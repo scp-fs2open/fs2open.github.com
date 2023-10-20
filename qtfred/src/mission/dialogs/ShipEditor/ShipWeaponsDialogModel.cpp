@@ -2,6 +2,7 @@
 namespace fso {
 namespace fred {
 namespace dialogs {
+namespace WeaponsDialog {
 ShipWeaponsDialogModel::ShipWeaponsDialogModel(QObject* parent, EditorViewport* viewport, bool isMultiEdit)
 	: AbstractDialogModel(parent, viewport)
 {
@@ -48,10 +49,10 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 		auto pilot = Ships[inst].weapons;
 		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 			if (pilot.primary_bank_weapons[i] >= 0) {
-				int maxAmmo = get_max_ammo_count_for_primary_bank(Ships[inst].ship_info_index,
-					i, pilot.primary_bank_weapons[i]);
-				int ammo = fl2ir(pilot.primary_bank_ammo[i] * maxAmmo / 100.0f);
-				pilotBank->add(new Bank(pilot.primary_bank_weapons[i], i, maxAmmo,ammo));
+				const int maxAmmo =
+					get_max_ammo_count_for_primary_bank(Ships[inst].ship_info_index, i, pilot.primary_bank_weapons[i]);
+				const int ammo = fl2ir(pilot.primary_bank_ammo[i] * maxAmmo / 100.0f);
+				pilotBank->add(new Bank(pilot.primary_bank_weapons[i], i, maxAmmo, ammo));
 			}
 		}
 		PrimaryBanks.push_back(pilotBank);
@@ -63,16 +64,17 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, pss);
 				for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 					if (pss->weapons.primary_bank_weapons[i] >= 0) {
-						int maxAmmo =
-							get_max_ammo_count_for_primary_turret_bank(&pss->weapons,
+						const int maxAmmo = get_max_ammo_count_for_primary_turret_bank(&pss->weapons,
 							i,
 							pss->weapons.primary_bank_weapons[i]);
-						int ammo = fl2ir(pss->weapons.primary_bank_ammo[i] * maxAmmo / 100.0f);
+						const int ammo = fl2ir(pss->weapons.primary_bank_ammo[i] * maxAmmo / 100.0f);
 						turretBank->add(new Bank(pss->weapons.primary_bank_weapons[i], i, maxAmmo, ammo));
 					}
 				}
-				if (turretBank->banks.size() > 0) {
+				if (!turretBank->banks.empty()) {
 					PrimaryBanks.push_back(turretBank);
+				} else {
+					delete turretBank;
 				}
 			}
 		}
@@ -114,9 +116,9 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 		auto pilot = Ships[inst].weapons;
 		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
 			if (pilot.secondary_bank_weapons[i] >= 0) {
-				int maxAmmo =
+				const int maxAmmo =
 					get_max_ammo_count_for_bank(Ships[inst].ship_info_index, i, pilot.secondary_bank_weapons[i]);
-				int ammo = fl2ir(pilot.secondary_bank_ammo[i] * maxAmmo / 100.0f);
+				const int ammo = fl2ir(pilot.secondary_bank_ammo[i] * maxAmmo / 100.0f);
 				pilotBank->add(new Bank(pilot.secondary_bank_weapons[i], i, maxAmmo, ammo));
 			}
 		}
@@ -129,15 +131,17 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, pss);
 				for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
 					if (pss->weapons.secondary_bank_weapons[i] >= 0) {
-						int maxAmmo = get_max_ammo_count_for_turret_bank(&pss->weapons,
+						const int maxAmmo = get_max_ammo_count_for_turret_bank(&pss->weapons,
 							i,
 							pss->weapons.secondary_bank_weapons[i]);
-						int ammo = fl2ir(pss->weapons.secondary_bank_ammo[i] * maxAmmo / 100.0f);
+						const int ammo = fl2ir(pss->weapons.secondary_bank_ammo[i] * maxAmmo / 100.0f);
 						turretBank->add(new Bank(pss->weapons.secondary_bank_weapons[i], i, maxAmmo, ammo));
 					}
 				}
-				if (turretBank->banks.size() > 0) {
+				if (!turretBank->banks.empty()) {
 					SecondaryBanks.push_back(turretBank);
+				} else {
+					delete turretBank;
 				}
 			}
 		}
@@ -188,16 +192,15 @@ SCP_vector<Banks*> ShipWeaponsDialogModel::getSecondaryBanks() const
 
 }
 */
-Banks::Banks(const SCP_string name, int aiIndex, ship_subsys* subsys) : subsys(subsys)
+Banks::Banks(const SCP_string &name, int aiIndex, ship_subsys* subsys) : name(name), subsys(subsys)
 {
-	this->name = std::move(name);
 	aiClass = aiIndex;
 }
 void Banks::add(Bank* bank)
 {
 	banks.push_back(bank);
 }
-Bank* Banks::getByBankId(int id)
+Bank* Banks::getByBankId(const int id)
 {
 	for (auto bank : banks) {
 		if (id == bank->getWeaponId())
@@ -228,6 +231,7 @@ void Bank::setAmmo(const int newAmmo)
 {
 	this->ammo = newAmmo;
 }
+} // namespace WeaponsDialog
 } // namespace dialogs
 } // namespace fred
 } // namespace fso

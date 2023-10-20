@@ -1,119 +1,11 @@
 #include "ShipWeaponsDialog.h"
 
-#include "ui_ShipWeaponsDialog.h"
-
 #include <qmimedata.h>
-#include <ui/util/SignalBlockers.h>
 #include <weapon/weapon.h>
-
-#include <QCloseEvent>
-#include <QStringListModel>
-
 namespace fso {
 namespace fred {
 namespace dialogs {
-ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, bool isMultiEdit)
-	: QDialog(parent), ui(new Ui::ShipWeaponsDialog()), _model(new ShipWeaponsDialogModel(this, viewport, isMultiEdit)),
-	  _viewport(viewport)
-{
-	ui->setupUi(this);
-
-	connect(ui->radioPrimary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 0); });
-	connect(ui->radioSecondary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 1); });
-	connect(ui->radioTertiary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 2); });
-
-	//Used to prevent user from selecting subsystems and weapons at the same time
-	connect(this, &QDialog::accepted, _model.get(), &ShipWeaponsDialogModel::apply);
-	if (!_model->getPrimaryBanks().empty()) {
-		util::SignalBlockers blockers(this);
-		bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
-		ui->radioPrimary->setChecked(true);
-		dialogMode = 0;
-	} else if (!_model->getSecondaryBanks().empty()) {
-		util::SignalBlockers blockers(this);
-		bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
-		ui->radioSecondary->setChecked(true);
-		dialogMode = 1;
-	} else {
-		Error("No Valid Weapon banks on ship");
-	}
-	ui->treeBanks->setModel(bankModel);
-	connect(ui->treeBanks->selectionModel(),
-		&QItemSelectionModel::selectionChanged,
-		this,
-		&ShipWeaponsDialog::processMultiSelect);
-	ui->treeBanks->expandAll();
-	updateUI();
-	// Resize the dialog to the minimum size
-	resize(QDialog::sizeHint());
-}
-
-ShipWeaponsDialog::~ShipWeaponsDialog() = default;
-
-void ShipWeaponsDialog::closeEvent(QCloseEvent* event)
-{
-	accept();
-	QDialog::closeEvent(event);
-}
-void ShipWeaponsDialog::modeChanged(bool enabled, int mode)
-{
-	if (enabled) {
-		if (mode == 0) {
-			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
-			dialogMode = 0;
-		} else if (mode == 1) {
-			bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
-			dialogMode = 1;
-		} else if (mode == 2) {
-			// bankModel = new BankTreeModel(_model->getTertiaryBanks(), this);
-			dialogMode = 2;
-		} else {
-			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-				"Illegal Mode",
-				"Somehow an Illegal mode has been set. Get a coder.\n Illegal mode is " + mode,
-				{DialogButton::Ok});
-			ui->radioPrimary->toggled(true);
-			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
-			dialogMode = 0;
-		}
-		ui->treeBanks->setModel(bankModel);
-		connect(ui->treeBanks->selectionModel(),
-			&QItemSelectionModel::selectionChanged,
-			this,
-			&ShipWeaponsDialog::processMultiSelect);
-		ui->treeBanks->expandAll();
-	}
-	updateUI();
-}
-void ShipWeaponsDialog::updateUI()
-{
-	util::SignalBlockers blockers(this);
-	ui->radioPrimary->setEnabled(!_model->getPrimaryBanks().empty());
-	ui->radioSecondary->setEnabled(!_model->getSecondaryBanks().empty());
-	ui->radioTertiary->setEnabled(false);
-}
-
-void ShipWeaponsDialog::processMultiSelect(const QItemSelection& selected, const QItemSelection& deselected) {
-	if (selected.empty())
-		bankModel->typeSelected = -1;
-		return;
-	QItemSelectionModel* selectionModel = ui->treeBanks->selectionModel();
-	QItemSelection selection = selectionModel->selection();
-	QModelIndexList  indexes = selection.indexes();
-	BankTreeItem* item = bankModel->getItem(indexes.first());
-	if (item) {
-		BankTreeBank* bankTest = dynamic_cast<BankTreeBank*>(item);
-		BankTreeLabel* labelTest = dynamic_cast<BankTreeLabel*>(item);
-		if (bankTest) {
-			bankModel->typeSelected = 0;
-		} else if (labelTest) {
-			bankModel->typeSelected = 1;
-		} else {
-			bankModel->typeSelected = -1;
-		}
-	}
-}
-
+namespace WeaponsDialog {
 BankTreeItem::BankTreeItem(BankTreeItem* parentItem) : m_parentItem(parentItem) {}
 BankTreeItem::~BankTreeItem()
 {
@@ -123,7 +15,7 @@ void BankTreeItem::appendChild(BankTreeItem* item)
 {
 	m_childItems.append(item);
 }
-BankTreeItem* BankTreeItem::child(int row)
+BankTreeItem* BankTreeItem::child(int row) const
 {
 	if (row < 0 || row >= m_childItems.size())
 		return nullptr;
@@ -246,6 +138,7 @@ BankTreeLabel::BankTreeLabel(const QString& name, Banks* banks, BankTreeItem* pa
 	this->name = name;
 }
 
+
 QVariant BankTreeLabel::data(int column) const
 {
 	switch (column) {
@@ -309,16 +202,16 @@ void BankTreeModel::setupModelData(const SCP_vector<Banks*>& data, BankTreeItem*
 QVariant BankTreeModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if (role == Qt::DisplayRole) {
-			switch (section) {
-			case 0:
-				return tr("Bank Name/Weapon");
-			case 1:
-				return tr("Ammo");
-			default:
-				return QString("");
-			}
+		switch (section) {
+		case 0:
+			return tr("Bank Name/Weapon");
+		case 1:
+			return tr("Ammo");
+		default:
+			return QString("");
 		}
-	return QVariant();
+	}
+	return {};
 }
 
 BankTreeModel::~BankTreeModel()
@@ -346,7 +239,7 @@ QVariant BankTreeModel::data(const QModelIndex& index, int role) const
 	return item->data(index.column());
 }
 
-BankTreeItem* BankTreeModel::getItem(const QModelIndex& index) const
+BankTreeItem* BankTreeModel::getItem(const QModelIndex index) const
 {
 	if (index.isValid()) {
 		auto* item = static_cast<BankTreeItem*>(index.internalPointer());
@@ -415,7 +308,7 @@ bool BankTreeModel::canDropMimeData(const QMimeData* data,
 	Qt::DropAction action,
 	int row,
 	int column,
-	const QModelIndex& parent)
+	const QModelIndex& parent) const
 {
 	Q_UNUSED(action);
 	Q_UNUSED(row);
@@ -425,11 +318,7 @@ bool BankTreeModel::canDropMimeData(const QMimeData* data,
 		return false;
 	BankTreeItem* item = this->getItem(parent);
 	Qt::ItemFlags flags = item->getFlags(column, typeSelected);
-	if (flags.testFlag(Qt::ItemIsDropEnabled)) {
-		return true;
-	} else {
-		return false;
-	}
+	return flags.testFlag(Qt::ItemIsDropEnabled);
 }
 bool BankTreeModel::dropMimeData(const QMimeData* data,
 	Qt::DropAction action,
@@ -462,15 +351,14 @@ bool BankTreeModel::dropMimeData(const QMimeData* data,
 	return true;
 }
 
-void BankTreeModel::setWeapon(const QModelIndex& index, int data)
+void BankTreeModel::setWeapon(const QModelIndex& index, int data) const
 {
-	BankTreeBank* item = dynamic_cast<BankTreeBank*>(this->getItem(index));
+	auto item = dynamic_cast<BankTreeBank*>(this->getItem(index));
 	Assert(item != nullptr);
 	if (item != nullptr) {
 		item->setWeapon(data);
 	}
 }
-
 
 bool BankTreeRoot::setData(int column, const QVariant& value)
 {
@@ -489,11 +377,12 @@ QVariant BankTreeRoot::data(int column) const
 		return {};
 	}
 }
-Qt::ItemFlags BankTreeRoot::getFlags(int column ,int type)
+Qt::ItemFlags BankTreeRoot::getFlags(int column, int type)
 {
 	Q_UNUSED(type)
 	return {};
 }
+} // namespace WeaponsDialog
 } // namespace dialogs
 } // namespace fred
 } // namespace fso
