@@ -5564,7 +5564,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size());
 	
 	//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
-	if ((flags == Weapon::Info_Flags::Puncture) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
+	if ((flags == Weapon::Info_Flags::Puncture) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL)))
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
@@ -5789,7 +5789,7 @@ void set_primary_weapon_linkage(object *objp)
 	//					puncture weapons
 	if ( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) )
 	{
-		if ( aip->goals[aip->active_goal].ai_mode & (AI_GOAL_DISABLE_SHIP|AI_GOAL_DISARM_SHIP) )
+		if ( aip->goals[aip->active_goal].ai_mode & (AI_GOAL_DISABLE_SHIP|AI_GOAL_DISABLE_SHIP_TACTICAL|AI_GOAL_DISARM_SHIP|AI_GOAL_DISARM_SHIP_TACTICAL) )
 		{
 			// only continue if both primaries are puncture weapons
 			if ( swp->num_primary_banks == 2 ) {
@@ -14934,9 +14934,9 @@ void ai_frame(int objnum)
 		if ( aip->targeted_subsys->current_hits <= 0.0f ) {
 			int subsys_type;
 
-			if ( aip->goals[0].ai_mode == AI_GOAL_DISABLE_SHIP ) {
+			if ( aip->goals[0].ai_mode == AI_GOAL_DISABLE_SHIP || aip->goals[0].ai_mode == AI_GOAL_DISABLE_SHIP_TACTICAL ) {
 				subsys_type = SUBSYSTEM_ENGINE;
-			} else if ( aip->goals[0].ai_mode == AI_GOAL_DISARM_SHIP ) {
+			} else if ( aip->goals[0].ai_mode == AI_GOAL_DISARM_SHIP || aip->goals[0].ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL ) {
 				subsys_type = SUBSYSTEM_TURRET;
 			} else {
 				subsys_type = -1;

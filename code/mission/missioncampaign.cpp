@@ -267,6 +267,8 @@ int mission_campaign_maybe_add(const char *filename)
 
 			Num_campaigns++;
 
+			// Note that we're not freeing desc here because the pointer is getting copied to Campaign_descs which is freed later.
+
 			return 1;
 		}
 	}

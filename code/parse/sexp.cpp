@@ -825,7 +825,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-destroy-subsystem",			OP_AI_DESTROY_SUBSYS,					3,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-disable-ship",				OP_AI_DISABLE_SHIP,						2,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-disable-ship-tactical",		OP_AI_DISABLE_SHIP_TACTICAL,			2,	4,			SEXP_GOAL_OPERATOR, },
 	{ "ai-disarm-ship",					OP_AI_DISARM_SHIP,						2,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-disarm-ship-tactical",		OP_AI_DISARM_SHIP_TACTICAL,				2,	4,			SEXP_GOAL_OPERATOR, },
 	{ "ai-warp",						OP_AI_WARP,								2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-warp-out",					OP_AI_WARP_OUT,							1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-dock",						OP_AI_DOCK,								4,	5,			SEXP_GOAL_OPERATOR,	},
@@ -887,7 +889,9 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_WAYPOINTS_ONCE, OP_AI_WAYPOINTS_ONCE },
 	{ AI_GOAL_DESTROY_SUBSYSTEM, OP_AI_DESTROY_SUBSYS },
 	{ AI_GOAL_DISABLE_SHIP, OP_AI_DISABLE_SHIP },
+	{ AI_GOAL_DISABLE_SHIP_TACTICAL, OP_AI_DISABLE_SHIP_TACTICAL },
 	{ AI_GOAL_DISARM_SHIP, OP_AI_DISARM_SHIP },
+	{ AI_GOAL_DISARM_SHIP_TACTICAL, OP_AI_DISARM_SHIP_TACTICAL },
 	{ AI_GOAL_GUARD, OP_AI_GUARD },
 	{ AI_GOAL_GUARD_WING, OP_AI_GUARD_WING },
 	{ AI_GOAL_EVADE_SHIP, OP_AI_EVADE_SHIP },
@@ -20973,7 +20977,6 @@ void sexp_set_armor_type(int node)
 {
 	int armor;
 	bool rset;
-	ship_subsys *ss = nullptr;
 	ship *shipp = nullptr;
 	ship_info *sip = nullptr;
 
@@ -20991,17 +20994,20 @@ void sexp_set_armor_type(int node)
 	node = CDR(node);
 
 	// get armor
-	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
+	auto armor_name = CTEXT(node);
+	if (!stricmp(SEXP_NONE_STRING, armor_name)) {
 		armor = -1;
 	} else {
-		armor = armor_type_get_idx(CTEXT(node));
+		armor = armor_type_get_idx(armor_name);
 	}
 	node = CDR(node);
 
 	//Set armor
 	for (; node != -1; node = CDR(node))
 	{
-		if (!stricmp(SEXP_HULL_STRING, CTEXT(node)))
+		auto subsys_name = CTEXT(node);
+
+		if (!stricmp(SEXP_HULL_STRING, subsys_name))
 		{
 			// we are setting the ship itself
 			if (!rset)
@@ -21009,7 +21015,7 @@ void sexp_set_armor_type(int node)
 			else
 				shipp->armor_type_idx = armor;
 		}
-		else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node)))
+		else if (!stricmp(SEXP_SHIELD_STRING, subsys_name))
 		{
 			// we are setting the ships shields
 			if (!rset)
@@ -21017,19 +21023,37 @@ void sexp_set_armor_type(int node)
 			else
 				shipp->shield_armor_type_idx = armor;
 		}
-		else 
+		else
 		{
-			// get the subsystem
-			ss = ship_get_subsys(shipp, CTEXT(node));
-			if(ss == nullptr){
-				continue;
+			int generic_type = get_generic_subsys(subsys_name);
+			if (generic_type != SUBSYSTEM_NONE)
+			{
+				// search through all subsystems
+				for (auto ss : list_range(&ship_entry->shipp->subsys_list))
+				{
+					if (generic_type == ss->system_info->type)
+					{
+						// set the range
+						if (!rset)
+							ss->armor_type_idx = ss->system_info->armor_type_idx;
+						else
+							ss->armor_type_idx = armor;
+					}
+				}
 			}
-		
-			// set the range
-			if (!rset)
-				ss->armor_type_idx = ss->system_info->armor_type_idx;
 			else
-				ss->armor_type_idx = armor;
+			{
+				// get the subsystem
+				auto ss = ship_get_subsys(shipp, subsys_name);
+				if (ss != nullptr)
+				{
+					// set the range
+					if (!rset)
+						ss->armor_type_idx = ss->system_info->armor_type_idx;
+					else
+						ss->armor_type_idx = armor;
+				}
+			}
 		}
 	}
 }
@@ -30029,7 +30053,9 @@ int query_operator_return_type(int op)
 		case OP_AI_WAYPOINTS_ONCE:
 		case OP_AI_DESTROY_SUBSYS:
 		case OP_AI_DISABLE_SHIP:
+		case OP_AI_DISABLE_SHIP_TACTICAL:
 		case OP_AI_DISARM_SHIP:
+		case OP_AI_DISARM_SHIP_TACTICAL:
 		case OP_AI_GUARD:
 		case OP_AI_GUARD_WING:
 		case OP_AI_EVADE_SHIP:
@@ -30936,7 +30962,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NULL;
 
 		case OP_AI_DISABLE_SHIP:
+		case OP_AI_DISABLE_SHIP_TACTICAL:
 		case OP_AI_DISARM_SHIP:
+		case OP_AI_DISARM_SHIP_TACTICAL:
 			if (argnum == 0)
 				return OPF_SHIP;
 			else if (argnum == 1)
@@ -31844,7 +31872,7 @@ int query_operator_argument_type(int op, int argnum)
 			} else if(argnum == 2) {
 				return OPF_ARMOR_TYPE;
 			} else {
-				return OPF_SUBSYSTEM;
+				return OPF_SUBSYS_OR_GENERIC;
 			}
 
 		case OP_WEAPON_SET_DAMAGE_TYPE:
@@ -34969,7 +34997,9 @@ int get_category(int op_id)
 		case OP_AI_WAYPOINTS_ONCE:
 		case OP_AI_DESTROY_SUBSYS:
 		case OP_AI_DISABLE_SHIP:
+		case OP_AI_DISABLE_SHIP_TACTICAL:
 		case OP_AI_DISARM_SHIP:
+		case OP_AI_DISARM_SHIP_TACTICAL:
 		case OP_AI_GUARD:
 		case OP_AI_CHASE_ANY:
 		case OP_AI_EVADE_SHIP:
@@ -37412,9 +37442,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
 		"goals.\r\n"
-		"Please note that this goal may call \"protect-ship\" on the target "
-		"to prevent overzealous AI ships from destroying it in the process of disabling it.  "
-		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
+		"Please note that this goal will call \"protect-ship\" on the target "
+		"to prevent overzealous AI ships from destroying it in the process of disabling it.  It will "
+		"also clear attack goals from any other AI ships which have goals to attack the target.  "
+		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp, or "
+		"consider using ai-disable-ship-tactical.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
+	},
+
+	{ OP_AI_DISABLE_SHIP_TACTICAL, "Ai-disable-ship-tactical (Ship/wing goal)\r\n"
+		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
+		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
+		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
+		"goals.\r\n"
+		"This goal is specifically a \"tactical disable\" of its target, performing the specific task without "
+		"implying anything else.  It does not protect the target ship, nor does it clear attack goals from other "
+		"AI ships attacking the target ship.\r\n\r\n"
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
@@ -37428,8 +37475,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"may have multiple turret subsystems requiring the use of > 1 ai-destroy-subsystem "
 		"goals.\r\n"
 		"Please note that this goal may call \"protect-ship\" on the target "
-		"to prevent overzealous AI ships from destroying it in the process of disarming it.  "
-		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
+		"to prevent overzealous AI ships from destroying it in the process of disarming it.  It will "
+		"also clear attack goals from any other AI ships which have goals to attack the target.  "
+		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp, or "
+		"consider using ai-disarm-ship-tactical.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
+	},
+
+	{ OP_AI_DISARM_SHIP_TACTICAL, "Ai-disarm-ship-tactical (Ship/wing goal)\r\n"
+		"\tThis AI goal causes a ship/wing to destroy all of the turret subsystems on "
+		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
+		"may have multiple turret subsystems requiring the use of > 1 ai-destroy-subsystem "
+		"goals.\r\n"
+		"This goal is specifically a \"tactical disarm\" of its target, performing the specific task without "
+		"implying anything else.  It does not protect the target ship, nor does it clear attack goals from other "
+		"AI ships attacking the target ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
