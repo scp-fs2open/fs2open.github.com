@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AbstractDialogModel.h"
+#include "../AbstractDialogModel.h"
 
 #include <object/objectdock.h>
 

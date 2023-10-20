@@ -11,7 +11,7 @@
 
 #include <qevent.h>
 #include <FredApplication.h>
-#include <ui/dialogs/ShipEditorDialog.h>
+#include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>

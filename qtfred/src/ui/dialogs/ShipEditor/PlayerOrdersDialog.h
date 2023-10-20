@@ -2,9 +2,9 @@
 
 #include <QtWidgets/QDialog>
 
-#include <mission/dialogs/PlayerOrdersDialogModel.h>
+#include <mission/dialogs/ShipEditor/PlayerOrdersDialogModel.h>
 #include <ui/widgets/ShipFlagCheckbox.h>
-#include <ui/dialogs/ShipEditorDialog.h>
+#include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 
 namespace fso {
 	namespace fred {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AbstractDialogModel.h"
+#include "../AbstractDialogModel.h"
 
 namespace fso {
 namespace fred {
