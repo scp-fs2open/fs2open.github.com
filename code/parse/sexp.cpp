@@ -30289,6 +30289,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum == 2 || argnum == 4)
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:

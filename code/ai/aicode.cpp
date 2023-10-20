@@ -12509,7 +12509,7 @@ int ai_formation()
 				if (aip->wp_index == -1)
 					++aip->wp_index;
 			} else {
-				if (aip->wp_index == aip->wp_list->get_waypoints().size())
+				if (aip->wp_index == (int)aip->wp_list->get_waypoints().size())
 					--aip->wp_index;
 			}
 		}

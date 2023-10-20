@@ -305,7 +305,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_WAYPOINTS_ONCE:
 			// check if waypoint order is the current goal (ohp->odx == 0) and if it is valid
 			if ( (ohp->odx == 0) && (aip->wp_index != INVALID_WAYPOINT_POSITION) &&
-				(aip->wp_index < aip->wp_list->get_waypoints().size()) ) {
+				(aip->wp_index >= 0 && aip->wp_index < (int)aip->wp_list->get_waypoints().size()) ) {
 				objnum = aip->wp_list->get_waypoints()[aip->wp_index].get_objnum();
 			} else {
 				wpl = find_matching_waypoint_list(ohp->aigp->target_name);
