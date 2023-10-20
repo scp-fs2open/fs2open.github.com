@@ -825,10 +825,11 @@ void ShipEditorDialog::on_deleteButton_clicked()
 }
 void ShipEditorDialog::on_weaponsButton_clicked()
 {
-	// TODO: weapons dialog
+		auto weaponsDialog = new dialogs::WeaponsDialog::ShipWeaponsDialog(this, _viewport, getIfMultipleShips());
+		weaponsDialog->show();
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
-{
+	{
 	if (!playerOrdersDialog) {
 		playerOrdersDialog = std::unique_ptr<PlayerOrdersDialog>(new dialogs::PlayerOrdersDialog(this, _viewport));
 	}

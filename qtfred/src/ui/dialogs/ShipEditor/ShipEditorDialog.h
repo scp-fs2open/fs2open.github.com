@@ -2,7 +2,7 @@
 #define SHIPDEDITORDIALOG_H
 
 #include <QtWidgets/QDialog>
-#include <mission/dialogs/ShipEditorDialogModel.h>
+#include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
 #include <ui/FredView.h>
 #include "ShipGoalsDialog.h"
 #include "ShipInitialStatusDialog.h"

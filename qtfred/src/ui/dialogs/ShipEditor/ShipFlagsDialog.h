@@ -1,7 +1,7 @@
 #ifndef SHIPFLAGDIALOG_H
 #define SHIPFLAGDIALOG_H
 
-#include <mission/dialogs/ShipFlagsDialogModel.h>
+#include <mission/dialogs/ShipEditor/ShipFlagsDialogModel.h>
 #include <ui/FredView.h>
 #include <QtWidgets/QDialog>
 

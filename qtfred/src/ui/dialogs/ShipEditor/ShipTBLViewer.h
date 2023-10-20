@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mission/dialogs/ShipTBLViewerModel.h>
+#include <mission/dialogs/ShipEditor/ShipTBLViewerModel.h>
 #include <QtWidgets/QDialog>
 
 #include "ShipEditorDialog.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AbstractDialogModel.h"
+#include "../AbstractDialogModel.h"
 
 #include "mission/util.h"
 #include "ship/ship.h"
