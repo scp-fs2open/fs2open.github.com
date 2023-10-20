@@ -1673,20 +1673,22 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_DISABLE:
+		case LE_ORDER_DISABLE_TACTICAL:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_DISABLE_SHIP;
+				ai_mode = (eh->index == LE_ORDER_DISABLE) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
 				ai_submode = -SUBSYSTEM_ENGINE;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}
 			break;
 		}
 		case LE_ORDER_DISARM:
+		case LE_ORDER_DISARM_TACTICAL:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_DISARM_SHIP;
+				ai_mode = (eh->index == LE_ORDER_DISARM) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
 				ai_submode = -SUBSYSTEM_TURRET;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}
@@ -1699,10 +1701,11 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_IGNORE:
+		case LE_ORDER_IGNORE_NEW:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_IGNORE_NEW;
+				ai_mode = (eh->index == LE_ORDER_IGNORE) ? AI_GOAL_IGNORE : AI_GOAL_IGNORE_NEW;
 				ai_submode = 0;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}

@@ -145,28 +145,30 @@ bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 
-static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
-							 .category("Other")
-							 .default_val(Discord_presence)
-							 .level(options::ExpertLevel::Advanced)
-							 .importance(55)
-		                     .change_listener([](bool val, bool) {
-									if(Discord_presence){
-										if (!val) {
-											Discord_presence = false;
-											libs::discord::shutdown();
-											return true;
-										}
-									} else {
-										if (val) {
-											Discord_presence = true;
-											libs::discord::init();
-											return true;
-										}
-									}
-									return false;
-								})
-							 .finish();
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
+                     std::pair<const char*, int>{"Discord Presence", 1754},
+                     std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
+                     .category("Other")
+                     .default_val(Discord_presence)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(55)
+                     .change_listener([](bool val, bool) {
+                          if(Discord_presence){
+                               if (!val) {
+                                    Discord_presence = false;
+                                    libs::discord::shutdown();
+                                    return true;
+                               }
+                          } else {
+                               if (val) {
+                                    Discord_presence = true;
+                                    libs::discord::init();
+                                    return true;
+                               }
+                          }
+                          return false;
+                     })
+                     .finish();
 
 void mod_table_set_version_flags();
 

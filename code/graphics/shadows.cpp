@@ -34,24 +34,20 @@ ShadowQuality Shadow_quality = ShadowQuality::Disabled;
 
 bool Shadow_quality_uses_mod_option = false; 
 
-auto ShadowQualityOption =
-    options::OptionBuilder<ShadowQuality>("Graphics.Shadows", "Shadow Quality", "The quality of the shadows")
-        .values({{ShadowQuality::Disabled, "Disabled"},
-                 {ShadowQuality::Low, "Low"},
-                 {ShadowQuality::Medium, "Medium"},
-                 {ShadowQuality::High, "High"},
-                 {ShadowQuality::Ultra, "Ultra"}})
-        .change_listener([](ShadowQuality val, bool initial) {
-	        if (initial) {
-		        Shadow_quality = val;
-	        }
-	        return initial; // No dynamic changes implemented
-        })
-        .level(options::ExpertLevel::Advanced)
-        .category("Graphics")
-        .default_val(ShadowQuality::Disabled)
-        .importance(80)
-        .finish();
+auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shadows",
+                     std::pair<const char*, int>{"Shadow Quality", 1750},
+                     std::pair<const char*, int>{"The quality of the shadows", 1751})
+                     .values({{ShadowQuality::Disabled, {"Disabled", 1779}},
+                              {ShadowQuality::Low, {"Low", 1160}},
+                              {ShadowQuality::Medium, {"Medium", 1161}},
+                              {ShadowQuality::High, {"High", 1162}},
+                              {ShadowQuality::Ultra, {"Ultra", 1721}}})
+                     .change_listener([](ShadowQuality val, bool initial) {if (initial) {Shadow_quality = val;}return initial;})
+                     .level(options::ExpertLevel::Advanced)
+                     .category("Graphics")
+                     .default_val(ShadowQuality::Disabled)
+                     .importance(80)
+                     .finish();
 
 bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3d *max)
 {

@@ -680,8 +680,16 @@ void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 					str = "ai-disable-ship";
 					break;
 
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
+					str = "ai-disable-ship-tactical";
+					break;
+
 				case AI_GOAL_DISARM_SHIP:
 					str = "ai-disarm-ship";
+					break;
+
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
+					str = "ai-disarm-ship-tactical";
 					break;
 
 				case AI_GOAL_IGNORE:

@@ -866,7 +866,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 				mc.model_instance_num = -1;
 				mc.model_num = sip->cockpit_model_num;
 				mc.submodel_num = -1;
-				mc.orient = &Eye_matrix;
+				mc.orient = &eye_ori;
 				mc.pos = &pos;
 				mc.p0 = &rp0;
 				mc.p1 = &rp1;

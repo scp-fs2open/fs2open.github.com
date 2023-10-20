@@ -48,19 +48,20 @@ int Shockwave_inited = 0;
 extern int Show_area_effect;
 extern int Cmdline_enable_3d_shockwave;
 
-static SCP_string shockwave_mode_display(bool mode) { return mode ? "3D" : "2D"; }
+static SCP_string shockwave_mode_display(bool mode) { return mode ? XSTR("3D", 1691) : XSTR("2D", 1692); }
 
 static bool Use_3D_shockwaves = true;
 
-static auto Shockwave3DMode __UNUSED =
-    options::OptionBuilder<bool>("Graphics.3DShockwaves", "Shockwaves", "The way shockwaves are displayed.")
-        .category("Graphics")
-        .display(shockwave_mode_display)
-        .default_val(true)
-        .bind_to_once(&Use_3D_shockwaves)
-        .level(options::ExpertLevel::Advanced)
-        .importance(66)
-        .finish();
+static auto Shockwave3DMode __UNUSED = options::OptionBuilder<bool>("Graphics.3DShockwaves",
+                     std::pair<const char*, int>{"Shockwaves", 1722},
+                     std::pair<const char*, int>{"The way shockwaves are displayed", 1723})
+                     .category("Graphics")
+                     .display(shockwave_mode_display)
+                     .default_val(true)
+                     .bind_to_once(&Use_3D_shockwaves)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(66)
+                     .finish();
 
 /**
  * Call to create a shockwave
