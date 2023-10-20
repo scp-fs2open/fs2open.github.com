@@ -1303,7 +1303,7 @@ void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float 
 // If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
 // (rvec defaults to NULL)
 // optionally specified turnrate_mod contains multipliers for each component of the turnrate (RATE, so 0.5 = slower)
-void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* rel_pos, float bank_override, int flags, vec3d* rvec, vec3d* turnrate_mod)
+void ai_turn_towards_vector(const vec3d* dest, object* objp, const vec3d* slide_vec, const vec3d* rel_pos, float bank_override, int flags, const vec3d* rvec, const vec3d* turnrate_mod)
 {
 	matrix	curr_orient;
 	vec3d	vel_in, vel_out, desired_fvec, src;
@@ -4517,7 +4517,7 @@ void ai_safety()
 // optionally returns true if Pl_objp's (pl_treat_as_ship_p) fly to order was issued to him directly,
 // or if the order was issued to his wing (returns false) (can be NULL, and result is only
 // valid if Pl_done_p was not NULL and was set true by function.
-void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl_treat_as_ship_p=NULL)
+void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bool* pl_treat_as_ship_p=NULL)
 {
 	float		dot, dist_to_goal;
 	ship		*shipp = &Ships[Pl_objp->instance];

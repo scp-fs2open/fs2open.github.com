@@ -314,9 +314,9 @@ int find_index_of_waypoint_list(const waypoint_list *wp_list)
 {
 	Assert(wp_list != NULL);
 
-	auto index = wp_list - Waypoint_lists.data();
+	ptrdiff_t index = wp_list - Waypoint_lists.data();
 
-	if (index >= 0 && index < Waypoint_lists.size())
+	if (index >= 0 && index < (ptrdiff_t)Waypoint_lists.size())
 		return (int)index;
 
 	return -1;
@@ -327,9 +327,9 @@ int find_index_of_waypoint(const waypoint_list *wp_list, const waypoint *wpt)
 	Assert(wp_list != NULL);
 	Assert(wpt != NULL);
 
-	auto index = wpt - wp_list->get_waypoints().data();
+	ptrdiff_t index = wpt - wp_list->get_waypoints().data();
 
-	if (index >= 0 && index < wp_list->get_waypoints().size())
+	if (index >= 0 && index < (ptrdiff_t)wp_list->get_waypoints().size())
 		return (int)index;
 
 	return -1;
@@ -383,7 +383,7 @@ int waypoint_add(const vec3d *pos, int waypoint_instance)
 	Assert(pos != NULL);
 	waypoint_list *wp_list;
 	waypoint *wpt;
-	int i, wp_list_index, wp_index;
+	int wp_list_index, wp_index;
 
 	// find a new list to start
 	if (waypoint_instance < 0)

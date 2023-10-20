@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+#include "FREDDoc.h"
 #include "WaypointPathDlg.h"
 #include "Management.h"
 #include "MainFrm.h"
@@ -264,10 +265,10 @@ int waypoint_path_dlg::update_data(int redraw)
 
 
 		strcpy_s(old_name, cur_waypoint_list->get_name());
-		string_copy(cur_waypoint_list->get_name(), m_name, NAME_LENGTH - 1, 1);
-
 		str = (char *) (LPCTSTR) m_name;
+		cur_waypoint_list->set_name(str);
 		if (strcmp(old_name, str)) {
+			set_modified(TRUE);
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(sexp_ref_type::WAYPOINT, old_name, str);
 			update_texture_replacements(old_name, str);

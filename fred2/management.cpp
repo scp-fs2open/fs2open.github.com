@@ -1130,7 +1130,8 @@ int delete_ship(int ship)
 
 int common_object_delete(int obj)
 {
-	char msg[255], *name;
+	char msg[255];
+	const char *name;
 	int i, z, r, type;
 	object *objp;
 	SCP_list<CJumpNode>::iterator jnp;
@@ -1722,7 +1723,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, sexp_ref_type type)
+int invalidate_references(const char *name, sexp_ref_type type)
 {
 	char new_name[512];
 	int i;
@@ -1887,7 +1888,7 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, sexp_ref_type type, int obj)
+int reference_handler(const char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
 	int r, node;

@@ -869,7 +869,7 @@ void EndAutoPilot()
 	Assert( CurrentNav >= 0 );
 
 	int goal = 0;
-	char *goal_name = NULL;
+	const char *goal_name = NULL;
 
 	if (Navs[CurrentNav].flags & NP_WAYPOINT)
 	{
