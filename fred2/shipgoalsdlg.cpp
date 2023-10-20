@@ -461,7 +461,9 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
 			case AI_GOAL_EVADE_SHIP:
@@ -669,7 +671,9 @@ void ShipGoalsDlg::set_item(int item, int init)
 		case AI_GOAL_DOCK:
 		case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
@@ -941,7 +945,9 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:

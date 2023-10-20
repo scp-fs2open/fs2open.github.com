@@ -107,7 +107,9 @@ namespace fso {
 				case AI_GOAL_WAYPOINTS:
 				case AI_GOAL_WAYPOINTS_ONCE:
 				case AI_GOAL_DISABLE_SHIP:
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
 				case AI_GOAL_IGNORE:
 				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_EVADE_SHIP:
@@ -427,7 +429,9 @@ namespace fso {
 					case AI_GOAL_CHASE:
 					case AI_GOAL_GUARD:
 					case AI_GOAL_DISABLE_SHIP:
+					case AI_GOAL_DISABLE_SHIP_TACTICAL:
 					case AI_GOAL_DISARM_SHIP:
+					case AI_GOAL_DISARM_SHIP_TACTICAL:
 					case AI_GOAL_IGNORE:
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:

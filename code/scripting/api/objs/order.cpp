@@ -119,15 +119,23 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_DISABLE_SHIP:
 			eh_idx = LE_ORDER_DISABLE;
 			break;
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
+			eh_idx = LE_ORDER_DISABLE_TACTICAL;
+			break;
 		case AI_GOAL_DISARM_SHIP:
 			eh_idx = LE_ORDER_DISARM;
+			break;
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
+			eh_idx = LE_ORDER_DISARM_TACTICAL;
 			break;
 		case AI_GOAL_CHASE_ANY:
 			eh_idx = LE_ORDER_ATTACK_ANY;
 			break;
-		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
 			eh_idx = LE_ORDER_IGNORE;
+			break;
+		case AI_GOAL_IGNORE_NEW:
+			eh_idx = LE_ORDER_IGNORE_NEW;
 			break;
 		case AI_GOAL_EVADE_SHIP:
 			eh_idx = LE_ORDER_EVADE;
@@ -190,7 +198,9 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_FORM_ON_WING:
 				case AI_GOAL_GUARD:
 				case AI_GOAL_DISABLE_SHIP:
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
 				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_IGNORE:
 				case AI_GOAL_EVADE_SHIP:
@@ -272,7 +282,9 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_EVADE_SHIP:

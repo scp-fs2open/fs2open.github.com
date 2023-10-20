@@ -512,6 +512,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
 	{ "no impact spew",				Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",			Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "multilock target dead subsys", Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
+	{ "ignores countermeasures",	Weapon::Info_Flags::Ignores_countermeasures,			true, false },
 };
 
 const int num_ai_tgt_weapon_info_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -16587,7 +16588,9 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 	case AI_GOAL_UNDOCK:
 	case AI_GOAL_GUARD:
 	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISABLE_SHIP_TACTICAL:
 	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_DISARM_SHIP_TACTICAL:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_REARM_REPAIR:
 	case AI_GOAL_FLY_TO_SHIP:
@@ -16675,7 +16678,9 @@ SCP_string ship_return_orders(ship* sp)
 	case AI_GOAL_UNDOCK:
 	case AI_GOAL_GUARD:
 	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISABLE_SHIP_TACTICAL:
 	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_DISARM_SHIP_TACTICAL:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_REARM_REPAIR:
 	case AI_GOAL_FLY_TO_SHIP:
