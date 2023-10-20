@@ -844,7 +844,8 @@ int Editor::dup_object(object* objp) {
 }
 
 int Editor::common_object_delete(int obj) {
-	char msg[255], * name;
+	char msg[255];
+	const char *name;
 	int i, z, r, type;
 	object* objp;
 	SCP_list<CJumpNode>::iterator jnp;
