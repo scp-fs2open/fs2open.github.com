@@ -17751,7 +17751,7 @@ int get_max_ammo_count_for_primary_turret_bank(ship_weapon* swp, int bank, int a
 		ammo_type,
 		weapon_info_size());
 
-	if (!swp || bank < 0 || ammo_type < 0) {
+	if (!swp || bank < 0 || ammo_type < 0 || !(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic])) {
 		return 0;
 	} else {
 		capacity = (float)swp->primary_bank_capacity[bank];
