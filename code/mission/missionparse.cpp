@@ -4710,50 +4710,77 @@ void parse_wing(mission *pm)
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
+	// make a temporary map since we want to keep this separate from the ship registry
+	SCP_unordered_map<SCP_string, int> parse_object_indexes;
+	i = 0;
+	for (const auto& pobj : Parse_objects)
+		parse_object_indexes.emplace(pobj.name, i++);
+
+	// Goober5000 - to avoid confusing mismatches in the ship registry and hotkey list, and possibly other places,
+	// make sure the order of parse objects matches their order in the wing
+	auto prev_iter = parse_object_indexes.end();
+	for (i = 0; i < wingp->wave_count; i++) {
+		auto this_iter = parse_object_indexes.find(ship_names[i]);
+		if (this_iter == parse_object_indexes.end()) {
+			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_names[i]);
+			break;
+		}
+
+		if (i > 0) {
+			// compare the parse object indexes of the previous ship and this ship
+			if (this_iter->second < prev_iter->second) {
+				// swap the parse objects
+				std::swap(Parse_objects[this_iter->second], Parse_objects[prev_iter->second]);
+
+				// swap the indexes in our temporary map
+				std::swap(this_iter->second, prev_iter->second);
+
+				// start over from the beginning of the wing
+				i = -1;
+				this_iter = parse_object_indexes.end();
+			}
+		}
+
+		prev_iter = this_iter;
+	}
+
 	// set the wing number for all ships in the wing
 	for (i = 0; i < wingp->wave_count; i++ ) {
 		char *ship_name = ship_names[i];
-		int assigned = 0;
 
 		// Goober5000 - since the ship/wing creation stuff is reordered to accommodate multiple docking,
 		// everything is still only in the parse array at this point (in both FRED and FS2)
 
 		// find the parse object and assign it the wing number
-		for (SCP_vector<p_object>::iterator p_objp = Parse_objects.begin(); p_objp != Parse_objects.end(); ++p_objp) {
-			if ( !strcmp(ship_name, p_objp->name) ) {
-				// get Allender -- ship appears to be in multiple wings
-				Assert (p_objp->wingnum == -1);
+		auto iter = parse_object_indexes.find(ship_name);
+		if (iter != parse_object_indexes.end()) {
+			auto p_objp = &Parse_objects[iter->second];
 
-				// assign wingnum
-				p_objp->wingnum = wingnum;
-				p_objp->pos_in_wing = i;
+			// get Allender -- ship appears to be in multiple wings
+			// (or appears multiple times in the same wing)
+			if (p_objp->wingnum >= 0)
+				Error(LOCATION, "Cannot load mission -- tried to assign ship %s to wing %s but it was already assigned to wing %s.\n", ship_name, wingp->name, p_objp->wingnum < Num_wings ? Wings[p_objp->wingnum].name : "<out of range wingnum>");
 
-				// we have found our "special ship" (our wing leader)
-				if (!Fred_running && i == 0){
-					wingp->special_ship_ship_info_index = p_objp->ship_class;
-				}
+			// assign wingnum
+			p_objp->wingnum = wingnum;
+			p_objp->pos_in_wing = i;
 
-				assigned++;
+			// we have found our "special ship" (our wing leader)
+			if (!Fred_running && i == 0){
+				wingp->special_ship_ship_info_index = p_objp->ship_class;
+			}
 
-				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
-				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
-					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
-					if (!Fred_running && wingp->arrival_delay > 0) {
-						// timestamp has been set, so set it again
-						wingp->arrival_delay = timestamp(0);
-					} else {
-						// no timestamp, or timestamp invalid
-						wingp->arrival_delay = 0;
-					}
+			// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
+			if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
+				Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
+				if (!Fred_running && wingp->arrival_delay > 0) {
+					// timestamp has been set, so set it again
+					wingp->arrival_delay = timestamp(0);
+				} else {
+					// no timestamp, or timestamp invalid
+					wingp->arrival_delay = 0;
 				}
 			}
-		}
-
-		// error checking
-		if (assigned == 0) {
-			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
-		} else if (assigned > 1) {
-			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
 		}
 	}
 
