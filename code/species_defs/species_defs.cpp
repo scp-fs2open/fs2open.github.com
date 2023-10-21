@@ -16,7 +16,7 @@
 #include "ship/shipfx.h"
 #include "species_defs/species_defs.h"
 
-extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name, bool set_special_warp_physics = false);
+extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name, bool set_supercap_warp_physics = false);
 
 SCP_vector<species_info> Species_info;
 

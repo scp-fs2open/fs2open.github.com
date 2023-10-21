@@ -1228,7 +1228,7 @@
 #define IDC_SPIN_EM_FALLOFF             1695
 #define IDC_SPIN_NOISE_COLOR_B          1696
 #define IDC_NOISE_COLOR_B               1697
-#define IDC_SPECIAL_WARP_PHYSICS        1698
+#define IDC_SUPERCAP_WARP_PHYSICS       1698
 #define IDC_NOISE_INTENSITY             1700
 #define IDC_SPIN_NOISE_INTENSITY        1701
 #define IDC_NOISE_RESOLUTION            1702

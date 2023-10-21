@@ -2306,7 +2306,7 @@ BEGIN
     LTEXT           "Acceleration Exponent (Hyperspace Only)",IDC_ACCEL_EXP_LABEL,7,155,143,8,WS_DISABLED
     LTEXT           "Radius",IDC_STATIC,7,174,99,8
     LTEXT           "Animation (Homeworld Only)",IDC_ANIM_LABEL,7,193,99,8,WS_DISABLED
-    LTEXT           "Special Warp Physics",IDC_STATIC,7,212,99,8
+    LTEXT           "Supercap Warp Physics",IDC_STATIC,7,212,99,8
     LTEXT           "Player Warpout Speed",IDC_PLAYER_WARPOUT_SPEED_LABEL,7,231,99,8,WS_DISABLED
     EDITTEXT        IDC_END_SOUND,161,77,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_WARPOUT_ENGAGE_TIME,161,96,103,12,ES_AUTOHSCROLL
@@ -2315,7 +2315,7 @@ BEGIN
     EDITTEXT        IDC_ACCEL_EXP,161,153,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_RADIUS,161,172,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_ANIM,161,191,103,12,ES_AUTOHSCROLL
-    CONTROL         "",IDC_SPECIAL_WARP_PHYSICS,"Button",BS_AUTOCHECKBOX,161,210,103,12
+    CONTROL         "",IDC_SUPERCAP_WARP_PHYSICS,"Button",BS_AUTOCHECKBOX,161,210,103,12
     EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,229,103,12,ES_AUTOHSCROLL
     LTEXT           "All of these parameters are optional, and a mission designer will usually not need to override more than one or two.  These parameters are the same as those found in ships.tbl.",IDC_STATIC,7,7,257,29
 END
