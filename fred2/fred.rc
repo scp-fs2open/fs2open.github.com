@@ -2306,7 +2306,7 @@ BEGIN
     LTEXT           "Acceleration Exponent (Hyperspace Only)",IDC_ACCEL_EXP_LABEL,7,155,143,8,WS_DISABLED
     LTEXT           "Radius",IDC_STATIC,7,174,99,8
     LTEXT           "Animation (Homeworld Only)",IDC_ANIM_LABEL,7,193,99,8,WS_DISABLED
-    LTEXT           "Special Warp Physics",IDC_STATIC,7,212,99,8
+    LTEXT           "Supercap Warp Physics",IDC_STATIC,7,212,99,8
     LTEXT           "Player Warpout Speed",IDC_PLAYER_WARPOUT_SPEED_LABEL,7,231,99,8,WS_DISABLED
     EDITTEXT        IDC_END_SOUND,161,77,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_WARPOUT_ENGAGE_TIME,161,96,103,12,ES_AUTOHSCROLL
