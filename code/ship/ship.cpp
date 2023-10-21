@@ -20827,7 +20827,7 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
  *
  * @return is the ship arriving, bool
  */
-bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single)
+bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 {
 	if (stage == ship::warpstage::BOTH) {
 		if (!dock_leader_or_single) {

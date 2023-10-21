@@ -71,7 +71,7 @@ class polymodel;
 #define fl(p)	(*reinterpret_cast<float*>(p))
 #define cfl(p)  (*reinterpret_cast<const float*>(p))
 
-void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
+void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
 void interp_clear_instance();
 

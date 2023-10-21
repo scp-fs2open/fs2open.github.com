@@ -1316,7 +1316,7 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 	return swap_was_necessary;
 }
 
-void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
+void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx)
 {
 	box[0].xyz.x = big_mn->xyz.x; box[0].xyz.y = big_mn->xyz.y; box[0].xyz.z = big_mn->xyz.z;
 	box[1].xyz.x = big_mx->xyz.x; box[1].xyz.y = big_mn->xyz.y; box[1].xyz.z = big_mn->xyz.z;

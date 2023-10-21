@@ -30,7 +30,7 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 */
 extern modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
 extern void create_family_tree(polymodel* obj);
-extern void model_calc_bound_box(vec3d* box, vec3d* big_mn, vec3d* big_mx);
+extern void model_calc_bound_box(vec3d* box, const vec3d* big_mn, const vec3d* big_mx);
 
 /*
 * Caching base-loaded POFs, as well has providing automatic deallocation for loaded models
