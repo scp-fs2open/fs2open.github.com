@@ -924,6 +924,26 @@ int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 	}
 }
 
+//	Pauses all currently playing messages in the message queue
+void message_pause_all()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		if ((Playing_messages[i].wave.isValid()) && snd_is_playing(Playing_messages[i].wave)) {
+			snd_pause(Playing_messages[i].wave);
+		}
+	}
+}
+
+//	Resumes playing any paused messages in the message queue
+void message_resume_all()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		if ((Playing_messages[i].wave.isValid()) && snd_is_paused(Playing_messages[i].wave)) {
+			snd_resume(Playing_messages[i].wave);
+		}
+	}
+}
+
 // function to kill all currently playing messages.  kill_all parameter tells us to
 // kill only the animations that are playing, or wave files too
 void message_kill_all( int kill_all )

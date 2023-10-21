@@ -880,6 +880,7 @@ void hud_scrollback_init()
 	// pause all game sounds
 	weapon_pause_sounds();
 	audiostream_pause_all();
+	message_pause_all();
 
 	hud_initialize_scrollback_lines();
 
@@ -940,6 +941,7 @@ void hud_scrollback_close()
 	// unpause all game sounds
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
+	message_resume_all();
 
 }
 

@@ -968,6 +968,44 @@ void snd_stop(sound_handle sig)
 }
 
 /**
+ * Pauses a sound
+ *
+ * @param sig handle to sound, what is returned from snd_play()
+ */
+void snd_pause(sound_handle sig)
+{
+	if (!ds_initialized)
+		return;
+	if (!sig.isValid())
+		return;
+
+	int channel = ds_get_channel(sig);
+	if (channel == -1)
+		return;
+
+	ds_pause_channel(channel);
+}
+
+/**
+ * Resumes a sound
+ *
+ * @param sig handle to sound, what is returned from snd_play()
+ */
+void snd_resume(sound_handle sig)
+{
+	if (!ds_initialized)
+		return;
+	if (!sig.isValid())
+		return;
+
+	int channel = ds_get_channel_raw(sig);
+	if (channel == -1)
+		return;
+
+	ds_resume_channel(channel);
+}
+
+/**
  * Stop all playing sound channels (including looping sounds)
  *
  * NOTE: This stops all sounds that are playing from Channels[] sound buffers.
@@ -1145,6 +1183,32 @@ int snd_is_playing(sound_handle sig)
 	}
 
 	return 0;
+}
+
+// ---------------------------------------------------------------------------------------
+// snd_is_paused()
+//
+// Determine if a sound is paused
+//
+// returns:			1				=> sound is currently paused
+//						0				=> sound is not paused
+//
+// parameters:		sig	=> signature of sound, what is returned from snd_play()
+//
+bool snd_is_paused(sound_handle sig)
+{
+	if (!ds_initialized)
+		return false;
+
+	if (!sig.isValid())
+		return false;
+
+	int channel = ds_get_channel_raw(sig);
+	if (channel == -1)
+		return false;
+
+	return ds_is_channel_paused(channel);
+
 }
 
 // ---------------------------------------------------------------------------------------

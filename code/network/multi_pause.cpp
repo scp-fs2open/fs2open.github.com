@@ -17,6 +17,7 @@
 #include "gamesequence/gamesequence.h"
 #include "network/stand_gui.h"
 #include "gamesnd/gamesnd.h"
+#include "mission/missionmessage.h"
 #include "network/multiutil.h"
 #include "network/multiui.h"
 #include "network/multimsgs.h"
@@ -336,6 +337,9 @@ void multi_pause_init()
 		// pause all game music
 		audiostream_pause_all();
 
+		// pause all voices
+		message_pause_all();
+
 		// switch off the text messaging system if it is active
 		multi_msg_text_flush();
 
@@ -472,6 +476,9 @@ void multi_pause_close(int end_mission)
 
 	// unpause beam weapon sounds
 	weapon_unpause_sounds();
+
+	// unpause voices
+	message_resume_all();
 
 	// eat keys timestamp
 	Multi_pause_eat = f2fl(timer_get_fixed_seconds());

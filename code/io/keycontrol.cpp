@@ -1517,7 +1517,8 @@ void game_do_end_mission_popup()
 		game_stop_time();
 		game_stop_looped_sounds();
 		audiostream_pause_all();
-		snd_stop_all();
+		weapon_pause_sounds();
+		message_pause_all();
 
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
 		choice = popup(pf_flags, 3, POPUP_NO, XSTR( "&Yes, Quit", 28), XSTR( "Yes, &Restart", 29), XSTR( "Do you really want to end the mission?", 30));
@@ -1538,6 +1539,8 @@ void game_do_end_mission_popup()
 				game_start_subspace_ambient_sound();
 			}
 			audiostream_unpause_all();
+			weapon_unpause_sounds();
+			message_resume_all();
 			break;
 		}
 

@@ -243,6 +243,9 @@ int	message_is_playing();
 void	message_maybe_distort();
 void	message_kill_all( int kill_all );
 
+void	message_pause_all();
+void	message_resume_all();
+
 void	message_queue_message(int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type, int event_num_to_cancel);
 
 // functions which send messages to player -- called externally
