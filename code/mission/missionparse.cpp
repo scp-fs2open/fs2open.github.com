@@ -2865,7 +2865,7 @@ bool p_object::has_display_name() {
 	return flags[Mission::Parse_Object_Flags::SF_Has_display_name];
 }
 
-extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name, bool set_special_warp_physics = false);
+extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name, bool set_supercap_warp_physics = false);
 
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.

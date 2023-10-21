@@ -2315,7 +2315,7 @@ BEGIN
     EDITTEXT        IDC_ACCEL_EXP,161,153,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_RADIUS,161,172,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_ANIM,161,191,103,12,ES_AUTOHSCROLL
-    CONTROL         "",IDC_SPECIAL_WARP_PHYSICS,"Button",BS_AUTOCHECKBOX,161,210,103,12
+    CONTROL         "",IDC_SUPERCAP_WARP_PHYSICS,"Button",BS_AUTOCHECKBOX,161,210,103,12
     EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,229,103,12,ES_AUTOHSCROLL
     LTEXT           "All of these parameters are optional, and a mission designer will usually not need to override more than one or two.  These parameters are the same as those found in ships.tbl.",IDC_STATIC,7,7,257,29
 END

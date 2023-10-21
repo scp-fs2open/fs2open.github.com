@@ -2649,7 +2649,7 @@ static int parse_and_add_briefing_icon_info()
  *
  * If we are creating a ship, we want to inherit the parameters of the ship class, then override on a field-by-field basis.
  */
-int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name, bool set_special_warp_physics)
+int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name, bool set_supercap_warp_physics)
 {
 	Assert(info_type_name != nullptr);
 	Assert(info_name != nullptr);
@@ -2757,13 +2757,13 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 	}
 
 	// we might need to explicitly set this flag; but if so, the modder has the option of unsetting it
-	if (set_special_warp_physics)
-		params.special_warp_physics = true;
+	if (set_supercap_warp_physics)
+		params.supercap_warp_physics = true;
 
-	sprintf(str, "$Special warp%s physics:", (direction == WarpDirection::WARP_IN) ? "in" : "out");
+	sprintf(str, "$Supercap warp%s physics:", (direction == WarpDirection::WARP_IN) ? "in" : "out");
 	if (optional_string(str))
 	{
-		stuff_boolean(&params.special_warp_physics);
+		stuff_boolean(&params.supercap_warp_physics);
 	}
 
 	if (direction == WarpDirection::WARP_OUT)
