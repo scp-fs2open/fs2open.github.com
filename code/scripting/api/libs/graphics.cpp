@@ -1403,7 +1403,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		for(int i = 0; i < num_lines; i++)
 		{
 			//Draw the string
-			gr_string(x,curr_y,linestarts[i],resize_mode,linelengths[i]);
+			gr_string(x, curr_y, linestarts[i], resize_mode, linelengths[i]);
 
 			//Increment line height
 			curr_y += line_ht;
