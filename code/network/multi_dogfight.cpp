@@ -470,7 +470,7 @@ void multi_df_blit_kill_matrix()
 
 		// draw the row total
 		gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
-		sprintf(squashed_string, "(%d)", row_total);
+		snprintf(squashed_string, CALLSIGN_LEN+1, "(%d)", row_total);
 		gr_get_string_size(&str_len, NULL, squashed_string);
 		gr_string(Multi_df_display_coords[gr_screen.res][0] + Multi_df_display_coords[gr_screen.res][2] - (MULTI_DF_TOTAL_ADJUST + str_len), cy, squashed_string, GR_RESIZE_MENU);
 
@@ -485,6 +485,6 @@ int multi_df_stuff_kills(char *kills, int player_x, int player_y)
 	multi_df_score *s = &Multi_df_score[player_x];
 	strcpy(kills, "");
 	
-	sprintf(kills, "%d", s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index]);
+	snprintf(kills, CALLSIGN_LEN+1, "%d", s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index]);
 	return s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index];
 }
