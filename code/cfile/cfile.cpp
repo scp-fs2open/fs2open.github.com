@@ -438,7 +438,7 @@ int cfile_flush_dir(int dir_type)
 //    filename = name of filename or filepath to process
 //    ext = extension to add.  Must start with the period
 //    Returns: new filename or filepath with extension.
-char *cf_add_ext(const char *filename, const char *ext)
+const char *cf_add_ext(const char *filename, const char *ext)
 {
 	static char path[MAX_PATH_LEN];
 
