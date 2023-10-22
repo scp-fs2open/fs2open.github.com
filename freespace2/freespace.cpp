@@ -3523,7 +3523,7 @@ void game_flip_page_and_time_it()
 	fix t2 = timer_get_fixed_seconds();
 	fix d = t2 - t1;
 	int t = (gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel)/1024;
-	sprintf( transfer_text, NOX("%d MB/s"), (int)fixmuldiv(t,65,d) );
+	snprintf( transfer_text, 128, NOX("%d MB/s"), (int)fixmuldiv(t,65,d) );
 }
 
 void game_simulation_frame()
@@ -4661,7 +4661,7 @@ int game_poll()
 
 				// we could probably go with .3 here for 1,000 shots but people really need to clean out
 				// their directories better than that so it's 100 for now.
-				sprintf( tmp_name, NOX("screen%.4i"), counter );
+				snprintf( tmp_name, MAX_FILENAME_LEN, NOX("screen%.4i"), counter );
 				counter++;
 
 				// we've got two character precision so we can only have 100 shots at a time, reset if needed
@@ -6532,12 +6532,12 @@ int game_do_ram_check(uint64_t ram_in_bytes)
 
 		if ( allowed_to_run ) {
 
-			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n\nPress 'OK' to continue running with less than the minimum required memory\n", 193), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
+			snprintf( tmp, 1024, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n\nPress 'OK' to continue running with less than the minimum required memory\n", 193), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
 
 			os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, tmp, XSTR( "Not Enough RAM", 194));
 
 		} else {
-			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n", 195), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
+			snprintf( tmp, 1024, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n", 195), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
 			os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, tmp, XSTR( "Not Enough RAM", 194) );
 			return -1;
 		}
@@ -6568,7 +6568,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 	}
 	
 	// write out total
-	sprintf(str, "Submodel %s total : %d faces\n", pm->submodel[sm].name, total);
+	snprintf(str, 255, "Submodel %s total : %d faces\n", pm->submodel[sm].name, total);
 	cfputs(str, out);		
 
 	*out_total += total + sub_total;
@@ -6597,7 +6597,7 @@ void game_spew_pof_info()
 	}	
 	int counted = 0;
 	for(int idx=0; idx<num_files; idx++, counted++){
-		sprintf(str, "%s.pof", pof_list[idx]);
+		snprintf(str, 255, "%s.pof", pof_list[idx]);
 		int model_num = model_load(str, 0, nullptr);
 		if(model_num >= 0){
 			polymodel *pm = model_get(model_num);
@@ -6615,16 +6615,16 @@ void game_spew_pof_info()
 					total = submodel_get_num_polys(model_num, i);					
 					
 					model_total += total;
-					sprintf(str, "Submodel %s total : %d faces\n", pm->submodel[i].name, total);
+					snprintf(str, "Submodel %s total : %d faces\n", pm->submodel[i].name, total);
 					cfputs(str, out);
 				}				
-				sprintf(str, "Model total %d\n", model_total);				
+				snprintf(str, 255, "Model total %d\n", model_total);				
 				cfputs(str, out);				
 
 				// now go through and do it by LOD
 				cfputs("BY LOD\n\n", out);				
 				for(int i=0; i<pm->n_detail_levels; i++){
-					sprintf(str, "LOD %d\n", i);
+					snprintf(str, 255, "LOD %d\n", i);
 					cfputs(str, out);
 
 					// submodels
@@ -6635,14 +6635,14 @@ void game_spew_pof_info()
 						game_spew_pof_info_sub(model_num, pm, j, out, &total, &destroyed_total);
 					}
 
-					sprintf(str, "Submodel %s total : %d faces\n", pm->submodel[pm->detail[i]].name, root_total);
+					snprintf(str, 255, "Submodel %s total : %d faces\n", pm->submodel[pm->detail[i]].name, root_total);
 					cfputs(str, out);
 
-					sprintf(str, "TOTAL: %d\n", total + root_total);					
+					snprintf(str, 255, "TOTAL: %d\n", total + root_total);					
 					cfputs(str, out);
-					sprintf(str, "TOTAL not counting destroyed faces %d\n", (total + root_total) - destroyed_total);
+					snprintf(str, 255, "TOTAL not counting destroyed faces %d\n", (total + root_total) - destroyed_total);
 					cfputs(str, out);
-					sprintf(str, "TOTAL destroyed faces %d\n\n", destroyed_total);
+					snprintf(str, 255, "TOTAL destroyed faces %d\n\n", destroyed_total);
 					cfputs(str, out);
 				}				
 				cfputs("------------------------------------------------------------------------\n\n", out);				
@@ -7071,7 +7071,7 @@ void game_show_event_debug(float  /*frametime*/)
 		z = Event_debug_index[k];
 		if (z & EVENT_DEBUG_EVENT) {
 			z &= 0x7fff;
-			sprintf(buf, NOX("%s%s (%s) %s%d %d"), (Mission_events[z].flags & MEF_CURRENT) ? NOX("* ") : "",
+			snprintf(buf, 256, NOX("%s%s (%s) %s%d %d"), (Mission_events[z].flags & MEF_CURRENT) ? NOX("* ") : "",
 				Mission_events[z].name.c_str(), Mission_events[z].result ? NOX("True") : NOX("False"),
 				(Mission_events[z].chain_delay < 0) ? "" : NOX("x "),
 				Mission_events[z].repeat_count, Mission_events[z].interval);
@@ -7314,7 +7314,7 @@ void game_format_time(fix m_time,char *time_str)
 
 	// print the hour if necessary
 	if(hours > 0){		
-		sprintf(time_str,XSTR( "%d:", 201),hours);
+		snprintf(time_str, 10, XSTR( "%d:", 201),hours);
 		// if there are less than 10 minutes, print a leading 0
 		if(minutes < 10){
 			strcpy_s(tmp,NOX("0"));
@@ -7324,10 +7324,10 @@ void game_format_time(fix m_time,char *time_str)
 	
 	// print the minutes
 	if(hours){
-		sprintf(tmp,XSTR( "%d:", 201),minutes);
+		snprintf(tmp, 10, XSTR( "%d:", 201),minutes);
 		strcat(time_str,tmp);
 	} else {
-		sprintf(time_str,XSTR( "%d:", 201),minutes);
+		snprintf(time_str, 10, XSTR( "%d:", 201),minutes);
 	}
 
 	// print the seconds
@@ -7335,7 +7335,7 @@ void game_format_time(fix m_time,char *time_str)
 		strcpy_s(tmp,NOX("0"));
 		strcat(time_str,tmp);
 	} 
-	sprintf(tmp,"%d",seconds);
+	snprintf(tmp, 10, "%d",seconds);
 	strcat(time_str,tmp);
 }
 

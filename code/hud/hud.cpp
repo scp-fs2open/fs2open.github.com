@@ -3684,11 +3684,11 @@ void HudGaugeObjectiveNotify::renderObjective()
 	case SECONDARY_GOAL:
 		switch(Objective_display.goal_status) {
 		case GOAL_FAILED:
-			sprintf(buf, XSTR( "failed (%d/%d)", 240), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
+			snprintf(buf, 128, XSTR( "failed (%d/%d)", 240), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
 			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, buf);
 			break;
 		default:
-			sprintf(buf, XSTR( "complete (%d/%d)", 241), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
+			snprintf(buf, 128, XSTR( "complete (%d/%d)", 241), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
 			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, buf);
 			break;
 		}		
@@ -4073,7 +4073,7 @@ void HudGaugePing::render(float  /*frametime*/)
 			if(Netgame.server->s_info.ping.ping_avg >= 1000){
 				strcpy_s(ping_str,XSTR("> 1 sec",628));
 			} else {
-				sprintf(ping_str,XSTR("%d ms",629),Netgame.server->s_info.ping.ping_avg);
+				snprintf(ping_str, 50, XSTR("%d ms",629),Netgame.server->s_info.ping.ping_avg);
 			}
 
 			// Blit the string out
