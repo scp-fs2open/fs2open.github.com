@@ -1114,7 +1114,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		dist = vm_vec_dist(&target_objp->pos, &wp->homing_pos);
 		
 		if ( speed > 0 ) {
-			sprintf(outstr, XSTR("impact: %.1f sec", 1596), dist/speed);
+			snprintf(outstr, 100, XSTR("impact: %.1f sec", 1596), dist/speed);
 		} else {
 			strcpy_s(outstr, XSTR( "unknown", 349));
 		}
@@ -1329,7 +1329,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 			dist = dist * Hud_unit_multiplier;
 		}
 
-		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
+		snprintf(outstr, 256, XSTR( "d: %.0f", 340), dist);
 		hud_num_make_mono(outstr, font_num);
 		gr_get_string_size(&w,&h,outstr);
 	
@@ -1563,12 +1563,12 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		// docked to only one object
 		if (dock_count == 1)
 		{
-			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].get_display_name());
+			snprintf(outstr, 256, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].get_display_name());
 		}
 		// docked to multiple objects
 		else
 		{
-			sprintf(outstr, XSTR("Docked: %d objects", 1623), dock_count);
+			snprintf(outstr, 256, XSTR("Docked: %d objects", 1623), dock_count);
 		}
 
 		font::force_fit_string(outstr, 255, dock_max_w);
@@ -1645,14 +1645,14 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 		for (int i = 0; i < swp->num_primary_banks; ++i) {
 			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 			if (*(wip->altSubsysName) != '\0') {
-				sprintf(outstr, "%s", wip->altSubsysName);
+				snprintf(outstr, NAME_LENGTH, "%s", wip->altSubsysName);
 				return;
 			}
 		} 
 		for (int i = 0; i < swp->num_secondary_banks; ++i) {
 			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 			if (*(wip->altSubsysName) != '\0') {
-				sprintf(outstr, "%s", wip->altSubsysName);
+				snprintf(outstr, NAME_LENGTH, "%s", wip->altSubsysName);
 				return;
 			}
 		}
@@ -1662,27 +1662,27 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 		// check if beam or flak using weapon flags
 		if (flags[Weapon::Info_Flags::Beam]) {
-			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
+			snprintf(outstr, NAME_LENGTH, "%s", XSTR("Beam turret", 1567));
 		} else if (flags[Weapon::Info_Flags::Flak]) {
-			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
+			snprintf(outstr, NAME_LENGTH, "%s", XSTR("Flak turret", 1566));
 		} else {
 			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
-				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+				snprintf(outstr, NAME_LENGTH, "%s", XSTR("Missile lnchr", 1569));
 			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
 				if (flags[Weapon::Info_Flags::Ballistic]) {
-					sprintf(outstr, "%s", XSTR("Turret", 1487));
+					snprintf(outstr, NAME_LENGTH, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
 				else if (flags[Weapon::Info_Flags::Bomb]) {
-					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+					snprintf(outstr, NAME_LENGTH, "%s", XSTR("Missile lnchr", 1569));
 				} else {
-					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
+					snprintf(outstr, NAME_LENGTH, "%s", XSTR("Laser turret", 1568));
 				}
 			} else {
 				// Mantis #2226: find out if there are any weapons here at all
 				if (flags.none_set()) {
-					sprintf(outstr, "%s", NOX("Unused"));
+					snprintf(outstr, NAME_LENGTH, "%s", NOX("Unused"));
 				} else {
 					// Illegal subtype
 					static bool Turret_illegal_subtype_warned = false;
@@ -1690,16 +1690,16 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 						Turret_illegal_subtype_warned = true;
 						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
 					}
-					sprintf(outstr, "%s", XSTR("Turret", 1487));
+					snprintf(outstr, NAME_LENGTH, "%s", XSTR("Turret", 1487));
 				}
 			}
 		}
 	} else if(swp->num_tertiary_banks) {
 		//TODO: add tertiary turret code stuff here
-		sprintf(outstr, "%s", NOX("Unknown"));
+		snprintf(outstr, NAME_LENGTH, "%s", NOX("Unknown"));
 	} else {
 		// This should not happen
-		sprintf(outstr, "%s", NOX("Unused"));
+		snprintf(outstr, NAME_LENGTH, "%s", NOX("Unused"));
 	}
 }
 
@@ -1739,7 +1739,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 
 		hud_stuff_ship_callsign(outstr_callsign, target_shipp);
 		if (*outstr_callsign)
-			sprintf(&outstr_name[strlen(outstr_name)], " (%s)", outstr_callsign);
+			snprintf(&outstr_name[strlen(outstr_name)], NAME_LENGTH*2+3, " (%s)", outstr_callsign);
 	}
 	// maybe substitute the callsign
 	else
@@ -1768,7 +1768,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		}
 	}
 	// Print out right-justified integrity
-	sprintf(outstr, XSTR( "%d%%", 341), screen_integrity);
+	snprintf(outstr, NAME_LENGTH, XSTR( "%d%%", 341), screen_integrity);
 	gr_get_string_size(&w,&h,outstr);
 
 	if ( HudGauge::maybeFlashSexp() == 1 ) {
@@ -1801,7 +1801,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET && !ship_subsys_has_instance_name(Player_ai->targeted_subsys)) {
 			get_turret_subsys_name(&Player_ai->targeted_subsys->weapons, outstr);
 		} else {
-			sprintf(outstr, "%s", ship_subsys_get_name(Player_ai->targeted_subsys));
+			snprintf(outstr, NAME_LENGTH, "%s", ship_subsys_get_name(Player_ai->targeted_subsys));
 		}
 
 		char *p_line;
@@ -1856,7 +1856,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		// fighterbays can be destroyed
 		if ( ship_subsys_takes_damage(Player_ai->targeted_subsys) )
 		{
-			sprintf(outstr,XSTR( "%d%%", 341),screen_integrity);
+			snprintf(outstr, NAME_LENGTH, XSTR( "%d%%", 341),screen_integrity);
 			gr_get_string_size(&w,&h,outstr);
 			renderPrintf(subsys_integrity_pos_x - w, subsys_integrity_pos_y - h, "%s", outstr);
 		}
@@ -2059,7 +2059,7 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys 
 
 void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 {
-	char outstr[256];						// temp buffer for sprintf'ing hud output
+	char outstr[256];						// temp buffer for snprintf'ing hud output
 	int w,h;									// width and height of string about to print
 	object		*target_objp;
 	ship			*shipp = NULL;
@@ -2109,7 +2109,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	}
 
 	// print out the target distance and speed
-	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
+	snprintf(outstr, 256, XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
 
 	hud_num_make_mono(outstr, font_num);
 	gr_get_string_size(&w,&h,outstr);
@@ -2139,7 +2139,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		displayed_target_speed = current_target_speed;
 	}
 
-	sprintf(outstr, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
+	snprintf(outstr, 256, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
 	hud_num_make_mono(outstr, font_num);
 
 	renderString(position[0] + Speed_offsets[0], position[1] + Speed_offsets[1], EG_TBOX_SPEED, outstr);
@@ -2162,17 +2162,17 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		if ( shipp->ai_index >= 0 ) {
 			ai_info	*aip = &Ai_info[shipp->ai_index];
 
-			sprintf(outstr,"AI: %s",Ai_behavior_names[aip->mode]);
+			snprintf(outstr, 256, "AI: %s",Ai_behavior_names[aip->mode]);
 
 			switch (aip->mode) {
 			case AIM_CHASE:
 				Assert(aip->submode <= SM_BIG_PARALLEL);	//	Must be <= largest chase submode value.
-				sprintf(outstr2," / %s",Submode_text[aip->submode]);
+				snprintf(outstr2, 256, " / %s",Submode_text[aip->submode]);
 				strcat_s(outstr,outstr2);
 				break;
 			case AIM_STRAFE:
 				Assert(aip->submode <= AIS_STRAFE_POSITION);	//	Must be <= largest chase submode value.
-				sprintf(outstr2," / %s",Strafe_submode_text[aip->submode-AIS_STRAFE_ATTACK]);
+				snprintf(outstr2, 256, " / %s",Strafe_submode_text[aip->submode-AIS_STRAFE_ATTACK]);
 				strcat_s(outstr,outstr2);
 				break;
 			case AIM_WAYPOINTS:
@@ -2213,7 +2213,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 				sy += dy;
 
 				if ( aip->targeted_subsys != NULL ) {
-					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name);
+					snprintf(outstr, 256, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name);
 					gr_printf_no_resize(sx, sy, "%s", outstr);
 				}
 				sy += dy;
@@ -2222,11 +2222,11 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			// print out energy transfer information on the ship
 			sy = gr_screen.center_offset_y + 70;
 
-			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy, target_objp->phys_info.max_vel.xyz.z);
+			snprintf(outstr, 256, "MAX G/E: %.0f/%.0f",shipp->weapon_energy, target_objp->phys_info.max_vel.xyz.z);
 			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 			 
-			sprintf(outstr,"G/S/E: %.2f/%.2f/%.2f",Energy_levels[shipp->weapon_recharge_index],Energy_levels[shipp->shield_recharge_index],Energy_levels[shipp->engine_recharge_index]);
+			snprintf(outstr, 256, "G/S/E: %.2f/%.2f/%.2f",Energy_levels[shipp->weapon_recharge_index],Energy_levels[shipp->shield_recharge_index],Energy_levels[shipp->engine_recharge_index]);
 			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 
@@ -2307,21 +2307,21 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		sy = gr_screen.center_offset_y + 100;
 		dy = gr_get_font_height();
 
-		sprintf(outstr,"Num primaries: %d", swp->num_primary_banks);
+		snprintf(outstr, 256, "Num primaries: %d", swp->num_primary_banks);
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].get_display_name());
+			snprintf(outstr, 256, "%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].get_display_name());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
 
 		sy += dy;
-		sprintf(outstr,"Num secondaries: %d", swp->num_secondary_banks);
+		snprintf(outstr, 256, "Num secondaries: %d", swp->num_secondary_banks);
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].get_display_name());
+			snprintf(outstr, 256, "%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].get_display_name());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
