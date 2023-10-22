@@ -1231,7 +1231,7 @@ char *GetChannelList(void)
 		strcat(Chan_list,"$");
 		strcat(Chan_list,Currchannel->channel_name);
 		strcat(Chan_list," ");
-		sprintf(sznumusers,"%d ",Currchannel->users);
+		snprintf(sznumusers, 10, "%d ",Currchannel->users);
 		strcat(Chan_list,sznumusers);
 		strcat(Chan_list,Currchannel->topic);//fgets
 		strcat(Chan_list," ");

@@ -968,7 +968,7 @@ void ship_select_blit_ship_info()
 	else if(ShipSelectModelNum >= 0)
 	{
 		polymodel *pm = model_get(ShipSelectModelNum);
-		sprintf( str, "%d", fl2i(pm->maxs.xyz.z - pm->mins.xyz.z) );
+		snprintf( str, 100, "%d", fl2i(pm->maxs.xyz.z - pm->mins.xyz.z) );
 		strcat_s(str, " M");
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
@@ -982,7 +982,7 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header_clr);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Max Velocity",742), GR_RESIZE_MENU);	
 	y_start += line_height;
-	sprintf(str, XSTR("%d m/s",743),fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
+	snprintf(str, 100, XSTR("%d m/s",743),fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
 	gr_set_color_fast(text);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str, GR_RESIZE_MENU);	
 	y_start += line_height;
@@ -1083,7 +1083,7 @@ void ship_select_blit_ship_info()
 			sum += pm->gun_banks[i].num_slots;
 		}
 		if(sum != 0)
-			sprintf(str, "%d", sum);
+			snprintf(str, 100, "%d", sum);
 		else
 			strcpy_s(str, XSTR("None", 1673));
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
@@ -1095,7 +1095,7 @@ void ship_select_blit_ship_info()
 		gr_set_color_fast(text);
 		if(sip->num_primary_banks)
 		{
-			sprintf(str, "%d", sip->num_primary_banks);
+			snprintf(str, 100, "%d", sip->num_primary_banks);
 		}
 		else
 		{
@@ -1117,7 +1117,7 @@ void ship_select_blit_ship_info()
 	{
 		if(sip->num_secondary_banks)
 		{
-			sprintf(str, "%d", sip->num_secondary_banks);
+			snprintf(str, 100, "%d", sip->num_secondary_banks);
 		}
 		else
 		{
@@ -1164,7 +1164,7 @@ void ship_select_blit_ship_info()
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",1627), GR_RESIZE_MENU);
 			y_start += line_height;
 			gr_set_color_fast(text);
-			sprintf(str, "%d", num_turrets);
+			snprintf(str, 100, "%d", num_turrets);
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 			y_start += line_height;
 		}
@@ -1705,7 +1705,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	}
 
 	// blit the number
-	sprintf(buf, "%d", Ss_pool[ship_class] );
+	snprintf(buf, 32, "%d", Ss_pool[ship_class] );
 	gr_set_color_fast(&Color_white);
 	gr_string(num_x, num_y, buf, GR_RESIZE_MENU);
 }

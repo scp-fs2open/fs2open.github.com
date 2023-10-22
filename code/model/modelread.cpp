@@ -1127,7 +1127,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname));
 		char tmp_buffer[128];
-		sprintf(tmp_buffer, "$Subsystem:\t\t\t%s,1,0.0\n", subobj_name);
+		snprintf(tmp_buffer, 128, "$Subsystem:\t\t\t%s,1,0.0\n", subobj_name);
 		cfputs(tmp_buffer, ss_fp);
 	}
 #endif
@@ -1304,7 +1304,7 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 		// append hex values to the string
 		for (int i = 0; i < NUM_BYTES; i++)
 		{
-			sprintf(hex_str, "%02X ", z._byte[i]);
+			snprintf(hex_str, 5, "%02X ", z._byte[i]);
 			strcat_s(text, hex_str);
 		}
 
@@ -1604,7 +1604,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		char bname[_MAX_FNAME];
 
 		_splitpath(filename, NULL, NULL, bname, NULL);
-		sprintf(debug_name, "%s.subsystems", bname);
+		snprintf(debug_name, _MAX_PATH, "%s.subsystems", bname);
 		ss_fp = cfopen(debug_name, "wb", CFILE_NORMAL, CF_TYPE_TABLES );
 		if ( !ss_fp )	{
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
@@ -2322,7 +2322,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							}
 						} else {
 							nprintf(("Model", "model '%s' has no name specified for docking point %d\n", pm->filename, i));
-							sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
+							snprintf(bay->name, MAX_NAME_LEN, "<unnamed bay %c>", 'A' + i);
 						}
 
 #ifndef NDEBUG
@@ -3335,7 +3335,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	if(Fred_running && Parse_normal_problem_count > 0)
 	{
 		char buffer[100];
-		sprintf(buffer,"Serious problem loading model %s, %d normals capped to zero",
+		snprintf(buffer, 100, "Serious problem loading model %s, %d normals capped to zero",
 			filename, Parse_normal_problem_count);
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, buffer);
 	}
