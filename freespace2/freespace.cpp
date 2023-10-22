@@ -6615,7 +6615,7 @@ void game_spew_pof_info()
 					total = submodel_get_num_polys(model_num, i);					
 					
 					model_total += total;
-					snprintf(str, "Submodel %s total : %d faces\n", pm->submodel[i].name, total);
+					snprintf(str, 255, "Submodel %s total : %d faces\n", pm->submodel[i].name, total);
 					cfputs(str, out);
 				}				
 				snprintf(str, 255, "Model total %d\n", model_total);				

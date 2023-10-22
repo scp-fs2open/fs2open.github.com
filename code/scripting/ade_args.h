@@ -223,7 +223,7 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 		}
 		if (ar.currentline > -1) {
 			char buf[33];
-			sprintf(buf, "%d", ar.currentline);
+			snprintf(buf, 33, "%d", ar.currentline);
 			strcat_s(state.funcname, " (Line ");
 			strcat_s(state.funcname, buf);
 			strcat_s(state.funcname, ")");
