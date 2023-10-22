@@ -107,7 +107,7 @@ void multi_kick_player(int player_index, int ban, int reason)
 			// add the string to the chatbox and the hud (always safe - if it is not inited, nothing bad will happen)			
 			char str[512];
 			memset(str, 0, 512);
-			sprintf(str, XSTR("<kicking %s ...>", 1501), Net_players[player_index].m_player->callsign);
+			snprintf(str, 512, XSTR("<kicking %s ...>", 1501), Net_players[player_index].m_player->callsign);
 			multi_display_chat_msg(str, player_index, 0);							 
 		}
 		// otherwise, we should send the packet indicating that this guy should be kicked
@@ -172,16 +172,16 @@ void multi_kick_get_text(net_player *pl, int reason, char *str)
 
 	switch(reason){
 	case KICK_REASON_BAD_XFER:
-		sprintf(str, XSTR("<%s was kicked because of mission file xfer failure>", 1003), pl->m_player->callsign);
+		snprintf(str, 512, XSTR("<%s was kicked because of mission file xfer failure>", 1003), pl->m_player->callsign);
 		break;
 	case KICK_REASON_CANT_XFER:
-		sprintf(str, XSTR("<%s was kicked for not having builtin mission %s>", 1004), pl->m_player->callsign, Game_current_mission_filename);
+		snprintf(str, 512, XSTR("<%s was kicked for not having builtin mission %s>", 1004), pl->m_player->callsign, Game_current_mission_filename);
 		break;
 	case KICK_REASON_INGAME_ENDED:
-		sprintf(str, XSTR("<%s was kicked for ingame joining an ended game>",1005), pl->m_player->callsign);
+		snprintf(str, 512, XSTR("<%s was kicked for ingame joining an ended game>",1005), pl->m_player->callsign);
 		break;
 	default:
-		sprintf(str, XSTR("<%s was kicked>",687), pl->m_player->callsign);
+		snprintf(str, 512, XSTR("<%s was kicked>",687), pl->m_player->callsign);
 		break;
 	}		
 }
