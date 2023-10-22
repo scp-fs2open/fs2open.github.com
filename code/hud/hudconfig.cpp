@@ -1290,7 +1290,7 @@ void hud_config_button_do(int n)
 
 		// save the file, maybe generating a new filename
 		if(strlen(name) <= 0){
-			sprintf(name, "hud_%d.hcf", (int)HC_preset_filenames.size());
+			snprintf(name, 32, "hud_%d.hcf", (int)HC_preset_filenames.size());
 			out = name;
 		} else {
 			out = cf_add_ext(name, ".hcf");
@@ -1692,7 +1692,7 @@ void hud_config_color_save(const char *name)
 		cfputs(HC_gauge_descriptions(idx), out);		
 		cfputs("\n", out);
 		cfputs("+RGBA: ", out);
-		sprintf(vals, "%d %d %d %d\n\n", HUD_config.clr[idx].red, HUD_config.clr[idx].green, HUD_config.clr[idx].blue, HUD_config.clr[idx].alpha);
+		snprintf(vals, 255, "%d %d %d %d\n\n", HUD_config.clr[idx].red, HUD_config.clr[idx].green, HUD_config.clr[idx].blue, HUD_config.clr[idx].alpha);
 		cfputs(vals, out);
 	}
 	

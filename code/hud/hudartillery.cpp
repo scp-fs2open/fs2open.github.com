@@ -82,7 +82,7 @@ void parse_ssm(const char *filename)
 			stuff_string(ssm_name, F_NAME, NAME_LENGTH);
 			if (*ssm_name == 0)
 			{
-				sprintf(ssm_name, "SSM " SIZE_T_ARG, Ssm_info.size());
+				snprintf(ssm_name, NAME_LENGTH, "SSM " SIZE_T_ARG, Ssm_info.size());
 				mprintf(("Found an SSM entry without a name.  Assigning \"%s\".\n", ssm_name));
 			}
 
