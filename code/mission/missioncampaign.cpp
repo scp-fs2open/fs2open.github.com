@@ -767,7 +767,7 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 	auto ext = NOX(".csg");
 	dir_type = CF_TYPE_PLAYERS;
 
-	sprintf(file_spec, NOX("%s.*%s"), pilot_name, ext);
+	snprintf(file_spec, MAX_FILENAME_LEN + 2, NOX("%s.*%s"), pilot_name, ext);
 
 	// HACK HACK HACK HACK!!!!  cf_get_file_list is not reentrant.  Pretty dumb because it should
 	// be.  I have to save any file filters
@@ -919,7 +919,7 @@ void mission_campaign_store_goals_and_events()
 		auto& stored_goal = mission_obj->goals.back();
 
 		if (goal.name.empty())
-			sprintf(stored_goal.name, NOX("Goal #" SIZE_T_ARG), &goal - &Mission_goals[0] + 1);
+			snprintf(stored_goal.name, NAME_LENGTH, NOX("Goal #" SIZE_T_ARG), &goal - &Mission_goals[0] + 1);
 		else
 			strncpy_s(stored_goal.name, goal.name.c_str(), NAME_LENGTH - 1);
 
@@ -937,7 +937,7 @@ void mission_campaign_store_goals_and_events()
 		auto& stored_event = mission_obj->events.back();
 
 		if (event.name.empty()) {
-			sprintf(stored_event.name, NOX("Event #" SIZE_T_ARG), &event - &Mission_events[0] + 1);
+			snprintf(stored_event.name, NAME_LENGTH, NOX("Event #" SIZE_T_ARG), &event - &Mission_events[0] + 1);
 			nprintf(("Warning", "Mission event in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name, stored_event.name));
 		} else
 			strncpy_s(stored_event.name, event.name.c_str(), NAME_LENGTH - 1);
@@ -1365,7 +1365,7 @@ void read_mission_goal_list(int num)
 				if (z == 1)
 					stuff_string(stored_event.name, F_NAME, NAME_LENGTH);
 				else
-					sprintf(stored_event.name, NOX("Event #" SIZE_T_ARG), &stored_event - &Campaign.missions[num].events[0] + 1);
+					snprintf(stored_event.name, NAME_LENGTH, NOX("Event #" SIZE_T_ARG), &stored_event - &Campaign.missions[num].events[0] + 1);
 			}
 		}
 
@@ -1386,7 +1386,7 @@ void read_mission_goal_list(int num)
 				if (z == 1)
 					stuff_string(stored_goal.name, F_NAME, NAME_LENGTH);
 				else
-					sprintf(stored_goal.name, NOX("Goal #" SIZE_T_ARG), &stored_goal - &Campaign.missions[num].goals[0] + 1);
+					snprintf(stored_goal.name, NAME_LENGTH, NOX("Goal #" SIZE_T_ARG), &stored_goal - &Campaign.missions[num].goals[0] + 1);
 			}
 		}
 
@@ -1420,7 +1420,7 @@ int mission_campaign_find_mission( const char *name )
 	// end of the filename
 	strcpy_s(realname, name );
 	if ( strchr(name, '.') == NULL ){
-		sprintf(realname, NOX("%s%s"), name, FS_MISSION_FILE_EXT );
+		snprintf(realname, _MAX_PATH, NOX("%s%s"), name, FS_MISSION_FILE_EXT );
 	}
 
 	for (i = 0; i < Campaign.num_missions; i++ ) {
