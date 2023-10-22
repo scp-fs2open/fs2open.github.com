@@ -59,7 +59,7 @@ void SpawnShipCheat::runCheat() {
 			// create a name for the ship with a number. look for collisions until one isn't found anymore
 			ship_idx = 1;
 			do {
-				sprintf(name, "%s %d", shipName.c_str(), ship_idx);
+				snprintf(name, NAME_LENGTH, "%s %d", shipName.c_str(), ship_idx);
 				if ( (ship_name_lookup(name) == -1) && (ship_find_exited_ship_by_name(name) == -1) )
 				{
 					strcpy_s(shipp->ship_name, name);

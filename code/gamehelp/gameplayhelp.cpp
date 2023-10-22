@@ -185,7 +185,7 @@ void gameplay_help_set_title(const SCP_string *title)
 
 	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,sy,"%s", title->c_str());
 
-	sprintf(buf, XSTR("Page %d of %d", 132), Current_help_page + 1, Gp_last_screen + 1);
+	snprintf(buf, 128, XSTR("Page %d of %d", 132), Current_help_page + 1, Gp_last_screen + 1);
 	gr_get_string_size(&w, NULL, buf);
 	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, sy + gr_get_font_height() + 2, "%s", buf);
 	gr_set_color_fast(&Color_normal);

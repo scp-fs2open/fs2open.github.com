@@ -384,7 +384,7 @@ interface_snd_id gamesnd_get_by_iface_name(const char* name)
 gamesnd_id gamesnd_get_by_tbl_index(int index)
 {
 	char temp[11];
-	sprintf(temp, "%i", index);
+	snprintf(temp, 11, "%i", index);
 
 	auto idx = gamesnd_lookup_name(temp, Snds);
 
@@ -400,7 +400,7 @@ interface_snd_id gamesnd_get_by_iface_tbl_index(int index)
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
 	char temp[11];
-	sprintf(temp, "%i", index);
+	snprintf(temp, 11, "%i", index);
 
 	auto idx = gamesnd_lookup_name(temp, Snds_iface);
 

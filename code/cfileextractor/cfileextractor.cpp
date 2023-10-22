@@ -267,9 +267,9 @@ void extract_all_files(char *file)
 			if ( (out_len + 1 + strlen(path)) > MAX_PATH-1 )
 				print_error(ERR_PATH_TOO_LONG);
 
-			sprintf(path, "%s%s%s%s", out_dir, DIR_SEPARATOR_STR, VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
+			snprintf(path, CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1,"%s%s%s%s", out_dir, DIR_SEPARATOR_STR, VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
 		} else {
-			sprintf(path, "%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
+			snprintf(path, CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1, "%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
 		}
 
 		c = &path[0];
@@ -302,14 +302,14 @@ void extract_all_files(char *file)
 		// start writing out the file
 		fseek(fp_in, VP_FileInfo[i].offset, SEEK_SET);
 
-		sprintf(path, "%s%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR, VP_FileInfo[i].file_name);
+		snprintf(path, CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1, "%s%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR, VP_FileInfo[i].file_name);
 
 		// this is cheap, I know.
 		if (have_outdir) {
 			if ( (out_len + 1 + strlen(path)) > MAX_PATH-1 )
 				print_error(ERR_PATH_TOO_LONG);
 
-			sprintf(path2, "%s%s%s", out_dir, DIR_SEPARATOR_STR, path);
+			snprintf(path2, CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1, "%s%s%s", out_dir, DIR_SEPARATOR_STR, path);
 		} else {
 			strcpy_s(path2, path);
 		}

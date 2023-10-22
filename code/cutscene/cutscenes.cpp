@@ -361,7 +361,7 @@ void cutscenes_screen_play()
 		if (Cmdline_nomovies)
 			strcpy_s(str, XSTR("Movies are currently disabled.", 1574));
 		else
-			sprintf(str, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
+			snprintf(str, 256, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
 
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, str);
 	}

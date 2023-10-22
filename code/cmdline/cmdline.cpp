@@ -875,7 +875,7 @@ void os_validate_parms(int argc, char *argv[])
 				}
 				else {
 					char buffer[128];
-					sprintf(buffer, "Unrecognized command line parameter %s.", token);
+					snprintf(buffer, 128, "Unrecognized command line parameter %s.", token);
 
 					os::dialogs::Message(os::dialogs::MESSAGEBOX_INFORMATION, buffer);
 				}
