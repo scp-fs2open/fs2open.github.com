@@ -996,7 +996,7 @@ void main_hall_do(float frametime)
 				case SKILL_LEVEL_REGION:
 					char temp[100];
 					game_increase_skill_level();
-					sprintf(temp, XSTR( "Skill level set to %s.", 370), Skill_level_names(Game_skill_level));
+					snprintf(temp, 100, XSTR( "Skill level set to %s.", 370), Skill_level_names(Game_skill_level));
 					main_hall_set_notify_string(temp);
 					break;
 
@@ -2252,7 +2252,7 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	required_string("$Main Hall");
 
 	// default to the current index
-	sprintf(temp_string, "%d", hall_idx);
+	snprintf(temp_string, MAX_FILENAME_LEN, "%d", hall_idx);
 
 	// see if we have a name
 	if (optional_string("+Name:"))

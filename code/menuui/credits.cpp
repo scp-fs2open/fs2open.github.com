@@ -776,9 +776,9 @@ void credits_do_frame(float  /*frametime*/)
 		char buf[40];
 
 		if (gr_screen.res == GR_1024) {
-			sprintf(buf, NOX("2_CrIm%.2d"), Credits_artwork_index);
+			snprintf(buf, 40, NOX("2_CrIm%.2d"), Credits_artwork_index);
 		} else {
-			sprintf(buf, NOX("CrIm%.2d"), Credits_artwork_index);
+			snprintf(buf, 40, NOX("CrIm%.2d"), Credits_artwork_index);
 		}
 		Credits_bmps[Credits_artwork_index] = bm_load(buf);
 	}
@@ -787,9 +787,9 @@ void credits_do_frame(float  /*frametime*/)
 		char buf[40];
 
 		if (gr_screen.res == GR_1024) {
-			sprintf(buf, NOX("2_CrIm%.2d"), next);
+			snprintf(buf, 40, NOX("2_CrIm%.2d"), next);
 		} else {
-			sprintf(buf, NOX("CrIm%.2d"), next);
+			snprintf(buf, 40, NOX("CrIm%.2d"), next);
 		}
 		Credits_bmps[next] = bm_load(buf);
 	}

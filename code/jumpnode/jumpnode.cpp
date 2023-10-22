@@ -40,7 +40,7 @@ CJumpNode::CJumpNode(const vec3d* position)
 	gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
 	
 	// Set m_name and m_display
-	sprintf(m_name, XSTR( "Jump Node %d", 632), Jump_nodes.size());
+	snprintf(m_name, 32, XSTR( "Jump Node %d", 632), Jump_nodes.size());
 	m_display[0] = '\0';
 	
 	// Set m_modelnum and m_radius

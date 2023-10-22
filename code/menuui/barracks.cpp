@@ -340,17 +340,17 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon shots:", 51));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_fired);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%u", stats->p_shots_fired);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon hits:", 52));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_hit);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%u", stats->p_shots_hit);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hits:", 53));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_bonehead_hits);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%u", stats->p_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -360,7 +360,7 @@ void barracks_init_stats(scoring_struct *stats)
 	} else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, XSTR( "%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -370,7 +370,7 @@ void barracks_init_stats(scoring_struct *stats)
 	} else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, XSTR( "%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -380,17 +380,17 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon shots:", 57));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_fired);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%u", stats->s_shots_fired);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon hits:", 58));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_hit);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%u", stats->s_shots_hit);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hits:", 59));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%u", stats->s_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -401,7 +401,7 @@ void barracks_init_stats(scoring_struct *stats)
 	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, XSTR("%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -412,7 +412,7 @@ void barracks_init_stats(scoring_struct *stats)
 	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, XSTR("%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -422,12 +422,12 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Total kills:", 62));
-	sprintf(Stats[Num_stat_lines], "%d", stats->kill_count_ok);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%d", stats->kill_count_ok);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Assists:", 63));
-	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%d", stats->assists);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -437,7 +437,7 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	strcpy_s(Stat_labels[Num_stat_lines], XSTR("Current Score:", 1583));
-	sprintf(Stats[Num_stat_lines], "%d", stats->score);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%d", stats->score);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -474,8 +474,8 @@ void barracks_init_stats(scoring_struct *stats)
 			}
 
 			Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
-			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
-			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
+			snprintf(Stat_labels[Num_stat_lines], STAT_COLUMN1_W, NOX("%s:"), it->name);
+			snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%d", stats->kills[i]);
 			Num_stat_lines++;
 
 			// work out the total score from ship kills
@@ -486,7 +486,7 @@ void barracks_init_stats(scoring_struct *stats)
 	// add the score from kills
 	Assert((Num_stat_lines + 1) < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Score from kills only:", 1636));
-	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
+	snprintf(Stats[Num_stat_lines], STAT_COLUMN2_W, "%d", score_from_kills);
 	Num_stat_lines++;
 
 	int w;
@@ -1340,7 +1340,7 @@ void barracks_draw_pilot_pic()
 
 			// print number of the current pic
 			char buf[40];			
-			sprintf(buf, XSTR( "%d of %d", 71), Pic_number + 1, Num_pilot_images);
+			snprintf(buf, 40, XSTR( "%d of %d", 71), Pic_number + 1, Num_pilot_images);
 			gr_printf_menu(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], "%s", buf);
 		}
 	} else {
@@ -1362,7 +1362,7 @@ void barracks_draw_squad_pic()
 
 			// print number of current squad pic
 			if(Player_sel_mode != PLAYER_SELECT_MODE_SINGLE){
-				sprintf(buf,XSTR( "%d of %d", 71), Pic_squad_number+1, Num_pilot_squad_images);
+				snprintf(buf, 40, XSTR( "%d of %d", 71), Pic_squad_number+1, Num_pilot_squad_images);
 				gr_printf_menu(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], "%s", buf);
 			}
 		}
