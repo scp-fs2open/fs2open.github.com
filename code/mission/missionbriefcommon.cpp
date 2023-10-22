@@ -1328,7 +1328,7 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 
 	Assert( Briefing != NULL );
 	gr_set_color_fast(&Color_text_heading);
-	sprintf(buf, XSTR( "Stage %d of %d", 394), stage_num + 1, stage_max);
+	snprintf(buf, 64, XSTR( "Stage %d of %d", 394), stage_num + 1, stage_max);
 	if (Game_mode & GM_MULTIPLAYER) {
 		gr_printf_menu(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], "%s", buf);
 	} else {
