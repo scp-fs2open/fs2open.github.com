@@ -606,7 +606,10 @@ void event_music_level_start(int force_soundtrack)
 
 	// Check that soundtrack index is in range, except that < 0 means no soundtrack
 	if (Current_soundtrack_num < 0)
+	{
+		Pattern_timer_id = TIMESTAMP::never();	// update the timestamp as if a soundtrack did start
 		return;
+	}
 	Assert(Current_soundtrack_num < (int)Soundtracks.size());
 	if (Current_soundtrack_num >= (int)Soundtracks.size())
 		return;
