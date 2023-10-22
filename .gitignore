@@ -250,6 +250,7 @@ documentation/doxygen/*
 projects/*
 /.vs
 CMakeSettings.json
+CMakePresets.json
 
 # Weird files created by Linux
 .fuse_hidden*
