@@ -792,9 +792,9 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	// maybe stick on who sent the message	
 	if(add_id){
 		if(MULTI_STANDALONE(Net_players[pid])){
-			sprintf(msg_extra, NOX("%s %s"), NOX("<SERVER>"), msg );
+			snprintf(msg_extra, CHATBOX_STRING_LEN, NOX("%s %s"), NOX("<SERVER>"), msg );
 		} else {
-			sprintf(msg_extra, NOX("%s: %s"), Net_players[pid].m_player->short_callsign, msg );
+			snprintf(msg_extra, CHATBOX_STRING_LEN, NOX("%s: %s"), Net_players[pid].m_player->short_callsign, msg );
 		}
 	} else {
 		strcpy_s(msg_extra,msg);

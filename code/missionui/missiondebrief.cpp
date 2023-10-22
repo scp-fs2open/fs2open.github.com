@@ -954,7 +954,7 @@ void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_ve
 	Assert(buf != NULL && medal_earned >= 0 && zero_based_version_index >= 0);
 
 	// start with the regular file name, adapted for resolution
-	sprintf(buf, NOX("%s%s"), Resolution_prefixes[gr_screen.res], Medals[medal_earned].debrief_bitmap);
+	snprintf(buf, 80, NOX("%s%s"), Resolution_prefixes[gr_screen.res], Medals[medal_earned].debrief_bitmap);
 
 	// if the medal has multiple versions, we may want to choose a specific bitmap
 	char *p = strstr(buf, "##");
@@ -973,7 +973,7 @@ void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_ve
 		if (Medals[medal_earned].version_starts_at_1)
 			version++;
 
-		sprintf(number, NOX("%.2d"), version);
+		snprintf(number, 8, NOX("%.2d"), version);
 		Assert(strlen(number) == 2);
 		strncpy(p, number, 2);
 	}
@@ -1467,7 +1467,7 @@ void debrief_render_stagenum()
 	if (Num_stages < 2)
 		return;
 		
-	sprintf(buf, XSTR( "%d of %d", 445), Current_stage + 1, Num_stages);
+	snprintf(buf, 64, XSTR( "%d of %d", 445), Current_stage + 1, Num_stages);
 	gr_get_string_size(&w, NULL, buf);
 	gr_set_color_fast(&Color_bright_blue);
 	gr_string(Debrief_stage_info_coords[gr_screen.res][0] - w, Debrief_stage_info_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);
@@ -2273,7 +2273,7 @@ void debrief_add_award_text(const char *str)
 	if (Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES) {
 		line2 = split_str_once(Debrief_award_text[Debrief_award_text_num_lines-1], field_width);
 		if (line2 != NULL) {
-			sprintf(Debrief_award_text[Debrief_award_text_num_lines], " %s", line2);  // indent a space
+			snprintf(Debrief_award_text[Debrief_award_text_num_lines], AWARD_TEXT_MAX_LINE_LENGTH, " %s", line2);  // indent a space
 		}
 		Debrief_award_text_num_lines++;		// leave blank line even if it all fits into 1
 	}
