@@ -4732,6 +4732,9 @@ void parse_wing(mission *pm)
 				// swap the parse objects
 				std::swap(Parse_objects[this_iter->second], Parse_objects[prev_iter->second]);
 
+				// swap the swapped net signatures so they are in their original order
+				std::swap(Parse_objects[this_iter->second].net_signature, Parse_objects[prev_iter->second].net_signature);
+
 				// swap the indexes in our temporary map
 				std::swap(this_iter->second, prev_iter->second);
 
