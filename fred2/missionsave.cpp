@@ -2569,6 +2569,22 @@ int CFred_mission_save::save_messages()
 
 			fout(" %s", Messages[i].wave_info.name);
 		}
+		
+		if (Messages[i].note != "") {
+			if (optional_string_fred("+Note:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Note:");
+
+			auto copy = Messages[i].note;
+			lcl_fred_replace_stuff(copy);
+			fout(" %s", copy.c_str());
+
+			if (optional_string_fred("$end_multi_text", "$Name:"))
+				parse_comments();
+			else
+				fout_version("\n$end_multi_text");
+		}
 
 		fso_comment_pop();
 	}

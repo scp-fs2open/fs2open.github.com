@@ -444,6 +444,7 @@
 #define IDC_GRID_XY_PLANE               1159
 #define IDC_GRID_YZ_PLANE               1160
 #define IDC_GRID_SIZE                   1162
+#define IDC_NEW_NOTE                    1163
 #define IDC_SPIN_GRID_SIZE              1164
 #define IDC_STATIC_GRID_SIZE            1165
 #define IDC_PREF_STARFIELD              1167

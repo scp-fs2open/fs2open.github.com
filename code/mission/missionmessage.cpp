@@ -520,6 +520,16 @@ void message_parse(MessageFormat format) {
 		}
 	}
 
+	if (optional_string("+Note:")) {
+		if (Fred_running) { // Msg stage notes do nothing in FSO, so let's not even waste a few bytes
+			stuff_string(msg.note, F_MULTITEXT);
+			lcl_replace_stuff(msg.note, true);
+		} else {
+			SCP_string junk;
+			stuff_string(junk, F_MULTITEXT);
+		}
+	}
+
 	bool require_exact_mood_match;
 	if (optional_string("$Mood:")) {
 		SCP_string buf;

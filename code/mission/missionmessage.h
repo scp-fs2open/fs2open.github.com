@@ -152,11 +152,12 @@ typedef struct MessageFilter {
 } MessageFilter;
 
 typedef struct MissionMessage {
-	char	name[NAME_LENGTH];					// used to identify this message
-	char	message[MESSAGE_LENGTH];			// actual message
-	int	persona_index;							// which persona says this message
-	int	multi_team;								// multiplayer team filter (important for TvT only)
-	int				mood;
+	char    name[NAME_LENGTH];					// used to identify this message
+	char    message[MESSAGE_LENGTH];			// actual message
+	int     persona_index;							// which persona says this message
+	int     multi_team;								// multiplayer team filter (important for TvT only)
+	int     mood;
+	SCP_string note;
 	SCP_vector<int> excluded_moods;
 
 	MessageFilter sender_filter;
