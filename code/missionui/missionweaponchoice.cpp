@@ -4030,6 +4030,10 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 		// get the slot for this ship
 		cur_wss_slot = cur_wing_block * MAX_WING_SLOTS + cur_wing_slot;
 
+		// make sure there is actually a ship here
+		if (Wss_slots[cur_wss_slot].ship_class < 0)
+			continue;
+
 		// get the ship's name and class
 		sip = &Ship_info[Wss_slots[cur_wss_slot].ship_class];	
 		ss_return_name(cur_wing_block, cur_wing_slot, ship_name);
