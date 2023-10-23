@@ -156,9 +156,6 @@ void camera::set_fov(fov_t in_fov, float in_fov_time, float in_fov_acceleration_
 
 void camera::set_object_host(object *objp, int n_object_host_submodel)
 {
-	if(objp == NULL)
-		object_host = object_h();
-
 	object_host = object_h(objp);
 	object_host_submodel = n_object_host_submodel;
 	set_custom_position_function(NULL);
