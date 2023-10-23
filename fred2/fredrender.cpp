@@ -841,8 +841,10 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 	vm_vec_add2(&center_pt, &objp->pos);
 	g3_rotate_vertex(&text_center, &center_pt);
 	g3_project_vertex(&text_center);
-	gr_set_color_fast(&colour_white);
-	gr_string( (int)text_center.screen.xyw.x,  (int)text_center.screen.xyw.y, buf.c_str() );
+	if (!(text_center.flags & PF_OVERFLOW)) {
+		gr_set_color_fast(&colour_white);
+		gr_string((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str());
+	}
 }
 
 void fred_disable_htl() {

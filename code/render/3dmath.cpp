@@ -225,20 +225,25 @@ int g3_project_vertex(vertex *p)
 
 	if ( p->flags & PF_PROJECTED )
 		return p->flags;
+	
+	w = 1.0f / p->world.xyz.z;
 
-	if ( p->world.xyz.z <= MIN_Z ) {
+	if (p->world.xyz.z <= MIN_Z) {
 		p->flags |= PF_OVERFLOW;
-	} else {
-		w = 1.0f / p->world.xyz.z;
+	}
 
+	if (w < 0.0f) {
+		p->screen.xyw.x = (Canvas_width + (p->world.xyz.x * Canvas_width * -w)) * 0.5f;
+		p->screen.xyw.y = (Canvas_height - (p->world.xyz.y * Canvas_height * -w)) * 0.5f;
+	} else {
 		p->screen.xyw.x = (Canvas_width + (p->world.xyz.x * Canvas_width * w)) * 0.5f;
 		p->screen.xyw.y = (Canvas_height - (p->world.xyz.y * Canvas_height * w)) * 0.5f;
-		 
-		if ( w > 1.0f ) w = 1.0f;		
-		
-		p->screen.xyw.w = w;
-		p->flags |= PF_PROJECTED;
 	}
+		 
+	CAP(w, -1.0f, 1.0f);
+		
+	p->screen.xyw.w = w;
+	p->flags |= PF_PROJECTED;	
 	
 	return p->flags;
 }
