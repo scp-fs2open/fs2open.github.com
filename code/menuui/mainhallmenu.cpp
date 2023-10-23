@@ -2717,3 +2717,11 @@ void main_hall_unpause()
 
 	main_hall_start_ambient();
 }
+
+/**
+* Toggle the help overlay
+*/
+void main_hall_toggle_help(bool enable)
+{
+	help_overlay_set_state(Main_hall_overlay_id, main_hall_get_overlay_resolution_index(), (int)enable);
+}
