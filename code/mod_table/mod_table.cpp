@@ -145,6 +145,7 @@ bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
+bool Always_reset_selected_wep_on_loadout_open;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -1342,6 +1343,10 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
 		}
 
+		if (optional_string("$Always refresh selected weapon when viewing loadout:")) {
+			stuff_boolean(&Always_reset_selected_wep_on_loadout_open);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1519,6 +1524,7 @@ void mod_table_reset()
 		}};
 	Randomize_particle_rotation = false;
 	Calculate_subsystem_hitpoints_after_parsing = false;
+	Always_reset_selected_wep_on_loadout_open = false;
 }
 
 void mod_table_set_version_flags()
