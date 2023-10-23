@@ -208,8 +208,6 @@ extern void mission_campaign_maybe_play_movie(int type);
 // save persistent information
 extern void mission_campaign_save_persistent( int type, int index );
 
-void mission_campaign_savefile_generate_root(char *filename, player *pl = NULL);
-
 // The following are functions I added to set up the globals and then
 // execute the corresponding mission_campaign_savefile functions.
 
