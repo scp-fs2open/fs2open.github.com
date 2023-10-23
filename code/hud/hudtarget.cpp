@@ -2985,7 +2985,6 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	cur_dist = vm_vec_dist_quick(&Player_obj->pos, hostile_pos);
 
 	g3_rotate_vertex(&hostile_vertex, hostile_pos);
-	g3_project_vertex(&hostile_vertex);
 
 	if (reticle_follow) {
 		int nx = HUD_nose_x;
@@ -3007,6 +3006,8 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 	if (hostile_vertex.codes == 0)  { // on screen
 		int		projected_x, projected_y;
+
+		g3_project_vertex(&hostile_vertex);
 
 		if (!(hostile_vertex.flags & PF_OVERFLOW)) {  // make sure point projected
 			int mag_squared;
