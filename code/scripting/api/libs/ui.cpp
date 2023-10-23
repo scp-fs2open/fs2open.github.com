@@ -427,6 +427,22 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(toggleHelp,
+	l_UserInterface_MainHall,
+	"boolean",
+	"Sets the mainhall F1 help overlay to display. True to display, false to hide",
+	nullptr,
+	"nothing")
+{
+	bool toggle;
+	ade_get_args(L, "b", &toggle);
+
+	main_hall_toggle_help(toggle);
+
+
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/Barracks
 ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               "API for accessing values specific to the Barracks UI.",
