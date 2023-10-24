@@ -9384,6 +9384,8 @@ void ai_chase()
 										// Cyborg: need to check for division by zero, coverity 1523419
 										if (aip->ai_secondary_range_mult == FLT_MIN && (ai_maybe_autoscale(Num_ai_classes) > 1))
 											secondary_range_mult = (float)(Game_skill_level + 1 + (3 * ai_maybe_autoscale(aip->ai_class)/(ai_maybe_autoscale(Num_ai_classes) - 1)))/NUM_SKILL_LEVELS;
+										else if (aip->ai_secondary_range_mult == FLT_MIN) 
+											secondary_range_mult = (float)(Game_skill_level + 2)/NUM_SKILL_LEVELS; // default to using the default retail class Captain out of the seven there are total when we don't have enough autoscale classes or just one regular class.  (This simplifies to 2 + Game_skill_level / Num of skill levels)
 										else 
 											secondary_range_mult = aip->ai_secondary_range_mult;
 
@@ -13048,21 +13050,24 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		//	Scale between 1x and 3x based on ai_class (SUSHI: only if autoscale is on)
 		if (aip->ai_class_autoscale)
 		{
-			int autoscale_index = ai_get_autoscale_index(Num_ai_classes);
+			int number_of_as_classes = ai_get_autoscale_index(Num_ai_classes);
 
 			// 	Cyborg: Make sure that autoscale index is greater than one before dividing, coverity 1523548
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale] && autoscale_index > 1)
-				delay = delay + delay * (float)(3 * (autoscale_index - ai_get_autoscale_index(aip->ai_class) - 1) / (autoscale_index - 1));
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale] && number_of_as_classes > 1)
+				delay = delay + delay * (float)(3 * (number_of_as_classes - ai_get_autoscale_index(aip->ai_class) - 1) / (number_of_as_classes - 1));
 			else {
 				static bool autoscale_checked = false;
 
 				// warn if there's only one autoscale ai class
-				if (autoscale_index == 1 && !autoscale_checked) { 
+				if (number_of_as_classes == 1 && !autoscale_checked) { 
 					mprintf(("Warning! Having only 1 autoscale ai class will disable autoscale features that rely on division."));
 					autoscale_checked = true;
 				}
 
-				delay = delay + delay * (float)(3 * (Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
+				// Only adjust if we have more than one ai class to avoid div by 0
+				if (Num_ai_classes > 1){
+					delay = delay + delay * (float)(3 * (Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
+				}
 			}
 		}
 
@@ -13433,9 +13438,10 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 			}
 		}
 
-		// Cyborg: fall back to standard behavior if no allowed paths to avoid divide by zero -- Coverity 1523287
+		// Cyborg: to avoid divide by zero and avoid a logic path that should not exist check for 0 allowed paths -- Coverity 1523287
 		if (num_allowed_paths == 0) {
 			bay_path = Ai_last_arrive_path % bay->num_paths;
+			UNREACHABLE("Parent_shipp in ai_acquire_emerge_path somehow does not have any allowed bay paths!");
 		} else {
 			// cycle through the allowed paths
 			bay_path = allowed_bay_paths[Ai_last_arrive_path % num_allowed_paths];
