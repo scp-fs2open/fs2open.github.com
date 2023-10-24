@@ -13044,9 +13044,20 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		//	Scale between 1x and 3x based on ai_class (SUSHI: only if autoscale is on)
 		if (aip->ai_class_autoscale)
 		{
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
-				delay = delay + delay * (float)(3 * (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) / (ai_get_autoscale_index(Num_ai_classes) - 1));
-			else
+			int autoscale_index = ai_get_autoscale_index(Num_ai_classes);
+
+			// 	Cyborg: Make sure that autoscale index is greater than one before dividing, coverity 1523548
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale] && autoscale_index > 1)
+				delay = delay + delay * (float)(3 * (autoscale_index - ai_get_autoscale_index(aip->ai_class) - 1) / (autoscale_index - 1));
+			else {
+				static bool autoscale_checked = false;
+
+				// warn if there's only one autoscale ai class
+				if (autoscale_index == 1 && !autoscale_checked) { 
+					mprintf(("Warning! Having only 1 autoscale ai class will disable autoscale features that rely on division."));
+					autoscale_checked = true;
+				}
+
 				delay = delay + delay * (float)(3 * (Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
 		}
 
