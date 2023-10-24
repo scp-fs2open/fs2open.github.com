@@ -13063,6 +13063,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 				}
 
 				delay = delay + delay * (float)(3 * (Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
+			}
 		}
 
 		// set timestamp
@@ -13432,8 +13433,13 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 			}
 		}
 
-		// cycle through the allowed paths
-		bay_path = allowed_bay_paths[Ai_last_arrive_path % num_allowed_paths];
+		// Cyborg: fall back to standard behavior if no allowed paths to avoid divide by zero -- Coverity 1523287
+		if (num_allowed_paths == 0) {
+			bay_path = Ai_last_arrive_path % bay->num_paths;
+		} else {
+			// cycle through the allowed paths
+			bay_path = allowed_bay_paths[Ai_last_arrive_path % num_allowed_paths];
+		}
 	}
 	// choose from among all paths
 	else
