@@ -9379,9 +9379,13 @@ void ai_chase()
 										firing_range = MIN((swip->max_speed * swip->lifetime * 0.75f), swip->weapon_range);
 									else
 									{
-										float secondary_range_mult = (aip->ai_secondary_range_mult == FLT_MIN)
-											? (float)(Game_skill_level + 1 + (3 * ai_maybe_autoscale(aip->ai_class)/(ai_maybe_autoscale(Num_ai_classes) - 1)))/NUM_SKILL_LEVELS
-											: aip->ai_secondary_range_mult;
+										float secondary_range_mult;
+										
+										// Cyborg: need to check for division by zero, coverity 1523419
+										if (aip->ai_secondary_range_mult == FLT_MIN && (ai_maybe_autoscale(Num_ai_classes) > 1))
+											secondary_range_mult = (float)(Game_skill_level + 1 + (3 * ai_maybe_autoscale(aip->ai_class)/(ai_maybe_autoscale(Num_ai_classes) - 1)))/NUM_SKILL_LEVELS;
+										else 
+											secondary_range_mult = aip->ai_secondary_range_mult;
 
 										firing_range = MIN((swip->max_speed * swip->lifetime * secondary_range_mult), swip->weapon_range);
 									}
