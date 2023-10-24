@@ -225,10 +225,18 @@ int g3_project_vertex(vertex *p)
 
 	if ( p->flags & PF_PROJECTED )
 		return p->flags;
+
+	if (p->world.xyz.z == 0.0f) {
+		p->screen.xyw.x = 0.0;
+		p->screen.xyw.y = 0.0;
+		p->screen.xyw.w = 0.0; 
+		p->flags |= PF_OVERFLOW & PF_PROJECTED;
+		return;
+	}
 	
 	w = 1.0f / p->world.xyz.z;
 
-	if (p->world.xyz.z <= MIN_Z) {
+	if (p->world.xyz.z < MIN_Z) {
 		p->flags |= PF_OVERFLOW;
 	}
 
