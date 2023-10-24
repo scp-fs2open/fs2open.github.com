@@ -102,7 +102,7 @@ ADE_FUNC(enableInput,
 	"any context /* A libRocket Context value */",
 	"Enables input for the specified libRocket context",
 	"boolean",
-	"true if successfull")
+	"true if successful")
 {
 	using namespace Rocket::Core;
 
@@ -123,7 +123,7 @@ ADE_FUNC(enableInput,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successfull")
+ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successful")
 {
 	scpui::disableInput();
 
@@ -461,7 +461,7 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the given player as the current player",
-         "boolean", "true on sucess, false otherwise")
+         "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
@@ -485,7 +485,7 @@ ADE_FUNC(playVoiceClip,
 	nullptr,
 	"Plays the example voice clip used for checking the voice volume",
 	"boolean",
-	"true on sucess, false otherwise")
+	"true on success, false otherwise")
 {
 	options_play_voice_clip();
 	return ADE_RETURN_TRUE;

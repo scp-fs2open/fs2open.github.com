@@ -1309,7 +1309,7 @@ void brief_set_closeup_pos(brief_icon * /*bi*/)
 // -------------------------------------------------------------------------------------
 // brief_setup_closeup()
 //
-// exit: 0	=>		set-up icon sucessfully
+// exit: 0	=>		set-up icon successfully
 //			-1	=>		could not setup closeup icon
 int brief_setup_closeup(brief_icon *bi, bool api_access)
 {

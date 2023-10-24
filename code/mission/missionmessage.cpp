@@ -411,7 +411,7 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	static bool warned = false;
 	if (!warned) {
 		WarningEx(LOCATION,
-			"Converting legacy '%s Arrived' message. Consult the documention on message filters for more information. "
+			"Converting legacy '%s Arrived' message. Consult the documentation on message filters for more information. "
 			"A complete list will be printed to the log.",
 			wing_name.c_str());
 		warned = true;

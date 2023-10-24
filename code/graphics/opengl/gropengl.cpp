@@ -1181,7 +1181,7 @@ static void init_extensions() {
 
 	// we require a minimum GLSL version
 	if (GLSL_version < MIN_REQUIRED_GLSL_VERSION) {
-		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
+		Error(LOCATION,  "Current GL Shading Language Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
 	GLint max_texture_units;

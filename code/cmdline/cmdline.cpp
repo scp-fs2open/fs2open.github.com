@@ -1649,7 +1649,7 @@ bool SetCmdlineParams()
 
 		// be sure that this string fits in our limits
 		if ( strlen(Cmdline_game_password) >= MAX_PASSWD_LEN ) {
-			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d charaters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
+			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d characters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
 			Cmdline_game_password[MAX_PASSWD_LEN-1] = '\0';
 		}
 	}

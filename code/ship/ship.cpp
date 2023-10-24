@@ -4806,7 +4806,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			size_t seppos;
 			seppos = token->find_first_of(':');
 			if(seppos == SCP_string::npos) {
-				Warning(LOCATION, "Couldn't find ':' seperator in Glowpoint override for ship %s ignoring token", sip->name);
+				Warning(LOCATION, "Couldn't find ':' separator in Glowpoint override for ship %s ignoring token", sip->name);
 				continue;
 			}
 			name = token->substr(0, seppos);

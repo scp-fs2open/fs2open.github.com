@@ -363,7 +363,7 @@ ADE_FUNC(loadPlayer, l_Base, "string callsign", "Loads the player with the speci
 }
 
 ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boolean",
-         "true of successfull, false otherwise")
+         "true of successful, false otherwise")
 {
 	player_h* plh;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
@@ -542,7 +542,7 @@ ADE_FUNC(replaceTokens,
 ADE_FUNC(replaceVariables,
 	l_Base,
 	"string text",
-	"Returns a string that replaces any variable name with the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceeded by '$' for replacement to work.",
+	"Returns a string that replaces any variable name with the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceded by '$' for replacement to work.",
 	"string",
 	"Updated string or nil if invalid")
 {

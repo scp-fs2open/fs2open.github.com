@@ -319,7 +319,7 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 	return ade_set_args(L, "f", Weapon_info[idx].fire_wait);
 }
 
-ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will fly before turing onto its target", "number", "Free flight time or emty string if invalid")
+ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will fly before turing onto its target", "number", "Free flight time or empty string if invalid")
 {
 	int idx;
 	float f = 0.0f;

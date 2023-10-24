@@ -36303,7 +36303,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_IS_DISABLED_DELAY, "Is disabled delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified ship(s) are disabled.  A "
 		"ship is disabled when all of its engine subsystems are destroyed.  All "
-		"ships must be diabled for this function to return true.\r\n\r\n"
+		"ships must be disabled for this function to return true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disabled status of." },
@@ -37065,7 +37065,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NEXT_MISSION, "Next Mission (Action operator)\r\n"
 		"\tThe next mission operator is used for campaign branching in the campaign editor.  "
 		"It specifies which mission should played be next in the campaign.  This operator "
-		"generally follows a 'when' or 'cond' statment in the campaign file.\r\n\r\n"
+		"generally follows a 'when' or 'cond' statement in the campaign file.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of mission (filename) to proceed to." },
 

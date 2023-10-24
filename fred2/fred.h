@@ -74,7 +74,7 @@ public:
 	 * @param[in]     adjust Height, in pixels, to adjust the window by
 	 * @param[in]     pre    Pre-placement?
 	 *
-	 * @returns  0 If sucessful, or
+	 * @returns  0 If successful, or
 	 * @returns -1 If pre is nonzero and the window is not visible, or
 	 * @returns -2 If the window has been already initialized
 	 */

@@ -2610,7 +2610,7 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 					err_msg += Main_hall_region_map[i].name;
 				}
 
-				Error(LOCATION, "Unkown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.c_str());
+				Error(LOCATION, "Unknown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.c_str());
 			}
 
 			m->regions[idx].action = action;

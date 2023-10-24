@@ -576,7 +576,7 @@ int hud_squadmsg_get_key()
 
 			// use a timestamp to prevent top level key code from possibly reprocessing this key
 			Msg_eat_key_timestamp = timestamp(MSG_KEY_EAT_TIME);
-			if ( k == KEY_PAGEDOWN ) {			// pageup and pagedown scroll the menu -- deal with these seperately!!
+			if ( k == KEY_PAGEDOWN ) {			// pageup and pagedown scroll the menu -- deal with these separately!!
 				hud_squadmsg_page_down();
 				return -1;
 			} else if ( k == KEY_PAGEUP ) {
