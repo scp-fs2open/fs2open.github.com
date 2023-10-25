@@ -32,26 +32,30 @@ static intel_data expected_foo = {
 	"Foo name", // XSTR id 3000
 	"Foo desc", // XSTR id 3001
 	"Foo anim",
-	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE,
+	SCP_map<SCP_string, SCP_string>{}
 };
 static intel_data expected_bar = {
 	"Bar name", // XSTR id 3002
 	"Bar desc", // XSTR id 3003
 	"Bar anim",
-	0
+	0,
+	SCP_map<SCP_string, SCP_string>{}
 };
 static intel_data expected_baz = {
 	"Baz name", // XSTR id 3004
 	"Baz desc", // XSTR id 3005
 	"Baz anim",
-	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE,
+	SCP_map<SCP_string, SCP_string>{}
 };
 
 static intel_data expected_qux = {
 	"Qux name", // No XSTR
 	"Qux desc", // No XSTR
 	"Qux anim",
-	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE,
+	SCP_map<SCP_string, SCP_string>{}
 };
 
 // use SCOPED_TRACE("<test name>") before calling this
@@ -117,7 +121,8 @@ TEST_F(IntelParseTest, single_translate) {
 		"Foo name German", // XSTR id 3000
 		"Foo desc German", // XSTR id 3001
 		"Foo anim",
-		IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+		IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE,
+		SCP_map<SCP_string, SCP_string>{}
 	};
 
 	ASSERT_EQ(intel_info_size(), 1);
