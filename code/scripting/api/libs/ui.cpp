@@ -498,6 +498,8 @@ ADE_FUNC(savePlayerData,
 	nullptr,
 	nullptr)
 {
+	SCP_UNUSED(L);
+
 	Pilot.save_player();
 	Pilot.save_savefile();
 
