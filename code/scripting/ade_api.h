@@ -44,7 +44,7 @@ namespace internal {
 
 	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, char* /*data_ptr*/, ubyte* /*data*/, int& /*offset*/) {
 		LuaError(L, "Cannot deserialize data of type %s from network! Make sure all players are running the same version!", tableEntry.GetName());
-		throw lua_net_exception("Cannot deserialize data of recieved userdata type from network");
+		throw lua_net_exception("Cannot deserialize data of received userdata type from network");
 	}
 
 	enum class ade_multi_serialize_mode : size_t { NATIVE, FUNDAMENTAL, UNSUPPORTED };

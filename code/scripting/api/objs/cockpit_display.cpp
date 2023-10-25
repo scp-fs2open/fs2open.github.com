@@ -259,7 +259,7 @@ ADE_FUNC(startRendering, l_CockpitDisplay, "[boolean setClip = true]", "Starts r
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(bm_handle)));
 }
 
-ADE_FUNC(stopRendering, l_CockpitDisplay, NULL, "Stops rendering to this cockpit display", "boolean", "true if successfull, false otherwise")
+ADE_FUNC(stopRendering, l_CockpitDisplay, NULL, "Stops rendering to this cockpit display", "boolean", "true if successful, false otherwise")
 {
 	cockpit_display_h *cdh = NULL;
 

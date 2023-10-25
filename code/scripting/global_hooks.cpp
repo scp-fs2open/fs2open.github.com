@@ -374,7 +374,7 @@ const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
-	"Invoked when a system dialog initalizes. Override to prevent the system dialog from loading dialog-related resources (requires retail files)",
+	"Invoked when a system dialog initializes. Override to prevent the system dialog from loading dialog-related resources (requires retail files)",
 	{   
 		{"Choices",
 			"table",

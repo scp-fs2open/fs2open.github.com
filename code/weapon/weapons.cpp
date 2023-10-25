@@ -1580,7 +1580,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nResetting value to default.", wip->name);
 					wip->seeker_strength = 2.0f;
 				}
 			} 
@@ -2015,7 +2015,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Alpha Decay Exponent:")) {
 			stuff_float(&ti->a_decay_exponent);
 			if (ti->a_decay_exponent < 0.0f) {
-				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Reseting to 1.\n", wip->name);
+				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Resetting to 1.\n", wip->name);
 				ti->a_decay_exponent = 1.0f;
 			}
 		}

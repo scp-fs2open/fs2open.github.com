@@ -14812,7 +14812,7 @@ void ai_frame(int objnum)
 		aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_started);
 	}
 
-	// moved call to ai_do_repair frame here from below because of the subsequent if statment returning
+	// moved call to ai_do_repair frame here from below because of the subsequent if statement returning
 	// if the ship is getting repaired
 	//	If waiting to be repaired, just stop and sit.
 	ai_do_repair_frame(Pl_objp, aip, flFrametime);

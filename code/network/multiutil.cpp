@@ -1974,7 +1974,7 @@ int multi_eval_join_request(join_request *jr, net_addr *addr)
 		return JOIN_DENY_JR_STATE;
 	}
 
-	// the standalone has some oddball situations which we must handle seperately
+	// the standalone has some oddball situations which we must handle separately
 	if (Game_mode & GM_STANDALONE_SERVER) {		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){

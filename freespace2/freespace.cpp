@@ -1782,7 +1782,7 @@ void game_init()
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
 	}
@@ -3610,7 +3610,7 @@ void game_simulation_frame()
 			mission_parse_eval_stuff();
 		}
 
-		// if we're an observer, move ourselves seperately from the standard physics
+		// if we're an observer, move ourselves separately from the standard physics
 		if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 			obj_observer_move(flFrametime);
 		}

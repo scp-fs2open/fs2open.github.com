@@ -16,7 +16,7 @@ rpc_h rpc_h_impl::create(lua_State* L, SCP_string name) {
 	rpc_h newRPC{ new rpc_h_impl(std::move(name)) };
 	if (!add_rpc(newRPC)) {
 		LuaError(L, "This name is already in use for an RPC on this machine.\nIf you are using different RPC's for different "
-			"machines with the same name, make sure that each machine actually only intializes one RPC object.");
+			"machines with the same name, make sure that each machine actually only initializes one RPC object.");
 		return nullptr;
 	}
 	return newRPC;
