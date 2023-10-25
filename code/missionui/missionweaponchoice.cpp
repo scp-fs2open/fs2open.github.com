@@ -1515,13 +1515,13 @@ void wl_maybe_reset_selected_slot()
 
 /**
  * If Selected_wl_class is -1, choose the first weapon available from the pool for an animation
- *  - on second thought, choose the first weapon that is oin the ship, then go to the pools
+ *  - on second thought, choose the first weapon that is on the ship, then go to the pools
  */
 void wl_maybe_reset_selected_weapon_class()
 {
 	int i;
 
-	if ( Selected_wl_class >= 0 ) 
+	if ( (Selected_wl_class >= 0) && !(Always_reset_selected_wep_on_loadout_open) ) 
 		return;
 
 	Assert( Wss_slots != NULL );

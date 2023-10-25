@@ -56,6 +56,7 @@ extern bool Enable_external_default_scripts;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Dont_automatically_select_turret_when_targeting_ship;
+extern bool Always_reset_selected_wep_on_loadout_open;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;
