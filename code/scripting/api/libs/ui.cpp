@@ -500,6 +500,8 @@ ADE_FUNC(savePlayerData,
 {
 	Pilot.save_player();
 	Pilot.save_savefile();
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/CampaignMenu
