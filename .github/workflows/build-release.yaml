@@ -92,6 +92,7 @@ jobs:
         name: Checkout
         with:
           submodules: true  # `true` to checkout submodules, `recursive` to recursively checkout submodules
+          ref: '${{ github.ref }}'
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
@@ -145,6 +146,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'  # value 0 to fetch all history and tags for all branches
+          ref: '${{ github.ref }}'
       - name: Download Release builds
         # Grab the release builds
         uses: actions/download-artifact@v2
@@ -197,6 +199,7 @@ jobs:
         name: Checkout
         with:
           submodules: true
+          ref: '${{ github.ref }}'
       # - name: Cache Qt
         # # Cache Qt
         # id: cache-qt-win
@@ -291,7 +294,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'
-
+          ref: '${{ github.ref }}'
       - name: Download Release builds
         uses: actions/download-artifact@v2
         with:
@@ -363,6 +366,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+          ref: '${{ github.ref }}'
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
