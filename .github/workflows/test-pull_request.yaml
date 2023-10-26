@@ -123,12 +123,6 @@ jobs:
           vulkan-query-version: 1.3.204.0
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
-      # workaround for failing download of prebuilt libs in 20231016.1.0 runner
-      # https://github.com/actions/runner-images/issues/8598
-      - name: Remove Strawberry Perl from PATH
-        run: |
-          $env:PATH = $env:PATH -replace "C:\\Strawberry\\c\\bin;", ""
-          "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
