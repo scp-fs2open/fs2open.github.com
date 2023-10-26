@@ -1369,7 +1369,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 	}	
 
 	// Cyborg17 - add the subsystem data, now with packer function.
-	if ((MULTIPLAYER_MASTER || objp->flags[Object::Object_Flags::Player_ship]) && shipp->ship_info_index >= 0) {
+	if (MULTIPLAYER_MASTER || objp->flags[Object::Object_Flags::Player_ship]) {
 		SCP_vector<ubyte> flags;
 		SCP_vector<float> subsys_data;
 		ubyte i = 0;
