@@ -11712,7 +11712,13 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		return 0;
 	}
 
-	shipp->cmeasure_fire_stamp = timestamp(Weapon_info[shipp->current_cmeasure].cmeasure_firewait);	//	Can launch every cmeasure wait
+	// Cyborg: Coverity 1523546, check that we have a valid countermeasure before setting the delay. (Could help things work more intuitively if CM is changed mid-mission)
+	if (shipp->current_cmeasure > -1){
+		shipp->cmeasure_fire_stamp = timestamp(Weapon_info[shipp->current_cmeasure].cmeasure_firewait);	//	Can launch every cmeasure wait
+	} else {
+		shipp->cmeasure_fire_stamp = timestamp(0);
+	}
+
 #ifndef NDEBUG
 	if (Weapon_energy_cheat) {
 		shipp->cmeasure_count++;
