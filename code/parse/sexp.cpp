@@ -438,6 +438,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "player-not-use-ai",				OP_PLAYER_NOT_USE_AI,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-player-orders",				OP_SET_PLAYER_ORDERS,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "enable-general-orders",          OP_ENABLE_GENERAL_ORDERS,               2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
+	{ "validate-general-orders",        OP_VALIDATE_GENERAL_ORDERS,             2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
 	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-wing-formation",				OP_SET_WING_FORMATION,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
@@ -4111,6 +4113,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_traitor_override_pointer(CTEXT(node)) == nullptr)) {
 					return SEXP_CHECK_INVALID_TRAITOR_OVERRIDE;
+				}
+				break;
+
+			case OPF_LUA_GENERAL_ORDER:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (ai_lua_find_general_order_id(CTEXT(node)) < 0)) {
+					return SEXP_CHECK_INVALID_LUA_GENERAL_ORDER;
 				}
 				break;
 
@@ -12945,6 +12957,30 @@ void sexp_set_order_allowed_for_target(int n)
 							std::inserter(diff, diff.end()));
 		shipp->orders_allowed_against = diff;
 	}
+}
+
+void sexp_enable_or_validate_general_orders(int n, bool enable)
+{
+	bool choice = is_sexp_true(n);
+	n = CDR(n);
+
+	do {
+		int order_num = ai_lua_find_general_order_id(CTEXT(n));
+
+		// if we got an invalid order number then skip
+		if (order_num < 0) {
+			Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
+			continue;
+		}
+
+		if (enable) {
+			ai_lua_enable_general_order(order_num, choice);
+		} else {
+			ai_lua_validate_general_order(order_num, choice);
+		}
+
+		n = CDR(n);
+	} while (n >= 0);
 }
 
 // Goober5000
@@ -27429,6 +27465,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			//MjnMixael
+			case OP_ENABLE_GENERAL_ORDERS:
+				sexp_enable_or_validate_general_orders(node, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			//MjnMixael
+			case OP_VALIDATE_GENERAL_ORDERS:
+				sexp_enable_or_validate_general_orders(node, false);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// MjnMixael
 			case OP_CREATE_BOLT:
 				sexp_create_bolt(node);
@@ -29902,6 +29950,8 @@ int query_operator_return_type(int op)
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -31171,6 +31221,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else 
 				return OPF_AI_ORDER;
+
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_LUA_GENERAL_ORDER;
 
 		case OP_SET_SOUND_ENVIRONMENT:
 			if (argnum == 0)
@@ -33460,6 +33517,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_TRAITOR_OVERRIDE:
 			return "Invalid traitor override";
 
+		case SEXP_CHECK_INVALID_LUA_GENERAL_ORDER:
+			return "Invalid lua general order";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -35024,6 +35084,8 @@ int get_category(int op_id)
 		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
 		case OP_SET_WING_FORMATION:
@@ -35151,6 +35213,8 @@ int get_subcategory(int op_id)
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_WING_FORMATION:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -39482,6 +39546,22 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tShip Name\r\n"
 		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
 		"\tRest:\tOrder"
+	},
+
+		// MjnMixael
+	{ OP_ENABLE_GENERAL_ORDERS, "enable-general-orders\r\n"
+		"\tEnables or disables general orders defined in sexps.tbl. Takes 2 or more arguments.\r\n"
+		"\tDisabled orders are not visible on the comms board at all\r\n"
+		"\t1:\tTrue/False as to whether the order is enabled or not\r\n"
+		"\tRest:\tThe order to enable or disable"
+	},
+
+		// MjnMixael
+	{ OP_VALIDATE_GENERAL_ORDERS, "validate-general-orders\r\n"
+		"\tValidates or invalidates general orders defined in sexps.tbl. Takes 2 or more arguments.\r\n"
+		"\tInvalid orders are greyed out on the comms board and cannot be selected\r\n"
+		"\t1:\tTrue/False as to whether the order is enabled or not\r\n"
+		"\tRest:\tThe order to validate or invalidate"
 	},
 
 	//WMC
