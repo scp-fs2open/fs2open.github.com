@@ -186,12 +186,6 @@ jobs:
     name: Windows
     runs-on: windows-2019
     steps:
-      # workaround for failing download of prebuilt libs in 20231016.1.0 runner
-      # https://github.com/actions/runner-images/issues/8598
-      - name: Remove Strawberry Perl from PATH
-        run: |
-          $env:PATH = $env:PATH -replace "C:\\Strawberry\\c\\bin;", ""
-          "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
       - uses: actions/checkout@v1
         # Checkout repo
         name: Checkout
