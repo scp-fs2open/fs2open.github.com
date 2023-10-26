@@ -2310,8 +2310,13 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// damage scaling due to big damage, supercap, etc
 	float damage_scale = 1.0f; 
 	// if this is a weapon
-	if (other_obj_is_weapon)
-		damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+	if (other_obj_is_weapon){
+		// Cyborg - Coverity 1523515, this was the only place in ship_do_damage that we weren't checking weapon_info_index
+		Assertion(Weapons[other_obj->instance].weapon_info_index > -1, "Weapon info index in ship_do_damage was found to be a negative value of %d.  Please report this to an SCP coder!", Weapons[other_obj->instance].weapon_info_index);
+		if (Weapons[other_obj->instance].weapon_info_index > -1){
+			damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+		}
+	}
 
 	if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
 		if(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
