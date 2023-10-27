@@ -18,9 +18,9 @@ void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode) {
 }
 
 bool ai_lua_add_order(int sexp_op, player_order_lua order) {
-	Player_orders.emplace_back(vm_strdup(order.parseText.c_str()), vm_strdup(order.displayText.c_str()), -1, sexp_op);
+	Player_orders.emplace_back(order.parseText, order.displayText, -1, sexp_op);
 	Player_orders.back().localize();
-
+	
 	Lua_player_orders.emplace(sexp_op, std::move(order));
 
 	return true;
