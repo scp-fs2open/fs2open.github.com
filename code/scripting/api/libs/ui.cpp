@@ -491,6 +491,21 @@ ADE_FUNC(playVoiceClip,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(savePlayerData,
+	l_UserInterface_Options,
+	nullptr,
+	"Saves all player data. This includes the player file and campaign file.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	Pilot.save_player();
+	Pilot.save_savefile();
+
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/CampaignMenu
 ADE_LIB_DERIV(l_UserInterface_Campaign,
 	"CampaignMenu",
