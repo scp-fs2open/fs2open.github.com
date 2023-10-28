@@ -167,6 +167,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
     { "no dumbfire",					Weapon::Info_Flags::No_dumbfire,						true },
 	{ "no doublefire",					Weapon::Info_Flags::No_doublefire,						true },
     { "in tech database",				Weapon::Info_Flags::In_tech_database,					true },
+	{ "default player weapon",			Weapon::Info_Flags::Default_player_weapon,				true },
     { "player allowed",					Weapon::Info_Flags::Player_allowed,                     true }, 
     { "particle spew",					Weapon::Info_Flags::Particle_spew,						true },
     { "emp",							Weapon::Info_Flags::Emp,								true },
@@ -1579,7 +1580,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nResetting value to default.", wip->name);
 					wip->seeker_strength = 2.0f;
 				}
 			} 
@@ -1587,6 +1588,20 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				if(!(wip->wi_flags[Weapon::Info_Flags::Custom_seeker_str]))
 					wip->seeker_strength = 2.0f;
+			}
+
+			if (optional_string("+Lock FOV:"))
+			{
+				float temp;
+				stuff_float(&temp);
+				if (temp > 360 || temp < 0)
+				{
+					error_display(0, "Lock FOV values should be between 0 and 360 degrees; ignoring value of %f for missile \'%s\'.", temp, wip->name);
+				}
+				else
+				{
+					wip->lock_fov = cosf(fl_radians(temp * 0.5f));
+				}
 			}
 
 			if (optional_string("+Target Lead Scaler:"))
@@ -2000,7 +2015,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Alpha Decay Exponent:")) {
 			stuff_float(&ti->a_decay_exponent);
 			if (ti->a_decay_exponent < 0.0f) {
-				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Reseting to 1.\n", wip->name);
+				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Resetting to 1.\n", wip->name);
 				ti->a_decay_exponent = 1.0f;
 			}
 		}

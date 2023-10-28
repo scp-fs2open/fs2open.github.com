@@ -875,13 +875,17 @@ void process_debug_keys(int k)
 
 					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, Player_ai->targeted_subsys->system_info->subobj_num, (float) -Player_ai->targeted_subsys->system_info->type, NULL); //100.0f);
 
-					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
-						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
-						sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
+					if ( Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_ENGINE ) {
+						if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
+							mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
+							sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
+						}
 					}
 
-					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
-						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
+					if ( Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET ) {
+						if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
+							mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
+						}
 					}
 				}
 			}
@@ -1513,7 +1517,8 @@ void game_do_end_mission_popup()
 		game_stop_time();
 		game_stop_looped_sounds();
 		audiostream_pause_all();
-		snd_stop_all();
+		weapon_pause_sounds();
+		message_pause_all();
 
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
 		choice = popup(pf_flags, 3, POPUP_NO, XSTR( "&Yes, Quit", 28), XSTR( "Yes, &Restart", 29), XSTR( "Do you really want to end the mission?", 30));
@@ -1534,6 +1539,8 @@ void game_do_end_mission_popup()
 				game_start_subspace_ambient_sound();
 			}
 			audiostream_unpause_all();
+			weapon_unpause_sounds();
+			message_resume_all();
 			break;
 		}
 

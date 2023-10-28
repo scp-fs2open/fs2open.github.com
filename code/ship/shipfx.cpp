@@ -3197,7 +3197,7 @@ bool WarpParams::operator==(const WarpParams &other)
 		&& time == other.time
 		&& accel_exp == other.accel_exp
 		&& warp_type == other.warp_type
-		&& special_warp_physics == other.special_warp_physics
+		&& supercap_warp_physics == other.supercap_warp_physics
 		&& warpout_engage_time == other.warpout_engage_time
 		&& warpout_player_speed == other.warpout_player_speed;
 }
@@ -3512,7 +3512,7 @@ int WE_Default::warpStart()
 		objp->phys_info.flags &= ~PF_SUPERCAP_WARP_IN;
 
 		// maybe turn on warpout physics
-		if (params->special_warp_physics) {
+		if (params->supercap_warp_physics) {
 			objp->phys_info.flags |= PF_SUPERCAP_WARP_OUT;
 		}
 	}
@@ -3632,7 +3632,7 @@ int WE_Default::warpFrame(float frametime)
 			this->warpEnd();
 
 			// notify physics to slow down
-			if (params->special_warp_physics) {
+			if (params->supercap_warp_physics) {
 				// let physics know this is a special warp in
 				objp->phys_info.flags |= PF_SUPERCAP_WARP_IN;
 			}
@@ -3754,7 +3754,7 @@ float shipfx_calculate_arrival_warp_distance(object *objp)
 
 	// the total distance is a full length from its current position, plus the distance it takes to slow down from its warping speed
 	float decel_time_const = objp->phys_info.forward_decel_time_const;
-	if (warpin_params->special_warp_physics) {
+	if (warpin_params->supercap_warp_physics) {
 		// super cap style warpins are annoying, one time constant while above their max speed, a different one while slowing down from there
 		float supercap_slowdown_dist = (warping_speed - (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) * SUPERCAP_WARP_T_CONST;
 		float regular_slowdown_dist = (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD) * decel_time_const;

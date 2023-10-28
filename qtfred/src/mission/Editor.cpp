@@ -454,7 +454,7 @@ void Editor::clearMission() {
 
 		count = 0;
 		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {

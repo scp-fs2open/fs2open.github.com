@@ -105,13 +105,11 @@ typedef struct mmode_item {
 	SCP_string	text;		// text to display on the menu
 } mmode_item;
 
-#define MAX_MENU_ITEMS		50				// max number of items in the menu
-#define MAX_MENU_DISPLAY	10				// max number that can be displayed
-
 char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1;					// number of items for a message menu
 int First_menu_item= -1;							// index of first item in the menu
+SCP_string Lua_sqd_msg_cat;
 
 #define MAX_KEYS_NO_SCROLL	10
 #define MAX_KEYS_USED		12		// maximum number of keys used for the messaging system
@@ -123,17 +121,6 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 #define ID1		1
 #define ID2		2
-
-// following are defines and character strings that are used as part of messaging mode
-
-#define NUM_COMM_ORDER_TYPES			6
-
-#define TYPE_SHIP_ITEM					0
-#define TYPE_WING_ITEM					1
-#define TYPE_ALL_FIGHTERS_ITEM			2
-#define TYPE_REINFORCEMENT_ITEM			3
-#define TYPE_REPAIR_REARM_ITEM			4
-#define TYPE_REPAIR_REARM_ABORT_ITEM	5
 
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
@@ -576,7 +563,7 @@ int hud_squadmsg_get_key()
 
 			// use a timestamp to prevent top level key code from possibly reprocessing this key
 			Msg_eat_key_timestamp = timestamp(MSG_KEY_EAT_TIME);
-			if ( k == KEY_PAGEDOWN ) {			// pageup and pagedown scroll the menu -- deal with these seperately!!
+			if ( k == KEY_PAGEDOWN ) {			// pageup and pagedown scroll the menu -- deal with these separately!!
 				hud_squadmsg_page_down();
 				return -1;
 			} else if ( k == KEY_PAGEUP ) {
@@ -1590,13 +1577,26 @@ void hud_squadmsg_type_select( )
 {
 	int k, i;
 
+	int num_order_types = NUM_COMM_ORDER_TYPES;
+
+	int lua_order_count = 0;
+
+	// Now get a list of all lua categories to add. Meow.
+	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_general_order_categories();
+
+	num_order_types += (int)lua_cat_list.size();
+
 	// Add the items
-	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
+	for (i = 0; i < num_order_types; i++)
 	{
-		MsgItems[i].text = Comm_order_types[i];
+		if (i < NUM_COMM_ORDER_TYPES) {
+			MsgItems[i].text = Comm_order_types[i];
+		} else {
+			MsgItems[i].text = lua_cat_list[i - NUM_COMM_ORDER_TYPES];
+		}
 		MsgItems[i].active = 1;						// assume active
 	}
-	Num_menu_items = NUM_COMM_ORDER_TYPES;
+	Num_menu_items = num_order_types;
 
 
 	// check to see if the player is a traitor.  If so, then he will not
@@ -1626,6 +1626,13 @@ void hud_squadmsg_type_select( )
 
 	MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;				// this item will always be available (I think)
 	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
+
+	for(const auto& cat : lua_cat_list){
+		if (ai_lua_get_general_orders(false, false, cat).size() == 0) {
+			MsgItems[NUM_COMM_ORDER_TYPES + lua_order_count].active = 0;
+		}
+		lua_order_count++;
+	}
 
 	// AL: 10/13/97
 	// If the player ship communications are severely damaged, then the player
@@ -1694,6 +1701,9 @@ do_main_menu:
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
 			} else if ( k == TYPE_REPAIR_REARM_ABORT_ITEM ) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
+			} else if (k >= NUM_COMM_ORDER_TYPES) {
+				Lua_sqd_msg_cat = lua_cat_list[k - NUM_COMM_ORDER_TYPES];
+				hud_squadmsg_do_mode( SM_MODE_GENERAL );
 			}
 		}
 	}
@@ -2038,6 +2048,60 @@ void hud_squadmsg_ship_command()
 	}
 }
 
+void hud_squadmsg_msg_general()
+{
+	int k;
+
+	Num_menu_items = 0;
+	for (size_t order_id = 0; order_id < Player_orders.size(); order_id++) {
+		Assert(Num_menu_items < MAX_MENU_ITEMS);
+
+		if (Player_orders[order_id].lua_id <= 0) {
+			continue;
+		}
+
+		auto lua_porder = ai_lua_find_player_order(Player_orders[order_id].lua_id);
+
+		//If it's not a general order then do not add it.
+		if (!lua_porder->generalOrder) {
+			continue;
+		}
+
+		//If it's not part of the selected category then do not add it.
+		if (lua_porder->category != Lua_sqd_msg_cat) {
+			continue;
+		}
+
+		//Only add it if it is enabled for the mission
+		if (lua_porder->cur_enabled) {
+
+			MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
+			MsgItems[Num_menu_items].instance = Player_orders[order_id].lua_id;
+			MsgItems[Num_menu_items].active = (int)lua_porder->cur_valid;
+
+			// do some other checks to possibly gray out other items.
+			// if no target, remove any items which are associated with the players target
+			if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
+				MsgItems[Num_menu_items].active = 0;
+
+			Num_menu_items++;
+		}
+	}
+
+	strcpy_s(Squad_msg_title, XSTR("What Command", 321));
+	k = hud_squadmsg_get_key();
+
+	// when we get a valid goal, we must add the goal to the ai ship's goal list
+
+	if (k != -1) {
+		Assert(k < Num_menu_items);
+		
+		ai_lua_start_general(MsgItems[k].instance, Player_ai->target_objnum);
+
+		hud_squadmsg_toggle();
+	}
+}
+
 // function to display list of command for a wing
 void hud_squadmsg_wing_command()
 {
@@ -2335,6 +2399,10 @@ int hud_squadmsg_do_frame( )
 
 	case SM_MODE_ALL_FIGHTERS:
 		hud_squadmsg_msg_all_fighters();
+		break;
+
+	case SM_MODE_GENERAL:
+		hud_squadmsg_msg_general();
 		break;
 
 	default:

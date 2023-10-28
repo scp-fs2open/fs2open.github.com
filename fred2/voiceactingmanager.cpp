@@ -436,6 +436,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 			entry.Replace("$name", "<no name specified>");
+			entry.Replace("$note", "<no note specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -456,6 +457,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 			entry.Replace("$name", "<no name specified>");
+			entry.Replace("$note", "<no note specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -476,6 +478,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 			entry.Replace("$name", "<no name specified>");
+			entry.Replace("$note", "<no note specified>");
 	
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -527,6 +530,8 @@ void VoiceActingManager::export_one_message(const MMessage *message)
 
 	// replace message
 	entry.Replace("$message", message->message);
+
+	entry.Replace("$note", message->note.c_str());
 
 	// determine and replace persona
 	if (message->persona_index >= 0)

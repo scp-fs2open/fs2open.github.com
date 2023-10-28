@@ -16,6 +16,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "io/key.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionscreencommon.h"
 #include "sound/audiostr.h"
 #include "ui/ui.h"
@@ -516,6 +517,7 @@ void gameplay_help_leave()
 	// unpause all game sounds
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
+	message_resume_all();
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	game_flush();
@@ -631,6 +633,7 @@ void gameplay_help_do_frame(float  /*frametime*/)
 	// make sure game sounds are paused
 	weapon_pause_sounds();
 	audiostream_pause_all();
+	message_pause_all();
 
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 	gameplay_help_process_key(k);

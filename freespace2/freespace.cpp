@@ -537,7 +537,7 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 
-fs_builtin_mission *game_find_builtin_mission(char *filename)
+const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 {
 	// look through all existing builtin missions
 	for(int idx=0; idx<Game_builtin_mission_count; idx++){
@@ -1782,7 +1782,7 @@ void game_init()
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
 	}
@@ -3610,7 +3610,7 @@ void game_simulation_frame()
 			mission_parse_eval_stuff();
 		}
 
-		// if we're an observer, move ourselves seperately from the standard physics
+		// if we're an observer, move ourselves separately from the standard physics
 		if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 			obj_observer_move(flFrametime);
 		}
@@ -5233,6 +5233,7 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
+					message_resume_all();
 
 					// multi doesn't pause here so time keeps going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -5743,6 +5744,7 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
+					message_pause_all();
 
 					// multi doesn't pause here so time needs to keep going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {

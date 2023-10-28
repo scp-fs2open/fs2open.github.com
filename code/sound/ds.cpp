@@ -1154,6 +1154,22 @@ int ds_get_channel(ds_sound_handle sig)
 }
 
 /**
+ * Return the channel number that contains the sound identified by sig.
+ * This differs from ds_get_channel() in that it does not check that the sound is currently playing.
+ * @return Channel number, if not playing, return -1.
+ */
+int ds_get_channel_raw(ds_sound_handle sig)
+{
+	for (int i = 0; i < MAX_CHANNELS; i++) {
+		if (Channels[i].source_id && (Channels[i].sig == sig)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+/**
  * @todo Documentation
  */
 int ds_is_channel_playing(int channel_id)
@@ -1170,12 +1186,52 @@ int ds_is_channel_playing(int channel_id)
 }
 
 /**
+ * Returns if a channel is paused or not.
+ * @return Channel number, if not playing, return -1.
+ * @param channel id to sound, what is returned from ds_get_channel()
+ */
+bool ds_is_channel_paused(int channel_id)
+{
+	if (Channels[channel_id].source_id != 0) {
+		ALint status;
+
+		OpenAL_ErrorPrint(alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status));
+
+		return (status == AL_PAUSED);
+	}
+
+	return false;
+}
+
+/**
  * @todo Documentation
  */
 void ds_stop_channel(int channel_id)
 {
 	if ( Channels[channel_id].source_id != 0 ) {
 		OpenAL_ErrorPrint( alSourceStop(Channels[channel_id].source_id) );
+	}
+}
+
+/**
+ * Pauses a channel.
+ * @param channel id to sound, what is returned from ds_get_channel()
+ */
+void ds_pause_channel(int channel_id)
+{
+	if (Channels[channel_id].source_id != 0) {
+		OpenAL_ErrorPrint(alSourcePause(Channels[channel_id].source_id));
+	}
+}
+
+/**
+ * Resumes playing a channel.
+ * @param channel id to sound, what is returned from ds_get_channel()
+ */
+void ds_resume_channel(int channel_id)
+{
+	if (Channels[channel_id].source_id != 0) {
+		OpenAL_ErrorPrint(alSourcePlay(Channels[channel_id].source_id));
 	}
 }
 

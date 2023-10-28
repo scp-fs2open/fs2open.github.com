@@ -940,7 +940,7 @@ ADE_FUNC(sendMessage,
 
 ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number delay=0.0]",
 		 "Sends a training message to the player. <i>time</i> is the amount in seconds to display the message, only whole seconds are used!",
-		 "boolean", "true if successfull, false otherwise")
+		 "boolean", "true if successful, false otherwise")
 {
 	int messageIdx = -1;
 	float delay = 0.0f;
@@ -1427,7 +1427,7 @@ ADE_FUNC(createBolt,
 	"string BoltName, vector Origin, vector Target, [boolean PlaySound = true]",
 	"Creates a lightning bolt between the origin and target vectors. BoltName is name of a bolt from lightning.tbl",
 	"boolean",
-	"True if successful, false if the bolt could't be created.")
+	"True if successful, false if the bolt couldn't be created.")
 {
 	const char* boltname;
 	vec3d origin = vmd_zero_vector;

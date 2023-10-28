@@ -598,7 +598,7 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data) {
 
 	// make sure that we have valid data
 	if (data == nullptr) {
-		UNREACHABLE("No valid data recieved for 3D Bitmap creation!");
+		UNREACHABLE("No valid data received for 3D Bitmap creation!");
 		return -1;
 	}
 

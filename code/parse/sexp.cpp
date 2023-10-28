@@ -438,6 +438,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "player-not-use-ai",				OP_PLAYER_NOT_USE_AI,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-player-orders",				OP_SET_PLAYER_ORDERS,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "enable-general-orders",          OP_ENABLE_GENERAL_ORDERS,               2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
+	{ "validate-general-orders",        OP_VALIDATE_GENERAL_ORDERS,             2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
 	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-wing-formation",				OP_SET_WING_FORMATION,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
@@ -744,6 +746,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "nebula-fade-poof",				OP_NEBULA_FADE_POOF,					3,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
@@ -4110,6 +4113,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_traitor_override_pointer(CTEXT(node)) == nullptr)) {
 					return SEXP_CHECK_INVALID_TRAITOR_OVERRIDE;
+				}
+				break;
+
+			case OPF_LUA_GENERAL_ORDER:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (ai_lua_find_general_order_id(CTEXT(node)) < 0)) {
+					return SEXP_CHECK_INVALID_LUA_GENERAL_ORDER;
 				}
 				break;
 
@@ -12946,6 +12959,30 @@ void sexp_set_order_allowed_for_target(int n)
 	}
 }
 
+void sexp_enable_or_validate_general_orders(int n, bool enable)
+{
+	bool choice = is_sexp_true(n);
+	n = CDR(n);
+
+	do {
+		int order_num = ai_lua_find_general_order_id(CTEXT(n));
+
+		// if we got an invalid order number then skip
+		if (order_num < 0) {
+			Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
+			continue;
+		}
+
+		if (enable) {
+			ai_lua_enable_general_order(order_num, choice);
+		} else {
+			ai_lua_validate_general_order(order_num, choice);
+		}
+
+		n = CDR(n);
+	} while (n >= 0);
+}
+
 // Goober5000
 void sexp_change_soundtrack(int n)
 {
@@ -15583,6 +15620,31 @@ void sexp_nebula_toggle_poof(int n)
 	if (i == (int)Poof_info.size()) return;
 
 	neb2_toggle_poof(i, result);
+}
+
+void sexp_nebula_fade_poofs(int n)
+{
+	bool is_nan, is_nan_forever;
+	
+	auto name = CTEXT(n);
+	n = CDR(n);
+	int time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	n = CDR(n);
+	bool result = is_sexp_true(n);
+	int i;
+
+	for (i = 0; i < (int)Poof_info.size(); i++) {
+		if (!stricmp(name, Poof_info[i].name))
+			break;
+	}
+
+	// coulnd't find the poof
+	if (i == (int)Poof_info.size())
+		return;
+
+	neb2_fade_poofs(i, time, result);
 }
 
 void sexp_nebula_change_pattern(int n)
@@ -27403,6 +27465,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			//MjnMixael
+			case OP_ENABLE_GENERAL_ORDERS:
+				sexp_enable_or_validate_general_orders(node, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			//MjnMixael
+			case OP_VALIDATE_GENERAL_ORDERS:
+				sexp_enable_or_validate_general_orders(node, false);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// MjnMixael
 			case OP_CREATE_BOLT:
 				sexp_create_bolt(node);
@@ -27575,6 +27649,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NEBULA_TOGGLE_POOF:
 				sexp_nebula_toggle_poof(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_NEBULA_FADE_POOF:
+				sexp_nebula_fade_poofs(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -29871,6 +29950,8 @@ int query_operator_return_type(int op)
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -29948,6 +30029,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -31139,6 +31221,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else 
 				return OPF_AI_ORDER;
+
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_LUA_GENERAL_ORDER;
 
 		case OP_SET_SOUND_ENVIRONMENT:
 			if (argnum == 0)
@@ -32567,6 +32656,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_FADE_POOF:
+			if (argnum == 0)
+				return OPF_NEBULA_POOF;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPF_POSITIVE;
 
@@ -33419,6 +33516,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_TRAITOR_OVERRIDE:
 			return "Invalid traitor override";
+
+		case SEXP_CHECK_INVALID_LUA_GENERAL_ORDER:
+			return "Invalid lua general order";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -34792,6 +34892,7 @@ int get_category(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
@@ -34983,6 +35084,8 @@ int get_category(int op_id)
 		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
 		case OP_SET_WING_FORMATION:
@@ -35110,6 +35213,8 @@ int get_subcategory(int op_id)
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_WING_FORMATION:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -35411,6 +35516,7 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
@@ -36261,7 +36367,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_IS_DISABLED_DELAY, "Is disabled delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified ship(s) are disabled.  A "
 		"ship is disabled when all of its engine subsystems are destroyed.  All "
-		"ships must be diabled for this function to return true.\r\n\r\n"
+		"ships must be disabled for this function to return true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disabled status of." },
@@ -37023,7 +37129,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NEXT_MISSION, "Next Mission (Action operator)\r\n"
 		"\tThe next mission operator is used for campaign branching in the campaign editor.  "
 		"It specifies which mission should played be next in the campaign.  This operator "
-		"generally follows a 'when' or 'cond' statment in the campaign file.\r\n\r\n"
+		"generally follows a 'when' or 'cond' statement in the campaign file.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of mission (filename) to proceed to." },
 
@@ -39442,6 +39548,22 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRest:\tOrder"
 	},
 
+		// MjnMixael
+	{ OP_ENABLE_GENERAL_ORDERS, "enable-general-orders\r\n"
+		"\tEnables or disables general orders defined in sexps.tbl. Takes 2 or more arguments.\r\n"
+		"\tDisabled orders are not visible on the comms board at all\r\n"
+		"\t1:\tTrue/False as to whether the order is enabled or not\r\n"
+		"\tRest:\tThe order to enable or disable"
+	},
+
+		// MjnMixael
+	{ OP_VALIDATE_GENERAL_ORDERS, "validate-general-orders\r\n"
+		"\tValidates or invalidates general orders defined in sexps.tbl. Takes 2 or more arguments.\r\n"
+		"\tInvalid orders are greyed out on the comms board and cannot be selected\r\n"
+		"\t1:\tTrue/False as to whether the order is enabled or not\r\n"
+		"\tRest:\tThe order to validate or invalidate"
+	},
+
 	//WMC
 	{ OP_HUD_SET_TEXT, "hud-set-text\r\n"
 		"\tSets the text value of a given HUD gauge. Works for custom gauges only. Takes 2 arguments...\r\n"
@@ -39947,6 +40069,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of nebula poof to toggle\r\n"
 		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
+	},
+
+	{ OP_NEBULA_FADE_POOF, "nebula-fade-poof\r\n"
+		"\tSets a poof pattern to fade in or out over time\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of the nebula poof to fade\r\n"
+		"\t2:\tTime in milliseconds to fade\r\n"
+		"\t3:\tWhether or not to fade in or out. True to fade in, false to fade out\r\n"
 	},
 
 	{ OP_NEBULA_CHANGE_PATTERN, "nebula-change-pattern\r\n"

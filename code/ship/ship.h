@@ -841,10 +841,10 @@ public:
 	void clear();
 
     //Helper functions
-	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false);
-	inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
-	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
+	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false) const;
+	inline bool is_departing() const { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
+	inline bool cannot_warp_flags() const { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
+	inline bool is_dying_or_departing() const { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;

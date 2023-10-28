@@ -968,7 +968,7 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is diabled, false otherwise")
+ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is disabled, false otherwise")
 {
 	object_h *objh=NULL;
 	bool set = false;

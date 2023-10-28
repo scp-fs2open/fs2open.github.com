@@ -21,6 +21,7 @@
 #include "EventEditor.h"
 #include "MissionGoalsDlg.h"
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
@@ -3663,6 +3664,9 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_TRAITOR_OVERRIDE:
 			return Traitor_overrides.empty() ? 0 : 1;
 
+		case OPF_LUA_GENERAL_ORDER:
+			return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
+
 		default:
 			if (!Dynamic_enums.empty()) {
 				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -5740,6 +5744,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_traitor_overrides();
 			break;
 
+		case OPF_LUA_GENERAL_ORDER:
+			list = get_listing_opf_lua_general_orders();
+			break;
+
 		case OPF_CHILD_LUA_ENUM:
 			list = get_listing_opf_lua_enum(parent_node, arg_index);
 			break;
@@ -7579,6 +7587,19 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_ind
 		error_display(1, "Could not find Lua Enum %s!", tree_nodes[child].text);
 		return nullptr;
 	}
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
+{
+	sexp_list_item head;
+
+	SCP_vector<SCP_string> orders = ai_lua_get_general_orders();
+
+	for (const auto& val : orders) {
+		head.add_data(val.c_str());
+	}
+
+	return head.next;
 }
 
 extern SCP_vector<game_snd>	Snds;

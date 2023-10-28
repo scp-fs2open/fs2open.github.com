@@ -711,10 +711,10 @@ public:
 	texture_info(int bm_handle);
 	void clear();
 
-	int GetNumFrames();
-	int GetOriginalTexture();
-	int GetTexture();
-	float GetTotalTime();
+	int GetNumFrames() const;
+	int GetOriginalTexture() const;
+	int GetTexture() const;
+	float GetTotalTime() const;
 
 	int LoadTexture(const char *filename, const char *dbg_name = "<UNKNOWN>");
 
@@ -1414,7 +1414,7 @@ bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_str
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
 
-void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags);
 
 void model_render_shields( polymodel * pm, uint flags );
 

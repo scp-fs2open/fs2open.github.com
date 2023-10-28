@@ -18,7 +18,7 @@ bool execution_context_h::isValid() const { return m_executionContext != nullptr
 ADE_OBJ(l_ExecutionContext,
 	execution_context_h,
 	"execution_context",
-	"An execution context for asynchonous operations");
+	"An execution context for asynchronous operations");
 
 ADE_FUNC(determineState,
 	l_ExecutionContext,
