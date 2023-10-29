@@ -2073,7 +2073,7 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 	}
 
 	// bail if harmless
-	if ( Ship_info[esct_p->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
+	if ( Ship_info[esct_p->shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
 		return false;
 	}
 
@@ -3583,8 +3583,8 @@ void hud_show_hostile_triangle()
 			continue;
 		}
 
-		// always ignore cargo containers and navbuoys
-		if ( Ship_info[sp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
+		// always ignore cargo containers, navbouys, etc, and non-ships
+		if ( Ship_info[sp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
 			continue;
 		}
 

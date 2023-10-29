@@ -556,12 +556,17 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 					}
 
 					// grab the ship type of the ship that is being disarmed/disabled
-					ship_type_info *crippled_ships_type = &Ship_types[Ship_info[Ships[ship_index].ship_info_index].class_type];
+					int crippled_ship_type = Ship_info[Ships[ship_index].ship_info_index].class_type;
 
-					// work through all the ship types which to see if the class matching our ai ship must ignore the ship 
+					if (ai_ship_type < 0 || crippled_ship_type < 0)
+						break;
+
+					ship_type_info *crippled_ship_type_info = &Ship_types[crippled_ship_type];
+
+					// work through all the ship types to see if the class matching our ai ship must ignore the ship 
 					// being disarmed/disabled
-					for ( j=0 ; j < (int)crippled_ships_type->ai_cripple_ignores.size(); j++) {
-						if (crippled_ships_type->ai_cripple_ignores[j] == ai_ship_type) {
+					for ( j=0 ; j < (int)crippled_ship_type_info->ai_cripple_ignores.size(); j++) {
+						if (crippled_ship_type_info->ai_cripple_ignores[j] == ai_ship_type) {
 							purge_goal->flags.set(AI::Goal_Flags::Purge);
 						}
 					}
@@ -2428,8 +2433,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		// don't protect-ship for tactical goals
 		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM && current_goal->ai_mode != AI_GOAL_DISABLE_SHIP_TACTICAL && current_goal->ai_mode != AI_GOAL_DISARM_SHIP_TACTICAL) {
 			if (aip->target_objnum != -1) {
+				int class_type = Ship_info[Ships[shipnum].ship_info_index].class_type;
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
-				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_protected_on_cripple])
+				if (class_type >= 0 && Ship_types[class_type].flags[Ship::Type_Info_Flags::AI_protected_on_cripple])
 					Objects[aip->target_objnum].flags.set(Object::Object_Flags::Protected);
 			}
 		} else	//	Just in case this ship had been protected, unprotect it.

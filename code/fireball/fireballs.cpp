@@ -86,7 +86,10 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 		}
 
 		// originally 6.0 for SIF_BIG_SHIP and 1.0 for everything else
-		fb->warp_sound_range_multiplier = Ship_types[Ship_info[ship_class].class_type].warp_sound_range_multiplier;
+		if (Ship_info[ship_class].class_type >= 0)
+			fb->warp_sound_range_multiplier = Ship_types[Ship_info[ship_class].class_type].warp_sound_range_multiplier;
+		else
+			fb->warp_sound_range_multiplier = 1.0f;
 	}
 
 	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, fb->warp_sound_range_multiplier); // play warp sound effect
