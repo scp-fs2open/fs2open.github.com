@@ -395,6 +395,10 @@ void main()
 			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
 		}
 		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+
+		if (FLAG_ACTIVE(MODEL_SDR_FLAG_ALPHA_MULT)) {
+			emissiveColor.a *= alphaMult;
+		}
 	}
 
 	if (FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)) {
