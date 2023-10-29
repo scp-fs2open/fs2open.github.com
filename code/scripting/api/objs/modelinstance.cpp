@@ -256,6 +256,31 @@ ADE_FUNC(findWorldPointAndOrientation, l_SubmodelInstance, "vector, orientation"
 	return ade_set_args(L, "oo", l_Vector.Set(pnt), l_Matrix.Set(matrix_h(&orient)));
 }
 
+ADE_FUNC(findLocalPointAndOrientation, l_SubmodelInstance, "vector, orientation, [boolean world = true]", "Calculates the coordinates and orientation in the submodel's frame of reference, of a point and orientation in world coordinates [world = true] / in the object's frame of reference [world = false]", "vector, orientation", "Vector and orientation, or empty values if a handle is invalid")
+{
+	vec3d pnt;
+	matrix orient;
+
+	submodelinstance_h* smih;
+	vec3d local_pnt;
+	matrix_h* local_orient;
+	bool fromWorld = true;
+
+	if (!ade_get_args(L, "ooo|b", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&local_pnt), l_Matrix.GetPtr(&local_orient), &fromWorld))
+		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
+
+	if (!smih->IsValid())
+		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
+
+	auto pmi = smih->GetModelInstance();
+	if (fromWorld && pmi->objnum < 0)
+		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
+
+	model_instance_global_to_local_point_orient(&pnt, &orient, &local_pnt, local_orient->GetMatrix(), smih->GetModel(), pmi, smih->GetSubmodelIndex(), fromWorld ? &Objects[pmi->objnum].orient : nullptr, fromWorld ? &Objects[pmi->objnum].pos : nullptr);
+	
+	return ade_set_args(L, "oo", l_Vector.Set(pnt), l_Matrix.Set(matrix_h(&orient)));
+}
+
 ADE_FUNC(isValid, l_SubmodelInstance, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
 	submodelinstance_h *smih;
