@@ -119,6 +119,18 @@ ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not"
 	return ade_set_args(L, "b", mih->IsValid());
 }
 
+ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance of this submodel", "model_instance", "A model instancve")
+{
+	submodelinstance_h* smih;
+	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
+		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
+
+	if (!smih->IsValid())
+		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
+
+	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(smih->GetModelInstance())));
+}
+
 ADE_FUNC(getSubmodel, l_SubmodelInstance, nullptr, "Gets the submodel of this instance", "submodel", "A submodel")
 {
 	submodelinstance_h* smih;
