@@ -4768,6 +4768,51 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 		delete[] submodelStack;
 }
 
+void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorient, const vec3d* submodel_pnt, const matrix* submodel_orient, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+	Assert(pm->id == pmi->model_num);
+
+	constexpr int preallocatedStackDepth = 5;
+	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
+
+	int mn = submodel_num;
+
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_orient;
+		std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_offset;
+		std::get<2>(submodelStack[stackCounter++]) = &pm->submodel[mn].offset;
+		mn = pm->submodel[mn].parent;
+	}
+
+	if (objorient != nullptr && objpos != nullptr) {
+		std::get<0>(submodelStack[stackCounter]) = objorient;
+		std::get<1>(submodelStack[stackCounter]) = &vmd_zero_vector;
+		std::get<2>(submodelStack[stackCounter++]) = objpos;
+	}
+	stackCounter--;
+
+	vec3d resultPnt = *submodel_pnt;
+	matrix resultMat = *submodel_orient;
+
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
+
+		vm_vec_sub2(&resultPnt, std::get<2>(transform));
+		vm_vec_sub2(&resultPnt, std::get<1>(transform));
+		vm_vec_rotate(&resultPnt, &resultPnt, std::get<0>(transform));
+		resultMat = *std::get<0>(transform) * resultMat;
+	}
+
+	*outpnt = resultPnt;
+	*outorient = resultMat;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
+}
+
 /*
  * Get all submodel indexes that satisfy the following:
  * 1) Have the rotating or intrinsic-rotating movement type

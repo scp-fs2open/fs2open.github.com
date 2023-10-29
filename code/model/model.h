@@ -1165,6 +1165,10 @@ extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_d
 // If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
 extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, bool use_last_frame = false);
 
+// Combines model_instance_local_to_global_point and the matrix equivalent of model_instance_local_to_global_dir into one function.
+extern void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorient, const vec3d* submodel_pnt, const matrix* submodel_orient, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient = nullptr, const vec3d* objpos = nullptr);
+
+
 // ------- end of submodel transformations -------
 
 // Given a polygon model index, find a list of moving submodels to be used for collision
