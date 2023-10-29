@@ -119,6 +119,18 @@ ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not"
 	return ade_set_args(L, "b", mih->IsValid());
 }
 
+ADE_FUNC(getSubmodel, l_SubmodelInstance, nullptr, "Gets the submodel of this instance", "submodel", "A submodel")
+{
+	submodelinstance_h* smih;
+	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	if (!smih->IsValid())
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smih->GetModel(), smih->GetSubmodelIndex())));
+}
+
 ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the submodel instance orientation", "orientation", "Orientation, or identity orientation if handle is not valid")
 {
 	submodelinstance_h *smih;
