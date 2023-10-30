@@ -435,7 +435,8 @@ ADE_FUNC(toggleHelp,
 	"nothing")
 {
 	bool toggle;
-	ade_get_args(L, "b", &toggle);
+	if (!ade_get_args(L, "b", &toggle))
+		return ADE_RETURN_NIL;
 
 	main_hall_toggle_help(toggle);
 

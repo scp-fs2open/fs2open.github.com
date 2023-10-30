@@ -468,7 +468,8 @@ ADE_FUNC(setTips, l_Base, "boolean", "Sets whether to display tips of the day th
 
 	bool tips = false;
 
-	ade_get_args(L, "b", &tips);
+	if (!ade_get_args(L, "b", &tips))
+		return ADE_RETURN_NIL;
 
 	if (tips)
 		Player->tips = 1;
