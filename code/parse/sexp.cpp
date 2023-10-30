@@ -20192,6 +20192,7 @@ void sexp_replace_texture(int n)
 				strcpy(replace.ship_name, ship_entry->name);
 				strcpy(replace.old_texture, old_name);
 				strcpy(replace.new_texture, new_name);
+				replace.from_table = false;
 
 				if (!stricmp(new_name, "invisible"))
 					replace.new_texture_id = REPLACE_WITH_INVISIBLE;
@@ -20232,6 +20233,7 @@ void sexp_replace_texture(int n)
 					strcpy(replace.ship_name, p_objp->name);
 					strcpy(replace.old_texture, old_name);
 					strcpy(replace.new_texture, new_name);
+					replace.from_table = false;
 
 					if (!stricmp(new_name, "invisible"))
 						replace.new_texture_id = REPLACE_WITH_INVISIBLE;
