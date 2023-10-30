@@ -239,7 +239,7 @@ void model_render_params::set_replacement_textures(int modelnum, const SCP_vecto
 
 	polymodel* pm = model_get(modelnum);
 
-	for (auto tr : replacement_textures) 
+	for (const auto& tr : replacement_textures) 
 	{
 		for (int i = 0; i < pm->n_textures; ++i) 
 		{
