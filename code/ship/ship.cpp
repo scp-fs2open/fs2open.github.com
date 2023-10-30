@@ -17017,7 +17017,7 @@ void ship_maybe_praise_player(ship *deader_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-    if ((Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction])) {
+    if ((Ship_info[deader_sp->ship_info_index].class_type >= 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction])) {
 		return;
 	}
 
@@ -17069,7 +17069,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction]) ) {
+	if ( (Ship_info[deader_sp->ship_info_index].class_type >= 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction]) ) {
 		return;
 	}
 
@@ -17588,7 +17588,9 @@ ship_type_info *ship_get_type_info(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 	Assert(objp->instance > -1);
 	Assert(Ships[objp->instance].ship_info_index > -1);
-	Assert(Ship_info[Ships[objp->instance].ship_info_index].class_type > -1);
+
+	if (Ship_info[Ships[objp->instance].ship_info_index].class_type < 0)
+		return nullptr;
 
 	return &Ship_types[Ship_info[Ships[objp->instance].ship_info_index].class_type];
 }

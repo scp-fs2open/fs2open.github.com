@@ -2116,7 +2116,7 @@ bool filters_match(MessageFilter& filter, ship* it) {
 		    && filter_matches(hud_get_ship_class(it), filter.class_name)
 		    && filter_matches(wing_name, filter.wing_name)
 		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
-		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield)
+		    && (Ship_info[it->ship_info_index].class_type < 0 || filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield))
 		    && filter_matches(it->team, filter.team_bitfield);
 	}
 }

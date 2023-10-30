@@ -3728,7 +3728,7 @@ void beam_handle_collisions(beam *b)
 			if (Objects[target].type == OBJ_SHIP) {
 				ship_type_info *sti;
 				sti = ship_get_type_info(&Objects[target]);
-				if (sti->flags[Ship::Type_Info_Flags::No_huge_impact_eff])
+				if (!sti || sti->flags[Ship::Type_Info_Flags::No_huge_impact_eff])
 					draw_effects = 0;
 			}
 		}
