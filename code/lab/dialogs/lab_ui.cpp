@@ -847,10 +847,10 @@ void LabUi::reset_animations(ship* shipp, ship_info* sip) const
 		}
 	}
 
-	for (auto entry : manual_animations) {
-		if (manual_animations[entry.first]) {
+	for (auto& entry : manual_animations) {
+		if (entry.second) {
 			sip->animations.getAll(shipp_pmi, entry.first).start(animation::ModelAnimationDirection::RWD);
-			manual_animations[entry.first] = false;
+			entry.second = false;
 		}
 	}
 

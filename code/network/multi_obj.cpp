@@ -834,7 +834,7 @@ bool multi_oo_simulate_rollback_shots(int frame_idx)
 // restores ships to the positions they were in bedfore rollback.
 void multi_record_restore_positions() 
 {
-	for (auto restore_point : Oo_info.restore_points) {
+	for (const auto& restore_point : Oo_info.restore_points) {
 
 		object* objp = &Objects[restore_point.roll_objnum];
 		// reset the position, orientation, and velocity for each object

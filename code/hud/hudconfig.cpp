@@ -616,7 +616,7 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 		// can't find a better one. Need to get the furthest right and bottom
 		// pixels to be rendered to calculate the percent change. That is then
 		// used to rescale each gauge correctly for the rendering size and position. - Mjn
-		for (auto gauge : HC_gauge_regions[gr_screen.res]) {
+		for (const auto& gauge : HC_gauge_regions[gr_screen.res]) {
 			if (!stricmp(gauge.filename, NOX("none"))) {
 				continue;
 			}
