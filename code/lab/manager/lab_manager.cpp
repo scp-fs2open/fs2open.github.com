@@ -324,8 +324,8 @@ void LabManager::changeShipInternal() {
 
 	// If the ship class defines replacement textures, load them and apply them to the ship
 	// load the texture
-	auto replacements = SCP_vector<texture_replace>();
-	for (auto tr : ship_infop->replacement_textures) {
+	auto replacements = ship_infop->replacement_textures;
+	for (auto& tr : replacements) {
 		if (!stricmp(tr.new_texture, "invisible"))
 		{
 			// invisible is a special case
@@ -336,7 +336,6 @@ void LabManager::changeShipInternal() {
 			// try to load texture or anim as normal
 			tr.new_texture_id = bm_load_either(tr.new_texture);
 		}
-		replacements.push_back(tr);
 	}
 
 	ship_objp->apply_replacement_textures(replacements);
