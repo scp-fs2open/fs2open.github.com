@@ -645,7 +645,7 @@ public:
 	int	engine_recharge_index;			// index into array holding the engine recharge rate
 	float	weapon_energy;						// Number of EUs in energy reserves
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
-	float prev_engine_aggregate_strength;	// used only in update_ets() to allow for minimizing overrides to max speed --Asteroth and wookieejedi
+	float prev_engine_strength;	// used only in update_ets() to allow for minimizing overrides to max speed --Asteroth and wookieejedi
 
 	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state
 	int	reinforcement_index;				// index into reinforcement struct or -1
