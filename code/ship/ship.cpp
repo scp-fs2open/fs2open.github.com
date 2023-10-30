@@ -14808,7 +14808,7 @@ int ship_find_subsys(ship *sp, const char *ss_name)
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
 // calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
-float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check )
+float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check, bool no_minimum_engine_str )
 {
 	float strength;
 	ship_subsys *ssp;
@@ -14841,7 +14841,7 @@ float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check 
 				float ratio;
 
 				ratio = ssp->current_hits / ssp->max_hits;
-				if ( ratio < ENGINE_MIN_STR )
+				if ( ratio < ENGINE_MIN_STR && !no_minimum_engine_str)
 					ratio = ENGINE_MIN_STR;
 
 				percent += ratio;

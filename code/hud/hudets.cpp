@@ -133,11 +133,16 @@ void update_ets(object* objp, float fl_frametime)
 		engine_aggregate_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
 	}
 
+	// very annoying, but ship_get_subsystem_strength will typically cap at no lower than 15% strength reported
+	// causing the condition below to possibly erroneously believe the engine strength isn't changing while being
+	// repaired below that threshold. use the ACTUAL strength for this check
+	float actual_engine_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE, false, true);
+
 	// only update max speed if engine_aggregate_strength has changed
 	// which helps minimize amount of overrides to max speed
-	if (engine_aggregate_strength != ship_p->prev_engine_aggregate_strength) {
+	if (actual_engine_strength != ship_p->prev_engine_aggregate_strength) {
 		ets_update_max_speed(objp);
-		ship_p->prev_engine_aggregate_strength = engine_aggregate_strength;
+		ship_p->prev_engine_aggregate_strength = actual_engine_strength;
 
 		// check if newly updated max speed should be reduced due to engine damage
 		// don't let engine strength affect max speed when playing on lowest skill level
