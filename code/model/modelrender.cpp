@@ -2345,6 +2345,9 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
 			g3_transfer_vertex( &p, &world_pnt );
+			
+			// these values are not used, but just appease the linters and future-proof
+			p.screen.xyw.x = 0.0f; p.screen.xyw.y = 0.0f; p.screen.xyw.w = 0.0f;
 
 			// start primary thruster glows
 			if ( (thruster_info.primary_glow_bitmap >= 0) && (d > 0.0f) ) {
