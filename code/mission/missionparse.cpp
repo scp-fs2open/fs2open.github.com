@@ -3474,8 +3474,13 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	// parse the persona index if present
 	// For backwards compatbility only
-	if (optional_string("+Persona Index:"))
+	if (optional_string("+Persona Index:")) {
 		stuff_int(&p_objp->persona_index);
+		if (p_objp->persona_index < -1 || p_objp->persona_index >= (int)Personas.size()) {
+			Warning(LOCATION, "Persona index %d for %s is out of range!  Setting to -1.", p_objp->persona_index, p_objp->name);
+			p_objp->persona_index = -1;
+		}
+	}
 
 	if (optional_string("+Persona Name:")) {
 		SCP_string persona;
