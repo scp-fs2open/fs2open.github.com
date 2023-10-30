@@ -6834,11 +6834,11 @@ void ship::apply_replacement_textures(SCP_vector<texture_replace> &replacements)
 			ship_replacement_textures[i] = -1;
 	}
 
-	// now fill them in
-	for (auto tr : replacements)
-	{
-		auto pm = model_get(Ship_info[ship_info_index].model_num);
+	auto pm = model_get(Ship_info[ship_info_index].model_num);
 
+	// now fill them in
+	for (const auto& tr : replacements)
+	{
 		// look for textures
 		for (auto j = 0; j < pm->n_textures; j++)
 		{

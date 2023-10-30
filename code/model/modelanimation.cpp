@@ -907,7 +907,7 @@ namespace animation {
 			return false;
 
 		polymodel_instance* pmi = model_get_instance(pmi_id);
-		for(auto anim : animations)
+		for(const auto& anim : animations)
 			anim->start(pmi, direction, forced, instant, pause);
 
 		return !animations.empty();
