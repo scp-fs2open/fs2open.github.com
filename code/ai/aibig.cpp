@@ -547,6 +547,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	// not in sight, gotta get there
 	vec3d* good_pos = nullptr;
+	vec3d world_goal_pos;
 	// For performance reasons we only recheck once a second, otherwise we reuse the last found target.
 	if (timestamp_elapsed(aip->next_dynamic_path_check_time)) {
 		vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
@@ -568,7 +569,6 @@ bool ai_new_maybe_reposition_attack_subsys() {
 		vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
 
 		// then scale in (or out) towards our subsys
-		vec3d world_goal_pos;
 		float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
 		vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
 		world_goal_pos += target_objp->pos;
