@@ -8495,12 +8495,12 @@ void ai_cruiser_chase()
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
-	Assertion(En_objp->type == OBJ_SHIP, "En_objp is of type %d which is illegal in ai_cruiser_chase. Please report to the SCP!");
+	Assertion(En_objp->type == OBJ_SHIP, "En_objp is of type %d which is illegal in ai_cruiser_chase. Please report to the SCP!", En_objp->type);
 	if (En_objp->type != OBJ_SHIP) {
 		return;
 	}
 
-	Assertion(En_objp->instance > -1, "En_objp has a bad instance of %d which is illegal in ai_cruiser_chase. Please report to the SCP!");
+	Assertion(En_objp->instance > -1, "En_objp has a bad instance of %d which is illegal in ai_cruiser_chase. Please report to the SCP!", En_objp->instance);
 	if (En_objp->instance < 0) {
 		return;
 	}
@@ -8670,8 +8670,7 @@ void ai_chase()
     flagset<Ship::Ship_Flags> enemy_shipp_flags;
 	int has_fired = -1;
 
-	// If we messed up this bad, then we need to fix it ASAP
-	Verification(aip->mode == AIM_CHASE, "ai_chase was called but the ship was not in the chase ai mode.  It is in %d instead.  This is a fundamental problem and needs to be reported to the SCP, right away!");
+	Assertion(aip->mode == AIM_CHASE, "ai_chase was called but the ship was not in the chase ai mode.  It is in %d instead.  This is a fundamental problem and needs to be reported to the SCP, right away!", aip->mode);
 
 	// by default we try to chase anything
 	bool go_after_it = true;
@@ -15911,7 +15910,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		objp_hitter = hit_objp;
 		hitter_objnum = OBJ_INDEX(hit_objp);
 	} else {
-		UNREACHABLE("ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", objp->type);
+		UNREACHABLE("ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
 		return;
 	}
 
@@ -16390,7 +16389,7 @@ void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int doc
 // of a path_num associated with than dockbay (this is an index into polymodel->paths[])
 int ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index)
 {
-	Assertion(dockbay_index > -1 && dockee_objp != nullptr, "ai_return_path_num_from_dockbay has been passed invalid docking info: %s dockbay index of %d, please report to the SCP!", dockee_objp == nullptr ? "null pointer dockee object and ", dockbay_index);
+	Assertion(dockbay_index > -1 && dockee_objp != nullptr, "ai_return_path_num_from_dockbay has been passed invalid docking info: %s dockbay index of %d, please report to the SCP!", dockee_objp == nullptr ? "null pointer dockee object and " : "", dockbay_index);
 	if ( dockbay_index < 0 || dockee_objp == nullptr ) {
 		return -1;
 	}

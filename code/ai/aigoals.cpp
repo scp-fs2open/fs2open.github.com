@@ -2539,7 +2539,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	default:
-		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", goal_type);
+		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal->ai_mode);
 		break;
 	}
 
