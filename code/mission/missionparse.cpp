@@ -6018,13 +6018,13 @@ void parse_custom_data(mission* pm)
 void apply_default_custom_data(mission* pm)
 {
 	for (const auto& def : Default_custom_data) {
-		int count = 0;
+		size_t count = 0;
 		for (const auto& listed : pm->custom_data) {
 			if (listed.first != def.key) {
 				count++;
 			}
 		}
-		if (count == (int)pm->custom_data.size()) {
+		if (count == pm->custom_data.size()) {
 			pm->custom_data.emplace(def.key, def.value);
 		}
 	}

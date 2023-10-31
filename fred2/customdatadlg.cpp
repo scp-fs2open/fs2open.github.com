@@ -129,14 +129,14 @@ void CustomDataDlg::OnListerSelectionChange()
 	}
 
 	Assert(m_data_lister.GetCount() > 0);
-	Assert(index >= 0 && index < (int)m_custom_data.size());
+	Assert(index >= 0 && index < static_cast<int>(m_custom_data.size()));
 
 	const SCP_string& key = m_lister_keys[index];
 
 	update_text_edit_boxes(key, m_custom_data[key]);
 	update_help_text("No help text provided");
 
-	for (int i = 0; i < (int)Default_custom_data.size(); i++) {
+	for (size_t i = 0; i < Default_custom_data.size(); i++) {
 		if (Default_custom_data[i].key == key) {
 			update_help_text(Default_custom_data[i].description);
 		}
@@ -146,7 +146,7 @@ void CustomDataDlg::OnListerSelectionChange()
 
 void CustomDataDlg::OnPairAdd()
 {
-	add_pair_entry((int)m_custom_data.size());
+	add_pair_entry(static_cast<int>(m_custom_data.size()));
 }
 
 void CustomDataDlg::add_pair_entry(const int insert_index)
@@ -172,7 +172,7 @@ void CustomDataDlg::OnPairRemove()
 {
 	const int index = m_data_lister.GetCurSel();
 
-	Assert(index >= 0 && index < (int)m_custom_data.size());
+	Assert(index >= 0 && index < static_cast<int>(m_custom_data.size()));
 
 	const auto& key = m_lister_keys[index];
 	m_custom_data.erase(key);
