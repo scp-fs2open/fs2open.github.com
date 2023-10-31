@@ -17537,7 +17537,7 @@ int sexp_previous_goal_status( int n, int status )
 // sexpression which gets the status of an event from a previous mission.  Like the above function but
 // dealing with events instead of goals.  Again, the status parameter tells the code if we are looking
 // for an event_true, event_false, or event_incomplete status
-int sexp_previous_event_status( int n, int status )
+int sexp_previous_event_status( int n, EventStatus status )
 {
 	int rval = 0;
 	int i, mission_num;
@@ -17558,8 +17558,8 @@ int sexp_previous_event_status( int n, int status )
 
 		// if the mission name wasn't found -- make this return FALSE for the event status.
 		if ( i == -1 ) {
-			nprintf(("General", "Couldn't find mission name \"%s\" in current campaign's list of missions.\nReturning %s for event-status function.\n", mission_name, (status==EVENT_SATISFIED)?"false":"true"));
-			if ( status == EVENT_SATISFIED ) {
+			nprintf(("General", "Couldn't find mission name \"%s\" in current campaign's list of missions.\nReturning %s for event-status function.\n", mission_name, (status==EventStatus::SATISFIED)?"false":"true"));
+			if ( status == EventStatus::SATISFIED ) {
 				rval = SEXP_KNOWN_FALSE;
 			} else {
 				rval = SEXP_KNOWN_TRUE;
@@ -17577,15 +17577,15 @@ int sexp_previous_event_status( int n, int status )
 			}
 
 			if ( i == (int)Campaign.missions[mission_num].events.size() ) {
-				Warning(LOCATION, "Couldn't find event name \"%s\" in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EVENT_SATISFIED)?"false":"true");
-				if ( status == EVENT_SATISFIED )
+				Warning(LOCATION, "Couldn't find event name \"%s\" in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EventStatus::SATISFIED)?"false":"true");
+				if ( status == EventStatus::SATISFIED )
 					rval = SEXP_KNOWN_FALSE;
 				else
 					rval = SEXP_KNOWN_TRUE;
 
 			} else {
 				// now return KNOWN_TRUE or KNOWN_FALSE based on the status field in the goal structure
-				if ( Campaign.missions[mission_num].events[i].status == status )
+				if ( Campaign.missions[mission_num].events[i].status == (int)status )
 					rval = SEXP_KNOWN_TRUE;
 				else
 					rval = SEXP_KNOWN_FALSE;
@@ -17602,7 +17602,7 @@ int sexp_previous_event_status( int n, int status )
 			else
 				rval = SEXP_KNOWN_FALSE;
 		} else {
-			if ( status == EVENT_SATISFIED )
+			if ( status == EventStatus::SATISFIED )
 				rval = SEXP_KNOWN_TRUE;
 			else
 				rval = SEXP_KNOWN_FALSE;
@@ -26675,15 +26675,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_PREVIOUS_EVENT_TRUE:
-				sexp_val = sexp_previous_event_status( node, EVENT_SATISFIED );
+				sexp_val = sexp_previous_event_status( node, EventStatus::SATISFIED );
 				break;
 
 			case OP_PREVIOUS_EVENT_FALSE:
-				sexp_val = sexp_previous_event_status( node, EVENT_FAILED );
+				sexp_val = sexp_previous_event_status( node, EventStatus::FAILED );
 				break;
 
 			case OP_PREVIOUS_EVENT_INCOMPLETE:
-				sexp_val = sexp_previous_event_status( node, EVENT_INCOMPLETE );
+				sexp_val = sexp_previous_event_status( node, EventStatus::INCOMPLETE );
 				break;
 
 			case OP_EVENT_TRUE:
