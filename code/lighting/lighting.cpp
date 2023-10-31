@@ -376,7 +376,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 	vec3d to_light;
 	float dot, dist;
 	vec3d temp;
-	for (auto l : Lights) {
+	for (const auto& l : Lights) {
 
 		dist = -1.0f;
 		switch(l.type){

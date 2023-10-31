@@ -101,7 +101,7 @@ SCP_vector<SCP_string> ai_lua_get_general_orders(bool onlyEnabled, bool onlyVali
 {
 	SCP_vector<SCP_string> list;
 
-	for (auto order : Lua_player_orders) {
+	for (const auto& order : Lua_player_orders) {
 		if (order.second.generalOrder) {
 			bool add = false;
 
@@ -161,7 +161,7 @@ void ai_lua_validate_general_order(int sexp_op, bool validity)
 }
 
 void ai_lua_reset_general_orders() {
-	for (auto order : Lua_player_orders) {
+	for (const auto& order : Lua_player_orders) {
 		ai_lua_enable_general_order(order.first, false);
 		ai_lua_validate_general_order(order.first, false);
 	}
