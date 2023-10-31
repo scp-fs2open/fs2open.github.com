@@ -2643,7 +2643,7 @@ void ai_evade_object(object *evader, object *evaded)
 	Assert(Ships[evader->instance].ai_index != -1);
 
 	if (evaded == evader) {
-		Int3();	//	Bogus!  Who tried to get me to evade myself!  Trace out and fix!
+		UNREACHABLE("Ship %s is trying to evade itself. Please report to the SCP!", Ships[evader->instance].ship_name);	//	Bogus!  Who tried to get me to evade myself!  Trace out and fix!
 		return;
 	}
 
@@ -3404,7 +3404,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		aip->submode_start_time = Missiontime;
 		break;
 	default:
-		Int3();		//	Bogus dock_type.
+		UNREACHABLE("Unknown dock type in ai_dock_with_object of %d. Please report to the SCP!", dock_type);		//	Bogus dock_type.
 	}
 
 	// Goober5000 - we no longer need to set dock_path_index because it's easier to grab the path from the dockpoint
@@ -4485,9 +4485,6 @@ void ai_safety()
 		aip->submode = AISS_2;
 		aip->submode_start_time = Missiontime;
 		break;
-	case AISS_1a:	//	Pick a safe point because we just got whacked!
-		Int3();
-		break;
 	case AISS_2:
 		if (ai_safety_goto_spot(Pl_objp) < 25.0f) {
 			aip->submode = AISS_3;
@@ -4497,8 +4494,9 @@ void ai_safety()
 	case AISS_3:
 		ai_safety_circle_spot(Pl_objp);
 		break;
+	case AISS_1a:   //	Pick a safe point because we just got whacked!
 	default:
-		Int3();		//	Illegal submode for ai_safety();
+		UNREACHABLE("Bad AI submode for ai_safety mode of %d. Please report to the SCP!", aip->submode);		//	Illegal submode for ai_safety();
 		break;
 	}
 }
@@ -7721,8 +7719,8 @@ void ai_stealth_sweep()
 		break;
 
 	default:
-		Int3();
-
+		UNREACHABLE("Bad submode in ai_steath_sweep of %d. Please report to the SCP!", aip->submode_parm0);
+		break;
 	}
 
 	// when close to goal_pt, update next goal pt
@@ -8497,13 +8495,13 @@ void ai_cruiser_chase()
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
+	Assertion(En_objp->type == OBJ_SHIP, "En_objp is of type %d which is illegal in ai_cruiser_chase. Please report to the SCP!");
 	if (En_objp->type != OBJ_SHIP) {
-		Int3();
 		return;
 	}
 
+	Assertion(En_objp->instance > -1, "En_objp has a bad instance of %d which is illegal in ai_cruiser_chase. Please report to the SCP!");
 	if (En_objp->instance < 0) {
-		Int3();
 		return;
 	}
 
@@ -8672,9 +8670,8 @@ void ai_chase()
     flagset<Ship::Ship_Flags> enemy_shipp_flags;
 	int has_fired = -1;
 
-	if (aip->mode != AIM_CHASE) {
-		Int3();
-	}
+	// If we messed up this bad, then we need to fix it ASAP
+	Verification(aip->mode == AIM_CHASE, "ai_chase was called but the ship was not in the chase ai mode.  It is in %d instead.  This is a fundamental problem and needs to be reported to the SCP, right away!");
 
 	// by default we try to chase anything
 	bool go_after_it = true;
@@ -9164,7 +9161,7 @@ void ai_chase()
 				}
 				break;
 			default:
-				Int3();	//	Impossible!
+				UNREACHABLE("Somehow we changed a call to get a random number in ai_chase so it's not 0-4, please report to the SCP!");	//	Impossible!
 			}
 		}
 
@@ -10610,7 +10607,7 @@ void ai_big_guard()
 		break;
 
 	default:
-		Int3();	//	Illegal submode for Guard mode.
+		UNREACHABLE("Illegal submode of %d for guard mode in ai_big_guard. Pleae report to the SCP!", aip->submode);
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
 		aip->submode_start_time = Missiontime;
@@ -10639,7 +10636,7 @@ void ai_guard()
 	guard_objp = &Objects[aip->guard_objnum];
 
 	if (guard_objp == Pl_objp) {
-		Int3();		//	This seems illegal.  Why is a ship guarding itself?
+		UNREACHABLE("The ship %s has been found to be guarding itself in ai_guard.  Please report to the SCP!", shipp->ship_name);		//	This seems illegal.  Why is a ship guarding itself?
 		aip->guard_objnum = -1;
 		return;
 	}
@@ -10818,7 +10815,7 @@ void ai_guard()
 
 		break;
 	default:
-		Int3();	//	Illegal submode for Guard mode.
+		UNREACHABLE("Illegal ai submode of %d for guard mode in ai_guard for ship %s. Pleae report to the SCP!", aip->submode, shipp->ship_name);
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
 		aip->submode_start_time = Missiontime;
@@ -10962,7 +10959,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	default:
-		Int3();			// bogus type of repair info
+		UNREACHABLE("Illegal repair info type of %d in ai_do_objects_repairing_stuff. Pleae report to the SCP!", how);
 	}
 
 	// repair_objp might be NULL if we are cleaning up this mode because of the support ship
@@ -10999,7 +10996,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			break;
 
 		default:
-			Int3();		// bogus type of repair info
+			UNREACHABLE("Illegal repair info type of %d in ai_do_objects_repairing_stuff. Pleae report to the SCP!", how);
 		}
 	}
 
@@ -11823,7 +11820,7 @@ void ai_dock()
 
 	default:
 	{
-		Int3();	//	Error, bogus submode
+		UNREACHABLE("Illegal dock submode of %d in ai_dock. Pleae report to the SCP!", aip->submode);
 	}
 
 	}	// end of switch statement
@@ -13398,8 +13395,8 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	Assertion(shipp->ai_index >= 0, "Arriving ship does not have a valid ai index.  Has %d instead. Please report!", shipp->ai_index);
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
+	Assertion(parent_objnum > -1, "parent_objnum in ai_acquire_emerge_path was found to be %d, which is an invalid value, please report to the SCP!", parent_objnum);
 	if ( parent_objnum == -1 ) {
-		Int3();
 		return -1;
 	}
 
@@ -14258,7 +14255,7 @@ void ai_warp_out(object *objp)
 	case AIS_WARP_5:
 		break;
 	default:
-		Int3();		//	Illegal submode for warping out.
+		UNREACHABLE("Illegal ai submode of %d in ai_warp_out. Pleae report to the SCP!", aip->submode);
 	}
 }
 
@@ -14504,7 +14501,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		return 1;
 
 	} else {
-		Int3();	//	Illegal -- supposedly avoiding a shockwave, but neither ship nor weapon.  What is it!?
+		UNREACHABLE("aas_1 has been passed an invalid object type of %d, please report to the SCP!", objp->type);
 	}
 
 	return 0;
@@ -14768,7 +14765,7 @@ void validate_mode_submode(ai_info *aip)
 		case SM_ATTACK_FOREVER:
 			break;
 		default:
-			Int3();
+			UNREACHABLE("validate_mode_submode found an illegal submode for AIM_CHASE of %d. Please report to the SCP!", aip->submode);
 		}
 		break;
 
@@ -14782,7 +14779,7 @@ void validate_mode_submode(ai_info *aip)
 		case AIS_STRAFE_POSITION:
 			break;
 		default:
-			Int3();
+			UNREACHABLE("validate_mode_submode found an illegal submode for AIM_STRAFE of %d. Please report to the SCP!", aip->submode);
 		}
 		break;
 	}
@@ -15914,7 +15911,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		objp_hitter = hit_objp;
 		hitter_objnum = OBJ_INDEX(hit_objp);
 	} else {
-		Int3();	//	Hmm, what kind of object hit this if not weapon or ship?  Get MikeK.
+		UNREACHABLE("ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", objp->type);
 		return;
 	}
 
@@ -16393,8 +16390,8 @@ void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int doc
 // of a path_num associated with than dockbay (this is an index into polymodel->paths[])
 int ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index)
 {
-	if ( dockbay_index < 0 || dockee_objp == NULL ) {
-		Int3();		// should never happen
+	Assertion(dockbay_index > -1 && dockee_objp != nullptr, "ai_return_path_num_from_dockbay has been passed invalid docking info: %s dockbay index of %d, please report to the SCP!", dockee_objp == nullptr ? "null pointer dockee object and ", dockbay_index);
+	if ( dockbay_index < 0 || dockee_objp == nullptr ) {
 		return -1;
 	}
 
