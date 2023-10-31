@@ -97,6 +97,10 @@ SCP_vector<SCP_string> ai_lua_get_general_order_categories(bool enabled_only)
 	return list;
 }
 
+// Provides a list of general orders for mission saving. You can only get one kind
+// of list at a time. If onlyEnabled and onlyValid are both true, for example, you will get
+// a list of onlyEnabled orders. If you need a list of enabled orders that are also valid, you'll
+// need to get both lists separately and compare.
 SCP_vector<SCP_string> ai_lua_get_general_orders(bool onlyEnabled, bool onlyValid, const SCP_string& category)
 {
 	SCP_vector<SCP_string> list;
