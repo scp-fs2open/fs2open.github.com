@@ -7362,6 +7362,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			vm_vec_add(&rand_vec, &t1, &t2);
 			vm_vec_add2(&rand_vec, &t3);
 			vm_vec_normalize(&rand_vec);
+		} else {
+			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
 		}
 
 		// add in the radius of the two ships involved.  This will make the ship arrive further than
