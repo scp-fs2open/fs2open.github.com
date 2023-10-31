@@ -937,7 +937,7 @@ void mission_process_event( int event )
 	}
 
 	if (sindex >= 0) {
-		Sexp_useful_number = 1;
+		Assume_event_is_current = true;
 		if (Snapshot_all_events || Mission_events[event].mission_log_flags != 0) {
 			Log_event = true;
 			
@@ -964,7 +964,7 @@ void mission_process_event( int event )
 			Mission_events[event].count = Directive_count;
 		}
 
-		if (Sexp_useful_number){
+		if (Assume_event_is_current){
 			Mission_events[event].flags |= MEF_CURRENT;
 		}
 

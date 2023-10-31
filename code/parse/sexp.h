@@ -1353,6 +1353,7 @@ extern size_t Max_operator_length;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
+extern bool Assume_event_is_current;
 extern int Training_context;
 extern int Training_context_speed_min;
 extern int Training_context_speed_max;

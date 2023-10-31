@@ -975,7 +975,8 @@ const char *Skybox_flags[] = {
 };
 
 int	Directive_count;
-int	Sexp_useful_number;  // a variable to pass useful info in from external modules
+int	Sexp_useful_number = 1;  // a variable to pass useful info in from external modules
+bool Assume_event_is_current = true;
 int	Locked_sexp_true = -1;
 int	Locked_sexp_false = -1;
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
@@ -17619,6 +17620,7 @@ int sexp_previous_event_status( int n, int status )
  */
 int sexp_event_status( int n, int want_true )
 {
+	int rval = SEXP_FALSE;
 	auto name = CTEXT(n);
 
 	for (int i = 0; i < (int)Mission_events.size(); ++i) {
@@ -17627,20 +17629,25 @@ int sexp_event_status( int n, int want_true )
 			int result = Mission_events[i].result;
 			if (Mission_events[i].formula < 0) {
 				if ( (want_true && result) || (!want_true && !result) )
-					return SEXP_KNOWN_TRUE;
+					rval = SEXP_KNOWN_TRUE;
 				else
-					return SEXP_KNOWN_FALSE;
+					rval = SEXP_KNOWN_FALSE;
 
 			} else {
 				if ( (want_true && result) || (!want_true && !result) )
-					return SEXP_TRUE;
+					rval = SEXP_TRUE;
 				else
-					return SEXP_FALSE;
+					rval = SEXP_FALSE;
 			}
+			break;
 		}
 	}
 
-	return SEXP_FALSE;
+	// don't make the enclosing event current if this operator doesn't return true
+	if ((rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE))
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
+
+	return rval;
 }
 
 /**
@@ -17659,9 +17666,11 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 
 	delay = eval_num(CDR(n), is_nan, is_nan_forever);
 	if (is_nan) {
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
 		return SEXP_FALSE;
 	}
 	else if (is_nan_forever) {
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
 		return SEXP_KNOWN_FALSE;
 	}
 	if (!use_msecs) {
@@ -17722,9 +17731,9 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	if (n != -1)
 		use_as_directive = is_sexp_true(n);
 
-	// zero out Sexp_useful_number if it's not true and we don't want this for specific directive use
+	// don't make the enclosing event current if this operator doesn't return true and we don't want this for specific directive use
 	if ( !use_as_directive && (rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE) )
-		Sexp_useful_number = 0;  // indicate sexp isn't current yet
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
 
 	return rval;
 }
@@ -17734,6 +17743,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
  */
 int sexp_event_incomplete(int n)
 {
+	int rval = SEXP_FALSE;
 	auto name = CTEXT(n);
 	
 	for (int i = 0; i < (int)Mission_events.size(); ++i) {
@@ -17741,13 +17751,18 @@ int sexp_event_incomplete(int n)
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
 			// the event is incomplete
 			if ( Mission_events[i].formula != -1 )
-				return SEXP_TRUE;
+				rval = SEXP_TRUE;
 			else
-				return SEXP_KNOWN_FALSE;
+				rval = SEXP_KNOWN_FALSE;
+			break;
 		}
 	}
 
-	return SEXP_FALSE;
+	// don't make the enclosing event current if this operator doesn't return true
+	if ((rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE))
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
+
+	return rval;
 }
 
 /**
@@ -26674,8 +26689,6 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_EVENT_TRUE:
 			case OP_EVENT_FALSE:
 				sexp_val = sexp_event_status( node, (op_num == OP_EVENT_TRUE?1:0) );
-				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-					Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_EVENT_TRUE_DELAY:
@@ -26695,8 +26708,6 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_EVENT_INCOMPLETE:
 				sexp_val = sexp_event_incomplete(node);
-				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-					Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_GOAL_INCOMPLETE:
@@ -28918,7 +28929,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 		if ( sexp_val == SEXP_CANT_EVAL ) {
 			Sexp_nodes[cur_node].value = SEXP_CANT_EVAL;
-			Sexp_useful_number = 0;  // indicate sexp isn't current yet
+			Assume_event_is_current = false;  // indicate sexp isn't current yet
 			return SEXP_FALSE;
 		}
 
