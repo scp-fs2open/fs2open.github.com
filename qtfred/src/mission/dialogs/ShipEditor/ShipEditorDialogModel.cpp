@@ -269,7 +269,7 @@ namespace fso {
 										_m_cargo1 = Cargo_names[cargo];
 										_m_hotkey = Ships[i].hotkey + 1;
 										_m_score = Ships[i].score;
-										_m_assist_score = ((int)(Ships[i].assist_score_pct * 100));
+										_m_assist_score = static_cast<int>(Ships[i].assist_score_pct * 100);
 
 										_m_persona = Ships[i].persona_index;
 										_m_alt_name = Fred_alt_names[base_ship];
@@ -308,7 +308,7 @@ namespace fso {
 										}
 
 										_m_score = Ships[i].score;
-										_m_assist_score = (int)(Ships[i].assist_score_pct * 100);
+										_m_assist_score = static_cast<int>(Ships[i].assist_score_pct * 100);
 
 										if (Ships[i].hotkey != _m_hotkey - 1) {
 											_m_hotkey = -1;
@@ -412,7 +412,8 @@ namespace fso {
 			{
 				char* str, old_name[255];
 				object* ptr;
-				int i, z, wing;
+				size_t i;
+				int z, wing;
 				if (multi_edit) {
 					ptr = GET_FIRST(&obj_used_list);
 					while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -467,7 +468,7 @@ namespace fso {
 
 					// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
-					for (i = 0; i < (int)Ai_tp_list.size(); i++) {
+					for (i = 0; i < Ai_tp_list.size(); i++) {
 						if (!stricmp(_m_ship_name.c_str(), Ai_tp_list[i].name)) {
 
 							auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -541,7 +542,7 @@ namespace fso {
 								break;
 
 						Assert(i < Wings[wing].wave_count);
-						wing_bash_ship_name(old_name, Wings[wing].name, i + 1);
+						wing_bash_ship_name(old_name, Wings[wing].name, static_cast<int>(i + 1));
 						if (strcmp(old_name, _m_ship_name.c_str())) {
 
 							auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -715,7 +716,7 @@ namespace fso {
 									"Value has been reset to this.  Use with caution!\r\n"
 									"Recommended distance is %d meters.\r\n",
 									d,
-									(int)(2.0f * Objects[Ships[ship].objnum].radius));
+									static_cast<int>(2.0f * Objects[Ships[ship].objnum].radius));
 
 								_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", str, { DialogButton::Ok });
 								if (Ships[ship].arrival_distance < 0)

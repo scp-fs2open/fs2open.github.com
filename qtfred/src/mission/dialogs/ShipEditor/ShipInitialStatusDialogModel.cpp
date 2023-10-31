@@ -137,9 +137,9 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		}
 	}
 	vflag = sflag = hflag = 0;
-	m_velocity = (int)Objects[_editor->currentObject].phys_info.speed;
-	m_shields = (int)Objects[_editor->currentObject].shield_quadrant[0];
-	m_hull = (int)Objects[_editor->currentObject].hull_strength;
+	m_velocity = static_cast<int>(Objects[_editor->currentObject].phys_info.speed);
+	m_shields = static_cast<int>(Objects[_editor->currentObject].shield_quadrant[0]);
+	m_hull = static_cast<int>(Objects[_editor->currentObject].hull_strength);
 
 	if (Objects[_editor->currentObject].flags[Object::Object_Flags::No_shields])
 		m_has_shields = 0;
@@ -193,9 +193,9 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 				(objp->flags[Object::Object_Flags::Marked])) {
 				if (objp->phys_info.speed != m_velocity)
 					vflag = 1;
-				if ((int)objp->shield_quadrant[0] != m_shields)
+				if (static_cast<int>(objp->shield_quadrant[0]) != m_shields)
 					sflag = 1;
-				if ((int)objp->hull_strength != m_hull)
+				if (static_cast<int>(objp->hull_strength) != m_hull)
 					hflag = 1;
 				if (objp->flags[Object::Object_Flags::No_shields]) {
 					if (m_has_shields)
@@ -838,7 +838,7 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 			ptr = GET_NEXT(ptr);
 		}
 
-		m_damage = 100 - (int)ptr->current_hits;
+		m_damage = 100 - static_cast<int>(ptr->current_hits);
 		if (ship_has_scannable_subsystems) {
 			if (ptr->subsys_cargo_name > 0) {
 				m_cargo_name = Cargo_names[ptr->subsys_cargo_name];

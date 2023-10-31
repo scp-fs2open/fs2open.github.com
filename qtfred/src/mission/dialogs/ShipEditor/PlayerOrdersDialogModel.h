@@ -20,7 +20,7 @@ namespace fso {
 
 				int m_num_checks_active;
 
-				SCP_vector<int> acceptedOrders;
+				SCP_vector<size_t> acceptedOrders;
 				SCP_vector<SCP_string> orderNames;
 
 				SCP_vector<int> currentOrders;
@@ -33,10 +33,10 @@ namespace fso {
 
 				 bool query_modified() const;
 
-				 SCP_vector<int> getAcceptedOrders() const;
+				 SCP_vector<size_t> getAcceptedOrders() const;
 				 SCP_vector<SCP_string> getOrderNames() const;
 				 SCP_vector<int> getCurrentOrders() const;
-				void setCurrentOrder(const int, const int);
+				 void setCurrentOrder(const int, const size_t);
 			};
 			template<typename T>
 			inline void PlayerOrdersDialogModel::modify(T& a, const T& b)

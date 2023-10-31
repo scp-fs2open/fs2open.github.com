@@ -35,7 +35,7 @@ namespace fso {
 					ship_info* sip;
 					sip = &Ship_info[Ships[m_ship].ship_info_index];
 
-					m_hull = (int)sip->max_hull_strength;
+					m_hull = static_cast<int>(sip->max_hull_strength);
 					m_special_hitpoints_enabled = false;
 
 					if (m_hull < 1) { m_hull = 10; }
@@ -50,7 +50,7 @@ namespace fso {
 					ship_info* sip;
 					sip = &Ship_info[Ships[m_ship].ship_info_index];
 
-					m_shields = (int)sip->max_shield_strength;
+					m_shields = static_cast<int>(sip->max_shield_strength);
 					m_special_shield_enabled = false;
 
 					if (m_shields < 0) {
@@ -64,12 +64,12 @@ namespace fso {
 					ship_info* sip;
 					sip = &Ship_info[Ships[m_ship].ship_info_index];
 
-					m_inner_rad = (int)sip->shockwave.inner_rad;
-					m_outer_rad = (int)sip->shockwave.outer_rad;
-					m_damage = (int)sip->shockwave.damage;
-					m_blast = (int)sip->shockwave.blast;
-					m_shockwave = (int)sip->explosion_propagates;
-					m_shock_speed = (int)sip->shockwave.speed;
+					m_inner_rad = static_cast<int>(sip->shockwave.inner_rad);
+					m_outer_rad = static_cast<int>(sip->shockwave.outer_rad);
+					m_damage = static_cast<int>(sip->shockwave.damage);
+					m_blast = static_cast<int>(sip->shockwave.blast);
+					m_shockwave = static_cast<int>(sip->explosion_propagates);
+					m_shock_speed = static_cast<int>(sip->shockwave.speed);
 					m_deathRoll = false;
 					m_duration = 0;
 					m_special_exp = false;
@@ -163,7 +163,7 @@ namespace fso {
 						temp_max_hull_strength = Ship_info[Ships[shipp].ship_info_index].max_hull_strength;
 					}
 
-					Ai_info[Ships[shipp].ai_index].kamikaze_damage = std::min(1000, 200 + (int)(temp_max_hull_strength / 4.0f));
+					Ai_info[Ships[shipp].ai_index].kamikaze_damage = std::min(1000, 200 + static_cast<int>(temp_max_hull_strength / 4.0f));
 
 					if (m_special_exp) {
 						// set em

@@ -228,10 +228,10 @@ void ShipEditorDialog::updateColumnOne()
 {
 	util::SignalBlockers blockers(this);
 	ui->shipNameEdit->setText(_model->getShipName().c_str());
-	int i;
+	size_t i;
 	auto idx = _model->getShipClass();
 	ui->shipClassCombo->clear();
-	for (i = 0; i < int(Ship_info.size()); i++) {
+	for (i = 0; i < Ship_info.size(); i++) {
 		ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(i));
 	}
 	ui->shipClassCombo->setCurrentIndex(ui->shipClassCombo->findData(idx));
@@ -258,7 +258,7 @@ void ShipEditorDialog::updateColumnOne()
 		idx = _model->getTeam();
 		ui->teamCombo->setEnabled(_model->getUIEnable());
 		ui->teamCombo->clear();
-		for (i = 0; i < (int)Iff_info.size(); i++) {
+		for (i = 0; i < Iff_info.size(); i++) {
 			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(i));
 		}
 		ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
@@ -328,7 +328,7 @@ void ShipEditorDialog::updateColumnTwo()
 			int species = -1;
 			for (size_t j = 0; j < 32 && j < Species_info.size(); j++) {
 				if (Personas[i].species_bitfield == (1 << j)) {
-					species = (int)j;
+					species = static_cast<int>(j);
 					break;
 				}
 			}
@@ -343,7 +343,7 @@ void ShipEditorDialog::updateColumnTwo()
 					persona_name += species_name[j];
 			}
 
-			ui->personaCombo->addItem(persona_name.c_str(), QVariant((int)i));
+			ui->personaCombo->addItem(persona_name.c_str(), QVariant(i));
 		}
 	}
 	auto idx = _model->getPersona();
@@ -358,8 +358,8 @@ void ShipEditorDialog::updateColumnTwo()
 void ShipEditorDialog::updateArrival()
 {
 	util::SignalBlockers blockers(this);
-	auto idx = _model->getArrivalLocationIndex();
-	int i;
+	auto idx = _model->getArrivalLocation();
+	size_t i;
 	ui->arrivalLocationCombo->clear();
 	for (i = 0; i < MAX_ARRIVAL_NAMES; i++) {
 		ui->arrivalLocationCombo->addItem(Arrival_location_names[i], QVariant(i));
@@ -372,9 +372,9 @@ void ShipEditorDialog::updateArrival()
 	if (_model->getArrivalLocation() != ArrivalLocation::FROM_DOCK_BAY) {
 		// Add Special Arrivals
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
-			for (i = 0; i < (int)Iff_info.size(); i++) {
+			for (i = 0; i < Iff_info.size(); i++) {
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, static_cast<int>(i), restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}
@@ -423,9 +423,9 @@ void ShipEditorDialog::updateArrival()
 			ui->arrivalTree->clear_tree("");
 		}
 		if (!_model->getIfMultipleShips()) {
-			i = ui->arrivalTree->select_sexp_node;
-			if (i != -1) {
-				ui->arrivalTree->hilite_item(i);
+			int j = ui->arrivalTree->select_sexp_node;
+			if (j != -1) {
+				ui->arrivalTree->hilite_item(j);
 			}
 		}
 	} else {

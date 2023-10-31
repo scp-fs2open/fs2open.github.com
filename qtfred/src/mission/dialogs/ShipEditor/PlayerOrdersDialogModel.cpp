@@ -58,7 +58,7 @@ namespace fso {
 				return _modified;
 			}
 
-			 SCP_vector<int> PlayerOrdersDialogModel::getAcceptedOrders() const
+			 SCP_vector<size_t> PlayerOrdersDialogModel::getAcceptedOrders() const
 			{
 				return acceptedOrders;
 			}
@@ -73,7 +73,7 @@ namespace fso {
 				return currentOrders;
 			}
 
-			void PlayerOrdersDialogModel::setCurrentOrder(const int value, const int index)
+			void PlayerOrdersDialogModel::setCurrentOrder(const int value, const size_t index)
 			{
 				currentOrders[index] = value;
 				set_modified();
@@ -107,7 +107,7 @@ namespace fso {
 				for (size_t order_id : default_orders)
 				{
 					orderNames[m_num_checks_active] = Player_orders[order_id].localized_name;
-					acceptedOrders[m_num_checks_active] = (int) order_id;
+					acceptedOrders[m_num_checks_active] =  order_id;
 					m_num_checks_active++;
 				}
 

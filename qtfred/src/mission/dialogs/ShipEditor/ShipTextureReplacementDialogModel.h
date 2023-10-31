@@ -28,7 +28,7 @@ namespace fso {
 				SCP_vector<SCP_string> defaultTextures;
 				SCP_vector<SCP_map<SCP_string, SCP_string>> currentTextures;
 				bool mainChanged = false;
-				void saveSubMap(const int index, const SCP_string& type);
+				void saveSubMap(const size_t index, const SCP_string& type);
 				static bool testTexture(const SCP_string&);
 				static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
 			public:
@@ -38,17 +38,17 @@ namespace fso {
 				bool apply() override;
 				void reject() override;
 
-				int getSize() const;
-				SCP_string getDefaultName(const int) const;
+				size_t getSize() const;
+				SCP_string getDefaultName(const size_t) const;
 
-				void setMap(const int index, const SCP_string& type, const SCP_string& newName);
-				SCP_string getMap(const int index, const SCP_string& type) const;
+				void setMap(const size_t index, const SCP_string& type, const SCP_string& newName);
+				SCP_string getMap(const size_t index, const SCP_string& type) const;
 
-				SCP_map<SCP_string, bool> getSubtypesForMap(int index) const;
-				SCP_map<SCP_string, bool> getReplace(int index) const;
-				SCP_map<SCP_string, bool> getInherit(int index) const;
-				void setReplace(const int index, const SCP_string& type, const bool state);
-				void setInherit(const int index, const SCP_string& type, const bool state);
+				SCP_map<SCP_string, bool> getSubtypesForMap(const size_t index) const;
+				SCP_map<SCP_string, bool> getReplace(const size_t index) const;
+				SCP_map<SCP_string, bool> getInherit(const size_t index) const;
+				void setReplace(const size_t index, const SCP_string& type, const bool state);
+				void setInherit(const size_t index, const SCP_string& type, const bool state);
 
 				bool query_modified() const;
 
