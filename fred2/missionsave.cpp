@@ -3126,6 +3126,17 @@ void CFred_mission_save::save_mission_internal(const char *pathname)
 	// Migrate the version!
 	The_mission.required_fso_version = MISSION_VERSION;
 
+	// Additional incremental version update for some features
+	auto newer_version = gameversion::version(23, 3);
+	if (MISSION_VERSION >= newer_version)
+	{
+		Warning(LOCATION, "Notify an SCP coder: now that the required mission version is at least 23.3, the incremental version code can be removed");
+	}
+	else if (check_for_23_3_data())
+	{
+		The_mission.required_fso_version = newer_version;
+	}
+
 	reset_parse();
 	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;

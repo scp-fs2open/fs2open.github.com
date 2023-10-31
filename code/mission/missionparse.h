@@ -51,6 +51,10 @@ int get_special_anchor(const char *name);
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
 
+// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// a "soft version bump" rather than a hard bump because not all missions are affected.
+extern bool check_for_23_3_data();
+
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
 // mission parse flags used for parse_mission() to tell what kind of information to get from the mission file
@@ -400,7 +404,7 @@ extern SCP_vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct {
+typedef struct team_data {
 	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		num_ship_choices; // number of ship choices inside ship_list 

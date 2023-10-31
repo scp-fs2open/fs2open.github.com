@@ -8782,3 +8782,36 @@ void clear_texture_replacements()
 {
 	Fred_texture_replacements.clear();
 }
+
+bool check_for_23_3_data()
+{
+	auto e_list = ai_lua_get_general_orders(true);
+	if (!e_list.empty())
+		return true;
+	auto v_list = ai_lua_get_general_orders(false, true);
+	if (!v_list.empty())
+		return true;
+
+	for (const auto& msg : Messages)
+	{
+		if (!msg.note.empty())
+			return true;
+	}
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+
+		auto shipp_params = &Warp_params[shipp->warpin_params_index];
+		auto sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpin_params_index];
+		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+			return true;
+
+		shipp_params = &Warp_params[shipp->warpout_params_index];
+		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpout_params_index];
+		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+			return true;
+	}
+
+	return false;
+}

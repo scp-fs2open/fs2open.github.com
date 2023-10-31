@@ -248,7 +248,7 @@ void ai_lua_start_general(int lua_sexp_id, int target_objnum)
 	ai_info aip;
 	aip.shipnum = -1;
 
-	if (target_objnum >= 0) {
+	if (target_objnum >= 0 && Objects[target_objnum].type == OBJ_SHIP) {
 		aip.lua_ai_target = {object_ship_wing_point_team(&Ships[Objects[target_objnum].instance]), {}};
 	}
 	
