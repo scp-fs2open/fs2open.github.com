@@ -1220,6 +1220,10 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 		return str;
 	}
 
+#ifndef NDEBUG
+	nprintf(("XSTR", "Localizing String: %i, \"%s\"\n", index, str));
+#endif
+
 	// for some internal strings, such as the ones we loaded using $Has XStr:,
 	// we want to force a lookup even if we're normally untranslated
 	if (Lcl_current_lang != LCL_UNTRANSLATED || force_lookup)
