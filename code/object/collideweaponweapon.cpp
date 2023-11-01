@@ -10,6 +10,7 @@
 
 
 #include "freespace.h"
+#include "math/curve.h"
 #include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
@@ -56,17 +57,19 @@ int collide_weapon_weapon( obj_pair * pair )
 	A_radius = A->radius;
 	B_radius = B->radius;
 
+	float A_time_alive = f2fl(Missiontime - wpA->creation_time);
+	float B_time_alive = f2fl(Missiontime - wpB->creation_time);
+
 	if (wipA->weapon_hitpoints > 0) {
 		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
-		float time_alive = f2fl(Missiontime - wpA->creation_time);
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
-			if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -75,12 +78,11 @@ int collide_weapon_weapon( obj_pair * pair )
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
 
-		float time_alive = f2fl(Missiontime - wpB->creation_time);
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
-			if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -109,10 +111,14 @@ int collide_weapon_weapon( obj_pair * pair )
 		if(!a_override && !b_override && !MULTIPLAYER_CLIENT)
 		{
 			float aDamage = wipA->damage;
+			if (wipA->damage_curve_idx >= 0)
+				aDamage *= Curves[wipA->damage_curve_idx].GetValue(A_time_alive / wipA->lifetime);
 			if (wipB->armor_type_idx >= 0)
 				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f, false);
 
 			float bDamage = wipB->damage;
+			if (wipB->damage_curve_idx >= 0)
+				bDamage *= Curves[wipB->damage_curve_idx].GetValue(B_time_alive / wipB->lifetime);
 			if (wipA->armor_type_idx >= 0)
 				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f, false);
 

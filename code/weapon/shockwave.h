@@ -75,11 +75,12 @@ typedef struct shockwave_create_info {
 	char name[MAX_FILENAME_LEN];
 	char pof_name[MAX_FILENAME_LEN];
 
-	float inner_rad;
-	float outer_rad;
+	float inner_rad;		// max damage out to this distance
+	float outer_rad;		// 0 damage at this distance or more, outer_rad / speed is total time
 	float damage;
 	float blast;
 	float speed;
+	int radius_curve_idx;   // curve for shockwave radius over time
 	angles rot_angles;
 	bool rot_defined;		// if the modder specified rot_angles
 	bool damage_overidden;  // did this have shockwave damage specifically set or not
