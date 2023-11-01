@@ -1515,13 +1515,13 @@ void wl_maybe_reset_selected_slot()
 
 /**
  * If Selected_wl_class is -1, choose the first weapon available from the pool for an animation
- *  - on second thought, choose the first weapon that is oin the ship, then go to the pools
+ *  - on second thought, choose the first weapon that is on the ship, then go to the pools
  */
 void wl_maybe_reset_selected_weapon_class()
 {
 	int i;
 
-	if ( Selected_wl_class >= 0 ) 
+	if ( (Selected_wl_class >= 0) && !(Always_reset_selected_wep_on_loadout_open) ) 
 		return;
 
 	Assert( Wss_slots != NULL );
@@ -4029,6 +4029,10 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 		// get the slot for this ship
 		cur_wss_slot = cur_wing_block * MAX_WING_SLOTS + cur_wing_slot;
+
+		// make sure there is actually a ship here
+		if (Wss_slots[cur_wss_slot].ship_class < 0)
+			continue;
 
 		// get the ship's name and class
 		sip = &Ship_info[Wss_slots[cur_wss_slot].ship_class];	

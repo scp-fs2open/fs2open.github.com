@@ -75,7 +75,7 @@ class Editor;
  * @param[in]   cfilepath   CFile root directory.
  * @param[in]   listener    A callback function called after each initializer.
  *
- * @return @c true if initialization was successfull, @c false otherwise
+ * @return @c true if initialization was successful, @c false otherwise
  */
 bool initialize(const std::string& cfilepath,
 				int argc,

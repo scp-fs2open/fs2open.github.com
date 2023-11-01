@@ -670,7 +670,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
  * @param file_mapped Whether to use memory-mapped file or not.
  * 
  * @details Memory-mapped files will page in the animation from disk as it is needed, but performance is not as good.
- * @return Pointer to anim that is loaded if sucess, NULL if failure.
+ * @return Pointer to anim that is loaded if success, NULL if failure.
  */
 anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 {

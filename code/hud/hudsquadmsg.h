@@ -24,6 +24,7 @@
 #define SM_MODE_REPAIR_REARM			7		//repair/rearm player ship
 #define SM_MODE_REPAIR_REARM_ABORT	8		//abort repair/rearm of player ship
 #define SM_MODE_ALL_FIGHTERS			9		//message all fighters/bombers
+#define SM_MODE_GENERAL             10		//general orders, usually luaAI
 
 // define for trapping messages send to "all fighters"
 #define MESSAGE_ALL_FIGHTERS		-999
@@ -59,6 +60,20 @@ class object;
 
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
+
+#define MAX_MENU_ITEMS 50   // max number of items in the menu
+#define MAX_MENU_DISPLAY 10 // max number that can be displayed
+
+// following are defines and character strings that are used as part of messaging mode
+
+#define NUM_COMM_ORDER_TYPES 6
+
+#define TYPE_SHIP_ITEM 0
+#define TYPE_WING_ITEM 1
+#define TYPE_ALL_FIGHTERS_ITEM 2
+#define TYPE_REINFORCEMENT_ITEM 3
+#define TYPE_REPAIR_REARM_ITEM 4
+#define TYPE_REPAIR_REARM_ABORT_ITEM 5
 
 typedef struct player_order {
 private:
@@ -140,7 +155,6 @@ extern void hud_init_comm_orders();
 extern void hud_squadmsg_toggle();						// toggles the state of messaging mode
 extern void hud_squadmsg_shortcut( int command );	// use of a shortcut key
 extern int hud_squadmsg_hotkey_select( int k );	// a hotkey was hit -- maybe send a message to those ship(s)
-extern void hud_squadmsg_save_keys( int do_scroll = 0 );					// saves into local area keys which need to be saved/restored when in messaging mode
 extern int hud_squadmsg_do_frame();
 extern int hud_query_order_issued(const char *to, const char *order_name, const char *target = nullptr, int timestamp = 0, const char *from = nullptr, const char *special_index = nullptr);
 extern int hud_squadmsg_read_key( int k );			// called from high level keyboard code

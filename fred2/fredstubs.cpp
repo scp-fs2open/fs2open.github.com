@@ -194,7 +194,7 @@ int Show_target_weapons;
 int Show_target_debug_info;
 int Game_do_state_should_skip;
 fix Game_time_compression;
-struct fs_builtin_mission *game_find_builtin_mission(char*){return NULL;}
+const struct fs_builtin_mission *game_find_builtin_mission(const char*){return NULL;}
 void game_format_time(fix, char*){}
 void game_do_state(int){}
 void game_process_event(int, int){}

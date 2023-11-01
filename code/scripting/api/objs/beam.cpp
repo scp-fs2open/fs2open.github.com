@@ -12,6 +12,8 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 
+extern void beam_delete(beam *b);
+
 namespace scripting {
 namespace api {
 
@@ -378,6 +380,20 @@ ADE_FUNC(getEndDirectionInfo, l_Beam, NULL, "Gets the end information about the 
 	beam_info inf = bp->binfo;
 
 	return ade_set_args(L, "o", l_Vector.Set(inf.dir_b));
+}
+
+ADE_FUNC(vanish, l_Beam, nullptr, "Vanishes this beam from the mission.", "boolean", "True if the deletion was successful, false otherwise.")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	beam_delete(&Beams[objh->objp->instance]);
+
+	return ADE_RETURN_TRUE;
 }
 
 

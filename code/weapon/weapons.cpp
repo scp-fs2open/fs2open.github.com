@@ -167,6 +167,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
     { "no dumbfire",					Weapon::Info_Flags::No_dumbfire,						true },
 	{ "no doublefire",					Weapon::Info_Flags::No_doublefire,						true },
     { "in tech database",				Weapon::Info_Flags::In_tech_database,					true },
+	{ "default player weapon",			Weapon::Info_Flags::Default_player_weapon,				true },
     { "player allowed",					Weapon::Info_Flags::Player_allowed,                     true }, 
     { "particle spew",					Weapon::Info_Flags::Particle_spew,						true },
     { "emp",							Weapon::Info_Flags::Emp,								true },
@@ -244,6 +245,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
  	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true },
 	{ "no_fred",						Weapon::Info_Flags::No_fred,							true },
 	{ "detonate on expiration",			Weapon::Info_Flags::Detonate_on_expiration,				true },
+	{ "ignores countermeasures",		Weapon::Info_Flags::Ignores_countermeasures,			true },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -1578,7 +1580,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nResetting value to default.", wip->name);
 					wip->seeker_strength = 2.0f;
 				}
 			} 
@@ -1586,6 +1588,20 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				if(!(wip->wi_flags[Weapon::Info_Flags::Custom_seeker_str]))
 					wip->seeker_strength = 2.0f;
+			}
+
+			if (optional_string("+Lock FOV:"))
+			{
+				float temp;
+				stuff_float(&temp);
+				if (temp > 360 || temp < 0)
+				{
+					error_display(0, "Lock FOV values should be between 0 and 360 degrees; ignoring value of %f for missile \'%s\'.", temp, wip->name);
+				}
+				else
+				{
+					wip->lock_fov = cosf(fl_radians(temp * 0.5f));
+				}
 			}
 
 			if (optional_string("+Target Lead Scaler:"))
@@ -1999,7 +2015,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Alpha Decay Exponent:")) {
 			stuff_float(&ti->a_decay_exponent);
 			if (ti->a_decay_exponent < 0.0f) {
-				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Reseting to 1.\n", wip->name);
+				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Resetting to 1.\n", wip->name);
 				ti->a_decay_exponent = 1.0f;
 			}
 		}
@@ -4871,6 +4887,10 @@ void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list)
 			weapon *wp = &Weapons[weapon_objp->instance];
 			weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
 
+			// If the weapon has the ignores countermeasures flag, then do not try to find a valid countermeasure!
+			if (wip->wi_flags[Weapon::Info_Flags::Ignores_countermeasures])
+				continue;
+
 			if (wip->is_homing()) {
 				float best_dot = wip->fov;
 				for (auto cit = cmeasure_list.cbegin(); cit != cmeasure_list.cend(); ++cit) {
@@ -5017,6 +5037,10 @@ void weapon_home(object *obj, int num, float frame_time)
 	wp = &Weapons[num];
 	wip = &Weapon_info[wp->weapon_info_index];
 	hobjp = Weapons[num].homing_object;
+
+	// don't home if we're detonating; we don't want to change target, lifetime, heading, or speed
+	if (wp->weapon_flags[Weapon::Weapon_Flags::Begun_detonation])
+		return;
 
 	//local ssms home only in stages 1 and 5
 	if ( (wp->lssm_stage==2) || (wp->lssm_stage==3) || (wp->lssm_stage==4))
@@ -5370,6 +5394,9 @@ void weapon_home(object *obj, int num, float frame_time)
 
 			// this flag is needed so we don't prolong the missile's life by repeatedly detonating it
 			wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
+
+			// return so we don't change target, lifetime, heading, or speed
+			return;
         }
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
@@ -7231,7 +7258,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		case OBJ_WEAPON:
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
-				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f);
+				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f, false);
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {

@@ -161,6 +161,10 @@ sound_handle snd_play_looping(game_snd* gs, float pan = 0.0f, int start_loop = -
 
 void snd_stop(sound_handle snd_handle);
 
+void snd_pause(sound_handle snd_handle);
+
+void snd_resume(sound_handle snd_handle);
+
 // Sets the volume of a sound that is already playing.
 // The volume is between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.
@@ -180,6 +184,8 @@ void	snd_stop_all();
 
 // determines if the sound handle is still palying
 int snd_is_playing(sound_handle snd_handle);
+
+bool snd_is_paused(sound_handle sig);
 
 // change the looping status of a sound that is playing
 void snd_chg_loop_status(sound_handle snd_handle, int loop);

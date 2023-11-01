@@ -62,14 +62,15 @@ static bool effects_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
-static auto EffectVolumeOption __UNUSED =
-    options::OptionBuilder<float>("Audio.Effects", "Effects", "Volume used for playing in-game effects")
-        .category("Audio")
-        .default_val(Default_sound_volume)
-        .range(0.0f, 1.0f)
-        .change_listener(effects_volume_change_listener)
-        .importance(2)
-        .finish();
+static auto EffectVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Effects",
+                     std::pair<const char*, int>{"Effects", 1370},
+                     std::pair<const char*, int>{"Volume used for playing in-game effects", 1734})
+                     .category("Audio")
+                     .default_val(Default_sound_volume)
+                     .range(0.0f, 1.0f)
+                     .change_listener(effects_volume_change_listener)
+                     .importance(2)
+                     .finish();
 
 float Default_voice_volume = 0.7f; // range is 0 -> 1, used for all voice playback
 float Master_voice_volume = Default_voice_volume;
@@ -83,14 +84,15 @@ static bool voice_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
-static auto VoiceVolumeOption __UNUSED =
-    options::OptionBuilder<float>("Audio.Voice", "Voice", "Volume used for playing voice audio")
-        .category("Audio")
-        .default_val(Default_voice_volume)
-        .range(0.0f, 1.0f)
-        .change_listener(voice_volume_change_listener)
-        .importance(0)
-        .finish();
+static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Voice",
+                     std::pair<const char*, int>{"Voice", 1372},
+                     std::pair<const char*, int>{"Volume used for playing voice audio", 1735})
+                     .category("Audio")
+                     .default_val(Default_voice_volume)
+                     .range(0.0f, 1.0f)
+                     .change_listener(voice_volume_change_listener)
+                     .importance(0)
+                     .finish();
 
 unsigned int SND_ENV_DEFAULT = 0;
 
@@ -966,6 +968,44 @@ void snd_stop(sound_handle sig)
 }
 
 /**
+ * Pauses a sound
+ *
+ * @param sig handle to sound, what is returned from snd_play()
+ */
+void snd_pause(sound_handle sig)
+{
+	if (!ds_initialized)
+		return;
+	if (!sig.isValid())
+		return;
+
+	int channel = ds_get_channel(sig);
+	if (channel == -1)
+		return;
+
+	ds_pause_channel(channel);
+}
+
+/**
+ * Resumes a sound
+ *
+ * @param sig handle to sound, what is returned from snd_play()
+ */
+void snd_resume(sound_handle sig)
+{
+	if (!ds_initialized)
+		return;
+	if (!sig.isValid())
+		return;
+
+	int channel = ds_get_channel_raw(sig);
+	if (channel == -1)
+		return;
+
+	ds_resume_channel(channel);
+}
+
+/**
  * Stop all playing sound channels (including looping sounds)
  *
  * NOTE: This stops all sounds that are playing from Channels[] sound buffers.
@@ -1143,6 +1183,32 @@ int snd_is_playing(sound_handle sig)
 	}
 
 	return 0;
+}
+
+// ---------------------------------------------------------------------------------------
+// snd_is_paused()
+//
+// Determine if a sound is paused
+//
+// returns:			1				=> sound is currently paused
+//						0				=> sound is not paused
+//
+// parameters:		sig	=> signature of sound, what is returned from snd_play()
+//
+bool snd_is_paused(sound_handle sig)
+{
+	if (!ds_initialized)
+		return false;
+
+	if (!sig.isValid())
+		return false;
+
+	int channel = ds_get_channel_raw(sig);
+	if (channel == -1)
+		return false;
+
+	return ds_is_channel_paused(channel);
+
 }
 
 // ---------------------------------------------------------------------------------------

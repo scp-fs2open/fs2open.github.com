@@ -12,6 +12,7 @@
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
+#include "mission/missioncampaign.h"
 #include "missionui/missionweaponchoice.h"
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
@@ -674,7 +675,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
-ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
+ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This property is read-only")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
@@ -930,7 +931,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleratio
 	return ade_set_args(L, "f", Ship_info[idx].forward_accel);
 }
 
-ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
+ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward deceleration time, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -1068,6 +1069,23 @@ ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this s
 	}
 
 	return ade_set_args(L, "b", Ship_info[idx].flags[flag]);
+}
+
+ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether this ship class is allowed in loadouts in campaign mode", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Campaign.ships_allowed[idx] = new_value;
+	}
+
+	return Campaign.ships_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")

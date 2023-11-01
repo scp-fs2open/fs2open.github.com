@@ -256,16 +256,17 @@ static SCP_string skill_level_display(int value)
 	return SCP_string(Skill_level_names(value, true));
 }
 
-static auto GameSkillOption __UNUSED =
-    options::OptionBuilder<int>("Game.SkillLevel", "Skill Level", "The skill level for the game.")
-        .category("Game")
-        .range(0, 4)
-        .level(options::ExpertLevel::Beginner)
-        .default_val(DEFAULT_SKILL_LEVEL)
-        .bind_to(&Game_skill_level)
-        .display(skill_level_display)
-        .importance(1)
-        .finish();
+static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
+                     std::pair<const char*, int>{"Skill Level", 1284},
+                     std::pair<const char*, int>{"The skill level for the game.", 1700})
+                     .category("Game")
+                     .range(0, 4)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(DEFAULT_SKILL_LEVEL)
+                     .bind_to(&Game_skill_level)
+                     .display(skill_level_display)
+                     .importance(1)
+                     .finish();
 
 #define EXE_FNAME			("fs2.exe")
 
@@ -536,7 +537,7 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 
-fs_builtin_mission *game_find_builtin_mission(char *filename)
+const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 {
 	// look through all existing builtin missions
 	for(int idx=0; idx<Game_builtin_mission_count; idx++){
@@ -1351,9 +1352,9 @@ void game_post_level_init()
 							(The_mission.ambient_light_level >> 8) & 0xff,
 							(The_mission.ambient_light_level >> 16) & 0xff);
 
-	// If this is a red alert mission in campaign mode, bash wingman status
+	// If this is a red alert mission in campaign mode, bash status
 	if ( (Game_mode & GM_CAMPAIGN_MODE) && red_alert_mission() ) {
-		red_alert_bash_wingman_status();
+		red_alert_bash_ship_status();
 	}
 
 	freespace_mission_load_stuff();
@@ -1781,7 +1782,7 @@ void game_init()
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
 	}
@@ -2751,7 +2752,7 @@ DCF(fov, "Change the field of view of the main camera")
 		if(cam == nullptr) {
 			dc_printf("Camera unavailable.");
 		} else {
-			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)\n", cam->get_fov());
+			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)\n", g3_get_hfov(cam->get_fov()));
 		}
 
 		process = false;
@@ -3046,9 +3047,9 @@ camid game_render_frame_setup()
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
-	static float last_FOV = Sexp_fov;
+	static fov_t last_FOV = Sexp_fov;
 
-	bool fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
+	bool fov_changed = ((Sexp_fov > 0.0f) && (!mpark::holds_alternative<float>(last_FOV) || mpark::get<float>(last_FOV) != Sexp_fov));
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
@@ -3374,9 +3375,7 @@ void game_render_frame( camid cid )
 	}
 
 	if (!(Game_mode & GM_LAB)) {
-		// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
-		int dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-		HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
+		HUD_set_offsets();
 	}
 
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
@@ -3611,7 +3610,7 @@ void game_simulation_frame()
 			mission_parse_eval_stuff();
 		}
 
-		// if we're an observer, move ourselves seperately from the standard physics
+		// if we're an observer, move ourselves separately from the standard physics
 		if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 			obj_observer_move(flFrametime);
 		}
@@ -5234,6 +5233,7 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
+					message_resume_all();
 
 					// multi doesn't pause here so time keeps going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -5744,6 +5744,7 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
+					message_pause_all();
 
 					// multi doesn't pause here so time needs to keep going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -6653,6 +6654,10 @@ int game_main(int argc, char *argv[])
 		return 0;
 	}
 
+	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
+		scripting::hooks::OnIntroAboutToPlay->run();
+	}
+
 	if (!Is_standalone) {
 		movie::play("intro.mve");
 	}
@@ -7150,11 +7155,13 @@ void Time_model( int modelnum )
 
 	bm_get_frame_usage(&bitmaps_used_this_frame,&bitmaps_new_this_frame);
 
-	modelstats_num_polys /= framecount;
-	modelstats_num_verts /= framecount;
+	// safety check
+	if (framecount > 0) { 
+		modelstats_num_polys /= framecount;
+		modelstats_num_verts /= framecount;
 
-	Tmap_npixels /=framecount;
-
+		Tmap_npixels /=framecount;
+	}
 
 	mprintf(( "'%s' is %.2f FPS\n", pof_file, i2fl(framecount)/f2fl(t2-t1) ));
 	fprintf( Time_fp, "\"%s\"\t%.0f\t%d\t%d\t%d\t%d\n", pof_file, i2fl(framecount)/f2fl(t2-t1), bitmaps_used_this_frame, modelstats_num_polys, modelstats_num_verts, Tmap_npixels );
@@ -7522,11 +7529,54 @@ void game_title_screen_display()
 	
 	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 
-	if (!Splash_screens.empty()) {
-		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
-	} else {
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+	// Search splash screens for matches
+	bool any_exact_match = false;
+	bool any_range_match = false;
+	for (auto &ss : Splash_screens) {
+		if (ss.aspect_ratio_exact != 0.0f) {
+			ss.match_exact = fl_equal(ss.aspect_ratio_exact, gr_screen.clip_aspect, 0.01f);
+		}
+		if (ss.aspect_ratio_min != 0.0f || ss.aspect_ratio_max != 0.0f) {
+			bool match = true;
+			if (ss.aspect_ratio_min != 0.0f && ss.aspect_ratio_min > gr_screen.clip_aspect) {
+				match = false;
+			}
+			if (ss.aspect_ratio_max != 0.0f && ss.aspect_ratio_max < gr_screen.clip_aspect) {
+				match = false;
+			}
+			ss.match_range = match;
+		}
+		if (ss.match_exact) {
+			any_exact_match = true;
+		}
+		if (ss.match_range) {
+			any_range_match = true;
+		}
 	}
+
+	// Filter splash screens
+	Splash_screens.erase(
+		std::remove_if(Splash_screens.begin(), Splash_screens.end(), [any_exact_match, any_range_match](const splash_screen& ss) {
+			if (any_exact_match) {
+				return !ss.match_exact;
+			} else if (any_range_match) {
+				return !ss.match_range;
+			} else {
+				return !ss.is_default;
+			}
+		}), Splash_screens.end()
+	);
+
+	const char* filename;
+	if (Splash_screens.size() == 1) {
+		filename = Splash_screens[0].filename.c_str();
+	} else if (!Splash_screens.empty()) {
+		filename = Splash_screens[Random::next((int)Splash_screens.size())].filename.c_str();
+	} else {
+		filename = Game_title_screen_fname[gr_screen.res];
+	}
+	mprintf(("Loading %s as splash screen\n", filename));
+	Game_title_bitmap = bm_load(filename);
 
 	if (Splash_fade_in_time > 0) {
 		float alpha = 0.0f;

@@ -1486,7 +1486,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 // Return codes:
 // -1 socket not connected
 // 0 No packet ready to receive
-// >0 Buffer filled with the number of bytes recieved
+// >0 Buffer filled with the number of bytes received
 int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int max_length)
 {
 	reliable_socket *rsocket = nullptr;

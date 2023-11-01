@@ -52,8 +52,15 @@ These builds use a mechanism called [url=https://appimage.org/]AppImage[/url] wh
 Alternatively, if there is a package in your software repository then you should use that. If you are the maintainer of such a package for a distribution then let us know and we will include that here.
 
 
-[img]https://scp.indiegames.us/img/mac-icon.png[/img] [color=green][size=12pt]OS X[/size][/color]
-[b][color=red]Not available[/color][/b] We recently lost access to our Mac CI environment which we usually used for compiling these builds so for the time being, there will be no builds for this OS.
+[img]https://scp.indiegames.us/img/mac-icon.png[/img] [color=green][size=12pt]macOS[/size][/color]
+[size=8pt]macOS 10.9+, 64-bit (Intel)[/size]
+${build(groups["Mac"].mainFile)}
+
+These builds are not signed and so by default will fail to launch. To run them simply right-click on the app, click open, then click open again on the security confirmation dialog. You should only have to do this once for each app.
+If running the game through Knossos or Knossos.NET this step should not be necessary.
+
+[size=8pt][color=red][b]NOTE:[/b][/color] macOS builds currently have limited support and may exhibit issues not present on other platforms.[/size]
+
 
 [hidden=TrackIR Users]
 [size=12pt]Important!![/size]

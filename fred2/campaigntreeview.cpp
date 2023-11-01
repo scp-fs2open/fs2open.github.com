@@ -118,7 +118,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 	Assert(r);
 
 	pDC->SelectObject(&black_pen);
-	// draw level seperators
+	// draw level separators
 	for (i=1; i<total_levels; i++) {
 		pDC->MoveTo(0, i * LEVEL_HEIGHT - 1);
 		pDC->LineTo(total_width * CELL_WIDTH, i * LEVEL_HEIGHT - 1);

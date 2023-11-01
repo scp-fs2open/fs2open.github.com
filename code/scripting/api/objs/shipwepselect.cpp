@@ -191,7 +191,7 @@ ADE_INDEXER(l_Loadout_Amount,
 		ship_info* sip = &Ship_info[current.getBank()->ship_class];
 		int widx = current.getBank()->wep[idx];
 		if (widx >= 0 && widx < (int)Weapon_info.size()) {
-			weapon_info* wip = &Weapon_info[idx];
+			weapon_info* wip = &Weapon_info[widx];
 			int capacity = 0;
 			// Calculate max capacity of the weapon in the current bank
 			if (wip->subtype == WP_LASER) {

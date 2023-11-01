@@ -922,7 +922,7 @@ void message_training_queue_check()
 	auto ship_entry = ship_registry_get(NOX("instructor"));
 	if (ship_entry != nullptr)
 	{
-		if (ship_entry->status == ShipStatus::PRESENT)
+		if (ship_entry->shipp != nullptr)
 		{
 			// if the instructor is dying or departing, do nothing
 			if (ship_entry->shipp->is_dying_or_departing())
@@ -1061,7 +1061,21 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 	gr_set_screen_scale(base_w, base_h);
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(position[0], position[1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
+
+	int nx = 0;
+	int ny = 0;
+
+	if (reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+
+		gr_reset_screen_scale();
+		gr_resize_screen_pos(&nx, &ny);
+		gr_set_screen_scale(base_w, base_h);
+		gr_unsize_screen_pos(&nx, &ny);
+	}
+
+	gr_shade(position[0] + nx, position[1] + ny, TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
 	gr_reset_screen_scale();
 
 	gr_set_color_fast(&Color_bright_blue);

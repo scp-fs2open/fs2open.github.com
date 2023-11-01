@@ -104,6 +104,7 @@
     <addaction name="actionShow_Ship_Models"/>
     <addaction name="actionShow_Outlines"/>
     <addaction name="actionDraw_Outlines_On_Selected_Ships"/>
+    <addaction name="actionDraw_Outline_At_Warpin_Position"/>
     <addaction name="actionShow_Ship_Info"/>
     <addaction name="actionShow_Coordinates"/>
     <addaction name="actionShow_Grid_Positions"/>
@@ -766,6 +767,14 @@
    </property>
    <property name="text">
     <string>Draw Outlines on Selected Ships</string>
+   </property>
+  </action>
+  <action name="actionDraw_Outline_At_Warpin_Position">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Draw Outline At Warpin Position</string>
    </property>
   </action>
   <action name="actionShow_Coordinates">

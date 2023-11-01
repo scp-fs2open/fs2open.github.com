@@ -1804,7 +1804,7 @@ void options_multi_vox_do()
 	}
 
 	// if the currently selected player is muted
-	if((Om_vox_player_select != NULL) && !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)]){
+	if((Om_vox_player_select != NULL) && options_multi_vox_plist_get(Om_vox_player_select) > -1 && !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)]){
 		Om_vox_buttons[gr_screen.res][OM_VOX_VOICE_MUTE].button.draw_forced(2);
 	}
 
@@ -1910,7 +1910,15 @@ void options_multi_vox_button_pressed(int n)
 	// mute/unmute button
 	case OM_VOX_VOICE_MUTE:
 		if(Om_vox_player_select != NULL){
-			Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)] = !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)];
+			int index = options_multi_vox_plist_get(Om_vox_player_select);
+
+			// there's already an assertion for this in options_multi_vox_plist_get, just ignore in release
+			if (index < 0){
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+				break;
+			}
+				
+			Om_vox_player_flags[index] = !Om_vox_player_flags[index];
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -2105,13 +2113,17 @@ int options_multi_vox_plist_get(net_player *pl)
 
 	for(idx=0;idx<Om_vox_num_players;idx++){
 		if(pl == Om_vox_players[idx]){
-			return idx;
+			break;
 		}
 	}
 
-	// should neve get here. hmmm.
-	Int3();
-	return -1;
+	// Should never get a bad value here, but the places where this is called can now handle the negative return value, as it's not catastrophic.
+	// Still Assert to assist with bug tracking in debug.
+	Assertion(idx < Om_vox_num_players, "options_multi_vox_plist_get() could not find the correct net player.  Please report to an SCP member!");
+	if (idx >= Om_vox_num_players)
+		return -1;
+	else
+		return idx;
 }
 
 // scroll the player list down

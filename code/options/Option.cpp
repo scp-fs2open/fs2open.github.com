@@ -99,7 +99,7 @@ bool boolean_deserializer(const json_t* value)
 	return b != 0;
 }
 json_t* boolean_serializer(bool value) { return json_pack("b", value ? 1 : 0); }
-SCP_string boolean_display(bool value) { return value ? "On" : "Off"; }
+SCP_string boolean_display(bool value) { return value ? XSTR("On", 1285) : XSTR("Off", 1286); }
 template<>
 void set_defaults<bool>(Option<bool>& opt) {
 	opt.setDeserializer(boolean_deserializer);

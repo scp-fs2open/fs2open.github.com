@@ -147,8 +147,13 @@ namespace particle
 			return false;
 		}
 
+		vec3d world_pos = info->pos;
+		if (info->attached_objnum >= 0) {
+			vm_vec_unrotate(&world_pos, &world_pos, &Objects[info->attached_objnum].orient);
+			world_pos += Objects[info->attached_objnum].pos;
+		}
 		// treat particles on lower detail levels as 'further away' for the purposes of culling
-		float adjusted_dist = vm_vec_dist(&Eye_position, &info->pos) * powf(2.5f, (float)(NUM_DEFAULT_DETAIL_LEVELS - Detail.num_particles));
+		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(NUM_DEFAULT_DETAIL_LEVELS - Detail.num_particles));
 		// treat bigger particles as 'closer'
 		adjusted_dist /= info->rad;
 		float cull_start_dist = 1000.f;

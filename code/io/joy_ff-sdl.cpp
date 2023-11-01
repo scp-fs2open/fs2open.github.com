@@ -46,27 +46,30 @@ static haptic_effect_t pDeathroll1;
 static haptic_effect_t pDeathroll2;
 static haptic_effect_t pExplode;
 
-static auto ForceFeedbackOption =
-    options::OptionBuilder<bool>("Input.ForceFeedback", "Force Feedback", "Enable or disable force feedback.")
-        .category("Input")
-        .level(options::ExpertLevel::Beginner)
-        .default_val(false)
-        .finish();
+static auto ForceFeedbackOption = options::OptionBuilder<bool>("Input.ForceFeedback",
+                     std::pair<const char*, int>{"Force Feedback", 1728},
+                     std::pair<const char*, int>{"Enable or disable force feedback", 1729})
+                     .category("Input")
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(false)
+                     .finish();
 
-static auto HitEffectOption =
-    options::OptionBuilder<bool>("Input.HitEffect", "Directional Hit", "Enable or disable the directional hit effect.")
-        .category("Input")
-        .level(options::ExpertLevel::Beginner)
-        .default_val(false)
-        .finish();
+static auto HitEffectOption = options::OptionBuilder<bool>("Input.HitEffect",
+                     std::pair<const char*, int>{"Directional Hit", 1730},
+                     std::pair<const char*, int>{"Enable or disable the directional hit effect", 1731})
+                     .category("Input")
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(false)
+                     .finish();
 
-static auto ForceFeedbackStrength = options::OptionBuilder<float>("Input.FFStrength", "Force Feedback Strength",
-                                                                  "The relative strength of Force Feedback effects.")
-                                        .category("Input")
-                                        .level(options::ExpertLevel::Beginner)
-                                        .range(0, 100)
-                                        .default_val(100)
-                                        .finish();
+static auto ForceFeedbackStrength = options::OptionBuilder<float>("Input.FFStrength",
+                     std::pair<const char*, int>{"Force Feedback Strength", 1756},
+                     std::pair<const char*, int>{"The realtive strength of Force Feedback effects", 1757})
+                     .category("Input")
+                     .level(options::ExpertLevel::Beginner)
+                     .range(0, 100)
+                     .default_val(100)
+                     .finish();
 
 static int joy_ff_create_effects();
 static int joy_ff_has_valid_effects();

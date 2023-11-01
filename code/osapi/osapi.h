@@ -186,6 +186,7 @@ namespace os
 		Fullscreen = 0,
 		Borderless,
 		Resizeable,
+		Capture_Mouse,
 
 		NUM_VALUES
 	};

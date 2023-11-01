@@ -191,8 +191,8 @@ int Sim_room_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 #define READYROOM_FLAG_FROM_VOLITION			(1<<0)			// volition made
 static struct {	
 	int type;					// see READYROOM_LINE_* defines above
-	char *name;
-	char *filename;
+	const char *name;
+	const char *filename;
 	int x;						// X coordinate of line
 	int y;						// Y coordinate of line
 	int flags;					// special flags, see READYROOM_FLAG_* defines above
@@ -238,7 +238,7 @@ static UI_SLIDER2 Sim_room_slider;
 
 typedef struct hash_node {
 	hash_node *next;
-	char *filename;
+	const char *filename;
 } hash_node;
 
 static hash_node *Campaign_mission_hash_table[CAMPAIGN_MISSION_HASH_SIZE];
@@ -294,7 +294,7 @@ int hash_filename(const char *filename) {
 // insert filename into Campaign_mission_hash_table
 //
 // returns 1 if successful, 0 if could not allocate memory
-int hash_insert(char *filename) {
+int hash_insert(const char *filename) {
 	int hash_val = hash_filename(filename);
 	hash_node *cur_node;
 
@@ -403,7 +403,7 @@ void campaign_mission_hash_table_delete()
 
 
 // add a line of sim_room smuck to end of list
-int sim_room_line_add(int type, char *name, char *filename, int x, int y, int flags)
+int sim_room_line_add(int type, const char *name, const char *filename, int x, int y, int flags)
 {
 	if (Num_lines >= MAX_LINES)
 		return 0;
@@ -458,8 +458,7 @@ int sim_room_standalone_mission_filter(const char *filename)
 int build_standalone_mission_list_do_frame(bool API_Access)
 {
 	int font_height = gr_get_font_height();
-	char filename[MAX_FILENAME_LEN];
-	char str[256];
+	SCP_string popup_str;
 	bool lcl_weirdness = false;
 	
 	// When no standalone missions in data directory
@@ -474,15 +473,12 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 
 	if (Num_standalone_missions > 0) {  // sanity check
 		if (strlen(Mission_filenames[Num_standalone_missions_with_info]) < MAX_FILENAME_LEN - 4) { // sanity check?
-			strcpy_s(filename, Mission_filenames[Num_standalone_missions_with_info]);
-
-			// update popup		
-			memset(str, 0, 256);
-			sprintf(str, XSTR("Single Mission\n\n%s",989), filename);
-			popup_change_text(str);
-
 			// tack on an extension
-			strcat_s(filename, FS_MISSION_FILE_EXT);
+			auto filename = cf_add_ext(Mission_filenames[Num_standalone_missions_with_info], FS_MISSION_FILE_EXT);
+
+			// update popup
+			sprintf(popup_str, XSTR("Single Mission\n\n%s", 989), filename);
+			popup_change_text(popup_str.c_str());
 
 			// activate tstrings check
 			Lcl_unexpected_tstring_check = &lcl_weirdness;
@@ -516,7 +512,7 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 
 				// determine some extra information
 				int flags = 0;
-				fs_builtin_mission *fb = game_find_builtin_mission(filename);				
+				auto fb = game_find_builtin_mission(filename);
 				if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 					flags |= READYROOM_FLAG_FROM_VOLITION;
 				}
@@ -545,8 +541,7 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 int build_campaign_mission_list_do_frame(bool API_Access)
 {
 	int font_height = gr_get_font_height();
-	char str[256];
-	char filename[MAX_FILENAME_LEN];
+	SCP_string popup_str;
 	static int valid_missions_with_info = 0; // we use this to avoid blank entries in the mission list
 
 	// When no campaign files in data directory
@@ -556,9 +551,8 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 	}
 
 	// change popup
-	memset(str, 0, 256);
-	sprintf(str, XSTR("Campaign Mission\n\n%s",990), Campaign.missions[Num_campaign_missions_with_info].name);
-	popup_change_text(str);
+	sprintf(popup_str, XSTR("Campaign Mission\n\n%s", 990), Campaign.missions[Num_campaign_missions_with_info].name);
+	popup_change_text(popup_str.c_str());
 
 	// Set global variable so we we'll have list available next time
 	Campaign_mission_names[Num_campaign_missions_with_info] = NULL;
@@ -569,7 +563,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 	{
 		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) 
 		{
-			strcpy_s(filename, Campaign.missions[Num_campaign_missions_with_info].name);
+			auto filename = Campaign.missions[Num_campaign_missions_with_info].name;
 			
 			// add to list
 			Campaign_mission_names[Num_campaign_missions_with_info] = vm_strdup(The_mission.name);
@@ -590,7 +584,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 
 			// determine some extra information
 			int flags = 0;
-			fs_builtin_mission *fb = game_find_builtin_mission(Campaign.missions[Num_campaign_missions_with_info].name);				
+			auto fb = game_find_builtin_mission(Campaign.missions[Num_campaign_missions_with_info].name);
 			if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION))
 			{
 				flags |= READYROOM_FLAG_FROM_VOLITION;
@@ -618,7 +612,6 @@ void sim_room_build_listing()
 {
 	int i, y, max_num_entries_viewable;
 	int font_height = gr_get_font_height();
-	char full_filename[256];
 
 	Num_lines = y = 0;
 	list_y = Mission_list_coords[gr_screen.res][1];
@@ -637,9 +630,8 @@ void sim_room_build_listing()
 					if (Standalone_mission_names[i]) {
 						// determine some extra information
 						int flags = 0;
-						memset(full_filename, 0, 256);
-						strcpy_s(full_filename, cf_add_ext(Mission_filenames[i], FS_MISSION_FILE_EXT));
-						fs_builtin_mission *fb = game_find_builtin_mission(full_filename);						
+						auto full_filename = cf_add_ext(Mission_filenames[i], FS_MISSION_FILE_EXT);
+						auto fb = game_find_builtin_mission(full_filename);
 						if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 							flags |= READYROOM_FLAG_FROM_VOLITION;
 						}
@@ -665,9 +657,8 @@ void sim_room_build_listing()
 				if (Campaign_mission_names[i]) {
 					// determine some extra information
 					int flags = 0;
-					memset(full_filename, 0, 256);
-					strcpy_s(full_filename, cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT));
-					fs_builtin_mission *fb = game_find_builtin_mission(full_filename);
+					auto full_filename = cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT);
+					auto fb = game_find_builtin_mission(full_filename);
 					if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 						flags |= READYROOM_FLAG_FROM_VOLITION;
 					}					
@@ -837,70 +828,6 @@ int sim_room_can_resume_savegame(char * /*savegame_filename*/)
 	#endif
 }
 
-// Decide wether to resume a save game or not
-// exit:	1	=>	savegame has been restored
-//			0	=>	no restore, proceed to briefing
-//			-1	=>	don't start mission at all
-int sim_room_maybe_resume_savegame()
-{
-	// MWA -- 3/26/98 -- removed all savegame references in game
-	return 0;
-
-	/*
-	char savegame_filename[_MAX_FNAME];
-	int popup_rval = -1, resume_savegame = 0;
-
-	// Generate the save-game filename for this campaign
-	memset(savegame_filename, 0, _MAX_FNAME);
-	mission_campaign_savefile_generate_root(savegame_filename);
-	strcat_s(savegame_filename, NOX("svg"));
-
-	// Decide if we should offer choice to resume this savegame
-	if ( sim_room_can_resume_savegame(savegame_filename) ) {
-		popup_rval = popup(0, 3, XSTR("&Cancel",-1), XSTR("&Overwrite",-1), XSTR("&Resume",-1), XSTR("A save game for this mission exists.", -1));
-		switch ( popup_rval ) {
-		case 0:
-		case -1:
-			resume_savegame = -1;
-			break;
-		case 1:
-			resume_savegame = 0;
-			break;
-		case 2:
-			resume_savegame = 1;
-			break;
-		default:
-			Int3();
-			resume_savegame = -1;
-			break;
-		}
-	} else {
-		resume_savegame = 0;
-	}
-
-	if (resume_savegame == 1) {
-		if ( state_restore_all(savegame_filename) == -1 ) {
-			popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR("Error\nSaved misison could not be loaded.\nDo you wish to start this mission from the beginning?", -1));
-			if (popup_rval == 1) {
-				resume_savegame = 0;
-			} else {
-				resume_savegame = -1;
-			}
-
-		} else {
-			resume_savegame = 1;
-		}
-	}
-
-	// If we are resuming this savegame, then delete the file
-	if (resume_savegame == 1) {
-		cf_delete(savegame_filename);
-	}
-
-	return resume_savegame;
-	*/
-}
-
 int readyroom_continue_campaign()
 {
 	// check for possible mission loop, need to do this before calling mission_campaign_next_mission()!
@@ -1052,7 +979,7 @@ void sim_room_init()
 {
 	int i;
 	sim_room_buttons *b;
-	char wild_card[256];
+	char wild_card[8];
 
 	list_x1 = Mission_list_coords[gr_screen.res][0];
 	list_x2 = Campaign_list_coords[gr_screen.res][0];
@@ -1150,7 +1077,6 @@ void sim_room_init()
 	gr_flip();		
 
 	Get_file_list_filter = sim_room_standalone_mission_filter;
-	memset(wild_card, 0, 256);
 	strcpy_s(wild_card, NOX("*"));
 	strcat_s(wild_card, FS_MISSION_FILE_EXT);
 
@@ -1239,7 +1165,7 @@ void sim_room_close()
 //functionality without a complete refactor.
 void api_sim_room_build_mission_list(bool API_Access)
 {
-	char wild_card[256];
+	char wild_card[8];
 
 	Num_campaign_missions = 0;
 	Get_file_list_filter = sim_room_campaign_mission_filter;
@@ -1252,7 +1178,6 @@ void api_sim_room_build_mission_list(bool API_Access)
 	}
 
 	Get_file_list_filter = sim_room_standalone_mission_filter;
-	memset(wild_card, 0, 256);
 	strcpy_s(wild_card, NOX("*"));
 	strcat_s(wild_card, FS_MISSION_FILE_EXT);
 
@@ -1440,10 +1365,8 @@ void sim_room_do_frame(float  /*frametime*/)
 			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 			// blit the proper icons if necessary
-			char full_name[CF_MAX_PATHNAME_LENGTH + 4];
-			memset(full_name, 0, CF_MAX_PATHNAME_LENGTH + 4);
-			strcpy_s(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
-			fs_builtin_mission *fb = game_find_builtin_mission(full_name);
+			auto full_name = cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT);
+			auto fb = game_find_builtin_mission(full_name);
 			if(fb != NULL){
 				// sim_room_blit_icons(0, Mission_list_coords[gr_screen.res][1], fb, 0);
 			}
@@ -1605,8 +1528,7 @@ void campaign_room_build_listing()
 		if (Campaign_names[i] != NULL) {
 			// determine some extra information
 			int flags = 0;
-			fs_builtin_mission *fb = game_find_builtin_mission(Campaign_file_names[i]);
-	
+			auto fb = game_find_builtin_mission(Campaign_file_names[i]);
 			if (fb != NULL) {
 				if (fb->flags & FSB_FROM_VOLITION) {
 					flags |= READYROOM_FLAG_FROM_VOLITION;

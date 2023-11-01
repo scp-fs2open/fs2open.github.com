@@ -1359,9 +1359,6 @@ bool control_config_accept(bool API_Access)
 		}
 	}
 	
-
-	hud_squadmsg_save_keys();  // rebuild map for saving/restoring keys in squadmsg mode
-
 	if (!API_Access) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1630,7 +1627,7 @@ void control_config_close(bool API_Access)
 		Ui_window.destroy();
 		common_free_interface_palette(); // restore game palette
 	}
-	hud_squadmsg_save_keys();				// rebuild map for saving/restoring keys in squadmsg mode
+
 	game_flush();
 
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -2536,6 +2533,10 @@ void control_config_do_frame(float frametime)
 		if (List_buttons[i].pressed()) {
 			// Select the pressed line
 			Selected_line = i + Scroll_offset;
+
+			// Cyborg - Quick assertion for Coverity 1093701.  Not likely to happen, but we check for a negative Selected Line later.
+			Assertion(Selected_line > -1, "control_config_do_frame() has somehow managed to get a negative Selected_line index of %d.  Please get an SCP member.", Selected_line);
+
 			Selected_item = selItem::None;
 			List_buttons[i].get_mouse_pos(&x, &y);
 

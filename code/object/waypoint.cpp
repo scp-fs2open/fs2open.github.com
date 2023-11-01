@@ -138,6 +138,12 @@ void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index)
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
 	wpt->objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, default_flags);
+
+	Assert(wpt->objnum > -1);
+	if (wpt->objnum < 0) {
+		return;
+	}
+
 	Objects[wpt->objnum].net_signature = multi_assign_network_signature(MULTI_SIG_WAYPOINT);
 }
 

@@ -128,19 +128,24 @@ SCP_vector<poof> Neb2_poofs;
 
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
-const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
-                                                                  { 1, "Low" },
-                                                                  { 2, "Medium" },
-                                                                  { 3, "High" },
-                                                                  { 4, "Ultra" }, };
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
+                                                                                   { 1, {"Low", 1161}},
+                                                                                   { 2, {"Medium", 1162}},
+                                                                                   { 3, {"High", 1163}},
+                                                                                   { 4, {"Ultra", 1721}}};
 
 const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
-                                                           "Nebula Detail",
-                                                           "Detail level of nebulas").category("Graphics").values(
-	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool) {
-	Detail.nebula_detail = val;
-	return true;
-}).finish();
+                     std::pair<const char*, int>{"Nebula Detail", 1361},
+                     std::pair<const char*, int>{"Detail level of nebulas", 1697})
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .importance(7)
+                     .change_listener([](int val, bool) {
+                          Detail.nebula_detail = val;
+                          return true;
+                     })
+                     .finish();
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA FORWARD DECLARATIONS
@@ -759,6 +764,58 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 	return 0.0f;
 }
 
+// Calculate the alpha multiplier for a poof type. This is used for fading in and out
+void neb2_calc_poof_fades() {
+
+	for (size_t i = 0; i < Poof_info.size(); i++) {
+
+		poof_info* pinfo = &Poof_info[i];
+
+		if (pinfo->fade_duration > -1) {
+
+			// Initialize variables
+			if (pinfo->fade_start == TIMESTAMP::invalid()) {
+				pinfo->fade_start = _timestamp();
+			}
+
+			// Calculate the elapsed time in milliseconds
+			auto elapsedTime = timestamp_since(pinfo->fade_start);
+
+			// fade duration of 0 can be reasonably set to 1 to prevent divide by 0
+			if (pinfo->fade_duration == 0) {
+				pinfo->fade_duration = 1;
+			}
+
+			if (pinfo->fade_in) {
+				// Make sure to enable this poof type if we're fading it in
+				if (pinfo->fade_multiplier < 0) {
+					Neb2_poof_flags |= (1 << i);
+					neb2_poof_setup();
+				}
+				pinfo->fade_multiplier = 0.0f + ((float)elapsedTime / pinfo->fade_duration);
+			} else {
+				pinfo->fade_multiplier = 1.0f - ((float)elapsedTime / pinfo->fade_duration);
+			}
+
+			// if we're finished then reset pf_info
+			if ((pinfo->fade_multiplier >= 1.0f && pinfo->fade_in) || (pinfo->fade_multiplier <= 0.0f && !pinfo->fade_in)) {
+
+				// turn off any faded out poof types
+				if (!pinfo->fade_in) {
+					Neb2_poof_flags &= ~(1 << i);
+					neb2_poof_setup();
+				}
+
+				// reset the values to default
+				pinfo->fade_duration = -1;
+				pinfo->fade_start = TIMESTAMP::invalid();
+				pinfo->fade_in = true;
+				pinfo->fade_multiplier = -1.0f;
+			}
+		}
+	}
+}
+
 // -------------------------------------------------------------------------------------------------
 // WACKY LOCAL PLAYER NEBULA STUFF
 //
@@ -774,6 +831,14 @@ void neb2_toggle_poof(int poof_idx, bool enabling) {
 	vm_vec_make(&Poof_last_gen_pos, 999999.0f, 999999.0f, 999999.0f);
 
 	neb2_poof_setup();
+}
+
+void neb2_fade_poofs(int poof_idx, int time, bool type)
+{
+	poof_info* pinfo = &Poof_info[poof_idx];
+
+	pinfo->fade_duration = time;
+	pinfo->fade_in = type;
 }
 
 void new_poof(size_t poof_info_idx, vec3d* pos) {
@@ -802,7 +867,11 @@ void upkeep_poofs()
 	// cull distant poofs
 	if (!Neb2_poofs.empty()) {
 		for (size_t i = 0; i < Neb2_poofs.size();) {
-			if (vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT) {
+
+			// If the poof type is not used or if the poof is too far then cull it
+			if (!poof_is_used(Neb2_poofs[i].poof_info_index) || (
+					vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) >
+					Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT)) {
 				Neb2_poofs[i] = Neb2_poofs.back();
 				Neb2_poofs.pop_back();
 			}
@@ -870,6 +939,9 @@ void neb2_render_poofs()
     memset(&p, 0, sizeof(p));
 	memset(&ptemp, 0, sizeof(ptemp));
 
+	// upkeep poof fade stuff
+	neb2_calc_poof_fades();
+
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);
 	neb2_get_eye_orient(&eye_orient);
@@ -892,6 +964,13 @@ void neb2_render_poofs()
 		// Miss this one out if the id is -1
 		if (pinfo->bitmap.first_frame < 0)
 			continue;
+
+		// It's possible for some faded-out poofs to get rendered after a poof type has finished a fade out
+		// and reset it's multiplier but before the poof is culled from the poof vector. So this small safety
+		// prevents them from flickering.
+		if (!poof_is_used(pf.poof_info_index)) {
+			continue;
+		}
 
 		// do animation upkeep
 		int framenum = 0;
@@ -936,6 +1015,10 @@ void neb2_render_poofs()
 
 		// get the proper alpha value
 		alpha = neb2_get_alpha_2shell(pf.alpha, pf.radius, pinfo->view_dist, pf.radius/4, &pf.pt);
+
+		if (pinfo->fade_duration > -1) {
+			alpha = alpha * pinfo->fade_multiplier;
+		}
 
 		// optimization 2 - don't draw 0.0f or less poly's
 		// this amounts to big savings

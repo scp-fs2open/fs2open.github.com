@@ -241,6 +241,7 @@ BOOL CFREDApp::InitInstance() {
 	Highlight_selectable_subsys = GetProfileInt("Preferences", "Highlight selectable subsys", Highlight_selectable_subsys);
 	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
 	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
+	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
@@ -518,6 +519,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Highlight selectable subsys", Highlight_selectable_subsys);
 	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
 	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
+	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);
