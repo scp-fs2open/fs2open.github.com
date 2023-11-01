@@ -125,25 +125,32 @@ void update_ets(object* objp, float fl_frametime)
 	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
 	//
 
-	float engine_aggregate_strength;
+	float effective_engine_strength;
+	float actual_engine_strength;
 	if (ship_p->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
 		// Pretend our strength is 100% when this flag is active
-		engine_aggregate_strength = 1.0f;
+		effective_engine_strength = 1.0f;
+		actual_engine_strength = 1.0f;
 	} else {
-		engine_aggregate_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+		effective_engine_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+
+		// very annoying, but ship_get_subsystem_strength will typically cap at no lower than 15% strength reported
+		// causing the condition below to possibly erroneously believe the engine strength isn't changing while being
+		// repaired below that threshold. use the ACTUAL strength for this check
+		actual_engine_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE, false, true);
 	}
 
 	// only update max speed if engine_aggregate_strength has changed
 	// which helps minimize amount of overrides to max speed
-	if (engine_aggregate_strength != ship_p->prev_engine_aggregate_strength) {
+	if (actual_engine_strength != ship_p->prev_engine_strength) {
 		ets_update_max_speed(objp);
-		ship_p->prev_engine_aggregate_strength = engine_aggregate_strength;
+		ship_p->prev_engine_strength = actual_engine_strength;
 
 		// check if newly updated max speed should be reduced due to engine damage
 		// don't let engine strength affect max speed when playing on lowest skill level
 		if ((objp != Player_obj) || (Game_skill_level > 0)) {
-			if (engine_aggregate_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
-				objp->phys_info.max_vel.xyz.z *= fl_sqrt(engine_aggregate_strength);
+			if (effective_engine_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
+				objp->phys_info.max_vel.xyz.z *= fl_sqrt(effective_engine_strength);
 			}
 		}
 	}
