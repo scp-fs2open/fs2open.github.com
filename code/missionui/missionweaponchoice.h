@@ -12,11 +12,10 @@
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 
-#include "mission/missionparse.h"
-
 class p_object;
 struct wss_unit;
 class ship_weapon;
+struct team_data;
 
 // mask regions for icons in the scrollable lists
 #define ICON_PRIMARY_0				28
