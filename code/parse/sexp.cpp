@@ -983,15 +983,6 @@ int	Locked_sexp_true = -1;
 int	Locked_sexp_false = -1;
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
 int	Sexp_clipboard = -1;  // used by Fred
-int	Training_context = 0;
-int	Training_context_speed_set;
-int	Training_context_speed_min;
-int	Training_context_speed_max;
-int	Training_context_speed_timestamp;
-waypoint_list *Training_context_path;
-int Training_context_goal_waypoint;
-int Training_context_at_waypoint;
-float	Training_context_distance;
 
 // If you edit this, make sure this is greater than zero,
 // so that we don't have to write pointless asserts. :)
@@ -1006,12 +997,6 @@ sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility w
 int Num_special_expl_blocks;
 
 SCP_vector<int> Current_sexp_operator;
-
-int Players_target = UNINITIALIZED;
-int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
-ship_subsys *Players_targeted_subsys;
-int Players_target_timestamp;
-int Players_mlocked_timestamp;
 
 // for sexp_fade
 static int Fade_out_r = 0;
@@ -19004,7 +18989,7 @@ int sexp_targeted(int node)
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if (timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
+		if (!Players_target_timestamp.isValid() || timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
 			return SEXP_FALSE;
 		}
 
@@ -23045,12 +23030,11 @@ int sexp_missile_locked(int node)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
-	if (timestamp_since(Players_mlocked_timestamp) >= z * MILLISECONDS_PER_SECOND)
-	{
-		return SEXP_TRUE;
-	}
 
-	return SEXP_FALSE;
+	if (!Players_mlocked_timestamp.isValid() || timestamp_since(Players_mlocked_timestamp) < z * MILLISECONDS_PER_SECOND)
+		return SEXP_FALSE;
+
+	return SEXP_TRUE;
 }
 
 int sexp_is_player(int node)
@@ -24225,14 +24209,14 @@ void sexp_fade(bool fade_in, int duration, ubyte R, ubyte G, ubyte B)
 {
 	if (duration > 0)
 	{
-		Fade_start_timestamp = timestamp();
-		Fade_end_timestamp = timestamp(duration);
-		Fade_type = fade_in ? FI_FADEIN : FI_FADEOUT;
+		Fade_start_timestamp = _timestamp();
+		Fade_end_timestamp = _timestamp(duration);
+		Fade_type = fade_in ? FadeType::FI_FADEIN : FadeType::FI_FADEOUT;
 		gr_create_shader(&Viewer_shader, R, G, B, Viewer_shader.c);
 	}
 	else
 	{
-		Fade_type = FI_NONE;
+		Fade_type = FadeType::FI_NONE;
 		gr_create_shader(&Viewer_shader, R, G, B, fade_in ? 0 : 255);
 	}
 }

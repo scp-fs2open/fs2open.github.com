@@ -87,6 +87,23 @@ int Training_bind_warning = -1;  // Missiontime at which we last gave warning
 int Training_message_visible;
 training_message_queue Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX];
 
+int	Training_context = 0;
+int	Training_context_speed_set;
+int	Training_context_speed_min;
+int	Training_context_speed_max;
+TIMESTAMP	Training_context_speed_timestamp;
+waypoint_list *Training_context_path;
+int Training_context_goal_waypoint;
+int Training_context_at_waypoint;
+float	Training_context_distance;
+
+int Players_target = UNINITIALIZED;
+int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
+ship_subsys *Players_targeted_subsys;
+TIMESTAMP Players_target_timestamp;
+TIMESTAMP Players_mlocked_timestamp;
+
+
 // coordinates for training messages
 int Training_message_window_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ 174, 40 },
@@ -369,6 +386,17 @@ void training_mission_init()
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
 	}
+
+	Training_context = 0;
+	Training_context_speed_set = 0;
+	Training_context_speed_timestamp = TIMESTAMP::invalid();
+	Training_context_path = nullptr;
+
+	Players_target = UNINITIALIZED;
+	Players_mlocked = UNINITIALIZED;
+	Players_targeted_subsys = nullptr;
+	Players_target_timestamp = TIMESTAMP::invalid();
+	Players_mlocked_timestamp = TIMESTAMP::invalid();
 }
 
 int comp_training_lines_by_born_on_date(const int *e1, const int *e2)

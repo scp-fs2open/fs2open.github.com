@@ -12,11 +12,29 @@
 
 #include "hud/hud.h"
 
+class TIMESTAMP;
+
 extern int Max_directives;
 extern int Training_message_method;
 extern int Training_num_lines;
 extern int Training_message_visible;
 extern int Training_failure;
+
+extern int Training_context;
+extern int Training_context_speed_min;
+extern int Training_context_speed_max;
+extern int Training_context_speed_set;
+extern TIMESTAMP Training_context_speed_timestamp;
+extern waypoint_list *Training_context_path;
+extern int Training_context_goal_waypoint;
+extern int Training_context_at_waypoint;
+extern float Training_context_distance;
+
+extern int Players_target;
+extern int Players_mlocked;
+extern ship_subsys *Players_targeted_subsys;
+extern TIMESTAMP Players_target_timestamp;
+extern TIMESTAMP Players_mlocked_timestamp;
 
 void training_mission_init();
 void training_mission_shutdown();
