@@ -8765,7 +8765,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				}
 
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
-					alphaf = wp->alpha_current * 255.0f;
+					alphaf = wp->alpha_current;
 				if (wip->laser_alpha_curve_idx >= 0)
 					alphaf *= Curves[wip->laser_alpha_curve_idx].GetValue(time);
 				CLAMP(alphaf, 0.0f, 1.0f);

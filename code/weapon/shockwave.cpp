@@ -282,6 +282,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	if (wip && wip->shockwave.radius_curve_idx >= 0) {
 		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
 		sw->radius = val * sw->outer_radius;
+		if (sw->radius < 0.0f)
+			sw->radius = 0.0f;
 	} else {
 		sw->radius += (frametime * sw->speed);
 		CLAMP(sw->radius, 0.0f, sw->outer_radius);
