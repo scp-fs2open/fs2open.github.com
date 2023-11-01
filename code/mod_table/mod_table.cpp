@@ -146,6 +146,7 @@ bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
+bool Disable_internal_loadout_restoration_system;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -289,6 +290,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Center splash logo:")) {
 			stuff_boolean(&Splash_logo_center);
+		}
+
+		if (optional_string("$Disable FSO Internal Loadout Restoration System:")) {
+			stuff_boolean(&Disable_internal_loadout_restoration_system);
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -1525,6 +1530,7 @@ void mod_table_reset()
 		}};
 	Randomize_particle_rotation = false;
 	Calculate_subsystem_hitpoints_after_parsing = false;
+	Disable_internal_loadout_restoration_system = false;
 }
 
 void mod_table_set_version_flags()

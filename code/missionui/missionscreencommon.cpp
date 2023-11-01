@@ -37,6 +37,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -1117,6 +1118,10 @@ void wss_maybe_restore_loadout()
 	wss_unit	*slot;
 
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
+
+	if (Disable_internal_loadout_restoration_system) {
+		return;
+	}
 
 	// only restore if mission hasn't changed
 	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
