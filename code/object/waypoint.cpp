@@ -317,7 +317,7 @@ int find_index_of_waypoint_list(const waypoint_list *wp_list)
 	ptrdiff_t index = wp_list - Waypoint_lists.data();
 
 	if (index >= 0 && index < (ptrdiff_t)Waypoint_lists.size())
-		return (int)index;
+		return static_cast<int>(index);
 
 	return -1;
 }
