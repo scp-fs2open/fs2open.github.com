@@ -879,6 +879,8 @@ enum : int {
 	OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
 	OP_HUD_FORCE_EMP_EFFECT, // MjnMixael
 	OP_SET_GRAVITY_ACCEL,	// Asteroth
+	OP_FORCE_REARM,	 // MjnMixael
+	OP_ABORT_REARM,  // MjnMixael
 	OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
 	OP_ENABLE_GENERAL_ORDERS,	// MjnMixael
 	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
