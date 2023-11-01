@@ -8833,6 +8833,10 @@ bool check_for_23_3_data()
 			return true;
 	}
 
+	if (The_mission.custom_data.size() > 0) {
+		return true;
+	}
+
 	for (const auto& so : list_range(&Ship_obj_list))
 	{
 		auto shipp = &Ships[Objects[so->objnum].instance];
