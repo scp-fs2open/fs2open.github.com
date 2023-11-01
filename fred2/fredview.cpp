@@ -264,6 +264,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
 	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
+	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -3461,7 +3463,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_IGNORE:
@@ -3637,7 +3641,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE_WING:
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				if (team == team2) {
 					if (ship >= 0)
 						return "Ship assigned to attack same team";
@@ -3768,6 +3774,18 @@ void CFREDView::OnViewOutlinesOnSelected()
 void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
+}
+
+void CFREDView::OnViewOutlineAtWarpin()
+{
+	Draw_outline_at_warpin_position = !Draw_outline_at_warpin_position;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 

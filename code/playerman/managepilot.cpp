@@ -183,6 +183,10 @@ int campaign_file_list_filter(const char *filename)
 			Campaign_names[local_num_campaigns] = vm_strdup(name);
 			local_num_campaigns++;
 
+			// here we *do* free the campaign description because we are not saving the pointer.
+			if (desc != NULL)
+				vm_free(desc);
+
 			return 1;
 		}
 	}

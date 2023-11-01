@@ -82,6 +82,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggle2DMission, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Mission_2d); });
 	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_showing_goals); });
 	connect(ui->toggleMissionEndToMainhall, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::End_to_mainhall); });
+	connect(ui->togglePreloadSubspace, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Preload_subspace); });
 
 	// AI Profiles
 	connect(ui->aiProfileCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &MissionSpecDialog::aiProfileIndexChanged);
@@ -253,6 +254,7 @@ void MissionSpecDialog::updateFlags() {
 	ui->toggleScramble->setChecked(flags[Mission::Mission_Flags::Scramble]);
 	ui->toggleHullRepair->setChecked(flags[Mission::Mission_Flags::Support_repairs_hull]);
 	ui->toggleTrail->setChecked(flags[Mission::Mission_Flags::Toggle_ship_trails]);
+	ui->togglePreloadSubspace->setChecked(flags[Mission::Mission_Flags::Preload_subspace]);
 }
 
 void MissionSpecDialog::updateAIProfiles() {

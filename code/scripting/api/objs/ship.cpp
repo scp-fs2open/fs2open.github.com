@@ -269,7 +269,12 @@ ADE_FUNC(getFlag, l_Ship, "string flag_name", "Checks whether one or more flags 
 				return ADE_RETURN_FALSE;
 		}
 
-		// we don't check parse flags
+		// we don't check parse flags, except for one that can be an object flag in reverse
+		if (parse_obj_flag == Mission::Parse_Object_Flags::OF_No_collide)
+		{
+			if (objp->flags[Object::Object_Flags::Collides])
+				return ADE_RETURN_FALSE;
+		}
 
 		if (ai_flag != AI::AI_Flags::NUM_VALUES)
 		{
@@ -963,7 +968,7 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is diabled, false otherwise")
+ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is disabled, false otherwise")
 {
 	object_h *objh=NULL;
 	bool set = false;
@@ -1668,20 +1673,22 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_DISABLE:
+		case LE_ORDER_DISABLE_TACTICAL:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_DISABLE_SHIP;
+				ai_mode = (eh->index == LE_ORDER_DISABLE) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
 				ai_submode = -SUBSYSTEM_ENGINE;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}
 			break;
 		}
 		case LE_ORDER_DISARM:
+		case LE_ORDER_DISARM_TACTICAL:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_DISARM_SHIP;
+				ai_mode = (eh->index == LE_ORDER_DISARM) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
 				ai_submode = -SUBSYSTEM_TURRET;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}
@@ -1694,10 +1701,11 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_IGNORE:
+		case LE_ORDER_IGNORE_NEW:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_IGNORE_NEW;
+				ai_mode = (eh->index == LE_ORDER_IGNORE) ? AI_GOAL_IGNORE : AI_GOAL_IGNORE_NEW;
 				ai_submode = 0;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}

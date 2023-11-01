@@ -541,7 +541,7 @@ sexp_container *get_sexp_container_special(const SCP_string &text, size_t start_
 }
 
 /**
-* Helper function for sexp_container_replace_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
+* Helper function for sexp_container_replace_refs_with_values(). Given a SEXP Container it works out what modifier was used and what the replacement string should be.
 **/
 bool get_replace_text_for_modifier(const SCP_string &text,
 	sexp_container &container,
@@ -595,7 +595,7 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 
 		if (modifier == ListModifier::INVALID) {
 			Warning(LOCATION,
-				"Attempt to reaplce text from list container %s using unrecognized list modifer",
+				"Attempt to replace text from list container %s using unrecognized list modifier",
 				container.container_name.c_str());
 			return false;
 		}

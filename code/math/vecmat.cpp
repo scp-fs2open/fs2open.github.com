@@ -2811,7 +2811,7 @@ void vm_matrix4_get_orientation(matrix *out, const matrix4 *m)
 	out->a2d[2][2] = m->a2d[2][2];
 }
 
-void vm_matrix4_get_offset(vec3d *out, matrix4 *m)
+void vm_matrix4_get_offset(vec3d *out, const matrix4 *m)
 {
 	out->xyz.x = m->vec.pos.xyzw.x;
 	out->xyz.y = m->vec.pos.xyzw.y;

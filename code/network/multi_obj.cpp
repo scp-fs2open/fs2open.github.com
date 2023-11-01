@@ -834,7 +834,7 @@ bool multi_oo_simulate_rollback_shots(int frame_idx)
 // restores ships to the positions they were in bedfore rollback.
 void multi_record_restore_positions() 
 {
-	for (auto restore_point : Oo_info.restore_points) {
+	for (const auto& restore_point : Oo_info.restore_points) {
 
 		object* objp = &Objects[restore_point.roll_objnum];
 		// reset the position, orientation, and velocity for each object
@@ -1369,7 +1369,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 	}	
 
 	// Cyborg17 - add the subsystem data, now with packer function.
-	if ((MULTIPLAYER_MASTER || objp->flags[Object::Object_Flags::Player_ship]) && shipp->ship_info_index >= 0) {
+	if (MULTIPLAYER_MASTER || objp->flags[Object::Object_Flags::Player_ship]) {
 		SCP_vector<ubyte> flags;
 		SCP_vector<float> subsys_data;
 		ubyte i = 0;

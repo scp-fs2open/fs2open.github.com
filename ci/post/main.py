@@ -19,7 +19,7 @@
 # HLP_API:
 # HLP_KEY:
 
-# LINUX_RESULT: bool, if the linux builds were sucessfully uploaded
+# LINUX_RESULT: bool, if the linux builds were successfully uploaded
 # WINDOWS_RESULT: bool, if the windows builds were successfully uploaded
 
 import sys
@@ -137,8 +137,8 @@ def main():
 			"pass": os.environ["INDIEGAMES_SSHPASS"],
 			"path": "public_html/builds/{type}/{version}/",
 			"mirrors": (
-				"https://porphyrion.feralhosting.com/datacorder/builds/{type}/{version}/{file}",
-				"http://scp.indiegames.us/builds/{type}/{version}/{file}",
+				"https://perses.feralhosting.com/datacorder/builds/{type}/{version}/{file}",
+				"https://scp.indiegames.us/builds/{type}/{version}/{file}",
 			),
 		},
 		"nebula": {
@@ -259,6 +259,10 @@ def main():
 		
 		if "Linux" not in groups.keys():
 			print("ERROR: No Linux builds were detected!")
+			sys.exit(1)
+
+		if "Mac" not in groups.keys():
+			print("ERROR: No Mac builds were detected!")
 			sys.exit(1)
 		
 		# z64: What dose this do???

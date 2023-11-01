@@ -240,7 +240,8 @@ void popupdead_start()
 			scripting::hook_param("IsTimeStopped", 'b', false),
 			scripting::hook_param("IsStateRunning", 'b', true),
 			scripting::hook_param("IsInputPopup", 'b', false),
-			scripting::hook_param("IsDeathPopup", 'b', true));
+			scripting::hook_param("IsDeathPopup", 'b', true),
+			scripting::hook_param("DeathMessage", 's', Player->death_message.c_str()));
 
 		scripting::hooks::OnDialogInit->run(paramList);
 		if (scripting::hooks::OnDialogInit->isOverride(paramList))

@@ -543,7 +543,7 @@ public:
 	void render(float frametime) override;
 };
 
-class HudGaugeOffscreen: public HudGauge
+class HudGaugeOffscreen: public HudGauge3DAnchor
 {
 protected:
 	float Max_offscreen_tri_seperation;
@@ -562,7 +562,7 @@ public:
 	void pageIn() override;
 };
 
-class HudGaugeLeadIndicator: public HudGauge
+class HudGaugeLeadIndicator: public HudGauge3DAnchor
 {
 protected:
 	hud_frames Lead_indicator_gauge;

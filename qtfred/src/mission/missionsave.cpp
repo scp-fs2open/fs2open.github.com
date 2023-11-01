@@ -10,6 +10,7 @@
 #include <freespace.h>
 
 #include <ai/aigoals.h>
+#include <ai/ailua.h>
 #include <asteroid/asteroid.h>
 #include <cfile/cfile.h>
 #include <hud/hudsquadmsg.h>
@@ -680,8 +681,16 @@ void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 					str = "ai-disable-ship";
 					break;
 
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
+					str = "ai-disable-ship-tactical";
+					break;
+
 				case AI_GOAL_DISARM_SHIP:
 					str = "ai-disarm-ship";
+					break;
+
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
+					str = "ai-disarm-ship-tactical";
 					break;
 
 				case AI_GOAL_IGNORE:
@@ -1232,13 +1241,13 @@ int CFred_mission_save::save_briefing()
 					}
 				}
 
-				if (save_format != MissionFormat::RETAIL) {
+				if (save_format != MissionFormat::RETAIL && bi->scale_factor != 1.0f) {
 					if (optional_string_fred("$icon scale:"))
 						parse_comments();
 					else
 						fout("\n$icon scale:");
 
-					fout(" %d", bi->scale);
+					fout(" %d", static_cast<int>(bi->scale_factor * 100.0f));
 				}
 
 				if (optional_string_fred("+id:")) {
@@ -1254,20 +1263,29 @@ int CFred_mission_save::save_briefing()
 				fout(" %d", (bi->flags & BI_HIGHLIGHT) ? 1 : 0);
 
 				if (save_format != MissionFormat::RETAIL) {
-					required_string_fred("$mirror:");
-					parse_comments();
+					if (optional_string_fred("$mirror:"))
+						parse_comments();
+					else
+						fout("\n$mirror:");
+
 					fout(" %d", (bi->flags & BI_MIRROR_ICON) ? 1 : 0);
 				}
 
 				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_WING_ICON)) {
-					required_string_fred("$use wing icon:");
-					parse_comments();
+					if (optional_string_fred("$use wing icon:"))
+						parse_comments();
+					else
+						fout("\n$use wing icon:");
+
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
 				}
 
 				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
-					required_string_fred("$use cargo icon:");
-					parse_comments();
+					if (optional_string_fred("$use cargo icon:"))
+						parse_comments();
+					else
+						fout("\n$use cargo icon:");
+
 					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
@@ -2248,6 +2266,22 @@ int CFred_mission_save::save_messages()
 			fout(" %s", Messages[i].wave_info.name);
 		}
 
+		if (Messages[i].note != "") {
+			if (optional_string_fred("+Note:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Note:");
+
+			auto copy = Messages[i].note;
+			lcl_fred_replace_stuff(copy);
+			fout(" %s", copy.c_str());
+
+			if (optional_string_fred("$end_multi_text", "$Name:"))
+				parse_comments();
+			else
+				fout_version("\n$end_multi_text");
+		}
+
 		fso_comment_pop();
 	}
 
@@ -2259,6 +2293,7 @@ int CFred_mission_save::save_messages()
 int CFred_mission_save::save_campaign_file(const char *pathname)
 {
 	reset_parse();
+	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
 
 	pathname = cf_add_ext(pathname, FS_CAMPAIGN_FILE_EXT);
@@ -2339,10 +2374,13 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		required_string_fred("+Flags:", "$Mission:");
 		parse_comments();
 
+		// don't save any internal flags
+		auto flags_to_save = cm.flags & CMISSION_EXTERNAL_FLAG_MASK;
+
 		// Goober5000
 		if (save_format != MissionFormat::RETAIL) {
 			// don't save Bastion flag
-			fout(" %d", cm.flags & ~CMISSION_FLAG_BASTION);
+			fout(" %d", flags_to_save & ~CMISSION_FLAG_BASTION);
 
 			// new main hall stuff
 			if (optional_string_fred("+Main Hall:", "$Mission:")) {
@@ -2354,7 +2392,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", cm.flags | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (cm.debrief_persona_index > 0) {
@@ -2494,8 +2532,13 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
-	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
+	if (save_format == MissionFormat::RETAIL) {
+		// All retail missions, both FS1 and FS2, have the same version
+		fout(" %d.%d", LEGACY_MISSION_VERSION.major, LEGACY_MISSION_VERSION.minor);
+	} else {
+		// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+		fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
+	}
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -2992,8 +3035,21 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 	// Migrate the version!
 	The_mission.required_fso_version = MISSION_VERSION;
 
+	// Additional incremental version update for some features
+	auto newer_version = gameversion::version(23, 3);
+	if (MISSION_VERSION >= newer_version)
+	{
+		Warning(LOCATION, "Notify an SCP coder: now that the required mission version is at least 23.3, the incremental version code can be removed");
+	}
+	else if (check_for_23_3_data())
+	{
+		The_mission.required_fso_version = newer_version;
+	}
+
 	reset_parse();
+	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
+
 	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open mission file to save.\n"));
@@ -3271,6 +3327,11 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 	{
 		if (strlen(shipp_params->anim) > 0)
 			fout("\n%s animation: %s", prefix, shipp_params->anim);
+	}
+
+	if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+	{
+		fout("\n$Supercap warp%s physics: %s", direction == WarpDirection::WARP_IN ? "in" : "out", shipp_params->supercap_warp_physics ? "YES" : "NO");
 	}
 
 	if (direction == WarpDirection::WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)
@@ -4143,6 +4204,38 @@ int CFred_mission_save::save_players()
 	required_string_fred("#Players");
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Player_starts);
+
+	SCP_vector<SCP_string> e_list = ai_lua_get_general_orders(true);
+
+	if (save_format != MissionFormat::RETAIL && (e_list.size() > 0)) {
+		if (optional_string_fred("+General Orders Enabled:", "#Players"))
+			parse_comments();
+		else
+			fout("\n+General Orders Enabled:");
+
+		fout(" (");
+
+		for (const SCP_string& order : e_list) {
+			fout(" \"%s\"", order.c_str());
+		}
+		fout(" )\n");
+	}
+
+	SCP_vector<SCP_string> v_list = ai_lua_get_general_orders(false, true);
+
+	if (save_format != MissionFormat::RETAIL && (v_list.size() > 0)) {
+		if (optional_string_fred("+General Orders Valid:", "#Players"))
+			parse_comments();
+		else
+			fout("\n+General Orders Valid:");
+
+		fout(" (");
+
+		for (const SCP_string& order : v_list) {
+			fout(" \"%s\"", order.c_str());
+		}
+		fout(" )\n");
+	}
 
 	for (i = 0; i < Num_teams; i++) {
 		required_string_fred("$Starting Shipname:");

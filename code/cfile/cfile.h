@@ -171,7 +171,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
 void cfile_close();
 
 // add an extension to a filename if it doesn't already have it
-char *cf_add_ext(const char *filename, const char *ext);
+const char *cf_add_ext(const char *filename, const char *ext);
 
 // return filename of a CFILE you called cfopen() successfully on.
 const char *cf_get_filename(const CFILE *cfile);

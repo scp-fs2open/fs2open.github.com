@@ -16,13 +16,13 @@ enum class lua_net_data_type : uint8_t { NIL, BOOL, NUMBER, STRING8, STRING16, U
 static bool need_toss_packet(ushort target, short packet_source, ushort packetTime, UI_TIMESTAMP localTime) {
 	//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
 	//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
-	static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> recieved_packets;
+	static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> received_packets;
 
 	//The idea is, that we reject packets which are in the past, unless the last packet we actually got is so far in the past, we're not sure if it might have overflowed
 	//Basically, assume that if packetTime - lastPacketTime < 1000, then it's either delayed over 60 seconds, or not a past packet. If it's larger than that, compare it to
 	//the difference of local timestamps. If the local timestamp is over 2^16, it's also safe, otherwise, allow a 10% delay margin.
 
-	auto& channel = recieved_packets[{target, packet_source}];
+	auto& channel = received_packets[{target, packet_source}];
 	std::pair<ushort, UI_TIMESTAMP> newTimestamp = { std::move(packetTime), std::move(localTime) };
 
 	if (!channel.second.isValid()) {
@@ -47,7 +47,7 @@ static bool need_toss_packet(ushort target, short packet_source, ushort packetTi
 	}
 
 	//If we're still here, then we've got a packet that has a very high remote time but a very short local time, so likely a packet whose high remote time indicates a
-	//negative remote time. Toss is then. Also, since we toss the packet, we DON'T update the recieved packet index.
+	//negative remote time. Toss is then. Also, since we toss the packet, we DON'T update the received packet index.
 	return true;
 }
 

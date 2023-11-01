@@ -123,6 +123,57 @@ ADE_VIRTVAR(InTechDatabase, l_Intelentry, "boolean", "Gets or sets whether this 
 	return ade_set_args(L, "b", (Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0);
 }
 
+ADE_VIRTVAR(CustomData,
+	l_Intelentry,
+	nullptr,
+	"Gets the custom data table for this entry",
+	"table",
+	"The entry's custom data table")
+{
+	int idx;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= intel_info_size())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : Intel_info[idx].custom_data) {
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_FUNC(hasCustomData,
+	l_Intelentry,
+	nullptr,
+	"Detects whether the entry has any custom data",
+	"boolean",
+	"true if the entry's custom_data is not empty, false otherwise")
+{
+	int idx;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= intel_info_size())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	bool result = !Intel_info[idx].custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
 ADE_FUNC(isValid, l_Intelentry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;

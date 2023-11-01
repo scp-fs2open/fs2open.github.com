@@ -36,6 +36,7 @@ class OverridableHook;
 
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
+extern float Min_draw_distance_cockpit;
 extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
@@ -102,7 +103,7 @@ public:
 		Stack.push_back(Current_transform);
 	}
 
-	matrix4 &get_transform()
+	const matrix4 &get_transform() const
 	{
 		return Current_transform;
 	}
@@ -115,7 +116,7 @@ public:
 		Stack.push_back(Current_transform);
 	}
 
-	void push_and_replace(matrix4 new_transform)
+	void push_and_replace(const matrix4 &new_transform)
 	{
 		Current_transform = new_transform;
 		Stack.push_back(Current_transform);
@@ -300,7 +301,7 @@ public:
 
 	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset);
 
-	size_t get_vertex_stride() { return Vertex_stride; }
+	size_t get_vertex_stride() const { return Vertex_stride; }
 
 	bool operator==(const vertex_layout& other) const;
 

@@ -311,7 +311,7 @@ static char* GetFilePart(char *source)
 SCP_string safe_string;
 
 // Entry point into the main exception handling routine.  This routine is put into an except()
-// statment at the beginning of a thread and is called anytime that there is a program exception
+// statement at the beginning of a thread and is called anytime that there is a program exception
 // The data is stored in a file called ErrorLog.txt in the data directory.
 //
 // data:			pointer to the exception data

@@ -581,6 +581,12 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	return TRUE;
 }
 
+// For tokenizing
+#define MAX_FILENAME_LEN_1	31
+#if (MAX_FILENAME_LEN_1) != (MAX_FILENAME_LEN - 1)
+#error MAX_FILENAME_LEN_1 must be equal to MAX_FILENAME_LEN - 1!
+#endif
+
 BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	CFred_mission_save save;
 	DWORD attrib;
@@ -591,7 +597,7 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	auto len = strlen(filename);
 
 	if (len >= MAX_FILENAME_LEN)
-		Fred_main_wnd->MessageBox("The filename is too long for FreeSpace.  The game will not be able to read this file.  Max length, including extension, is " SCP_TOKEN_TO_STR(MAX_FILENAME_LEN-1) " characters.", NULL, MB_OK | MB_ICONEXCLAMATION);
+		Fred_main_wnd->MessageBox("The filename is too long for FreeSpace.  The game will not be able to read this file.  Max length, including extension, is " SCP_TOKEN_TO_STR(MAX_FILENAME_LEN_1) " characters.", NULL, MB_OK | MB_ICONEXCLAMATION);
 
 	// drop extension and copy to Mission_filename
 	auto ext_ch = strrchr(filename, '.');

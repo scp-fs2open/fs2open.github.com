@@ -267,6 +267,8 @@ int mission_campaign_maybe_add(const char *filename)
 
 			Num_campaigns++;
 
+			// Note that we're not freeing desc here because the pointer is getting copied to Campaign_descs which is freed later.
+
 			return 1;
 		}
 	}
@@ -722,31 +724,6 @@ void mission_campaign_init()
 	Campaign_file_missing = 0;
 
 	player_loadout_init();
-}
-
-/**
- * Fill in the root of the campaign save filename
- */
-void mission_campaign_savefile_generate_root(char *filename, player *pl)
-{
-	char base[_MAX_FNAME];
-
-	Assert ( strlen(Campaign.filename) != 0 ); //-V805
-
-	if (pl == NULL) {
-		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
-		pl = &Players[Player_num];
-	}
-
-	Assert( pl != NULL );
-
-	// build up the filename for the save file.  There could be a problem with filename length,
-	// but this problem can get fixed in several ways -- ignore the problem for now though.
-	_splitpath( Campaign.filename, NULL, NULL, base, NULL );
-
-	Assert ( (strlen(base) + strlen(pl->callsign) + 1) < _MAX_FNAME );
-
-	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
 }
 
 // the below two functions is internal to this module.  It is here so that I can group the save/load
@@ -1491,7 +1468,7 @@ void mission_campaign_maybe_play_movie(int type)
 /**
  * Return the type of campaign of the passed filename
  */
-int mission_campaign_parse_is_multi(char *filename, char *name)
+int mission_campaign_parse_is_multi(const char *filename, char *name)
 {	
 	int i;
 	char temp[NAME_LENGTH];
