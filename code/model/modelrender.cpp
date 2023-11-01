@@ -1840,13 +1840,14 @@ void model_render_glowpoint_add_light(int point_num, const vec3d *pos, const mat
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		if (pmi){
-			if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
-				model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
-			} else {
-				vec3d tempn = loc_norm;
-				model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
-			}
+
+		if (!pmi){
+			model_local_to_global_point(&loc_offset, &tempv, pm, bank->submodel_parent);
+		} else if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
+			model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
+		} else {
+			vec3d tempn = loc_norm;
+			model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
 		}
 	}
 
@@ -1870,7 +1871,7 @@ void model_render_glowpoint_add_light(int point_num, const vec3d *pos, const mat
 			return;
 	}
 
-	if( (pmi && gpo->type_override?gpo->type:bank->type)==0)
+	if( (gpo->type_override?gpo->type:bank->type)==0)
 	{
 		float pulse = model_render_get_point_activation(bank, gpo);
 		if (pulse == 0.0f)
@@ -1893,7 +1894,11 @@ void model_render_glowpoint_add_light(int point_num, const vec3d *pos, const mat
 				cone_dir_rot = gpo->cone_direction;
 			}
 
-			model_instance_local_to_global_dir(&cone_dir_model, &cone_dir_rot, pm, pmi, bank->submodel_parent);
+			if (pmi)
+				model_instance_local_to_global_dir(&cone_dir_model, &cone_dir_rot, pm, pmi, bank->submodel_parent);
+			else 
+				cone_dir_model = cone_dir_rot;
+				
 			vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
 			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
