@@ -8821,5 +8821,11 @@ bool check_for_23_3_data()
 			return true;
 	}
 
+	for (int t = 0; t < Num_teams; t++) {
+		if (Team_data[t].do_not_validate) {
+			return true;
+		}
+	}
+
 	return false;
 }
