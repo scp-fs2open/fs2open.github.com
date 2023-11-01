@@ -17585,7 +17585,7 @@ int sexp_previous_event_status( int n, EventStatus status )
 
 			} else {
 				// now return KNOWN_TRUE or KNOWN_FALSE based on the status field in the goal structure
-				if ( Campaign.missions[mission_num].events[i].status == (int)status )
+				if ( Campaign.missions[mission_num].events[i].status == static_cast<int>(status) )
 					rval = SEXP_KNOWN_TRUE;
 				else
 					rval = SEXP_KNOWN_FALSE;

@@ -948,9 +948,9 @@ void mission_campaign_store_goals_and_events()
 		// event evaluation
 		if ( event.formula == -1 ) {
 			if ( event.result )
-				stored_event.status = (int)EventStatus::SATISFIED;
+				stored_event.status = static_cast<int>(EventStatus::SATISFIED);
 			else
-				stored_event.status = (int)EventStatus::FAILED;
+				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
 			UNREACHABLE("Mission event formula should be -1 at end-of-mission");
 	}

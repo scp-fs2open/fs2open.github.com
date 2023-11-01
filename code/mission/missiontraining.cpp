@@ -290,6 +290,10 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 					c = &Color_bright_blue;
 				}
 				break;
+
+			default:
+				// stick with Color_normal
+				break;
 			}
 		}
 
