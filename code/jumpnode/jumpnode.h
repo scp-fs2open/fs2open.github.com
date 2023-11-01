@@ -66,7 +66,7 @@ public:
 	int GetSCPObjectNumber() const;
 	int GetPolymodelInstanceNum() const;
 	const object *GetSCPObject() const;
-	const color *GetColor() const;
+	const color &GetColor() const;
 	const vec3d *GetPosition() const;
 
 	//Setting

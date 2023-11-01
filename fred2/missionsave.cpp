@@ -4686,8 +4686,8 @@ int CFred_mission_save::save_waypoints()
 					fout("\n+Alphacolor:");
 				}
 
-				auto jn_color = jnp->GetColor();
-				fout(" %u %u %u %u", jn_color->red, jn_color->green, jn_color->blue, jn_color->alpha);
+				const auto &jn_color = jnp->GetColor();
+				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 
 			int hidden_is_there = optional_string_fred("+Hidden:", "$Jump Node:");

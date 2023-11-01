@@ -4840,7 +4840,7 @@ int CFred_mission_save::save_waypoints()
 					fout("\n+Alphacolor:");
 				}
 
-				color jn_color = jnp->GetColor();
+				const auto &jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 

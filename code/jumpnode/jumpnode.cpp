@@ -177,9 +177,9 @@ const object *CJumpNode::GetSCPObject() const
 /**
  * @return Color of jump node when rendered
  */
-const color *CJumpNode::GetColor() const
+const color &CJumpNode::GetColor() const
 {
-	return &m_display_color;
+	return m_display_color;
 }
 
 /**
