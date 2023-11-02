@@ -1752,6 +1752,61 @@ ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters
 	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
 }
 
+ADE_VIRTVAR(CustomData, l_Mission, nullptr, "Gets the custom data table for this mission", "table", "The mission's custom data table") 
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : The_mission.custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Mission, nullptr, "Detects whether the mission has any custom data", "boolean", "true if the mission's custom_data is not empty, false otherwise") 
+{
+
+	bool result = !The_mission.custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(addDefaultCustomData,
+	l_Mission,
+	"string key, string value, string description",
+	"Adds a custom data pair with the given key if it's unique. Only works in FRED! The description will be displayed in the FRED custom data editor.",
+	"boolean",
+	"returns true if sucessful, false otherwise. Returns nil if not running in FRED.")
+{
+	const char* key;
+	const char* value;
+	const char* desc;
+	if (!ade_get_args(L, "sss", &key, &value, &desc))
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+
+	// defaults are not ever used in gameplay, but only as a convenience for FREDers
+	// so if we're not in FRED we can skip all of this.
+	if (!Fred_running) {
+		return ADE_RETURN_NIL;
+	}
+
+	for (const auto& pair : Default_custom_data) {
+		if (key == pair.key) {
+			return ADE_RETURN_FALSE;
+		}
+	}
+
+	mission_default_custom_data data = {key, value, desc};
+
+	Default_custom_data.push_back(data);
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
 {
 	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);

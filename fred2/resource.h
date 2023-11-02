@@ -46,6 +46,7 @@
 #define IDD_PLAYER_EDITOR               199
 #define IDD_LOADOUT_EDITOR              199
 #define IDD_ORIENT_EDITOR               200
+#define IDD_EDIT_CUSTOM_DATA            201
 #define IDR_PLAYER_EDIT_MENU            202
 #define IDD_EVENT_EDITOR                203
 #define IDD_EDITORS_MESSAGES            205
@@ -316,6 +317,7 @@
 #define IDC_AUTOGENERATE                1062
 #define IDC_GENERATE_FILE_NAMES         1062
 #define IDC_CONTAINER_ADD               1062
+#define IDC_CUSTOM_ADD                  1062
 #define IDC_NOISE_BASE                  1062
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
@@ -424,6 +426,7 @@
 #define IDC_SOUND_CLIP_DELETE           1139
 #define IDC_SOUND_CLIP_WINDOW           1140
 #define IDC_SHIP_PREVIOUS               1141
+#define IDC_CUSTOM_DATA_DESC            1142
 #define IDC_WEAPON_NAME                 1143
 #define IDC_WEAPON_DESCRIPTION          1144
 #define IDC_WEAPON_MASS                 1145
@@ -542,6 +545,7 @@
 #define IDC_CURRENT_CONTAINER_NAME      1203
 #define IDC_NEBCOLOR                    1204
 #define IDC_SUBSTITUTE_EVENT_MUSIC      1205
+#define IDC_OPEN_CUSTOM_DATA            1206
 #define IDC_AI_PROFILE                  1207
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
@@ -721,6 +725,7 @@
 #define IDC_WEAPON_LIST                 1341
 #define IDC_SUN1_LIST                   1341
 #define IDC_CONTAINER_DATA_LISTER       1341
+#define IDC_CUSTOM_DATA_LISTER          1341
 #define IDC_EDIT1                       1342
 #define IDC_AMMO1                       1342
 #define IDC_GOAL_NAME                   1342
@@ -744,6 +749,7 @@
 #define IDC_SQUADRON_WING_NAME_1        1343
 #define IDC_SOUND_ENVIRONMENT_DAMPING   1343
 #define IDC_CONTAINER_KEY               1343
+#define IDC_CUSTOM_KEY                  1343
 #define IDC_EDIT3                       1344
 #define IDC_AMMO3                       1344
 #define IDC_TIME                        1344
@@ -759,6 +765,7 @@
 #define IDC_ASSIST_SCORE                1344
 #define IDC_SOUND_ENVIRONMENT_VOLUME    1344
 #define IDC_CONTAINER_DATA              1344
+#define IDC_CUSTOM_DATA                 1344
 #define IDC_EDIT4                       1345
 #define IDC_AMMO4                       1345
 #define IDC_VOICE                       1345
@@ -950,6 +957,7 @@
 #define IDC_SET_AS_PLAYER_SHIP          1498
 #define IDC_IMPORT_BACKGROUND           1498
 #define IDC_CONTAINER_UPDATE            1498
+#define IDC_CUSTOM_UPDATE               1498
 #define IDC_FULLNEB                     1499
 #define IDC_NO_TRAITOR                  1499
 #define IDC_ADD_VARIABLE_NAME           1500
@@ -1180,6 +1188,7 @@
 #define IDC_NEW_CONTAINER_NAME          1661
 #define IDC_ADD_FIELD                   1661
 #define IDC_CONTAINER_REMOVE            1662
+#define IDC_CUSTOM_REMOVE               1662
 #define IDC_REMOVE_FIELD                1662
 #define IDC_ADD_NEW_CONTAINER           1663
 #define IDC_ADD_FIELD_TARGET            1663
