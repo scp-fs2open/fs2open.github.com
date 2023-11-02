@@ -149,13 +149,6 @@ void CustomStringsDlg::OnListerSelectionChange()
 	if (cs != nullptr) {
 		update_text_edit_boxes(cs->name, cs->value, cs->text);
 	}
-	/*update_help_text("No help text provided");
-
-	for (int i = 0; i < (int)Default_custom_data.size(); i++) {
-		if (Default_custom_data[i].key == key) {
-			update_help_text(Default_custom_data[i].description);
-		}
-	}*/
 
 }
 
@@ -197,11 +190,14 @@ void CustomStringsDlg::OnStringRemove()
 {
 	const int index = m_data_lister.GetCurSel();
 
-	Assert(index >= 0 && index < (int)m_custom_strings.size());
+	if (index == LB_ERR) {
+		MessageBox("Nothing selected! You must select something to remove!");
+		return;
+	}
 
 	const auto& key = m_lister_keys[index];
 
-	for (int i = 0; i <= (int)m_custom_strings.size(); i++) {
+	for (size_t i = 0; i <= m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
 			m_custom_strings.erase(m_custom_strings.begin() + i);
 			break;
@@ -219,16 +215,17 @@ void CustomStringsDlg::OnStringUpdate()
 	}
 
 	const int index = m_data_lister.GetCurSel();
-	const auto& key = m_lister_keys[index];
 
 	if (index == LB_ERR) {
 		MessageBox("Nothing selected! Use Add to enter new data");
 		return;
 	}
 
-	int i;
+	const auto& key = m_lister_keys[index];
 
-	for (i = 0; i <= (int)m_custom_strings.size(); i++) {
+	size_t i;
+
+	for (i = 0; i <= m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
 			break;
 		}
@@ -287,15 +284,18 @@ bool CustomStringsDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
-	const int index = m_data_lister.GetCurSel();
-	const auto& this_key = m_lister_keys[index];
+	// Only check for duplicate keys if there are other keys to check!
+	if (m_lister_keys.size() > 0) {
+		const int index = m_data_lister.GetCurSel();
+		const auto& this_key = m_lister_keys[index];
 
-	if (strcmp(this_key.c_str(), key_str)) {
-		for (const auto& cs : m_custom_strings) {
-			const CString key = cs.name.c_str();
-			if (key == key_str) {
-				MessageBox("Names must be unique!");
-				return false;
+		if (strcmp(this_key.c_str(), key_str)) {
+			for (const auto& cs : m_custom_strings) {
+				const CString key = cs.name.c_str();
+				if (key == key_str) {
+					MessageBox("Names must be unique!");
+					return false;
+				}
 			}
 		}
 	}

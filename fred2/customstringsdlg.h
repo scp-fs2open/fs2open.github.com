@@ -59,15 +59,6 @@ class CustomStringsDlg : public CDialog {
 	DECLARE_MESSAGE_MAP()
 
   private:
-	bool has_containers() const
-	{
-		return !m_custom_strings.empty();
-	}
-	int num_containers() const
-	{
-		return (int)m_custom_strings.size();
-	}
-
 	bool query_modified() const;
 
 	bool m_text_edit_focus;
