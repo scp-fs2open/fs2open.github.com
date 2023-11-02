@@ -91,10 +91,10 @@ class SourceOrigin {
 	/**
 	 * @brief Applies the information to a particle info
 	 *
-	 * This can be used to initialize the position of a created particle from a source.
+	 * This fills the provided &info with certain data from the origin, such as objnum/signature of an object origin,
+	 * the scale and remaining lifetime of a particle origin, or simply the current global position of the origin
 	 *
 	 * @param info The particle_info this should be applied to
-	 * @param allowRelative If @c true then the location of the particle can be relative to the host
 	 */
 	void applyToParticleInfo(particle_info& info) const;
 
