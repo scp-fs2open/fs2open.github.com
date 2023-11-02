@@ -137,7 +137,9 @@ sound_h::sound_h() : sound_entry_h() { sig = sound_handle::invalid(); }
 sound_h::sound_h(gamesnd_id n_gs_idx, sound_handle n_sig) : sound_entry_h(n_gs_idx) { sig = n_sig; }
 sound_handle sound_h::getSignature()
 {
-	if (!IsValid())
+	// We can have both regular and raw file sounds here so we have to check both
+	// else even a valid signature is never returned.
+	if (!IsValid() && !IsSoundValid())
 		return sound_handle::invalid();
 
 	return sig;
@@ -198,11 +200,18 @@ ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound hand
 	return ade_set_args(L, "f", i2fl(remaining) / 1000.0f);
 }
 
-ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance", "boolean", "true if succeeded, false otherwise")
+ADE_FUNC(setVolume,
+	l_Sound,
+	"number, [boolean voice = false]",
+	"Sets the volume of this sound instance. Set voice to true to use the voice channel multiplier. False to use the "
+	"effects channel multiplier",
+	"boolean",
+	"true if succeeded, false otherwise")
 {
 	sound_h *sh;
 	float newVol = -1.0f;
-	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newVol))
+	bool voice = false;
+	if (!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &newVol, &voice))
 		return ADE_RETURN_FALSE;
 
 	if (!sh->IsSoundValid())
@@ -210,7 +219,7 @@ ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance",
 
 	CAP(newVol, 0.0f, 1.0f);
 
-	snd_set_volume(sh->getSignature(), newVol);
+	snd_set_volume(sh->getSignature(), newVol, voice);
 
 	return ADE_RETURN_TRUE;
 }
@@ -319,6 +328,40 @@ ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(pause, l_Sound, NULL, "Pauses the sound of this handle", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	if (!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsSoundValid())
+		return ade_set_error(L, "b", false);
+
+	if (snd_is_paused(sh->getSignature()))
+		return ade_set_error(L, "b", false);
+
+	snd_pause(sh->getSignature());
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(resume, l_Sound, NULL, "Resumes the sound of this handle", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	if (!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsSoundValid())
+		return ade_set_error(L, "b", false);
+
+	if (!snd_is_paused(sh->getSignature()))
+		return ade_set_error(L, "b", false);
+
+	snd_resume(sh->getSignature());
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(isValid, l_Sound, nullptr,
          "Detects whether the whole handle is valid.<br>"
          "<b>Warning:</b> This does not work for sounds started by a "
@@ -398,25 +441,30 @@ ADE_VIRTVAR(Filename, l_Soundfile, "string", "The filename of the file", "string
 }
 
 
-ADE_FUNC(play, l_Soundfile, "[number volume = 1.0, number panning = 0.0]", "Plays the sound", "sound", "A sound handle or invalid handle on error")
+ADE_FUNC(play,
+	l_Soundfile,
+	"[number volume = 1.0, number panning = 0.0, boolean voice = true]",
+	"Plays the sound. If voice is true then uses the Voice channel volume, else uses the Effects channel volume.",
+	"sound",
+	"A sound handle or invalid handle on error")
 {
-	soundfile_h* handle = nullptr;
+	soundfile_h *handle = nullptr;
 	float volume = 1.0f;
 	float panning = 0.0f;
+	bool voice = true;
 
-	if (!ade_get_args(L, "o|ff", l_Soundfile.GetPtr(&handle), &volume, &panning))
+	if (!ade_get_args(L, "o|ffb", l_Soundfile.GetPtr(&handle), &volume, &panning, &voice))
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
 	if (!handle->idx.isValid())
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
-	if (volume < 0.0f)
-	{
+	if (volume < 0.0f) {
 		LuaError(L, "Invalid volume value of %f specified!", volume);
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 	}
 
-	auto snd_handle = snd_play_raw(handle->idx, panning, volume);
+	auto snd_handle = snd_play_raw(handle->idx, panning, volume, 0, voice);
 
 	return ade_set_args(L, "o", l_Sound.Set(sound_h(gamesnd_id(), snd_handle)));
 }
