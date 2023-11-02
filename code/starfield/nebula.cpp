@@ -104,6 +104,10 @@ int load_nebula_sub(const char *filename)
 	cfread( &num_tris, sizeof(int), 1, fp );
 	Assert( num_tris < MAX_TRIS );
 
+	// Cyborg - can't load nonsense.
+	if (num_pts <= 0 || num_pts >= MAX_POINTS || num_tris <= 0 || num_tris >= MAX_TRIS)
+		return 0;
+
 	int i;
 	for (i=0; i<num_pts; i++ )	{
 		float xf, yf;
