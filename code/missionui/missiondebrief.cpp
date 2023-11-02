@@ -952,10 +952,11 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_version_index)
 {
 	Assert(buf != NULL && medal_earned >= 0 && zero_based_version_index >= 0);
+	Assertion(strlen(Resolution_prefixes[gr_screen.res]) + strlen(Medals[medal_earned].debrief_bitmap) < MAX_FILENAME_LEN, "The filename for %s is over the filename length limit of 31 characters.  On release builds, this filename will be shortened and will not work.", buf);
 
 	// start with the regular file name, adapted for resolution
-	sprintf(buf, NOX("%s%s"), Resolution_prefixes[gr_screen.res], Medals[medal_earned].debrief_bitmap);
-
+	snprintf(buf, MAX_FILENAME_LEN, NOX("%s%s"), Resolution_prefixes[gr_screen.res], Medals[medal_earned].debrief_bitmap);
+	
 	// if the medal has multiple versions, we may want to choose a specific bitmap
 	char *p = strstr(buf, "##");
 	if (p != NULL)
@@ -975,6 +976,7 @@ void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_ve
 
 		sprintf(number, NOX("%.2d"), version);
 		Assert(strlen(number) == 2);
+		// coverity 1522943: Covscan thinks p is not null terminated, but buf, the string that it points to *is* null terminated.
 		strncpy(p, number, 2);
 	}
 }
