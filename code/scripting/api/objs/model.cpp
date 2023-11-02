@@ -6,7 +6,7 @@
 #include "eye.h"
 #include "texture.h"
 
-extern void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
+extern void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
 namespace scripting {
 namespace api {

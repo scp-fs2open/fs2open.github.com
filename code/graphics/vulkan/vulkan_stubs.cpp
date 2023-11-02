@@ -90,6 +90,8 @@ void stub_copy_effect_texture() {}
 
 void stub_deferred_lighting_begin(bool /*clearNonColorBufs*/) {}
 
+void stub_deferred_lighting_msaa() {}
+
 void stub_deferred_lighting_end() {}
 
 void stub_deferred_lighting_finish() {}
@@ -300,6 +302,7 @@ void init_stub_pointers()
 	gr_screen.gf_copy_effect_texture = stub_copy_effect_texture;
 
 	gr_screen.gf_deferred_lighting_begin = stub_deferred_lighting_begin;
+	gr_screen.gf_deferred_lighting_msaa = stub_deferred_lighting_msaa;
 	gr_screen.gf_deferred_lighting_end = stub_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = stub_deferred_lighting_finish;
 

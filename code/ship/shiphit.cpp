@@ -567,7 +567,7 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 		if ((j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
 			if (subsystem->armor_type_idx > -1)
 			{
-				healing_left = Armor_types[subsystem->armor_type_idx].GetDamage(healing_left, dmg_type_idx, 1.0f); 
+				healing_left = Armor_types[subsystem->armor_type_idx].GetDamage(healing_left, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM);
 			}
 		}
 
@@ -598,13 +598,12 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
 		if ((heal_to_apply > 0.1f) && !(MULTIPLAYER_CLIENT))
 		{
-			
 			healing_left -= (heal_to_apply);
 
 			//Apply armor to healing
 			if (subsystem->armor_type_idx >= 0)
 				// Nuke: this will finally factor it in to heal_to_apply and i wont need to factor it in anywhere after this
-				heal_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(heal_to_apply, dmg_type_idx, 1.0f);
+				heal_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(heal_to_apply, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM);
 
 			subsystem->current_hits += heal_to_apply;
 
@@ -676,6 +675,10 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
 	vec3d			hitpos2;
 	float			ss_dif_scale = 1.0f; // Nuke: Set a base dificulty scale for compatibility
+	
+	const bool other_obj_is_weapon = other_obj && other_obj->type == OBJ_WEAPON;
+	const bool other_obj_is_shockwave = other_obj && other_obj->type == OBJ_SHOCKWAVE;
+	const bool other_obj_is_beam = other_obj && other_obj->type == OBJ_BEAM;
 
 	//WMC - first, set this to damage if it isn't NULL, in case we want to return with no damage to subsystems
 	if(hull_should_apply_armor != NULL) {
@@ -695,7 +698,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	}
 
 	//	Shockwave damage is applied like weapon damage.  It gets consumed.
-	if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
+	if (other_obj_is_shockwave)
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
@@ -714,8 +717,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
-	if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) ||
-				(Beams_use_damage_factors && (other_obj->type == OBJ_BEAM)))) {
+	if ((weapon_info_index >= 0) && (other_obj_is_weapon ||
+				(Beams_use_damage_factors && other_obj_is_beam))) {
 		if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
 			return damage_left;
 		}
@@ -892,7 +895,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
 			if(subsystem->armor_type_idx > -1)
 			{
-				damage = Armor_types[subsystem->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
+				damage = Armor_types[subsystem->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f, other_obj_is_beam); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
 				if(hull_should_apply_armor) {
 					*hull_should_apply_armor = false;
 				}
@@ -904,7 +907,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		//	miss their target.  There is code dating to FS1 in the collision code to detect that a bomb or
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
-		if ((weapon_info_index >= 0) && (dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
+		if ((weapon_info_index >= 0) && (dist < 10.0f) && other_obj_is_shockwave) {	// Goober5000 check for NULL
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;
 			damage_if_hull *= 4.0f * Weapon_info[weapon_info_index].armor_factor;			
 		}
@@ -928,6 +931,12 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			if (ship_objp->flags[Object::Object_Flags::Player_ship]){
 				ss_dif_scale = The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
 			}
+
+			// maybe modify damage FROM player ships
+			if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
+				if (Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
+					ss_dif_scale *= The_mission.ai_profile->player_damage_inflicted_scale[Game_skill_level];
+			}
 		
 			// Goober5000 - subsys guardian
 			if (subsystem->subsys_guardian_threshold > 0)
@@ -948,9 +957,9 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Carry_no_damage]) {
-				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
+				if (!other_obj_is_shockwave || !(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave])) {
 					float subsystem_factor = 0.0f;
-					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
+					if ((weapon_info_index >= 0) && (other_obj_is_weapon || other_obj_is_shockwave)) {
 						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
 							subsystem_factor = Weapon_info[weapon_info_index].armor_factor;
 						} else {
@@ -968,7 +977,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			//Apply armor to damage
 			if (subsystem->armor_type_idx >= 0) {
 				// Nuke: this will finally factor it in to damage_to_apply and i wont need to factor it in anywhere after this
-				damage_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale);
+				damage_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale, other_obj_is_beam);
 			} else { // Nuke: no get damage call to apply difficulty scaling, so factor it in now
 				damage_to_apply *= ss_dif_scale;
 			}
@@ -1044,7 +1053,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 					nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
 				}
 			} else {
-				strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
+				strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 			}
 		} else {
 			p->killer_species = -1;
@@ -1072,7 +1081,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 				nprintf(("Network", "Couldn't find player object of shockwave for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
+			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 		}
 		break;
 
@@ -1100,7 +1109,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 				nprintf(("Network", "Couldn't find player object for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy_s(p->killer_parent_name, Ships[killer_objp->instance].get_display_name());
+			strcpy_s(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
 		}
 		break;
 	
@@ -1123,7 +1132,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_objtype = OBJ_BEAM;
 		if(beam_obj != -1){			
 			if((Objects[beam_obj].type == OBJ_SHIP) && (Objects[beam_obj].instance >= 0)){
-				strcpy_s(p->killer_parent_name, Ships[Objects[beam_obj].instance].get_display_name());
+				strcpy_s(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
 			}
 			p->killer_species = Ship_info[Ships[Objects[beam_obj].instance].ship_info_index].species;
 		} else {			
@@ -1684,15 +1693,19 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
-	//SUSHI: What are the chances of an instant vaporization? Check the ship type first (objecttypes.tbl), then the ship (ships.tbl)
-	ship_type_info *stp = &Ship_types[sip->class_type];
-	float vapChance = stp->vaporize_chance;
-	if (sip->vaporize_chance > 0.0f)
+	//SUSHI: What are the chances of an instant vaporization? Check the ship type (objecttypes.tbl) as well as the ship (ships.tbl)
+	float vapChance;
+	if (sp->flags[Ship::Ship_Flags::Vaporize])
+		vapChance = 1.0f;
+	else if (sip->vaporize_chance > 0.0f)
 		vapChance = sip->vaporize_chance;
+	else if (sip->class_type >= 0)
+		vapChance = Ship_types[sip->class_type].vaporize_chance;
+	else
+		vapChance = 0.0f;
 
-	if (sp->flags[Ship::Ship_Flags::Vaporize] || frand() < vapChance) {
-		// Assert(Ship_info[sp->ship_info_index].flags & SIF_SMALL_SHIP);
-
+	if (frand() < vapChance)
+	{
 		// LIVE FOR 100 MS
 		sp->final_death_time = timestamp(100);
 	}
@@ -1789,6 +1802,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 	ship *sp = &Ships[ship_objp->instance];
+
+	// don't kill the ship if it's already dying
+	if (sp->flags[Ship::Ship_Flags::Dying])
+		return;
 
 	if (scripting::hooks::OnShipDeathStarted->isActive())
 	{
@@ -1974,7 +1991,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 
 	// Goober5000 - since we added a mission log entry above, immediately set the status.  For destruction, ship_cleanup isn't called until a little bit later
 	auto entry = &Ship_registry[Ship_registry_map[sp->ship_name]];
-	entry->status = ShipStatus::EXITED;
+	entry->status = ShipStatus::DEATH_ROLL;
 
 	ship_generic_kill_stuff( ship_objp, percent_killed );
 
@@ -2028,6 +2045,10 @@ void ship_self_destruct( object *objp )
 {	
 	Assert ( objp->type == OBJ_SHIP );
 
+	// don't self-destruct if this ship is already dying
+	if (Ships[objp->instance].flags[Ship::Ship_Flags::Dying])
+		return;
+
 	// check to see if this ship needs to be respawned
 	if(MULTIPLAYER_MASTER){
 		// player ship?
@@ -2049,8 +2070,6 @@ void ship_self_destruct( object *objp )
 	// self destruct
 	ship_hit_kill(objp, nullptr, nullptr, 1.0f, true);
 }
-
-extern int Homing_hits, Homing_misses;
 
 // Call this instead of physics_apply_whack directly to 
 // deal with two docked ships properly.
@@ -2295,8 +2314,18 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// damage scaling due to big damage, supercap, etc
 	float damage_scale = 1.0f; 
 	// if this is a weapon
-	if (other_obj_is_weapon)
-		damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+	if (other_obj_is_weapon){
+		// Cyborg - Coverity 1523515, this was the only place in ship_do_damage that we weren't checking weapon_info_index
+		Assertion(Weapons[other_obj->instance].weapon_info_index > -1, "Weapon info index in ship_do_damage was found to be a negative value of %d.  Please report this to an SCP coder!", Weapons[other_obj->instance].weapon_info_index);
+		if (Weapons[other_obj->instance].weapon_info_index > -1){
+			damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+		}
+	}
+
+	if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
+		if(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
+			difficulty_scale_factor *= The_mission.ai_profile->player_damage_inflicted_scale[Game_skill_level];
+	}
 
 	MONITOR_INC( ShipHits, 1 );
 
@@ -2795,20 +2824,9 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 		}
 	}
 
-#ifndef NDEBUG
-	if (other_obj->type == OBJ_WEAPON) {
-		weapon_info	*wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-		if (wip->is_homing()) {
-			Homing_hits++;
-			// nprintf(("AI", " Hit!  Hits = %i/%i\n", Homing_hits, (Homing_hits + Homing_misses)));
-		}
-	}
-#endif
-
 	if ( Event_Music_battle_started == 0 )	{
 		ship_hit_music(ship_objp, other_obj);
 	}
-	
 
 	if (damage < 0.0f){
 		damage = 0.0f;

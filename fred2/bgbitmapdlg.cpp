@@ -10,10 +10,12 @@
 
 
 
+#include "globalincs/vmallocator.h"
 #include "stdafx.h"
 #include "FRED.h"
 #include "BgBitmapDlg.h"
 #include "listitemchooser.h"
+#include "lighting/lighting_profiles.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
 #include "graphics/light.h"
@@ -24,6 +26,7 @@
 #include "nebula/neblightning.h"
 #include "parse/parselo.h"
 #include "mission/missionparse.h"
+#include <vcruntime.h>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -76,6 +79,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_sky_flag_4 = The_mission.skybox_flags & MR_NO_CULL ? 1 : 0;
 	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
 	m_sky_flag_6 = The_mission.skybox_flags & MR_FORCE_CLAMP ? 1 : 0;
+	m_light_profile_index = 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -140,6 +144,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
 	DDX_Text(pDX, IDC_NEB2_FAR_MULTIPLIER, m_neb_far_multi);
 	DDX_Text(pDX, IDC_NEB2_NEAR_MULTIPLIER, m_neb_near_multi);
+	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
 	DDX_Text(pDX, IDC_NEB2_FOG_G, m_fog_g);
@@ -270,12 +275,9 @@ void bg_bitmap_dlg::create()
 	m_skybox_heading = fl2ir(fl_degrees(skybox_angles.h));
 
 	//make sure angle values are in the 0-359 degree range
-	if (m_skybox_pitch < 0)
-		m_skybox_pitch = m_skybox_pitch + 360;
-	if (m_skybox_bank < 0)
-		m_skybox_bank = m_skybox_bank + 360;
-	if (m_skybox_heading < 0)
-		m_skybox_heading = m_skybox_heading + 360;
+	if (m_skybox_pitch < 0) m_skybox_pitch += 360;
+	if (m_skybox_bank < 0) m_skybox_bank += 360;
+	if (m_skybox_heading < 0) m_skybox_heading += 360;
 
 
 	for (i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
@@ -384,6 +386,17 @@ void bg_bitmap_dlg::create()
 
 	m_neb_near_multi = Neb2_fog_near_mult;
 	m_neb_far_multi = Neb2_fog_far_mult;
+
+	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
+	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
+	m_light_profile_index = 0;
+	for(size_t idx = 0; idx<profiles.size();idx++){
+		SCP_string n = profiles[idx];
+		box->AddString(profiles[idx].c_str());
+		if(The_mission.lighting_profile_name == n)
+			m_light_profile_index = (int) idx;
+	}
+	box->SetCurSel(m_light_profile_index);
 
 	background_flags_init();
 
@@ -499,6 +512,7 @@ void bg_bitmap_dlg::OnClose()
 	Neb2_fog_near_mult = m_neb_near_multi;
 	Neb2_fog_far_mult = m_neb_far_multi;
 
+	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
 	// close sun data
 	sun_data_close();
 
@@ -774,6 +788,13 @@ void bg_bitmap_dlg::OnSunChange()
 		s_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
 		s_scale = sle->scale_x;
 
+		// make sure angles are in the 0-359 degree range;
+		// an angle of 6.28318310, which is less than 6.28318548,
+		// is converted to 359.999847, which is rounded to 360
+		if (s_pitch >= 360) s_pitch -= 360;
+		if (s_bank >= 360) s_bank -= 360;
+		if (s_heading >= 360) s_heading -= 360;
+
 		// stuff back into the controls
 		UpdateData(FALSE);
 
@@ -940,6 +961,11 @@ void bg_bitmap_dlg::OnBitmapChange()
 		b_scale_y = sle->scale_y;
 		b_div_x = sle->div_x;
 		b_div_y = sle->div_y;
+
+		// make sure angles are in the 0-359 degree range
+		if (b_pitch >= 360) b_pitch -= 360;
+		if (b_bank >= 360) b_bank -= 360;
+		if (b_heading >= 360) b_heading -= 360;
 
 		// stuff back into the controls
 		UpdateData(FALSE);

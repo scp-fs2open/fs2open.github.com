@@ -79,6 +79,9 @@ extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_h
 
 extern void consolidate_double_characters(char *str, char ch);
 
+// for limiting strings that may be very long; useful for dialog boxes
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size);
+
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
@@ -96,6 +99,9 @@ extern void drop_white_space(SCP_string &str);
 extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
 extern void ignore_gray_space(const char **pp = nullptr);
+
+// other
+extern bool is_parenthesis(char ch);
 
 // error
 extern int get_line_num();
@@ -249,6 +255,7 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
 int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
@@ -298,6 +305,7 @@ extern void stop_parse();
 // utility
 extern void compact_multitext_string(char *str);
 extern void compact_multitext_string(SCP_string &str);
+extern void read_file_bytes(const char *filename, int mode, char *raw_bytes = nullptr);
 extern void read_file_text(const char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_file_text_from_default(const default_file& file, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);

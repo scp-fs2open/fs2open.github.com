@@ -17,6 +17,7 @@
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
@@ -790,54 +791,12 @@ int sexp_tree::query_node_argument_type(int node) const {
 	return query_operator_argument_type(op_num, argnum);
 }
 
-//
-// See https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C++
-//
-template<typename T>
-typename T::size_type GeneralizedLevensteinDistance(const T &source,
-	const T &target,
-	typename T::size_type insert_cost = 1,
-	typename T::size_type delete_cost = 1,
-	typename T::size_type replace_cost = 1) {
-	if (source.size() > target.size()) {
-		return GeneralizedLevensteinDistance(target, source, delete_cost, insert_cost, replace_cost);
-	}
-
-	using TSizeType = typename T::size_type;
-	const TSizeType min_size = source.size(), max_size = target.size();
-	std::vector<TSizeType> lev_dist(min_size + 1);
-
-	lev_dist[0] = 0;
-	for (TSizeType i = 1; i <= min_size; ++i) {
-		lev_dist[i] = lev_dist[i - 1] + delete_cost;
-	}
-
-	for (TSizeType j = 1; j <= max_size; ++j) {
-		TSizeType previous_diagonal = lev_dist[0], previous_diagonal_save;
-		lev_dist[0] += insert_cost;
-
-		for (TSizeType i = 1; i <= min_size; ++i) {
-			previous_diagonal_save = lev_dist[i];
-			if (source[i - 1] == target[j - 1]) {
-				lev_dist[i] = previous_diagonal;
-			}
-			else {
-				lev_dist[i] = std::min(std::min(lev_dist[i - 1] + delete_cost, lev_dist[i] + insert_cost), previous_diagonal + replace_cost);
-			}
-			previous_diagonal = previous_diagonal_save;
-		}
-	}
-
-	return lev_dist[min_size];
-}
-
 // Look for the valid operator that is the closest match for 'str' and return the operator
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
 //
-SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node) {
-	int z, i, op, arg_num, opf, opr;
-	int min = -1, best = -1;
+const SCP_string &sexp_tree::match_closest_operator(const SCP_string &str, int node) {
+	int z, op, arg_num, opf;
 
 	z = tree_nodes[node].parent;
 	if (z < 0) {
@@ -853,19 +812,10 @@ SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node) {
 	arg_num = find_argument_number(z, node);
 	opf = query_operator_argument_type(op, arg_num);	// check argument type at this position
 
-	for (i = 0; i < (int) Operators.size(); i++) {
-		opr = query_operator_return_type(i);			// figure out which type this operator returns
-
-		if (sexp_query_type_match(opf, opr)) {
-			int dist = (int)GeneralizedLevensteinDistance(str, Operators[i].text, 2, 2, 3);
-			if (min < 0 || dist < min) {
-				min = dist;
-				best = i;
-			}
-		}
-	}
-
-	Assert(best >= 0);  // we better have some valid operator at this point.
+	// find the best operator
+	int best = sexp_match_closest_operator(str, opf);
+	if (best < 0)
+		return str;
 	return Operators[best].text;
 }
 
@@ -1714,6 +1664,12 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 			return 1;
 		}
 		return 0;
+
+	case OPF_TRAITOR_OVERRIDE:
+		return Traitor_overrides.empty() ? 0 : 1;
+
+	case OPF_LUA_GENERAL_ORDER:
+		return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
 
 	default:
 		if (!Dynamic_enums.empty()) {
@@ -3493,6 +3449,14 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_bolt_types();
 		break;
 
+	case OPF_TRAITOR_OVERRIDE:
+		list = get_listing_opf_traitor_overrides();
+		break;
+
+	case OPF_LUA_GENERAL_ORDER:
+		list = get_listing_opf_lua_general_orders();
+		break;
+
 	default:
 		// We're at the end of the list so check for any dynamic enums
 		list = check_for_dynamic_sexp_enum(opf);
@@ -3970,6 +3934,20 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if (child < 0)
 		return nullptr;
 
+	
+	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
+	if (special_subsys == OPS_STRENGTH) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+
+	// if setting armor type we only need Hull and Shields
+	if (special_subsys == OPS_ARMOR) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SHIELD_STRING);
+	}
+
+
 	// now find the ship and add all relevant subsystems
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
@@ -4017,17 +3995,6 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			// next subsystem
 			subsys = GET_NEXT(subsys);
 		}
-	}
-
-	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
-	if (special_subsys == OPS_STRENGTH) {
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SIM_HULL_STRING);
-	}
-	// if setting armor type we only need Hull and Shields
-	if (special_subsys == OPS_ARMOR) {
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SHIELD_STRING);
 	}
 
 	return head.next;
@@ -4465,23 +4432,28 @@ sexp_list_item* sexp_tree::get_listing_opf_builtin_hud_gauge() {
 sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
 {
 	sexp_list_item head;
-	SCP_unordered_set<SCP_string> all_gauges;
+	// prevent duplicate names, comparing case-insensitively
+	SCP_unordered_set<SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> all_gauges;
 
 	for (auto &gauge : default_hud_gauges)
 	{
-		all_gauges.insert(gauge->getCustomGaugeName());
-		head.add_data(gauge->getCustomGaugeName());
+		SCP_string name = gauge->getCustomGaugeName();
+		if (!name.empty() && all_gauges.count(name) == 0)
+		{
+			head.add_data(name.c_str());
+			all_gauges.insert(std::move(name));
+		}
 	}
 
 	for (auto &si : Ship_info)
 	{
 		for (auto &gauge : si.hud_gauges)
 		{
-			// avoid duplicating any HUD gauges
-			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			SCP_string name = gauge->getCustomGaugeName();
+			if (!name.empty() && all_gauges.count(name) == 0)
 			{
-				all_gauges.insert(gauge->getCustomGaugeName());
-				head.add_data(gauge->getCustomGaugeName());
+				head.add_data(name.c_str());
+				all_gauges.insert(std::move(name));
 			}
 		}
 	}
@@ -5158,6 +5130,32 @@ sexp_list_item* sexp_tree::get_listing_opf_bolt_types()
 
 	for (int i = 0; i < (int)Bolt_types.size(); i++) {
 		head.add_data(Bolt_types[i].name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_traitor_overrides()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
+		head.add_data(Traitor_overrides[i].name.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
+{
+	sexp_list_item head;
+
+	SCP_vector<SCP_string> orders = ai_lua_get_general_orders();
+
+	for (const auto& val : orders) {
+		head.add_data(val.c_str());
 	}
 
 	return head.next;
@@ -6005,6 +6003,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_TRIGGER_SUBMODEL_ANIMATION:
 					case OP_ADD_BACKGROUND_BITMAP:
 					case OP_ADD_SUN_BITMAP:
+					case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -6076,6 +6075,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_TRIGGER_SUBMODEL_ANIMATION:
 					case OP_ADD_BACKGROUND_BITMAP:
 					case OP_ADD_SUN_BITMAP:
+					case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}

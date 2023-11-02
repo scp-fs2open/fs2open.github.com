@@ -13,6 +13,7 @@
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 #pragma warning(disable: 4786)
 
+#include "OperatorComboBox.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
@@ -127,7 +128,7 @@ public:
 	void verify_and_fix_arguments(int node);
 	void post_load();
 	void update_help(HTREEITEM h);
-	const char *help(int code);
+	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
 	int get_type(HTREEITEM h);
@@ -161,7 +162,7 @@ public:
 	void expand_operator(int node);
 	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
-	int edit_label(HTREEITEM h);
+	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
 	int identify_arg_type(int node);
@@ -186,7 +187,7 @@ public:
 	void add_sub_tree(int node, HTREEITEM root);
 	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
-	SCP_string match_closest_operator(const SCP_string &str, int node);
+	const SCP_string &match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char *var_name);
 	void modify_sexp_tree_variable(const char *old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -307,7 +308,9 @@ public:
 	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 	sexp_list_item *get_listing_opf_wing_formation();
 	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
-	sexp_list_item* get_listing_opf_bolt_types();
+	sexp_list_item *get_listing_opf_bolt_types();
+	sexp_list_item *get_listing_opf_traitor_overrides();
+	sexp_list_item *get_listing_opf_lua_general_orders();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;
@@ -327,6 +330,10 @@ public:
 	CEdit *help_box;
 	CEdit *mini_help_box;
 	CPoint m_pt;
+	OperatorComboBox m_operator_box;
+
+	void start_operator_edit(HTREEITEM h);
+	void end_operator_edit(bool confirm);
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(sexp_tree)
@@ -360,6 +367,10 @@ protected:
 
 	int flag;
 	int *modified;
+	bool m_operator_popup_active;
+	bool m_operator_popup_created;
+	int m_font_height;
+	int m_font_max_width;
 
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;

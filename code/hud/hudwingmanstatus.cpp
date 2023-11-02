@@ -388,7 +388,7 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 
 		sy += right_frame_start_offset;
 	} else {
-		if(num_wings_to_draw > 2 && bitmap > 0) {
+		if(num_wings_to_draw > 2 && bitmap >= 0) {
 			for(int i = 0; i < num_wings_to_draw - 2; i++){
 				renderBitmap(bitmap, sx, sy);
 				sx += wing_width;
@@ -399,7 +399,8 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 	}
 
 	bitmap = Wingman_status_right.first_frame;
-	renderBitmap(bitmap, sx, sy);
+	if (bitmap >= 0)
+		renderBitmap(bitmap, sx, sy);
 }
 
 void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num_wings_to_draw)

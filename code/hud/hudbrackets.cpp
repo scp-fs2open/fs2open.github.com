@@ -331,7 +331,7 @@ int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsy
 }
 
 HudGaugeBrackets::HudGaugeBrackets():
-HudGauge(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
 {
 }
 
@@ -675,10 +675,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 					if(jnp->GetSCPObject() == t_objp)
 						break;
 				}
-				
-				strcpy_s(temp_name, jnp->GetName());
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
+				tinfo_name = jnp->GetDisplayName();
 				break;
 		}
 

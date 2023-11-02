@@ -179,6 +179,7 @@ class Editor : public QObject {
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
+	static void lcl_fred_replace_stuff(QString& text);
 
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();

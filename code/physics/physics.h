@@ -25,15 +25,18 @@
 #define	PF_AFTERBURNER_WAIT		(1 << 7)	// true when afterburner cannot be used.  replaces variable used in afterburner code
 #define	PF_CONST_VEL			(1 << 8)	// Use velocity in phys_info struct.  Optimize weapons in phys_sim 
 #define	PF_WARP_IN				(1 << 9)	//	Use when ship is warping in
-#define	PF_SPECIAL_WARP_IN		(1 << 10)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
+#define	PF_SUPERCAP_WARP_IN		(1 << 10)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
 #define	PF_WARP_OUT				(1 << 11)	//	Use when ship is warping out
-#define	PF_SPECIAL_WARP_OUT		(1 << 12)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
+#define	PF_SUPERCAP_WARP_OUT	(1 << 12)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
 #define PF_BOOSTER_ON			(1 << 13)
 #define PF_GLIDING				(1 << 14)
 #define PF_FORCE_GLIDE			(1 << 15)
 #define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
 #define PF_MANEUVER_NO_DAMP		(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 #define PF_BALLISTIC			(1 << 18)	// Asteroth - not moving 'under its own power', simplified physics calculations
+
+extern const float SUPERCAP_WARP_T_CONST;
+extern const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD;
 
 //information for physics sim for an object
 typedef struct physics_info {

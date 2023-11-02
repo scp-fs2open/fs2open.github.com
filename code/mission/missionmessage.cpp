@@ -12,6 +12,7 @@
 #include "anim/animplay.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/utility.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"
@@ -20,6 +21,7 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "localization/localize.h"
+#include "math/vecmat.h"
 #include "mission/missiontraining.h"
 #include "mission/missiongoals.h"
 #include "mod_table/mod_table.h"
@@ -43,6 +45,7 @@
 bool Allow_generic_backup_messages = false;
 float Command_announces_enemy_arrival_chance = 0.25;
 
+#define DEFAULT_MOOD 0
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
@@ -59,6 +62,16 @@ builtin_message Builtin_messages[] = {
   BUILTIN_MESSAGE_TYPES
   #undef X
 };
+
+constexpr int BUILTIN_BOOST_LEVEL_ONE =  1;
+constexpr int BUILTIN_BOOST_LEVEL_TWO =  2;
+constexpr int BUILTIN_MATCHES_TYPE    =  4;
+constexpr int BUILTIN_MATCHES_FILTER  =  8;
+constexpr int BUILTIN_MATCHES_MOOD    = 16;
+constexpr int BUILTIN_MATCHES_SPECIES = 32;
+constexpr int BUILTIN_MATCHES_PERSONA = 64;
+
+constexpr int BUILTIN_BOOST_LEVEL_THREE = (BUILTIN_BOOST_LEVEL_ONE | BUILTIN_BOOST_LEVEL_TWO);
 
 int get_builtin_message_type(const char* name) {
 	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
@@ -140,7 +153,7 @@ const char *Persona_type_names[MAX_PERSONA_TYPES] =
 //XSTR:ON
 };
 
-int Default_command_persona;
+int Default_command_persona, Default_support_persona;
 
 // Goober5000
 // NOTE - these are truncated filenames, i.e. without extensions
@@ -201,6 +214,8 @@ int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 void persona_parse()
 {
 	Persona this_persona;
+	this_persona.flags = 0;
+	this_persona.species_bitfield = 0;
 
 	required_string("$Persona:");
 	stuff_string(this_persona.name, F_NAME, NAME_LENGTH);
@@ -272,13 +287,16 @@ void persona_parse()
 	}
 
 	if (!dup) {
+		int persona_index = (int) Personas.size();
 		Personas.push_back(this_persona);
 
-		// save the Command persona in a global
+		// Save some important personae for later
 		if (this_persona.flags & PERSONA_FLAG_COMMAND) {
-			// always use the most recent Command persona
-			// found, since that's how retail does it
-			Default_command_persona = ((int)Personas.size() - 1);
+			// Always use the most recent Command persona found, since that's how retail does it
+			Default_command_persona = persona_index;
+		}
+		if ((this_persona.flags & PERSONA_FLAG_SUPPORT) && (Default_support_persona == -1)) {
+			Default_support_persona = persona_index;
 		}
 	}
 }
@@ -332,6 +350,7 @@ int add_wave( const char *wave_name )
 void message_filter_clear(MessageFilter& filter) {
 	filter.species_bitfield = 0;
 	filter.type_bitfield = 0;
+	filter.team_bitfield = 0;
 }
 
 void message_filter_parse(MessageFilter& filter) {
@@ -368,11 +387,22 @@ void message_filter_parse(MessageFilter& filter) {
 		stuff_string(buf, F_NAME);
 		int type = ship_type_name_lookup(buf.c_str());
 		if (type < 0) {
-			Warning(LOCATION, "Unknown type %s in messages.tbl", buf.c_str());
+			Warning(LOCATION, "Unknown ship type %s in messages.tbl", buf.c_str());
 		} else if (type >= 32) {
 			Warning(LOCATION, "Type %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
 		} else {
 			filter.type_bitfield |= (1 << type);
+		}
+	}
+	while (optional_string("+Team:")) {
+		stuff_string(buf, F_NAME);
+		int team = iff_lookup(buf.c_str());
+		if (team < 0) {
+			Warning(LOCATION, "Unknown team %s in messages.tbl", buf.c_str());
+		} else if (team >= 32) {
+			Warning(LOCATION, "Team %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
+		} else {
+			filter.team_bitfield |= (1 << team);
 		}
 	}
 }
@@ -381,7 +411,7 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	static bool warned = false;
 	if (!warned) {
 		WarningEx(LOCATION,
-			"Converting legacy '%s Arrived' message. Consult the documention on message filters for more information. "
+			"Converting legacy '%s Arrived' message. Consult the documentation on message filters for more information. "
 			"A complete list will be printed to the log.",
 			wing_name.c_str());
 		warned = true;
@@ -395,6 +425,16 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	static const char* backup = Builtin_messages[MESSAGE_BACKUP].name;
 	msg.sender_filter.wing_name.push_back(wing_name);
 	strcpy(msg.name, backup);
+}
+
+int lookup_mood(SCP_string const& name) {
+	for (auto i = Builtin_moods.begin(); i != Builtin_moods.end(); ++i) {
+		if (lcase_equal(*i, name)) {
+			return (int) std::distance(Builtin_moods.begin(), i);
+		}
+	}
+	Warning(LOCATION, "Message.tbl has an entry for mood type %s, but this mood is not in the #Moods section of the table.", name.c_str());
+	return -1;
 }
 
 // parses an individual message
@@ -480,45 +520,41 @@ void message_parse(MessageFormat format) {
 		}
 	}
 
+	if (optional_string("+Note:")) {
+		if (Fred_running) { // Msg stage notes do nothing in FSO, so let's not even waste a few bytes
+			stuff_string(msg.note, F_MULTITEXT);
+			lcl_replace_stuff(msg.note, true);
+		} else {
+			SCP_string junk;
+			stuff_string(junk, F_MULTITEXT);
+		}
+	}
+
+	bool require_exact_mood_match;
 	if (optional_string("$Mood:")) {
-		SCP_string buf; 
-		bool found = false;
-
-		stuff_string(buf, F_NAME); 
-		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-			if (*iter == buf) {
-				msg.mood = (int)std::distance(Builtin_moods.begin(), iter);
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			// found a mood, but it's not in the list of moods at the start of the table
-			Warning(LOCATION, "Message.tbl has an entry for mood type %s, but this mood is not in the #Moods section of the table.", buf.c_str()); 
-		}
-	}
-	else {
-		msg.mood = 0;
+		SCP_string buf;
+		stuff_string(buf, F_NAME);
+		msg.mood = lookup_mood(buf);
+		require_exact_mood_match = optional_string("+Require exact match");
+	} else {
+		msg.mood = DEFAULT_MOOD;
+		require_exact_mood_match = false;
 	}
 
-	if (optional_string("$Exclude Mood:")) {
-		SCP_vector<SCP_string> buff;
-		bool found = false;
-
-		stuff_string_list(buff); 
-		for (SCP_vector<SCP_string>::iterator parsed_moods = buff.begin(); parsed_moods != buff.end(); ++parsed_moods) {
-			for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-				if (!stricmp(iter->c_str(), parsed_moods->c_str())) {
-					msg.excluded_moods.push_back((int)std::distance(Builtin_moods.begin(), iter));
-					found = true;
-					break;
-				}
+	if (require_exact_mood_match) {
+		for (auto i = Builtin_moods.begin(); i != Builtin_moods.end(); ++i) {
+			int mood = (int) std::distance(Builtin_moods.begin(), i);
+			if (mood != msg.mood) {
+				msg.excluded_moods.push_back(mood);
 			}
-
-			if (!found) {
-				// found a mood, but it's not in the list of moods at the start of the table
-				Warning(LOCATION, "Message.tbl has an entry for exclude mood type %s, but this mood is not in the #Moods section of the table.", parsed_moods->c_str()); 
+		}
+	} else if (optional_string("$Exclude Mood:")) {
+		SCP_vector<SCP_string> buf;
+		stuff_string_list(buf);
+		for (auto i = buf.begin(); i != buf.end(); ++i) {
+			int mood = lookup_mood(*i);
+			if (mood >= 0) {
+				msg.excluded_moods.push_back(mood);
 			}
 		}
 	}
@@ -535,6 +571,26 @@ void message_parse(MessageFormat format) {
 		message_filter_clear(msg.subject_filter);
 	}
 
+	msg.outer_filter_radius = -1;
+	if (optional_string("$Filter by other ship:")) {
+		if (optional_string("+Within range of sender:")) {
+			stuff_int(&msg.outer_filter_radius);
+		}
+		message_filter_parse(msg.outer_filter);
+	} else {
+		message_filter_clear(msg.outer_filter);
+	}
+
+	if (optional_string("$Prefer this message very highly")) {
+		msg.boost_level = BUILTIN_BOOST_LEVEL_THREE;
+	} else if (optional_string("$Prefer this message highly")) {
+		msg.boost_level = BUILTIN_BOOST_LEVEL_TWO;
+	} else if (optional_string("$Prefer this message")) {
+		msg.boost_level = BUILTIN_BOOST_LEVEL_ONE;
+	} else {
+		msg.boost_level = 0;
+	}
+
 	if (format == MessageFormat::TABLED) {
 		if (!stricmp(msg.name, "Beta Arrived")) {
 			handle_legacy_backup_message(msg, "Beta");
@@ -544,7 +600,7 @@ void message_parse(MessageFormat format) {
 			handle_legacy_backup_message(msg, "Delta");
 		} else if (!stricmp(msg.name, "Epsilon Arrived")) {
 			handle_legacy_backup_message(msg, "Epsilon");
-		} if (get_builtin_message_type(msg.name) == MESSAGE_NONE) {
+		} else if (get_builtin_message_type(msg.name) == MESSAGE_NONE) {
 			Warning(LOCATION, "Unknown builtin message type %s in messages.tbl", msg.name);
 		}
 	}
@@ -734,6 +790,7 @@ void messages_init()
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
+		Default_support_persona = -1;
 
 		// speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
 		Messages.reserve(500);
@@ -874,6 +931,26 @@ int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 		return 1;
 	} else {
 		return 0;
+	}
+}
+
+//	Pauses all currently playing messages in the message queue
+void message_pause_all()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		if ((Playing_messages[i].wave.isValid()) && snd_is_playing(Playing_messages[i].wave)) {
+			snd_pause(Playing_messages[i].wave);
+		}
+	}
+}
+
+//	Resumes playing any paused messages in the message queue
+void message_resume_all()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		if ((Playing_messages[i].wave.isValid()) && snd_is_paused(Playing_messages[i].wave)) {
+			snd_resume(Playing_messages[i].wave);
+		}
 	}
 }
 
@@ -1968,14 +2045,18 @@ int pick_persona(ship* shipp) {
 			return i;
 		}
 	}
-	int count = (int)candidates.size();
-	if (count == 0) {
-		return -1;
-	} else if (count == 1) {
+	int count = (int) candidates.size();
+	if (count == 1) {
 		return candidates[0];
+	} else if (count > 1) {
+		return candidates[Random::next(count)];
+	} else if (persona_type & PERSONA_FLAG_SUPPORT) {
+		// Species without a support persona (e.g. the UEF) historically used the
+		// first support persona; retain that behavior
+		return Default_support_persona;
 	} else {
-		return candidates[Random::next(0, count)];
-	}
+		return -1;
+	} 
 }
 
 bool can_auto_assign_persona(ship* shipp) {
@@ -2006,7 +2087,8 @@ bool has_filters(MessageFilter& filter) {
 			|| !filter.class_name.empty()
 			|| !filter.wing_name.empty()
 			||  filter.species_bitfield
-			||  filter.type_bitfield;
+			||  filter.type_bitfield
+			||  filter.team_bitfield;
 }
 
 bool filter_matches(SCP_string value, SCP_vector<SCP_string>& filter) {
@@ -2034,8 +2116,32 @@ bool filters_match(MessageFilter& filter, ship* it) {
 		    && filter_matches(hud_get_ship_class(it), filter.class_name)
 		    && filter_matches(wing_name, filter.wing_name)
 		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
-		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield);
+		    && (Ship_info[it->ship_info_index].class_type < 0 || filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield))
+		    && filter_matches(it->team, filter.team_bitfield);
 	}
+}
+
+bool outer_filters_match(MessageFilter& filter, int range, ship* sender) {
+	for (auto i: list_range(&Ship_obj_list)) {
+		auto obj = &Objects[i->objnum];
+		// Ignore dead/dying ships
+		if (obj->flags[Object::Object_Flags::Should_be_dead] || Ships[obj->instance].flags[Ship::Ship_Flags::Dying]) {
+			continue;
+		}
+		// Ignore the sender itself
+		if (sender->objnum == i->objnum) {
+			continue;
+		}
+		// If a range was specified, ignore anything out of range
+		if ((range > 0) && (vm_vec_dist(&obj->pos, &Objects[sender->objnum].pos) > range)) {
+			continue;
+		}
+		// If we got this far, we can check our filters
+		if (filters_match(filter, &Ships[obj->instance])) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool excludes_current_mood(int message) {
@@ -2048,12 +2154,6 @@ bool excludes_current_mood(int message) {
 }
 
 int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
-	static const int BUILTIN_MATCHES_TYPE    = 0;
-	static const int BUILTIN_MATCHES_FILTER  = 1;
-	static const int BUILTIN_MATCHES_MOOD    = 2;
-	static const int BUILTIN_MATCHES_SPECIES = 4;
-	static const int BUILTIN_MATCHES_PERSONA = 8;
-
 	const char* name = Builtin_messages[type].name;
 	SCP_vector<int> matching_builtins;
 	int match_level, best_match_level = 0;
@@ -2072,6 +2172,9 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 		} else {
 			match_level = BUILTIN_MATCHES_TYPE;
 		}
+
+		// Apply "Prefer this message" flags
+		match_level |= Messages[i].boost_level;
 
 		if (Current_mission_mood == Messages[i].mood) {
 			// Boost messages that match the current mood
@@ -2109,6 +2212,17 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 			}
 		}
 
+		// Ditto with outer filters, although they're more complicated
+		if (has_filters(Messages[i].outer_filter)) {
+			if (outer_filters_match(Messages[i].outer_filter, Messages[i].outer_filter_radius, sender)) {
+				// Boost messages that have at least one filter
+				match_level |= BUILTIN_MATCHES_FILTER;
+			} else {
+				// Ignore messages where any filter doesn't match
+				continue;
+			}
+		}
+
 		if (match_level == best_match_level) {
 			matching_builtins.push_back(i);
 		} else if (match_level > best_match_level) {
@@ -2119,7 +2233,9 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 	}
 
 	int matches = (int) matching_builtins.size();
-	if (matches != 0) {
+	if (matches == 1) {
+		return matching_builtins[0];
+	} else if (matches > 0) {
 		return matching_builtins[Random::next(matches)];
 	}
 

@@ -769,7 +769,7 @@ int targa_write_bitmap(char *real_filename, ubyte *data, ubyte * /*palette*/, in
 
 	cfwrite(compressed_data, compressed_data_len, 1, f);
 	cfclose(f);
-	f = NULL;
+	vm_free(compressed_data);
 
 	return 0;
 }

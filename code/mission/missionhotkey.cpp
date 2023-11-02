@@ -21,6 +21,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 #include "mission/missionhotkey.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionscreencommon.h"
 #include "mod_table/mod_table.h"
 #include "object/object.h"
@@ -962,6 +963,9 @@ void mission_hotkey_init()
 	// pause all game music
 	audiostream_pause_all();
 
+	// pause all voices
+	message_pause_all();
+
 	reset_hotkeys();
 	common_set_interface_palette();  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -1031,6 +1035,9 @@ void mission_hotkey_close()
 
 	// unpause all game music
 	audiostream_unpause_all();
+
+	// unpause all voices
+	message_resume_all();
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette

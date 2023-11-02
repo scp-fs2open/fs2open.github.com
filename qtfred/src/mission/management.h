@@ -28,8 +28,11 @@ enum class SubSystem {
 	Species,
 	BriefingIcons,
 	HudCommOrders,
+	HudGaugePositions,
+	LightingProfiles,
 	AlphaColors,
-	GameSound,
+	GameSound1,
+	GameSound2,
 	MissionBrief,
 	AI,
 	AIProfiles,
@@ -38,8 +41,10 @@ enum class SubSystem {
 	Medals,
 	Glowpoints,
 	Ships,
+	Asteroids,
 	Parse,
 	TechroomIntel,
+	Traitor,
 	Nebulas,
 	Stars,
 	Ssm,
@@ -70,7 +75,7 @@ class Editor;
  * @param[in]   cfilepath   CFile root directory.
  * @param[in]   listener    A callback function called after each initializer.
  *
- * @return @c true if initialization was successfull, @c false otherwise
+ * @return @c true if initialization was successful, @c false otherwise
  */
 bool initialize(const std::string& cfilepath,
 				int argc,

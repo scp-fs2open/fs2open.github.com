@@ -74,7 +74,7 @@ void opengl_post_pass_tonemap()
 		[](graphics::generic_data::tonemapping_data* data) {
 		auto ppc = ltp::current_piecewise_intermediates();
 		auto tn = ltp::current_tonemapper();
-		data->tonemapper = tn;
+		data->tonemapper = (int)tn;
 		data->sh_B = ppc.sh_B;
 		data->sh_lnA = ppc.sh_lnA;
 		data->sh_offsetX =ppc.sh_offsetX;

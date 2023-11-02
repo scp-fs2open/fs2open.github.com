@@ -468,7 +468,7 @@ void multi_voice_process()
 		}
 	}
 
-	// process seperately as player or server
+	// process separately as player or server
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		multi_voice_server_process();
 	}

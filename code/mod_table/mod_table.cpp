@@ -48,6 +48,7 @@ bool Enable_external_default_scripts;
 int Default_detail_level;
 bool Full_color_head_anis;
 bool Dont_automatically_select_turret_when_targeting_ship;
+bool Always_reset_selected_wep_on_loadout_open;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
@@ -68,7 +69,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
-SCP_vector<SCP_string> Splash_screens;
+SCP_vector<splash_screen> Splash_screens;
 int Splash_fade_in_time;
 int Splash_fade_out_time;
 bool Splash_logo_center;
@@ -129,6 +130,7 @@ bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
+int HUD_set_coords_screen_base_res[2];
 bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
@@ -143,29 +145,32 @@ bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
+bool Calculate_subsystem_hitpoints_after_parsing;
 
-static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
-							 .category("Other")
-							 .default_val(Discord_presence)
-							 .level(options::ExpertLevel::Advanced)
-							 .importance(55)
-		                     .change_listener([](bool val, bool) {
-									if(Discord_presence){
-										if (!val) {
-											Discord_presence = false;
-											libs::discord::shutdown();
-											return true;
-										}
-									} else {
-										if (val) {
-											Discord_presence = true;
-											libs::discord::init();
-											return true;
-										}
-									}
-									return false;
-								})
-							 .finish();
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
+                     std::pair<const char*, int>{"Discord Presence", 1754},
+                     std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
+                     .category("Other")
+                     .default_val(Discord_presence)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(55)
+                     .change_listener([](bool val, bool) {
+                          if(Discord_presence){
+                               if (!val) {
+                                    Discord_presence = false;
+                                    libs::discord::shutdown();
+                                    return true;
+                               }
+                          } else {
+                               if (val) {
+                                    Discord_presence = true;
+                                    libs::discord::init();
+                                    return true;
+                               }
+                          }
+                          return false;
+                     })
+                     .finish();
 
 void mod_table_set_version_flags();
 
@@ -227,16 +232,36 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Splash screens:")) {
-			SCP_string splash_bitmap;
 			while (optional_string("+Bitmap:")) {
-				stuff_string(splash_bitmap, F_NAME);
+				splash_screen splash;
+				stuff_string(splash.filename, F_NAME);
 
 				// remove extension?
-				if (drop_extension(splash_bitmap)) {
-					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				if (drop_extension(splash.filename)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash.filename.c_str()));
 				}
 
-				Splash_screens.push_back(splash_bitmap);
+				if (optional_string("+Aspect Ratio:")) {
+					stuff_float(&splash.aspect_ratio_exact);
+				}
+				if (optional_string("+Aspect Ratio Min:")) {
+					stuff_float(&splash.aspect_ratio_min);
+				}
+				if (optional_string("+Aspect Ratio Max:")) {
+					stuff_float(&splash.aspect_ratio_max);
+				}
+
+				if (splash.aspect_ratio_exact != 0.0f && (splash.aspect_ratio_min != 0.0f || splash.aspect_ratio_max != 0.0f)) {
+					Warning(LOCATION, "Game Settings Table: An exact aspect ratio and either a min or max aspect ratio were supplied for '%s'.  Only the exact value will be used.", splash.filename.c_str());
+					splash.aspect_ratio_min = 0.0f;
+					splash.aspect_ratio_max = 0.0f;
+				}
+
+				if (splash.aspect_ratio_exact == 0.0f && splash.aspect_ratio_min == 0.0f && splash.aspect_ratio_max == 0.0f) {
+					splash.is_default = true;
+				}
+
+				Splash_screens.push_back(splash);
 			}
 		}
 
@@ -395,6 +420,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Always_warn_player_about_unbound_keys);
 		}
 
+		if (optional_string("$HUD drop shadows enabled by default:")) {
+			stuff_boolean(&HUD_shadows);
+		}
+
 		optional_string("#SEXP SETTINGS");
 
 		if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -431,8 +460,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_host_orientation_for_set_camera_facing);
 			if (Use_host_orientation_for_set_camera_facing) {
 				mprintf(("Game Settings Table: Using host orientation for set-camera-facing\n"));
-			}
-			else {
+			} else {
 				mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 			}
 		}
@@ -458,6 +486,21 @@ void parse_mod_table(const char *filename)
 				}
 			} else {
 				Warning(LOCATION, "$Show-subtitle base resolution: must specify two arguments");
+			}
+		}
+
+		if (optional_string("$HUD-set-coords base resolution:")) {
+			int base_res[2];
+			if (stuff_int_list(base_res, 2) == 2) {
+				if (base_res[0] >= 640 && base_res[1] >= 480) {
+					HUD_set_coords_screen_base_res[0] = base_res[0];
+					HUD_set_coords_screen_base_res[1] = base_res[1];
+					mprintf(("Game Settings Table: HUD-set-coords base resolution is (%d, %d)\n", base_res[0], base_res[1]));
+				} else {
+					Warning(LOCATION, "$HUD-set-coords base resolution: arguments must be at least 640x480!");
+				}
+			} else {
+				Warning(LOCATION, "$HUD-set-coords base resolution: must specify two arguments");
 			}
 		}
 
@@ -992,18 +1035,35 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Fixed Turret Collisions:")) {
 			stuff_boolean(&Fixed_turret_collisions);
+			if (Fixed_turret_collisions) {
+				mprintf(("Game Settings Table: Using fixed turret collisions (shooting a turret barrel will always register)\n"));
+			} else {
+				mprintf(("Game Settings Table: Using retail turret collisions (shooting a turret barrel will register if it is within the radius of the base)\n"));
+			}
 		}
 
 		if (optional_string("$Fixed Missile Detonation:")) {
 			stuff_boolean(&Fixed_missile_detonation);
+			if (Fixed_missile_detonation) {
+				mprintf(("Game Settings Table: Using fixed missile detonation (missiles will cross an entire subsystem before detonating)\n"));
+			} else {
+				mprintf(("Game Settings Table: Using retail missile detonation (missiles will detonate when they reach the center coordinates of a subsystem)\n"));
+			}
 		}
 
 		if (optional_string("$Damage Impacted Subsystem First:")) {
 			stuff_boolean(&Damage_impacted_subsystem_first);
+			if (Damage_impacted_subsystem_first) {
+				mprintf(("Game Settings Table: Damage Impacted Subsystem First set to TRUE (weapons will damage the subsystem they impact before any others)\n"));
+			} else {
+				mprintf(("Game Settings Table: Damage Impacted Subsystem First set to FALSE (weapons will damage the closest subsystem before any others)\n"));
+			}
 		}
 
 		if (optional_string("$Use 3d ship select:")) {
 			stuff_boolean(&Use_3d_ship_select);
+			if (Use_3d_ship_select)
+				mprintf(("Game Settings Table: Using 3D ship select\n"));
 		}
 
 		if (optional_string("$Default ship select effect:")) {
@@ -1019,10 +1079,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Use 3d ship icons:")) {
 			stuff_boolean(&Use_3d_ship_icons);
+			if (Use_3d_ship_icons)
+				mprintf(("Game Settings Table: Using 3D ship icons\n"));
 		}
 
 		if (optional_string("$Use 3d weapon select:")) {
 			stuff_boolean(&Use_3d_weapon_select);
+			if (Use_3d_weapon_select)
+				mprintf(("Game Settings Table: Using 3D weapon select\n"));
 		}
 
 		if (optional_string("$Default weapon select effect:")) {
@@ -1038,10 +1102,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Use 3d weapon icons:")) {
 			stuff_boolean(&Use_3d_weapon_icons);
+			if (Use_3d_weapon_icons)
+				mprintf(("Game Settings Table: Using 3D weapon icons\n"));
 		}
 
 		if (optional_string("$Use 3d overhead ship:")) {
 			stuff_boolean(&Use_3d_overhead_ship);
+			if (Use_3d_overhead_ship)
+				mprintf(("Game Settings Table: Using 3D overhead ship\n"));
 		}
 
 		if (optional_string("$Default overhead ship style:")) {
@@ -1054,6 +1122,10 @@ void parse_mod_table(const char *filename)
 			} else {
 				error_display(0, "Unknown Select Overhead Ship Style %s, using TOPVIEW instead.", effect);
 			}
+		}
+
+		if (optional_string("$Always refresh selected weapon when viewing loadout:")) {
+			stuff_boolean(&Always_reset_selected_wep_on_loadout_open);
 		}
 
 		if (optional_string("$Weapons inherit parent collision group:")) {
@@ -1072,8 +1144,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Beams_use_damage_factors);
 			if (Beams_use_damage_factors) {
 				mprintf(("Game Settings Table: Beams will use Damage Factors\n"));
-			}
-			else {
+			} else {
 				mprintf(("Game Settings Table: Beams will ignore Damage Factors (retail behavior)\n"));
 			}
 		}
@@ -1146,14 +1217,20 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Shockwaves Always Damage Bombs:")) {
 			stuff_boolean(&Shockwaves_always_damage_bombs);
+			if (Shockwaves_always_damage_bombs)
+				mprintf(("Game Settings Table: Shockwaves always damage bombs\n"));
 		}
 
 		if (optional_string("$Shockwaves Damage All Object Types Once:")) {
 			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
+			if (Shockwaves_damage_all_obj_types_once)
+				mprintf(("Game Settings Table: Shockwaves damage all object types once\n"));
 		}
 
 		if (optional_string("$Shockwaves Inherit Parent Weapon Damage Type:")) {
 			stuff_boolean(&Shockwaves_inherit_parent_damage_type);
+			if (Shockwaves_inherit_parent_damage_type)
+				mprintf(("Game Settings Table: Shockwaves inherit parent damage type\n"));
 		}
 
 		if (optional_string("$Inherited Shockwave Damage Type Added Suffix:")) {
@@ -1185,6 +1262,8 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Swarmers Lead Targets:")) {
 			stuff_boolean(&Swarmers_lead_targets);
+			if (Swarmers_lead_targets)
+				mprintf(("Game Settings Table: Swarmers lead targets\n"));
 		}
 
 		if (optional_string("$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:")) {
@@ -1243,6 +1322,7 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Use distant firepoint for all turrets:")){
 			stuff_boolean(&Always_use_distant_firepoints);
 		}
+
 		if (optional_string("$Enable Discord rich presence:")) {
 			stuff_boolean(&Discord_presence);
 		}
@@ -1257,6 +1337,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Countermeasures use capacity:")) {
 			stuff_boolean(&Countermeasures_use_capacity);
+		}
+
+		if (optional_string("$Calculate subsystem hitpoints after parsing:")) {
+			stuff_boolean(&Calculate_subsystem_hitpoints_after_parsing);
+			if (Calculate_subsystem_hitpoints_after_parsing)
+				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated after parsing\n"));
+			else
+				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
 		}
 
 		required_string("#END");
@@ -1290,15 +1378,17 @@ void mod_table_post_process()
 	// use the same widescreen code as in adjust_base_res()
 	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
 	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
-	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
-	if (aspect_quotient >= 1.0) {
-		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient);
+	float aspect_quotient_subtitle = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
+	if (aspect_quotient_subtitle >= 1.0) {
+		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient_subtitle);
 		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
 	} else {
 		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
-		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient);
+		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient_subtitle);
 	}
 	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
+
+	// we don't need to calculate adjusted resolution for hud-set-coords because that function doesn't do screen scaling
 }
 
 bool mod_supports_version(int major, int minor, int build)
@@ -1330,6 +1420,7 @@ void mod_table_reset()
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Dont_automatically_select_turret_when_targeting_ship = false;
+	Always_reset_selected_wep_on_loadout_open = false;
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;
@@ -1354,7 +1445,7 @@ void mod_table_reset()
 	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
-	Movie_subtitle_font = "font01.vf";
+	Movie_subtitle_font = "";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
@@ -1411,6 +1502,8 @@ void mod_table_reset()
 	Show_subtitle_screen_base_res[1] = -1;
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
+	HUD_set_coords_screen_base_res[0] = -1;
+	HUD_set_coords_screen_base_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
@@ -1431,6 +1524,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
 	Randomize_particle_rotation = false;
+	Calculate_subsystem_hitpoints_after_parsing = false;
 }
 
 void mod_table_set_version_flags()
@@ -1445,5 +1539,8 @@ void mod_table_set_version_flags()
 	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
 		Fixed_chaining_to_repeat = true;
+	}
+	if (mod_supports_version(24, 0, 0)) {
+		Calculate_subsystem_hitpoints_after_parsing = true;		// this is essentially a bugfix
 	}
 }

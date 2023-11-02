@@ -611,7 +611,7 @@ ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
 
-void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags )
 {
 	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
@@ -660,7 +660,7 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
 		gr_set_color(0,255,0);
 
 		vec3d	bounding_box[8];		// caclulated fron min/max
-		model_calc_bound_box(bounding_box,&pm->mins, &pm->maxs);
+		model_calc_bound_box(bounding_box, &pm->mins, &pm->maxs);
 
 		for (i=0; i<8; i++ )	{
 			g3_rotate_vertex( &pts[i], &bounding_box[i] );
@@ -789,7 +789,7 @@ static const int MAX_ARC_SEGMENT_POINTS = 50;
 int Num_arc_segment_points = 0;
 vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
 
-void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
+void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth )
 {
 	float d = vm_vec_dist_quick( v1, v2 );
 	const float scaler = 0.30f;
@@ -2646,7 +2646,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 // Goober5000
 // uses same algorithms as in ship_do_thruster_frame
-int model_interp_get_texture(texture_info *tinfo, int elapsed_time)
+int model_interp_get_texture(const texture_info *tinfo, int elapsed_time)
 {
 	int texture, frame, cur_time, num_frames;
 	float total_time;
@@ -2751,19 +2751,19 @@ void texture_info::clear()
 	num_frames = 0;
 	total_time = 1.0f;
 }
-int texture_info::GetNumFrames()
+int texture_info::GetNumFrames() const
 {
 	return num_frames;
 }
-int texture_info::GetOriginalTexture()
+int texture_info::GetOriginalTexture() const
 {
 	return original_texture;
 }
-int texture_info::GetTexture()
+int texture_info::GetTexture() const
 {
 	return texture;
 }
-float texture_info::GetTotalTime()
+float texture_info::GetTotalTime() const
 {
 	return total_time;
 }

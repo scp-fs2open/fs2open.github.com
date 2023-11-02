@@ -6,6 +6,11 @@
 namespace sexp {
 
 /**
+ * @brief Returns the maximum SEXP id, exclusive, or alternatively the id that would be used by the next scripted SEXP.
+ */
+int operator_upper_bound();
+
+/**
  * @brief Adds the sexp to the dynamic SEXP system
  *
  * The pointer is transferred to the ownership of the SEXP system and may not be deleted by outside code.

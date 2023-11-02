@@ -60,6 +60,7 @@
 #include "calcrelativecoordsdlg.h"
 #include "musicplayerdlg.h"
 #include "volumetricsdlg.h"
+#include "customdatadlg.h"
 
 #include "osapi/osapi.h"
 
@@ -258,10 +259,13 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_REINFORCEMENT, OnEditorsReinforcement)
 	ON_COMMAND(ID_ERROR_CHECKER, OnErrorChecker)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
+	ON_COMMAND(ID_EDITORS_JUMPNODE, OnEditorsJumpnode)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
 	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
+	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -1443,7 +1447,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
 				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
-					id = ID_EDITORS_WAYPOINT;
+					id = ID_EDITORS_JUMPNODE;
 					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 						if(jnp->GetSCPObject() == &Objects[objnum])
 							break;
@@ -1963,8 +1967,11 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 				break;
 
 			case OBJ_WAYPOINT:
-			case OBJ_JUMP_NODE:
 				OnEditorsWaypoint();
+				break;
+
+			case OBJ_JUMP_NODE:
+				OnEditorsJumpnode();
 				break;
 		}
 
@@ -3389,6 +3396,17 @@ void CFREDView::OnEditorsWaypoint()
 	Waypoint_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
+void CFREDView::OnEditorsJumpnode()
+{
+	Assert(Jumpnode_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Jumpnode_wnd_data, &Jumpnode_editor_dialog))
+		return;
+
+	Jumpnode_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Jumpnode_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
 char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 {
 	char *source;
@@ -3445,7 +3463,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_IGNORE:
@@ -3621,7 +3641,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE_WING:
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				if (team == team2) {
 					if (ship >= 0)
 						return "Ship assigned to attack same team";
@@ -3752,6 +3774,18 @@ void CFREDView::OnViewOutlinesOnSelected()
 void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
+}
+
+void CFREDView::OnViewOutlineAtWarpin()
+{
+	Draw_outline_at_warpin_position = !Draw_outline_at_warpin_position;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 

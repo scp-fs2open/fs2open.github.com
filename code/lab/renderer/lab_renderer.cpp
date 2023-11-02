@@ -1,8 +1,10 @@
 #include "lab/renderer/lab_renderer.h"
+#include "globalincs/vmallocator.h"
 #include "lab/labv2_internal.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "lighting/lighting_profiles.h"
+#include "parse/parselo.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
@@ -268,7 +270,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	extern const char* Neb2_filenames[];
 
 	char envmap_name[MAX_FILENAME_LEN] = {0};
-
+	SCP_string ltp_name;
 	currentMissionBackground = mission_name;
 
 	stars_pre_level_init(true);
@@ -286,7 +288,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
 
-		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "#Background bitmaps" });
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
 		if (optional_string("+Volumetric Nebula:")) {
 			//Rendering usually happens in post-mission-init, just do it now in the lab
 			The_mission.volumetrics.emplace().parse_volumetric_nebula().renderVolumeBitmap();
@@ -296,8 +298,9 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		}
 
 		// Are we using a skybox?
-		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
-
+		//skip will skip to the end of the file (or to the 'end' string) if any string is absent,
+		//so be sure to include any section that might be found
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
 		strcpy_s(skybox_model, "");
 		if (optional_string("$Skybox Model:")) {
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
@@ -316,8 +319,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 
 			stars_set_background_model(skybox_model, nullptr, skybox_flags);
 			stars_set_background_orientation(&skybox_orientation);
+		}
 
-			skip_to_start_of_string("#Background bitmaps");
+		skip_to_start_of_string_either("$Lighting Profile:", "#Background bitmaps");
+		ltp_name = ltp::default_name();
+		if(optional_string("$Lighting Profile:")){
+			stuff_string(ltp_name,F_NAME);
+		}
+		if (ltp_name != ltp::current()->name) {
+				ltp::switch_to(ltp_name);
 		}
 
 		if (optional_string("#Background bitmaps")) {

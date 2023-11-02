@@ -188,6 +188,7 @@ Flag exe_params[] =
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-window",			"Run in window",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
 	{ "-fullscreen_window",	"Run in fullscreen window",					false,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fullscreen_window", },
+	{ "-capture_mouse",		"Capture the mouse within the window",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-capture_mouse", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
@@ -235,6 +236,7 @@ Flag exe_params[] =
 	{ "-prefer_ipv4",		"Prefer IPv4 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv4", },
 	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
 	{ "-log_multi_packet",	"Log multi packet types ",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-log_multi_packet",},
+	{ "-no_bsp_align",		"Disable pof BSP data alignment",			true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_bsp_align", },
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -405,6 +407,7 @@ cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3
 cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
@@ -413,6 +416,7 @@ int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
+bool Cmdline_capture_mouse = false;
 int Cmdline_no_screenshake = 0;
 int Cmdline_deadzone = -1;
 
@@ -467,6 +471,7 @@ cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
 cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
 cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
 cmdline_parm log_multi_packet_arg("-log_multi_packet", nullptr, AT_NONE);
+cmdline_parm no_bsp_align_arg("-no_bsp_align", nullptr, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -488,6 +493,7 @@ bool Cmdline_noshadercache = false;
 bool Cmdline_prefer_ipv4 = false;
 bool Cmdline_prefer_ipv6 = false;
 bool Cmdline_dump_packet_type = false;
+bool Cmdline_no_bsp_align = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -832,7 +838,7 @@ void os_validate_parms(int argc, char *argv[])
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
-					printf("Website: http://scp.indiegames.us\n");
+					printf("Website: https://scp.indiegames.us\n");
 					printf("Github (bug reporting): https://github.com/scp-fs2open/fs2open.github.com/issues\n\n");
 					printf("Usage: fs2_open [options]\n");
 
@@ -1643,7 +1649,7 @@ bool SetCmdlineParams()
 
 		// be sure that this string fits in our limits
 		if ( strlen(Cmdline_game_password) >= MAX_PASSWD_LEN ) {
-			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d charaters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
+			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d characters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
 			Cmdline_game_password[MAX_PASSWD_LEN-1] = '\0';
 		}
 	}
@@ -1868,6 +1874,10 @@ bool SetCmdlineParams()
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
+
+	if ( capture_mouse.found() ) {
+		Cmdline_capture_mouse = true;
+	}
 	// new lighting lines
 	if ( ambient_power_arg.found() )
 		Cmdline_ambient_power = ambient_power_arg.get_float();
@@ -2020,6 +2030,10 @@ bool SetCmdlineParams()
 	if (lang_arg.found()) 
 	{
 		Cmdline_lang = lang_arg.str();
+	}
+
+	if (no_bsp_align_arg.found()) {
+		Cmdline_no_bsp_align = true;
 	}
 	
 #ifdef WIN32

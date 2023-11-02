@@ -39,6 +39,8 @@ set(FRED2_SOURCES
 	cmdbrief.h
 	createwingdlg.cpp
 	createwingdlg.h
+	customdatadlg.cpp
+	customdatadlg.h
 	customwingnames.cpp
 	customwingnames.h
 	debriefingeditordlg.cpp
@@ -67,6 +69,8 @@ set(FRED2_SOURCES
 	initialships.h
 	initialstatus.cpp
 	initialstatus.h
+	jumpnodedlg.cpp
+	jumpnodedlg.h
 	listitemchooser.cpp
 	listitemchooser.h
 	mainfrm.cpp
@@ -87,6 +91,8 @@ set(FRED2_SOURCES
 	musicplayerdlg.h
 	operatorargtypeselect.cpp
 	operatorargtypeselect.h
+	OperatorComboBox.cpp
+	OperatorComboBox.h
 	orienteditor.cpp
 	orienteditor.h
 	playerstarteditor.cpp

@@ -93,6 +93,7 @@ public:
 	CString	m_avi_filename;
 	CString	m_message_name;
 	CString	m_message_text;
+	CString m_message_note;
 	int		m_persona;
 	CString	m_wave_filename;
 	int		m_cur_msg, m_cur_msg_old;
@@ -142,6 +143,7 @@ protected:
 	afx_msg void OnSelchangeMessageList();
 	afx_msg void OnNewMsg();
 	afx_msg void OnDeleteMsg();
+	afx_msg void OnMsgNote();
 	afx_msg void OnBrowseAvi();
 	afx_msg void OnBrowseWave();
 	afx_msg void OnSelchangeWaveFilename();

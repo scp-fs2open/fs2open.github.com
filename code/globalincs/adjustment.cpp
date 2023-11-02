@@ -10,7 +10,7 @@
 /**
  * @brief Processes an input according to the user's configuration and returns the result.
  */
-float adjustment::handle(float input)
+float adjustment::handle(float input) const
 {
 	if (only_positive && input < 0.0f)
 		input = base;
@@ -160,4 +160,20 @@ bool adjustment::parse(const char* filename,
 			profile_name.c_str());
 	}
 	return false;
+}
+
+adjustment::adjustment(const adjustment& rhs){
+	*this = rhs;
+}
+
+adjustment& adjustment::operator= (const adjustment& rhs){
+	has_adjust = rhs.has_adjust;
+	adjust = rhs.adjust;
+	has_multiplier = rhs.has_multiplier;
+	multipier = rhs.multipier;
+	has_minimum = rhs.has_minimum;
+	minimum = rhs.minimum;
+	has_maximum = rhs.has_maximum;
+	maximum = rhs.maximum;
+	return *this;
 }

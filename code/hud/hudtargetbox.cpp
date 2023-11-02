@@ -39,7 +39,7 @@
 #endif
 
 
-extern float View_zoom;
+extern fov_t View_zoom;
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {
@@ -395,7 +395,8 @@ void HudGaugeTargetBox::render(float frametime)
 	setGaugeColor();
 
 	// blit the background frame
-	renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
+	if (Monitor_frame.first_frame >= 0)
+		renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
 
 	if ( Monitor_mask >= 0 ) {
 		// render the alpha mask
@@ -461,8 +462,9 @@ void HudGaugeTargetBox::render(float frametime)
 void HudGaugeTargetBox::renderTargetForeground()
 {
 	setGaugeColor();
-
-	renderBitmap(Monitor_frame.first_frame+1, position[0], position[1]);	
+	
+	if (Monitor_frame.first_frame + 1 >= 0)
+		renderBitmap(Monitor_frame.first_frame+1, position[0], position[1]);	
 }
 
 /**
@@ -473,7 +475,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	int		clip_h,w,h;
 	char		buf[16];
 
-	if ( Integrity_bar.first_frame == -1 ) 
+	if ( Integrity_bar.first_frame < 0 ) 
 		return;
 
 	if ( disabled ) {
@@ -522,7 +524,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	}
 }
 
-void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, float zoom)
+void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom)
 {
 	// JAS: g3_start_frame uses clip_width and clip_height to determine the
 	// size to render to.  Normally, you would set this by using gr_set_clip,
@@ -941,7 +943,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
 		}
 
-		renderTargetSetup(&camera_eye, &camera_orient, View_zoom/3);
+		renderTargetSetup(&camera_eye, &camera_orient, View_zoom * (1.0f/3.0f));
 		model_clear_instance(viewed_model_num);
 		
 		model_render_params render_info;
@@ -1267,7 +1269,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	matrix		camera_orient = IDENTITY_MATRIX;
 	vec3d		orient_vec, up_vector;
 	float			factor, dist;
-	int			hx, hy, w, h;
+	int			hx = 0, hy = 0, w, h;
 	SCP_list<CJumpNode>::iterator jnp;
 	
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
@@ -1320,18 +1322,12 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		renderTargetIntegrity(1);
 		setGaugeColor();
 
-		strcpy_s(outstr, jnp->GetName());
-		end_string_at_first_hash_symbol(outstr);
-		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
+		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, jnp->GetDisplayName());
 
 		dist = Player_ai->current_target_distance;
 		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
 			dist = dist * Hud_unit_multiplier;
 		}
-
-		// account for hud shaking
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
 
 		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
 		hud_num_make_mono(outstr, font_num);
@@ -1582,7 +1578,7 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		extra_data_shown=1;
 	}
 
-	if ( extra_data_shown ) {	
+	if ( extra_data_shown && bracket.first_frame >= 0) {
 		renderBitmap(bracket.first_frame, position[0] + bracket_offsets[0], position[1] + bracket_offsets[1]);		
 	}
 }
@@ -2111,19 +2107,13 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			break;
 	}
 
-	int hx, hy;
-
-	// Account for HUD shaking
-	hx = fl2i(HUD_offset_x);
-	hy = fl2i(HUD_offset_y);
-
 	// print out the target distance and speed
 	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
 
 	hud_num_make_mono(outstr, font_num);
 	gr_get_string_size(&w,&h,outstr);
 
-	renderString(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);	
+	renderString(position[0] + Dist_offsets[0], position[1] + Dist_offsets[1], EG_TBOX_DIST, outstr);	
 
 #if 0
 	current_target_speed = vm_vec_dist(&target_objp->pos, &target_objp->last_pos) / frametime;
@@ -2151,7 +2141,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	sprintf(outstr, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
 	hud_num_make_mono(outstr, font_num);
 
-	renderString(position[0] + Speed_offsets[0]+hx, position[1] + Speed_offsets[1]+hy, EG_TBOX_SPEED, outstr);
+	renderString(position[0] + Speed_offsets[0], position[1] + Speed_offsets[1], EG_TBOX_SPEED, outstr);
 
 	//
 	// output target info for debug purposes only, this will be removed later

@@ -21,7 +21,7 @@ namespace util {
  */
 enum class Duration {
 	Onetime, //!< The effect is active exactly once
-	Range, //!< The effect is active withing a specific time range
+	Range, //!< The effect is active within a specific time range
 	Always //!< The effect is always active
 };
 

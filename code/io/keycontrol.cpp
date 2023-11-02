@@ -166,6 +166,8 @@ void factor_table::resize(size_t size)
 	}
 }
 
+// Cyborg -- You may see a linter or coverity complain about this function, since it basically discards a lot of the result of the float division.
+// But using modulo division instead is actually about 60% slower based on some quick testing I did, and it gives the same results.
 bool factor_table::isNaturalNumberFactor(size_t factor, size_t n)
 {
 	return ((float)n / (float)factor) == n / factor;
@@ -641,7 +643,7 @@ extern int Framerate_delay;
 
 extern vec3d Eye_position;
 extern matrix Eye_matrix;
-extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
+extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, fov_t zoom);
 
 extern int Show_cpu;
 
@@ -873,13 +875,17 @@ void process_debug_keys(int k)
 
 					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, Player_ai->targeted_subsys->system_info->subobj_num, (float) -Player_ai->targeted_subsys->system_info->type, NULL); //100.0f);
 
-					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
-						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
-						sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
+					if ( Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_ENGINE ) {
+						if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
+							mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
+							sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
+						}
 					}
 
-					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
-						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
+					if ( Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET ) {
+						if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
+							mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
+						}
 					}
 				}
 			}
@@ -1013,7 +1019,6 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_U: {
 		case KEY_DEBUGGED1 + KEY_U:
 			// launch asteroid
-			object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int subtype);
 			object *objp = asteroid_create(&Asteroid_field, 0, 0);
 			if(objp == NULL) {
 				break;
@@ -1321,7 +1326,7 @@ void process_debug_keys(int k)
 				break;
 			}
 			cam->set_fov(cam->get_fov() + 0.1f);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , cam->get_fov());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , g3_get_hfov(cam->get_fov()));
 			}
 			break;
 
@@ -1335,7 +1340,7 @@ void process_debug_keys(int k)
 				break;
 			}
 			cam->set_fov(cam->get_fov() - 0.1f);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , cam->get_fov());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , g3_get_hfov(cam->get_fov()));
 			}
 			break;
 		case KEY_DEBUGGED + KEY_Z:
@@ -1512,7 +1517,8 @@ void game_do_end_mission_popup()
 		game_stop_time();
 		game_stop_looped_sounds();
 		audiostream_pause_all();
-		snd_stop_all();
+		weapon_pause_sounds();
+		message_pause_all();
 
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
 		choice = popup(pf_flags, 3, POPUP_NO, XSTR( "&Yes, Quit", 28), XSTR( "Yes, &Restart", 29), XSTR( "Do you really want to end the mission?", 30));
@@ -1533,6 +1539,8 @@ void game_do_end_mission_popup()
 				game_start_subspace_ambient_sound();
 			}
 			audiostream_unpause_all();
+			weapon_unpause_sounds();
+			message_resume_all();
 			break;
 		}
 
@@ -1832,10 +1840,10 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(objp, CYCLE_PRIMARY_NEXT)) {
+			if (ship_select_next_primary(objp, CycleDirection::NEXT)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
-					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
@@ -1853,10 +1861,10 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(objp, CYCLE_PRIMARY_PREV)) {
+			if (ship_select_next_primary(objp, CycleDirection::PREV)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
-					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
@@ -1876,7 +1884,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			if (ship_select_next_secondary(objp)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {
-					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here

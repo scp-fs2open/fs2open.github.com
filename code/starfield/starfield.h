@@ -53,8 +53,6 @@ extern matrix Nmodel_orient;
 extern int Nmodel_flags;
 extern int Nmodel_bitmap;
 
-extern bool Subspace_sexp_used;
-
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
 

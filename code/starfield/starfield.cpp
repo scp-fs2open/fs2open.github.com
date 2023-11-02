@@ -165,19 +165,18 @@ int Nmodel_bitmap = -1;						// model texture
 
 bool Dynamic_environment = false;
 
-bool Subspace_sexp_used = false;
-
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
-auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris", "Motion Debris",
-                                                       "Controls whether motion debris are shown or not")
-                              .category("Graphics")
-                              .bind_to_once(&Motion_debris_enabled)
-                              .default_val(true)
-                              .level(options::ExpertLevel::Advanced)
-                              .importance(67)
-                              .finish();
+auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
+                     std::pair<const char*, int>{"Motion Debris", 1713},
+                     std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
+                     .category("Graphics")
+                     .bind_to_once(&Motion_debris_enabled)
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(67)
+                     .finish();
 
 static int Default_env_map = -1;
 static int Mission_env_map = -1;
@@ -186,7 +185,7 @@ static bool Irr_cubemap_drawn = false;
 
 int get_motion_debris_by_name(const SCP_string &name) {
 	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
-		if (SCP_string_lcase_equal_to()(Motion_debris_info[i].name, name)) {
+		if (lcase_equal(Motion_debris_info[i].name, name)) {
 			return i;
 		}
 	}
@@ -887,8 +886,6 @@ void stars_pre_level_init(bool clear_backgrounds)
 	// also clear the preload indexes
 	Preload_background_indexes.clear();
 
-	Subspace_sexp_used = false;
-
 	Dynamic_environment = false;
 	Motion_debris_override = false;
 
@@ -1338,10 +1335,8 @@ void stars_draw_sun(int show_sun)
 		// draw the sun itself, keep track of how many we drew
 		int bitmap_id = -1;
 		if (bm->fps) {
-			//gr_set_bitmap(bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
-			bitmap_id = bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames);
+			bitmap_id = bm->bitmap_id + ((timestamp() * bm->fps / MILLISECONDS_PER_SECOND) % bm->n_frames);
 		} else {
-			//gr_set_bitmap(bm->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
 			bitmap_id = bm->bitmap_id;
 		}
 
@@ -1475,10 +1470,8 @@ void stars_draw_sun_glow(int sun_n)
 	// draw the sun itself, keep track of how many we drew
 	int bitmap_id = -1;
 	if (bm->glow_fps) {
-		//gr_set_bitmap(bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
-		bitmap_id = bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames);
+		bitmap_id = bm->glow_bitmap + ((timestamp() * bm->glow_fps / MILLISECONDS_PER_SECOND) % bm->glow_n_frames);
 	} else {
-		//gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
 		bitmap_id = bm->glow_bitmap;
 	}
 
@@ -1549,13 +1542,13 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 			} else {
 				bitmap_id = Starfield_bitmaps[star_index].bitmap_id;
 			}
 		} else {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 				blending = true;
 				alpha = 0.9999f;
 			} else {
@@ -2090,7 +2083,7 @@ void stars_page_in()
 
 	// Initialize the subspace stuff
 
-	if ( Game_subspace_effect || Subspace_sexp_used ) {
+	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
 		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
 		Assert(Subspace_model_inner >= 0);
 
@@ -3035,7 +3028,7 @@ void stars_pack_backgrounds()
 		stars_add_blank_background(true);
 }
 
-static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
+static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, fov_t new_zoom)
 {
 	bm_set_render_target(gr_screen.envmap_render_target, i);
 
@@ -3043,7 +3036,7 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 
 	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
 
-	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
+	gr_set_proj_matrix( new_zoom * PI_2, 1.0f, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix( &Eye_position, &Eye_matrix );
 
 	if ( Game_subspace_effect ) {
@@ -3059,8 +3052,8 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 void stars_setup_environment_mapping(camid cid) {
 	matrix new_orient = IDENTITY_MATRIX;
 
-	extern float View_zoom;
-	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
+	extern fov_t View_zoom;
+	fov_t old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 
 	if (gr_screen.mode == GR_STUB) {
 		return;

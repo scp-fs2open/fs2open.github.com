@@ -59,6 +59,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "species_defs/species_defs.h"
+#include "lighting/lighting_profiles.h"
 #include "osapi/osapi.h"
 #include "graphics/font.h"
 #include "object/objectdock.h"
@@ -126,7 +127,9 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
 	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
 	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
 	{ "Dock",					AI_GOAL_DOCK,				0 },
 	{ "Undock",					AI_GOAL_UNDOCK,				0 },
@@ -220,64 +223,14 @@ void pad_with_newline(CString& str, int max_size) {
 	}
 }
 
-// medal_stuff Medals[NUM_MEDALS];
-/*
-void parse_medal_tbl()
+void lcl_fred_replace_stuff(CString &text)
 {
-	int rval, num_medals;
-
-	// open localization
-	lcl_ext_open();
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
-		lcl_ext_close();
-		return;
-	} 
-
-	read_file_text("medals.tbl");
-	reset_parse();
-
-	// parse in all the rank names
-	num_medals = 0;
-	required_string("#Medals");
-	while ( required_string_either("#End", "$Name:") ) {
-		Assert ( num_medals < NUM_MEDALS);
-		required_string("$Name:");
-		stuff_string( Medals[num_medals].name, F_NAME, NULL );
-		required_string("$Bitmap:");
-		stuff_string( Medals[num_medals].bitmap, F_NAME, NULL );
-		required_string("$Num mods:");
-		stuff_int( &Medals[num_medals].num_versions);
-
-		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
-		// this medal is a badge and should be treated specially
-		Medals[num_medals].kills_needed = 0;
-
-		if ( optional_string("+Num Kills:") ) {
-			char buf[MULTITEXT_LENGTH + 1];
-
-			stuff_int( &Medals[num_medals].kills_needed );
-
-			required_string("$Wavefile 1:");
-			stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-
-			required_string("$Wavefile 2:");
-			stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-
-			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, NULL);
-		}
-
-		num_medals++;
-	}
-
-	required_string("#End");      
-
-	// close localization
-	lcl_ext_close();
+	// this should be kept in sync with the function in localize.cpp
+	text.Replace("\"", "$quote");
+	text.Replace(";", "$semicolon");
+	text.Replace("/", "$slash");
+	text.Replace("\\", "$backslash");
 }
-*/
 
 void brief_init_colors();
 
@@ -379,8 +332,10 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	curves_init();
 	particle::ParticleManager::init();
 
-	iff_init();			// Goober5000
-	species_init();		// Kazan
+	gamesnd_parse_soundstbl(true);
+	iff_init();						// Goober5000
+	species_init();					// Kazan
+	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
 
@@ -407,7 +362,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	alpha_colors_init();
 	
-	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
 	sexp_startup(); // Must happen before ship init for LuaAI
@@ -426,6 +380,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	techroom_intel_init();
 	hud_positions_init();
 	asteroid_init();
+	lighting_profiles::load_profiles();
+	traitor_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
@@ -874,8 +830,10 @@ void clear_mission()
 	The_mission.author = str;
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
-	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
+	strcpy_s(The_mission.mission_desc, "Put mission description here");
+
+	apply_default_custom_data(&The_mission);
 
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
@@ -900,7 +858,7 @@ void clear_mission()
 
 		count = 0;
 		for ( j = 0; j < weapon_info_size(); j++ ) {
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {
@@ -1006,6 +964,7 @@ void set_cur_object_index(int obj)
 	set_cur_indices(obj);  // select the new object
 	Update_ship = Update_wing = 1;
 	Waypoint_editor_dialog.initialize_data(1);
+	Jumpnode_editor_dialog.initialize_data(1);
 	Update_window = 1;
 }
 
@@ -1124,6 +1083,15 @@ int update_dialog_boxes()
 		nprintf(("Fred routing", "waypoint dialog save failed\n"));
 		Waypoint_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
 			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+
+		return z;
+	}
+
+	z = Jumpnode_editor_dialog.update_data();
+	if (z) {
+		nprintf(("Fred routing", "jumpnode dialog save failed\n"));
+		Jumpnode_editor_dialog
+			.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 
 		return z;
 	}
@@ -1434,6 +1402,7 @@ void mark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 
@@ -1461,6 +1430,7 @@ void unmark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 

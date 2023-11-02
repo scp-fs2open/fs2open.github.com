@@ -264,6 +264,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 			transparent_objects.push_back(obj);
 		}
 	}
+	gr_deferred_lighting_msaa();
 	gr_deferred_lighting_end();
 
 	// we're done rendering models so flush render states
@@ -347,6 +348,7 @@ void obj_render_queue_all()
 
 	gr_clear_states();
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+	gr_deferred_lighting_msaa();
 
 	decals::renderAll();
 

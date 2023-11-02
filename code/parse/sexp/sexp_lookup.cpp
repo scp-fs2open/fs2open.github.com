@@ -79,7 +79,7 @@ void parse_sexp_table(const char* filename) {
 					bool skip = false;
 					// Case insensitive check if the item already exists in the list
 					for (int i = 0; i < (int)thisList.list.size(); i++) {
-						if (SCP_string_lcase_equal_to()(item, thisList.list[i])) {
+						if (lcase_equal(item, thisList.list[i])) {
 							error_display(0, "Enum item '%s' already exists in list %s. Skipping!\n", item.c_str(), thisList.name.c_str());
 							skip = true;
 							break;
@@ -194,6 +194,11 @@ void free_lua_sexps(lua_State* /*L*/)
 
 namespace sexp {
 
+int operator_upper_bound()
+{
+	return globals().next_free_operator_id;
+}
+
 int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 {
 	auto& global = globals();
@@ -262,7 +267,7 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 int get_category(const SCP_string& name)
 {
 	for (auto& cat : op_menu) {
-		if (SCP_string_lcase_equal_to()(cat.name, name)) {
+		if (lcase_equal(cat.name, name)) {
 			return cat.id;
 		}
 	}
@@ -272,7 +277,7 @@ int get_category(const SCP_string& name)
 int get_subcategory(const SCP_string& name, int category)
 {
 	for (auto& subcat : op_submenu) {
-		if (SCP_string_lcase_equal_to()(subcat.name, name) && get_category_of_subcategory(subcat.id) == category) {
+		if (lcase_equal(subcat.name, name) && get_category_of_subcategory(subcat.id) == category) {
 			return subcat.id;
 		}
 	}

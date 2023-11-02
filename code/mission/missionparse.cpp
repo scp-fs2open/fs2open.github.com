@@ -16,6 +16,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
@@ -24,6 +25,7 @@
 #include "gamesnd/eventmusic.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
 #include "hud/hudsquadmsg.h"
@@ -32,6 +34,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
@@ -102,7 +105,6 @@ int Mission_palette;  // index into Nebula_palette_filenames[] of palette file t
 int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
-int Num_status_names = MAX_STATUS_NAMES;
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
 int Num_parse_goals;
@@ -117,6 +119,8 @@ int Num_unknown_loadout_classes;
 ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
 int    Current_file_length   = 0;
+
+SCP_vector<mission_default_custom_data> Default_custom_data;
 
 // alternate ship type names
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
@@ -234,18 +238,6 @@ const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Bomber", "Bomber Wing", "Cruiser", "Cruiser Wing", "Unknown", "Unknown Wing",
 	"Player Fighter", "Player Fighter Wing", "Player Bomber", "Player Bomber Wing",
 	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
-};
-
-const char *Status_desc_names[MAX_STATUS_NAMES] = {
-	"Shields Critical", "Engines Damaged", "Fully Operational",
-};
-
-const char *Status_type_names[MAX_STATUS_NAMES] = {
-	"Damaged", "Disabled", "Corroded",
-};
-
-const char *Status_target_names[MAX_STATUS_NAMES] = {
-	"Weapons", "Engines", "Cable TV",
 };
 
 // definitions for arrival locations for ships/wings
@@ -792,6 +784,14 @@ void parse_mission_info(mission *pm, bool basic = false)
 			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
 
+	if (optional_string("$Lighting Profile:"))
+	{
+		stuff_string(The_mission.lighting_profile_name, F_NAME);
+	}
+	else
+		The_mission.lighting_profile_name = lighting_profiles::default_name();
+	lighting_profiles::switch_to(The_mission.lighting_profile_name);
+
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
 		stuff_string(preset, F_NAME, sizeof(preset)-1);
@@ -854,6 +854,34 @@ void parse_player_info(mission *pm)
 	}
 	
 	required_string("#Players");
+
+	// starting general orders go here
+	ai_lua_reset_general_orders();
+
+	if (optional_string("+General Orders Enabled:")) {
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			int lua_order_id = ai_lua_find_general_order_id(accepted);
+
+			if (lua_order_id >= 0) {
+				ai_lua_enable_general_order(lua_order_id, true);
+			}
+		}
+	}
+	if (optional_string("+General Orders Valid:")) {
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			int lua_order_id = ai_lua_find_general_order_id(accepted);
+
+			if (lua_order_id >= 0) {
+				ai_lua_validate_general_order(lua_order_id, true);
+			}
+		}
+	}
 
 	while (required_string_either("#Objects", "$")){
 		parse_player_info2(pm);
@@ -1130,7 +1158,7 @@ void parse_briefing_info(mission * /*pm*/)
  */
 void parse_music(mission *pm, int flags)
 {
-	int index, num;
+	int index;
 	char *ch;
 	char temp[NAME_LENGTH];
 
@@ -1237,9 +1265,12 @@ void parse_music(mission *pm, int flags)
 			}
 		}
 
-		// last resort: pick a random track out of the 7 FS2 soundtracks
-		num = std::max((int)Soundtracks.size(), 7);
-		strcpy_s(pm->event_music_name, Soundtracks[Random::next(num)].name);
+		if (!Soundtracks.empty())
+		{
+			// last resort: pick a random track out of the 7 FS2 soundtracks
+			int num = std::max((int)Soundtracks.size(), 7);
+			strcpy_s(pm->event_music_name, Soundtracks[Random::next(num)].name);
+		}
 
 
 done_event_music:
@@ -1264,9 +1295,12 @@ done_event_music:
 		if (event_music_get_spooled_music_index(pm->briefing_music_name) >= 0)
 			goto done_briefing_music;
 
-		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
-		num = std::max((int)Spooled_music.size(), 7);
-		strcpy_s(pm->briefing_music_name, Spooled_music[Random::next(num)].name);
+		if (!Spooled_music.empty())
+		{
+			// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
+			int num = std::max((int)Spooled_music.size(), 7);
+			strcpy_s(pm->briefing_music_name, Spooled_music[Random::next(num)].name);
+		}
 
 
 done_briefing_music:
@@ -1572,9 +1606,12 @@ void parse_briefing(mission * /*pm*/, int flags)
 				if (optional_string("$closeup label:")) {
 					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
 				}
-				bi->scale = 100;
+
+				bi->scale_factor = 1.0f;
 				if (optional_string("$icon scale:")) {
-					stuff_int(&bi->scale);
+					int scale;
+					stuff_int(&scale);
+					bi->scale_factor = scale / 100.0f;
 				}
 
 				if (optional_string("+id:")) {
@@ -2008,14 +2045,8 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	shipp->respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0))
-	{
-		for (i = 0; i < MAX_STARTING_WINGS; i++)
-		{
-			if (!stricmp(Starting_wing_names[i], Wings[p_objp->wingnum].name))
-				shipp->team = Iff_traitor;
-		}
-	}
+	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0) && p_objp->flags[Mission::Parse_Object_Flags::SF_From_player_wing])
+		shipp->team = Iff_traitor;
 
 	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
@@ -2515,10 +2546,21 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	// assign/update parse object in ship registry entry if needed
+	// (this is unrelated to ship registry state management and is only here because apparently in-game joining needs it;
+	// in the normal course of ship creation, the pointers and status are updated elsewhere)
 	auto ship_it = Ship_registry_map.find(shipp->ship_name);
-
 	if (ship_it != Ship_registry_map.end()) {
 		auto entry = &Ship_registry[ship_it->second];
+
+		if (entry->status == ShipStatus::INVALID) {
+			Warning(LOCATION, "Potential bug: ship registry status for %s is INVALID", shipp->ship_name);
+		}
+		if (entry->p_objp == nullptr) {
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is nullptr", shipp->ship_name);
+		} else if (entry->p_objp != p_objp) {
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
+		}
+
 		entry->p_objp = p_objp;
 	}
 
@@ -2537,7 +2579,6 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	Assert(p_objp != NULL);
 	Assert(wingnum >= 0);
 	Assert(shipnum >= 0);
-	int j, index;
 	wing *wingp = &Wings[wingnum];
 
 	// link ship and wing together
@@ -2571,13 +2612,6 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	p_objp->wing_status_wing_index = Ships[shipnum].wing_status_wing_index;
 	p_objp->wing_status_wing_pos = Ships[shipnum].wing_status_wing_pos;
 
-	// set flag if necessary
-	for (j = 0; j < MAX_STARTING_WINGS; j++)
-	{
-		if (!stricmp(Starting_wing_names[j], wingp->name))
-			Ships[shipnum].flags[Ship::Ship_Flags::From_player_wing];
-	}
-
 	// handle AI
 	ai_info *aip = &Ai_info[Ships[shipnum].ai_index];
 
@@ -2585,7 +2619,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 	// copy any goals from the wing to the newly created ship
-	for (index = 0; index < MAX_AI_GOALS; index++)
+	for (int index = 0; index < MAX_AI_GOALS; index++)
 	{
 		if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
 			ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
@@ -2797,6 +2831,9 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
 		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_From_player_wing])
+		shipp->flags.set(Ship::Ship_Flags::From_player_wing);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -2859,7 +2896,7 @@ bool p_object::has_display_name() {
 	return flags[Mission::Parse_Object_Flags::SF_Has_display_name];
 }
 
-extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name);
+extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name, bool set_supercap_warp_physics = false);
 
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.
@@ -3439,8 +3476,13 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	// parse the persona index if present
 	// For backwards compatbility only
-	if (optional_string("+Persona Index:"))
+	if (optional_string("+Persona Index:")) {
 		stuff_int(&p_objp->persona_index);
+		if (p_objp->persona_index < -1 || p_objp->persona_index >= (int)Personas.size()) {
+			Warning(LOCATION, "Persona index %d for %s is out of range!  Setting to -1.", p_objp->persona_index, p_objp->name);
+			p_objp->persona_index = -1;
+		}
+	}
 
 	if (optional_string("+Persona Name:")) {
 		SCP_string persona;
@@ -4264,9 +4306,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
-			if (!ship_registry_get(p_objp->name))
+			if (!ship_registry_exists(p_objp->name))
 			{
 				ship_registry_entry entry(p_objp->name);
+				entry.status = ShipStatus::NOT_YET_PRESENT;
 				entry.p_objp = p_objp;
 
 				Ship_registry.push_back(entry);
@@ -4336,25 +4379,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 						p_objp->ai_goals = -1;
 					}
 				}
-			}
-		}
-
-		// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
-		if (MULTI_TEAM)
-		{
-			// different for tvt -- Goober5000
-			for (j = 0; j < MAX_TVT_WINGS; j++)
-			{
-				if (!stricmp(TVT_wing_names[j], wingp->name))
-					Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::From_player_wing);
-			}
-		}
-		else
-		{
-			for (j = 0; j < MAX_STARTING_WINGS; j++)
-			{
-				if (!stricmp(Starting_wing_names[j], wingp->name))
-					Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::From_player_wing);
 			}
 		}
 
@@ -4722,50 +4746,80 @@ void parse_wing(mission *pm)
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
+	// make a temporary map since we want to keep this separate from the ship registry
+	SCP_unordered_map<SCP_string, int> parse_object_indexes;
+	i = 0;
+	for (const auto& pobj : Parse_objects)
+		parse_object_indexes.emplace(pobj.name, i++);
+
+	// Goober5000 - to avoid confusing mismatches in the ship registry and hotkey list, and possibly other places,
+	// make sure the order of parse objects matches their order in the wing
+	auto prev_iter = parse_object_indexes.end();
+	for (i = 0; i < wingp->wave_count; i++) {
+		auto this_iter = parse_object_indexes.find(ship_names[i]);
+		if (this_iter == parse_object_indexes.end()) {
+			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_names[i]);
+			break;
+		}
+
+		if (i > 0) {
+			// compare the parse object indexes of the previous ship and this ship
+			if (this_iter->second < prev_iter->second) {
+				// swap the parse objects
+				std::swap(Parse_objects[this_iter->second], Parse_objects[prev_iter->second]);
+
+				// swap the swapped net signatures so they are in their original order
+				std::swap(Parse_objects[this_iter->second].net_signature, Parse_objects[prev_iter->second].net_signature);
+
+				// swap the indexes in our temporary map
+				std::swap(this_iter->second, prev_iter->second);
+
+				// start over from the beginning of the wing
+				i = -1;
+				this_iter = parse_object_indexes.end();
+			}
+		}
+
+		prev_iter = this_iter;
+	}
+
 	// set the wing number for all ships in the wing
 	for (i = 0; i < wingp->wave_count; i++ ) {
 		char *ship_name = ship_names[i];
-		int assigned = 0;
 
 		// Goober5000 - since the ship/wing creation stuff is reordered to accommodate multiple docking,
 		// everything is still only in the parse array at this point (in both FRED and FS2)
 
 		// find the parse object and assign it the wing number
-		for (SCP_vector<p_object>::iterator p_objp = Parse_objects.begin(); p_objp != Parse_objects.end(); ++p_objp) {
-			if ( !strcmp(ship_name, p_objp->name) ) {
-				// get Allender -- ship appears to be in multiple wings
-				Assert (p_objp->wingnum == -1);
+		auto iter = parse_object_indexes.find(ship_name);
+		if (iter != parse_object_indexes.end()) {
+			auto p_objp = &Parse_objects[iter->second];
 
-				// assign wingnum
-				p_objp->wingnum = wingnum;
-				p_objp->pos_in_wing = i;
+			// get Allender -- ship appears to be in multiple wings
+			// (or appears multiple times in the same wing)
+			if (p_objp->wingnum >= 0)
+				Error(LOCATION, "Cannot load mission -- tried to assign ship %s to wing %s but it was already assigned to wing %s.\n", ship_name, wingp->name, p_objp->wingnum < Num_wings ? Wings[p_objp->wingnum].name : "<out of range wingnum>");
 
-				// we have found our "special ship" (our wing leader)
-				if (!Fred_running && i == 0){
-					wingp->special_ship_ship_info_index = p_objp->ship_class;
-				}
+			// assign wingnum
+			p_objp->wingnum = wingnum;
+			p_objp->pos_in_wing = i;
 
-				assigned++;
+			// we have found our "special ship" (our wing leader)
+			if (!Fred_running && i == 0){
+				wingp->special_ship_ship_info_index = p_objp->ship_class;
+			}
 
-				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
-				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
-					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
-					if (!Fred_running && wingp->arrival_delay > 0) {
-						// timestamp has been set, so set it again
-						wingp->arrival_delay = timestamp(0);
-					} else {
-						// no timestamp, or timestamp invalid
-						wingp->arrival_delay = 0;
-					}
+			// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
+			if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
+				Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
+				if (!Fred_running && wingp->arrival_delay > 0) {
+					// timestamp has been set, so set it again
+					wingp->arrival_delay = timestamp(0);
+				} else {
+					// no timestamp, or timestamp invalid
+					wingp->arrival_delay = 0;
 				}
 			}
-		}
-
-		// error checking
-		if (assigned == 0) {
-			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
-		} else if (assigned > 1) {
-			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
 		}
 	}
 
@@ -4863,7 +4917,34 @@ void post_process_path_stuff()
 // Goober5000
 void post_process_ships_wings()
 {
-	// Goober5000 - first, resolve the path masks.  Needs to be done first because
+	// error checking for custom wings
+	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]) != 0)
+	{
+		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+	}
+
+	// set up wing indexes
+	for (int i = 0; i < MAX_STARTING_WINGS; i++)
+		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
+	for (int i = 0; i < MAX_TVT_WINGS; i++)
+		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+
+	// when TVT, hack starting wings to be team wings
+	if (MULTI_TEAM)
+	{
+		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
+		for (int i = 0; i < MAX_STARTING_WINGS; i++)
+		{
+			if (i < MAX_TVT_WINGS)
+				Starting_wings[i] = TVT_wings[i];
+			else
+				Starting_wings[i] = -1;
+		}
+	}
+
+	// Goober5000 - resolve the path masks.  Needs to be done early because
 	// mission_parse_maybe_create_parse_object relies on it.
 	post_process_path_stuff();
 
@@ -4878,10 +4959,19 @@ void post_process_ships_wings()
 	for (auto &p_obj : Parse_objects)
 	{
 		ship_registry_entry entry(p_obj.name);
+		entry.status = ShipStatus::NOT_YET_PRESENT;
 		entry.p_objp = &p_obj;
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
+
+		// set a flag if this parse object is in a starting wing
+		if (p_obj.wingnum >= 0)
+		{
+			for (int i = 0; i < MAX_STARTING_WINGS; i++)
+				if (p_obj.wingnum == Starting_wings[i])
+					p_obj.flags.set(Mission::Parse_Object_Flags::SF_From_player_wing);
+		}
 
 		// also load any replacement textures (do this outside the parse loop because we may have ship class replacements too)
 		for (SCP_vector<texture_replace>::iterator tr = p_obj.replacement_textures.begin(); tr != p_obj.replacement_textures.end(); ++tr)
@@ -4949,12 +5039,6 @@ void post_process_ships_wings()
 
 	// ----------------- at this point the ships have been created -----------------
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
-
-	// error checking for custom wings
-	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]) != 0)
-	{
-		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
-	}
 
 	// Goober5000 - for FRED, the ships are initialized after the wings, so we must now tell the wings
 	// where their ships are
@@ -5270,6 +5354,7 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 
 	char file_name[MAX_FILENAME_LEN] = { 0 };
 	char jump_name[NAME_LENGTH] = { 0 };
+	char jump_display_name[NAME_LENGTH] = {0};
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vec3d(&pos);
@@ -5278,6 +5363,11 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
 			stuff_string(jump_name, F_NAME, NAME_LENGTH);
 			jnp.SetName(jump_name);
+		}
+
+		if (optional_string("+Display Name:")) {
+			stuff_string(jump_display_name, F_NAME, NAME_LENGTH);
+			jnp.SetDisplayName(jump_display_name);
 		}
 
 		if(optional_string("+Model File:")){
@@ -5467,7 +5557,10 @@ void parse_one_background(background_t *background)
 
 		// correct legacy bitmap angles which used incorrect math in older versions
 		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+		{
 			stars_correct_background_sun_angles(&sle.ang);
+			sle.ang.b = 0.0f;	// stars do not bank
+		}
 
 		// scale
 		required_string("+Scale:");
@@ -5556,6 +5649,10 @@ void parse_bitmaps(mission *pm)
 	// set the ambient light
 
 	// neb2 info
+
+	// all poofs on by default
+	for (size_t i = 0; i < Poof_info.size(); i++)
+		Neb2_poof_flags += (1 << i);
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
@@ -5813,6 +5910,10 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.has_inner_bound = false;
 		}
 
+		if (optional_string("+Use Enhanced Checks")) {
+			Asteroid_field.enhanced_visibility_checks = true;
+		}
+
 		if (optional_string("$Asteroid Targets:")) {
 			stuff_string_list(Asteroid_field.target_names);
 		}
@@ -5989,6 +6090,32 @@ void parse_sexp_containers()
 	}
 }
 
+void parse_custom_data(mission* pm)
+{
+	if (!optional_string("#Custom Data"))
+		return;
+
+	if (optional_string("$begin_data_map")) {
+
+		parse_string_map(pm->custom_data, "$end_data_map", "+Val:");
+	}
+}
+
+void apply_default_custom_data(mission* pm)
+{
+	for (const auto& def : Default_custom_data) {
+		size_t count = 0;
+		for (const auto& listed : pm->custom_data) {
+			if (listed.first != def.key) {
+				count++;
+			}
+		}
+		if (count == pm->custom_data.size()) {
+			pm->custom_data.emplace(def.key, def.value);
+		}
+	}
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -6004,7 +6131,7 @@ bool parse_mission(mission *pm, int flags)
 	reset_parse();
 	mission_init(pm);
 
-	parse_mission_info(pm); 
+	parse_mission_info(pm);
 
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
@@ -6031,6 +6158,7 @@ bool parse_mission(mission *pm, int flags)
 	parse_bitmaps(pm);
 	parse_asteroid_fields(pm);
 	parse_music(pm, flags);
+	parse_custom_data(pm);
 
 	// if we couldn't load some mod data
 	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
@@ -6085,9 +6213,8 @@ bool parse_mission(mission *pm, int flags)
 		}
 	}
 
-	if (!post_process_mission(pm)) {
+	if (!post_process_mission(pm))
 		return false;
-	}
 
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];
@@ -6143,37 +6270,11 @@ bool post_process_mission(mission *pm)
 	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
 		Player_use_ai = 1;
 
-
 	// Assign squadron information
 	if (!Fred_running && (Player != nullptr) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER)) {
 		mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
 		player_set_squad(Player, pm->squad_name);
 		player_set_squad_bitmap(Player, pm->squad_filename, false);
-	}
-
-	// set up wing indexes
-	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++ ) {
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_TVT_WINGS; i++ ) {
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
-	}
-
-	// when TVT, hack starting wings to be team wings
-	if(MULTI_TEAM){
-		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
-		for (i=0; i<MAX_STARTING_WINGS; i++)
-		{
-			if (i<MAX_TVT_WINGS)
-				Starting_wings[i] = TVT_wings[i];
-			else
-				Starting_wings[i] = -1;
-		}
 	}
 
 	init_ai_system();
@@ -6392,25 +6493,33 @@ bool post_process_mission(mission *pm)
 	if (pm->volumetrics)
 		pm->volumetrics->renderVolumeBitmap();
 
+	apply_default_custom_data(pm);
+
 	// success
 	return true;
 }
 
 int get_mission_info(const char *filename, mission *mission_p, bool basic, bool filename_is_full_path)
 {
-	int filelength;
-	char real_fname_buf[MAX_FILENAME_LEN];
-	const char *real_fname = real_fname_buf;
+	static SCP_string real_fname_buf;
+	const char *real_fname = nullptr;
 	
 	if (filename_is_full_path) {
 		real_fname = filename;
 	} else {
-		strncpy(real_fname_buf, filename, MAX_FILENAME_LEN-1);
-		real_fname_buf[sizeof(real_fname_buf)-1] = '\0';
-	
-		char *p = strrchr(real_fname_buf, '.');
-		if (p) *p = 0; // remove any extension
-		strcat_s(real_fname_buf, FS_MISSION_FILE_EXT);  // append mission extension
+		// replace any extension with the standard one
+		auto p = strrchr(filename, '.');
+		if (p == nullptr) {
+			real_fname_buf = filename;
+			real_fname_buf += FS_MISSION_FILE_EXT;
+			real_fname = real_fname_buf.c_str();
+		} else if (stricmp(p, FS_MISSION_FILE_EXT) == 0) {
+			real_fname = filename;
+		} else {
+			real_fname_buf.assign(filename, p - filename);
+			real_fname_buf += FS_MISSION_FILE_EXT;
+			real_fname = real_fname_buf.c_str();
+		}
 	}
 
 	// if mission_p is NULL, make it point to The_mission
@@ -6423,7 +6532,7 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 	}
 
 	// 7/9/98 -- MWA -- check for 0 length file.
-	filelength = cfilelength(ftemp);
+	auto filelength = cfilelength(ftemp);
 	cfclose(ftemp);
 	if (filelength == 0) {
 		return -1;
@@ -6499,6 +6608,7 @@ void mission::Reset()
 	command_persona = Default_command_persona;
 	strcpy_s(command_sender, DEFAULT_COMMAND);
 	debriefing_persona = debrief_find_persona_index();
+	traitor_override = nullptr;
 
 	event_music_name[ 0 ] = '\0';
 	briefing_music_name[ 0 ] = '\0';
@@ -6506,11 +6616,15 @@ void mission::Reset()
 	substitute_briefing_music_name[ 0 ] = '\0';
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
+	lighting_profile_name = lighting_profiles::default_name();
+
 	cutscenes.clear( );
 
 	gravity = vmd_zero_vector;
-
+	HUD_timer_padding = 0;
 	volumetrics.reset();
+
+	custom_data.clear();
 }
 
 /**
@@ -6539,6 +6653,7 @@ void mission_init(mission *pm)
 
 	mission_parse_reset_alt();
 	mission_parse_reset_callsign();
+	ai_lua_reset_general_orders();
 
 	Num_parse_names = 0;
 	Num_path_restrictions = 0;
@@ -6603,9 +6718,9 @@ void mission_init(mission *pm)
 	Mission_palette = 1;
 }
 
-// main parse routine for parsing a mission.  The default parameter flags tells us which information
+// Main parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
-// info such as game type, number of players etc.
+// info such as game type, number of players etc. or whether we are importing from a different format.
 bool parse_main(const char *mission_name, int flags)
 {
 	int i;
@@ -6641,17 +6756,18 @@ bool parse_main(const char *mission_name, int flags)
 
 		try
 		{
-			// import?
+			// import FS1 mission
 			if (flags & MPF_IMPORT_FSM) {
 				read_file_text(mission_name, CF_TYPE_ANY);
 				convertFSMtoFS2();
+				rval = parse_mission(&The_mission, flags);
 			}
+			// regular mission load
 			else {
 				read_file_text(mission_name, CF_TYPE_MISSIONS);
+				rval = parse_mission(&The_mission, flags);
 			}
 
-			The_mission.Reset();
-			rval = parse_mission(&The_mission, flags);
 			display_parse_diagnostics();
 		}
 		catch (const parse::ParseException& e)
@@ -7279,6 +7395,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			vm_vec_add(&rand_vec, &t1, &t2);
 			vm_vec_add2(&rand_vec, &t3);
 			vm_vec_normalize(&rand_vec);
+		} else {
+			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
 		}
 
 		// add in the radius of the two ships involved.  This will make the ship arrive further than
@@ -8357,6 +8475,16 @@ void mission_bring_in_support_ship( object *requester_objp )
 		i++;
 	} while(true);
 
+	// create a ship registry entry for the support ship
+	{
+		ship_registry_entry entry(pobj->name);
+		entry.status = ShipStatus::NOT_YET_PRESENT;
+		entry.p_objp = pobj;
+
+		Ship_registry.push_back(entry);
+		Ship_registry_map[pobj->name] = static_cast<int>(Ship_registry.size() - 1);
+	}
+
 	pobj->team = requester_shipp->team;
 
 	// We will put the requester object shipname in repair target array and then take
@@ -8688,4 +8816,41 @@ void convertFSMtoFS2()
 void clear_texture_replacements() 
 {
 	Fred_texture_replacements.clear();
+}
+
+bool check_for_23_3_data()
+{
+	auto e_list = ai_lua_get_general_orders(true);
+	if (!e_list.empty())
+		return true;
+	auto v_list = ai_lua_get_general_orders(false, true);
+	if (!v_list.empty())
+		return true;
+
+	for (const auto& msg : Messages)
+	{
+		if (!msg.note.empty())
+			return true;
+	}
+
+	if (The_mission.custom_data.size() > 0) {
+		return true;
+	}
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+
+		auto shipp_params = &Warp_params[shipp->warpin_params_index];
+		auto sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpin_params_index];
+		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+			return true;
+
+		shipp_params = &Warp_params[shipp->warpout_params_index];
+		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpout_params_index];
+		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+			return true;
+	}
+
+	return false;
 }

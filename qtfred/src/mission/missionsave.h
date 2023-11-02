@@ -47,7 +47,7 @@ class CFred_mission_save {
 	 * @brief Default constructor
 	 */
 	explicit CFred_mission_save(EditorViewport* viewport = nullptr, MissionFormat format = MissionFormat::STANDARD) :
-		raw_ptr(Parse_text_raw), save_format(format), _editor(viewport ? viewport->editor : nullptr), _viewport(viewport) {
+		save_format(format), _editor(viewport ? viewport->editor : nullptr), _viewport(viewport) {
 	}
 
 	/**
@@ -395,6 +395,16 @@ class CFred_mission_save {
 	 * @returns A negative value if an error occurred
 	 */
 	int save_music();
+
+	/**
+	 * @brief Saves custom entries to file
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 */
+	int save_custom_data();
 
 	/**
 	* Helper function for save_objects().

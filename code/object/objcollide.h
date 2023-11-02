@@ -68,8 +68,8 @@ void obj_remove_collider(int obj_index);
 void obj_reset_colliders();
 void obj_sort_and_collide(SCP_vector<int>* Collision_list = nullptr);
 
-// retimes all collision pairs to be checked immediately
-void obj_collide_retime_cached_pairs();
+// Retime all collision pairs, so that all object collisions will be rechecked immediately
+void obj_collide_obj_cache_stale(object* objp);
 
 // Returns TRUE if the weapon will never hit the other object.
 // If it can it predicts how long until these two objects need

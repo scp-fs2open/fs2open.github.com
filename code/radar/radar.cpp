@@ -98,7 +98,8 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 }
 void HudGaugeRadarStd::blitGauge()
 {
-	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+	if (Radar_gauge.first_frame + 1 >= 0)
+		renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
 }
 void HudGaugeRadarStd::drawBlips(int blip_type, int bright, int distort)
 {

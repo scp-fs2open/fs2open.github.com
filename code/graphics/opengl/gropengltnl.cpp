@@ -76,7 +76,7 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::COLOR4F,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
-		{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+		{ vertex_format_data::TEX_COORD4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
 		{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
 		{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
 		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
@@ -974,7 +974,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 			data->srgb          = High_dynamic_range ? 1 : 0;
 			data->blend_alpha   = material_info->get_blend_mode() != ALPHA_BLEND_ADDITIVE;
 
-			if (Cmdline_no_deferred_lighting) {
+			if (!light_deferred_enabled()) {
 				data->linear_depth = 0;
 			} else {
 				data->linear_depth = 1;
@@ -984,7 +984,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
 	Current_shader->program->Uniforms.setTextureUniform("depthMap", 1);
 
-	if (!Cmdline_no_deferred_lighting) {
+	if (light_deferred_enabled()) {
 		Assert(Scene_position_texture != 0);
 
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_position_texture);

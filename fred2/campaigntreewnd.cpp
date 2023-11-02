@@ -37,6 +37,7 @@ IMPLEMENT_DYNCREATE(campaign_tree_wnd, CFrameWnd)
 // campaign_tree_wnd
 
 campaign_tree_wnd::campaign_tree_wnd()
+	: g_err(0)
 {
 }
 
@@ -188,7 +189,8 @@ void campaign_tree_wnd::OnCpgnFileSave()
 	}
 	*/	
 
-	if (save.save_campaign_file(Campaign.filename))
+	auto full_path = (LPCSTR)Campaign_tree_formp->GetCurrentCampaignPath();
+	if (save.save_campaign_file(full_path))
 	{
 		MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return;
@@ -200,9 +202,7 @@ void campaign_tree_wnd::OnCpgnFileSave()
 
 void campaign_tree_wnd::OnCpgnFileSaveAs() 
 {
-	char *old_name = NULL;
-	char campaign_path[256];
-	CString name;
+	const char *old_name = nullptr;
 	CFred_mission_save save;
 
 	Campaign_tree_formp->update();
@@ -210,9 +210,13 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		old_name = Campaign.filename;
 
 	CFileDialog dlg(FALSE, "fc2", old_name, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, "FreeSpace Campaign files (*.fc2)|*.fc2||", this);
+	auto campaign_path = Campaign_tree_formp->GetCurrentCampaignPath();
+	if (!campaign_path.IsEmpty())
+		dlg.m_ofn.lpstrInitialDir = (LPCSTR)campaign_path;
+
 	if (dlg.DoModal() == IDOK)
 	{
-		name = dlg.GetFileName();
+		auto name = dlg.GetFileName();
 		if (strlen(name) > MAX_FILENAME_LEN - 1) {
 			MessageBox("Filename is too long", "Error");
 			return;
@@ -223,13 +227,13 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		}
 
 		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
-		string_copy(campaign_path, dlg.GetPathName(), 256 - 1);
-		if (save.save_campaign_file(campaign_path))
+		if (save.save_campaign_file((LPCSTR)dlg.GetPathName()))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 			return;
 		}
 
+		Campaign_tree_formp->SetCurrentCampaignPath(dlg.GetPathName());
 		Campaign_modified = 0;
 	}
 }

@@ -27,6 +27,7 @@
 #include "graphics/2d.h"
 #include "graphics/matrix.h"
 #include "libs/renderdoc/renderdoc.h"
+#include "lighting/lighting.h"
 #include "math/floating.h"
 #include "model/model.h"
 #include "options/Option.h"
@@ -861,6 +862,9 @@ int opengl_init_display_device()
 		}
 	}
 
+	if (Cmdline_capture_mouse)
+		attrs.flags.set(os::ViewPortFlags::Capture_Mouse);
+
 	auto viewport = gr_opengl_create_viewport(attrs);
 	if (!viewport) {
 		return 1;
@@ -972,6 +976,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
 
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
+	gr_screen.gf_deferred_lighting_msaa = gr_opengl_deferred_lighting_msaa;
 	gr_screen.gf_deferred_lighting_end = gr_opengl_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
 
@@ -1176,7 +1181,7 @@ static void init_extensions() {
 
 	// we require a minimum GLSL version
 	if (GLSL_version < MIN_REQUIRED_GLSL_VERSION) {
-		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
+		Error(LOCATION,  "Current GL Shading Language Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
 	GLint max_texture_units;
@@ -1394,17 +1399,16 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return Cmdline_height ? true : false;
 	case CAPABILITY_SOFT_PARTICLES:
 	case CAPABILITY_DISTORTION:
-		return Gr_enable_soft_particles && !Cmdline_no_fbo;
+		return Gr_enable_soft_particles && !Cmdline_no_fbo && !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_POST_PROCESSING:
 		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
-		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
+		return !Cmdline_no_fbo && light_deferred_enabled();
 	case CAPABILITY_SHADOWS:
-		return true;
+	case CAPABILITY_THICK_OUTLINE:
+		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_BATCHED_SUBMODELS:
 		return true;
-	case CAPABILITY_POINT_PARTICLES:
-		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
 	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:

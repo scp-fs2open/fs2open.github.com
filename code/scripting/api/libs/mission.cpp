@@ -804,13 +804,13 @@ ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball obje
 
 	int objnum = -1;
 	if (idx > 0)
-		objnum = object_subclass_at_index(Fireballs, MAX_FIREBALLS, idx);
+		objnum = object_subclass_at_index(Fireballs, Fireballs.size(), idx);
 
 	return ade_set_args(L, "o", l_Fireball.Set(object_h(objnum)));
 }
 ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
 {
-	return ade_set_args(L, "i", object_subclass_count(Fireballs, MAX_FIREBALLS));
+	return ade_set_args(L, "i", object_subclass_count(Fireballs, Fireballs.size()));
 }
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
@@ -940,7 +940,7 @@ ADE_FUNC(sendMessage,
 
 ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number delay=0.0]",
 		 "Sends a training message to the player. <i>time</i> is the amount in seconds to display the message, only whole seconds are used!",
-		 "boolean", "true if successfull, false otherwise")
+		 "boolean", "true if successful, false otherwise")
 {
 	int messageIdx = -1;
 	float delay = 0.0f;
@@ -984,6 +984,75 @@ ADE_FUNC(sendPlainMessage,
 		return ADE_RETURN_FALSE;
 
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", message);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(addMessageToScrollback,
+	l_Mission,
+	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",
+	"Adds a string to the message log scrollback without sending it as a message first. Source should be either the team handle "
+	"or one of the SCROLLBACK_SOURCE enumerations.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const char* message = nullptr;
+	int team = -1;
+	enum_h* esp = nullptr;
+
+	int source = HUD_SOURCE_COMPUTER;
+	if (luacpp::convert::ade_odata_is_userdata_type(L, 2, l_Team)) {
+		if (!ade_get_args(L, "s|o", &message, l_Team.Get(&team))) {
+			return ADE_RETURN_FALSE;
+		} else {
+			source = HUD_team_get_source(team);
+			if (source < HUD_SOURCE_TEAM_OFFSET) {
+				LuaError(L, "Got team index %i. Team source may be invalid!", source);
+				return ADE_RETURN_FALSE;
+			}
+		}
+	} else {
+		if (!ade_get_args(L, "s|o", &message, l_Enum.GetPtr(&esp))) {
+			return ADE_RETURN_FALSE;
+		} else {
+			if (esp != nullptr) {
+				switch (esp->index) {
+				case LE_SCROLLBACK_SOURCE_COMPUTER:
+					source = HUD_SOURCE_COMPUTER;
+					break;
+				case LE_SCROLLBACK_SOURCE_TRAINING:
+					source = HUD_SOURCE_TRAINING;
+					break;
+				case LE_SCROLLBACK_SOURCE_HIDDEN:
+					source = HUD_SOURCE_HIDDEN;
+					break;
+				case LE_SCROLLBACK_SOURCE_IMPORTANT:
+					source = HUD_SOURCE_IMPORTANT;
+					break;
+				case LE_SCROLLBACK_SOURCE_FAILED:
+					source = HUD_SOURCE_FAILED;
+					break;
+				case LE_SCROLLBACK_SOURCE_SATISFIED:
+					source = HUD_SOURCE_SATISFIED;
+					break;
+				case LE_SCROLLBACK_SOURCE_COMMAND:
+					source = HUD_SOURCE_TERRAN_CMD;
+					break;
+				case LE_SCROLLBACK_SOURCE_NETPLAYER:
+					source = HUD_SOURCE_NETPLAYER;
+					break;
+				default:
+					LuaError(L, "Invalid enumeration used! Must be one of SCROLLBACK_SOURCE_*.");
+					return ADE_RETURN_FALSE;
+				}
+			}
+		}
+	}
+
+	if (message == nullptr)
+		return ADE_RETURN_FALSE;
+
+	HUD_add_to_scrollback(message, source);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1216,9 +1285,9 @@ ADE_FUNC(createWeapon,
 	l_Mission,
 	"[weaponclass Class /* first weapon in table by default*/, orientation Orientation=identity, vector "
 	"WorldPosition/* null vector by default */, object Parent = "
-	"nil, number Group = -1]",
+	"nil, number GroupId = -1]",
 	"Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
-	" for example, quad lasers would only need to act as one light source.",
+	" for example, quad lasers would only need to act as one light source.  Use generateWeaponGroupId() if you need a group.",
 	"weapon",
 	"Weapon handle, or invalid weapon handle if weapon couldn't be created.")
 {
@@ -1243,6 +1312,16 @@ ADE_FUNC(createWeapon,
 		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
+}
+
+ADE_FUNC(generateWeaponGroupId,
+	l_Mission,
+	nullptr,
+	"Generates a weapon group ID to be used with createWeapon.  This is only needed for weapons that should share a light source, such as quad lasers.  Group IDs may be reused by the engine.",
+	"number",
+	"the group ID")
+{
+	return ade_set_args(L, "i", weapon_create_group_id());
 }
 
 ADE_FUNC(createWarpeffect,
@@ -1348,7 +1427,7 @@ ADE_FUNC(createBolt,
 	"string BoltName, vector Origin, vector Target, [boolean PlaySound = true]",
 	"Creates a lightning bolt between the origin and target vectors. BoltName is name of a bolt from lightning.tbl",
 	"boolean",
-	"True if successful, false if the bolt could't be created.")
+	"True if successful, false if the bolt couldn't be created.")
 {
 	const char* boltname;
 	vec3d origin = vmd_zero_vector;
@@ -1366,6 +1445,25 @@ ADE_FUNC(createBolt,
 	}
 
 	return ade_set_args(L, "b", nebl_bolt(boltclass, &origin, &dest, playSound));
+}
+
+ADE_FUNC(getSupportAllowed,
+	l_Mission,
+	"[boolean SimpleCheck = true]",
+	"Get whether or not the player's call for support will be successful. If simple check is false, the code will do a much more "
+	"expensive, but accurate check.",
+	"boolean",
+	"true if support can be called, false if not or not in a mission")
+{
+	bool simple_check = true;
+	ade_get_args(L, "|b", &simple_check);
+
+	// we should be in a mission and the player object must exist
+	if (((Game_mode & GM_IN_MISSION) == 0) && (Player_obj != nullptr)) {
+		return ade_set_args(L, "b", (bool)is_support_allowed(Player_obj, simple_check));
+	}
+
+	return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
@@ -1457,6 +1555,22 @@ ADE_FUNC(startMission,
 ADE_FUNC(getMissionTime, l_Mission, nullptr, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds) of the current or most recently played mission.")
 {
 	return ade_set_args(L, "x", Missiontime);
+}
+
+ADE_VIRTVAR(MissionHUDTimerPadding,
+	l_Mission,
+	"number",
+	"Gets or sets padding currently applied to the HUD mission timer.",
+	"number",
+	"the padding in seconds")
+{
+	int pad;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*i", &pad)) {
+		The_mission.HUD_timer_padding = pad;
+	}
+
+	return ade_set_args(L, "i", The_mission.HUD_timer_padding);
 }
 
 //WMC - These are in freespace.cpp
@@ -1636,6 +1750,61 @@ ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
+}
+
+ADE_VIRTVAR(CustomData, l_Mission, nullptr, "Gets the custom data table for this mission", "table", "The mission's custom data table") 
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : The_mission.custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Mission, nullptr, "Detects whether the mission has any custom data", "boolean", "true if the mission's custom_data is not empty, false otherwise") 
+{
+
+	bool result = !The_mission.custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(addDefaultCustomData,
+	l_Mission,
+	"string key, string value, string description",
+	"Adds a custom data pair with the given key if it's unique. Only works in FRED! The description will be displayed in the FRED custom data editor.",
+	"boolean",
+	"returns true if sucessful, false otherwise. Returns nil if not running in FRED.")
+{
+	const char* key;
+	const char* value;
+	const char* desc;
+	if (!ade_get_args(L, "sss", &key, &value, &desc))
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+
+	// defaults are not ever used in gameplay, but only as a convenience for FREDers
+	// so if we're not in FRED we can skip all of this.
+	if (!Fred_running) {
+		return ADE_RETURN_NIL;
+	}
+
+	for (const auto& pair : Default_custom_data) {
+		if (key == pair.key) {
+			return ADE_RETURN_FALSE;
+		}
+	}
+
+	mission_default_custom_data data = {key, value, desc};
+
+	Default_custom_data.push_back(data);
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")

@@ -2955,6 +2955,7 @@ void multi_sg_rank_build_name(char *in,char *out)
 	// just copy the string
 	if(first == NULL){
 		strcpy(out,in);
+		return;
 	}
 	
 	// if the first part of the string is lieutenant, then abbreivate it and tack on the rest of the string	
@@ -3687,8 +3688,7 @@ void multi_create_game_do()
 
 		char mission_name[NAME_LENGTH+1];
 		int flags;
-		char *filename; 
-		filename = cf_add_ext( Cmdline_almission, FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
+		auto filename = cf_add_ext( Cmdline_almission, FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
 		flags = mission_parse_is_multi(filename, mission_name); //DTP flags will set if mission is multi
 
 		if (flags) { //only continue if mission is multiplayer mission
@@ -4496,14 +4496,13 @@ void multi_create_list_load_missions()
 
 	for (idx = 0; idx < file_count; idx++) {
 		int flags, max_players;
-		char *filename;
 		uint m_respawn;
 		bool lcl_weirdness = false;
 
 		fname = file_list[idx];
 		
 		// tack on any necessary file extension
-		filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
+		auto filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
 
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
@@ -4535,7 +4534,7 @@ void multi_create_list_load_missions()
 			mcip.max_players = (ubyte)max_players;
 
 			// get any additional information for possibly builtin missions
-			fs_builtin_mission *fb = game_find_builtin_mission(filename);
+			auto fb = game_find_builtin_mission(filename);
 			if(fb != NULL){					
 			}
 
@@ -4564,8 +4563,7 @@ void multi_create_list_load_missions()
 }
 
 void multi_create_list_load_campaigns()
-{	
-	char *fname;
+{
 	int idx, file_count;
 	int campaign_type,max_players;
 	char title[255];
@@ -4593,12 +4591,12 @@ void multi_create_list_load_campaigns()
 
 	for (idx = 0; idx < file_count; idx++) {
 		int flags;
-		char *filename, name[NAME_LENGTH];
+		char name[NAME_LENGTH];
 
-		fname = file_list[idx];
+		auto fname = file_list[idx];
 		
 		// tack on any necessary file extension
-		filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
+		auto filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
 
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
@@ -4629,7 +4627,7 @@ void multi_create_list_load_campaigns()
 			mcip.max_players = (unsigned char)max_players;
 
 			// get any additional information for possibly builtin missions
-			fs_builtin_mission *fb = game_find_builtin_mission(filename);
+			auto fb = game_find_builtin_mission(filename);
 			if(fb != NULL){					
 			}
 
@@ -4927,7 +4925,6 @@ void multi_create_list_select_item(int n)
 void multi_create_list_blit_icons(int list_index, int y_start)
 {
 	multi_create_info *mcip;
-	fs_builtin_mission *fb;	
 	int max_index;
 
 	// get a pointer to the list item
@@ -4969,8 +4966,8 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 		}
 	}
 
-	// now see if its a builtin mission
-	fb = game_find_builtin_mission(mcip->filename);	
+	// now see if it's a builtin mission
+	auto fb = game_find_builtin_mission(mcip->filename);
 	// if the mission is from volition, blit the volition icon
 	if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 		if(Multi_common_icons[MICON_VOLITION] >= 0){
@@ -7802,7 +7799,7 @@ void multi_sync_blit_screen_all()
 			case NETPLAYER_STATE_MISSION_XFER :				
 				memset(txt,0,255);
 				// server should display the pct completion of all clients				
-				if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+				if(Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER){
 					if(Net_players[idx].s_info.xfer_handle != -1){					
 						pct_complete = multi_xfer_pct_complete(Net_players[idx].s_info.xfer_handle);
 

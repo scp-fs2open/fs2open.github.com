@@ -6,6 +6,7 @@ namespace scripting {
 namespace hooks {
 
 extern const std::shared_ptr<Hook<>>									OnGameInit;
+extern const std::shared_ptr<Hook<>>									OnIntroAboutToPlay;
 //The On State Start hook previously used to pass OldState to the conditions, but no semantically sensible condition read the value, so we pretend it has no local condition
 extern const std::shared_ptr<OverridableHook<>>							OnStateStart;
 
@@ -44,6 +45,7 @@ extern const std::shared_ptr<Hook<ShipDeathConditions>>					OnShipDeathStarted;
 extern const std::shared_ptr<OverridableHook<ShipDeathConditions>>		OnShipDeath;
 extern const std::shared_ptr<Hook<WeaponDeathConditions>>				OnMissileDeathStarted;
 extern const std::shared_ptr<Hook<WeaponDeathConditions>>				OnMissileDeath;
+extern const std::shared_ptr<Hook<>>									OnBeamDeath;
 extern const std::shared_ptr<Hook<>>									OnAsteroidDeath;
 extern const std::shared_ptr<Hook<>>									OnDebrisDeath;
 extern const std::shared_ptr<Hook<SubsystemDeathConditions>>			OnSubsystemDestroyed;
@@ -58,7 +60,12 @@ extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnSecondaryFired;
 extern const std::shared_ptr<Hook<WeaponSelectedConditions>>			OnWeaponSelected;
 extern const std::shared_ptr<Hook<WeaponDeselectedConditions>>			OnWeaponDeselected;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnTurretFired;
+extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamWarmup;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamFired;
+extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamWarmdown;
+
+extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuOpened;
+extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuClosed;
 
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnHudDraw;
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnObjectRender;

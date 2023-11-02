@@ -37,6 +37,7 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
+#include "graphics/shadows.h"
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
@@ -78,6 +79,9 @@ static bool ss_warning_shown_mismatch = false;	// ditto but for a different warn
 
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
+
+// This begins the FS2 version history
+#define PM_FIRST_FREESPACE2_VERSION 2100
 
 // Anything greater than or equal to PM_COMPATIBLE_VERSION and 
 // whose major version is less than or equal to this is considered
@@ -1312,7 +1316,7 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 	return swap_was_necessary;
 }
 
-void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
+void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx)
 {
 	box[0].xyz.x = big_mn->xyz.x; box[0].xyz.y = big_mn->xyz.y; box[0].xyz.z = big_mn->xyz.z;
 	box[1].xyz.x = big_mx->xyz.x; box[1].xyz.y = big_mn->xyz.y; box[1].xyz.z = big_mn->xyz.z;
@@ -1667,22 +1671,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 		switch (id) {
 
+			case ID_HDR2:
 			case ID_OHDR: {		//Object header
 				//vector v;
 
 				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
-#if defined( FREESPACE1_FORMAT )
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-#elif defined( FREESPACE2_FORMAT )
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-#endif
+				if (id == ID_OHDR) {
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+				}
+				if (id == ID_HDR2) {
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+				}
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
@@ -1817,6 +1823,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				break;
 			}
 			
+			case ID_OBJ2:
 			case ID_SOBJ: {		//Subobject header
 				int n, parent;
 				char *p, props[MAX_PROP_LEN];
@@ -1829,9 +1836,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				Assert(n < pm->n_models );
 				auto sm = &pm->submodel[n];
 
-#if defined( FREESPACE2_FORMAT )	
-				sm->rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_OBJ2) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
 				parent = cfread_int(fp);
 				sm->parent = parent;
@@ -1854,9 +1861,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 //			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, sm->offset.xyz.x, sm->offset.xyz.y, sm->offset.xyz.z ));
 	
-#if defined ( FREESPACE1_FORMAT )
-				sm->rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_SOBJ) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
 //				sm->tree_offset = cfread_int(fp);	//offset
 //				sm->data_offset = cfread_int(fp);	//offset
@@ -2116,23 +2123,30 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						// byte swap first thing
 						swap_bsp_data(pm, bsp_data);
 
-						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
-
-						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
-							auto bsp_data_aligned = reinterpret_cast<ubyte *>(vm_malloc(bsp_data_size_aligned));
-
-							align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
-
-							// release unaligned data
-							vm_free(bsp_data);
-							bsp_data = nullptr;
-
-							nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned-sm->bsp_data_size, bsp_data_size_aligned));
-
-							sm->bsp_data = bsp_data_aligned;
-							sm->bsp_data_size = bsp_data_size_aligned;
-						} else {
+						extern bool Cmdline_no_bsp_align;
+						if (Cmdline_no_bsp_align) {
 							sm->bsp_data = bsp_data;
+						}
+						else {
+							auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
+
+							if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
+								auto bsp_data_aligned = reinterpret_cast<ubyte*>(vm_malloc(bsp_data_size_aligned));
+
+								align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
+
+								// release unaligned data
+								vm_free(bsp_data);
+								bsp_data = nullptr;
+
+								nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned - sm->bsp_data_size, bsp_data_size_aligned));
+
+								sm->bsp_data = bsp_data_aligned;
+								sm->bsp_data_size = bsp_data_size_aligned;
+							}
+							else {
+								sm->bsp_data = bsp_data;
+							}
 						}
 					}
 					else {
@@ -2917,12 +2931,38 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-	// handle dockpoint parent_submodels
+	// some dockpoint checks
 	for (i = 0; i < pm->n_docks; i++) {
 		auto dock = &pm->docking_bays[i];
 
+		// handle dockpoint parent_submodels
 		if (dock->parent_submodel >= 0) {
 			resolve_submodel_index(pm, dock->name, "$parent_submodel", dock->parent_submodel, dock_parent_submodel_names);
+		}
+
+		// reconcile paths
+		for (j = 0; j < dock->num_spline_paths; j++) {
+			auto path_num = dock->splines[j];
+
+			if (path_num < 0) {
+				continue;
+			} else if (path_num >= pm->n_paths) {
+				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d (the index should be between 0 and %d).", pm->filename, j, dock->name, path_num, pm->n_paths, pm->n_paths - 1);
+				dock->splines[j] = -1;
+				continue;
+			}
+
+			auto path = &pm->paths[path_num];
+
+			// most dockpoint paths will have a parent_name like $dock01-01 which does not resolve to a submodel
+			if (path->parent_submodel < 0) {
+				continue;
+			}
+			// for paths that have a parent, it had better match
+			if (path->parent_submodel != dock->parent_submodel) {
+				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!  This could be due to an incorrect dockpoint path, an incorrect dockpoint parent submodel, or an incorrect path parent submodel.  Be sure to check all three.", pm->filename, dock->name);
+				continue;
+			}
 		}
 	}
 
@@ -3194,7 +3234,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	if (Shadow_quality != ShadowQuality::Disabled)
+		gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
 }
@@ -3243,7 +3285,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
-	nprintf(("Model", "Loading model '%s' into slot '%i'\n", filename, num ));
+	mprintf(( "Loading model '%s' into slot '%i'\n", filename, num ));
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
@@ -6070,13 +6112,20 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
-		
+
 		//Chunk type 0 is EOF, but the size is read as 0, it needs to be adjusted
 		if (bsp_chunk_type == 0) {
 			bsp_chunk_size = 4;
 		}
 		else {
 			memcpy(&bsp_chunk_size, bsp_in + 4, 4);
+		}
+
+		//Chunk size validation, if fails change it to copy the remaining data in chain
+		auto max_size = end - bsp_in;
+		if (bsp_chunk_size > max_size) {
+			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<uint>(max_size));
+			bsp_chunk_size = static_cast<uint>(max_size);
 		}
 
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));

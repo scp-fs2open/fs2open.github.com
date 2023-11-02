@@ -31,7 +31,7 @@ struct ship_obj;
 #define MAX_SEXP_VARIABLES 250
 
 // Operator argument formats (data types of an argument)
-enum : int {
+enum sexp_opf_t : int {
 	OPF_UNUSED,						// argument types need to start at 1 instead of 0
 	OPF_NONE,						// argument cannot exist at this position if it's this
 	OPF_NULL,						// no value.  Can still be used for type matching, however
@@ -139,6 +139,8 @@ enum : int {
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
 	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
+	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
+	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -163,14 +165,17 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 int get_dynamic_enum_position(const SCP_string &enum_name);
 
 // Operand return types
-#define	OPR_NUMBER				1	// returns number
-#define	OPR_BOOL				2	// returns true/false value
-#define	OPR_NULL				3	// doesn't return a value
-#define	OPR_AI_GOAL				4	// is an ai operator (doesn't really return a value, but used for type matching)
-#define	OPR_POSITIVE			5	// returns a non-negative number
-#define	OPR_STRING				6	// not really a return type, but used for type matching.
-#define	OPR_AMBIGUOUS			7	// not really a return type, but used for type matching.
-#define OPR_FLEXIBLE_ARGUMENT	8	// Goober5000 - is an argument operator (doesn't really return a value, but used for type matching)
+enum sexp_opr_t : int {
+	OPR_NONE,
+	OPR_NUMBER,             // returns number
+	OPR_BOOL,               // returns true/false value
+	OPR_NULL,               // doesn't return a value
+	OPR_AI_GOAL,	        // is an ai operator (doesn't really return a value, but used for type matching)
+	OPR_POSITIVE,	        // returns a non-negative number
+	OPR_STRING,             // not really a return type, but used for type matching.
+	OPR_AMBIGUOUS,          // not really a return type, but used for type matching.
+	OPR_FLEXIBLE_ARGUMENT,  // Goober5000 - is an argument operator (doesn't really return a value, but used for type matching)
+};
 
 #define	OP_INSERT_FLAG			0x8000
 #define	OP_REPLACE_FLAG			0x4000
@@ -346,6 +351,7 @@ enum : int {
 	OP_TIME_DOCKED,
 	OP_TIME_UNDOCKED,
 	OP_TIME_TO_GOAL, // tcrayford
+	OP_SET_HUD_TIME_PAD, // MjnMixael
 	
 	// OP_CATEGORY_STATUS
 	
@@ -647,6 +653,7 @@ enum : int {
 	OP_CUTSCENES_RESET_TIME_COMPRESSION,	// WMC
 	OP_CUTSCENES_FORCE_PERSPECTIVE,	// WMC
 	OP_JUMP_NODE_SET_JUMPNODE_NAME,	// CommanderDJ
+	OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME,
 	OP_JUMP_NODE_SET_JUMPNODE_COLOR,	// WMC
 	OP_JUMP_NODE_SET_JUMPNODE_MODEL,	// WMC
 	OP_JUMP_NODE_SHOW_JUMPNODE,	// WMC
@@ -667,6 +674,7 @@ enum : int {
 	OP_REMOVE_SUN_BITMAP,
 	OP_NEBULA_CHANGE_STORM,
 	OP_NEBULA_TOGGLE_POOF,
+	OP_NEBULA_FADE_POOF,
 	
 	OP_TURRET_CHANGE_WEAPON,
 	OP_TURRET_SET_TARGET_ORDER,
@@ -831,6 +839,7 @@ enum : int {
 	OP_CHANGE_BACKGROUND,	// Goober5000
 	OP_CLEAR_DEBRIS,	// Goober5000
 	OP_SET_DEBRIEFING_PERSONA,	// Goober5000
+	OP_SET_TRAITOR_OVERRIDE,	//MjnMixael
 	OP_ADD_TO_COLGROUP_NEW,	// Goober5000
 	OP_REMOVE_FROM_COLGROUP_NEW,	// Goober5000
 	OP_GET_POWER_OUTPUT,	// The E
@@ -870,7 +879,11 @@ enum : int {
 	OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
 	OP_HUD_FORCE_EMP_EFFECT, // MjnMixael
 	OP_SET_GRAVITY_ACCEL,	// Asteroth
+	OP_FORCE_REARM,	 // MjnMixael
+	OP_ABORT_REARM,  // MjnMixael
 	OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
+	OP_ENABLE_GENERAL_ORDERS,	// MjnMixael
+	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
@@ -902,7 +915,9 @@ enum : int {
 	OP_AI_PLAY_DEAD_PERSISTENT,	// Goober5000
 	OP_AI_FLY_TO_SHIP,	// Goober5000
 	OP_AI_REARM_REPAIR,	// Goober5000
-	
+	OP_AI_DISABLE_SHIP_TACTICAL,	// Goober5000
+	OP_AI_DISARM_SHIP_TACTICAL,	// Goober5000
+
 	// OP_CATEGORY_UNLISTED
 	
 	OP_GOALS_ID,
@@ -1209,6 +1224,8 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_ASTEROID,
 	SEXP_CHECK_INVALID_MOTION_DEBRIS,
 	SEXP_CHECK_INVALID_BOLT_TYPE,
+	SEXP_CHECK_INVALID_TRAITOR_OVERRIDE,
+	SEXP_CHECK_INVALID_LUA_GENERAL_ORDER,
 };
 
 
@@ -1332,6 +1349,8 @@ extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern SCP_vector<sexp_oper> Operators;
+extern SCP_vector<int> Sorted_operator_indexes;
+extern size_t Max_operator_length;
 
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
@@ -1380,6 +1399,7 @@ extern int get_operator_index(const char *token);
 extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
 extern int get_operator_const(int node);
+extern int find_operator_index(int op_const);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
 extern int get_sexp_main(void);	//	Returns start node
@@ -1388,6 +1408,8 @@ extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
+extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
+const char *opr_type_name(sexp_opr_t opr_type);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
@@ -1395,7 +1417,8 @@ extern void update_sexp_references(const char *old_name, const char *new_name, i
 extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, const char *name, int &node);
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
-extern int sexp_query_type_match(int opf, int opr);
+extern bool sexp_query_type_match(int opf, int opr);
+extern int sexp_match_closest_operator(const SCP_string &str, int opf);
 extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();

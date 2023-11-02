@@ -343,7 +343,7 @@ void ShipEditorDialog::updateColumnTwo()
 					persona_name += species_name[j];
 			}
 
-			ui->personaCombo->addItem(persona_name.c_str(), QVariant(i));
+			ui->personaCombo->addItem(persona_name.c_str(), QVariant((int)i));
 		}
 	}
 	auto idx = _model->getPersona();

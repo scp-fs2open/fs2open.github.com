@@ -29,6 +29,8 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	connect(ui->enabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleEnabled);
 	connect(ui->innerBoxEnabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleInnerBoxEnabled);
 
+	connect(ui->enhancedFieldEnabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleEnhancedEnabled);
+
 	connect(ui->checkBoxBrown, &QCheckBox::toggled, this,
 				[this](bool enabled) { \
 				AsteroidEditorDialog::toggleAsteroid(AsteroidEditorDialogModel::_AST_BROWN, enabled); });
@@ -228,6 +230,12 @@ void AsteroidEditorDialog::toggleInnerBoxEnabled(bool enabled)
 	updateUI();
 }
 
+void AsteroidEditorDialog::toggleEnhancedEnabled(bool enabled)
+{
+	_model->setEnhancedEnabled(enabled);
+	updateUI();
+}
+
 void AsteroidEditorDialog::toggleAsteroid(AsteroidEditorDialogModel::_roid_types colour, bool enabled)
 {
 	_model->setAsteroidEnabled(colour, enabled);
@@ -253,6 +261,7 @@ void AsteroidEditorDialog::updateUI()
 	bool inner_box_enabled = _model->getInnerBoxEnabled();
 	bool field_is_active = (_model->getFieldType() == FT_ACTIVE);
 	bool debris_is_asteroid = (_model->getDebrisGenre() == DG_ASTEROID);
+	bool enhanced_is_active = _model->getEnhancedEnabled();
 
 	// checkboxes
 	ui->enabled->setChecked(asteroids_enabled);
@@ -260,6 +269,7 @@ void AsteroidEditorDialog::updateUI()
 	ui->checkBoxBrown->setChecked(_model->getAsteroidEnabled(AsteroidEditorDialogModel::_AST_BROWN));
 	ui->checkBoxBlue->setChecked(_model->getAsteroidEnabled(AsteroidEditorDialogModel::_AST_BLUE));
 	ui->checkBoxOrange->setChecked(_model->getAsteroidEnabled(AsteroidEditorDialogModel::_AST_ORANGE));
+	ui->enhancedFieldEnabled->setChecked(enhanced_is_active);
 
 	// radio buttons (2x groups)
 	ui->radioButtonActiveField->setChecked(field_is_active);

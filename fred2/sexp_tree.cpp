@@ -15,11 +15,13 @@
 #include "FREDDoc.h"
 #include "Management.h"
 #include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
 #include "OperatorArgTypeSelect.h"
 #include "globalincs/linklist.h"
 #include "EventEditor.h"
 #include "MissionGoalsDlg.h"
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
@@ -85,6 +87,7 @@ static int Modify_variable;
 
 // constructor
 sexp_tree::sexp_tree()
+	: m_operator_box(help)
 {
 	select_sexp_node = -1;
 	root_item = -1;
@@ -93,6 +96,11 @@ sexp_tree::sexp_tree()
 	m_p_image_list = NULL;
 	help_box = NULL;
 	clear_tree();
+
+	m_operator_popup_active = false;
+	m_operator_popup_created = false;
+	m_font_height = 0;
+	m_font_max_width = 0;
 }
 
 // clears out the tree, so all the nodes are unused.
@@ -1004,6 +1012,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TRIGGER_SUBMODEL_ANIMATION:
 							case OP_ADD_BACKGROUND_BITMAP:
 							case OP_ADD_SUN_BITMAP:
+							case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -1058,6 +1067,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TRIGGER_SUBMODEL_ANIMATION:
 							case OP_ADD_BACKGROUND_BITMAP:
 							case OP_ADD_SUN_BITMAP:
+							case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -1726,9 +1736,12 @@ int sexp_tree::identify_arg_type(int node)
 }
 
 // determine if an item should be editable.  This doesn't actually edit the label.
-int sexp_tree::edit_label(HTREEITEM h)
+int sexp_tree::edit_label(HTREEITEM h, bool *is_operator)
 {
 	uint i;
+
+	if (is_operator != nullptr)
+		*is_operator = false;
 
 	for (i=0; i<tree_nodes.size(); i++) {
 		if (tree_nodes[i].handle == h) {
@@ -1747,6 +1760,8 @@ int sexp_tree::edit_label(HTREEITEM h)
 
 	// Operators are editable
 	if (tree_nodes[i].type & SEXPT_OPERATOR) {
+		if (is_operator != nullptr)
+			*is_operator = true;
 		return 1;
 	}
 
@@ -1881,55 +1896,13 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 	return r;
 }
 
-//
-// See https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C++
-//
-template<typename T>
-typename T::size_type GeneralizedLevensteinDistance(const T &source,
-	const T &target,
-	typename T::size_type insert_cost = 1,
-	typename T::size_type delete_cost = 1,
-	typename T::size_type replace_cost = 1) {
-	if (source.size() > target.size()) {
-		return GeneralizedLevensteinDistance(target, source, delete_cost, insert_cost, replace_cost);
-	}
-
-	using TSizeType = typename T::size_type;
-	const TSizeType min_size = source.size(), max_size = target.size();
-	std::vector<TSizeType> lev_dist(min_size + 1);
-
-	lev_dist[0] = 0;
-	for (TSizeType i = 1; i <= min_size; ++i) {
-		lev_dist[i] = lev_dist[i - 1] + delete_cost;
-	}
-
-	for (TSizeType j = 1; j <= max_size; ++j) {
-		TSizeType previous_diagonal = lev_dist[0], previous_diagonal_save;
-		lev_dist[0] += insert_cost;
-
-		for (TSizeType i = 1; i <= min_size; ++i) {
-			previous_diagonal_save = lev_dist[i];
-			if (source[i - 1] == target[j - 1]) {
-				lev_dist[i] = previous_diagonal;
-			}
-			else {
-				lev_dist[i] = std::min(std::min(lev_dist[i - 1] + delete_cost, lev_dist[i] + insert_cost), previous_diagonal + replace_cost);
-			}
-			previous_diagonal = previous_diagonal_save;
-		}
-	}
-
-	return lev_dist[min_size];
-}
-
 // Look for the valid operator that is the closest match for 'str' and return the operator
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
 //
-SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node)
+const SCP_string &sexp_tree::match_closest_operator(const SCP_string &str, int node)
 {
-	int z, i, op, arg_num, opf, opr;
-	int min = -1, best = -1;
+	int z, op, arg_num, opf;
 
 	z = tree_nodes[node].parent;
 	if (z < 0) {
@@ -1944,33 +1917,142 @@ SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node)
 	arg_num = find_argument_number(z, node);
 	opf = query_operator_argument_type(op, arg_num);	// check argument type at this position
 
-	for (i=0; i<(int)Operators.size(); i++) {
-		opr = query_operator_return_type(i);			// figure out which type this operator returns
-
-		if (sexp_query_type_match(opf, opr)) {
-			int dist = (int)GeneralizedLevensteinDistance(str, Operators[i].text, 2, 2, 3);
-			if (min < 0 || dist < min) {
-				min = dist;
-				best = i;
-			}
-		}
+	// find the best operator
+	int best = sexp_match_closest_operator(str, opf);
+	if (best < 0)
+	{
+		Warning(LOCATION, "Unable to find an operator match for string '%s' and argument type %d", str.c_str(), opf);
+		return str;
 	}
-
-	Assert(best >= 0);  // we better have some valid operator at this point.
 	return Operators[best].text;
 }
 
+void sexp_tree::start_operator_edit(HTREEITEM h)
+{
+	if (m_operator_popup_active)
+		return;
+
+	// this can get out of sync if we add an event and then try to edit an operator in a different event
+	update_item(h);
+
+	// sanity checks
+	Assertion(item_handle == h, "Mismatch between item handle and the handle being edited!");
+	Assertion(item_index >= 0 && item_index < (int)tree_nodes.size() && !tree_nodes.empty(), "Unknown node being edited!");
+	Assertion(tree_nodes[item_index].handle == item_handle, "Mismatch between tree node and item handle!");
+
+	// we are editing an operator, so find out which type it should be
+	auto opf_type = (sexp_opf_t)query_node_argument_type(item_index);
+
+	// do first-time setup
+	if (!m_operator_popup_created)
+	{
+		// text metrics
+		TEXTMETRIC tm;
+		auto dc = GetDC();
+		dc->GetTextMetrics(&tm);
+		m_font_height = tm.tmHeight;
+		dc->SelectObject(GetFont());
+		m_font_max_width = 0;
+		for (auto& op : Operators)
+		{
+			auto font_extent = dc->GetTextExtent(op.text.c_str());
+			if (font_extent.cx > m_font_max_width)
+				m_font_max_width = font_extent.cx;
+		}
+
+		// adjust for scroll bar and border edge
+		m_font_max_width += GetSystemMetrics(SM_CXVSCROLL) + 2 * GetSystemMetrics(SM_CXEDGE);
+	}
+
+	// calculate position and size of the dropdown
+	RECT item_rect, dropdown_rect;
+	GetItemRect(h, &item_rect, TRUE);
+	dropdown_rect.top = item_rect.top;
+	dropdown_rect.left = item_rect.left;
+	dropdown_rect.right = dropdown_rect.left + m_font_max_width;
+	dropdown_rect.bottom = dropdown_rect.top + m_font_height * 10;
+
+	// create or just position it
+	if (!m_operator_popup_created)
+	{
+		m_operator_box.Create(WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_SIMPLE | CBS_HASSTRINGS | CBS_OWNERDRAWFIXED, dropdown_rect, this, IDC_SEXP_POPUP_LIST);
+		m_operator_box.SetFont(GetFont());
+		m_operator_popup_created = true;
+	}
+	else
+	{
+		m_operator_box.MoveWindow(&dropdown_rect);
+	}
+
+	m_operator_box.refresh_popup_operators(opf_type, tree_nodes[item_index].text);
+
+	m_operator_box.ShowWindow(SW_SHOWNORMAL);
+	m_operator_box.SetFocus();
+	m_operator_popup_active = true;
+}
+
+void sexp_tree::end_operator_edit(bool confirm)
+{
+	if (!m_operator_popup_active)
+		return;
+
+	m_operator_box.cleanup(confirm);
+	m_operator_box.ShowWindow(SW_HIDE);
+	m_operator_popup_active = false;
+}
+
 // this really only handles messages generated by the right click popup menu
+// now it also handles messages from the operator combo box
 BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	int i, z, id, node, op;
+	int i, z, id, data, node, op;
 	sexp_list_item *list, *ptr;
 	HTREEITEM h;
 
-	if ((item_index >= 0) && (item_index < total_nodes))
+	if ((item_index >= 0) && (item_index < total_nodes) && !tree_nodes.empty())
 		item_handle = tree_nodes[item_index].handle;
 
 	id = LOWORD(wParam);
+	data = HIWORD(wParam);
+
+#ifndef NDEBUG
+	// Sanity check: None of these #defines used in this function should overlap with any SEXP operators, or mysterious bugs will ensue
+	// note: this won't catch operator values plus OP_REPLACE_FLAG or OP_INSERT_FLAG
+	switch (id)
+	{
+		case ID_SEXP_TREE_ADD_VARIABLE:
+		case ID_SEXP_TREE_MODIFY_VARIABLE:
+		case ID_EDIT_SEXP_TREE_EDIT_CONTAINERS:
+		case ID_EDIT_COPY:
+		case ID_EDIT_PASTE:
+		case ID_EDIT_PASTE_SPECIAL:
+		case ID_SPLIT_LINE:
+		case ID_EXPAND_ALL:
+		case ID_EDIT_TEXT:
+		case ID_EDIT_COMMENT:
+		case ID_EDIT_BG_COLOR:
+		case ID_REPLACE_NUMBER:
+		case ID_REPLACE_STRING:
+		case ID_ADD_STRING:
+		case ID_ADD_NUMBER:
+		case ID_EDIT_CUT:
+		case ID_DELETE:
+		case IDC_SEXP_POPUP_LIST:
+			Assertion(id >= sexp::operator_upper_bound(), "A resource definition (%d) must not overlap with an operator value!", id);
+			break;
+
+		default:
+			if ((id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)
+				|| (id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)
+				|| (id >= ID_REPLACE_MENU) && (id < ID_REPLACE_MENU + 511)
+				|| (id >= ID_CONTAINER_NAME_MENU) && (id < ID_CONTAINER_NAME_MENU + 511)
+				|| (id >= ID_CONTAINER_DATA_MENU) && (id < ID_CONTAINER_DATA_MENU + 511))
+			{
+				Assertion(id >= sexp::operator_upper_bound(), "A resource definition (%d) must not overlap with an operator value!", id);
+			}
+			break;
+	}
+#endif // !NDEBUG
 
 	// Add variable
 	if (id == ID_SEXP_TREE_ADD_VARIABLE) {
@@ -2426,6 +2508,65 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		case ID_DELETE:
 			NodeDelete();
 			return 1;
+
+		case IDC_SEXP_POPUP_LIST:
+		{
+			bool command_handled = false;
+
+			switch (data)
+			{
+				case CBN_SELCHANGE:
+				{
+					int index = m_operator_box.GetCurSel();
+					if (index >= 0)
+					{
+						if (m_operator_box.IsItemEnabled(index))
+						{
+							op = m_operator_box.GetOpIndex(index);
+
+							// close the popup
+							end_operator_edit(true);
+
+							// do the operator replacement
+							add_or_replace_operator(op, 1);
+							expand_branch(item_handle);
+						}
+						// if the selected item wasn't enabled, do nothing
+					}
+					else
+						end_operator_edit(false);
+
+					command_handled = true;
+					break;
+				}
+
+				case CBN_KILLFOCUS:
+				{
+					if (m_operator_popup_active && m_operator_box.PressedEnter())
+					{
+						op = m_operator_box.GetOpIndex(-1);
+
+						// close the popup
+						end_operator_edit(true);
+
+						// do the operator replacement
+						add_or_replace_operator(op, 1);
+						expand_branch(item_handle);
+					}
+					else
+						end_operator_edit(false);
+
+					command_handled = true;
+					break;
+				}
+
+				default:
+					break;
+			}
+
+			if (command_handled)
+				return TRUE;
+		}
 	}
 	
 	return CTreeCtrl::OnCommand(wParam, lParam);
@@ -2654,7 +2795,7 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag)
 
 	op_index = item_index;
 	if (replace_flag) {
-		if (tree_nodes[item_index].flags & OPERAND) {  // are both operators?
+		if (tree_nodes[item_index].type & SEXPT_OPERATOR) {  // are both operators?
 			op2 = get_operator_index(tree_nodes[item_index].text);
 			Assert(op2 >= 0);
 			i = count_args(tree_nodes[item_index].child);
@@ -3518,6 +3659,12 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 			}
 			return 0;
+
+		case OPF_TRAITOR_OVERRIDE:
+			return Traitor_overrides.empty() ? 0 : 1;
+
+		case OPF_LUA_GENERAL_ORDER:
+			return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
 
 		default:
 			if (!Dynamic_enums.empty()) {
@@ -5592,6 +5739,14 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_bolt_types();
 			break;
 
+		case OPF_TRAITOR_OVERRIDE:
+			list = get_listing_opf_traitor_overrides();
+			break;
+
+		case OPF_LUA_GENERAL_ORDER:
+			list = get_listing_opf_lua_general_orders();
+			break;
+
 		default:
 			//We're at the end of the list so check for any dynamic enums
 			list = check_for_dynamic_sexp_enum(opf);
@@ -6110,6 +6265,20 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if (child < 0)
 		return nullptr;
 
+
+	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
+	if (special_subsys == OPS_STRENGTH) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+
+	// if setting armor type we only need Hull and Shields
+	if (special_subsys == OPS_ARMOR) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SHIELD_STRING);
+	}
+
+
 	// now find the ship and add all relevant subsystems
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
@@ -6159,17 +6328,6 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		}
 	}
 	
-	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
-	if(special_subsys == OPS_STRENGTH){
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SIM_HULL_STRING);
-	}
-	// if setting armor type we only need Hull and Shields
-	if(special_subsys == OPS_ARMOR){
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SHIELD_STRING);
-	}
-
 	return head.next;
 }
 
@@ -7371,6 +7529,32 @@ sexp_list_item* sexp_tree::get_listing_opf_bolt_types()
 
 	for (int i = 0; i < (int)Bolt_types.size(); i++) {
 		head.add_data(Bolt_types[i].name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_traitor_overrides()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
+		head.add_data(Traitor_overrides[i].name.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
+{
+	sexp_list_item head;
+
+	SCP_vector<SCP_string> orders = ai_lua_get_general_orders();
+
+	for (const auto& val : orders) {
+		head.add_data(val.c_str());
 	}
 
 	return head.next;

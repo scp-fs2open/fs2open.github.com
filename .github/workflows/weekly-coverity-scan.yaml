@@ -1,0 +1,81 @@
+name: Weekly Coverity Scan for Freespace Open
+# adapted from code by "albert-github" on the doxygen repository
+# many thanks for figuring this out first so it could be less painful for us!
+
+# This mode is for testing
+#on: [push, pull_request]
+
+# In production, push on a specific schedule
+on:
+  schedule:
+    - cron: "1 0 * * 5" # Run once per a week on Friday morning (midnight UTC, 4 AM EST), to avoid Coverity's submission limits
+
+env:
+  QT_VERSION: 5.12.9
+  coverity_email: SirKnightlySCP@gmail.com
+  coverity_token: ${{ secrets.COVERITY_TOKEN }}
+
+jobs:
+  build:
+    name: Build FSO With Coverity Wrapper
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { name: "GCC on ubuntu", os: ubuntu-latest, build_type: "Release" }
+    steps:
+      - name: Install Dependencies
+        run: |
+          sudo apt-get install ninja-build
+          sudo apt install cmake libsdl2-dev g++
+          sudo apt-get install libopenal-dev
+          sudo apt-get install -y libudev-dev
+          sudo apt-get install doxygen
+          sudo apt install graphviz
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # `true` to checkout submodules, `recursive` to recursively checkout submodules
+
+      # pipe results of wget to a log file because it's very verbose and rarely fails
+      - name: Install Coverity
+        run: |
+          wget -o wgetlog.txt -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=${{ env.coverity_token }}&project=scp-fs2open/fs2open.github.com" -O coverity_tool.tgz
+          mkdir cov-scan
+          tar ax -f coverity_tool.tgz --strip-components=1 -C cov-scan
+
+      - name: Setup Environment
+        run: |
+          echo "$(pwd)/cov-scan/bin" >> $GITHUB_PATH
+          echo "NPROC=$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
+
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+
+      - name: Configure CMake for FSO
+        env:
+          CONFIGURATION: Release
+          compiler: gcc-5
+        run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
+
+      - name: Build FSO with Coverity Wrapper
+        working-directory: ./build
+        env:
+          CONFIGURATION: Release
+        run: cov-build --dir cov-int ninja -k 20 all
+
+      - name: Compress Results
+        working-directory: ./build
+        run: tar zcf cov-scan.tgz cov-int
+
+      #Comment this out when testing to keep from running into upload limits
+      - name: Upload to Coverity
+        run: |
+          cd build
+          curl --form token=${{ env.coverity_token }} --form email=${{ env.coverity_email }} --form file=@cov-scan.tgz --form version="$(git rev-parse HEAD)" --form description="Automatic GHA scan" 'https://scan.coverity.com/builds?project=scp-fs2open/fs2open.github.com'

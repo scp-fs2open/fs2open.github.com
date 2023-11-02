@@ -57,6 +57,7 @@ asteroid_editor::asteroid_editor(CWnd* pParent /*=NULL*/)
 	m_box_min_y = _T("");
 	m_box_min_z = _T("");
 	m_field_target_index = -1;
+	m_field_enhanced_checks = FALSE;
 	m_field_targets.clear();
 	//}}AFX_DATA_INIT
 
@@ -86,6 +87,7 @@ void asteroid_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_INNER_MIN_X, m_box_min_x);
 	DDX_Text(pDX, IDC_INNER_MIN_Y, m_box_min_y);
 	DDX_Text(pDX, IDC_INNER_MIN_Z, m_box_min_z);
+	DDX_Check(pDX, IDC_RANGE_OVERRIDE, m_field_enhanced_checks);
 	//}}AFX_DATA_MAP
 }
 
@@ -103,6 +105,7 @@ BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	ON_LBN_SELCHANGE(IDC_FIELD_TARGET_LIST, OnFieldTargetChange)
 	ON_BN_CLICKED(IDC_ADD_FIELD_TARGET, OnAddFieldTarget)
 	ON_BN_CLICKED(IDC_REMOVE_FIELD_TARGET, OnRemoveFieldTarget)
+	ON_BN_CLICKED(IDC_RANGE_OVERRIDE, OnEnableRangeOverride)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -190,6 +193,9 @@ int asteroid_editor::query_modified()
 			if (a_field[i].inner_min_bound.xyz.z != Asteroid_field.inner_min_bound.xyz.z)
 				return 1;
 		}
+
+		if (a_field[i].enhanced_visibility_checks != Asteroid_field.enhanced_visibility_checks)
+			return 1;
 
 		if (a_field[i].target_names != Asteroid_field.target_names)
 			return 1;
@@ -409,6 +415,8 @@ void asteroid_editor::update_init()
 		MODIFY(a_field[last_field].inner_max_bound.xyz.y, (float) atof(m_box_max_y));
 		MODIFY(a_field[last_field].inner_max_bound.xyz.z, (float) atof(m_box_max_z));
 
+		MODIFY(a_field[last_field].enhanced_visibility_checks, (bool)m_field_enhanced_checks);
+
 		MODIFY(a_field[last_field].target_names, m_field_targets);
 	}
 
@@ -416,6 +424,7 @@ void asteroid_editor::update_init()
 	// get from temp asteroid field into class
 	m_enable_asteroids = a_field[cur_field].num_initial_asteroids ? TRUE : FALSE;
 	m_enable_inner_bounds = a_field[cur_field].has_inner_bound ? TRUE : FALSE;
+	m_field_enhanced_checks = a_field[cur_field].enhanced_visibility_checks ? TRUE : FALSE;
 	m_density = a_field[cur_field].num_initial_asteroids;
 	if (!m_enable_asteroids)
 		m_density = 10;
@@ -593,6 +602,11 @@ void asteroid_editor::OnEnableInnerBox()
 	GetDlgItem(IDC_INNER_MAX_Y)->EnableWindow(m_enable_inner_bounds && m_enable_asteroids);
 	GetDlgItem(IDC_INNER_MIN_Z)->EnableWindow(m_enable_inner_bounds && m_enable_asteroids);
 	GetDlgItem(IDC_INNER_MAX_Z)->EnableWindow(m_enable_inner_bounds && m_enable_asteroids);
+}
+
+void asteroid_editor::OnEnableRangeOverride()
+{
+	UpdateData(TRUE);
 }
 
 // 

@@ -223,6 +223,9 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 					parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Player Damage Inflicted Factor:"))
+					parse_float_list(profile->player_damage_inflicted_scale, NUM_SKILL_LEVELS);
+
 				// represented in fractions of F1_0
 				if (optional_string("$Predict Position Delay:"))
 				{
@@ -549,7 +552,9 @@ void parse_ai_profiles_tbl(const char *filename)
                     profile->flags.set(AI::Profile_Flags::All_nonshielded_ships_can_manage_ets, temp);
 				}
 
-                set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
+				// ----------
+
+				set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
@@ -619,6 +624,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$asteroids affected by physics whacks:", AI::Profile_Flags::Whackable_asteroids);
 
 				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
+
+				set_flag(profile, "$hud squad messages use tactical disarm/disable:", AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -729,6 +736,7 @@ void ai_profile_t::reset()
         shield_energy_scale[i] = 0;
         afterburner_recharge_scale[i] = 0;
         player_damage_scale[i] = 0;
+		player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
         beam_friendly_damage_cap[i] = 0;
@@ -807,5 +815,8 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(23, 2, 0)) {
 		flags.set(AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
+	}
+	if (mod_supports_version(23, 4, 0)) {
+		flags.set(AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
 	}
 }

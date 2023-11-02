@@ -242,7 +242,7 @@ void FillSDLArray ()
 }
 
 SDL_Scancode fs2_to_sdl(int scancode) {
-	for (auto code : SDLtoFS2) {
+	for (const auto& code : SDLtoFS2) {
 		if (code.second == scancode)
 			return code.first;
 	}

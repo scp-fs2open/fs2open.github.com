@@ -20,8 +20,10 @@
 #include "resource.h"
 #include "ShipEditorDlg.h"
 #include "WaypointPathDlg.h"
+#include "JumpNodeDlg.h"
 #include "wing_editor.h"
 #include "musicplayerdlg.h"
+#include "customdatadlg.h"
 
 #include "globalincs/systemvars.h"
 #include "globalincs/systemvars.h"
@@ -73,7 +75,7 @@ public:
 	 * @param[in]     adjust Height, in pixels, to adjust the window by
 	 * @param[in]     pre    Pre-placement?
 	 *
-	 * @returns  0 If sucessful, or
+	 * @returns  0 If successful, or
 	 * @returns -1 If pre is nonzero and the window is not visible, or
 	 * @returns -2 If the window has been already initialized
 	 */
@@ -179,6 +181,7 @@ extern CWnd*                Prev_window;            //!< The currently active wi
 extern CShipEditorDlg       Ship_editor_dialog;     //!< The ship editor instance
 extern wing_editor          Wing_editor_dialog;     //!< The wing editor instance
 extern waypoint_path_dlg    Waypoint_editor_dialog; //!< The waypoint editor instance
+extern jumpnode_dlg			Jumpnode_editor_dialog; //!< The jumpnode editor instance
 extern music_player_dlg		Music_player_dialog;    //!< The music player instance
 extern bg_bitmap_dlg*       Bg_bitmap_dialog;       //!< The bitmap dialog instance
 extern briefing_editor_dlg* Briefing_dialog;        //!< The briefing editor instance
@@ -197,9 +200,11 @@ extern window_data Bg_wnd_data;
 extern window_data Briefing_wnd_data;
 extern window_data Reinforcement_wnd_data;
 extern window_data Waypoint_wnd_data;
+extern window_data Jumpnode_wnd_data;
 extern window_data MusPlayer_wnd_data;
 extern window_data Starfield_wnd_data;
 extern window_data Asteroid_wnd_data;
 extern window_data Mission_notes_wnd_data;
+extern window_data Custom_data_wnd_data;
 
 #endif // _FRED_H

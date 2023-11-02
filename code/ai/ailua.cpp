@@ -18,9 +18,9 @@ void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode) {
 }
 
 bool ai_lua_add_order(int sexp_op, player_order_lua order) {
-	Player_orders.emplace_back(vm_strdup(order.parseText.c_str()), vm_strdup(order.displayText.c_str()), -1, sexp_op);
+	Player_orders.emplace_back(order.parseText, order.displayText, -1, sexp_op);
 	Player_orders.back().localize();
-
+	
 	Lua_player_orders.emplace(sexp_op, std::move(order));
 
 	return true;
@@ -48,6 +48,134 @@ const player_order_lua* ai_lua_find_player_order(int sexp_op) {
 		return &aiLuaOrder->second;
 }
 
+int ai_lua_get_num_general_orders() {
+	int count = 0;
+	
+	for (const auto& order : Lua_player_orders) {
+		if (order.second.generalOrder) {
+			count++;
+		}
+	}
+
+	return count;
+}
+
+SCP_vector<SCP_string> ai_lua_get_general_order_categories(bool enabled_only)
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& order : Lua_player_orders) {
+		const SCP_string &cat = order.second.category;
+
+		// If it's not a general order then move on
+		if (!order.second.generalOrder) {
+			continue;
+		}
+
+		// If the order is not enabled then move on
+		if (enabled_only && !order.second.cur_enabled) {
+			continue;
+		}
+
+		Assertion((cat.length() > 0), "Lua general orders category name must be longer than 0 characters!");
+
+		for (size_t i = 0; i <= list.size(); i++) {
+
+			// reached the end of the list, so add it
+			if (i == list.size()) {
+				list.push_back(cat);
+				break;
+			}
+
+			// if it's already in the list then don't add it
+			if (cat == list[i]) {
+				break;
+			}
+		}
+	}
+
+	return list;
+}
+
+SCP_vector<SCP_string> ai_lua_get_general_orders(bool onlyEnabled, bool onlyValid, const SCP_string& category)
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& order : Lua_player_orders) {
+		if (order.second.generalOrder) {
+			bool add = false;
+
+			// Only enabled orders
+			if (onlyEnabled && order.second.cur_enabled) {
+				add = true;
+
+			// Only valid orders
+			} else if (onlyValid && order.second.cur_valid) {
+				add = true;
+
+			// Only orders that match the category requested
+			} else if ((!category.empty()) && (order.second.category == category)) {
+				add = true;
+
+			// All general orders
+			} else {
+				add = true;
+			}
+
+			if (add) {
+				list.push_back(order.second.parseText);
+			}
+		}
+	}
+
+	return list;
+}
+
+int ai_lua_find_general_order_id(const SCP_string& name) {
+	for (const auto& order : Lua_player_orders) {
+		if (order.second.parseText == name) {
+			return order.first;
+		}
+	}
+
+	return -1;
+}
+
+void ai_lua_enable_general_order(int sexp_op, bool enable) {
+	auto aiLuaOrder = Lua_player_orders.find(sexp_op);
+
+	if (aiLuaOrder == Lua_player_orders.end())
+		return;
+	else
+		aiLuaOrder->second.cur_enabled = enable;
+}
+
+void ai_lua_validate_general_order(int sexp_op, bool validity)
+{
+	auto aiLuaOrder = Lua_player_orders.find(sexp_op);
+
+	if (aiLuaOrder == Lua_player_orders.end())
+		return;
+	else
+		aiLuaOrder->second.cur_valid = validity;
+}
+
+void ai_lua_reset_general_orders() {
+	for (const auto& order : Lua_player_orders) {
+		ai_lua_enable_general_order(order.first, false);
+		ai_lua_validate_general_order(order.first, false);
+	}
+}
+
+bool ai_lua_is_general_order(int sexp_op) {
+	auto aiLuaOrder = Lua_player_orders.find(sexp_op);
+
+	if (aiLuaOrder == Lua_player_orders.end())
+		return false;
+
+	return aiLuaOrder->second.generalOrder;
+}
+
 void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua_ai, ai_info* aip) {
 	if (!action.isValid()) {
 		Error(LOCATION,
@@ -56,7 +184,11 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	}
 
 	luacpp::LuaValueList luaParameters;
-	luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h(&Objects[Ships[aip->shipnum].objnum]))));
+	if (aip->shipnum >= 0){
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h(&Objects[Ships[aip->shipnum].objnum]))));
+	} else {
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h())));
+	}
 	if (lua_ai.needsTarget) {
 		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aip->lua_ai_target.target)));
 	}
@@ -67,8 +199,13 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
 
 	if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::BOOLEAN) {
-		if (retVals[0].getValue<bool>())
-			ai_mission_goal_complete(aip);
+		if (retVals[0].getValue<bool>()) {
+
+			// If we don't have a ship then it's a general order and we have nothing else to do
+			if (aip->shipnum >= 0) {
+				ai_mission_goal_complete(aip);
+			}
+		}
 	}
 }
 
@@ -101,6 +238,26 @@ void ai_lua_start(ai_goal* aigp, object* objp){
 	const auto& action = lua_ai_sexp.getActionEnter();
 
 	run_ai_lua_action(action, lua_ai, aip);
+}
+
+// For sending general orders that don't run on a ship.
+// Essentially just runs arbitrary lua script when the command is called
+void ai_lua_start_general(int lua_sexp_id, int target_objnum)
+{
+	//Create a dummy aip to pass the target data
+	ai_info aip;
+	aip.shipnum = -1;
+
+	if (target_objnum >= 0 && Objects[target_objnum].type == OBJ_SHIP) {
+		aip.lua_ai_target = {object_ship_wing_point_team(&Ships[Objects[target_objnum].instance]), {}};
+	}
+	
+	const auto& lua_ai = ai_lua_find_mode(lua_sexp_id);
+
+	const auto& lua_ai_sexp = lua_ai->sexp;
+	const auto& action = lua_ai_sexp.getActionEnter();
+
+	run_ai_lua_action(action, *lua_ai, &aip);
 }
 
 bool ai_lua_is_valid_target_intrinsic(int sexp_op, int target_objnum, ship* self) {

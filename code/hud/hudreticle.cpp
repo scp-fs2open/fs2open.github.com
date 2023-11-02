@@ -249,7 +249,11 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 
 void HudGaugeReticle::render(float  /*frametime*/)
 {
-ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	if (crosshair.first_frame < 0) {
+		return;
+	}
+
+	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 
 	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid()) {
 		ship *shipp = &Ships[Objects[Player->objnum].instance];
@@ -361,12 +365,22 @@ void HudGaugeReticle::getFirepointStatus() {
 					int bankactive = 0;
 					ship_weapon *swp = &shipp->weapons;
 
-					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
-						bankactive = 1;
-					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-						bankactive = 1;
-					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked])
+					// If this firepoint doesn't actually have a weapon mounted, skip all of this
+					if (swp->primary_bank_weapons[i] < 0) {
+						continue;
+					}
+
+					// bank is firing
+					// (make sure we haven't cycled banks recently, since that will also reset the timestamp)
+					if (   (!Control_config[CYCLE_NEXT_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_NEXT_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!Control_config[CYCLE_PREV_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_PREV_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) || !timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))) {
 						bankactive = 2;
+					}
+					// bank is selected
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked]) {
+						bankactive = 1;
+					}
 
 					int num_slots = pm->gun_banks[i].num_slots;
 					for (int j = 0; j < num_slots; j++) {
@@ -533,6 +547,10 @@ void HudGaugeThrottle::pageIn()
 
 void HudGaugeThrottle::render(float  /*frametime*/)
 {
+	if (throttle_frames.first_frame < 0) {
+		return;
+	}
+
 	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
 	int	desired_y_pos, y_end;
 
@@ -812,7 +830,9 @@ void HudGaugeThreatIndicator::pageIn()
 void HudGaugeThreatIndicator::render(float  /*frametime*/)
 {
 	setGaugeColor();
-	renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
+
+	if (threat_arc.first_frame >= 0)
+		renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
 
 	renderLaserThreat();
 	renderLockThreat();
@@ -820,6 +840,9 @@ void HudGaugeThreatIndicator::render(float  /*frametime*/)
 
 void HudGaugeThreatIndicator::renderLaserThreat()
 {
+	if (laser_warn.first_frame < 0)
+		return;
+
 	int frame_offset, num_frames;
 
 	//Check how many frames the ani actually has
@@ -845,6 +868,9 @@ void HudGaugeThreatIndicator::renderLaserThreat()
 
 void HudGaugeThreatIndicator::renderLockThreat()
 {
+	if (lock_warn.first_frame < 0)
+		return;
+
 	int frame_offset, num_frames;
 
 	//Let's find out how many frames our ani has, and adjust accordingly

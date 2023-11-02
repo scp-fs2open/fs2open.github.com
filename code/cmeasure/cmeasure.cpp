@@ -51,6 +51,14 @@ void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
 
 	objp->phys_info.max_vel.xyz.z = -25.0f;
 	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
+
+	// if this cmeasure has a single segment trail, let the trail know since we just changed the velocity
+	// yeah this is hacky but that's what this function gets for CHANGING the velocity on objects with a ""CONSTANT VELOCITY""
+	weapon* wp = &Weapons[objp->instance];
+	if (wp->trail_ptr && wp->trail_ptr->single_segment) {
+		wp->trail_ptr->vel[0] = objp->phys_info.vel;
+		wp->trail_ptr->vel[1] = objp->phys_info.vel;
+	}
 }
 
 /** 

@@ -12,6 +12,7 @@
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
+#include "mission/missioncampaign.h"
 #include "missionui/missionweaponchoice.h"
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
@@ -674,7 +675,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
-ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
+ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This property is read-only")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
@@ -688,6 +689,28 @@ ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time re
 	}
 
 	return ade_set_args(L, "i", Ship_info[idx].scan_time);
+}
+
+ADE_VIRTVAR(CountermeasureClass, l_Shipclass, "weaponclass", "The default countermeasure class assigned to this ship class", "weaponclass", "Countermeasure hardpoint weapon class, or invalid weaponclass handle if no countermeasure class or ship handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	ship_info* sip = &Ship_info[idx];
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting CountermeasureClass is not supported");
+	}
+
+	if (sip->cmeasure_type > -1) {
+		return ade_set_args(L, "o", l_Weaponclass.Set(sip->cmeasure_type));
+	} else {
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+	}
 }
 
 ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of countermeasures the ship can carry", "number", "Countermeasure capacity, or 0 if handle is invalid")
@@ -908,7 +931,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleratio
 	return ade_set_args(L, "f", Ship_info[idx].forward_accel);
 }
 
-ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
+ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward deceleration time, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -1046,6 +1069,23 @@ ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this s
 	}
 
 	return ade_set_args(L, "b", Ship_info[idx].flags[flag]);
+}
+
+ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether this ship class is allowed in loadouts in campaign mode", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Campaign.ships_allowed[idx] = new_value;
+	}
+
+	return Campaign.ships_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")
@@ -1450,6 +1490,29 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isPlayerAllowed,
+	l_Shipclass,
+	nullptr,
+	"Detects whether the ship has the player allowed flag",
+	"boolean",
+	"true if player allowed, false otherwise, nil if a syntax/type error occurs")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_FALSE;
+
+	ship_info* sip = &Ship_info[idx];
+
+	if (sip->flags[Ship::Info_Flags::Player_ship]) {
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getShipClassIndex, l_Shipclass, nullptr, "Gets the index value of the ship class", "number", "index value of the ship class")

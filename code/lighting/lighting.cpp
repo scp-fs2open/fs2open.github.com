@@ -20,6 +20,7 @@
 #include "math/vecmat.h"
 #include "model/modelrender.h"
 #include "render/3d.h"
+#include "options/Option.h"
 
 
 SCP_vector<light> Lights;
@@ -97,6 +98,29 @@ DCF(light,"Changes lighting parameters")
 	} else {
 		dc_stuff_string_white(arg_str);
 		dc_printf("Error: Unknown argument '%s'\n", arg_str.c_str());
+	}
+}
+
+// used by In-Game Options menu
+static bool DeferredLightingEnabled = true;
+
+static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
+                  std::pair<const char*, int>{"Deferred Lighting", 1782},
+                  std::pair<const char*, int>{"Enables or disables deferred lighting", 1783})
+                  .category("Graphics")
+                  .default_val(true)
+                  .level(options::ExpertLevel::Advanced)
+                  .bind_to_once(&DeferredLightingEnabled)
+                  .importance(60)
+                  .finish();
+
+
+bool light_deferred_enabled()
+{
+	if (Using_in_game_options) {
+		return DeferredLightingOption->getValue();
+	} else {
+		return !Cmdline_no_deferred_lighting;
 	}
 }
 
@@ -264,6 +288,8 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.instance = Num_lights-1;
 
 	l.source_radius = MAX(0.0f,source_radius);
+	l.local_vec = vmd_zero_vector;
+	l.local_vec2 = vmd_zero_vector;
 
 	Lights.push_back(l);
 }
@@ -352,7 +378,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 	vec3d to_light;
 	float dot, dist;
 	vec3d temp;
-	for (auto l : Lights) {
+	for (const auto& l : Lights) {
 
 		dist = -1.0f;
 		switch(l.type){

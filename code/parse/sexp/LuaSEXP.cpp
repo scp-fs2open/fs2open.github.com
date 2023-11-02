@@ -39,23 +39,24 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "string",       OPF_STRING },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
+														  { "waypoint",     OPF_POINT },
 														  { "variable",     OPF_VARIABLE_NAME },
 														  { "message",      OPF_MESSAGE },
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, 
-														  { "ship+waypoint",   OPF_SHIP_POINT },
-														  { "ship+wing",   OPF_SHIP_WING },
+														  { "ship+waypoint",OPF_SHIP_POINT },
+														  { "ship+wing",    OPF_SHIP_WING },
 														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
-														  { "subsystem",   OPF_SUBSYSTEM },
-														  { "dockpoint",   OPF_DOCKER_POINT },
-														  { "hudgauge",   OPF_ANY_HUD_GAUGE },
-														  { "event",   OPF_EVENT_NAME },
-														  { "enum",   First_available_opf_id } };
+														  { "subsystem",    OPF_SUBSYSTEM },
+														  { "dockpoint",    OPF_DOCKER_POINT },
+														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
+														  { "event",        OPF_EVENT_NAME },
+														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
 static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint"};
@@ -176,7 +177,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->name : "");
 		}
 
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->objp) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
@@ -232,6 +233,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_SHIP_WING_WHOLETEAM:
 	case OPF_SHIP_WING_SHIPONTEAM_POINT:
 	case OPF_SHIP_WING_POINT:
+	case OPF_POINT:
 	case OPF_SHIP_WING_POINT_OR_NONE: {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
@@ -256,7 +258,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		auto ship_entry = eval_ship(this_node);
 
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->shipp) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
@@ -284,7 +286,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		}
 
 		auto ship_entry = eval_ship(this_node);
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->shipp) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
@@ -474,15 +476,18 @@ void LuaSEXP::parseTable() {
 		_category = sexp::add_category(category);
 	}
 
-	required_string("$Subcategory:");
-	SCP_string subcategory;
-	stuff_string(subcategory, F_NAME);
+	if (optional_string("$Subcategory:")) {
+		SCP_string subcategory;
+		stuff_string(subcategory, F_NAME);
 
-	_subcategory = get_subcategory(subcategory, _category);
-	if (_subcategory == OP_SUBCATEGORY_NONE) {
-		// Unknown subcategory so we need to add this one
-		_subcategory = sexp::add_subcategory(_category, subcategory);
-	} 
+		_subcategory = get_subcategory(subcategory, _category);
+		if (_subcategory == OP_SUBCATEGORY_NONE) {
+			// Unknown subcategory so we need to add this one
+			_subcategory = sexp::add_subcategory(_category, subcategory);
+		}
+	} else {
+		_subcategory = OP_SUBCATEGORY_NONE;
+	}
 
 	required_string("$Minimum Arguments:");
 
@@ -645,7 +650,7 @@ void LuaSEXP::parseTable() {
 				bool skip = false;
 				// Case insensitive check if the item already exists in the list
 				for (int i = 0; i < (int)thisList.list.size(); i++) {
-					if (SCP_string_lcase_equal_to()(item, thisList.list[i])) {
+					if (lcase_equal(item, thisList.list[i])) {
 						error_display(0, "Enum item '%s' already exists in list %s. Skipping!\n", item.c_str(), thisList.name.c_str());
 						skip = true;
 						break;
@@ -703,7 +708,7 @@ void LuaSEXP::parseTable() {
 			// check if this operator already has an entry for dynamic parameters
 			int dyn_index = -1;
 			for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-				if (SCP_string_lcase_equal_to()(Dynamic_parameters[i].operator_name, _name)) {
+				if (lcase_equal(Dynamic_parameters[i].operator_name, _name)) {
 					dyn_index = i;
 				}
 			}

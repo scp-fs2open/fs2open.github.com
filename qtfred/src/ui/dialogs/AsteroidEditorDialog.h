@@ -25,6 +25,7 @@ private:
 
 	void toggleEnabled(bool enabled);
 	void toggleInnerBoxEnabled(bool enabled);
+	void toggleEnhancedEnabled(bool enabled);
 	void toggleAsteroid(AsteroidEditorDialogModel::_roid_types colour, bool enabled);
 
 	void asteroidNumberChanged(int num_asteroids);

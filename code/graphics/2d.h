@@ -36,6 +36,7 @@ class OverridableHook;
 
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
+extern float Min_draw_distance_cockpit;
 extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
@@ -102,7 +103,7 @@ public:
 		Stack.push_back(Current_transform);
 	}
 
-	matrix4 &get_transform()
+	const matrix4 &get_transform() const
 	{
 		return Current_transform;
 	}
@@ -115,7 +116,7 @@ public:
 		Stack.push_back(Current_transform);
 	}
 
-	void push_and_replace(matrix4 new_transform)
+	void push_and_replace(const matrix4 &new_transform)
 	{
 		Current_transform = new_transform;
 		Stack.push_back(Current_transform);
@@ -262,7 +263,7 @@ struct vertex_format_data
 		COLOR4,
 		COLOR4F,
 		TEX_COORD2,
-		TEX_COORD3,
+		TEX_COORD4,
 		NORMAL,
 		TANGENT,
 		MODEL_ID,
@@ -300,7 +301,7 @@ public:
 
 	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset);
 
-	size_t get_vertex_stride() { return Vertex_stride; }
+	size_t get_vertex_stride() const { return Vertex_stride; }
 
 	bool operator==(const vertex_layout& other) const;
 
@@ -324,8 +325,8 @@ typedef enum gr_capability {
 	CAPABILITY_POST_PROCESSING,
 	CAPABILITY_DEFERRED_LIGHTING,
 	CAPABILITY_SHADOWS,
+	CAPABILITY_THICK_OUTLINE,
 	CAPABILITY_BATCHED_SUBMODELS,
-	CAPABILITY_POINT_PARTICLES,
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
@@ -790,6 +791,7 @@ typedef struct screen {
 	std::function<void()> gf_post_process_restore_zbuffer;
 
 	std::function<void(bool clearNonColorBufs)> gf_deferred_lighting_begin;
+	std::function<void()> gf_deferred_lighting_msaa;
 	std::function<void()> gf_deferred_lighting_end;
 	std::function<void()> gf_deferred_lighting_finish;
 
@@ -1092,6 +1094,7 @@ inline void gr_post_process_restore_zbuffer()
 }
 
 #define gr_deferred_lighting_begin		GR_CALL(gr_screen.gf_deferred_lighting_begin)
+#define gr_deferred_lighting_msaa		GR_CALL(gr_screen.gf_deferred_lighting_msaa)
 #define gr_deferred_lighting_end		GR_CALL(gr_screen.gf_deferred_lighting_end)
 #define gr_deferred_lighting_finish		GR_CALL(gr_screen.gf_deferred_lighting_finish)
 

@@ -73,7 +73,6 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;
 	SCP_list<waypoint_list>::iterator ii;
-	SCP_list<CJumpNode>::iterator jnp;
 	CMenu *m;
 
 	m = pMenu->GetSubMenu(0);
@@ -81,16 +80,6 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 
 	for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
 		m->AppendMenu(MF_ENABLED | MF_STRING, ID_WAYPOINT_MENU + i, ii->get_name());
-	}
-
-	i = 0; 
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp->GetName());
-		if (jnp->GetSCPObjectNumber() == cur_object_index) {
-			m->CheckMenuItem(ID_JUMP_NODE_MENU + i,  MF_BYCOMMAND | MF_CHECKED);
-		}
-		i++;
-
 	}
 
 	m->DeleteMenu(ID_PLACEHOLDER, MF_BYCOMMAND);
@@ -123,7 +112,6 @@ void waypoint_path_dlg::OnClose()
 void waypoint_path_dlg::initialize_data(int full_update)
 {
 	int enable = TRUE;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (!GetSafeHwnd())
 		return;
@@ -135,14 +123,6 @@ void waypoint_path_dlg::initialize_data(int full_update)
 
 	if (cur_waypoint_list != NULL) {
 		m_name = _T(cur_waypoint_list->get_name());
-
-	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == &Objects[cur_object_index])
-				break;
-		}
-		
-		m_name = _T(jnp->GetName());
 
 	} else {
 		m_name = _T("");
@@ -161,7 +141,6 @@ int waypoint_path_dlg::update_data(int redraw)
 	char old_name[255];
 	int i, z;
 	object *ptr;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (!GetSafeHwnd())
 		return 0;
@@ -295,127 +274,6 @@ int waypoint_path_dlg::update_data(int redraw)
 			update_texture_replacements(old_name, str);
 		}
 
-	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == &Objects[cur_object_index])
-				break;
-		}
-
-		for (i=0; i<MAX_WINGS; i++)
-		{
-			if (!stricmp(Wings[i].name, m_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This jump node name is already being used by a wing\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_name = _T(jnp->GetName());
-				UpdateData(FALSE);
-			}
-		}
-
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
-				if (!stricmp(m_name, Ships[ptr->instance].ship_name)) {
-					if (bypass_errors)
-						return 1;
-
-					bypass_errors = 1;
-					z = MessageBox("This jump node name is already being used by a ship\n"
-						"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-					if (z == IDCANCEL)
-						return -1;
-
-					m_name = _T(jnp->GetName());
-					UpdateData(FALSE);
-				}
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
-
-		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
-
-		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
-			if (!stricmp(m_name, Ai_tp_list[i].name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This jump node name is already being used by a target priority group.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_name = _T(jnp->GetName());
-				UpdateData(FALSE);
-			}
-		}
-
-		if (find_matching_waypoint_list((LPCSTR) m_name) != NULL)
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("This jump node name is already being used by a waypoint path\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_name = _T(jnp->GetName());
-			UpdateData(FALSE);
-		}
-
-		if (!stricmp(m_name.Left(1), "<")) {
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("Jump node names not allowed to begin with <\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_name = _T(jnp->GetName());
-			UpdateData(FALSE);
-		}
-
-		CJumpNode* found = jumpnode_get_by_name(m_name);
-		if(found != NULL && &(*jnp) != found)
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("This jump node name is already being used by another jump node\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_name = _T(jnp->GetName());
-			UpdateData(FALSE);
-		}
-		
-		strcpy_s(old_name, jnp->GetName());
-		jnp->SetName((LPCSTR) m_name);
-		
-		str = (LPCTSTR) m_name;
-		if (strcmp(old_name, str)) {
-			update_sexp_references(old_name, str);
-		}
-		
 	}
 
 	if (redraw)
@@ -439,26 +297,6 @@ BOOL waypoint_path_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 				if (ptr->type == OBJ_WAYPOINT)
 					if (calc_waypoint_list_index(ptr->instance) == point)
 						mark_object(OBJ_INDEX(ptr));
-
-				ptr = GET_NEXT(ptr);
-			}
-
-			return 1;
-		}
-	}
-
-	if ((id >= ID_JUMP_NODE_MENU) && (id < ID_JUMP_NODE_MENU + (int) Jump_nodes.size())) {
-		if (!update_data()) {
-			point = id - ID_JUMP_NODE_MENU;
-			unmark_all();
-			ptr = GET_FIRST(&obj_used_list);
-			while ((ptr != END_OF_LIST(&obj_used_list)) && (point > -1)) {
-				if (ptr->type == OBJ_JUMP_NODE) {
-					if (point == 0) {
-						mark_object(OBJ_INDEX(ptr));
-					}
-					point--; 
-				}
 
 				ptr = GET_NEXT(ptr);
 			}

@@ -465,7 +465,8 @@ void HudGaugeRadarOrb::render(float  /*frametime*/)
 
 void HudGaugeRadarOrb::blitGauge()
 {
-	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+	if (Radar_gauge.first_frame + 1 >= 0)
+		renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
 }
 
 void HudGaugeRadarOrb::pageIn()
@@ -562,10 +563,12 @@ void HudGaugeRadarOrb::drawCrosshairs( vec3d pnt )
 }
 
 extern void hud_save_restore_camera_data(int);
-extern float View_zoom;
 
 void HudGaugeRadarOrb::setupViewHtl()
 {
+	if (Radar_gauge.first_frame < 0)
+		return;
+
     int w,h;
 	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
     

@@ -59,6 +59,8 @@ extern int Num_weapon_subtypes;
 // enum for multilock object type restriction
 enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
+constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second delay until player can fire
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -546,8 +548,8 @@ struct weapon_info
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
 	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
 	bool cmeasure_use_firewait;					// if set to true, then countermeasure will use specified firewait instead of default --wookieejedi
-	int cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
-	int cmeasure_sucess_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	float cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	float cmeasure_success_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;

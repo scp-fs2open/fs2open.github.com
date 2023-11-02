@@ -25,6 +25,7 @@
 #include "sound/sound.h"
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
+#include "stats/scoring.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -49,6 +50,10 @@ int get_special_anchor(const char *name);
 // not be updated simply because the engine's version changed.
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
+
+// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// a "soft version bump" rather than a hard bump because not all missions are affected.
+extern bool check_for_23_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -108,6 +113,12 @@ typedef struct mission_cutscene {
 	int formula;
 } mission_cutscene;
 
+typedef struct mission_default_custom_data {
+	SCP_string key;
+	SCP_string value;
+	SCP_string description;
+} mission_default_custom_data;
+
 // descriptions of flags for FRED
 template <class T>
 struct parse_object_flag_description {
@@ -144,11 +155,13 @@ typedef struct mission {
 	tl::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
+	int     HUD_timer_padding;
 
 	// Goober5000
 	int	command_persona;
 	char command_sender[NAME_LENGTH];
 	int debriefing_persona;
+	traitor_override_t* traitor_override;
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];
@@ -159,7 +172,11 @@ typedef struct mission {
 	// Goober5000
 	ai_profile_t *ai_profile;
 
+	SCP_string lighting_profile_name;
+
 	SCP_vector<mission_cutscene> cutscenes;
+
+	SCP_map<SCP_string, SCP_string> custom_data;
 
 	void Reset( );
 
@@ -175,7 +192,7 @@ typedef struct mission {
 // must be reworked so that all the flags are maintained from function to function
 #define CARGO_INDEX_MASK	0xBF
 #define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
-#define MAX_CARGO				30
+#define MAX_CARGO				60
 
 
 // Goober5000 - contrail threshold (previously defined in ShipContrails.cpp)
@@ -183,9 +200,6 @@ typedef struct mission {
 
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)
-
-#define	MAX_FORMATION_NAMES	3
-#define	MAX_STATUS_NAMES		3
 
 // defines for arrival locations.  These defines should match their counterparts in the arrival location
 // array
@@ -223,10 +237,6 @@ typedef struct path_restriction_t {
 
 extern const char *Ship_class_names[MAX_SHIP_CLASSES];
 extern const char *Ai_behavior_names[MAX_AI_BEHAVIORS];
-extern char *Formation_names[MAX_FORMATION_NAMES];
-extern const char *Status_desc_names[MAX_STATUS_NAMES];
-extern const char *Status_type_names[MAX_STATUS_NAMES];
-extern const char *Status_target_names[MAX_STATUS_NAMES];
 extern const char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
@@ -251,9 +261,7 @@ extern int	Num_iff;
 extern int	Num_ai_behaviors;
 extern int	Num_ai_classes;
 extern int	Num_cargo;
-extern int	Num_status_names;
 extern int	Num_arrival_names;
-extern int	Num_formation_names;
 extern int	Num_goal_type_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
@@ -266,6 +274,8 @@ extern int Num_unknown_loadout_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
+
+extern SCP_vector<mission_default_custom_data> Default_custom_data;
 
 #define SUBSYS_STATUS_NO_CHANGE	-999
 
@@ -404,7 +414,7 @@ extern SCP_vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct {
+typedef struct team_data {
 	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		num_ship_choices; // number of ship choices inside ship_list 
@@ -463,6 +473,9 @@ int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
+
+// used in fred management.cpp when creating a new mission
+void apply_default_custom_data(mission* pm);
 
 bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false);
 bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);

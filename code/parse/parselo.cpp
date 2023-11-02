@@ -80,7 +80,7 @@ bool is_gray_space(unicode::codepoint_t cp) {
 	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
 }
 
-int is_parenthesis(char ch)
+bool is_parenthesis(char ch)
 {
 	return ((ch == '(') || (ch == ')'));
 }
@@ -245,11 +245,12 @@ int get_line_num()
 	bool	inquote = false;
 	int		incomment = false;
 	int		multiline = false;
-	char	*stoploc;
-	char	*p;
+	char	*p = Parse_text;
+	char	*stoploc = Mp;
 
-	p = Parse_text;
-	stoploc = Mp;
+	// if there is no parse text, then we have some ad-hoc text such as provided in an evaluateSEXP call or in the debug console
+	if (Parse_text == nullptr)
+		return count;
 
 	while (p < stoploc)
 	{
@@ -1114,17 +1115,22 @@ int get_string_or_variable (char *str)
 	ignore_white_space();
 
 	// Variable
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
+		auto saved_Mp = Mp;
 		Mp++;
 		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
-		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		result = PARSING_FOUND_VARIABLE;
+		if (sexp_variable_index >= 0)
+			result = PARSING_FOUND_VARIABLE;
+		else
+		{
+			Mp = saved_Mp;
+			stuff_string_white(str);
+			error_display(1, "Expected \"%s\" to be a variable", str);
+		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1135,7 +1141,7 @@ int get_string_or_variable (char *str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
+		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
 	}
 
 	return result;
@@ -1149,17 +1155,22 @@ int get_string_or_variable (SCP_string &str)
 	ignore_white_space();
 
 	// Variable
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
+		auto saved_Mp = Mp;
 		Mp++;
 		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
-		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		result = PARSING_FOUND_VARIABLE;
+		if (sexp_variable_index >= 0)
+			result = PARSING_FOUND_VARIABLE;
+		else
+		{
+			Mp = saved_Mp;
+			stuff_string_white(str);
+			error_display(1, "Expected \"%s\" to be a variable", str.c_str());
+		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1170,7 +1181,7 @@ int get_string_or_variable (SCP_string &str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
+		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
 	}
 
 	return result;
@@ -2220,16 +2231,16 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-        nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-        throw parse::ParseException("Failed to open file");
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
 	}
 
 	// read the entire file in
 	int file_len = cfilelength(mf);
 
 	if(!file_len) {
-        nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-        throw parse::ParseException("Failed to open file");
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
 	}
 
 	// For the possible Latin1 -> UTF-8 conversion we need to reallocate the raw_text at some point and we can only do
@@ -2446,6 +2457,53 @@ void debug_show_mission_text()
 
 	while ((ch = *mp++) != '\0')
 		printf("%c", ch);
+}
+
+// Goober5000
+void read_file_bytes(const char *filename, int mode, char *raw_bytes)
+{
+	CFILE	*mf;
+
+	// copy the filename
+	if (!filename)
+		throw parse::ParseException("Invalid filename");
+
+	strcpy_s(Current_filename_sub, filename);
+
+	// if we are paused then raw_bytes must not be NULL!!
+	if ( !Bookmarks.empty() && (raw_bytes == nullptr) ) {
+		Error(LOCATION, "ERROR: raw_bytes may not be NULL when parsing is paused!!\n");
+	}
+
+	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
+	if (mf == nullptr)
+	{
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
+	}
+
+	// read the entire file in
+	int file_len = cfilelength(mf);
+
+	if(!file_len) {
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
+	}
+
+	if (raw_bytes == nullptr) {
+		// allocate, or reallocate, memory for Parse_text and Parse_text_raw based on size we need now
+		allocate_parse_text((size_t) (file_len + 1));
+		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
+		raw_bytes = Parse_text_raw;
+	}
+
+	cfread(raw_bytes, file_len, 1, mf);
+
+	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
+	// Goober5000 - for binary files, the equivalent is an EOF
+	raw_bytes[file_len] = EOF;
+
+	cfclose(mf);
 }
 
 // Returns whether the first character encountered in str that is not whitespace is the character to look for.
@@ -2715,13 +2773,14 @@ int stuff_int_optional(int *i)
 // index of the variable in the following slot.
 void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 {
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
-		Mp++;
 		int value = -1;
 		SCP_string str;
-		stuff_string(str, F_NAME);
 
+		auto saved_Mp = Mp;
+		Mp++;
+		stuff_string(str, F_NAME);
 		int index = get_index_sexp_variable_name(str);
 
 		if (index > -1 && index < MAX_SEXP_VARIABLES)
@@ -2737,7 +2796,8 @@ void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 		}
 		else
 		{
-
+			Mp = saved_Mp;
+			stuff_string(str, F_NAME);
 			error_display(1, "Invalid variable name \"%s\" found.", str.c_str());
 		}
 
@@ -2785,20 +2845,35 @@ void stuff_boolean_flag(int *i, int flag, bool a_to_eol)
 // Stuffs a boolean value pointed at by Mp.
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
-
 void stuff_boolean(bool *b, bool a_to_eol)
 {
-	char token[32];
-	stuff_string_white(token, sizeof(token)/sizeof(char));
+	char token[NAME_LENGTH];
+	stuff_string_white(token);
 	if(a_to_eol)
 		advance_to_eoln(NULL);
 
-	if( isdigit(token[0]))
+	if (!parse_boolean(token, b))
+	{
+		*b = false;
+		error_display(0, "Boolean '%s' type unknown; assuming 'no/false'", token);
+	}
+
+	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
+}
+
+// Parses a token into a boolean value, if the token is recognized.  If so, the boolean parameter is assigned the value and the function returns true;
+// if not, the boolean parameter is not assigned and the function returns false.
+bool parse_boolean(const char *token, bool *b)
+{
+	Assertion(token != nullptr && b != nullptr, "Parameters must not be NULL!");
+
+	if(isdigit(token[0]))
 	{
 		if(token[0] != '0')
 			*b = true;
 		else
 			*b = false;
+		return true;
 	}
 	else
 	{
@@ -2811,6 +2886,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 			|| !stricmp(token, "HIja'") || !stricmp(token, "HISlaH"))	//Klingon
 		{
 			*b = true;
+			return true;
 		}
 		else if(!stricmp(token, "no")
 			|| !stricmp(token, "false")
@@ -2823,15 +2899,12 @@ void stuff_boolean(bool *b, bool a_to_eol)
 			|| !stricmp(token, "ghobe'"))	//Klingon
 		{
 			*b = false;
-		}
-		else
-		{
-			*b = false;
-			error_display(0, "Boolean '%s' type unknown; assuming 'no/false'",token);
+			return true;
 		}
 	}
 
-	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
+	// token not recognized
+	return false;
 }
 
 //	Stuff an integer value (cast to a ubyte) pointed at by Mp.
@@ -3393,7 +3466,9 @@ char *split_str_once(char *src, int max_pixel_w)
 	bool last_was_white = false;
 
 	Assert(src);
-	Assert(max_pixel_w > 0);
+
+	if (max_pixel_w <= 0)
+		return src;  // if there's no width, skip everything else
 
 	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
@@ -4037,6 +4112,24 @@ void consolidate_double_characters(char *src, char ch)
 		if (src != dest)
 			*dest = *src;
 	}
+}
+
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size)
+{
+	Assertion(buffer && source, "Arguments must not be null!");
+
+	// this would be silly
+	if (buffer_size < 6)
+	{
+		*buffer = '\0';
+		return buffer;
+	}
+
+	strncpy(buffer, source, buffer_size);
+	if (buffer[buffer_size - 1] != '\0')
+		strcpy(&buffer[buffer_size - 6], "[...]");
+
+	return buffer;
 }
 
 // Goober5000

@@ -264,7 +264,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Show Ship Models\tShift+Alt+M", 32820, CHECKED
         MENUITEM "Show Outlines\tShift+Alt+O",  32980
-        MENUITEM "Draw Outlines on Selected Ships", 32982, CHECKED
+        MENUITEM "Draw Outlines on Selected Ships", ID_VIEW_OUTLINES_ON_SELECTED, CHECKED
+        MENUITEM "Draw Outline at Warpin Position", ID_VIEW_OUTLINE_AT_WARPIN, CHECKED
         MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
         MENUITEM "Show Coordinates\tShift+Alt+C", 32915
         MENUITEM "Show Grid Positions\tShift+Alt+P", 32914
@@ -551,6 +552,14 @@ BEGIN
     END
 END
 
+IDR_JUMPNODE_EDIT_MENU MENU
+BEGIN
+    POPUP "&Select Jump Node"
+    BEGIN
+        MENUITEM "PlaceHolder",                 ID_SELECTSHIP_PLACEHOLDER
+    END
+END
+
 IDR_ASTEROID_FIELD_MENU MENU
 BEGIN
     POPUP "Select Field"
@@ -611,6 +620,7 @@ BEGIN
     "R",            ID_EDITORS_REINFORCEMENT, VIRTKEY, SHIFT, NOINVERT
     "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
     "Y",            ID_EDITORS_WAYPOINT,    VIRTKEY, SHIFT, NOINVERT
+    "J",            ID_EDITORS_JUMPNODE,    VIRTKEY, SHIFT, NOINVERT
     "W",            ID_EDITORS_WING,        VIRTKEY, SHIFT, NOINVERT
     "H",            ID_ERROR_CHECKER,       VIRTKEY, SHIFT, NOINVERT
     "N",            ID_FILE_MISSIONNOTES,   VIRTKEY, SHIFT, NOINVERT
@@ -944,10 +954,12 @@ BEGIN
     LTEXT           "Max Respawn Delay",IDC_STATIC,7,113,78,12
     EDITTEXT        IDC_MAX_RESPAWN_DELAY,86,112,50,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "",IDC_MAX_RESPAWN_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,112,11,14
-    PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,158,244,140,15
+    PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,156,244,140,15
+    PUSHBUTTON      "Custom Data",IDC_OPEN_CUSTOM_DATA,318,244,140,15
     CONTROL         "Toggle Showing Goals In Briefing",IDC_TOGGLE_SHOWING_GOALS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,142,10
     CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
+    CONTROL         "Preload Subspace Tunnel",IDC_PRELOAD_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
     CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
 END
@@ -1387,9 +1399,10 @@ BEGIN
     CONTROL         "Always False",IDC_MISSION_LOG_ALWAYS_FALSE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,37,410,57,10
     LTEXT           "Log These States To The Event.log",IDC_STATIC,37,386,114,8
     CONTROL         "Interval && Chain in Milliseconds",IDC_USE_MSECS,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,208,275,65,19
+    PUSHBUTTON      "Add Note",IDC_NEW_NOTE,380,111,50,12,0,WS_EX_STATICEDGE
 END
 
-IDD_BG_BITMAP DIALOGEX 0, 0, 431, 402
+IDD_BG_BITMAP DIALOGEX 0, 0, 431, 422
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Background Editor"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
@@ -1439,7 +1452,7 @@ BEGIN
     LTEXT           "Heading",IDC_STATIC,134,353,28,8
     LTEXT           "Number of stars:",IDC_STATIC,227,325,52,8
     LTEXT           "Static",IDC_TOTAL,283,325,43,8
-    GROUPBOX        "Misc",IDC_STATIC,220,314,206,79
+    GROUPBOX        "Misc",IDC_STATIC,220,314,206,99
     GROUPBOX        "Suns",IDC_STATIC,220,23,206,124
     GROUPBOX        "Bitmaps",IDC_STATIC,5,23,210,145
     LTEXT           "Scale",IDC_STATIC,340,108,19,8
@@ -1506,6 +1519,8 @@ BEGIN
     LTEXT           "B",IDC_STATIC,176,281,8,8
     CONTROL         "Save sun/bitmap angles to mission file in correct format",IDC_CORRECTED_ANGLES_IN_MISSION_FILE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,380,195,10
+    COMBOBOX        IDC_LIGHT_PROFILE,319,394,93,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Lighting Profile",IDC_STATIC,227,397,88,8
 END
 
 IDD_REINFORCEMENT_EDITOR DIALOGEX 0, 0, 183, 119
@@ -1538,12 +1553,36 @@ END
 
 IDD_WAYPOINT_PATH_EDITOR DIALOG 0, 0, 145, 29
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Waypoint Path/Jump Node Editor"
+CAPTION "Waypoint Path Editor"
 MENU IDR_WAYPOINT_PATH_EDIT_MENU
 FONT 8, "MS Sans Serif"
 BEGIN
     LTEXT           "Name",IDC_STATIC,7,10,20,8
     EDITTEXT        IDC_NAME,32,7,106,14,ES_AUTOHSCROLL
+END
+
+IDD_JUMPNODE_EDITOR DIALOGEX 0, 0, 145, 120
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Jump Node Editor"
+MENU IDR_JUMPNODE_EDIT_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    LTEXT           "Name",IDC_STATIC,7,9,20,8
+    EDITTEXT        IDC_NAME,32,7,106,14,ES_AUTOHSCROLL
+    LTEXT           "Display Name",IDC_STATIC,7,25,48,8
+    EDITTEXT        IDC_ALT_NAME,54,22,84,14,ES_AUTOHSCROLL
+    LTEXT           "Model File",IDC_STATIC,7,46,48,8
+    EDITTEXT        IDC_MODEL_FILENAME,44,43,94,14,ES_AUTOHSCROLL
+    LTEXT           "R",IDC_STATIC,9,78,8,8
+    EDITTEXT        IDC_NODE_R,16,75,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "G",IDC_STATIC,42,78,8,8
+    EDITTEXT        IDC_NODE_G,49,75,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "B",IDC_STATIC,76,78,8,8
+    EDITTEXT        IDC_NODE_B,82,75,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "A",IDC_STATIC,108,78,8,8
+    EDITTEXT        IDC_NODE_A,115,75,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Hidden By Default",IDC_NODE_HIDDEN,"Button",BS_3STATE | WS_TABSTOP,7,97,70,10
+    LTEXT           "Node Color",IDC_STATIC,7,65,48,8
 END
 
 IDD_WING_CREATE DIALOG 0, 0, 119, 68
@@ -1657,6 +1696,8 @@ BEGIN
     LISTBOX         IDC_FIELD_TARGET_LIST,385,70,151,60,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Add",IDC_ADD_FIELD_TARGET,385,136,41,14
     PUSHBUTTON      "Remove",IDC_REMOVE_FIELD_TARGET,430,136,40,14
+    CONTROL         "Use enhanced spawn checking",IDC_RANGE_OVERRIDE, "Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,163,130,10
+    LTEXT           "(By default player range is checked in addition to the player view cone for spawning asteroids. In small fields you may want to override this behavior.)",IDC_STATIC,192,176,155,26
 END
 
 IDD_CAMPAIGN DIALOGEX 0, 0, 270, 441
@@ -2115,12 +2156,12 @@ BEGIN
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 226
+IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 256
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,214
+    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,234
     GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
     LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
     EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,44,12,ES_AUTOHSCROLL
@@ -2144,26 +2185,26 @@ BEGIN
     CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,116,10
     PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,200,120,14
-    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,214
-    GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,76
-    EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,56,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
-    LTEXT           "$name - name of the message\r\n$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n\r\nNote that $persona and $sender will only appear for the Message section.",IDC_STATIC,270,28,120,58
-    GROUPBOX        "Export",IDC_EXPORT,276,98,119,83
-    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,280,108,99,9
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,234
+    GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,101
+    EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,83,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
+    LTEXT           "$name - name of the message\r\n$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n$note - message notes\r\n\r\nNote that $persona and $sender will only appear for the Message section.",IDC_STATIC,270,28,120,85
+    GROUPBOX        "Export",IDC_EXPORT,276,121,119,83
+    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,280,131,99,9
     CONTROL         "Just Command Briefings",IDC_EXPORT_COMMAND_BRIEFINGS,
-                    "Button",BS_AUTORADIOBUTTON,280,118,99,9
-    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,128,99,9
-    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,138,99,9
-    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,280,148,99,9
-    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,275,185,120,30
+                    "Button",BS_AUTORADIOBUTTON,280,141,99,9
+    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,151,99,9
+    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,161,99,9
+    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,280,171,99,9
+    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,275,208,120,30
     CONTROL         "Group send-message-list messages before others",IDC_GROUP_MESSAGES,
-                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,293,159,100,19
-    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,98,119,118
-    PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,154,128,109,14
-    PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,145,109,14
-    PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,188,109,23,BS_MULTILINE
-    PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,162,109,23,BS_MULTILINE
-    LTEXT           "NOTE: Only wingman personas are modified here.",IDC_LBL_NOTE,155,109,107,16
+                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,293,182,100,19
+    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,121,119,118
+    PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,154,151,109,14
+    PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,168,109,14
+    PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,211,109,23,BS_MULTILINE
+    PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,185,109,23,BS_MULTILINE
+    LTEXT           "NOTE: Only wingman personas are modified here.",IDC_LBL_NOTE,155,132,107,16
 END
 
 IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54
@@ -2249,13 +2290,13 @@ BEGIN
     PUSHBUTTON      "IDB_PLAY",IDC_PLAY,235,62,17,15,BS_BITMAP,WS_EX_TRANSPARENT
 END
 
-IDD_WARP_PARAMS DIALOGEX 0, 0, 271, 252
+IDD_WARP_PARAMS DIALOGEX 0, 0, 271, 271
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Warp Parameters"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,161,231,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,214,231,50,14
+    DEFPUSHBUTTON   "OK",IDOK,161,250,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,214,250,50,14
     LTEXT           "Warp Type",IDC_STATIC,7,41,99,8
     COMBOBOX        IDC_WARP_TYPE,161,39,103,196,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Start Sound",IDC_STATIC,7,60,99,8
@@ -2267,7 +2308,8 @@ BEGIN
     LTEXT           "Acceleration Exponent (Hyperspace Only)",IDC_ACCEL_EXP_LABEL,7,155,143,8,WS_DISABLED
     LTEXT           "Radius",IDC_STATIC,7,174,99,8
     LTEXT           "Animation (Homeworld Only)",IDC_ANIM_LABEL,7,193,99,8,WS_DISABLED
-    LTEXT           "Player Warpout Speed",IDC_PLAYER_WARPOUT_SPEED_LABEL,7,212,99,8,WS_DISABLED
+    LTEXT           "Supercap Warp Physics",IDC_STATIC,7,212,99,8
+    LTEXT           "Player Warpout Speed",IDC_PLAYER_WARPOUT_SPEED_LABEL,7,231,99,8,WS_DISABLED
     EDITTEXT        IDC_END_SOUND,161,77,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_WARPOUT_ENGAGE_TIME,161,96,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_SPEED,161,115,103,12,ES_AUTOHSCROLL
@@ -2275,7 +2317,8 @@ BEGIN
     EDITTEXT        IDC_ACCEL_EXP,161,153,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_RADIUS,161,172,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_ANIM,161,191,103,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,210,103,12,ES_AUTOHSCROLL
+    CONTROL         "",IDC_SUPERCAP_WARP_PHYSICS,"Button",BS_AUTOCHECKBOX,161,210,103,12
+    EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,229,103,12,ES_AUTOHSCROLL
     LTEXT           "All of these parameters are optional, and a mission designer will usually not need to override more than one or two.  These parameters are the same as those found in ships.tbl.",IDC_STATIC,7,7,257,29
 END
 
@@ -2439,6 +2482,24 @@ BEGIN
     PUSHBUTTON      "Set Sub Noise Function",IDC_NOISE_SUB,410,190,118,14,WS_DISABLED
 END
 
+IDD_EDIT_CUSTOM_DATA DIALOGEX 0, 0, 441, 238
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Edit Mission Custom Data"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",ID_OK,15,208,53,14
+    PUSHBUTTON      "Cancel",ID_CANCEL,73,208,53,14
+    LISTBOX         IDC_CUSTOM_DATA_LISTER,133,16,289,206,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Value",IDC_STATIC,15,46,50,8
+    LTEXT           "Key",IDC_STATIC,15,16,13,8
+    EDITTEXT        IDC_CUSTOM_KEY,15,28,111,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_CUSTOM_DATA,15,57,112,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Add",IDC_CUSTOM_ADD,15,75,111,15
+    PUSHBUTTON      "Remove",IDC_CUSTOM_REMOVE,73,92,53,14
+    PUSHBUTTON      "Update",IDC_CUSTOM_UPDATE,15,92,53,14
+    LTEXT           "",IDC_CUSTOM_DATA_DESC,16,110,110,92
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2500,7 +2561,6 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 315
         TOPMARGIN, 7
-        BOTTOMMARGIN, 490
     END
 
     IDD_WEAPON_EDITOR, DIALOG
@@ -2581,7 +2641,7 @@ BEGIN
         VERTGUIDE, 215
         VERTGUIDE, 220
         VERTGUIDE, 426
-        BOTTOMMARGIN, 393
+        BOTTOMMARGIN, 413
         HORZGUIDE, 126
         HORZGUIDE, 132
     END
@@ -2608,6 +2668,14 @@ BEGIN
         RIGHTMARGIN, 138
         TOPMARGIN, 7
         BOTTOMMARGIN, 22
+    END
+
+    IDD_JUMPNODE_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 138
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 113
     END
 
     IDD_WING_CREATE, DIALOG
@@ -2801,7 +2869,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 400
         TOPMARGIN, 7
-        BOTTOMMARGIN, 211
+        BOTTOMMARGIN, 241
     END
 
     IDD_CUSTOM_WING_NAMES, DIALOG
@@ -2885,6 +2953,14 @@ BEGIN
         RIGHTMARGIN, 534
         TOPMARGIN, 7
         BOTTOMMARGIN, 208
+    END
+
+    IDD_EDIT_CUSTOM_DATA, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 434
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 231
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -3176,6 +3252,7 @@ BEGIN
     25, 100, 0, 0,
     25, 100, 0, 0,
     25, 100, 0, 0,
+    50, 50, 0, 0,
     50, 50, 0, 0
 END
 
@@ -3200,6 +3277,16 @@ BEGIN
 END
 
 IDD_VOLUMETRICS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_JUMPNODE_EDITOR AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_EDIT_CUSTOM_DATA AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

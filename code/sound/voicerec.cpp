@@ -56,10 +56,13 @@
 
 // FreeSpace includes
 #include "cfile/cfile.h"
+#include "gamesequence/gamesequence.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
 #include "osapi/osapi.h"
 #include "playerman/player.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
 #include "ship/ship.h"
 
 #include <SDL_syswm.h>
@@ -88,7 +91,7 @@ namespace
 		switch (e.syswm.msg->msg.win.msg)
 		{
 		case WM_RECOEVENT:
-			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
+			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition && gameseq_get_state() != GS_STATE_GAME_PAUSED && !popup_active() && !popupdead_is_active())
 			{
 				VOICEREC_process_event(e.syswm.msg->msg.win.hwnd);
 				return true;

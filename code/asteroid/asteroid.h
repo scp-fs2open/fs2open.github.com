@@ -143,6 +143,7 @@ typedef	struct asteroid_field {
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 	int				num_used_field_debris_types;	// how many of the above are used
+	bool            enhanced_visibility_checks;     // if true then range checks are overridden for spawning and wrapping asteroids in the field
 
 	SCP_vector<SCP_string> target_names;	// default retail behavior is to just throw at the first big ship in the field
 } asteroid_field;
@@ -158,11 +159,12 @@ extern vec3d	Asteroid_icon_closeup_position;  // closeup position for asteroid f
 extern float	Asteroid_icon_closeup_zoom;		 // zoom position for asteroid field briefing icon rendering
 
 void	asteroid_init();
+bool    asteroid_is_within_view(vec3d *pos, float range, bool range_override = false);
 void	asteroid_level_init();
 void	asteroid_level_close();
 void	asteroid_create_all();
 void	asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets);
-void	asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max);
+void	asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max, bool enhanced);
 void	asteroid_render(object* obj, model_draw_list* scene);
 void	asteroid_delete( object *asteroid_objp );
 void	asteroid_process_pre( object *asteroid_objp );
@@ -176,6 +178,9 @@ void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
 void asteroid_add_target(object* objp);
 int get_asteroid_index(const char* asteroid_name);
+
+// need to extern for keycontrol debug commands
+object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility = false);
 
 // need to extern for multiplayer
 void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec);

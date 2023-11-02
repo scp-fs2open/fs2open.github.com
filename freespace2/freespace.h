@@ -150,7 +150,7 @@ bool game_using_low_mem();
 // misc ---------------------------------------------------------------
 
 // lookup the specified filename. return an fs_builtin_mission* if found, NULL otherwise
-fs_builtin_mission *game_find_builtin_mission(char *filename);
+const fs_builtin_mission *game_find_builtin_mission(const char *filename);
 
 
 

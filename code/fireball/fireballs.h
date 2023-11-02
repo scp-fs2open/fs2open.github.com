@@ -40,8 +40,6 @@ class asteroid_info;
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
-#define MAX_FIREBALLS	200
-
 extern int fireball_used[MAX_FIREBALL_TYPES];
 
 // all this moved here by Goober5000 because it makes more sense in the H file
@@ -94,6 +92,9 @@ typedef struct fireball {
 	gamesnd_id warp_close_sound_index;
 	float	warp_open_duration;
 	float	warp_close_duration;
+
+	// the sound multiplier is based on the ship class, but we lose that while the warp is closing
+	float	warp_sound_range_multiplier;
 } fireball;
 // end move
 

@@ -93,6 +93,7 @@ public:
 	int m_skybox_heading;
 	float m_neb_near_multi;
 	float m_neb_far_multi;
+	int m_light_profile_index;
 	//}}AFX_DATA
 
 // Overrides

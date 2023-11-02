@@ -240,7 +240,7 @@ class sexp_tree: public QTreeWidget {
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
-	SCP_string match_closest_operator(const SCP_string &str, int node);
+	const SCP_string &match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char* var_name);
 	void modify_sexp_tree_variable(const char* old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -356,8 +356,10 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 	sexp_list_item *get_listing_opf_wing_formation();
-	sexp_list_item* check_for_dynamic_sexp_enum(int opf);
-	sexp_list_item* get_listing_opf_bolt_types();
+	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
+	sexp_list_item *get_listing_opf_bolt_types();
+	sexp_list_item *get_listing_opf_traitor_overrides();
+	sexp_list_item *get_listing_opf_lua_general_orders();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

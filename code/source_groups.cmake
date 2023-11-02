@@ -287,6 +287,7 @@ add_file_folder("Default files\\\\data\\\\maps"
 
 add_file_folder("Default files\\\\data\\\\scripts"
 	def_files/data/scripts/cfile_require.lua
+	def_files/data/scripts/dkjson.lua
 )
 
 add_file_folder("Default files\\\\data\\\\tables"
@@ -399,6 +400,7 @@ add_file_folder("GlobalIncs"
 	globalincs/toolchain.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
+	globalincs/utility.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h

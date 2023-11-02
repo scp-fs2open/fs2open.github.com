@@ -128,6 +128,17 @@ public:
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
+class VirtualPOFOperationChangeSubsystemData : public VirtualPOFOperation {
+	SCP_string subsystem;
+	tl::optional<vec3d> setPosition = tl::nullopt;
+	tl::optional<float> setRadius = tl::nullopt;
+	tl::optional<SCP_string> setProperties = tl::nullopt;
+	bool propertyReplace = true;
+public:
+	VirtualPOFOperationChangeSubsystemData();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
 class VirtualPOFOperationHeaderData : public VirtualPOFOperation {
 	tl::optional<float> radius = tl::nullopt;
 	tl::optional<std::pair<vec3d, vec3d>> boundingbox = tl::nullopt;

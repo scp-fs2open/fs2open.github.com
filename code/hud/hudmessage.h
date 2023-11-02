@@ -18,6 +18,7 @@
 
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
 
+// If these are changed, the lua 'addMessageToScrollback' method in mission.cpp should be updated.
 #define HUD_SOURCE_COMPUTER		0
 #define HUD_SOURCE_TRAINING		1
 #define HUD_SOURCE_HIDDEN		2

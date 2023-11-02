@@ -32,13 +32,15 @@ DECLARE_ADE_OBJ(l_Player, player_h);
 class scoring_stats_h {
 	scoring_struct _score;
 	bool _valid = false;
+	player *_plr = nullptr;
   public:
 	scoring_stats_h();
-	scoring_stats_h(const scoring_struct& stats);
+	scoring_stats_h(const scoring_struct& stats, player *player);
 
 	bool isValid() const;
 
 	scoring_struct* get();
+	player* getPlayer();
 };
 
 DECLARE_ADE_OBJ(l_ScoringStats, scoring_stats_h);

@@ -211,7 +211,7 @@ void CFREDDoc::editor_init_mission() {
 	recreate_dialogs();
 }
 
-bool CFREDDoc::load_mission(char *pathname, int flags) {
+bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// make sure we're in the correct working directory!!!!!!
 	chdir(Fred_base_dir);
 
@@ -425,7 +425,7 @@ void CFREDDoc::OnFileImportFSM() {
 
 	memset(dest_directory, 0, sizeof(dest_directory));
 
-	// get location to save to    
+	// get location to save to
 	BROWSEINFO bi;
 	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
 	//bi.pidlRoot = &fs2_mission_pidl;
@@ -450,15 +450,18 @@ void CFREDDoc::OnFileImportFSM() {
 
 	clear_mission();
 
+	int num_files = 0;
+	char dest_path[MAX_PATH_LEN];
+
 	// process all missions
 	POSITION pos(dlgFile.GetStartPosition());
 	while (pos) {
 		char *ch;
 		char filename[1024];
 		char fs1_path[MAX_PATH_LEN];
-		char dest_path[MAX_PATH_LEN];
 
 		CString fs1_path_mfc(dlgFile.GetNextPathName(pos));
+		num_files++;
 		CFred_mission_save save;
 
 		DWORD attrib;
@@ -518,9 +521,25 @@ void CFREDDoc::OnFileImportFSM() {
 		// success
 	}
 
-	create_new_mission();
+	if (num_files > 1)
+	{
+		create_new_mission();
+		MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+	}
+	else if (num_files == 1)
+	{
+		SetModifiedFlag(FALSE);
 
-	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+		if (Briefing_dialog) {
+			Briefing_dialog->restore_editor_state();
+			Briefing_dialog->update_data(1);
+		}
+
+		// these aren't done automatically for imports
+		theApp.AddToRecentFileList((LPCTSTR)dest_path);
+		SetTitle((LPCTSTR)Mission_filename);
+	}
+
 	recreate_dialogs();
 }
 
@@ -535,32 +554,23 @@ BOOL CFREDDoc::OnNewDocument() {
 }
 
 BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
-	char name[1024];
-
-	if (pathname)
-		strcpy_s(mission_pathname, pathname);
-
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
 
-	auto len = strlen(mission_pathname);
-	strcpy_s(name, mission_pathname);
-	if (name[len - 4] == '.')
-		len -= 4;
+	auto sep_ch = strrchr(pathname, '\\');
+	auto filename = (sep_ch != nullptr) ? (sep_ch + 1) : pathname;
+	auto len = strlen(filename);
 
-	name[len] = 0;  // drop extension
-	auto i = len;
-	while (i--)
-		if ((name[i] == '\\') || (name[i] == ':'))
-			break;
+	// drop extension and copy to Mission_filename
+	auto ext_ch = strrchr(filename, '.');
+	if (ext_ch != nullptr)
+		len = ext_ch - filename;
+	if (len >= 80)
+		len = 79;
+	strncpy(Mission_filename, filename, len);
+	Mission_filename[len] = 0;
 
-	strcpy_s(Mission_filename, name + i + 1);
-	//	for (i=1; i<=BACKUP_DEPTH; i++) {
-	//		sprintf(name + len, ".%.3d", i);
-	//		unlink(name);
-	//	}
-
-	if (!load_mission(mission_pathname)) {
+	if (!load_mission(pathname)) {
 		*Mission_filename = 0;
 		return FALSE;
 	}
@@ -571,23 +581,34 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	return TRUE;
 }
 
+// For tokenizing
+#define MAX_FILENAME_LEN_1	31
+#if (MAX_FILENAME_LEN_1) != (MAX_FILENAME_LEN - 1)
+#error MAX_FILENAME_LEN_1 must be equal to MAX_FILENAME_LEN - 1!
+#endif
+
 BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	CFred_mission_save save;
-	char name[1024];
 	DWORD attrib;
 	FILE *fp;
 
-	auto len = strlen(pathname);
-	strcpy_s(name, pathname);
-	if (name[len - 4] == '.')
-		len -= 4;
+	auto sep_ch = strrchr(pathname, '\\');
+	auto filename = (sep_ch != nullptr) ? (sep_ch + 1) : pathname;
+	auto len = strlen(filename);
 
-	name[len] = 0;  // drop extension
-	while (len--)
-		if ((name[len] == '\\') || (name[len] == ':'))
-			break;
+	if (len >= MAX_FILENAME_LEN)
+		Fred_main_wnd->MessageBox("The filename is too long for FreeSpace.  The game will not be able to read this file.  Max length, including extension, is " SCP_TOKEN_TO_STR(MAX_FILENAME_LEN_1) " characters.", NULL, MB_OK | MB_ICONEXCLAMATION);
 
-	strcpy_s(Mission_filename, name + len + 1);
+	// drop extension and copy to Mission_filename
+	auto ext_ch = strrchr(filename, '.');
+	if (ext_ch != nullptr)
+		len = ext_ch - filename;
+	if (len >= 80)
+		len = 79;
+	strncpy(Mission_filename, filename, len);
+	Mission_filename[len] = 0;
+
+
 	Fred_view_wnd->global_error_check();
 	if (Briefing_dialog) {
 		Briefing_dialog->update_data(1);
@@ -610,13 +631,13 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 		}
 	}
 
-	if (save.save_mission_file((char *) pathname)) {
+	if (save.save_mission_file(pathname)) {
 		Fred_main_wnd->MessageBox("An error occured while saving!", NULL, MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
 	SetModifiedFlag(FALSE);
-	if (!load_mission((char *) pathname))
+	if (!load_mission(pathname))
 		Error(LOCATION, "Failed attempting to reload mission after saving.  Report this bug now!");
 
 	if (Briefing_dialog) {
@@ -625,7 +646,6 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	}
 
 	return TRUE;
-	//	return CDocument::OnSaveDocument(pathname);
 }
 
 void CFREDDoc::Serialize(CArchive& ar) {

@@ -14,7 +14,7 @@ struct adjustment {
 	float base;
 	bool only_positive = true;
 
-	float handle(float input);
+	float handle(float input) const;
 	void reset();
 	void set_adjust(const float in);
 	void set_multiplier(const float in);
@@ -31,10 +31,15 @@ struct adjustment {
 	bool read_multiplier(float* out) const;
 	bool read_adjust(float* out) const;
 
-  private:
+	adjustment() = default ;
+	adjustment(const adjustment& rhs);
+	//adjustment(const adjustment& lhs, const adjustment& rhs, const float& fact);
+	adjustment& operator= (const adjustment& rhs);
+
+private:
 	bool has_adjust = false;
 	float adjust;
-	bool has_multiplier = false;
+	bool has_multiplier=false;
 	float multipier;
 	bool has_minimum = false;
 	float minimum;

@@ -217,10 +217,13 @@ protected:
 	afx_msg void OnEditorsReinforcement();
 	afx_msg void OnErrorChecker();
 	afx_msg void OnEditorsWaypoint();
+	afx_msg void OnEditorsJumpnode();
 	afx_msg void OnViewOutlines();
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
 	afx_msg void OnViewOutlinesOnSelected();
 	afx_msg void OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI);
+	afx_msg void OnViewOutlineAtWarpin();
+	afx_msg void OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);

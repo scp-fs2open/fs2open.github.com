@@ -13,6 +13,7 @@
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
+#include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "scripting/api/LuaEventCallback.h"
@@ -148,6 +149,9 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 			waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objh->objp));
 			wpt->set_pos(v3);
 		}
+
+		if (objh->objp->flags[Object::Object_Flags::Collides])
+			obj_collide_obj_cache_stale(objh->objp);
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
@@ -182,6 +186,9 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 
 	if(ADE_SETTING_VAR && mh != NULL) {
 		objh->objp->orient = *mh->GetMatrix();
+
+		if (objh->objp->flags[Object::Object_Flags::Collides])
+			obj_collide_obj_cache_stale(objh->objp);
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));

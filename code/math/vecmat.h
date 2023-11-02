@@ -73,6 +73,7 @@ extern void vm_set_identity(matrix *m);
 
 extern angles vm_angles_new(float p, float b, float h);
 extern vec3d vm_vec_new(float x, float y, float z);
+extern vec4 vm_vec4_new(float x, float y, float z, float w);
 extern matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8);
 extern matrix vm_matrix_new(vec3d rvec, vec3d uvec, vec3d fvec);
 
@@ -564,7 +565,7 @@ void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
 
 void vm_matrix4_get_orientation(matrix *out, const matrix4 *m);
 
-void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
+void vm_matrix4_get_offset(vec3d *out, const matrix4 *m);
 
 void vm_vec_transform(vec4 *dest, const vec4 *src, const matrix4 *m);
 void vm_vec_transform(vec3d *dest, const vec3d *src, const matrix4 *m, bool pos = true);
@@ -666,6 +667,12 @@ inline vec3d operator*(const vec3d& left, float right)
 {
 	vec3d out;
 	vm_vec_copy_scale(&out, &left, right);
+	return out;
+}
+inline vec3d operator*(float left, const vec3d& right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &right, left);
 	return out;
 }
 inline vec3d& operator*=(vec3d& left, float right)
