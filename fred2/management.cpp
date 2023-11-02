@@ -833,6 +833,8 @@ void clear_mission()
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
 
+	apply_default_custom_data(&The_mission);
+
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
 		strcpy_s(Fred_alt_names[i], "");

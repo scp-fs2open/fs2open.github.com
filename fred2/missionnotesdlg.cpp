@@ -152,6 +152,7 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_CONTRAIL_THRESHOLD_CHECK, OnToggleContrailThreshold)
 	ON_BN_CLICKED(IDC_CUSTOM_WING_NAMES, OnCustomWingNames)
 	ON_BN_CLICKED(IDC_SOUND_ENVIRONMENT_BUTTON, OnSoundEnvironment)
+	ON_BN_CLICKED(IDC_OPEN_CUSTOM_DATA, OnCustomData)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -705,6 +706,16 @@ void CMissionNotesDlg::OnSoundEnvironment()
 	UpdateData(TRUE);
 
 	SoundEnvironment dlg;
+	dlg.DoModal();
+
+	UpdateData(FALSE);
+}
+
+void CMissionNotesDlg::OnCustomData()
+{
+	UpdateData(TRUE);
+
+	CustomDataDlg dlg;
 	dlg.DoModal();
 
 	UpdateData(FALSE);

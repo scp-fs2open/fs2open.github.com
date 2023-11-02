@@ -39,6 +39,8 @@ set(FRED2_SOURCES
 	cmdbrief.h
 	createwingdlg.cpp
 	createwingdlg.h
+	customdatadlg.cpp
+	customdatadlg.h
 	customwingnames.cpp
 	customwingnames.h
 	debriefingeditordlg.cpp

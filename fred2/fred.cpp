@@ -140,6 +140,7 @@ window_data MusPlayer_wnd_data;
 window_data Starfield_wnd_data;
 window_data Asteroid_wnd_data;
 window_data Mission_notes_wnd_data;
+window_data Custom_data_wnd_data;
 
 float Sun_spot = 0.0f;	//!< Used to help link FRED with the codebase
 
@@ -260,6 +261,7 @@ BOOL CFREDApp::InitInstance() {
 	read_window("Starfield window", &Starfield_wnd_data);
 	read_window("Asteroid window", &Asteroid_wnd_data);
 	read_window("Mission notes window", &Mission_notes_wnd_data);
+	read_window("Custom data window", &Custom_data_wnd_data);
 	write_ini_file(1);
 
 	// Register the application's document templates.  Document templates
@@ -546,6 +548,7 @@ void CFREDApp::write_ini_file(int degree) {
 		write_window("Starfield window", &Starfield_wnd_data);
 		write_window("Asteroid window", &Asteroid_wnd_data);
 		write_window("Mission notes window", &Mission_notes_wnd_data);
+		write_window("Custom data window", &Custom_data_wnd_data);
 	}
 	m_pRecentFileList->WriteList();
 }

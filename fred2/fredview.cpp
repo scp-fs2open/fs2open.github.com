@@ -60,6 +60,7 @@
 #include "calcrelativecoordsdlg.h"
 #include "musicplayerdlg.h"
 #include "volumetricsdlg.h"
+#include "customdatadlg.h"
 
 #include "osapi/osapi.h"
 
