@@ -1303,7 +1303,7 @@ void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float 
 // If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
 // (rvec defaults to NULL)
 // optionally specified turnrate_mod contains multipliers for each component of the turnrate (RATE, so 0.5 = slower)
-void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* rel_pos, float bank_override, int flags, vec3d* rvec, vec3d* turnrate_mod)
+void ai_turn_towards_vector(const vec3d* dest, object* objp, const vec3d* slide_vec, const vec3d* rel_pos, float bank_override, int flags, const vec3d* rvec, const vec3d* turnrate_mod)
 {
 	matrix	curr_orient;
 	vec3d	vel_in, vel_out, desired_fvec, src;
@@ -3464,11 +3464,18 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 
 //	Cause a ship to fly its waypoints.
 //	flags tells:
-//		WPF_REPEAT	Set -> repeat waypoints.
-void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
+//		WPF_REPEAT		Set -> repeat waypoints.
+//		WPF_BACKTRACK	Go in reverse.
+void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags, int start_index)
 {
 	ai_info	*aip;
 	Assert(wp_list != NULL);
+
+	if (start_index < 0 || start_index >= (int)wp_list->get_waypoints().size())
+	{
+		Warning(LOCATION, "Starting index for %s on '%s' is out of range!", Ships[objp->instance].ship_name, wp_list->get_name());
+		start_index = (wp_flags & WPF_BACKTRACK) ? (int)wp_list->get_waypoints().size() - 1 : 0;
+	}
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -3477,7 +3484,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
 			Warning(LOCATION, "aip->wp_index should have been assigned already!");
-			aip->wp_index = 0;
+			aip->wp_index = start_index;
 		}
 		return;
 	}
@@ -3493,7 +3500,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 	aip->ai_flags.remove(AI::AI_Flags::Formation_object);
 
 	aip->wp_list = wp_list;
-	aip->wp_index = 0;
+	aip->wp_index = start_index;
 	aip->wp_flags = wp_flags;
 	aip->mode = AIM_WAYPOINTS;
 
@@ -4510,7 +4517,7 @@ void ai_safety()
 // optionally returns true if Pl_objp's (pl_treat_as_ship_p) fly to order was issued to him directly,
 // or if the order was issued to his wing (returns false) (can be NULL, and result is only
 // valid if Pl_done_p was not NULL and was set true by function.
-void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl_treat_as_ship_p=NULL)
+void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bool* pl_treat_as_ship_p=NULL)
 {
 	float		dot, dist_to_goal;
 	ship		*shipp = &Ships[Pl_objp->instance];
@@ -4842,11 +4849,11 @@ void ai_waypoints()
 	// sanity checking for stuff that should never happen
 	if (aip->wp_index == INVALID_WAYPOINT_POSITION) {
 		if (aip->wp_list == NULL) {
-			Warning(LOCATION, "Waypoints should have been assigned already!");
-			ai_start_waypoints(Pl_objp, &Waypoint_lists.front(), WPF_REPEAT);
+			UNREACHABLE("Waypoints should have been assigned already!");
+			ai_start_waypoints(Pl_objp, &Waypoint_lists.front(), WPF_REPEAT, 0);
 		} else {
-			Warning(LOCATION, "Waypoints should have been started already!");
-			ai_start_waypoints(Pl_objp, aip->wp_list, WPF_REPEAT);
+			UNREACHABLE("Waypoints should have been started already!");
+			ai_start_waypoints(Pl_objp, aip->wp_list, WPF_REPEAT, 0);
 		}
 	}
 	
@@ -4856,17 +4863,32 @@ void ai_waypoints()
 	ai_fly_to_target_position(aip->wp_list->get_waypoints()[aip->wp_index].get_pos(), &done, &treat_as_ship);
 
 	if ( done ) {
+		bool reached_end;
 		// go on to next waypoint in path
-		++aip->wp_index;
+		if (aip->wp_flags & WPF_BACKTRACK) {
+			--aip->wp_index;
+			reached_end = (aip->wp_index == -1);
+		} else {
+			++aip->wp_index;
+			reached_end = (aip->wp_index == (int)aip->wp_list->get_waypoints().size());
+		}
 
-		if ( aip->wp_index == aip->wp_list->get_waypoints().size() ) {
+		if (reached_end) {
 			// have reached the last waypoint.  Do I repeat?
 			if ( aip->wp_flags & WPF_REPEAT ) {
 				 // go back to the start.
-				aip->wp_index = 0;
+				if (aip->wp_flags & WPF_BACKTRACK) {
+					aip->wp_index = (int)aip->wp_list->get_waypoints().size() - 1;
+				} else {
+					aip->wp_index = 0;
+				}
 			} else {
 				// stay on the last waypoint.
-				--aip->wp_index;
+				if (aip->wp_flags & WPF_BACKTRACK) {
+					++aip->wp_index;
+				} else {
+					--aip->wp_index;
+				}
 
 				// Log a message that the wing or ship reached his waypoint and
 				// remove the goal from the AI goals of the ship pr wing, respectively.
@@ -12477,7 +12499,6 @@ int ai_formation()
 	}
 	
 	if (aip->mode == AIM_WAYPOINTS) {
-
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_path_order_bug]){
 			// skip if wing leader has no waypoint order or a different waypoint list
 			if ((laip->mode != AIM_WAYPOINTS) || !(aip->wp_list == laip->wp_list)){
@@ -12489,8 +12510,15 @@ int ai_formation()
 		aip->wp_index = laip->wp_index;
 		aip->wp_flags = laip->wp_flags;
 
-		if ((aip->wp_list != NULL) && (aip->wp_index == aip->wp_list->get_waypoints().size()))
-			--aip->wp_index;
+		if (aip->wp_list != nullptr) {
+			if (aip->wp_flags & WPF_BACKTRACK) {
+				if (aip->wp_index == -1)
+					++aip->wp_index;
+			} else {
+				if (aip->wp_index == (int)aip->wp_list->get_waypoints().size())
+					--aip->wp_index;
+			}
+		}
 	}
 
 	#ifndef NDEBUG

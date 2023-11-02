@@ -96,9 +96,8 @@ bool WaypointEditorDialogModel::apply() {
 			}
 		}
 
-		SCP_list<waypoint_list>::iterator ii;
-		for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-			if (!stricmp(ii->get_name(), _currentName.c_str()) && (&(*ii) != _editor->cur_waypoint_list)) {
+		for (const auto &ii: Waypoint_lists) {
+			if (!stricmp(ii.get_name(), _currentName.c_str()) && (&ii != _editor->cur_waypoint_list)) {
 				if (showErrorDialog("This waypoint path name is already being used by another waypoint path\n"
 										"Press OK to restore old name", "Error")) {
 					return false;
@@ -131,10 +130,10 @@ bool WaypointEditorDialogModel::apply() {
 
 
 		strcpy_s(old_name, _editor->cur_waypoint_list->get_name());
-		strcpy_s(_editor->cur_waypoint_list->get_name(), NAME_LENGTH, _currentName.c_str());
-
 		str = _currentName.c_str();
+		_editor->cur_waypoint_list->set_name(str);
 		if (strcmp(old_name, str) != 0) {
+			modified = true;
 			update_sexp_references(old_name, str);
 			_editor->ai_update_goal_references(sexp_ref_type::WAYPOINT, old_name, str);
 			_editor->update_texture_replacements(old_name, str);
@@ -285,7 +284,7 @@ const SCP_vector<WaypointEditorDialogModel::PointListElement>& WaypointEditorDia
 }
 void WaypointEditorDialogModel::updateElementList() {
 	int i;
-	SCP_list<waypoint_list>::iterator ii;
+	SCP_vector<waypoint_list>::iterator ii;
 	SCP_list<CJumpNode>::iterator jnp;
 
 	_elements.clear();

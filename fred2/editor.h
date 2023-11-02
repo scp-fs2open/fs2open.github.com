@@ -30,6 +30,6 @@ vec3d Grid_center;
 
 int Show_stars;
 
-void rpd_line(vec3d *v0, vec3d *v1);
+void rpd_line(const vec3d *v0, const vec3d *v1);
 
 #endif	// _EDITOR_H

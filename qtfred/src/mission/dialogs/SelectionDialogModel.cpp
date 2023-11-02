@@ -43,7 +43,7 @@ void SelectionDialogModel::initializeData() {
 	}
 
 	_waypoint_list.clear();
-	SCP_list<waypoint_list>::iterator ii;
+	SCP_vector<waypoint_list>::iterator ii;
 	int i;
 	for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
 		ListEntry entry;

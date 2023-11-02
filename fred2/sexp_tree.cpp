@@ -6381,15 +6381,13 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
 sexp_list_item *sexp_tree::get_listing_opf_point()
 {
 	char buf[NAME_LENGTH+8];
-	SCP_list<waypoint_list>::iterator ii;
-	int j;
 	sexp_list_item head;
 
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
+	for (const auto &ii: Waypoint_lists)
 	{
-		for (j = 0; (uint) j < ii->get_waypoints().size(); ++j)
+		for (int j = 0; (uint) j < ii.get_waypoints().size(); ++j)
 		{
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			head.add_data(buf);
 		}
 	}
@@ -6860,11 +6858,10 @@ sexp_list_item *sexp_tree::get_listing_opf_explosion_option()
 
 sexp_list_item *sexp_tree::get_listing_opf_waypoint_path()
 {
-	SCP_list<waypoint_list>::iterator ii;
 	sexp_list_item head;
 
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
-		head.add_data(ii->get_name());
+	for (const auto &ii: Waypoint_lists)
+		head.add_data(ii.get_name());
 
 	return head.next;
 }

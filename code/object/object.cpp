@@ -504,8 +504,8 @@ void obj_free(int objnum)
  * The object will be a non-rendering, non-physics object.   Pass -1 if no parent.
  * @return the object number 
  */
-int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
+int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient,
+               const vec3d *pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
 {
 	int objnum;
 	object *obj;
