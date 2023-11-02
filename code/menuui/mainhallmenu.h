@@ -216,4 +216,6 @@ void main_hall_vasudan_funny();
 void main_hall_pause();
 void main_hall_unpause();
 
+void main_hall_toggle_help(bool enable);
+
 #endif

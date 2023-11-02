@@ -57,7 +57,7 @@ void opengl_clear_deferred_buffers()
 
 void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 {
-	if ( Cmdline_no_deferred_lighting)
+	if (!light_deferred_enabled())
 		return;
 
 	static const float black[] = {0, 0, 0, 1.0f};
@@ -149,7 +149,7 @@ void gr_opengl_deferred_lighting_msaa()
 	opengl_set_generic_uniform_data<graphics::generic_data::msaa_data>(
 		[&](graphics::generic_data::msaa_data* data) {
 			data->samples = Cmdline_msaa_enabled;
-			data->fov = Proj_fov;
+			data->fov = g3_get_hfov(Proj_fov);
 		});
 	GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_WRITE);
@@ -181,7 +181,7 @@ void gr_opengl_deferred_lighting_finish()
 	GR_DEBUG_SCOPE("Deferred lighting finish");
 	TRACE_SCOPE(tracing::ApplyLights);
 
-	if (Cmdline_no_deferred_lighting) {
+	if (!light_deferred_enabled()) {
 		return;
 	}
 
@@ -254,6 +254,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		header->nearPlane = gr_near_plane;
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;
@@ -480,7 +481,7 @@ void gr_opengl_deferred_lighting_finish()
 			data->noiseColorScale2 = std::get<1>(neb.getNoiseColorScale());
 			data->noiseColorIntensity = neb.getNoiseColorIntensity();
 			data->aspect = gr_screen.clip_aspect;
-			data->fov = Proj_fov;
+			data->fov = g3_get_hfov(Proj_fov);
 			});
 
 		{

@@ -66,6 +66,7 @@ public:
 	BOOL		m_toggle_showing_goals;
 	BOOL		m_end_to_mainhall;
 	BOOL		m_override_hashcommand;
+	BOOL        m_preload_subspace;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

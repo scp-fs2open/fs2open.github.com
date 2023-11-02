@@ -20,6 +20,7 @@
 #include "playerman/player.h"
 #include "mod_table/mod_table.h"
 
+#include <tl/optional.hpp>
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -62,7 +63,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1675
+// #define XSTR_SIZE	1784 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -481,6 +482,35 @@ void parse_tstringstbl(const char *filename)
 	parse_stringstbl_common(filename, true);
 }
 
+struct xstr_delayed_order {
+	SCP_string& toFill;
+	const char* name;
+	int xstr;
+};
+
+static void lcl_delayed_xstr_internal(tl::optional<xstr_delayed_order> to_init) {
+	static SCP_vector<xstr_delayed_order> delayed_init;
+
+	if (to_init) {
+		if (Xstr_inited)
+			to_init->toFill = XSTR(to_init->name, to_init->xstr);
+		else
+			delayed_init.emplace_back(std::move(*to_init));
+	}
+	else {
+		Assertion(Xstr_inited, "Tried to resolve delayed XSTR before XSTR init!");
+
+		for (const auto& delayed : delayed_init)
+			delayed.toFill = XSTR(delayed.name, delayed.xstr);
+
+		delayed_init.clear();
+	}
+}
+
+void lcl_delayed_xstr(SCP_string& str, const char* name, int xstr) {
+	lcl_delayed_xstr_internal(xstr_delayed_order{ str, name, xstr });
+}
+
 // initialize the xstr table
 void lcl_xstr_init()
 {
@@ -549,6 +579,8 @@ void lcl_xstr_init()
 
 
 	Xstr_inited = true;
+
+	lcl_delayed_xstr_internal(tl::nullopt);
 }
 
 
@@ -1183,9 +1215,14 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 {
 	if(!Xstr_inited)
 	{
+		//If you're here then you should use lcl_delayed_xstr instead!
 		Int3();
 		return str;
 	}
+
+#ifndef NDEBUG
+	nprintf(("XSTR", "Localizing String: %i, \"%s\"\n", index, str));
+#endif
 
 	// for some internal strings, such as the ones we loaded using $Has XStr:,
 	// we want to force a lookup even if we're normally untranslated

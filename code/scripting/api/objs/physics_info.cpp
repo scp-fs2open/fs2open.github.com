@@ -97,7 +97,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Physics, "number", "Forward acceleration 
 	return ade_set_args(L, "f", pih->pi->forward_accel_time_const);
 }
 
-ADE_VIRTVAR(ForwardDecelerationTime, l_Physics, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
+ADE_VIRTVAR(ForwardDecelerationTime, l_Physics, "number", "Forward deceleration time", "number", "Forward deceleration time, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
 	float f = 0.0f;

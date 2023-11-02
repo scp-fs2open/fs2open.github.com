@@ -2235,7 +2235,7 @@ BOOL std_create_standalone_window()
 						WS_POPUP, CW_USEDEFAULT, CW_USEDEFAULT, 10, 10,
 						NULL, NULL, hInst, NULL);
 
-	// create the propery sheet dialog itself
+	// create the property sheet dialog itself
 	std_init_property_sheet(NULL);
 
 	// this is kind of a big-ass hack. But here's what it does. Property sheets only 

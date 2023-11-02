@@ -100,6 +100,20 @@ class flagset {
 		return *this;
 	}
 
+	template<typename TIter>
+	flagset<T>& set_multiple_from_source(const flagset<T>& source, TIter begin, TIter end) {
+		auto current = begin;
+		while (current != end) {
+			if (source[*current]) {
+				set(*current, true);
+			}
+
+			current = std::next(current);
+		}
+
+		return *this;
+	}
+
 	flagset<T>& remove(T idx) {
 		return set(idx, false);
 	}

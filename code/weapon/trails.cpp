@@ -24,6 +24,21 @@
 static int Num_trails = 0;
 static trail Trails;
 
+void trail_info_init(trail_info* t_info) {
+	t_info->pt = vmd_zero_vector;
+	t_info->w_start = 0.0f;
+	t_info->w_end = 0.0f;
+	t_info->a_start = 0.0f;
+	t_info->a_end = 0.0f;
+	t_info->a_decay_exponent = 1.0f;
+	t_info->max_life = 0.0f;
+	t_info->stamp = 0;
+	generic_bitmap_init(&t_info->texture);
+	t_info->texture_stretch = 1.0f;
+	t_info->n_fade_out_sections = 0;
+	t_info->spread = 0.0f;
+}
+
 // Reset everything between levels
 void trail_level_init()
 {
@@ -146,6 +161,7 @@ void trail_render( trail * trailp )
 
 		float total_len = speed * ti->max_life;
 		float t = vm_vec_dist(&trailp->pos[front], &trailp->pos[back]) / total_len;
+		CLAMP(t, 0.0f, 1.0f);
 		float f_alpha, b_alpha, f_width, b_width;
 		if (trailp->object_died) {
 			f_alpha = t * (ti->a_start - ti->a_end) + ti->a_end;
@@ -364,9 +380,6 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient, vec3d*
 
 void trail_set_segment( trail *trailp, vec3d *pos )
 {
-	if (trailp->single_segment)
-		return;
-
 	int next = trailp->tail-1;
 	if ( next < 0 )	{
 		next = NUM_TRAIL_SECTIONS-1;

@@ -184,6 +184,7 @@ int script_state::CreateLuaState()
 	//***** LOAD DEFAULT SCRIPTS
 	mprintf(("ADE: Loading default scripts...\n"));
 	load_default_script(L, "cfile_require.lua");
+	load_default_script(L, "dkjson.lua");
 
 	return 1;
 }

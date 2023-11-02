@@ -106,15 +106,10 @@ void unload_wing_icons();
 void	common_flash_button_init();
 int	common_flash_bright();
 
-// functions for the multiplayer chat window
-void common_render_chat_window();
-void multi_chat_scroll_up();
-void multi_chat_scroll_down();
-
 void	set_active_ui(UI_WINDOW *ui_window);
 
 // music functions exported for multiplayer team selection screen to start briefing music
-SCP_string common_music_get_filename(int score_index);
+const char *common_music_get_filename(int score_index);
 void common_music_init( int score_index );
 void common_music_do();
 void common_music_close();

@@ -2073,7 +2073,7 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 	}
 
 	// bail if harmless
-	if ( Ship_info[esct_p->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
+	if ( Ship_info[esct_p->shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
 		return false;
 	}
 
@@ -2758,17 +2758,11 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	y1 += position[1];
 	x1 += position[0];
 
-	x1 += HUD_offset_x;
-	y1 += HUD_offset_y;
-
 	y2 = sinf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 	x2 = cosf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 
 	y2 += position[1];
 	x2 += position[0];
-
-	x2 += HUD_offset_x;
-	y2 += HUD_offset_y;
 
 	x3 = x1 - T_BASE_LENGTH * sinf(dot_product);
 	y3 = y1 + T_BASE_LENGTH * cosf(dot_product);
@@ -2983,6 +2977,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	float		ang;
 	float		xpos,ypos,cur_dist,sin_ang,cos_ang;
 	int		draw_inside=0;
+	int tablePosX, tablePosY;
 
 	// determine if the given object is within the targeting reticle
 	// (which means the triangle is not drawn)
@@ -2991,6 +2986,24 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 	g3_rotate_vertex(&hostile_vertex, hostile_pos);
 	g3_project_vertex(&hostile_vertex);
+
+	if (reticle_follow) {
+		int nx = HUD_nose_x;
+		int ny = HUD_nose_y;
+
+		gr_resize_screen_pos(&nx, &ny);
+		gr_set_screen_scale(base_w, base_h);
+		gr_unsize_screen_pos(&nx, &ny);
+		gr_reset_screen_scale();
+
+		tablePosX = position[0] + nx;
+		tablePosY = position[1] + ny;
+	}
+	else {
+		//Technically not non-slewing, but keeps old behaviour
+		tablePosX = position[0] + fl2i(HUD_nose_x);
+		tablePosY = position[1] + fl2i(HUD_nose_y);
+	}								   
 
 	if (hostile_vertex.codes == 0)  { // on screen
 		int		projected_x, projected_y;
@@ -3003,8 +3016,8 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 			unsize(&projected_x, &projected_y);
 
-			mag_squared = (projected_x - position[0]) * (projected_x - position[0]) +
-							  (projected_y - position[1]) * (projected_y - position[1]);
+			mag_squared = (projected_x - tablePosX) * (projected_x - tablePosX) +
+							  (projected_y - tablePosY) * (projected_y - tablePosY);
 
 			if ( mag_squared < Radius*Radius ) {
 				if ( show_interior ) {
@@ -3016,27 +3029,20 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 		}
 	}
 
-	int HUD_nose_scaled_x = HUD_nose_x;
-	int HUD_nose_scaled_y = HUD_nose_y;
+	// even if the screen position overflowed, it will still be pointing in the correct direction
+	unsize( &hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y );
 
-	gr_resize_screen_pos(&HUD_nose_scaled_x, &HUD_nose_scaled_y);
-
-	unsize( &hostile_vertex.world.xyz.x, &hostile_vertex.world.xyz.y );
-
-	ang = atan2_safe(hostile_vertex.world.xyz.y,hostile_vertex.world.xyz.x);
+	ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	sin_ang=sinf(ang);
 	cos_ang=cosf(ang);
 
 	if ( draw_inside ) {
-		xpos = position[0] + cos_ang*(Radius-7);
-		ypos = position[1] - sin_ang*(Radius-7);
+		xpos = tablePosX + cos_ang*(Radius-7);
+		ypos = tablePosY - sin_ang*(Radius-7);
 	} else {
-		xpos = position[0] + cos_ang*(Radius+4);
-		ypos = position[1] - sin_ang*(Radius+4);
+		xpos = tablePosX + cos_ang*(Radius+4);
+		ypos = tablePosY - sin_ang*(Radius+4);
 	}
-
-	xpos += HUD_offset_x + HUD_nose_x;
-	ypos += HUD_offset_y + HUD_nose_y;
 
 	if ( split_tri ) {
 		// renderTriangleMissileSplit(ang, xpos, ypos, cur_dist, aspect_flag, draw_inside);
@@ -3577,8 +3583,8 @@ void hud_show_hostile_triangle()
 			continue;
 		}
 
-		// always ignore cargo containers and navbuoys
-		if ( Ship_info[sp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
+		// always ignore cargo containers, navbouys, etc, and non-ships
+		if ( Ship_info[sp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
 			continue;
 		}
 
@@ -3818,7 +3824,7 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 }
 
 HudGaugeLeadIndicator::HudGaugeLeadIndicator():
-HudGauge(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
@@ -4249,11 +4255,32 @@ void HudGaugeLeadSight::renderSight(int frame_offset, vec3d *target_pos, vec3d *
 		float reticle_target_sx = target_sx - Lead_sight_half[0] - target_lead_sx;
 		float reticle_target_sy = target_sy - Lead_sight_half[1] - target_lead_sy;
 
-		reticle_target_sx += position[0] + 0.5f;
-		reticle_target_sy += position[1] + 0.5f;
+		int tablePosX = position[0];
+		int tablePosY = position[1];
+
+		bool do_slew = reticle_follow;
+		if (do_slew) {
+			int nx = HUD_nose_x;
+			int ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+			gr_reset_screen_scale();
+
+			tablePosX += nx;
+			tablePosY += ny;
+		}
+
+		reticle_target_sx += tablePosX + 0.5f;
+		reticle_target_sy += tablePosY + 0.5f;
 
 		setGaugeColor();
-		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx) + fl2i(HUD_offset_x), fl2i(reticle_target_sy) + fl2i(HUD_offset_y));
+
+		//We need to do slewing manually only on the non-3D-dependant part of the hud, so make the rendering function believe that we don't slew
+		reticle_follow = false;
+		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx), fl2i(reticle_target_sy));
+		reticle_follow = do_slew;
 	}
 }
 
@@ -6364,7 +6391,7 @@ void hud_target_clear_display_list()
 }
 
 HudGaugeOffscreen::HudGaugeOffscreen():
-HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -6495,11 +6522,9 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	codes_or = (ubyte)(target_point->codes | eye_vertex->codes);
 	clip_line(&target_point,&eye_vertex,codes_or,0);
 
-	if (!(target_point->flags&PF_PROJECTED))
-		g3_project_vertex(target_point);
+	g3_project_vertex(target_point);
 
-	if (!(eye_vertex->flags&PF_PROJECTED))
-		g3_project_vertex(eye_vertex);
+	g3_project_vertex(eye_vertex);
 
 	if (eye_vertex->flags&PF_OVERFLOW) {
 		Int3();			//	This is unlikely to happen, but can if a clip goes through the player's eye.
@@ -7416,8 +7441,8 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 
 					//unsize(&xc, &yc);
 					//unsize(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y);
-
-					renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
+					if (!(draw_point.flags & PF_OVERFLOW))
+						renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 					//renderCircle(xc, yc, 25);
 				} else {
 					model_render_params weapon_render_info;

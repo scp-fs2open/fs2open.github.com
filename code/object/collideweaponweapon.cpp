@@ -61,11 +61,12 @@ int collide_weapon_weapon( obj_pair * pair )
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
+		float time_alive = f2fl(Missiontime - wpA->creation_time);
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
-			if ( (wipA->max_lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if ( (wipA->lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -73,11 +74,13 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (!(wipB->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
+
+		float time_alive = f2fl(Missiontime - wpB->creation_time);
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
-			if ( (wipB->max_lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if ( (wipB->lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if ( time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -107,11 +110,11 @@ int collide_weapon_weapon( obj_pair * pair )
 		{
 			float aDamage = wipA->damage;
 			if (wipB->armor_type_idx >= 0)
-				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f);
+				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f, false);
 
 			float bDamage = wipB->damage;
 			if (wipA->armor_type_idx >= 0)
-				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f);
+				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f, false);
 
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.

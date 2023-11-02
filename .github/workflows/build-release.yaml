@@ -44,7 +44,7 @@ jobs:
     name: Linux
     needs: create_release   # Don't run this job until create_release is done and successful
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-8a6bbbe
+    container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
     steps:
       # - name: Cache Qt
         # id: cache-qt-lin
@@ -87,15 +87,12 @@ jobs:
           # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
-      - name: Add curl to the container
-        run: |    
-          apt-get update -y 
-          apt -y install curl jq
       - uses: actions/checkout@v1
         # checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
         name: Checkout
         with:
           submodules: true  # `true` to checkout submodules, `recursive` to recursively checkout submodules
+          ref: '${{ github.ref }}'
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
@@ -149,6 +146,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'  # value 0 to fetch all history and tags for all branches
+          ref: '${{ github.ref }}'
       - name: Download Release builds
         # Grab the release builds
         uses: actions/download-artifact@v2
@@ -195,6 +193,7 @@ jobs:
         name: Checkout
         with:
           submodules: true
+          ref: '${{ github.ref }}'
       # - name: Cache Qt
         # # Cache Qt
         # id: cache-qt-win
@@ -289,7 +288,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'
-
+          ref: '${{ github.ref }}'
       - name: Download Release builds
         uses: actions/download-artifact@v2
         with:
@@ -361,6 +360,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+          ref: '${{ github.ref }}'
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
@@ -384,13 +384,15 @@ jobs:
           XDG_RUNTIME_DIR: /root
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Package build result
-        working-directory: ./build
-        run: cd bin && tar -cvzf macos-build.tar *.app
+        working-directory: ./build/bin
+        # Use GNU tar here (part of runner image) to avoid weird corruption bug with bsdtar
+        # Ref: https://github.com/actions/runner-images/issues/2619
+        run: gtar -cvzf macos-build-${{ matrix.configuration }}.tgz *.app
       - name: Upload build result
         uses: actions/upload-artifact@v2
         with:
           name: mac-${{ matrix.configuration }}
-          path: ${{ github.workspace }}/build/bin/macos-build.tar
+          path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}.tgz
   mac_zip:
     name: Build Mac distribution zip
     needs: build_mac
@@ -413,6 +415,11 @@ jobs:
         with:
           name: mac-FastDebug
           path: builds
+      - name: Unpack builds
+        working-directory: ./builds
+        run: |
+          tar -xvzf macos-build-Release.tgz
+          tar -xvzf macos-build-FastDebug.tgz
       - name: Create Distribution package
         id: generate_package
         working-directory: ./builds

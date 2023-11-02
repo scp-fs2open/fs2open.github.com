@@ -2610,7 +2610,7 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 					err_msg += Main_hall_region_map[i].name;
 				}
 
-				Error(LOCATION, "Unkown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.c_str());
+				Error(LOCATION, "Unknown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.c_str());
 			}
 
 			m->regions[idx].action = action;
@@ -2716,4 +2716,12 @@ void main_hall_unpause()
 	audiostream_unpause(Main_hall_music_handle);
 
 	main_hall_start_ambient();
+}
+
+/**
+* Toggle the help overlay
+*/
+void main_hall_toggle_help(bool enable)
+{
+	help_overlay_set_state(Main_hall_overlay_id, main_hall_get_overlay_resolution_index(), (int)enable);
 }

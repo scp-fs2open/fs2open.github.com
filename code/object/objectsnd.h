@@ -14,7 +14,7 @@
 
 #include "gamesnd/gamesnd.h"
 
-#define	OS_USED					(1<<0)
+#define	OS_IN_USE				(1<<0)		// changed from OS_USED since it shadowed another macOS macro
 #define OS_MAIN					(1<<1)		// "main" sound. attentuation does not apply until outside the radius of the object
 #define OS_ENGINE				(1<<2)		// the engine sound; only played when engines are on
 #define OS_TURRET_BASE_ROTATION	(1<<3)
@@ -44,7 +44,7 @@ void	obj_snd_do_frame();
 int	obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags = 0, const ship_subsys *associated_sub = nullptr);
 
 //Delete specific persistent sound on object
-void obj_snd_delete(object *objp, int index, bool stop_sound = true);
+void obj_snd_delete(object *objp, int index);
 
 // if sndnum is not -1, deletes all instances of the given sound within the object
 void	obj_snd_delete_type(int objnum, gamesnd_id sndnum = gamesnd_id(), ship_subsys *ss = NULL);

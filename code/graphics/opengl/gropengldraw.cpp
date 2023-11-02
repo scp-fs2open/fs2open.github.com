@@ -25,6 +25,7 @@
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/uniform_structs.h"
+#include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
@@ -673,7 +674,7 @@ void gr_opengl_scene_texture_begin()
 		Scene_texture_v_scale = 1.0f;
 	}
 
-	if ( Cmdline_no_deferred_lighting ) {
+	if (!light_deferred_enabled()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {

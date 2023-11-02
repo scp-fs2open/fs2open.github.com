@@ -263,16 +263,17 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 		{
 			if(wp->target_sig != newh->sig)
 			{
-				wp->homing_object = newh->objp;
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1, newh->ss);
+			}
+			else
+			{
 				wp->homing_subsys = newh->ss;
 				get_subsystem_pos(&wp->homing_pos, wp->homing_object, wp->homing_subsys);
 			}
 		}
 		else
 		{
-			wp->homing_object = &obj_used_list;
-			wp->homing_pos = vmd_zero_vector;
-			wp->homing_subsys = NULL;
+			weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, -1);
 		}
 
 		// need to update the position for multiplayer.

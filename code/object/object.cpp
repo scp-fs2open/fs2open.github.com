@@ -54,7 +54,7 @@
 #include "graphics/light.h"
 #include "graphics/color.h"
 
-
+extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
 /*
  *  Global variables
@@ -841,7 +841,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 	// everyone does the following for their own ships.
 	if ( ci.afterburner_start ){
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE)){
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f) {
 			afterburners_start( objp );
 		}
 	}
@@ -861,19 +861,24 @@ void obj_move_call_physics(object *objp, float frametime)
 		// only set phys info if ship is not dead
 		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags[Ship::Ship_Flags::Dying])) {
 			ship *shipp = &Ships[objp->instance];
-			float	engine_strength;
 
-			engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
-			if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
-				engine_strength=0.0f;
+			if (!shipp->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
+				float engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
+				if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+					engine_strength=0.0f;
+				}
+
+				if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
+					vm_vec_zero(&objp->phys_info.desired_vel);
+					vm_vec_zero(&objp->phys_info.desired_rotvel);
+					vm_mat_zero(&objp->phys_info.ai_desired_orient);
+					objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
+					objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
+				}
 			}
-
-			if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
-				vm_vec_zero(&objp->phys_info.desired_vel);
-				vm_vec_zero(&objp->phys_info.desired_rotvel);
-				vm_mat_zero(&objp->phys_info.ai_desired_orient);
-				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
-				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
+			// recover if we *are* maneuvering but the flag was added
+			else if ((objp->phys_info.flags & PF_DEAD_DAMP) && !shipp->flags[Ship::Ship_Flags::Dying]) {
+				ship_reset_disabled_physics(objp, shipp->ship_info_index);
 			}
 
 			if (shipp->weapons.num_secondary_banks > 0) {
@@ -946,7 +951,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				if (/* (objnum_I_am_docked_or_docking_with != -1) || */
 					((aip->mode == AIM_DOCK) && ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_UNDOCK_0))) ||
 					((aip->mode == AIM_WARP_OUT) && (aip->submode >= AIS_WARP_3))) {
-					if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f){
+					if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f){
 						objp->phys_info.flags |= PF_USE_VEL;
 					} else {
 						objp->phys_info.flags &= ~PF_USE_VEL;	//	If engine blown, don't PF_USE_VEL, or ships stop immediately

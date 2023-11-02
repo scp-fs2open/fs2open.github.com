@@ -80,7 +80,7 @@ bool is_gray_space(unicode::codepoint_t cp) {
 	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
 }
 
-int is_parenthesis(char ch)
+bool is_parenthesis(char ch)
 {
 	return ((ch == '(') || (ch == ')'));
 }
@@ -245,11 +245,12 @@ int get_line_num()
 	bool	inquote = false;
 	int		incomment = false;
 	int		multiline = false;
-	char	*stoploc;
-	char	*p;
+	char	*p = Parse_text;
+	char	*stoploc = Mp;
 
-	p = Parse_text;
-	stoploc = Mp;
+	// if there is no parse text, then we have some ad-hoc text such as provided in an evaluateSEXP call or in the debug console
+	if (Parse_text == nullptr)
+		return count;
 
 	while (p < stoploc)
 	{
@@ -1114,17 +1115,22 @@ int get_string_or_variable (char *str)
 	ignore_white_space();
 
 	// Variable
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
+		auto saved_Mp = Mp;
 		Mp++;
 		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
-		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		result = PARSING_FOUND_VARIABLE;
+		if (sexp_variable_index >= 0)
+			result = PARSING_FOUND_VARIABLE;
+		else
+		{
+			Mp = saved_Mp;
+			stuff_string_white(str);
+			error_display(1, "Expected \"%s\" to be a variable", str);
+		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1135,7 +1141,7 @@ int get_string_or_variable (char *str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
+		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
 	}
 
 	return result;
@@ -1149,17 +1155,22 @@ int get_string_or_variable (SCP_string &str)
 	ignore_white_space();
 
 	// Variable
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
+		auto saved_Mp = Mp;
 		Mp++;
 		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
-		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		result = PARSING_FOUND_VARIABLE;
+		if (sexp_variable_index >= 0)
+			result = PARSING_FOUND_VARIABLE;
+		else
+		{
+			Mp = saved_Mp;
+			stuff_string_white(str);
+			error_display(1, "Expected \"%s\" to be a variable", str.c_str());
+		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1170,7 +1181,7 @@ int get_string_or_variable (SCP_string &str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
+		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
 	}
 
 	return result;
@@ -2762,13 +2773,14 @@ int stuff_int_optional(int *i)
 // index of the variable in the following slot.
 void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 {
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
-		Mp++;
 		int value = -1;
 		SCP_string str;
-		stuff_string(str, F_NAME);
 
+		auto saved_Mp = Mp;
+		Mp++;
+		stuff_string(str, F_NAME);
 		int index = get_index_sexp_variable_name(str);
 
 		if (index > -1 && index < MAX_SEXP_VARIABLES)
@@ -2784,7 +2796,8 @@ void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 		}
 		else
 		{
-
+			Mp = saved_Mp;
+			stuff_string(str, F_NAME);
 			error_display(1, "Invalid variable name \"%s\" found.", str.c_str());
 		}
 
@@ -2832,20 +2845,35 @@ void stuff_boolean_flag(int *i, int flag, bool a_to_eol)
 // Stuffs a boolean value pointed at by Mp.
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
-
 void stuff_boolean(bool *b, bool a_to_eol)
 {
-	char token[32];
-	stuff_string_white(token, sizeof(token)/sizeof(char));
+	char token[NAME_LENGTH];
+	stuff_string_white(token);
 	if(a_to_eol)
 		advance_to_eoln(NULL);
 
-	if( isdigit(token[0]))
+	if (!parse_boolean(token, b))
+	{
+		*b = false;
+		error_display(0, "Boolean '%s' type unknown; assuming 'no/false'", token);
+	}
+
+	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
+}
+
+// Parses a token into a boolean value, if the token is recognized.  If so, the boolean parameter is assigned the value and the function returns true;
+// if not, the boolean parameter is not assigned and the function returns false.
+bool parse_boolean(const char *token, bool *b)
+{
+	Assertion(token != nullptr && b != nullptr, "Parameters must not be NULL!");
+
+	if(isdigit(token[0]))
 	{
 		if(token[0] != '0')
 			*b = true;
 		else
 			*b = false;
+		return true;
 	}
 	else
 	{
@@ -2858,6 +2886,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 			|| !stricmp(token, "HIja'") || !stricmp(token, "HISlaH"))	//Klingon
 		{
 			*b = true;
+			return true;
 		}
 		else if(!stricmp(token, "no")
 			|| !stricmp(token, "false")
@@ -2870,15 +2899,12 @@ void stuff_boolean(bool *b, bool a_to_eol)
 			|| !stricmp(token, "ghobe'"))	//Klingon
 		{
 			*b = false;
-		}
-		else
-		{
-			*b = false;
-			error_display(0, "Boolean '%s' type unknown; assuming 'no/false'",token);
+			return true;
 		}
 	}
 
-	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
+	// token not recognized
+	return false;
 }
 
 //	Stuff an integer value (cast to a ubyte) pointed at by Mp.
@@ -4086,6 +4112,24 @@ void consolidate_double_characters(char *src, char ch)
 		if (src != dest)
 			*dest = *src;
 	}
+}
+
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size)
+{
+	Assertion(buffer && source, "Arguments must not be null!");
+
+	// this would be silly
+	if (buffer_size < 6)
+	{
+		*buffer = '\0';
+		return buffer;
+	}
+
+	strncpy(buffer, source, buffer_size);
+	if (buffer[buffer_size - 1] != '\0')
+		strcpy(&buffer[buffer_size - 6], "[...]");
+
+	return buffer;
 }
 
 // Goober5000

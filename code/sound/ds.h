@@ -63,8 +63,12 @@ void ds_unload_buffer(int sid);
 ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData* enhanced_sound_data, float volume,
                         float pan, int looping, bool is_voice_msg = false);
 int ds_get_channel(ds_sound_handle sig);
+int ds_get_channel_raw(ds_sound_handle sig);
 int ds_is_channel_playing(int channel);
+bool ds_is_channel_paused(int channel_id);
 void ds_stop_channel(int channel);
+void ds_pause_channel(int channel_id);
+void ds_resume_channel(int channel_id);
 void ds_stop_channel_all();
 void ds_set_volume( int channel, float vol );
 void ds_set_pan( int channel, float pan );

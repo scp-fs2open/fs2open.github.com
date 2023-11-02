@@ -127,7 +127,9 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
 	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
 	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
 	{ "Dock",					AI_GOAL_DOCK,				0 },
 	{ "Undock",					AI_GOAL_UNDOCK,				0 },
@@ -828,8 +830,8 @@ void clear_mission()
 	The_mission.author = str;
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
-	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
+	strcpy_s(The_mission.mission_desc, "Put mission description here");
 
 	apply_default_custom_data(&The_mission);
 
@@ -856,7 +858,7 @@ void clear_mission()
 
 		count = 0;
 		for ( j = 0; j < weapon_info_size(); j++ ) {
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {

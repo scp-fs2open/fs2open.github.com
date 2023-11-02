@@ -1,10 +1,9 @@
+#pragma once
+
 /*
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
-
-#ifndef _CUSTOMDATA_H
-#define _CUSTOMDATA_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,15 +53,6 @@ class CustomDataDlg : public CDialog {
 	DECLARE_MESSAGE_MAP()
 
   private:
-	bool has_containers() const
-	{
-		return !m_custom_data.empty();
-	}
-	int num_containers() const
-	{
-		return (int)m_custom_data.size();
-	}
-
 	bool query_modified() const;
 
 	SCP_map<SCP_string, SCP_string> m_custom_data;
@@ -70,5 +60,3 @@ class CustomDataDlg : public CDialog {
 	// read-only view of data pair keys
 	SCP_vector<SCP_string> m_lister_keys;
 };
-
-#endif // _CUSTOMDATA_H

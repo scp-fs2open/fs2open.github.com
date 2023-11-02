@@ -115,7 +115,7 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 
 typedef struct brief_icon {
 	int		x,y,w,h;
-	int		scale;
+	float	scale_factor;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
@@ -128,8 +128,7 @@ typedef struct brief_icon {
 	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
-	hud_anim	fadein_anim;
-	hud_anim	fadeout_anim;
+	hud_anim	fade_anim;
 	hud_anim	highlight_anim;
 	int		flags;				// BI_* flags defined above
 } brief_icon;
@@ -300,7 +299,7 @@ void brief_init_screen(int multiplayer_flag);
 void brief_render_map(int stage_num, float frametime);
 void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num);
 void brief_camera_move(float frametime, int stage_num);
-void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
+void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
 void brief_icons_init();

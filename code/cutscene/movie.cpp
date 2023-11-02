@@ -174,10 +174,15 @@ void determine_display_positions(Player* player, PlaybackState* state) {
 void initialize_player_state(Player* player, PlaybackState* state) {
 	determine_display_positions(player, state);
 
-	state->subtitle_font = font::FontManager::getFontIndex(Movie_subtitle_font);
+	if (!Movie_subtitle_font.empty()) {
+		state->subtitle_font = font::FontManager::getFontIndex(Movie_subtitle_font);
 
-	if (state->subtitle_font < 0) {
-		Warning(LOCATION, "Failed to load subtitle font '%s'! Subtitles will be disabled.", Movie_subtitle_font.c_str());
+		if (state->subtitle_font < 0) {
+			Warning(LOCATION, "Failed to load subtitle font '%s'! Subtitles will be disabled.", Movie_subtitle_font.c_str());
+		}
+	}
+	else if (font::FontManager::numberOfFonts() > 0) {
+		state->subtitle_font = 0;	// if not explicitly specified, default to the first available font
 	}
 }
 

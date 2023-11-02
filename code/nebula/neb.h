@@ -74,6 +74,13 @@ typedef struct poof_info {
 	float view_dist;
 	::util::UniformFloatRange alpha;
 
+	// These values are dynamic, unlike the above and can change during a mission.
+	// They are used for fading poof types in and out via sexp
+	TIMESTAMP fade_start;			// when the fade began
+	int fade_duration;		// the length of the fade in milliseconds
+	bool fade_in;			// true if fading the poof type in, false if fading out
+	float fade_multiplier;	// the current multiplier for a poof's alpha transparency used to render the poofs of this type
+
 	poof_info() {
 		bitmap_filename[0] = '\0';
 		generic_anim_init(&bitmap);
@@ -82,6 +89,10 @@ typedef struct poof_info {
 		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
 		view_dist = 250.f;
 		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
+		fade_start = TIMESTAMP::invalid();
+		fade_duration = -1;
+		fade_in = true;
+		fade_multiplier = -1.0f;
 	}
 } poof_info;
 
@@ -149,6 +160,9 @@ void neb2_render_setup(camid cid);
 
 // turns a poof on or off
 void neb2_toggle_poof(int poof_idx, bool enabling);
+
+// fades poofs
+void neb2_fade_poofs(int poof_idx, int time, bool type);
 
 // render the player nebula
 void neb2_render_poofs();

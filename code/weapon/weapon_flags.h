@@ -27,6 +27,7 @@ namespace Weapon {
 		Thruster,							// Has thruster cone and/or glow
 		In_tech_database,
 		Player_allowed,						// allowed to be on starting wing ships/in weaponry pool
+		Default_player_weapon,				// added to the weapons pool by default
 		Bomber_plus,						// Fire this missile only at a bomber or big ship.  But not a fighter.
 		Corkscrew,							// corkscrew style missile
 		Particle_spew,						// spews particles as it travels
@@ -93,6 +94,8 @@ namespace Weapon {
 		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 		Dont_merge_indicators,				// This secondary lead indicator won't be merged with the primary lead indicator even if this is a homing weapon.
 		No_fred,							// not available in fred
+		Detonate_on_expiration,				// Secondary weapons always detonate when their lifetime runs out, but now primary weapons can too
+		Ignores_countermeasures,			// The weapon will never be affected by countermeasures
 
         NUM_VALUES
 	};

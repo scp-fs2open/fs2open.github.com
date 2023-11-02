@@ -950,7 +950,7 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 }
 
 // adapted from g3_draw_rod()
-void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
+void g3_render_rod(const color *clr, int num_points, const vec3d *pvecs, float width)
 {
 	const int MAX_ROD_VERTS = 100;
 	vec3d uvec, fvec, rvec;

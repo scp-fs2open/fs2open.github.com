@@ -51,6 +51,10 @@ int get_special_anchor(const char *name);
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
 
+// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// a "soft version bump" rather than a hard bump because not all missions are affected.
+extern bool check_for_23_3_data();
+
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
 // mission parse flags used for parse_mission() to tell what kind of information to get from the mission file
@@ -157,6 +161,7 @@ typedef struct mission {
 	tl::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
+	int     HUD_timer_padding;
 
 	// Goober5000
 	int	command_persona;
@@ -195,7 +200,7 @@ typedef struct mission {
 // must be reworked so that all the flags are maintained from function to function
 #define CARGO_INDEX_MASK	0xBF
 #define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
-#define MAX_CARGO				30
+#define MAX_CARGO				60
 
 
 // Goober5000 - contrail threshold (previously defined in ShipContrails.cpp)
@@ -417,7 +422,7 @@ extern SCP_vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct {
+typedef struct team_data {
 	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		num_ship_choices; // number of ship choices inside ship_list 

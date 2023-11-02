@@ -12,6 +12,10 @@ const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	tl::nullopt,
 	CHA_GAMEINIT);
 
+const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro About To Play",
+	"Executed just before the intro movie is played.",
+	{});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{ 
@@ -213,6 +217,12 @@ const std::shared_ptr<Hook<WeaponDeathConditions>> OnMissileDeath = Hook<WeaponD
 		{"Object", "object", "The object that the weapon hit - a ship, asteroid, or piece of debris.  Always set but could be invalid if there is no other object.  If this missile was destroyed by another weapon, the 'other object' will be invalid but the DestroyedByWeapon flag will be set."},
 	});
 
+const std::shared_ptr<Hook<>> OnBeamDeath = Hook<>::Factory(
+	"On Beam Death", "Called when a beam has been removed from the mission (whether by finishing firing, destruction of turret, etc.).",
+	{
+		{"Beam", "beam", "The beam that was removed."},
+	});
+
 const std::shared_ptr<Hook<>> OnAsteroidCreated = Hook<>::Factory("On Asteroid Created",
 	"Called when an asteroid has been created.",
 	{
@@ -306,10 +316,26 @@ const std::shared_ptr<Hook<WeaponUsedConditions>> OnTurretFired = Hook<WeaponUse
 		{"Target", "object", "The current target of the shot."},
 	});
 
-const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamFired = Hook<WeaponUsedConditions>::Factory("On Beam Fire",
-	"Invoked when a beam is fired.",
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamWarmup = Hook<WeaponUsedConditions>::Factory("On Beam Warmup",
+	"Invoked when a beam starts warming up to fire.",
 	{
-		{"User", "ship", "The ship that has fired the turret."},
+		{"User", "ship", "The ship that is firing the beam."},
+		{"Beam", "beam", "The spawned beam object."},
+		{"Target", "object", "The current target of the shot."},
+	});
+
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamFired = Hook<WeaponUsedConditions>::Factory("On Beam Fire",
+	"Invoked when a beam starts firing (after warming up).",
+	{
+		{"User", "ship", "The ship that is firing the beam."},
+		{"Beam", "beam", "The spawned beam object."},
+		{"Target", "object", "The current target of the shot."},
+	});
+
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamWarmdown = Hook<WeaponUsedConditions>::Factory("On Beam Warmdown",
+	"Invoked when a beam starts \"warming down\" after firing.",
+	{
+		{"User", "ship", "The ship that is firing the beam."},
 		{"Beam", "beam", "The spawned beam object."},
 		{"Target", "object", "The current target of the shot."},
 	});
@@ -348,7 +374,7 @@ const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
-	"Invoked when a system dialog initalizes. Override to prevent the system dialog from loading dialog-related resources (requires retail files)",
+	"Invoked when a system dialog initializes. Override to prevent the system dialog from loading dialog-related resources (requires retail files)",
 	{   
 		{"Choices",
 			"table",
@@ -362,7 +388,8 @@ const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Facto
 		{"IsStateRunning", "boolean", "True if the underlying state is still being processed and rendered."},
 		{"IsInputPopup", "boolean", "True if this popup is for entering text."},
 		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
-		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."}
+		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."},
+		{"DeathMessage", "string", "The death message if the dialog is a death popup. Nil if not a death popup."}
 	 });
 
 const std::shared_ptr<OverridableHook<>> OnDialogFrame = OverridableHook<>::Factory("On Dialog Frame",

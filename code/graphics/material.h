@@ -133,7 +133,7 @@ public:
 
 	void set_color(float red, float green, float blue, float alpha);
 	void set_color(int r, int g, int b, int a);
-	void set_color(color &clr_in);
+	void set_color(const color &clr_in);
 	const vec4& get_color() const;
 
 	void set_color_scale(float scale);

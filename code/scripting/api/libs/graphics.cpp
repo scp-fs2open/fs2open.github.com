@@ -60,6 +60,8 @@ static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 static int lua_ResizeMode = GR_RESIZE_NONE;
 
+int get_resize_mode() { return lua_ResizeMode; }
+
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
@@ -373,7 +375,7 @@ ADE_FUNC(getScreenHeight, l_Graphics, NULL, "Gets screen height", "number", "Hei
 	return ade_set_args(L, "i", gr_screen.max_h);
 }
 
-ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should be used in conjuction with getCenterOffsetX)", "number", "Width of center monitor in pixels, or 0 if graphics are not initialized yet")
+ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should be used in conjunction with getCenterOffsetX)", "number", "Width of center monitor in pixels, or 0 if graphics are not initialized yet")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
@@ -381,7 +383,7 @@ ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should
 	return ade_set_args(L, "i", gr_screen.center_w);
 }
 
-ADE_FUNC(getCenterHeight, l_Graphics, NULL, "Gets height of center monitor (should be used in conjuction with getCenterOffsetY)", "number", "Height of center monitor in pixels, or 0 if graphics are not initialized yet")
+ADE_FUNC(getCenterHeight, l_Graphics, NULL, "Gets height of center monitor (should be used in conjunction with getCenterOffsetY)", "number", "Height of center monitor in pixels, or 0 if graphics are not initialized yet")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
@@ -1400,17 +1402,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		int curr_y = y;
 		for(int i = 0; i < num_lines; i++)
 		{
-			//Contrary to WMC's previous comment, let's make a new string each line
-			int len = linelengths[i];
-			char *buf = new char[len+1];
-			strncpy(buf, linestarts[i], len);
-			buf[len] = '\0';
-
 			//Draw the string
-			gr_string(x,curr_y,buf,resize_mode);
-
-			//Free the string we made
-			delete[] buf;
+			gr_string(x, curr_y, linestarts[i], resize_mode, linelengths[i]);
 
 			//Increment line height
 			curr_y += line_ht;
@@ -2221,6 +2214,15 @@ ADE_FUNC(createParticle,
 	particle::create(&pi);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(killAllParticles, l_Graphics, nullptr, "Clears all particles from a mission", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	particle::kill_all();
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target and encodes it into a blob-PNG", "string", "The png blob string")

@@ -129,7 +129,7 @@ void hud_render_gauges(int cockpit_display_num = -1);
 void hud_stop_looped_engine_sounds();
 
 // set the offset values for this render frame
-void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient);
+void HUD_set_offsets();
 // returns the offset between the player's view vector and the forward vector of the ship in pixels (Swifty)
 void HUD_get_nose_coordinates(int *x, int *y);
 
@@ -149,7 +149,7 @@ void hud_num_make_mono(char *num_str, int font_num = font::FONT1);
 // functions for handling hud animations
 void hud_anim_init(hud_anim *ha, int sx, int sy, const char *filename);
 void hud_frames_init(hud_frames *hf);
-int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,int resize_mode=GR_RESIZE_FULL, bool mirror = false);
+int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,int resize_mode=GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 int	hud_anim_load(hud_anim *ha);
 
 // functions for displaying the support view popup
@@ -277,7 +277,7 @@ public:
 	void initOriginAndOffset(float originX, float originY, int offsetX, int offsetY);
 	void initCoords(bool use_coords, int coordsX, int coordsY);
 
-	void initSlew(bool slew);
+	virtual void initSlew(bool slew);
 	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
 
@@ -360,6 +360,21 @@ public:
 	void resize(float *x, float *y);
 	void setClip(int x, int y, int w, int h);
 	void resetClip();
+};
+
+//Use this instead of HudGauge whenever you have a HudGauge that is anchored in 3D-space (i.e. takes its rendering coordinates from g3_rotate/project_vertex, as these MUST NEVER slew.
+class HudGauge3DAnchor : public HudGauge {
+
+public:
+	HudGauge3DAnchor() 
+		: HudGauge() { }
+	HudGauge3DAnchor(int _gauge_object, int _gauge_config, bool /*_slew*/, bool _message, int _disabled_views, int r, int g, int b)
+		: HudGauge(_gauge_object, _gauge_config, false, _message, _disabled_views, r, g, b) { }
+	// constructor for custom gauges
+	HudGauge3DAnchor(int _gauge_config, bool /*_slew*/, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y)
+		: HudGauge(_gauge_config, false, r, g, b, _custom_name, _custom_text, frame_fname, txtoffset_x, txtoffset_y) { }
+
+	void initSlew(bool /*slew*/) override {};
 };
 
 class HudGaugeMissionTime: public HudGauge // HUD_MISSION_TIME
@@ -492,7 +507,10 @@ protected:
 
 	int next_flash;
 	bool flash_status;
-public:
+
+	bool always_display;
+
+  public:
 	HudGaugeDamage();
 	void initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom);
 	void initHeaderOffsets(int x, int y);
@@ -503,6 +521,7 @@ public:
 	void initSubsysIntegValueOffsetX(int x);
 	void initBottomBgOffset(int offset);
 	void initLineHeight(int h);
+	void initDisplayValue(bool value);
 	void render(float frametime) override;
 	void pageIn() override;
 	void initialize() override;
@@ -562,7 +581,7 @@ public:
 	void render(float frametime) override;
 };
 
-class HudGaugeFlightPath: public HudGauge
+class HudGaugeFlightPath: public HudGauge3DAnchor
 {
 	hud_frames Marker;
 

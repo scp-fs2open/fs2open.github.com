@@ -448,6 +448,7 @@
 #define IDC_GRID_XY_PLANE               1159
 #define IDC_GRID_YZ_PLANE               1160
 #define IDC_GRID_SIZE                   1162
+#define IDC_NEW_NOTE                    1163
 #define IDC_SPIN_GRID_SIZE              1164
 #define IDC_STATIC_GRID_SIZE            1165
 #define IDC_PREF_STARFIELD              1167
@@ -1127,6 +1128,7 @@
 #define IDC_ALT_CLASS_UP                1602
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
+#define IDC_PRELOAD_SUBSPACE            1605
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1240,6 +1242,7 @@
 #define IDC_SPIN_EM_FALLOFF             1695
 #define IDC_SPIN_NOISE_COLOR_B          1696
 #define IDC_NOISE_COLOR_B               1697
+#define IDC_SUPERCAP_WARP_PHYSICS       1698
 #define IDC_NOISE_INTENSITY             1700
 #define IDC_SPIN_NOISE_INTENSITY        1701
 #define IDC_NOISE_RESOLUTION            1702
@@ -1435,6 +1438,7 @@
 #define ID_SHOW_SHIPS                   32990
 #define ID_SHOW_STARTS                  32991
 #define ID_TOGGLE_VIEWPOINT             32992
+#define ID_VIEW_OUTLINE_AT_WARPIN       32993
 #define ID_CPGN_FILE_NEW                32995
 #define ID_CPGN_FILE_OPEN               32996
 #define ID_CPGN_FILE_SAVE               32997

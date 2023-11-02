@@ -25,7 +25,7 @@ void draw_brackets_diamond_quick(graphics::line_draw_list* draw_list, int x1, in
 
 int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsys, int min_width, int min_height, bool draw = true, bool set_color = true, int* draw_coords = NULL);
 
-class HudGaugeBrackets: public HudGauge
+class HudGaugeBrackets: public HudGauge3DAnchor
 {
 protected:
 	int attacking_dot;
