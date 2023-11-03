@@ -12822,6 +12822,9 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 					else if (&Objects[support_objnum] == objp) { // Undocking ends the repair,
 														// but since we don'tneed to do that in this case, end it here
 						ai_do_objects_repairing_stuff(objp, &Objects[support_objnum], REPAIR_INFO_END);
+						if (!MULTIPLAYER_CLIENT) {
+							hud_support_view_stop();
+						}
 					}
 				}
 			}
