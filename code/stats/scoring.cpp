@@ -149,6 +149,14 @@ void parse_rank_table(const char* filename)
 				rank_p = &Ranks.back();
 			}
 
+			if (optional_string("$Alt Name:")) {
+				stuff_string(rank_p->alt_name, F_NAME);
+			}
+
+			if (optional_string("$Title:")) {
+				stuff_string(rank_p->title, F_NAME);
+			}
+
 			if (optional_string("$Points:")) {
 				stuff_int(&rank_p->points);
 			} 
@@ -283,6 +291,15 @@ int verify_rank(int ranki)
 	}
 
 	return ranki;
+}
+
+SCP_string get_rank_display_name(rank_stuff* rank)
+{
+	if (!rank->alt_name.empty()) {
+		return rank->alt_name;
+	} else {
+		return rank->name;
+	}
 }
 
 void parse_traitor_tbl(const char* filename)

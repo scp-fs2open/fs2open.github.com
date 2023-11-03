@@ -683,7 +683,7 @@ void multi_pinfo_build_stats()
 	}	
 
 	// rank
-	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK], Ranks[verify_rank(sc->rank)].name);
+	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK], get_rank_display_name(&Ranks[verify_rank(sc->rank)]).c_str());
 
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
