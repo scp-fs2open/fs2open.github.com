@@ -10873,7 +10873,11 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, i
 int eval_any_of(int arg_handler_node, int condition_node)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10894,7 +10898,11 @@ int eval_any_of(int arg_handler_node, int condition_node)
 int eval_every_of(int arg_handler_node, int condition_node)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10916,7 +10924,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10951,7 +10963,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 int eval_random_of(int arg_handler_node, int condition_node)
 {
 	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the number of valid arguments
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
@@ -11040,6 +11056,10 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 {
 	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
 	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the number of valid arguments
 	SCP_vector<int> cumulative_arg_counts;
@@ -11151,7 +11171,11 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	int val = SEXP_FALSE;
 	int n = -1 ;
 	
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the first argument
 	n = CDR(arg_handler_node);
@@ -11205,7 +11229,11 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 	int i, count, counter_start, counter_stop, counter_step;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
 	char buf[NAME_LENGTH];
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	n = CDR(arg_handler_node);
 
@@ -11275,7 +11303,11 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 {
 	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	n = CDR(arg_handler_node);
 
@@ -11367,6 +11399,10 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 		"Attempt to use invalid condition with a for-container SEXP (%d). Please report!",
 		op_const);
 
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
+
 	int num_arguments = 0;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
 
@@ -11421,7 +11457,11 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 {
 	int num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	if (Game_mode & GM_MULTIPLAYER)
 	{
@@ -11470,7 +11510,11 @@ int eval_first_of(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
