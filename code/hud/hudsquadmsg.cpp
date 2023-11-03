@@ -232,7 +232,7 @@ void hud_squadmsg_start()
 	if (scripting::hooks::OnHudCommMenuOpened->isActive())
 	{
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
-		scripting::hooks::OnHudCommMenuOpened->run(paramList);
+		scripting::hooks::OnHudCommMenuOpened->run(std::move(paramList));
 	}
 }
 
@@ -255,7 +255,7 @@ void hud_squadmsg_end()
 	if (scripting::hooks::OnHudCommMenuClosed->isActive())
 	{
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
-		scripting::hooks::OnHudCommMenuClosed->run(paramList);
+		scripting::hooks::OnHudCommMenuClosed->run(std::move(paramList));
 	}
 }
 

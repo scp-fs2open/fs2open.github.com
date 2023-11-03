@@ -608,7 +608,7 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 	if (OnWarpOutCompleteHook->isActive()) {
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{shipp};
-		OnWarpOutCompleteHook->run(conditions, params);
+		OnWarpOutCompleteHook->run(conditions, std::move(params));
 	}
 }
 

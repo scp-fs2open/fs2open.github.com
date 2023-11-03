@@ -3001,7 +3001,7 @@ modelread_status read_model_file(polymodel* pm, const char* filename, int ferror
 	modelread_status status;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, depth, ferror, deferredTasks)) {
+	if (read_virtual_model_file(pm, filename, std::move(depth), ferror, deferredTasks)) {
 		status = modelread_status::SUCCESS_VIRTUAL;
 	}
 	else {

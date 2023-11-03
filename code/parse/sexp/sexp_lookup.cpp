@@ -248,7 +248,7 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 
 	sexp_help_struct new_help;
 	new_help.id = new_op.value;
-	new_help.help = help_text;
+	new_help.help = std::move(help_text);
 	Sexp_help.push_back(new_help);
 
 	return new_op.value;
