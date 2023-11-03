@@ -3741,9 +3741,9 @@ void ai_update_aim(ai_info *aip)
 
 // returns if the currently active goal trying to afterburn hard
 bool ai_willing_to_afterburn_hard(ai_info* aip) {
-	return aip->active_goal > -1 && aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC ?
+	return aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC ?
 		The_mission.ai_profile->flags[AI::Profile_Flags::Dynamic_goals_afterburn_hard] :
-		aip->goals[aip->active_goal].flags[AI::Goal_Flags::Afterburn_hard];
+		(aip->active_goal > -1 && aip->goals[aip->active_goal].flags[AI::Goal_Flags::Afterburn_hard]);
 }
 
 // pedal to the metal!!1!
