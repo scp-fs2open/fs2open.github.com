@@ -1844,7 +1844,10 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		// of the wave and head
 		// ADDENDUM -- Since the special hack is specifically for mission-unique messages, don't
 		// convert built-in messages to Command
-		if ( builtin_type < 0 && !stricmp(who_from, The_mission.command_sender) ) {
+		if ( builtin_type < 0
+			&& (!stricmp(who_from, The_mission.command_sender)
+				|| (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_COMMAND))
+				) ) {
 			// ADDENDUM 2 -- perform an additional check: only convert this message if a WAV exists for it
 			auto m = &Messages[message_num];
 			if (m->wave_info.index >= 0) {

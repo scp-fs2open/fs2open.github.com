@@ -14163,7 +14163,7 @@ void sexp_abort_rearm(int node)
 
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1 )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1, bool do_hash_fallback = false )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -14200,6 +14200,10 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
 		message_send_unique( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
+		return;
+	} else if ( !ship_entry && wingnum < 0 && do_hash_fallback ) {
+		// ship/wing not found, so act as if this who_from has a hash prepended to it
+		message_send_unique( name, who_from, MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -14262,10 +14266,13 @@ void sexp_send_message(int n)
 	}
 
 	// we might override the sender
-	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+	bool do_hash_fallback = false;
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
 		who_from = The_mission.command_sender;
+		do_hash_fallback = true;
+	}
 
-	sexp_send_one_message( name, who_from, priority, 0, 0 );
+	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
 }
 
 void sexp_send_message_list(int n, bool send_message_chain)
@@ -14328,11 +14335,14 @@ void sexp_send_message_list(int n, bool send_message_chain)
 		}
 
 		// we might override the sender
-		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+		bool do_hash_fallback = false;
+		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
 			who_from = The_mission.command_sender;
+			do_hash_fallback = true;
+		}
 
 		// send the message
-		sexp_send_one_message(name, who_from, priority, 1, delay, event_num);
+		sexp_send_one_message( name, who_from, priority, 1, delay, event_num, do_hash_fallback );
 	}
 }
 
@@ -14370,7 +14380,14 @@ void sexp_send_random_message(int n)
 	Assert (n != -1);		// should have found the message!!!
 	auto name = CTEXT(n);
 
-	sexp_send_one_message( name, who_from, priority, 0, 0 );
+	// we might override the sender
+	bool do_hash_fallback = false;
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
+		who_from = The_mission.command_sender;
+		do_hash_fallback = true;
+	}
+
+	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
 }
 
 void sexp_self_destruct(int node)
@@ -17179,7 +17196,8 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		auto ship_name = CTEXT(node);
 
 		// check that this isn't a request to silence command. 
-		if ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender)) 
+		if ( ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender))
+			|| (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(ship_name, DEFAULT_HASHCOMMAND)) )
 		{
 			// Either disable or enable messages from command
 			The_mission.flags.set(Mission::Mission_Flags::No_builtin_command, !enable_messages);
