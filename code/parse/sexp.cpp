@@ -34127,7 +34127,6 @@ void add_block_variable(const char *text, const char *var_name, int type, int in
 
 	strcpy_s(Block_variables[index].text, text);
 	strcpy_s(Block_variables[index].variable_name, var_name);
-	Block_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
 	Block_variables[index].type = (type | SEXP_VARIABLE_SET);
 
 }

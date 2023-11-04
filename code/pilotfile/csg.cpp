@@ -130,7 +130,8 @@ void pilotfile::csg_read_info()
 	Assertion ((idx < (int)ship_list.size()), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
 	if (idx >= (int)ship_list.size())
 		idx = -1;
-	else if (idx != -1)
+
+	if (idx != -1)
 		p->last_ship_flown_si_index = ship_list[idx].index;
 	else
 		p->last_ship_flown_si_index = -1;
