@@ -19836,7 +19836,6 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 						// Nuke: idiotproof this, no segfault 4 u
 						if ( (storage_idx < 0) || (storage_idx >= AT_NUM_STORAGE_LOCATIONS) ) {
 							Warning(LOCATION, "+Value: for +Store: calculation out of range. Should be between 0 and %i. Read: %i, Skipping calculation.", AT_NUM_STORAGE_LOCATIONS, storage_idx);
-							storage_idx = 0;
 						} else {
 							storage[storage_idx] = damage_applied;
 						}
@@ -19850,7 +19849,6 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 						// Nuke: idiotproof this, no segfault 4 u
 						if ( (storage_idx < 0) || (storage_idx >= AT_NUM_STORAGE_LOCATIONS) ) {
 							Warning(LOCATION, "+Value: for +Load: calculation out of range. Should be between 0 and %i. Read: %i, Skipping calculation.", AT_NUM_STORAGE_LOCATIONS, storage_idx);
-							storage_idx = 0;
 						} else {
 							damage_applied = storage[storage_idx];
 						}
