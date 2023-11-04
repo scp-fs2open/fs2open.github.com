@@ -34153,7 +34153,6 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 	if (index >= 0) {
 		strcpy_s(Sexp_variables[index].text, text);
 		strcpy_s(Sexp_variables[index].variable_name, var_name);
-		Sexp_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
 		Sexp_variables[index].type = (type | SEXP_VARIABLE_SET);
 	}
 
