@@ -14546,7 +14546,6 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 
 		weapon	*weaponp = &Weapons[weapon_objp->instance];
 		weapon_info	*wip = &Weapon_info[weaponp->weapon_info_index];
-		object *target_ship_obj = NULL;
 
 		if (wip->shockwave.speed == 0.0f) {
 			aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_weapon);
@@ -14565,16 +14564,12 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		//	time in the future, this time based on max lifetime and life left.
 		if (wip->is_locked_homing()) {
 			expected_pos = weaponp->homing_pos;
-			if (weaponp->homing_object && weaponp->homing_object->type == OBJ_SHIP) {
-				target_ship_obj = weaponp->homing_object;
-			}
 			pos_set = 1;
 			if (IS_VEC_NULL(&weaponp->homing_pos)) {
 				pos_set = 0;
 				if (weaponp->target_num != -1) {
 					if (Objects[weaponp->target_num].type == OBJ_SHIP) {
-						target_ship_obj = &Objects[weaponp->target_num];
-						expected_pos = target_ship_obj->pos;
+						expected_pos = Objects[weaponp->target_num].pos;
 						pos_set = 1;
 					}
 				}
