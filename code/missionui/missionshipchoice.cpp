@@ -2466,7 +2466,6 @@ commit_pressed_status create_wings(bool API_Access)
 					}
 
 					objnum = OBJ_INDEX(Player_obj);
-					shipnum = Objects[objnum].instance;
 				} else {
 					// We should always update the parse object information, even if the ship is present at start,
 					// because the wing might have more than one wave or scripting functions might need accurate data
