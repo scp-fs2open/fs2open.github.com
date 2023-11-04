@@ -2432,7 +2432,7 @@ commit_pressed_status create_wings(bool API_Access)
 	ss_slot_info		*ws;
 	wing					*wp;
 
-	int shipnum, objnum, slot_index;
+	int shipnum, slot_index;
 	int cleanup_ship_index[MAX_WING_SLOTS];
 	int i,j,k;
 
@@ -2465,7 +2465,6 @@ commit_pressed_status create_wings(bool API_Access)
 						return commit_pressed_status::PLAYER_NO_WEAPONS;
 					}
 
-					objnum = OBJ_INDEX(Player_obj);
 				} else {
 					// We should always update the parse object information, even if the ship is present at start,
 					// because the wing might have more than one wave or scripting functions might need accurate data
