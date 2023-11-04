@@ -38210,7 +38210,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_AI_STAY_NEAR_SHIP, "Ai-stay near ship (Ship goal)\r\n"
 		"\tCauses the specified ship to park itself near the given ship and move closer if the other ship moves too far "
 		"away from it.\r\n\r\n"
-		"Takes 2 to 3 arguments...\r\n"
+		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship to stay near.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89).\r\n"
 		"\t3:\tDistance to stay within (optional; defaults to 300).\r\n"
