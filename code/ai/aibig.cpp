@@ -76,7 +76,7 @@ extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d
 //	If truly_random flag set (haha), then generate a pretty random number.  Otherwise, generate a static rand which
 //	tends to not change from frame to frame.
 //	Try four times and choose nearest point to increase chance of getting a good point.
-void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, ship_subsys *ss)
+void ai_bpap(const object *objp, const vec3d *attacker_objp_pos, const vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, const ship_subsys *ss)
 {
 	float		nearest_dist;
 	vec3d	result_point, best_point;
@@ -193,7 +193,7 @@ done_1:
 //
 //	Note: Default value for fov is 1.0f  1.0f means don't use fov parameter.
 //	If fov != 1.0f, try up to four times to find a point that's in the field of view.
-void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist)
+void ai_big_pick_attack_point_turret(const object *objp, ship_subsys *ssp, const vec3d *gpos, const vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist)
 {
 	if (!timestamp_elapsed(ssp->turret_pick_big_attack_point_timestamp)) {
 		vec3d	result_point;
@@ -213,7 +213,7 @@ void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos
 //	Note: Default value for fov is 1.0f  1.0f means don't use fov parameter.
 //	If fov != 1.0f, try up to four times to find a point that's in the field of view.
 //	Note, attacker_objp can be a ship or a weapon.
-void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov)
+void ai_big_pick_attack_point(const object *objp, const object *attacker_objp, vec3d *attack_point, float fov)
 {
 	Assert(objp->instance > -1);
 	Assert(objp->type == OBJ_SHIP);
@@ -411,7 +411,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 				}
 			}
 
-			if ( ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, 1) ) {
+			if ( ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, true) ) {
 				subsys_in_sight = 1;
 			}
 		}
@@ -541,7 +541,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 	get_subsystem_pos(&gsubpos, target_objp, aip->targeted_subsys);
 
 	// you're in sight! shoot it!
-	if (ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, 0))
+	if (ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, false))
 		return false;
 
 	// not in sight, gotta get there

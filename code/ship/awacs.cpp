@@ -177,7 +177,7 @@ void awacs_update_all_levels()
 // < 0.0f		: untargetable
 // 0.0 - 1.0f	: marginally targetable
 // >= 1.0f			: fully targetable as normal
-float awacs_get_level(object *target, ship *viewer, int use_awacs)
+float awacs_get_level(const object *target, const ship *viewer, bool use_awacs)
 {
 	Assert(target);	// Goober5000
 	Assert(viewer);	// Goober5000
@@ -461,7 +461,7 @@ void team_visibility_update()
 
 // Determine is ship is visible by team
 // Goober5000 - now accounts for primitive sensors
-int ship_is_visible_by_team(object *target, ship *viewer)
+int ship_is_visible_by_team(const object *target, const ship *viewer)
 {
 	Assert(target);
 	Assert(viewer);

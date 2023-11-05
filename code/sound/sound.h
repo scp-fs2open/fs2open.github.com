@@ -144,9 +144,9 @@ sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale = 1
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
 // the pan and volume relative to the current viewer's location.
-sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, float radius = 0.0f, vec3d* vel = nullptr,
-                         int looping = 0, float vol_scale = 1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE,
-                         vec3d* sound_fvec = nullptr, float range_factor = 1.0f, int force = 0,
+sound_handle snd_play_3d(game_snd* gs, const vec3d* source_pos, const vec3d* listen_pos, float radius = 0.0f, const vec3d* vel = nullptr,
+                         bool looping = false, float vol_scale = 1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE,
+                         const vec3d* sound_fvec = nullptr, float range_factor = 1.0f, bool force = false,
                          bool is_ambient = false);
 
 // update the given 3d sound with a new position

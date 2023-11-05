@@ -1021,7 +1021,7 @@ void ai_level_init()
 /**
  * Check if object is a stealth ship
  */
-bool is_object_stealth_ship(object* objp)
+bool is_object_stealth_ship(const object *objp)
 {
 	if (objp->type == OBJ_SHIP) {
 		if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth]) {
@@ -1109,7 +1109,7 @@ float get_skill_stealth_dot_scaler()
 	return 1.0f;
 }
 
-int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
+int ai_is_stealth_visible(const object *viewer_objp, const object *stealth_objp)
 {
 	ship *shipp;
 	vec3d vec_to_stealth;
@@ -1905,7 +1905,7 @@ int	Player_attacking_enabled = 1;
 /**
  * Determine whether an object is targetable within a nebula
  */
-int object_is_targetable(object *target, ship *viewer)
+bool object_is_targetable(const object *target, const ship *viewer)
 {
 	// if target is ship, check if visible by team
 	if (target->type == OBJ_SHIP)
@@ -2413,7 +2413,7 @@ int find_nearby_threat(int objnum, int enemy_team_mask, float range, int *count)
 /**
  * Number of live turrets with target_objnum 
  */
-int num_turrets_attacking(object *turret_parent, int target_objnum) 
+int num_turrets_attacking(const object *turret_parent, int target_objnum)
 {
 	ship_subsys *ss;
 	ship *shipp;
@@ -3636,7 +3636,7 @@ int Debug_k = 0;
  *
  * Return this value.  Return value of 0.0f means no collision is possible.
  */
-float compute_collision_time(vec3d *targpos, vec3d *targvel, vec3d *attackpos, float weapon_speed)
+float compute_collision_time(const vec3d *targpos, const vec3d *targvel, const vec3d *attackpos, float weapon_speed)
 {
 	vec3d	vec_to_target;
 	float		pos_dot_vel;
@@ -6305,7 +6305,7 @@ int ai_fire_primary_weapon(object *objp)
 //				threshold			=>	max distance from pos to be considered "near"
 //
 // exit:		number of ships within threshold units of pos
-int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
+int num_nearby_fighters(int enemy_team_mask, const vec3d *pos, float threshold)
 {
 	ship_obj	*so;
 	object	*ship_objp;
@@ -6476,7 +6476,7 @@ bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 /**
  * @return number of objects homing on object *target_objp
  */
-int compute_num_homing_objects(object *target_objp)
+int compute_num_homing_objects(const object *target_objp)
 {
 	int		count = 0;
 
@@ -6558,7 +6558,7 @@ float compute_incoming_payload(object *target_objp)
 //			OR: secondary los flag is set but no line of sight is availabe
 //	Note: If player is attacking a ship, that ship is allowed to fire at player.  Otherwise, we get in a situation in which
 //	player is attacking a large ship, but that large ship is not defending itself with missiles.
-bool check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secondary_bank, vec3d *firing_pos_global)
+bool check_ok_to_fire(int objnum, int target_objnum, const weapon_info *wip, int secondary_bank, const vec3d *firing_pos_global)
 {
 	int	num_homers = 0;
 
@@ -6616,7 +6616,7 @@ bool check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secon
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
 //	threshold defines the minimum radius for an object to be considered relevant for LoS
-bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, vec3d *firing_pos_global) {
+bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, const vec3d *firing_pos_global) {
 
 	//Do both checks over an XOR-Check for more detailed messages
 	int sources = (primary_bank != -1 ? 1 : 0) + (secondary_bank != -1 ? 1 : 0) + (firing_pos_global != nullptr ? 1 : 0);
@@ -6940,7 +6940,7 @@ float ai_get_weapon_dist(ship_weapon *swp)
 	return MIN((Weapon_info[weapon_num].max_speed * Weapon_info[weapon_num].lifetime), Weapon_info[weapon_num].weapon_range);
 }
 
-float ai_get_weapon_speed(ship_weapon *swp)
+float ai_get_weapon_speed(const ship_weapon *swp)
 {
 	int	bank_num, weapon_num;
 
@@ -6984,7 +6984,7 @@ weapon_info* ai_get_weapon(ship_weapon *swp)
 //	Also, stuff globals G_predicted_pos, G_collision_time and G_fire_pos.
 //	*pobjp		object firing the weapon
 //	*eobjp		object being fired upon
-void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range)
+void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, const vec3d *gun_pos, const object *pobjp, const vec3d *enemy_pos, const vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range)
 {
 	ship	*shipp = &Ships[pobjp->instance];
 	float	range_time;
@@ -10241,7 +10241,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 		}
 
 		// don't attack if you can't see him
-		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], 1) < 1 ) {
+		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], true) < 1.0f ) {
 			// if he's a stealth and visible, but not targetable, ok to attack.
 			if ( is_object_stealth_ship(hitter_objp) ) {
 				if ( ai_is_stealth_visible(guard_objp, hitter_objp) != STEALTH_IN_FRUSTUM ) {
@@ -15810,7 +15810,7 @@ void maybe_set_dynamic_chase(ai_info *aip, int hitter_objnum)
 	}
 
 	// only set as target if can be targeted.
-	if (awacs_get_level(&Objects[hitter_objnum], &Ships[aip->shipnum], 1) < 1) {
+	if (awacs_get_level(&Objects[hitter_objnum], &Ships[aip->shipnum], true) < 1.0f) {
 		return;
 	}
 

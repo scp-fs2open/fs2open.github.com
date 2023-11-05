@@ -15,7 +15,7 @@
 #include "network/multiutil.h"
 
 void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free);
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
 
 namespace scripting {
 namespace api {
@@ -896,7 +896,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, reset ? nullptr : &pos);
+	bool ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, reset ? nullptr : &pos);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;
@@ -1014,9 +1014,9 @@ ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
 	get_subsystem_world_pos(sso->objp, sso->ss, &world_pos);
 
 	// Disable facing check since the HUD code does the same
-	int in_sight = ship_subsystem_in_sight(sso->objp, sso->ss, from, &world_pos, 0);
+	bool in_sight = ship_subsystem_in_sight(sso->objp, sso->ss, from, &world_pos, false);
 
-	return ade_set_args(L, "b", in_sight != 0);
+	return ade_set_args(L, "b", in_sight);
 }
 
 ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

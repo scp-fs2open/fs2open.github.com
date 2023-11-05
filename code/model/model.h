@@ -1091,7 +1091,7 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst);
+extern bool model_rotate_gun(const object *objp, const polymodel *pm, const polymodel_instance *pmi, ship_subsys *ss, const vec3d *dst);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
