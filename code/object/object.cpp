@@ -841,7 +841,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 	// everyone does the following for their own ships.
 	if ( ci.afterburner_start ){
-		if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f) {
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || !ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE)) {
 			afterburners_start( objp );
 		}
 	}
@@ -951,7 +951,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				if (/* (objnum_I_am_docked_or_docking_with != -1) || */
 					((aip->mode == AIM_DOCK) && ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_UNDOCK_0))) ||
 					((aip->mode == AIM_WARP_OUT) && (aip->submode >= AIS_WARP_3))) {
-					if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f){
+					if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || !ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE)){
 						objp->phys_info.flags |= PF_USE_VEL;
 					} else {
 						objp->phys_info.flags &= ~PF_USE_VEL;	//	If engine blown, don't PF_USE_VEL, or ships stop immediately

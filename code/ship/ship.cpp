@@ -14809,12 +14809,32 @@ int ship_find_subsys(ship *sp, const char *ss_name)
 	return -1;
 }
 
+// an optimization of the below function that skips the subsystem iteration if we don't care about the exact number
+bool ship_subsystems_blown(const ship* shipp, int type, bool skip_dying_check)
+{
+	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
+
+	//	For a dying ship, all subsystem strengths are zero.
+	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
+		return true;
+
+	// short circuit 1
+	if (shipp->subsys_info[type].aggregate_max_hits <= 0.0f)
+		return false;
+
+	// short circuit 0
+	if (shipp->subsys_info[type].aggregate_current_hits <= 0.0f)
+		return true;
+
+	return false;
+}
+
 // routine to return the strength of a subsystem.  We keep a total hit tally for all subsystems
 // which are similar (i.e. a total for all engines).  These routines will return a number between
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
 // calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
-float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check, bool no_minimum_engine_str )
+float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check, bool no_minimum_engine_str)
 {
 	float strength;
 	ship_subsys *ssp;
