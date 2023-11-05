@@ -1734,7 +1734,7 @@ bool SetCmdlineParams()
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
+			Warning(LOCATION, "Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res);
 		}
 	}
 	if(window_res_arg.found()){
@@ -1744,7 +1744,7 @@ bool SetCmdlineParams()
 		if ( sscanf(window_res_arg.str(), "%dx%d", &width, &height) == 2 ) {
 			Cmdline_window_res.emplace(width, height);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
+			Warning(LOCATION, "Failed to parse -window_res parameter \"%s\". Must be in format \"<width>x<height>\".\n", window_res_arg.str());
 		}
 	}
 	if(center_res_arg.found()){
