@@ -5021,7 +5021,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_SCRIPTING_MISSION:
-			gameseq_set_state(GS_STATE_SCRIPTING_MISSION);
+			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
 			break;
 
 		default:
