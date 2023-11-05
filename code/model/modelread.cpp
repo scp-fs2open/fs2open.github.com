@@ -4375,10 +4375,10 @@ void submodel_translate(bsp_info *sm, submodel_instance *smi)
 	submodel_canonicalize_translation(sm, smi);
 }
 
-// Tries to move joints so that the turret points to the point dst.
+// Tries to move joints so that the turret points to the point dst.  If dst is nullptr, the turret's joints are reset.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst)
 {
 	model_subsystem *turret = ss->system_info;
 
@@ -4401,7 +4401,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	// Find the heading and pitch that the gun needs to turn to
 	float desired_base_angle, desired_gun_angle;
 
-	if (!reset) {
+	if (dst) {
 		vec3d world_axis, world_pos, planar_dst, dir, rotated_vec;
 		matrix save_base_orient;
 
@@ -4476,10 +4476,10 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	float step_size = turret->turret_turning_rate * calc_time;
 	float base_delta, gun_delta;
 
-	if (reset)
-		step_size /= 3.0f;
-	else
+	if (dst)
 		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
+	else
+		step_size /= 3.0f;
 
 	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, turret->turret_base_fov > -1.0f);
 	gun_delta = vm_interp_angle(&gun_smi->cur_angle, desired_gun_angle, step_size);

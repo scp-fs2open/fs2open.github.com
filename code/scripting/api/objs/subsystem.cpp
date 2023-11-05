@@ -896,7 +896,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, &pos, reset);
+	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, reset ? nullptr : &pos);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;
