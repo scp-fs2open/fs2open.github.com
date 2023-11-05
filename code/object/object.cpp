@@ -863,12 +863,12 @@ void obj_move_call_physics(object *objp, float frametime)
 			ship *shipp = &Ships[objp->instance];
 
 			if (!shipp->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
-				float engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
+				bool engines_blown = ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE);
 				if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
-					engine_strength=0.0f;
+					engines_blown = true;
 				}
 
-				if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
+				if (engines_blown) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
 					vm_vec_zero(&objp->phys_info.desired_vel);
 					vm_vec_zero(&objp->phys_info.desired_rotvel);
 					vm_mat_zero(&objp->phys_info.ai_desired_orient);

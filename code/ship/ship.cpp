@@ -14856,7 +14856,8 @@ float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_c
 	strength = shipp->subsys_info[type].aggregate_current_hits / shipp->subsys_info[type].aggregate_max_hits;
 	Assert( strength != 0.0f );
 
-	if ( (type == SUBSYSTEM_ENGINE) && (strength < 1.0f) ) {
+	// if we don't need to enforce a minimum engine contribution ratio, we can just use the regular strength calculation
+	if ( (type == SUBSYSTEM_ENGINE) && !no_minimum_engine_str && (strength < 1.0f) ) {
 		float percent;
 
 		percent = 0.0f;
@@ -14867,7 +14868,7 @@ float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_c
 				float ratio;
 
 				ratio = ssp->current_hits / ssp->max_hits;
-				if ( ratio < ENGINE_MIN_STR && !no_minimum_engine_str)
+				if ( ratio < ENGINE_MIN_STR )
 					ratio = ENGINE_MIN_STR;
 
 				percent += ratio;
@@ -16174,7 +16175,9 @@ int ship_engine_ok_to_warp(ship *sp)
 	if (sp->flags[Ship_Flags::Disabled])
 		return 0;
 
-	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
+	// since the required strength to warp is above the minimum engine contribution,
+	// and we don't otherwise need the exact number, we can use the no_minimum_engine_str flag
+	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE, false, true);
 
 	// if at 0% strength, can't warp
 	if (engine_strength <= 0.0f)
