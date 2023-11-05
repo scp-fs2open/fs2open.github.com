@@ -320,7 +320,7 @@ ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "Th
 	return ade_set_args(L, "s", smh->GetSubmodel()->name);
 }
 
-ADE_VIRTVAR(Index, l_Submodel, nullptr, "Gets the submodel's index", "number", "The number or -1 if invalid")
+ADE_VIRTVAR(Index, l_Submodel, nullptr, "Gets the submodel's index", "number", "The number (adjusted for lua) or -1 if invalid")
 {
 	submodel_h* smh = nullptr;
 
@@ -333,7 +333,7 @@ ADE_VIRTVAR(Index, l_Submodel, nullptr, "Gets the submodel's index", "number", "
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Setting the submodel index is not implemented");
 
-	return ade_set_args(L, "i", smh->GetSubmodelIndex());
+	return ade_set_args(L, "i", smh->GetSubmodelIndex() + 1);
 }
 
 ADE_VIRTVAR(Offset, l_Submodel, nullptr, "Gets the submodel's offset from its parent submodel", "vector", "The offset vector or a empty vector if invalid")
