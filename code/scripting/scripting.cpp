@@ -978,7 +978,7 @@ void scripting_state_close()
 	scripting_state_inited = 0;
 }
 
-void scripting_state_do_frame(float  /*frametime*/)
+void scripting_state_do_frame(float  /*frametime*/, bool doKeys)
 {
 	// just incase something is wrong
 	if (!scripting_state_inited)
@@ -987,6 +987,9 @@ void scripting_state_do_frame(float  /*frametime*/)
 	gr_reset_clip();
 	gr_clear();
 	gr_flip();
+
+	if (!doKeys)
+		return;
 
 	// process keys
 	int k = game_check_key() & ~KEY_DEBUGGED;	
