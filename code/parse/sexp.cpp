@@ -20949,7 +20949,7 @@ void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free)
 			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free]))
 			{
 				turret->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-				turret->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
+				turret->turret_next_fire_stamp = timestamp(Random::next(50, 4000));
 			}
 		}
 		else
@@ -20966,7 +20966,7 @@ void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free)
 			if (turret->weapons.flags[Ship::Weapon_Flags::Turret_Lock])
 			{
 				turret->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
-				turret->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
+				turret->turret_next_fire_stamp = timestamp(Random::next(50, 4000));
 			}
 		}
 		else

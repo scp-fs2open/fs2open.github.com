@@ -1578,7 +1578,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	if(stride <= 0){
 		stride = 1;
 	}
-	int offset = (int)frand_range(0.0f, (float)(aifft_list_size % stride));
+	int offset = Random::next(aifft_list_size % stride);
 	int idx;
 	float dot_fov_modifier = 0.0f;
 

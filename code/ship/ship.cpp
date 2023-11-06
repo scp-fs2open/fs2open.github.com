@@ -7551,7 +7551,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_next_fire_stamp = timestamp(0);
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
-		ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
+		ship_system->turret_next_fire_stamp = timestamp(Random::next(1, 500));	// next time this turret can fire
 		ship_system->turret_last_fire_direction = model_system->turret_norm;
 		ship_system->turret_next_fire_pos = 0;
 		ship_system->turret_time_enemy_in_range = 0.0f;

@@ -610,7 +610,7 @@ void emp_randomize_chars(char *str)
 	// shuffle chars around
 	for(idx=0; idx<(int)(strlen(str)-1); idx++){
 		if(frand_range(0.0f, 1.0f) < Emp_intensity){
-			char_index = (int)frand_range(0.0f, (float)(NUM_RANDOM_CHARS - 1));
+			char_index = Random::next(NUM_RANDOM_CHARS);
 			str[idx] = Emp_random_char[char_index];
 		}
 	}

@@ -2555,7 +2555,7 @@ void game_tst_frame()
 		tst_time = (int) time(nullptr);
 
 		// load the tst bitmap		
-		switch((int)frand_range(0.0f, 3.0)){
+		switch(Random::next(4)){
 		case 0:			
 			tst_bitmap = bm_load("ig_jim");
 			left = 1;

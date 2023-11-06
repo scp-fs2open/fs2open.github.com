@@ -1523,7 +1523,7 @@ void beam_generate_muzzle_particles(beam *b)
 	b->Beam_muzzle_stamp = timestamp(hack_time);
 
 	// randomly generate 10 to 20 particles
-	particle_count = (int)frand_range(0.0f, (float)wip->b_info.beam_particle_count);
+	particle_count = Random::next(0, wip->b_info.beam_particle_count);
 
 	// get turret info - position and normal
 	turret_pos = b->last_start;

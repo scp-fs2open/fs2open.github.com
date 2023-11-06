@@ -5439,14 +5439,7 @@ void multi_pxo_ban_parse_banner_file()
 	if (num_banners > 1) {
 		do {
 			// randomly pick a file for download
-			idx = (int)frand_range(0.0f, (float)num_banners);
-
-			if (idx >= num_banners){
-				idx = num_banners - 1;
-			}
-			if (idx < 0){
-				idx = 0;
-			}
+			idx = Random::next(num_banners);
 		} while (Multi_pxo_banner.ban_file == banners[idx]);
 	}
 
