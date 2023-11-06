@@ -108,6 +108,7 @@ namespace {
 			case GS_STATE_CMD_BRIEF:
 			case GS_STATE_FICTION_VIEWER:
 			case GS_STATE_SCRIPTING:
+			case GS_STATE_SCRIPTING_MISSION:
 				return true;
 
 			default:

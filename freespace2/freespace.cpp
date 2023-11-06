@@ -5020,6 +5020,10 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_SCRIPTING);
 			break;
 
+		case GS_EVENT_SCRIPTING_MISSION:
+			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
+			break;
+
 		default:
 			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
@@ -5086,6 +5090,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_EVENT_DEBUG:				
 		case GS_STATE_GAMEPLAY_HELP:
 		case GS_STATE_LAB:
+		case GS_STATE_SCRIPTING_MISSION:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
@@ -5513,6 +5518,7 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_SCRIPTING:
+		case GS_STATE_SCRIPTING_MISSION:
 			// this can happen because scripting can be done in odd places.
 			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
@@ -6082,6 +6088,7 @@ void mouse_force_pos(int x, int y);
 			break;
 
 		case GS_STATE_SCRIPTING:
+		case GS_STATE_SCRIPTING_MISSION:
 			scripting_state_init();
 			break;
 	} // end switch
@@ -6424,7 +6431,12 @@ void game_do_state(int state)
 
 		case GS_STATE_SCRIPTING:
 			game_set_frametime(GS_STATE_SCRIPTING);
-			scripting_state_do_frame(flFrametime);
+			scripting_state_do_frame(flFrametime, true);
+			break;
+
+		case GS_STATE_SCRIPTING_MISSION:
+			game_set_frametime(GS_STATE_SCRIPTING_MISSION);
+			scripting_state_do_frame(flFrametime, false);
 			break;
 
    } // end switch(gs_current_state)
