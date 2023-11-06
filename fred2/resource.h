@@ -1109,6 +1109,7 @@
 #define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
+#define IDC_ENTRY_FORMAT_DESC           1588
 #define IDC_ENVMAP                      1589
 #define IDC_ENVMAP_BROWSE               1590
 #define IDC_ENTRY_FORMAT                1590
