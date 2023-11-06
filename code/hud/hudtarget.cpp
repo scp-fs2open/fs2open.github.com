@@ -1754,8 +1754,9 @@ int turret_compare_func(const eval_next_turret *p1, const eval_next_turret *p2)
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags);
-extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
+extern bool turret_weapon_has_flags(const ship_weapon *swp, Weapon::Info_Flags flags);
+extern bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype);
+
 // target the next/prev live turret on the current target
 // auto_advance from hud_update_closest_turret
 void hud_target_live_turret(int next_flag, int auto_advance, int only_player_target)

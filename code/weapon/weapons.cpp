@@ -6997,7 +6997,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags);
+extern bool turret_weapon_has_flags(const ship_weapon *swp, Weapon::Info_Flags flags);
 
 /**
  * Distrupt any subsystems that fall into damage sphere of this Electronics missile
