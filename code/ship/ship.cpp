@@ -14812,7 +14812,7 @@ int ship_find_subsys(ship *sp, const char *ss_name)
 // an optimization of the below function that skips the subsystem iteration if we don't care about the exact number
 bool ship_subsystems_blown(const ship* shipp, int type, bool skip_dying_check)
 {
-	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
+	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_subsystems_blown() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
 	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
@@ -14839,7 +14839,7 @@ float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_c
 	float strength;
 	ship_subsys *ssp;
 
-	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
+	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_get_subsystem_strength() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
 	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
