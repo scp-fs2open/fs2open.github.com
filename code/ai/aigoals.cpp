@@ -487,10 +487,12 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 	// these goals cannot be associated to wings, but can to a ship in a wing.  So, we should find out
 	// if the ship is in a wing so we can purge goals which might operate on that wing
 	ship_index = ship_name_lookup(name);
-	if ( ship_index == -1 ) {
-		Int3();						// get allender -- this is sort of odd
-		return;
+
+	Assertion(ship_index > -1, "Found a bad ship_index of %d in ai_goal_purge_invalid_goals, please report to the SCP!", ship_index); // get allender -- this is sort of odd
+	if ( ship_index < 0 ) {					
+		return; 
 	}
+
 	wingnum = Ships[ship_index].wingnum;
 
 	purge_goal = goal_list;
@@ -919,13 +921,13 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		bool is_nan, is_nan_forever;
 
 		ref_type = Sexp_nodes[CDR(node)].subtype;
-		if (ref_type == SEXP_ATOM_STRING || ref_type == SEXP_ATOM_CONTAINER_DATA) {  // referenced by name
-			// save the waypoint path name -- the list will get resolved when the goal is checked
-			// for achievability.
-			aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
+		Assertion(ref_type == SEXP_ATOM_STRING || ref_type == SEXP_ATOM_CONTAINER_DATA, "Found a bad ref_type in ai_add_goal_sub_sexp of %d. Please report to the SCP!", ref_type);
+		
+		// referenced by name
+		// save the waypoint path name -- the list will get resolved when the goal is checked
+		// for achievability.
+		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
 
-		} else
-			Int3();
 
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 		aigp->ai_mode = AI_GOAL_WAYPOINTS;
@@ -1460,15 +1462,8 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 	int gindex;
 	ai_goal *aigp;
 
-#ifndef NDEBUG
 	// Goober5000 - none of the goals act on the actor, as in ai_add_goal_sub_sexp
-	if (!strcmp(name, Ships[aip->shipnum].ship_name))
-	{
-		// not good
-		Int3();
-		return;
-	}
-#endif
+	Assertion(strcmp(name, Ships[aip->shipnum].ship_name) != 0, "The goals apply to the actor in ai_add_goal_ship_internal for ship %s, please report to the SCP!", name);
 
 	// find an empty slot to put this goal in.
 	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
@@ -1519,7 +1514,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 		break;
 
 	default:
-		Int3();		// unsupported internal goal -- see Mike K or Mark A.
+		UNREACHABLE("unsupported internal goal of %d found in ai_add_goal_ship_internal. Please report to the SCP", goal_type); // see Mike K or Mark A.
 		return;
 	}
 
@@ -2553,7 +2548,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	default:
-		Int3();
+		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal->ai_mode);
 		break;
 	}
 
