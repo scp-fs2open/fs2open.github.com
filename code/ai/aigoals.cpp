@@ -489,7 +489,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 	ship_index = ship_name_lookup(name);
 
 	Assertion(ship_index > -1, "Found a bad ship_index of %d in ai_goal_purge_invalid_goals, please report to the SCP!", ship_index); // get allender -- this is sort of odd
-	if ( ship_index == -1 ) {					
+	if ( ship_index < 0 ) {					
 		return; 
 	}
 

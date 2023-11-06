@@ -10606,7 +10606,7 @@ void ai_big_guard()
 		break;
 
 	default:
-		UNREACHABLE("Illegal submode of %d for guard mode in ai_big_guard. Pleae report to the SCP!", aip->submode);
+		UNREACHABLE("Illegal submode of %d for guard mode in ai_big_guard. Please report to the SCP!", aip->submode);
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
 		aip->submode_start_time = Missiontime;
@@ -13394,7 +13394,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	Assertion(shipp->ai_index >= 0, "Arriving ship does not have a valid ai index.  Has %d instead. Please report!", shipp->ai_index);
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	Assertion(parent_objnum > -1, "parent_objnum in ai_acquire_emerge_path was found to be %d, which is an invalid value, please report to the SCP!", parent_objnum);
+	Assertion(parent_objnum > -1, "parent_objnum in ai_acquire_emerge_path was found to be %d, which is an invalid value. Please report to the SCP!", parent_objnum);
 	if ( parent_objnum == -1 ) {
 		return -1;
 	}
