@@ -84,16 +84,16 @@ typedef struct eval_enemy_obj_struct {
 	int			current_enemy = -1;
 
 
-	float		nearest_attacker_dist = 0.0f;		// nearest ship	
+	float		nearest_attacker_dist = 99999.0f;		// nearest ship
 	int			nearest_attacker_objnum = -1;
 
-	float		nearest_homing_bomb_dist = 0.0f;	// nearest homing bomb
+	float		nearest_homing_bomb_dist = 99999.0f;	// nearest homing bomb
 	int			nearest_homing_bomb_objnum = -1;
 
-	float		nearest_bomb_dist = 0.0f;			// nearest non-homing bomb
+	float		nearest_bomb_dist = 99999.0f;			// nearest non-homing bomb
 	int			nearest_bomb_objnum = -1;
 
-	float		nearest_dist = 0.0f;				// nearest ship attacking this turret
+	float		nearest_dist = 99999.0f;				// nearest ship attacking this turret
 	int			nearest_objnum = -1;
 }	eval_enemy_obj_struct;
 
@@ -772,8 +772,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
  */
 int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_only_flag, bool small_only_flag, bool tagged_only_flag, bool beam_flag, bool flak_flag, bool laser_flag, bool missile_flag)
 {
-	//float					weapon_travel_dist;
-	int					weapon_system_ok;
 	eval_enemy_obj_struct eeo;
 	ship_weapon *swp = &turret_subsys->weapons;
 
@@ -788,10 +786,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	//	weapon_travel_dist=wip->lssm_lock_range;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
-	weapon_system_ok = 0;
-	if ( ship_get_subsystem_strength( &Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS ) > 0 ) {
-		weapon_system_ok = 1;
-	}
+	bool weapon_system_ok = (ship_get_subsystem_strength(&Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS) > 0);
 
 	// Initialize eeo struct.
 	eeo.turret_parent_objnum = turret_parent_objnum;
@@ -822,18 +817,6 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.tpos = tpos;
 	eeo.tvec = tvec;
 	eeo.turret_subsys = turret_subsys;
-
-	eeo.nearest_attacker_dist = 99999.0f;
-	eeo.nearest_attacker_objnum = -1;
-
-	eeo.nearest_homing_bomb_dist = 99999.0f;
-	eeo.nearest_homing_bomb_objnum = -1;
-
-	eeo.nearest_bomb_dist = 99999.0f;
-	eeo.nearest_bomb_objnum = -1;
-
-	eeo.nearest_dist = 99999.0f;
-	eeo.nearest_objnum = -1;
 
 	// here goes the new targeting priority setting
 	int n_tgt_priorities;
