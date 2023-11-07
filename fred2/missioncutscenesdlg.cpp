@@ -127,7 +127,7 @@ void CMissionCutscenesDlg::load_tree()
 	m_cutscenes_tree.clear_tree();
 	m_cutscenes.clear();
 	m_sig.clear();
-	for (size_t i=0; i<The_mission.cutscenes.size(); i++) {
+	for (int i=0; i<static_cast<int>(The_mission.cutscenes.size()); i++) {
 		m_cutscenes.push_back(The_mission.cutscenes[i]);
 		m_sig.push_back(i);
 
@@ -186,14 +186,14 @@ void CMissionCutscenesDlg::OnSelchangedCutscenesTree(NMHDR* pNMHDR, LRESULT* pRe
 	}
 
 	int z = static_cast<int>(m_cutscenes_tree.GetItemData(h));
-	size_t i;
-	for (i = 0; i < m_cutscenes.size(); i++) {
+	int i;
+	for (i = 0; i < static_cast<int>(m_cutscenes.size()); i++) {
 		if (m_cutscenes[i].formula == z) {
 			break;
 		}
 	}
 
-	Assertion(i < m_cutscenes.size(), "Attempt to select non-existing cutscene. Please report!");
+	Assertion(i < static_cast<int>(m_cutscenes.size()), "Attempt to select non-existing cutscene. Please report!");
 	cur_cutscene = i;
 	update_cur_cutscene();
 	*pResult = 0;
