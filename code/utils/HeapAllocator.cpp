@@ -177,6 +177,7 @@ bool HeapAllocator::check_connected_range(const MemoryRange& left, const MemoryR
 	return left.offset + left.size == right.offset;
 }
 void HeapAllocator::checkRangesMerged() {
+#ifndef NDEBUG
 	bool first = true;
 	size_t lastEnd = 0;
 	for (auto& range : _freeRanges) {
@@ -187,6 +188,7 @@ void HeapAllocator::checkRangesMerged() {
 		lastEnd = range.offset + range.size;
 		first = false;
 	}
+#endif
 }
 
 bool HeapAllocator::MemoryRange::operator<(const HeapAllocator::MemoryRange& other) const {
