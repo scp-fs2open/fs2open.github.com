@@ -127,7 +127,7 @@ void CMissionCutscenesDlg::load_tree()
 	m_cutscenes_tree.clear_tree();
 	m_cutscenes.clear();
 	m_sig.clear();
-	for (int i=0; i<(int)The_mission.cutscenes.size(); i++) {
+	for (size_t i=0; i<The_mission.cutscenes.size(); i++) {
 		m_cutscenes.push_back(The_mission.cutscenes[i]);
 		m_sig.push_back(i);
 
@@ -149,7 +149,7 @@ void CMissionCutscenesDlg::create_tree()
 
 	m_cutscenes_tree.DeleteAllItems();
 	m_cutscenes_tree.reset_handles();
-	for (int i = 0; i < (int)m_cutscenes.size(); i++) {
+	for (size_t i = 0; i < m_cutscenes.size(); i++) {
 		if (m_cutscenes[i].type != m_display_cutscene_types)
 			continue;
 
@@ -173,7 +173,7 @@ void CMissionCutscenesDlg::OnSelchangeDisplayCutsceneTypesDrop()
 // we need to update the display when this occurs.
 void CMissionCutscenesDlg::OnSelchangedCutscenesTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;
+	NM_TREEVIEW* pNMTreeView = reinterpret_cast<NM_TREEVIEW*>(pNMHDR);
 
 	HTREEITEM h = pNMTreeView->itemNew.hItem;
 	if (!h)
@@ -185,15 +185,15 @@ void CMissionCutscenesDlg::OnSelchangedCutscenesTree(NMHDR* pNMHDR, LRESULT* pRe
 		h = h2;
 	}
 
-	int z = (int)m_cutscenes_tree.GetItemData(h);
-	int i;
-	for (i = 0; i < (int)m_cutscenes.size(); i++) {
+	int z = static_cast<int>(m_cutscenes_tree.GetItemData(h));
+	size_t i;
+	for (i = 0; i < m_cutscenes.size(); i++) {
 		if (m_cutscenes[i].formula == z) {
 			break;
 		}
 	}
 
-	Assert(i < (int)m_cutscenes.size());
+	Assertion(i < m_cutscenes.size(), "Attempt to select non-existing cutscene. Please report!");
 	cur_cutscene = i;
 	update_cur_cutscene();
 	*pResult = 0;
@@ -325,21 +325,21 @@ int CMissionCutscenesDlg::handler(int code, int node)
 {
 	switch (code) {
 		case ROOT_DELETED:
-			int i;
-			for (i = 0; i < (int)m_cutscenes.size(); i++){
+			size_t i;
+			for (i = 0; i < m_cutscenes.size(); i++){
 				if (m_cutscenes[i].formula == node) {
 					break;
 				}
 			}
 
-			Assert(i < (int)m_cutscenes.size());
+			Assertion(i < m_cutscenes.size(), "Attempt to delete non-existing cutscene. Please report!");
 			m_cutscenes.erase(m_cutscenes.begin() + i);
 			m_sig.erase(m_sig.begin() + i);
 
 			return node;
 
 		default:
-			Int3();
+			UNREACHABLE("Unknown cutscene context menu case. Please report!");
 	}
 
 	return -1;
@@ -357,7 +357,9 @@ void CMissionCutscenesDlg::OnSelchangeCutsceneTypeDrop()
 	m_cutscenes[cur_cutscene].type = m_cutscene_type;
 
 	HTREEITEM h = m_cutscenes_tree.GetSelectedItem();
-	Assert(h);
+	if (!h) {
+		return;
+	}
 
 	HTREEITEM h2;
 	while ((h2 = m_cutscenes_tree.GetParentItem(h)) != 0) {
@@ -414,38 +416,38 @@ void CMissionCutscenesDlg::OnClose()
 
 void CMissionCutscenesDlg::insert_handler(int old, int node)
 {
-	int i;
+	size_t i;
 
-	for (i = 0; i < (int)m_cutscenes.size(); i++) {
+	for (i = 0; i < m_cutscenes.size(); i++) {
 		if (m_cutscenes[i].formula == old) {
 			break;
 		}
 	}
 
-	Assert(i < (int)m_cutscenes.size());
+	Assertion(i < m_cutscenes.size(), "Attempt to set formula for non-existing cutscene. Please report!");
 	m_cutscenes[i].formula = node;
 	return;
 }
 
 void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before)
 {
-	int index1;
-	for (index1 = 0; index1 < (int)m_cutscenes.size(); index1++) {
+	size_t index1;
+	for (index1 = 0; index1 < m_cutscenes.size(); index1++) {
 		if (m_cutscenes[index1].formula == node1) {
 			break;
 		}
 	}
-	Assert(index1 < (int)m_cutscenes.size());
+	Assertion(index1 < m_cutscenes.size(), "Attept to modify non-existing cutscene. Please report!");
 
-	int index2;
-	for (index2 = 0; index2 < (int)m_cutscenes.size(); index2++) {
+	size_t index2;
+	for (index2 = 0; index2 < m_cutscenes.size(); index2++) {
 		if (m_cutscenes[index2].formula == node2) {
 			break;
 		}
 	}
-	Assert(index2 < (int)m_cutscenes.size());
+	Assertion(index2 < m_cutscenes.size(), "Attempt to insert non-existing cutscene. Please report!");
 
-	mission_cutscene fu = m_cutscenes[index1];
+	mission_cutscene foo = m_cutscenes[index1];
 	int s = m_sig[index1];
 
 	int offset = insert_before ? -1 : 0;
@@ -461,6 +463,6 @@ void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before
 		index1--;
 	}
 
-	m_cutscenes[index1] = fu;
+	m_cutscenes[index1] = foo;
 	m_sig[index1] = s;
 }
