@@ -6176,6 +6176,8 @@ int ai_fire_primary_weapon(object *objp)
 		}
 	}
 
+	swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
+
 	set_primary_weapon_linkage(objp);
 	
 	ship_fire_primary(objp);
@@ -14844,6 +14846,9 @@ void ai_frame(int objnum)
 
 	//Default to glide OFF
 	Pl_objp->phys_info.flags &= ~PF_GLIDING;
+	
+	// turn off trigger down
+	shipp->weapons.flags.remove(Ship::Weapon_Flags::Primary_trigger_down);
 
 	// warping out?
 	if ((aip->mode == AIM_WARP_OUT) || (aip->ai_flags[AI::AI_Flags::Trying_unsuccessfully_to_warp]))
