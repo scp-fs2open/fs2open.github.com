@@ -428,7 +428,6 @@ void CFREDDoc::OnFileImportFSM() {
 	// get location to save to
 	BROWSEINFO bi;
 	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
-	//bi.pidlRoot = &fs2_mission_pidl;
 	bi.pidlRoot = NULL;
 	bi.pszDisplayName = dest_directory;
 	bi.lpszTitle = "Select a location to save in";
@@ -444,6 +443,9 @@ void CFREDDoc::OnFileImportFSM() {
 
 	SHGetPathFromIDList(ret_val, dest_directory);
 
+	if (*dest_directory == '\0')
+		return;
+
 	// clean things up first
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);
@@ -451,7 +453,8 @@ void CFREDDoc::OnFileImportFSM() {
 	clear_mission();
 
 	int num_files = 0;
-	char dest_path[MAX_PATH_LEN];
+	int successes = 0;
+	char dest_path[MAX_PATH_LEN] = "";
 
 	// process all missions
 	POSITION pos(dlgFile.GetStartPosition());
@@ -519,6 +522,7 @@ void CFREDDoc::OnFileImportFSM() {
 			continue;
 
 		// success
+		successes++;
 	}
 
 	if (num_files > 1)
@@ -528,16 +532,20 @@ void CFREDDoc::OnFileImportFSM() {
 	}
 	else if (num_files == 1)
 	{
-		SetModifiedFlag(FALSE);
+		if (successes == 1)
+			SetModifiedFlag(FALSE);
 
 		if (Briefing_dialog) {
 			Briefing_dialog->restore_editor_state();
 			Briefing_dialog->update_data(1);
 		}
 
-		// these aren't done automatically for imports
-		theApp.AddToRecentFileList((LPCTSTR)dest_path);
-		SetTitle((LPCTSTR)Mission_filename);
+		if (successes == 1)
+		{
+			// these aren't done automatically for imports
+			theApp.AddToRecentFileList((LPCTSTR)dest_path);
+			SetTitle((LPCTSTR)Mission_filename);
+		}
 	}
 
 	recreate_dialogs();
