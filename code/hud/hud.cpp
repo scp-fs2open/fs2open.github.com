@@ -2019,7 +2019,7 @@ void hud_damage_popup_init()
 	Damage_flash_timer =	1;
 
 	for ( i = 0; i < SUBSYSTEM_MAX; i++ ) {
-		Pl_hud_subsys_info[i].last_str = 1000.0f;
+		Pl_hud_subsys_info[i].last_str = 1.0f;
 		Pl_hud_subsys_info[i].flash_duration_timestamp = 1;
 		Pl_hud_next_flash_timestamp = 1;
 		Pl_hud_is_bright = 0;
@@ -2072,6 +2072,11 @@ void HudGaugeDamage::initBottomBgOffset(int offset)
 void HudGaugeDamage::initLineHeight(int h)
 {
 	line_h = h;
+}
+
+void HudGaugeDamage::initDisplayValue(bool value)
+{
+	always_display = value;
 }
 
 void HudGaugeDamage::initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom)
@@ -2134,7 +2139,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 	for ( pss = GET_FIRST(&Player_ship->subsys_list); pss !=END_OF_LIST(&Player_ship->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 		strength = ship_get_subsystem_strength(Player_ship, psub->type);
-		if ( strength < 1 ) {
+		if ( always_display || strength < 1 ) {
 			// display the actual health of this specific subsystem --wookieejedi
 			if (pss->max_hits > 0) {
 				// get percentage if this subsystem has hitpoints to begin with
@@ -2271,7 +2276,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 	// Show hull integrity if it's below 100% or if a subsystem is damaged
 	// The second case is just to make the display look complete
 	// The third case is there to make the gauge appear only if needed if the right option is set
-	if ( screen_integrity < 100 || !info_lines.empty() ) {
+	if ( always_display || screen_integrity < 100 || !info_lines.empty() ) {
 		DamageInfo info;
 
 		info.name = XSTR( "Hull Integrity", 220);

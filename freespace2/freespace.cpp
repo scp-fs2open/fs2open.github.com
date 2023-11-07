@@ -537,7 +537,7 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 
-fs_builtin_mission *game_find_builtin_mission(char *filename)
+const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 {
 	// look through all existing builtin missions
 	for(int idx=0; idx<Game_builtin_mission_count; idx++){
@@ -1782,7 +1782,7 @@ void game_init()
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
 	}
@@ -3610,7 +3610,7 @@ void game_simulation_frame()
 			mission_parse_eval_stuff();
 		}
 
-		// if we're an observer, move ourselves seperately from the standard physics
+		// if we're an observer, move ourselves separately from the standard physics
 		if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 			obj_observer_move(flFrametime);
 		}
@@ -5020,6 +5020,10 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_SCRIPTING);
 			break;
 
+		case GS_EVENT_SCRIPTING_MISSION:
+			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
+			break;
+
 		default:
 			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
@@ -5086,6 +5090,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_EVENT_DEBUG:				
 		case GS_STATE_GAMEPLAY_HELP:
 		case GS_STATE_LAB:
+		case GS_STATE_SCRIPTING_MISSION:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
@@ -5233,6 +5238,7 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
+					message_resume_all();
 
 					// multi doesn't pause here so time keeps going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -5512,6 +5518,7 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_SCRIPTING:
+		case GS_STATE_SCRIPTING_MISSION:
 			// this can happen because scripting can be done in odd places.
 			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
@@ -5743,6 +5750,7 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
+					message_pause_all();
 
 					// multi doesn't pause here so time needs to keep going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -6080,6 +6088,7 @@ void mouse_force_pos(int x, int y);
 			break;
 
 		case GS_STATE_SCRIPTING:
+		case GS_STATE_SCRIPTING_MISSION:
 			scripting_state_init();
 			break;
 	} // end switch
@@ -6422,7 +6431,12 @@ void game_do_state(int state)
 
 		case GS_STATE_SCRIPTING:
 			game_set_frametime(GS_STATE_SCRIPTING);
-			scripting_state_do_frame(flFrametime);
+			scripting_state_do_frame(flFrametime, true);
+			break;
+
+		case GS_STATE_SCRIPTING_MISSION:
+			game_set_frametime(GS_STATE_SCRIPTING_MISSION);
+			scripting_state_do_frame(flFrametime, false);
 			break;
 
    } // end switch(gs_current_state)

@@ -23,6 +23,7 @@
 #include "JumpNodeDlg.h"
 #include "wing_editor.h"
 #include "musicplayerdlg.h"
+#include "customdatadlg.h"
 
 #include "globalincs/systemvars.h"
 #include "globalincs/systemvars.h"
@@ -74,7 +75,7 @@ public:
 	 * @param[in]     adjust Height, in pixels, to adjust the window by
 	 * @param[in]     pre    Pre-placement?
 	 *
-	 * @returns  0 If sucessful, or
+	 * @returns  0 If successful, or
 	 * @returns -1 If pre is nonzero and the window is not visible, or
 	 * @returns -2 If the window has been already initialized
 	 */
@@ -205,5 +206,6 @@ extern window_data MusPlayer_wnd_data;
 extern window_data Starfield_wnd_data;
 extern window_data Asteroid_wnd_data;
 extern window_data Mission_notes_wnd_data;
+extern window_data Custom_data_wnd_data;
 
 #endif // _FRED_H

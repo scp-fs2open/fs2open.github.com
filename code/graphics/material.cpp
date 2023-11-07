@@ -441,7 +441,7 @@ void material::set_color(int r, int g, int b, int a)
 	Clr.xyzw.w = i2fl(a) / 255.0f;
 }
 
-void material::set_color(color &clr_in)
+void material::set_color(const color &clr_in)
 {
 	if ( clr_in.is_alphacolor ) {
 		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;

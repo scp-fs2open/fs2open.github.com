@@ -78,6 +78,29 @@ ADE_VIRTVAR(Timestamp, l_Log_Entry, nullptr, "The timestamp of the log entry", "
 	return ade_set_args(L, "s", time.c_str());
 }
 
+ADE_VIRTVAR(paddedTimestamp, l_Log_Entry, nullptr, "The timestamp of the log entry that accounts for timer padding", "string", "The timestamp")
+{
+	log_entry_h current;
+	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	int seconds = f2i(current.getSection()->timestamp) + current.getSection()->timer_padding;
+
+	// format the time information into strings
+	SCP_string time;
+	sprintf(time, "%.1d:%.2d:%.2d", (seconds / 3600) % 10, (seconds / 60) % 60, seconds % 60);
+
+	return ade_set_args(L, "s", time.c_str());
+}
+
 ADE_VIRTVAR(Flags, l_Log_Entry, nullptr, "The flag of the log entry. 1 for Goal True, 2 for Goal Failed, 0 otherwise.", "number", "The flag")
 {
 	log_entry_h current;
@@ -216,6 +239,29 @@ ADE_VIRTVAR(Timestamp, l_Message_Entry, nullptr, "The timestamp of the message e
 	}
 
 	int seconds = f2i(current.getSection()->time);
+
+	// format the time information into strings
+	SCP_string time;
+	sprintf(time, "%.1d:%.2d:%.2d", (seconds / 3600) % 10, (seconds / 60) % 60, seconds % 60);
+
+	return ade_set_args(L, "s", time.c_str());
+}
+
+ADE_VIRTVAR(paddedTimestamp, l_Message_Entry, nullptr, "The timestamp of the message entry that accounts for mission timer padding", "string", "The timestamp")
+{
+	message_entry_h current;
+	if (!ade_get_args(L, "o", l_Message_Entry.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	int seconds = f2i(current.getSection()->time) + current.getSection()->timer_padding;
 
 	// format the time information into strings
 	SCP_string time;

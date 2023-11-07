@@ -156,16 +156,13 @@ void camera::set_fov(fov_t in_fov, float in_fov_time, float in_fov_acceleration_
 
 void camera::set_object_host(object *objp, int n_object_host_submodel)
 {
-	if(objp == NULL)
-		object_host = object_h();
-
 	object_host = object_h(objp);
 	object_host_submodel = n_object_host_submodel;
 	set_custom_position_function(NULL);
 	set_custom_orientation_function(NULL);
 	if(n_object_host_submodel > 0)
 	{
-		if(objp->type == OBJ_SHIP)
+		if(objp != nullptr && objp->type == OBJ_SHIP)
 		{
 			ship_subsys* ssp = GET_FIRST(&Ships[objp->instance].subsys_list);
 			while ( ssp != END_OF_LIST( &Ships[objp->instance].subsys_list ) )

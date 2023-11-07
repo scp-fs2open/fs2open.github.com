@@ -2490,41 +2490,45 @@ void multi_pxo_process_channels()
 	int item_index,my;
 	int idx;
 	
-	// if we don't have a start item, but the list is non-null
-	if((Multi_pxo_channel_start == NULL) && (Multi_pxo_channels != NULL)){
-		Multi_pxo_channel_start = Multi_pxo_channels;
-		Multi_pxo_channel_start_index = 0;
-	} 
+	// the first part of this function works under the assumption that the list has been initialized.
+	if (Multi_pxo_channels != NULL) {
 
-	// if we don't have a selected item, but the list is non-null
-	if((Multi_pxo_channel_select == NULL) && (Multi_pxo_channels != NULL)){
-		Multi_pxo_channel_select = Multi_pxo_channels;
+		// if we don't have a start item
+		if(Multi_pxo_channel_start == NULL){
+			Multi_pxo_channel_start = Multi_pxo_channels;
+			Multi_pxo_channel_start_index = 0;
+		} 
 
-		// set the text
-		multi_pxo_set_status_text(Multi_pxo_channel_select->desc);
-	}
-
-	// if the "switch" delay timestamp is set, see if it has expired
-	if(Multi_pxo_switch_delay.isValid() && ui_timestamp_elapsed(Multi_pxo_switch_delay)){
-		Multi_pxo_switch_delay = UI_TIMESTAMP::invalid();
-	}
-
-	// see if we have a mouse click on the channel region
-	if(Multi_pxo_channel_button.pressed()){
-		Multi_pxo_channel_button.get_mouse_pos(NULL,&my);
-
-		// index from the top
-		item_index = my / (gr_get_font_height() + 1);
-
-		// select the item if possible
-		if((item_index + Multi_pxo_channel_start_index) < Multi_pxo_channel_count){
-			Multi_pxo_channel_select = Multi_pxo_channel_start;
-			for(idx=0;idx<item_index;idx++){
-				Multi_pxo_channel_select = Multi_pxo_channel_select->next;
-			}
+		// if we don't have a selected item
+		if(Multi_pxo_channel_select == NULL){
+			Multi_pxo_channel_select = Multi_pxo_channels;
 
 			// set the text
 			multi_pxo_set_status_text(Multi_pxo_channel_select->desc);
+		}
+
+		// if the "switch" delay timestamp is set, see if it has expired
+		if(Multi_pxo_switch_delay.isValid() && ui_timestamp_elapsed(Multi_pxo_switch_delay)){
+			Multi_pxo_switch_delay = UI_TIMESTAMP::invalid();
+		}
+
+		// see if we have a mouse click on the channel region
+		if(Multi_pxo_channel_button.pressed()){
+			Multi_pxo_channel_button.get_mouse_pos(NULL,&my);
+
+			// index from the top
+			item_index = my / (gr_get_font_height() + 1);
+
+			// select the item if possible
+			if((item_index + Multi_pxo_channel_start_index) < Multi_pxo_channel_count){
+				Multi_pxo_channel_select = Multi_pxo_channel_start;
+				for(idx=0;idx<item_index;idx++){
+					Multi_pxo_channel_select = Multi_pxo_channel_select->next;
+				}
+
+				// set the text
+				multi_pxo_set_status_text(Multi_pxo_channel_select->desc);
+			}
 		}
 	}
 
@@ -4584,7 +4588,8 @@ void multi_pxo_pinfo_build_vals()
 
 	// rank
 	memset(Multi_pxo_pinfo_vals[1], 0, 50);	
-	multi_sg_rank_build_name(Ranks[verify_rank(fs->stats.rank)].name, Multi_pxo_pinfo_vals[1]);	
+	multi_sg_rank_build_name(get_rank_display_name(&Ranks[verify_rank(fs->stats.rank)]).c_str(),
+		Multi_pxo_pinfo_vals[1]);	
 	font::force_fit_string(Multi_pxo_pinfo_vals[1], 49, Multi_pxo_pinfo_coords[gr_screen.res][2] - (Multi_pxo_pinfo_val_x[gr_screen.res] - Multi_pxo_pinfo_coords[gr_screen.res][0]));
 
 	// kills

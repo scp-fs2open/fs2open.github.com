@@ -782,6 +782,7 @@ int mission_get_event_status(int event)
 {
 	// check for directive special events first.  We will always return from this part of the if statement
 	if ( Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL ) {
+		Assertion(Mission_events[event].flags & MEF_CURRENT, "An event should have MEF_CURRENT set if it also has MEF_DIRECTIVE_SPECIAL set");
 
 		// if this event is temporarily true, return as such
 		if ( Mission_events[event].flags & MEF_DIRECTIVE_TEMP_TRUE ){
@@ -820,6 +821,8 @@ void mission_event_set_directive_special(int event)
 	if((event < 0) || (event >= (int)Mission_events.size())){
 		return;
 	}
+
+	Assertion(Mission_events[event].flags & MEF_CURRENT, "An event should have MEF_CURRENT set before it has MEF_DIRECTIVE_SPECIAL set");
 
 	Mission_events[event].flags |= MEF_DIRECTIVE_SPECIAL;
 
@@ -950,9 +953,12 @@ void mission_process_event( int event )
 
 		// if the directive count is a special value, deal with that first.  Mark the event as a special
 		// event, and unmark it when the directive is true again.
-		if ( (Directive_count == DIRECTIVE_WING_ZERO) && !(Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL) ) {			
-			// make it special - which basically just means that its true until the next wave arrives
-			mission_event_set_directive_special(event);
+		if ( (Directive_count == DIRECTIVE_WING_ZERO) && !(Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL) ) {
+			// only mark it special if it's actually current
+			if (Mission_events[event].flags & MEF_CURRENT) {
+				// make it special - which basically just means that its true until the next wave arrives
+				mission_event_set_directive_special(event);
+			}
 
 			Directive_count = 0;
 		} else if ( (Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL) && Directive_count > 1 ) {			

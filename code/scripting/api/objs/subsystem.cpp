@@ -474,7 +474,7 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
 }
 
-ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets resets after a certain time of inactivity", "boolean", "true if turret resets, false otherwise")
+ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies whether this turrets resets after a certain time of inactivity", "boolean", "true if turret resets, false otherwise")
 {
 	ship_subsys_h *sso;
 	bool newVal = false;

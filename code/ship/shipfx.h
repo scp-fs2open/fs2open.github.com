@@ -97,7 +97,7 @@ public:
 	int			time = 0;					// in ms
 	float		accel_exp = 1.0f;
 	int			warp_type = WT_DEFAULT;
-	bool		special_warp_physics = false;
+	bool		supercap_warp_physics = false;
 
 	// only valid for warpout
 	int			warpout_engage_time = -1;	// in ms

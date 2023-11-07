@@ -438,6 +438,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "player-not-use-ai",				OP_PLAYER_NOT_USE_AI,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-player-orders",				OP_SET_PLAYER_ORDERS,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "enable-general-orders",          OP_ENABLE_GENERAL_ORDERS,               2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
+	{ "validate-general-orders",        OP_VALIDATE_GENERAL_ORDERS,             2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
 	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-wing-formation",				OP_SET_WING_FORMATION,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
@@ -744,6 +746,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "nebula-fade-poof",				OP_NEBULA_FADE_POOF,					3,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
@@ -781,6 +784,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
 	{ "set-gravity-accel",				OP_SET_GRAVITY_ACCEL,					1,	1,			SEXP_ACTION_OPERATOR, },	// Asteroth
+	{ "force-rearm",					OP_FORCE_REARM,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
+	{ "abort-rearm",					OP_ABORT_REARM,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -833,8 +838,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-dock",						OP_AI_DOCK,								4,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-undock",						OP_AI_UNDOCK,							1,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-rearm-repair",				OP_AI_REARM_REPAIR,						2,	2,			SEXP_GOAL_OPERATOR, },
-	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	3,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	5,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
@@ -4110,6 +4115,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_traitor_override_pointer(CTEXT(node)) == nullptr)) {
 					return SEXP_CHECK_INVALID_TRAITOR_OVERRIDE;
+				}
+				break;
+
+			case OPF_LUA_GENERAL_ORDER:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (ai_lua_find_general_order_id(CTEXT(node)) < 0)) {
+					return SEXP_CHECK_INVALID_LUA_GENERAL_ORDER;
 				}
 				break;
 
@@ -10858,7 +10873,11 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, i
 int eval_any_of(int arg_handler_node, int condition_node)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10879,7 +10898,11 @@ int eval_any_of(int arg_handler_node, int condition_node)
 int eval_every_of(int arg_handler_node, int condition_node)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10901,7 +10924,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10936,7 +10963,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 int eval_random_of(int arg_handler_node, int condition_node)
 {
 	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the number of valid arguments
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
@@ -11025,6 +11056,10 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 {
 	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
 	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the number of valid arguments
 	SCP_vector<int> cumulative_arg_counts;
@@ -11136,7 +11171,11 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	int val = SEXP_FALSE;
 	int n = -1 ;
 	
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the first argument
 	n = CDR(arg_handler_node);
@@ -11190,7 +11229,11 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 	int i, count, counter_start, counter_stop, counter_step;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
 	char buf[NAME_LENGTH];
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	n = CDR(arg_handler_node);
 
@@ -11260,7 +11303,11 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 {
 	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	n = CDR(arg_handler_node);
 
@@ -11352,6 +11399,10 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 		"Attempt to use invalid condition with a for-container SEXP (%d). Please report!",
 		op_const);
 
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
+
 	int num_arguments = 0;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
 
@@ -11406,7 +11457,11 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 {
 	int num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	if (Game_mode & GM_MULTIPLAYER)
 	{
@@ -11455,7 +11510,11 @@ int eval_first_of(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -12946,6 +13005,30 @@ void sexp_set_order_allowed_for_target(int n)
 	}
 }
 
+void sexp_enable_or_validate_general_orders(int n, bool enable)
+{
+	bool choice = is_sexp_true(n);
+	n = CDR(n);
+
+	do {
+		int order_num = ai_lua_find_general_order_id(CTEXT(n));
+
+		// if we got an invalid order number then skip
+		if (order_num < 0) {
+			Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
+			continue;
+		}
+
+		if (enable) {
+			ai_lua_enable_general_order(order_num, choice);
+		} else {
+			ai_lua_validate_general_order(order_num, choice);
+		}
+
+		n = CDR(n);
+	} while (n >= 0);
+}
+
 // Goober5000
 void sexp_change_soundtrack(int n)
 {
@@ -14077,9 +14160,54 @@ void multi_sexp_set_gravity_accel()
 	}
 }
 
+void sexp_force_rearm(int node)
+{
+	// This is kiiiiinda hacky. All the related repair methods expect a docker and a dockee, but
+	// nothing really special happens between them. It checks that they are same team and tells the docker
+	// to undock when repair is completed. So with minimal changes we can skip the dock stuff and just tell
+	// the code that the repairer is the repairee and all works as expected. Basically we simply created a
+	// way for a ship to 'repair itself'.
+
+	for (int n = node; n >= 0; n = CDR(n)) {
+
+		auto ship = eval_ship(n);
+		if (!ship || !ship->shipp)
+			return;
+
+		// Set flags
+		ai_info* aip = &Ai_info[Ships[ship->objp->instance].ai_index];
+		aip->support_ship_signature = ship->objp->signature;
+		aip->support_ship_objnum = OBJ_INDEX(ship->objp);
+		aip->submode_start_time = Missiontime;
+
+		// Start the HUD stuff
+		if (aip == Player_ai) {
+			hud_support_view_start();
+		}
+
+		// Begin the repair
+		ai_do_objects_repairing_stuff(ship->objp, ship->objp, REPAIR_INFO_BEGIN);
+	}
+}
+
+void sexp_abort_rearm(int node)
+{
+	for (int n = node; n >= 0; n = CDR(n)) {
+
+		auto ship = eval_ship(n);
+		if (!ship || !ship->shipp)
+			return;
+
+		ai_info* aip = &Ai_info[Ships[ship->objp->instance].ai_index];
+
+		// Begin the repair
+		ai_do_objects_repairing_stuff(ship->objp, &Objects[aip->support_ship_objnum], REPAIR_INFO_ABORT);
+	}
+}
+
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1 )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1, bool do_hash_fallback = false )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -14116,6 +14244,10 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
 		message_send_unique( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
+		return;
+	} else if ( !ship_entry && wingnum < 0 && do_hash_fallback ) {
+		// ship/wing not found, so act as if this who_from has a hash prepended to it
+		message_send_unique( name, who_from, MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -14178,10 +14310,13 @@ void sexp_send_message(int n)
 	}
 
 	// we might override the sender
-	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+	bool do_hash_fallback = false;
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
 		who_from = The_mission.command_sender;
+		do_hash_fallback = true;
+	}
 
-	sexp_send_one_message( name, who_from, priority, 0, 0 );
+	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
 }
 
 void sexp_send_message_list(int n, bool send_message_chain)
@@ -14244,11 +14379,14 @@ void sexp_send_message_list(int n, bool send_message_chain)
 		}
 
 		// we might override the sender
-		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+		bool do_hash_fallback = false;
+		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
 			who_from = The_mission.command_sender;
+			do_hash_fallback = true;
+		}
 
 		// send the message
-		sexp_send_one_message(name, who_from, priority, 1, delay, event_num);
+		sexp_send_one_message( name, who_from, priority, 1, delay, event_num, do_hash_fallback );
 	}
 }
 
@@ -14286,7 +14424,14 @@ void sexp_send_random_message(int n)
 	Assert (n != -1);		// should have found the message!!!
 	auto name = CTEXT(n);
 
-	sexp_send_one_message( name, who_from, priority, 0, 0 );
+	// we might override the sender
+	bool do_hash_fallback = false;
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
+		who_from = The_mission.command_sender;
+		do_hash_fallback = true;
+	}
+
+	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
 }
 
 void sexp_self_destruct(int node)
@@ -15583,6 +15728,31 @@ void sexp_nebula_toggle_poof(int n)
 	if (i == (int)Poof_info.size()) return;
 
 	neb2_toggle_poof(i, result);
+}
+
+void sexp_nebula_fade_poofs(int n)
+{
+	bool is_nan, is_nan_forever;
+	
+	auto name = CTEXT(n);
+	n = CDR(n);
+	int time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	n = CDR(n);
+	bool result = is_sexp_true(n);
+	int i;
+
+	for (i = 0; i < (int)Poof_info.size(); i++) {
+		if (!stricmp(name, Poof_info[i].name))
+			break;
+	}
+
+	// coulnd't find the poof
+	if (i == (int)Poof_info.size())
+		return;
+
+	neb2_fade_poofs(i, time, result);
 }
 
 void sexp_nebula_change_pattern(int n)
@@ -17070,7 +17240,8 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		auto ship_name = CTEXT(node);
 
 		// check that this isn't a request to silence command. 
-		if ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender)) 
+		if ( ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender))
+			|| (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(ship_name, DEFAULT_HASHCOMMAND)) )
 		{
 			// Either disable or enable messages from command
 			The_mission.flags.set(Mission::Mission_Flags::No_builtin_command, !enable_messages);
@@ -20130,6 +20301,7 @@ void sexp_replace_texture(int n)
 				strcpy(replace.ship_name, ship_entry->name);
 				strcpy(replace.old_texture, old_name);
 				strcpy(replace.new_texture, new_name);
+				replace.from_table = false;
 
 				if (!stricmp(new_name, "invisible"))
 					replace.new_texture_id = REPLACE_WITH_INVISIBLE;
@@ -20170,6 +20342,7 @@ void sexp_replace_texture(int n)
 					strcpy(replace.ship_name, p_objp->name);
 					strcpy(replace.old_texture, old_name);
 					strcpy(replace.new_texture, new_name);
+					replace.from_table = false;
 
 					if (!stricmp(new_name, "invisible"))
 						replace.new_texture_id = REPLACE_WITH_INVISIBLE;
@@ -27403,6 +27576,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			//MjnMixael
+			case OP_ENABLE_GENERAL_ORDERS:
+				sexp_enable_or_validate_general_orders(node, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			//MjnMixael
+			case OP_VALIDATE_GENERAL_ORDERS:
+				sexp_enable_or_validate_general_orders(node, false);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// MjnMixael
 			case OP_CREATE_BOLT:
 				sexp_create_bolt(node);
@@ -27575,6 +27760,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NEBULA_TOGGLE_POOF:
 				sexp_nebula_toggle_poof(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_NEBULA_FADE_POOF:
+				sexp_nebula_fade_poofs(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -28792,6 +28982,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_FORCE_REARM:
+				sexp_force_rearm(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_ABORT_REARM:
+				sexp_abort_rearm(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -29871,6 +30071,8 @@ int query_operator_return_type(int op)
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -29948,6 +30150,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -30039,6 +30242,8 @@ int query_operator_return_type(int op)
 		case OP_COPY_CONTAINER:
 		case OP_APPLY_CONTAINER_FILTER:
 		case OP_SET_GRAVITY_ACCEL:
+		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -30285,10 +30490,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_WAYPOINTS_ONCE:
 			if (argnum == 0)
 				return OPF_WAYPOINT_PATH;
-			else if (argnum == 1)
+			else if (argnum == 1 || argnum == 3)
 				return OPF_POSITIVE;
-			else
+			else if (argnum == 2 || argnum == 4)
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:
@@ -30340,6 +30547,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_GET_THROTTLE_SPEED:
+		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 			return OPF_SHIP;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -31139,6 +31348,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else 
 				return OPF_AI_ORDER;
+
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_LUA_GENERAL_ORDER;
 
 		case OP_SET_SOUND_ENVIRONMENT:
 			if (argnum == 0)
@@ -32567,6 +32783,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_FADE_POOF:
+			if (argnum == 0)
+				return OPF_NEBULA_POOF;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPF_POSITIVE;
 
@@ -33425,6 +33649,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_TRAITOR_OVERRIDE:
 			return "Invalid traitor override";
+
+		case SEXP_CHECK_INVALID_LUA_GENERAL_ORDER:
+			return "Invalid lua general order";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -34798,6 +35025,7 @@ int get_category(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
@@ -34988,7 +35216,11 @@ int get_category(int op_id)
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
+		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
 		case OP_SET_WING_FORMATION:
@@ -35116,6 +35348,8 @@ int get_subcategory(int op_id)
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_WING_FORMATION:
 		case OP_SET_ORDER_ALLOWED_TARGET:
+		case OP_ENABLE_GENERAL_ORDERS:
+		case OP_VALIDATE_GENERAL_ORDERS:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -35417,6 +35651,7 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
@@ -35452,6 +35687,8 @@ int get_subcategory(int op_id)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CALL_SSM_STRIKE:
 		case OP_SET_GRAVITY_ACCEL:
+		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
 
 		case OP_MODIFY_VARIABLE:
@@ -36267,7 +36504,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_IS_DISABLED_DELAY, "Is disabled delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified ship(s) are disabled.  A "
 		"ship is disabled when all of its engine subsystems are destroyed.  All "
-		"ships must be diabled for this function to return true.\r\n\r\n"
+		"ships must be disabled for this function to return true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disabled status of." },
@@ -37029,7 +37266,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NEXT_MISSION, "Next Mission (Action operator)\r\n"
 		"\tThe next mission operator is used for campaign branching in the campaign editor.  "
 		"It specifies which mission should played be next in the campaign.  This operator "
-		"generally follows a 'when' or 'cond' statment in the campaign file.\r\n\r\n"
+		"generally follows a 'when' or 'cond' statement in the campaign file.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of mission (filename) to proceed to." },
 
@@ -37423,14 +37660,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t4 (optional):\tStarting index (1-n) of the waypoint path.\r\n"
+		"\t5 (optional):\tWhether to fly the waypoint path in reverse.\r\n"
+	},
 
 	{ OP_AI_WAYPOINTS_ONCE, "Ai-waypoints once (Ship goal)\r\n"
 		"\tCauses the specified ship to fly a waypoint path.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t4 (optional):\tStarting index (1-n) of the waypoint path.\r\n"
+		"\t5 (optional):\tWhether to fly the waypoint path in reverse.\r\n"
+	},
 
 	{ OP_AI_DESTROY_SUBSYS, "Ai-destroy subsys (Ship goal)\r\n"
 		"\tCauses the specified ship to attack and try and destroy the specified subsystem "
@@ -37991,7 +38234,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_AI_STAY_NEAR_SHIP, "Ai-stay near ship (Ship goal)\r\n"
 		"\tCauses the specified ship to park itself near the given ship and move closer if the other ship moves too far "
 		"away from it.\r\n\r\n"
-		"Takes 2 to 3 arguments...\r\n"
+		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship to stay near.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89).\r\n"
 		"\t3:\tDistance to stay within (optional; defaults to 300).\r\n"
@@ -39357,6 +39600,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Acceleration rate"
 	},
 
+	{ OP_FORCE_REARM, "force-rearm\r\n"
+		"\tForces a ship to instantly begin a rearm sequence as if docked to a support ship\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\tALL: The ship to rearm\r\n"
+	},
+
+	{ OP_ABORT_REARM, "abort-rearm\r\n"
+		"\tForces a ship to instantly abort a rearm sequence\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\tALL: The ship to abort rearm\r\n"
+	},
+
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
 		"\tConfigures a post-processing effect.  Takes 2 arguments...\r\n"
 		"\t1: Effect type\r\n"
@@ -39446,6 +39701,22 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tShip Name\r\n"
 		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
 		"\tRest:\tOrder"
+	},
+
+		// MjnMixael
+	{ OP_ENABLE_GENERAL_ORDERS, "enable-general-orders\r\n"
+		"\tEnables or disables general orders defined in sexps.tbl. Takes 2 or more arguments.\r\n"
+		"\tDisabled orders are not visible on the comms board at all\r\n"
+		"\t1:\tTrue/False as to whether the order is enabled or not\r\n"
+		"\tRest:\tThe order to enable or disable"
+	},
+
+		// MjnMixael
+	{ OP_VALIDATE_GENERAL_ORDERS, "validate-general-orders\r\n"
+		"\tValidates or invalidates general orders defined in sexps.tbl. Takes 2 or more arguments.\r\n"
+		"\tInvalid orders are greyed out on the comms board and cannot be selected\r\n"
+		"\t1:\tTrue/False as to whether the order is enabled or not\r\n"
+		"\tRest:\tThe order to validate or invalidate"
 	},
 
 	//WMC
@@ -39953,6 +40224,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of nebula poof to toggle\r\n"
 		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
+	},
+
+	{ OP_NEBULA_FADE_POOF, "nebula-fade-poof\r\n"
+		"\tSets a poof pattern to fade in or out over time\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of the nebula poof to fade\r\n"
+		"\t2:\tTime in milliseconds to fade\r\n"
+		"\t3:\tWhether or not to fade in or out. True to fade in, false to fade out\r\n"
 	},
 
 	{ OP_NEBULA_CHANGE_PATTERN, "nebula-change-pattern\r\n"

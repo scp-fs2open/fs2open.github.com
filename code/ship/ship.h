@@ -645,7 +645,7 @@ public:
 	int	engine_recharge_index;			// index into array holding the engine recharge rate
 	float	weapon_energy;						// Number of EUs in energy reserves
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
-	float prev_engine_aggregate_strength;	// used only in update_ets() to allow for minimizing overrides to max speed --Asteroth and wookieejedi
+	float prev_engine_strength;	// used only in update_ets() to allow for minimizing overrides to max speed --Asteroth and wookieejedi
 
 	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state
 	int	reinforcement_index;				// index into reinforcement struct or -1
@@ -841,10 +841,10 @@ public:
 	void clear();
 
     //Helper functions
-	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false);
-	inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
-	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
+	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false) const;
+	inline bool is_departing() const { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
+	inline bool cannot_warp_flags() const { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
+	inline bool is_dying_or_departing() const { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;
@@ -1778,7 +1778,7 @@ extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns ind
 extern int ship_find_subsys(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship_subsys *subsys);
 
-extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
+extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
@@ -1913,12 +1913,12 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-bool object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
+bool object_in_turret_fov(const object *objp, const ship_subsys *ss, const vec3d *tvec, const vec3d *tpos, float dist);
 
 // functions for testing fov.. returns true if fov test is passed.
-bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
-bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
-bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_std_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod = 0);
+bool turret_adv_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod = 0);
+bool turret_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod = 0);
 
 // function for checking adjusted turret rof
 float get_adjusted_turret_rof(ship_subsys *ss);

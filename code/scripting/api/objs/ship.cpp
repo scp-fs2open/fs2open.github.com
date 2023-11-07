@@ -968,7 +968,7 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is diabled, false otherwise")
+ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is disabled, false otherwise")
 {
 	object_h *objh=NULL;
 	bool set = false;
@@ -1582,7 +1582,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	bool tgsh_valid = tgsh && tgsh->isSubsystemValid();
 	int ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
-	char *ai_shipname = NULL;
+	const char *ai_shipname = NULL;
 	switch(eh->index)
 	{
 		case LE_ORDER_ATTACK:

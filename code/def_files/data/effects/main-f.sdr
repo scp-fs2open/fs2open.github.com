@@ -263,6 +263,9 @@ void main()
 	
 	if (FLAG_ACTIVE(MODEL_SDR_FLAG_SPEC)) {
 		specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
+		if (FLAG_ACTIVE(MODEL_SDR_FLAG_ALPHA_MULT)) {
+			specColor *= alphaMult;
+		}
 		if(alphaGloss) glossData = specColor.a;
 		if(gammaSpec) {
 			specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
@@ -395,6 +398,11 @@ void main()
 			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
 		}
 		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+	}
+
+	if (FLAG_ACTIVE(MODEL_SDR_FLAG_ALPHA_MULT)) {
+		//Since this is emissive, we need to premultiply it for intensity, and apply alpha to not replace existing emissive
+		emissiveColor *= alphaMult;
 	}
 
 	if (FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)) {

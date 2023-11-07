@@ -17,6 +17,7 @@
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
@@ -1666,6 +1667,9 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 
 	case OPF_TRAITOR_OVERRIDE:
 		return Traitor_overrides.empty() ? 0 : 1;
+
+	case OPF_LUA_GENERAL_ORDER:
+		return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
 
 	default:
 		if (!Dynamic_enums.empty()) {
@@ -3449,6 +3453,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_traitor_overrides();
 		break;
 
+	case OPF_LUA_GENERAL_ORDER:
+		list = get_listing_opf_lua_general_orders();
+		break;
+
 	default:
 		// We're at the end of the list so check for any dynamic enums
 		list = check_for_dynamic_sexp_enum(opf);
@@ -4041,13 +4049,11 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem_type(int parent_node) {
 
 sexp_list_item* sexp_tree::get_listing_opf_point() {
 	char buf[NAME_LENGTH + 8];
-	SCP_list<waypoint_list>::iterator ii;
-	int j;
 	sexp_list_item head;
 
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		for (j = 0; (uint) j < ii->get_waypoints().size(); ++j) {
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+	for (const auto &ii: Waypoint_lists) {
+		for (int j = 0; (uint) j < ii.get_waypoints().size(); ++j) {
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			head.add_data(buf);
 		}
 	}
@@ -4484,11 +4490,10 @@ sexp_list_item* sexp_tree::get_listing_opf_explosion_option() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_waypoint_path() {
-	SCP_list<waypoint_list>::iterator ii;
 	sexp_list_item head;
 
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		head.add_data(ii->get_name());
+	for (const auto &ii: Waypoint_lists) {
+		head.add_data(ii.get_name());
 	}
 
 	return head.next;
@@ -5135,6 +5140,19 @@ sexp_list_item* sexp_tree::get_listing_opf_traitor_overrides()
 
 	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
 		head.add_data(Traitor_overrides[i].name.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
+{
+	sexp_list_item head;
+
+	SCP_vector<SCP_string> orders = ai_lua_get_general_orders();
+
+	for (const auto& val : orders) {
+		head.add_data(val.c_str());
 	}
 
 	return head.next;

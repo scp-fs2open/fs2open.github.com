@@ -103,6 +103,7 @@ protected:
 	afx_msg void OnToggleContrailThreshold();
 	afx_msg void OnCustomWingNames();
 	afx_msg void OnSoundEnvironment();
+	afx_msg void OnCustomData();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

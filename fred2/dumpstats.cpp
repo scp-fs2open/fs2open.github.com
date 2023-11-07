@@ -384,11 +384,10 @@ void DumpStats::get_object_stats(CString &buffer)
 	size_t total_waypoints = 0;
 	buffer += "\r\nWAYPOINTS\r\n";
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		temp.Format("\tWaypoint: %s, count: %d\r\n", ii->get_name(), ii->get_waypoints().size());
+	for (const auto &ii: Waypoint_lists) {
+		temp.Format("\tWaypoint: %s, count: %d\r\n", ii.get_name(), ii.get_waypoints().size());
 		buffer += temp;
-		total_waypoints += ii->get_waypoints().size();
+		total_waypoints += ii.get_waypoints().size();
 	}
 
 	if (total_waypoints > 0) {

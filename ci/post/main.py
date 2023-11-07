@@ -19,7 +19,7 @@
 # HLP_API:
 # HLP_KEY:
 
-# LINUX_RESULT: bool, if the linux builds were sucessfully uploaded
+# LINUX_RESULT: bool, if the linux builds were successfully uploaded
 # WINDOWS_RESULT: bool, if the windows builds were successfully uploaded
 
 import sys

@@ -6,6 +6,7 @@
 #include "gamesnd/gamesnd.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionbrief.h"
 #include "render/3d.h"
 #include "weapon/weapon.h"
@@ -47,6 +48,19 @@ ADE_VIRTVAR(MasterEventMusicVolume,
 		LuaError(L, "This property is read-only!");
 	}
 	return ade_set_args(L, "f", Master_event_music_volume);
+}
+
+ADE_VIRTVAR(MasterEffectsVolume,
+	l_Audio,
+	nullptr,
+	"The current master effects volume. This property is read-only.",
+	"number",
+	"The volume in the range from 0 to 1")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read-only!");
+	}
+	return ade_set_args(L, "f", Master_sound_volume);
 }
 
 ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching the specified index or name. If you are using a number then the first valid index is 1", "soundentry", "soundentry or invalid handle on error")
@@ -378,6 +392,27 @@ ADE_FUNC(pauseWeaponSounds,
 		weapon_pause_sounds();
 	} else {
 		weapon_unpause_sounds();
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(pauseVoiceMessages,
+	l_Audio,
+	"boolean pause",
+	"Pauses or unpauses all voice message sounds. The boolean argument should be true to pause and false to unpause.",
+	nullptr,
+	nullptr)
+{
+	bool pause;
+
+	if (!ade_get_args(L, "b", &pause))
+		return ADE_RETURN_NIL;
+
+	if (pause) {
+		message_pause_all();
+	} else {
+		message_resume_all();
 	}
 
 	return ADE_RETURN_NIL;

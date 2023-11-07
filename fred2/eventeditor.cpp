@@ -61,6 +61,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_obj_key_text = _T("");
 	m_avi_filename = _T("");
 	m_message_name = _T("");
+	m_message_note = _T("");
 	m_message_text = _T("");
 	m_persona = -1;
 	m_wave_filename = _T("");
@@ -156,6 +157,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_LBN_SELCHANGE(IDC_MESSAGE_LIST, OnSelchangeMessageList)
 	ON_BN_CLICKED(IDC_NEW_MSG, OnNewMsg)
 	ON_BN_CLICKED(IDC_DELETE_MSG, OnDeleteMsg)
+	ON_BN_CLICKED(IDC_NEW_NOTE, OnMsgNote)
 	ON_BN_CLICKED(IDC_BROWSE_AVI, OnBrowseAvi)
 	ON_BN_CLICKED(IDC_BROWSE_WAVE, OnBrowseWave)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
@@ -504,6 +506,10 @@ int event_editor::query_modified()
 	if (stricmp(buf, m_messages[m_cur_msg].message))
 		return 1;
 
+	string_copy(buf, m_message_note, MESSAGE_LENGTH - 1);
+	if (stricmp(buf, m_messages[m_cur_msg].note.c_str()))
+		return 1;
+
 	ptr = (char *) (LPCTSTR) m_avi_filename;
 	if (advanced_stricmp(ptr, m_messages[m_cur_msg].avi_info.name))
 		return 1;
@@ -609,6 +615,7 @@ void event_editor::update_cur_message()
 	if (m_cur_msg < 0) {
 		enable = FALSE;
 		m_message_name = _T("");
+		m_message_note = _T("");
 		m_message_text = _T("");
 		m_avi_filename = _T("");
 		m_wave_filename = _T("");
@@ -616,6 +623,7 @@ void event_editor::update_cur_message()
 		m_message_team = -1;
 	} else {
 		m_message_name = m_messages[m_cur_msg].name;
+		m_message_note = (CString)m_messages[m_cur_msg].note.c_str();
 		m_message_text = m_messages[m_cur_msg].message;
 		if (m_messages[m_cur_msg].avi_info.name){
 			m_avi_filename = _T(m_messages[m_cur_msg].avi_info.name);
@@ -1268,6 +1276,7 @@ int event_editor::save_message(int num)
 		}
 
 		string_copy(m_messages[num].message, m_message_text, MESSAGE_LENGTH - 1);
+		m_messages[num].note = m_message_note;
 		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH - 1);
 		if (m_messages[num].avi_info.name){
 			free(m_messages[num].avi_info.name);
@@ -1359,6 +1368,31 @@ void event_editor::OnDeleteMsg()
 	GetDlgItem(IDC_NEW_MSG)->EnableWindow(TRUE);
 	modified = 1;
 	update_cur_message();
+}
+
+void event_editor::OnMsgNote()
+{
+	// handle this case somewhat gracefully
+	Assertion((m_cur_msg >= -1) && (m_cur_msg < (int)m_messages.size()), "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n", m_cur_msg, (int)m_messages.size() - 1);
+	if((m_cur_msg < 0) || (m_cur_msg >= (int)m_messages.size())){
+		return;
+	}
+
+	CString old_text = m_message_note;
+	CString new_text;
+
+	TextViewDlg dlg;
+	dlg.SetText(old_text);
+	dlg.SetCaption("Enter a note");
+	dlg.SetEditable(true);
+	dlg.DoModal();
+	dlg.GetText(new_text);
+
+	// comment is unchanged
+	if (new_text == old_text)
+		return;
+
+	m_message_note = new_text;
 }
 
 void event_editor::OnBrowseAvi() 

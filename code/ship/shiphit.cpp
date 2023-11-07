@@ -1693,15 +1693,19 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
-	//SUSHI: What are the chances of an instant vaporization? Check the ship type first (objecttypes.tbl), then the ship (ships.tbl)
-	ship_type_info *stp = &Ship_types[sip->class_type];
-	float vapChance = stp->vaporize_chance;
-	if (sip->vaporize_chance > 0.0f)
+	//SUSHI: What are the chances of an instant vaporization? Check the ship type (objecttypes.tbl) as well as the ship (ships.tbl)
+	float vapChance;
+	if (sp->flags[Ship::Ship_Flags::Vaporize])
+		vapChance = 1.0f;
+	else if (sip->vaporize_chance > 0.0f)
 		vapChance = sip->vaporize_chance;
+	else if (sip->class_type >= 0)
+		vapChance = Ship_types[sip->class_type].vaporize_chance;
+	else
+		vapChance = 0.0f;
 
-	if (sp->flags[Ship::Ship_Flags::Vaporize] || frand() < vapChance) {
-		// Assert(Ship_info[sp->ship_info_index].flags & SIF_SMALL_SHIP);
-
+	if (frand() < vapChance)
+	{
 		// LIVE FOR 100 MS
 		sp->final_death_time = timestamp(100);
 	}
@@ -2310,8 +2314,13 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// damage scaling due to big damage, supercap, etc
 	float damage_scale = 1.0f; 
 	// if this is a weapon
-	if (other_obj_is_weapon)
-		damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+	if (other_obj_is_weapon){
+		// Cyborg - Coverity 1523515, this was the only place in ship_do_damage that we weren't checking weapon_info_index
+		Assertion(Weapons[other_obj->instance].weapon_info_index > -1, "Weapon info index in ship_do_damage was found to be a negative value of %d.  Please report this to an SCP coder!", Weapons[other_obj->instance].weapon_info_index);
+		if (Weapons[other_obj->instance].weapon_info_index > -1){
+			damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+		}
+	}
 
 	if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
 		if(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])

@@ -242,7 +242,7 @@ grid *create_default_grid(void)
 }
 
 //	Rotate and project points and draw a line.
-void rpd_line(vec3d *v0, vec3d *v1)
+void rpd_line(const vec3d *v0, const vec3d *v1)
 {
 	vertex	tv0, tv1;
 

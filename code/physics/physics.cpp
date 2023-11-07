@@ -58,7 +58,7 @@ void physics_init( physics_info * pi )
 	pi->max_vel.xyz.x = 100.0f;		//sideways
 	pi->max_vel.xyz.y = 100.0f;		//up/down
 	pi->max_vel.xyz.z = 100.0f;		//forward
-	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
+	pi->max_rear_vel = 100.0f;	//backward -- controlled separately
 
 	pi->max_rotvel = vm_vec_new(2.0f, 1.0f, 2.0f);
 
@@ -608,7 +608,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		if (pi->flags & PF_SLIDE_ENABLED)  {
 			// determine the local velocity
-			// deterimine whether accelerating or decleration toward goal for x
+			// deterimine whether accelerating or deceleration toward goal for x
 			if ( goal_vel.xyz.x > 0.0f )  {
 				if ( goal_vel.xyz.x >= pi->prev_ramp_vel.xyz.x )
 					ramp_time_const = pi->slide_accel_time_const;
@@ -628,7 +628,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			}
 			pi->prev_ramp_vel.xyz.x = velocity_ramp(pi->prev_ramp_vel.xyz.x, goal_vel.xyz.x, ramp_time_const, sim_time);
 
-			// deterimine whether accelerating or decleration toward goal for y
+			// deterimine whether accelerating or deceleration toward goal for y
 			if ( goal_vel.xyz.y > 0.0f )  {
 				if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.y )
 					ramp_time_const = pi->slide_accel_time_const;
@@ -653,7 +653,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			pi->prev_ramp_vel.xyz.y = 0.0f;
 		}
 
-		// deterimine whether accelerating or decleration toward goal for z
+		// deterimine whether accelerating or deceleration toward goal for z
 		if ( goal_vel.xyz.z > 0.0f )  {
 			if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
 				if ( pi->flags & PF_AFTERBURNER_ON )

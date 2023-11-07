@@ -103,11 +103,6 @@ extern int HUD_color_alpha;
 
 extern color HUD_color_debug;
 
-// Values used "wiggle" the HUD.  In the 2D HUD case, the clip region accounts
-// for these, but for the 3d-type hud stuff, you need to add these in manually.
-extern float HUD_offset_x;
-extern float HUD_offset_y;
-
 // the offset of the player's view vector and the ship forward vector in pixels (Swifty)
 extern int HUD_nose_x;
 extern int HUD_nose_y;
@@ -507,7 +502,10 @@ protected:
 
 	int next_flash;
 	bool flash_status;
-public:
+
+	bool always_display;
+
+  public:
 	HudGaugeDamage();
 	void initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom);
 	void initHeaderOffsets(int x, int y);
@@ -518,6 +516,7 @@ public:
 	void initSubsysIntegValueOffsetX(int x);
 	void initBottomBgOffset(int offset);
 	void initLineHeight(int h);
+	void initDisplayValue(bool value);
 	void render(float frametime) override;
 	void pageIn() override;
 	void initialize() override;

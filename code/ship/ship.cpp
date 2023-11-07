@@ -461,6 +461,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
     { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
+	{ "default player weapon",		Weapon::Info_Flags::Default_player_weapon,				true, false },
     { "corkscrew",					Weapon::Info_Flags::Corkscrew,							true, false },
     { "particle spew",				Weapon::Info_Flags::Particle_spew,						true, false },
     { "esuck",						Weapon::Info_Flags::Energy_suck,						true, false },
@@ -2649,7 +2650,7 @@ static int parse_and_add_briefing_icon_info()
  *
  * If we are creating a ship, we want to inherit the parameters of the ship class, then override on a field-by-field basis.
  */
-int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name, bool set_special_warp_physics)
+int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name, bool set_supercap_warp_physics)
 {
 	Assert(info_type_name != nullptr);
 	Assert(info_name != nullptr);
@@ -2757,13 +2758,13 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 	}
 
 	// we might need to explicitly set this flag; but if so, the modder has the option of unsetting it
-	if (set_special_warp_physics)
-		params.special_warp_physics = true;
+	if (set_supercap_warp_physics)
+		params.supercap_warp_physics = true;
 
-	sprintf(str, "$Special warp%s physics:", (direction == WarpDirection::WARP_IN) ? "in" : "out");
+	sprintf(str, "$Supercap warp%s physics:", (direction == WarpDirection::WARP_IN) ? "in" : "out");
 	if (optional_string(str))
 	{
-		stuff_boolean(&params.special_warp_physics);
+		stuff_boolean(&params.supercap_warp_physics);
 	}
 
 	if (direction == WarpDirection::WARP_OUT)
@@ -4805,7 +4806,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			size_t seppos;
 			seppos = token->find_first_of(':');
 			if(seppos == SCP_string::npos) {
-				Warning(LOCATION, "Couldn't find ':' seperator in Glowpoint override for ship %s ignoring token", sip->name);
+				Warning(LOCATION, "Couldn't find ':' separator in Glowpoint override for ship %s ignoring token", sip->name);
 				continue;
 			}
 			name = token->substr(0, seppos);
@@ -5041,13 +5042,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		subsystems[i].reset();
 	}
 	
-	float	hull_percentage_of_hits = 100.0f;
-	//If the ship already has subsystem entries (ie this is a modular table)
-	//make sure hull_percentage_of_hits is set properly
-	for(auto i=0; i < sip->n_subsystems; i++) {
-		hull_percentage_of_hits -= sip->subsystems[i].max_subsys_strength / sip->max_hull_strength;
-	}
-
 	while (cont_flag) {
 		int r = required_string_one_of(3, "#End", "$Subsystem:", type_name);
 		switch (r) {
@@ -5140,8 +5134,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
 			{
-				hull_percentage_of_hits -= percentage_of_hits;
-				sp->max_subsys_strength = sip->max_hull_strength * (percentage_of_hits / 100.0f);
+				if (Calculate_subsystem_hitpoints_after_parsing)
+					sp->max_subsys_strength = percentage_of_hits;
+				else
+					sp->max_subsys_strength = sip->max_hull_strength * (percentage_of_hits / 100.0f);
+
 				sp->type = SUBSYSTEM_UNKNOWN;
 			}
 			if(sfo_return > 0)
@@ -5429,13 +5426,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 	}	
 
-	// must be > 0//no it doesn't :P -Bobboau
-	// yes it does! - Goober5000
-	// (we don't want a div-0 error)
-	if (hull_percentage_of_hits <= 0.0f )
-	{
-		//Warning(LOCATION, "The subsystems defined for the %s can take more (or the same) combined damage than the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
-	}
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	int orig_n_subsystems = sip->n_subsystems;
 	if ( n_subsystems > 0 ) {
@@ -6022,6 +6012,16 @@ static void ship_parse_post_cleanup()
 			error_display(0, "$Player Minimum Velocity Z-value (%f) is negative or greater than max velocity Z-value (%f), setting to zero\nFix for ship '%s'\n",
 					sip->min_vel.xyz.z, sip->max_vel.xyz.z, sip->name);
 			sip->min_vel.xyz.z = 0.0f;
+		}
+
+		// we might need to calculate subsystem strength
+		if (Calculate_subsystem_hitpoints_after_parsing)
+		{
+			for (int i = 0; i < sip->n_subsystems; ++i)
+			{
+				auto sp = &sip->subsystems[i];
+				sp->max_subsys_strength = sip->max_hull_strength * (sp->max_subsys_strength / 100.0f);
+			}
 		}
 	}
 
@@ -6628,7 +6628,7 @@ void ship::clear()
 	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
 	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
 	weapon_energy = 0;
-	prev_engine_aggregate_strength = 1.0f;
+	prev_engine_strength = 1.0f;
 	next_manage_ets = timestamp(0);
 
 	flags.reset();
@@ -6834,11 +6834,11 @@ void ship::apply_replacement_textures(SCP_vector<texture_replace> &replacements)
 			ship_replacement_textures[i] = -1;
 	}
 
-	// now fill them in
-	for (auto tr : replacements)
-	{
-		auto pm = model_get(Ship_info[ship_info_index].model_num);
+	auto pm = model_get(Ship_info[ship_info_index].model_num);
 
+	// now fill them in
+	for (const auto& tr : replacements)
+	{
 		// look for textures
 		for (auto j = 0; j < pm->n_textures; j++)
 		{
@@ -7448,7 +7448,10 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	{
 		model_system = &(sinfo->subsystems[i]);
 		if (model_system->model_num < 0) {
-			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem '%s' on ship type '%s'.\nNot linking into ship!\n\n(This warning means that a subsystem was present in the table entry and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name );
+			Error(LOCATION, "Invalid subobj_num or model_num in subsystem '%s' on ship type '%s'.\nNot linking into ship!\n\n"
+				"This warning means that a subsystem was present in the table entry and not present in the model."
+				"It should be removed from the table or added to the model.\n"
+				"Ensure subsystem names are spelled correctly, and that submodels or special points intended to be subsystems have '$special=subsystem' in their properties.", model_system->subobj_name, sinfo->name );
 			continue;
 		}
 
@@ -11709,7 +11712,13 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		return 0;
 	}
 
-	shipp->cmeasure_fire_stamp = timestamp(Weapon_info[shipp->current_cmeasure].cmeasure_firewait);	//	Can launch every cmeasure wait
+	// Cyborg: Coverity 1523546, check that we have a valid countermeasure before setting the delay. (Could help things work more intuitively if CM is changed mid-mission)
+	if (shipp->current_cmeasure > -1){
+		shipp->cmeasure_fire_stamp = timestamp(Weapon_info[shipp->current_cmeasure].cmeasure_firewait);	//	Can launch every cmeasure wait
+	} else {
+		shipp->cmeasure_fire_stamp = timestamp(0);
+	}
+
 #ifndef NDEBUG
 	if (Weapon_energy_cheat) {
 		shipp->cmeasure_count++;
@@ -14805,7 +14814,7 @@ int ship_find_subsys(ship *sp, const char *ss_name)
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
 // calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
-float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check )
+float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check, bool no_minimum_engine_str )
 {
 	float strength;
 	ship_subsys *ssp;
@@ -14838,7 +14847,7 @@ float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check 
 				float ratio;
 
 				ratio = ssp->current_hits / ssp->max_hits;
-				if ( ratio < ENGINE_MIN_STR )
+				if ( ratio < ENGINE_MIN_STR && !no_minimum_engine_str)
 					ratio = ENGINE_MIN_STR;
 
 				percent += ratio;
@@ -16784,15 +16793,27 @@ int ship_return_seconds_to_goal(ship *sp)
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
-			dist += vm_vec_dist_quick(&objp->pos, aip->wp_list->get_waypoints()[aip->wp_index].get_pos());
+			auto& waypoints = aip->wp_list->get_waypoints();
 
-			SCP_vector<waypoint>::iterator ii;
-			vec3d *prev_vec = NULL;
-			for (ii = (aip->wp_list->get_waypoints().begin() + aip->wp_index); ii != aip->wp_list->get_waypoints().end(); ++ii) {
-				if (prev_vec != NULL) {
-					dist += vm_vec_dist_quick(ii->get_pos(), prev_vec);
+			// distance to current waypoint
+			dist += vm_vec_dist_quick(&objp->pos, waypoints[aip->wp_index].get_pos());
+
+			// distance from current waypoint to the end of the list, whichever way we're going
+			const vec3d *prev_vec = nullptr;
+			if (aip->wp_flags & WPF_BACKTRACK) {
+				for (int i = aip->wp_index; i >= 0; --i) {
+					if (prev_vec != nullptr) {
+						dist += vm_vec_dist_quick(waypoints[i].get_pos(), prev_vec);
+					}
+					prev_vec = waypoints[i].get_pos();
 				}
-				prev_vec = ii->get_pos();
+			} else {
+				for (int i = aip->wp_index; i < (int)waypoints.size(); ++i) {
+					if (prev_vec != nullptr) {
+						dist += vm_vec_dist_quick(waypoints[i].get_pos(), prev_vec);
+					}
+					prev_vec = waypoints[i].get_pos();
+				}
 			}
 		}
 
@@ -17014,7 +17035,7 @@ void ship_maybe_praise_player(ship *deader_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-    if ((Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction])) {
+    if ((Ship_info[deader_sp->ship_info_index].class_type >= 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction])) {
 		return;
 	}
 
@@ -17066,7 +17087,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction]) ) {
+	if ( (Ship_info[deader_sp->ship_info_index].class_type >= 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction]) ) {
 		return;
 	}
 
@@ -17585,7 +17606,9 @@ ship_type_info *ship_get_type_info(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 	Assert(objp->instance > -1);
 	Assert(Ships[objp->instance].ship_info_index > -1);
-	Assert(Ship_info[Ships[objp->instance].ship_info_index].class_type > -1);
+
+	if (Ship_info[Ships[objp->instance].ship_info_index].class_type < 0)
+		return nullptr;
 
 	return &Ship_types[Ship_info[Ships[objp->instance].ship_info_index].class_type];
 }
@@ -20825,7 +20848,7 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
  *
  * @return is the ship arriving, bool
  */
-bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single)
+bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 {
 	if (stage == ship::warpstage::BOTH) {
 		if (!dock_leader_or_single) {

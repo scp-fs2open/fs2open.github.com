@@ -926,10 +926,9 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
 
 		// copy important data
-		int copy_flags = mc.flags;  // make a copy of start end positions of sphere in  big ship RF
-		vec3d copy_p0, copy_p1;
-		copy_p0 = *mc.p0;
-		copy_p1 = *mc.p1;
+		int orig_flags = mc.flags;  // make a copy of start end positions of sphere in big ship RF
+		auto orig_p0 = mc.p0;
+		auto orig_p1 = mc.p1;
 
 		// first test against the sphere - if this fails then don't do any submodel tests
 		mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
@@ -955,7 +954,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				}
 
 				// Only check single submodel now, since children of moving submodels are handled as moving as well
-				mc.flags = copy_flags | MC_SUBMODEL;
+				mc.flags = orig_flags | MC_SUBMODEL;
 
 				if (Ship_info[Ships[pship_obj->instance].ship_info_index].collision_lod > -1) {
 					mc.lod = Ship_info[Ships[pship_obj->instance].ship_info_index].collision_lod;
@@ -1005,9 +1004,9 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 			}
 
 			// Now complete base model collision checks that do not take into account rotating submodels.
-			mc.flags = copy_flags;
-			*mc.p0 = copy_p0;
-			*mc.p1 = copy_p1;
+			mc.flags = orig_flags;
+			mc.p0 = orig_p0;
+			mc.p1 = orig_p1;
 			mc.orient = &heavy_obj->orient;
 
 			// usual ship_ship collision test

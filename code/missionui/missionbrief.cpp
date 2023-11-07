@@ -1309,7 +1309,7 @@ void brief_set_closeup_pos(brief_icon * /*bi*/)
 // -------------------------------------------------------------------------------------
 // brief_setup_closeup()
 //
-// exit: 0	=>		set-up icon sucessfully
+// exit: 0	=>		set-up icon successfully
 //			-1	=>		could not setup closeup icon
 int brief_setup_closeup(brief_icon *bi, bool api_access)
 {
@@ -1382,7 +1382,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 		if (Closeup_icon->closeup_label[0] == '\0') {
 			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
-			if (!Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display]
+			if ((sip->class_type < 0 || !Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display])
 				&& (sip->is_small_ship() || sip->is_big_ship() || sip->is_huge_ship() || sip->flags[Ship::Info_Flags::Sentrygun])) {
 					strcat_s(Closeup_icon->closeup_label, XSTR(" class", 434));
 			}

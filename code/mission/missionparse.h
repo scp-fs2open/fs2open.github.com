@@ -51,6 +51,10 @@ int get_special_anchor(const char *name);
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
 
+// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// a "soft version bump" rather than a hard bump because not all missions are affected.
+extern bool check_for_23_3_data();
+
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
 // mission parse flags used for parse_mission() to tell what kind of information to get from the mission file
@@ -116,6 +120,12 @@ typedef struct mission_cutscene {
 	int formula;
 } mission_cutscene;
 
+typedef struct mission_default_custom_data {
+	SCP_string key;
+	SCP_string value;
+	SCP_string description;
+} mission_default_custom_data;
+
 // descriptions of flags for FRED
 template <class T>
 struct parse_object_flag_description {
@@ -172,6 +182,8 @@ typedef struct mission {
 	SCP_string lighting_profile_name;
 
 	SCP_vector<mission_cutscene> cutscenes;
+
+	SCP_map<SCP_string, SCP_string> custom_data;
 
 	void Reset( );
 
@@ -269,6 +281,8 @@ extern int Num_unknown_loadout_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
+
+extern SCP_vector<mission_default_custom_data> Default_custom_data;
 
 #define SUBSYS_STATUS_NO_CHANGE	-999
 
@@ -407,7 +421,7 @@ extern SCP_vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct {
+typedef struct team_data {
 	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		num_ship_choices; // number of ship choices inside ship_list 
@@ -466,6 +480,9 @@ int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
+
+// used in fred management.cpp when creating a new mission
+void apply_default_custom_data(mission* pm);
 
 bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false);
 bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);

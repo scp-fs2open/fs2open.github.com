@@ -834,6 +834,8 @@ void clear_mission()
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
 
+	apply_default_custom_data(&The_mission);
+
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
 		strcpy_s(Fred_alt_names[i], "");
@@ -857,7 +859,7 @@ void clear_mission()
 
 		count = 0;
 		for ( j = 0; j < weapon_info_size(); j++ ) {
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {
@@ -1131,7 +1133,8 @@ int delete_ship(int ship)
 
 int common_object_delete(int obj)
 {
-	char msg[255], *name;
+	char msg[255];
+	const char *name;
 	int i, z, r, type;
 	object *objp;
 	SCP_list<CJumpNode>::iterator jnp;
@@ -1723,7 +1726,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, sexp_ref_type type)
+int invalidate_references(const char *name, sexp_ref_type type)
 {
 	char new_name[512];
 	int i;
@@ -1888,7 +1891,7 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, sexp_ref_type type, int obj)
+int reference_handler(const char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
 	int r, node;

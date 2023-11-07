@@ -168,17 +168,17 @@ extern void ai_process_mission_orders( int objnum, ai_info *aip );
 extern int ai_goal_num(ai_goal *goals);
 
 // adds goals to ships/wing through sexpressions
-extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip);
+extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char *shipname, ai_info *aip);
 extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
-extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char *actor_name);
+extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name);
 
 extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders
-extern void ai_add_ship_goal_player(int type, int mode, int submode, char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
-extern void ai_add_wing_goal_player(int type, int mode, int submode, char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_ship_goal_player(int type, int mode, int submode, const char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_wing_goal_player(int type, int mode, int submode, const char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
 
 extern void ai_remove_ship_goal( ai_info *aip, int index );
 extern void ai_clear_ship_goals( ai_info *aip );

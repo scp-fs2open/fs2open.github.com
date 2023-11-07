@@ -85,7 +85,7 @@ enum ConditionalActions : int32_t {
 // management stuff
 void scripting_state_init();
 void scripting_state_close();
-void scripting_state_do_frame(float frametime);
+void scripting_state_do_frame(float frametime, bool doKeys);
 
 const scripting::HookBase* scripting_string_to_action(const char* action);
 ConditionalType scripting_string_to_condition(const char* condition);

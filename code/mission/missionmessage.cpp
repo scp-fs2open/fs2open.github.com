@@ -411,7 +411,7 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	static bool warned = false;
 	if (!warned) {
 		WarningEx(LOCATION,
-			"Converting legacy '%s Arrived' message. Consult the documention on message filters for more information. "
+			"Converting legacy '%s Arrived' message. Consult the documentation on message filters for more information. "
 			"A complete list will be printed to the log.",
 			wing_name.c_str());
 		warned = true;
@@ -517,6 +517,16 @@ void message_parse(MessageFormat format) {
 			msg.wave_info.index = add_wave(wave_name);
 		} else {
 			msg.wave_info.name = vm_strdup(wave_name);
+		}
+	}
+
+	if (optional_string("+Note:")) {
+		if (Fred_running) { // Msg stage notes do nothing in FSO, so let's not even waste a few bytes
+			stuff_string(msg.note, F_MULTITEXT);
+			lcl_replace_stuff(msg.note, true);
+		} else {
+			SCP_string junk;
+			stuff_string(junk, F_MULTITEXT);
 		}
 	}
 
@@ -921,6 +931,26 @@ int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 		return 1;
 	} else {
 		return 0;
+	}
+}
+
+//	Pauses all currently playing messages in the message queue
+void message_pause_all()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		if ((Playing_messages[i].wave.isValid()) && snd_is_playing(Playing_messages[i].wave)) {
+			snd_pause(Playing_messages[i].wave);
+		}
+	}
+}
+
+//	Resumes playing any paused messages in the message queue
+void message_resume_all()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		if ((Playing_messages[i].wave.isValid()) && snd_is_paused(Playing_messages[i].wave)) {
+			snd_resume(Playing_messages[i].wave);
+		}
 	}
 }
 
@@ -1814,7 +1844,10 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		// of the wave and head
 		// ADDENDUM -- Since the special hack is specifically for mission-unique messages, don't
 		// convert built-in messages to Command
-		if ( builtin_type < 0 && !stricmp(who_from, The_mission.command_sender) ) {
+		if ( builtin_type < 0
+			&& (!stricmp(who_from, The_mission.command_sender)
+				|| (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_COMMAND))
+				) ) {
 			// ADDENDUM 2 -- perform an additional check: only convert this message if a WAV exists for it
 			auto m = &Messages[message_num];
 			if (m->wave_info.index >= 0) {
@@ -2086,7 +2119,7 @@ bool filters_match(MessageFilter& filter, ship* it) {
 		    && filter_matches(hud_get_ship_class(it), filter.class_name)
 		    && filter_matches(wing_name, filter.wing_name)
 		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
-		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield)
+		    && (Ship_info[it->ship_info_index].class_type < 0 || filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield))
 		    && filter_matches(it->team, filter.team_bitfield);
 	}
 }

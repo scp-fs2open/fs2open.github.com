@@ -774,7 +774,7 @@ int medal_main_do()
 
 	if (medal_index == Rank_medal_index)
 	{
-		blit_label(Ranks[verify_rank(Player_score->rank)].name, 1);
+		blit_label(get_rank_display_name(&Ranks[verify_rank(Player_score->rank)]).c_str(), 1);
 	}
 	else switch (region)
 	{

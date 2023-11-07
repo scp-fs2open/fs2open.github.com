@@ -89,7 +89,7 @@ void convert_model_material(model_uniform_data* data_out,
 	if (material.is_alpha_mult_active())
 		data_out->flags |= MODEL_SDR_FLAG_ALPHA_MULT; 
 
-	if (material.get_animated_effect() > 0) {
+	if (material.get_animated_effect() >= 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
 		data_out->effect_num = material.get_animated_effect();
 	}

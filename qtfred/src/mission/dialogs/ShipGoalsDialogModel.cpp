@@ -509,7 +509,7 @@ namespace fso {
 					}
 
 					if (flag & 0x4) { // data is a waypoint path name
-						SCP_list<waypoint_list>::iterator ii;
+						SCP_vector<waypoint_list>::iterator ii;
 						for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
 							if (!stricmp(goalp[item].target_name, ii->get_name())) {
 								m_object[item] = i | TYPE_PATH;

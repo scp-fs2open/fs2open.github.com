@@ -1632,8 +1632,9 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp);
-extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
+extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(const ship_weapon *swp);
+extern bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype);
+
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
 	Assert(swp != NULL);	// Goober5000 //WMC

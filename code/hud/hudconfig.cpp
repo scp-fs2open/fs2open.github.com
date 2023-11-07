@@ -616,7 +616,7 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 		// can't find a better one. Need to get the furthest right and bottom
 		// pixels to be rendered to calculate the percent change. That is then
 		// used to rescale each gauge correctly for the rendering size and position. - Mjn
-		for (auto gauge : HC_gauge_regions[gr_screen.res]) {
+		for (const auto& gauge : HC_gauge_regions[gr_screen.res]) {
 			if (!stricmp(gauge.filename, NOX("none"))) {
 				continue;
 			}
@@ -1266,7 +1266,7 @@ void hud_config_button_do(int n)
 
 	case HCB_SAVE_HCF:		
 		int exists;
-		char *out;
+		const char *out;
 
 		// get the text in the input control
 		exists = 0;
@@ -1704,10 +1704,9 @@ void hud_config_color_load(const char *name)
 {
 	int idx;
 	char str[1024];
-	char *fname;
 	ubyte r, g, b, a;
 
-	fname = cf_add_ext(name, ".hcf");
+	const char *fname = cf_add_ext(name, ".hcf");
 
 	try
 	{

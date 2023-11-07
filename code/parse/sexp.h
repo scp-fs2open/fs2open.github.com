@@ -140,6 +140,7 @@ enum sexp_opf_t : int {
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
 	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
+	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -673,6 +674,7 @@ enum : int {
 	OP_REMOVE_SUN_BITMAP,
 	OP_NEBULA_CHANGE_STORM,
 	OP_NEBULA_TOGGLE_POOF,
+	OP_NEBULA_FADE_POOF,
 	
 	OP_TURRET_CHANGE_WEAPON,
 	OP_TURRET_SET_TARGET_ORDER,
@@ -877,7 +879,11 @@ enum : int {
 	OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
 	OP_HUD_FORCE_EMP_EFFECT, // MjnMixael
 	OP_SET_GRAVITY_ACCEL,	// Asteroth
+	OP_FORCE_REARM,	 // MjnMixael
+	OP_ABORT_REARM,  // MjnMixael
 	OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
+	OP_ENABLE_GENERAL_ORDERS,	// MjnMixael
+	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
@@ -1220,6 +1226,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_MOTION_DEBRIS,
 	SEXP_CHECK_INVALID_BOLT_TYPE,
 	SEXP_CHECK_INVALID_TRAITOR_OVERRIDE,
+	SEXP_CHECK_INVALID_LUA_GENERAL_ORDER,
 };
 
 

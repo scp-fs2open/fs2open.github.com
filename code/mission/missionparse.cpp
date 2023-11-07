@@ -16,6 +16,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
@@ -118,6 +119,8 @@ int Num_unknown_loadout_classes;
 ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
 int    Current_file_length   = 0;
+
+SCP_vector<mission_default_custom_data> Default_custom_data;
 
 // alternate ship type names
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
@@ -851,6 +854,34 @@ void parse_player_info(mission *pm)
 	}
 	
 	required_string("#Players");
+
+	// starting general orders go here
+	ai_lua_reset_general_orders();
+
+	if (optional_string("+General Orders Enabled:")) {
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			int lua_order_id = ai_lua_find_general_order_id(accepted);
+
+			if (lua_order_id >= 0) {
+				ai_lua_enable_general_order(lua_order_id, true);
+			}
+		}
+	}
+	if (optional_string("+General Orders Valid:")) {
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			int lua_order_id = ai_lua_find_general_order_id(accepted);
+
+			if (lua_order_id >= 0) {
+				ai_lua_validate_general_order(lua_order_id, true);
+			}
+		}
+	}
 
 	while (required_string_either("#Objects", "$")){
 		parse_player_info2(pm);
@@ -2871,7 +2902,7 @@ bool p_object::has_display_name() {
 	return flags[Mission::Parse_Object_Flags::SF_Has_display_name];
 }
 
-extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name, bool set_special_warp_physics = false);
+extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name, bool set_supercap_warp_physics = false);
 
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.
@@ -3451,8 +3482,13 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	// parse the persona index if present
 	// For backwards compatbility only
-	if (optional_string("+Persona Index:"))
+	if (optional_string("+Persona Index:")) {
 		stuff_int(&p_objp->persona_index);
+		if (p_objp->persona_index < -1 || p_objp->persona_index >= (int)Personas.size()) {
+			Warning(LOCATION, "Persona index %d for %s is out of range!  Setting to -1.", p_objp->persona_index, p_objp->name);
+			p_objp->persona_index = -1;
+		}
+	}
 
 	if (optional_string("+Persona Name:")) {
 		SCP_string persona;
@@ -4716,50 +4752,80 @@ void parse_wing(mission *pm)
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
+	// make a temporary map since we want to keep this separate from the ship registry
+	SCP_unordered_map<SCP_string, int> parse_object_indexes;
+	i = 0;
+	for (const auto& pobj : Parse_objects)
+		parse_object_indexes.emplace(pobj.name, i++);
+
+	// Goober5000 - to avoid confusing mismatches in the ship registry and hotkey list, and possibly other places,
+	// make sure the order of parse objects matches their order in the wing
+	auto prev_iter = parse_object_indexes.end();
+	for (i = 0; i < wingp->wave_count; i++) {
+		auto this_iter = parse_object_indexes.find(ship_names[i]);
+		if (this_iter == parse_object_indexes.end()) {
+			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_names[i]);
+			break;
+		}
+
+		if (i > 0) {
+			// compare the parse object indexes of the previous ship and this ship
+			if (this_iter->second < prev_iter->second) {
+				// swap the parse objects
+				std::swap(Parse_objects[this_iter->second], Parse_objects[prev_iter->second]);
+
+				// swap the swapped net signatures so they are in their original order
+				std::swap(Parse_objects[this_iter->second].net_signature, Parse_objects[prev_iter->second].net_signature);
+
+				// swap the indexes in our temporary map
+				std::swap(this_iter->second, prev_iter->second);
+
+				// start over from the beginning of the wing
+				i = -1;
+				this_iter = parse_object_indexes.end();
+			}
+		}
+
+		prev_iter = this_iter;
+	}
+
 	// set the wing number for all ships in the wing
 	for (i = 0; i < wingp->wave_count; i++ ) {
 		char *ship_name = ship_names[i];
-		int assigned = 0;
 
 		// Goober5000 - since the ship/wing creation stuff is reordered to accommodate multiple docking,
 		// everything is still only in the parse array at this point (in both FRED and FS2)
 
 		// find the parse object and assign it the wing number
-		for (SCP_vector<p_object>::iterator p_objp = Parse_objects.begin(); p_objp != Parse_objects.end(); ++p_objp) {
-			if ( !strcmp(ship_name, p_objp->name) ) {
-				// get Allender -- ship appears to be in multiple wings
-				Assert (p_objp->wingnum == -1);
+		auto iter = parse_object_indexes.find(ship_name);
+		if (iter != parse_object_indexes.end()) {
+			auto p_objp = &Parse_objects[iter->second];
 
-				// assign wingnum
-				p_objp->wingnum = wingnum;
-				p_objp->pos_in_wing = i;
+			// get Allender -- ship appears to be in multiple wings
+			// (or appears multiple times in the same wing)
+			if (p_objp->wingnum >= 0)
+				Error(LOCATION, "Cannot load mission -- tried to assign ship %s to wing %s but it was already assigned to wing %s.\n", ship_name, wingp->name, p_objp->wingnum < Num_wings ? Wings[p_objp->wingnum].name : "<out of range wingnum>");
 
-				// we have found our "special ship" (our wing leader)
-				if (!Fred_running && i == 0){
-					wingp->special_ship_ship_info_index = p_objp->ship_class;
-				}
+			// assign wingnum
+			p_objp->wingnum = wingnum;
+			p_objp->pos_in_wing = i;
 
-				assigned++;
+			// we have found our "special ship" (our wing leader)
+			if (!Fred_running && i == 0){
+				wingp->special_ship_ship_info_index = p_objp->ship_class;
+			}
 
-				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
-				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
-					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
-					if (!Fred_running && wingp->arrival_delay > 0) {
-						// timestamp has been set, so set it again
-						wingp->arrival_delay = timestamp(0);
-					} else {
-						// no timestamp, or timestamp invalid
-						wingp->arrival_delay = 0;
-					}
+			// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
+			if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
+				Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
+				if (!Fred_running && wingp->arrival_delay > 0) {
+					// timestamp has been set, so set it again
+					wingp->arrival_delay = timestamp(0);
+				} else {
+					// no timestamp, or timestamp invalid
+					wingp->arrival_delay = 0;
 				}
 			}
-		}
-
-		// error checking
-		if (assigned == 0) {
-			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
-		} else if (assigned > 1) {
-			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
 		}
 	}
 
@@ -6030,6 +6096,32 @@ void parse_sexp_containers()
 	}
 }
 
+void parse_custom_data(mission* pm)
+{
+	if (!optional_string("#Custom Data"))
+		return;
+
+	if (optional_string("$begin_data_map")) {
+
+		parse_string_map(pm->custom_data, "$end_data_map", "+Val:");
+	}
+}
+
+void apply_default_custom_data(mission* pm)
+{
+	for (const auto& def : Default_custom_data) {
+		size_t count = 0;
+		for (const auto& listed : pm->custom_data) {
+			if (listed.first != def.key) {
+				count++;
+			}
+		}
+		if (count == pm->custom_data.size()) {
+			pm->custom_data.emplace(def.key, def.value);
+		}
+	}
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -6072,6 +6164,7 @@ bool parse_mission(mission *pm, int flags)
 	parse_bitmaps(pm);
 	parse_asteroid_fields(pm);
 	parse_music(pm, flags);
+	parse_custom_data(pm);
 
 	// if we couldn't load some mod data
 	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
@@ -6406,6 +6499,8 @@ bool post_process_mission(mission *pm)
 	if (pm->volumetrics)
 		pm->volumetrics->renderVolumeBitmap();
 
+	apply_default_custom_data(pm);
+
 	// success
 	return true;
 }
@@ -6534,6 +6629,8 @@ void mission::Reset()
 	gravity = vmd_zero_vector;
 	HUD_timer_padding = 0;
 	volumetrics.reset();
+
+	custom_data.clear();
 }
 
 /**
@@ -6562,6 +6659,7 @@ void mission_init(mission *pm)
 
 	mission_parse_reset_alt();
 	mission_parse_reset_callsign();
+	ai_lua_reset_general_orders();
 
 	Num_parse_names = 0;
 	Num_path_restrictions = 0;
@@ -7303,6 +7401,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			vm_vec_add(&rand_vec, &t1, &t2);
 			vm_vec_add2(&rand_vec, &t3);
 			vm_vec_normalize(&rand_vec);
+		} else {
+			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
 		}
 
 		// add in the radius of the two ships involved.  This will make the ship arrive further than
@@ -8722,4 +8822,41 @@ void convertFSMtoFS2()
 void clear_texture_replacements() 
 {
 	Fred_texture_replacements.clear();
+}
+
+bool check_for_23_3_data()
+{
+	auto e_list = ai_lua_get_general_orders(true);
+	if (!e_list.empty())
+		return true;
+	auto v_list = ai_lua_get_general_orders(false, true);
+	if (!v_list.empty())
+		return true;
+
+	for (const auto& msg : Messages)
+	{
+		if (!msg.note.empty())
+			return true;
+	}
+
+	if (The_mission.custom_data.size() > 0) {
+		return true;
+	}
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+
+		auto shipp_params = &Warp_params[shipp->warpin_params_index];
+		auto sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpin_params_index];
+		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+			return true;
+
+		shipp_params = &Warp_params[shipp->warpout_params_index];
+		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpout_params_index];
+		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+			return true;
+	}
+
+	return false;
 }

@@ -182,7 +182,7 @@ int obj_snd_get_slot()
 	int i;
 
 	for ( i = 0; i < MAX_OBJ_SNDS; i++ ) {
-		if ( !(Objsnds[i].flags & OS_USED) ) 
+		if ( !(Objsnds[i].flags & OS_IN_USE) ) 
 			return i;
 	}
 
@@ -747,7 +747,7 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, c
 		return -1;
 	}
 	snd = &Objsnds[objp->objsnd_num[sound_index]];
-	snd->flags = OS_USED;
+	snd->flags = OS_IN_USE;
 
 	if(flags > 0){
 		snd->flags |= flags;
@@ -845,7 +845,7 @@ void obj_snd_delete_all()
 {
 	int idx;
 	for(idx=0; idx<MAX_OBJ_SNDS; idx++){
-		if(Objsnds[idx].flags & OS_USED){
+		if(Objsnds[idx].flags & OS_IN_USE){
 			obj_snd_delete_type(Objsnds[idx].objnum);
 		}
 	}

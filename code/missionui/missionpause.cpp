@@ -18,6 +18,7 @@
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "io/key.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionpause.h"
 #include "network/multi_pause.h"
 #include "object/object.h"
@@ -113,6 +114,9 @@ void pause_init()
 
 	// pause all game music
 	audiostream_pause_all();
+
+	// pause voices
+	message_pause_all();
 
 	Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
@@ -249,6 +253,9 @@ void pause_close()
 
 	// unpause all weapon sounds
 	weapon_unpause_sounds();
+
+	// unpause voices
+	message_resume_all();
 
 	// deinit stuff
 	if(Pause_saved_screen != -1) {

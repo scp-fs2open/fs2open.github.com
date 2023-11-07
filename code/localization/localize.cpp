@@ -63,7 +63,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1782
+// #define XSTR_SIZE	1784 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -762,7 +762,8 @@ void lcl_replace_stuff(SCP_string &text, bool force)
 	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
-		replace_all(text, "$rank", Ranks[verify_rank(Player->stats.rank)].name);
+		replace_all(text, "$rank", get_rank_display_name(&Ranks[verify_rank(Player->stats.rank)]).c_str());
+		replace_all(text, "$rtitle", Ranks[verify_rank(Player->stats.rank)].title.c_str());
 	}
 
 	replace_all(text, "$quote", "\"");
@@ -1219,6 +1220,10 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 		Int3();
 		return str;
 	}
+
+#ifndef NDEBUG
+	nprintf(("XSTR", "Localizing String: %i, \"%s\"\n", index, str));
+#endif
 
 	// for some internal strings, such as the ones we loaded using $Has XStr:,
 	// we want to force a lookup even if we're normally untranslated

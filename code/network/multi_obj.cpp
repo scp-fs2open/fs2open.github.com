@@ -834,7 +834,7 @@ bool multi_oo_simulate_rollback_shots(int frame_idx)
 // restores ships to the positions they were in bedfore rollback.
 void multi_record_restore_positions() 
 {
-	for (auto restore_point : Oo_info.restore_points) {
+	for (const auto& restore_point : Oo_info.restore_points) {
 
 		object* objp = &Objects[restore_point.roll_objnum];
 		// reset the position, orientation, and velocity for each object
@@ -1369,7 +1369,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 	}	
 
 	// Cyborg17 - add the subsystem data, now with packer function.
-	if ((MULTIPLAYER_MASTER || objp->flags[Object::Object_Flags::Player_ship]) && shipp->ship_info_index >= 0) {
+	if (MULTIPLAYER_MASTER || objp->flags[Object::Object_Flags::Player_ship]) {
 		SCP_vector<ubyte> flags;
 		SCP_vector<float> subsys_data;
 		ubyte i = 0;
@@ -1493,7 +1493,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 		// either send out the waypoint they are trying to get to *or* their current target
 		if (umode == AIM_WAYPOINTS) {
 			// if it's already started pointing to a waypoint, grab its net_signature and send that instead
-			if ((aip->wp_list != nullptr) && (aip->wp_list->get_waypoints().size() > aip->wp_index)) {
+			if ((aip->wp_list != nullptr) && (aip->wp_index >= 0 && aip->wp_index < static_cast<int>(aip->wp_list->get_waypoints().size()))) {
 				target_signature = Objects[aip->wp_list->get_waypoints().at(aip->wp_index).get_objnum()].net_signature;
 			}
 		} // send the target signature. 2021 Version!

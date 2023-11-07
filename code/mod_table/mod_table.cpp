@@ -48,6 +48,7 @@ bool Enable_external_default_scripts;
 int Default_detail_level;
 bool Full_color_head_anis;
 bool Dont_automatically_select_turret_when_targeting_ship;
+bool Always_reset_selected_wep_on_loadout_open;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
@@ -144,6 +145,8 @@ bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
+bool Calculate_subsystem_hitpoints_after_parsing;
+bool Disable_internal_loadout_restoration_system;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -287,6 +290,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Center splash logo:")) {
 			stuff_boolean(&Splash_logo_center);
+		}
+
+		if (optional_string("$Disable FSO Internal Loadout Restoration System:")) {
+			stuff_boolean(&Disable_internal_loadout_restoration_system);
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -458,8 +465,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_host_orientation_for_set_camera_facing);
 			if (Use_host_orientation_for_set_camera_facing) {
 				mprintf(("Game Settings Table: Using host orientation for set-camera-facing\n"));
-			}
-			else {
+			} else {
 				mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 			}
 		}
@@ -1034,18 +1040,35 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Fixed Turret Collisions:")) {
 			stuff_boolean(&Fixed_turret_collisions);
+			if (Fixed_turret_collisions) {
+				mprintf(("Game Settings Table: Using fixed turret collisions (shooting a turret barrel will always register)\n"));
+			} else {
+				mprintf(("Game Settings Table: Using retail turret collisions (shooting a turret barrel will register if it is within the radius of the base)\n"));
+			}
 		}
 
 		if (optional_string("$Fixed Missile Detonation:")) {
 			stuff_boolean(&Fixed_missile_detonation);
+			if (Fixed_missile_detonation) {
+				mprintf(("Game Settings Table: Using fixed missile detonation (missiles will cross an entire subsystem before detonating)\n"));
+			} else {
+				mprintf(("Game Settings Table: Using retail missile detonation (missiles will detonate when they reach the center coordinates of a subsystem)\n"));
+			}
 		}
 
 		if (optional_string("$Damage Impacted Subsystem First:")) {
 			stuff_boolean(&Damage_impacted_subsystem_first);
+			if (Damage_impacted_subsystem_first) {
+				mprintf(("Game Settings Table: Damage Impacted Subsystem First set to TRUE (weapons will damage the subsystem they impact before any others)\n"));
+			} else {
+				mprintf(("Game Settings Table: Damage Impacted Subsystem First set to FALSE (weapons will damage the closest subsystem before any others)\n"));
+			}
 		}
 
 		if (optional_string("$Use 3d ship select:")) {
 			stuff_boolean(&Use_3d_ship_select);
+			if (Use_3d_ship_select)
+				mprintf(("Game Settings Table: Using 3D ship select\n"));
 		}
 
 		if (optional_string("$Default ship select effect:")) {
@@ -1061,10 +1084,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Use 3d ship icons:")) {
 			stuff_boolean(&Use_3d_ship_icons);
+			if (Use_3d_ship_icons)
+				mprintf(("Game Settings Table: Using 3D ship icons\n"));
 		}
 
 		if (optional_string("$Use 3d weapon select:")) {
 			stuff_boolean(&Use_3d_weapon_select);
+			if (Use_3d_weapon_select)
+				mprintf(("Game Settings Table: Using 3D weapon select\n"));
 		}
 
 		if (optional_string("$Default weapon select effect:")) {
@@ -1080,10 +1107,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Use 3d weapon icons:")) {
 			stuff_boolean(&Use_3d_weapon_icons);
+			if (Use_3d_weapon_icons)
+				mprintf(("Game Settings Table: Using 3D weapon icons\n"));
 		}
 
 		if (optional_string("$Use 3d overhead ship:")) {
 			stuff_boolean(&Use_3d_overhead_ship);
+			if (Use_3d_overhead_ship)
+				mprintf(("Game Settings Table: Using 3D overhead ship\n"));
 		}
 
 		if (optional_string("$Default overhead ship style:")) {
@@ -1096,6 +1127,10 @@ void parse_mod_table(const char *filename)
 			} else {
 				error_display(0, "Unknown Select Overhead Ship Style %s, using TOPVIEW instead.", effect);
 			}
+		}
+
+		if (optional_string("$Always refresh selected weapon when viewing loadout:")) {
+			stuff_boolean(&Always_reset_selected_wep_on_loadout_open);
 		}
 
 		if (optional_string("$Weapons inherit parent collision group:")) {
@@ -1114,8 +1149,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Beams_use_damage_factors);
 			if (Beams_use_damage_factors) {
 				mprintf(("Game Settings Table: Beams will use Damage Factors\n"));
-			}
-			else {
+			} else {
 				mprintf(("Game Settings Table: Beams will ignore Damage Factors (retail behavior)\n"));
 			}
 		}
@@ -1188,14 +1222,20 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Shockwaves Always Damage Bombs:")) {
 			stuff_boolean(&Shockwaves_always_damage_bombs);
+			if (Shockwaves_always_damage_bombs)
+				mprintf(("Game Settings Table: Shockwaves always damage bombs\n"));
 		}
 
 		if (optional_string("$Shockwaves Damage All Object Types Once:")) {
 			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
+			if (Shockwaves_damage_all_obj_types_once)
+				mprintf(("Game Settings Table: Shockwaves damage all object types once\n"));
 		}
 
 		if (optional_string("$Shockwaves Inherit Parent Weapon Damage Type:")) {
 			stuff_boolean(&Shockwaves_inherit_parent_damage_type);
+			if (Shockwaves_inherit_parent_damage_type)
+				mprintf(("Game Settings Table: Shockwaves inherit parent damage type\n"));
 		}
 
 		if (optional_string("$Inherited Shockwave Damage Type Added Suffix:")) {
@@ -1227,6 +1267,8 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Swarmers Lead Targets:")) {
 			stuff_boolean(&Swarmers_lead_targets);
+			if (Swarmers_lead_targets)
+				mprintf(("Game Settings Table: Swarmers lead targets\n"));
 		}
 
 		if (optional_string("$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:")) {
@@ -1302,6 +1344,14 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Countermeasures_use_capacity);
 		}
 
+		if (optional_string("$Calculate subsystem hitpoints after parsing:")) {
+			stuff_boolean(&Calculate_subsystem_hitpoints_after_parsing);
+			if (Calculate_subsystem_hitpoints_after_parsing)
+				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated after parsing\n"));
+			else
+				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1375,6 +1425,7 @@ void mod_table_reset()
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Dont_automatically_select_turret_when_targeting_ship = false;
+	Always_reset_selected_wep_on_loadout_open = false;
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;
@@ -1478,6 +1529,8 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
 	Randomize_particle_rotation = false;
+	Calculate_subsystem_hitpoints_after_parsing = false;
+	Disable_internal_loadout_restoration_system = false;
 }
 
 void mod_table_set_version_flags()
@@ -1492,5 +1545,8 @@ void mod_table_set_version_flags()
 	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
 		Fixed_chaining_to_repeat = true;
+	}
+	if (mod_supports_version(24, 0, 0)) {
+		Calculate_subsystem_hitpoints_after_parsing = true;		// this is essentially a bugfix
 	}
 }

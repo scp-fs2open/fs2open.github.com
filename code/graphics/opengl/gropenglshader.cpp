@@ -398,7 +398,7 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 
 			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
 				Error(LOCATION,
-					  "Shader %s:%d: Malformed include line. Could not find both quote charaters.",
+					  "Shader %s:%d: Malformed include line. Could not find both quote characters.",
 					  filename.c_str(),
 					  line_num);
 			}

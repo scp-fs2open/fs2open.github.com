@@ -397,6 +397,16 @@ class CFred_mission_save {
 	int save_music();
 
 	/**
+	 * @brief Saves custom entries to file
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 */
+	int save_custom_data();
+
+	/**
 	* Helper function for save_objects().
 	*/
 	int save_warp_params(WarpDirection direction, ship *shipp);
@@ -496,7 +506,7 @@ class CFred_mission_save {
 	 * @returns 0 for no error, or
 	 * @returns A negative value if an error occurred
 	 */
-	int save_waypoint_list(waypoint_list* w);
+	int save_waypoint_list(const waypoint_list* wp_list);
 
 	/**
 	 * @brief Saves the wing entries to file
