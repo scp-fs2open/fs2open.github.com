@@ -734,7 +734,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 	}
 }
 
-void generic_anim_bitmap_set(generic_anim* ga, float frametime, bool menu, const generic_extras* ge)
+void generic_anim_bitmap_set(generic_anim* ga, float frametime, const generic_extras* ge)
 {
 	if ((ge != nullptr) && (ga->use_hud_color == true)) {
 		Warning(LOCATION, "Monochrome generic anims can't use extra info (yet)");
