@@ -1214,12 +1214,22 @@ void HudGaugeTalkingHead::render(float frametime)
 			int hx = tablePosX + Anim_offsets[0];
 			int hy = tablePosY + Anim_offsets[1];
 
-			if (gr_screen.rendering_to_texture != -1) 
+			if (gr_screen.rendering_to_texture != -1) {
 				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+				hx += gr_screen.offset_x_unscaled;
+				hy += gr_screen.offset_y_unscaled;
+			}
 			else
 				gr_set_screen_scale(base_w, base_h);
 
-			generic_anim_render_ex(head_anim,frametime, hx, hy, Anim_size[0], Anim_size[1]);
+			generic_anim_bitmap_set(head_anim, frametime);
+			bitmap_rect_list brl = bitmap_rect_list(hx, hy, Anim_size[0], Anim_size[1]);
+
+			if (head_anim->use_hud_color)
+				gr_aabitmap_list(&brl, 1, GR_RESIZE_FULL);
+			else
+				gr_bitmap_list(&brl, 1, GR_RESIZE_FULL);
+
 			gr_reset_screen_scale();
 
 			// draw title
