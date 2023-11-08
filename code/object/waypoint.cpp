@@ -56,11 +56,15 @@ int waypoint::get_objnum() const
 
 const waypoint_list *waypoint::get_parent_list() const
 {
+	if (m_list_index < 0)
+		return nullptr;
 	return &Waypoint_lists[m_list_index];
 }
 
 waypoint_list *waypoint::get_parent_list()
 {
+	if (m_list_index < 0)
+		return nullptr;
 	return &Waypoint_lists[m_list_index];
 }
 
