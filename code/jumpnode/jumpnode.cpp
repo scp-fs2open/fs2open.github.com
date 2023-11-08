@@ -323,8 +323,9 @@ void CJumpNode::SetVisibility(bool enabled)
 	else
 	{
 		// Untarget this node if it is already targeted
-		if ( Player_ai->target_objnum == m_objnum )
+		if ((Game_mode & GM_IN_MISSION) && Player_ai->target_objnum == m_objnum) {
 			Player_ai->target_objnum = -1;
+		}
 		m_flags|=JN_HIDE;
 	}
 }
