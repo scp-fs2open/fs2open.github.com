@@ -1423,6 +1423,7 @@ extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
+
 struct ship_registry_entry;
 struct wing;
 
@@ -1438,6 +1439,12 @@ extern bool sexp_can_construe_as_integer(int node);
 void do_action_for_each_special_argument(int cur_node);
 bool special_argument_appears_in_sexp_tree(int node);
 bool special_argument_appears_in_sexp_list(int node);
+
+// Goober5000 - for special-arg SEXPs
+extern bool is_when_argument_op(int op_const);
+extern bool is_argument_provider_op(int op_const);
+extern bool is_implicit_argument_provider_op(int op_const); // jg18
+extern int find_argument_provider(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
