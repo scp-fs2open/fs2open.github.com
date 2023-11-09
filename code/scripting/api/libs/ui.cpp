@@ -119,6 +119,8 @@ ADE_FUNC(enableInput,
 	}
 
 	scpui::enableInput(ctx);
+	game_flush();
+	Main_hall_poll_key = false;
 
 	return ADE_RETURN_TRUE;
 }
@@ -126,6 +128,8 @@ ADE_FUNC(enableInput,
 ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successful")
 {
 	scpui::disableInput();
+	game_flush();
+	Main_hall_poll_key = true;
 
 	return ADE_RETURN_TRUE;
 }

@@ -68,6 +68,8 @@ static main_hall_defines *Main_hall = nullptr;
 
 static int Main_hall_music_index = -1;
 
+bool Main_hall_poll_key = true;
+
 int Vasudan_funny = 0;
 int Vasudan_funny_plate = -1;
 
@@ -745,7 +747,7 @@ void main_hall_do(float frametime)
 
 	// process any keypresses/mouse events
 	snazzy_action = -1;
-	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, (int)Main_hall->regions.size(), Main_hall_region, &snazzy_action, 1, &key);
+	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, static_cast<int>(Main_hall->regions.size()), Main_hall_region, &snazzy_action, static_cast<int>(Main_hall_poll_key), &key);
 
 	if (key) {
 		game_process_cheats(key);
