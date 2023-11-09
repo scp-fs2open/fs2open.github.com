@@ -19005,7 +19005,7 @@ int sexp_node_targeted(int node)
 	int z;
 	bool is_nan, is_nan_forever;
 
-	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(node));
+	auto jnp = jumpnode_get_by_name(CTEXT(node));
 
 	if (jnp==nullptr || !Player_ai || (jnp->GetSCPObjectNumber() != Players_target)){
 		return SEXP_FALSE;
