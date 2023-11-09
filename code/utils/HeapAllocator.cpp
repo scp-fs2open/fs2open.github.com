@@ -177,6 +177,7 @@ bool HeapAllocator::check_connected_range(const MemoryRange& left, const MemoryR
 	return left.offset + left.size == right.offset;
 }
 void HeapAllocator::checkRangesMerged() {
+// This is a debug only function because its values are only used in debug and linters will get tripped up otherwise.
 #ifndef NDEBUG
 	bool first = true;
 	size_t lastEnd = 0;
