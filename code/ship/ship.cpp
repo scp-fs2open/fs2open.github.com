@@ -4699,7 +4699,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	while(optional_string("$Thruster:"))
 	{
 		rcs_thruster_info *mtp = nullptr;
-		rcs_thruster_info manwich;
+		rcs_thruster_info rcs_info_placeholder;	// The variable formerly known as manwich
 		int idx = -1;
 		if(optional_string("+index:")) {
 			stuff_int(&idx);
@@ -4711,7 +4711,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->rcs_thrusters.emplace_back();
 			mtp = &sip->rcs_thrusters.back();
 		} else {
-			mtp = &manwich;
+			mtp = &rcs_info_placeholder;
 			Warning(LOCATION, "Invalid index (%d) specified for maneuvering thruster on %s '%s'", idx, info_type_name, sip->name);
 		}
 
@@ -9980,7 +9980,7 @@ void ship_do_thruster_sounds(object *obj)
 	while (shipp->rcs_activity.size() < sip->rcs_thrusters.size())
 		shipp->rcs_activity.emplace_back(TIMESTAMP::invalid(), -1, 0.0f);
 
-	for (int i = 0; i < static_cast<int>(sip->rcs_thrusters.size()); i++)
+	for (size_t i = 0; i < sip->rcs_thrusters.size(); i++)
 	{
 		auto& rcs = sip->rcs_thrusters[i];
 		auto& activity = shipp->rcs_activity[i];
@@ -20315,7 +20315,7 @@ void ship_render_batch_thrusters(object *obj)
 
 	if ( Rendering_to_shadow_map ) return;
 
-	for (int i = 0; i < static_cast<int>(shipp->rcs_activity.size()); i++)
+	for (size_t i = 0; i < shipp->rcs_activity.size(); i++)
 	{
 		const auto mtp = &sip->rcs_thrusters[i];
 		const auto& activity = shipp->rcs_activity[i];
