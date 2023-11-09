@@ -1,4 +1,5 @@
 #include <math/bitarray.h>
+#include <math/curve.h>
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
@@ -83,33 +84,33 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allowRelative) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
-	if (allowRelative) {
-		switch (m_originType) {
-			case SourceOriginType::OBJECT: {
-				info.attached_objnum = static_cast<int>(OBJ_INDEX(m_origin.m_object.objp));
-				info.attached_sig = m_origin.m_object.objp->signature;
+	switch (m_originType) {
+		case SourceOriginType::OBJECT: {
+			info.attached_objnum = static_cast<int>(OBJ_INDEX(m_origin.m_object.objp));
+			info.attached_sig = m_origin.m_object.objp->signature;
 
-				info.pos = m_offset;
-				break;
-			}
-			case SourceOriginType::BEAM: // Intentional fall-through
-			case SourceOriginType::PARTICLE: // Intentional fall-through
-			case SourceOriginType::VECTOR: // Intentional fall-through
-			default: {
-				this->getGlobalPosition(&info.pos);
-				info.attached_objnum = -1;
-				info.attached_sig = -1;
-				break;
-			}
+			info.pos = m_offset;
+			break;
 		}
-	}
-	else {
-		this->getGlobalPosition(&info.pos);
-		info.attached_objnum = -1;
-		info.attached_sig = -1;
+		case SourceOriginType::PARTICLE: {
+			info.rad = getScale();
+			info.lifetime = getLifetime();
+			this->getGlobalPosition(&info.pos);
+			info.attached_objnum = -1;
+			info.attached_sig = -1;
+			break;
+		}
+		case SourceOriginType::BEAM: // Intentional fall-through
+		case SourceOriginType::VECTOR: // Intentional fall-through
+		default: {
+			this->getGlobalPosition(&info.pos);
+			info.attached_objnum = -1;
+			info.attached_sig = -1;
+			break;
+		}
 	}
 
 	info.vel = getVelocity();
@@ -123,6 +124,29 @@ vec3d SourceOrigin::getVelocity() const {
 			return m_origin.m_particle.lock()->velocity;
 		default:
 			return m_velocity;
+	}
+}
+
+float SourceOrigin::getLifetime() const {
+	switch (this->m_originType) {
+	case SourceOriginType::PARTICLE:
+		return m_origin.m_particle.lock()->max_life - m_origin.m_particle.lock()->age;
+	default:
+		return -1.0f;
+	}
+}
+
+float SourceOrigin::getScale() const {
+	int idx = -1;
+	switch (this->m_originType) {
+	case SourceOriginType::PARTICLE:
+		idx = m_origin.m_particle.lock()->size_lifetime_curve;
+		if (idx >= 0)
+			return m_origin.m_particle.lock()->radius * Curves[idx].GetValue(m_origin.m_particle.lock()->age / m_origin.m_particle.lock()->max_life);
+		else
+			return m_origin.m_particle.lock()->radius;
+	default:
+		return 1.0f;
 	}
 }
 
