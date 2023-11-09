@@ -818,7 +818,7 @@ DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 
 		// timestamp it so we get random timeouts
 		if(newitem != NULL){
-			// newitem->heard_from_timer = timestamp((int)frand_range(500.0f, 10000.0f));
+			// newitem->heard_from_timer = timestamp(Random::next(500, 10000));
 		}
 	}
 }
