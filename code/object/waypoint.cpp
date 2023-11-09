@@ -23,11 +23,11 @@ waypoint::waypoint()
 	this->m_position.xyz.y = 0.0f;
 	this->m_position.xyz.z = 0.0f;
 
-	this->objnum = -1;
-	this->m_parent_list = NULL;
+	this->m_objnum = -1;
+	this->m_list_index = -1;
 }
 
-waypoint::waypoint(const vec3d *position, waypoint_list *parent_list)
+waypoint::waypoint(const vec3d *position, int list_index)
 {
 	Assert(position != NULL);
 
@@ -35,8 +35,8 @@ waypoint::waypoint(const vec3d *position, waypoint_list *parent_list)
 	this->m_position.xyz.y = position->xyz.y;
 	this->m_position.xyz.z = position->xyz.z;
 
-	this->objnum = -1;
-	this->m_parent_list = parent_list;
+	this->m_objnum = -1;
+	this->m_list_index = list_index;
 }
 
 waypoint::~waypoint()
@@ -51,17 +51,21 @@ const vec3d *waypoint::get_pos() const
 
 int waypoint::get_objnum() const
 {
-	return objnum;
+	return m_objnum;
 }
 
 const waypoint_list *waypoint::get_parent_list() const
 {
-	return m_parent_list;
+	if (m_list_index < 0)
+		return nullptr;
+	return &Waypoint_lists[m_list_index];
 }
 
 waypoint_list *waypoint::get_parent_list()
 {
-	return m_parent_list;
+	if (m_list_index < 0)
+		return nullptr;
+	return &Waypoint_lists[m_list_index];
 }
 
 void waypoint::set_pos(const vec3d *pos)
@@ -147,14 +151,14 @@ void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index)
 	Assert(wpt_index >= 0);
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
-	wpt->objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, default_flags);
+	wpt->m_objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, default_flags);
 
-	Assert(wpt->objnum > -1);
-	if (wpt->objnum < 0) {
+	Assert(wpt->m_objnum > -1);
+	if (wpt->m_objnum < 0) {
 		return;
 	}
 
-	Objects[wpt->objnum].net_signature = multi_assign_network_signature(MULTI_SIG_WAYPOINT);
+	Objects[wpt->m_objnum].net_signature = multi_assign_network_signature(MULTI_SIG_WAYPOINT);
 }
 
 // done immediately after mission load; originally found in aicode.cpp
@@ -369,13 +373,14 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)
 	}
 
 	waypoint_list new_list(name);
+	int wp_list_index = static_cast<int>(Waypoint_lists.size());
 	Waypoint_lists.push_back(new_list);
 	waypoint_list *wp_list = &Waypoint_lists.back();
 
 	wp_list->get_waypoints().reserve(vec_list.size());
 	for (const auto &ii: vec_list)
 	{
-		waypoint new_waypoint(&ii, wp_list);
+		waypoint new_waypoint(&ii, wp_list_index);
 		wp_list->get_waypoints().push_back(new_waypoint);
 	}
 
@@ -434,7 +439,7 @@ int waypoint_add(const vec3d *pos, int waypoint_instance)
 	Assert(wp_index < 0x10000);
 
 	// create the waypoint object
-	waypoint new_waypoint(pos, wp_list);
+	waypoint new_waypoint(pos, wp_list_index);
 
 	// add it at its appropriate spot, which may be the end of the list
 	wp_list->get_waypoints().insert(wp_list->get_waypoints().begin() + wp_index, new_waypoint);
