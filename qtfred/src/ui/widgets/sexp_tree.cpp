@@ -5184,12 +5184,13 @@ sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
 
 sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_index)
 {
-	int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
 
 	// first child node
 	int child = tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
+
+	int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
 
 	if (this_index >= 0) {
 		for (int count = 0; count < this_index; count++) {
@@ -5200,13 +5201,14 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_ind
 			"Expected to find an enum parent parameter for node %i in operator %s but found nothing!",
 			arg_index,
 			tree_nodes[parent_node].text);
+		return nullptr;
 	}
 
 	sexp_list_item head;
 
 	int item = get_dynamic_enum_position(tree_nodes[child].text);
 
-	if (item > 0 && item < (int)Dynamic_enums.size()) {
+	if (item > 0 && item < static_cast<int>(Dynamic_enums.size())) {
 
 		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
 			head.add_data(enum_item.c_str());
