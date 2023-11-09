@@ -513,7 +513,9 @@ cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
 cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
-cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm deprecated_res_arg("-res", "Deprecated, resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm render_res_arg("-render_res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm window_res_arg("-window_res", "Window resolution, formatted like 1600x900.", AT_STRING);
 cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
@@ -551,6 +553,7 @@ int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
+tl::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = tl::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
@@ -1724,8 +1727,14 @@ bool SetCmdlineParams()
 		Cmdline_window = 0; /* Make sure no-one sets both */
 	}
 
-	if(res_arg.found()){
-		Cmdline_res = res_arg.str();
+	if(render_res_arg.found() || deprecated_res_arg.found()){
+		if (render_res_arg.found()) {
+			Cmdline_res = render_res_arg.str();
+		}
+		else {
+			Cmdline_res = deprecated_res_arg.str();
+			mprintf(("Deprecated -res argument. Use -render_res instead...\n"));
+		}
 
 		int width = 0;
 		int height = 0;
@@ -1735,7 +1744,17 @@ bool SetCmdlineParams()
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
+			Warning(LOCATION, "Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res);
+		}
+	}
+	if(window_res_arg.found()){
+		int width = 0;
+		int height = 0;
+
+		if ( sscanf(window_res_arg.str(), "%dx%d", &width, &height) == 2 ) {
+			Cmdline_window_res.emplace(width, height);
+		} else {
+			Warning(LOCATION, "Failed to parse -window_res parameter \"%s\". Must be in format \"<width>x<height>\".\n", window_res_arg.str());
 		}
 	}
 	if(center_res_arg.found()){

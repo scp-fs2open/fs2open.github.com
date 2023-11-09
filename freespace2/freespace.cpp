@@ -6115,7 +6115,6 @@ void game_do_state_common(int state,int no_networking)
 #endif
 	Last_frame_ui_timestamp = ui_timestamp();
 
-
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states

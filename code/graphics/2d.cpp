@@ -2598,6 +2598,7 @@ void gr_flip(bool execute_scripting)
 
 	TRACE_SCOPE(tracing::PageFlip);
 	gr_screen.gf_flip();
+	gr_setup_frame();
 }
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
