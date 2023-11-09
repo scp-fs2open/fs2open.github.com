@@ -8,8 +8,9 @@
 
 #if !defined __APPLE_CC__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
-//Required because X defines none, which is used later
+//Required because X defines none and always, which is used later
 #undef None
+#undef Always
 #endif
 
 #include "gropengl.h"
