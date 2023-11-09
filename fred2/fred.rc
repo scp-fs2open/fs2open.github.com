@@ -2157,12 +2157,12 @@ BEGIN
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 256
+IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 250
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,234
+    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,237
     GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
     LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
     EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,44,12,ES_AUTOHSCROLL
@@ -2186,10 +2186,10 @@ BEGIN
     CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,116,10
     PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,200,120,14
-    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,234
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,237
     GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,101
     EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,83,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
-    LTEXT           "$name - name of the message\r\n$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n$note - message notes\r\n\r\nNote that $persona and $sender will only appear for the Message section.",IDC_STATIC,270,28,120,85
+    LTEXT           "Placeholder - this text is set at runtime",IDC_ENTRY_FORMAT_DESC,270,28,120,85
     GROUPBOX        "Export",IDC_EXPORT,276,121,119,83
     CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,280,131,99,9
     CONTROL         "Just Command Briefings",IDC_EXPORT_COMMAND_BRIEFINGS,

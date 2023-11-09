@@ -838,8 +838,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-dock",						OP_AI_DOCK,								4,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-undock",						OP_AI_UNDOCK,							1,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-rearm-repair",				OP_AI_REARM_REPAIR,						2,	2,			SEXP_GOAL_OPERATOR, },
-	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	3,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	5,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
@@ -10873,7 +10873,11 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, i
 int eval_any_of(int arg_handler_node, int condition_node)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10894,7 +10898,11 @@ int eval_any_of(int arg_handler_node, int condition_node)
 int eval_every_of(int arg_handler_node, int condition_node)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10916,7 +10924,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -10951,7 +10963,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 int eval_random_of(int arg_handler_node, int condition_node)
 {
 	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the number of valid arguments
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
@@ -11040,6 +11056,10 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 {
 	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
 	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the number of valid arguments
 	SCP_vector<int> cumulative_arg_counts;
@@ -11151,7 +11171,11 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	int val = SEXP_FALSE;
 	int n = -1 ;
 	
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// get the first argument
 	n = CDR(arg_handler_node);
@@ -11205,7 +11229,11 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 	int i, count, counter_start, counter_stop, counter_step;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
 	char buf[NAME_LENGTH];
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	n = CDR(arg_handler_node);
 
@@ -11275,7 +11303,11 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 {
 	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	n = CDR(arg_handler_node);
 
@@ -11367,6 +11399,10 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 		"Attempt to use invalid condition with a for-container SEXP (%d). Please report!",
 		op_const);
 
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
+
 	int num_arguments = 0;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
 
@@ -11421,7 +11457,11 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 {
 	int num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<const char*, int>> argument_vector;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	if (Game_mode & GM_MULTIPLAYER)
 	{
@@ -11470,7 +11510,11 @@ int eval_first_of(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
@@ -14163,7 +14207,7 @@ void sexp_abort_rearm(int node)
 
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1 )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1, bool do_hash_fallback = false )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -14200,6 +14244,10 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
 		message_send_unique( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
+		return;
+	} else if ( !ship_entry && wingnum < 0 && do_hash_fallback ) {
+		// ship/wing not found, so act as if this who_from has a hash prepended to it
+		message_send_unique( name, who_from, MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -14262,10 +14310,13 @@ void sexp_send_message(int n)
 	}
 
 	// we might override the sender
-	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+	bool do_hash_fallback = false;
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
 		who_from = The_mission.command_sender;
+		do_hash_fallback = true;
+	}
 
-	sexp_send_one_message( name, who_from, priority, 0, 0 );
+	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
 }
 
 void sexp_send_message_list(int n, bool send_message_chain)
@@ -14328,11 +14379,14 @@ void sexp_send_message_list(int n, bool send_message_chain)
 		}
 
 		// we might override the sender
-		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+		bool do_hash_fallback = false;
+		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
 			who_from = The_mission.command_sender;
+			do_hash_fallback = true;
+		}
 
 		// send the message
-		sexp_send_one_message(name, who_from, priority, 1, delay, event_num);
+		sexp_send_one_message( name, who_from, priority, 1, delay, event_num, do_hash_fallback );
 	}
 }
 
@@ -14370,7 +14424,14 @@ void sexp_send_random_message(int n)
 	Assert (n != -1);		// should have found the message!!!
 	auto name = CTEXT(n);
 
-	sexp_send_one_message( name, who_from, priority, 0, 0 );
+	// we might override the sender
+	bool do_hash_fallback = false;
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(who_from, DEFAULT_HASHCOMMAND)) {
+		who_from = The_mission.command_sender;
+		do_hash_fallback = true;
+	}
+
+	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
 }
 
 void sexp_self_destruct(int node)
@@ -17179,7 +17240,8 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		auto ship_name = CTEXT(node);
 
 		// check that this isn't a request to silence command. 
-		if ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender)) 
+		if ( ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender))
+			|| (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !stricmp(ship_name, DEFAULT_HASHCOMMAND)) )
 		{
 			// Either disable or enable messages from command
 			The_mission.flags.set(Mission::Mission_Flags::No_builtin_command, !enable_messages);
@@ -30428,10 +30490,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_WAYPOINTS_ONCE:
 			if (argnum == 0)
 				return OPF_WAYPOINT_PATH;
-			else if (argnum == 1)
+			else if (argnum == 1 || argnum == 3)
 				return OPF_POSITIVE;
-			else
+			else if (argnum == 2 || argnum == 4)
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:
@@ -37590,14 +37654,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t4 (optional):\tStarting index (1-n) of the waypoint path.\r\n"
+		"\t5 (optional):\tWhether to fly the waypoint path in reverse.\r\n"
+	},
 
 	{ OP_AI_WAYPOINTS_ONCE, "Ai-waypoints once (Ship goal)\r\n"
 		"\tCauses the specified ship to fly a waypoint path.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t4 (optional):\tStarting index (1-n) of the waypoint path.\r\n"
+		"\t5 (optional):\tWhether to fly the waypoint path in reverse.\r\n"
+	},
 
 	{ OP_AI_DESTROY_SUBSYS, "Ai-destroy subsys (Ship goal)\r\n"
 		"\tCauses the specified ship to attack and try and destroy the specified subsystem "
@@ -38158,7 +38228,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_AI_STAY_NEAR_SHIP, "Ai-stay near ship (Ship goal)\r\n"
 		"\tCauses the specified ship to park itself near the given ship and move closer if the other ship moves too far "
 		"away from it.\r\n\r\n"
-		"Takes 2 to 3 arguments...\r\n"
+		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship to stay near.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89).\r\n"
 		"\t3:\tDistance to stay within (optional; defaults to 300).\r\n"

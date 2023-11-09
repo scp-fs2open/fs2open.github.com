@@ -145,7 +145,11 @@ const AVCodec* sound::ffmpeg::FFmpegWaveFile::prepareOpened()
     }
     m_audioStream = ctx->streams[m_audioStreamIndex];
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 	audio_codec = avcodec_find_decoder(m_audioStream->codecpar->codec_id);
+#else
+	audio_codec = avcodec_find_decoder(m_audioStream->codec->codec_id);
+#endif
 
 	if ( !audio_codec ) {
 		throw FFmpegException("Failed to find decoder for audio stream in file.");

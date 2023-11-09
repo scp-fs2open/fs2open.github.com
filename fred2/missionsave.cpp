@@ -4816,21 +4816,22 @@ int CFred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	bool first_wpt_list = true;
+	for (const auto &ii: Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");
 		required_string_fred("$Name:");
-		parse_comments((ii == Waypoint_lists.begin()) ? 1 : 2);
-		fout(" %s", ii->get_name());
+		parse_comments(first_wpt_list ? 1 : 2);
+		fout(" %s", ii.get_name());
 
 		required_string_fred("$List:");
 		parse_comments();
-		fout(" (\t\t;! %d points in list\n", ii->get_waypoints().size());
+		fout(" (\t\t;! %d points in list\n", ii.get_waypoints().size());
 
-		save_waypoint_list(&(*ii));
+		save_waypoint_list(&ii);
 		fout(")");
 
 		fso_comment_pop();
+		first_wpt_list = false;
 	}
 
 	fso_comment_pop(true);
@@ -4838,13 +4839,12 @@ int CFred_mission_save::save_waypoints()
 	return err;
 }
 
-int CFred_mission_save::save_waypoint_list(waypoint_list *wp_list)
+int CFred_mission_save::save_waypoint_list(const waypoint_list *wp_list)
 {
 	Assert(wp_list != NULL);
-	SCP_vector<waypoint>::iterator ii;
 
-	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii) {
-		vec3d *pos = ii->get_pos();
+	for (const auto &ii: wp_list->get_waypoints()) {
+		auto pos = ii.get_pos();
 		fout("\t( %f, %f, %f )\n", pos->xyz.x, pos->xyz.y, pos->xyz.z);
 	}
 

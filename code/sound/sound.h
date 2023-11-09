@@ -139,7 +139,7 @@ sound_handle snd_play(game_snd* gs, float pan = 0.0f, float vol_scale = 1.0f,
 // Play a sound directly from index returned from snd_load().  Bypasses
 // the sound management process of using game_snd.
 sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale = 1.0f,
-                          int priority = SND_PRIORITY_MUST_PLAY);
+                          int priority = SND_PRIORITY_MUST_PLAY, bool is_voice = true);
 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
@@ -168,7 +168,7 @@ void snd_resume(sound_handle snd_handle);
 // Sets the volume of a sound that is already playing.
 // The volume is between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.
-void snd_set_volume(sound_handle snd_handle, float volume);
+void snd_set_volume(sound_handle snd_handle, float volume, bool is_voice = false);
 
 // Sets the panning location of a sound that is already playing.
 // Pan goes from -1.0 all the way left to 0.0 in center to 1.0 all the way right.

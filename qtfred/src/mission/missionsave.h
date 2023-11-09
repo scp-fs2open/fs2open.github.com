@@ -506,7 +506,7 @@ class CFred_mission_save {
 	 * @returns 0 for no error, or
 	 * @returns A negative value if an error occurred
 	 */
-	int save_waypoint_list(waypoint_list* w);
+	int save_waypoint_list(const waypoint_list* wp_list);
 
 	/**
 	 * @brief Saves the wing entries to file

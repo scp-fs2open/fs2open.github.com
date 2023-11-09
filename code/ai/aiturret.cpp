@@ -72,29 +72,29 @@ const char* Turret_valid_types[NUM_TURRET_TYPES] = {
 };
 
 typedef struct eval_enemy_obj_struct {
-	int			turret_parent_objnum;			// parent of turret
-	float			weapon_travel_dist;				// max targeting range of turret weapon
-	int			enemy_team_mask;
-	int			weapon_system_ok;					// is the weapon subsystem of turret ship ok
-	int			eeo_flags;
+	int			turret_parent_objnum = -1;			// parent of turret
+	float		weapon_travel_dist = 0.0f;			// max targeting range of turret weapon
+	int			enemy_team_mask = 0;
+	bool		weapon_system_ok = false;			// is the weapon subsystem of turret ship ok
+	int			eeo_flags = 0;
 
-	vec3d		*tpos;
-	vec3d		*tvec;
-	ship_subsys *turret_subsys;
-	int			current_enemy;
+	const vec3d	*tpos = nullptr;
+	const vec3d	*tvec = nullptr;
+	const ship_subsys *turret_subsys = nullptr;
+	int			current_enemy = -1;
 
 
-	float			nearest_attacker_dist;			// nearest ship	
-	int			nearest_attacker_objnum;
+	float		nearest_attacker_dist = 99999.0f;		// nearest ship
+	int			nearest_attacker_objnum = -1;
 
-	float			nearest_homing_bomb_dist;		// nearest homing bomb
-	int			nearest_homing_bomb_objnum;
+	float		nearest_homing_bomb_dist = 99999.0f;	// nearest homing bomb
+	int			nearest_homing_bomb_objnum = -1;
 
-	float			nearest_bomb_dist;				// nearest non-homing bomb
-	int			nearest_bomb_objnum;
+	float		nearest_bomb_dist = 99999.0f;			// nearest non-homing bomb
+	int			nearest_bomb_objnum = -1;
 
-	float			nearest_dist;						// nearest ship attacking this turret
-	int			nearest_objnum;
+	float		nearest_dist = 99999.0f;				// nearest ship attacking this turret
+	int			nearest_objnum = -1;
 }	eval_enemy_obj_struct;
 
 // the current world orientation of the turret matrix, corresponding to its fvec and uvec defined in the model
@@ -120,7 +120,7 @@ void turret_instance_find_world_orient(matrix* out_mat, int model_instance_num, 
  *
  * @return 1 if objp is in fov of the specified turret.  Otherwise return 0.
  */
-bool object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist)
+bool object_in_turret_fov(const object *objp, const ship_subsys *ss, const vec3d *tvec, const vec3d *tpos, float dist)
 {
 	vec3d	v2e;
 	float size_mod;
@@ -215,7 +215,7 @@ int turret_select_best_weapon(ship_subsys *turret, object * /*target*/)
 /**
  * Returns true if all weapons in swp have the specified flag
  */
-bool all_turret_weapons_have_flags(ship_weapon *swp, flagset<Weapon::Info_Flags> flags)
+bool all_turret_weapons_have_flags(const ship_weapon *swp, flagset<Weapon::Info_Flags> flags)
 {
 	int i;
 	for(i = 0; i < swp->num_primary_banks; i++)
@@ -232,7 +232,7 @@ bool all_turret_weapons_have_flags(ship_weapon *swp, flagset<Weapon::Info_Flags>
 	return true;
 }
 
-bool all_turret_weapons_have_flags(ship_weapon *swp, Weapon::Info_Flags flags)
+bool all_turret_weapons_have_flags(const ship_weapon *swp, Weapon::Info_Flags flags)
 {
     int i;
     for (i = 0; i < swp->num_primary_banks; i++)
@@ -253,7 +253,7 @@ bool all_turret_weapons_have_flags(ship_weapon *swp, Weapon::Info_Flags flags)
  * Returns true if any of the weapons in swp have flags
  *
  */
-bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags)
+bool turret_weapon_has_flags(const ship_weapon *swp, Weapon::Info_Flags flags)
 {
 	Assert(swp != NULL);
     
@@ -279,7 +279,7 @@ bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags)
 /**
  * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
  */
-flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp)
+flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(const ship_weapon *swp)
 {
 	Assert(swp != NULL);
 
@@ -307,7 +307,7 @@ flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp)
  * @note It might be a little faster to optimize based on WP_LASER should only appear in primaries
  * and WP_MISSILE in secondaries. but in the interest of future coding I leave it like this.
  */
-bool turret_weapon_has_subtype(ship_weapon *swp, int subtype)
+bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype)
 {
 	Assert(swp != NULL);
     
@@ -492,7 +492,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 {
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
 	ship *shipp;
-	ship_subsys *ss = eeo->turret_subsys;
+	auto ss = eeo->turret_subsys;
 	float dist, dist_comp;
 	bool turret_has_no_target = false;
 
@@ -772,8 +772,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
  */
 int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_only_flag, bool small_only_flag, bool tagged_only_flag, bool beam_flag, bool flak_flag, bool laser_flag, bool missile_flag)
 {
-	//float					weapon_travel_dist;
-	int					weapon_system_ok;
 	eval_enemy_obj_struct eeo;
 	ship_weapon *swp = &turret_subsys->weapons;
 
@@ -788,10 +786,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	//	weapon_travel_dist=wip->lssm_lock_range;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
-	weapon_system_ok = 0;
-	if ( ship_get_subsystem_strength( &Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS ) > 0 ) {
-		weapon_system_ok = 1;
-	}
+	bool weapon_system_ok = (ship_get_subsystem_strength(&Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS) > 0);
 
 	// Initialize eeo struct.
 	eeo.turret_parent_objnum = turret_parent_objnum;
@@ -822,18 +817,6 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.tpos = tpos;
 	eeo.tvec = tvec;
 	eeo.turret_subsys = turret_subsys;
-
-	eeo.nearest_attacker_dist = 99999.0f;
-	eeo.nearest_attacker_objnum = -1;
-
-	eeo.nearest_homing_bomb_dist = 99999.0f;
-	eeo.nearest_homing_bomb_objnum = -1;
-
-	eeo.nearest_bomb_dist = 99999.0f;
-	eeo.nearest_bomb_objnum = -1;
-
-	eeo.nearest_dist = 99999.0f;
-	eeo.nearest_objnum = -1;
 
 	// here goes the new targeting priority setting
 	int n_tgt_priorities;
@@ -1064,7 +1047,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					break;
 
 				default:
-					Int3(); //Means invalid number passed.
+					UNREACHABLE("Invalid target type of %d sent to get_nearest_turret_objnum.  Please report to the SCP!", turret_subsys->turret_targeting_order[i]);
 			}
 		}
 	}
@@ -1171,9 +1154,9 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Flak_protected]) && flak_flag) );
 		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Laser_protected]) && laser_flag) );
 		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Missile_protected]) && missile_flag) );
+		Assertion(!Objects[enemy_objnum].flags[Object::Object_Flags::Protected], "find_turret_enemy selected an object of type %d %s that is protected, please report to the SCP!", Objects[enemy_objnum].type, Objects[enemy_objnum].type == OBJ_SHIP ? Ships[Objects[enemy_objnum].instance].ship_name : "");
 
 		if ( Objects[enemy_objnum].flags[Object::Object_Flags::Protected] ) {
-			Int3();
 			enemy_objnum = aip->target_objnum;
 		}
 	}
@@ -2869,7 +2852,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	}
 }
 
-bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
+bool turret_std_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod)
 {
 	model_subsystem *tp = ss->system_info;
 	float dot = vm_vec_dot(v2e, gvec);
@@ -2879,7 +2862,7 @@ bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	return false;
 }
 
-bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
+bool turret_adv_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod)
 {
 	model_subsystem *tp = ss->system_info;
 	float dot = vm_vec_dot(v2e, gvec);
@@ -2905,7 +2888,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	return false;
 }
 
-bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
+bool turret_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod)
 {
 	bool in_fov = false;
 	if (ss->system_info->turret_base_fov > -1.0f)

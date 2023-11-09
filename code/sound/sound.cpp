@@ -523,7 +523,7 @@ void snd_close(void)
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority)
+sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority, bool is_voice)
 {
 	game_snd gs;
 
@@ -538,7 +538,9 @@ sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, in
 	entry.id_sig      = Sounds[soundnum.value()].sig;
 	entry.filename[0] = 0;
 //	entry.flags = GAME_SND_VOICE | GAME_SND_USE_DS3D;
-	gs.flags = GAME_SND_VOICE;
+	if (is_voice) {
+		gs.flags = GAME_SND_VOICE;
+	}
 
 	gs.volume_range = util::UniformFloatRange(1.0f);
 	gs.pitch_range = util::UniformFloatRange(1.0f);
@@ -1034,7 +1036,7 @@ SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInf
  * @param sig		handle to sound, what is returned from snd_play()
  * @param volume	volume of sound (range: 0.0 -> 1.0)
  */
-void snd_set_volume(sound_handle sig, float volume)
+void snd_set_volume(sound_handle sig, float volume, bool is_voice)
 {
 	int	channel;
 	float	new_volume;
@@ -1068,7 +1070,11 @@ void snd_set_volume(sound_handle sig, float volume)
 
 	//looping sound volumes are updated in snd_do_frame
 	if(!isLoopingSound) {
-		new_volume = volume * (Master_sound_volume * aav_effect_volume);
+		if (is_voice) {
+			new_volume = volume * (Master_voice_volume * aav_effect_volume);
+		} else {
+			new_volume = volume * (Master_sound_volume * aav_effect_volume);
+		}
 		ds_set_volume( channel, new_volume );
 	}
 }

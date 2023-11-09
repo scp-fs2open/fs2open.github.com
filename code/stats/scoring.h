@@ -62,6 +62,8 @@ class object;
 
 struct rank_stuff {
 	char		name[NAME_LENGTH];		// name of this rank
+	SCP_string	alt_name;  // Alt name for displaying
+	SCP_string	title;     // Title used for replacing the $RankTitle variable
 	SCP_map<int, SCP_string>	promotion_text;		// text to display when promoted to this rank
 	int		points;						// points needed to reach this rank
 	char		bitmap[MAX_FILENAME_LEN];		// bitmap of this rank medal
@@ -152,6 +154,8 @@ extern traitor_stuff Traitor;
 extern SCP_vector<traitor_override_t> Traitor_overrides;
 
 int verify_rank(int rank);
+
+SCP_string get_rank_display_name(rank_stuff* rank);
 
 void rank_init();
 void traitor_init();

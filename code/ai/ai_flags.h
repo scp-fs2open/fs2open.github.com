@@ -47,6 +47,7 @@ namespace AI {
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
 		Target_own_team,	// this attack goal is allowed to target friendlies
 		Afterburn_hard,		// afterburn as hard as possible to the goal
+		Waypoints_in_reverse,	// decrement instead of increment
 
 		NUM_VALUES
 	};

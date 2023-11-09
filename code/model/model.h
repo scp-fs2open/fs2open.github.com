@@ -1233,10 +1233,10 @@ typedef struct mc_info {
 	int     model_instance_num = -1;
 	int     model_num = -1;             // What model to check
 	int     submodel_num = -1;          // What submodel to check if MC_SUBMODEL is set
-	matrix  *orient = nullptr;          // The orient of the model
-	vec3d   *pos = nullptr;             // The pos of the model in world coordinates
-	vec3d   *p0 = nullptr;              // The starting point of the ray (sphere) to check
-	vec3d   *p1 = nullptr;              // The ending point of the ray (sphere) to check
+	const matrix  *orient = nullptr;        // The orient of the model
+	const vec3d   *pos = nullptr;           // The pos of the model in world coordinates
+	const vec3d   *p0 = nullptr;            // The starting point of the ray (sphere) to check
+	const vec3d   *p1 = nullptr;            // The ending point of the ray (sphere) to check
 	int     flags = 0;                  // Flags that the model_collide code looks at.  See MC_??? defines
 	float   radius = 0;                 // If MC_CHECK_THICK is set, checks a sphere moving with the radius.
 	int     lod = 0;                    // Which detail level of the submodel to check instead

@@ -340,7 +340,7 @@ void event_music_init()
 					Warning(LOCATION, "Soundtrack file %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
 #endif
 
-				Warning(LOCATION, "One or more files in '%s' could not be loaded.  The soundtrack will not be used.", soundtrack.name);
+				Warning(LOCATION, "Soundtrack file %s was not found.  The soundtrack '%s' will not be used.", filename, soundtrack.name);
 				all_patterns_valid = false;
 				break;
 			}

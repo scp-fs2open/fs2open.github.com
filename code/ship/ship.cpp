@@ -16793,15 +16793,27 @@ int ship_return_seconds_to_goal(ship *sp)
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
-			dist += vm_vec_dist_quick(&objp->pos, aip->wp_list->get_waypoints()[aip->wp_index].get_pos());
+			auto& waypoints = aip->wp_list->get_waypoints();
 
-			SCP_vector<waypoint>::iterator ii;
-			vec3d *prev_vec = NULL;
-			for (ii = (aip->wp_list->get_waypoints().begin() + aip->wp_index); ii != aip->wp_list->get_waypoints().end(); ++ii) {
-				if (prev_vec != NULL) {
-					dist += vm_vec_dist_quick(ii->get_pos(), prev_vec);
+			// distance to current waypoint
+			dist += vm_vec_dist_quick(&objp->pos, waypoints[aip->wp_index].get_pos());
+
+			// distance from current waypoint to the end of the list, whichever way we're going
+			const vec3d *prev_vec = nullptr;
+			if (aip->wp_flags & WPF_BACKTRACK) {
+				for (int i = aip->wp_index; i >= 0; --i) {
+					if (prev_vec != nullptr) {
+						dist += vm_vec_dist_quick(waypoints[i].get_pos(), prev_vec);
+					}
+					prev_vec = waypoints[i].get_pos();
 				}
-				prev_vec = ii->get_pos();
+			} else {
+				for (int i = aip->wp_index; i < (int)waypoints.size(); ++i) {
+					if (prev_vec != nullptr) {
+						dist += vm_vec_dist_quick(waypoints[i].get_pos(), prev_vec);
+					}
+					prev_vec = waypoints[i].get_pos();
+				}
 			}
 		}
 

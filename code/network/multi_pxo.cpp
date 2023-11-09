@@ -4588,7 +4588,8 @@ void multi_pxo_pinfo_build_vals()
 
 	// rank
 	memset(Multi_pxo_pinfo_vals[1], 0, 50);	
-	multi_sg_rank_build_name(Ranks[verify_rank(fs->stats.rank)].name, Multi_pxo_pinfo_vals[1]);	
+	multi_sg_rank_build_name(get_rank_display_name(&Ranks[verify_rank(fs->stats.rank)]).c_str(),
+		Multi_pxo_pinfo_vals[1]);	
 	font::force_fit_string(Multi_pxo_pinfo_vals[1], 49, Multi_pxo_pinfo_coords[gr_screen.res][2] - (Multi_pxo_pinfo_val_x[gr_screen.res] - Multi_pxo_pinfo_coords[gr_screen.res][0]));
 
 	// kills
