@@ -320,6 +320,22 @@ ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "Th
 	return ade_set_args(L, "s", smh->GetSubmodel()->name);
 }
 
+ADE_VIRTVAR(Index, l_Submodel, nullptr, "Gets the submodel's index", "number", "The number (adjusted for lua) or -1 if invalid")
+{
+	submodel_h* smh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
+		return ade_set_error(L, "i", -1);
+
+	if (!smh->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the submodel index is not implemented");
+
+	return ade_set_args(L, "i", smh->GetSubmodelIndex() + 1);
+}
+
 ADE_VIRTVAR(Offset, l_Submodel, nullptr, "Gets the submodel's offset from its parent submodel", "vector", "The offset vector or a empty vector if invalid")
 {
 	submodel_h *smh = nullptr;
@@ -429,6 +445,23 @@ ADE_FUNC(getNextSibling, l_Submodel, nullptr, "Gets the next sibling submodel of
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smh->GetModel(), sm->next_sibling)));
+}
+
+ADE_FUNC(getParent, l_Submodel, nullptr, "Gets the parent submodel of this submodel", "submodel", "A submodel, or nil if there is no parent, or an invalid submodel if the handle is not valid")
+{
+	submodel_h* smh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	if (!smh->IsValid())
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	auto sm = smh->GetSubmodel();
+	if (sm->parent < 0)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smh->GetModel(), sm->parent)));
 }
 
 ADE_FUNC(isValid, l_Submodel, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
