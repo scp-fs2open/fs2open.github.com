@@ -7575,7 +7575,7 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_ind
 
 	int item = get_dynamic_enum_position(tree_nodes[child].text);
 
-	if (item > 0 && item < static_cast<int>(Dynamic_enums.size())) {
+	if (item >= 0 && item < static_cast<int>(Dynamic_enums.size())) {
 
 		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
 			head.add_data(enum_item.c_str());
