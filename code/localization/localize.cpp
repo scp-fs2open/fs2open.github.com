@@ -63,7 +63,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1784 // This is the next available ID
+// #define XSTR_SIZE	1789 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
