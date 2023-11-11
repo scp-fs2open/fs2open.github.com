@@ -1102,7 +1102,6 @@ int Sexp_current_argument_nesting_level;
 
 // Goober5000
 bool is_blank_argument_op(int op_const);
-bool is_blank_of_op(int op_const);
 bool is_for_blank_op(int op_const); // jg18
 int get_handler_for_x_of_operator(int node);
 
@@ -2286,7 +2285,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			// this is an instance of "Replace Container Data"
 
 			// can't be used in special argument list
-			if (type == OPF_ANYTHING || type == OPF_DATA_OR_STR_CONTAINER) {
+			if (sexp_is_blank_of_op(get_operator_const(op_node)) {
 				return SEXP_CHECK_TYPE_MISMATCH;
 			}
 
@@ -4626,7 +4625,7 @@ int get_sexp()
 		{
 			// get the first op of the parent, which should be a *_of operator
 			arg_handler = CADR(parent);
-			if (arg_handler >= 0 && !is_blank_of_op(get_operator_const(arg_handler)))
+			if (arg_handler >= 0 && !sexp_is_blank_of_op(get_operator_const(arg_handler)))
 				arg_handler = -1;
 		}
 
@@ -11733,7 +11732,7 @@ int get_handler_for_x_of_operator(int n)
 
 	// get the first op of the parent, which should be a *_of operator
 	arg_handler = CADR(conditional);
-	if (arg_handler < 0 || !is_blank_of_op(get_operator_const(arg_handler))) {
+	if (arg_handler < 0 || !sexp_is_blank_of_op(get_operator_const(arg_handler))) {
 		return -1;
 	}
 
@@ -11755,7 +11754,7 @@ bool is_blank_argument_op(int op_const)
 }
 
 // Goober5000
-bool is_blank_of_op(int op_const)
+bool sexp_is_blank_of_op(int op_const)
 {
 	if (is_for_blank_op(op_const)) {
 		return true;
