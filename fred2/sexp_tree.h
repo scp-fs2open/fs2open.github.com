@@ -311,6 +311,7 @@ public:
 	sexp_list_item *get_listing_opf_bolt_types();
 	sexp_list_item *get_listing_opf_traitor_overrides();
 	sexp_list_item *get_listing_opf_lua_general_orders();
+	sexp_list_item *get_listing_opf_lua_enum(int parent_node, int arg_index);
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;
