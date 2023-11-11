@@ -229,12 +229,12 @@ flag_def_list Armor_flags[] = {
 const int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
 
 
-flag_def_list_new<Thruster_Flags> Man_types[] = {
+flag_def_list_new<Thruster_Flags> RCS_types[] = {
     { "Bank right", Thruster_Flags::Bank_right, true, false },
     { "Bank left",	Thruster_Flags::Bank_left,	true, false },
     { "Pitch up",	Thruster_Flags::Pitch_up,	true, false },
     { "Pitch down", Thruster_Flags::Pitch_down, true, false },
-    { "Yaw right", Thruster_Flags::Yaw_right, true, false },
+    { "Yaw right",  Thruster_Flags::Yaw_right,  true, false },
     { "Yaw left",	Thruster_Flags::Yaw_left,	true, false },
     { "Slide right",Thruster_Flags::Slide_right,true, false },
     { "Slide left", Thruster_Flags::Slide_left, true, false },
@@ -244,7 +244,7 @@ flag_def_list_new<Thruster_Flags> Man_types[] = {
     { "Reverse",	Thruster_Flags::Reverse,	true, false }
 };
 
-const size_t Num_man_types = sizeof(Man_types) / sizeof(flag_def_list_new<Thruster_Flags>);
+const size_t Num_rcs_types = sizeof(RCS_types) / sizeof(flag_def_list_new<Thruster_Flags>);
 
 // Use the last parameter here to tell the parser whether to stuff the flag into flags or flags2
 flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
@@ -1214,12 +1214,7 @@ void ship_info::clone(const ship_info& other)
 
 	custom_data = other.custom_data;
 
-	num_maneuvering = other.num_maneuvering;
-
-    for (int i = 0; i < MAX_MAN_THRUSTERS; ++i) 
-    {
-        maneuvering[i] = other.maneuvering[i];
-    }
+	rcs_thrusters = other.rcs_thrusters;
 
 	radar_image_2d_idx = other.radar_image_2d_idx;
 	radar_color_image_2d_idx = other.radar_color_image_2d_idx;
@@ -1547,8 +1542,7 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(custom_data, other.custom_data);
 
-	num_maneuvering = other.num_maneuvering;
-	std::swap(maneuvering, other.maneuvering);
+	std::swap(rcs_thrusters, other.rcs_thrusters);
 
 	radar_image_2d_idx = other.radar_image_2d_idx;
 	radar_color_image_2d_idx = other.radar_color_image_2d_idx;
@@ -1993,14 +1987,9 @@ ship_info::ship_info()
 
 	ship_sounds.clear();
 
-	num_maneuvering = 0;
+	rcs_thrusters.clear();
 
 	custom_data.clear();
-
-	for (int i = 0; i < MAX_MAN_THRUSTERS; i++)
-	{
-        maneuvering[i].reset();
-	}
 
 	radar_image_2d_idx = -1;
 	radar_color_image_2d_idx = -1;
@@ -4707,31 +4696,28 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 	}
 
-	man_thruster *mtp = NULL;
-	man_thruster manwich;
 	while(optional_string("$Thruster:"))
 	{
+		rcs_thruster_info *mtp = nullptr;
+		rcs_thruster_info rcs_info_placeholder;	// The variable formerly known as manwich
 		int idx = -1;
 		if(optional_string("+index:")) {
 			stuff_int(&idx);
 		}
 
-		if(idx >= 0 && idx < sip->num_maneuvering) {
-			mtp = &sip->maneuvering[idx];
+		if(idx >= 0 && idx < static_cast<int>(sip->rcs_thrusters.size())) {
+			mtp = &sip->rcs_thrusters[idx];
 		} else if(idx < 0) {
-			if(sip->num_maneuvering < MAX_MAN_THRUSTERS) {
-				mtp = &sip->maneuvering[sip->num_maneuvering++];
-			} else {
-				Warning(LOCATION, "Too many maneuvering thrusters on %s '%s'; maximum is %d", info_type_name, sip->name, MAX_MAN_THRUSTERS);
-			}
+			sip->rcs_thrusters.emplace_back();
+			mtp = &sip->rcs_thrusters.back();
 		} else {
-			mtp = &manwich;
+			mtp = &rcs_info_placeholder;
 			Warning(LOCATION, "Invalid index (%d) specified for maneuvering thruster on %s '%s'", idx, info_type_name, sip->name);
 		}
 
 		if(optional_string("+Used for:")) {
 			SCP_vector<SCP_string> unparsed;
-			parse_string_flag_list(mtp->use_flags, Man_types, Num_man_types, &unparsed);
+			parse_string_flag_list(mtp->use_flags, RCS_types, Num_rcs_types, &unparsed);
 
 			// backwards compatibility
 			for (const auto& str : unparsed) {
@@ -6769,11 +6755,7 @@ void ship::clear()
 	bay_doors_need_open = false;
 	bay_doors_parent_shipnum = -1;
 
-	for(int i = 0; i < MAX_MAN_THRUSTERS; i++)
-	{
-		thrusters_start[i] = timestamp(-1);
-		thrusters_sounds[i] = -1;
-	}
+	rcs_activity.clear();
 
 	s_alt_classes.clear();
 
@@ -6824,7 +6806,7 @@ const char* ship::get_display_name() const {
 	}
 }
 
-void ship::apply_replacement_textures(SCP_vector<texture_replace> &replacements)
+void ship::apply_replacement_textures(const SCP_vector<texture_replace> &replacements)
 {
 	if (!replacements.empty())
 	{
@@ -9920,9 +9902,9 @@ void ship_evaluate_ai(object* obj, float frametime) {
 }
 
 // given a particular maneuvering thruster, returns 0-1 how strongly the thruster is activated based on the ship's current phyiscal situation
-float ship_get_thruster_status(object* obj, man_thruster* mtp) {
+float ship_get_thruster_status(const object* obj, const rcs_thruster_info *mtp) {
 	float val = 0.0f;
-	physics_info* pi = &obj->phys_info;
+	auto pi = &obj->phys_info;
 
 	if (mtp->use_flags.any_set()) {
 		if (pi->rotational_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
@@ -9983,65 +9965,70 @@ float ship_get_thruster_status(object* obj, man_thruster* mtp) {
 	return val;
 }
 
-
-void ship_do_thruster_sounds(object* obj) {
-	if (Cmdline_freespace_no_sound)
-		return;
-
+// this function doesn't just play sounds but also keeps track of the time the thruster started firing
+void ship_do_thruster_sounds(object *obj)
+{
 	int num = obj->instance;
 	ship* shipp = &Ships[num];
 	ship_info* sip = &Ship_info[Ships[num].ship_info_index];
 
-	for (int i = 0; i < sip->num_maneuvering; i++) {
-		man_thruster* mtp = &sip->maneuvering[i];
+	// check whether we can play sounds in general and also on this ship
+	bool play_sound = !Cmdline_freespace_no_sound &&
+		(obj != Player_obj || Play_thruster_sounds_for_player);
 
-		float activated = ship_get_thruster_status(obj, mtp);
+	// make sure there are enough thruster instances
+	while (shipp->rcs_activity.size() < sip->rcs_thrusters.size())
+		shipp->rcs_activity.emplace_back(TIMESTAMP::invalid(), -1, 0.0f);
 
-		vec3d thruster_pos;
-		vm_vec_unrotate(&thruster_pos, &mtp->pos, &obj->orient);
-		vm_vec_add2(&thruster_pos, &obj->pos);
+	for (size_t i = 0; i < sip->rcs_thrusters.size(); i++)
+	{
+		auto& rcs = sip->rcs_thrusters[i];
+		auto& activity = shipp->rcs_activity[i];
 
-		if (activated > 0.0f) {
+		TIMESTAMP& start_time = std::get<0>(activity);
+		int& looping_sound = std::get<1>(activity);
+		float& activated = std::get<2>(activity);
 
-			if (obj != Player_obj || Play_thruster_sounds_for_player) {
-				//Handle sounds and stuff
-				if (shipp->thrusters_start[i] <= 0) {
-					shipp->thrusters_start[i] = timestamp();
-					if (mtp->start_snd.isValid())
-						snd_play_3d(gamesnd_get_game_sound(mtp->start_snd), &thruster_pos, &Eye_position, 0.0f, &obj->phys_info.vel);
-				}
+		activated = ship_get_thruster_status(obj, &rcs);
+
+		// We are firing a thruster
+		if (activated > 0.0f)
+		{
+			if (!start_time.isValid())
+			{
+				start_time = _timestamp();
+
+				// we don't need to store a sound reference because it will just play once and be automatically removed
+				if (play_sound && rcs.start_snd.isValid())
+					obj_snd_assign(OBJ_INDEX(obj), rcs.start_snd, &rcs.pos, OS_MAIN | OS_PLAY_ON_PLAYER | OS_LOOPING_DISABLED);
 
 				//Only assign looping sound if
 				//it is specified
 				//it isn't assigned already
 				//start sound doesn't exist or has finished
-				if (mtp->loop_snd.isValid()
-					&& shipp->thrusters_sounds[i] < 0
-					&& (!mtp->start_snd.isValid() || (gamesnd_get_max_duration(gamesnd_get_game_sound(mtp->start_snd)) < timestamp() - shipp->thrusters_start[i]))
+				if (play_sound &&
+					rcs.loop_snd.isValid()
+					&& looping_sound < 0
+					&& (!rcs.start_snd.isValid() || (gamesnd_get_max_duration(gamesnd_get_game_sound(rcs.start_snd)) < timestamp_since(start_time)))
 					)
 				{
-					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, OS_MAIN | OS_PLAY_ON_PLAYER);
+					looping_sound = obj_snd_assign(OBJ_INDEX(obj), rcs.loop_snd, &rcs.pos, OS_MAIN | OS_PLAY_ON_PLAYER);
 				}
 			}
-
-		} else if (shipp->thrusters_start[i] > 0 && (obj != Player_obj || Play_thruster_sounds_for_player)) {
-			// We've stopped firing a thruster
-
-			shipp->thrusters_start[i] = 0;
-			if (shipp->thrusters_sounds[i] >= 0)
+		}
+		// We've just stopped firing a thruster
+		else if (start_time.isValid())
+		{
+			start_time = TIMESTAMP::invalid();
+			if (looping_sound >= 0)
 			{
-				obj_snd_delete(obj, shipp->thrusters_sounds[i]);
-				shipp->thrusters_sounds[i] = -1;
+				obj_snd_delete(obj, looping_sound);
+				looping_sound = -1;
 			}
 
-			if (mtp->stop_snd.isValid()) {
-				//Get world pos
-				vec3d start;
-				vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
-				vm_vec_add2(&start, &obj->pos);
-
-				snd_play_3d(gamesnd_get_game_sound(mtp->stop_snd), &thruster_pos, &Eye_position, 0.0f, &obj->phys_info.vel);
-			}
+			// we don't need to store a sound reference because it will just play once and be automatically removed
+			if (play_sound && rcs.stop_snd.isValid())
+				obj_snd_assign(OBJ_INDEX(obj), rcs.stop_snd, &rcs.pos, OS_MAIN | OS_PLAY_ON_PLAYER | OS_LOOPING_DISABLED);
 		}
 	}
 }
@@ -20351,10 +20338,16 @@ void ship_render_batch_thrusters(object *obj)
 
 	if ( Rendering_to_shadow_map ) return;
 
-	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
-		man_thruster *mtp = &sip->maneuvering[i];
+	for (size_t i = 0; i < shipp->rcs_activity.size(); i++)
+	{
+		const auto mtp = &sip->rcs_thrusters[i];
+		const auto& activity = shipp->rcs_activity[i];
 
-		float render_amount = ship_get_thruster_status(obj, mtp);
+		TIMESTAMP start_time = std::get<0>(activity);
+		float render_amount = std::get<2>(activity);
+
+		if (!start_time.isValid())
+			continue;
 
 		//Don't render small faraway thrusters (more than 1k * radius * length away)
 		if ( vm_vec_dist(&Eye_position, &obj->pos) > (1000.0f * mtp->radius * mtp->length) ) {
@@ -20386,7 +20379,7 @@ void ship_render_batch_thrusters(object *obj)
 
 				int bmap_frame = mtp->tex_id;
 				if(mtp->tex_nframes > 0)
-					bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
+					bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp_since(start_time)) / MILLISECONDS_PER_SECOND, 0.0f, true);
 
 				//man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
 				//mtr->man_batcher.add_allocate(1);

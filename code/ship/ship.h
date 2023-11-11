@@ -483,7 +483,6 @@ extern const size_t Num_wing_flag_names;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
-#define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -795,8 +794,9 @@ public:
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
-	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
-	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
+	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
+																//Sound index for thrusters
+																//Thruster status
 
 	SCP_vector<alt_class> s_alt_classes;	
 
@@ -849,7 +849,7 @@ public:
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
-	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
+	void apply_replacement_textures(const SCP_vector<texture_replace> &replacements);
 };
 
 struct ai_target_priority {
@@ -1032,7 +1032,7 @@ typedef struct ship_type_info {
 
 extern SCP_vector<ship_type_info> Ship_types;
 
-class man_thruster {
+class rcs_thruster_info {
     public:
 	flagset<Ship::Thruster_Flags> use_flags;
 
@@ -1436,8 +1436,7 @@ public:
 
 	SCP_map<SCP_string, SCP_string> custom_data;
 
-	int num_maneuvering;
-	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+	SCP_vector<rcs_thruster_info> rcs_thrusters;
 
 	int radar_image_2d_idx;
 	int radar_color_image_2d_idx;
