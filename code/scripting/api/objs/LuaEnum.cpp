@@ -92,16 +92,15 @@ ADE_FUNC(removeEnumItem,
 	size_t i;
 
 	for (i = 0; i < lua_enum.getEnum()->list.size(); i++) {
-		if (stricmp(item_name, lua_enum.getEnum()->list[i].c_str())) {
-			return ADE_RETURN_FALSE;
-		} else {
-			break;
+		if (!stricmp(item_name, lua_enum.getEnum()->list[i].c_str())) {
+			lua_enum.getEnum()->list.erase(lua_enum.getEnum()->list.begin() + i);
+			return ADE_RETURN_TRUE;
 		}
 	}
 
-	lua_enum.getEnum()->list.erase(lua_enum.getEnum()->list.begin() + i);
+	
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_FALSE;
 }
 
 } // namespace api
