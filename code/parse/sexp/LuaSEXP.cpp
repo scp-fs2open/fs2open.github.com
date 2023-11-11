@@ -669,7 +669,7 @@ void LuaSEXP::parseTable() {
 			}
 
 			if (thisList.list.size() == 0) {
-				error_display(0, "Parsed empty enum list '%s'\n", thisList.name.c_str());
+				mprintf(("Parsed empty enum list '%s'. Adding <none>.\n", thisList.name.c_str()));
 				thisList.list.push_back("<none>");
 			}
 
