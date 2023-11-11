@@ -3305,18 +3305,29 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_custom_data()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL) {
-		required_string_fred("#Custom Data");
-		parse_comments(2);
+	if (Mission_save_format != FSO_FORMAT_RETAIL && !The_mission.custom_data.empty()) {
+		if (optional_string_fred("#Custom Data", "#End")) {
+			parse_comments(2);
+		} else {
+			fout("\n\n#Custom Data");
+		}
 
 		if (The_mission.custom_data.size() > 0) {
-			required_string_fred("$begin_data_map");
-			parse_comments(2);
+			if (optional_string_fred("$begin_data_map")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n$begin_data_map");
+			}
+
 			for (const auto& pair : The_mission.custom_data) {
 				fout("\n+Val: %s %s", pair.first.c_str(), pair.second.c_str());
 			}
-			required_string_fred("$end_data_map");
-			parse_comments(2);
+
+			if (optional_string_fred("$end_data_map")) {
+				parse_comments();
+			} else {
+				fout("\n$end_data_map");
+			}
 		}
 	}
 
