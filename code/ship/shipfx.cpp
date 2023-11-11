@@ -2702,7 +2702,7 @@ void engine_wash_ship_process(ship *shipp)
 		float ship_intensity = 0;
 
 		// if engines disabled, no engine wash
-		if (ship_get_subsystem_strength(wash_shipp, SUBSYSTEM_ENGINE) < 0.01) {
+		if (ship_subsystems_blown(wash_shipp, SUBSYSTEM_ENGINE)) {
 			continue;
 		}
 

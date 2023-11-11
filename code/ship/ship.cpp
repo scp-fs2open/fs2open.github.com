@@ -14809,17 +14809,37 @@ int ship_find_subsys(ship *sp, const char *ss_name)
 	return -1;
 }
 
+// an optimization of the below function that skips the subsystem iteration if we don't care about the exact number
+bool ship_subsystems_blown(const ship* shipp, int type, bool skip_dying_check)
+{
+	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_subsystems_blown() subsystem type %d is out of range!", type );
+
+	//	For a dying ship, all subsystem strengths are zero.
+	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
+		return true;
+
+	// short circuit 1
+	if (shipp->subsys_info[type].aggregate_max_hits <= 0.0f)
+		return false;
+
+	// short circuit 0
+	if (shipp->subsys_info[type].aggregate_current_hits <= 0.0f)
+		return true;
+
+	return false;
+}
+
 // routine to return the strength of a subsystem.  We keep a total hit tally for all subsystems
 // which are similar (i.e. a total for all engines).  These routines will return a number between
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
 // calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
-float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check, bool no_minimum_engine_str )
+float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check, bool no_minimum_engine_str)
 {
 	float strength;
 	ship_subsys *ssp;
 
-	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
+	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_get_subsystem_strength() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
 	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
@@ -14836,7 +14856,8 @@ float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check,
 	strength = shipp->subsys_info[type].aggregate_current_hits / shipp->subsys_info[type].aggregate_max_hits;
 	Assert( strength != 0.0f );
 
-	if ( (type == SUBSYSTEM_ENGINE) && (strength < 1.0f) ) {
+	// if we don't need to enforce a minimum engine contribution ratio, we can just use the regular strength calculation
+	if ( (type == SUBSYSTEM_ENGINE) && !no_minimum_engine_str && (strength < 1.0f) ) {
 		float percent;
 
 		percent = 0.0f;
@@ -14847,7 +14868,7 @@ float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check,
 				float ratio;
 
 				ratio = ssp->current_hits / ssp->max_hits;
-				if ( ratio < ENGINE_MIN_STR && !no_minimum_engine_str)
+				if ( ratio < ENGINE_MIN_STR )
 					ratio = ENGINE_MIN_STR;
 
 				percent += ratio;
@@ -16154,7 +16175,9 @@ int ship_engine_ok_to_warp(ship *sp)
 	if (sp->flags[Ship_Flags::Disabled])
 		return 0;
 
-	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
+	// since the required strength to warp is above the minimum engine contribution,
+	// and we don't otherwise need the exact number, we can use the no_minimum_engine_str flag
+	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE, false, true);
 
 	// if at 0% strength, can't warp
 	if (engine_strength <= 0.0f)

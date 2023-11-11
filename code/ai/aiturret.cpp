@@ -786,7 +786,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	//	weapon_travel_dist=wip->lssm_lock_range;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
-	bool weapon_system_ok = (ship_get_subsystem_strength(&Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS) > 0);
+	bool weapon_system_ok = !ship_subsystems_blown(&Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS);
 
 	// Initialize eeo struct.
 	eeo.turret_parent_objnum = turret_parent_objnum;
