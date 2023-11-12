@@ -24,10 +24,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-// aww mumford
-bool is_blank_argument_op(int op_const);
-
-
 CMessageEditorDlg *Message_editor_dlg = NULL;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -306,7 +302,7 @@ int CMessageEditorDlg::find_event()
 			|| op_const == OP_PERFORM_ACTIONS_BOOL_FIRST || op_const == OP_PERFORM_ACTIONS_BOOL_LAST )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
-			if (is_blank_argument_op(op_const))
+			if (is_when_argument_op(op_const))
 				node = CDR(node);
 
 			node = CDR(node);
