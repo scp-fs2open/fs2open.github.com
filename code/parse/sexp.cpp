@@ -2280,7 +2280,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			// this is an instance of "Replace Container Data"
 
 			// can't be used in special argument list
-			if (type == OPF_ANYTHING || type == OPF_DATA_OR_STR_CONTAINER) {
+			if (is_argument_provider_op(get_operator_const(op_node))) {
 				return SEXP_CHECK_TYPE_MISMATCH;
 			}
 
