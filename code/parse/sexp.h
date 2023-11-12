@@ -1592,7 +1592,4 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int no
 bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flag, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 bool sexp_check_flag_array(const char* flag_name, Ship::Wing_Flags& wing_flag);
 
-// Goober5000
-extern bool sexp_is_blank_of_op(int op_const);
-
 #endif
