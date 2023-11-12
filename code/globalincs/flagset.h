@@ -191,8 +191,8 @@ class flagset {
 		return *this;
 	}
 
-	bool any_set() { return values.any(); }
-	bool none_set() { return values.none(); }
+	bool any_set() const { return values.any(); }
+	bool none_set() const { return values.none(); }
 
 	void from_u64(std::uint64_t num) { values = (unsigned long) num; }
 

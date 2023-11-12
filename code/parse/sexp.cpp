@@ -1100,11 +1100,6 @@ SCP_vector<std::pair<const char*, int>> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
 
 
-// Goober5000
-bool is_blank_argument_op(int op_const);
-bool is_for_blank_op(int op_const); // jg18
-int get_handler_for_x_of_operator(int node);
-
 //Karajorma
 int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
@@ -2394,7 +2389,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (z < 0) {
 					break;
 				}
-				if (is_blank_argument_op(get_operator_const(z))) {
+				if (is_when_argument_op(get_operator_const(z))) {
 					found = true;
 					break;
 				}
@@ -4621,11 +4616,11 @@ int get_sexp()
 
 		// see if we're using special arguments
 		parent = find_parent_operator(start);
-		if (parent >= 0 && is_blank_argument_op(get_operator_const(parent)))
+		if (parent >= 0 && is_when_argument_op(get_operator_const(parent)))
 		{
 			// get the first op of the parent, which should be a *_of operator
 			arg_handler = CADR(parent);
-			if (arg_handler >= 0 && !sexp_is_blank_of_op(get_operator_const(arg_handler)))
+			if (arg_handler >= 0 && !is_argument_provider_op(get_operator_const(arg_handler)))
 				arg_handler = -1;
 		}
 
@@ -10244,7 +10239,7 @@ bool special_argument_appears_in_sexp_tree(int node)
 
 	// we don't want to include special arguments if they are nested in a new argument SEXP
 	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
-		if (is_blank_argument_op(get_operator_const(node))) {
+		if (is_when_argument_op(get_operator_const(node))) {
 			return false; 
 		}
 	}
@@ -10539,7 +10534,7 @@ int eval_when(int n, int when_op_num)
 	arg_item *ptr;
 
 	// get the parts of the sexp and evaluate the conditional
-	if (is_blank_argument_op(when_op_num))
+	if (is_when_argument_op(when_op_num))
 	{
 		arg_handler = CAR(n);
 		cond = CADR(n);
@@ -10616,7 +10611,7 @@ int eval_when(int n, int when_op_num)
 		val = SEXP_TRUE;
 	}
 
-	if (is_blank_argument_op(when_op_num))
+	if (is_when_argument_op(when_op_num))
 	{
 		if (Log_event) {	
 			ptr = Sexp_applicable_argument_list.get_next();		
@@ -11544,7 +11539,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
 
-	arg_handler = get_handler_for_x_of_operator(n);
+	arg_handler = find_argument_provider(n);
 
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
@@ -11552,7 +11547,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_blank_op(op_const))
+	if (is_implicit_argument_provider_op(op_const))
 		return;
 		
 	while (n != -1)
@@ -11579,7 +11574,7 @@ int sexp_num_valid_arguments( int n )
 	int arg_handler, arg_n;
 	int matches = 0;
 
-	arg_handler = get_handler_for_x_of_operator(n);
+	arg_handler = find_argument_provider(n);
 
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
@@ -11626,7 +11621,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	int arg_handler, arg_n;
 	bool toggled;
 
-	arg_handler = get_handler_for_x_of_operator(n);
+	arg_handler = find_argument_provider(n);
 
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	// (thanks to woutersmits for finding this bug)
@@ -11635,7 +11630,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_blank_op(op_const))
+	if (is_implicit_argument_provider_op(op_const))
 		return;
 		
 	// loop through arguments
@@ -11712,15 +11707,18 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	}
 }
 
-int get_handler_for_x_of_operator(int n)
+/**
+ * Given any SEXP node, return the node of the argument provider operator used in the enclosing when-argument-type SEXP, or -1 if not found.
+ */
+int find_argument_provider(int node)
 {
 	int conditional, arg_handler;
 
-	if (n < 0) {
+	if (node < 0) {
 		return -1;
 	}
 
-	conditional = n; 
+	conditional = node;
 	do {
 		// find the conditional sexp
 		conditional = find_parent_operator(conditional);
@@ -11728,19 +11726,21 @@ int get_handler_for_x_of_operator(int n)
 			return -1;
 		}
 	}
-	while (!is_blank_argument_op(get_operator_const(conditional)));
+	while (!is_when_argument_op(get_operator_const(conditional)));
 
 	// get the first op of the parent, which should be a *_of operator
 	arg_handler = CADR(conditional);
-	if (arg_handler < 0 || !sexp_is_blank_of_op(get_operator_const(arg_handler))) {
+	if (arg_handler < 0 || !is_argument_provider_op(get_operator_const(arg_handler))) {
 		return -1;
 	}
 
 	return arg_handler;
 }
 
-// Goober5000
-bool is_blank_argument_op(int op_const)
+/**
+ * Checks whether this operator is when-argument or every-time-argument.  (Any future similar operators should be added here too.)
+ */
+bool is_when_argument_op(const int op_const)
 {
 	switch (op_const)
 	{
@@ -11753,13 +11753,17 @@ bool is_blank_argument_op(int op_const)
 	}
 }
 
-// Goober5000
-bool sexp_is_blank_of_op(int op_const)
+/**
+ * Checks whether this operator can provide values (whether explicitly or implicitly) to a when-argument-type operator.
+ */
+bool is_argument_provider_op(const int op_const)
 {
-	if (is_for_blank_op(op_const)) {
+	// implicit operators are covered by their own function
+	if (is_implicit_argument_provider_op(op_const)) {
 		return true;
 	}
 
+	// these operators provide values by explicitly listing them
 	switch (op_const)
 	{
 		case OP_ANY_OF:
@@ -11776,9 +11780,10 @@ bool sexp_is_blank_of_op(int op_const)
 	}
 }
 
-// jg18
-// check if an operator is one of the for-* SEXPs
-bool is_for_blank_op(const int op_const)
+/**
+ * Checks whether this operator provides values implicitly, that is, by generating them rather than listing them in the SEXP.
+ */
+bool is_implicit_argument_provider_op(const int op_const)
 {
 	switch (op_const)
 	{
