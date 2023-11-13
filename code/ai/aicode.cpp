@@ -6176,8 +6176,6 @@ int ai_fire_primary_weapon(object *objp)
 		}
 	}
 
-	swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
-
 	set_primary_weapon_linkage(objp);
 	
 	ship_fire_primary(objp);
