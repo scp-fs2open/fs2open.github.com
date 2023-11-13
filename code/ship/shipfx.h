@@ -189,21 +189,20 @@ class WarpEffect
 {
 protected:
 	//core variables
-	object	*objp;
-	WarpDirection	direction;
+	int m_objnum = -1;
+	WarpDirection m_direction = WarpDirection::NONE;
 
 	//variables provided for expediency
-	ship *shipp;
-	ship_info *sip;
-	WarpParams *params;
+	int m_shipnum = -1;
+	int m_ship_info_index = -1;
+	int m_warp_params_index = -1;
 
 public:
-	WarpEffect();
-	WarpEffect(object *n_objp, WarpDirection n_direction);
+	WarpEffect() = default;
+	explicit WarpEffect(int objnum, WarpDirection direction);
 	virtual ~WarpEffect() = default;
 
-	void clear();
-	bool isValid();
+	bool isValid() const;
 
 	virtual void pageIn();
 	virtual void pageOut();
@@ -215,8 +214,8 @@ public:
 	virtual int warpEnd();
 
 	//For VM_WARP_CHASE
-	virtual int getWarpPosition(vec3d *output);
-    virtual int getWarpOrientation(matrix *output);
+	virtual int getWarpPosition(vec3d *output) const;
+    virtual int getWarpOrientation(matrix *output) const;
 };
 
 bool point_is_clipped_by_warp(const vec3d* point, WarpEffect* warp_effect);
@@ -227,7 +226,7 @@ class WE_Default : public WarpEffect
 {
 private:
 	//portal object
-	object *portal_objp;
+	int m_portal_objnum = -1;
 
 	//ship data
 	vec3d actual_local_center;	// center of the ship, not necessarily the model origin
@@ -246,23 +245,23 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[WE_DEFAULT_NUM_STAGES+1];
+	int stage_duration[WE_DEFAULT_NUM_STAGES + 1] = { 0 };
 
 	//sweeper polygon and clip effect
-	vec3d	pos;
-	vec3d	fvec;
-	float	radius;
+	vec3d	pos = vmd_zero_vector;
+	vec3d	fvec = vmd_zero_vector;
+	float	radius = 0.0f;
 
 public:
-	WE_Default(object *n_objp, WarpDirection n_direction);
+	explicit WE_Default(int objnum, WarpDirection n_direction);
 
 	int warpStart() override;
 	int warpFrame(float frametime) override;
 	int warpShipClip(model_render_params *render_info) override;
 	int warpShipRender() override;
 
-	int getWarpPosition(vec3d *output) override;
-    int getWarpOrientation(matrix *output) override;
+	int getWarpPosition(vec3d *output) const override;
+    int getWarpOrientation(matrix *output) const override;
 };
 
 //********************-----CLASS: WE_BSG-----********************//
@@ -307,7 +306,7 @@ private:
 	game_snd *snd_end_gs;
 
 public:
-	WE_BSG(object *n_objp, WarpDirection n_direction);
+	explicit WE_BSG(int objnum, WarpDirection n_direction);
 	~WE_BSG() override;
 
 	void pageIn() override;
@@ -318,8 +317,8 @@ public:
 	int warpShipRender() override;
 	int warpEnd() override;
 
-	int getWarpPosition(vec3d *output) override;
-	int getWarpOrientation(matrix *output) override;
+	int getWarpPosition(vec3d *output) const override;
+	int getWarpOrientation(matrix *output) const override;
 };
 
 //********************-----CLASS: WE_Homeworld-----********************//
@@ -358,7 +357,7 @@ private:
 	float	z_offset_min;
 	float	z_offset_max;
 public:
-	WE_Homeworld(object *n_objp, WarpDirection n_direction);
+	explicit WE_Homeworld(int objnum, WarpDirection n_direction);
 	~WE_Homeworld() override;
 
 	int warpStart() override;
@@ -367,8 +366,8 @@ public:
 	int warpShipRender() override;
 	int warpEnd() override;
 
-	int getWarpPosition(vec3d *output) override;
-    int getWarpOrientation(matrix *output) override;
+	int getWarpPosition(vec3d *output) const override;
+    int getWarpOrientation(matrix *output) const override;
 };
 
 //********************-----CLASS: WE_Hyperspace----********************//
@@ -394,7 +393,7 @@ private:
 	game_snd *snd_end_gs;	
 	
 public:
-	WE_Hyperspace(object *n_objp, WarpDirection n_direction);
+	explicit WE_Hyperspace(int objnum, WarpDirection n_direction);
 
 	int warpStart() override;
 	int warpFrame(float frametime) override;
