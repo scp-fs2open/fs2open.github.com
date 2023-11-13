@@ -8,8 +8,9 @@ namespace Ship {
 	FLAG_LIST(Weapon_Flags){
 		Beam_Free = 0,	// if this is a beam weapon, its free to fire
 		Turret_Lock,	// is this turret is free to fire or locked
-		Tagged_Only,	// only fire if target is tagged
-		Trigger_Lock,	// // indicates that the trigger is held down
+		Tagged_Only,	// only fire if target is tagged		
+		Secondary_trigger_down,	// indicates that the trigger is held down, used for multilock hold-to-lock type missiles
+		Primary_trigger_down,	// indicates that the trigger is held down
 
 		NUM_VALUES
 	};
@@ -72,7 +73,7 @@ namespace Ship {
 		Secondary_dual_fire,		// ship is firing two missiles from the current secondary bank
 		Warp_broken,				// set when warp drive is not working, but is repairable
 		Warp_never,					// set when ship can never warp
-		Trigger_down,				// ship has its "trigger" held down
+		Trigger_down,				// ship has its "trigger" held down, PLAYER ONLY
 		Ammo_count_recorded,		// we've recorded the initial secondary weapon count (which is used to limit support ship rearming)
 		Hidden_from_sensors,		// ship doesn't show up on sensors, blinks in/out on radar
 		Scannable,					// ship is "scannable".  Play scan effect and report as "Scanned" or "not scanned".

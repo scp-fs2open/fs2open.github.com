@@ -2085,8 +2085,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			// (I'm not sure how accurate this timestamp would be in practice - taylor)
 			if (turret->turret_animation_position == MA_POS_READY)
 				turret->turret_animation_done_time = timestamp(100);
-
-			swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
 		}
 	}
 	//Not useful -WMC
@@ -2214,7 +2212,6 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	ss->points_to_target = -1.0f;
 	ss->base_rotation_rate_pct = 0.0f;
 	ss->gun_rotation_rate_pct = 0.0f;
-	ss->weapons.flags.remove(Ship::Weapon_Flags::Primary_trigger_down);
 
 	if (!Ai_firing_enabled) {
 		return;

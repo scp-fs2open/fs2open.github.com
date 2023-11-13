@@ -6896,6 +6896,8 @@ void ship_weapon::clear()
         burst_counter[i] = 0;
 		burst_seed[i] = Random::next();
         external_model_fp_counter[i] = 0;
+
+		firing_loop_sounds[i] = -1;
     }
 
     for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
@@ -10118,6 +10120,65 @@ static void ship_radar_process( object * obj, ship * shipp, ship_info * sip )
 	shipp->radar_current_status = visibility;
 }
 
+void update_firing_sounds(object* objp, ship* shipp) {
+
+	ship_weapon* swp = &shipp->weapons;
+	bool trigger_down = swp->flags[Ship::Weapon_Flags::Primary_trigger_down];
+	vec3d pos = model_get(Ship_info[shipp->ship_info_index].model_num)->view_positions[0].pnt;
+
+	// much like in ship_fire_primary, these prevent doubling up on the same sound effect for multiple banks triggering at once
+	gamesnd_id start_snd_played = gamesnd_id();
+	gamesnd_id end_snd_played = gamesnd_id();
+
+	for (int i = 0; i < swp->num_primary_banks; i++) {
+		if (swp->primary_bank_weapons[i] < 0)
+			continue;
+
+		weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		bool primaries_locked = shipp->flags[Ship_Flags::Primaries_locked];
+		bool selected = swp->current_primary_bank == i || (shipp->flags[Ship_Flags::Primary_linked] && !wip->wi_flags[Weapon::Info_Flags::Nolink]);
+		bool has_resources = shipp->weapon_energy >= wip->energy_consumed && (!wip->wi_flags[Weapon::Info_Flags::Ballistic] || swp->primary_bank_ammo[i] >= 0);
+		bool burst_only_allowed = !wip->burst_flags[Weapon::Burst_Flags::Burst_only_loop_sounds] || swp->burst_counter[i] > 0;
+		bool dying = shipp->flags[Ship::Ship_Flags::Dying];
+
+		// equality comparisons to -1 are correct here, -2 is valid and means a loop is active but the modder didnt specify an actual loop sound
+
+		if (swp->firing_loop_sounds[i] == -1 && trigger_down && !primaries_locked && selected && has_resources && burst_only_allowed && !dying) {
+			if (wip->start_firing_snd.isValid() && start_snd_played != wip->start_firing_snd) {
+				if (objp == Player_obj)
+					snd_play(gamesnd_get_game_sound(wip->start_firing_snd));
+				else
+					snd_play_3d(gamesnd_get_game_sound(wip->start_firing_snd), &objp->pos, &View_position);
+
+				start_snd_played = wip->start_firing_snd;
+			}
+
+			if (wip->loop_firing_snd.isValid())
+				swp->firing_loop_sounds[i] = obj_snd_assign(shipp->objnum, wip->loop_firing_snd, &vmd_zero_vector, OS_PLAY_ON_PLAYER);
+			else
+				swp->firing_loop_sounds[i] = -2;
+		} 
+
+		if (swp->firing_loop_sounds[i] != -1 && (!trigger_down || primaries_locked || !selected || !has_resources || !burst_only_allowed || dying)) {
+			if (wip->end_firing_snd.isValid() && end_snd_played != wip->end_firing_snd) {
+				if (objp == Player_obj)
+					snd_play(gamesnd_get_game_sound(wip->end_firing_snd));
+				else
+					snd_play_3d(gamesnd_get_game_sound(wip->end_firing_snd), &objp->pos, &View_position);
+
+				end_snd_played = wip->end_firing_snd;
+			}
+
+			if (wip->loop_firing_snd.isValid()) {
+				obj_snd_delete(objp, swp->firing_loop_sounds[i]);
+				swp->firing_loop_sounds[i] = -1;
+			} else
+				swp->firing_loop_sounds[i] = -1;
+		}
+	}
+}
+
 
 /**
  * Player ship uses this code, but does a quick out after doing a few things.
@@ -10155,6 +10216,8 @@ void ship_process_post(object * obj, float frametime)
 	afterburners_update(obj, frametime);
 
 	ship_subsys_disrupted_maybe_check(shipp);
+
+	update_firing_sounds(obj, shipp);
 
 	ship_dying_frame(obj, num);
 
@@ -12144,6 +12207,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	{
 		return 0;
 	}
+
+	swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
 
 	sound_played = gamesnd_id();
 
@@ -20971,7 +21036,7 @@ bool ship_start_secondary_fire(object* objp)
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
 	if ( wip->trigger_lock ) {
-		swp->flags.set(Ship::Weapon_Flags::Trigger_Lock);
+		swp->flags.set(Ship::Weapon_Flags::Secondary_trigger_down);
 
 		return true;
 	}
@@ -21013,8 +21078,8 @@ bool ship_stop_secondary_fire(object* objp)
 
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
-	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Trigger_Lock]) {
-		swp->flags.remove(Ship::Weapon_Flags::Trigger_Lock);
+	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Secondary_trigger_down]) {
+		swp->flags.remove(Ship::Weapon_Flags::Secondary_trigger_down);
 
 		return true;
 	}

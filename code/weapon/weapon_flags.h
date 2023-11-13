@@ -123,6 +123,7 @@ namespace Weapon {
 		Random_length,
 		Resets,
 		Num_firepoints_burst_shots, // Burst shots is set to however many firepoints the firer has
+		Burst_only_loop_sounds, // start/loop/end sounds trigger on the start and end of bursts in addition to the trigger state
 
 		NUM_VALUES
 	};

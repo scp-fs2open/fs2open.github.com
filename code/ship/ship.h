@@ -148,6 +148,10 @@ public:
 	int detonate_weapon_time;			//	time at which last fired weapon can be detonated
 	int ai_class;
 
+	int firing_loop_sounds[MAX_SHIP_PRIMARY_BANKS]; // objsnd indices, 
+													// -2 is a special value used to mean 'a loop WOULD be going on right now' 
+													// but the modder did not actually specify a loop sound
+
 	flagset<Ship::Weapon_Flags> flags;
 
 	EModelAnimationPosition primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
