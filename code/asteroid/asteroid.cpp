@@ -401,12 +401,24 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	vec3d rotvel;
 	if ( Game_mode & GM_NORMAL ) {
 		vm_vec_rand_vec_quick(&rotvel);
-		vm_vec_scale(&rotvel, frand()/4.0f + 0.1f);
+		float rot_vel_multiplier = frand()/4.0f + 0.1f;
+		// cap rotational velocity scaling if max is set --wookieejedi
+		if (asip->max_rotational_vel_multiplier >= 0.0f) {
+			vm_vec_scale(&rotvel, MIN(asip->max_rotational_vel_multiplier, rot_vel_multiplier));
+		} else {
+			vm_vec_scale(&rotvel, rot_vel_multiplier);
+		}
 		objp->phys_info.rotvel = rotvel;
 		vm_vec_rand_vec_quick(&objp->phys_info.vel);
 	} else {
 		static_randvec( rand_base++, &rotvel );
-		vm_vec_scale(&rotvel, static_randf(rand_base++)/4.0f + 0.1f);
+		float rot_vel_multiplier = static_randf(rand_base++)/4.0f + 0.1f;
+		// cap rotational velocity scaling if max is set --wookieejedi
+		if (asip->max_rotational_vel_multiplier >= 0.0f) {
+			vm_vec_scale(&rotvel, MIN(asip->max_rotational_vel_multiplier, rot_vel_multiplier));
+		} else {
+			vm_vec_scale(&rotvel, rot_vel_multiplier);
+		}
 		objp->phys_info.rotvel = rotvel;
 		static_randvec( rand_base++, &objp->phys_info.vel );
 	}
@@ -2236,6 +2248,10 @@ static void asteroid_parse_section()
 
 	if (optional_string("$Max Speed:")) {
 		stuff_float(&asteroid_p->max_speed);
+	}
+
+	if (optional_string("$Max Rotational Velocity Multiplier:")) {
+		stuff_float(&asteroid_p->max_rotational_vel_multiplier);
 	}
 
 	if(optional_string("$Damage Type:")) {
