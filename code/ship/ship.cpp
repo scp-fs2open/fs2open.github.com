@@ -10124,7 +10124,6 @@ void update_firing_sounds(object* objp, ship* shipp) {
 
 	ship_weapon* swp = &shipp->weapons;
 	bool trigger_down = swp->flags[Ship::Weapon_Flags::Primary_trigger_down];
-	vec3d pos = model_get(Ship_info[shipp->ship_info_index].model_num)->view_positions[0].pnt;
 
 	// much like in ship_fire_primary, these prevent doubling up on the same sound effect for multiple banks triggering at once
 	gamesnd_id start_snd_played = gamesnd_id();
@@ -10154,8 +10153,10 @@ void update_firing_sounds(object* objp, ship* shipp) {
 				start_snd_played = wip->start_firing_snd;
 			}
 
+			vec3d pos = model_get(Ship_info[shipp->ship_info_index].model_num)->view_positions[0].pnt;
+
 			if (wip->loop_firing_snd.isValid())
-				swp->firing_loop_sounds[i] = obj_snd_assign(shipp->objnum, wip->loop_firing_snd, &vmd_zero_vector, OS_PLAY_ON_PLAYER);
+				swp->firing_loop_sounds[i] = obj_snd_assign(shipp->objnum, wip->loop_firing_snd, &pos, OS_PLAY_ON_PLAYER);
 			else
 				swp->firing_loop_sounds[i] = -2;
 		} 
