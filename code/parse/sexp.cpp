@@ -916,6 +916,8 @@ SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
 SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
+SCP_vector<dynamic_sexp_child_enum_suffixes> Dynamic_enum_suffixes;
+
 int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 {
 	for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
@@ -951,6 +953,21 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 
 	// Didn't find anything.
 	return -1;
+}
+
+// Gets the custom suffix to append when using child enums. If we have a match
+// for operator name and parameter index, then return the suffix. Otherwise return
+// an empty string
+SCP_string get_child_enum_suffix(const SCP_string& op_name, int param_index)
+{
+	for (int i = 0; i < (int)Dynamic_enum_suffixes.size(); i++) {
+		if (lcase_equal(Dynamic_enum_suffixes[i].operator_name, op_name)) {
+			if (Dynamic_enum_suffixes[i].param_index == param_index) {
+				return Dynamic_enum_suffixes[i].suffix;
+			}
+		}
+	}
+	return "";
 }
 
 int get_dynamic_enum_position(const SCP_string &enum_name)

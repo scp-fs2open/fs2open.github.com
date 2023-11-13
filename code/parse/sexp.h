@@ -161,9 +161,19 @@ struct dynamic_sexp_parameter_list {
 
 extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
+struct dynamic_sexp_child_enum_suffixes {
+	SCP_string operator_name;
+	int param_index;
+	SCP_string suffix;
+};
+
+extern SCP_vector<dynamic_sexp_child_enum_suffixes> Dynamic_enum_suffixes;
+
 int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 
 int get_dynamic_enum_position(const SCP_string &enum_name);
+
+SCP_string get_child_enum_suffix(const SCP_string& op_name, int param_index);
 
 // Operand return types
 enum sexp_opr_t : int {
