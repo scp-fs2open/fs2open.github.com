@@ -10137,7 +10137,7 @@ void update_firing_sounds(object* objp, ship* shipp) {
 
 		bool primaries_locked = shipp->flags[Ship_Flags::Primaries_locked];
 		bool selected = swp->current_primary_bank == i || (shipp->flags[Ship_Flags::Primary_linked] && !wip->wi_flags[Weapon::Info_Flags::Nolink]);
-		bool has_resources = shipp->weapon_energy >= wip->energy_consumed && (!wip->wi_flags[Weapon::Info_Flags::Ballistic] || swp->primary_bank_ammo[i] >= 0);
+		bool has_resources = shipp->weapon_energy >= wip->energy_consumed && (!wip->wi_flags[Weapon::Info_Flags::Ballistic] || swp->primary_bank_ammo[i] > 0);
 		bool burst_only_allowed = !wip->burst_flags[Weapon::Burst_Flags::Burst_only_loop_sounds] || swp->burst_counter[i] > 0;
 		bool dying = shipp->flags[Ship::Ship_Flags::Dying];
 
