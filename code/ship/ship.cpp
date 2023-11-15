@@ -2554,9 +2554,6 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	const char *default_banks_str = is_primary ? "$Default PBanks:" : "$Default SBanks:";
 	const char *bank_capacities_str = is_primary ? "$PBank Capacity:" : "$SBank Capacity:";
 
-	// we initialize to the previous parse, which presumably worked
-	int num_bank_capacities = num_banks != NULL ? *num_banks : 0;
-
 	if (optional_string(default_banks_str))
 	{
 		// get weapon list
@@ -2565,6 +2562,9 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 		else
 			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
 	}
+
+	// we initialize to the previous parse, which presumably worked
+	int num_bank_capacities = num_banks != NULL ? *num_banks : 0;
 
 	if (optional_string(bank_capacities_str))
 	{
