@@ -960,7 +960,7 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 // an empty string
 SCP_string get_child_enum_suffix(const SCP_string& op_name, int param_index)
 {
-	for (int i = 0; i < (int)Dynamic_enum_suffixes.size(); i++) {
+	for (size_t i = 0; i < Dynamic_enum_suffixes.size(); i++) {
 		if (lcase_equal(Dynamic_enum_suffixes[i].operator_name, op_name)) {
 			if (Dynamic_enum_suffixes[i].param_index == param_index) {
 				return Dynamic_enum_suffixes[i].suffix;
