@@ -19,7 +19,7 @@ cockpit_display_info* cockpit_disp_info_h::Get() {
 	return &Ship_info[m_ship_info_idx].displays[m_display_num];
 }
 bool cockpit_disp_info_h::isValid() const {
-	if (m_ship_info_idx < 0)
+	if (m_ship_info_idx < 0 || m_ship_info_idx >= ship_info_size())
 	{
 		return false;
 	}
