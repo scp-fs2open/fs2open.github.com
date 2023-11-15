@@ -39,6 +39,7 @@ protected:
 	int text_start_offsets[2];
 	int text_h;
 	int max_line_width;
+	int key_line_x_offset;
 public:
 	HudGaugeDirectives();
 	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
@@ -48,6 +49,7 @@ public:
 	void initTextStartOffsets(int x, int y);
 	void initTextHeight(int h);
 	void initMaxLineWidth(int w);
+	void initKeyLineXOffset(int offset);
 	void render(float frametime) override;
 	void pageIn() override;
 	bool canRender() override;

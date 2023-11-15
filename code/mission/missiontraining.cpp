@@ -142,6 +142,11 @@ void HudGaugeDirectives::initMaxLineWidth(int w)
 	max_line_width = w;
 }
 
+void HudGaugeDirectives::initKeyLineXOffset(int offset)
+{
+	key_line_x_offset = offset;
+}
+
 void HudGaugeDirectives::initBottomBgOffset(int offset)
 {
 	bottom_bg_offset = offset;
@@ -250,11 +255,14 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
+		int line_x_offset = 0;
+
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
 			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str());  // remap keys
 			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
+			line_x_offset = key_line_x_offset;
 		} else {
 			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
@@ -324,7 +332,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		// blit the text
 		gr_set_color_fast(c);
 		
-		renderString(x, y, EG_OBJ1 + i, buf);
+		renderString(x + line_x_offset, y, EG_OBJ1 + i, buf);
 		
 		Training_obj_num_display_lines++;
 
