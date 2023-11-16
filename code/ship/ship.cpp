@@ -989,7 +989,7 @@ void ship_info::clone(const ship_info& other)
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
 	explosion_bitmap_anims = other.explosion_bitmap_anims;
-	vaporize_chance = other.vaporize_chance;
+	skip_deathroll_chance = other.skip_deathroll_chance;
 
 	impact_spew = other.impact_spew;
 	damage_spew = other.damage_spew;
@@ -1334,7 +1334,7 @@ void ship_info::move(ship_info&& other)
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
 	std::swap(explosion_bitmap_anims, other.explosion_bitmap_anims);
-	vaporize_chance = other.vaporize_chance;
+	skip_deathroll_chance = other.skip_deathroll_chance;
 
 	std::swap(impact_spew, other.impact_spew);
 	std::swap(damage_spew, other.damage_spew);
@@ -1711,7 +1711,7 @@ ship_info::ship_info()
 	death_fx_count = 6;
 	shockwave_count = 1;
 	explosion_bitmap_anims.clear();
-	vaporize_chance = 0;
+	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
 	impact_spew.n_high = 30;
@@ -3305,7 +3305,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				Warning(LOCATION, "Lightning Arc Percent on %s '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", info_type_name, sip->name, sip->debris_arc_percent);
 				sip->debris_arc_percent = 50.0;
 			}
-			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+			//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
 		}
 		if (optional_string("+Debris Gravity Const:")) {
@@ -3661,14 +3661,20 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		parse_ship_particle_effect(sip, &sip->knossos_end_particles, "knossos death spew");
 	}
 
-	if(optional_string("$Vaporize Percent Chance:")){
-		stuff_float(&sip->vaporize_chance);
-		if (sip->vaporize_chance < 0.0f || sip->vaporize_chance > 100.0f) {
-			sip->vaporize_chance = 0.0f;
-			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 100.0 (read %f). Setting to 0.", sip->vaporize_chance);
+	auto skip_str = "$Skip Death Roll Percent Chance:";
+	auto vaporize_str = "$Vaporize Percent Chance:";
+	int which;
+	if ((which = optional_string_either(skip_str, vaporize_str)) >= 0) {
+		if (which == 1) {
+			mprintf(("Found %s for ship class '%s'.  This has been deprecated; use %s instead.\n", vaporize_str, sip->name, skip_str));
 		}
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		sip->vaporize_chance /= 100.0;
+		stuff_float(&sip->skip_deathroll_chance);
+		if (sip->skip_deathroll_chance < 0.0f || sip->skip_deathroll_chance > 100.0f) {
+			Warning(LOCATION, "%s should be between 0 and 100.0 (read %f) for ship class '%s'. Setting to 0.", which == 0 ? skip_str : vaporize_str, sip->skip_deathroll_chance, sip->name);
+			sip->skip_deathroll_chance = 0.0f;
+		}
+		//Percent is nice for modders, but here in the code we want it between 0 and 1.0
+		sip->skip_deathroll_chance /= 100.0f;
 	}
 
 	if(optional_string("$Shockwave Damage Type:")) {
@@ -5716,14 +5722,20 @@ static void parse_ship_type(const char *filename, const bool replace)
 		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
 
-	if(optional_string("$Vaporize Percent Chance:")) {
-		stuff_float(&stp->vaporize_chance);
-		if (stp->vaporize_chance < 0.0f || stp->vaporize_chance > 100.0f) {
-			stp->vaporize_chance = 0.0f;
-			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 100.0 (read %f) for ship type '%s' in %s. Setting to 0.", stp->vaporize_chance, stp->name, filename);
+	auto skip_str = "$Skip Death Roll Percent Chance:";
+	auto vaporize_str = "$Vaporize Percent Chance:";
+	int which;
+	if ((which = optional_string_either(skip_str, vaporize_str)) >= 0) {
+		if (which == 1) {
+			mprintf(("Found %s for ship type '%s'.  This has been deprecated; use %s instead.\n", vaporize_str, stp->name, skip_str));
 		}
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		stp->vaporize_chance /= 100.0;
+		stuff_float(&stp->skip_deathroll_chance);
+		if (stp->skip_deathroll_chance < 0.0f || stp->skip_deathroll_chance > 100.0f) {
+			Warning(LOCATION, "%s should be between 0 and 100.0 (read %f) for ship type '%s'. Setting to 0.", which == 0 ? skip_str : vaporize_str, stp->skip_deathroll_chance, stp->name);
+			stp->skip_deathroll_chance = 0.0f;
+		}
+		//Percent is nice for modders, but here in the code we want it between 0 and 1.0
+		stp->skip_deathroll_chance /= 100.0f;
 	}
 }
 

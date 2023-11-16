@@ -1008,7 +1008,7 @@ typedef struct ship_type_info {
 	SCP_vector<int> ai_cripple_ignores;
 
 	//Explosions
-	float vaporize_chance;
+	float skip_deathroll_chance;
 
 	//Resources
 	SCP_vector<int> explosion_bitmap_anims;
@@ -1022,7 +1022,7 @@ typedef struct ship_type_info {
 		  ff_multiplier( 0.f ), emp_multiplier( 0.f ), warp_sound_range_multiplier( 1.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
 		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
-		  vaporize_chance( 0.f )
+		  skip_deathroll_chance( 0.f )
 
 	{
         flags.reset();
@@ -1211,7 +1211,7 @@ public:
 	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
-	float vaporize_chance;					
+	float skip_deathroll_chance;					
 
 	particle_effect		impact_spew;
 	particle_effect		damage_spew;
