@@ -84,15 +84,21 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			info.attached_objnum = static_cast<int>(OBJ_INDEX(m_origin.m_object.objp));
-			info.attached_sig = m_origin.m_object.objp->signature;
+			if (allow_relative) {
+				info.attached_objnum = static_cast<int>(OBJ_INDEX(m_origin.m_object.objp));
+				info.attached_sig = m_origin.m_object.objp->signature;
 
-			info.pos = m_offset;
+				info.pos = m_offset;
+			} else {
+				this->getGlobalPosition(&info.pos);
+				info.attached_objnum = -1;
+				info.attached_sig = -1;
+			}
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
