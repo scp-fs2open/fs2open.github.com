@@ -167,7 +167,7 @@ void fishtank_start()
 	Fish_inited = 1;
 
 	// generate a random # of fish
-	int count = (int)frand_range(1.0f, (float)(MAX_FISH - 1));
+	int count = Random::next(1, MAX_FISH);
 	for(idx=0; idx<count; idx++){
 		fish_generate();
 	}		

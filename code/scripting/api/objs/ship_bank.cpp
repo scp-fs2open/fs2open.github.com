@@ -426,6 +426,66 @@ ADE_VIRTVAR(FOFCooldown, l_WeaponBank, "number", "The FOF cooldown value. A valu
 	return ade_set_error(L, "f", -1.f);
 }
 
+ADE_VIRTVAR(BurstCounter, l_WeaponBank, "number", "The burst counter for this bank. Starts at 1, counting every shot up to and including the weapon class's burst shots value before resetting to 1.", "number", "The counter or -1 if handle is invalid")
+{
+	ship_bank_h* bh = NULL;
+	int newCounter = -1;
+	if (!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &newCounter))
+		return ade_set_error(L, "i", -1);
+
+	if (!bh->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	switch (bh->type)
+	{
+	case SWH_PRIMARY:
+		if (ADE_SETTING_VAR) {
+			bh->sw->burst_counter[bh->bank] = newCounter - 1;
+		}
+		return ade_set_args(L, "i", bh->sw->burst_counter[bh->bank] + 1);
+	case SWH_SECONDARY:
+		if (ADE_SETTING_VAR) {
+			bh->sw->burst_counter[MAX_SHIP_PRIMARY_BANKS + bh->bank] = newCounter - 1;
+		}
+		return ade_set_args(L, "i", bh->sw->burst_counter[MAX_SHIP_PRIMARY_BANKS + bh->bank] + 1);
+	case SWH_TERTIARY:
+		LuaError(L, "Burst counter is not valid for tertiary banks!");
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_error(L, "i", -1);
+}
+
+ADE_VIRTVAR(BurstSeed, l_WeaponBank, "number", "A random seed associated to the current burst. Changes only when a new burst starts.", "number", "The seed or -1 if handle is invalid")
+{
+	ship_bank_h* bh = NULL;
+	int newSeed = -1;
+	if (!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &newSeed))
+		return ade_set_error(L, "i", -1);
+
+	if (!bh->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	switch (bh->type)
+	{
+	case SWH_PRIMARY:
+		if (ADE_SETTING_VAR) {
+			bh->sw->burst_seed[bh->bank] = newSeed;
+		}
+		return ade_set_args(L, "i", bh->sw->burst_seed[bh->bank]);
+	case SWH_SECONDARY:
+		if (ADE_SETTING_VAR) {
+			bh->sw->burst_seed[MAX_SHIP_PRIMARY_BANKS + bh->bank] = newSeed;
+		}
+		return ade_set_args(L, "i", bh->sw->burst_seed[MAX_SHIP_PRIMARY_BANKS + bh->bank]);
+	case SWH_TERTIARY:
+		LuaError(L, "Burst seed is not valid for tertiary banks!");
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_error(L, "i", -1);
+}
+
 ADE_FUNC(isValid, l_WeaponBank, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	ship_bank_h *bh;

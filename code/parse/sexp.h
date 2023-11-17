@@ -141,6 +141,7 @@ enum sexp_opf_t : int {
 	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
 	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
+	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -1038,6 +1039,7 @@ enum class sexp_src
 	WING_DEPARTURE,
 	EVENT,
 	MISSION_GOAL,
+	MISSION_CUTSCENE,
 	SHIP_ORDER,
 	WING_ORDER,
 	DEBRIEFING,
@@ -1355,6 +1357,7 @@ extern size_t Max_operator_length;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
+extern bool Assume_event_is_current;
 extern int Training_context;
 extern int Training_context_speed_min;
 extern int Training_context_speed_max;
@@ -1423,6 +1426,7 @@ extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
+
 struct ship_registry_entry;
 struct wing;
 
@@ -1438,6 +1442,12 @@ extern bool sexp_can_construe_as_integer(int node);
 void do_action_for_each_special_argument(int cur_node);
 bool special_argument_appears_in_sexp_tree(int node);
 bool special_argument_appears_in_sexp_list(int node);
+
+// Goober5000 - for special-arg SEXPs
+extern bool is_when_argument_op(int op_const);
+extern bool is_argument_provider_op(int op_const);
+extern bool is_implicit_argument_provider_op(int op_const); // jg18
+extern int find_argument_provider(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );

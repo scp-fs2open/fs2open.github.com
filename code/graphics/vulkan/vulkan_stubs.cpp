@@ -15,6 +15,8 @@ gr_buffer_handle stub_create_buffer(BufferType, BufferUsageHint)
 	return gr_buffer_handle::invalid();
 }
 
+void stub_setup_frame() {}
+
 void stub_delete_buffer(gr_buffer_handle /*handle*/) {}
 
 int stub_preload(int /*bitmap_num*/, int /*is_aabitmap*/) { return 0; }
@@ -237,6 +239,7 @@ void stub_delete_query_object(int /*obj*/) {}
 void init_stub_pointers()
 {
 	// function pointers...
+	gr_screen.gf_setup_frame = stub_setup_frame;
 	gr_screen.gf_set_clip = stub_set_clip;
 	gr_screen.gf_reset_clip = stub_reset_clip;
 

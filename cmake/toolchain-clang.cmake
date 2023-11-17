@@ -83,20 +83,41 @@ if(SUPPORTS_SHIFT_NEGATIVE_VALUE)
 	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-shift-negative-value")
 endif()
 
-set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-parameter")
+# Check if there is a user-set optimisation flag
+string(REGEX MATCH "-O[a-zA-Z|0-9]+" CXX_OPT_FLAG ${CXX_BASE_FLAGS})
+string(REGEX MATCH "-O[a-zA-Z|0-9]+" C_OPT_FLAG ${C_BASE_FLAGS})
 
-set(COMPILER_FLAGS_DEBUG "-Og -g -Wshadow")
+# If no user-set opt flag, set -O2 and -Og
+if ("${CXX_OPT_FLAG}" STREQUAL "")
+	set(CXX_OPT_FLAG_RELEASE "-O2")
+	set(CXX_OPT_FLAG_DEBUG "-Og")
+else()
+	set(CXX_OPT_FLAG_RELEASE "${CXX_OPT_FLAG}")
+	set(CXX_OPT_FLAG_DEBUG "${CXX_OPT_FLAG}")
+endif()
+if ("${C_OPT_FLAG}" STREQUAL "")
+	set(C_OPT_FLAG_RELEASE "-O2")
+	set(C_OPT_FLAG_DEBUG "-Og")
+else()
+	set(C_OPT_FLAG_RELEASE "${C_OPT_FLAG}")
+	set(C_OPT_FLAG_DEBUG "${C_OPT_FLAG}")
+endif()
 
-# Always use the base flags and add our compiler flags at the bacl
+set(CXX_FLAGS_RELEASE "${CXX_OPT_FLAG_RELEASE} -Wno-unused-variable -Wno-unused-parameter")
+set(C_FLAGS_RELEASE "${C_OPT_FLAG_RELEASE} -Wno-unused-variable -Wno-unused-parameter")
+
+set(CXX_FLAGS_DEBUG "${CXX_OPT_FLAG_DEBUG} -g -Wshadow")
+set(C_FLAGS_DEBUG "${C_OPT_FLAG_DEBUG} -g -Wshadow")
+
+# Always use the base flags and add our compiler flags at the back
 set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")
 set(CMAKE_C_FLAGS "${C_BASE_FLAGS} ${COMPILER_FLAGS}")
 
-set(CMAKE_CXX_FLAGS_RELEASE ${COMPILER_FLAGS_RELEASE})
-set(CMAKE_C_FLAGS_RELEASE ${COMPILER_FLAGS_RELEASE})
+set(CMAKE_CXX_FLAGS_RELEASE ${CXX_FLAGS_RELEASE})
+set(CMAKE_C_FLAGS_RELEASE ${C_FLAGS_RELEASE})
 
-set(CMAKE_CXX_FLAGS_DEBUG ${COMPILER_FLAGS_DEBUG})
-set(CMAKE_C_FLAGS_DEBUG ${COMPILER_FLAGS_DEBUG})
-
+set(CMAKE_CXX_FLAGS_DEBUG ${CXX_FLAGS_DEBUG})
+set(CMAKE_C_FLAGS_DEBUG ${C_FLAGS_DEBUG})
 
 set(CMAKE_EXE_LINKER_FLAGS "")
 

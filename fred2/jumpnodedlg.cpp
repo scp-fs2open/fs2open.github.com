@@ -145,7 +145,7 @@ void jumpnode_dlg::initialize_data(int full_update)
 		polymodel* pm = model_get(model);
 		m_filename = _T(pm->filename);
 
-		color jn_color = jnp->GetColor();
+		const auto &jn_color = jnp->GetColor();
 		m_color_r = jn_color.red;
 		m_color_g = jn_color.green;
 		m_color_b = jn_color.blue;

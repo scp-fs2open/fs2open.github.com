@@ -774,11 +774,11 @@ void mission_goal_status_change( int goal_num, int new_status)
 }
 
 // return value:
-//   EVENT_UNBORN    = event has yet to be available (not yet evaluatable)
-//   EVENT_CURRENT   = current (evaluatable), but not yet true
-//   EVENT_SATISFIED = event has occured (true)
-//   EVENT_FAILED    = event failed, can't possibly become true anymore
-int mission_get_event_status(int event)
+//   UNBORN    = event has yet to be available (not yet evaluatable)
+//   CURRENT   = current (evaluatable), but not yet true
+//   SATISFIED = event has occured (true)
+//   FAILED    = event failed, can't possibly become true anymore
+EventStatus mission_get_event_status(int event)
 {
 	// check for directive special events first.  We will always return from this part of the if statement
 	if ( Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL ) {
@@ -786,7 +786,7 @@ int mission_get_event_status(int event)
 
 		// if this event is temporarily true, return as such
 		if ( Mission_events[event].flags & MEF_DIRECTIVE_TEMP_TRUE ){
-			return EVENT_SATISFIED;
+			return EventStatus::SATISFIED;
 		}
 
 		// if the timestamp has elapsed, we can "mark" this directive as true although it's really not.
@@ -795,24 +795,24 @@ int mission_get_event_status(int event)
 			Mission_events[event].flags |= MEF_DIRECTIVE_TEMP_TRUE;
 		}
 
-		return EVENT_CURRENT;
+		return EventStatus::CURRENT;
 	} else if (Mission_events[event].flags & MEF_CURRENT) {
 		if (!Mission_events[event].born_on_date.isValid()) {
 			Mission_events[event].born_on_date = _timestamp();
 		}
 
 		if (Mission_events[event].result) {
-			return EVENT_SATISFIED;
+			return EventStatus::SATISFIED;
 		}
 
 		if (Mission_events[event].formula < 0) {
-			return EVENT_FAILED;
+			return EventStatus::FAILED;
 		}
 
-		return EVENT_CURRENT;
+		return EventStatus::CURRENT;
 	}
 
-	return EVENT_UNBORN;
+	return EventStatus::UNBORN;
 }
 
 void mission_event_set_directive_special(int event)
@@ -940,7 +940,7 @@ void mission_process_event( int event )
 	}
 
 	if (sindex >= 0) {
-		Sexp_useful_number = 1;
+		Assume_event_is_current = true;
 		if (Snapshot_all_events || Mission_events[event].mission_log_flags != 0) {
 			Log_event = true;
 			
@@ -970,7 +970,7 @@ void mission_process_event( int event )
 			Mission_events[event].count = Directive_count;
 		}
 
-		if (Sexp_useful_number){
+		if (Assume_event_is_current){
 			Mission_events[event].flags |= MEF_CURRENT;
 		}
 

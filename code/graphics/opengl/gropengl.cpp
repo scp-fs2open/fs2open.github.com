@@ -107,6 +107,18 @@ void gr_opengl_flip()
 	if (!GL_initted)
 		return;
 
+	if (Cmdline_window_res) {
+		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(Back_framebuffer, GL_READ_FRAMEBUFFER);
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_BACK);
+		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glDrawBuffer(GL_NONE);
+
+		GL_state.PopFramebufferState();
+	}
+
 	if (Cmdline_gl_finish)
 		glFinish();
 
@@ -121,6 +133,17 @@ void gr_opengl_flip()
 		mprintf(("!!DEBUG!! OpenGL Errors this frame: %i\n", ic));
 	}
 #endif
+}
+
+void gr_opengl_setup_frame() {
+	if (!GL_initted)
+		return;
+
+	if (Cmdline_window_res) {
+		GL_state.PushFramebufferState();
+		GL_state.BindFrameBuffer(Back_framebuffer);
+		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+	}
 }
 
 void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
@@ -904,6 +927,7 @@ int opengl_init_display_device()
 void opengl_setup_function_pointers()
 {
 	gr_screen.gf_flip				= gr_opengl_flip;
+	gr_screen.gf_setup_frame		= gr_opengl_setup_frame;
 	gr_screen.gf_set_clip			= gr_opengl_set_clip;
 	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
 
@@ -1346,11 +1370,15 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
+
+	gr_setup_frame();
 	gr_opengl_reset_clip();
 	gr_opengl_clear();
 	gr_opengl_flip();
+	gr_setup_frame();
 	gr_opengl_clear();
 	gr_opengl_flip();
+	gr_setup_frame();
 	gr_opengl_clear();
 
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);

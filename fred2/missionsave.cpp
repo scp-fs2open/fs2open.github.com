@@ -3305,18 +3305,29 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_custom_data()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL) {
-		required_string_fred("#Custom Data");
-		parse_comments(2);
+	if (Mission_save_format != FSO_FORMAT_RETAIL && !The_mission.custom_data.empty()) {
+		if (optional_string_fred("#Custom Data", "#End")) {
+			parse_comments(2);
+		} else {
+			fout("\n\n#Custom Data");
+		}
 
 		if (The_mission.custom_data.size() > 0) {
-			required_string_fred("$begin_data_map");
-			parse_comments(2);
+			if (optional_string_fred("$begin_data_map")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n$begin_data_map");
+			}
+
 			for (const auto& pair : The_mission.custom_data) {
 				fout("\n+Val: %s %s", pair.first.c_str(), pair.second.c_str());
 			}
-			required_string_fred("$end_data_map");
-			parse_comments(2);
+
+			if (optional_string_fred("$end_data_map")) {
+				parse_comments();
+			} else {
+				fout("\n$end_data_map");
+			}
 		}
 
 		if (The_mission.custom_strings.size() > 0) {
@@ -4730,7 +4741,7 @@ int CFred_mission_save::save_variables()
 	return err;
 }
 
-int CFred_mission_save::save_vector(vec3d &v)
+int CFred_mission_save::save_vector(const vec3d &v)
 {
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
 	return 0;
@@ -4794,7 +4805,7 @@ int CFred_mission_save::save_waypoints()
 					fout("\n+Alphacolor:");
 				}
 
-				color jn_color = jnp->GetColor();
+				const auto &jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 

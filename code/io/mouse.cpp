@@ -89,6 +89,10 @@ const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::F
 		{"MouseWheelX", "number", "Positive if moved right, negative if moved left."},
 	});
 
+#define SCALE_MOUSE_TO_WINDOW(x, y, op) \
+	static_cast<decltype(x)>(Cmdline_window_res ? static_cast<float>(x) op (static_cast<float>(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first)) : x), \
+	static_cast<decltype(y)>(Cmdline_window_res ? static_cast<float>(y) op (static_cast<float>(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second)) : y)
+
 namespace
 {
 	bool mouse_key_event_handler(const SDL_Event& e)
@@ -127,7 +131,7 @@ namespace
 			return false;
 		}
 
-		mouse_event(e.motion.x, e.motion.y, e.motion.xrel, e.motion.yrel);
+		mouse_event(SCALE_MOUSE_TO_WINDOW(e.motion.x, e.motion.y, *), SCALE_MOUSE_TO_WINDOW(e.motion.xrel, e.motion.yrel, *));
 
 		return true;
 	}
@@ -519,7 +523,7 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 void mouse_force_pos(int x, int y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
-		SDL_WarpMouseInWindow(os::getSDLMainWindow(), x, y);
+		SDL_WarpMouseInWindow(os::getSDLMainWindow(), SCALE_MOUSE_TO_WINDOW(x, y, /));
 	}
 }
 
@@ -606,6 +610,12 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 void mouse_get_real_pos(int *mx, int *my)
 {
 	SDL_GetMouseState(mx, my);
+	if (Cmdline_window_res) {
+		if (mx)
+			*mx *= gr_screen.max_w / Cmdline_window_res->first;
+		if (my)
+			*my *= gr_screen.max_h / Cmdline_window_res->second;
+	}
 }
 
 void mouse_set_pos(int xpos, int ypos)

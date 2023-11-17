@@ -483,7 +483,6 @@ extern const size_t Num_wing_flag_names;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
-#define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -795,8 +794,9 @@ public:
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
-	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
-	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
+	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
+																//Sound index for thrusters
+																//Thruster status
 
 	SCP_vector<alt_class> s_alt_classes;	
 
@@ -849,7 +849,7 @@ public:
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
-	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
+	void apply_replacement_textures(const SCP_vector<texture_replace> &replacements);
 };
 
 struct ai_target_priority {
@@ -1032,7 +1032,7 @@ typedef struct ship_type_info {
 
 extern SCP_vector<ship_type_info> Ship_types;
 
-class man_thruster {
+class rcs_thruster_info {
     public:
 	flagset<Ship::Thruster_Flags> use_flags;
 
@@ -1436,8 +1436,7 @@ public:
 
 	SCP_map<SCP_string, SCP_string> custom_data;
 
-	int num_maneuvering;
-	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+	SCP_vector<rcs_thruster_info> rcs_thrusters;
 
 	int radar_image_2d_idx;
 	int radar_color_image_2d_idx;
@@ -1778,7 +1777,8 @@ extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns ind
 extern int ship_find_subsys(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship_subsys *subsys);
 
-extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
+extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_check = false);
+extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);

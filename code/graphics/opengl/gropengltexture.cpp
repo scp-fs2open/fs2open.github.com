@@ -14,6 +14,7 @@
 #define BMPMAN_INTERNAL
 #include "gropenglstate.h"
 #include "gropengltexture.h"
+#include "gropengldraw.h"
 #include "bmpman/bm_internal.h"
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
@@ -1704,8 +1705,13 @@ int opengl_set_render_target( int slot, int face, int is_static )
 			}
 		}
 
-		GL_state.BindFrameBuffer(0);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		if(Cmdline_window_res) {
+			GL_state.BindFrameBuffer(Back_framebuffer);
+		}
+		else {
+			GL_state.BindFrameBuffer(0);
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		}
 
 		// done with this render target so lets move on
 		render_target = NULL;

@@ -664,14 +664,14 @@ void nebl_process()
 		
 	// random stamp
 	if(Nebl_stamp == -1){
-		Nebl_stamp = timestamp((int)frand_range((float)Storm->min, (float)Storm->max));
+		Nebl_stamp = timestamp(Random::next(Storm->min, Storm->max));
 		return;
 	}	
 
 	// maybe make a bolt
 	if(timestamp_elapsed(Nebl_stamp)){
 		// determine how many bolts to spew
-		num_bolts = (uint)frand_range((float)Storm->min_count, (float)Storm->max_count);
+		num_bolts = Random::next(Storm->min_count, Storm->max_count);
 		for(idx=0; idx<num_bolts; idx++){
 			vec3d start;
 			do {
@@ -711,12 +711,12 @@ void nebl_process()
 				vm_vec_add(&strike, &start, &the_mixture);
 			}
 
-			int type = (int)frand_range(0.0f, (float)(Storm->num_bolt_types-1));
+			int type = Random::next(Storm->num_bolt_types);
 			nebl_bolt(Storm->bolt_types[type], &start, &strike);
 		}
 
 		// reset the timestamp
-		Nebl_stamp = timestamp((int)frand_range((float)Storm->min, (float)Storm->max));
+		Nebl_stamp = timestamp(Random::next(Storm->min, Storm->max));
 	}	
 }
 

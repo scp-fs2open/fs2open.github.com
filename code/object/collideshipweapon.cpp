@@ -12,6 +12,7 @@
 #include "hud/hudshield.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/timer.h"
+#include "math/curve.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -98,6 +99,9 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
 	}
+
+	if (wip->damage_curve_idx >= 0)
+		damage *= Curves[wip->damage_curve_idx].GetValue(f2fl(Missiontime - wp->creation_time) / wip->lifetime);
 
 	// deterine whack whack
 	float		blast = wip->mass;

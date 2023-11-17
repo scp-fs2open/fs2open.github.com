@@ -3708,6 +3708,7 @@ void load_gauge_directives(gauge_settings* settings)
 	char fname_middle[MAX_FILENAME_LEN] = "directives2";
 	char fname_bottom[MAX_FILENAME_LEN] = "directives3";
 	int bottom_bg_offset = 0;
+	int key_line_x_offset = 0;
 	
 	settings->origin[0] = 0.0f;
 	settings->origin[1] = 0.5f;
@@ -3756,6 +3757,9 @@ void load_gauge_directives(gauge_settings* settings)
 	if ( optional_string("Max Line Width:") ) {
 		stuff_int(&max_line_width);
 	}
+	if (optional_string("Key Line X Offset:")) {
+		stuff_int(&key_line_x_offset);
+	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initMiddleFrameOffsetY(middle_frame_offset_y);
@@ -3764,6 +3768,7 @@ void load_gauge_directives(gauge_settings* settings)
 	hud_gauge->initTextStartOffsets(text_start_offsets[0], text_start_offsets[1]);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initMaxLineWidth(max_line_width);
+	hud_gauge->initKeyLineXOffset(key_line_x_offset);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

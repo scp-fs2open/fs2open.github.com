@@ -68,6 +68,8 @@ static main_hall_defines *Main_hall = nullptr;
 
 static int Main_hall_music_index = -1;
 
+bool Main_hall_poll_key = true;
+
 int Vasudan_funny = 0;
 int Vasudan_funny_plate = -1;
 
@@ -745,7 +747,7 @@ void main_hall_do(float frametime)
 
 	// process any keypresses/mouse events
 	snazzy_action = -1;
-	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, (int)Main_hall->regions.size(), Main_hall_region, &snazzy_action, 1, &key);
+	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, static_cast<int>(Main_hall->regions.size()), Main_hall_region, &snazzy_action, static_cast<int>(Main_hall_poll_key), &key);
 
 	if (key) {
 		game_process_cheats(key);
@@ -970,8 +972,20 @@ void main_hall_do(float frametime)
 				case ESC_PRESSED:
 					// if there is a help overlay active, then don't quit the game - just kill the overlay
 					if (!help_overlay_active(Main_hall_overlay_id)) {
-						gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
-						main_hall_exit_game();
+
+						// if there is no custom script action then exit
+						if (Main_hall->esc_action.empty()) {
+							gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+							main_hall_exit_game();
+						} else {
+							const char* lua = Main_hall->esc_action.c_str();
+							bool success = Script_system.EvalString(lua, lua);
+							if (!success)
+								Warning(LOCATION,
+									"mainhall '+Escape Key Action' script failed to evaluate \"%s\"; check your syntax",
+									lua);
+						}
+
 					} else { // kill the overlay
 						help_overlay_set_state(Main_hall_overlay_id,gr_screen.res,0);
 					}
@@ -2657,6 +2671,11 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	// tooltip y location
 	if (optional_string("+Tooltip Y:")) {
 		stuff_int(&m->region_yval);
+	}
+
+	//ESC key action
+	if (optional_string("+Escape Key Script Action:")) {
+		stuff_string(m->esc_action, F_RAW);
 	}
 
 	// ---------- done parsing the main hall data ----------

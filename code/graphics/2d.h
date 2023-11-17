@@ -697,6 +697,8 @@ typedef struct screen {
 	// switch onscreen, offscreen
 	std::function<void()> gf_flip;
 
+	std::function<void()> gf_setup_frame;
+
 	// sets the clipping region
 	std::function<void(int x, int y, int w, int h, int resize_mode)> gf_set_clip;
 
@@ -1010,6 +1012,10 @@ extern void gr_activate(int active);
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
+
+inline void gr_setup_frame() {
+	gr_screen.gf_setup_frame();
+}
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)

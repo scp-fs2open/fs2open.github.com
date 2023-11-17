@@ -38,6 +38,9 @@ extern GLuint Scene_depth_texture_ms;
 extern GLuint Cockpit_depth_texture;
 extern GLuint Scene_stencil_buffer;
 
+extern GLuint Back_framebuffer;
+extern GLuint Back_texture;
+
 void gr_opengl_update_distortion();
 
 void gr_opengl_sphere(material *material_def, float rad);

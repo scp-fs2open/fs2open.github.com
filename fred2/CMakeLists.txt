@@ -81,6 +81,8 @@ set(FRED2_SOURCES
 	management.h
 	messageeditordlg.cpp
 	messageeditordlg.h
+	missioncutscenesdlg.cpp
+	missioncutscenesdlg.h
 	missiongoalsdlg.cpp
 	missiongoalsdlg.h
 	missionnotesdlg.cpp

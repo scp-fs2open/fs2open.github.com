@@ -977,7 +977,8 @@ const char *Skybox_flags[] = {
 };
 
 int	Directive_count;
-int	Sexp_useful_number;  // a variable to pass useful info in from external modules
+int	Sexp_useful_number = 1;  // a variable to pass useful info in from external modules
+bool Assume_event_is_current = true;
 int	Locked_sexp_true = -1;
 int	Locked_sexp_false = -1;
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
@@ -1099,12 +1100,6 @@ arg_item Sexp_applicable_argument_list;
 SCP_vector<std::pair<const char*, int>> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
 
-
-// Goober5000
-bool is_blank_argument_op(int op_const);
-bool is_blank_of_op(int op_const);
-bool is_for_blank_op(int op_const); // jg18
-int get_handler_for_x_of_operator(int node);
 
 //Karajorma
 int get_generic_subsys(const char *subsy_name);
@@ -2286,7 +2281,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			// this is an instance of "Replace Container Data"
 
 			// can't be used in special argument list
-			if (type == OPF_ANYTHING || type == OPF_DATA_OR_STR_CONTAINER) {
+			if (is_argument_provider_op(get_operator_const(op_node))) {
 				return SEXP_CHECK_TYPE_MISMATCH;
 			}
 
@@ -2395,7 +2390,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (z < 0) {
 					break;
 				}
-				if (is_blank_argument_op(get_operator_const(z))) {
+				if (is_when_argument_op(get_operator_const(z))) {
 					found = true;
 					break;
 				}
@@ -4128,7 +4123,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 				break;
 
-			default:
+			default: //This handles OPF_CHILD_LUA_ENUM as well
 				if (Dynamic_enums.size() > 0) {
 					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
 						if (type2 != SEXP_ATOM_STRING)
@@ -4622,11 +4617,11 @@ int get_sexp()
 
 		// see if we're using special arguments
 		parent = find_parent_operator(start);
-		if (parent >= 0 && is_blank_argument_op(get_operator_const(parent)))
+		if (parent >= 0 && is_when_argument_op(get_operator_const(parent)))
 		{
 			// get the first op of the parent, which should be a *_of operator
 			arg_handler = CADR(parent);
-			if (arg_handler >= 0 && !is_blank_of_op(get_operator_const(arg_handler)))
+			if (arg_handler >= 0 && !is_argument_provider_op(get_operator_const(arg_handler)))
 				arg_handler = -1;
 		}
 
@@ -10245,7 +10240,7 @@ bool special_argument_appears_in_sexp_tree(int node)
 
 	// we don't want to include special arguments if they are nested in a new argument SEXP
 	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
-		if (is_blank_argument_op(get_operator_const(node))) {
+		if (is_when_argument_op(get_operator_const(node))) {
 			return false; 
 		}
 	}
@@ -10540,7 +10535,7 @@ int eval_when(int n, int when_op_num)
 	arg_item *ptr;
 
 	// get the parts of the sexp and evaluate the conditional
-	if (is_blank_argument_op(when_op_num))
+	if (is_when_argument_op(when_op_num))
 	{
 		arg_handler = CAR(n);
 		cond = CADR(n);
@@ -10617,7 +10612,7 @@ int eval_when(int n, int when_op_num)
 		val = SEXP_TRUE;
 	}
 
-	if (is_blank_argument_op(when_op_num))
+	if (is_when_argument_op(when_op_num))
 	{
 		if (Log_event) {	
 			ptr = Sexp_applicable_argument_list.get_next();		
@@ -11545,7 +11540,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
 
-	arg_handler = get_handler_for_x_of_operator(n);
+	arg_handler = find_argument_provider(n);
 
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
@@ -11553,7 +11548,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_blank_op(op_const))
+	if (is_implicit_argument_provider_op(op_const))
 		return;
 		
 	while (n != -1)
@@ -11580,7 +11575,7 @@ int sexp_num_valid_arguments( int n )
 	int arg_handler, arg_n;
 	int matches = 0;
 
-	arg_handler = get_handler_for_x_of_operator(n);
+	arg_handler = find_argument_provider(n);
 
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
@@ -11627,7 +11622,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	int arg_handler, arg_n;
 	bool toggled;
 
-	arg_handler = get_handler_for_x_of_operator(n);
+	arg_handler = find_argument_provider(n);
 
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	// (thanks to woutersmits for finding this bug)
@@ -11636,7 +11631,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_blank_op(op_const))
+	if (is_implicit_argument_provider_op(op_const))
 		return;
 		
 	// loop through arguments
@@ -11713,15 +11708,18 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	}
 }
 
-int get_handler_for_x_of_operator(int n)
+/**
+ * Given any SEXP node, return the node of the argument provider operator used in the enclosing when-argument-type SEXP, or -1 if not found.
+ */
+int find_argument_provider(int node)
 {
 	int conditional, arg_handler;
 
-	if (n < 0) {
+	if (node < 0) {
 		return -1;
 	}
 
-	conditional = n; 
+	conditional = node;
 	do {
 		// find the conditional sexp
 		conditional = find_parent_operator(conditional);
@@ -11729,19 +11727,21 @@ int get_handler_for_x_of_operator(int n)
 			return -1;
 		}
 	}
-	while (!is_blank_argument_op(get_operator_const(conditional)));
+	while (!is_when_argument_op(get_operator_const(conditional)));
 
 	// get the first op of the parent, which should be a *_of operator
 	arg_handler = CADR(conditional);
-	if (arg_handler < 0 || !is_blank_of_op(get_operator_const(arg_handler))) {
+	if (arg_handler < 0 || !is_argument_provider_op(get_operator_const(arg_handler))) {
 		return -1;
 	}
 
 	return arg_handler;
 }
 
-// Goober5000
-bool is_blank_argument_op(int op_const)
+/**
+ * Checks whether this operator is when-argument or every-time-argument.  (Any future similar operators should be added here too.)
+ */
+bool is_when_argument_op(const int op_const)
 {
 	switch (op_const)
 	{
@@ -11754,13 +11754,17 @@ bool is_blank_argument_op(int op_const)
 	}
 }
 
-// Goober5000
-bool is_blank_of_op(int op_const)
+/**
+ * Checks whether this operator can provide values (whether explicitly or implicitly) to a when-argument-type operator.
+ */
+bool is_argument_provider_op(const int op_const)
 {
-	if (is_for_blank_op(op_const)) {
+	// implicit operators are covered by their own function
+	if (is_implicit_argument_provider_op(op_const)) {
 		return true;
 	}
 
+	// these operators provide values by explicitly listing them
 	switch (op_const)
 	{
 		case OP_ANY_OF:
@@ -11777,9 +11781,10 @@ bool is_blank_of_op(int op_const)
 	}
 }
 
-// jg18
-// check if an operator is one of the for-* SEXPs
-bool is_for_blank_op(const int op_const)
+/**
+ * Checks whether this operator provides values implicitly, that is, by generating them rather than listing them in the SEXP.
+ */
+bool is_implicit_argument_provider_op(const int op_const)
 {
 	switch (op_const)
 	{
@@ -17645,7 +17650,7 @@ int sexp_previous_goal_status( int n, int status )
 // sexpression which gets the status of an event from a previous mission.  Like the above function but
 // dealing with events instead of goals.  Again, the status parameter tells the code if we are looking
 // for an event_true, event_false, or event_incomplete status
-int sexp_previous_event_status( int n, int status )
+int sexp_previous_event_status( int n, EventStatus status )
 {
 	int rval = 0;
 	int i, mission_num;
@@ -17666,8 +17671,8 @@ int sexp_previous_event_status( int n, int status )
 
 		// if the mission name wasn't found -- make this return FALSE for the event status.
 		if ( i == -1 ) {
-			nprintf(("General", "Couldn't find mission name \"%s\" in current campaign's list of missions.\nReturning %s for event-status function.\n", mission_name, (status==EVENT_SATISFIED)?"false":"true"));
-			if ( status == EVENT_SATISFIED ) {
+			nprintf(("General", "Couldn't find mission name \"%s\" in current campaign's list of missions.\nReturning %s for event-status function.\n", mission_name, (status==EventStatus::SATISFIED)?"false":"true"));
+			if ( status == EventStatus::SATISFIED ) {
 				rval = SEXP_KNOWN_FALSE;
 			} else {
 				rval = SEXP_KNOWN_TRUE;
@@ -17685,15 +17690,15 @@ int sexp_previous_event_status( int n, int status )
 			}
 
 			if ( i == (int)Campaign.missions[mission_num].events.size() ) {
-				Warning(LOCATION, "Couldn't find event name \"%s\" in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EVENT_SATISFIED)?"false":"true");
-				if ( status == EVENT_SATISFIED )
+				Warning(LOCATION, "Couldn't find event name \"%s\" in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EventStatus::SATISFIED)?"false":"true");
+				if ( status == EventStatus::SATISFIED )
 					rval = SEXP_KNOWN_FALSE;
 				else
 					rval = SEXP_KNOWN_TRUE;
 
 			} else {
 				// now return KNOWN_TRUE or KNOWN_FALSE based on the status field in the goal structure
-				if ( Campaign.missions[mission_num].events[i].status == status )
+				if ( Campaign.missions[mission_num].events[i].status == static_cast<int>(status) )
 					rval = SEXP_KNOWN_TRUE;
 				else
 					rval = SEXP_KNOWN_FALSE;
@@ -17710,7 +17715,7 @@ int sexp_previous_event_status( int n, int status )
 			else
 				rval = SEXP_KNOWN_FALSE;
 		} else {
-			if ( status == EVENT_SATISFIED )
+			if ( status == EventStatus::SATISFIED )
 				rval = SEXP_KNOWN_TRUE;
 			else
 				rval = SEXP_KNOWN_FALSE;
@@ -17728,6 +17733,7 @@ int sexp_previous_event_status( int n, int status )
  */
 int sexp_event_status( int n, int want_true )
 {
+	int rval = SEXP_FALSE;
 	auto name = CTEXT(n);
 
 	for (int i = 0; i < (int)Mission_events.size(); ++i) {
@@ -17736,20 +17742,25 @@ int sexp_event_status( int n, int want_true )
 			int result = Mission_events[i].result;
 			if (Mission_events[i].formula < 0) {
 				if ( (want_true && result) || (!want_true && !result) )
-					return SEXP_KNOWN_TRUE;
+					rval = SEXP_KNOWN_TRUE;
 				else
-					return SEXP_KNOWN_FALSE;
+					rval = SEXP_KNOWN_FALSE;
 
 			} else {
 				if ( (want_true && result) || (!want_true && !result) )
-					return SEXP_TRUE;
+					rval = SEXP_TRUE;
 				else
-					return SEXP_FALSE;
+					rval = SEXP_FALSE;
 			}
+			break;
 		}
 	}
 
-	return SEXP_FALSE;
+	// don't make the enclosing event current if this operator doesn't return true
+	if ((rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE))
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
+
+	return rval;
 }
 
 /**
@@ -17768,9 +17779,11 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 
 	delay = eval_num(CDR(n), is_nan, is_nan_forever);
 	if (is_nan) {
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
 		return SEXP_FALSE;
 	}
 	else if (is_nan_forever) {
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
 		return SEXP_KNOWN_FALSE;
 	}
 	if (!use_msecs) {
@@ -17831,9 +17844,9 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	if (n != -1)
 		use_as_directive = is_sexp_true(n);
 
-	// zero out Sexp_useful_number if it's not true and we don't want this for specific directive use
+	// don't make the enclosing event current if this operator doesn't return true and we don't want this for specific directive use
 	if ( !use_as_directive && (rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE) )
-		Sexp_useful_number = 0;  // indicate sexp isn't current yet
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
 
 	return rval;
 }
@@ -17843,6 +17856,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
  */
 int sexp_event_incomplete(int n)
 {
+	int rval = SEXP_FALSE;
 	auto name = CTEXT(n);
 	
 	for (int i = 0; i < (int)Mission_events.size(); ++i) {
@@ -17850,13 +17864,18 @@ int sexp_event_incomplete(int n)
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
 			// the event is incomplete
 			if ( Mission_events[i].formula != -1 )
-				return SEXP_TRUE;
+				rval = SEXP_TRUE;
 			else
-				return SEXP_KNOWN_FALSE;
+				rval = SEXP_KNOWN_FALSE;
+			break;
 		}
 	}
 
-	return SEXP_FALSE;
+	// don't make the enclosing event current if this operator doesn't return true
+	if ((rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE))
+		Assume_event_is_current = false;  // indicate sexp isn't current yet
+
+	return rval;
 }
 
 /**
@@ -19005,7 +19024,7 @@ int sexp_node_targeted(int node)
 	int z;
 	bool is_nan, is_nan_forever;
 
-	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(node));
+	auto jnp = jumpnode_get_by_name(CTEXT(node));
 
 	if (jnp==nullptr || !Player_ai || (jnp->GetSCPObjectNumber() != Players_target)){
 		return SEXP_FALSE;
@@ -20949,7 +20968,7 @@ void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free)
 			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free]))
 			{
 				turret->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-				turret->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
+				turret->turret_next_fire_stamp = timestamp(Random::next(50, 4000));
 			}
 		}
 		else
@@ -20966,7 +20985,7 @@ void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free)
 			if (turret->weapons.flags[Ship::Weapon_Flags::Turret_Lock])
 			{
 				turret->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
-				turret->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
+				turret->turret_next_fire_stamp = timestamp(Random::next(50, 4000));
 			}
 		}
 		else
@@ -26771,22 +26790,20 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_PREVIOUS_EVENT_TRUE:
-				sexp_val = sexp_previous_event_status( node, EVENT_SATISFIED );
+				sexp_val = sexp_previous_event_status( node, EventStatus::SATISFIED );
 				break;
 
 			case OP_PREVIOUS_EVENT_FALSE:
-				sexp_val = sexp_previous_event_status( node, EVENT_FAILED );
+				sexp_val = sexp_previous_event_status( node, EventStatus::FAILED );
 				break;
 
 			case OP_PREVIOUS_EVENT_INCOMPLETE:
-				sexp_val = sexp_previous_event_status( node, EVENT_INCOMPLETE );
+				sexp_val = sexp_previous_event_status( node, EventStatus::INCOMPLETE );
 				break;
 
 			case OP_EVENT_TRUE:
 			case OP_EVENT_FALSE:
 				sexp_val = sexp_event_status( node, (op_num == OP_EVENT_TRUE?1:0) );
-				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-					Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_EVENT_TRUE_DELAY:
@@ -26806,8 +26823,6 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_EVENT_INCOMPLETE:
 				sexp_val = sexp_event_incomplete(node);
-				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-					Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_GOAL_INCOMPLETE:
@@ -29039,7 +29054,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 		if ( sexp_val == SEXP_CANT_EVAL ) {
 			Sexp_nodes[cur_node].value = SEXP_CANT_EVAL;
-			Sexp_useful_number = 0;  // indicate sexp isn't current yet
+			Assume_event_is_current = false;  // indicate sexp isn't current yet
 			return SEXP_FALSE;
 		}
 
@@ -33177,6 +33192,12 @@ std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type  /*type*/, const
 	for (i=0; i<(int)Mission_goals.size(); i++){
 		if (query_node_in_sexp(n, Mission_goals[i].formula)){
 			return std::make_pair(i, sexp_src::MISSION_GOAL);
+		}
+	}
+
+	for (i = 0; i < static_cast<int>(The_mission.cutscenes.size()); i++) {
+		if (query_node_in_sexp(n, The_mission.cutscenes[i].formula)) {
+			return std::make_pair(i, sexp_src::MISSION_CUTSCENE);
 		}
 	}
 

@@ -63,6 +63,7 @@ public:
 	int			num_detail_levels;								// number of detail levels for this ship
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];	// distance to change detail levels at
 	float		max_speed;										// cap on speed for asteroid
+	float		rotational_vel_multiplier;						// rotational velocity multiplier for asteroid --wookieejedi
 	int			damage_type_idx;								//Damage type of the asteroid
 	int			damage_type_idx_sav;							// stored value from table used to reset damage_type_idx
 	float		inner_rad;										// radius within which maximum area effect damage is applied
@@ -80,7 +81,8 @@ public:
 	float		gravity_const;									// multiplier for mission gravity
 
 	asteroid_info( )
-		: type(ASTEROID_TYPE_DEBRIS), num_detail_levels(0), max_speed(0), damage_type_idx(0),
+		: type(ASTEROID_TYPE_DEBRIS), num_detail_levels(0), max_speed(0), 
+		  rotational_vel_multiplier(1), damage_type_idx(0),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
 		  fireball_radius_multiplier( -1 ), spawn_weight( 1 ), gravity_const( 0 )

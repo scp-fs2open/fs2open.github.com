@@ -18,6 +18,11 @@
 #include "bmpman/bm_internal.h"
 
 
+void gr_stub_setup_frame()
+{
+
+}
+
 uint gr_stub_lock()
 {
 	return 1;
@@ -449,6 +454,7 @@ bool gr_stub_init()
 
 	// function pointers...
 	gr_screen.gf_flip				= gr_stub_flip;
+	gr_screen.gf_setup_frame		= gr_stub_setup_frame;
 	gr_screen.gf_set_clip			= gr_stub_set_clip;
 	gr_screen.gf_reset_clip			= gr_stub_reset_clip;
 	

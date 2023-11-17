@@ -148,6 +148,8 @@ public:
 
 	// action
 	SCP_vector<main_hall_region> regions;
+
+	SCP_string esc_action;
 	
 	bool default_readyroom = true;
 
@@ -160,6 +162,8 @@ public:
 };
 
 extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
+
+extern bool Main_hall_poll_key;
 
 
 // initialize the main hall proper 

@@ -16,8 +16,13 @@ void ParticleProperties::parse(bool nocreate) {
 		m_bitmap_range = ::util::UniformRange<size_t>(0, m_bitmap_list.size() - 1);
 	}
 
-	if (internal::required_string_if_new("+Size:", nocreate)) {
+	if (optional_string("+Size:")) {
 		m_radius = ::util::parseUniformRange<float>();
+	} else if (optional_string("+Parent Size Factor:")) {
+		m_radius = ::util::parseUniformRange<float>();
+		m_parentScale = true;
+	} else if (!nocreate) {
+		Error(LOCATION, "Missing +Size or +Parent Size Factor");
 	}
 
 	if (optional_string("+Length:")) {
@@ -28,11 +33,14 @@ void ParticleProperties::parse(bool nocreate) {
 		if (optional_string("<none>")) {
 			// Use lifetime of effect
 			m_hasLifetime = false;
-		}
-		else {
+		} else {
 			m_hasLifetime = true;
 			m_lifetime = ::util::parseUniformRange<float>();
 		}
+	} else if (optional_string("+Parent Lifetime Factor:")) {
+		m_hasLifetime = true;
+		m_parentLifetime = true;
+		m_lifetime = ::util::parseUniformRange<float>();
 	}
 
 	if (optional_string("+Size over lifetime curve:")) {
@@ -67,10 +75,18 @@ int ParticleProperties::chooseBitmap()
 void ParticleProperties::createParticle(particle_info& info) {
 	info.optional_data = ParticleProperties::chooseBitmap();
 	info.type = PARTICLE_BITMAP;
-	info.rad = m_radius.next();
+	if (m_parentScale)
+		// if we were spawned by a particle, info.rad is the parent's radius and m_radius is a factor of that
+		info.rad *= m_radius.next(); 
+	else
+		info.rad = m_radius.next();
 	info.length = m_length.next();
 	if (m_hasLifetime) {
-		info.lifetime = m_lifetime.next();
+		if (m_parentLifetime)
+			// if we were spawned by a particle, info.lifetime is the parent's remaining liftime and m_lifetime is a factor of that
+			info.lifetime *= m_lifetime.next();
+		else
+			info.lifetime = m_lifetime.next();
 		info.lifetime_from_animation = false;
 	}
 	info.size_lifetime_curve = m_size_lifetime_curve;
