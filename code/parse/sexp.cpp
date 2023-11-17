@@ -15245,12 +15245,6 @@ void sexp_transfer_cargo(int n)
 	if (!ship2 || !ship2->shipp)
 		return;
 
-	// we must be sure that these two objects are indeed docked
-	if (!dock_check_find_direct_docked_object(ship1->objp, ship2->objp)) {
-		Warning(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", ship1->name, ship2->name);
-		return;
-	}
-
 	if ( !stricmp(Cargo_names[ship1->shipp->cargo1 & CARGO_INDEX_MASK], "nothing") ) {
 		return;
 	}
