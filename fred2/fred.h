@@ -193,6 +193,7 @@ extern window_data Ship_wnd_data;
 extern window_data Wing_wnd_data;
 extern window_data Object_wnd_data;
 extern window_data Mission_goals_wnd_data;
+extern window_data Mission_cutscenes_wnd_data;
 extern window_data Messages_wnd_data;
 extern window_data Player_wnd_data;
 extern window_data Events_wnd_data;

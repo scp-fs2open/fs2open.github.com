@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "EventEditor.h"
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "ai/aigoals.h"
 #include "ai/ailua.h"
 #include "mission/missionmessage.h"
@@ -2590,6 +2591,10 @@ void sexp_tree::NodeDelete()
 		if (m_mode == MODE_GOALS) {
 			Assert(Goal_editor_dlg);
 			theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
+
+		}else if (m_mode == MODE_CUTSCENES) {
+			Assert(Cutscene_editor_dlg);
+			theNode = Cutscene_editor_dlg->handler(ROOT_DELETED, item_index);
 
 		} else if (m_mode == MODE_EVENTS) {
 			Assert(Event_editor_dlg);

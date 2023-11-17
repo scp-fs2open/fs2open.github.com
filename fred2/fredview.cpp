@@ -31,6 +31,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "wing.h"
 #include "ship_select.h"
 #include "PlayerStartEditor.h"
@@ -168,6 +169,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
+	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
 	ON_COMMAND(ID_SPEED2, OnSpeed2)
 	ON_COMMAND(ID_SPEED5, OnSpeed5)
@@ -1631,6 +1633,13 @@ void CFREDView::OnChangeViewpointFollow()
 void CFREDView::OnEditorsGoals()
 {
 	CMissionGoalsDlg dlg;
+
+	dlg.DoModal();
+}
+
+void CFREDView::OnEditorsCutscenes()
+{
+	CMissionCutscenesDlg dlg;
 
 	dlg.DoModal();
 }

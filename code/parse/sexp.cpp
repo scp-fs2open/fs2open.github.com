@@ -33195,6 +33195,12 @@ std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type  /*type*/, const
 		}
 	}
 
+	for (i = 0; i < static_cast<int>(The_mission.cutscenes.size()); i++) {
+		if (query_node_in_sexp(n, The_mission.cutscenes[i].formula)) {
+			return std::make_pair(i, sexp_src::MISSION_CUTSCENE);
+		}
+	}
+
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Debriefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Debriefings[j].stages[i].formula)){

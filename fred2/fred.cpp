@@ -128,6 +128,7 @@ window_data Ship_wnd_data;
 window_data Wing_wnd_data;
 window_data Object_wnd_data;
 window_data Mission_goals_wnd_data;
+window_data Mission_cutscenes_wnd_data;
 window_data Messages_wnd_data;
 window_data Player_wnd_data;
 window_data Events_wnd_data;
@@ -252,6 +253,7 @@ BOOL CFREDApp::InitInstance() {
 	read_window("Musicplayer window", &MusPlayer_wnd_data);
 	read_window("Object window", &Object_wnd_data);
 	read_window("Mission goals window", &Mission_goals_wnd_data);
+	read_window("Mission cutscenes window", &Mission_cutscenes_wnd_data);
 	read_window("Messages window", &Messages_wnd_data);
 	read_window("Player window", &Player_wnd_data);
 	read_window("Events window", &Events_wnd_data);
@@ -539,6 +541,7 @@ void CFREDApp::write_ini_file(int degree) {
 		write_window("Musicplayer window", &MusPlayer_wnd_data);
 		write_window("Object window", &Object_wnd_data);
 		write_window("Mission goals window", &Mission_goals_wnd_data);
+		write_window("Mission cutscenes window", &Mission_cutscenes_wnd_data);
 		write_window("Messages window", &Messages_wnd_data);
 		write_window("Player window", &Player_wnd_data);
 		write_window("Events window", &Events_wnd_data);
