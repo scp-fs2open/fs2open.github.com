@@ -1642,18 +1642,18 @@ void mission_campaign_end_close()
 
 /**
  * Skip to the next mission in the campaign
- * this also posts the state change by default.  pass 0 to override that
+ * this also posts the state change
  */
-void mission_campaign_skip_to_next(int start_game)
+void mission_campaign_skip_to_next()
 {
+	// mark mission as skipped
+	Campaign.missions[Campaign.current_mission].flags |= CMISSION_FLAG_SKIPPED;
+
 	// mark all goals/events complete
 	// these do not really matter, since is-previous-event-* and is-previous-goal-* sexps check
 	// to see if the mission was skipped, and use defaults accordingly.
 	mission_goal_mark_objectives_complete();
 	mission_goal_mark_events_complete();
-
-	// mark mission as skipped
-	Campaign.missions[Campaign.current_mission].flags |= CMISSION_FLAG_SKIPPED;
 
 	// store
 	mission_campaign_store_goals_and_events_and_variables();
@@ -1665,22 +1665,20 @@ void mission_campaign_skip_to_next(int start_game)
 	Player->failures_this_session = 0;
 	Player->show_skip_popup = 1;
 
-	if (start_game) {
-		// proceed to next mission or main hall
-		if ((Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1)) {
-			// go to loop solicitation
-			gameseq_post_event(GS_EVENT_LOOP_BRIEF);
-		} else {
-			// closes out mission stuff, sets up next one
-			mission_campaign_mission_over();
+	// proceed to next mission or main hall
+	if ((Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1)) {
+		// go to loop solicitation
+		gameseq_post_event(GS_EVENT_LOOP_BRIEF);
+	} else {
+		// closes out mission stuff, sets up next one
+		mission_campaign_mission_over();
 
-			if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
-				// go to main hall, either the campaign is over or the FREDer requested it.
-				gameseq_post_event(GS_EVENT_MAIN_MENU);
-			} else {
-				// go to next mission
-				gameseq_post_event(GS_EVENT_START_GAME);
-			}
+		if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
+			// go to main hall, either the campaign is over or the FREDer requested it.
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		} else {
+			// go to next mission
+			gameseq_post_event(GS_EVENT_START_GAME);
 		}
 	}
 }
