@@ -645,7 +645,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 	}
 
 	// create the new node for the vector
-	line_node newLine = {t, source, 0, 1, w, ""};
+	line_node newLine = {t, The_mission.HUD_timer_padding, source, 0, 1, w, ""};
 	newLine.text = text;
 
 	Msg_scrollback_vec.push_back(newLine);
@@ -853,7 +853,7 @@ void hud_initialize_scrollback_lines()
 				char* text = c_text;
 
 				char* split = split_str_once(text, max_width);
-				Msg_scrollback_lines.push_back({node_msg.time, node_msg.source, node_msg.x, 1, node_msg.underline_width, text});
+				Msg_scrollback_lines.push_back({node_msg.time, The_mission.HUD_timer_padding, node_msg.source, node_msg.x, 1, node_msg.underline_width, text});
 
 				while (split != nullptr) {
 					text = split;
@@ -864,7 +864,7 @@ void hud_initialize_scrollback_lines()
 					if (split == nullptr)
 						offset = height / 3;
 
-					Msg_scrollback_lines.push_back({0, node_msg.source, node_msg.x, offset, 0, text});
+					Msg_scrollback_lines.push_back({0, 0, node_msg.source, node_msg.x, offset, 0, text});
 				}
 			} else {
 				node_msg.y = height / 3;
@@ -1214,12 +1214,22 @@ void HudGaugeTalkingHead::render(float frametime)
 			int hx = tablePosX + Anim_offsets[0];
 			int hy = tablePosY + Anim_offsets[1];
 
-			if (gr_screen.rendering_to_texture != -1) 
+			if (gr_screen.rendering_to_texture != -1) {
 				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+				hx += gr_screen.offset_x_unscaled;
+				hy += gr_screen.offset_y_unscaled;
+			}
 			else
 				gr_set_screen_scale(base_w, base_h);
 
-			generic_anim_render_ex(head_anim,frametime, hx, hy, Anim_size[0], Anim_size[1]);
+			generic_anim_bitmap_set(head_anim, frametime);
+			bitmap_rect_list brl = bitmap_rect_list(hx, hy, Anim_size[0], Anim_size[1]);
+
+			if (head_anim->use_hud_color)
+				gr_aabitmap_list(&brl, 1, GR_RESIZE_FULL);
+			else
+				gr_bitmap_list(&brl, 1, GR_RESIZE_FULL);
+
 			gr_reset_screen_scale();
 
 			// draw title

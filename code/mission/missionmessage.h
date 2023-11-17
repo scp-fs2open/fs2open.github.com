@@ -54,6 +54,7 @@ extern SCP_vector<message_extra> Message_waves;
 
 // define used for sender of a message when you want it to be Terran Command
 #define DEFAULT_COMMAND			"Command"
+#define DEFAULT_HASHCOMMAND		"#" DEFAULT_COMMAND
 
 extern SCP_vector<SCP_string> Builtin_moods;
 extern int Current_mission_mood;

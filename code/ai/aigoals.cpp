@@ -487,10 +487,12 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 	// these goals cannot be associated to wings, but can to a ship in a wing.  So, we should find out
 	// if the ship is in a wing so we can purge goals which might operate on that wing
 	ship_index = ship_name_lookup(name);
-	if ( ship_index == -1 ) {
-		Int3();						// get allender -- this is sort of odd
-		return;
+
+	Assertion(ship_index > -1, "Found a bad ship_index of %d in ai_goal_purge_invalid_goals, please report to the SCP!", ship_index); // get allender -- this is sort of odd
+	if ( ship_index < 0 ) {					
+		return; 
 	}
+
 	wingnum = Ships[ship_index].wingnum;
 
 	purge_goal = goal_list;
@@ -726,7 +728,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
+void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -813,7 +815,7 @@ int ai_goal_num(ai_goal *goals)
 }
 
 
-void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, const char *target_name, ai_goal *aigp )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -830,7 +832,7 @@ void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, ch
 	aigp->priority = priority;
 }
 
-void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip)
+void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char *shipname, ai_info *aip)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -854,7 +856,7 @@ void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipn
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
+void ai_add_ship_goal_player( int type, int mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -875,7 +877,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum, const ai_lua_parameters& lua_target)
+void ai_add_wing_goal_player( int type, int mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -899,7 +901,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 
 
 // common routine to add a sexpression mission goal to the appropriate goal structure.
-void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char *actor_name )
+void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name )
 {
 	int node, dummy, op;
 
@@ -913,22 +915,30 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 	switch (op) {
 
 	case OP_AI_WAYPOINTS_ONCE:
-	case OP_AI_WAYPOINTS: {
+	case OP_AI_WAYPOINTS:
+	{
 		int ref_type;
+		bool is_nan, is_nan_forever;
 
 		ref_type = Sexp_nodes[CDR(node)].subtype;
-		if (ref_type == SEXP_ATOM_STRING || ref_type == SEXP_ATOM_CONTAINER_DATA) {  // referenced by name
-			// save the waypoint path name -- the list will get resolved when the goal is checked
-			// for achievability.
-			aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
+		Assertion(ref_type == SEXP_ATOM_STRING || ref_type == SEXP_ATOM_CONTAINER_DATA, "Found a bad ref_type in ai_add_goal_sub_sexp of %d. Please report to the SCP!", ref_type);
+		
+		// referenced by name
+		// save the waypoint path name -- the list will get resolved when the goal is checked
+		// for achievability.
+		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
 
-		} else
-			Int3();
 
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 		aigp->ai_mode = AI_GOAL_WAYPOINTS;
 		if ( op == OP_AI_WAYPOINTS_ONCE )
 			aigp->ai_mode = AI_GOAL_WAYPOINTS_ONCE;
+		if (CDDDDR(node) < 0)
+			aigp->int_data = 0;	// handle optional node separately because we don't subtract 1 here
+		else
+			aigp->int_data = eval_num(CDDDDR(node), is_nan, is_nan_forever) - 1;
+		if (is_sexp_true(CDDDDDR(node)))
+			aigp->flags.set(AI::Goal_Flags::Waypoints_in_reverse);
 		break;
 	}
 
@@ -1452,15 +1462,8 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 	int gindex;
 	ai_goal *aigp;
 
-#ifndef NDEBUG
 	// Goober5000 - none of the goals act on the actor, as in ai_add_goal_sub_sexp
-	if (!strcmp(name, Ships[aip->shipnum].ship_name))
-	{
-		// not good
-		Int3();
-		return;
-	}
-#endif
+	Assertion(strcmp(name, Ships[aip->shipnum].ship_name) != 0, "The goals apply to the actor in ai_add_goal_ship_internal for ship %s, please report to the SCP!", name);
 
 	// find an empty slot to put this goal in.
 	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
@@ -1511,7 +1514,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 		break;
 
 	default:
-		Int3();		// unsupported internal goal -- see Mike K or Mark A.
+		UNREACHABLE("unsupported internal goal of %d found in ai_add_goal_ship_internal. Please report to the SCP", goal_type); // see Mike K or Mark A.
 		return;
 	}
 
@@ -2334,10 +2337,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_WAYPOINTS:				// do nothing for waypoints
 	case AI_GOAL_WAYPOINTS_ONCE: {
 		int flags = 0;
-
-		if ( current_goal->ai_mode == AI_GOAL_WAYPOINTS)
+		if (current_goal->ai_mode == AI_GOAL_WAYPOINTS)
 			flags |= WPF_REPEAT;
-		ai_start_waypoints(objp, current_goal->wp_list, flags);
+		if (current_goal->flags[AI::Goal_Flags::Waypoints_in_reverse])
+			flags |= WPF_BACKTRACK;
+		ai_start_waypoints(objp, current_goal->wp_list, flags, current_goal->int_data);
 		break;
 	}
 
@@ -2544,7 +2548,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	default:
-		Int3();
+		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal->ai_mode);
 		break;
 	}
 

@@ -165,7 +165,7 @@ void ShipGoalsDialog::updateUI()
 		}
 		behaviors[i]->setCurrentIndex(behaviors[i]->findData(value));
 		auto mode = value;
-		SCP_list<waypoint_list>::iterator ii;
+		SCP_vector<waypoint_list>::iterator ii;
 		if (i >= MAX_AI_GOALS)
 			behaviors[i]->setEnabled(false);
 		if (value < 1) {

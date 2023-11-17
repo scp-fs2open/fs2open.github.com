@@ -28,6 +28,7 @@
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "math/fvi.h"
+#include "math/curve.h"
 #include "math/staticrand.h"
 #include "nebula/neb.h"
 #include "mod_table/mod_table.h"
@@ -1366,7 +1367,6 @@ void beam_render(beam *b, float u_offset)
 	vec3d fvec, top1, bottom1, top2, bottom2;
 	float scale;
 	float u_scale;	// beam tileing -Bobboau
-	float length;	// beam tileing -Bobboau
 	beam_weapon_section_info *bwsi;
 	beam_weapon_info *bwi;
 
@@ -1387,7 +1387,6 @@ void beam_render(beam *b, float u_offset)
 	// turn off backface culling
 	//int cull = gr_set_cull(0);
 
-	length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
@@ -1396,6 +1395,25 @@ void beam_render(beam *b, float u_offset)
 		u_offset = b->u_offset_local;			// the parameter is passed by value so this won't interfere with the u_offset in the calling function
 		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
+
+	float alpha_mult = 1.0f;
+	if (bwi->beam_alpha_curve_idx >= 0)
+		alpha_mult *= Curves[bwi->beam_alpha_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
+
+	float length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
+	float per = 1.0f;
+	if (bwi->range)
+		per -= length / bwi->range;
+
+	float end_alphaf = 255.0f * alpha_mult * per;
+	float start_alphaf = 255.0f * alpha_mult;
+
+	// just to be safe
+	CLAMP(end_alphaf, 0.0f, 255.0f);
+	CLAMP(start_alphaf, 0.0f, 255.0f);
+
+	ubyte end_alpha = static_cast<ubyte>(end_alphaf);
+	ubyte start_alpha = static_cast<ubyte>(start_alphaf);
 
 	// draw all sections	
 	for (s_idx = 0; s_idx < bwi->beam_num_sections; s_idx++) {
@@ -1427,32 +1445,24 @@ void beam_render(beam *b, float u_offset)
 		verts[3]->texture_position.u = (0 + (u_offset * bwsi->translation));
 		verts[0]->texture_position.u = (0 + (u_offset * bwsi->translation));
 
-		float per = 1.0f;
-		if (bwi->range)
-			per -= length / bwi->range;
 
-		//this should never happen but, just to be safe
-		CLAMP(per, 0.0f, 1.0f);
+		verts[1]->r = end_alpha;
+		verts[2]->r = end_alpha;
+		verts[1]->g = end_alpha;
+		verts[2]->g = end_alpha;
+		verts[1]->b = end_alpha;
+		verts[2]->b = end_alpha;
+		verts[1]->a = end_alpha;
+		verts[2]->a = end_alpha;
 
-		ubyte alpha = (ubyte)(255.0f * per);
-
-		verts[1]->r = alpha;
-		verts[2]->r = alpha;
-		verts[1]->g = alpha;
-		verts[2]->g = alpha;
-		verts[1]->b = alpha;
-		verts[2]->b = alpha;
-		verts[1]->a = alpha;
-		verts[2]->a = alpha;
-
-		verts[0]->r = 255;
-		verts[3]->r = 255;
-		verts[0]->g = 255;
-		verts[3]->g = 255;
-		verts[0]->b = 255;
-		verts[3]->b = 255;
-		verts[0]->a = 255;
-		verts[3]->a = 255;
+		verts[0]->r = start_alpha;
+		verts[3]->r = start_alpha;
+		verts[0]->g = start_alpha;
+		verts[3]->g = start_alpha;
+		verts[0]->b = start_alpha;
+		verts[3]->b = start_alpha;
+		verts[0]->a = start_alpha;
+		verts[3]->a = start_alpha;
 
 		// set the right texture with additive alpha, and draw the poly
 		int framenum = 0;
@@ -1523,7 +1533,7 @@ void beam_generate_muzzle_particles(beam *b)
 	b->Beam_muzzle_stamp = timestamp(hack_time);
 
 	// randomly generate 10 to 20 particles
-	particle_count = (int)frand_range(0.0f, (float)wip->b_info.beam_particle_count);
+	particle_count = Random::next(wip->b_info.beam_particle_count+1);
 
 	// get turret info - position and normal
 	turret_pos = b->last_start;
@@ -4205,14 +4215,17 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 		}
 	}
 
-	float damage = 0.0f;
+	float damage = wip->damage;
+
+	if (wip->damage_curve_idx >= 0)
+		damage *= Curves[wip->damage_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
 
 	// same team. yikes
-	if ( (b->team == Ships[objp->instance].team) && (wip->damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
+	if ( (b->team == Ships[objp->instance].team) && (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
 		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
-		damage = wip->damage * attenuation;
+		damage *= attenuation;
 	}
 
 	return damage;

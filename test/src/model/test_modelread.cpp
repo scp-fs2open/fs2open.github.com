@@ -3,7 +3,7 @@
 
 #include "util/FSTestFixture.h"
 
-#define EXPECT_VECTOR_NEAR(global,vector) EXPECT_NEAR(error(&global,vector), 0.0f, 0.001f);
+#define EXPECT_VECMAT_NEAR(global,vector) EXPECT_NEAR(error(&global,vector), 0.0f, 0.001f);
 
 float error(vec3d* val, vec3d target) {
 	float totalError = 0;
@@ -13,6 +13,7 @@ float error(vec3d* val, vec3d target) {
 	}
 	return totalError;
 }
+extern float error(matrix* val, matrix target);
 
 class SubmodelLocalizeTest : public test::FSTestFixture {
 public:
@@ -68,15 +69,15 @@ TEST_F(SubmodelLocalizeTest, submodel_instance_localize_roundtrip) {
 	model_instance_local_to_global_point(&global, &local, pm, pmi, 2);
 	model_instance_global_to_local_point(&roundtrip, &global, pm, pmi, 2);
 
-	EXPECT_VECTOR_NEAR(global, (vec3d{ {{-1.0f, 1.0f, 1.0f}} }));
-	EXPECT_VECTOR_NEAR(roundtrip, local);
+	EXPECT_VECMAT_NEAR(global, (vec3d{ {{-1.0f, 1.0f, 1.0f}} }));
+	EXPECT_VECMAT_NEAR(roundtrip, local);
 }
 
 TEST_F(SubmodelLocalizeTest, submodel_instance_localize_roundtrip_world) {
 
 	vec3d globalPos{ {{0.0f, 5.0f, 0.0f}} };
 	matrix globalOrient;
-	angles globalRot{ 0.0f, PI_2, 0.0f};
+	angles globalRot{ 0.0f, PI_2, 0.0f };
 	vm_angles_2_matrix(&globalOrient, &globalRot);
 
 	vec3d global;
@@ -85,6 +86,16 @@ TEST_F(SubmodelLocalizeTest, submodel_instance_localize_roundtrip_world) {
 	model_instance_local_to_global_point(&global, &local, pm, pmi, 2, &globalOrient, &globalPos);
 	model_instance_global_to_local_point(&roundtrip, &global, pm, pmi, 2, &globalOrient, &globalPos);
 
-	EXPECT_VECTOR_NEAR(global, (vec3d{ {{-1.0f, 4.0f, 1.0f}} }));
-	EXPECT_VECTOR_NEAR(roundtrip, local);
+	EXPECT_VECMAT_NEAR(global, (vec3d{ {{-1.0f, 4.0f, 1.0f}} }));
+	EXPECT_VECMAT_NEAR(roundtrip, local);
+
+	matrix globalMat;
+	matrix roundtripMat;
+	matrix localMat = globalOrient;
+	model_instance_local_to_global_point_orient(&global, &globalMat, &local, &localMat, pm, pmi, 2, &globalOrient, &globalPos);
+	model_instance_global_to_local_point_orient(&roundtrip, &roundtripMat, &global, &globalMat, pm, pmi, 2, &globalOrient, &globalPos);
+
+	EXPECT_VECMAT_NEAR(global, (vec3d{ {{-1.0f, 4.0f, 1.0f}} }));
+	EXPECT_VECMAT_NEAR(roundtrip, local);
+	EXPECT_VECMAT_NEAR(roundtripMat, localMat);
 }

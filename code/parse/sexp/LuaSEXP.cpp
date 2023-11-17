@@ -56,10 +56,11 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "dockpoint",    OPF_DOCKER_POINT },
 														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
 														  { "event",        OPF_EVENT_NAME },
+														  { "child_enum",   OPF_CHILD_LUA_ENUM },
 														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
-static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint"};
+static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint", "child_enum"};
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -309,6 +310,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 				break;
 			}
 		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
+	}
+	case OPF_CHILD_LUA_ENUM: {
+		auto text = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), text);
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
@@ -664,7 +669,7 @@ void LuaSEXP::parseTable() {
 			}
 
 			if (thisList.list.size() == 0) {
-				error_display(0, "Parsed empty enum list '%s'\n", thisList.name.c_str());
+				mprintf(("Parsed empty enum list '%s'. Adding <none>.\n", thisList.name.c_str()));
 				thisList.list.push_back("<none>");
 			}
 
@@ -698,7 +703,7 @@ void LuaSEXP::parseTable() {
 
 			if (this_index >= (param_index + 1)) {
 				error_display(1,
-					"Ship Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
+					"Parent Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
 					this_index,
 					param_index + 1);
 			}

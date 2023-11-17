@@ -172,7 +172,10 @@ void CustomDataDlg::OnPairRemove()
 {
 	const int index = m_data_lister.GetCurSel();
 
-	Assert(index >= 0 && index < static_cast<int>(m_custom_data.size()));
+	if (index == LB_ERR) {
+		MessageBox("Nothing selected! You must select something to remove!");
+		return;
+	}
 
 	const auto& key = m_lister_keys[index];
 	m_custom_data.erase(key);
@@ -188,13 +191,14 @@ void CustomDataDlg::OnPairUpdate()
 	}
 
 	const int index = m_data_lister.GetCurSel();
-	const auto& key = m_lister_keys[index];
-	m_custom_data.erase(key);
 
 	if (index == LB_ERR) {
 		MessageBox("Nothing selected! Use Add to enter new data");
 		return;
 	}
+
+	const auto& key = m_lister_keys[index];
+	m_custom_data.erase(key);
 
 	CEdit* data_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_DATA);
 	CString data_str;
@@ -238,15 +242,19 @@ bool CustomDataDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
-	const int index = m_data_lister.GetCurSel();
-	const auto& this_key = m_lister_keys[index];
+	// Only check for duplicate keys if there are other keys to check!
+	if (m_lister_keys.size() > 0) {
 
-	if (strcmp(this_key.c_str(), key_str)) {
-		for (const auto& pair : m_custom_data) {
-			const CString key = pair.first.c_str();
-			if (key == key_str) {
-				MessageBox("Keys must be unique!");
-				return false;
+		const int index = m_data_lister.GetCurSel();
+		const auto& this_key = m_lister_keys[index];
+
+		if (strcmp(this_key.c_str(), key_str)) {
+			for (const auto& pair : m_custom_data) {
+				const CString key = pair.first.c_str();
+				if (key == key_str) {
+					MessageBox("Keys must be unique!");
+					return false;
+				}
 			}
 		}
 	}

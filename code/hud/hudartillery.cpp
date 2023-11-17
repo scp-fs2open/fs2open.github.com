@@ -357,7 +357,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		ssm.sinfo.start_pos.resize(count);
 
 		for (idx = 0; idx < count; idx++) {
-			ssm.sinfo.delay_stamp[idx] = _timestamp(200 + (int)frand_range(-199.0f, 1000.0f));
+			ssm.sinfo.delay_stamp[idx] = _timestamp(200 + Random::next(-199, 1000));
 			ssm_get_random_start_pos(&ssm.sinfo.start_pos[idx], start, &dir, ssm_index);
 		}
 

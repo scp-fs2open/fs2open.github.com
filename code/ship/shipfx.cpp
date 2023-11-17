@@ -2474,7 +2474,7 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 	shipp->lightning_stamp = timestamp(stamp);
 
 	// ah, now we can create some lightning bolts
-	count = (int)frand_range(0.0f, (float)count);
+	count = Random::next(count+1);
 	while(count > 0){
 		// get 2 points on the hull of the ship
 		v1 = submodel_get_random_point(shipp->modelnum, 0);
@@ -2497,7 +2497,7 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 		binfo.num_strikes = 3;
 		binfo.noise = 0.045f;
 		binfo.life = 375;
-		binfo.delay = (int)frand_range(0.0f, 1600.0f);
+		binfo.delay = Random::next(1600+1);
 		nebl_bolt(&binfo);
 		count--;
 
@@ -2523,7 +2523,7 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 		binfo.num_strikes = 3;
 		binfo.noise = 0.045f;
 		binfo.life = 375;
-		binfo.delay = (int)frand_range(0.0f, 1600.0f);
+		binfo.delay = Random::next(1600+1);
 		nebl_bolt(&binfo);
 		count--;
 	}
@@ -2613,7 +2613,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 		sci2.rot_angles.b = frand_range(0.0f, 1.99f*PI);
 		sci2.rot_angles.h = frand_range(0.0f, 1.99f*PI);
 
-		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f));
+		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, Random::next(350+1));
 		
 		// next shockwave
 		cur += step;
@@ -2702,7 +2702,7 @@ void engine_wash_ship_process(ship *shipp)
 		float ship_intensity = 0;
 
 		// if engines disabled, no engine wash
-		if (ship_get_subsystem_strength(wash_shipp, SUBSYSTEM_ENGINE) < 0.01) {
+		if (ship_subsystems_blown(wash_shipp, SUBSYSTEM_ENGINE)) {
 			continue;
 		}
 

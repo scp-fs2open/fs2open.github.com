@@ -221,7 +221,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r);
  * @param[in] gridp      The grid we're referencing against
  * @param[in] col_scheme Color scheme?
  */
-void render_model_x(vec3d *pos, grid *gridp, int col_scheme = 0);
+void render_model_x(const vec3d *pos, const grid *gridp, int col_scheme = 0);
 
 /**
  * @brief Draws the X from a elevation line on the grid with HTL
@@ -1699,12 +1699,12 @@ void render_models(void) {
 
 }
 
-void render_model_x(vec3d *pos, grid *gridp, int col_scheme) {
+void render_model_x(const vec3d *pos, const grid *gridp, int col_scheme) {
 	vec3d	gpos;	//	Location of point on grid.
 	vec3d	tpos;
 	float	dxz;
 	plane	tplane;
-	vec3d	*gv;
+	const vec3d	*gv;
 
 	if (!Show_grid_positions)
 		return;
@@ -1971,18 +1971,15 @@ void render_one_model_htl(object *objp) {
 void render_waypoints(void) {
 	vertex v;
 
-	SCP_list<waypoint_list>::iterator ii;
-	SCP_vector<waypoint>::iterator jj;
-
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		vec3d *prev_vec = NULL;
-		for (jj = ii->get_waypoints().begin(); jj != ii->get_waypoints().end(); ++jj) {
-			g3_rotate_vertex(&v, jj->get_pos());
+	for (const auto &ii: Waypoint_lists) {
+		const vec3d *prev_vec = nullptr;
+		for (const auto &jj: ii.get_waypoints()) {
+			g3_rotate_vertex(&v, jj.get_pos());
 			if (!(v.codes & CC_BEHIND)) {
 				if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-					if (cur_waypoint_list == &(*ii) && cur_waypoint == &(*jj))
+					if (jj.get_objnum() == cur_waypoint->get_objnum())
 						gr_set_color(255, 255, 255);
-					else if (Objects[jj->get_objnum()].flags[Object::Object_Flags::Marked])
+					else if (Objects[jj.get_objnum()].flags[Object::Object_Flags::Marked])
 						gr_set_color(160, 255, 0);
 					else
 						gr_set_color(160, 96, 0);
@@ -1999,12 +1996,12 @@ void render_waypoints(void) {
 				}
 			}
 
-			render_model_x(jj->get_pos(), The_grid, 1);
+			render_model_x(jj.get_pos(), The_grid, 1);
 
 			gr_set_color(160, 96, 0);
 			if (prev_vec != NULL)
-				rpd_line(prev_vec, jj->get_pos());
-			prev_vec = jj->get_pos();
+				rpd_line(prev_vec, jj.get_pos());
+			prev_vec = jj.get_pos();
 		}
 	}
 }

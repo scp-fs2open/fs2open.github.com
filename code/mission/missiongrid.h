@@ -49,6 +49,6 @@ grid *create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int 
 grid *create_default_grid(void);
 void render_grid(grid *gridp);
 void modify_grid(grid *gridp);
-void rpd_line(vec3d *v0, vec3d *v1);
+void rpd_line(const vec3d *v0, const vec3d *v1);
 
 #endif

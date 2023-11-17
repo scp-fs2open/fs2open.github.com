@@ -38,6 +38,7 @@ typedef struct HUD_message_data {
 
 typedef struct line_node {
 	fix time;  // timestamp when message was added
+	int timer_padding; // the mission timer padding, in seconds, at the time the message was added
 	int source;  // who/what the source of the message was (for color coding)
 	int x;
 	int y;

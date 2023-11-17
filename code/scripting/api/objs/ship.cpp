@@ -1582,7 +1582,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	bool tgsh_valid = tgsh && tgsh->isSubsystemValid();
 	int ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
-	char *ai_shipname = NULL;
+	const char *ai_shipname = NULL;
 	switch(eh->index)
 	{
 		case LE_ORDER_ATTACK:

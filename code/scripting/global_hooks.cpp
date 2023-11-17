@@ -19,8 +19,8 @@ const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro Abo
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{ 
-		{"OldState", "object", "The gamestate object of the state that was executing."}, 
-		{"NewState", "object", "The gamestate object of the state that will be executing."}
+		{"OldState", "gamestate", "The gamestate that was executing."}, 
+		{"NewState", "gamestate", "The gamestate that will be executing."}
 	});
 
 const std::shared_ptr<Hook<>> OnLoadScreen = Hook<>::Factory("On Load Screen",

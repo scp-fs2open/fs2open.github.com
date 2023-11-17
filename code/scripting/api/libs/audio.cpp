@@ -50,6 +50,19 @@ ADE_VIRTVAR(MasterEventMusicVolume,
 	return ade_set_args(L, "f", Master_event_music_volume);
 }
 
+ADE_VIRTVAR(MasterEffectsVolume,
+	l_Audio,
+	nullptr,
+	"The current master effects volume. This property is read-only.",
+	"number",
+	"The volume in the range from 0 to 1")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read-only!");
+	}
+	return ade_set_args(L, "f", Master_sound_volume);
+}
+
 ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching the specified index or name. If you are using a number then the first valid index is 1", "soundentry", "soundentry or invalid handle on error")
 {
 	gamesnd_id index;

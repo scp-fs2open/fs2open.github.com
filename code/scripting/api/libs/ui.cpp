@@ -119,6 +119,8 @@ ADE_FUNC(enableInput,
 	}
 
 	scpui::enableInput(ctx);
+	game_flush();
+	Main_hall_poll_key = false;
 
 	return ADE_RETURN_TRUE;
 }
@@ -126,6 +128,8 @@ ADE_FUNC(enableInput,
 ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successful")
 {
 	scpui::disableInput();
+	game_flush();
+	Main_hall_poll_key = true;
 
 	return ADE_RETURN_TRUE;
 }
@@ -1049,7 +1053,7 @@ ADE_FUNC(getEarnedPromotion,
 	if (Player->stats.m_promotion_earned != -1) {
 		Promoted = Player->stats.m_promotion_earned;
 		debrief_choose_medal_variant(filename, Rank_medal_index, Promoted);
-		displayname = Ranks[Promoted].name;
+		displayname = get_rank_display_name(&Ranks[Promoted]).c_str();
 
 		return ade_set_args(L, "oss", l_DebriefStage.Set(debrief_stage_h(&Promotion_stage)), displayname, filename);
 	} else {

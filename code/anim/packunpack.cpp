@@ -22,19 +22,19 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 {
 	anim_instance *inst;
 
+	Assertion(ptr, "Bad pointer in init_anim_instance(), please report to the SCP!");
 	if (!ptr) {
-		Int3();
 		return NULL;
 	}
 
 	if ( ptr->flags & ANF_STREAMED ) {
+		Assertion(ptr->file_offset > -1, "Bad file offset of %d in init_anim_instance(), please report to the SCP!", ptr->file_offset);
 		if ( ptr->file_offset < 0 ) {
-			Int3();
 			return NULL;
 		}
 	} else {
+		Assertion(ptr->data, "Bad data in init_anim_instance(), please report to the SCP!");
 		if ( !ptr->data ) {
-			Int3();
 			return NULL;
 		}
 	}

@@ -31,6 +31,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "wing.h"
 #include "ship_select.h"
 #include "PlayerStartEditor.h"
@@ -168,6 +169,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
+	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
 	ON_COMMAND(ID_SPEED2, OnSpeed2)
 	ON_COMMAND(ID_SPEED5, OnSpeed5)
@@ -1635,6 +1637,13 @@ void CFREDView::OnEditorsGoals()
 	dlg.DoModal();
 }
 
+void CFREDView::OnEditorsCutscenes()
+{
+	CMissionCutscenesDlg dlg;
+
+	dlg.DoModal();
+}
+
 void CFREDView::OnSpeed1() 
 {
 	physics_speed = 1;
@@ -2838,18 +2847,17 @@ int CFREDView::global_error_check()
 		return internal_error("Num_wings is incorrect");
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	for (const auto &ii: Waypoint_lists) {
 		for (z=0; z<obj_count; z++){
 			if (names[z]){
-				if (!stricmp(names[z], ii->get_name())){
+				if (!stricmp(names[z], ii.get_name())){
 					return internal_error("Waypoint path name is also used by an object (%s)", names[z]);
 				}
 			}
 		}
 
-		for (j = 0; (uint) j < ii->get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			for (z=0; z<obj_count; z++){
 				if (names[z]){
 					if (!stricmp(names[z], buf)){

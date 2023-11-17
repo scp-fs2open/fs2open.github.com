@@ -277,7 +277,7 @@ typedef struct ai_info {
 
 	//	Probably become obsolete, to be replaced by path_start, path_cur, etc.
 	waypoint_list	*wp_list;		// waypoint list being followed
-	size_t			 wp_index;		// waypoint index in list
+	int				 wp_index;		// waypoint index in list
 	int		wp_flags;				//	waypoint flags, see WPF_xxxx
 	int		waypoint_speed_cap;		// -1 no cap, otherwise cap - changed to int by Goober5000
 
@@ -533,11 +533,11 @@ extern void ai_ignore_wing(object *ignorer, int wingnum);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_do_default_behavior(object *obj);
-extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags);
+extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags, int start_index);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum);
 extern vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp);
-extern void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = nullptr, vec3d* turnrate_mod = nullptr);
+extern void ai_turn_towards_vector(const vec3d *dest, object *objp, const vec3d *slide_vec, const vec3d *rel_pos, float bank_override, int flags, const vec3d *rvec = nullptr, const vec3d* turnrate_mod = nullptr);
 extern void init_ai_object(int objnum);
 extern void ai_init(void);				//	Call this one to parse ai.tbl.
 extern void ai_level_init(void);		//	Call before each level to reset AI

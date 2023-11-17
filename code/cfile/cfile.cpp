@@ -681,6 +681,8 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 		} else {
 			// Path type given?
 			Assert( dir_type != CF_TYPE_ANY );
+			if (dir_type == CF_TYPE_ANY)
+				return NULL;
 
 			// Create the directory if necessary
 			cf_create_directory(dir_type, location_flags);

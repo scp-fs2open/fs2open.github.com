@@ -355,6 +355,7 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	}
 
 	entry->timestamp = Missiontime;
+	entry->timer_padding = The_mission.HUD_timer_padding;
 
 	// if in multiplayer and I am the master, send this log entry to everyone
 	if ( MULTIPLAYER_MASTER ){
@@ -468,6 +469,7 @@ void mission_log_add_entry_multi( LogType type, const char *pname, const char *s
 
 	entry->flags = flags;
 	entry->timestamp = timestamp;
+	entry->timer_padding = The_mission.HUD_timer_padding;
 
 	entry->pname_display = entry->pname;
 	entry->sname_display = entry->sname;
@@ -698,6 +700,7 @@ void message_log_init_scrollback(int pw, bool split_string)
 
 		// track time of event (normal Missiontime format)
 		thisEntry.timestamp = entry->timestamp;
+		thisEntry.timer_padding = entry->timer_padding;
 
 		// keep track of base color for the entry
 		int thisColor;

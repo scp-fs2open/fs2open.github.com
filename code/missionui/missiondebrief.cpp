@@ -1019,7 +1019,7 @@ void debrief_award_init()
 		// choose appropriate promotion voice for this mission
 		debrief_choose_voice(Promotion_stage.voice, sizeof(Promotion_stage.voice), Ranks[Promoted].promotion_voice_base, persona_index);
 
-		debrief_add_award_text(Ranks[Promoted].name);
+		debrief_add_award_text(get_rank_display_name(&Ranks[Promoted]).c_str());
 	}
 
 	// handle badge earned

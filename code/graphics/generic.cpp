@@ -734,7 +734,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 	}
 }
 
-void generic_anim_render_ex(generic_anim* ga, float frametime, int x, int y, int w, int h, bool menu, const generic_extras* ge)
+void generic_anim_bitmap_set(generic_anim* ga, float frametime, const generic_extras* ge)
 {
 	if ((ge != nullptr) && (ga->use_hud_color == true)) {
 		Warning(LOCATION, "Monochrome generic anims can't use extra info (yet)");
@@ -752,23 +752,8 @@ void generic_anim_render_ex(generic_anim* ga, float frametime, int x, int y, int
 		generic_anim_render_fixed_frame_delay(ga, frametime, a);
 	}
 
-	if (ga->num_frames > 0) {
+	if (ga->num_frames > 0)
 		ga->previous_frame = ga->current_frame;
-
-		if (ga->use_hud_color) {
-			gr_aabitmap_ex(x, y, w, h, 0, 0, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
-		}
-		else {
-			if (ge == nullptr) {
-				gr_bitmap_ex(x, y, w, h, 0, 0, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
-			}
-			else if (ge->draw == true) {
-				// currently only for lua streaminganim objects
-				// and don't draw them unless requested...
-				gr_bitmap_uv(x, y, w, h, ge->u0, ge->v0, ge->u1, ge->v1, ge->resize_mode);
-			}
-		}
-	}
 }
 
 /*

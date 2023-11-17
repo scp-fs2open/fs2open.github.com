@@ -401,12 +401,12 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	vec3d rotvel;
 	if ( Game_mode & GM_NORMAL ) {
 		vm_vec_rand_vec_quick(&rotvel);
-		vm_vec_scale(&rotvel, frand()/4.0f + 0.1f);
+		vm_vec_scale(&rotvel, asip->rotational_vel_multiplier * (frand()/4.0f + 0.1f));
 		objp->phys_info.rotvel = rotvel;
 		vm_vec_rand_vec_quick(&objp->phys_info.vel);
 	} else {
 		static_randvec( rand_base++, &rotvel );
-		vm_vec_scale(&rotvel, static_randf(rand_base++)/4.0f + 0.1f);
+		vm_vec_scale(&rotvel, asip->rotational_vel_multiplier * (static_randf(rand_base++)/4.0f + 0.1f));
 		objp->phys_info.rotvel = rotvel;
 		static_randvec( rand_base++, &objp->phys_info.vel );
 	}
@@ -1332,10 +1332,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
 
 		// copy important data
-		int copy_flags = mc.flags;  // make a copy of start end positions of sphere in  big ship RF
-		vec3d copy_p0, copy_p1;
-		copy_p0 = *mc.p0;
-		copy_p1 = *mc.p1;
+		int orig_flags = mc.flags;  // make a copy of start end positions of sphere in big ship RF
+		vec3d orig_p0 = *mc.p0;
+		vec3d orig_p1 = *mc.p1;
 
 		// first test against the sphere - if this fails then don't do any submodel tests
 		mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
@@ -1361,7 +1360,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 				}
 
 				// Only check single submodel now, since children of moving submodels are handled as moving as well
-				mc.flags = copy_flags | MC_SUBMODEL;
+				mc.flags = orig_flags | MC_SUBMODEL;
 
 				// check each submodel in turn
 				for (auto submodel: submodel_vector) {
@@ -1406,9 +1405,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 			}
 
 			// Now complete base model collision checks that do not take into account rotating submodels.
-			mc.flags = copy_flags;
-			*mc.p0 = copy_p0;
-			*mc.p1 = copy_p1;
+			mc.flags = orig_flags;
+			mc.p0 = &orig_p0;
+			mc.p1 = &orig_p1;
 			mc.orient = &heavy_obj->orient;
 
 			// usual ship_ship collision test
@@ -2237,6 +2236,10 @@ static void asteroid_parse_section()
 
 	if (optional_string("$Max Speed:")) {
 		stuff_float(&asteroid_p->max_speed);
+	}
+
+	if (optional_string("$Rotational Velocity Multiplier:")) {
+		stuff_float(&asteroid_p->rotational_vel_multiplier);
 	}
 
 	if(optional_string("$Damage Type:")) {

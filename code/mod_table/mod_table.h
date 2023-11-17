@@ -155,6 +155,7 @@ extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
+extern bool Disable_internal_loadout_restoration_system;
 
 void mod_table_init();
 void mod_table_post_process();

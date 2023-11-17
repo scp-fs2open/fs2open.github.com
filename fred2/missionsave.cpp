@@ -3305,18 +3305,29 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_custom_data()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL) {
-		required_string_fred("#Custom Data");
-		parse_comments(2);
+	if (Mission_save_format != FSO_FORMAT_RETAIL && !The_mission.custom_data.empty()) {
+		if (optional_string_fred("#Custom Data", "#End")) {
+			parse_comments(2);
+		} else {
+			fout("\n\n#Custom Data");
+		}
 
 		if (The_mission.custom_data.size() > 0) {
-			required_string_fred("$begin_data_map");
-			parse_comments(2);
+			if (optional_string_fred("$begin_data_map")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n$begin_data_map");
+			}
+
 			for (const auto& pair : The_mission.custom_data) {
 				fout("\n+Val: %s %s", pair.first.c_str(), pair.second.c_str());
 			}
-			required_string_fred("$end_data_map");
-			parse_comments(2);
+
+			if (optional_string_fred("$end_data_map")) {
+				parse_comments();
+			} else {
+				fout("\n$end_data_map");
+			}
 		}
 	}
 
@@ -4713,7 +4724,7 @@ int CFred_mission_save::save_variables()
 	return err;
 }
 
-int CFred_mission_save::save_vector(vec3d &v)
+int CFred_mission_save::save_vector(const vec3d &v)
 {
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
 	return 0;
@@ -4777,7 +4788,7 @@ int CFred_mission_save::save_waypoints()
 					fout("\n+Alphacolor:");
 				}
 
-				color jn_color = jnp->GetColor();
+				const auto &jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 
@@ -4799,21 +4810,22 @@ int CFred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	bool first_wpt_list = true;
+	for (const auto &ii: Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");
 		required_string_fred("$Name:");
-		parse_comments((ii == Waypoint_lists.begin()) ? 1 : 2);
-		fout(" %s", ii->get_name());
+		parse_comments(first_wpt_list ? 1 : 2);
+		fout(" %s", ii.get_name());
 
 		required_string_fred("$List:");
 		parse_comments();
-		fout(" (\t\t;! %d points in list\n", ii->get_waypoints().size());
+		fout(" (\t\t;! %d points in list\n", ii.get_waypoints().size());
 
-		save_waypoint_list(&(*ii));
+		save_waypoint_list(&ii);
 		fout(")");
 
 		fso_comment_pop();
+		first_wpt_list = false;
 	}
 
 	fso_comment_pop(true);
@@ -4821,13 +4833,12 @@ int CFred_mission_save::save_waypoints()
 	return err;
 }
 
-int CFred_mission_save::save_waypoint_list(waypoint_list *wp_list)
+int CFred_mission_save::save_waypoint_list(const waypoint_list *wp_list)
 {
 	Assert(wp_list != NULL);
-	SCP_vector<waypoint>::iterator ii;
 
-	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii) {
-		vec3d *pos = ii->get_pos();
+	for (const auto &ii: wp_list->get_waypoints()) {
+		auto pos = ii.get_pos();
 		fout("\t( %f, %f, %f )\n", pos->xyz.x, pos->xyz.y, pos->xyz.z);
 	}
 
