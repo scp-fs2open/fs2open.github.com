@@ -851,6 +851,8 @@ void main_hall_do(float frametime)
 			break;
 	}
 
+	extern bool Campaign_room_no_campaigns;
+
 	// do any processing based upon what happened to the snazzy menu
 	switch (snazzy_action) {
 		case SNAZZY_OVER:
@@ -904,7 +906,6 @@ void main_hall_do(float frametime)
 					Game_mode = GM_NORMAL;
 
 					// see if we have a missing campaign and force the player to select a new campaign if so
-					extern bool Campaign_room_no_campaigns;
 					if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing &&
 						!Campaign_room_no_campaigns) {
 						int rc = popup(0,
@@ -1094,6 +1095,11 @@ void main_hall_do(float frametime)
 
 	gr_flip();
 	gr_reset_screen_scale();
+
+	// Log if we don't have a campaign set yet.
+	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
+		mprintf(("No valid campaign is currently selected for the active player!\n"));
+	}
 
 	// Display a popup if playermenu loaded a player file with a different version than expected
 	bool popup_shown = player_tips_controls();
