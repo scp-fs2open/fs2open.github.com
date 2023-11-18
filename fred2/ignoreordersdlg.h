@@ -10,6 +10,7 @@
 
 
 #include "ship/ship.h"
+#include "shipchecklistbox.h"
 
 // we won't have more than 9 checkboxes per dialog
 #define MAX_CHECKBOXES		10
@@ -31,7 +32,7 @@ public:
 
 	ship *m_shipp;
 	SCP_vector<size_t> m_orderList;
-	CCheckListBox m_ignore_orders_checklistbox;
+	ShipCheckListBox m_ignore_orders_checklistbox;
 
 // Dialog Data
 	//{{AFX_DATA(ignore_orders_dlg)

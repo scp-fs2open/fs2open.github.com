@@ -8,6 +8,7 @@
 
 #include "model/model.h"
 #include "parse/parselo.h"
+#include "shipchecklistbox.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // restrict_paths dialog
@@ -27,7 +28,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(restrict_paths)
 	enum { IDD = IDD_RESTRICT_PATHS };
-	CCheckListBox		m_path_list;
+	ShipCheckListBox		m_path_list;
 	//}}AFX_DATA
 
 
