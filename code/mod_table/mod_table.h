@@ -156,6 +156,7 @@ extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
+extern bool Contrails_use_absolute_speed;
 
 void mod_table_init();
 void mod_table_post_process();
