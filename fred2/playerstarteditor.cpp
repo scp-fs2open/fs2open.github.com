@@ -382,12 +382,14 @@ BOOL player_start_editor::OnCommand(WPARAM wParam, LPARAM lParam)
 	id = LOWORD(wParam);
 	switch(id){
 	case ID_TEAM_1:
+		UpdateData();
 		previous_team = selected_team; 
 		selected_team = 0;
 		reset_controls();
 		break;
 
 	case ID_TEAM_2:
+		UpdateData();
 		previous_team = selected_team; 
 		selected_team = 1;
 		reset_controls();
@@ -405,6 +407,9 @@ BOOL player_start_editor::OnCommand(WPARAM wParam, LPARAM lParam)
 // ship list changed
 void player_start_editor::OnSelchangeShipList() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	int selected;
 	int si_index;
 	char ship_name[255] = "";
@@ -465,7 +470,10 @@ void player_start_editor::OnSelchangeShipList()
 // ship variable list changed
 void player_start_editor::OnSelchangeShipVariablesList() 
 {
-	int selection; 
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
+	int selection;
 
 	// If the variable list is selected the ship list should be deselected
 	m_ship_list.SetCurSel(-1);
@@ -518,6 +526,9 @@ void player_start_editor::OnSelchangeShipVariablesList()
 
 void player_start_editor::OnSelchangeShipVariablesCombo() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	// Get the new selection
 	char variable_name[TOKEN_LENGTH]; 
 	bool update_static_pool = false; 
@@ -570,6 +581,9 @@ void player_start_editor::OnSelchangeShipVariablesCombo()
 // weapon list changed
 void player_start_editor::OnSelchangeWeaponList() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	int selected;
 	int wi_index;
 	char weapon_name[255] = "";
@@ -629,6 +643,9 @@ void player_start_editor::OnSelchangeWeaponList()
 
 void player_start_editor::OnSelchangeWeaponVariablesList() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	int selection; 
 
 	// deselect the other list
@@ -681,6 +698,9 @@ void player_start_editor::OnSelchangeWeaponVariablesList()
 
 void player_start_editor::OnSelchangeWeaponVariablesCombo() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	// Get the new selection
 	char variable_name[TOKEN_LENGTH]; 
 	bool update_static_pool = false; 
@@ -766,7 +786,9 @@ void player_start_editor::OnCancel()
 void player_start_editor::OnOK()
 {
 	int i, idx;
-	int num_choices; 
+	int num_choices;
+
+	UpdateData();
 	
 	int num_sexp_variables = sexp_variable_count();	
 
