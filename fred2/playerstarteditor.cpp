@@ -87,7 +87,7 @@ END_MESSAGE_MAP()
 BOOL player_start_editor::OnInitDialog() 
 {
 	int i, j;
-	int idx;	
+	int idx;
 
 	// initialize ship pool data
 	memset(static_ship_pool, -1, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
@@ -195,6 +195,13 @@ BOOL player_start_editor::OnInitDialog()
 	m_spin1.SetRange(0, 99);
 	m_pool_spin.SetRange(0, 9999);
 	m_delay_spin.SetRange(0, 30);	
+
+	// fix overlapping checkboxes issue
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_ship_list.SetFont(GetFont());
+	m_weapon_list.SetFont(GetFont());
+	m_ship_variable_list.SetFont(GetFont());
+	m_weapon_variable_list.SetFont(GetFont());
 
 	// regenerate all the controls
 	reset_controls();

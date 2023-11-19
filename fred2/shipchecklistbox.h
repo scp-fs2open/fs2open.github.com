@@ -16,7 +16,6 @@ class ShipCheckListBox : public CCheckListBox
 {
 public:
 	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
-	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 
 protected:
 	//{{AFX_MSG(CCheckListBox)

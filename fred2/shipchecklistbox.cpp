@@ -27,23 +27,6 @@ BOOL ShipCheckListBox::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd,
 	return b;
 }
 
-// prevent checkboxes from overlapping
-// see https://stackoverflow.com/questions/3147958/mfc-cchecklistbox-items-overlap
-void ShipCheckListBox::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
-{
-	// set item height once:
-	if ((GetStyle() & (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS)) ==
-	                  (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS) && m_cyText == 0)
-	{
-		SetItemHeight(0, CalcMinimumItemHeight() + 2);
-	}
-
-	// add some space between box and string: 
-	lpDrawItemStruct->rcItem.left += 1;
-
-	CCheckListBox::DrawItem(lpDrawItemStruct);
-}
-
 void ShipCheckListBox::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 	if (nChar == VK_SPACE)
