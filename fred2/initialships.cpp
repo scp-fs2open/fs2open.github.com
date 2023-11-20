@@ -57,6 +57,10 @@ BOOL InitialShips::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	// fix overlapping checkboxes issue
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_initial_list.SetFont(GetFont());
+
 	m_list_count = 0;
 	// change the window text, get the index into the array, and check the box for either the ships
 	// or weapons

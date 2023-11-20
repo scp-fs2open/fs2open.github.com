@@ -26,10 +26,10 @@ public:
 	CSpinButtonCtrl	m_pool_spin;
 	CSpinButtonCtrl	m_delay_spin;
 	CSpinButtonCtrl	m_spin1;
-	CCheckListBox		m_ship_list;
-	CCheckListBox		m_weapon_list;	
-	CCheckListBox		m_ship_variable_list;
-	CCheckListBox		m_weapon_variable_list;	
+	ShipCheckListBox	m_ship_list;
+	ShipCheckListBox	m_weapon_list;
+	ShipCheckListBox	m_ship_variable_list;
+	ShipCheckListBox	m_weapon_variable_list;
 	int					m_delay;	
 	int					m_weapon_pool;
 	int					m_ship_pool;
