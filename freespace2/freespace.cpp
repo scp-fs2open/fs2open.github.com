@@ -5538,7 +5538,7 @@ void game_leave_state( int old_state, int new_state )
 			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
 			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-		scripting::hooks::OnStateEndHook->run(script_param_list);
+		scripting::hooks::OnStateEndHook->run(std::move(script_param_list));
 	}
 }
 

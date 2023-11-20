@@ -2082,7 +2082,7 @@ ADE_FUNC(createPreset,
 
 	SCP_string name = preset;
 
-	return ade_set_args(L, "b", control_config_create_new_preset(name));
+	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name)));
 }
 
 ADE_FUNC(undoLastChange,

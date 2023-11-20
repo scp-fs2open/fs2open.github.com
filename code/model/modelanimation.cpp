@@ -1541,10 +1541,10 @@ namespace animation {
 			//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 			if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
 				auto subsysBase = sip->animations.getSubmodel(sp->subobj_name, sip->name, false);
-				auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(subsysBase, angle.h));
+				auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(std::move(subsysBase), angle.h));
 
 				auto subsysBarrel = sip->animations.getSubmodel(sp->subobj_name, sip->name, true);
-				auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(subsysBarrel, angle.p));
+				auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(std::move(subsysBarrel), angle.p));
 
 				auto rot = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
 				rot->addSegment(std::move(rotBase));
@@ -1624,7 +1624,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(std::move(subsys), target, velocity, tl::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;
