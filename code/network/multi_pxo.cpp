@@ -263,22 +263,9 @@ void multi_pxo_set_status_text(const char *txt);
 // blit the status text
 void multi_pxo_blit_status_text();
 
-
-// channel related stuff -------------------------------------------
-#define MAX_CHANNEL_NAME_LEN			32
-#define MAX_CHANNEL_DESCRIPT_LEN		120
-
 // some convenient macros
-#define SWITCHING_CHANNELS()			(Multi_pxo_channel_switch.num_users != -1)
-#define ON_CHANNEL()						(Multi_pxo_channel_current.num_users != -1)
-
-typedef struct pxo_channel {
-	pxo_channel *next,*prev;							// next and previous items in the list
-	char name[MAX_CHANNEL_NAME_LEN+1];				// name 
-	char desc[MAX_CHANNEL_DESCRIPT_LEN+1];			// description
-	short num_users;										// # users, or -1 if not in use			
-	short num_servers;									// the # of servers registered on this channel
-} pxo_channel;
+#define SWITCHING_CHANNELS() (Multi_pxo_channel_switch.num_users != -1)
+#define ON_CHANNEL() (Multi_pxo_channel_current.num_users != -1)
 
 // last channel we were on before going to the game list screen
 char Multi_pxo_channel_last[MAX_CHANNEL_NAME_LEN+1] = "";
@@ -320,16 +307,15 @@ int Multi_pxo_max_chan_display[GR_NUM_RESOLUTIONS] = {
 
 UI_BUTTON Multi_pxo_channel_button;
 
-// head of the list of available (displayed) channels
-pxo_channel *Multi_pxo_channels = NULL;
-int Multi_pxo_channel_count = 0;
+// the list of available (displayed) channels
+SCP_vector<pxo_channel> Multi_pxo_channels_vec;
 
 // item we're going to start displaying at
-pxo_channel *Multi_pxo_channel_start = NULL;
+int Multi_pxo_channel_start = 0;
 int Multi_pxo_channel_start_index = -1;
 
 // items we've currently got selected
-pxo_channel *Multi_pxo_channel_select = NULL;
+int Multi_pxo_channel_select = 0;
 
 // channel we're currently connected to, num_users == -1, if we're not connected
 pxo_channel Multi_pxo_channel_current;
@@ -347,10 +333,10 @@ void multi_pxo_clear_channels();
 void multi_pxo_make_channels(char *chan_str);
 
 // create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
-pxo_channel *multi_pxo_add_channel(char *name, pxo_channel **list);
+pxo_channel *multi_pxo_add_channel(char *name);
 
 // lookup a channel with the specified name
-pxo_channel *multi_pxo_find_channel(char *name, pxo_channel *list);
+pxo_channel *multi_pxo_find_channel(char *name);
 
 // process the channel list (select, etc)
 void multi_pxo_process_channels();
@@ -455,9 +441,6 @@ void multi_pxo_scroll_players_up();
 
 // scroll player list down
 void multi_pxo_scroll_players_down();
-
-// get the absolute index of the displayed items which our currently selected one is
-int multi_pxo_get_select_index();
 
 DCF(players, "Adds the specified number of bogus players to the PXO listing (Multiplayer)")
 {
@@ -1813,16 +1796,16 @@ void multi_pxo_button_pressed(int n)
 
 	case MULTI_PXO_JOIN:
 		// if there are no channels to join, let the user know
-		if((Multi_pxo_channel_count == 0) || (Multi_pxo_channels == NULL)){
+		if(Multi_pxo_channels_vec.size() == 0){
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			multi_pxo_notify_add(XSTR("No channels!",944));
 			break;
 		}
 
 		// if we're not already trying to join, allow this
-		if(!SWITCHING_CHANNELS() && (Multi_pxo_channel_select != NULL)){
+		if(!SWITCHING_CHANNELS() && (Multi_pxo_channel_select >= 0)){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			multi_pxo_join_channel(Multi_pxo_channel_select);
+			multi_pxo_join_channel(&Multi_pxo_channels_vec[Multi_pxo_channel_select]);
 		} else {
 			multi_pxo_notify_add(XSTR("Already trying to join a channel!",945));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -2124,7 +2107,7 @@ void multi_pxo_api_process()
 
 				// increase the player count
 				if (ON_CHANNEL() ) {
-					lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name, Multi_pxo_channels);
+					lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 
 					if (lookup != NULL)
 						lookup->num_users++;
@@ -2142,7 +2125,7 @@ void multi_pxo_api_process()
 
 				// decrease the player count
 				if ( ON_CHANNEL() ) {
-					lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name,Multi_pxo_channels);
+					lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 
 					if (lookup != NULL)
 						lookup->num_users--;
@@ -2172,11 +2155,11 @@ void multi_pxo_api_process()
 				strcpy_s(Multi_pxo_channel_current.name, cmd->data);
 
 				// if we don't already have this guy on the list, add him
-				lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name, Multi_pxo_channels);
+				lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 	
 				if (lookup == NULL) {
 					// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
-					lookup = multi_pxo_add_channel(Multi_pxo_channel_current.name, &Multi_pxo_channels);
+					lookup = multi_pxo_add_channel(Multi_pxo_channel_current.name);
 				}
 
 				// set the user count to be 0
@@ -2262,7 +2245,7 @@ void multi_pxo_channel_count_update(char *name, int count)
 	pxo_channel *lookup;
 	
 	// lookup the channel name on the normal list	
-	lookup = multi_pxo_find_channel(name,Multi_pxo_channels);
+	lookup = multi_pxo_find_channel(name);
 
 	if (lookup != NULL) {
 		lookup->num_servers = (ushort)count;
@@ -2320,35 +2303,17 @@ void multi_pxo_get_channels()
  */
 void multi_pxo_clear_channels()
 {
-	pxo_channel *moveup,*backup;
-	
 	// only clear a non-null list
-	if(Multi_pxo_channels != NULL){		
-		// otherwise
-		moveup = Multi_pxo_channels;
-		backup = NULL;
-		if(moveup != NULL){
-			do {			
-				backup = moveup;
-				moveup = moveup->next;			
-		
-				// free the struct itself
-				vm_free(backup);
-				backup = NULL;
-			} while(moveup != Multi_pxo_channels);
-			Multi_pxo_channels = NULL;
-		}	
+	if(Multi_pxo_channels_vec.size() > 0){		
+		Multi_pxo_channels_vec.clear();
 
-		// head of the list of available channels
-		Multi_pxo_channels = NULL;
-		Multi_pxo_channel_count = 0;
 
 		// item we're going to start displaying at
-		Multi_pxo_channel_start = NULL;
+		Multi_pxo_channel_start = 0;
 		Multi_pxo_channel_start_index = -1;
 
 		// items we've currently got selected
-		Multi_pxo_channel_select = NULL;
+		Multi_pxo_channel_select = 0;
 	}	
 }
 
@@ -2390,14 +2355,14 @@ void multi_pxo_make_channels(char *chan_str)
 		// if the # of users is > 0, or its not an autojoin, place it on the display list
 		if((num_users > 0) || !multi_pxo_is_autojoin(name_tok)){
 			// see if it exists already, and if so, just update the user count
-			lookup = multi_pxo_find_channel(name_tok,Multi_pxo_channels);
+			lookup = multi_pxo_find_channel(name_tok);
 			
 			if(lookup != NULL){
 				lookup->num_users = (short)num_users;
 			}
 			// add the channel
 			else {
-				res = multi_pxo_add_channel(name_tok,&Multi_pxo_channels);
+				res = multi_pxo_add_channel(name_tok);
 				if(res != NULL){
 					res->num_users = (short)num_users;
 					strcpy_s(res->desc,desc_tok);
@@ -2419,10 +2384,10 @@ void multi_pxo_make_channels(char *chan_str)
 
 	// if we don't already have this guy on the list, add him
 	if(ON_CHANNEL()){
-		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name,Multi_pxo_channels);
+		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 		if(lookup == NULL){
 			// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
-			multi_pxo_add_channel(Multi_pxo_channel_current.name,&Multi_pxo_channels);
+			multi_pxo_add_channel(Multi_pxo_channel_current.name);
 		}
 	}
 }
@@ -2430,56 +2395,31 @@ void multi_pxo_make_channels(char *chan_str)
 /**
  * Create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
  */
-pxo_channel *multi_pxo_add_channel(char *name,pxo_channel **list)
+pxo_channel *multi_pxo_add_channel(char *name)
 {
-	pxo_channel *new_channel;
-
-	// try and allocate a new pxo_channel struct
-	new_channel = (pxo_channel *)vm_malloc(sizeof(pxo_channel));
-	if ( new_channel == NULL ) {
-		nprintf(("Network", "Cannot allocate space for new pxo_channel structure\n"));
-		return NULL;
-	}	
-	memset(new_channel,0,sizeof(pxo_channel));
-	// try and allocate a string for the channel name
-	strncpy(new_channel->name,name,MAX_CHANNEL_NAME_LEN);	
-
-	// insert it on the list
-	if ( *list != NULL ) {
-		new_channel->next = (*list)->next;
-		new_channel->next->prev = new_channel;
-		(*list)->next = new_channel;
-		new_channel->prev = *list;
-	} else {
-		*list = new_channel;
-		(*list)->next = (*list)->prev = *list;
-	}
-		
-	Multi_pxo_channel_count++;
-	return new_channel;
+	pxo_channel channel = {'\0', '\0', -1, 0};
+	strcpy_s(channel.name, name);
+	Multi_pxo_channels_vec.push_back(channel);
+	return &Multi_pxo_channels_vec.back();
 }
 
 /**
  * Lookup a channel with the specified name
  */
-pxo_channel *multi_pxo_find_channel(char *name,pxo_channel *list)
+pxo_channel *multi_pxo_find_channel(char *name)
 {
-	pxo_channel *moveup;
-
-	// look the sucker up
-	moveup = list;
-	if(moveup == NULL){
-		return NULL;
+	if(Multi_pxo_channels_vec.size() == 0){
+		return nullptr;
 	} 
-	do {
-		if(!stricmp(name,moveup->name)){
-			return moveup;
+
+	for (size_t i = 0; i < Multi_pxo_channels_vec.size(); i++) {
+		pxo_channel channel = Multi_pxo_channels_vec[i];
+		if (!stricmp(name, channel.name)) {
+			return &Multi_pxo_channels_vec[i];
 		}
+	}
 
-		moveup = moveup->next;
-	} while((moveup != list) && (moveup != NULL));
-
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -2491,20 +2431,20 @@ void multi_pxo_process_channels()
 	int idx;
 	
 	// the first part of this function works under the assumption that the list has been initialized.
-	if (Multi_pxo_channels != NULL) {
+	if (Multi_pxo_channels_vec.size() > 0) {
 
 		// if we don't have a start item
-		if(Multi_pxo_channel_start == NULL){
-			Multi_pxo_channel_start = Multi_pxo_channels;
+		if (Multi_pxo_channel_start < 0) {
+			Multi_pxo_channel_start = 0;
 			Multi_pxo_channel_start_index = 0;
 		} 
 
 		// if we don't have a selected item
-		if(Multi_pxo_channel_select == NULL){
-			Multi_pxo_channel_select = Multi_pxo_channels;
+		if(Multi_pxo_channel_select < 0){
+			Multi_pxo_channel_select = 0;
 
 			// set the text
-			multi_pxo_set_status_text(Multi_pxo_channel_select->desc);
+			multi_pxo_set_status_text(Multi_pxo_channels_vec[Multi_pxo_channel_select].desc);
 		}
 
 		// if the "switch" delay timestamp is set, see if it has expired
@@ -2520,14 +2460,14 @@ void multi_pxo_process_channels()
 			item_index = my / (gr_get_font_height() + 1);
 
 			// select the item if possible
-			if((item_index + Multi_pxo_channel_start_index) < Multi_pxo_channel_count){
+			if((item_index + Multi_pxo_channel_start_index) < static_cast<int>(Multi_pxo_channels_vec.size())){
 				Multi_pxo_channel_select = Multi_pxo_channel_start;
 				for(idx=0;idx<item_index;idx++){
-					Multi_pxo_channel_select = Multi_pxo_channel_select->next;
+					Multi_pxo_channel_select++;
 				}
 
 				// set the text
-				multi_pxo_set_status_text(Multi_pxo_channel_select->desc);
+				multi_pxo_set_status_text(Multi_pxo_channels_vec[Multi_pxo_channel_select].desc);
 			}
 		}
 	}
@@ -2560,29 +2500,23 @@ void multi_pxo_process_channels()
  */
 void multi_pxo_channel_refresh_servers()
 {
-	pxo_channel *lookup;
 	filter_game_list_struct filter;
 
-	// traverse the list of existing channels we know about and query the game tracker about them
-	lookup = Multi_pxo_channels;
-
-	if (lookup == NULL) {
+	if (Multi_pxo_channels_vec.size() == 0) {
 		return;
 	}
 
-	do {
-		if ( strlen(lookup->name) ) {
+	// traverse the list of existing channels we know about and query the game tracker about them
+	for (auto channel : Multi_pxo_channels_vec) {
+		if (strlen(channel.name)) {
 			// copy in the info
 			memset(&filter, 0, sizeof(filter_game_list_struct));
-			SDL_strlcpy(filter.channel, lookup->name, SDL_arraysize(filter.channel));
+			SDL_strlcpy(filter.channel, channel.name, SDL_arraysize(filter.channel));
 
 			// send the request
 			RequestGameCountWithFilter(&filter);
 		}
-
-		// next item
-		lookup = lookup->next;
-	} while ( (lookup != NULL) && (lookup != Multi_pxo_channels) );
+	}
 
 	// record the time
 	Multi_pxo_channel_server_refresh = f2fl(timer_get_fixed_seconds());
@@ -2610,7 +2544,6 @@ void multi_pxo_channel_refresh_current()
  */
 void multi_pxo_blit_channels()
 {
-	pxo_channel *moveup;
 	char chan_name[MAX_PXO_TEXT_LEN];
 	char chan_users[15];
 	char chan_servers[15];
@@ -2621,13 +2554,12 @@ void multi_pxo_blit_channels()
 	// blit as many channels as we can
 	disp_count = 0;
 	y_start = Multi_pxo_chan_coords[gr_screen.res][1];
-	moveup = Multi_pxo_channel_start;
-	if(moveup == NULL){
+	if (Multi_pxo_channel_start < 0) {
 		return;
 	}
-	do {		
+	for (size_t i = 0; i < Multi_pxo_channels_vec.size(); i++) {		
 		// if this is the currently selected item, highlight it
-		if(moveup == Multi_pxo_channel_select){
+		if(i == Multi_pxo_channel_select){
 			gr_set_color_fast(&Color_bright);
 		}
 		// otherwise draw it normally
@@ -2635,24 +2567,26 @@ void multi_pxo_blit_channels()
 			gr_set_color_fast(&Color_normal);
 		}
 
+		pxo_channel *channel = &Multi_pxo_channels_vec[i];
+
 		// get the # of users on the channel
 		memset(chan_users, 0, 15);
-		sprintf(chan_users, "%d", moveup->num_users);
+		sprintf(chan_users, "%d", channel->num_users);
 
 		// get the width of the user count string
-		gr_get_string_size(&user_w, NULL, chan_users);
+		gr_get_string_size(&user_w, nullptr, chan_users);
 
 		// get the # of servers on the channel
 		memset(chan_servers,0,15);
-		sprintf(chan_servers, "%d", moveup->num_servers);
+		sprintf(chan_servers, "%d", channel->num_servers);
 
 		// get the width of the user count string
-		gr_get_string_size(&server_w, NULL, chan_servers);
+		gr_get_string_size(&server_w, nullptr, chan_servers);
 
 		// make sure the name fits
 		memset(chan_name, 0, MAX_PXO_TEXT_LEN);
-		Assert(moveup->name);
-		strcpy_s(chan_name,moveup->name);
+		Assert(channel->name);
+		strcpy_s(chan_name,channel->name);
 		font::force_fit_string(chan_name, MAX_PXO_TEXT_LEN-1, Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_PLAYERS_COLUMN]);
 
 		// blit the strings
@@ -2665,9 +2599,7 @@ void multi_pxo_blit_channels()
 		disp_count++;
 		y_start += line_height;		
 
-		// next item
-		moveup = moveup->next;
-	} while((moveup != Multi_pxo_channels) && (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res])));
+	};
 }
 
 /**
@@ -2676,13 +2608,13 @@ void multi_pxo_blit_channels()
 void multi_pxo_scroll_channels_up()
 {		
 	// if we're already at the head of the list, do nothing
-	if((Multi_pxo_channel_start == NULL) || (Multi_pxo_channel_start == Multi_pxo_channels)){
+	if(Multi_pxo_channel_start == 0){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	
 	// otherwise move up one
-	Multi_pxo_channel_start = Multi_pxo_channel_start->prev;
+	Multi_pxo_channel_start--;
 	Multi_pxo_channel_start_index--;
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
@@ -2693,19 +2625,19 @@ void multi_pxo_scroll_channels_up()
 void multi_pxo_scroll_channels_down()
 {
 	// if we're already at the tail of the list, do nothing
-	if((Multi_pxo_channel_start == NULL) || (Multi_pxo_channel_start->next == Multi_pxo_channels)){
+	if(Multi_pxo_channel_start == static_cast<int>(Multi_pxo_channels_vec.size() -1)){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// if we can't scroll further without going past the end of the viewable list, don't
-	if((Multi_pxo_channel_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= Multi_pxo_channel_count)){
+	if((Multi_pxo_channel_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= static_cast<int>(Multi_pxo_channels_vec.size()))){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise move down one
-	Multi_pxo_channel_start = Multi_pxo_channel_start->next;
+	Multi_pxo_channel_start++;
 	Multi_pxo_channel_start_index++;
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
@@ -2736,7 +2668,7 @@ void multi_pxo_join_channel(pxo_channel *chan)
 	case 0 :
 		// decrement the count of our current channel
 		pxo_channel *lookup;
-		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name,Multi_pxo_channels);
+		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 		if(lookup != NULL){
 			lookup->num_users--;
 		}
@@ -2810,10 +2742,10 @@ void multi_pxo_handle_channel_change()
 
 		// if we don't already have this guy on the list, add him
 		pxo_channel *lookup;
-		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name,Multi_pxo_channels);
+		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 		if(lookup == NULL){
 			// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
-			lookup = multi_pxo_add_channel(Multi_pxo_channel_current.name,&Multi_pxo_channels);
+			lookup = multi_pxo_add_channel(Multi_pxo_channel_current.name);
 		}
 
 		// set the user count to be 1 (just me)
@@ -4261,7 +4193,7 @@ int multi_pxo_find_popup()
 		// if we have a channel, join it now if possible
 		if(Multi_pxo_find_channel[0] != '\0'){
 			pxo_channel *lookup;
-			lookup = multi_pxo_find_channel(Multi_pxo_find_channel,Multi_pxo_channels);
+			lookup = multi_pxo_find_channel(Multi_pxo_find_channel);
 			
 			// if we couldn't find it, don't join
 			if(lookup != NULL){				

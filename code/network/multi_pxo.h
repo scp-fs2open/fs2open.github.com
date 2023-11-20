@@ -37,6 +37,19 @@
 #define MULTI_PXO_GAME_TRACKER_IP		"gt.pxo.com"
 #define MULTI_PXO_CHAT_IP					"chat.pxo.net"
 
+// channel related stuff -------------------------------------------
+#define MAX_CHANNEL_NAME_LEN 32
+#define MAX_CHANNEL_DESCRIPT_LEN 120
+
+typedef struct pxo_channel {
+	char name[MAX_CHANNEL_NAME_LEN + 1];     // name
+	char desc[MAX_CHANNEL_DESCRIPT_LEN + 1]; // description
+	short num_users;                         // # users, or -1 if not in use
+	short num_servers;                       // the # of servers registered on this channel
+} pxo_channel;
+
+extern SCP_vector<pxo_channel> Multi_pxo_channels_vec;
+
 // ----------------------------------------------------------------------------------------------------
 // PXO FUNCTIONS
 //
