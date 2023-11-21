@@ -64,7 +64,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1790 // This is the next available ID
+// #define XSTR_SIZE	1808 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -118,7 +118,7 @@ int Language_choice_index = -1;
 
 auto LanguageOption = options::OptionBuilder<int>("Game.Language",
 							   std::pair<const char*, int>{"Select Language", 1143},
-							   std::pair<const char*, int>{"The language to display", 1789})
+							   std::pair<const char*, int>{"The language to display", 1807})
 							   .enumerator(language_enumerator)
 							   .display(language_display)
 							   .bind_to_once(&Language_choice_index)
