@@ -50,6 +50,11 @@ typedef struct pxo_channel {
 
 extern SCP_vector<pxo_channel> Multi_pxo_channels_vec;
 
+// player related stuff -------------------------------------------
+#define MAX_PLAYER_NAME_LEN 32
+
+extern SCP_vector<SCP_string> Multi_pxo_players_vec;
+
 // ----------------------------------------------------------------------------------------------------
 // PXO FUNCTIONS
 //

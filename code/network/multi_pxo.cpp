@@ -368,15 +368,6 @@ void multi_pxo_channel_refresh_servers();
 // refresh current channel server count
 void multi_pxo_channel_refresh_current();
 
-
-// player related stuff -------------------------------------------
-#define MAX_PLAYER_NAME_LEN		32
-
-typedef struct player_list {
-	player_list *next,*prev;
-	char name[MAX_PLAYER_NAME_LEN+1];
-} player_list;
-
 // channel list region
 int Multi_pxo_player_coords[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
@@ -407,28 +398,27 @@ const char *Multi_pxo_player_slider_name[GR_NUM_RESOLUTIONS] = {
 	"2_slider"			// GR_1024
 };
 
-// head of the list of players in this channel
-player_list *Multi_pxo_players = NULL;
-int Multi_pxo_player_count = 0;
+// the list of players in the current channel
+SCP_vector<SCP_string> Multi_pxo_players_vec;
 
 // item we're going to start displaying at
-player_list *Multi_pxo_player_start = NULL;
-// int Multi_pxo_player_start_index = -1;
+int Multi_pxo_player_start = 0;
+int Multi_pxo_player_start_index = -1;
 
 // items we've currently got selected
-player_list *Multi_pxo_player_select = NULL;
+int Multi_pxo_player_select = -1;
 
 // clear the old player list
 void multi_pxo_clear_players();
 
-// create a new player with the given name and place it on the player list, return a pointer or NULL on fail
-player_list *multi_pxo_add_player(char *name);
+// create a new player with the given name and place it on the player list
+void multi_pxo_add_player(char *name);
 
 // remove a player with the given name
 void multi_pxo_del_player(char *name);
 
 // try and find a player with the given name, return a pointer to his entry (or NULL)
-player_list *multi_pxo_find_player(char *name);
+int multi_pxo_find_player(const char *name);
 
 // process the player list (select, etc)
 void multi_pxo_process_players();
@@ -867,7 +857,7 @@ int Multi_pxo_pinfo_stats_spacing[MULTI_PXO_PINFO_NUM_LABELS] = {
 int multi_pxo_pinfo_cond();
 
 // return 1 if Multi_pxo_pinfo was successfully filled in, 0 otherwise
-int multi_pxo_pinfo_get(char *name);
+int multi_pxo_pinfo_get(const char *name);
 
 // fire up the stats view popup
 void multi_pxo_pinfo_show();
@@ -1846,9 +1836,9 @@ void multi_pxo_button_pressed(int n)
 		char stats[MAX_PXO_TEXT_LEN];
 
 		// if we have a guy selected, try and get his info
-		if(Multi_pxo_player_select != NULL){
+		if((Multi_pxo_player_select >= 0) && (Multi_pxo_player_select < static_cast<int>(Multi_pxo_players_vec.size()))){
 			// if we successfully got info for this guy
-			if(multi_pxo_pinfo_get(Multi_pxo_player_select->name)){				
+			if (multi_pxo_pinfo_get(Multi_pxo_players_vec[Multi_pxo_player_select].c_str())) {				
 				// convert stats to player
 				multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
 				SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
@@ -1859,7 +1849,9 @@ void multi_pxo_button_pressed(int n)
 			// if we didn't get stats for this guy.
 			else {
 				memset(stats,0,MAX_PXO_TEXT_LEN);
-				sprintf(stats,XSTR("Could not get stats for %s\n(May not be a registered pilot)",946),Multi_pxo_player_select->name);
+				sprintf(stats,
+					XSTR("Could not get stats for %s\n(May not be a registered pilot)", 946),
+					Multi_pxo_players_vec[Multi_pxo_player_select].c_str());
 				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,stats);
 			}
 		} else {
@@ -2102,7 +2094,7 @@ void multi_pxo_api_process()
 		{			
 			case CC_USER_JOINING:			
 				// add a user, if he doesn't already exist
-				if (multi_pxo_find_player(cmd->data) == NULL)
+				if (multi_pxo_find_player(cmd->data) < 0)
 					multi_pxo_add_player(cmd->data);
 
 				// increase the player count
@@ -2190,16 +2182,15 @@ void multi_pxo_api_process()
  */
 void multi_pxo_process_nick_change(char *data)
 {
-	char *from, *to;
-	player_list *lookup;	
+	char *from, *to;	
 	
 	// get the new string
 	from = strtok(data," ");
 	to = strtok(NULL,"");
 	if((from != NULL) && (to != NULL)){
-		lookup = multi_pxo_find_player(from);
-		if(lookup != NULL){
-			strcpy_s(lookup->name,to);
+		int ply = multi_pxo_find_player(from);
+		if(ply > 0){
+			Multi_pxo_players_vec[ply] = to;
 
 			// if this is also my nick, change it
 			if(!stricmp(Multi_pxo_nick,from)){
@@ -2770,61 +2761,20 @@ void multi_pxo_handle_channel_change()
  */
 void multi_pxo_clear_players()
 {
-	player_list *moveup,*backup;
-	
-	// if the list is null, don't free it up
-	if(Multi_pxo_players != NULL){		
-		// otherwise
-		moveup = Multi_pxo_players;
-		backup = NULL;
-		if(moveup != NULL){
-			do {			
-				backup = moveup;
-				moveup = moveup->next;			
-		
-				// free the struct itself
-				vm_free(backup);
-				backup = NULL;
-			} while(moveup != Multi_pxo_players);
-			Multi_pxo_players = NULL;
-		}	
-	}
-
-	Multi_pxo_player_start = NULL;	
-	Multi_pxo_player_select = NULL;
+	Multi_pxo_players_vec.clear();
+	Multi_pxo_player_start = 0;	
+	Multi_pxo_player_select = -1;
 }
 
 /**
  * Create a new player with the given name and place it on the player list, return a pointer or NULL on fail
  */
-player_list *multi_pxo_add_player(char *name)
+void multi_pxo_add_player(char *name)
 {
-	player_list *new_player;
+	SCP_string new_player = name;
+	new_player.resize(MAX_PLAYER_NAME_LEN);
 
-	// try and allocate a new player_list struct
-	new_player = (player_list *)vm_malloc(sizeof(player_list));
-	if ( new_player == NULL ) {
-		nprintf(("Network", "Cannot allocate space for new player_list structure\n"));
-		return NULL;
-	}	
-	// try and allocate a string for the channel name
-	strncpy(new_player->name, name, MAX_PLAYER_NAME_LEN);	
-
-	// insert it on the list
-	if ( Multi_pxo_players != NULL ) {
-		new_player->next = Multi_pxo_players->next;
-		new_player->next->prev = new_player;
-		Multi_pxo_players->next = new_player;
-		new_player->prev = Multi_pxo_players;		
-	} else {
-		Multi_pxo_players = new_player;
-		Multi_pxo_players->next = Multi_pxo_players->prev = Multi_pxo_players;
-	}
-
-	// new player
-	Multi_pxo_player_count++;
-		
-	return new_player;
+	Multi_pxo_players_vec.push_back(new_player);
 }
 
 /**
@@ -2832,92 +2782,38 @@ player_list *multi_pxo_add_player(char *name)
  */
 void multi_pxo_del_player(char *name)
 {
-	player_list *lookup;
-
-	// try and find this guy
-	lookup = Multi_pxo_players;
-	if(lookup == NULL){
+	if (Multi_pxo_players_vec.size() == 0) {
 		return;
 	}
-	do {
-		// if we found a match, delete it
-		if(!stricmp(name,lookup->name)){			
-			// if this is the only item on the list, free stuff up
-			if(lookup->next == lookup){
-				Assert(lookup == Multi_pxo_players);
-				vm_free(lookup);
-				Multi_pxo_players = NULL;
-				multi_pxo_clear_players();
-			}
-			// otherwise, just delete it 
-			else {
-				lookup->next->prev = lookup->prev;
-				lookup->prev->next = lookup->next;				
-				
-				// if this was our selected item, unselect it
-				if((lookup == Multi_pxo_player_select) && (Multi_pxo_player_select != NULL)){
-					Multi_pxo_player_select = Multi_pxo_player_select->next;
-				}
 
-				// if this was our point to start viewing from, select another
-				if(lookup == Multi_pxo_player_start){
-					// if this is the head of the list, move up one
-					if(Multi_pxo_players == lookup){
-						Multi_pxo_player_start = Multi_pxo_player_start->next;
-						// Multi_pxo_player_start_index = 0;
-					}
-					// otherwise move back
-					else {
-						Multi_pxo_player_start = Multi_pxo_player_start->prev;
-					}
-				}
-
-				// if this is the head of the list, move it up
-				if(lookup == Multi_pxo_players){
-					Multi_pxo_players = Multi_pxo_players->next;					
-				}
-
-				// free the item up
-				lookup->next = NULL;
-				lookup->prev = NULL;
-				vm_free(lookup);
-			}	
-
-			// new player
-			Multi_pxo_player_count--;
-			Assert(Multi_pxo_player_count >= 0);
-				
-			// we're done now
-			return;
+	// find and erase the player from the list
+	for (size_t i = 0; i < Multi_pxo_players_vec.size(); i++) {
+		if (!stricmp(Multi_pxo_players_vec[i].c_str(), name)) {
+			Multi_pxo_players_vec.erase(Multi_pxo_players_vec.begin() + i);
+			break;
 		}
+	}
 
-		// next item
-		lookup = lookup->next;
-	} while((lookup != NULL) && (lookup != Multi_pxo_players));
+	return;
 }
 
 /**
  * Try and find a player with the given name, return a pointer to his entry (or NULL)
  */
-player_list *multi_pxo_find_player(char *name)
+int multi_pxo_find_player(const char *name)
 {
-	player_list *lookup;
+	if (Multi_pxo_players_vec.size() == 0) {
+		return -1;
+	}
 
-	// look through all players
-	lookup = Multi_pxo_players;
-	if(lookup == NULL){
-		return NULL;
-	} 
-	do {	
-		if(!stricmp(name,lookup->name)){
-			return lookup;
+	for (int i = 0; i < static_cast<int>(Multi_pxo_players_vec.size()); i++) {
+		if (!stricmp(Multi_pxo_players_vec[i].c_str(), name)) {
+			Multi_pxo_players_vec.erase(Multi_pxo_players_vec.begin() + i);
+			return i;
 		}
+	}
 
-		lookup = lookup->next;
-	} while((lookup != NULL) && (lookup != Multi_pxo_players));
-
-	// return NULL
-	return NULL;
+	return -1;
 }
 
 /**
@@ -2926,16 +2822,11 @@ player_list *multi_pxo_find_player(char *name)
 void multi_pxo_process_players()
 {
 	int item_index,my;
-	player_list *lookup;
 	
 	// if we don't have a start item, but the list is non-null
-	if((Multi_pxo_player_start == NULL) && (Multi_pxo_players != NULL)){
-		Multi_pxo_player_start = Multi_pxo_players;		
-	} 
-
-	// if we don't have a selected item, but the list is non-null
-	if((Multi_pxo_player_select == NULL) && (Multi_pxo_players != NULL)){
-		Multi_pxo_player_select = Multi_pxo_players;
+	if(Multi_pxo_player_start_index < 0){
+		Multi_pxo_player_start = 0;
+		Multi_pxo_player_start_index = 0;
 	}
 
 	// see if we have a mouse click on the channel region
@@ -2946,26 +2837,16 @@ void multi_pxo_process_players()
 		item_index = my / (gr_get_font_height() + 1);
 
 		// select the item if possible
-		lookup = Multi_pxo_player_start;
-		if(lookup == NULL){
-			return;
+		if ((item_index + Multi_pxo_player_start_index) < static_cast<int>(Multi_pxo_players_vec.size())) {
+			Multi_pxo_player_select = Multi_pxo_player_start_index;
+			for (int idx = 0; idx < item_index; idx++) {
+				Multi_pxo_player_select++;
+			};
 		}
-		// select item 0
-		if(item_index == 0){
-			Multi_pxo_player_select = Multi_pxo_player_start;
-			return;
-		}
-		do {
-			// move to the next item
-			lookup = lookup->next;
-			item_index--;
 
-			// if this item is our guy
-			if((item_index == 0) && (lookup != Multi_pxo_players)){
-				Multi_pxo_player_select = lookup;
-				return;
-			}
-		} while((lookup != Multi_pxo_players) && (item_index > 0));		
+		if ((Multi_pxo_player_select < 0) || (Multi_pxo_player_select >= static_cast<int>(Multi_pxo_players_vec.size()))) {
+			Multi_pxo_player_select = -1;
+		}
 	}
 }
 
@@ -2974,42 +2855,37 @@ void multi_pxo_process_players()
  */
 void multi_pxo_blit_players()
 {
-	player_list *moveup;
-	char player_name[MAX_PXO_TEXT_LEN];
 	int disp_count,y_start;
 	int line_height = gr_get_font_height() + 1;
 
 	// blit as many channels as we can
 	disp_count = 0;
 	y_start = Multi_pxo_player_coords[gr_screen.res][1];
-	moveup = Multi_pxo_player_start;
-	if(moveup == NULL){
+	if(Multi_pxo_players_vec.size() == 0){
 		return;
 	}
-	do {
-		// if this is the currently selected item, highlight it
-		if(moveup == Multi_pxo_player_select){
-			gr_set_color_fast(&Color_bright);
+
+	for (int i = 0; i < static_cast<int>(Multi_pxo_players_vec.size()); i++) {
+		if (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])) {
+			if (i == Multi_pxo_player_select) {
+				gr_set_color_fast(&Color_bright);
+			} else {
+				gr_set_color_fast(&Color_normal);
+			}
+
+			// make sure the string fits
+			char player_name[MAX_PXO_TEXT_LEN];
+			strcpy_s(player_name, Multi_pxo_players_vec[i].c_str());
+			font::force_fit_string(player_name, MAX_PXO_TEXT_LEN - 1, Multi_pxo_player_coords[gr_screen.res][2]);
+
+			// blit the string
+			gr_string(Multi_pxo_player_coords[gr_screen.res][0], y_start, player_name, GR_RESIZE_MENU);
+
+			// increment the displayed count
+			disp_count++;
+			y_start += line_height;
 		}
-		// otherwise draw it normally
-		else {
-			gr_set_color_fast(&Color_normal);
-		}
-
-		// make sure the string fits		
-		strcpy_s(player_name,moveup->name);		
-		font::force_fit_string(player_name, MAX_PXO_TEXT_LEN-1, Multi_pxo_player_coords[gr_screen.res][2]);
-
-		// blit the string
-		gr_string(Multi_pxo_player_coords[gr_screen.res][0], y_start, player_name, GR_RESIZE_MENU);
-
-		// increment the displayed count
-		disp_count++;
-		y_start += line_height;
-
-		// next item
-		moveup = moveup->next;
-	} while((moveup != Multi_pxo_players) && (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])));
+	}
 }
 
 /**
@@ -3018,13 +2894,14 @@ void multi_pxo_blit_players()
 void multi_pxo_scroll_players_up()
 {
 	// if we're already at the head of the list, do nothing
-	if((Multi_pxo_player_start == NULL) || (Multi_pxo_player_start == Multi_pxo_players)){
+	if(Multi_pxo_player_start == 0){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	
 	// otherwise move up one
-	Multi_pxo_player_start = Multi_pxo_player_start->prev;	
+	Multi_pxo_player_start--;
+	Multi_pxo_player_start_index--;	
 
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
@@ -3034,28 +2911,24 @@ void multi_pxo_scroll_players_up()
  */
 void multi_pxo_scroll_players_down()
 {
-	player_list *lookup;
-	int count = 0;
 	
-	// see if its okay to scroll down
-	lookup = Multi_pxo_player_start;
-	if(lookup == NULL ){
+	// if we're already at the tail of the list, do nothing
+	if (Multi_pxo_player_start == static_cast<int>(Multi_pxo_players_vec.size() - 1)) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
-	count = 0;
-	while(lookup->next != Multi_pxo_players){
-		lookup = lookup->next;
-		count++;
-	}
-	
-	// if we can move down
-	if(count >= gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])){
-		Multi_pxo_player_start = Multi_pxo_player_start->next;
-		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-	} else {
+
+	// if we can't scroll further without going past the end of the viewable list, don't
+	if ((Multi_pxo_player_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res]) >=
+			static_cast<int>(Multi_pxo_players_vec.size()))) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-	}	
+		return;
+	}
+
+	// otherwise move down one
+	Multi_pxo_player_start++;
+	Multi_pxo_player_start_index++;
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);	
 }
 
 
@@ -4464,7 +4337,7 @@ int multi_pxo_pinfo_cond()
 /**
  * Return 1 if Multi_pxo_pinfo was successfully filled in, 0 otherwise
  */
-int multi_pxo_pinfo_get(char *name)
+int multi_pxo_pinfo_get(const char *name)
 {
 	// run the popup	
 	Multi_pxo_retrieve_mode = 0;
