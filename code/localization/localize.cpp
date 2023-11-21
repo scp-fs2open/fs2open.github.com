@@ -19,6 +19,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 
 #include <tl/optional.hpp>
 
@@ -97,17 +98,57 @@ SCP_unordered_map<int, char*> Lcl_ext_str_explicit_default;
 // parses the string.tbl and reports back only on the languages it found
 void parse_stringstbl_quick(const char *filename);
 
+static SCP_vector<int> language_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(Lcl_languages.size()); i++) {
+		vals.push_back(i);
+	}
+
+	return vals;
+}
+
+static SCP_string language_display(int value)
+{
+	return Lcl_languages[value].lang_name;
+}
+
+// Used to persist the language selection
+int Language_choice_index = -1;
+
+auto LanguageOption = options::OptionBuilder<int>("Game.Language",
+							   std::pair<const char*, int>{"Language", 1750},
+							   std::pair<const char*, int>{"The language to display", 1751})
+							   .enumerator(language_enumerator)
+							   .display(language_display)
+							   .bind_to_once(&Language_choice_index)
+							   .category("Game")
+							   .default_val(0)
+							   .finish();
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
 //
+
+// find a language's index
+int lcl_find_lang_index_by_name(const SCP_string& lang)
+{
+	for (int i = 0; i < static_cast<int>(Lcl_languages.size()); i++) {
+		if (!stricmp(Lcl_languages[i].lang_name, lang.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
+}
 
 // get an index we can use to look into the array
 int lcl_get_current_lang_index()
 {
 	Assertion(Lcl_current_lang >= 0, "Lcl_current_lang should never be negative!");
 
-	if (Lcl_current_lang < (int)Lcl_languages.size())
+	if (Lcl_current_lang < static_cast<int>(Lcl_languages.size()))
 		return Lcl_current_lang;
 
 	return LCL_DEFAULT;
@@ -116,10 +157,6 @@ int lcl_get_current_lang_index()
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang_init)
 {
-	char lang_string[128];
-	const char *ret;
-	int lang, idx, i;
-
 	// initialize encryption
 	encrypt_init();
 
@@ -140,41 +177,43 @@ void lcl_init(int lang_init)
 
 	// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
 	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
-	if ((int)Lcl_languages.size() == 1) {
-		for (i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
+	if ((No_built_in_languages == false) && (static_cast<int>(Lcl_languages.size()) == 1)) {
+		for (int i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
 			Lcl_languages.push_back(Lcl_builtin_languages[i]);
 		}
 	}
 
 	// read the language from the commandline and then registry
+	int lang;
 	if (lang_init < 0) {
 
-		lang = -1;
+		// first we start with any persisted in-game option choice
+		lang = Language_choice_index;
 
-		// first try the commandline
-		if (!Cmdline_lang.empty()) {
-			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
-				if (!stricmp(Lcl_languages[idx].lang_name, Cmdline_lang.c_str())) {
-					lang = idx;
-					break;
-				}
+		// make sure the language exists for the current mod
+		if (lang < 0 || lang > static_cast<int>(Lcl_languages.size())) {
+			lang = -1;
+		}
+
+		// now try the the commandline
+		if (lang < 0) {
+			if (!Cmdline_lang.empty()) {
+				lang = lcl_find_lang_index_by_name(Cmdline_lang.c_str());
 			}
 		}
 
+		// still nothing, so go to the ini file
 		if (lang < 0) {
-			// now go the the registry if it's not found
+			char lang_string[128];
 			memset(lang_string, 0, 128);
 			// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
 			// in tstrings in the #default section)
-			ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+			const char* ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
 			strcpy_s(lang_string, ret);
 
 			// look it up
-			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
-				if (!stricmp(Lcl_languages[idx].lang_name, lang_string)) {
-					lang = idx;
-					break;
-				}
+			for (int idx = 0; idx < static_cast<int>(Lcl_languages.size()); idx++) {
+				lang = lcl_find_lang_index_by_name(lang_string);
 			}
 			if (lang < 0) {
 				lang = LCL_DEFAULT;

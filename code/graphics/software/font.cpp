@@ -344,12 +344,7 @@ namespace
 			stuff_string(lang_name, F_NAME, LCL_LANG_NAME_LEN + 1);
 
 			// find language and set the index, or if not found move to the next one
-			for (auto i = 0; i < (int)Lcl_languages.size(); ++i) {
-				if (!strcmp(Lcl_languages[i].lang_name, lang_name)) {
-					lang_idx = i;
-					break;
-				}
-			}
+			lang_idx = lcl_find_lang_index_by_name(lang_name);
 
 			if (lang_idx == -1) {
 				Warning(LOCATION, "Ignoring invalid language (%s) specified by font (%s); not built-in or in strings.tbl",

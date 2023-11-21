@@ -81,6 +81,7 @@ extern int Splash_fade_in_time;
 extern int Splash_fade_out_time;
 extern bool Splash_logo_center;
 extern bool Use_tabled_strings_for_default_language;
+extern bool No_built_in_languages;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
