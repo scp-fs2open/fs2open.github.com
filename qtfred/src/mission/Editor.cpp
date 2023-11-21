@@ -281,7 +281,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		}
 		// double check the used pool is empty
 		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (used_pool[j] != 0) {
+			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
 				Warning(LOCATION,
 						"%s is used in wings of team %d but was not in the loadout. Fixing now",
 						Weapon_info[j].name,

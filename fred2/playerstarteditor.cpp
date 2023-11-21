@@ -33,6 +33,7 @@ player_start_editor::player_start_editor(CWnd* pParent) : CDialog(player_start_e
 	m_delay = 0;	
 	m_weapon_pool = 0;
 	m_ship_pool = 0;
+	m_validation_toggle = FALSE;
 	//}}AFX_DATA_INIT
 
 	selected_team = 0;
@@ -59,6 +60,7 @@ void player_start_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_DELAY, m_delay);	
 	DDX_Text(pDX, IDC_SHIP_POOL, m_ship_pool);
 	DDX_Text(pDX, IDC_WEAPON_POOL, m_weapon_pool);
+	DDX_Check(pDX, IDC_PAD_TOGGLE, m_validation_toggle);
 	//}}AFX_DATA_MAP
 }
 
@@ -77,6 +79,7 @@ BEGIN_MESSAGE_MAP(player_start_editor, CDialog)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_WEAPON_VARIABLES_COMBO, OnSelchangeWeaponVariablesCombo)
 	ON_BN_CLICKED(IDC_REQUIRED_WEAPONS, OnRequiredWeapons)
+	ON_BN_CLICKED(IDC_PAD_TOGGLE, OnSelValidationToggle)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -160,6 +163,10 @@ BOOL player_start_editor::OnInitDialog()
 				}
 			}
 		}
+	}
+
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		validation_toggle[i] = Team_data[i].do_not_validate;
 	}
 
 	// initialise the ship and weapon usage list
@@ -336,6 +343,8 @@ void player_start_editor::reset_controls()
 			static_weapon_variable_pool[selected_team][i] = -1;
 		}
 	}	
+
+	m_validation_toggle = validation_toggle[selected_team];
 
 	// be sure that nothing is selected	
 	m_ship_list.SetCurSel(-1);
@@ -970,6 +979,11 @@ void player_start_editor::OnOK()
 		Team_data[i].num_weapon_choices = num_choices; 
 	}
 
+	// store the loadout padding toggle
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		Team_data[i].do_not_validate = validation_toggle[i];
+	}
+
 	// store required weapons
 	for (i = 0; i < MAX_TVT_TEAMS; i++) {
 		for (idx = 0; idx < weapon_info_size(); idx++) {
@@ -1125,4 +1139,10 @@ void player_start_editor::OnUpdateWeaponPool()
 		dynamic_weapon_pool[selected_team][sexp_index] = m_weapon_pool;	
 		UpdateQuantityVariable(&m_weapon_quantity_variable, m_weapon_pool);
 	}
+}
+
+void player_start_editor::OnSelValidationToggle()
+{
+	validation_toggle[selected_team] = !m_validation_toggle;
+	UpdateData(TRUE);
 }

@@ -37,6 +37,7 @@ public:
 	CComboBox			m_weapon_quantity_variable;
 	CStatic				m_ships_used_in_wings;
 	CStatic				m_weapons_used_in_wings;
+	BOOL				m_validation_toggle;
 	//}}AFX_DATA
 
 
@@ -66,6 +67,7 @@ protected:
 	afx_msg void OnSelchangeShipVariablesCombo();
 	afx_msg void OnSelchangeWeaponVariablesCombo();
 	afx_msg void OnRequiredWeapons();
+	afx_msg void OnSelValidationToggle();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -96,6 +98,8 @@ private:
 	int weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
 	bool weapon_is_required[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+
+	bool validation_toggle[MAX_TVT_TEAMS];
 
 	// regenerate all controls
 	void reset_controls();

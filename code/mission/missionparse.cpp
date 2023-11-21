@@ -908,6 +908,12 @@ void parse_player_info2(mission *pm)
 		if ( optional_string("$Starting Shipname:") )
 			stuff_string( Player_start_shipname, F_NAME, NAME_LENGTH );
 
+		if (optional_string("+Do Not Validate Loadout")) {
+			ptr->do_not_validate = true;
+		} else {
+			ptr->do_not_validate = false;
+		}
+
 		required_string("$Ship Choices:");
 		stuff_loadout_list(list, MISSION_LOADOUT_SHIP_LIST);
 
@@ -8856,6 +8862,12 @@ bool check_for_23_3_data()
 		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpout_params_index];
 		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
 			return true;
+	}
+
+	for (int t = 0; t < Num_teams; t++) {
+		if (Team_data[t].do_not_validate) {
+			return true;
+		}
 	}
 
 	return false;
