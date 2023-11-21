@@ -8793,7 +8793,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius,
 						scaled_tail_radius,
 						alpha, alpha, alpha);
-					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult);
+					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult * 255.0);
 				}
 
 				batching_add_laser(
