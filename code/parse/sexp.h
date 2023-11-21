@@ -1368,20 +1368,6 @@ extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
 extern bool Assume_event_is_current;
-extern int Training_context;
-extern int Training_context_speed_min;
-extern int Training_context_speed_max;
-extern int Training_context_speed_set;
-extern int Training_context_speed_timestamp;
-extern waypoint_list *Training_context_path;
-extern int Training_context_goal_waypoint;
-extern int Training_context_at_waypoint;
-extern float Training_context_distance;
-extern int Players_target;
-extern int Players_mlocked;
-extern ship_subsys *Players_targeted_subsys;
-extern int Players_target_timestamp;
-extern int Players_mlocked_timestamp;
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;

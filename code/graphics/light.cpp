@@ -15,6 +15,7 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
+#include "io/timer.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "math/bitarray.h"
@@ -42,6 +43,12 @@ struct gr_light
 
 	int type;
 };
+
+//FADEIN STUFF
+shader Viewer_shader;
+FadeType Fade_type = FadeType::FI_NONE;
+TIMESTAMP Fade_start_timestamp = TIMESTAMP::invalid();
+TIMESTAMP Fade_end_timestamp = TIMESTAMP::invalid();
 
 // Variables
 SCP_vector<gr_light> gr_lights;

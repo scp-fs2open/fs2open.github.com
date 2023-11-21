@@ -12,7 +12,6 @@
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "io/timer.h"
 #include "nebula/neb.h"
 #include "options/Option.h"
 
@@ -33,12 +32,6 @@ int Cutscene_bar_flags = CUB_NONE;
 float Cutscene_delta_time = 1.0f;
 //How far along a change is (0 to 1)
 float Cutscene_bars_progress = 1.0f;
-
-//FADEIN STUFF
-shader Viewer_shader;
-FadeType Fade_type = FI_NONE;
-int Fade_start_timestamp = 0;
-int Fade_end_timestamp = 0;
 
 // The detail level.  Anything below zero draws simple models earlier than it
 // should.   Anything above zero draws higher detail models longer than it should.

@@ -59,19 +59,6 @@
 extern float Cutscene_bars_progress, Cutscene_delta_time;
 extern int Cutscene_bar_flags;
 
-//-----Fadein stuff
-struct shader;
-extern shader Viewer_shader;
-
-enum FadeType {
-	FI_NONE,
-	FI_FADEIN,
-	FI_FADEOUT
-};
-extern FadeType Fade_type;
-extern int Fade_start_timestamp;
-extern int Fade_end_timestamp;
-
 
 typedef struct vei {
 	angles_t	angles;			//	Angles defining viewer location.
