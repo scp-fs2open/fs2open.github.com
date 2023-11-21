@@ -17800,7 +17800,10 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 
 			// Events that have never fired are not subject to the delay check. This matches the behavior of the
 			// original public source code release and also allows checks for these events to work in debriefings.
-			if (!Mission_events[i].timestamp.isValid()) {
+			// Addendum: Also do not check the delay if we're not in-mission.  This allows debriefings to check
+			// events that have fired on the same timestamp that the mission ends.  These events would otherwise
+			// not be checked due to the "one frame must elapse" rule.
+			if (!Mission_events[i].timestamp.isValid() || !(Game_mode & GM_IN_MISSION)) {
 				/* do not set rval */;
 			}
 			// Check that the event delay has elapsed, again using the same logic as in mission_process_event()
@@ -36425,15 +36428,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"this mission is played as a single mission." },
 
 	{ OP_GOAL_TRUE_DELAY, "Mission Goal True (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified goal in the this mission is true "
-		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N seconds after the specified goal in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tThis operator works by checking the mission log.  Since goal status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the goal becomes true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true."},
 
 	{ OP_GOAL_FALSE_DELAY, "Mission Goal False (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified goal in the this mission is false "
-		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N seconds after the specified goal in the this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"\tThis operator works by checking the mission log.  Since goal status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the goal becomes false.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true."},
@@ -36446,8 +36449,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the event in the mission."},
 
 	{ OP_EVENT_TRUE_DELAY, "Mission Event True (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified event in the this mission is true "
-		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N seconds after the specified event in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tNOTE: For a delay of 0 (if used in-mission), this operator will become true on the frame after the specified event becomes true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true.\r\n"
@@ -36455,8 +36458,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_FALSE_DELAY, "Mission Event False (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified event in the this mission is false "
-		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N seconds after the specified event in the this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"\tNOTE: For a delay of 0 (if used in-mission), this operator will become true on the frame after the specified event becomes false.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true.\r\n"
@@ -36464,8 +36467,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_TRUE_MSECS_DELAY, "Mission Event True (Boolean operator)\r\n"
-		"\tReturns true N milliseconds after the specified event in the this mission is true "
-		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N milliseconds after the specified event in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tNOTE: For a delay of 0 (if used in-mission), this operator will become true on the frame after the specified event becomes true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
@@ -36473,8 +36476,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_FALSE_MSECS_DELAY, "Mission Event False (Boolean operator)\r\n"
-		"\tReturns true N milliseconds after the specified event in the this mission is false "
-		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N milliseconds after the specified event in the this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"\tNOTE: For a delay of 0 (if used in-mission), this operator will become true on the frame after the specified event becomes false.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
