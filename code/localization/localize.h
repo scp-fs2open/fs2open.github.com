@@ -37,6 +37,7 @@
 // language info table
 typedef struct lang_info {
 	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
+	int xstr;											// the xstr id for the language name itself. Used for the built-in langauge selector
 	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
 	SCP_vector<ubyte> special_char_indexes;				// where in the font do we have the special characters for this language
 														// note: treats 0 as "none" since a zero offset in a font makes no sense

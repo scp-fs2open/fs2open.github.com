@@ -36,10 +36,10 @@ SCP_vector<lang_info> Lcl_languages;
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",		"",		{127,0,176,0,0},	589986744},				// English ("" is correct; the game data files do not use a language extension for English)
-	{ "German",			"gr",	{164,0,176,0,0},	-1132430286 },			// German
-	{ "French",			"fr",	{164,0,176,0,0},	0 },					// French
-	{ "Polish",			"pl",	{127,0,176,0,0},	-1131728960},			// Polish
+	{ "English",  -1, "",   {127,0,176,0,0}, 589986744},    // English ("" is correct; the game data files do not use a language extension for English)
+	{ "German",   -1, "gr", {164,0,176,0,0}, -1132430286 }, // German
+	{ "French",   -1, "fr", {164,0,176,0,0}, 0 },           // French
+	{ "Polish",   -1, "pl", {127,0,176,0,0}, -1131728960},  // Polish
 };
 
 int Lcl_special_chars;
@@ -64,7 +64,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1789 // This is the next available ID
+// #define XSTR_SIZE	1790 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -110,15 +110,15 @@ static SCP_vector<int> language_enumerator()
 
 static SCP_string language_display(int value)
 {
-	return Lcl_languages[value].lang_name;
+	return XSTR(Lcl_languages[value].lang_name, Lcl_languages[value].xstr);
 }
 
 // Used to persist the language selection
 int Language_choice_index = -1;
 
 auto LanguageOption = options::OptionBuilder<int>("Game.Language",
-							   std::pair<const char*, int>{"Language", 1750},
-							   std::pair<const char*, int>{"The language to display", 1751})
+							   std::pair<const char*, int>{"Select Language", 1143},
+							   std::pair<const char*, int>{"The language to display", 1789})
 							   .enumerator(language_enumerator)
 							   .display(language_display)
 							   .bind_to_once(&Language_choice_index)
@@ -252,6 +252,11 @@ void parse_stringstbl_quick(const char *filename)
 			while (required_string_either("#End","$Language:")) {
 				required_string("$Language:");
 				stuff_string(language.lang_name, F_RAW, LCL_LANG_NAME_LEN + 1);
+				if (optional_string("+XSTR:")) {
+					stuff_int(&language.xstr);
+				} else {
+					language.xstr = -1;
+				}
 				required_string("+Extension:");
 				stuff_string(language.lang_ext, F_RAW, LCL_LANG_NAME_LEN + 1);
 
