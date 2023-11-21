@@ -308,7 +308,7 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Don't initalize built-in languages by default:")) {
 			stuff_boolean(&No_built_in_languages);
 
-			mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages));
+			mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages ? "yes" : "no"));
 		}
 
 		if (optional_string("$Don't pre-empt training message voice:")) {
