@@ -1583,7 +1583,7 @@ void hud_do_lock_indicators(float frametime)
 			lock_slot->target_in_lock_cone = false;
 		}
 
-		if ( !lock_slot->locked && wip->trigger_lock && !(swp->flags[Ship::Weapon_Flags::Trigger_Lock]) ) {
+		if ( !lock_slot->locked && wip->trigger_lock && !(swp->flags[Ship::Weapon_Flags::Secondary_trigger_down]) ) {
 			// only reset locks that are not locked if this is a trigger dependent weapon 
 			// and player isn't holding down trigger
 			ship_clear_lock(lock_slot);

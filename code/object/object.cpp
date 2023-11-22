@@ -781,6 +781,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		return;
 	}
 
+	ship_weapon* swp = &shipp->weapons;
+
 	// single player pilots, and all players in multiplayer take care of firing their own primaries
 	if(!(Game_mode & GM_MULTIPLAYER) || (objp == Player_obj))
 	{
@@ -788,6 +790,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// flag the ship as having the trigger down
 			if(shipp != NULL){
 				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
+				swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
 			}
 
 			// fire non-streaming primaries here
@@ -802,6 +805,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
                 shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
+				swp->flags.remove(Ship::Weapon_Flags::Primary_trigger_down);
 				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
 		}
@@ -814,7 +818,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	// single player and multiplayer masters do all of the following
 	if ( !MULTIPLAYER_CLIENT 
 		// Cyborg17 - except clients now fire dumbfires for rollback on the server
-		|| !(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing())) {		
+		|| !(Weapon_info[swp->secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing())) {
 		if (ci.fire_secondary_count) {
    			if ( !ship_start_secondary_fire(objp) ) {
 				ship_fire_secondary( objp );
@@ -830,7 +834,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	}
 
 	if ( MULTIPLAYER_CLIENT && objp == Player_obj ) {
-		if (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].trigger_lock) {
+		if (Weapon_info[swp->secondary_bank_weapons[shipp->weapons.current_secondary_bank]].trigger_lock) {
 			if (ci.fire_secondary_count) {
 				ship_start_secondary_fire(objp);
 			} else {
