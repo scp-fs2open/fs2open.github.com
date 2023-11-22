@@ -3128,9 +3128,6 @@ void multi_pxo_chat_blit()
  */
 void multi_pxo_goto_bottom()
 {
-	chat_line *backup;
-	int idx;
-	
 	// if we have less than the displayable amount of lines, do nothing
 	if(static_cast<int>(Multi_pxo_chat_vec.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
 		// nothing to do for the slider
@@ -3907,7 +3904,7 @@ int multi_pxo_find_popup()
 			lookup = multi_pxo_find_channel(Multi_pxo_find_channel);
 			
 			// if we couldn't find it, don't join
-			if(lookup != NULL){				
+			if(lookup != nullptr){				
 				multi_pxo_join_channel(lookup);
 			}
 		}
