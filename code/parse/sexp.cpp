@@ -9773,8 +9773,6 @@ float get_damage_caused(const ship_registry_entry *ship_entry, int attacker_sig)
 
 	// is the ship that took damage on the exit list?
 	if (ship_entry->exited_index >= 0) {
-		//TO DO - Add code to check the damage ships which have exited have taken
-
 		for (idx = 0; idx < MAX_DAMAGE_SLOTS; idx++) {
 			if (Ships_exited[ship_entry->exited_index].damage_ship_id[idx] == attacker_sig) {
 				damage_total += Ships_exited[ship_entry->exited_index].damage_ship[idx];
@@ -36347,7 +36345,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NAV_ADD_SHIP, "add-nav-ship\r\n"
 		"Binds the named navpoint to the named ship - when the ship moves, the waypoint moves with it. Takes 2 Arguments...\r\n"
 		"\t1:\tThe NavPoint's Name\r\n"
-		"\t2:\tThe Ship's Name\r\n" },
+		"\t2:\tThe Ship's Name (ship must be in-mission)\r\n" },
 
 	{ OP_NAV_DEL, "del-nav\r\n"
 		"Deletes a nav point. Takes 1 Argument...\r\n"
@@ -36380,26 +36378,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NAV_SET_CARRY, "nav-set-carry\r\n"
 		"Sets the Nav Carry flag for all listed ships. Vessels with this flag will follow the player into and out of autopilot.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1:\tShips and Wings that should receive the Nav Carry flag.\r\n" },
+		"\t1:\tShips (must be in-mission) and Wings (do not need to be in-mission) that should receive the Nav Carry flag.\r\n" },
 
 	{ OP_NAV_UNSET_CARRY, "unset-nav-carry\r\n"
 		"Removes the Nav Carry flag from all listed ships and wings. Takes 1 or more arguments...\r\n"
-		"\t1:\tShips and Wings to remove the Nav Carry flag from\r\n" },
+		"\t1:\tShips (must be in-mission) and Wings (do not need to be in-mission) to remove the Nav Carry flag from\r\n" },
 
 	{ OP_NAV_SET_NEEDSLINK, "set-nav-needslink\r\n"
 		"Marks all listed ships as needing to link up before entering autopilot.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1:\tShips to mark\r\n" },
+		"\t1:\tShips to mark (ships must be in-mission)\r\n" },
 
 	{ OP_NAV_UNSET_NEEDSLINK, "unset-nav-needslink\r\n"
 		"Removes the requirement for the listed ships to link up before entering autopilot.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1:\tShips to mark\r\n" },
+		"\t1:\tShips to mark (ships must be in-mission)\r\n" },
 
 	{ OP_NAV_ISLINKED, "is-nav-linked\r\n"
 		"Determines if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"
 		"Takes 1 argument...\r\n"
-		"\t1:\tShip to check\r\n"},
+		"\t1:\tShip to check (evaluation returns NAN until ship is in-mission)\r\n"},
 
 	{ OP_NAV_USECINEMATICS, "use-nav-cinematics\r\n"
 		"Controls the use of the cinematic autopilot camera. Takes 1 Argument..."
@@ -36517,40 +36515,40 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t6: The z component of the second vector.\r\n"},
 
 	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x (deprecated in favor of ship-maneuver)\r\n"
-		"\tSets the X speed of a ship or wing."
+		"\tSets the X speed of a ship or wing (ship/wing must be in-mission)."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y (deprecated in favor of ship-maneuver)\r\n"
-		"\tSets the Y speed of a ship or wing."
+		"\tSets the Y speed of a ship or wing (ship/wing must be in-mission)."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z (deprecated in favor of ship-maneuver)\r\n"
-		"\tSets the Z speed of a ship or wing."
+		"\tSets the Z speed of a ship or wing (ship/wing must be in-mission)."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_X, "get-object-speed-x\r\n"
-		"\tReturns the X speed of a ship or wing as an integer."
+		"\tReturns the X speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission)."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_Y, "get-object-speed-y\r\n"
-		"\tReturns the Y speed of a ship or wing as an integer."
+		"\tReturns the Y speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission)."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_Z, "get-object-speed-z\r\n"
-		"\tReturns the Z speed of a ship or wing as an integer."
+		"\tReturns the Z speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission)."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
@@ -36561,7 +36559,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"subsystem).  The input coordinates are the coordinates relative to the object's position and orientation.  "
 		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
 		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t1: The name of a ship, wing, or waypoint (evaluation returns NAN until object is in-mission).\r\n"
 		"\t2: A ship subsystem (or \"" SEXP_NONE_STRING "\" if the first argument is not a ship - optional).\r\n"
 		"\t3: The relative X coordinate (optional).\r\n"
 		"\t4: The relative Y coordinate (optional).\r\n"
@@ -36573,7 +36571,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"subsystem).  The input coordinates are the coordinates relative to the object's position and orientation.  "
 		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
 		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t1: The name of a ship, wing, or waypoint (evaluation returns NAN until object is in-mission).\r\n"
 		"\t2: A ship subsystem (or \"" SEXP_NONE_STRING "\" if the first argument is not a ship - optional).\r\n"
 		"\t3: The relative X coordinate (optional).\r\n"
 		"\t4: The relative Y coordinate (optional).\r\n"
@@ -36585,7 +36583,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"subsystem).  The input coordinates are the coordinates relative to the object's position and orientation.  "
 		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
 		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t1: The name of a ship, wing, or waypoint (evaluation returns NAN until object is in-mission).\r\n"
 		"\t2: A ship subsystem (or \"" SEXP_NONE_STRING "\" if the first argument is not a ship - optional).\r\n"
 		"\t3: The relative X coordinate (optional).\r\n"
 		"\t4: The relative Y coordinate (optional).\r\n"
@@ -36595,7 +36593,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_OBJECT_POSITION, "set-object-position\r\n"
 		"\tInstantaneously sets an object's spatial coordinates."
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t1: The name of a ship, wing, or waypoint (object does not need to be in-mission).\r\n"
 		"\t2: The new X coordinate.\r\n"
 		"\t3: The new Y coordinate.\r\n"
 		"\t4: The new Z coordinate." },
@@ -36603,23 +36601,23 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_GET_OBJECT_PITCH, "get-object-pitch\r\n"
 		"\tReturns the pitch angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship or wing.\r\n" },
+		"\t1: The name of a ship or wing (evaluation returns NAN until ship/wing is in-mission).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_BANK, "get-object-bank\r\n"
 		"\tReturns the bank angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship or wing.\r\n" },
+		"\t1: The name of a ship or wing (evaluation returns NAN until ship/wing is in-mission).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_HEADING, "get-object-heading\r\n"
 		"\tReturns the heading angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship or wing.\r\n" },
+		"\t1: The name of a ship or wing (evaluation returns NAN until ship/wing is in-mission).\r\n" },
 
 	// Goober5000
 	{ OP_SET_OBJECT_ORIENTATION, "set-object-orientation\r\n"
 		"\tInstantaneously sets an object's spatial orientation."
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of a ship or wing.\r\n"
+		"\t1: The name of a ship or wing (ship/wing does not need to be in-mission).\r\n"
 		"\t2: The new pitch angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360.\r\n"
 		"\t3: The new bank angle, in degrees.  The angle can be any can be any number; it does not have to be between 0 and 360.\r\n"
 		"\t4: The new heading angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360." },
@@ -36704,14 +36702,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tTrue if ship(s) or wing(s) are all of the specified team.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTeam (\"friendly\", \"hostile\", \"neutral\", or \"unknown\").\r\n"
-		"\tRest:\tName of ship or wing to check." },
+		"\tRest:\tName of ship or wing to check (ship/wing does not need to be in-mission)." },
 
 	// Goober5000
 	{ OP_IS_AI_CLASS, "Is AI Class (Boolean operator)\r\n"
 		"\tTrue if ship or ship subsystem(s) is/are all of the specified AI class.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tAI class (\"None\", \"Coward\", \"Lieutenant\", etc.)\r\n"
-		"\t2:\tName of ship to check.\r\n"
+		"\t2:\tName of ship to check (evaluation returns NAN until ship is in-mission).\r\n"
 		"\tRest:\tName of ship subsystem(s) to check (optional)" },
 
 	// Goober5000
@@ -36719,14 +36717,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tTrue if ship or ships is/are all of the specified ship type.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tShip type (\"fighter\", \"bomber\", etc.)\r\n"
-		"\t2:\tName of ship to check.\r\n" },
+		"\t2:\tName of ship to check (ship/wing does not need to be in-mission) .\r\n" },
 
 	// Goober5000
 	{ OP_IS_SHIP_CLASS, "Is Ship Class (Boolean operator)\r\n"
 		"\tTrue if ship or ships is/are all of the specified ship class.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tShip class\r\n"
-		"\t2:\tName of ship to check.\r\n" },
+		"\t2:\tName of ship to check (ship/wing does not need to be in-mission) .\r\n" },
 
 	{ OP_HAS_TIME_ELAPSED, "Has time elapsed (Boolean operator)\r\n"
 		"\tBecomes true when the specified amount of time has elapsed (Mission time "
@@ -36870,7 +36868,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_IS_DESTROYED_DELAY, "Is destroyed delay (Boolean operator)\r\n"
-		"\tBecomes true <delay> seconds after all specified ships have been destroyed.\r\n"
+		"\tBecomes true <delay> seconds after all specified ships (including listed ships not in-mission) have been destroyed.\r\n"
 		"\tWARNING: If multiple is-destroyed-delay SEXPs are used in a directive event, unexpected results may be "
 		"observed. Instead, use a single is-destroyed-delay SEXP with multiple parameters.\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
@@ -36878,7 +36876,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRest:\tName of ship (or wing) to check status of." },
 
 	{ OP_WAS_DESTROYED_BY_DELAY, "Was destroyed by delay (Boolean operator)\r\n"
-		"\tBecomes true <delay> seconds after all specified ships have been destroyed by the specified first ship.\r\n\r\n"
+		"\tBecomes true <delay> seconds after all specified ships (including listed ships not in-mission) have been destroyed by the specified first ship.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 or more arguments...\r\n"
 		"\t1:\tTime delay in seconds (see above).\r\n"
 		"\t2:\tShip that should have destroyed the other ships (see below).\r\n"
@@ -36950,7 +36948,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4:\tHow many times the ship has completed the waypoint path (optional)." },
 
 	{ OP_SHIP_TYPE_DESTROYED, "Ship Type Destroyed (Boolean operator)\r\n"
-		"\tBecomes true when the specified percentage of ship types in this mission "
+		"\tBecomes true when the specified percentage of ship types in this mission (including ships not yet in-mission) "
 		"have been destroyed.  The ship type is a generic type such as fighter/bomber, "
 		"transport, etc.  Fighters and bombers count as the same type.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 arguments...\r\n"
@@ -36958,7 +36956,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tShip type to check for." },
 
 	{ OP_TIME_SHIP_DESTROYED, "Time ship destroyed (Time operator)\r\n"
-		"\tReturns the time the specified ship was destroy.\r\n\r\n"
+		"\tReturns the time the specified ship was destroyed (evaluation returns NAN until then). "
+		" Having departed doesn't count as destroyed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship we want to check." },
 
@@ -36968,13 +36967,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of ship we want to check." },
 
 	{ OP_TIME_SHIP_DEPARTED, "Time ship departed (Time operator)\r\n"
-		"\tReturns the time the specified ship departed the mission by warping out.  Being "
-		"destroyed doesn't count departed.\r\n\r\n"
+		"\tReturns the time the specified ship departed the mission "
+		"(evaluation returns NAN until then).  Being destroyed doesn't count as departed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship we want to check." },
 
 	{ OP_TIME_WING_DESTROYED, "Time wing destroyed (Time operator)\r\n"
-		"\tReturns the time the specified wing was destroy.\r\n\r\n"
+		"\tReturns the time the specified wing was destroyed.  All "
+		"ships in the wing have to have been destroyed (evaluation returns NAN until then). "
+		"If any have departed, the wing can never be considered destroyed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of wing we want to check." },
 
@@ -36984,11 +36985,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of wing we want to check." },
 
 	{ OP_TIME_WING_DEPARTED, "Time wing departed (Time operator)\r\n"
-		"\tReturns the time the specified wing departed the mission by warping out.  All "
-		"ships in the wing have to have warped out.  If any are destroyed, the wing can "
-		"never be considered departed.\r\n\r\n"
+		"\tReturns the time the specified wing departed the mission.  All "
+		"ships in the wing have to have departed (evaluation returns NAN until then).\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship we want to check." },
+		"\t1:\tName of wing we want to check." },
 
 	{ OP_MISSION_TIME, "Mission time (Time operator)\r\n"
 		"\tReturns the current time into the mission.\r\n\r\n"
@@ -37015,7 +37015,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_TIME_TO_GOAL, "Time-to-goal (Time operator)\r\n"
 		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
 		"Returns a number value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check waypoint time." },
+		"\t1:\tName of ship to check waypoint time (evaluation is deferred until ship is in-mission)." },
 
 	// MjnMixael
 	{ OP_SET_HUD_TIME_PAD, "Set HUD Timer Padding (Action operator)\r\n"
@@ -37027,21 +37027,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AFTERBURNER_LEFT, "Afterburner left\r\n"
 		"\tReturns a ship's current engine energy as a percentage.\r\n"
-		"\t1: Ship name\r\n" },
+		"\t1: Ship name (evaluation returns NAN until ship is in-mission)\r\n" },
 
 	{ OP_WEAPON_ENERGY_LEFT, "Weapon energy left\r\n"
 		"\tReturns a ship's current weapon energy as a percentage.\r\n"
-		"\t1: Ship name\r\n" },
+		"\t1: Ship name (evaluation returns NAN until ship is in-mission)\r\n" },
 
 	{ OP_SHIELDS_LEFT, "Shields left (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's shields as a percentage.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check." },
+		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)." },
 
 	{ OP_HITS_LEFT, "Hits left (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's hull as a percentage.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check." },
+		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)." },
 
 	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (status operator, deprecated)\r\n"
 		"\tReturns the current level of the specified ship's subsystem integrity as a percentage of the damage done to *all "
@@ -37051,7 +37051,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"this operator is deprecated.  Mission designers are strongly encouraged to use hits-left-subsystem-specific rather than "
 		"the optional boolean parameter.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 or 3 arguments...\r\n"
-		"\t1:\tName of ship to check.\r\n"
+		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission).\r\n"
 		"\t2:\tName of subsystem on ship to check.\r\n"
 		"\t3:\t(Optional) True/False. When set to true only the subsystem supplied will be tested; when set to false (the default), "
 		"all subsystems of that type will be tested." },
@@ -37063,7 +37063,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"example, if the integrity of all engine subsystems (that is, the combined strength of all engines divided by the maximum "
 		"total strength of all engines) is less than 30%, the player cannot warp out.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to check\r\n"
+		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)\r\n"
 		"\t2:\tName of subsystem type to check\r\n" },
 
 	{ OP_HITS_LEFT_SUBSYSTEM_SPECIFIC, "hits-left-subsystem-specific (status operator)\r\n"
@@ -37073,16 +37073,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"and will not appear in the operator list; it can only be used if you type it in manually.  Old missions using hits-left-subsystem "
 		"will still work, but mission designers are strongly encouraged to use the new operators instead.)\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to check\r\n"
+		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)\r\n"
 		"\t2:\tName of subsystem to check\r\n" },
 
 	{ OP_SIM_HITS_LEFT, "Simulated Hits left (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's simulated hull as a percentage.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check." },
+		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)." },
 
 	{ OP_DISTANCE, "Distance (Status operator)\r\n"
-		"\tReturns the distance between two objects.  These can be ships, wings, or waypoints.\r\n"
+		"\tReturns the distance between two objects.  These can be ships, wings, or waypoints.  "
+		"(Evaluation returns NAN until both objects are in-mission).\r\n"
 		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
 		"NOTE: The standard retail SEXP measures between the center of one ship and the bounding box of another.  It is "
 		"recommended to use center-distance or bbox-distance.\r\n\r\n"
@@ -37092,7 +37093,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_DISTANCE_CENTER, "Distance-To-Center (Status operator)\r\n"
-		"\tReturns the distance between the centers of two objects.  These can be ships, wings, or waypoints.\r\n"
+		"\tReturns the distance between the centers of two objects.  These can be ships, wings, or waypoints.  "
+		"(Evaluation returns NAN until both objects are in-mission).\r\n"
 		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tThe name of one of the objects.\r\n"
@@ -37100,7 +37102,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_DISTANCE_BBOX, "Distance-To-BBox (Status operator)\r\n"
-		"\tReturns the distance between the bounding boxes of two objects.  These can be ships, wings, or waypoints.\r\n"
+		"\tReturns the distance between the bounding boxes of two objects.  These can be ships, wings, or waypoints.  "
+		"(Evaluation returns NAN until both objects are in-mission).\r\n"
 		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tThe name of one of the objects.\r\n"
@@ -37108,7 +37111,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_DISTANCE_CENTER_SUBSYSTEM, "Center distance from ship subsystem (Status operator)\r\n"
-		"\tReturns the distance between the center of an object and the center of a ship subsystem.  The object can be a ship, wing, or waypoint.\r\n"
+		"\tReturns the distance between the center of an object and the center of a ship subsystem.  "
+		"The object can be a ship, wing, or waypoint.  (Evaluation returns NAN until both objects are in-mission).\r\n"
 		"When a wing or team is given, the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 3 arguments...\r\n"
 		"\t1:\tThe name of the object.\r\n"
@@ -37116,7 +37120,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\tThe name of the subsystem." },
 
 	{ OP_DISTANCE_BBOX_SUBSYSTEM, "BBox distance from ship subsystem (Status operator)\r\n"
-		"\tReturns the distance between the bounding box of an object and the center of a ship subsystem.  The object can be a ship, wing, or waypoint.\r\n"
+		"\tReturns the distance between the bounding box of an object and the center of a ship subsystem.  "
+		"The object can be a ship, wing, or waypoint.  (Evaluation returns NAN until both objects are in-mission).\r\n"
 		"When a wing or team is given, the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 3 arguments...\r\n"
 		"\t1:\tThe name of the object.\r\n"
@@ -37160,7 +37165,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_HAS_ARMOR_TYPE, "has-armor-type (Status operator)\r\n"
 		"\tChecks if a given ship has a specific armor type.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
-		"\t1:\tThe ship to check\r\n"
+		"\t1:\tThe ship to check (evaluation returns NAN until ship is in-mission)\r\n"
 		"\t2:\tThe armor type to check\r\n"
 		"\t3:\tThe subsystem armor to check" },
 
@@ -37168,7 +37173,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tChecks whether the specified ships are currently docked.  This sexp is different from has-docked-delay, which will return true if the ships have docked at "
 		"any point in the past.  The has-docked-delay sexp checks the mission log, whereas the is-docked sexp examines the actual dockpoints.\r\n\r\n"
 		"Takes 1 or more arguments.  (If more than 2 arguments are specified, the sexp will only evaluate to true if all ships are docked simultaneously.)\r\n"
-		"If a single argument is supplied, the sexp will evaluate to true if anything is docked to the host ship. \r\n"
+		"If a single argument is supplied, the sexp will evaluate to true if anything is docked to the host ship.  (Evaluation returns NAN until all ships are in-mission). \r\n"
 		"\t1:\tThe host ship.\r\n"
 		"\tRest:\tShip to check as docked to the host ship." },
 
@@ -37184,7 +37189,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"is not the warp out order.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime in seconds that must elapse.\r\n"
-		"\tRest:\tName of ship or wing to check for having received orders." },
+		"\tRest:\tName of ship (must be in-mission) or wing (does not need to be in-mission) to check for having received orders." },
 
 	{ OP_WHEN, "When (Conditional operator)\r\n"
 		"\tPerforms specified actions when a condition becomes true\r\n\r\n"
@@ -37446,7 +37451,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the specified ship(s) or wing(s) or all ships of a team to the specified team.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tTeam to change to (\"friendly\", \"hostile\" or \"unknown\").\r\n"
-		"\tRest:\tName of ship, wing, or team to change team status of." },
+		"\tRest:\tName of ship, wing, or team to change team status of (ship/wing does not need to be in-mission)." },
 
 	// Wanderer
 	{ OP_CHANGE_IFF_COLOR, "Change IFF Color (Action operator)\r\n"
@@ -37457,14 +37462,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\tRed color (value from 0 to 255).\r\n"
 		"\t4:\tGreen color (value from 0 to 255).\r\n"
 		"\t5:\tBlue color (value from 0 to 255).\r\n"
-		"\tRest:\tName of ship or wing to change team status of." },
+		"\tRest:\tName of ship or wing to change team status of (ship/wing does not need to be in-mission)." },
 
 	// Goober5000
 	{ OP_CHANGE_AI_CLASS, "Change AI Class (Action operator)\r\n"
 		"\tSets the specified ship or ship subsystem(s) to the specified ai class.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tAI Class to change to (\"None\", \"Coward\", \"Lieutenant\", etc.)\r\n"
-		"\t2:\tName of ship to change AI class of\r\n"
+		"\t2:\tName of ship to change AI class of (ship must be in-mission)\r\n"
 		"\tRest:\tName of subsystem to change AI class of (optional)" },
 
 	{ OP_MODIFY_VARIABLE, "Modify-variable (Misc. operator)\r\n"
@@ -37577,27 +37582,27 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
 		"that is protected will not come under enemy fire.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to protect." },
+		"\tAll:\tName of ship(s) to protect (ship does not need to be in-mission)." },
 
 	{ OP_UNPROTECT_SHIP, "Unprotect ship (Action operator)\r\n"
 		"\tUnprotects a ship from being attacked by any enemy ship.  Any ship "
 		"that is not protected can come under enemy fire.  This function is the opposite "
 		"of protect-ship.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to unprotect." },
+		"\tAll:\tName of ship(s) to unprotect (ship does not need to be in-mission)." },
 
 	{ OP_BEAM_PROTECT_SHIP, "Beam Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked with beam weapon.  Any ship "
 		"that is beam protected will not come under enemy beam fire.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to protect." },
+		"\tAll:\tName of ship(s) to protect (ship does not need to be in-mission)." },
 
 	{ OP_BEAM_UNPROTECT_SHIP, "Beam Unprotect ship (Action operator)\r\n"
 		"\tUnprotects a ship from being attacked with beam weapon.  Any ship "
 		"that is not beam protected can come under enemy beam fire.  This function is the opposite "
 		"of beam-protect-ship.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to unprotect." },
+		"\tAll:\tName of ship(s) to unprotect (ship does not need to be in-mission)." },
 
 	// Goober5000
 	{ OP_TURRET_PROTECT_SHIP, "Turret Protect ship (Action operator)\r\n"
@@ -37605,7 +37610,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"that is turret protected will not come under enemy fire from that type of turret, though it may come under fire by other turrets.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tType of turret (currently supported types are \"beam\", \"flak\", \"laser\", and \"missile\")\r\n"
-		"\tRest:\tName of ship(s) to protect." },
+		"\tRest:\tName of ship(s) to protect (ship does not need to be in-mission)." },
 
 	// Goober5000
 	{ OP_TURRET_UNPROTECT_SHIP, "Turret Unprotect ship (Action operator)\r\n"
@@ -37614,10 +37619,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"of turret-protect-ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tType of turret (currently supported types are \"beam\", \"flak\", \"laser\", and \"missile\")\r\n"
-		"\tRest:\tName of ship(s) to unprotect." },
+		"\tRest:\tName of ship(s) to unprotect (ship does not need to be in-mission)." },
 
 	{ OP_SEND_MESSAGE, "Send message (Action operator)\r\n"
-		"\tSends a message to the player.  Can be send by a ship, wing, or special "
+		"\tSends a message to the player.  Can be sent by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
 		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
@@ -37635,7 +37640,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"If no arguments are supplied any ships not given individual silence orders will be able\r\n"
 		"to send built in messages. Command will also be unsilenced\r\n"
 		"Using the Any Wingman option cancels radio silence for all ships in wings.\r\n"
-		"\tAll:\tName of ship to allow to talk." },
+		"\tAll:\tName of ship to allow to talk (ship does not need to be in-mission)." },
 		
 	// Karajorma
 	{ OP_DISABLE_BUILTIN_MESSAGES, "Disable builtin messages (Action operator)\r\n"
@@ -37643,7 +37648,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 0 or more arguments....\r\n"
 		"If no arguments are supplied all built in messages are disabled.\r\n"
 		"Using the Any Wingman option silences for all ships in wings.\r\n"
-		"\tAll:\tName of ship to be silenced." },
+		"\tAll:\tName of ship to be silenced (ship does not need to be in-mission)." },
 
 	// Karajorma	
 	{ OP_SET_MISSION_MOOD, "set Mission Mood (Action operator)\r\n"
@@ -37656,12 +37661,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the persona of the supplied ship to the persona supplied\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPersona to use."
-		"\tRest:\tName of the ship." },
+		"\tRest:\tName of the ship (ship must be in-mission)." },
 
 	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
 		"\tCauses the specified ship(s) to self destruct.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship to self destruct." },
+		"\tAll:\tName of ship to self destruct (ship must be in-mission)." },
 
 	{ OP_NEXT_MISSION, "Next Mission (Action operator)\r\n"
 		"\tThe next mission operator is used for campaign branching in the campaign editor.  "
@@ -37673,19 +37678,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CLEAR_GOALS, "Clear goals (Action operator)\r\n"
 		"\tClears the goals for the specified ships and/or wings.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship or wing." },
+		"\tAll:\tName of ship or wing (ship/wing must be in-mission)." },
 
 	{ OP_ADD_GOAL, "Add goal (Action operator)\r\n"
 		"\tAdds a goal to a ship or wing.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship or wing to add goal to.\r\n"
+		"\t1:\tName of ship or wing to add goal to (ship/wing must be in-mission).\r\n"
 		"\t2:\tGoal to add." },
 
 	// Goober5000
 	{ OP_REMOVE_GOAL, "Remove goal (Action operator)\r\n"
 		"\tRemoves a goal from a ship or wing.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship or wing to remove goal from.\r\n"
+		"\t1:\tName of ship or wing to remove goal from (ship/wing must be in-mission).\r\n"
 		"\t2:\tGoal to remove." },
 
 	{ OP_SABOTAGE_SUBSYSTEM, "Sabotage subystem (Action operator)\r\n"
@@ -37693,7 +37698,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"If the percntage strength of the subsystem (after completion) is less than 0%,"
 		"subsystem strength is set to 0%.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
-		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
 		"\t2:\tName of subsystem to sabotage.\r\n"
 		"\t3:\tPercentage to reduce subsystem integrity by." },
 
@@ -37702,7 +37707,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"If the percentage strength of the subsystem (after completion) is greater than 100%,"
 		"subsystem strength is set to 100%.\r\n\r\n"
 		"Takes 3 to 5 arguments...\r\n"
-		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
 		"\t2:\tName of subsystem to repair.\r\n"
 		"\t3:\tPercentage to increase subsystem integrity by.\r\n"
 		"\t4:\tRepair submodel if it exists.  Optional argument that defaults to true.\r\n"
@@ -37713,7 +37718,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"If the percentage specified is < 0, strength is set to 0.  If the percentage is "
 		"> 100 % the subsystem strength is set to 100%.\r\n\r\n"
 		"Takes 3 to 5 arguments...\r\n"
-		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
 		"\t2:\tName of subsystem to set strength.\r\n"
 		"\t3:\tPercentage to set subsystem integrity to.\r\n" 
 		"\t4:\tRepair submodel if it exists.  Optional argument that defaults to true.\r\n"
@@ -37722,7 +37727,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
 		"\tDestroys the specified subsystems without effects."
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
 		"\tRest:\tName of subsystem to destroy.\r\n"},
 
 	{ OP_INVALIDATE_GOAL, "Invalidate goal (Action operator)\r\n"
@@ -37748,22 +37753,22 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_TRANSFER_CARGO, "Transfer Cargo (Action operator)\r\n"
 		"\tTransfers the cargo from one ship to another ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship that cargo is being transferred from.\r\n"
-		"\t2:\tName of ship that cargo is being transferred to." },
+		"\t1:\tName of ship that cargo is being transferred from (ship must be in-mission).\r\n"
+		"\t2:\tName of ship that cargo is being transferred to (ship must be in-mission)." },
 
 	{ OP_EXCHANGE_CARGO, "Exchange Cargo (Action operator)\r\n"
 		"\tExchanges the cargos of two ships.  If one of the two ships contains no cargo, "
 		"the cargo is transferred instead.\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of one of the ships.\r\n"
-		"\t2:\tName of the other ship." },
+		"\t1:\tName of one of the ships (ship must be in-mission).\r\n"
+		"\t2:\tName of the other ship (ship must be in-mission)." },
 
 	// Goober5000
 	{ OP_SET_CARGO, "Set Cargo (Action operator)\r\n"
 		"\tSets the cargo on a ship or ship subsystem.  The cargo-no-deplete flag status is carried through to the new cargo.\r\n"
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of the cargo\r\n"
-		"\t2:\tName of the ship\r\n"
+		"\t2:\tName of the ship (does not need to be in-mission)\r\n"
 		"\t3:\tName of the ship subsystem (optional)" },
 
 	// Goober5000
@@ -37771,8 +37776,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tChecks whether the specified ship or ship subsystem contains a particular cargo.\r\n"
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of the cargo\r\n"
-		"\t2:\tName of the ship\r\n"
-		"\t3:\tName of the ship subsystem (optional)" },
+		"\t2:\tName of the ship (ship does not need to be in-mission)\r\n"
+		"\t3:\tName of the ship subsystem (Optional. Ship must be in-mission)" },
 
 	// Goober5000
 	{ OP_CHANGE_SOUNDTRACK, "change-soundtrack\r\n"
@@ -37841,7 +37846,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_SET_EXPLOSION_OPTION, "set-explosion-option\r\n"
 		"Sets an explosion option on a particular ship.  Takes 3 or more arguments...\r\n"
-		"\t1:\tShip name\r\n"
+		"\t1:\tShip name (ship must be in-mission)\r\n"
 		"\t2:\tExplosion option\r\n"
 		"\t3:\tExplosion value (for shockwave speed, 0 will produce no shockwave; for death roll time, 0 will use the default time)\r\n"
 		"Use Add-Data to specify additional explosion options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
@@ -37902,7 +37907,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_OBJECT_FACING, "set-object-facing\r\n"
 		"\tSets an object's orientation to face the specified coordinates.  "
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of a ship or wing.\r\n"
+		"\t1: The name of a ship or wing (ship/wing does not need to be in-mission).\r\n"
 		"\t2: The X coordinate to face.\r\n"
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
@@ -37915,8 +37920,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
 		"\tSets an object's orientation to face the specified object.  "
 		"Takes 2 arguments...\r\n"
-		"\t1: The name of a ship or wing.\r\n"
-		"\t2: The object to face.\r\n"
+		"\t1: The name of a ship or wing (ship/wing does not need to be in-mission).\r\n"
+		"\t2: The object to face (object does not need to be in-mission).\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
 		"\t4: Bank (optional). Enter a non-zero value to enable banking.\r\n"
 		"Note that if Turn time is specified, this needs to be called once per frame, as the rotation is reset every frame.\r\n"
@@ -37925,7 +37930,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
 		"\tCombines the effects of the ship-rot-maneuver and ship-lat-maneuver sexps.  Takes 10 or 11 arguments:\r\n"
-		"\t1: The name of a ship or wing\r\n"
+		"\t1: The name of a ship or wing (ship/wing must be in-mission).\r\n"
 		"\t2: Duration of the maneuver, in milliseconds.  Specifying 0 or 1 indicates infinite duration.\r\n"
 		"\t3: Heading movement velocity, as a percentage (-100 to 100) of the tabled maximum heading velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Pitch movement velocity, as a percentage (-100 to 100) of the tabled maximum pitch velocity, or 0 to not modify the ship's current value\r\n"
@@ -37947,7 +37952,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses a ship to move in a rotational direction.  For the purposes of this sexp, this means the ship rotates along its own heading, pitch, or bank axis (or a combination of axes) without regard to normal ship rotation rules.  "
 		"You may find it necessary to disable the ship AI (e.g. by issuing a play-dead order) before running this sexp.\r\n\r\n"
 		"Takes 6 or 7 arguments:\r\n"
-		"\t1: The name of a ship or wing\r\n"
+		"\t1: The name of a ship or wing (ship/wing must be in-mission).\r\n"
 		"\t2: Duration of the maneuver, in milliseconds.  Specifying 0 or 1 indicates infinite duration.\r\n"
 		"\t3: Heading movement velocity, as a percentage (-100 to 100) of the tabled maximum heading velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Pitch movement velocity, as a percentage (-100 to 100) of the tabled maximum pitch velocity, or 0 to not modify the ship's current value\r\n"
@@ -37965,7 +37970,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses a ship to move in a lateral direction.  For the purposes of this sexp, this means the ship translates along its own X, Y, or Z axis (or a combination of axes) without regard to normal ship movement rules.  "
 		"You may find it necessary to disable the ship AI (e.g. by issuing a play-dead order) before running this sexp.\r\n\r\n"
 		"Takes 6 or 7 arguments:\r\n"
-		"\t1: The name of a ship or wing\r\n"
+		"\t1: The name of a ship or wing (ship/wing must be in-mission).\r\n"
 		"\t2: Duration of the maneuver, in milliseconds.  Specifying 0 or 1 indicates infinite duration.\r\n"
 		"\t3: Vertical movement velocity, as a percentage (-100 to 100) of the tabled maximum vertical velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Sideways movement velocity, as a percentage (-100 to 100) of the tabled maximum sideways velocity, or 0 to not modify the ship's current value\r\n"
@@ -37981,7 +37986,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
 		"\tTags a ship.  Takes 3 or 8 arguments...\r\n"
-		"\t1: The name of a ship.\r\n"
+		"\t1: The name of a ship (ship must be in-mission).\r\n"
 		"\t2: The tag level (currently 1, 2, or 3).\r\n"
 		"\t3: The tag time (in seconds).\r\n"
 		"\t4: A SSM missile (optional - used only for TAG-C).\r\n"
@@ -37992,7 +37997,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SHIP_UNTAG, "ship-untag\r\n"
 		"\tUntags a ship.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship.\r\n" },
+		"\t1: The name of a ship (ship must be in-mission).\r\n" },
 
 /*	made obsolete by Goober5000 - it only works in debug builds anyway
 	{ OP_INT3, "Error (Debug directive)\r\n"
@@ -38086,7 +38091,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
-	{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
+{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
@@ -38478,7 +38483,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tTeam name which will prefer firing given weapon\r\n"
 		"\t2:\tMaximum number of this type of weapon above team can fire.\r\n"
 		"\t3:\tWeapon name (list includes only the valid weapons for this expression)\r\n"
-		"\t4:\tShip name at which the above named team should fire the above named weapon." },
+		"\t4:\tShip name at which the above named team should fire the above named weapon (ship must be in-mission)." },
 
 	{ OP_AND_IN_SEQUENCE, "And in sequence (Boolean operator)\r\n"
 		"\tReturns true if all of its arguments have become true in the order they are listed in.\r\n"
@@ -38506,18 +38511,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if all of the specified ships have been tagged.\r\n\r\n"
 		"Returns a boolean value after <delay> seconds when all ships have been tagged.  Takes 2 or more arguments...\r\n"
 		"\t1:\tDelay in seconds after which sexpression will return true when all ships have been tagged.\r\n"
-		"\tRest:\tNames of ships to check if tagged.." },
+		"\tRest:\tNames of ships to check if tagged (evaluation is deferred until ship is in-mission)." },
 
 	{ OP_ARE_SHIP_FLAGS_SET, "Are ship flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship.\r\n"
+		"\t1:\tName of the ship (ship does not have to be in-mission).\r\n"
 		"\tRest:\tShip, object, parse object, or ai flags which might be set for this ship." },
 
 	{ OP_ARE_WING_FLAGS_SET, "Are wing flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular wing.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the wing.\r\n"
+		"\t1:\tName of the wing (wing does not have to be in-mission).\r\n"
 		"\tRest:\tWing flags which might be set for this wing." },
 
 	{ OP_IS_SHIP_EMP_ACTIVE, "Is ship emp active (Boolean operator)\r\n"
@@ -38737,53 +38742,53 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make visible to sensors." },
+		"\t1+:\tName of ships to make visible to sensors (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_INVISIBLE, "ship-invisible\r\n"
 		"\tCauses the ships listed in this sexpression to be invisible to player sensors.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make invisible to sensors." },
+		"\t1+:\tName of ships to make invisible to sensors (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_VULNERABLE, "ship-vulnerable\r\n"
 		"\tCauses the ship listed in this sexpression to be vulnerable to weapons.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make vulnerable to weapons." },
+		"\t1+:\tName of ships to make vulnerable to weapons (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_INVULNERABLE, "ship-invulnerable\r\n"
 		"\tCauses the ships listed in this sexpression to be invulnerable to weapons.  Use with caution!!!!\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make invulnerable to weapons." },
+		"\t1+:\tName of ships to make invulnerable to weapons (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_BOMB_TARGETABLE, "ship-targetable-as-bomb\r\n"
 		"\tCauses the ships listed in this sexpression to be targetable with bomb targeting key.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make targetable with bomb targeting key." },
+		"\t1+:\tName of ships to make targetable with bomb targeting key (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_BOMB_UNTARGETABLE, "ship-untargetable-as-bomb\r\n"
 		"\tCauses the ships listed in this sexpression to not be targetable with bomb targeting key.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make nontargetable with bomb targeting key." },
+		"\t1+:\tName of ships to make nontargetable with bomb targeting key (ships do not need to be in-mission)." },
 
 	{ OP_SHIELDS_ON, "shields-on\r\n" //-Sesquipedalian
 		"\tCauses the ship listed in this sexpression to have their shields activated.\r\n"
 		"If the ship had no-shields prior to the sexp being called, the ETS will be rebalanced to default.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to activate shields on." },
+		"\t1+:\tName of ships to activate shields on (ships do not need to be in-mission)." },
 
 	{ OP_SHIELDS_OFF, "shields-off\r\n" //-Sesquipedalian
 		"\tCauses the ships listed in this sexpression to have their shields deactivated.  \r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to deactivate shields on." },
+		"\t1+:\tName of ships to deactivate shields on (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_GUARDIAN, "ship-guardian\r\n"
 		"\tCauses the ships listed in this sexpression to not take any damage below 1% of hull strength.  As such, the ship will not be killable by weapons.  Use with caution!!!!\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make unkillable." },
+		"\t1+:\tName of ships to make unkillable (ships do not need to be in-mission)." },
 
 	{ OP_SHIP_NO_GUARDIAN, "ship-no-guardian\r\n"
 		"\tCauses the ships listed in this sexpression to be killable by weapons, if not invulnerable.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1+:\tName of ships to make killable." },
+		"\t1+:\tName of ships to make killable (ships do not need to be in-mission)." },
 
 	// Goober5000
  	{ OP_SHIP_GUARDIAN_THRESHOLD, "ship-guardian-threshold\r\n"
@@ -38791,7 +38796,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
  		"Call with a threshold of 0 (or use ship-no-guardian) to deactivate.\r\n\r\n"
  		"Takes 2 or more arguments...\r\n"
  		"\t1:\tThreshold value.\r\n"
- 		"\t2+:\tName of ships to make unkillable." },
+ 		"\t2+:\tName of ships to make unkillable (ships must be in-mission)." },
  
  	// Goober5000
 	{ OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD, "ship-subsys-guardian-threshold\r\n"
@@ -38799,20 +38804,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Call with a threshold of 0 to deactivate.\r\n\r\n"
  		"Takes 3 or more arguments...\r\n"
 		"\t1:\tThreshold value.\r\n"
-		"\t2:\tShip housing the subsystem(s).\r\n"
+		"\t2:\tShip housing the subsystem(s) (ships must be in-mission).\r\n"
 		"\t3+:\tSubsystems to make unkillable." },
 
 	// Goober5000
 	{ OP_SHIP_STEALTHY, "ship-stealthy\r\n"
 		"\tCauses the ships listed in this sexpression to become stealth ships (i.e. invisible to radar).\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ships to make stealthy." },
+		"\tAll:\tName of ships to make stealthy (ships do not need to be in-mission)." },
 
 	// Goober5000
 	{ OP_SHIP_UNSTEALTHY, "ship-unstealthy\r\n"
 		"\tCauses the ships listed in this sexpression to become non-stealth ships (i.e. visible to radar).\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ships to make non-stealthy." },
+		"\tAll:\tName of ships to make non-stealthy (ships do not need to be in-mission)." },
 
 	// Goober5000
 	{ OP_FRIENDLY_STEALTH_INVISIBLE, "friendly-stealth-invisible\r\n"
@@ -38820,34 +38825,34 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"It doesn't matter if the ship is friendly at the time this sexp executes: as long as it is a stealth ship, it will"
 		"be invisible to radar both as hostile and as friendly.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ships" },
+		"\tAll:\tName of ships (ships do not need to be in-mission)" },
 
 	// Goober5000
 	{ OP_FRIENDLY_STEALTH_VISIBLE, "friendly-stealth-visible\r\n"
 		"\tCauses the friendly ships listed in this sexpression to resume their normal behavior of being visible to radar as"
 		"stealth friendlies.  Does not affect their visibility as stealth hostiles.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ships" },
+		"\tAll:\tName of ships (ships do not need to be in-mission)" },
 
 	// Goober5000
 	{ OP_SHIP_SUBSYS_TARGETABLE, "ship-subsys-targetable\r\n"
 		"\tCauses the specified ship subsystem(s) to be targetable on radar.\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\tRest: Name of the ship's subsystem(s)" },
 
 	// Goober5000
 	{ OP_SHIP_SUBSYS_UNTARGETABLE, "ship-subsys-untargetable\r\n"
 		"\tCauses the specified ship subsystem(s) to not be targetable on radar.\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\tRest: Name of the ship's subsystem(s)" },
 
 	// FUBAR
 	{ OP_SHIP_SUBSYS_NO_REPLACE, "ship-subsys-no-replace\r\n"
 		"\tCauses the -destroyed version of specified ship subsystem(s) to not render when it's destroyed.\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\t2:\tTrue = Do not render or False = render if exists\r\n"
 		"\tRest: Name of the ship's subsystem(s)" 
 		"\tNote: If subsystem is already dead it will vanish or reappear out of thin air" },
@@ -38857,7 +38862,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SHIP_SUBSYS_NO_LIVE_DEBRIS, "ship-subsys-no-live-debris\r\n"
 		"\tCauses the specified ship subsystem(s) to not render live debris when it's destroyed.\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\t2:\tTrue = Do not render or False = render if exists\r\n"
 		"\tRest: Name of the ship's subsystem(s)" },
 
@@ -38866,7 +38871,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses the subsystem to vanish without a trace - no fanfare, notification, or special effects.  See also ship-vanish.\r\n"
 		"\tSingle Player Only!  Warning: This will cause subsystem destruction not to be logged, so 'has-departed', etc. will not work\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\t2:\tTrue = vanish or False = don't vanish\r\n"
 		"\tRest: Name of the ship's subsystem(s)" 
 		"\tNote: Useful for replacing subsystems with actual docked models." },
@@ -38875,7 +38880,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SHIP_SUBSYS_IGNORE_IF_DEAD, "ship-subsys-ignore-if-dead\r\n"
 		"\tCauses secondary weapons to ignore dead ship subsystem(s)and home on hull instead.\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\t2:\tTrue = Ignore dead or False = don't ignore\r\n"
 		"\tRest: Name of the ship's subsystem(s)" },
 
@@ -38883,13 +38888,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SHIP_CHANGE_ALT_NAME, "ship-change-alt-name\r\n"
 		"\tChanges the alternate ship class name displayed in the HUD target window.  Takes 2 or more arguments...\r\n"
 		"\t1:\tThe ship class name to display\r\n"
-		"\tRest:\tThe ships to display the new class name" },
+		"\tRest:\tThe ships to display the new class name (ships do not need to be in-mission)" },
 
 	// FUBAR
 	{ OP_SHIP_CHANGE_CALLSIGN, "ship-change-callsign\r\n"
 		"\tChanges the callsign of a ship.  Takes 2 or more arguments...\r\n"
 		"\t1:\tThe callsign to display or empty to remove\r\n"
-		"\tRest:\tThe ships to display the new callsign" },
+		"\tRest:\tThe ships to display the new callsign (ships do not need to be in-mission)" },
 
 	// Goober5000
 	{ OP_SET_DEATH_MESSAGE, "set-death-message\r\n"
@@ -38908,7 +38913,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PERCENT_SHIPS_DEPARTED, "percent-ships-departed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
 		"which have departed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to depart.\r\n\r\n"
+		"are used for calculation for the total possible ships to depart.  As expected, ships yet to arrive are "
+		" included in the percentage that has not departed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of departed ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships/wings whose departure status should be determined." },
@@ -38916,7 +38922,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PERCENT_SHIPS_DESTROYED, "percent-ships-destroyed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
 		"which have been destroyed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.\r\n\r\n"
+		"are used for calculation for the total possible ships to be destroyed.  As expected, ships yet to arrive are "
+		" included in the percentage that has not been destroyed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of destroyed ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships/wings whose destroyed status should be determined." },
@@ -38924,7 +38931,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_PERCENT_SHIPS_DISARMED, "percent-ships-disarmed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships "
-		"which have been disarmed is greater or equal to the given percentage.\r\n\r\n"
+		"which have been disarmed is greater or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to be destroyed.  As expected, ships yet to arrive are "
+		" included in the percentage that has not been disarmed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of disarmed ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships whose disarmed status should be determined." },
@@ -38932,7 +38941,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_PERCENT_SHIPS_DISABLED, "percent-ships-disabled\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships "
-		"which have been disabled is greater or equal to the given percentage.\r\n\r\n"
+		"which have been disabled is greater or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to be destroyed.  As expected, ships yet to arrive are "
+		" included in the percentage that has not been disabled.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of disabled ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships whose disabled status should be determined." },
@@ -38985,13 +38996,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_SET_SCANNED, "set-scanned\r\n"
 		"\tSets the cargo on the specified ship or ship subsystem as known or scanned.  Takes 1 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\tRest:\tName of a subsystem on that ship (optional)\r\n" },
 
 	// Goober5000
 	{ OP_SET_UNSCANNED, "set-unscanned\r\n"
 		"\tSets the cargo on the specified ship or ship subsystem as unknown or unscanned.  Takes 1 or more arguments...\r\n"
-		"\t1:\tName of a ship\r\n"
+		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\tRest:\tName of a subsystem on that ship (optional)\r\n" },
 
 	{ OP_DEPART_NODE_DELAY, "depart-node-delay\r\n"
@@ -39037,32 +39048,32 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SHIP_VAPORIZE, "ship-vaporize\r\n"
 		"\tSets the ship to vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to set the vaporize flag" },
+		"\tAll:\tList of ships on which to set the vaporize flag (ships do not need to be in-mission)" },
 
 	{ OP_SHIP_NO_VAPORIZE, "ship-no-vaporize\r\n"
 		"\tSets the ship to not vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to unset the vaporize flag" },
+		"\tAll:\tList of ships on which to unset the vaporize flag (ships do not need to be in-mission)" },
 
 	{ OP_DONT_COLLIDE_INVISIBLE, "don't-collide-invisible\r\n"
 		"\tSets the \"don't collide invisible\" flag on a list of ships.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to set the \"don't collide invisible\" flag" },
+		"\tAll:\tList of ships on which to set the \"don't collide invisible\" flag (ships do not need to be in-mission)" },
 
 	{ OP_COLLIDE_INVISIBLE, "collide-invisible\r\n"
 		"\tUnsets the \"don't collide invisible\" flag on a list of ships.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to unset the \"don't collide invisible\" flag" },
+		"\tAll:\tList of ships on which to unset the \"don't collide invisible\" flag (ships do not need to be in-mission)" },
 
 	{ OP_SET_MOBILE, "set-mobile\r\n"
 		"\tAllows the specified ship(s) to move.  Opposite of set-immobile.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to unset the \"immobile\" flag" },
+		"\tAll:\tList of ships on which to unset the \"immobile\" flag (ships do not need to be in-mission)" },
 
 	{ OP_SET_IMMOBILE, "set-immobile\r\n"
 		"\tPrevents the specified ship(s) from moving in any way.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to set the \"immobile\" flag" },
+		"\tAll:\tList of ships on which to set the \"immobile\" flag (ships do not need to be in-mission)" },
 
 	{ OP_IGNORE_KEY, "ignore-key\r\n"
 		"\tCauses the game to ignore (or stop ignoring) a certain key.\r\n"
@@ -39074,22 +39085,22 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_WARP_BROKEN, "break-warp\r\n"
 		"\tBreak the warp drive on the specified ship.  A broken warp drive can be repaired by "
 		"a repair ship.  Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships to break the warp drive on" },
+		"\tAll:\tList of ships to break the warp drive on (ships do not need to be in-mission)" },
 
 	{ OP_WARP_NOT_BROKEN, "fix-warp\r\n"
 		"\tFixes a broken warp drive instantaneously.  This option applies to warp drives broken with "
 		"the break-warp sepxression.  Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships whose warp drive should be fixed"},
+		"\tAll:\tList of ships whose warp drive should be fixed (ships do not need to be in-mission)"},
 
 	{ OP_WARP_NEVER, "never-warp\r\n"
 		"\tNever allows a ship to warp out.  When this sexpression is used, the given ships will "
 		"never be able to warp out.  The warp drive cannot be repaired.  Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships whose are not allowed to warp out under any condition"},
+		"\tAll:\tList of ships whose are not allowed to warp out under any condition (ships do not need to be in-mission)"},
 
 	{ OP_WARP_ALLOWED, "allow-warp\r\n"
 		"\tAllows a ship which was previously not allowed to warp out to do so.  When this sexpression is "
 		"used, the given ships will be able to warp out again.  Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships whose are allowed to warp out"},
+		"\tAll:\tList of ships whose are allowed to warp out (ships do not need to be in-mission)"},
 
 	{ OP_SET_SUBSPACE_DRIVE, "set-subspace-drive\r\n"
 		"\tTurns on or off the subspace edrive for the given ships.  A ship with no subspace drive will act "
@@ -39097,11 +39108,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"for a friendly ship with a hangar bay.  If the ship is the player, pressing Alt-J will not not initiate "
 		"a jump, nor give any indication that a jump failed.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTrue if the ship should have a drive; false otherwise\r\n"
-		"\tRest:\tList of ships" },
+		"\tRest:\tList of ships (ships do not need to be in-mission)" },
 
 	{ OP_JETTISON_CARGO_DELAY, "jettison-cargo-delay (deprecated)\r\n"
 		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure.  Takes 2 or more arguments...\r\n"
-		"\t1: Ship to jettison cargo\r\n"
+		"\t1: Ship to jettison cargo (ship must be in-mission)\r\n"
 		"\t2: Delay after which to jettison cargo (note that this isn't actually used)\r\n"
 		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
 	},
@@ -39109,13 +39120,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_JETTISON_CARGO_NEW, "jettison-cargo\r\n"
 		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure.  This is an upgrade of the old "
 		"jettison-cargo-delay sexp which a) didn't use a delay, and b) botched the physics calculations.  Takes 1 or more arguments...\r\n"
-		"\t1: Ship to jettison cargo\r\n"
+		"\t1: Ship to jettison cargo (ship must be in-mission)\r\n"
 		"\t2 (optional): Speed with which to jettison cargo (defaults to 25)\r\n"
 		"\tRest (optional): Cargo to jettison.  If no cargo arguments are specified, the ship jettisons all cargo.\r\n"
 	},
 
 	{ OP_SET_DOCKED, "set-docked\r\n"
-		"\tCauses one ship to become instantly docked to another at the specified docking ports.  Takes 4 arguments...\r\n"
+		"\tCauses one ship to become instantly docked to another at the specified docking ports (both ships must be in-mission).  Takes 4 arguments...\r\n"
 		"\t1: Docker ship\r\n"
 		"\t2: Docker point\r\n"
 		"\t3: Dockee ship\r\n"
@@ -39124,7 +39135,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_BEAM_FIRE, "fire-beam\r\n"
 		"\tFire a beam weapon from a specified subsystem\r\n"
-		"\t1:\tShip which will be firing\r\n"
+		"\t1:\tShip which will be firing (ship must be in-mission)\r\n"
 		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
 		"\t3:\tShip which will be targeted\r\n"
 		"\t4:\tSubsystem to target (optional)\r\n"
@@ -39132,7 +39143,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_BEAM_FIRE_COORDS, "fire-beam-at-coordinates\r\n"
 		"\tFire a beam weapon from a specified subsystem at a set of coordinates.  Not compatible with multiplayer.\r\n"
-		"\t1:\tShip which will be firing\r\n"
+		"\t1:\tShip which will be firing (ship must be in-mission)\r\n"
 		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
 		"\t3:\tx coordinate to be targeted\r\n"
 		"\t4:\ty coordinate to be targeted\r\n"
@@ -39145,13 +39156,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_BEAM_FLOATING_FIRE, "beam-create\r\n"
 		"\tFire a beam weapon from the specified coordinates to the specified target. Not compatible with multiplayer.\r\n"
 		"\t1:\tBeam weapon to fire\r\n"
-		"\t2:\tParent ship (for kill credit, if applicable; can be none)\r\n"
+		"\t2:\tParent ship (for kill credit, if applicable, must be in-mission; or \"" SEXP_NONE_STRING "\")\r\n"
 		"\t3:\tTeam for this beam to be on (related to difficulty-based damage)\r\n"
 		"\t4:\tX coordinate to fire from\r\n"
 		"\t5:\tY coordinate to fire from\r\n"
 		"\t6:\tZ coordinate to fire from\r\n"
-		"\t7:\tTarget ship (can be none)\r\n"
-		"\t8:\tTarget subsystem (optional, can be none)\r\n"
+		"\t7:\tTarget ship (must be in-mission or \"" SEXP_NONE_STRING "\")\r\n"
+		"\t8:\tTarget subsystem (optional; can be \"" SEXP_NONE_STRING "\")\r\n"
 		"\t9:\tX coordinate to fire at (optional)\r\n"
 		"\t10:\tY coordinate to fire at (optional)\r\n"
 		"\t11:\tZ coordinate to fire at (optional)\r\n"
@@ -39160,7 +39171,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t14:\tSecond Z coordinate to fire at (optional; used for slash beams)\r\n" },
 
 	{ OP_IS_TAGGED, "is-tagged\r\n"
-		"\tReturns whether a given ship is tagged or not\r\n"},
+		"\tReturns whether a given ship is tagged or not (evaluation returns NAN until ship is in-mission)\r\n"},
 
 	{ OP_IS_PLAYER, "is-player\r\n"
 		"\tReturns true if all the ships specified are currently under control of a player.\r\n"
@@ -39228,39 +39239,39 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_BEAM_FREE, "beam-free\r\n"
 		"\tSets one or more turrets to allow beam weapons firing.  When a beam-equipped turret is activated, there will be a short random delay (between 50 and 4000 milliseconds) before firing.\r\n"
-		"\t1: Ship to be operated on\r\n"
+		"\t1: Ship to be operated on (ship must be in-mission)\r\n"
 		"\t2, 3, etc : List of turrets to activate\r\n"},
 
 	{ OP_BEAM_FREE_ALL, "beam-free-all\r\n"
-		"\tSets all beam weapons on the specified ship to be active.  For each beam-equipped turret, there will be a different short random delay (between 50 and 4000 milliseconds) before firing.\r\n"},
+		"\tSets all beam weapons on the specified ship to be active (ship must be in-mission).  For each beam-equipped turret, there will be a different short random delay (between 50 and 4000 milliseconds) before firing.\r\n"},
 
 	{ OP_BEAM_LOCK, "beam-lock\r\n"
 		"\tSets one or more turrets to NOT allow beam weapons firing.\r\n"
-		"\t1: Ship to be operated on\r\n"
+		"\t1: Ship to be operated on (ship must be in-mission)\r\n"
 		"\t2, 3, etc : List of turrets to deactivate\r\n"},
 
 	{ OP_BEAM_LOCK_ALL, "beam-lock-all\r\n"
-		"\tSets all beam turrets on the specified ship to be deactivated\r\n"},
+		"\tSets all beam turrets on the specified ship to be deactivated (ship must be in-mission)\r\n"},
 
 	{ OP_TURRET_FREE, "turret-free\r\n"
 		"\tSets one or more turrets to allow standard primary or secondary weapons firing.  When a turret is activated, there will be a short random delay (between 50 and 4000 milliseconds) before firing.\r\n"
-		"\t1: Ship to be operated on\r\n"
+		"\t1: Ship to be operated on (ship must be in-mission)\r\n"
 		"\t2, 3, etc : List of turrets to activate\r\n"},
 
 	{ OP_TURRET_FREE_ALL, "turret-free-all\r\n"
-		"\tSets all standard primary or secondary weapon turrets on the specified ship to be active.  For each turret, there will be a different short random delay (between 50 and 4000 milliseconds) before firing.\r\n"},
+		"\tSets all standard primary or secondary weapon turrets on the specified ship to be active (ship must be in-mission).  For each turret, there will be a different short random delay (between 50 and 4000 milliseconds) before firing.\r\n"},
 
 	{ OP_TURRET_LOCK, "turret-lock\r\n"
 		"\tSets one or more turrets to NOT allow standard primary or secondary weapons firing.\r\n"
-		"\t1: Ship to be operated on\r\n"
+		"\t1: Ship to be operated on (ship must be in-mission)\r\n"
 		"\t2, 3, etc : List of turrets to deactivate\r\n"},
 
 	{ OP_TURRET_LOCK_ALL, "turret-lock-all\r\n"
-		"\tSets all turret weapons on the specified ship to be deactivated\r\n"},
+		"\tSets all turret weapons on the specified ship to be deactivated (ship must be in-mission)\r\n"},
 
 	{ OP_TURRET_CHANGE_WEAPON, "turret-change-weapon\r\n"
 		"\tSets a given turret weapon slot to the specified weapon\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (ship must be in-mission)\r\n"
 		"\t2: Turret\r\n"
 		"\t3: Weapon to set slot to\r\n"
 		"\t4: Primary slot (or 0 to use secondary)\r\n"
@@ -39268,45 +39279,45 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_TURRET_SET_DIRECTION_PREFERENCE, "turret-set-direction-preference\r\n"
 		"\tSets specified ship turrets direction preference to the specified value\r\n"
-		"\t1: Ship turrets are on\r\n"
+		"\t1: Ship turrets are on (ship must be in-mission)\r\n"
 		"\t2: Preference to set, 0 to disable, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
 	{ OP_TURRET_SET_RATE_OF_FIRE, "turret-set-rate-of-fire\r\n"
 		"\tSets specified ship turrets rate of fire to the specified value\r\n"
-		"\t1: Ship turrets are on\r\n"
+		"\t1: Ship turrets are on (ship must be in-mission)\r\n"
 		"\t2: Rate to set in percentage format (200 = 2x, 50 = .5x), 0 to set to number of fire points, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
 	{ OP_TURRET_SET_OPTIMUM_RANGE, "turret-set-optimum-range\r\n"
 		"\tSets specified ship turrets optimum range to the specified value\r\n"
-		"\t1: Ship turrets are on\r\n"
+		"\t1: Ship turrets are on (ship must be in-mission)\r\n"
 		"\t2: Priority to set, 0 to disable, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
 	{ OP_TURRET_SET_FORCED_TARGET, "turret-set-forced-target\r\n"
 		"\tForces one or more turrets to target a specific ship. Will hang on to this target until dead or cleared by turret-clear-forced-target\r\n"
 		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
-		"\t1: Ship to target\r\n"
-		"\t2: Ship turrets are on\r\n"
+		"\t1: Ship to target (ship must be in-mission)\r\n"
+		"\t2: Ship turrets are on (ship must be in-mission)\r\n"
 		"\trest: Turrets to set\r\n" },
 	
 	{ OP_TURRET_SET_FORCED_SUBSYS_TARGET, "turret-set-forced-subsys-target\r\n"
 		"\tForces one or more turrets to target a specific subsystem on a particular ship. Will hang on to this subsystem target until destroyed or cleared by turret-clear-forced-target\r\n"
 		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
-		"\t1: Ship to target\r\n"
+		"\t1: Ship to target (ship must be in-mission)\r\n"
 		"\t2: Subsystem to target\r\n"
-		"\t3: Ship turrets are on\r\n"
+		"\t3: Ship turrets are on (ship must be in-mission)\r\n"
 		"\trest: Turrets to set\r\n" },
 
 	{ OP_TURRET_CLEAR_FORCED_TARGET, "turret-clear-forced-target\r\n"
 		"\tClears any targets set by turret-set-forced-target\r\n"
-		"\t1: Ship turrets are on\r\n"
+		"\t1: Ship turrets are on (ship must be in-mission)\r\n"
 		"\trest: Turrets to have their targets cleared\r\n" },
 
 	{ OP_TURRET_SET_TARGET_PRIORITIES, "turret-set-target-priorities\r\n"
 		"\tSets target priorities for the specified ship turret\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (ship must be in-mission)\r\n"
 		"\t2: Turret to set\r\n"
 		"\t3: True = Set new list, False = Reset to turret default\r\n"
 		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
@@ -39315,46 +39326,46 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tMakes the specified turrets more inaccurate by firing their shots in a cone, like field of fire."
 		"This will only decrease their accuracy, it cannot make the weapons more accurate than normal.\r\n"
 		"\tDoes not work on beams.\r\n"
-		"\t1: Ship turret(s) are on\r\n"
+		"\t1: Ship turret(s) are on (ship must be in-mission)\r\n"
 		"\t2: TENTHS of a degree. (i.e. 100 = 10 degrees)\r\n"
 		"\trest: (optional) Turrets to set. If omitted affects all turrets on the ship.\r\n" },
 
 	{ OP_TURRET_GET_PRIMARY_AMMO, "turret-get-primary-ammo\r\n"
 		"\tGets the turret's primary bank ammo, only works with ballistic weapons\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (evaluation returns NAN until ship is in-mission)\r\n"
 		"\t2: Turret the bank is on\r\n"
 		"\t3: Bank to check ammo\r\n"},
 
 	{ OP_TURRET_GET_SECONDARY_AMMO, "turret-get-secondary-ammo\r\n"
 		"\tGets the turret's secondary bank ammo\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (evaluation returns NAN until ship is in-mission)\r\n"
 		"\t2: Turret to check ammo\r\n"
 		"\t3: Bank to check ammo\r\n" },
 
 	{ OP_TURRET_SET_PRIMARY_AMMO, "turret-set-primary-ammo\r\n"
 		"\tSets the turret's primary bank ammo, only works with ballistic weapons\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (ship must be in-mission)\r\n"
 		"\t2: Turret the bank is on\r\n"
 		"\t3: Bank to add ammo to\r\n" 
 		"\t4: Amount to add" },
 
 	{ OP_TURRET_SET_SECONDARY_AMMO, "turret-set-secondary-ammo\r\n"
 		"\tSets the turret's secondary bank ammo\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (ship must be in-mission)\r\n"
 		"\t2: Turret the bank is on\r\n"
 		"\t3: Bank to add ammo to\r\n"
 		"\t4: Amount to add" },
 
 	{ OP_IS_IN_TURRET_FOV, "is-in-turret-fov\r\n"
 		"\tChecks whether the given craft is within the field of view of a turret, and optionally within a specified range.  Takes 3 to 4 arguments...\r\n"
-		"\t1: Ship being targeted\r\n"
-		"\t2: Ship which carries a turret\r\n"
+		"\t1: Ship being targeted (false if ship not in-mission)\r\n"
+		"\t2: Ship which carries a turret (false if ship not in-mission)\r\n"
 		"\t3: Turret to check\r\n"
 		"\t4: Range in meters (optional)\r\n" },
 
 	{ OP_SET_ARMOR_TYPE, "set-armor-type\r\n"
 		"\tSets the armor type for a ship or subsystem\r\n"
-		"\t1: Ship subsystem is on\r\n"
+		"\t1: Ship subsystem is on (ship must be in-mission)\r\n"
 		"\t2: Set = true/Reset to default = false\r\n"
 		"\t3: Armor type to set or <none>\r\n"
 		"\trest: Subsystems to set (hull for ship, shield for shields)\r\n"},
@@ -39371,7 +39382,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: true = set collision, False = set debris\r\n"
 		"\t2: Damage type to set or <none>\r\n"
 		"\t3: Set = true/Reset to default = false\r\n"
-		"\trest: Ships to set\r\n"},
+		"\trest: Ships to set (ship must be in-mission)\r\n"},
 
 	{ OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE, "ship-set-shockwave-damage-type\r\n"
 		"\tSets the shockwave damage type for a class of ship.  All ships of that class are changed.\r\n"
@@ -39386,35 +39397,35 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_TURRET_SET_TARGET_ORDER, "turret-set-target-order\r\n"
 		"\tSets targeting order of a given turret\r\n"
-		"\t1: Ship turret is on\r\n"
+		"\t1: Ship turret is on (ship must be in-mission)\r\n"
 		"\t2: Turret\r\n"
 		"\trest: Target order type (Bombs,ships,asteroids)"},
 
 	{ OP_SHIP_TURRET_TARGET_ORDER, "ship-turret-target-order\r\n"
 		"\tSets targeting order of all turrets on a given ship\r\n"
-		"\t1: Ship turrets are on\r\n"
+		"\t1: Ship turrets are on (ship must be in-mission)\r\n"
 		"\trest: Target order type (Bombs,ships,asteroids)"},
 
 	{ OP_TURRET_SUBSYS_TARGET_DISABLE, "turret-subsys-target-disable\r\n"
 		"\tPrevents turrets from targeting only the subsystems when targeting large targets\r\n"
-		"\t1: Ship to be operated on\r\n"
+		"\t1: Ship to be operated on (ship must be in-mission)\r\n"
 		"\trest: List of turrets that are affected\r\n"},
 
 	{ OP_TURRET_SUBSYS_TARGET_ENABLE, "turret-subsys-target-enable\r\n"
 		"\tSets turret to target the subsystems when targeting large targets\r\n"
-		"\t1: Ship to be operated on\r\n"
+		"\t1: Ship to be operated on (ship must be in-mission)\r\n"
 		"\trest: List of turrets that are affected\r\n"},
 
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"
-		"\t1: Ship to be added or removed\r\n"
+		"\t1: Ship to be added or removed (ship must be in-mission)\r\n"
 		"\t2: 0 to remove from the list, any positive value will be used as the escort priority\r\n"
 		"NOTE : it _IS_ safe to add a ship which may already be on the list or remove\r\n"
 		"a ship which is not on the list\r\n"},
 
 	{ OP_AWACS_SET_RADIUS, "awacs-set-radius\r\n"
 		"\tSets the awacs radius for a given ship subsystem. NOTE : does not work properly in multiplayer\r\n"
-		"\t1: Ship which has the awacs subsystem\r\n"
+		"\t1: Ship which has the awacs subsystem (ship must be in-mission)\r\n"
 		"\t2: Awacs subsystem\r\n"
 		"\t3: New radius\r\n"},
 
@@ -39422,7 +39433,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PRIMITIVE_SENSORS_SET_RANGE, "primitive-sensors-set-range\r\n"
 		"\tSets the range of the primitive sensors on a ship.  Ships outside of this range will not appear on "
 		"sensors.  Has no effect on ships that do not have the \"primitive-sensors\" flag2 set.  Takes 2 arguments...\r\n"
-		"\t1: Ship on which to set range\r\n"
+		"\t1: Ship on which to set range (ship must be in-mission)\r\n"
 		"\t2: Range, in meters\r\n" },
 
 	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
@@ -39458,7 +39469,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Maximum speed while flying waypoints (must be greater than 0)\r\n"
 		"\tNOTE: This will only work if the ship is already in the game\r\n"
 		"\tNOTE: Set to -1 to reset\r\n"},
@@ -39467,17 +39478,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the formation used by one or more wings\r\n"
 		"\t1: Formation name\r\n"
 		"\t2: Formation multiplier, as a percentage (1x = 100)\r\n"
-		"\tRest: Wing that should fly this formation\r\n"
+		"\tRest: Wing that should fly this formation (wing does not need to be in-mission)\r\n"
 	},
 
 	{ OP_TURRET_TAGGED_ONLY_ALL, "turret-tagged-only\r\n"
 		"\tMakes turrets target and hence fire strictly at tagged objects\r\n"
-		"\tAll: Ship name\r\n"
+		"\tAll: Ship name (ship must be in-mission)\r\n"
 		"\tNOTE: Will not stop a turret already firing at an untagged ship\r\n"},
 
 	{ OP_TURRET_TAGGED_CLEAR_ALL, "turret-tagged-clear\r\n"
 		"\tRelaxes restriction on turrets targeting only tagged ships\r\n"
-		"\tAll: Ship name\r\n"},
+		"\tAll: Ship name (ship must be in-mission)\r\n"},
 
 	{ OP_PRIMARIES_DEPLETED, "primaries-depleted\r\n"
 		"\tReturns true if ship is out of primary weapons\r\n"
@@ -39489,7 +39500,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SUBSYS_SET_RANDOM, "subsys-set-random\r\n"
 		"\tSets ship subsystem strength in a given range\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Low range\r\n"
 		"\t3: High range\r\n"
 		"\t4: List of subsys names not to be randomized\r\n"},
@@ -39540,7 +39551,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses the named ship to have unlimited cargo.\r\n"
 		"\tNote:  only applies to BIG or HUGE ships\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1:\tName of one of the ships.\r\n"
+		"\t1:\tName of one of the ships (ship does not need to be in-mission).\r\n"
 		"\t2:\toptional: 1 disallow depletion, 0 allow depletion." },
 
 	{ OP_SHIELD_QUAD_LOW, "shield-quad-low\r\n"
@@ -39593,13 +39604,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SET_SPECIAL_WARPOUT_NAME, "special-warpout-name\r\n"
 		"\tSets the name of the knossos device to be used for warpout\r\n"
-		"\t1: Ship name to exit\r\n"
-		"\t2: Name of knossos device\r\n"},
+		"\t1: Ship name to exit (ship must be in-mission)\r\n"
+		"\t2: Name of knossos device (knossos device must be in-mission)\r\n"},
 
 	{ OP_SHIP_VANISH, "ship-vanish\r\n"
 		"\tMakes the named ship vanish (no log and vanish)\r\n"
 		"\tSingle Player Only!  Warning: This will cause ship exit not to be logged, so 'has-departed', etc. will not work\r\n"
-		"\t1: List of ship names to vanish\r\n"},
+		"\t1: List of ship names to vanish (ship must be in-mission)\r\n"},
 
 	{ OP_DESTROY_INSTANTLY, "destroy-instantly\r\n"
 		"\tSelf-destructs the named ship without explosion, death roll, or debris.  That is, the ship is instantly gone from the mission and the only indication of what happened is a mission log entry.\r\n"
@@ -39686,7 +39697,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CHANGE_SHIP_CLASS, "change-ship-class\r\n"
 		"\tCauses the listed ships' classes to be changed to the specified ship class.  Takes 2 or more arguments...\r\n"
 		"\t1: The name of the new ship class\r\n"
-		"\tRest: The list of ships to change the classes of"
+		"\tRest: The list of ships to change the classes of (ships do not need to be in-mission)"
 	},
 
 	// Goober5000
@@ -39727,7 +39738,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_SET_DEPARTURE_INFO, "set-departure-info\r\n"
 		"\tSets departure information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
-		"\t1: Ship or wing name\r\n"
+		"\t1: Ship or wing name (ship/wing does not need to be in-mission)\r\n"
 		"\t2: Departure location\r\n"
 		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
 		"\t4: Departure path mask (optional; this is a bitfield where the bits set to 1 correspond to the paths to use; defaults to 0 which is a special case that means all paths can be used)\r\n"
@@ -39739,38 +39750,38 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Bobboau
 	{ OP_DEACTIVATE_GLOW_POINTS, "deactivate-glow-points\r\n"
 		"\tDeactivates all glow points on a ship.  Takes 1 or more arguments...\r\n"
-		"\tAll: Name of ship on which to deactivate glow points\r\n"
+		"\tAll: Name of ship on which to deactivate glow points (ship must be in-mission)\r\n"
 	},
 
 	// Bobboau
 	{ OP_ACTIVATE_GLOW_POINTS, "activate-glow-points\r\n"
 		"\tActivates all glow points on a ship.  Takes 1 or more arguments...\r\n"
-		"\tAll: Name of ship on which to activate glow points\r\n"
+		"\tAll: Name of ship on which to activate glow points (ship must be in-mission)\r\n"
 	},
 
 	// Bobboau
 	{ OP_DEACTIVATE_GLOW_MAPS, "deactivate-glow-maps\r\n"
 		"\tDeactivates the glow maps for a ship.  Takes 1 or more arguments...\r\n"
-		"\tAll: Name of ship on which to deactivate glow maps\r\n"
+		"\tAll: Name of ship on which to deactivate glow maps (ship must be in-mission)\r\n"
 	},
 
 	// Bobboau
 	{ OP_ACTIVATE_GLOW_MAPS, "activate-glow-maps\r\n"
 		"\tActivates the glow maps for a ship.  Takes 1 or more arguments...\r\n"
-		"\tAll: Name of ship on which to activate glow maps\r\n"
+		"\tAll: Name of ship on which to activate glow maps (ship must be in-mission)\r\n"
 	},
 
 	// Bobboau
 	{ OP_DEACTIVATE_GLOW_POINT_BANK, "deactivate-glow-point-bank\r\n"
 		"\tDeactivates one or more glow point bank(s) on a ship.  Takes 2 or more arguments...\r\n"
-		"\t1: Name of ship on which to deactivate glow point bank(s)\r\n"
+		"\t1: Name of ship on which to deactivate glow point bank(s) (ship must be in-mission)\r\n"
 		"\tRest: Name of glow point bank to deactivate\r\n"
 	},
 
 	// Bobboau
 	{ OP_ACTIVATE_GLOW_POINT_BANK, "activate-glow-point-bank\r\n"
 		"\tActivates one or more glow point bank(s) on a ship.  Takes 2 or more arguments...\r\n"
-		"\t1: Name of ship on which to activate glow point bank(s)\r\n"
+		"\t1: Name of ship on which to activate glow point bank(s) (ship must be in-mission)\r\n"
 		"\tRest: Name of glow point bank to activate\r\n"
 	},
 
@@ -39778,7 +39789,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_KAMIKAZE, "kamikaze\r\n"
 		"\tTells ships to perform a kamikaze on its current target. Takes 2 or more arguments...\r\n"
 		"\t1: Damage dealt when kamikaze is done\r\n"
-		"\tRest: Names of ships to perform kamikaze\r\n"
+		"\tRest: Names of ships to perform kamikaze (ships do not need to be in-mission)\r\n"
 	},
 	
 	//phreak
@@ -39786,7 +39797,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSpecific turrets on a ship only fire at tagged targets, as opposed to all turrets doing this using turret-tagged-only\r\n"
 		"\tIt is safe to slave turrets already slaved\r\n"
 		"\tTakes 2 or more arguments...\r\n"
-		"\t1: Name of ship to slave some turrets to target only tagged ships\r\n"
+		"\t1: Name of ship to slave some turrets to target only tagged ships (ship must be in-mission)\r\n"
 		"\tRest: Turrets to slave\r\n"
 	},
 
@@ -39795,7 +39806,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSpecific turrets on a ship are free to fire on untagged ships, as opposed to all turrets doing this using turret-tagged-clear\r\n"
 		"\tIt is safe to unslave turrets already free\r\n"
 		"\tTakes 2 or more arguments...\r\n"
-		"\t1: Name of ship to unslave some turrets to target any hostile ship\r\n"
+		"\t1: Name of ship to unslave some turrets to target any hostile ship (ship must be in-mission)\r\n"
 		"\tRest: Turrets to unslave\r\n"
 	},
 
@@ -39803,7 +39814,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_LOCK_ROTATING_SUBSYSTEM, "lock-rotating-subsystem\r\n"
 		"\tInstantaneously locks a rotating subsystem so that it cannot rotate unless freed by free-rotating-subsystem.  "
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\tRest:\tName of the rotating subsystem to lock"
 	},
 
@@ -39811,7 +39822,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_FREE_ROTATING_SUBSYSTEM, "free-rotating-subsystem\r\n"
 		"\tInstantaneously frees a rotating subsystem previously locked by lock-rotating-subsystem.  "
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\tRest:\tName of the rotating subsystem to free"
 	},
 
@@ -39819,7 +39830,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_REVERSE_ROTATING_SUBSYSTEM, "reverse-rotating-subsystem\r\n"
 		"\tInstantaneously reverses the rotation direction of a rotating subsystem.  "
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\tRest:\tName of the rotating subsystem to reverse"
 	},
 
@@ -39827,7 +39838,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_ROTATING_SUBSYS_SET_TURN_TIME, "rotating-subsys-set-turn-time\r\n"
 		"\tSets the turn time of a rotating subsystem.  "
 		"Takes 3 or 4 arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\t2:\tName of the rotating subsystem to configure\r\n"
 		"\t3:\tThe time for one complete rotation, in milliseconds - positive is counterclockwise, negative is clockwise\r\n"
 		"\t4:\tThe acceleration (x1000, just as #3 is seconds x1000) to change from the current turn rate to the desired turn rate.  "
@@ -39841,7 +39852,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_LOCK_TRANSLATING_SUBSYSTEM, "lock-translating-subsystem\r\n"
 		"\tInstantaneously locks a translating subsystem so that it cannot translate unless freed by free-translating-subsystem.  "
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\tRest:\tName of the translating subsystem to lock"
 	},
 
@@ -39849,7 +39860,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_FREE_TRANSLATING_SUBSYSTEM, "free-translating-subsystem\r\n"
 		"\tInstantaneously frees a translating subsystem previously locked by lock-translating-subsystem.  "
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\tRest:\tName of the translating subsystem to free"
 	},
 
@@ -39857,7 +39868,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_REVERSE_TRANSLATING_SUBSYSTEM, "reverse-translating-subsystem\r\n"
 		"\tInstantaneously reverses the translation direction of a translating subsystem.  "
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\tRest:\tName of the translating subsystem to reverse"
 	},
 
@@ -39865,7 +39876,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_TRANSLATING_SUBSYS_SET_SPEED, "translating-subsys-set-speed\r\n"
 		"\tSets the speed (movement rate) of a translating subsystem.  "
 		"Takes 3 or 4 arguments...\r\n"
-		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t1:\tName of the ship housing the subsystem (ship must be in-mission)\r\n"
 		"\t2:\tName of the translating subsystem to configure\r\n"
 		"\t3:\tThe movement rate, in millimeters per second (i.e. one thousand times the speed in m/s) - positive is along the vector of the translation axis\r\n"
 		"\t4:\tThe acceleration (x1000, just as #3 is m/s x1000) to change from the current movement rate to the desired movement rate.  "
@@ -39875,7 +39886,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_TRIGGER_SUBMODEL_ANIMATION, "trigger-submodel-animation\r\n"
 		"\tActivates a submodel animation trigger for a given ship.  Takes 4 to 6 arguments...\r\n"
-		"\t1: The ship on which the animation should run\r\n"
+		"\t1: The ship on which the animation should run (ship must be in-mission)\r\n"
 		"\t2: The type of animation (named as one would see them in ships.tbl)\r\n"
 		"\t3: The subtype of animation, which is type-dependent.  For docking animations this is the dock index.\r\n"
 		"\t4: The animation direction: 1 for forward, or -1 for reverse\r\n"
@@ -39886,7 +39897,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_SET_PRIMARY_AMMO, "set-primary-ammo\r\n"
 		"\tSets the amount of ammo for the specified ballistic bank\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Bank to check (0, 1, and 2 are legal banks)\r\n" 
 		"\t3: Number to set this bank to (If this is larger than the maximum, bank will be set to maximum).\r\n"
 		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
@@ -39895,7 +39906,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_SET_SECONDARY_AMMO, "set-secondary-ammo\r\n"
 		"\tSets the amount of ammo for the specified bank\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
 		"\t3: Number to set this bank to (If this is larger than the maximum, bank will be set to maximum).\r\n"
 		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
@@ -39904,7 +39915,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_SET_PRIMARY_WEAPON, "set-primary-weapon\r\n"
 		"\tSets the weapon for the specified bank\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Bank to check (0, 1 and 2 are legal banks)\r\n" 
 		"\t3: Name of the primary weapon \r\n"
 		"\t4: Number to set ammo of this bank to (If this is larger than the maximum, bank will be set to maximum)\r\n"
@@ -39914,7 +39925,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_SET_SECONDARY_WEAPON, "set-secondary-weapon\r\n"
 		"\tSets the weapon for the specified bank\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
 		"\t3: Name of the secondary weapon \r\n"
 		"\t4: Number to set ammo of this bank to (If this is larger than the maximum, bank will be set to maximum)\r\n"
@@ -39927,7 +39938,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_NUM_COUNTERMEASURES, "set-num-countermeasures\r\n"
 		"\tSets the number of countermeasures the ship has\r\n"
 		"\tValues greater than the maximum a ship can carry are set to the maximum\r\n"
-		"\t1: Ship name\r\n"
+		"\t1: Ship name (ship must be in-mission)\r\n"
 		"\t2: Number to set"
 	},
 	
@@ -39935,42 +39946,42 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_LOCK_PRIMARY_WEAPON, "lock-primary-weapon\r\n"
 		"\tLocks the primary banks for the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
-		"\t(all): Name(s) of ship(s) to lock"
+		"\t(all): Name(s) of ship(s) to lock (ships do not need to be in-mission)"
 	},
 
 	// Karajorma
 	{ OP_UNLOCK_PRIMARY_WEAPON, "unlock-primary-weapon\r\n"
 		"\tUnlocks the primary banks for the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
-		"\t(all): Name(s) of ship(s) to lock"
+		"\t(all): Name(s) of ship(s) to lock (ships do not need to be in-mission)"
 	},
 	
 	// Karajorma
 	{ OP_LOCK_SECONDARY_WEAPON, "lock-secondary-weapon\r\n"
 		"\tLocks the secondary banks for the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
-		"\t(all): Name(s) of ship(s) to lock"
+		"\t(all): Name(s) of ship(s) to lock (ships do not need to be in-mission)"
 	},
 
 	// Karajorma
 	{ OP_UNLOCK_SECONDARY_WEAPON, "unlock-secondary-weapon\r\n"
 		"\tUnlocks the secondary banks for the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
-		"\t(all): Name(s) of ship(s) to lock"
+		"\t(all): Name(s) of ship(s) to lock (ships do not need to be in-mission)"
 	},
 	
 	// KeldorKatarn
 	{ OP_LOCK_AFTERBURNER, "lock-afterburner\r\n"
 		"\tLocks the afterburners on the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
-		"\t(all): Name(s) of ship(s) to lock"
+		"\t(all): Name(s) of ship(s) to lock (ships do not need to be in-mission)"
 	},
 
 	// KeldorKatarn
 	{ OP_UNLOCK_AFTERBURNER, "unlock-afterburner\r\n"
 		"\tUnlocks the afterburners on the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
-		"\t(all): Name(s) of ship(s) to lock"
+		"\t(all): Name(s) of ship(s) to lock (ships do not need to be in-mission)"
 	},
 
 	// Karajorma
@@ -39978,21 +39989,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the afterburner energy for the specified ship(s)\r\n"
 		"\tTakes 2 or more arguments\r\n"
 		"\t1: percentage of maximum afterburner energy.\r\n"
-		"\t(rest): Name(s) of ship(s)"
+		"\t(rest): Name(s) of ship(s) (ship must be in-mission)"
 	},
 
 	{ OP_SET_WEAPON_ENERGY, "set-weapon-energy\r\n"
 		"\tSets the weapon energy for the specified ship(s)\r\n"
 		"\tTakes 2 or more arguments\r\n"
 		"\t1: percentage of maximum weapon energy.\r\n"
-		"\t(rest): Name(s) of ship(s)"
+		"\t(rest): Name(s) of ship(s) (ship must be in-mission)"
 	},
 
 	{ OP_SET_SHIELD_ENERGY, "set-shield-energy\r\n"
 		"\tSets the shield energy for the specified ship(s)\r\n"
 		"\tTakes 2 or more arguments\r\n"
 		"\t1: percentage of maximum shield energy.\r\n"
-		"\t(rest): Name(s) of ship(s)"
+		"\t(rest): Name(s) of ship(s) (ship must be in-mission)"
 	},
 
 	{ OP_SET_AMBIENT_LIGHT, "set-ambient-light\r\n"
@@ -40039,7 +40050,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tTakes 3 or more arguments\r\n"
 		"\t1: Name of the ship.\r\n"
 		"\t2: New name for the subsystem (names larger than the maximum display size will be truncated\r\n"
-		"\t3: Name(s) of subsystem(s) to rename\r\n"
+		"\t3: Name(s) of subsystem(s) to rename (ship must be in-mission)\r\n"
 	},
 
 	//phreak
@@ -40099,7 +40110,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_SET_PLAYER_ORDERS, "set-player-orders\r\n"
 		"\tChanges the orders friendly AI will accept. Takes 3 or more arguments.\r\n"
-		"\t1:\tShip Name\r\n"
+		"\t1:\tShip Name (ship must be in-mission)\r\n"
 		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
 		"\tRest:\tOrder"
 	},
@@ -40107,7 +40118,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		// MjnMixael
 	{ OP_SET_ORDER_ALLOWED_TARGET, "set-order-allowed-for-target\r\n"
 		"\tChanges the orders that can be issued against a ship. Takes 3 or more arguments.\r\n"
-		"\t1:\tShip Name\r\n"
+		"\t1:\tShip Name (ship must be in-mission)\r\n"
 		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
 		"\tRest:\tOrder"
 	},
@@ -40205,7 +40216,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajora
 	{ OP_HAS_PRIMARY_WEAPON, "has-primary-weapon\r\n"
 		"\tReturns true if the primary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
-		"\t1:\tShip name\r\n"
+		"\t1:\tShip name (evaluation returns NAN until the ship is in-mission)\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
@@ -40213,7 +40224,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajora
 	{ OP_HAS_SECONDARY_WEAPON, "has-secondary-weapon\r\n"
 		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
-		"\t1:\tShip name\r\n"
+		"\t1:\tShip name (evaluation returns NAN until the ship is in-mission)\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
@@ -40221,7 +40232,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// MjnMixael
 	{ OP_TURRET_HAS_PRIMARY_WEAPON, "turret-has-primary-weapon\r\n"
 		"\tReturns true if the turret specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
-		"\t1:\tShip name\r\n"
+		"\t1:\tShip name (evaluation returns NAN until the ship is in-mission)\r\n"
 		"\t2:\tTurret to check\r\n"
 		"\t3:\tTurret bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
@@ -40230,7 +40241,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// MjnMixael
 	{ OP_TURRET_HAS_SECONDARY_WEAPON, "turret-has-secondary-weapon\r\n"
 		"\tReturns true if the turret specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
-		"\t1:\tShip name\r\n"
+		"\t1:\tShip name (evaluation returns NAN until the ship is in-mission)\r\n"
 		"\t2:\tTurret to check\r\n"
 		"\t3:\tTurret bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
@@ -40672,13 +40683,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_DISABLE_ETS, "disable-ets\r\n"
 		"\tSwitches a ships' ETS system off\r\n\r\n"
 		"Takes at least 1 argument...\r\n"
-		"\tAll:\tList of ships this sexp applies to\r\n"
+		"\tAll:\tList of ships this sexp applies to (ship does not need to be in-mission)\r\n"
 	},
 
 	{ OP_ENABLE_ETS, "enable-ets\r\n"
 		"\tSwitches a ships' ETS system on\r\n\r\n"
 		"Takes at least 1 argument...\r\n"
-		"\tAll:\tList of ships this sexp applies to\r\n"
+		"\tAll:\tList of ships this sexp applies to (ship does not need to be in-mission)\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
@@ -40711,7 +40722,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{OP_FORCE_GLIDE, "force-glide\r\n"
 		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode on his own,, and that a ship in glide mode cannot warp out or enter autopilot."
 		"Takes 2 Arguments...\r\n"
-		"\t1:\tShip to force\r\n"
+		"\t1:\tShip to force (ship must be in-mission)\r\n"
 		"\t2:\tTrue to activate glide, False to deactivate\r\n"
 	},
 
@@ -40773,7 +40784,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups, "
 		"and that an object may be in several collision groups at the same time\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tShip to add.\r\n"
+		"\t1:\tShip to add (ships do not need to be in-mission).\r\n"
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
 	},
 
@@ -40781,7 +40792,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRemoves a ship from the specified collision group(s). Note that there are 32 collision groups, "
 		"and that an object may be in several collision groups at the same time\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tShip to add.\r\n"
+		"\t1:\tShip to add (ships do not need to be in-mission).\r\n"
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
 	},
 
@@ -40791,7 +40802,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"add-to-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
-		"\t2+:\tShip to add.\r\n"
+		"\t2+:\tShip to add (ships do not need to be in-mission).\r\n"
 	},
 
 	{OP_REMOVE_FROM_COLGROUP_NEW, "remove-from-collision-group-new\r\n"
@@ -40800,7 +40811,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"remove-from-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
-		"\t2+:\tShip to remove.\r\n"
+		"\t2+:\tShip to remove (ships do not need to be in-mission).\r\n"
 	},
 
 	{OP_GET_COLGROUP_ID, "get-collision-group\r\n"
@@ -40815,7 +40826,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tEffect name (as defined in post_processing.tbl)\r\n"
 		"\t2:\tHow long the effect should take in milliseconds\r\n"
-		"\tRest:\tShip or wing name\r\n"
+		"\tRest:\tShip or wing name (ship must be in-mission)\r\n"
 	},
 
 	{OP_CLEAR_SUBTITLES, "clear-subtitles\r\n"
@@ -40826,7 +40837,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tManipulates the thrusters on a ship.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tBoolean, true sets thrusters to visible, false deactivates them.\r\n"
-		"\t2:\tRest: List of ships this sexp will work on.\r\n"
+		"\t2:\tRest: List of ships this sexp will work on (ship must be in-mission).\r\n"
 	},
 
 	{OP_SET_PLAYER_THROTTLE_SPEED, "set-player-throttle-speed\r\n"
@@ -40844,7 +40855,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tTakes 3 or more arguments...\r\n"
 		"\t1:\tThe new team color name. Name must be defined in colors.tbl.\r\n"
 		"\t2:\tCrossfade time in milliseconds. During this time, colors will be mixed.\r\n"
-		"\t3:\tRest: List of ships this sexp will operate on."
+		"\t3:\tRest: List of ships this sexp will operate on (ships must be in-mission)."
 	},
 
 	{OP_CALL_SSM_STRIKE, "call-ssm-strike\r\n"
@@ -40892,20 +40903,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1: Name of the texture to be replaced.\r\n"
 		"\t2: Name of the texture to be changed to.\r\n"
-		"\tRest: Name of the ship or wing.\r\n"
+		"\tRest: Name of the ship or wing (ship/wing does not need to be in-mission).\r\n"
 	},
 
 	{ OP_SET_ALPHA_MULT, "set-alpha-multiplier\r\n"
 		"\tSets the opacity of a ship.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1: Opacity (0 = transparent, 100 = opaque)\r\n"
-		"\tRest: Name of the ship or wing.\r\n"
+		"\tRest: Name of the ship or wing (ship/wing must be in-mission).\r\n"
 	},
 
 	{ OP_TRIGGER_ANIMATION_NEW , "trigger-ship-animation\r\n"
 		"\tTriggers an animation on a ship.\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1: The ship to trigger the animation on.\r\n"
+		"\t1: The ship to trigger the animation on (ship must be in-mission).\r\n"
 		"\t2: The trigger type of the animation.\r\n"
 		"\t3: The triggered-by value of the animation. Must be the same as in the table for the animation. Leave blank if not specified in the table.\r\n"
 		"\t\tException: fighterbay-type animations must specify the number of the fighter bay path.\r\n"
@@ -40918,7 +40929,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_STOP_LOOPING_ANIMATION, "stop-looping-animation\r\n"
 		"\tStops a looping animation once it finishes its current loop.\r\n"
 		"Takes 3 arguments...\r\n"
-		"\t1: The ship to trigger the animation on.\r\n"
+		"\t1: The ship to trigger the animation on (ship must be in-mission).\r\n"
 		"\t2: The trigger type of the animation.\r\n"
 		"\t3: The triggered-by value of the animation. Must be the same as in the table for the animation. Leave blank if not specified in the table.\r\n"
 		"\t\tException: fighterbay-type animations must specify the number of the fighter bay path.\r\n"
@@ -40927,7 +40938,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_UPDATE_MOVEABLE , "update-moveable-animation\r\n"
 		"\tUpdates the data for a moveable animation.\r\n"
 		"Takes 2 and more arguments...\r\n"
-		"\t1: The ship to update the moveable for.\r\n"
+		"\t1: The ship to update the moveable for (ship must be in-mission).\r\n"
 		"\t2: The name of the moveable.\r\n"
 		"\tRest: The data for the moveable. Depends on moveable type. Refer to the table below:\r\n\r\n"
 		"Orientation:\r\n"
