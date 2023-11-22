@@ -446,8 +446,6 @@ DCF(players, "Adds the specified number of bogus players to the PXO listing (Mul
 }
 
 // chat text stuff -----------------------------------------
-#define MAX_CHAT_LINES					60
-#define MAX_CHAT_LINE_LEN				256
 
 int Multi_pxo_chat_title_y[GR_NUM_RESOLUTIONS] = {
 	181,	// GR_640
@@ -493,21 +491,11 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 #define CHAT_MODE_CHANNEL_SWITCH		4			// "switching channels" message - draw in red
 #define CHAT_MODE_MOTD					5			// message of the day from the chat server
 
-typedef struct chat_line {
-	chat_line *next,*prev;
-	char text[MAX_CHAT_LINE_LEN+1];
-	int mode;
-} chat_line;
-
-// the chat linked list itself
-chat_line *Multi_pxo_chat = NULL;
-
-// the current add line
-chat_line *Multi_pxo_chat_add = NULL;
+// the chat list
+SCP_vector<chat_line> Multi_pxo_chat_vec;
 
 // the current line to start displaying from
-chat_line *Multi_pxo_chat_start = NULL;
-int Multi_pxo_chat_start_index = -1;
+int Multi_pxo_chat_start = 0;
 
 // input box for text
 UI_INPUTBOX Multi_pxo_chat_input;
@@ -529,18 +517,9 @@ const char *Multi_pxo_chat_slider_name[GR_NUM_RESOLUTIONS] = {
 	"2_slider"
 };
 
-// how many chat lines we have
-int Multi_pxo_chat_count = 0;
-
 // extra delay time when switching channels
 #define MULTI_PXO_SWITCH_DELAY_TIME			2000
 static UI_TIMESTAMP Multi_pxo_switch_delay;
-
-// initialize and create the chat text linked list
-void multi_pxo_chat_init();
-
-// free up all chat list stuff
-void multi_pxo_chat_free();
 
 // clear all lines of chat text in the chat area
 void multi_pxo_chat_clear();
@@ -558,9 +537,7 @@ void multi_pxo_chat_process_incoming(const char *txt, int mode = CHAT_MODE_NORMA
 void multi_pxo_goto_bottom();
 
 // check whether we can scroll down or not
-int multi_pxo_can_scroll_down();
-
-static int Can_scroll_down = 0;
+bool multi_pxo_can_scroll_down();
 
 // scroll the text up
 void multi_pxo_scroll_chat_up();
@@ -1162,7 +1139,7 @@ void multi_pxo_init(int use_last_channel)
 	multi_pxo_clear_players();
 
 	// initialize the chat system
-	multi_pxo_chat_init();
+	multi_pxo_chat_clear();
 
 	// initialize http
 	multi_pxo_ban_init();
@@ -1331,7 +1308,7 @@ void multi_pxo_close()
 	multi_pxo_clear_channels();
 
 	// close the chat system
-	multi_pxo_chat_free();
+	multi_pxo_chat_clear();
 
 	// close http stuff
 	multi_pxo_ban_close();
@@ -2858,7 +2835,7 @@ void multi_pxo_blit_players()
 	int disp_count,y_start;
 	int line_height = gr_get_font_height() + 1;
 
-	// blit as many channels as we can
+	// blit as many players as we can
 	disp_count = 0;
 	y_start = Multi_pxo_player_coords[gr_screen.res][1];
 	if(Multi_pxo_players_vec.size() == 0){
@@ -2935,92 +2912,14 @@ void multi_pxo_scroll_players_down()
 // chat text stuff -----------------------------------------
 
 /**
- * Initialize and create the chat text linked list
- */
-void multi_pxo_chat_init()
-{
-	int idx;
-	chat_line *new_line;
-
-	// no chat lines
-	Multi_pxo_chat = NULL;
-	Multi_pxo_chat_add = NULL;
-	Multi_pxo_chat_start = NULL;
-	Multi_pxo_chat_start_index = -1;
-
-	// create the lines in a non-circular doubly linked list
-	for(idx=0;idx<MAX_CHAT_LINES;idx++){
-		new_line = (chat_line*)vm_malloc(sizeof(chat_line));	
-		
-		// clear the line out
-		Assert(new_line != NULL);		
-		if(new_line == NULL){
-			return;
-		}
-		memset(new_line,0,sizeof(chat_line));
-		new_line->prev = NULL;
-		new_line->next = NULL;		
-
-		// insert it into the (empty) list
-		if(Multi_pxo_chat == NULL){
-			Multi_pxo_chat = new_line;
-		}
-		// insert it onto the (non-empty) list
-		else {
-			Multi_pxo_chat->prev = new_line;
-			new_line->next = Multi_pxo_chat;
-			Multi_pxo_chat = new_line;
-		}
-	}
-
-	// start adding chat lines at the beginning of the list
-	Multi_pxo_chat_add = Multi_pxo_chat;
-}
-
-/**
- * Free up all chat list stuff
- */
-void multi_pxo_chat_free()
-{
-	chat_line *moveup, *backup;	
-
-	// free all items up
-	moveup = Multi_pxo_chat;
-	while(moveup != NULL){
-		backup = moveup;		
-		moveup = moveup->next;
-
-		vm_free(backup);
-	}
-
-	// no chat lines
-	Multi_pxo_chat = NULL;
-	Multi_pxo_chat_add = NULL;
-	Multi_pxo_chat_start = NULL;
-	Multi_pxo_chat_start_index = -1;
-	Multi_pxo_chat_count = 0;
-	Multi_pxo_chat_slider.set_numberItems(0);	
-}
-
-/**
  * Clear all lines of chat text in the chat area
  */
 void multi_pxo_chat_clear()
 {
-	chat_line *moveup;
-
 	// clear the text in all the lines
-	moveup = Multi_pxo_chat;
-	while(moveup != NULL){
-		memset(moveup->text,0,MAX_CHAT_LINE_LEN+1);
-		moveup = moveup->next;
-	}
-
-	// how many chat lines we have
-	Multi_pxo_chat_count = 0;
-
-	// start adding chat lines at the beginning of the list
-	Multi_pxo_chat_add = Multi_pxo_chat;
+	Multi_pxo_chat_vec.clear();
+	Multi_pxo_chat_start = 0;
+	Multi_pxo_chat_slider.set_numberItems(0);
 }
 
 /**
@@ -3028,45 +2927,17 @@ void multi_pxo_chat_clear()
  */
 void multi_pxo_chat_add_line(const char *txt, int mode)
 {
-	chat_line *temp;
-	
-	// copy in the text
-	Assert(Multi_pxo_chat_add != NULL);
-	strncpy(Multi_pxo_chat_add->text, txt, MAX_CHAT_LINE_LEN);
-	Multi_pxo_chat_add->mode = mode;
+	chat_line temp;
+	strcpy_s(temp.text, txt);
+	temp.mode = mode;
 
-	// if we're at the end of the list, move the front item down
-	if(Multi_pxo_chat_add->next == NULL) {
-		// store the new "head" of the list
-		temp = Multi_pxo_chat->next;
-
-		// move the current head to the end of the list
-		Multi_pxo_chat_add->next = Multi_pxo_chat;
-		temp->prev = NULL;		
-		Multi_pxo_chat->prev = Multi_pxo_chat_add;
-		Multi_pxo_chat->next = NULL;
-
-		// reset the head of the list
-		Multi_pxo_chat = temp;
-
-		// set the new add line
-		Multi_pxo_chat_add = Multi_pxo_chat_add->next;
-		memset(Multi_pxo_chat_add->text, 0, MAX_CHAT_LINE_LEN+1);
-		Multi_pxo_chat_add->mode = CHAT_MODE_NORMAL;
-	} 
-	// if we're not at the end of the list, just move up by one
-	else {
-		// set the new add line
-		Multi_pxo_chat_add = Multi_pxo_chat_add->next;
-	}
+	Multi_pxo_chat_vec.push_back(temp);
 
 	// if we've reached max chat lines, don't increment
-	if(Multi_pxo_chat_count < MAX_CHAT_LINES) {
-		Multi_pxo_chat_count++;
-	}
+	int count = static_cast<int>(Multi_pxo_chat_vec.size());
 
 	// set the count
-	Multi_pxo_chat_slider.set_numberItems(Multi_pxo_chat_count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) ? Multi_pxo_chat_count - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) : 0, 0);		// the 0 means don't reset
+	Multi_pxo_chat_slider.set_numberItems(count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) ? count : 0, 0);		// the 0 means don't reset
 
 	multi_pxo_goto_bottom();
 }
@@ -3157,14 +3028,10 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
  */
 void multi_pxo_chat_blit()
 {
-	int y_start, line_height;
-	int disp_count,token_width;
-	char piece[MAX_CHAT_LINE_LEN+1];
-	char title[MAX_PXO_TEXT_LEN];
-	char *tok;
-	chat_line *moveup;
-
+	int token_width;
+	
 	// blit the title line
+	char title[MAX_PXO_TEXT_LEN];
 	memset(title,0,MAX_PXO_TEXT_LEN);
 	if(ON_CHANNEL()){
 		if(strlen(Multi_pxo_channel_current.name) > 1){
@@ -3176,74 +3043,80 @@ void multi_pxo_chat_blit()
 		strcpy_s(title,XSTR("Parallax Online - No Channel", 956));
 	}	
 	font::force_fit_string(title, MAX_PXO_TEXT_LEN-1, Multi_pxo_chat_coords[gr_screen.res][2] - 10);
-	gr_get_string_size(&token_width,NULL,title);
+	gr_get_string_size(&token_width,nullptr,title);
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + ((Multi_pxo_chat_coords[gr_screen.res][2] - token_width)/2), Multi_pxo_chat_title_y[gr_screen.res], title, GR_RESIZE_MENU);	
+	
+	int disp_count, y_start;
+	int line_height = gr_get_font_height() + 1;
 
-	// blit all active lines of text
-	moveup = Multi_pxo_chat_start;	
+	// blit as many chat lines as we can
 	disp_count = 0;
 	y_start = Multi_pxo_chat_coords[gr_screen.res][1];
-	line_height = gr_get_font_height() + 1;
-	while((moveup != nullptr) && (moveup != Multi_pxo_chat_add) && (disp_count < (gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])))){
-		switch(moveup->mode){
-		// if this is text from the server, display it all "bright"
-		case CHAT_MODE_SERVER:				
-			gr_set_color_fast(&Color_bright);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
-			break;
-
-		// if this is motd, display it all "bright"
-		case CHAT_MODE_MOTD:
-			gr_set_color_fast(&Color_bright_white);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
-			break;
-
-		// normal mode, just highlight the server
-		case CHAT_MODE_PRIVATE:		
-		case CHAT_MODE_NORMAL:					
-			strcpy_s(piece,moveup->text);
-			tok = strtok(piece," ");
-			if(tok != NULL){
-				// get the width of just the first "piece"
-				gr_get_string_size(&token_width, NULL, tok);
-				
-				// draw it brightly
-				gr_set_color_fast(&Color_bright);
-				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, tok, GR_RESIZE_MENU);
-
-				// draw the rest of the string normally
-				tok = strtok(NULL,"");
-				if(tok != NULL){
-					gr_set_color_fast(&Color_normal);
-					gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + token_width + 6, y_start, tok, GR_RESIZE_MENU);
-				}
-			}
-			break;
-		
-		// carry mode, display with no highlight
-		case CHAT_MODE_CARRY:
-			gr_set_color_fast(&Color_normal);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
-			break;
-
-		// "switching channels mode", display it bright
-		case CHAT_MODE_CHANNEL_SWITCH:
-			gr_set_color_fast(&Color_bright);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
-			break;
-		}
-		
-		// next chat line
-		moveup = moveup->next;
-		disp_count++;
-		y_start += line_height;
+	if (Multi_pxo_chat_vec.size() == 0) {
+		return;
 	}
 
-	if ((moveup != Multi_pxo_chat_add) && (moveup != NULL)) {
-		Can_scroll_down = 1;
-	} else {
-		Can_scroll_down = 0;
+	for (int i = Multi_pxo_chat_start; i < static_cast<int>(Multi_pxo_chat_vec.size()); i++) {
+		if (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
+			const chat_line* line = &Multi_pxo_chat_vec[i];
+			char* tok;
+			switch (line->mode) {
+			// if this is text from the server, display it all "bright"
+			case CHAT_MODE_SERVER:
+				gr_set_color_fast(&Color_bright);
+				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, line->text, GR_RESIZE_MENU);
+				break;
+
+			// if this is motd, display it all "bright"
+			case CHAT_MODE_MOTD:
+				gr_set_color_fast(&Color_bright_white);
+				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, line->text, GR_RESIZE_MENU);
+				break;
+
+			// normal mode, just highlight the server
+			case CHAT_MODE_PRIVATE:
+			case CHAT_MODE_NORMAL:
+				char piece[MAX_CHAT_LINE_LEN + 1];
+				strcpy_s(piece, line->text);
+				tok = strtok(piece, " ");
+				if (tok != nullptr) {
+					// get the width of just the first "piece"
+					gr_get_string_size(&token_width, nullptr, tok);
+
+					// draw it brightly
+					gr_set_color_fast(&Color_bright);
+					gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, tok, GR_RESIZE_MENU);
+
+					// draw the rest of the string normally
+					tok = strtok(nullptr, "");
+					if (tok != nullptr) {
+						gr_set_color_fast(&Color_normal);
+						gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + token_width + 6,
+							y_start,
+							tok,
+							GR_RESIZE_MENU);
+					}
+				}
+				break;
+
+			// carry mode, display with no highlight
+			case CHAT_MODE_CARRY:
+				gr_set_color_fast(&Color_normal);
+				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, line->text, GR_RESIZE_MENU);
+				break;
+
+			// "switching channels mode", display it bright
+			case CHAT_MODE_CHANNEL_SWITCH:
+				gr_set_color_fast(&Color_bright);
+				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, line->text, GR_RESIZE_MENU);
+				break;
+			}
+
+			// increment the displayed count
+			disp_count++;
+			y_start += line_height;
+		}
 	}
 }
 
@@ -3254,30 +3127,18 @@ void multi_pxo_goto_bottom()
 {
 	chat_line *backup;
 	int idx;
-
-	if (Multi_pxo_chat == NULL) {
-		return;
-	}
 	
 	// if we have less than the displayable amount of lines, do nothing
-	if(Multi_pxo_chat_count <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
-		Multi_pxo_chat_start = Multi_pxo_chat;						
-		
+	if(static_cast<int>(Multi_pxo_chat_vec.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
 		// nothing to do for the slider
 		Multi_pxo_chat_slider.set_numberItems(0);
 		return;
 	}
 
-	if (!Can_scroll_down)
+	if (multi_pxo_can_scroll_down())
 	{
 		// otherwise move back the right # of items
-		backup = Multi_pxo_chat_add;	
-		for(idx=0; idx<gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]); idx++){
-			Assert(backup->prev != NULL);
-			backup = backup->prev;		
-		}
-
-		Multi_pxo_chat_start = backup;
+		Multi_pxo_chat_start = static_cast<int>(Multi_pxo_chat_vec.size()) - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]);
 
 		// fixup the start index
 		multi_pxo_chat_adjust_start();	
@@ -3290,44 +3151,29 @@ void multi_pxo_goto_bottom()
 void multi_pxo_scroll_chat_up()
 {
 	// if we're already at the top of the list, don't do anything	
-	if ((Multi_pxo_chat_start == NULL) || (Multi_pxo_chat_start == Multi_pxo_chat)) {
+	if (Multi_pxo_chat_start == 0) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise move up one
-	Multi_pxo_chat_start = Multi_pxo_chat_start->prev;	
-
+	Multi_pxo_chat_start--;	
 	multi_pxo_chat_adjust_start();	
-	
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 /**
  * Returns 1 if we can scroll down, 0 otherwise
  */
-int multi_pxo_can_scroll_down()
+bool multi_pxo_can_scroll_down()
 {
-	chat_line *lookup;
-	int count = 0;
-	
-	// see if its okay to scroll down
-	lookup = Multi_pxo_chat_start;
-	if (lookup == NULL) {
-		return 0;
-	}
-	count = 0;
-	while (lookup != Multi_pxo_chat_add) {
-		lookup = lookup->next;
-		count++;
-	}
-	
 	// check if we can move down, return accordingly
-	if (count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
-		return 1;
-	} else {
-		return 0;
+	if (static_cast<int>(Multi_pxo_chat_vec.size()) > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
+		if (Multi_pxo_chat_start < (static_cast<int>(Multi_pxo_chat_vec.size()) - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]))){
+			return true;
+		}
 	}
+	return false;
 }
 
 /**
@@ -3337,7 +3183,7 @@ void multi_pxo_scroll_chat_down()
 {
 	// if we can move down
 	if (multi_pxo_can_scroll_down()) {
-		Multi_pxo_chat_start = Multi_pxo_chat_start->next;		
+		Multi_pxo_chat_start++;		
 		multi_pxo_chat_adjust_start();	
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
@@ -3514,24 +3360,13 @@ int multi_pxo_chat_is_left_message(const char *txt)
  */
 void multi_pxo_chat_adjust_start()
 {
-	chat_line *moveup;
-
 	// if we have no chat
-	if (Multi_pxo_chat == NULL) {
-		Multi_pxo_chat_start_index = -1;		
+	if (static_cast<int>(Multi_pxo_chat_vec.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
+		Multi_pxo_chat_start = 0;		
 		return;
+	} else {
+		Multi_pxo_chat_slider.force_currentItem(Multi_pxo_chat_start);
 	}
-
-	// traverse
-	Multi_pxo_chat_start_index = 0;
-	moveup = Multi_pxo_chat;
-	while((moveup != Multi_pxo_chat_start) && (moveup != NULL)){
-		Multi_pxo_chat_start_index++;
-		moveup = moveup->next;
-	}
-
-	// set the slider index
-	Multi_pxo_chat_slider.force_currentItem(Multi_pxo_chat_start_index);
 }
 
 // motd stuff ---------------------------------------------------------

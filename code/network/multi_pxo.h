@@ -55,6 +55,16 @@ extern SCP_vector<pxo_channel> Multi_pxo_channels_vec;
 
 extern SCP_vector<SCP_string> Multi_pxo_players_vec;
 
+// chat related stuff ----------------------------------------------
+#define MAX_CHAT_LINE_LEN 256
+
+typedef struct chat_line {
+	char text[MAX_CHAT_LINE_LEN + 1];
+	int mode;
+} chat_line;
+
+extern SCP_vector<chat_line> Multi_pxo_chat_vec;
+
 // ----------------------------------------------------------------------------------------------------
 // PXO FUNCTIONS
 //
