@@ -2101,7 +2101,7 @@ void multi_pxo_api_process()
 				if (ON_CHANNEL() ) {
 					lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 
-					if (lookup != NULL)
+					if (lookup != nullptr)
 						lookup->num_users++;
 				}
 				break;
@@ -2119,7 +2119,7 @@ void multi_pxo_api_process()
 				if ( ON_CHANNEL() ) {
 					lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 
-					if (lookup != NULL)
+					if (lookup != nullptr)
 						lookup->num_users--;
 				}
 				break;
@@ -2142,20 +2142,20 @@ void multi_pxo_api_process()
 				memset( &Multi_pxo_channel_current, 0, sizeof(pxo_channel) );
 				Multi_pxo_channel_switch.num_users = -1;			
 
-				SetNewChatChannel(NULL);
+				SetNewChatChannel(nullptr);
 
 				strcpy_s(Multi_pxo_channel_current.name, cmd->data);
 
 				// if we don't already have this guy on the list, add him
 				lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
 	
-				if (lookup == NULL) {
+				if (lookup == nullptr) {
 					// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
 					lookup = multi_pxo_add_channel(Multi_pxo_channel_current.name);
 				}
 
 				// set the user count to be 0
-				if (lookup != NULL)
+				if (lookup != nullptr)
 					lookup->num_users = 0;
 
 				// set our "last" channel to be this one
@@ -2186,8 +2186,8 @@ void multi_pxo_process_nick_change(char *data)
 	
 	// get the new string
 	from = strtok(data," ");
-	to = strtok(NULL,"");
-	if((from != NULL) && (to != NULL)){
+	to = strtok(nullptr,"");
+	if((from != nullptr) && (to != nullptr)){
 		int ply = multi_pxo_find_player(from);
 		if(ply > 0){
 			Multi_pxo_players_vec[ply] = to;
@@ -2238,7 +2238,7 @@ void multi_pxo_channel_count_update(char *name, int count)
 	// lookup the channel name on the normal list	
 	lookup = multi_pxo_find_channel(name);
 
-	if (lookup != NULL) {
+	if (lookup != nullptr) {
 		lookup->num_servers = (ushort)count;
 
 		nprintf(("Network","PXO : updated channel %s server count to %d\n",name,count));
@@ -2324,19 +2324,19 @@ void multi_pxo_make_channels(char *chan_str)
 	Multi_pxo_channel_last_refresh = f2fl(timer_get_fixed_seconds());
 
 	name_tok = strtok(chan_str," ");
-	if(name_tok == NULL){
+	if(name_tok == nullptr){
 		return;
 	} 
 	name_tok += 1;
 	do {
 		// parse the user count token		
-		user_tok = strtok(NULL," ");
+		user_tok = strtok(nullptr," ");
 
 		// parse the channel description token
-		desc_tok = strtok(NULL,"$");
+		desc_tok = strtok(nullptr,"$");
 
 		// something invalid in the data, return here.....
-		if((name_tok == NULL) || (user_tok == NULL) || (desc_tok == NULL)){
+		if((name_tok == nullptr) || (user_tok == nullptr) || (desc_tok == nullptr)){
 			return;
 		}
 
@@ -2348,13 +2348,13 @@ void multi_pxo_make_channels(char *chan_str)
 			// see if it exists already, and if so, just update the user count
 			lookup = multi_pxo_find_channel(name_tok);
 			
-			if(lookup != NULL){
+			if(lookup != nullptr){
 				lookup->num_users = (short)num_users;
 			}
 			// add the channel
 			else {
 				res = multi_pxo_add_channel(name_tok);
-				if(res != NULL){
+				if(res != nullptr){
 					res->num_users = (short)num_users;
 					strcpy_s(res->desc,desc_tok);
 				}		
@@ -2362,8 +2362,8 @@ void multi_pxo_make_channels(char *chan_str)
 		}				
 
 		// get the next name token
-		name_tok = strtok(NULL," ");
-	} while(name_tok != NULL);
+		name_tok = strtok(nullptr," ");
+	} while(name_tok != nullptr);
 
 	// refresh channels
 	multi_pxo_set_status_text(XSTR("Connected to Parallax Online",951));	
@@ -2376,7 +2376,7 @@ void multi_pxo_make_channels(char *chan_str)
 	// if we don't already have this guy on the list, add him
 	if(ON_CHANNEL()){
 		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
-		if(lookup == NULL){
+		if(lookup == nullptr){
 			// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
 			multi_pxo_add_channel(Multi_pxo_channel_current.name);
 		}
@@ -2445,7 +2445,7 @@ void multi_pxo_process_channels()
 
 		// see if we have a mouse click on the channel region
 		if(Multi_pxo_channel_button.pressed()){
-			Multi_pxo_channel_button.get_mouse_pos(NULL,&my);
+			Multi_pxo_channel_button.get_mouse_pos(nullptr,&my);
 
 			// index from the top
 			item_index = my / (gr_get_font_height() + 1);
@@ -2660,7 +2660,7 @@ void multi_pxo_join_channel(pxo_channel *chan)
 		// decrement the count of our current channel
 		pxo_channel *lookup;
 		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
-		if(lookup != NULL){
+		if(lookup != nullptr){
 			lookup->num_users--;
 		}
 
@@ -2704,7 +2704,7 @@ void multi_pxo_handle_channel_change()
 	}
 
 	// if we are, check the status
-	switch(SetNewChatChannel(NULL)){
+	switch(SetNewChatChannel(nullptr)){
 	// failed to switch
 	case -1 :
 		// unset our switching struct
@@ -2734,13 +2734,13 @@ void multi_pxo_handle_channel_change()
 		// if we don't already have this guy on the list, add him
 		pxo_channel *lookup;
 		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name);
-		if(lookup == NULL){
+		if(lookup == nullptr){
 			// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
 			lookup = multi_pxo_add_channel(Multi_pxo_channel_current.name);
 		}
 
 		// set the user count to be 1 (just me)
-		if(lookup != NULL){
+		if(lookup != nullptr){
 			lookup->num_users = 1;
 		}
 
@@ -2831,7 +2831,7 @@ void multi_pxo_process_players()
 
 	// see if we have a mouse click on the channel region
 	if(Multi_pxo_player_button.pressed()){
-		Multi_pxo_player_button.get_mouse_pos(NULL,&my);
+		Multi_pxo_player_button.get_mouse_pos(nullptr,&my);
 
 		// index from the top
 		item_index = my / (gr_get_font_height() + 1);
