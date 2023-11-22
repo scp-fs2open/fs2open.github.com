@@ -2365,8 +2365,11 @@ void multi_pxo_make_channels(char *chan_str)
  */
 pxo_channel *multi_pxo_add_channel(char *name)
 {
-	pxo_channel channel = {'\0', '\0', -1, 0};
+	pxo_channel channel;
 	strcpy_s(channel.name, name);
+	strcpy_s(channel.desc, "");
+	channel.num_users = -1;
+	channel.num_servers = 0;
 	Multi_pxo_channels_vec.push_back(channel);
 	return &Multi_pxo_channels_vec.back();
 }
@@ -2525,7 +2528,7 @@ void multi_pxo_blit_channels()
 	if (Multi_pxo_channel_start < 0) {
 		return;
 	}
-	for (size_t i = 0; i < Multi_pxo_channels_vec.size(); i++) {		
+	for (int i = 0; i < static_cast<int>(Multi_pxo_channels_vec.size()); i++) {		
 		// if this is the currently selected item, highlight it
 		if(i == Multi_pxo_channel_select){
 			gr_set_color_fast(&Color_bright);
