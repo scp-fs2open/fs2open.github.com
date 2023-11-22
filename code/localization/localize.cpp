@@ -98,6 +98,34 @@ SCP_unordered_map<int, char*> Lcl_ext_str_explicit_default;
 // parses the string.tbl and reports back only on the languages it found
 void parse_stringstbl_quick(const char *filename);
 
+int language_deserializer(const json_t* value)
+{
+	const char* lang;
+	const char* ext;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "{s:s, s:s}", "name", &lang, "id", &ext) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = lcl_find_lang_index_by_name(lang);
+
+	//does the extension also match? If not then we probably have a new language, so use default instead
+	if (!stricmp(Lcl_languages[id].lang_ext, ext)) {
+		return id;
+	}
+
+	return -1;
+}
+
+/**
+ * Converts/serializes language reference data into a json line
+ */
+json_t* language_serializer(int lang)
+{
+	return json_pack("{ssss}", "name", Lcl_languages[lang].lang_name, "id", Lcl_languages[lang].lang_ext);
+}
+
 static SCP_vector<int> language_enumerator()
 {
 	SCP_vector<int> vals;
@@ -113,15 +141,15 @@ static SCP_string language_display(int value)
 	return XSTR(Lcl_languages[value].lang_name, Lcl_languages[value].xstr);
 }
 
-// Used to persist the language selection
-int Language_choice_index = -1;
-
 auto LanguageOption = options::OptionBuilder<int>("Game.Language",
 							   std::pair<const char*, int>{"Select Language", 1143},
 							   std::pair<const char*, int>{"The language to display", 1807})
+							   .deserializer(language_deserializer)
+							   .serializer(language_serializer)
 							   .enumerator(language_enumerator)
 							   .display(language_display)
-							   .bind_to_once(&Language_choice_index)
+							   .change_listener(false)
+							   .flags({options::OptionFlags::ForceMultiValueSelection})
 							   .category("Game")
 							   .default_val(0)
 							   .finish();
@@ -188,7 +216,7 @@ void lcl_init(int lang_init)
 	if (lang_init < 0) {
 
 		// first we start with any persisted in-game option choice
-		lang = Language_choice_index;
+		lang = LanguageOption->getValue();
 
 		// make sure the language exists for the current mod
 		if (lang < 0 || lang > static_cast<int>(Lcl_languages.size())) {
@@ -198,7 +226,7 @@ void lcl_init(int lang_init)
 		// now try the the commandline
 		if (lang < 0) {
 			if (!Cmdline_lang.empty()) {
-				lang = lcl_find_lang_index_by_name(Cmdline_lang.c_str());
+				lang = lcl_find_lang_index_by_name(Cmdline_lang);
 			}
 		}
 
