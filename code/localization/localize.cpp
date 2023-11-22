@@ -177,7 +177,7 @@ void lcl_init(int lang_init)
 
 	// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
 	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
-	if ((No_built_in_languages == false) && (static_cast<int>(Lcl_languages.size()) == 1)) {
+	if (!No_built_in_languages && (static_cast<int>(Lcl_languages.size()) == 1)) {
 		for (int i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
 			Lcl_languages.push_back(Lcl_builtin_languages[i]);
 		}
@@ -212,9 +212,7 @@ void lcl_init(int lang_init)
 			strcpy_s(lang_string, ret);
 
 			// look it up
-			for (int idx = 0; idx < static_cast<int>(Lcl_languages.size()); idx++) {
-				lang = lcl_find_lang_index_by_name(lang_string);
-			}
+			lang = lcl_find_lang_index_by_name(lang_string);
 			if (lang < 0) {
 				lang = LCL_DEFAULT;
 			}
