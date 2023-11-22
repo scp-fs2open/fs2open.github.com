@@ -148,7 +148,7 @@ auto LanguageOption = options::OptionBuilder<int>("Game.Language",
 							   .serializer(language_serializer)
 							   .enumerator(language_enumerator)
 							   .display(language_display)
-							   .change_listener([](int val, bool){
+							   .change_listener([](int, bool){
 							       return false; //This makes it so that changing the language requires a game restart
 							   })
 							   .flags({options::OptionFlags::ForceMultiValueSelection})
