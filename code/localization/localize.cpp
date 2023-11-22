@@ -104,7 +104,7 @@ int language_deserializer(const json_t* value)
 	const char* ext;
 
 	json_error_t err;
-	if (json_unpack_ex((json_t*)value, &err, 0, "{s:s, s:s}", "name", &lang, "id", &ext) != 0) {
+	if (json_unpack_ex((json_t*)value, &err, 0, "{s:s, s:s}", "name", &lang, "ext", &ext) != 0) {
 		throw json_exception(err);
 	}
 
@@ -123,7 +123,7 @@ int language_deserializer(const json_t* value)
  */
 json_t* language_serializer(int lang)
 {
-	return json_pack("{ssss}", "name", Lcl_languages[lang].lang_name, "id", Lcl_languages[lang].lang_ext);
+	return json_pack("{ssss}", "name", Lcl_languages[lang].lang_name, "ext", Lcl_languages[lang].lang_ext);
 }
 
 static SCP_vector<int> language_enumerator()
