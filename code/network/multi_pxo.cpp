@@ -308,7 +308,7 @@ int Multi_pxo_max_chan_display[GR_NUM_RESOLUTIONS] = {
 UI_BUTTON Multi_pxo_channel_button;
 
 // the list of available (displayed) channels
-SCP_vector<pxo_channel> Multi_pxo_channels_vec;
+SCP_vector<pxo_channel> Multi_pxo_channels;
 
 // item we're going to start displaying at
 int Multi_pxo_channel_start = 0;
@@ -399,7 +399,7 @@ const char *Multi_pxo_player_slider_name[GR_NUM_RESOLUTIONS] = {
 };
 
 // the list of players in the current channel
-SCP_vector<SCP_string> Multi_pxo_players_vec;
+SCP_vector<SCP_string> Multi_pxo_players;
 
 // item we're going to start displaying at
 int Multi_pxo_player_start = 0;
@@ -412,10 +412,10 @@ int Multi_pxo_player_select = -1;
 void multi_pxo_clear_players();
 
 // create a new player with the given name and place it on the player list
-void multi_pxo_add_player(char *name);
+void multi_pxo_add_player(const char *name);
 
 // remove a player with the given name
-void multi_pxo_del_player(char *name);
+void multi_pxo_del_player(const char *name);
 
 // try and find a player with the given name, return a pointer to his entry (or NULL)
 int multi_pxo_find_player(const char *name);
@@ -492,7 +492,7 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 #define CHAT_MODE_MOTD					5			// message of the day from the chat server
 
 // the chat list
-SCP_vector<chat_line> Multi_pxo_chat_vec;
+SCP_vector<chat_line> Multi_pxo_chat;
 
 // the current line to start displaying from
 int Multi_pxo_chat_start = 0;
@@ -1763,7 +1763,7 @@ void multi_pxo_button_pressed(int n)
 
 	case MULTI_PXO_JOIN:
 		// if there are no channels to join, let the user know
-		if(Multi_pxo_channels_vec.size() == 0){
+		if(Multi_pxo_channels.size() == 0){
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			multi_pxo_notify_add(XSTR("No channels!",944));
 			break;
@@ -1772,7 +1772,7 @@ void multi_pxo_button_pressed(int n)
 		// if we're not already trying to join, allow this
 		if(!SWITCHING_CHANNELS() && (Multi_pxo_channel_select >= 0)){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			multi_pxo_join_channel(&Multi_pxo_channels_vec[Multi_pxo_channel_select]);
+			multi_pxo_join_channel(&Multi_pxo_channels[Multi_pxo_channel_select]);
 		} else {
 			multi_pxo_notify_add(XSTR("Already trying to join a channel!",945));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1813,9 +1813,9 @@ void multi_pxo_button_pressed(int n)
 		char stats[MAX_PXO_TEXT_LEN];
 
 		// if we have a guy selected, try and get his info
-		if((Multi_pxo_player_select >= 0) && (Multi_pxo_player_select < static_cast<int>(Multi_pxo_players_vec.size()))){
+		if((Multi_pxo_player_select >= 0) && (Multi_pxo_player_select < static_cast<int>(Multi_pxo_players.size()))){
 			// if we successfully got info for this guy
-			if (multi_pxo_pinfo_get(Multi_pxo_players_vec[Multi_pxo_player_select].c_str())) {				
+			if (multi_pxo_pinfo_get(Multi_pxo_players[Multi_pxo_player_select].c_str())) {				
 				// convert stats to player
 				multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
 				SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
@@ -1828,7 +1828,7 @@ void multi_pxo_button_pressed(int n)
 				memset(stats,0,MAX_PXO_TEXT_LEN);
 				sprintf(stats,
 					XSTR("Could not get stats for %s\n(May not be a registered pilot)", 946),
-					Multi_pxo_players_vec[Multi_pxo_player_select].c_str());
+					Multi_pxo_players[Multi_pxo_player_select].c_str());
 				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,stats);
 			}
 		} else {
@@ -2167,7 +2167,7 @@ void multi_pxo_process_nick_change(char *data)
 	if((from != nullptr) && (to != nullptr)){
 		int ply = multi_pxo_find_player(from);
 		if(ply > 0){
-			Multi_pxo_players_vec[ply] = to;
+			Multi_pxo_players[ply] = to;
 
 			// if this is also my nick, change it
 			if(!stricmp(Multi_pxo_nick,from)){
@@ -2272,9 +2272,9 @@ void multi_pxo_get_channels()
 void multi_pxo_clear_channels()
 {
 	// only clear a non-null list
-	if(Multi_pxo_channels_vec.size() > 0){		
-		Multi_pxo_channels_vec.clear();
-
+	if(Multi_pxo_channels.empty()){		
+		Multi_pxo_channels.clear();
+		Multi_pxo_channels.resize(0);
 
 		// item we're going to start displaying at
 		Multi_pxo_channel_start = 0;
@@ -2370,8 +2370,8 @@ pxo_channel *multi_pxo_add_channel(char *name)
 	strcpy_s(channel.desc, "");
 	channel.num_users = -1;
 	channel.num_servers = 0;
-	Multi_pxo_channels_vec.push_back(channel);
-	return &Multi_pxo_channels_vec.back();
+	Multi_pxo_channels.push_back(channel);
+	return &Multi_pxo_channels.back();
 }
 
 /**
@@ -2379,14 +2379,14 @@ pxo_channel *multi_pxo_add_channel(char *name)
  */
 pxo_channel *multi_pxo_find_channel(char *name)
 {
-	if(Multi_pxo_channels_vec.size() == 0){
+	if(Multi_pxo_channels.size() == 0){
 		return nullptr;
 	} 
 
-	for (size_t i = 0; i < Multi_pxo_channels_vec.size(); i++) {
-		pxo_channel channel = Multi_pxo_channels_vec[i];
+	for (size_t i = 0; i < Multi_pxo_channels.size(); i++) {
+		pxo_channel channel = Multi_pxo_channels[i];
 		if (!stricmp(name, channel.name)) {
-			return &Multi_pxo_channels_vec[i];
+			return &Multi_pxo_channels[i];
 		}
 	}
 
@@ -2402,7 +2402,7 @@ void multi_pxo_process_channels()
 	int idx;
 	
 	// the first part of this function works under the assumption that the list has been initialized.
-	if (Multi_pxo_channels_vec.size() > 0) {
+	if (Multi_pxo_channels.size() > 0) {
 
 		// if we don't have a start item
 		if (Multi_pxo_channel_start < 0) {
@@ -2415,7 +2415,7 @@ void multi_pxo_process_channels()
 			Multi_pxo_channel_select = 0;
 
 			// set the text
-			multi_pxo_set_status_text(Multi_pxo_channels_vec[Multi_pxo_channel_select].desc);
+			multi_pxo_set_status_text(Multi_pxo_channels[Multi_pxo_channel_select].desc);
 		}
 
 		// if the "switch" delay timestamp is set, see if it has expired
@@ -2431,14 +2431,14 @@ void multi_pxo_process_channels()
 			item_index = my / (gr_get_font_height() + 1);
 
 			// select the item if possible
-			if((item_index + Multi_pxo_channel_start_index) < static_cast<int>(Multi_pxo_channels_vec.size())){
+			if((item_index + Multi_pxo_channel_start_index) < static_cast<int>(Multi_pxo_channels.size())){
 				Multi_pxo_channel_select = Multi_pxo_channel_start;
 				for(idx=0;idx<item_index;idx++){
 					Multi_pxo_channel_select++;
 				}
 
 				// set the text
-				multi_pxo_set_status_text(Multi_pxo_channels_vec[Multi_pxo_channel_select].desc);
+				multi_pxo_set_status_text(Multi_pxo_channels[Multi_pxo_channel_select].desc);
 			}
 		}
 	}
@@ -2473,12 +2473,12 @@ void multi_pxo_channel_refresh_servers()
 {
 	filter_game_list_struct filter;
 
-	if (Multi_pxo_channels_vec.size() == 0) {
+	if (Multi_pxo_channels.size() == 0) {
 		return;
 	}
 
 	// traverse the list of existing channels we know about and query the game tracker about them
-	for (auto channel : Multi_pxo_channels_vec) {
+	for (auto channel : Multi_pxo_channels) {
 		if (strlen(channel.name)) {
 			// copy in the info
 			memset(&filter, 0, sizeof(filter_game_list_struct));
@@ -2528,7 +2528,7 @@ void multi_pxo_blit_channels()
 	if (Multi_pxo_channel_start < 0) {
 		return;
 	}
-	for (int i = 0; i < static_cast<int>(Multi_pxo_channels_vec.size()); i++) {		
+	for (int i = 0; i < static_cast<int>(Multi_pxo_channels.size()); i++) {		
 		// if this is the currently selected item, highlight it
 		if(i == Multi_pxo_channel_select){
 			gr_set_color_fast(&Color_bright);
@@ -2538,7 +2538,7 @@ void multi_pxo_blit_channels()
 			gr_set_color_fast(&Color_normal);
 		}
 
-		pxo_channel *channel = &Multi_pxo_channels_vec[i];
+		pxo_channel *channel = &Multi_pxo_channels[i];
 
 		// get the # of users on the channel
 		memset(chan_users, 0, 15);
@@ -2596,13 +2596,13 @@ void multi_pxo_scroll_channels_up()
 void multi_pxo_scroll_channels_down()
 {
 	// if we're already at the tail of the list, do nothing
-	if(Multi_pxo_channel_start == static_cast<int>(Multi_pxo_channels_vec.size() -1)){
+	if(Multi_pxo_channel_start == static_cast<int>(Multi_pxo_channels.size() -1)){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// if we can't scroll further without going past the end of the viewable list, don't
-	if((Multi_pxo_channel_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= static_cast<int>(Multi_pxo_channels_vec.size()))){
+	if((Multi_pxo_channel_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= static_cast<int>(Multi_pxo_channels.size()))){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
@@ -2741,7 +2741,8 @@ void multi_pxo_handle_channel_change()
  */
 void multi_pxo_clear_players()
 {
-	Multi_pxo_players_vec.clear();
+	Multi_pxo_players.clear();
+	Multi_pxo_players.resize(0);
 	Multi_pxo_player_start = 0;	
 	Multi_pxo_player_select = -1;
 }
@@ -2749,27 +2750,27 @@ void multi_pxo_clear_players()
 /**
  * Create a new player with the given name and place it on the player list, return a pointer or NULL on fail
  */
-void multi_pxo_add_player(char *name)
+void multi_pxo_add_player(const char *name)
 {
 	SCP_string new_player = name;
-	new_player.resize(MAX_PLAYER_NAME_LEN);
-
-	Multi_pxo_players_vec.push_back(new_player);
+	Multi_pxo_players.push_back(new_player);
 }
 
 /**
  * Remove a player with the given name
  */
-void multi_pxo_del_player(char *name)
+void multi_pxo_del_player(const char *name)
 {
-	if (Multi_pxo_players_vec.size() == 0) {
+	if (Multi_pxo_players.size() == 0) {
 		return;
 	}
 
 	// find and erase the player from the list
-	for (size_t i = 0; i < Multi_pxo_players_vec.size(); i++) {
-		if (!stricmp(Multi_pxo_players_vec[i].c_str(), name)) {
-			Multi_pxo_players_vec.erase(Multi_pxo_players_vec.begin() + i);
+	for (size_t i = 0; i < Multi_pxo_players.size(); i++) {
+		if (!stricmp(Multi_pxo_players[i].c_str(), name)) {
+			Multi_pxo_player_select = -1; // unselect
+			Multi_pxo_player_start--;
+			Multi_pxo_players.erase(Multi_pxo_players.begin() + i);
 			break;
 		}
 	}
@@ -2782,13 +2783,12 @@ void multi_pxo_del_player(char *name)
  */
 int multi_pxo_find_player(const char *name)
 {
-	if (Multi_pxo_players_vec.size() == 0) {
+	if (Multi_pxo_players.empty()) {
 		return -1;
 	}
 
-	for (int i = 0; i < static_cast<int>(Multi_pxo_players_vec.size()); i++) {
-		if (!stricmp(Multi_pxo_players_vec[i].c_str(), name)) {
-			Multi_pxo_players_vec.erase(Multi_pxo_players_vec.begin() + i);
+	for (int i = 0; i < static_cast<int>(Multi_pxo_players.size()); i++) {
+		if (!stricmp(Multi_pxo_players[i].c_str(), name)) {
 			return i;
 		}
 	}
@@ -2817,14 +2817,14 @@ void multi_pxo_process_players()
 		item_index = my / (gr_get_font_height() + 1);
 
 		// select the item if possible
-		if ((item_index + Multi_pxo_player_start_index) < static_cast<int>(Multi_pxo_players_vec.size())) {
+		if ((item_index + Multi_pxo_player_start_index) < static_cast<int>(Multi_pxo_players.size())) {
 			Multi_pxo_player_select = Multi_pxo_player_start_index;
 			for (int idx = 0; idx < item_index; idx++) {
 				Multi_pxo_player_select++;
 			};
 		}
 
-		if ((Multi_pxo_player_select < 0) || (Multi_pxo_player_select >= static_cast<int>(Multi_pxo_players_vec.size()))) {
+		if ((Multi_pxo_player_select < 0) || (Multi_pxo_player_select >= static_cast<int>(Multi_pxo_players.size()))) {
 			Multi_pxo_player_select = -1;
 		}
 	}
@@ -2841,11 +2841,11 @@ void multi_pxo_blit_players()
 	// blit as many players as we can
 	disp_count = 0;
 	y_start = Multi_pxo_player_coords[gr_screen.res][1];
-	if(Multi_pxo_players_vec.size() == 0){
+	if(Multi_pxo_players.size() == 0){
 		return;
 	}
 
-	for (int i = 0; i < static_cast<int>(Multi_pxo_players_vec.size()); i++) {
+	for (int i = 0; i < static_cast<int>(Multi_pxo_players.size()); i++) {
 		if (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])) {
 			if (i == Multi_pxo_player_select) {
 				gr_set_color_fast(&Color_bright);
@@ -2855,7 +2855,7 @@ void multi_pxo_blit_players()
 
 			// make sure the string fits
 			char player_name[MAX_PXO_TEXT_LEN];
-			strcpy_s(player_name, Multi_pxo_players_vec[i].c_str());
+			strcpy_s(player_name, Multi_pxo_players[i].c_str());
 			font::force_fit_string(player_name, MAX_PXO_TEXT_LEN - 1, Multi_pxo_player_coords[gr_screen.res][2]);
 
 			// blit the string
@@ -2893,14 +2893,14 @@ void multi_pxo_scroll_players_down()
 {
 	
 	// if we're already at the tail of the list, do nothing
-	if (Multi_pxo_player_start == static_cast<int>(Multi_pxo_players_vec.size() - 1)) {
+	if (Multi_pxo_player_start == static_cast<int>(Multi_pxo_players.size() - 1)) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// if we can't scroll further without going past the end of the viewable list, don't
 	if ((Multi_pxo_player_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res]) >=
-			static_cast<int>(Multi_pxo_players_vec.size()))) {
+			static_cast<int>(Multi_pxo_players.size()))) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
@@ -2920,7 +2920,8 @@ void multi_pxo_scroll_players_down()
 void multi_pxo_chat_clear()
 {
 	// clear the text in all the lines
-	Multi_pxo_chat_vec.clear();
+	Multi_pxo_chat.clear();
+	Multi_pxo_chat.resize(0);
 	Multi_pxo_chat_start = 0;
 	Multi_pxo_chat_slider.set_numberItems(0);
 }
@@ -2934,10 +2935,14 @@ void multi_pxo_chat_add_line(const char *txt, int mode)
 	strcpy_s(temp.text, txt);
 	temp.mode = mode;
 
-	Multi_pxo_chat_vec.push_back(temp);
+	if (Multi_pxo_chat.size() >= MAX_CHAT_LINES) {
+		Multi_pxo_chat.erase(Multi_pxo_chat.begin());
+	}
+	
+	Multi_pxo_chat.push_back(temp);
 
 	// if we've reached max chat lines, don't increment
-	int count = static_cast<int>(Multi_pxo_chat_vec.size());
+	int count = static_cast<int>(Multi_pxo_chat.size());
 
 	// set the count
 	Multi_pxo_chat_slider.set_numberItems(count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) ? count : 0, 0);		// the 0 means don't reset
@@ -3056,13 +3061,13 @@ void multi_pxo_chat_blit()
 	// blit as many chat lines as we can
 	disp_count = 0;
 	y_start = Multi_pxo_chat_coords[gr_screen.res][1];
-	if (Multi_pxo_chat_vec.size() == 0) {
+	if (Multi_pxo_chat.size() == 0) {
 		return;
 	}
 
-	for (int i = Multi_pxo_chat_start; i < static_cast<int>(Multi_pxo_chat_vec.size()); i++) {
+	for (int i = Multi_pxo_chat_start; i < static_cast<int>(Multi_pxo_chat.size()); i++) {
 		if (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
-			const chat_line* line = &Multi_pxo_chat_vec[i];
+			const chat_line* line = &Multi_pxo_chat[i];
 			char* tok;
 			switch (line->mode) {
 			// if this is text from the server, display it all "bright"
@@ -3129,7 +3134,7 @@ void multi_pxo_chat_blit()
 void multi_pxo_goto_bottom()
 {
 	// if we have less than the displayable amount of lines, do nothing
-	if(static_cast<int>(Multi_pxo_chat_vec.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
+	if(static_cast<int>(Multi_pxo_chat.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
 		// nothing to do for the slider
 		Multi_pxo_chat_slider.set_numberItems(0);
 		return;
@@ -3138,7 +3143,7 @@ void multi_pxo_goto_bottom()
 	if (multi_pxo_can_scroll_down())
 	{
 		// otherwise move back the right # of items
-		Multi_pxo_chat_start = static_cast<int>(Multi_pxo_chat_vec.size()) - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]);
+		Multi_pxo_chat_start = static_cast<int>(Multi_pxo_chat.size()) - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]);
 
 		// fixup the start index
 		multi_pxo_chat_adjust_start();	
@@ -3168,8 +3173,8 @@ void multi_pxo_scroll_chat_up()
 bool multi_pxo_can_scroll_down()
 {
 	// check if we can move down, return accordingly
-	if (static_cast<int>(Multi_pxo_chat_vec.size()) > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
-		if (Multi_pxo_chat_start < (static_cast<int>(Multi_pxo_chat_vec.size()) - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]))){
+	if (static_cast<int>(Multi_pxo_chat.size()) > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
+		if (Multi_pxo_chat_start < (static_cast<int>(Multi_pxo_chat.size()) - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]))){
 			return true;
 		}
 	}
@@ -3361,7 +3366,7 @@ int multi_pxo_chat_is_left_message(const char *txt)
 void multi_pxo_chat_adjust_start()
 {
 	// if we have no chat
-	if (static_cast<int>(Multi_pxo_chat_vec.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
+	if (static_cast<int>(Multi_pxo_chat.size()) <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
 		Multi_pxo_chat_start = 0;		
 		return;
 	} else {
