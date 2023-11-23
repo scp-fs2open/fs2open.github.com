@@ -5201,21 +5201,24 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_ind
 		return nullptr;
 	}
 
+	// Append the suffix if it exists
+	SCP_string enum_name = tree_nodes[child].text + get_child_enum_suffix(tree_nodes[parent_node].text, arg_index);
+
 	sexp_list_item head;
 
-	int item = get_dynamic_enum_position(tree_nodes[child].text);
+	int item = get_dynamic_enum_position(enum_name);
 
 	if (item >= 0 && item < static_cast<int>(Dynamic_enums.size())) {
 
 		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
 			head.add_data(enum_item.c_str());
 		}
-		return head.next;
 	} else {
 		// else if enum is invalid do this
-		error_display(1, "Could not find Lua Enum %s!", tree_nodes[child].text);
-		return nullptr;
+		mprintf(("Could not find Lua Enum %s! Using <none> instead!", enum_name.c_str()));
+		head.add_data("<none>");
 	}
+	return head.next;
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_game_snds() {

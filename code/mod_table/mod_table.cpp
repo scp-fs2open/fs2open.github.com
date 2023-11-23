@@ -147,6 +147,7 @@ std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
+bool Contrails_use_absolute_speed;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -1352,6 +1353,10 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
 		}
 
+		if (optional_string("$Contrails use absolute speed:")) {
+			stuff_boolean(&Contrails_use_absolute_speed);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1531,6 +1536,7 @@ void mod_table_reset()
 	Randomize_particle_rotation = false;
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;
+	Contrails_use_absolute_speed = false;
 }
 
 void mod_table_set_version_flags()

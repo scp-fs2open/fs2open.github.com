@@ -730,6 +730,14 @@ void LuaSEXP::parseTable() {
 
 		}
 
+		if (type_str == "child_enum") {
+			if (optional_string("+Suffix:")) {
+				SCP_string suffix;
+				stuff_string(suffix, F_NAME);
+				Dynamic_enum_suffixes.push_back({_name, param_index, suffix});
+			}
+		}
+
 		if (variable_arg_part) {
 			_varargs_type_pattern.push_back(type);
 		} else {

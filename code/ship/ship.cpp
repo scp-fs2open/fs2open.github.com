@@ -989,7 +989,7 @@ void ship_info::clone(const ship_info& other)
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
 	explosion_bitmap_anims = other.explosion_bitmap_anims;
-	vaporize_chance = other.vaporize_chance;
+	skip_deathroll_chance = other.skip_deathroll_chance;
 
 	impact_spew = other.impact_spew;
 	damage_spew = other.damage_spew;
@@ -1334,7 +1334,7 @@ void ship_info::move(ship_info&& other)
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
 	std::swap(explosion_bitmap_anims, other.explosion_bitmap_anims);
-	vaporize_chance = other.vaporize_chance;
+	skip_deathroll_chance = other.skip_deathroll_chance;
 
 	std::swap(impact_spew, other.impact_spew);
 	std::swap(damage_spew, other.damage_spew);
@@ -1711,7 +1711,7 @@ ship_info::ship_info()
 	death_fx_count = 6;
 	shockwave_count = 1;
 	explosion_bitmap_anims.clear();
-	vaporize_chance = 0;
+	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
 	impact_spew.n_high = 30;
@@ -3305,7 +3305,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				Warning(LOCATION, "Lightning Arc Percent on %s '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", info_type_name, sip->name, sip->debris_arc_percent);
 				sip->debris_arc_percent = 50.0;
 			}
-			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+			//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
 		}
 		if (optional_string("+Debris Gravity Const:")) {
@@ -3661,14 +3661,20 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		parse_ship_particle_effect(sip, &sip->knossos_end_particles, "knossos death spew");
 	}
 
-	if(optional_string("$Vaporize Percent Chance:")){
-		stuff_float(&sip->vaporize_chance);
-		if (sip->vaporize_chance < 0.0f || sip->vaporize_chance > 100.0f) {
-			sip->vaporize_chance = 0.0f;
-			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 100.0 (read %f). Setting to 0.", sip->vaporize_chance);
+	auto skip_str = "$Skip Death Roll Percent Chance:";
+	auto vaporize_str = "$Vaporize Percent Chance:";
+	int which;
+	if ((which = optional_string_either(skip_str, vaporize_str)) >= 0) {
+		if (which == 1) {
+			mprintf(("Found %s for ship class '%s'.  This has been deprecated; use %s instead.\n", vaporize_str, sip->name, skip_str));
 		}
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		sip->vaporize_chance /= 100.0;
+		stuff_float(&sip->skip_deathroll_chance);
+		if (sip->skip_deathroll_chance < 0.0f || sip->skip_deathroll_chance > 100.0f) {
+			Warning(LOCATION, "%s should be between 0 and 100.0 (read %f) for ship class '%s'. Setting to 0.", which == 0 ? skip_str : vaporize_str, sip->skip_deathroll_chance, sip->name);
+			sip->skip_deathroll_chance = 0.0f;
+		}
+		//Percent is nice for modders, but here in the code we want it between 0 and 1.0
+		sip->skip_deathroll_chance /= 100.0f;
 	}
 
 	if(optional_string("$Shockwave Damage Type:")) {
@@ -5716,14 +5722,20 @@ static void parse_ship_type(const char *filename, const bool replace)
 		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
 
-	if(optional_string("$Vaporize Percent Chance:")) {
-		stuff_float(&stp->vaporize_chance);
-		if (stp->vaporize_chance < 0.0f || stp->vaporize_chance > 100.0f) {
-			stp->vaporize_chance = 0.0f;
-			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 100.0 (read %f) for ship type '%s' in %s. Setting to 0.", stp->vaporize_chance, stp->name, filename);
+	auto skip_str = "$Skip Death Roll Percent Chance:";
+	auto vaporize_str = "$Vaporize Percent Chance:";
+	int which;
+	if ((which = optional_string_either(skip_str, vaporize_str)) >= 0) {
+		if (which == 1) {
+			mprintf(("Found %s for ship type '%s'.  This has been deprecated; use %s instead.\n", vaporize_str, stp->name, skip_str));
 		}
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		stp->vaporize_chance /= 100.0;
+		stuff_float(&stp->skip_deathroll_chance);
+		if (stp->skip_deathroll_chance < 0.0f || stp->skip_deathroll_chance > 100.0f) {
+			Warning(LOCATION, "%s should be between 0 and 100.0 (read %f) for ship type '%s'. Setting to 0.", which == 0 ? skip_str : vaporize_str, stp->skip_deathroll_chance, stp->name);
+			stp->skip_deathroll_chance = 0.0f;
+		}
+		//Percent is nice for modders, but here in the code we want it between 0 and 1.0
+		stp->skip_deathroll_chance /= 100.0f;
 	}
 }
 
@@ -6878,6 +6890,8 @@ void ship_weapon::clear()
         burst_counter[i] = 0;
 		burst_seed[i] = Random::next();
         external_model_fp_counter[i] = 0;
+
+		firing_loop_sounds[i] = -1;
     }
 
     for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
@@ -10105,6 +10119,66 @@ static void ship_radar_process( object * obj, ship * shipp, ship_info * sip )
 	shipp->radar_current_status = visibility;
 }
 
+void update_firing_sounds(object* objp, ship* shipp) {
+
+	ship_weapon* swp = &shipp->weapons;
+	bool trigger_down = swp->flags[Ship::Weapon_Flags::Primary_trigger_down];
+
+	// much like in ship_fire_primary, these prevent doubling up on the same sound effect for multiple banks triggering at once
+	gamesnd_id start_snd_played = gamesnd_id();
+	gamesnd_id end_snd_played = gamesnd_id();
+
+	for (int i = 0; i < swp->num_primary_banks; i++) {
+		if (swp->primary_bank_weapons[i] < 0)
+			continue;
+
+		weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		bool primaries_locked = shipp->flags[Ship_Flags::Primaries_locked];
+		bool selected = swp->current_primary_bank == i || (shipp->flags[Ship_Flags::Primary_linked] && !wip->wi_flags[Weapon::Info_Flags::Nolink]);
+		bool has_resources = shipp->weapon_energy >= wip->energy_consumed && (!wip->wi_flags[Weapon::Info_Flags::Ballistic] || swp->primary_bank_ammo[i] > 0);
+		bool burst_only_allowed = !wip->burst_flags[Weapon::Burst_Flags::Burst_only_loop_sounds] || swp->burst_counter[i] > 0;
+		bool dying = shipp->flags[Ship::Ship_Flags::Dying];
+
+		// equality comparisons to -1 are correct here, -2 is valid and means a loop is active but the modder didnt specify an actual loop sound
+
+		if (swp->firing_loop_sounds[i] == -1 && trigger_down && !primaries_locked && selected && has_resources && burst_only_allowed && !dying) {
+			if (wip->start_firing_snd.isValid() && start_snd_played != wip->start_firing_snd) {
+				if (objp == Player_obj)
+					snd_play(gamesnd_get_game_sound(wip->start_firing_snd));
+				else
+					snd_play_3d(gamesnd_get_game_sound(wip->start_firing_snd), &objp->pos, &View_position);
+
+				start_snd_played = wip->start_firing_snd;
+			}
+
+			vec3d pos = model_get(Ship_info[shipp->ship_info_index].model_num)->view_positions[0].pnt;
+
+			if (wip->loop_firing_snd.isValid())
+				swp->firing_loop_sounds[i] = obj_snd_assign(shipp->objnum, wip->loop_firing_snd, &pos, OS_PLAY_ON_PLAYER);
+			else
+				swp->firing_loop_sounds[i] = -2;
+		} 
+
+		if (swp->firing_loop_sounds[i] != -1 && (!trigger_down || primaries_locked || !selected || !has_resources || !burst_only_allowed || dying)) {
+			if (wip->end_firing_snd.isValid() && end_snd_played != wip->end_firing_snd) {
+				if (objp == Player_obj)
+					snd_play(gamesnd_get_game_sound(wip->end_firing_snd));
+				else
+					snd_play_3d(gamesnd_get_game_sound(wip->end_firing_snd), &objp->pos, &View_position);
+
+				end_snd_played = wip->end_firing_snd;
+			}
+
+			if (wip->loop_firing_snd.isValid()) {
+				obj_snd_delete(objp, swp->firing_loop_sounds[i]);
+				swp->firing_loop_sounds[i] = -1;
+			} else
+				swp->firing_loop_sounds[i] = -1;
+		}
+	}
+}
+
 
 /**
  * Player ship uses this code, but does a quick out after doing a few things.
@@ -10142,6 +10216,8 @@ void ship_process_post(object * obj, float frametime)
 	afterburners_update(obj, frametime);
 
 	ship_subsys_disrupted_maybe_check(shipp);
+
+	update_firing_sounds(obj, shipp);
 
 	ship_dying_frame(obj, num);
 
@@ -12131,6 +12207,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	{
 		return 0;
 	}
+
+	swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
 
 	sound_played = gamesnd_id();
 
@@ -20987,7 +21065,7 @@ bool ship_start_secondary_fire(object* objp)
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
 	if ( wip->trigger_lock ) {
-		swp->flags.set(Ship::Weapon_Flags::Trigger_Lock);
+		swp->flags.set(Ship::Weapon_Flags::Secondary_trigger_down);
 
 		return true;
 	}
@@ -21029,8 +21107,8 @@ bool ship_stop_secondary_fire(object* objp)
 
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
-	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Trigger_Lock]) {
-		swp->flags.remove(Ship::Weapon_Flags::Trigger_Lock);
+	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Secondary_trigger_down]) {
+		swp->flags.remove(Ship::Weapon_Flags::Secondary_trigger_down);
 
 		return true;
 	}

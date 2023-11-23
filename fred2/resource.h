@@ -925,6 +925,7 @@
 #define IDC_GUARDIAN                    1474
 #define IDC_SCANNABLE                   1475
 #define IDC_RED_ALERT                   1476
+#define IDC_PAD_TOGGLE                  1476
 #define IDC_VAPORIZE                    1476
 #define IDC_SCRAMBLE                    1477
 #define IDC_FRIENDLY_STEALTH_INVISIBLE  1477

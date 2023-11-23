@@ -3,6 +3,7 @@
 //
 
 #include <globalincs/vmallocator.h>
+#include "shipchecklistbox.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -25,7 +26,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CheckBoxListDlg)
 	enum { IDD = IDD_CHECKLIST_VIEW };
-	CCheckListBox m_checklist;
+	ShipCheckListBox m_checklist;
 	//}}AFX_DATA
 
 // Overrides

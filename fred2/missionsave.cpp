@@ -4286,6 +4286,13 @@ int CFred_mission_save::save_players()
 		Assert(Player_start_shipnum >= 0);
 		fout(" %s", Ships[Player_start_shipnum].ship_name);
 
+		if (Mission_save_format != FSO_FORMAT_RETAIL) {
+			if (Team_data[i].do_not_validate) {
+				required_string_fred("+Do Not Validate Loadout");
+				parse_comments();
+			}
+		}
+
 		required_string_fred("$Ship Choices:");
 		parse_comments();
 		fout(" (\n");
@@ -4384,9 +4391,11 @@ int CFred_mission_save::save_players()
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < weapon_info_size(); j++) {
-			if (used_pool[j] > 0) {
-				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+		if (!Team_data[i].do_not_validate) {
+			for (j = 0; j < weapon_info_size(); j++) {
+				if (used_pool[j] > 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+				}
 			}
 		}
 

@@ -12,7 +12,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // ship_select dialog
 
-#include "ShipCheckListBox.h"
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "iff_defs/iff_defs.h"

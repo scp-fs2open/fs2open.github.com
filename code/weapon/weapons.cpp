@@ -111,7 +111,8 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 	{ "fast firing",		Weapon::Burst_Flags::Fast_firing,		true, false },
 	{ "random length",		Weapon::Burst_Flags::Random_length,		true, false },
 	{ "resets",		Weapon::Burst_Flags::Resets,		true, false },
-	{ "num firepoints for burst shots",		Weapon::Burst_Flags::Num_firepoints_burst_shots,		true, false }
+	{ "num firepoints for burst shots",		Weapon::Burst_Flags::Num_firepoints_burst_shots,		true, false },
+	{ "burst only loop sounds",		Weapon::Burst_Flags::Burst_only_loop_sounds,		true, false }
 };
 
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
@@ -1874,6 +1875,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
 
 	parse_game_sound("$AmbientSnd:", &wip->ambient_snd);
+
+	parse_game_sound("$StartFiringSnd:", &wip->start_firing_snd);
+
+	parse_game_sound("$LoopFiringSnd:", &wip->loop_firing_snd);
+
+	parse_game_sound("$EndFiringSnd:", &wip->end_firing_snd);
 
 	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd);
 	
@@ -8793,7 +8800,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius,
 						scaled_tail_radius,
 						alpha, alpha, alpha);
-					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult);
+					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult * 255.0);
 				}
 
 				batching_add_laser(
