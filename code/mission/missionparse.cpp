@@ -6116,11 +6116,14 @@ void parse_custom_data(mission* pm)
 		while (optional_string("$Name:")) {
 			mission_custom_string cs;
 
+			// The name of the string
 			stuff_string(cs.name, F_NAME);
 
+			// Arbitrary string value used for grouping strings together
 			required_string("+Value:");
 			stuff_string(cs.value, F_NAME);
 
+			// The string text itself
 			required_string("+String:");
 			stuff_string(cs.text, F_MULTITEXT);
 

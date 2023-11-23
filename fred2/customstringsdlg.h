@@ -60,6 +60,7 @@ class CustomStringsDlg : public CDialog {
 
   private:
 	bool query_modified() const;
+	bool m_modified;
 
 	bool m_text_edit_focus;
 

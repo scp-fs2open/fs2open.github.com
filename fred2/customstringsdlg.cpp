@@ -68,6 +68,7 @@ BOOL CustomStringsDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	m_text_edit_focus = false;
+	m_modified = false;
 
 	// grab the existing list of custom strings and duplicate it. We only update it if the user clicks OK.
 	m_custom_strings = The_mission.custom_strings;
@@ -94,6 +95,7 @@ void CustomStringsDlg::OnButtonCancel()
 	if (query_modified()) {
 		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
 		if (z == IDCANCEL) {
+			m_modified = false;
 			return;
 		}
 
@@ -129,17 +131,17 @@ void CustomStringsDlg::OnListerSelectionChange()
 	const int index = m_data_lister.GetCurSel();
 
 	if (index == LB_ERR) {
-		// TODO: clear key and data text  edit boxes?
+		update_text_edit_boxes("", "", "");
 		return;
 	}
 
-	Assert(m_data_lister.GetCount() > 0);
-	Assert(index >= 0 && index < (int)m_custom_strings.size());
+	Assertion(m_data_lister.GetCount() > 0, "Attempt to change custom string selection when there are no custom strings! Please report.");
+	Assertion(index >= 0 && index < static_cast<int>(m_custom_strings.size()), "Selected an invalid custom string! Please report.");
 
 	const SCP_string& key = m_lister_keys[index];
 	const mission_custom_string *cs = nullptr;
 
-	for (int i = 0; i <= (int)m_custom_strings.size(); i++) {
+	for (size_t i = 0; i <= m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
 			cs = &m_custom_strings[i];
 			break;
@@ -181,6 +183,7 @@ void CustomStringsDlg::add_pair_entry()
 	cs.text = text_str;
 
 	m_custom_strings.push_back(cs);
+	m_modified = true;
 
 	update_data_lister();
 	update_text_edit_boxes("", "", "");
@@ -203,6 +206,7 @@ void CustomStringsDlg::OnStringRemove()
 			break;
 		}
 	}
+	m_modified = true;
 
 	update_data_lister();
 	update_text_edit_boxes("", "", "");
@@ -245,6 +249,8 @@ void CustomStringsDlg::OnStringUpdate()
 	CString text_str;
 	text_edit->GetWindowText(text_str);
 	m_custom_strings[i].text = text_str;
+
+	m_modified = true;
 
 	update_data_lister();
 	update_text_edit_boxes("", "", "");
@@ -370,6 +376,5 @@ void CustomStringsDlg::OnEnKillFocusEditString()
 
 bool CustomStringsDlg::query_modified() const
 {
-	//return The_mission.custom_strings != m_custom_strings;
-	return true;
+	return m_modified;
 }
