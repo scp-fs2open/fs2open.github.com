@@ -2274,7 +2274,7 @@ void multi_pxo_clear_channels()
 	// only clear a non-null list
 	if(Multi_pxo_channels.empty()){		
 		Multi_pxo_channels.clear();
-		Multi_pxo_channels.resize(0);
+		Multi_pxo_channels.shrink_to_fit();
 
 		// item we're going to start displaying at
 		Multi_pxo_channel_start = 0;
@@ -2478,7 +2478,7 @@ void multi_pxo_channel_refresh_servers()
 	}
 
 	// traverse the list of existing channels we know about and query the game tracker about them
-	for (auto channel : Multi_pxo_channels) {
+	for (auto &channel : Multi_pxo_channels) {
 		if (strlen(channel.name)) {
 			// copy in the info
 			memset(&filter, 0, sizeof(filter_game_list_struct));
@@ -2742,7 +2742,7 @@ void multi_pxo_handle_channel_change()
 void multi_pxo_clear_players()
 {
 	Multi_pxo_players.clear();
-	Multi_pxo_players.resize(0);
+	Multi_pxo_players.shrink_to_fit();
 	Multi_pxo_player_start = 0;	
 	Multi_pxo_player_select = -1;
 }
@@ -2921,7 +2921,7 @@ void multi_pxo_chat_clear()
 {
 	// clear the text in all the lines
 	Multi_pxo_chat.clear();
-	Multi_pxo_chat.resize(0);
+	Multi_pxo_chat.shrink_to_fit();
 	Multi_pxo_chat_start = 0;
 	Multi_pxo_chat_slider.set_numberItems(0);
 }
