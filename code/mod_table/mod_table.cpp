@@ -74,6 +74,7 @@ int Splash_fade_in_time;
 int Splash_fade_out_time;
 bool Splash_logo_center;
 bool Use_tabled_strings_for_default_language;
+bool No_built_in_languages;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
@@ -303,6 +304,12 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
 			mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+		}
+
+		if (optional_string("$Don't initalize built-in languages by default:")) {
+			stuff_boolean(&No_built_in_languages);
+
+			mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages ? "yes" : "no"));
 		}
 
 		if (optional_string("$Don't pre-empt training message voice:")) {
@@ -1454,6 +1461,7 @@ void mod_table_reset()
 	Splash_fade_out_time = 0;
 	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
+	No_built_in_languages = false;
 	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "";
 	Enable_scripts_in_fred = false;
