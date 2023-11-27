@@ -32,6 +32,7 @@
 #include "missionui/redalert.h"
 #include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
+#include "network/chat_api.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
 #include "network/multi_pxo.h"
@@ -59,6 +60,7 @@
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/multi_objects.h"
 #include "scripting/api/objs/rank.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
@@ -2476,6 +2478,233 @@ ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everythin
 	Pause_saved_screen = -1;
 
 	Paused = false;
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPXO
+ADE_LIB_DERIV(l_UserInterface_MultiPXO,
+	"MultiPXO",
+	nullptr,
+	"API for accessing data related to the Multi PXO UI.",
+	l_UserInterface);
+
+ADE_FUNC(initPXO, l_UserInterface_MultiPXO, nullptr, "Makes sure everything is done correctly to begin a multi lobby session.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_init(0, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePXO, l_UserInterface_MultiPXO, nullptr, "Makes sure everything is done correctly to end a multi lobby session.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiPXO, nullptr, "Runs the network commands to update the lobby lists once.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_do_normal(true);
+
+	// run api stuff
+	if (Multi_pxo_connected) {
+		multi_pxo_api_process();
+	}
+	multi_pxo_process_common();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getChat, l_UserInterface_MultiPXO, nullptr, "Gets the entire chat as a table of strings", "string[]", "A table of chat strings")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	for (auto i = 0; i < Multi_pxo_chat.size(); i++) {
+		chats.addValue(i + 1, Multi_pxo_chat[i].text);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(sendChat, l_UserInterface_MultiPXO, "string", "Sends a string to the current channel's IRC chat", nullptr, nullptr)
+{
+	const char* msg;
+	if (!ade_get_args(L, "s", &msg))
+		return ADE_RETURN_NIL;
+
+	multi_pxo_chat_send(msg);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getPlayers, l_UserInterface_MultiPXO, nullptr, "Gets the entire player list as a table of strings", "string[]", "A table of player names")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	for (auto i = 0; i < Multi_pxo_players.size(); i++) {
+		chats.addValue(i + 1, Multi_pxo_players[i]);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if channel is private or player is not found.", "string string", "The response string and the player's channel")
+{
+	const char* plr_name;
+	if (!ade_get_args(L, "s", &plr_name))
+		return ADE_RETURN_NIL;
+
+	SCP_string cmd;
+	sprintf(cmd, "/WHOIS %s", plr_name);
+
+	multi_pxo_chat_send(cmd.c_str());
+
+	// We have to process the pxo api in order for the response to come back
+	while (stricmp(User_req_channel, "") == 0) {
+		if (Multi_pxo_connected) {
+			multi_pxo_api_process();
+		}
+	}
+
+	SCP_string response;
+	SCP_string channel;
+
+	if ((ptr_s)User_req_channel == -1) {
+		response = XSTR("User not found", 964);
+		channel = "";
+	} else {
+		if (User_req_channel[0] == '*') {
+			response = XSTR("Player is logged in but is not on a channel", 965);
+			channel = "";
+		} else {
+			SCP_string p_text;
+
+			// if they are on a public channel, display which one
+			if (User_req_channel[0] == '#') {
+				sprintf(p_text, XSTR("Found %s on :", 966), plr_name);
+
+				response = p_text + User_req_channel;
+				channel = User_req_channel;
+			}
+			// if they are on a private channel
+			else if (User_req_channel[0] == '+') {
+				sprintf(p_text, XSTR("Found %s on a private channel", 967), plr_name);
+				response = p_text;
+				channel = "";
+			}
+		}
+	}
+
+	// Reset the global
+	strcpy_s(User_req_channel, "");
+
+	return ade_set_args(L, "ss", response.c_str(), channel.c_str());
+}
+
+ADE_FUNC(getPlayerStats, l_UserInterface_MultiPXO, "string", "Gets a handle of the player stats by player name or invalid handle if the name is invalid", "scoring_stats", "Player stats handle")
+{
+	const char* plr_name;
+	if (!ade_get_args(L, "s", &plr_name))
+		return ade_set_error(L, "o", l_ScoringStats.Set(scoring_stats_h()));
+	
+	if (multi_pxo_maybe_get_player(plr_name))
+	{
+		return ade_set_args(L, "o", l_ScoringStats.Set(scoring_stats_h(Multi_pxo_pinfo_player.stats, &Multi_pxo_pinfo_player)));
+	}
+	
+	return ade_set_args(L, "o", l_ScoringStats.Set(scoring_stats_h()));
+}
+
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiPXO, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+	
+	return ade_set_args(L, "s", Multi_pxo_status_text);
+}
+
+ADE_VIRTVAR(MotdText, l_UserInterface_MultiPXO, nullptr, "The current message of the day", "string", "the motd text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Pxo_motd);
+}
+
+ADE_VIRTVAR(bannerFilename, l_UserInterface_MultiPXO, nullptr, "The current banner filename", "string", "the banner filename")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_pxo_banner.ban_file);
+}
+
+ADE_VIRTVAR(bannerURL, l_UserInterface_MultiPXO, nullptr, "The current banner URL", "string", "the banner url")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_pxo_banner.ban_url);
+}
+
+ADE_LIB_DERIV(l_PXO_Channels, "Channels", nullptr, nullptr, l_UserInterface_MultiPXO);
+ADE_INDEXER(l_PXO_Channels,
+	"number Index",
+	"Array of channels",
+	"pxo_channel",
+	"channel handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= static_cast<int>(Multi_pxo_channels.size()))
+		return ade_set_args(L, "o", l_Channel.Set(channel_h()));
+
+	return ade_set_args(L, "o", l_Channel.Set(channel_h(idx)));
+}
+
+ADE_FUNC(__len, l_PXO_Channels, nullptr, "The number of channels available", "number", "The number of channels.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_pxo_channels.size()));
+}
+
+ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, nullptr, "Joins the specified private channel", nullptr, nullptr)
+{
+	const char* channel;
+	if (!ade_get_args(L, "s", &channel))
+		return ADE_RETURN_NIL;
+
+	SCP_string name = channel;
+	name.insert(0, "+");
+
+	pxo_channel priv;
+	strcpy_s(priv.name, name.c_str());
+	priv.num_users = 0;
+
+	multi_pxo_maybe_join_channel(&priv);
 
 	return ADE_RETURN_NIL;
 }
