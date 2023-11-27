@@ -26,13 +26,13 @@ bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
 }
 
 template <typename T>
-bool SCP_vector_inbounds(SCP_vector<T>& vector, int idx) {
+inline bool SCP_vector_inbounds(SCP_vector<T>& vector, int idx) {
 	return ((idx >= 0) && (idx < static_cast<int>(vector.size())));
 }
 
 template <typename T>
-bool SCP_vector_inbounds(SCP_vector<T>& vector, size_t idx) {
-	return ((idx >= 0) && (idx < vector.size()));
+inline bool SCP_vector_inbounds(SCP_vector<T>& vector, size_t idx) {
+	return idx < vector.size();
 }
 
 template <typename T>
