@@ -642,9 +642,6 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
-//Currently unused
-//static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
-
 SCP_vector<ship_effect> Ship_effects;
 
 int ship_render_mode = MODEL_RENDER_ALL;
