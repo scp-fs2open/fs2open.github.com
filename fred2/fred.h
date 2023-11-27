@@ -24,6 +24,7 @@
 #include "wing_editor.h"
 #include "musicplayerdlg.h"
 #include "customdatadlg.h"
+#include "customstringsdlg.h"
 
 #include "globalincs/systemvars.h"
 #include "globalincs/systemvars.h"
