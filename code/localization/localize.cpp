@@ -111,7 +111,7 @@ int language_deserializer(const json_t* value)
 	int id = lcl_find_lang_index_by_name(lang);
 
 	//does the extension also match? If not then we probably have a new language, so use default instead
-	if (!stricmp(Lcl_languages[id].lang_ext, ext)) {
+	if (SCP_vector_inbounds(Lcl_languages, id) && !stricmp(Lcl_languages[id].lang_ext, ext)) {
 		return id;
 	}
 
