@@ -2272,7 +2272,7 @@ void multi_pxo_get_channels()
 void multi_pxo_clear_channels()
 {
 	// only clear a non-null list
-	if(Multi_pxo_channels.empty()){		
+	if(!Multi_pxo_channels.empty()){		
 		Multi_pxo_channels.clear();
 		Multi_pxo_channels.shrink_to_fit();
 
