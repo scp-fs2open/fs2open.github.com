@@ -121,7 +121,7 @@ static int Last_ts;	// holds last target status.
  */
 void hud_targetbox_truncate_subsys_name(char *outstr)
 {	
-	if(Lcl_gr){
+	if (Lcl_gr && !Disable_built_in_translations) {
 		if ( strstr(outstr, "communication") )	{
 			strcpy(outstr, "Komm");
 		} else if ( !stricmp(outstr, "weapons") ) {
@@ -149,7 +149,7 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if (!stricmp(outstr, "Gas Collector")) {
 			strcpy(outstr, "Sammler");
 		} 
-	} else if(Lcl_fr){	
+	} else if (Lcl_fr && !Disable_built_in_translations) {	
 		if ( strstr(outstr, "communication") )	{
 			strcpy(outstr, "comm");
 		} else if ( !stricmp(outstr, "weapons") ) {
@@ -167,7 +167,7 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") || strstr(outstr, "missile") ) {
 			strcpy(outstr, "tourelle");
 		} 
-	} else if(Lcl_pl){	
+	} else if (Lcl_pl && !Disable_built_in_translations) {	
 		if ( strstr(outstr, "communication") )	{
 			strcpy(outstr, "komunikacja");
 		} else if ( !stricmp(outstr, "weapons") ) {
