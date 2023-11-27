@@ -222,7 +222,6 @@ void cutscene_mark_viewable(const char* filename)
 
 	// change to lower case
 	strlwr(file);
-	int i = 0;
 	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
 	{
 		// change the cutscene file name to lower case
@@ -235,7 +234,6 @@ void cutscene_mark_viewable(const char* filename)
 			cut->flags.set(Cutscene::Cutscene_Flags::Viewable);
 			return;
 		}
-		i++;
 	}
 
 	Warning(LOCATION, "Could not find cutscene '%s' in listing; cannot mark it viewable...", filename);

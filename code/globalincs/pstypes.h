@@ -288,7 +288,7 @@ constexpr bool LoggingEnabled = false;
 // Disabling this functionality is dangerous, crazy values can run rampant unchecked, and the longer it's disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
-#	define Assert(expr) do { ASSUME(expr); } while (false)
+#	define Assert(expr) do { ASSUME(expr); (void)sizeof(expr); } while (false)
 #else
 #	define Assert(expr) do {\
 		if (!(expr)) {\

@@ -12,9 +12,9 @@ class HookManager {
   public:
 	int32_t addHook(HookBase* hook)
 	{
+		const auto doesHookExist = [hook](const HookBase* test) { return test->getHookName() == hook->getHookName(); };
 		Assertion(std::find_if(_hooks.cbegin(),
-							   _hooks.cend(),
-							   [hook](const HookBase* test) { return test->getHookName() == hook->getHookName(); }) ==
+							   _hooks.cend(), doesHookExist) ==
 					  _hooks.cend(),
 				  "Hook '%s' already exists!",
 				  hook->getHookName().c_str());
@@ -26,9 +26,10 @@ class HookManager {
 
 	void addHookWithId(HookBase* hook)
 	{
+		const auto doesHookExist = [hook](const HookBase* test) { return test->getHookName() == hook->getHookName(); };
 		Assertion(std::find_if(_hooks.cbegin(),
 							   _hooks.cend(),
-							   [hook](const HookBase* test) { return test->getHookName() == hook->getHookName(); }) ==
+					  doesHookExist) ==
 					  _hooks.cend(),
 				  "Hook '%s' already exists!",
 				  hook->getHookName().c_str());

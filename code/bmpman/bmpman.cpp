@@ -425,6 +425,7 @@ DCF(bm_used, "Shows BmpMan Slot Usage") {
 
 	SCP_stringstream text;
 	text << "BmpMan Used Slots\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << none << ", NONE\n";
 	text << "  " << std::dec << std::setw(4) << std::setfill('0') << pcx  << ", PCX\n";
 	text << "  " << std::dec << std::setw(4) << std::setfill('0') << user << ", User\n";
 	text << "  " << std::dec << std::setw(4) << std::setfill('0') << tga  << ", TGA\n";

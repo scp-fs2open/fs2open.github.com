@@ -47,20 +47,6 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
-find_program(CCACHE_PROGRAM ccache)
-# Currently only GCC support ccache properly without generating additional warnings
-# Enable ccache on Mac even for clang
-if(CCACHE_PROGRAM AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR APPLE))
-	if(NOT CMAKE_C_COMPILER_LAUNCHER)
-		message(STATUS "Using ccache for C compilation: ${CCACHE_PROGRAM}")
-		SET(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
-	endif()
-	if(NOT CMAKE_CXX_COMPILER_LAUNCHER)
-		message(STATUS "Using ccache for C++ compilation: ${CCACHE_PROGRAM}")
-		SET(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
-	endif()
-endif()
-
 IF(CMAKE_CROSSCOMPILING)
 	SET(IMPORT_EXE_DIR "IMPORT_EXE_DIR-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to binary directory of a cmake build for the real OS")
 	INCLUDE(${IMPORT_EXE_DIR}/ImportExecutables.cmake)

@@ -1396,11 +1396,11 @@ void gauge_assign_common(const gauge_settings* settings, std::unique_ptr<T>&& hu
 		for (auto ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			std::unique_ptr<T> instance(new T());
 			*instance = *hud_gauge;
-			Ship_info[*ship_index].hud_gauges.push_back(move(instance));
+			Ship_info[*ship_index].hud_gauges.push_back(std::move(instance));
 		}
 		// Previous instance goes out of scope here and is destructed
 	} else {
-		default_hud_gauges.push_back(move(hud_gauge));
+		default_hud_gauges.push_back(std::move(hud_gauge));
 	}
 }
 

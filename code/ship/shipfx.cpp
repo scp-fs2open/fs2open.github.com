@@ -1659,13 +1659,6 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 			if ( create_debris ) {
 				half_ship->draw_debris[i] = DEBRIS_FREE;		// mark debris to not render with model
 				vec3d center_to_debris, debris_vel, radial_vel;
-				// check if last debris piece, ie, debris_count == 0
-				int debris_count = 0;
-				for (int j=0; j<pm->num_debris_objects; j++ ) {
-					if (half_ship->draw_debris[j] == DEBRIS_DRAW) {
-						debris_count++;
-					}
-				} 
 				// do debris create here, but not for live debris
 				// debris vel (1) split ship vel (2) split ship rotvel (3) random
 				if ( !is_live_debris ) {

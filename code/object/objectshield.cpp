@@ -335,7 +335,8 @@ float shield_get_quad(object *objp, int quadrant_num) {
 	// no shield generator, so behave as normal
 	else
 	*/
-		return objp->shield_quadrant[quadrant_num];
+
+	return objp->shield_quadrant[quadrant_num];
 }
 
 float shield_get_strength(object *objp)

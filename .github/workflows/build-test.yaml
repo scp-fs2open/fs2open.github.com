@@ -15,7 +15,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
+    container: ghcr.io/scp-fs2open/linux_build:sha-dfd9307
     steps:
       # - name: Cache Qt
         # id: cache-qt-lin
@@ -41,12 +41,6 @@ jobs:
           [[ "${{ github.ref }}" =~ ^refs\/heads\/test\/(.*)$ ]]
           # Override the revision string so that the builds are named correctly
           echo "set(FSO_VERSION_REVISION_STR ${BASH_REMATCH[1]})" > "version_override.cmake"
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: 1.3.204.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}

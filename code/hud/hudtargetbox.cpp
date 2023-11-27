@@ -2064,7 +2064,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	object		*target_objp;
 	ship			*shipp = NULL;
 	debris		*debrisp = NULL;
-	ship_info	*sip = NULL;
+	__UNUSED ship_info	*sip = NULL;
 	int is_ship = 0;
 	float		displayed_target_distance, displayed_target_speed, current_target_distance, current_target_speed;
 
@@ -2088,7 +2088,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			break;
 
 		case OBJ_DEBRIS:
-			debrisp = &Debris[target_objp->instance]; 
+			debrisp = &Debris[target_objp->instance];
 			sip = &Ship_info[debrisp->ship_info_index];
 			break;
 
