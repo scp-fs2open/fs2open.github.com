@@ -323,11 +323,23 @@ ADE_FUNC(isCommMenuOpen, l_HUD, nullptr, "Returns whether the HUD comm menu is c
 
 ADE_VIRTVAR(toggleCockpits, l_HUD, "boolean", "Gets or sets whether the the cockpit model will be rendered.", "boolean", "true if being rendered, false otherwise")
 {
-	bool choice = !disableCockpits;
+	bool choice = !Disable_cockpits;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice))
 	{
-		disableCockpits = !choice;
+		Disable_cockpits = !choice;
+	}
+
+	return ade_set_args(L, "b", choice);
+}
+
+ADE_VIRTVAR(toggleCockpitSway, l_HUD, "boolean", "Gets or sets whether the the cockpit model will sway due to ship acceleration.", "boolean", "true if using 'sway', false otherwise")
+{
+	bool choice = !Disable_cockpit_sway;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice))
+	{
+		Disable_cockpit_sway = !choice;
 	}
 
 	return ade_set_args(L, "b", choice);

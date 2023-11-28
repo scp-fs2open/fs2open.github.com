@@ -283,8 +283,9 @@ typedef struct cockpit_display {
 	char name[MAX_FILENAME_LEN];
 } cockpit_display;
 
-extern bool disableCockpits;
-extern bool cockpitActive;
+extern bool Disable_cockpits;
+extern bool Disable_cockpit_sway;
+extern bool Cockpit_active;
 
 extern SCP_vector<cockpit_display> Player_displays;
 
@@ -1156,6 +1157,7 @@ public:
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
+	float   cockpit_sway_val;					// multiplier for cockpit 'swaying'
 	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	char		pof_file_tech[MAX_FILENAME_LEN];	// POF file to load for the techroom
