@@ -81,8 +81,8 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 	}
 
 	if ( timestamp_elapsed(Radar_flicker_timer[flicker_index]) ) {
-		Radar_flicker_timer[flicker_index] = timestamp_rand(50,1000);
-		Radar_flicker_on[flicker_index] ^= 1;
+		Radar_flicker_timer[flicker_index] = _timestamp_rand(50,1000);
+		Radar_flicker_on[flicker_index] = !Radar_flicker_on[flicker_index];
 	}
 
 	if ( !Radar_flicker_on[flicker_index] ) {
@@ -299,20 +299,20 @@ void HudGaugeRadarStd::render(float  /*frametime*/)
 
 	// note that on lowest skill level, there is no radar effects due to sensors damage
 	if ( ((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced ) {
-		Radar_static_playing = 0;
-		Radar_static_next = 0;
-		Radar_death_timer = 0;
-		Radar_avail_prev_frame = 1;
+		Radar_static_playing = false;
+		Radar_static_next = TIMESTAMP::never();
+		Radar_death_timer = TIMESTAMP::never();
+		Radar_avail_prev_frame = true;
 	} else if ( sensors_str < MIN_SENSOR_STR_TO_RADAR ) {
 		if ( Radar_avail_prev_frame ) {
-			Radar_death_timer = timestamp(2000);
-			Radar_static_next = 1;
+			Radar_death_timer = _timestamp(2000);
+			Radar_static_next = TIMESTAMP::immediate();
 		}
-		Radar_avail_prev_frame = 0;
+		Radar_avail_prev_frame = false;
 	} else {
-		Radar_death_timer = 0;
-		if ( Radar_static_next == 0 )
-			Radar_static_next = 1;
+		Radar_death_timer = TIMESTAMP::never();
+		if ( Radar_static_next.isNever() )
+			Radar_static_next = TIMESTAMP::immediate();
 	}
 
 	if ( timestamp_elapsed(Radar_death_timer) ) {
@@ -324,13 +324,13 @@ void HudGaugeRadarStd::render(float  /*frametime*/)
 	drawRange();
 
 	if ( timestamp_elapsed(Radar_static_next) ) {
-		Radar_static_playing ^= 1;
-		Radar_static_next = timestamp_rand(50, 750);
+		Radar_static_playing = !Radar_static_playing;
+		Radar_static_next = _timestamp_rand(50, 750);
 	}
 
 	// if the emp effect is active, always draw the radar wackily
 	if(emp_active_local()){
-		Radar_static_playing = 1;
+		Radar_static_playing = true;
 	}
 
 	if ( ok_to_blit_radar ) {
