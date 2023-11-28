@@ -15,7 +15,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-dfd9307
+    container: ghcr.io/scp-fs2open/linux_build:sha-6cb62ee
     steps:
       # - name: Cache Qt
         # id: cache-qt-lin
@@ -64,7 +64,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: linux-${{ matrix.configuration }}
           path: ${{ github.workspace }}/build/install/*.AppImage
@@ -81,12 +81,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: linux-Release
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: linux-FastDebug
           path: builds
@@ -190,7 +190,7 @@ jobs:
         shell: bash
         run: ./bin/$CONFIGURATION/unittests --gtest_shuffle
       - name: Upload build result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
@@ -211,12 +211,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
@@ -299,7 +299,7 @@ jobs:
         # Ref: https://github.com/actions/runner-images/issues/2619
         run: gtar -cvzf macos-build-${{ matrix.configuration }}.tgz *.app
       - name: Upload build result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: mac-${{ matrix.configuration }}
           path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}.tgz
@@ -316,12 +316,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: mac-Release
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: mac-FastDebug
           path: builds
