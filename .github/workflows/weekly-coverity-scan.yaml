@@ -11,7 +11,7 @@ on:
     - cron: "1 0 * * 5" # Run once per a week on Friday morning (midnight UTC, 4 AM EST), to avoid Coverity's submission limits
 
 env:
-  QT_VERSION: 5.12.9
+  QT_VERSION: 5.12.12
   coverity_email: SirKnightlySCP@gmail.com
   coverity_token: ${{ secrets.COVERITY_TOKEN }}
 
@@ -62,6 +62,7 @@ jobs:
         env:
           CONFIGURATION: Release
           compiler: gcc-5
+          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
 
       - name: Build FSO with Coverity Wrapper
