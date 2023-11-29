@@ -2519,11 +2519,10 @@ void multi_pxo_blit_channels()
 	char chan_users[15];
 	char chan_servers[15];
 	int user_w,server_w;
-	int disp_count,y_start;
+	int y_start;
 	int line_height = gr_get_font_height() + 1;
 
 	// blit as many channels as we can
-	disp_count = 0;
 	y_start = Multi_pxo_chan_coords[gr_screen.res][1];
 	if (Multi_pxo_channel_start < 0) {
 		return;
@@ -2567,7 +2566,6 @@ void multi_pxo_blit_channels()
 		gr_string(Multi_pxo_chan_coords[gr_screen.res][0] + Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_GAMES_COLUMN], y_start, chan_servers, GR_RESIZE_MENU);
 
 		// increment the displayed count
-		disp_count++;
 		y_start += line_height;		
 
 	};
