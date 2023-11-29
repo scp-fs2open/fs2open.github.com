@@ -304,7 +304,7 @@ int Multi_pxo_channel_start = 0;
 int Multi_pxo_channel_start_index = -1;
 
 // items we've currently got selected
-extern int Multi_pxo_channel_select = 0;
+int Multi_pxo_channel_select = 0;
 
 // channel we're currently connected to, num_users == -1, if we're not connected
 pxo_channel Multi_pxo_channel_current;
