@@ -2709,5 +2709,29 @@ ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, nullptr, "Joins the speci
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lines as a table of strings", "string[]", "The help lines")
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_help_load();
+
+	using namespace luacpp;
+
+	LuaTable pages = LuaTable::create(L);
+
+	int count = 1;
+	for (auto i = 0; i < MULTI_PXO_MAX_PAGES; i++) {
+		for (int idx = 0; idx < Multi_pxo_help_pages[i].num_lines; idx++) {
+			SCP_string text = Multi_pxo_help_pages[i].text[idx];
+			pages.addValue(count, text.c_str());
+			count++;
+		}
+	}
+
+	multi_pxo_help_free();
+
+	return ade_set_args(L, "t", pages);
+}
+
 } // namespace api
 } // namespace scripting

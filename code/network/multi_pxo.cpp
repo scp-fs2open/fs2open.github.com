@@ -901,8 +901,6 @@ UI_XSTR Multi_pxo_help_text[GR_NUM_RESOLUTIONS][MULTI_PXO_HELP_NUM_TEXT] = {
 
 // help text
 #define MULTI_PXO_HELP_FILE			"pxohelp.txt"
-#define MULTI_PXO_MAX_LINES_PP		57
-#define MULTI_PXO_MAX_PAGES			5
 
 int Multi_pxo_help_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -923,12 +921,6 @@ int Multi_pxo_lines_pp[GR_NUM_RESOLUTIONS] = {
 	57			// GR_1024
 };
 
-// help text pages
-typedef struct help_page {
-	char *text[MULTI_PXO_MAX_LINES_PP];
-	int num_lines;
-} help_page;
-
 help_page Multi_pxo_help_pages[MULTI_PXO_MAX_PAGES];
 
 int Multi_pxo_help_num_pages = 0;
@@ -938,9 +930,6 @@ UI_WINDOW Multi_pxo_help_window;
 
 // current page we're on
 int Multi_pxo_help_cur = 0;
-
-// load the help file up
-void multi_pxo_help_load();
 
 // blit the current page
 void multi_pxo_help_blit_page();
@@ -4664,7 +4653,6 @@ void multi_pxo_help_do()
  */
 void multi_pxo_help_close()
 {
-	int idx, idx2;
 
 	// unload any bitmaps
 	bm_release(Multi_pxo_help_bitmap);
@@ -4672,11 +4660,19 @@ void multi_pxo_help_close()
 	// destroy the UI_WINDOW
 	Multi_pxo_help_window.destroy();
 
+	multi_pxo_help_free();
+}
+
+/**
+ * Load the help file up
+ */
+void multi_pxo_help_free()
+{
 	// free all pages
-	for(idx=0; idx<Multi_pxo_help_num_pages; idx++){
-		for(idx2=0; idx2<Multi_pxo_help_pages[idx].num_lines; idx2++){
+	for (int idx = 0; idx < Multi_pxo_help_num_pages; idx++) {
+		for (int idx2 = 0; idx2 < Multi_pxo_help_pages[idx].num_lines; idx2++) {
 			// maybe free
-			if(Multi_pxo_help_pages[idx].text[idx2] != NULL){
+			if (Multi_pxo_help_pages[idx].text[idx2] != NULL) {
 				vm_free(Multi_pxo_help_pages[idx].text[idx2]);
 				Multi_pxo_help_pages[idx].text[idx2] = NULL;
 			}

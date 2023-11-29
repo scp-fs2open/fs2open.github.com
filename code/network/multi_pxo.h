@@ -85,6 +85,18 @@ typedef struct pxo_banner {
 // active pxo banner
 extern pxo_banner Multi_pxo_banner;
 
+// help page related stuff -----------------------------------------
+#define MULTI_PXO_MAX_LINES_PP 57
+#define MULTI_PXO_MAX_PAGES 5
+
+// help text pages
+typedef struct help_page {
+	char* text[MULTI_PXO_MAX_LINES_PP];
+	int num_lines;
+} help_page;
+
+extern help_page Multi_pxo_help_pages[MULTI_PXO_MAX_PAGES];
+
 // Globals for the UI API
 
 extern player Multi_pxo_pinfo_player;
@@ -111,9 +123,14 @@ void multi_pxo_do();
 // close the PXO screen
 void multi_pxo_close(bool api_access = false);
 
-
 // initialize the PXO help screen
 void multi_pxo_help_init();
+
+// load the help file up
+void multi_pxo_help_load();
+
+// free the help text from memory
+void multi_pxo_help_free();
 
 // do frame for PXO help
 void multi_pxo_help_do();

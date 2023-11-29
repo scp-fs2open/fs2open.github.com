@@ -26,8 +26,8 @@ bool channel_h::isValid() const
 	return channel >= 0 && channel < static_cast<int>(Multi_pxo_channels.size());
 }
 
-//**********HANDLE: help section
-ADE_OBJ(l_Channel, channel_h, "pxo_channel", "Help Section handle");
+//**********HANDLE: channel section
+ADE_OBJ(l_Channel, channel_h, "pxo_channel", "Channel Section handle");
 
 ADE_FUNC(isValid,
 	l_Channel,
