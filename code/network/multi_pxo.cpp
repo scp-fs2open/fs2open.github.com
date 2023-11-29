@@ -492,7 +492,7 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 #define CHAT_MODE_MOTD					5			// message of the day from the chat server
 
 // the chat list
-SCP_vector<chat_line> Multi_pxo_chat;
+SCP_list<chat_line> Multi_pxo_chat;
 
 // the current line to start displaying from
 int Multi_pxo_chat_start = 0;
@@ -2921,7 +2921,6 @@ void multi_pxo_chat_clear()
 {
 	// clear the text in all the lines
 	Multi_pxo_chat.clear();
-	Multi_pxo_chat.shrink_to_fit();
 	Multi_pxo_chat_start = 0;
 	Multi_pxo_chat_slider.set_numberItems(0);
 }
@@ -3067,7 +3066,8 @@ void multi_pxo_chat_blit()
 
 	for (int i = Multi_pxo_chat_start; i < static_cast<int>(Multi_pxo_chat.size()); i++) {
 		if (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
-			const chat_line* line = &Multi_pxo_chat[i];
+			SCP_list<chat_line>::iterator line = Multi_pxo_chat.begin();
+			std::advance(line, i);
 			char* tok;
 			switch (line->mode) {
 			// if this is text from the server, display it all "bright"

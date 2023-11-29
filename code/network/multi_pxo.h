@@ -64,7 +64,7 @@ typedef struct chat_line {
 	int mode;
 } chat_line;
 
-extern SCP_vector<chat_line> Multi_pxo_chat;
+extern SCP_list<chat_line> Multi_pxo_chat;
 
 // ----------------------------------------------------------------------------------------------------
 // PXO FUNCTIONS
