@@ -2530,8 +2530,10 @@ ADE_FUNC(getChat, l_UserInterface_MultiPXO, nullptr, "Gets the entire chat as a 
 
 	LuaTable chats = LuaTable::create(L);
 
-	for (auto i = 0; i < Multi_pxo_chat.size(); i++) {
-		chats.addValue(i + 1, Multi_pxo_chat[i].text);
+	for (size_t i = 0; i < Multi_pxo_chat.size(); i++) {
+		SCP_list<chat_line>::iterator line = Multi_pxo_chat.begin();
+		std::advance(line, i);
+		chats.addValue(i + 1, line->text);
 	}
 
 	return ade_set_args(L, "t", chats);
@@ -2556,7 +2558,7 @@ ADE_FUNC(getPlayers, l_UserInterface_MultiPXO, nullptr, "Gets the entire player 
 
 	LuaTable chats = LuaTable::create(L);
 
-	for (auto i = 0; i < Multi_pxo_players.size(); i++) {
+	for (size_t i = 0; i < Multi_pxo_players.size(); i++) {
 		chats.addValue(i + 1, Multi_pxo_players[i]);
 	}
 
