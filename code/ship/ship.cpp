@@ -7824,7 +7824,7 @@ void ship_render_player_ship(object* objp) {
 	ship_get_eye_local(&eye_pos, &eye_orient, objp);
 	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
 	if (!Disable_cockpit_sway)
-		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration / 5000.0f;
+		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 
 	fov_t fov_backup = Proj_fov;
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
@@ -7898,7 +7898,7 @@ void ship_render_player_ship(object* objp) {
 			vec3d offset = sip->cockpit_offset;
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
 			if (!Disable_cockpit_sway)
-				offset += sip->cockpit_sway_val * objp->phys_info.acceleration / 5000.0f;
+				offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 		}
 
@@ -7947,7 +7947,7 @@ void ship_render_player_ship(object* objp) {
 		vec3d offset = sip->cockpit_offset;
 		vm_vec_unrotate(&offset, &offset, &objp->orient);
 		if (!Disable_cockpit_sway)
-			offset += sip->cockpit_sway_val * objp->phys_info.acceleration / 5000.0f;
+			offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 		model_render_immediate(&render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 	}
 
