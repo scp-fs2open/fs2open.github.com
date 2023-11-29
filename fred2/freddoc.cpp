@@ -43,6 +43,7 @@
 #include "ship/ship.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
+#include "scripting/global_hooks.h"
 
 extern int Num_objects;
 
@@ -368,6 +369,12 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	stars_post_level_init();
 
 	recreate_dialogs();
+
+	// This hook will allow for scripts to know when a mission has been loaded
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionLoad->isActive()) {
+		scripting::hooks::FredOnMissionLoad->run();
+	}
 
 	return true;
 }

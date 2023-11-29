@@ -441,6 +441,10 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 
 // ========== FRED HOOKS ==========
 
+const std::shared_ptr<Hook<>> FredOnMissionLoad = Hook<>::Factory("FRED On Mission Load",
+	"Invoked when a new mission is loaded.",
+	{});
+
 const std::shared_ptr<Hook<>> FredOnMissionSpecsSave = Hook<>::Factory("FRED On Mission Specs Save",
 	"Invoked when the Mission Specs dialog OK Button has been hit and all data is sucessfully saved.",
 	{});
