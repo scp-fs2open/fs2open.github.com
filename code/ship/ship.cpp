@@ -133,8 +133,9 @@ ship	Ships[MAX_SHIPS];
 ship	*Player_ship;
 int		*Player_cockpit_textures;
 SCP_vector<cockpit_display> Player_displays;
-bool disableCockpits = false;
-bool cockpitActive = false;
+bool Disable_cockpits = false;
+bool Disable_cockpit_sway = false;
+bool Cockpit_active = false;
 
 wing	Wings[MAX_WINGS];
 bool	Ships_inited = false;
@@ -928,6 +929,7 @@ void ship_info::clone(const ship_info& other)
 
 	strcpy_s(cockpit_pof_file, other.cockpit_pof_file);
 	cockpit_offset = other.cockpit_offset;
+	cockpit_sway_val = other.cockpit_sway_val;
 	strcpy_s(pof_file, other.pof_file);
 	strcpy_s(pof_file_hud, other.pof_file_hud);
 	strcpy_s(pof_file_tech, other.pof_file_tech);
@@ -1274,6 +1276,7 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(cockpit_pof_file, other.cockpit_pof_file);
 	std::swap(cockpit_offset, other.cockpit_offset);
+	cockpit_sway_val = other.cockpit_sway_val;
 	std::swap(pof_file, other.pof_file);
 	std::swap(pof_file_hud, other.pof_file_hud);
 	std::swap(pof_file_tech, other.pof_file_tech);
@@ -1642,6 +1645,7 @@ ship_info::ship_info()
 
 	cockpit_pof_file[0] = '\0';
 	vm_vec_zero(&cockpit_offset);
+	cockpit_sway_val = 0.0;
 	pof_file[0] = '\0';
 	pof_file_hud[0] = '\0';
 	pof_file_tech[0] = '\0';
@@ -2919,6 +2923,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		stuff_vec3d(&sip->cockpit_offset);
 	}
+
+	if (optional_string("+Cockpit Sway Multiplier:"))
+	{
+		stuff_float(&sip->cockpit_sway_val);
+	}
+
 	while(optional_string( "$Cockpit Display:" )) 
 	{
 		cockpit_display_info display;
@@ -7786,11 +7796,11 @@ void ship_render_player_ship(object* objp) {
 
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !disableCockpits;
+	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
 	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
 			|| !(Viewer_mode & VM_EXTERNAL));
-	cockpitActive = renderCockpitModel;
+	Cockpit_active = renderCockpitModel;
 
 	//Nothing to do
 	if (!(renderCockpitModel || renderShipModel)) {
@@ -7809,6 +7819,8 @@ void ship_render_player_ship(object* objp) {
 	matrix eye_orient;
 	ship_get_eye_local(&eye_pos, &eye_orient, objp);
 	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
+	if (!Disable_cockpit_sway)
+		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 
 	fov_t fov_backup = Proj_fov;
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
@@ -7881,6 +7893,8 @@ void ship_render_player_ship(object* objp) {
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
 			vec3d offset = sip->cockpit_offset;
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
+			if (!Disable_cockpit_sway)
+				offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 		}
 
@@ -7928,6 +7942,8 @@ void ship_render_player_ship(object* objp) {
 		render_info.set_replacement_textures(Player_cockpit_textures);
 		vec3d offset = sip->cockpit_offset;
 		vm_vec_unrotate(&offset, &offset, &objp->orient);
+		if (!Disable_cockpit_sway)
+			offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 		model_render_immediate(&render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 	}
 
