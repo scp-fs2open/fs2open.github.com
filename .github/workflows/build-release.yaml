@@ -290,7 +290,7 @@ jobs:
       matrix:
         configuration: [FastDebug, Release]
         compiler: [clang]
-        arch: [x86_64]
+        arch: [x86_64, arm64]
     name: Mac
     needs: create_release
     runs-on: macos-latest
@@ -342,17 +342,20 @@ jobs:
         working-directory: ./build/bin
         # Use GNU tar here (part of runner image) to avoid weird corruption bug with bsdtar
         # Ref: https://github.com/actions/runner-images/issues/2619
-        run: gtar -cvzf macos-build-${{ matrix.configuration }}.tgz *.app
+        run: gtar -cvzf macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz *.app
       - name: Upload build result
         uses: actions/upload-artifact@v3
         with:
-          name: mac-${{ matrix.configuration }}
-          path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}.tgz
+          name: mac-${{ matrix.configuration }}-${{ matrix.arch }}
+          path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz
   mac_zip:
     name: Build Mac distribution zip
     needs: build_mac
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
     steps:
       - uses: actions/checkout@v2
         name: Checkout
@@ -363,21 +366,23 @@ jobs:
       - name: Download Release builds
         uses: actions/download-artifact@v3
         with:
-          name: mac-Release
+          name: mac-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
         uses: actions/download-artifact@v3
         with:
-          name: mac-FastDebug
+          name: mac-FastDebug-${{ matrix.arch }}
           path: builds
       - name: Unpack builds
         working-directory: ./builds
         run: |
-          tar -xvzf macos-build-Release.tgz
-          tar -xvzf macos-build-FastDebug.tgz
+          tar -xvzf macos-build-Release-${{ matrix.arch }}.tgz
+          tar -xvzf macos-build-FastDebug-${{ matrix.arch }}.tgz
       - name: Create Distribution package
         id: generate_package
         working-directory: ./builds
+        env:
+          ARCH: ${{ matrix.arch }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Mac
       - name: Upload result package
         uses: actions/upload-artifact@v3

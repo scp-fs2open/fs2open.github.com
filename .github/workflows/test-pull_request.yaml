@@ -171,7 +171,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         compiler: [clang]
-        arch: [x86_64]
+        arch: [x86_64, arm64]
         cmake_options: [""]
     name: Mac
     runs-on: macos-latest
@@ -199,7 +199,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
-          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
+          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}-${{ matrix.arch }}
           save: false # Caches are created by a separate job and only restored for PRs
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
