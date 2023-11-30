@@ -36,7 +36,7 @@ typedef struct blip	{
 	int radar_color_image_2d;
 	int radar_image_size;
 	float radar_projection_size;
-	float time_since_update;
+	TIMESTAMP last_update;
 
 	float   dist;
 	object* objp;
@@ -77,7 +77,7 @@ extern int	N_blips;										// next blip index to take from pool
 #define BLIP_DRAW_DISTORTED	(1<<2)	// object is resistant to sensors, so draw distorted
 
 extern float	Radar_bright_range;				// range within which the radar blips are bright
-extern int		Radar_calc_bright_dist_timer;	// timestamp at which we recalc Radar_bright_range
+extern TIMESTAMP	Radar_calc_bright_dist_timer;	// timestamp at which we recalc Radar_bright_range
 
 extern int See_all;
 
@@ -102,18 +102,16 @@ protected:
 	int Radar_radius[2];
 	int Radar_dist_offsets[RR_MAX_RANGES][2];
 
-	// color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
-
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 
-	int Radar_static_playing;			// is static currently playing on the radar?
-	int Radar_static_next;				// next time to toggle static on radar
-	int Radar_avail_prev_frame;		// was radar active last frame?
-	int Radar_death_timer;				// timestamp used to play static on radar
+	bool Radar_static_playing;			// is static currently playing on the radar?
+	TIMESTAMP Radar_static_next;		// next time to toggle static on radar
+	bool Radar_avail_prev_frame;		// was radar active last frame?
+	TIMESTAMP Radar_death_timer;		// timestamp used to play static on radar
 
-	int		Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
-	int		Radar_flicker_on[NUM_FLICKER_TIMERS];	
+	TIMESTAMP	Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
+	bool		Radar_flicker_on[NUM_FLICKER_TIMERS];
 
 	ubyte Radar_infinity_icon;
 public:
