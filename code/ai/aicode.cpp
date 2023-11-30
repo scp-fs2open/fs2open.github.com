@@ -8824,38 +8824,40 @@ void ai_chase()
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.
 		weapon_info* wip = ai_get_weapon(&shipp->weapons);
-		bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
-		if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
-			Assert(En_objp->type == OBJ_SHIP);
-			vec3d target_pos;
-			get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);
+		if (wip) {
+			bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
+			if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
+				Assert(En_objp->type == OBJ_SHIP);
+				vec3d target_pos;
+				get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);
 
-			if (!ballistic)
-				predicted_enemy_pos = target_pos;
-			else {
-				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
-				has_valid_ballistic_trajectory =
-					physics_lead_ballistic_trajectory(&Pl_objp->pos, &target_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);
-
-				if (has_valid_ballistic_trajectory)
-					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &target_pos);
-				else
+				if (!ballistic)
 					predicted_enemy_pos = target_pos;
-			}
+				else {
+					vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+					has_valid_ballistic_trajectory =
+						physics_lead_ballistic_trajectory(&Pl_objp->pos, &target_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);
 
-			predicted_vec_to_enemy = real_vec_to_enemy;			
-		} else {
-			if (!ballistic)
-				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
-			else {
-				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
-				has_valid_ballistic_trajectory =
-					physics_lead_ballistic_trajectory(&Pl_objp->pos, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);			
-				
-				if (has_valid_ballistic_trajectory)
-					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &aip->last_aim_enemy_pos);
-				else
+					if (has_valid_ballistic_trajectory)
+						predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &target_pos);
+					else
+						predicted_enemy_pos = target_pos;
+				}
+
+				predicted_vec_to_enemy = real_vec_to_enemy;			
+			} else {
+				if (!ballistic)
 					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+				else {
+					vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+					has_valid_ballistic_trajectory =
+						physics_lead_ballistic_trajectory(&Pl_objp->pos, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);			
+				
+					if (has_valid_ballistic_trajectory)
+						predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &aip->last_aim_enemy_pos);
+					else
+						set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+				}
 			}
 		}
 	}
