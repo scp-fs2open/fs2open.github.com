@@ -2,6 +2,7 @@
 //
 
 #include "graphics.h"
+#include "globalincs/vmallocator.h"
 
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/color.h"
@@ -1362,9 +1363,6 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 	}
 	else
 	{
-		SCP_vector<int> linelengths;
-		SCP_vector<const char*> linestarts;
-
 		// This would pass a <=0 value to split_str
 		if (x2 <= x)
 		{
@@ -1390,8 +1388,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 			std::swap(y, y2);
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
-
+		SCP_vector<SCP_string> lines = str_wrap_to_width(s,x2-x,false);
+		num_lines = (int) lines.size();
 		int line_ht = gr_get_font_height();
 		if (y2 < 0)
 			y2 = y + line_ht;
@@ -1403,7 +1401,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		for(int i = 0; i < num_lines; i++)
 		{
 			//Draw the string
-			gr_string(x, curr_y, linestarts[i], resize_mode, linelengths[i]);
+			gr_string(x,curr_y,lines[i].c_str(),resize_mode);
 
 			//Increment line height
 			curr_y += line_ht;
