@@ -15,8 +15,16 @@ if(PLATFORM_WINDOWS)
 	set(dll_name "${SEARCH_PATH}/freetype281.dll")
 	add_target_copy_files("${dll_name}")
 else()
-	# mac freetype build uses only static linking
-	target_link_libraries(freetype INTERFACE "${SEARCH_PATH}/libfreetype.a")
+	find_library(freetype_LOCATION freetype
+		PATHS "${FREETYPE_ROOT_DIR}/lib"
+		NO_DEFAULT_PATH)
+
+	file(GLOB freetype_LIBS "${FREETYPE_ROOT_DIR}/lib/libfreetype*")
+
+	get_filename_component(FULL_LIB_PATH "${freetype_LOCATION}" REALPATH)
+	target_link_libraries(freetype INTERFACE "${FULL_LIB_PATH}")
+
+	add_target_copy_files("${freetype_LIBS}")
 endif(PLATFORM_WINDOWS)
 
 else()
