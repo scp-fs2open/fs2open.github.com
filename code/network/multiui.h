@@ -81,9 +81,6 @@ void multi_common_load_palette();
 void multi_common_set_palette();
 void multi_common_unload_palette();
 
-// call this to verify if we have a CD in the drive or not
-void multi_common_verify_cd();
-
 // variables to hold the mission and campaign lists
 extern SCP_vector<multi_create_info> Multi_create_mission_list;
 extern SCP_vector<multi_create_info> Multi_create_campaign_list;

@@ -481,19 +481,6 @@ void multi_common_unload_palette()
 	}
 }
 
-void multi_common_verify_cd()
-{
-#ifdef GAME_CD_CHECK
-	// otherwise, call the freespace function to determine if we have a cd
-	Multi_has_cd = 0;
-	if((find_freespace_cd(FS_CDROM_VOLUME_1) >= 0) || (find_freespace_cd(FS_CDROM_VOLUME_2) >= 0) || (find_freespace_cd(FS_CDROM_VOLUME_3) >= 0) ){
-		Multi_has_cd = 1;
-	} 
-#else
-	Multi_has_cd = 1;
-#endif
-}
-
 
 // -------------------------------------------------------------------------------------------------------------
 // 
@@ -786,7 +773,6 @@ void multi_join_cull_timeouts();
 void multi_join_handle_item_cull(active_game *item, int item_index);
 void multi_join_send_join_request(int as_observer);
 void multi_join_create_game();
-void multi_join_blit_top_stuff();
 int multi_join_maybe_warn();
 int multi_join_warn_pxo();
 void multi_join_blit_protocol();
@@ -863,9 +849,6 @@ void multi_join_game_init()
 	Net_player->flags |= NETINFO_FLAG_DO_NETWORKING;	
 	Net_player->m_player = Player;
 	memcpy(&Net_player->p_info.addr, &Psnet_my_addr, sizeof(Net_player->p_info.addr));
-
-	// check for the existence of a CD
-	multi_common_verify_cd();
 
 	// load my local netplayer options
 	multi_options_local_load(&Net_player->p_info.options, Net_player);	
@@ -1118,9 +1101,6 @@ void multi_join_game_do_frame()
 
 	// display any pending notification messages
 	multi_common_notify_do();
-
-	// blit the CD icon and any PXO filter stuff
-	multi_join_blit_top_stuff();
 
 	// draw the help overlay
 	help_overlay_maybe_blit(Multi_join_overlay_id, gr_screen.res);
@@ -2018,19 +1998,6 @@ void multi_join_reset_join_stamp()
 	multi_common_add_notify("");
 }
 
-void multi_join_blit_top_stuff()
-{	
-	// blit the cd icon if he has one
-	if(Multi_has_cd && (Multi_common_icons[MICON_CD] != -1)){
-		// get bitmap width
-		int cd_w;
-		bm_get_info(Multi_common_icons[MICON_CD], &cd_w, NULL, NULL, NULL, NULL);
-
-		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap((gr_screen.max_w_unscaled / 2) - (cd_w / 2), Mj_cd_coords[gr_screen.res], GR_RESIZE_MENU);
-	} 	
-}
-
 #define CW_CODE_CANCEL				0				// cancel the action
 #define CW_CODE_OK					1				// continue anyway
 #define CW_CODE_INFO					2				// gimme some more information
@@ -2781,11 +2748,6 @@ void multi_sg_init_gamenet()
 		Netgame.server = server_save;
 	}
 
-	// if I have a cd or not
-	if(Multi_has_cd){
-		Net_player->flags |= NETINFO_FLAG_HAS_CD;
-	}	
-
 	// if I have hacked data
 	if(game_hacked_data()){
 		Net_player->flags |= NETINFO_FLAG_HAXOR;
@@ -3384,7 +3346,6 @@ void multi_create_draw_filter_buttons();
 void multi_create_set_selected_team(int team);
 short multi_create_get_mouse_id();
 int multi_create_ok_to_commit();
-int multi_create_verify_cds();
 void multi_create_refresh_pxo();
 void multi_create_sw_clicked();
 
@@ -4283,15 +4244,7 @@ void multi_create_plist_blit_normal()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-			
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 			
 			// make sure the string will fit, then display it
 			strcpy_s(str,Net_players[idx].m_player->callsign);
@@ -4340,15 +4293,7 @@ void multi_create_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);				
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 
 			// blit the red team indicator			
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
@@ -4406,15 +4351,7 @@ void multi_create_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 
 			// blit the red team indicator			
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
@@ -5360,15 +5297,6 @@ int multi_create_ok_to_commit()
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Teams and/or team captains are not assigned properly", 793));			
 			return 0;
 		}
-	}
-
-	// verify cd's	
-	if(!multi_create_verify_cds()){
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
-
-		return 0;
 	}	
 	
 	// if we're playing on the tracker
@@ -5398,31 +5326,6 @@ int multi_create_ok_to_commit()
 		}
 	}	
 		
-	return 1;
-}
-
-int multi_create_verify_cds()
-{
-	int player_count = multi_num_players();
-	int multi_cd_count;
-	int idx;
-
-	// count how many cds we have
-	multi_cd_count = 0;
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && (Net_players[idx].flags & NETINFO_FLAG_HAS_CD)){
-			multi_cd_count++;
-		}
-	}
-
-	// determine if we have enough
-	float ratio = (float)player_count / (float)multi_cd_count;
-	// greater than a 4 to 1 ratio
-	if(ratio > 4.0f){
-		return 0;
-	} 
-
-	// we meet the conditions
 	return 1;
 }
 
@@ -7057,15 +6960,7 @@ void multi_jw_plist_blit_normal()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 			
 			// make sure the string will fit, then display it
 			strcpy_s(str,Net_players[idx].m_player->callsign);
@@ -7115,15 +7010,7 @@ void multi_jw_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1, GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 
 			// blit the red team indicator
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
@@ -7172,14 +7059,6 @@ void multi_jw_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
 
 			// blit the red team indicator
@@ -8459,12 +8338,6 @@ void multi_sync_display_name(const char *name,int index,int np_index)
 
 		// blit the string
 		gr_string(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height),fit,GR_RESIZE_MENU);
-	}
-
-	// maybe blit his CD status icon
-	if((Net_players[np_index].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height), GR_RESIZE_MENU);
 	}
 }
 

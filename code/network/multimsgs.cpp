@@ -1630,11 +1630,6 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	multi_options_local_load(&Net_player->p_info.options, Net_player);
 	Net_player->p_info.team = team;	
 
-	// determine if I have a CD
-	if(Multi_has_cd){
-		Net_player->flags |= NETINFO_FLAG_HAS_CD;
-	}	
-
 	// set accept code in netplayer for this guy
 	if ( code & ACCEPT_INGAME ){
 		Net_player->flags |= NETINFO_FLAG_ACCEPT_INGAME;
@@ -2387,11 +2382,8 @@ void send_netplayer_update_packet( net_player *pl )
 				ADD_INT(Net_players[idx].p_info.ship_class);				
 				ADD_INT(Net_players[idx].tracker_player_id);
 
-				if(Net_players[idx].flags & NETINFO_FLAG_HAS_CD){
-					val = 1;
-				} else {
-					val = 0;
-				}
+				//Used to be a check for a CD here --Mjn
+				val = 1;
 				ADD_DATA(val);				
 			}
 		}
@@ -2424,12 +2416,8 @@ void send_netplayer_update_packet( net_player *pl )
 		ADD_INT(Net_player->p_info.ship_class);		
 		ADD_INT(Multi_tracker_id);
 
-		// add if I have a CD or not
-		if(Multi_has_cd){
-			val = 1;
-		} else {
-			val = 0;
-		}
+		// Used to check or a CD here but that has been removed --Mjn
+		val = 1;
 		ADD_DATA(val);		
 
 		// add a final stop byte
@@ -2477,12 +2465,7 @@ void process_netplayer_update_packet( ubyte *data, header *hinfo )
 			GET_INT(new_state);
 			GET_INT(Net_players[player_num].p_info.ship_class);			
 			GET_INT(Net_players[player_num].tracker_player_id);
-			GET_DATA(has_cd);
-			if(has_cd){
-				Net_players[player_num].flags |= NETINFO_FLAG_HAS_CD;
-			} else {
-				Net_players[player_num].flags &= ~(NETINFO_FLAG_HAS_CD);
-			}			
+			GET_DATA(has_cd); //unused		
 
 			// if he's changing state to joined, send a team update
 			if((Net_players[player_num].state == NETPLAYER_STATE_JOINING) && (new_state == NETPLAYER_STATE_JOINED) && (Netgame.type_flags & NG_TYPE_TEAM)){
