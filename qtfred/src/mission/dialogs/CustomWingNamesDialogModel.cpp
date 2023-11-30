@@ -67,19 +67,35 @@ bool CustomWingNamesDialogModel::apply() {
 	}
 
 
-	// copy starting wings
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		strcpy_s(Starting_wing_names[i], _m_starting[i].c_str());
+	// copy starting wings -- Cyborg: Fixing this will require us to redo the 
+	// wing name selection editor (Maybe a dedicated squadron editor would be good?)
+	// But we have not yet finished overhauling the loadout selection screen, which
+	// would mean that allowing FRED to work with more than just the first three starting wings
+	// would require SCPUI, and at least some other changes.
+	for (i = 0; i < RETAIL_MAX_STARTING_WINGS; i++) {
+		if (i < static_cast<int>(Starting_wing_names.size())){
+			Starting_wing_names[i] = _m_starting[i];
+		} else if (!_m_starting[i].empty()){
+			Starting_wing_names.push_back(_m_starting[i]);
+		}
 	}
 
 	// copy squadron wings
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		strcpy_s(Squadron_wing_names[i], _m_squadron[i].c_str());
+		if (i < static_cast<int>(Squadron_wing_names.size())){
+			Squadron_wing_names[i] = _m_squadron[i];
+		} else if (!_m_squadron[i].empty()) {
+			Squadron_wing_names.push_back(_m_squadron[i]);
+		}
 	}
 
 	// copy tvt wings
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		strcpy_s(TVT_wing_names[i], _m_tvt[i].c_str());
+	// Cyborg - Nothing fancy for now, just allow copying to the first wing of each team.
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		TVT_wing_names[i].clear();
+		if (!_m_tvt[i].empty()){
+			TVT_wing_names[i].push_back(_m_tvt[i]);
+		}
 	}
 
 	_viewport->editor->update_custom_wing_indexes();
@@ -94,18 +110,30 @@ void CustomWingNamesDialogModel::initializeData() {
 	int i;
 
 	// init starting wings
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		_m_starting[i] = Starting_wing_names[i];
+	for (i = 0; i < RETAIL_MAX_STARTING_WINGS; i++) {
+		if (i < static_cast<int>(Starting_wing_names.size())){
+			_m_starting[i] = Starting_wing_names[i];
+		} else {
+			_m_starting[i].clear();
+		}
 	}
 
 	// init squadron wings
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		_m_squadron[i] = Squadron_wing_names[i];
+		if (i < static_cast<int>(Squadron_wing_names.size())){
+			_m_squadron[i] = Squadron_wing_names[i];
+		} else {
+			_m_squadron[i].clear();
+		}
 	}
 
 	// init tvt wings
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		_m_tvt[i] = TVT_wing_names[i];
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		if (!TVT_wing_names[i].empty()){
+			_m_tvt[i] = TVT_wing_names[i][0];
+		} else {
+			_m_tvt[i].clear();
+		}
 	}
 }
 
@@ -134,9 +162,82 @@ SCP_string CustomWingNamesDialogModel::getTvTWing(int index) {
 }
 
 bool CustomWingNamesDialogModel::query_modified() {
-	return strcmp(Starting_wing_names[0], _m_starting[0].c_str()) != 0 || strcmp(Starting_wing_names[1], _m_starting[1].c_str()) != 0 || strcmp(Starting_wing_names[2], _m_starting[2].c_str()) != 0
-		|| strcmp(Squadron_wing_names[0], _m_squadron[0].c_str()) != 0 || strcmp(Squadron_wing_names[1], _m_squadron[1].c_str()) != 0 || strcmp(Squadron_wing_names[2], _m_squadron[2].c_str()) != 0 || strcmp(Squadron_wing_names[3], _m_squadron[3].c_str()) != 0 || strcmp(Squadron_wing_names[4], _m_squadron[4].c_str()) != 0
-		|| strcmp(TVT_wing_names[0], _m_tvt[0].c_str()) != 0 || strcmp(TVT_wing_names[1], _m_tvt[1].c_str()) != 0;;
+
+	// did the first wing change
+	if (!Starting_wing_names.empty() && Starting_wing_names[0]!= _m_starting[0])
+		return true;
+	
+	// did the first wing get added?
+	if (Starting_wing_names.empty() && !_m_starting[0].empty())
+		return true;
+
+	// did the second wing change?
+	if (Starting_wing_names.size() > 1 && Starting_wing_names[1] != _m_starting[1])
+		return true;
+
+	// did the second wing get added?
+	if (Starting_wing_names.size() < 2 && !_m_starting[1].empty())
+		return true;
+
+	// did the third wing change?
+	if (Starting_wing_names.size() > 2 && Starting_wing_names[2] != _m_starting[2])	
+		return true;
+
+	// did the third wing get added?
+	if (Starting_wing_names.size() < 3 && !_m_starting[2].empty())
+		return true;
+
+
+	// same for squadron wings
+	// wing 1
+	if (!Squadron_wing_names.empty() && Squadron_wing_names[0] != _m_squadron[0])
+		return true;
+
+	if (Squadron_wing_names.empty() && !_m_squadron[0].empty())
+		return true;
+
+	// wing 2
+	if (Squadron_wing_names.size() > 1 && Squadron_wing_names[1] != _m_squadron[1])
+		return true;
+
+	if (Squadron_wing_names.size() < 2 && !_m_squadron[1].empty())
+		return true;
+
+	// wing 3
+	if (Squadron_wing_names.size() > 2 && Squadron_wing_names[2] != _m_squadron[2])
+		return true;
+
+	if (Squadron_wing_names.size() < 3 && !_m_squadron[2].empty())
+		return true;
+
+	// wing 4
+	if (Squadron_wing_names.size() > 3 && Squadron_wing_names[3] != _m_squadron[3])
+		return true;
+
+	if (Squadron_wing_names.size() < 4 && !_m_squadron[3].empty())
+		return true;
+
+	// wing 5
+	if (Squadron_wing_names.size() > 4 && Squadron_wing_names[4] != _m_squadron[4])
+		return true;
+
+	if (Squadron_wing_names.size() < 5 && !_m_squadron[4].empty())
+		return true;
+
+	// have the tvt wings changed?
+	// wing 1
+	if (!TVT_wing_names[0].empty() && TVT_wing_names[0][0] != _m_tvt[0])
+		return true;
+	
+	if (TVT_wing_names[0].empty() && !_m_tvt[0].empty())
+		return true;
+
+	// wing 2
+	if (!TVT_wing_names[1].empty() && TVT_wing_names[1][0] != _m_tvt[1])
+		return true;
+
+	if (TVT_wing_names[1].empty() && !_m_tvt[1].empty())
+		return true;
 }
 
 }

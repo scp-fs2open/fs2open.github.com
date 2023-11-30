@@ -75,18 +75,33 @@ void Editor::set_cur_wing(int wing)
 }
 void Editor::update_custom_wing_indexes()
 {
-	int i;
+	Starting_wings.clear();
 
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
+	int temp_index;
+
+	for (auto& wing_name : Starting_wing_names) {
+	temp_index = wing_name_lookup(wing_name, 1);
+
+		if (temp_index > -1)
+			Starting_wings.push_back(temp_index);
 	}
 
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
+	Squadron_wings.clear();
+
+	for (auto& wing_name : Squadron_wing_names) {
+		temp_index = wing_name_lookup(wing_name, 1);
+
+		if (temp_index > -1)
+			Squadron_wings.push_back(temp_index);
 	}
 
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+	for (int i = 0; i < MAX_TVT_TEAMS; ++i) {
+		for (auto& wing_name : TVT_wing_names[i]) {
+			temp_index = wing_name_lookup(wing_name, 1);
+
+			if (temp_index > -1)
+				TVT_wings[i].push_back(temp_index);
+		}
 	}
 }
 
@@ -222,8 +237,8 @@ int Editor::create_wing()
 	}
 
 	// if this wing is a player starting wing, automatically set the hotkey for this wing
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		if (!stricmp(Wings[wing].name, Starting_wing_names[i])) {
+	for (i = 0; i < static_cast<int>(Starting_wing_names.size()); i++) {
+		if (!stricmp(Wings[wing].name, Starting_wing_names[i].c_str())) {
 			Wings[wing].hotkey = i;
 			break;
 		}
@@ -436,13 +451,15 @@ bool Editor::wing_is_player_wing(int wing)
 		return false;
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		for (i = 0; i < MAX_TVT_WINGS; i++) {
-			if (wing == TVT_wings[i])
-				return true;
+		for (auto& team : TVT_wings) {
+			for (auto& index : team){
+				if (wing == index)
+					return true;
+			}
 		}
 	} else {
-		for (i = 0; i < MAX_STARTING_WINGS; i++) {
-			if (wing == Starting_wings[i])
+		for (auto& index : Starting_wings) {
+			if (wing == index)
 				return true;
 		}
 	}

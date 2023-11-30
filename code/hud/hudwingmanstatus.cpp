@@ -112,8 +112,6 @@ void hud_wingman_kill_multi_teams()
 	if ( !IS_MISSION_MULTI_TEAMS )
 		return;
 
-	Assert(MAX_TVT_WINGS == 2);	// Goober5000
-
 	wing_index = -1;
 	if ( Net_player->p_info.team == 0 )
 		wing_index = 1;
@@ -506,15 +504,16 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 	if (use_full_wingnames) {
 		// wookieejedi - use full wing name with unaltered capitalization
-		strcpy_s(wingstr, Squadron_wing_names[wing_index]);
+		strcpy_s(wingstr, Squadron_wing_names[wing_index].c_str());
 	} else {
 		// Goober5000 - get the lowercase abbreviation
-		char abbrev[4];
-		abbrev[0] = SCP_tolower(Squadron_wing_names[wing_index][0]);
-		abbrev[1] = SCP_tolower(Squadron_wing_names[wing_index][1]);
-		abbrev[2] = SCP_tolower(Squadron_wing_names[wing_index][2]);
-		abbrev[3] = '\0';
-		strncpy(wingstr, abbrev, 4);
+		SCP_string temp = Squadron_wing_names[wing_index].substr(0, 3);
+	
+		for (size_t j = 0; j < temp.size(); ++j){
+			temp[j] = std::tolower(temp[j]);
+		}
+
+		strncpy(wingstr, temp.c_str(), temp.size());
 	}
 
 	// Goober5000 - center it (round the offset rather than truncate it)

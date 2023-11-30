@@ -43,12 +43,14 @@
 
 #define MAX_SHIPS_PER_WING			6
 
-#define MAX_STARTING_WINGS			3	// number of wings player can start a mission with
+#define RETAIL_MAX_STARTING_WINGS	3	// for compatibility with old dialogs and UI screens
 #define MAX_SQUADRON_WINGS			5	// number of wings in squadron (displayed on HUD)
 
 #define MAX_TVT_TEAMS				2	// number of teams in a TVT game
 #define	MAX_TVT_WINGS_PER_TEAM		1 	// number of wings per team in a TVT game
-#define MAX_TVT_WINGS		MAX_TVT_TEAMS * MAX_TVT_WINGS_PER_TEAM	// number of wings in a TVT game
+
+// Cyborg - This was a small part of why the UI was a PITA and has been retired. Have a nice day! :)
+//#define MAX_TVT_WINGS		MAX_TVT_TEAMS * MAX_TVT_WINGS_PER_TEAM	// number of wings in a TVT game
 
 // from model.h
 #define MAX_SHIP_PRIMARY_BANKS		3

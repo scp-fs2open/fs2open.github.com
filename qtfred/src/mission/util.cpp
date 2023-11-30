@@ -48,12 +48,12 @@ void generate_weaponry_usage_list_team(int team, int* arr) {
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		Assert (team >= 0 && team < MAX_TVT_TEAMS);
 
-		for (i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], arr);
+		for (i = 0; i < static_cast<int>(TVT_wings[team].size()); i++) {
+			generate_weaponry_usage_list_wing(TVT_wings[team][i], arr);
 		}
 	} else {
-		for (i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list_wing(Starting_wings[i], arr);
+		for (auto& index : Starting_wings) {
+			generate_weaponry_usage_list_wing(index, arr);
 		}
 	}
 }

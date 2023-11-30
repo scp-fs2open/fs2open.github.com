@@ -205,8 +205,8 @@ int create_wing() {
 	}
 
 	// if this wing is a player starting wing, automatically set the hotkey for this wing
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		if (!stricmp(Wings[wing].name, Starting_wing_names[i])) {
+	for (auto& wing_name : Starting_wing_names) {
+		if (!stricmp(Wings[wing].name, wing_name.c_str())) {
 			Wings[wing].hotkey = i;
 			break;
 		}

@@ -1997,7 +1997,7 @@ void weapon_select_common_init(bool API_Access)
 
 	if(MULTI_TEAM){
 		// initialize for all teams
-		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+		for(idx=0;idx<MAX_TVT_TEAMS;idx++){
 			weapon_select_init_team(idx);
 		}
 

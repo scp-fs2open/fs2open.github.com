@@ -23,11 +23,10 @@ struct header;
 // should be initialize to 0 inside of multi_vars_init
 extern int Multi_ts_inited;
 
-#define MULTI_TS_MAX_TVT_TEAMS							2						// 2 teams max for now
 #define MULTI_TS_NUM_SHIP_SLOTS							12						// # of ship slots in non team vs. team mode
 
 // deleted ship objnums
-extern int Multi_ts_deleted_objnums[MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
+extern int Multi_ts_deleted_objnums[MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
 extern int Multi_ts_num_deleted;
 
 // ------------------------------------------------------------------------------------------------------
