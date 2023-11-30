@@ -284,6 +284,10 @@ void parse_medals_table(const char* filename)
 			medal_display_info* display_p;
 			bool create_if_not_found = true;
 
+			//Insert some dummy coords to start
+			display_t.coords[GR_640] = {-1, -1};
+			display_t.coords[GR_1024] = {-1, -1};
+
 			required_string("$Name:");
 			stuff_string(medal_t.name, F_NAME, NAME_LENGTH);
 
@@ -326,36 +330,22 @@ void parse_medals_table(const char* filename)
 				stuff_string(medal_p->bitmap, F_NAME, MAX_FILENAME_LEN);
 			}
 
-			// Check here that the medal has a bitmap. If not, then error out
-			if (!stricmp(medal_p->bitmap, "")) {
-				error_display(1, "Missing valid bitmap file for medal %s", medal_p->name);
-			}
-
 			if (optional_string("+Position 640:")) {
 				stuff_int(&display_p->coords[GR_640].x);
 				stuff_int(&display_p->coords[GR_640].y);
 			}
-			else if (Medals.size() <= NUM_MEDALS_FS2) {
+			else if (!Parsing_modular_table && Medals.size() <= NUM_MEDALS_FS2) {
 				display_p->coords[GR_640].x = Default_medal_coords[GR_640][Medals.size() - 1][0];
 				display_p->coords[GR_640].y = Default_medal_coords[GR_640][Medals.size() - 1][1];
 			}
-			else {
-				error_display(0, "No default GR_640 position for medal '%s'!", medal_p->name);
-				display_p->coords[GR_640].x = 0;
-				display_p->coords[GR_640].y = 0;
-			}
+			
 			if (optional_string("+Position 1024:")) {
 				stuff_int(&display_p->coords[GR_1024].x);
 				stuff_int(&display_p->coords[GR_1024].y);
 			}
-			else if (Medals.size() <= NUM_MEDALS_FS2) {//
+			else if (!Parsing_modular_table && Medals.size() <= NUM_MEDALS_FS2) {
 				display_p->coords[GR_1024].x = Default_medal_coords[GR_1024][Medals.size() - 1][0];
 				display_p->coords[GR_1024].y = Default_medal_coords[GR_1024][Medals.size() - 1][1];
-			}
-			else {
-				error_display(0, "No default GR_1024 position for medal '%s'!", medal_p->name);
-				display_p->coords[GR_1024].x = 0;
-				display_p->coords[GR_1024].y = 0;
 			}
 
 			if (optional_string("+Mask index:")) {
@@ -367,12 +357,8 @@ void parse_medals_table(const char* filename)
 			if (optional_string("+Debriefing Bitmap:")) {
 				stuff_string(medal_p->debrief_bitmap, F_NAME, MAX_FILENAME_LEN);
 			}
-			else if (Medals.size() <= NUM_MEDALS_FS2) {
+			else if (!Parsing_modular_table && Medals.size() <= NUM_MEDALS_FS2) {
 				strcpy_s(medal_p->debrief_bitmap, Default_debriefing_bitmaps[Medals.size() - 1]);
-			}
-			else {
-				error_display(0, "No default debriefing bitmap for medal '%s'!", medal_p->name);
-				strcpy_s(medal_p->debrief_bitmap, "");
 			}
 
 			if (optional_string("$Num mods:")) {
@@ -443,6 +429,36 @@ void parse_medals_table(const char* filename)
 	}
 }
 
+void post_process_medals()
+{
+	for (size_t i = 0; i < Medals.size(); i++) {
+		// Check here that the medal has a bitmap. If not, then error out
+		if (!stricmp(Medals[i].bitmap, "")) {
+			error_display(1, "Missing valid bitmap file for medal %s", Medals[i].name);
+		}
+
+		// Check here that the medal has a 640 coords. If not, then warn and input useful values
+		if (Medal_display_info[i].coords[GR_640].x == -1 || Medal_display_info[i].coords[GR_640].y == -1) {
+			error_display(0, "No default GR_640 position for medal '%s'!", Medals[i].name);
+			Medal_display_info[i].coords[GR_640].x = 0;
+			Medal_display_info[i].coords[GR_640].y = 0;
+		}
+
+		// Check here that the medal has a 1024 coords. If not, then warn and input useful values
+		if (Medal_display_info[i].coords[GR_1024].x == -1 || Medal_display_info[i].coords[GR_1024].y == -1) {
+			error_display(0, "No default GR_1024 position for medal '%s'!", Medals[i].name);
+			Medal_display_info[i].coords[GR_1024].x = 0;
+			Medal_display_info[i].coords[GR_1024].y = 0;
+		}
+
+		// Check here that the medal has a debriefing bitmap. If not, then warn and input empty string
+		if (!stricmp(Medals[i].debrief_bitmap, "")) {
+			error_display(0, "No default debriefing bitmap for medal '%s'!", Medals[i].name);
+			strcpy_s(Medals[i].debrief_bitmap, "");
+		}
+	}
+}
+
 void medals_init()
 {
 	//Set the retail defaults here - Mjn
@@ -466,6 +482,7 @@ void medals_init()
 	// parse any modular tables
 	parse_modular_table("*-mdl.tbm", parse_medals_table);
 
+	post_process_medals();
 
 	Rank_medal_index = get_medal_position("Rank");
 
