@@ -1790,7 +1790,7 @@ void multi_join_cull_timeouts()
 // deep magic begins here. 
 void multi_join_handle_item_cull(int item_index)
 {	
-	Assertion((item_index >= 0) || (item_index < Active_games.size()),
+	Assertion((item_index >= 0) && (item_index < static_cast<int>(Active_games.size())),
 		"Tried to cull a multiplayer game that doesn't exist! Please report!");
 	
 	//Get the item
