@@ -472,14 +472,6 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 
 #define MULTI_PXO_CHAT_LINE_LEN 512
 
-// chat flags
-#define CHAT_MODE_NORMAL				0			// normal chat from someone
-#define CHAT_MODE_SERVER				1			// is from the server, display appropriately
-#define CHAT_MODE_CARRY					2			// is a carryover from a previous line
-#define CHAT_MODE_PRIVATE				3			// is a private message
-#define CHAT_MODE_CHANNEL_SWITCH		4			// "switching channels" message - draw in red
-#define CHAT_MODE_MOTD					5			// message of the day from the chat server
-
 // the chat list
 SCP_list<chat_line> Multi_pxo_chat;
 

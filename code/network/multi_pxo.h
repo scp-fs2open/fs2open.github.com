@@ -66,6 +66,14 @@ extern SCP_vector<SCP_string> Multi_pxo_players;
 // chat related stuff ----------------------------------------------
 #define MAX_CHAT_LINE_LEN 256
 
+// chat flags
+#define CHAT_MODE_NORMAL 0         // normal chat from someone
+#define CHAT_MODE_SERVER 1         // is from the server, display appropriately
+#define CHAT_MODE_CARRY 2          // is a carryover from a previous line
+#define CHAT_MODE_PRIVATE 3        // is a private message
+#define CHAT_MODE_CHANNEL_SWITCH 4 // "switching channels" message - draw in red
+#define CHAT_MODE_MOTD 5           // message of the day from the chat server
+
 typedef struct chat_line {
 	char text[MAX_CHAT_LINE_LEN + 1];
 	int mode;

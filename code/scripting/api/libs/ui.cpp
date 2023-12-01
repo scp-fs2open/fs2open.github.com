@@ -2522,7 +2522,15 @@ ADE_FUNC(runNetwork, l_UserInterface_MultiPXO, nullptr, "Runs the network comman
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getChat, l_UserInterface_MultiPXO, nullptr, "Gets the entire chat as a table of strings", "string[]", "A table of chat strings")
+ADE_FUNC(getChat,
+	l_UserInterface_MultiPXO,
+	nullptr,
+	"Gets the entire chat as a table of tables each with the following values: "
+	"Callsign - the name of the message sender, "
+	"Message - the message text, "
+	"Mode - the mode where 0 is normal, 1 is private message, 2 is channel switch, 3 is server message, 4 is MOTD",
+	"table",
+	"A table of chat strings")
 {
 	SCP_UNUSED(L);
 
@@ -2533,7 +2541,50 @@ ADE_FUNC(getChat, l_UserInterface_MultiPXO, nullptr, "Gets the entire chat as a 
 	for (size_t i = 0; i < Multi_pxo_chat.size(); i++) {
 		SCP_list<chat_line>::iterator line = Multi_pxo_chat.begin();
 		std::advance(line, i);
-		chats.addValue(i + 1, line->text);
+		
+		char callsign[CALLSIGN_LEN];
+		char text[MAX_CHAT_LINE_LEN];
+
+		char* spacePos = std::strchr(line->text, ' ');
+
+		if (spacePos != nullptr) {
+			// Calculate the length of the callsign
+			int len = spacePos - line->text;
+
+			// Copy the callsign
+			std::strncpy(callsign, line->text, len);
+			callsign[len] = '\0';
+
+			// Copy the text
+			std::strcpy(text, spacePos + 1); // Copy from the character after spacePos
+		}
+
+		int mode;
+		switch (line->mode) {
+		case CHAT_MODE_PRIVATE:
+			mode = 1;
+			break;
+		case CHAT_MODE_CHANNEL_SWITCH:
+			mode = 2;
+			break;
+		case CHAT_MODE_SERVER:
+			mode = 3;
+			break;
+		case CHAT_MODE_MOTD:
+			mode = 4;
+			break;
+		default:
+			mode = 0;
+			break;
+		}
+
+		auto item = luacpp::LuaTable::create(L);
+
+		item.addValue("Callsign", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), callsign));
+		item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), text));
+		item.addValue("Mode", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), mode));
+
+		chats.addValue(i + 1, item);
 	}
 
 	return ade_set_args(L, "t", chats);
