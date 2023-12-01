@@ -32,7 +32,7 @@ struct net_player;
 typedef struct brief_chat {
 	int player_id;                        // the net player id
 	bool indent;                          // true if the line should be indented
-	char text[CHATBOX_STRING_LEN];        // the text of the message
+	char text[CHATBOX_MAX_LEN];           // the text of the message
 	char callsign[CALLSIGN_LEN];          // the player's callsign
 } brief_chat;
 
