@@ -722,9 +722,7 @@ int chatbox_scroll_down()
 
 void chatbox_chat_init()
 {
-	int idx;	
-		
-   chatbox_clear();	
+	chatbox_clear();	
 
 	// initialize the line recall data
 	Chatbox_recall_count = 0;
@@ -744,13 +742,7 @@ void chat_box_add_chat_to_list(brief_chat& chat)
 
 // int Test_color = 0;
 void chatbox_add_line(const char *msg, int pid, int add_id)
-{
-	int backup;
-	int	n_lines,idx;
-	int	n_chars[3];		
-	const char	*p_str[3];			// for the initial line (unindented)
-	char msg_extra[CHATBOX_STRING_LEN];
-
+{	
 	if(!Chatbox_created){
 		return;
 	}
@@ -771,8 +763,10 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	}	
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
-	Assert(n_lines != -1);	
+	int n_chars[3];	
+	const char* p_str[3]; // for the initial line (unindented)
+	int n_lines = split_str(msg, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
+	Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");	
 
 	// copy in the chars
 	strcpy_s(chat.text, p_str[0]);
@@ -782,11 +776,12 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	// if we have more than 1 line, re-split everything so that the rest are indented
 	if(n_lines > 1){
 		// split up the string after the first break-marker
+		char msg_extra[CHATBOX_STRING_LEN];
 		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3, CHATBOX_STRING_LEN);
-		Assert(n_lines != -1);		
+		Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");		
 
 		// setup these remaining lines
-		for(idx=0;idx<n_lines;idx++){
+		for(int idx=0;idx<n_lines;idx++){
 			brief_chat i_chat;
 			i_chat.player_id = pid;
 			i_chat.indent = true;
@@ -830,7 +825,7 @@ void chatbox_render_chat_lines()
 
 			// add the player callsign
 			sprintf(msg, "%s %s", chat->callsign, chat->text);
-			Assert(strlen(msg) < (CHATBOX_STRING_LEN - 2));
+			Assertion(strlen(msg) < (CHATBOX_STRING_LEN - 2), "Chat string is too long, please report!");
 
 			// print the line out
 			gr_set_color_fast(Color_netplayer[chat->player_id]);
@@ -904,7 +899,7 @@ void chatbox_toggle_size()
 		gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 	}
 }
-// handle indents, brief start thingy, and num chat lines
+
 void chatbox_toggle_size_adjust_lines()
 {
 	if ((static_cast<int>(Brief_chat.size()) > Chatbox_max_lines)) {
