@@ -26,11 +26,11 @@ elif [ "$OS" = "Windows" ]; then
     echo "debug_name=$(get_package_name)-debug-$ARCH-$SIMD.7z" >> $GITHUB_OUTPUT
     echo "debug_mime=$(file -b --mime-type "$(pwd)/$(get_package_name)-debug-$ARCH-$SIMD.7z")" >> $GITHUB_OUTPUT
 elif [ "$OS" = "Mac" ]; then
-    tar -cvzf "$(get_package_name)-builds-Mac.tar.gz" *.app
+    tar -cvzf "$(get_package_name)-builds-Mac-$ARCH.tar.gz" *.app
 
-    echo "package_path=$(pwd)/$(get_package_name)-builds-Mac.tar.gz" >> $GITHUB_OUTPUT
-    echo "package_name=$(get_package_name)-builds-Mac.tar.gz" >> $GITHUB_OUTPUT
-    echo "package_mime=$(file -b --mime-type "$(pwd)/$(get_package_name)-builds-Mac.tar.gz")" >> $GITHUB_OUTPUT
+    echo "package_path=$(pwd)/$(get_package_name)-builds-Mac-$ARCH.tar.gz" >> $GITHUB_OUTPUT
+    echo "package_name=$(get_package_name)-builds-Mac-$ARCH.tar.gz" >> $GITHUB_OUTPUT
+    echo "package_mime=$(file -b --mime-type "$(pwd)/$(get_package_name)-builds-Mac-$ARCH.tar.gz")" >> $GITHUB_OUTPUT
 else
     echo "Invalid OS: $OS"
 fi
