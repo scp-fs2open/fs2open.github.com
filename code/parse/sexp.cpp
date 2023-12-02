@@ -17255,28 +17255,35 @@ void sexp_set_subspace_drive(int node)
 extern void ai_set_preferred_primary_weapon(object_ship_wing_point_team *subject, int weapon_idx, object_ship_wing_point_team *target);
 extern void ai_clear_preferred_primary_weapon(object_ship_wing_point_team *subject, object_ship_wing_point_team *target);
 
-void sexp_good_primary_time(int node)
+void sexp_good_primary_time(int n)
 {
 	object_ship_wing_point_team subject;
-	eval_object_ship_wing_point_team(&subject, node);
+	eval_object_ship_wing_point_team(&subject, n);
 	//if we don't get a ship, wing, or team, bail
 	if (subject.type != oswpt_type::SHIP && subject.type != oswpt_type::WING && subject.type != oswpt_type::WHOLE_TEAM) {
 		return;
 	}
+	n = CDR(n);
 
-	//index into Weapon_info
-	int weap_idx = weapon_info_lookup(CTEXT(CDR(node)));
+	auto weapon_name = CTEXT(n);
+	int weapon_index = weapon_info_lookup(weapon_name);
+	if (weapon_index < 0) {
+		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
+		return;
+	}
+	n = CDR(n);
 
 	object_ship_wing_point_team target;
-	eval_object_ship_wing_point_team(&target, CDDR(node));
+	eval_object_ship_wing_point_team(&target, n);
 	if (target.type != oswpt_type::SHIP && target.type != oswpt_type::WING && target.type != oswpt_type::WHOLE_TEAM) {
 		return;
 	}
+	n = CDR(n);
 
-	auto activate = is_sexp_true(CDDDR(node));
+	auto activate = is_sexp_true(n);
 
 	if (activate) {
-		ai_set_preferred_primary_weapon(&subject, weap_idx, &target);
+		ai_set_preferred_primary_weapon(&subject, weapon_index, &target);
 	} else {
 		ai_clear_preferred_primary_weapon(&subject, &target);
 	}
@@ -17290,6 +17297,11 @@ void sexp_good_secondary_time(int n)
 	bool is_nan, is_nan_forever;
 
 	auto team_name = CTEXT(n);
+	int team = iff_lookup(team_name);
+	if (team < 0) {
+		nprintf(("Warning", "couldn't find team %s for good-secondary-time\n", team_name));
+		return;
+	}
 	n = CDR(n);
 
 	int num_weapons = eval_num(n, is_nan, is_nan_forever);
@@ -17298,20 +17310,16 @@ void sexp_good_secondary_time(int n)
 	n = CDR(n);
 
 	auto weapon_name = CTEXT(n);
+	int weapon_index = weapon_info_lookup(weapon_name);
+	if (weapon_index < 0) {
+		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
+		return;
+	}
 	n = CDR(n);
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
 		return;
-
-	int weapon_index = weapon_info_lookup(weapon_name);
-	if ( weapon_index == -1 ) {
-		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
-		return;
-	}
-
-	// get the team type from the team_name
-	int team = iff_lookup(team_name);
 
 	// see if the ship has exited.  If so, then we don't need to set up the AI stuff
 	if (ship_entry->status == ShipStatus::EXITED)
