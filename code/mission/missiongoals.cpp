@@ -805,7 +805,7 @@ EventStatus mission_get_event_status(int event)
 			return EventStatus::SATISFIED;
 		}
 
-		if (Mission_events[event].formula < 0) {
+		if (Mission_events[event].flags & MEF_EVENT_IS_DONE) {
 			return EventStatus::FAILED;
 		}
 
@@ -857,7 +857,6 @@ void mission_event_set_completion_sound_timestamp()
 void mission_process_event( int event )
 {
 	int store_flags = Mission_events[event].flags;
-	int store_formula = Mission_events[event].formula;
 	int store_result = Mission_events[event].result;
 	int store_count = Mission_events[event].count;
 
@@ -869,6 +868,11 @@ void mission_process_event( int event )
 	Event_index = event;
 	sindex = Mission_events[event].formula;
 	result = Mission_events[event].result;
+
+	// In retail, known-false or no-longer-repeating events would set the formula to -1, so sindex would be -1 for those events.
+	// However, the formula would be checked before this function is called, so that situation shouldn't happen here.  Furthermore,
+	// we now use a flag rather than setting the formula.  We should check all that now.
+	Assertion((sindex >= 0) && !(Mission_events[event].flags & MEF_EVENT_IS_DONE), "mission_process_event was called for an event that should not be processed!");
 
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
@@ -991,10 +995,11 @@ void mission_process_event( int event )
 		Mission_events[event].satisfied_time = _timestamp();
 		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
 		Mission_events[event].repeat_count = 0;
-		Mission_events[event].formula = -1;
+		Mission_events[event].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 
-		// Also send an update, if necessary.
-		if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (sindex != Mission_events[event].formula) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+		// Also send an update.
+		// (This would always fire on MULTIPLAYER_MASTER on retail because sindex and the formula were guaranteed to be different)
+		if (MULTIPLAYER_MASTER) {
 			send_event_update_packet(event);
 		}
 		return;
@@ -1027,7 +1032,7 @@ void mission_process_event( int event )
 		if ( Mission_events[event].repeat_count == 0 ) {
 			Mission_events[event].timestamp = _timestamp();
 			Mission_events[event].flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
-			Mission_events[event].formula = -1;
+			Mission_events[event].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 
 			if(Game_mode & GM_MULTIPLAYER){
 				// multiplayer missions (scoring is scaled in the multi_team_maybe_add_score() function)
@@ -1052,7 +1057,7 @@ void mission_process_event( int event )
 	}
 
 	// see if anything has changed	
-	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
 		send_event_update_packet(event);
 	}
 }
@@ -1075,7 +1080,7 @@ void mission_eval_goals()
 	// before checking whether or not we should evaluate goals, we should run through the events and
 	// process any whose timestamp is valid and has expired.  This would catch repeating events only
 	for (i=0; i<(int)Mission_events.size(); i++) {
-		if (Mission_events[i].formula != -1) {
+		if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE)) {
 			if ( !Mission_events[i].timestamp.isValid() || !timestamp_elapsed(Mission_events[i].timestamp) ){
 				continue;
 			}
@@ -1112,7 +1117,7 @@ void mission_eval_goals()
 
 	// now evaluate any mission events
 	for (i=0; i<(int)Mission_events.size(); i++) {
-		if ( Mission_events[i].formula != -1 ) {
+		if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE)) {
 			// only evaluate this event if the timestamp is not valid.  We do this since
 			// we will evaluate repeatable events at the top of the file so we can get
 			// the exact interval that the designer asked for.
@@ -1262,9 +1267,10 @@ void mission_goal_fail_incomplete()
 
 	// now for the events.  Must set the formula to -1 and the result to 0 to be a failed
 	// event.
+	// Goober5000 - we no longer set the formula to -1; instead we use a flag
 	for ( i = 0; i < (int)Mission_events.size(); i++ ) {
-		if ( Mission_events[i].formula != -1 ) {
-			Mission_events[i].formula = -1;
+		if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE)) {
+			Mission_events[i].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 			Mission_events[i].result = 0;
 		}
 	}
@@ -1288,7 +1294,7 @@ void mission_goal_mark_events_complete()
 
 	for (i = 0; i < (int)Mission_events.size(); i++ ) {
 		Mission_events[i].result = 1;
-		Mission_events[i].formula = -1;
+		Mission_events[i].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 	}
 }
 

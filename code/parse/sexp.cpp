@@ -206,6 +206,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-previous-event-true",			OP_PREVIOUS_EVENT_TRUE,					2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-previous-event-false",		OP_PREVIOUS_EVENT_FALSE,				2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,			2,	3,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "reset-event",					OP_RESET_EVENT,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "reset-goal",						OP_RESET_GOAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Objectives Category
 	{ "is-destroyed",					OP_IS_DESTROYED,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -17736,7 +17738,7 @@ int sexp_event_status( int n, int want_true )
 		// look for the event name; check its status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name.c_str(), name) ) {
 			int result = Mission_events[i].result;
-			if (Mission_events[i].formula < 0) {
+			if (Mission_events[i].flags & MEF_EVENT_IS_DONE) {
 				if ( (want_true && result) || (!want_true && !result) )
 					rval = SEXP_KNOWN_TRUE;
 				else
@@ -17815,7 +17817,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 			}
 
 			int result = Mission_events[i].result;
-			if (Mission_events[i].formula < 0) {
+			if (Mission_events[i].flags & MEF_EVENT_IS_DONE) {
 				if ( (want_true && result) || (!want_true && !result) ) {
 					rval = SEXP_KNOWN_TRUE;
 					break;
@@ -17859,7 +17861,8 @@ int sexp_event_incomplete(int n)
 		if ( !stricmp(Mission_events[i].name.c_str(), name ) ) {
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
 			// the event is incomplete
-			if ( Mission_events[i].formula != -1 )
+			// Goober5000 - check the flag instead
+			if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE))
 				rval = SEXP_TRUE;
 			else
 				rval = SEXP_KNOWN_FALSE;
@@ -17925,6 +17928,63 @@ int sexp_goal_incomplete(int n)
 		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_TRUE;
+}
+
+/**
+ * Resets an event, its status, and its nodes so that it is as if the event had never been evaluated.
+ */
+void sexp_reset_event(int node)
+{
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		auto name = CTEXT(n);
+		int event_num = mission_event_lookup(name);
+		if (event_num >= 0)
+		{
+			auto eventp = &Mission_events[event_num];
+
+			eventp->result = 0;
+			eventp->timestamp = TIMESTAMP::invalid();
+
+			// clear the flags that are changed over the course of the event's lifetime,
+			// leaving alone the flags that define how the event is configured
+			eventp->flags &= ~MEF_CURRENT;
+			eventp->flags &= ~MEF_DIRECTIVE_SPECIAL;
+			eventp->flags &= ~MEF_DIRECTIVE_TEMP_TRUE;
+			eventp->flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
+			eventp->flags &= ~MEF_EVENT_IS_DONE;
+
+			eventp->count = 0;
+			eventp->satisfied_time = TIMESTAMP::invalid();
+			eventp->born_on_date = TIMESTAMP::invalid();
+			eventp->previous_result = 0;
+
+			flush_sexp_tree(eventp->formula);
+		}
+		else
+			Warning(LOCATION, "Could not find event '%s'", name);
+	}
+}
+
+/**
+ * Resets a goal, its status, and its nodes so that it is as if the goal had never been evaluated.
+ */
+void sexp_reset_goal(int node)
+{
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		auto name = CTEXT(n);
+		int goal_num = mission_goal_lookup(name);
+		if (goal_num >= 0)
+		{
+			auto goalp = &Mission_goals[goal_num];
+
+			goalp->satisfied = GOAL_INCOMPLETE;
+			flush_sexp_tree(goalp->formula);
+		}
+		else
+			Warning(LOCATION, "Could not find goal '%s'", name);
+	}
 }
 
 /**
@@ -26824,6 +26884,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_goal_incomplete(node);
 				break;
 
+			case OP_RESET_EVENT:
+				sexp_reset_event(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_RESET_GOAL:
+				sexp_reset_goal(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// destroy type sexpressions
 			case OP_IS_DESTROYED:
 				sexp_val = sexp_is_destroyed(node, nullptr);
@@ -30254,6 +30324,8 @@ int query_operator_return_type(int op)
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
 		case OP_ABORT_REARM:
+		case OP_RESET_EVENT:
+		case OP_RESET_GOAL:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -31673,6 +31745,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_GOAL_NAME;
 			else
 				return OPF_POSITIVE;
+
+		case OP_RESET_EVENT:
+			return OPF_EVENT_NAME;
+
+		case OP_RESET_GOAL:
+			return OPF_GOAL_NAME;
 
 		case OP_AI_CHASE_ANY:
 			if (!argnum)
@@ -34699,6 +34777,8 @@ int get_category(int op_id)
 		case OP_PREVIOUS_GOAL_FALSE:
 		case OP_EVENT_TRUE_MSECS_DELAY:
 		case OP_EVENT_FALSE_MSECS_DELAY:
+		case OP_RESET_EVENT:
+		case OP_RESET_GOAL:
 			return OP_CATEGORY_GOAL_EVENT;
 
 		case OP_IS_DESTROYED_DELAY:
@@ -36487,6 +36567,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"has-time-elapsed.  Used alone, it will return true upon mission startup."
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
+
+	{ OP_RESET_EVENT, "Reset-Event (Action operator)\r\n"
+		"Clears all information associated with an event, resetting SEXP nodes and status flags so that it is as if the event had never been evaluated."
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of the event"
+	},
+
+	{ OP_RESET_GOAL, "Reset-Goal (Action operator)\r\n"
+		"Clears all information associated with a goal, resetting SEXP nodes and status flags so that it is as if the goal had never been evaluated."
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of the goal"
+	},
 
 	{ OP_IS_DESTROYED_DELAY, "Is destroyed delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after all specified ships have been destroyed.\r\n"

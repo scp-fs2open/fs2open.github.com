@@ -81,6 +81,7 @@ enum class EventStatus : int
 #define MEF_USING_TRIGGER_COUNT		(1 << 3)		// Karajorma - use trigger count as well as repeat count to determine how many repeats this event has
 #define MEF_USE_MSECS				(1 << 4)		// Goober5000 - interval and chain delay are in milliseconds, not seconds
 #define MEF_TIMESTAMP_HAS_INTERVAL	(1 << 5)		// Goober5000 - flag to simulate Volition's gloriously buggy hack
+#define MEF_EVENT_IS_DONE			(1 << 6)		// Goober5000 - originally indicated by setting formula to -1
 
 #define MAX_MISSION_EVENT_LOG_FLAGS		9			// this must be changed if a mission log flag is added below
 
