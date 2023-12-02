@@ -1315,8 +1315,24 @@ void avd_movement::setAVD(float final_position, float total_movement_time, float
 	TSi = timestamp();
 	
 	Vm = (Pf-Pi-0.5f*(Vi*Tai)-0.5f*(Vf*Taf)) / (Tf - 0.5f*Tai - 0.5f*Taf);
-	Ai = (Vm-Vi)/Tai;
-	Af = (Vf-Vm)/Taf;
+
+	// Cyborg - Many coverity dividing by zero issues were caused by this piece of low level code. Most places that called this function were also not checking inputs. 
+	// The two if blocks in this function do not guarantee that they will not be float zero (e.g. tai = 2.0 taf = 0.0 Tf = 1.0)
+	// The reason why this code used to work even when there were divisions by zero is that the NAN results were gated behind Taf > 0.0 and Tai > 0.0
+	// checks in other functions. Ai, initial Acceleration, and Af, final Acceleration, are completely meaningless and explicitly disabled if their respective
+	// time amounts are zero or less than zero. So instead of just letting some NAN's chill out in memory, waiting for someone else to unwisely access them,
+	// we are going to explicitly set them to zero, like a good engine should.
+	if (Tai <= 0.0f){
+		Ai = 0.0;
+	} else {
+		Ai = (Vm-Vi)/Tai;
+	}
+
+	if (Taf <= 0.0f){
+		Af = 0.0f;
+	} else {
+		Af = (Vf-Vm)/Taf;
+	}
 }
 
 void avd_movement::setVD(float total_movement_time, float ending_acceleration_time, float final_velocity)
@@ -1334,7 +1350,14 @@ void avd_movement::setVD(float total_movement_time, float ending_acceleration_ti
 
 	TSi = timestamp();
 	Ai = 0.0f;
-	Af = (Vf-Vm)/Taf;
+
+	// Avoid division by float zero. See the note in setAVD for more info.
+	if (Taf <= 0.0f){
+		Af = 0.0f;
+	} else {
+		Af = (Vf-Vm)/Taf;
+	}
+	
 	Pf = Pi + Pf*(Tf - Taf) + Vm*Taf + 0.5f*Af*(Taf*Taf);
 }
 
