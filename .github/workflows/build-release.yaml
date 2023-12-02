@@ -336,6 +336,7 @@ jobs:
         working-directory: ./build
         env:
           CONFIGURATION: ${{ matrix.configuration }}
+          ARCH: ${{ matrix.arch }}
           XDG_RUNTIME_DIR: /root
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Package build result
