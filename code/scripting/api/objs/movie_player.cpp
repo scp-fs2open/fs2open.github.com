@@ -53,10 +53,10 @@ ADE_VIRTVAR(FPS, l_MoviePlayer, "number", "Determines the frames per second of t
 {
 	movie_player_h* ph = nullptr;
 	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
-		return ade_set_args(L, "f", -1);
+		return ade_set_args(L, "f", -1.0f);
 
 	if (ph == nullptr || !ph->isValid()) {
-		return ade_set_args(L, "f", -1);
+		return ade_set_args(L, "f", -1.0f);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -71,10 +71,10 @@ ADE_VIRTVAR(Duration, l_MoviePlayer, "number", "Determines the duration in secon
 {
 	movie_player_h* ph = nullptr;
 	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
-		return ade_set_args(L, "f", -1);
+		return ade_set_args(L, "f", -1.0f);
 
 	if (ph == nullptr || !ph->isValid()) {
-		return ade_set_args(L, "f", -1);
+		return ade_set_args(L, "f", -1.0f);
 	}
 
 	if (ADE_SETTING_VAR) {
