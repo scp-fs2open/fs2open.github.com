@@ -1,5 +1,5 @@
 
-set(PREBUILT_VERSION_NAME "8a54f1d")
+set(PREBUILT_VERSION_NAME "f81df85")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt")
@@ -31,7 +31,11 @@ function(get_prebuilt_path OUT_VAR)
         set(FILENAME "bin-mac.tar.gz")
     else()
         # Use Linux binaries...
-        set(FILENAME "bin-linux.tar.gz")
+        if (IS_ARM64)
+            set(FILENAME "bin-linux_arm64.tar.gz")
+        else()
+            set(FILENAME "bin-linux.tar.gz")
+        endif()
     endif()
     set(DOWNLOAD_URL "https://github.com/scp-fs2open/scp-prebuilt/releases/download/${TAG_NAME}/${FILENAME}")
     set(DOWNLOAD_FILE "${CURRENT_ROOT}/${FILENAME}")

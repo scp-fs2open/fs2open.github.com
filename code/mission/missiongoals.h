@@ -66,11 +66,14 @@ extern SCP_vector<mission_goal> Mission_goals;	// structure for the goals of thi
 
 // defined for event states.  We will also use the satisfied/failed for saving event information
 // in campaign save file
-#define EVENT_UNBORN			0  // event can't be evaluated yet
-#define EVENT_CURRENT		1  // event can currently be evaluated, but not satisfied or failed yet
-#define EVENT_SATISFIED		2
-#define EVENT_FAILED			3
-#define EVENT_INCOMPLETE	4	// used in campaign save file.  used when event isn't satisfied yet
+enum class EventStatus : int
+{
+	UNBORN = 0,		// event can't be evaluated yet
+	CURRENT = 1,	// event can currently be evaluated, but not satisfied or failed yet
+	SATISFIED = 2,
+	FAILED = 3,
+	INCOMPLETE = 4	// used in campaign save file.  used when event isn't satisfied yet
+};
 
 #define MEF_CURRENT					(1 << 0)		// is event current or past current yet?
 #define MEF_DIRECTIVE_SPECIAL		(1 << 1)		// used to mark a directive as true even though not fully satisfied
@@ -168,7 +171,7 @@ int mission_goals_incomplete(int desired_type, int team = -1);
 void mission_goal_mark_objectives_complete();
 void mission_goal_mark_events_complete();
 
-int mission_get_event_status(int event);
+EventStatus mission_get_event_status(int event);
 void mission_goal_validation_change( int goal_num, bool valid );
 
 // mark an event as directive special

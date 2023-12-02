@@ -851,6 +851,8 @@ void main_hall_do(float frametime)
 			break;
 	}
 
+	extern bool Campaign_room_no_campaigns;
+
 	// do any processing based upon what happened to the snazzy menu
 	switch (snazzy_action) {
 		case SNAZZY_OVER:
@@ -902,9 +904,39 @@ void main_hall_do(float frametime)
 					// Make sure we aren't in multi mode.
 					Player->flags &= ~PLAYER_FLAGS_IS_MULTI;
 					Game_mode = GM_NORMAL;
-					
-					gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
-					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+
+					// see if we have a missing campaign and force the player to select a new campaign if so
+					if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing &&
+						!Campaign_room_no_campaigns) {
+						int rc = popup(0,
+							3,
+							XSTR("Go to Campaign Room", 1607),
+							XSTR("Select another pilot", 1608),
+							XSTR("Cancel", 641),
+							XSTR("The currently active campaign cannot be found.  Please select another...", 1600));
+
+						switch (rc) {
+						case 0:
+							gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+							break;
+
+						case 1:
+							gameseq_post_event(GS_EVENT_BARRACKS_MENU);
+							break;
+
+						case 2:
+							// do nothing
+							break;
+
+						default:
+							// do nothing
+							break;
+						}
+					} else {
+
+						gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
+						gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+					}
 					break;
 
 				// clicked on the tech room region
@@ -972,8 +1004,20 @@ void main_hall_do(float frametime)
 				case ESC_PRESSED:
 					// if there is a help overlay active, then don't quit the game - just kill the overlay
 					if (!help_overlay_active(Main_hall_overlay_id)) {
-						gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
-						main_hall_exit_game();
+
+						// if there is no custom script action then exit
+						if (Main_hall->esc_action.empty()) {
+							gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+							main_hall_exit_game();
+						} else {
+							const char* lua = Main_hall->esc_action.c_str();
+							bool success = Script_system.EvalString(lua, lua);
+							if (!success)
+								Warning(LOCATION,
+									"mainhall '+Escape Key Action' script failed to evaluate \"%s\"; check your syntax",
+									lua);
+						}
+
 					} else { // kill the overlay
 						help_overlay_set_state(Main_hall_overlay_id,gr_screen.res,0);
 					}
@@ -1052,38 +1096,13 @@ void main_hall_do(float frametime)
 	gr_flip();
 	gr_reset_screen_scale();
 
-	// see if we have a missing campaign and force the player to select a new campaign if so
-	extern bool Campaign_room_no_campaigns;
-	bool popup_shown = false;
-	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
-		int rc = popup(0, 3, XSTR("Go to Campaign Room", 1607), XSTR("Select another pilot", 1608), XSTR("Exit Game", 1609), XSTR("The currently active campaign cannot be found.  Please select another...", 1600));
-
-		switch (rc) {
-			case 0:
-				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-				break;
-
-			case 1:
-				gameseq_post_event(GS_EVENT_INITIAL_PLAYER_SELECT);
-				break;
-
-			case 2:
-				main_hall_exit_game();
-				break;
-
-			default:
-				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-				break;
-		}
-
-		// since all paths in this code block will take us to a different state, don't display any more popups
-		popup_shown = true;
+	// Log if we don't have a campaign set yet.
+	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
+		mprintf(("No valid campaign is currently selected for the active player!\n"));
 	}
 
 	// Display a popup if playermenu loaded a player file with a different version than expected
-	if (!popup_shown) {
-		popup_shown = player_tips_controls();
-	}
+	bool popup_shown = player_tips_controls();
 
 	// maybe run the player tips popup
 	if (!popup_shown) {
@@ -2659,6 +2678,11 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	// tooltip y location
 	if (optional_string("+Tooltip Y:")) {
 		stuff_int(&m->region_yval);
+	}
+
+	//ESC key action
+	if (optional_string("+Escape Key Script Action:")) {
+		stuff_string(m->esc_action, F_RAW);
 	}
 
 	// ---------- done parsing the main hall data ----------

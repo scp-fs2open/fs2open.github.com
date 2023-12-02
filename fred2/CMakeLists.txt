@@ -41,6 +41,8 @@ set(FRED2_SOURCES
 	createwingdlg.h
 	customdatadlg.cpp
 	customdatadlg.h
+	customstringsdlg.cpp
+	customstringsdlg.h
 	customwingnames.cpp
 	customwingnames.h
 	debriefingeditordlg.cpp
@@ -79,6 +81,8 @@ set(FRED2_SOURCES
 	management.h
 	messageeditordlg.cpp
 	messageeditordlg.h
+	missioncutscenesdlg.cpp
+	missioncutscenesdlg.h
 	missiongoalsdlg.cpp
 	missiongoalsdlg.h
 	missionnotesdlg.cpp

@@ -1316,7 +1316,7 @@ void ai_turn_towards_vector(const vec3d* dest, object* objp, const vec3d* slide_
 	//	Don't allow a ship to turn if it has no engine strength.
 	// AL 3-12-98: objp may not always be a ship!
 	if ( (objp->type == OBJ_SHIP) && !(flags & AITTV_VIA_SEXP) ) {
-		if (!Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
+		if (!Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE))
 			return;
 	}
 
@@ -2567,7 +2567,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 	}
 
 	// don't abort a support call if you're disabled!
-	if (ship_get_subsystem_strength(&Ships[attacker->instance], SUBSYSTEM_ENGINE) > 0.0f) 
+	if (!ship_subsystems_blown(&Ships[attacker->instance], SUBSYSTEM_ENGINE)) 
 		ai_set_goal_abort_support_call(attacker, aip);
 
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
@@ -6152,7 +6152,7 @@ int ai_fire_primary_weapon(object *objp)
 				int	type;
 
 				type = aip->targeted_subsys->system_info->type;
-				if (ship_get_subsystem_strength(&Ships[tobjp->instance], type) == 0.0f) {
+				if (ship_subsystems_blown(&Ships[tobjp->instance], type)) {
 					aip->target_objnum = -1;
 					return 0;
 				}
@@ -8824,38 +8824,40 @@ void ai_chase()
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.
 		weapon_info* wip = ai_get_weapon(&shipp->weapons);
-		bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
-		if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
-			Assert(En_objp->type == OBJ_SHIP);
-			vec3d target_pos;
-			get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);
+		if (wip) {
+			bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
+			if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
+				Assert(En_objp->type == OBJ_SHIP);
+				vec3d target_pos;
+				get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);
 
-			if (!ballistic)
-				predicted_enemy_pos = target_pos;
-			else {
-				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
-				has_valid_ballistic_trajectory =
-					physics_lead_ballistic_trajectory(&Pl_objp->pos, &target_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);
-
-				if (has_valid_ballistic_trajectory)
-					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &target_pos);
-				else
+				if (!ballistic)
 					predicted_enemy_pos = target_pos;
-			}
+				else {
+					vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+					has_valid_ballistic_trajectory =
+						physics_lead_ballistic_trajectory(&Pl_objp->pos, &target_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);
 
-			predicted_vec_to_enemy = real_vec_to_enemy;			
-		} else {
-			if (!ballistic)
-				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
-			else {
-				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
-				has_valid_ballistic_trajectory =
-					physics_lead_ballistic_trajectory(&Pl_objp->pos, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);			
-				
-				if (has_valid_ballistic_trajectory)
-					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &aip->last_aim_enemy_pos);
-				else
+					if (has_valid_ballistic_trajectory)
+						predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &target_pos);
+					else
+						predicted_enemy_pos = target_pos;
+				}
+
+				predicted_vec_to_enemy = real_vec_to_enemy;			
+			} else {
+				if (!ballistic)
 					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+				else {
+					vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+					has_valid_ballistic_trajectory =
+						physics_lead_ballistic_trajectory(&Pl_objp->pos, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);			
+				
+					if (has_valid_ballistic_trajectory)
+						predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &aip->last_aim_enemy_pos);
+					else
+						set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+				}
 			}
 		}
 	}
@@ -9708,7 +9710,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	// Goober5000 - moved out here to save calculations
 	if (dock_mode != DOA_DOCK_STAY)
-		if (!Ships[docker_objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_get_subsystem_strength(&Ships[docker_objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
+		if (!Ships[docker_objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_subsystems_blown(&Ships[docker_objp->instance], SUBSYSTEM_ENGINE))
 			return 9999.9f;
 
 	//	If dockee has moved much, then path will be recreated.
@@ -12031,7 +12033,7 @@ void ai_process_subobjects(int objnum)
 	}
 
 	//	Deal with a ship with blown out engines.
-	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
+	if (ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE)) {
 		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
 		// aren't under AI control here
 		if ((!(objp->flags[Object::Object_Flags::Player_ship])) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying])) {
@@ -12095,7 +12097,7 @@ object *get_wing_leader(int wingnum)
 
 	//	If this ship is disabled, try another ship in the wing.
 	int n = 0;
-	while (!Ships[ship_num].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_get_subsystem_strength(&Ships[ship_num], SUBSYSTEM_ENGINE) == 0.0f) {
+	while (!Ships[ship_num].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_subsystems_blown(&Ships[ship_num], SUBSYSTEM_ENGINE)) {
 		n++;
 
 		if (n >= wingp->current_count) {
@@ -14186,7 +14188,7 @@ void ai_maybe_depart(object *objp)
 	if (!shipp->is_departing()) {
 		if (sip->is_fighter_bomber()) {
 			if (aip->warp_out_timestamp == 0) {
-				//if (ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) == 0.0f) {
+				//if (ship_subsystems_blown(shipp, SUBSYSTEM_WEAPONS)) {
 				//	aip->warp_out_timestamp = timestamp(Random::next(10, 19) * 1000);
 				//}
 			} else if (timestamp_elapsed(aip->warp_out_timestamp)) {
@@ -14666,8 +14668,8 @@ void ai_maybe_self_destruct(object *objp, ai_info *aip)
 	//	mission would be broken.
 	//	Also, don't blow up the ship if it has a ship flag preventing this - Goober5000
 	if ((Ship_info[shipp->ship_info_index].is_small_ship()) && (shipp->wingnum >= 0) && !(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])) {
-		if ((ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) <= 0.0f) ||
-			(ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) <= 0.0f)) {
+		if ((ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE)) ||
+			(ship_subsystems_blown(shipp, SUBSYSTEM_WEAPONS))) {
 			if (aip->self_destruct_timestamp < 0)
 				aip->self_destruct_timestamp = timestamp(90 * 1000);	//	seconds until self-destruct
 		} else {
@@ -14844,6 +14846,9 @@ void ai_frame(int objnum)
 
 	//Default to glide OFF
 	Pl_objp->phys_info.flags &= ~PF_GLIDING;
+	
+	// turn off trigger down
+	shipp->weapons.flags.remove(Ship::Weapon_Flags::Primary_trigger_down);
 
 	// warping out?
 	if ((aip->mode == AIM_WARP_OUT) || (aip->ai_flags[AI::AI_Flags::Trying_unsuccessfully_to_warp]))

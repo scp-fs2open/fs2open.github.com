@@ -1172,7 +1172,7 @@ void cf_build_file_list()
 		}
 
 		Warning(LOCATION, "Some critical files might be shadowed! Please check the debug log for details.\n\n"
-							"%lu file(s) detected, including:\n%s", count, shadowed.c_str());
+							SIZE_T_ARG " file(s) detected, including:\n%s", count, shadowed.c_str());
 	}
 
 	critical_shadowed.clear();

@@ -3305,17 +3305,54 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_custom_data()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL) {
-		required_string_fred("#Custom Data");
-		parse_comments(2);
+	if (Mission_save_format != FSO_FORMAT_RETAIL && !The_mission.custom_data.empty()) {
+		if (optional_string_fred("#Custom Data", "#End")) {
+			parse_comments(2);
+		} else {
+			fout("\n\n#Custom Data");
+		}
 
 		if (The_mission.custom_data.size() > 0) {
-			required_string_fred("$begin_data_map");
-			parse_comments(2);
+			if (optional_string_fred("$begin_data_map")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n$begin_data_map");
+			}
+
 			for (const auto& pair : The_mission.custom_data) {
 				fout("\n+Val: %s %s", pair.first.c_str(), pair.second.c_str());
 			}
-			required_string_fred("$end_data_map");
+
+			if (optional_string_fred("$end_data_map")) {
+				parse_comments();
+			} else {
+				fout("\n$end_data_map");
+			}
+		}
+
+		if (The_mission.custom_strings.size() > 0) {
+			required_string_fred("$begin_custom_strings");
+			parse_comments(2);
+
+			for (const auto& cs : The_mission.custom_strings) {
+				required_string_fred("$Name:");
+				parse_comments(2);
+				fout(" %s", cs.name.c_str());
+
+				required_string_fred("+Value:");
+				parse_comments();
+				fout(" %s", cs.value.c_str());
+				
+				auto copy = cs.text;
+				lcl_fred_replace_stuff(copy);
+				required_string_fred("+String:");
+				parse_comments();
+				fout(" %s", copy.c_str());
+				
+				required_string_fred("$end_multi_text");
+				parse_comments();
+			}
+			required_string_fred("$end_custom_strings");
 			parse_comments(2);
 		}
 	}
@@ -4249,6 +4286,13 @@ int CFred_mission_save::save_players()
 		Assert(Player_start_shipnum >= 0);
 		fout(" %s", Ships[Player_start_shipnum].ship_name);
 
+		if (Mission_save_format != FSO_FORMAT_RETAIL) {
+			if (Team_data[i].do_not_validate) {
+				required_string_fred("+Do Not Validate Loadout");
+				parse_comments();
+			}
+		}
+
 		required_string_fred("$Ship Choices:");
 		parse_comments();
 		fout(" (\n");
@@ -4347,9 +4391,11 @@ int CFred_mission_save::save_players()
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < weapon_info_size(); j++) {
-			if (used_pool[j] > 0) {
-				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+		if (!Team_data[i].do_not_validate) {
+			for (j = 0; j < weapon_info_size(); j++) {
+				if (used_pool[j] > 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+				}
 			}
 		}
 
@@ -4704,7 +4750,7 @@ int CFred_mission_save::save_variables()
 	return err;
 }
 
-int CFred_mission_save::save_vector(vec3d &v)
+int CFred_mission_save::save_vector(const vec3d &v)
 {
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
 	return 0;
@@ -4768,7 +4814,7 @@ int CFred_mission_save::save_waypoints()
 					fout("\n+Alphacolor:");
 				}
 
-				color jn_color = jnp->GetColor();
+				const auto &jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 

@@ -159,7 +159,7 @@ void mission_log_obsolete_entries(LogType type, const char *pname)
 // that this event is for.  Don't add entries with this function for multiplayer
 void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags)
 {
-	int last_entry_save;
+	__UNUSED int last_entry_save;
 	log_entry *entry;	
 
 	// multiplayer clients don't use this function to add log entries -- they will get

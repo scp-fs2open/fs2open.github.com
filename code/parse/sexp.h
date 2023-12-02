@@ -141,6 +141,7 @@ enum sexp_opf_t : int {
 	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
 	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
+	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -160,9 +161,19 @@ struct dynamic_sexp_parameter_list {
 
 extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
+struct dynamic_sexp_child_enum_suffixes {
+	SCP_string operator_name;
+	int param_index;
+	SCP_string suffix;
+};
+
+extern SCP_vector<dynamic_sexp_child_enum_suffixes> Dynamic_enum_suffixes;
+
 int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 
 int get_dynamic_enum_position(const SCP_string &enum_name);
+
+SCP_string get_child_enum_suffix(const SCP_string& op_name, int param_index);
 
 // Operand return types
 enum sexp_opr_t : int {
@@ -1038,6 +1049,7 @@ enum class sexp_src
 	WING_DEPARTURE,
 	EVENT,
 	MISSION_GOAL,
+	MISSION_CUTSCENE,
 	SHIP_ORDER,
 	WING_ORDER,
 	DEBRIEFING,
@@ -1355,20 +1367,7 @@ extern size_t Max_operator_length;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
-extern int Training_context;
-extern int Training_context_speed_min;
-extern int Training_context_speed_max;
-extern int Training_context_speed_set;
-extern int Training_context_speed_timestamp;
-extern waypoint_list *Training_context_path;
-extern int Training_context_goal_waypoint;
-extern int Training_context_at_waypoint;
-extern float Training_context_distance;
-extern int Players_target;
-extern int Players_mlocked;
-extern ship_subsys *Players_targeted_subsys;
-extern int Players_target_timestamp;
-extern int Players_mlocked_timestamp;
+extern bool Assume_event_is_current;
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;
@@ -1423,6 +1422,7 @@ extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
+
 struct ship_registry_entry;
 struct wing;
 
@@ -1438,6 +1438,12 @@ extern bool sexp_can_construe_as_integer(int node);
 void do_action_for_each_special_argument(int cur_node);
 bool special_argument_appears_in_sexp_tree(int node);
 bool special_argument_appears_in_sexp_list(int node);
+
+// Goober5000 - for special-arg SEXPs
+extern bool is_when_argument_op(int op_const);
+extern bool is_argument_provider_op(int op_const);
+extern bool is_implicit_argument_provider_op(int op_const); // jg18
+extern int find_argument_provider(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );

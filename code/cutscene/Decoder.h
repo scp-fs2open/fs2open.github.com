@@ -52,6 +52,7 @@ struct MovieProperties {
 	FrameSize size;
 
 	float fps = -1.0f;
+	float duration = 0.0f;
 
 	FramePixelFormat pixelFormat = FramePixelFormat::Invalid;
 };

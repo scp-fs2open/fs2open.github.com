@@ -608,22 +608,29 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 	if (OnWarpOutCompleteHook->isActive()) {
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{shipp};
-		OnWarpOutCompleteHook->run(conditions, params);
+		OnWarpOutCompleteHook->run(conditions, std::move(params));
 	}
 }
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 {
+	Assertion(isValid(), "Warp effect must be valid when compute_warpout_stuff() is called!");
+
 	float warp_dist(0.0f), dist_to_plane, ship_move_dist;
 	vec3d facing_normal, vec_to_knossos, center_pos;
+
+	auto objp = &Objects[m_objnum];
+	auto sip = &Ship_info[m_ship_info_index];
 
 	// find world position of the center of the ship assembly
 	vm_vec_unrotate(&center_pos, &actual_local_center, &objp->orient);
 	vm_vec_add2(&center_pos, &objp->pos);
 
 	// If we're warping through the knossos, do something different.
-	if (portal_objp != nullptr)
+	if (m_portal_objnum >= 0)
 	{
+		auto portal_objp = &Objects[m_portal_objnum];
+
 		// get facing normal from knossos
 		vm_vec_sub(&vec_to_knossos, &portal_objp->pos, &center_pos);
 		facing_normal = portal_objp->orient.vec.fvec;
@@ -677,7 +684,7 @@ void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 	// Acount for time to get to warp effect, before we actually go through it.
 	*warp_time += ship_move_dist / warping_speed;
 
-	if (portal_objp == nullptr)
+	if (m_portal_objnum < 0)
 	{
 		// project the warp portal in front of us
 		vm_vec_scale_add(warp_pos, &center_pos, &objp->orient.vec.fvec, warp_dist);
@@ -1652,13 +1659,6 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 			if ( create_debris ) {
 				half_ship->draw_debris[i] = DEBRIS_FREE;		// mark debris to not render with model
 				vec3d center_to_debris, debris_vel, radial_vel;
-				// check if last debris piece, ie, debris_count == 0
-				int debris_count = 0;
-				for (int j=0; j<pm->num_debris_objects; j++ ) {
-					if (half_ship->draw_debris[j] == DEBRIS_DRAW) {
-						debris_count++;
-					}
-				} 
 				// do debris create here, but not for live debris
 				// debris vel (1) split ship vel (2) split ship rotvel (3) random
 				if ( !is_live_debris ) {
@@ -2702,7 +2702,7 @@ void engine_wash_ship_process(ship *shipp)
 		float ship_intensity = 0;
 
 		// if engines disabled, no engine wash
-		if (ship_get_subsystem_strength(wash_shipp, SUBSYSTEM_ENGINE) < 0.01) {
+		if (ship_subsystems_blown(wash_shipp, SUBSYSTEM_ENGINE)) {
 			continue;
 		}
 
@@ -3247,6 +3247,7 @@ int warptype_match(const char *p)
 
 void ship_set_warp_effects(object *objp)
 {
+	int objnum = OBJ_INDEX(objp);
 	ship *shipp = &Ships[objp->instance];
 	int warpin_type = Warp_params[shipp->warpin_params_index].warp_type;
 	int warpout_type = Warp_params[shipp->warpout_params_index].warp_type;
@@ -3264,16 +3265,16 @@ void ship_set_warp_effects(object *objp)
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpin_effect = new WE_Default(objp, WarpDirection::WARP_IN);
+			shipp->warpin_effect = new WE_Default(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BSG(objp, WarpDirection::WARP_IN);
+			shipp->warpin_effect = new WE_BSG(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_SWEEPER:
-			shipp->warpin_effect = new WE_Homeworld(objp, WarpDirection::WARP_IN);
+			shipp->warpin_effect = new WE_Homeworld(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpin_effect = new WE_Hyperspace(objp, WarpDirection::WARP_IN);
+			shipp->warpin_effect = new WE_Hyperspace(objnum, WarpDirection::WARP_IN);
 			break;
 		default:
 			shipp->warpin_effect = new WarpEffect();
@@ -3287,16 +3288,16 @@ void ship_set_warp_effects(object *objp)
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpout_effect = new WE_Default(objp, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = new WE_Default(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BSG(objp, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = new WE_BSG(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_SWEEPER:
-			shipp->warpout_effect = new WE_Homeworld(objp, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = new WE_Homeworld(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpout_effect = new WE_Hyperspace(objp, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = new WE_Hyperspace(objnum, WarpDirection::WARP_OUT);
 			break;
 		default:
 			shipp->warpout_effect = new WarpEffect();
@@ -3320,37 +3321,31 @@ bool point_is_clipped_by_warp(const vec3d* point, WarpEffect* warp_effect) {
 
 
 //********************-----CLASS: WarpEffect-----********************//
-WarpEffect::WarpEffect()
+WarpEffect::WarpEffect(int objnum, WarpDirection direction)
 {
-	this->clear();
-}
+	m_objnum = objnum;
+	m_direction = direction;
 
-WarpEffect::WarpEffect(object *n_objp, WarpDirection n_direction)
-{
-	this->clear();
-	if(n_objp != NULL && n_objp->type == OBJ_SHIP && n_objp->instance > -1 && Ships[n_objp->instance].ship_info_index > -1)
+	if (m_objnum < 0)
+		return;
+	auto objp = &Objects[m_objnum];
+
+	if (objp->type != OBJ_SHIP || objp->instance < 0)
+		return;
+	auto shipp = &Ships[objp->instance];
+
+	if (shipp->ship_info_index >= 0)
 	{
-		objp = n_objp;
-		direction = n_direction;
-
 		//Setup courtesy variables
-		shipp = &Ships[objp->instance];
-		sip = &Ship_info[shipp->ship_info_index];
-		params = &Warp_params[direction == WarpDirection::WARP_IN ? shipp->warpin_params_index : shipp->warpout_params_index];
+		m_shipnum = objp->instance;
+		m_ship_info_index = shipp->ship_info_index;
+		m_warp_params_index = (direction == WarpDirection::WARP_IN) ? shipp->warpin_params_index : shipp->warpout_params_index;
 	}
 }
 
-void WarpEffect::clear()
+bool WarpEffect::isValid() const
 {
-	objp = NULL;
-	direction = WarpDirection::NONE;
-	shipp = NULL;
-	sip = NULL;
-}
-
-bool WarpEffect::isValid()
-{
-	if(objp == NULL)
+	if (m_objnum < 0 || m_shipnum < 0 || m_ship_info_index < 0)
 		return false;
 
 	return true;
@@ -3391,73 +3386,70 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-	if (direction == WarpDirection::WARP_IN)
-		shipfx_actually_warpin(&Ships[objp->instance], objp);
-	else if (direction == WarpDirection::WARP_OUT)
-		shipfx_actually_warpout(&Ships[objp->instance], objp);
+	if (m_direction == WarpDirection::WARP_IN)
+		shipfx_actually_warpin(&Ships[m_shipnum], &Objects[m_objnum]);
+	else if (m_direction == WarpDirection::WARP_OUT)
+		shipfx_actually_warpout(&Ships[m_shipnum], &Objects[m_objnum]);
 
 	return 1;
 }
 
-int WarpEffect::getWarpPosition(vec3d *output)
+int WarpEffect::getWarpPosition(vec3d *output) const
 {
 	if(!this->isValid())
 		return 0;
 
-	*output = objp->pos;
+	*output = Objects[m_objnum].pos;
 	return 1;
 }
 
-int WarpEffect::getWarpOrientation(matrix* output)
+int WarpEffect::getWarpOrientation(matrix* output) const
 {
 	if(!this->isValid())
 		return 0;
 
-	*output = objp->orient;
+	*output = Objects[m_objnum].orient;
 	return 1;
 }
 
 //********************-----CLASS: WE_Default-----********************//
-WE_Default::WE_Default(object *n_objp, WarpDirection n_direction)
-	:WarpEffect(n_objp, n_direction)
-{
-	if(!this->isValid())
-		return;
-
-	portal_objp = nullptr;
-	stage_duration[0] = 0;
-
-	pos = vmd_zero_vector;
-	fvec = vmd_zero_vector;
-}
+WE_Default::WE_Default(int objnum, WarpDirection direction)
+	: WarpEffect(objnum, direction)
+{}
 
 int WE_Default::warpStart()
 {
 	if (!this->isValid())
 		return 0;
 
-	if(direction == WarpDirection::WARP_OUT && objp == Player_obj)
+	if (m_direction == WarpDirection::WARP_OUT && m_objnum == OBJ_INDEX(Player_obj))
 	{
 		HUD_printf(NOX("Subspace drive engaged"));
 	}
 
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[objp->instance];
+
 	// see if we have a valid Knossos device
-	portal_objp = nullptr;
-	if ((direction == WarpDirection::WARP_IN) && shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
+	if ((m_direction == WarpDirection::WARP_IN) && shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
 	{
-		portal_objp = &Objects[shipp->special_warpin_objnum];
+		m_portal_objnum = shipp->special_warpin_objnum;
 	}
-	else if ((direction == WarpDirection::WARP_OUT) && shipfx_special_warp_objnum_valid(shipp->special_warpout_objnum))
+	else if ((m_direction == WarpDirection::WARP_OUT) && shipfx_special_warp_objnum_valid(shipp->special_warpout_objnum))
 	{
-		portal_objp = &Objects[shipp->special_warpout_objnum];
+		m_portal_objnum = shipp->special_warpout_objnum;
 	}
 
 	// knossos warpout only valid in single player
-	if (portal_objp != nullptr && Game_mode & GM_MULTIPLAYER)
+	if (m_portal_objnum >= 0 && Game_mode & GM_MULTIPLAYER)
 	{
 		mprintf(("special warpout only for single player\n"));
-		portal_objp = nullptr;
+		m_portal_objnum = -1;
 	}
+
+	auto portal_objp = (m_portal_objnum < 0) ? nullptr : &Objects[m_portal_objnum];
+	auto sip = &Ship_info[m_ship_info_index];
+	const auto params = &Warp_params[m_warp_params_index];
 
 	// determine the correct center of the model (which may not be the model's origin)
 	if (object_is_docked(objp))
@@ -3479,10 +3471,10 @@ int WE_Default::warpStart()
 	}
 
 	// determine the warping time
-	warping_time = shipfx_calculate_warp_time(objp, direction, half_length, warping_dist);
+	warping_time = shipfx_calculate_warp_time(objp, m_direction, half_length, warping_dist);
 
 	// determine the warping speed
-	if (direction == WarpDirection::WARP_OUT)
+	if (m_direction == WarpDirection::WARP_OUT)
 		warping_speed = ship_get_warpout_speed(objp, sip, half_length, warping_dist);
 	else
 		warping_speed = warping_dist / warping_time;
@@ -3490,7 +3482,7 @@ int WE_Default::warpStart()
 	// done with initial computation; now set up the warp effect
 
 	float effect_time = 0.0f;
-	if(direction == WarpDirection::WARP_IN)
+	if (m_direction == WarpDirection::WARP_IN)
 	{
 		// first determine the world center in relation to its position
 		vm_vec_unrotate(&pos, &actual_local_center, &objp->orient);
@@ -3517,7 +3509,7 @@ int WE_Default::warpStart()
 		}
 	}
 
-	radius = shipfx_calculate_effect_radius(objp, direction);
+	radius = shipfx_calculate_effect_radius(objp, m_direction);
 	// cap radius to size of knossos
 	if (portal_objp != nullptr)
 	{
@@ -3527,13 +3519,13 @@ int WE_Default::warpStart()
 
 	// select the fireball we use
 	int fireball_type = FIREBALL_WARP;
-	if ((portal_objp != nullptr) || (params->warp_type == WT_KNOSSOS) || (direction == WarpDirection::WARP_OUT && params->warp_type == WT_DEFAULT_THEN_KNOSSOS))
+	if ((portal_objp != nullptr) || (params->warp_type == WT_KNOSSOS) || (m_direction == WarpDirection::WARP_OUT && params->warp_type == WT_DEFAULT_THEN_KNOSSOS))
 		fireball_type = FIREBALL_KNOSSOS;
 	else if (params->warp_type & WT_DEFAULT_WITH_FIREBALL)
 		fireball_type = params->warp_type & WT_FLAG_MASK;
 
 	// create fireball
-	int warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, (direction == WarpDirection::WARP_OUT), nullptr, effect_time, shipp->ship_info_index, nullptr, 0, 0, params->snd_start, params->snd_end);
+	int warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, m_objnum, radius, (m_direction == WarpDirection::WARP_OUT), nullptr, effect_time, m_ship_info_index, nullptr, 0, 0, params->snd_start, params->snd_end);
 
 	//WMC - bail
 	// JAS: This must always be created, if not, just warp the ship in/out
@@ -3546,7 +3538,7 @@ int WE_Default::warpStart()
 	fvec = Objects[warp_objnum].orient.vec.fvec;
 
 	stage_time_start = total_time_start = timestamp();
-	if(direction == WarpDirection::WARP_IN)
+	if (m_direction == WarpDirection::WARP_IN)
 	{
 		stage_duration[1] = fl2i(SHIPFX_WARP_DELAY*1000.0f);
 		stage_duration[2] = fl2i(warping_time*1000.0f);
@@ -3560,7 +3552,7 @@ int WE_Default::warpStart()
 			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
 		}
 	}
-	else if(direction == WarpDirection::WARP_OUT)
+	else if (m_direction == WarpDirection::WARP_OUT)
 	{
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
@@ -3596,7 +3588,11 @@ int WE_Default::warpStart()
 
 int WE_Default::warpFrame(float frametime)
 {
-	if(direction == WarpDirection::WARP_IN)
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[m_shipnum];
+	const auto params = &Warp_params[m_warp_params_index];
+
+	if (m_direction == WarpDirection::WARP_IN)
 	{
 		if ((shipp->flags[Ship::Ship_Flags::Arriving_stage_1]) && timestamp_elapsed(stage_time_end))
 		{
@@ -3638,7 +3634,7 @@ int WE_Default::warpFrame(float frametime)
 			}
 		}
 	}
-	else if(direction == WarpDirection::WARP_OUT)
+	else if (m_direction == WarpDirection::WARP_OUT)
 	{
 		vec3d tempv;
 		float warp_pos;	// position of warp effect in object's frame of reference
@@ -3706,7 +3702,7 @@ int WE_Default::warpShipRender()
 	return 1;
 }
 
-int WE_Default::getWarpPosition(vec3d *output)
+int WE_Default::getWarpPosition(vec3d *output) const
 {
 	if(!this->isValid())
 		return 0;
@@ -3715,12 +3711,14 @@ int WE_Default::getWarpPosition(vec3d *output)
 	return 1;
 }
 
-int WE_Default::getWarpOrientation(matrix* output)
+int WE_Default::getWarpOrientation(matrix* output) const
 {
 	if (!this->isValid())
 		return 0;
 
-	if (this->direction == WarpDirection::WARP_IN)
+	auto objp = &Objects[m_objnum];
+
+	if (this->m_direction == WarpDirection::WARP_IN)
 		vm_vector_2_matrix(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
@@ -3766,14 +3764,20 @@ float shipfx_calculate_arrival_warp_distance(object *objp)
 }
 
 //********************-----CLASS: WE_BSG-----********************//
-WE_BSG::WE_BSG(object *n_objp, WarpDirection n_direction)
-	:WarpEffect(n_objp, n_direction)
+WE_BSG::WE_BSG(int objnum, WarpDirection direction)
+	: WarpEffect(objnum, direction)
 {
 	//Zero animation and such
 	anim = shockwave = -1;
 	anim_fps = shockwave_fps = 0;
 	anim_nframes = shockwave_nframes = 0;
 	anim_total_time = shockwave_total_time = 0;
+
+	if (!isValid())
+		return;
+	auto objp = &Objects[m_objnum];
+	auto sip = &Ship_info[m_ship_info_index];
+	const auto params = &Warp_params[m_warp_params_index];
 
 	//Setup anim name
 	char tmp_name[MAX_FILENAME_LEN];
@@ -3878,6 +3882,10 @@ int WE_BSG::warpStart()
 		return 0;
 	}
 
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[m_shipnum];
+	const auto params = &Warp_params[m_warp_params_index];
+
 	//WMC - If object is docked now, update data:
 	if(object_is_docked(objp))
 	{
@@ -3895,7 +3903,7 @@ int WE_BSG::warpStart()
 		dock_calc_docked_actual_center(&autocenter, objp);
 	}
 
-	if (direction == WarpDirection::WARP_IN)
+	if (m_direction == WarpDirection::WARP_IN)
 	{
 		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		// dock leader needs to handle dockees
@@ -3939,6 +3947,9 @@ int WE_BSG::warpFrame(float  /*frametime*/)
 	if(!this->isValid())
 		return 0;
 
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[m_shipnum];
+
 	while( timestamp_elapsed(stage_time_end ))
 	{
 		stage++;
@@ -3950,7 +3961,7 @@ int WE_BSG::warpFrame(float  /*frametime*/)
 		switch(stage)
 		{
 			case 1:
-				if(direction == WarpDirection::WARP_IN)
+				if (m_direction == WarpDirection::WARP_IN)
 				{
 					shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
 					shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
@@ -3992,7 +4003,9 @@ int WE_BSG::warpShipClip(model_render_params *render_info)
 	if(!this->isValid())
 		return 0;
 
-	if(direction == WarpDirection::WARP_OUT && stage > 0)
+	auto objp = &Objects[m_objnum];
+
+	if (m_direction == WarpDirection::WARP_OUT && stage > 0)
 	{
 		vec3d position;
 		vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
@@ -4010,6 +4023,8 @@ int WE_BSG::warpShipRender()
 
 	if(anim < 0 && shockwave < 0)
 		return 0;
+
+	auto objp = &Objects[m_objnum];
 
 	// SUSHI: Turning off Zbuffering results in the FTL effect showing up through ship hulls. 
 	// The effect is slightly degraded by leaving it on, but ATM it's worth the tradeoff.
@@ -4063,18 +4078,20 @@ int WE_BSG::warpEnd()
 {
 	if (snd_start.isValid())
 		snd_stop(snd_start);
-	if(snd_end_gs != NULL)
-		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+	if (snd_end_gs != nullptr && m_objnum >= 0)
+		snd_end = snd_play_3d(snd_end_gs, &Objects[m_objnum].pos, &View_position, 0.0f, nullptr, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
 
 	return WarpEffect::warpEnd();
 }
 
 //WMC - These two functions are used to fool collision detection code
 //And do player warpout
-int WE_BSG::getWarpPosition(vec3d *output)
+int WE_BSG::getWarpPosition(vec3d *output) const
 {
-	if(!this->isValid())
+	if (!this->isValid())
 		return 0;
+
+	auto objp = &Objects[m_objnum];
 
 	vec3d position;
 	vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
@@ -4083,24 +4100,28 @@ int WE_BSG::getWarpPosition(vec3d *output)
 	return 1;
 }
 
-int WE_BSG::getWarpOrientation(matrix* output)
+int WE_BSG::getWarpOrientation(matrix* output) const
 {
-    if (!this->isValid())
-    {
-        return 0;
-    }
+	if (!this->isValid())
+		return 0;
 
-    vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
-    return 1;
+	auto objp = &Objects[m_objnum];
+
+	vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+	return 1;
 }
 
 //********************-----CLASS: WE_Homeworld-----********************//
 const float HOMEWORLD_SWEEPER_LINE_THICKNESS = 0.002f; // How tall the initial and final hyperspace "lines" are, as a factor of height
-WE_Homeworld::WE_Homeworld(object *n_objp, WarpDirection n_direction)
-	:WarpEffect(n_objp, n_direction)
+WE_Homeworld::WE_Homeworld(int objnum, WarpDirection direction)
+	: WarpEffect(objnum, direction)
 {
 	if(!this->isValid())
 		return;
+
+	auto objp = &Objects[m_objnum];
+	auto sip = &Ship_info[m_ship_info_index];
+	const auto params = &Warp_params[m_warp_params_index];
 
 	//Stage and time
 	stage = 0;
@@ -4179,6 +4200,10 @@ int WE_Homeworld::warpStart()
 		this->warpEnd();
 		return 0;
 	}
+
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[m_shipnum];
+	const auto params = &Warp_params[m_warp_params_index];
 	
 	stage = 1;
 	total_time_start = timestamp();
@@ -4193,13 +4218,13 @@ int WE_Homeworld::warpStart()
 	//Position
 	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, z_offset_max);
 	fvec = objp->orient.vec.fvec;
-	if(direction == WarpDirection::WARP_OUT)
+	if (m_direction == WarpDirection::WARP_OUT)
 		vm_vec_negate(&fvec);
 
 	width = 0.f;
 	height = height_full * HOMEWORLD_SWEEPER_LINE_THICKNESS;
 
-	if(direction == WarpDirection::WARP_IN)
+	if (m_direction == WarpDirection::WARP_IN)
 	{
 		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		// dock leader needs to handle dockees
@@ -4209,7 +4234,7 @@ int WE_Homeworld::warpStart()
 			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
 		}
 	}
-	else if(direction == WarpDirection::WARP_OUT)
+	else if (m_direction == WarpDirection::WARP_OUT)
 	{
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 	}
@@ -4233,6 +4258,9 @@ int WE_Homeworld::warpFrame(float  /*frametime*/)
 	if(!this->isValid())
 		return 0;
 
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[m_shipnum];
+
 	//Setup stage
 	while( timestamp_elapsed(stage_time_end ))
 	{
@@ -4247,7 +4275,7 @@ int WE_Homeworld::warpFrame(float  /*frametime*/)
 			case 2:
 				break;
 			case 3:
-				if(direction == WarpDirection::WARP_IN)
+				if (m_direction == WarpDirection::WARP_IN)
 				{
 					objp->phys_info.flags |= PF_WARP_IN;
 					shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
@@ -4335,7 +4363,7 @@ int WE_Homeworld::warpShipRender()
 		frame = fl2i( (int)(((float)(timestamp() - (float)total_time_start)/1000.0f) * (float)anim_fps) % anim_nframes);
 
 	//Set the correct frame
-	batching_add_polygon(anim + frame, &pos, &objp->orient, width, height);
+	batching_add_polygon(anim + frame, &pos, &Objects[m_objnum].orient, width, height);
 
 	return 1;
 }
@@ -4347,7 +4375,7 @@ int WE_Homeworld::warpEnd()
 	return WarpEffect::warpEnd();
 }
 
-int WE_Homeworld::getWarpPosition(vec3d *output)
+int WE_Homeworld::getWarpPosition(vec3d *output) const
 {
 	if(!this->isValid())
 		return 0;
@@ -4356,14 +4384,14 @@ int WE_Homeworld::getWarpPosition(vec3d *output)
 	return 1;
 }
 
-int WE_Homeworld::getWarpOrientation(matrix* output)
+int WE_Homeworld::getWarpOrientation(matrix* output) const
 {
-    if (!this->isValid())
-    {
-        return 0;
-    }
+	if (!this->isValid())
+		return 0;
 
-	if (this->direction == WarpDirection::WARP_IN)
+	auto objp = &Objects[m_objnum];
+
+	if (this->m_direction == WarpDirection::WARP_IN)
 		*output = objp->orient;
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
@@ -4371,13 +4399,18 @@ int WE_Homeworld::getWarpOrientation(matrix* output)
 		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, nullptr);
 	}
 
-    return 1;
+	return 1;
 }
 
 //********************-----CLASS: WE_Hyperspace----********************//
-WE_Hyperspace::WE_Hyperspace(object *n_objp, WarpDirection n_direction)
-	:WarpEffect(n_objp, n_direction)
+WE_Hyperspace::WE_Hyperspace(int objnum, WarpDirection direction)
+	: WarpEffect(objnum, direction)
 {
+	if (!isValid())
+		return;
+	auto objp = &Objects[m_objnum];
+	const auto params = &Warp_params[m_warp_params_index];
+
 	total_duration = params->time;
 	if (total_duration <= 0)
 		total_duration = 1000;
@@ -4401,10 +4434,15 @@ int WE_Hyperspace::warpStart()
 	if(!this->isValid())
 		return 0;
 
+	auto objp = &Objects[m_objnum];
+	auto shipp = &Ships[m_shipnum];
+	auto sip = &Ship_info[m_ship_info_index];
+	const auto params = &Warp_params[m_warp_params_index];
+
 	total_time_start = timestamp();
 	total_time_end = timestamp(total_duration);
 	
-	if(direction == WarpDirection::WARP_IN)
+	if (m_direction == WarpDirection::WARP_IN)
 	{
 		p_object* p_objp = mission_parse_get_parse_object(shipp->ship_name);
 		if (p_objp != nullptr) {
@@ -4423,7 +4461,7 @@ int WE_Hyperspace::warpStart()
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->flags.remove(Object::Object_Flags::Physics);
 	}
-	else if(direction == WarpDirection::WARP_OUT)
+	else if (m_direction == WarpDirection::WARP_OUT)
 	{
 		// wookieejedi - if the ship is already in the mission the initial_velocity for warpout should be the ship's current speed
 		initial_velocity = objp->phys_info.fspeed;
@@ -4458,6 +4496,8 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 	if(!this->isValid())
 		return 0;
 
+	auto objp = &Objects[m_objnum];
+
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
@@ -4469,7 +4509,7 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 		// How far along in the effect we are, in range of 0.0..1.0.
 		float progress = ((float)timestamp() - (float)total_time_start)/(float)total_duration;
 		float scale = 0.0f;
-		if (direction == WarpDirection::WARP_IN)
+		if (m_direction == WarpDirection::WARP_IN)
 		{
 			scale = scale_factor*(1.0f-pow((1.0f-progress), accel_or_decel_exp))-scale_factor;
 
@@ -4498,8 +4538,8 @@ int WE_Hyperspace::warpEnd()
 {
 	if (snd_start.isValid())
 		snd_stop(snd_start);
-	if(snd_end_gs != nullptr)
-		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, nullptr, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
+	if(snd_end_gs != nullptr && m_objnum >= 0)
+		snd_end = snd_play_3d(snd_end_gs, &Objects[m_objnum].pos, &View_position, 0.0f, nullptr, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
 
 	return WarpEffect::warpEnd();
 }

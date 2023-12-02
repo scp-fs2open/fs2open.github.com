@@ -1807,6 +1807,40 @@ ADE_FUNC(addDefaultCustomData,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_VIRTVAR(CustomStrings, l_Mission, nullptr, "Gets the indexed custom data table for this mission. Each item in the table is a table with the following values: "
+	"Name - the name of the custom string, Value - the value associated with the custom string, String - the custom string itself.", "table", "The mission's custom data table") 
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	int cnt = 0;
+
+	for (const auto& cs : The_mission.custom_strings)
+	{
+		cnt++;
+		auto item = luacpp::LuaTable::create(L);
+
+		item.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.name));
+		item.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.value));
+		item.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.text));
+
+
+		table.addValue(cnt, item);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomStrings, l_Mission, nullptr, "Detects whether the mission has any custom strings", "boolean", "true if the mission's custom_strings is not empty, false otherwise") 
+{
+
+	bool result = !The_mission.custom_strings.empty();
+	return ade_set_args(L, "b", result);
+}
+
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
 {
 	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);

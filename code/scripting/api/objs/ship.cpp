@@ -543,7 +543,7 @@ ADE_VIRTVAR(CockpitDisplays, l_Ship, "displays", "An array of the cockpit displa
 		LuaError(L, "Attempted to use incomplete feature: Cockpit displays copy");
 	}
 
-	return ade_set_args(L, "o", l_CockpitDisplays.Set(cockpit_displays_h(objh->objp)));
+	return ade_set_args(L, "o", l_CockpitDisplays.Set(cockpit_displays_h(OBJ_INDEX(objh->objp))));
 }
 
 ADE_VIRTVAR(CountermeasureClass, l_Ship, "weaponclass", "Weapon class mounted on this ship's countermeasure point", "weaponclass", "Countermeasure hardpoint weapon class, or invalid weaponclass handle if no countermeasure class or ship handle is invalid")

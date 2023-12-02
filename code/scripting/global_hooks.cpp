@@ -19,8 +19,8 @@ const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro Abo
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{ 
-		{"OldState", "object", "The gamestate object of the state that was executing."}, 
-		{"NewState", "object", "The gamestate object of the state that will be executing."}
+		{"OldState", "gamestate", "The gamestate that was executing."}, 
+		{"NewState", "gamestate", "The gamestate that will be executing."}
 	});
 
 const std::shared_ptr<Hook<>> OnLoadScreen = Hook<>::Factory("On Load Screen",
@@ -438,6 +438,16 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 	{
 		{"Camera", "camera", "The camera about to be used for rendering."},
 	});
+
+// ========== FRED HOOKS ==========
+
+const std::shared_ptr<Hook<>> FredOnMissionLoad = Hook<>::Factory("FRED On Mission Load",
+	"Invoked when a new mission is loaded.",
+	{});
+
+const std::shared_ptr<Hook<>> FredOnMissionSpecsSave = Hook<>::Factory("FRED On Mission Specs Save",
+	"Invoked when the Mission Specs dialog OK Button has been hit and all data is sucessfully saved.",
+	{});
 
 // ========== DEPRECATED ==========
 

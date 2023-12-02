@@ -373,6 +373,8 @@ void briefing_editor_dlg::update_data(int update)
 
 		if (m_no_grid)
 			ptr->draw_grid = false;
+		else
+			ptr->draw_grid = true;
 
 		MODIFY(ptr->flags, i);
 		ptr->formula = m_tree.save_tree();

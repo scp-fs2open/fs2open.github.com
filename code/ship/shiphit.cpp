@@ -1693,18 +1693,18 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
-	//SUSHI: What are the chances of an instant vaporization? Check the ship type (objecttypes.tbl) as well as the ship (ships.tbl)
-	float vapChance;
+	//SUSHI: What are the chances of an instant explosion? Check the ship type (objecttypes.tbl) as well as the ship (ships.tbl)
+	float skipChance;
 	if (sp->flags[Ship::Ship_Flags::Vaporize])
-		vapChance = 1.0f;
-	else if (sip->vaporize_chance > 0.0f)
-		vapChance = sip->vaporize_chance;
+		skipChance = 1.0f;
+	else if (sip->skip_deathroll_chance > 0.0f)
+		skipChance = sip->skip_deathroll_chance;
 	else if (sip->class_type >= 0)
-		vapChance = Ship_types[sip->class_type].vaporize_chance;
+		skipChance = Ship_types[sip->class_type].skip_deathroll_chance;
 	else
-		vapChance = 0.0f;
+		skipChance = 0.0f;
 
-	if (frand() < vapChance)
+	if (frand() < skipChance)
 	{
 		// LIVE FOR 100 MS
 		sp->final_death_time = timestamp(100);
@@ -1834,7 +1834,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				hitpos != nullptr));
 
 		if (scripting::hooks::OnDeath->isOverride(scripting::hooks::ObjectDeathConditions{ ship_objp }, onDeathParamList)) {
-			scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp }, onDeathParamList);
+			scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp }, std::move(onDeathParamList));
 			return;
 		}
 	}

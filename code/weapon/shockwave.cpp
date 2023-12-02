@@ -12,6 +12,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
+#include "math/curve.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "object/object.h"
@@ -273,10 +274,22 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	sw->time_elapsed += frametime;
 
 	shockwave_set_framenum(shockwave_objp->instance);
-		
-	sw->radius += (frametime * sw->speed);
-	if ( sw->radius > sw->outer_radius ) {
-		sw->radius = sw->outer_radius;
+
+	weapon_info* wip = nullptr;
+	if (sw->weapon_info_index >= 0)
+		wip = &Weapon_info[sw->weapon_info_index];
+	
+	if (wip && wip->shockwave.radius_curve_idx >= 0) {
+		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
+		sw->radius = val * sw->outer_radius;
+		if (sw->radius < 0.0f)
+			sw->radius = 0.0f;
+	} else {
+		sw->radius += (frametime * sw->speed);
+		CLAMP(sw->radius, 0.0f, sw->outer_radius);
+	}
+
+	if ( sw->time_elapsed > sw->total_time ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
@@ -292,11 +305,11 @@ void shockwave_move(object *shockwave_objp, float frametime)
 
 		if(objp->type == OBJ_WEAPON) {
 			// only apply to missiles with hitpoints
-			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->weapon_hitpoints <= 0)
+			weapon_info* target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (target_wip->weapon_hitpoints <= 0)
 				continue;
 
-			if (!Shockwaves_always_damage_bombs && !(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
+			if (!Shockwaves_always_damage_bombs && !(target_wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
 				continue;
 		}
 
@@ -323,8 +336,6 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		if ( weapon_area_calc_damage(objp, &sw->pos, sw->inner_radius, sw->outer_radius, sw->blast, sw->damage, &blast, &damage, sw->radius) == -1 ){
 			continue;
 		}
-
-		weapon_info* wip = NULL;
 		
 		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage 
 		// but only add non-ships to the list if the Game_settings flag is set
@@ -335,7 +346,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		switch(objp->type) {
 		case OBJ_SHIP:
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
-			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
+			if ( wip && (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
@@ -346,8 +357,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
 		case OBJ_WEAPON:
-			wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->armor_type_idx >= 0)
+			if (wip && wip->armor_type_idx >= 0)
 				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance), 1.0f, false);
 
 			objp->hull_strength -= damage;
@@ -724,6 +734,8 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->pof_name[ 0 ] = '\0';
 
 	sci->inner_rad = sci->outer_rad = sci->damage = sci->blast = sci->speed = 0.0f;
+
+	sci->radius_curve_idx = -1;
 
 	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
 	sci->rot_defined = false;

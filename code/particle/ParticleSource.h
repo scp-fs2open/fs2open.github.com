@@ -96,7 +96,7 @@ class SourceOrigin {
 	 *
 	 * @param info The particle_info this should be applied to
 	 */
-	void applyToParticleInfo(particle_info& info) const;
+	void applyToParticleInfo(particle_info& info, bool allowRelative = false) const;
 
 	/**
 	 * @brief Gets the velocity of the origin host

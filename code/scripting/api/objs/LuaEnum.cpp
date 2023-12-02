@@ -39,7 +39,7 @@ ADE_INDEXER(l_LuaEnum, "number Index", "Array of enum items", "string", "enum it
 		return ADE_RETURN_NIL;
 
 	idx--; //Convert from lua 1 based index
-	if ((idx < 0) || (idx >= (int)lua_enum.getEnum()->list.size()))
+	if ((idx < 0) || (idx >= static_cast<int>(lua_enum.getEnum()->list.size())))
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "s", lua_enum.getEnum()->list[idx].c_str());
@@ -51,7 +51,7 @@ ADE_FUNC(__len, l_LuaEnum, nullptr, "The number of Lua enum items", "number", "T
 	if (!ade_get_args(L, "o", l_LuaEnum.Get(&lua_enum)))
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", (int)lua_enum.getEnum()->list.size());
+	return ade_set_args(L, "i", static_cast<int>(lua_enum.getEnum()->list.size()));
 }
 
 ADE_FUNC(addEnumItem,
@@ -66,7 +66,7 @@ ADE_FUNC(addEnumItem,
 	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum) , &item_name))
 		return ADE_RETURN_FALSE;
 
-	for (int i = 0; i < (int)lua_enum.getEnum()->list.size(); i++) {
+	for (size_t i = 0; i < lua_enum.getEnum()->list.size(); i++) {
 		if (!stricmp(item_name, lua_enum.getEnum()->list[i].c_str())) {
 			return ADE_RETURN_FALSE;
 		}
@@ -75,6 +75,32 @@ ADE_FUNC(addEnumItem,
 	lua_enum.getEnum()->list.push_back(item_name);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(removeEnumItem,
+	l_LuaEnum,
+	"string itemname",
+	"Removes an enum item with the given string.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	lua_enum_h lua_enum;
+	const char* item_name;
+	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum), &item_name))
+		return ADE_RETURN_FALSE;
+
+	size_t i;
+
+	for (i = 0; i < lua_enum.getEnum()->list.size(); i++) {
+		if (!stricmp(item_name, lua_enum.getEnum()->list[i].c_str())) {
+			lua_enum.getEnum()->list.erase(lua_enum.getEnum()->list.begin() + i);
+			return ADE_RETURN_TRUE;
+		}
+	}
+
+	
+
+	return ADE_RETURN_FALSE;
 }
 
 } // namespace api

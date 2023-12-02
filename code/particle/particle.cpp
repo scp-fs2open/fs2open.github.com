@@ -518,8 +518,6 @@ namespace particle
 		GR_DEBUG_SCOPE("Render Particles");
 		TRACE_SCOPE(tracing::ParticlesRenderAll);
 
-		bool render_batch = false;
-
 		if (!Particles_enabled)
 			return;
 
@@ -527,21 +525,13 @@ namespace particle
 			return;
 
 		for (auto& part : Persistent_particles) {
-			if (render_particle(part.get())) {
-				render_batch = true;
-			}
+			render_particle(part.get());
 		}
 
 		for (auto& part : Particles) {
-			if (render_particle(&part)) {
-				render_batch = true;
-			}
+			render_particle(&part);
 		}
 
-		if (render_batch)
-		{
-			batching_render_all();
-		}
 	}
 
 	//============================================================================

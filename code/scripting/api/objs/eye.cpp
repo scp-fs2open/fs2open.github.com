@@ -68,9 +68,26 @@ ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location (Local vector)", 
 	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].pnt));
 }
 
-ADE_FUNC(IsValid, l_Eyepoint, NULL, "Detect whether this handle is valid", "boolean", "true if valid false otherwise")
+ADE_FUNC(isValid, l_Eyepoint, nullptr, "Detect whether this handle is valid", "boolean", "true if valid false otherwise")
 {
-	eye_h *eh = NULL;
+	eye_h* eh = nullptr;
+	if (!ade_get_args(L, "o", l_Eyepoint.GetPtr(&eh))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", eh->IsValid());
+}
+
+ADE_FUNC_DEPRECATED(IsValid,
+	l_Eyepoint,
+	nullptr,
+	"Detect whether this handle is valid",
+	"boolean",
+	"true if valid false otherwise",
+	gameversion::version(24, 0),
+	"IsValid is named with the incorrect case. Use isValid instead.")
+{
+	eye_h *eh = nullptr;
 	if (!ade_get_args(L, "o", l_Eyepoint.GetPtr(&eh)))
 	{
 		return ADE_RETURN_FALSE;

@@ -74,6 +74,7 @@ int Splash_fade_in_time;
 int Splash_fade_out_time;
 bool Splash_logo_center;
 bool Use_tabled_strings_for_default_language;
+bool No_built_in_languages;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
@@ -147,6 +148,7 @@ std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
+bool Contrails_use_absolute_speed;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -302,6 +304,12 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
 			mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+		}
+
+		if (optional_string("$Don't initalize built-in languages by default:")) {
+			stuff_boolean(&No_built_in_languages);
+
+			mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages ? "yes" : "no"));
 		}
 
 		if (optional_string("$Don't pre-empt training message voice:")) {
@@ -1352,6 +1360,10 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
 		}
 
+		if (optional_string("$Contrails use absolute speed:")) {
+			stuff_boolean(&Contrails_use_absolute_speed);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1449,6 +1461,7 @@ void mod_table_reset()
 	Splash_fade_out_time = 0;
 	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
+	No_built_in_languages = false;
 	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "";
 	Enable_scripts_in_fred = false;
@@ -1531,6 +1544,7 @@ void mod_table_reset()
 	Randomize_particle_rotation = false;
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;
+	Contrails_use_absolute_speed = false;
 }
 
 void mod_table_set_version_flags()

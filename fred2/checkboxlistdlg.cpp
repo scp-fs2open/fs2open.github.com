@@ -46,6 +46,10 @@ BOOL CheckBoxListDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	// fix overlapping checkboxes issue
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_checklist.SetFont(GetFont());
+
 	if (!m_offline_options.empty())
 		SetOptions(m_offline_options);
 

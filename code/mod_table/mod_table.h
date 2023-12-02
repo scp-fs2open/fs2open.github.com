@@ -81,6 +81,7 @@ extern int Splash_fade_in_time;
 extern int Splash_fade_out_time;
 extern bool Splash_logo_center;
 extern bool Use_tabled_strings_for_default_language;
+extern bool No_built_in_languages;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
@@ -156,6 +157,7 @@ extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
+extern bool Contrails_use_absolute_speed;
 
 void mod_table_init();
 void mod_table_post_process();

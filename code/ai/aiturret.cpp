@@ -786,7 +786,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	//	weapon_travel_dist=wip->lssm_lock_range;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
-	bool weapon_system_ok = (ship_get_subsystem_strength(&Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS) > 0);
+	bool weapon_system_ok = !ship_subsystems_blown(&Ships[Objects[turret_parent_objnum].instance], SUBSYSTEM_WEAPONS);
 
 	// Initialize eeo struct.
 	eeo.turret_parent_objnum = turret_parent_objnum;
@@ -1368,7 +1368,8 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 			set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
 		else {
 			vec3d shoot_vec;
-			if (physics_lead_ballistic_trajectory(&gun_pos, &enemy_point, &target_vel, wip->max_speed, &The_mission.gravity, &shoot_vec)) {
+			vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+			if (physics_lead_ballistic_trajectory(&gun_pos, &enemy_point, &target_vel, wip->max_speed, &gravity_vec, &shoot_vec)) {
 				*predicted_enemy_pos = gun_pos + shoot_vec * 1000.0f;
 			} else {
 				if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
@@ -1561,7 +1562,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	if(stride <= 0){
 		stride = 1;
 	}
-	int offset = Random::next(aifft_list_size % stride);
+	int offset = Random::next((aifft_list_size % stride) + 1);	// returns an offset in [0, size % stride] inclusive
 	int idx;
 	float dot_fov_modifier = 0.0f;
 

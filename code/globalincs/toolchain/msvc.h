@@ -39,7 +39,7 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (false)
+#	define Assertion(expr, msg, ...)  do { ASSUME(expr); (void)sizeof(expr); } while (false)
 #else
 #	define Assertion(expr, msg, ...)                                    \
 		do {                                                            \

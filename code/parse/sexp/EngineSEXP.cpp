@@ -5,7 +5,6 @@
 #include "parse/sexp.h"
 
 namespace sexp {
-
 EngineSEXPFactory::ArgumentListBuilder::ArgumentListBuilder(EngineSEXPFactory* parent) : _parent(parent) {}
 EngineSEXPFactory::ArgumentListBuilder& EngineSEXPFactory::ArgumentListBuilder::arg(int type, SCP_string help_text)
 {
@@ -20,11 +19,11 @@ EngineSEXPFactory::ArgumentListBuilder& EngineSEXPFactory::ArgumentListBuilder::
 {
 	Assertion(std::find_if(_parent->_arguments.begin(),
 				  _parent->_arguments.end(),
-				  [](const argument& arg) { return arg.optional_marker; }) == _parent->_arguments.end(),
+				  EngineSEXPFactory::isArgumentOptional) == _parent->_arguments.end(),
 		"Optional marker was already added!");
 	Assertion(std::find_if(_parent->_arguments.begin(),
 				  _parent->_arguments.end(),
-				  [](const argument& arg) { return arg.varargs_marker; }) == _parent->_arguments.end(),
+				  EngineSEXPFactory::isArgumentVarargsMarker) == _parent->_arguments.end(),
 		"Adding optional arguments after varags specifier is not allowed!");
 
 	argument arg;
@@ -37,7 +36,7 @@ EngineSEXPFactory::ArgumentListBuilder& EngineSEXPFactory::ArgumentListBuilder::
 {
 	Assertion(std::find_if(_parent->_arguments.begin(),
 				  _parent->_arguments.end(),
-				  [](const argument& arg) { return arg.varargs_marker; }) == _parent->_arguments.end(),
+				  EngineSEXPFactory::isArgumentVarargsMarker) == _parent->_arguments.end(),
 		"Varargs marker was already added!");
 
 	argument arg;
@@ -169,6 +168,14 @@ EngineSEXPFactory& EngineSEXPFactory::action(EngineSexpAction act)
 {
 	_action = std::move(act);
 	return *this;
+}
+bool EngineSEXPFactory::isArgumentOptional(const EngineSEXPFactory::argument& arg)
+{
+	return arg.optional_marker;
+}
+bool EngineSEXPFactory::isArgumentVarargsMarker(const EngineSEXPFactory::argument& arg)
+{
+	return arg.varargs_marker;
 }
 EngineSEXP::EngineSEXP(const SCP_string& name) : DynamicSEXP(name) {}
 

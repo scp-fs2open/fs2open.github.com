@@ -1751,11 +1751,6 @@ void model_render_glowpoint_bitmap(int point_num, const vec3d *pos, const matrix
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * MAX(d,0.0f));
 
 				if((gpo && gpo->glow_bitmap_override)?(gpo->glow_bitmap > -1):(bank->glow_bitmap > -1)) {
-					int gpflags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE;
-
-					if (use_depth_buffer)
-						gpflags |= TMAP_FLAG_SOFT_QUAD;
-
 					int bitmap_id = (gpo && gpo->glow_bitmap_override) ? gpo->glow_bitmap : bank->glow_bitmap;
 
 					if ( use_depth_buffer ) {

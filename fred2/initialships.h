@@ -7,8 +7,7 @@
  *
 */
 
-// InitialShips.h : header file
-//
+#include "shipchecklistbox.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // InitialShips dialog
@@ -28,7 +27,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(InitialShips)
 	enum { IDD = IDD_INITIAL_SHIPS };
-	CCheckListBox	m_initial_list;
+	ShipCheckListBox	m_initial_list;
 	//}}AFX_DATA
 
 

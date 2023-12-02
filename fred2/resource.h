@@ -32,6 +32,7 @@
 #define IDD_WEAPON_EDITOR               177
 #define IDD_SHIP_MARKINGS               178
 #define IDD_MISSION_GOALS               179
+#define IDD_MISSION_CUTSCENES           180
 #define IDD_SHIP_SELECT                 181
 #define IDD_GRID                        182
 #define IDR_MENU_SHIP_POPUP             183
@@ -57,7 +58,7 @@
 #define IDD_WAYPOINT_PATH_EDITOR        210
 #define IDR_WAYPOINT_PATH_EDIT_MENU     211
 #define IDD_WING_CREATE                 212
-#define IDD_JUMPNODE_EDITOR				213
+#define IDD_JUMPNODE_EDITOR             213
 #define IDD_INITIAL_STATUS              214
 #define IDD_ASTEROID_EDITOR             215
 #define IDD_CAMPAIGN                    216
@@ -68,7 +69,7 @@
 #define IDD_BRIEFING_EDITOR             221
 #define IDD_IGNORE_ORDERS               222
 #define IDD_DEBRIEFING_EDITOR           223
-#define IDR_JUMPNODE_EDIT_MENU     224
+#define IDR_JUMPNODE_EDIT_MENU          224
 #define IDB_OPERATOR                    226
 #define IDB_DATA                        227
 #define IDB_ROOT                        228
@@ -133,6 +134,7 @@
 #define IDD_EDIT_CONTAINER_NAME         324
 #define IDD_MUSIC_PLAYER                330
 #define IDD_VOLUMETRICS                 332
+#define IDD_EDIT_CUSTOM_STRINGS         333
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -451,7 +453,11 @@
 #define IDC_SPIN_GRID_SIZE              1164
 #define IDC_STATIC_GRID_SIZE            1165
 #define IDC_PREF_STARFIELD              1167
+#define IDC_CUTSCENE_NAME               1168
 #define IDC_GOALS_TREE                  1169
+#define IDC_CUTSCENES_TREE              1170
+#define IDC_DISPLAY_CUTSCENE_TYPES_DROP 1171
+#define IDC_CUTSCENE_TYPE_DROP          1172
 #define IDC_DISPLAY_GOAL_TYPES_DROP     1173
 #define IDC_BUTTON_NEXT_MUSIC           1174
 #define IDC_BUTTON_PREV_MUSIC           1175
@@ -463,6 +469,7 @@
 #define IDC_GOAL_TYPE_DROP              1181
 #define IDC_BUTTON_PLAY_MUSIC           1182
 #define IDC_BUTTON_NEW_GOAL             1183
+#define IDC_BUTTON_NEW_CUTSCENE         1183
 #define IDC_BUTTON_VERIFY               1184
 #define IDC_SHIP_TEAM                   1185
 #define IDC_DESIGNER                    1186
@@ -502,6 +509,7 @@
 #define IDC_ASCT2_CLASS_COMBO1          1194
 #define IDC_SHIP_VARIABLES_LIST         1194
 #define IDC_ASCT2_VARIABLES_COMBO1      1195
+#define IDC_CUTSCENE_HELP_BOX           1196
 #define IDC_NEW_WING                    1197
 #define IDC_DELETE_WING                 1197
 #define IDC_BUTTON2                     1198
@@ -552,6 +560,7 @@
 #define IDC_YES_MESSAGE_LIST            1208
 #define IDC_ALT_CLASS_LIST              1208
 #define IDC_LIGHT_PROFILE               1208
+#define IDC_OPEN_CUSTOM_STRINGS         1208
 #define IDC_COMMAND_SENDER              1209
 #define IDC_COMMAND_PERSONA             1210
 #define IDC_FILTER_WAYPOINTS            1211
@@ -773,6 +782,8 @@
 #define IDC_SUN1_B                      1345
 #define IDC_ABBREV_COMMAND_BRIEFING     1345
 #define IDC_STARTING_WING_NAME_2        1345
+#define IDC_CUSTOM_KEY2                 1345
+#define IDC_CUSTOM_STRING               1345
 #define IDC_SUBSYS                      1346
 #define IDC_SPECIAL_SHOCK_SPEED         1346
 #define IDC_SBITMAP_B                   1346
@@ -914,6 +925,7 @@
 #define IDC_GUARDIAN                    1474
 #define IDC_SCANNABLE                   1475
 #define IDC_RED_ALERT                   1476
+#define IDC_PAD_TOGGLE                  1476
 #define IDC_VAPORIZE                    1476
 #define IDC_SCRAMBLE                    1477
 #define IDC_FRIENDLY_STEALTH_INVISIBLE  1477
@@ -1276,6 +1288,7 @@
 #define ID_EDITORS_SOUND                32802
 #define ID_EDITORS_TERRAIN              32803
 #define ID_EDIT_DUPLICATE               32804
+#define ID_EDITORS_CUTSCENES            32805
 #define ID_VIEW_ELEVATIONS              32806
 #define ID_VIEW_WAYPOINTS               32807
 #define ID_VIEW_GRID                    32808

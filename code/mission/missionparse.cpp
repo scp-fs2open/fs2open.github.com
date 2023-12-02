@@ -908,6 +908,12 @@ void parse_player_info2(mission *pm)
 		if ( optional_string("$Starting Shipname:") )
 			stuff_string( Player_start_shipname, F_NAME, NAME_LENGTH );
 
+		if (optional_string("+Do Not Validate Loadout")) {
+			ptr->do_not_validate = true;
+		} else {
+			ptr->do_not_validate = false;
+		}
+
 		required_string("$Ship Choices:");
 		stuff_loadout_list(list, MISSION_LOADOUT_SHIP_LIST);
 
@@ -1047,25 +1053,31 @@ void parse_cutscenes(mission *pm)
 
 		while (!optional_string("#end"))
 		{
-			// this list should correspond to the MOVIE_* #defines
-			scene.type = optional_string_one_of(8,
+			// this list should correspond to the MOVIE_* enums
+			scene.type = optional_string_one_of(7,
 				"$Fiction Viewer Cutscene:",
 				"$Command Brief Cutscene:",
 				"$Briefing Cutscene:",
 				"$Pre-game Cutscene:",
 				"$Debriefing Cutscene:",
 				"$Post-debriefing Cutscene:",
-				"$Campaign End Cutscene:",
-				// this is not a #define, but a synonym for one
-				"$Post-briefing Cutscene:");
+				"$Campaign End Cutscene:");
 
-			// no more cutscenes specified?
-			if (scene.type < 0)
-				break;
+			// Didn't find one of the valid cutscene types
+			if (scene.type < 0) {
 
-			// post-briefing is the same as pre-game
-			if (scene.type == 7)
-				scene.type = MOVIE_PRE_GAME;
+				// $Post-briefing cutscene was added as an alias of $Pre-game cutscene when
+				// this section was only editable by hand. Now that there's a dialog that explains
+				// what each option is, we can drop the alias and quietly convert it if it's found
+				// for backwards compatibility. Log print just in case.
+				if (optional_string("$Post-briefing Cutscene:")) {
+					scene.type = MOVIE_PRE_GAME;
+					mprintf(("Found cutscene defined as '$Post-briefing Cutscene' and converted it to '$Pre-game cutscene'\n"));
+				} else {
+					// no more cutscenes specified?
+					break;
+				}
+			}
 
 			// get the cutscene file
 			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
@@ -6099,6 +6111,27 @@ void parse_custom_data(mission* pm)
 
 		parse_string_map(pm->custom_data, "$end_data_map", "+Val:");
 	}
+
+	if (optional_string("$begin_custom_strings")) {
+		while (optional_string("$Name:")) {
+			mission_custom_string cs;
+
+			// The name of the string
+			stuff_string(cs.name, F_NAME);
+
+			// Arbitrary string value used for grouping strings together
+			required_string("+Value:");
+			stuff_string(cs.value, F_NAME);
+
+			// The string text itself
+			required_string("+String:");
+			stuff_string(cs.text, F_MULTITEXT);
+
+			pm->custom_strings.push_back(cs);
+		}
+
+		required_string("$end_custom_strings");
+	}
 }
 
 void apply_default_custom_data(mission* pm)
@@ -6625,6 +6658,7 @@ void mission::Reset()
 	volumetrics.reset();
 
 	custom_data.clear();
+	custom_strings.clear();
 }
 
 /**
@@ -8837,6 +8871,10 @@ bool check_for_23_3_data()
 		return true;
 	}
 
+	if (The_mission.custom_strings.size() > 0) {
+		return true;
+	}
+
 	for (const auto& so : list_range(&Ship_obj_list))
 	{
 		auto shipp = &Ships[Objects[so->objnum].instance];
@@ -8850,6 +8888,12 @@ bool check_for_23_3_data()
 		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpout_params_index];
 		if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
 			return true;
+	}
+
+	for (int t = 0; t < Num_teams; t++) {
+		if (Team_data[t].do_not_validate) {
+			return true;
+		}
 	}
 
 	return false;

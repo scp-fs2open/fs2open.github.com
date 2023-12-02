@@ -87,6 +87,23 @@ int Training_bind_warning = -1;  // Missiontime at which we last gave warning
 int Training_message_visible;
 training_message_queue Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX];
 
+int	Training_context = 0;
+int	Training_context_speed_set;
+int	Training_context_speed_min;
+int	Training_context_speed_max;
+TIMESTAMP	Training_context_speed_timestamp;
+waypoint_list *Training_context_path;
+int Training_context_goal_waypoint;
+int Training_context_at_waypoint;
+float	Training_context_distance;
+
+int Players_target = UNINITIALIZED;
+int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
+ship_subsys *Players_targeted_subsys;
+TIMESTAMP Players_target_timestamp;
+TIMESTAMP Players_mlocked_timestamp;
+
+
 // coordinates for training messages
 int Training_message_window_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ 174, 40 },
@@ -140,6 +157,11 @@ void HudGaugeDirectives::initTextHeight(int h)
 void HudGaugeDirectives::initMaxLineWidth(int w)
 {
 	max_line_width = w;
+}
+
+void HudGaugeDirectives::initKeyLineXOffset(int offset)
+{
+	key_line_x_offset = offset;
 }
 
 void HudGaugeDirectives::initBottomBgOffset(int offset)
@@ -250,11 +272,14 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
+		int line_x_offset = 0;
+
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
 			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str());  // remap keys
 			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
+			line_x_offset = key_line_x_offset;
 		} else {
 			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
@@ -269,15 +294,15 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 			}
 
 			switch (mission_get_event_status(z)) {
-			case EVENT_CURRENT:
+			case EventStatus::CURRENT:
 				c = &Color_bright_white;
 				break;
 
-			case EVENT_FAILED:
+			case EventStatus::FAILED:
 				c = &Color_bright_red;
 				break;
 
-			case EVENT_SATISFIED:
+			case EventStatus::SATISFIED:
 				t = Mission_events[z].satisfied_time;
 				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name.c_str());
 				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
@@ -289,6 +314,10 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 				} else {
 					c = &Color_bright_blue;
 				}
+				break;
+
+			default:
+				// stick with Color_normal
 				break;
 			}
 		}
@@ -320,7 +349,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		// blit the text
 		gr_set_color_fast(c);
 		
-		renderString(x, y, EG_OBJ1 + i, buf);
+		renderString(x + line_x_offset, y, EG_OBJ1 + i, buf);
 		
 		Training_obj_num_display_lines++;
 
@@ -365,6 +394,17 @@ void training_mission_init()
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
 	}
+
+	Training_context = 0;
+	Training_context_speed_set = 0;
+	Training_context_speed_timestamp = TIMESTAMP::invalid();
+	Training_context_path = nullptr;
+
+	Players_target = UNINITIALIZED;
+	Players_mlocked = UNINITIALIZED;
+	Players_targeted_subsys = nullptr;
+	Players_target_timestamp = TIMESTAMP::invalid();
+	Players_mlocked_timestamp = TIMESTAMP::invalid();
 }
 
 int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
@@ -382,7 +422,7 @@ int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
 #define MIN_FAILED_TIME			7
 void sort_training_objectives()
 {
-	int i, event_status, offset;
+	int i, offset;
 
 	// start by sorting on born on date
 	insertion_sort(Training_obj_lines, Training_obj_num_lines, comp_training_lines_by_born_on_date);
@@ -399,7 +439,7 @@ void sort_training_objectives()
 	int num_offset_events = 0;
 	for (i=0; i<offset; i++) {
 		int event_num = TRAINING_OBJ_LINES_MASK(i);
-		event_status = mission_get_event_status(event_num);
+		auto event_status = mission_get_event_status(event_num);
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
 		if(MULTI_TEAM && (Net_player != NULL)){
@@ -408,10 +448,10 @@ void sort_training_objectives()
 			}
 		}
 
-		if (event_status == EVENT_CURRENT)  {
+		if (event_status == EventStatus::CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			num_offset_events++;
-		} else if (event_status ==	EVENT_SATISFIED) {
+		} else if (event_status == EventStatus::SATISFIED) {
 			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
@@ -419,7 +459,7 @@ void sort_training_objectives()
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
-		} else if (event_status ==	EVENT_FAILED) {
+		} else if (event_status == EventStatus::FAILED) {
 			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
@@ -438,7 +478,7 @@ void sort_training_objectives()
 	// go through lines offset to Training_obj_num_lines to check which should be shown, since some will need to be bumped
 	for (i=offset; i<Training_obj_num_lines; i++) {
 		int event_num = TRAINING_OBJ_LINES_MASK(i);
-		event_status = mission_get_event_status(event_num);
+		auto event_status = mission_get_event_status(event_num);
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
 		if(MULTI_TEAM && (Net_player != NULL)){
@@ -448,16 +488,16 @@ void sort_training_objectives()
 			}
 		}
 
-		if (event_status == EVENT_CURRENT)  {
+		if (event_status == EventStatus::CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
-		} else if (event_status ==	EVENT_SATISFIED) {
+		} else if (event_status == EventStatus::SATISFIED) {
 			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
-		} else if (event_status ==	EVENT_FAILED) {
+		} else if (event_status == EventStatus::FAILED) {
 			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
@@ -513,12 +553,12 @@ void sort_training_objectives()
  */
 void training_check_objectives()
 {
-	int i, event_idx, event_status;
+	int i, event_idx;
 
 	Training_obj_num_lines = 0;
 	for (event_idx=0; event_idx<(int)Mission_events.size(); event_idx++) {
-		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && !Mission_events[event_idx].objective_text.empty() && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
+		auto event_status = mission_get_event_status(event_idx);
+		if ( (event_status != EventStatus::UNBORN) && !Mission_events[event_idx].objective_text.empty() && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
 			if (!Training_failure || !strnicmp(Mission_events[event_idx].name.c_str(), XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
@@ -551,7 +591,7 @@ void training_check_objectives()
 
 				// if there is a keypress message with directive, process that too.
 				if (!Mission_events[event_idx].objective_key_text.empty()) {
-					if (event_status == EVENT_CURRENT) {
+					if (event_status == EventStatus::CURRENT) {
 
 						// not in objective list, need to add it
 						if (i == Training_obj_num_lines) {

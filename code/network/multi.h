@@ -735,7 +735,7 @@ typedef struct network_buffer {
 #define NETINFO_FLAG_ACCEPT_OBSERVER		(1<<18)		// accepted as observer
 #define NETINFO_FLAG_ACCEPT_CLIENT			(1<<19)		// accepted as client
 #define NETINFO_FLAG_WARPING_OUT			(1<<20)		// clients keep track of this for themselves to know if they should be leaving
-#define NETINFO_FLAG_HAS_CD					(1<<21)		// the player has a CD in the drive
+#define NETINFO_FLAG_UNUSED					(1<<21)		// Used to be a flag for if the player had a CD in the drive
 #define NETINFO_FLAG_RELIABLE_CONNECTED		(1<<22)		// reliable socket is now active
 #define NETINFO_FLAG_MT_GET_FAILED			(1<<23)		// set during MT stats update process indicating we didn't properly get his stats
 #define NETINFO_FLAG_MT_SEND_FAILED			(1<<24)		// set during MT stats update process indicating we didn't properly send his stats
@@ -893,7 +893,6 @@ extern int Multi_button_info_id;										// identifier of the stored button inf
 extern active_game* Active_game_head;								// linked list of active games displayed on Join screen
 extern int Active_game_count;											// for interface screens as well
 extern CFILE* Multi_chat_stream;										// for streaming multiplayer chat strings to a file
-extern int Multi_has_cd;												// if this machine has a cd or not (call multi_common_verify_cd() to set this)
 extern int Multi_num_players_at_start;								// the # of players present (kept track of only on the server) at the very start of the mission
 extern short Multi_id_num;												// for assigning player id #'s
 

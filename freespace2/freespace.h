@@ -182,9 +182,6 @@ void game_shudder_apply(int time, float intensity, bool perpetual = false, bool 
 
 //===================================================================
 
-// make sure a CD is in the drive before continuing (returns 1 to continue, otherwise 0).
-int find_freespace_cd(char *volume_name=NULL);
-
 // Used to tell the player that a feature is disabled by build settings
 void game_feature_disabled_popup();
 

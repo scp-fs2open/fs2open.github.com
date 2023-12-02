@@ -36,6 +36,8 @@ class EngineSEXPFactory {
 		bool optional_marker = false;
 		bool varargs_marker = false;
 	};
+	static bool isArgumentOptional(const argument& arg);
+	static bool isArgumentVarargsMarker(const argument& arg);
 
 	SCP_vector<argument> _arguments;
 

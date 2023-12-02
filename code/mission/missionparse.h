@@ -98,13 +98,20 @@ typedef struct support_ship_info {
 } support_ship_info;
 
 // movie type defines
-#define	MOVIE_PRE_FICTION		0
-#define	MOVIE_PRE_CMD_BRIEF		1
-#define	MOVIE_PRE_BRIEF			2
-#define	MOVIE_PRE_GAME			3
-#define	MOVIE_PRE_DEBRIEF		4
-#define	MOVIE_POST_DEBRIEF		5
-#define	MOVIE_END_CAMPAIGN		6
+// If you add one here, you must also add a description to missioncutscenedlg.cpp for FRED
+// and update the dropdown list in fred.rc for the mission cutscene dialog editor.
+enum : int {
+	MOVIE_PRE_FICTION,
+	MOVIE_PRE_CMD_BRIEF,
+	MOVIE_PRE_BRIEF,
+	MOVIE_PRE_GAME,
+	MOVIE_PRE_DEBRIEF,
+	MOVIE_POST_DEBRIEF,
+	MOVIE_END_CAMPAIGN,
+
+	// Must always be at the end of the list
+	Num_movie_types
+};
 
 // defines a mission cutscene.
 typedef struct mission_cutscene {
@@ -118,6 +125,12 @@ typedef struct mission_default_custom_data {
 	SCP_string value;
 	SCP_string description;
 } mission_default_custom_data;
+
+typedef struct mission_custom_string {
+	SCP_string name;
+	SCP_string value;
+	SCP_string text;
+} mission_custom_string;
 
 // descriptions of flags for FRED
 template <class T>
@@ -177,6 +190,8 @@ typedef struct mission {
 	SCP_vector<mission_cutscene> cutscenes;
 
 	SCP_map<SCP_string, SCP_string> custom_data;
+
+	SCP_vector<mission_custom_string> custom_strings;
 
 	void Reset( );
 
@@ -426,6 +441,7 @@ typedef struct team_data {
 
 	// weapons
 	int		num_weapon_choices;
+	bool    do_not_validate;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
 	int		weaponry_count[MAX_WEAPON_TYPES];
 	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];

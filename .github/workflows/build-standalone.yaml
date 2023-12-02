@@ -24,12 +24,6 @@ jobs:
       name: Checkout
       with:
         submodules: true
-    - name: Prepare Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
-      with:
-        vulkan-query-version: 1.3.204.0
-        vulkan-components: Vulkan-Headers, Vulkan-Loader
-        vulkan-use-cache: true
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
 

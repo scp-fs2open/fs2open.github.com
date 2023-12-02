@@ -104,6 +104,7 @@ protected:
 	afx_msg void OnCustomWingNames();
 	afx_msg void OnSoundEnvironment();
 	afx_msg void OnCustomData();
+	afx_msg void OnCustomStrings();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

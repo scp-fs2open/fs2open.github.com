@@ -375,16 +375,4 @@ void obj_render_queue_all()
 
 	gr_clear_states();
 
-	gr_reset_lighting();
-
-	batching_render_all();
-
-	gr_zbias(0);
-	gr_zbuffer_set(ZBUFFER_TYPE_READ);
-	gr_set_cull(0);
-	gr_set_fill_mode(GR_FILL_MODE_SOLID);
-
-	gr_clear_states();
-
-	gr_reset_lighting();
 }

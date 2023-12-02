@@ -78,7 +78,7 @@ blip	Blips[MAX_BLIPS];								// blips pool
 int	N_blips;											// next blip index to take from pool
 
 float	Radar_bright_range;					// range at which we start dimming the radar blips
-int		Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
+TIMESTAMP	Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
 
 extern int radar_iff_color[5][2][4];
 
@@ -264,7 +264,7 @@ void radar_plot_object( object *objp )
 	// determine the range within which the radar blip is bright
 	if (timestamp_elapsed(Radar_calc_bright_dist_timer))
 	{
-		Radar_calc_bright_dist_timer = timestamp(1000);
+		Radar_calc_bright_dist_timer = _timestamp(1000);
 		Radar_bright_range = player_farthest_weapon_range();
 		if (Radar_bright_range <= 0)
 			Radar_bright_range = 1500.0f;
@@ -280,6 +280,7 @@ void radar_plot_object( object *objp )
 	}
 
 	b = &Blips[N_blips];
+	b->rad = 0;
 	b->flags = 0;
 
 	// bright if within range
@@ -300,12 +301,14 @@ void radar_plot_object( object *objp )
 		list_append(&Blip_dim_list[blip_type], b);
 
 	b->position = pos;
-	b->dist = dist;
-	b->objp = objp;
 	b->radar_image_2d = -1;
 	b->radar_color_image_2d = -1;
 	b->radar_image_size = -1;
 	b->radar_projection_size = 1.0f;
+	b->last_update = TIMESTAMP::never();
+	b->dist = dist;
+	b->objp = objp;
+
 
 	// see if blip should be drawn distorted
 	// also determine if alternate image was defined for this ship
@@ -353,7 +356,7 @@ void radar_mission_init()
 		}
 	}
 
-	Radar_calc_bright_dist_timer = timestamp(0);
+	Radar_calc_bright_dist_timer = TIMESTAMP::immediate();
 }
 
 void radar_null_nblips()
@@ -437,15 +440,15 @@ void HudGaugeRadar::initialize()
 {
 	int i;
 
-	Radar_death_timer			= 0;
-	Radar_static_playing		= 0;
-	Radar_static_next			= 0;
-	Radar_avail_prev_frame	= 1;
-	Radar_calc_bright_dist_timer = timestamp(0);
+	Radar_death_timer			= TIMESTAMP::never();
+	Radar_static_playing		= false;
+	Radar_static_next			= TIMESTAMP::never();
+	Radar_avail_prev_frame		= true;
+	Radar_calc_bright_dist_timer = TIMESTAMP::immediate();
 
 	for ( i=0; i<NUM_FLICKER_TIMERS; i++ ) {
-		Radar_flicker_timer[i]=timestamp(0);
-		Radar_flicker_on[i]=0;
+		Radar_flicker_timer[i]=TIMESTAMP::immediate();
+		Radar_flicker_on[i]=false;
 	}
 
 	HudGauge::initialize();

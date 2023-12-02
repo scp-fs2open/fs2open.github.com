@@ -244,7 +244,7 @@ void game_show_framerate();			// draws framerate in lower right corner
 struct big_expl_flash {
 	float max_flash_intensity;	// max intensity
 	float cur_flash_intensity;	// cur intensity
-	int	flash_start;		// start time
+	TIMESTAMP	flash_start;		// start time
 };
 
 #define FRAME_FILTER 16
@@ -525,7 +525,7 @@ float Game_flash_red = 0.0f;
 float Game_flash_green = 0.0f;
 float Game_flash_blue = 0.0f;
 float Sun_spot = 0.0f;
-big_expl_flash Big_expl_flash = {0.0f, 0.0f, 0};
+big_expl_flash Big_expl_flash = {0.0f, 0.0f, TIMESTAMP::invalid()};
 
 // game shudder stuff (in ms)
 bool Game_shudder_perpetual = false;
@@ -565,7 +565,7 @@ void game_flash_reset()
 	Sun_spot = 0.0f;
 	Big_expl_flash.max_flash_intensity = 0.0f;
 	Big_expl_flash.cur_flash_intensity = 0.0f;
-	Big_expl_flash.flash_start = 0;
+	Big_expl_flash.flash_start = TIMESTAMP::invalid();
 }
 
 extern float Framerate;
@@ -614,7 +614,7 @@ void big_explosion_flash(float flash)
 {
 	CLAMP(flash, 0.0f, 1.0f);
 
-	Big_expl_flash.flash_start = timestamp(1);
+	Big_expl_flash.flash_start = TIMESTAMP::immediate();
 	Big_expl_flash.max_flash_intensity = flash;
 	Big_expl_flash.cur_flash_intensity = 0.0f;
 }
@@ -788,18 +788,23 @@ static void game_flash_diminish(float frametime)
 	} 
 
 	// update big_explosion_cur_flash
+	if (Big_expl_flash.flash_start.isValid()) {
 #define	TIME_UP		1500
 #define	TIME_DOWN	2500
-	int duration = TIME_UP + TIME_DOWN;
-	int time = timestamp_until(Big_expl_flash.flash_start);
-	if (time > -duration) {
-		time = -time;
-		if (time < TIME_UP) {
-			Big_expl_flash.cur_flash_intensity = Big_expl_flash.max_flash_intensity * time / (float) TIME_UP;
-		} else {
-			time -= TIME_UP;
-			Big_expl_flash.cur_flash_intensity = Big_expl_flash.max_flash_intensity * ((float) TIME_DOWN - time) / (float) TIME_DOWN;
+		int duration = TIME_UP + TIME_DOWN;
+		int time = timestamp_until(Big_expl_flash.flash_start);
+		if (time > -duration) {
+			time = -time;
+			if (time < TIME_UP) {
+				Big_expl_flash.cur_flash_intensity = Big_expl_flash.max_flash_intensity * time / (float)TIME_UP;
+			}
+			else {
+				time -= TIME_UP;
+				Big_expl_flash.cur_flash_intensity = Big_expl_flash.max_flash_intensity * ((float)TIME_DOWN - time) / (float)TIME_DOWN;
+			}
 		}
+	} else {
+		Big_expl_flash.cur_flash_intensity = 0.0f;
 	}
 	
 	if ( Use_palette_flash )	{
@@ -2510,7 +2515,7 @@ int tst_bitmap = -1;
 float tst_x, tst_y;
 float tst_offset, tst_offset_total;
 int tst_mode;
-int tst_stamp;
+TIMESTAMP tst_stamp;
 void game_tst_frame_pre()
 {
 	// start tst
@@ -2646,7 +2651,7 @@ void game_tst_frame()
 				switch(tst_mode){
 				case 0:
 					tst_mode = 1;
-					tst_stamp = timestamp(1000);
+					tst_stamp = _timestamp(1000);
 					tst_offset = fl_abs(tst_offset_total);
 					break;				
 
@@ -3818,7 +3823,7 @@ void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
 //100% blackness
 void game_reset_shade_frame()
 {
-	Fade_type = FI_NONE;
+	Fade_type = FadeType::FI_NONE;
 	gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 }
 
@@ -3831,33 +3836,33 @@ void game_shade_frame(float  /*frametime*/)
 
 	GR_DEBUG_SCOPE("Shade frame");
 
-	if (Fade_type != FI_NONE) {
-		Assert(Fade_start_timestamp > 0);
-		Assert(Fade_end_timestamp > 0);
-		Assert(Fade_end_timestamp > Fade_start_timestamp);
+	if (Fade_type != FadeType::FI_NONE) {
+		Assertion(Fade_start_timestamp.isValid(), "When Fade_type is set, Fade_start_timestamp must be valid!");
+		Assertion(Fade_end_timestamp.isValid(), "When Fade_type is set, Fade_end_timestamp must be valid!");
+		Assertion(timestamp_compare(Fade_end_timestamp, Fade_start_timestamp) > 0, "Fade_end_timestamp must be after Fade_start_timestamp!");
 
-		if( timestamp() >= Fade_start_timestamp ) {
+		if (timestamp_elapsed(Fade_start_timestamp)) {
 			int startAlpha = 0;
 			int endAlpha = 0;
 
-			if (Fade_type == FI_FADEOUT) {
+			if (Fade_type == FadeType::FI_FADEOUT) {
 				endAlpha = 255;
-			} else if (Fade_type == FI_FADEIN) {
+			} else if (Fade_type == FadeType::FI_FADEIN) {
 				startAlpha = 255;
 			}
 
 			int alpha = 0;
 
-			if( timestamp() < Fade_end_timestamp ) {
-				int duration = (Fade_end_timestamp - Fade_start_timestamp);
-				int elapsed = (timestamp() - Fade_start_timestamp);
+			if (!timestamp_elapsed(Fade_end_timestamp)) {
+				int duration = timestamp_get_delta(Fade_start_timestamp, Fade_end_timestamp);
+				int elapsed = timestamp_since(Fade_start_timestamp);
 
 				alpha = fl2i( (float)startAlpha + (((float)endAlpha - (float)startAlpha) / (float)duration) * (float)elapsed );
 			} else {
 				//Fade finished
-				Fade_type = FI_NONE;
-				Fade_start_timestamp = 0;
-				Fade_end_timestamp = 0;
+				Fade_type = FadeType::FI_NONE;
+				Fade_start_timestamp = TIMESTAMP::invalid();
+				Fade_end_timestamp = TIMESTAMP::invalid();
 
 				alpha = endAlpha;
 			}
@@ -5602,7 +5607,7 @@ void game_leave_state( int old_state, int new_state )
 			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
 			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-		scripting::hooks::OnStateEndHook->run(script_param_list);
+		scripting::hooks::OnStateEndHook->run(std::move(script_param_list));
 	}
 }
 
@@ -6915,7 +6920,7 @@ void game_do_training_checks()
 		if ((s >= Training_context_speed_min) && (s <= Training_context_speed_max)) {
 			if (!Training_context_speed_set) {
 				Training_context_speed_set = 1;
-				Training_context_speed_timestamp = timestamp();
+				Training_context_speed_timestamp = _timestamp();
 			}
 
 		} else
@@ -6951,12 +6956,12 @@ void game_do_training_checks()
 	if ((Players_target == UNINITIALIZED) || (Player_ai->target_objnum != Players_target) || (Player_ai->targeted_subsys != Players_targeted_subsys)) {
 		Players_target = Player_ai->target_objnum;
 		Players_targeted_subsys = Player_ai->targeted_subsys;
-		Players_target_timestamp = timestamp();
+		Players_target_timestamp = _timestamp();
 	}
 	// following added by Sesquipedalian for is_missile_locked
 	if ((Players_mlocked == UNINITIALIZED) || (Player_ai->current_target_is_locked != Players_mlocked)) {
 		Players_mlocked = Player_ai->current_target_is_locked;
-		Players_mlocked_timestamp = timestamp();
+		Players_mlocked_timestamp = _timestamp();
 	}
 
 }

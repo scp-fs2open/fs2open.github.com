@@ -3200,10 +3200,6 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 		multi_make_fake_players(MAX_PLAYERS);
 #endif
 
-	} else if (dc_optional_string("givecd")) {
-		extern int Multi_has_cd;
-		Multi_has_cd = 1;
-
 	} else if (dc_optional_string("oo")) {
 		int new_flags;
 

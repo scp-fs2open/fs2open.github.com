@@ -974,7 +974,7 @@ void ship_select_blit_ship_info()
 	}
 	else
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, "Unknown", GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, XSTR("Unknown", 497), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -999,25 +999,25 @@ void ship_select_blit_ship_info()
 	{
 		int sum = fl2i(sip->rotation_time.xyz.x + sip->rotation_time.xyz.y);
 		if(sum <= 6)
-			strcpy_s(str, "Excellent");
+			strcpy_s(str, XSTR("Excellent", 1789));
 		else if(sum < 7)
-			strcpy_s(str, "High");
+			strcpy_s(str, XSTR("High", 1790));
 		else if(sum < 8)
-			strcpy_s(str, "Good");
+			strcpy_s(str, XSTR("Good", 1791));
 		else if(sum < 9)
-			strcpy_s(str, "Average");
+			strcpy_s(str, XSTR("Average", 1792));
 		else if(sum < 10)
-			strcpy_s(str, "Poor");
+			strcpy_s(str, XSTR("Poor", 1793));
 		else if(sum < 15)
-			strcpy_s(str, "Very Poor");
+			strcpy_s(str, XSTR("Very Poor", 1794));
 		else
-			strcpy_s(str, "Extremely Poor");
+			strcpy_s(str, XSTR("Extremely Poor", 1795));
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
 	else
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, "Unknown", GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, XSTR("Unknown", 497), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -1033,27 +1033,27 @@ void ship_select_blit_ship_info()
 	{
 		int sum = fl2i(sip->max_hull_strength + sip->max_shield_strength);
 		if(sum <= 600)
-			strcpy_s(str, "Light");
+			strcpy_s(str, XSTR("Light", 1796));
 		else if(sum <= 700)
-			strcpy_s(str, "Average");
+			strcpy_s(str, XSTR("Average", 1797));
 		else if(sum <= 900)
-			strcpy_s(str, "Medium");
+			strcpy_s(str, XSTR("Medium", 1798));
 		else if(sum <= 1100)
-			strcpy_s(str,	"Heavy");
+			strcpy_s(str, XSTR("Heavy", 1799));
 		else if(sum <= 1300)
-			strcpy_s(str, "Very Heavy");
+			strcpy_s(str, XSTR("Very Heavy", 1800));
 		else if(sum <= 2000)
-			strcpy_s(str, "Ultra Heavy");
+			strcpy_s(str, XSTR("Ultra Heavy", 1801));
 		else if(sum <= 30000)
-			strcpy_s(str, "Light Capital");
+			strcpy_s(str, XSTR("Light Capital", 1802));
 		else if(sum <= 75000)
-			strcpy_s(str, "Medium Capital");
+			strcpy_s(str, XSTR("Medium Capital", 1803));
 		else if(sum <= 200000)
-			strcpy_s(str, "Heavy Capital");
+			strcpy_s(str, XSTR("Heavy Capital", 1804));
 		else if(sum <= 800000)
-			strcpy_s(str, "Very Heavy Capital");
+			strcpy_s(str, XSTR("Very Heavy Capital", 1805));
 		else
-			strcpy_s(str, "Ultra Heavy Capital");
+			strcpy_s(str, XSTR("Ultra Heavy Capital", 1806));
 			
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str, GR_RESIZE_MENU);
