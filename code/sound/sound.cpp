@@ -1336,7 +1336,10 @@ void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 
 	auto channel = ds_get_channel(snd_handle);
 
-	snd = &Sounds[ds_get_sound_index(channel)].info;
+	int idx = ds_get_sound_index(channel);
+	Assertion(SCP_vector_inbounds(Sounds, idx), "Attempt to get a sound that is not loaded, please report!");
+
+	snd = &Sounds[idx].info;
 
 	// set position as an absolute from 0 to 1
 	if(as_pct){
