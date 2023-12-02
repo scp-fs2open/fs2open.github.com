@@ -2015,6 +2015,14 @@ void debrief_init(bool API_Access)
 		debrief_init_music();
 	}
 
+	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
+		// Better luck next time; increase retries.
+		Player->failures_this_session++;
+	} else {
+		// Clear retry count regardless of whether or not the player accepts.
+		Player->failures_this_session = 0;
+	}
+
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
 
