@@ -11,6 +11,14 @@ IF(NOT CMAKE_CROSSCOMPILING)
 			FOLDER "Tools"
 	)
 
+	if (PLATFORM_MAC)
+		# we build for two archs on mac, but this needs to always match the host system
+		set_target_properties(embedfile
+			PROPERTIES
+			OSX_ARCHITECTURES ${CMAKE_HOST_SYSTEM_PROCESSOR}
+		)
+	endif()
+
 	enable_clang_tidy(embedfile)
 
 	EXPORT(TARGETS embedfile FILE ${CMAKE_BINARY_DIR}/ImportExecutables.cmake)
