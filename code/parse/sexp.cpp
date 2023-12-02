@@ -17251,9 +17251,8 @@ void sexp_set_subspace_drive(int node)
 	sexp_deal_with_ship_flag(CDR(node), true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::No_subspace_drive, Mission::Parse_Object_Flags::NUM_VALUES, set_flag);
 }
 
-//forward declarations
-extern void ai_set_preferred_primary_weapon(object_ship_wing_point_team *subject, int weapon_idx, object_ship_wing_point_team *target);
-extern void ai_clear_preferred_primary_weapon(object_ship_wing_point_team *subject, object_ship_wing_point_team *target);
+//forward declaration
+extern void ai_set_or_clear_preferred_primary_weapon(bool set_it, const object_ship_wing_point_team *subject, const object_ship_wing_point_team *target, int weapon_idx);
 
 void sexp_good_primary_time(int n)
 {
@@ -17281,12 +17280,7 @@ void sexp_good_primary_time(int n)
 	n = CDR(n);
 
 	auto activate = is_sexp_true(n);
-
-	if (activate) {
-		ai_set_preferred_primary_weapon(&subject, weapon_index, &target);
-	} else {
-		ai_clear_preferred_primary_weapon(&subject, &target);
-	}
+	ai_set_or_clear_preferred_primary_weapon(activate, &subject, &target, weapon_index);
 }
 
 /**

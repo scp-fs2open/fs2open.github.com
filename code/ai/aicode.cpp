@@ -296,11 +296,6 @@ typedef struct {
 
 static SCP_vector<primary_fire_info> Preferred_primary_info;
 
-//this is used to detect when good-primary-time has been called
-//in order to force the ai to reselect a primary
-//instead of possibly waiting the normal elapsed time
-static size_t Preferred_primary_info_last_size = 0;
-
 typedef struct {
 	int team;
 	int weapon_index;
@@ -1018,7 +1013,6 @@ void ai_level_init()
 
 	// clear out the preferred primaries so that it doesn't persist between missions or between mission reloads
 	Preferred_primary_info.clear();
-	Preferred_primary_info_last_size = 0;
 }
 
 // BEGIN STEALTH
@@ -5500,34 +5494,55 @@ vec3d	G_predicted_pos, G_fire_pos;
 /*
 * plieblang
 * Used by the good-primary-time sexp to store the info supplied from there
-* weapon_idx indexes into Weapon_info
+* weapon_idx indexes into Weapon_info if the primary preference is being set
 */
-void ai_set_preferred_primary_weapon(object_ship_wing_point_team *subject, int weapon_idx, object_ship_wing_point_team *target)
+void ai_set_or_clear_preferred_primary_weapon(bool set_it, const object_ship_wing_point_team *subject, const object_ship_wing_point_team *target, int weapon_idx)
 {
-	for (auto &ppi : Preferred_primary_info)
+	// force the ai to reselect a primary instead of possibly waiting the normal elapsed time
+	for (auto so : list_range(&Ship_obj_list))
 	{
-		if (ppi.subject == *subject && ppi.target == *target)
-		{
-			ppi.weapon_index = weapon_idx;
-			return;
-		}
+		auto subject_objp = &Objects[so->objnum];
+		if (subject_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		auto subject_shipp = &Ships[subject_objp->instance];
+		if (!subject->matches(subject_shipp))
+			continue;
+
+		auto subject_aip = &Ai_info[subject_shipp->ai_index];
+		if (subject_aip->target_objnum < 0)
+			continue;
+
+		auto target_objp = &Objects[subject_aip->target_objnum];
+		if (target_objp->type != OBJ_SHIP || !target->matches(&Ships[target_objp->instance]))
+			continue;
+
+		// for AIs that match this subject-target pair, select a new primary immediately
+		subject_aip->primary_select_timestamp = timestamp(1);
 	}
 
-	// not found, so add a new entry
-	Preferred_primary_info.push_back({ *subject, *target, weapon_idx });
-}
+	if (set_it)
+	{
+		for (auto& ppi : Preferred_primary_info)
+		{
+			if (ppi.subject == *subject && ppi.target == *target)
+			{
+				ppi.weapon_index = weapon_idx;
+				return;
+			}
+		}
 
-/*
-* plieblang
-* Used by good-primary-type to clear the entry or entries with this precise combination
-*/
-void ai_clear_preferred_primary_weapon(object_ship_wing_point_team *subject, object_ship_wing_point_team *target)
-{
-	Preferred_primary_info.erase(
-		std::remove_if(Preferred_primary_info.begin(), Preferred_primary_info.end(), [&](const primary_fire_info &ppi) {
-			return ppi.subject == *subject && ppi.target == *target;
-		}), Preferred_primary_info.end()
-	);
+		// not found, so add a new entry
+		Preferred_primary_info.push_back({ *subject, *target, weapon_idx });
+	}
+	else
+	{
+		Preferred_primary_info.erase(
+			std::remove_if(Preferred_primary_info.begin(), Preferred_primary_info.end(), [&](const primary_fire_info& ppi) {
+				return ppi.subject == *subject && ppi.target == *target;
+			}), Preferred_primary_info.end()
+		);
+	}
 }
 
 
@@ -6168,16 +6183,14 @@ int ai_fire_primary_weapon(object *objp)
 	}
 
 	//plieblang - added check for size of Preferred_primaries to force reevaluation if good-primary-time has been used in the meantime
-	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp) || Preferred_primary_info.size() != Preferred_primary_info_last_size) {
+	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
 		Weapon::Info_Flags flags = Weapon::Info_Flags::NUM_VALUES;
 		if ( aip->targeted_subsys != NULL ) {
 			flags = Weapon::Info_Flags::Puncture;
 		}
 		ai_select_primary_weapon(objp, enemy_objp, flags);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
-		aip->primary_select_timestamp = timestamp(5 * 1000);	//	Maybe change primary weapon five seconds from now.
-
-		Preferred_primary_info_last_size = Preferred_primary_info.size();
+		aip->primary_select_timestamp = timestamp(5 * MILLISECONDS_PER_SECOND);	//	Maybe change primary weapon five seconds from now.
 	}
 
 	//We can only check LoS if we have a target defined
