@@ -12,7 +12,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs = false);
 void gr_opengl_deferred_lighting_msaa();
 void gr_opengl_deferred_lighting_end();
 void gr_opengl_deferred_lighting_finish();
-graphics::deferred_light_data* prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner, bool& first_directional);
+graphics::deferred_light_data* prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner);
 
 void gr_opengl_deferred_light_sphere_init(int rings, int segments);
 void gr_opengl_deferred_light_cylinder_init(int segments);

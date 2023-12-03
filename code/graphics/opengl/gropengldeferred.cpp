@@ -189,7 +189,7 @@ static bool override_fog = false;
 graphics::deferred_light_data*
 
 // common conversion operations to translate a game light data structure into a render-ready light uniform.
-prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner, bool& first_directional)
+prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner)
 {
 	graphics::deferred_light_data* light_data = uniformAligner.addTypedElement<graphics::deferred_light_data>();
 
@@ -316,7 +316,7 @@ void gr_opengl_deferred_lighting_finish()
 		bool first_directional = true;
 
 		for (auto& l : full_frame_lights) {
-			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, first_directional);
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
 			if (Shadow_quality != ShadowQuality::Disabled) {
 				light_data->enable_shadows = first_directional ? 1 : 0;
 			}
@@ -343,7 +343,7 @@ void gr_opengl_deferred_lighting_finish()
 			first_directional = false;
 		}
 		for (auto& l : sphere_lights) {
-			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, first_directional);
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
 
 			if (l.type == Light_Type::Cone) {
 				light_data->dualCone = l.dual_cone ? 1.0f : 0.0f;
@@ -362,7 +362,7 @@ void gr_opengl_deferred_lighting_finish()
 			light_data->scale.xyz.z = rad * 1.05f;
 		}
 		for (auto& l : cylinder_lights) {
-			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, first_directional);
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
 			float rad =
 				(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
 
