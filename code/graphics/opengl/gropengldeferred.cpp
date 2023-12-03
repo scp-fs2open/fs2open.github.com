@@ -387,7 +387,7 @@ void gr_opengl_deferred_lighting_finish()
 		light_buffer.submitData();
 	}
 	{
-		for (auto& l : full_frame_lights) {
+		for (size_t i = 0; i<full_frame_lights.size(); i++) {
 			// just keeping things aligned really.
 			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
 		}
@@ -398,7 +398,7 @@ void gr_opengl_deferred_lighting_finish()
 			matrix_data->projMatrix = gr_projection_matrix;
 			g3_done_instance(true);
 		}
-		for (auto& l : cylinder_lights) {
+		for (auto& l : cylinder_lights ) {
 			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
 			vec3d dir, newPos;
 			matrix orient;
@@ -432,7 +432,7 @@ void gr_opengl_deferred_lighting_finish()
 		vertex_layout vertex_declare;
 		vertex_declare.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
-		for (auto& l : full_frame_lights) {
+		for (size_t i = 0; i<full_frame_lights.size(); i++) {
 			GR_DEBUG_SCOPE("Deferred apply single dir light");
 
 			gr_bind_uniform_buffer(uniform_block_type::Lights,
@@ -445,7 +445,7 @@ void gr_opengl_deferred_lighting_finish()
 		if (!sphere_lights.empty()) {
 			opengl_bind_vertex_layout(vertex_declare, deferred_light_sphere_vbo, deferred_light_sphere_ibo);
 		}
-		for (auto& l : sphere_lights) {
+		for (size_t i = 0; i<sphere_lights.size(); i++) {
 
 			gr_bind_uniform_buffer(uniform_block_type::Lights,
 				light_buffer.getAlignerElementOffset(element_index),
@@ -468,7 +468,7 @@ void gr_opengl_deferred_lighting_finish()
 		if (!cylinder_lights.empty()) {
 			opengl_bind_vertex_layout(vertex_declare, deferred_light_cylinder_vbo, deferred_light_cylinder_ibo);
 		}
-		for (auto& l : cylinder_lights) {
+		for (size_t i = 0; i<cylinder_lights.size(); i++) {
 			gr_bind_uniform_buffer(uniform_block_type::Lights,
 				light_buffer.getAlignerElementOffset(element_index),
 				sizeof(graphics::deferred_light_data),
