@@ -434,6 +434,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "clear-ship-goals",				OP_CLEAR_SHIP_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-wing-goals",				OP_CLEAR_WING_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,						2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "good-primary-time",				OP_GOOD_PRIMARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},	// plieblang
 	{ "good-secondary-time",			OP_GOOD_SECONDARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "change-ai-class",				OP_CHANGE_AI_CLASS,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "player-use-ai",					OP_PLAYER_USE_AI,						0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -6481,7 +6482,9 @@ int sexp_string_compare(int n, int op)
 object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
 : object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
 {
-	ship_entry = ship_registry_get(sp->ship_name);
+	ship_registry_index = ship_registry_get_index(sp->ship_name);
+	ship_entry = &Ship_registry[ship_registry_index];
+
 	if (ship_entry->status == ShipStatus::EXITED)
 	{
 		type = OSWPT_TYPE_EXITED;
@@ -6491,7 +6494,8 @@ object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
 object_ship_wing_point_team::object_ship_wing_point_team(p_object* pop)
 : object_name(pop->name), type(OSWPT_TYPE_PARSE_OBJECT)
 {
-	ship_entry = ship_registry_get(pop->name);
+	ship_registry_index = ship_registry_get_index(pop->name);
+	ship_entry = &Ship_registry[ship_registry_index];
 }
 
 object_ship_wing_point_team::object_ship_wing_point_team(ship_obj* sop)
@@ -6499,7 +6503,7 @@ object_ship_wing_point_team::object_ship_wing_point_team(ship_obj* sop)
 {}
 
 object_ship_wing_point_team::object_ship_wing_point_team(wing* wp)
-	: object_name(wp->name), wingp(wp)
+	: object_name(wp->name), wingp(wp), wing_index(WING_INDEX(wingp))
 {
 	if (wingp->current_count > 0)
 		type = OSWPT_TYPE_WING;
@@ -6519,6 +6523,25 @@ object_ship_wing_point_team::object_ship_wing_point_team(wing* wp)
 	}
 }
 
+bool object_ship_wing_point_team::matches(const ship *shipp) const
+{
+	switch (type)
+	{
+		case oswpt_type::SHIP:
+			return ship_entry->shipp == shipp;
+
+		case oswpt_type::SHIP_ON_TEAM:
+		case oswpt_type::WHOLE_TEAM:
+			return team == shipp->team;
+
+		case oswpt_type::WING:
+			return wing_index == shipp->wingnum;
+
+		default:
+			return false;
+	}
+}
+
 void object_ship_wing_point_team::clear()
 {
 	object_name = nullptr;
@@ -6529,6 +6552,45 @@ void object_ship_wing_point_team::clear()
 	wingp = nullptr;
 	waypointp = nullptr;
 	team = -1;
+
+	ship_registry_index = -1;
+	wing_index = -1;
+}
+
+bool object_ship_wing_point_team::operator==(const object_ship_wing_point_team &other) const
+{
+	if (type != other.type)
+		return false;
+
+	switch (type)
+	{
+		case oswpt_type::NONE:
+			return true;
+
+		case oswpt_type::PARSE_OBJECT:
+		case oswpt_type::SHIP:
+		case oswpt_type::EXITED:
+			return ship_registry_index == other.ship_registry_index;
+
+		case oswpt_type::SHIP_ON_TEAM:
+		case oswpt_type::WHOLE_TEAM:
+			return team == other.team;
+
+		case oswpt_type::WING:
+		case oswpt_type::WING_NOT_PRESENT:
+			return wing_index == other.wing_index;
+
+		case oswpt_type::WAYPOINT:
+			return waypointp == other.waypointp;
+
+		default:
+			return false;
+	}
+}
+
+bool object_ship_wing_point_team::operator!=(const object_ship_wing_point_team &other) const
+{
+	return !(operator==(other));
 }
 
 // Goober5000
@@ -6940,7 +7002,7 @@ int sexp_is_destroyed(int n, fix *latest_time)
 			// ship or wing isn't destroyed -- add to directive count
 			if (wingp)
 			{
-				wing_index = static_cast<int>(wingp - Wings);
+				wing_index = WING_INDEX(wingp);
 				Directive_count += Wings[wing_index].current_count;
 			}
 			else
@@ -17189,6 +17251,38 @@ void sexp_set_subspace_drive(int node)
 	sexp_deal_with_ship_flag(CDR(node), true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::No_subspace_drive, Mission::Parse_Object_Flags::NUM_VALUES, set_flag);
 }
 
+//forward declaration
+extern void ai_set_or_clear_preferred_primary_weapon(bool set_it, const object_ship_wing_point_team *subject, const object_ship_wing_point_team *target, int weapon_idx);
+
+void sexp_good_primary_time(int n)
+{
+	object_ship_wing_point_team subject;
+	eval_object_ship_wing_point_team(&subject, n);
+	//if we don't get a ship, wing, or team, bail
+	if (subject.type != oswpt_type::SHIP && subject.type != oswpt_type::WING && subject.type != oswpt_type::WHOLE_TEAM) {
+		return;
+	}
+	n = CDR(n);
+
+	auto weapon_name = CTEXT(n);
+	int weapon_index = weapon_info_lookup(weapon_name);
+	if (weapon_index < 0) {
+		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
+		return;
+	}
+	n = CDR(n);
+
+	object_ship_wing_point_team target;
+	eval_object_ship_wing_point_team(&target, n);
+	if (target.type != oswpt_type::SHIP && target.type != oswpt_type::WING && target.type != oswpt_type::WHOLE_TEAM) {
+		return;
+	}
+	n = CDR(n);
+
+	auto activate = is_sexp_true(n);
+	ai_set_or_clear_preferred_primary_weapon(activate, &subject, &target, weapon_index);
+}
+
 /**
  * Tell the AI when it is okay to fire certain secondary weapons at other ships.
  */
@@ -17197,6 +17291,11 @@ void sexp_good_secondary_time(int n)
 	bool is_nan, is_nan_forever;
 
 	auto team_name = CTEXT(n);
+	int team = iff_lookup(team_name);
+	if (team < 0) {
+		nprintf(("Warning", "couldn't find team %s for good-secondary-time\n", team_name));
+		return;
+	}
 	n = CDR(n);
 
 	int num_weapons = eval_num(n, is_nan, is_nan_forever);
@@ -17205,20 +17304,16 @@ void sexp_good_secondary_time(int n)
 	n = CDR(n);
 
 	auto weapon_name = CTEXT(n);
+	int weapon_index = weapon_info_lookup(weapon_name);
+	if (weapon_index < 0) {
+		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
+		return;
+	}
 	n = CDR(n);
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
 		return;
-
-	int weapon_index = weapon_info_lookup(weapon_name);
-	if ( weapon_index == -1 ) {
-		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
-		return;
-	}
-
-	// get the team type from the team_name
-	int team = iff_lookup(team_name);
 
 	// see if the ship has exited.  If so, then we don't need to set up the AI stuff
 	if (ship_entry->status == ShipStatus::EXITED)
@@ -27967,6 +28062,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_GOOD_PRIMARY_TIME:
+				sexp_good_primary_time(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_GOOD_SECONDARY_TIME:
 				sexp_good_secondary_time(node);
 				sexp_val = SEXP_TRUE;
@@ -30021,6 +30121,7 @@ int query_operator_return_type(int op)
 		case OP_WARP_ALLOWED:
 		case OP_SET_SUBSPACE_DRIVE:
 		case OP_FLASH_HUD_GAUGE:
+		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_SHIP_VISIBLE:
 		case OP_SHIP_INVISIBLE:
@@ -31890,6 +31991,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FLASH_HUD_GAUGE:
 			return OPF_BUILTIN_HUD_GAUGE;
+
+		case OP_GOOD_PRIMARY_TIME:
+			if (argnum == 0 || argnum == 2) {
+				return OPF_SHIP_WING_WHOLETEAM;
+			} else if (argnum == 1) {
+				return OPF_WEAPON_NAME;
+			} else
+				return OPF_BOOL;
 
 		case OP_GOOD_SECONDARY_TIME:
 			if ( argnum == 0 )
@@ -34975,6 +35084,7 @@ int get_category(int op_id)
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
 		case OP_ALLOW_WEAPON:
+		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
@@ -35430,6 +35540,7 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
 		case OP_GOOD_REARM_TIME:
+		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_CHANGE_AI_CLASS:
 		case OP_PLAYER_USE_AI:
@@ -38162,15 +38273,24 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of medal to grant to player." },
 
+	{ OP_GOOD_PRIMARY_TIME, "Set preferred primary weapon\r\n"
+		"\tForces the given ship/wing/team to use the specified primary weapon against a certain ship/wing/team.  "
+		"Use the fourth parameter to control overriding the normal AI weapon selection\r\n\r\n"
+		"Takes 4 arguments...\r\n"
+		"\t1:\tName of ship/wing/team which will prefer firing given weapon\r\n"
+		"\t2:\tWeapon name\r\n"
+		"\t3:\tTarget name\r\n"
+		"\t4:\tActivate/deactivate" },
+
 	{ OP_GOOD_SECONDARY_TIME, "Set preferred secondary weapons\r\n"
 		"\tThis sexpression is used to inform the AI about preferred secondary weapons to "
 		"fire during combat.  When this expression is evaluated, any AI ships of the given "
 		"team prefer to fire the given weapon at the given ship. (Preferred over other "
 		"secondary weapons)\r\n\r\n"
-		"Takes 4 argument...\r\n"
+		"Takes 4 arguments...\r\n"
 		"\t1:\tTeam name which will prefer firing given weapon\r\n"
 		"\t2:\tMaximum number of this type of weapon above team can fire.\r\n"
-		"\t3:\tWeapon name (list includes only the valid weapons for this expression\r\n"
+		"\t3:\tWeapon name (list includes only the valid weapons for this expression)\r\n"
 		"\t4:\tShip name at which the above named team should fire the above named weapon." },
 
 	{ OP_AND_IN_SEQUENCE, "And in sequence (Boolean operator)\r\n"

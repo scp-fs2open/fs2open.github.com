@@ -138,6 +138,7 @@ namespace Ship {
 		Cannot_perform_scan,		// Goober5000 - ship cannot scan other ships
 		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
 		Maneuver_despite_engines,	// Goober5000 - ship can move even when engines are disabled or disrupted
+		Force_primary_unlinking,	// plieblang - turned on when the ship is under good-primary-time
 
 		NUM_VALUES
 

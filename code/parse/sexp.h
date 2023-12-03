@@ -899,8 +899,10 @@ enum : int {
 	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
+
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
+	OP_GOOD_PRIMARY_TIME,	// plieblang
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -1575,13 +1577,20 @@ struct object_ship_wing_point_team
 	waypoint* waypointp = nullptr;
 	int team = -1;
 
+	int ship_registry_index = -1;
+	int wing_index = -1;
+
 	object_ship_wing_point_team() = default;
 	object_ship_wing_point_team(ship* sp);
 	object_ship_wing_point_team(p_object* pop);
 	object_ship_wing_point_team(ship_obj* sop);
 	object_ship_wing_point_team(wing* wp);
 
+	bool matches(const ship* shipp) const;
 	void clear();
+
+	bool operator==(const object_ship_wing_point_team &other) const;
+	bool operator!=(const object_ship_wing_point_team &other) const;
 
 	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
 	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
