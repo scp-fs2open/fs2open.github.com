@@ -389,7 +389,7 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		for (size_t i = 0; i<full_frame_lights.size(); i++) {
 			// just keeping things aligned really.
-			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
+			matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
 		}
 		for (auto& l : sphere_lights) {
 			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
