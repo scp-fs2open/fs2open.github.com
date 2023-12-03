@@ -309,10 +309,11 @@ static SCP_vector<SDL_Event> deferred_events;
 int Os_debugger_running = 0;
 
 #ifdef SCP_UNIX
-static bool user_dir_initialized = false;
-static SCP_string Os_user_dir_legacy;
+const char* os_get_legacy_user_dir()
+{
+	static bool user_dir_initialized = false;
+	static SCP_string Os_user_dir_legacy;
 
-const char* os_get_legacy_user_dir() {
 	if (user_dir_initialized) {
 		return Os_user_dir_legacy.c_str();
 	}
