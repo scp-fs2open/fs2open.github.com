@@ -7,6 +7,8 @@
 #include "render/3d.h"
 #include "starfield/starfield.h"
 
+std::unique_ptr<star[]> Stars_XRBuffer;
+
 #ifndef __APPLE_CC__
 
 #define XR_MAKE_VERSION_SHORT(major, minor, patch) \
@@ -29,8 +31,6 @@ vec3d xr_offset = ZERO_VECTOR;
 XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
 float xr_scale = 1.0f;
-
-std::unique_ptr<star[]> Stars_XRBuffer;
 
 #if !defined(NDEBUG) && defined(FS_OPENXR_DEBUG)
 static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* /*userData*/) {
