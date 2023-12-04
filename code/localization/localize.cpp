@@ -214,15 +214,17 @@ void lcl_init(int lang_init)
 	}
 
 	// read the language from the commandline and then registry
-	int lang;
+	int lang = -1;
 	if (lang_init < 0) {
 
 		// first we start with any persisted in-game option choice
-		lang = LanguageOption->getValue();
+		if (Using_in_game_options) {
+			lang = LanguageOption->getValue();
 
-		// make sure the language exists for the current mod
-		if (lang < 0 || lang > static_cast<int>(Lcl_languages.size())) {
-			lang = -1;
+			// make sure the language index is valid for the current mod
+			if (!SCP_vector_inbounds(Lcl_languages, lang)) {
+				lang = -1;
+			}
 		}
 
 		// now try the the commandline
