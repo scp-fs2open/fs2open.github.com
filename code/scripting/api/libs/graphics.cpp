@@ -2270,7 +2270,7 @@ ADE_FUNC(createColor,
 	return ade_set_args(L, "o", l_Color.Set(thisColor));
 }
 
-ADE_FUNC(isVR, l_Graphics, nullptr, "", "boolean", "true if FSO is currently outputting frames to a VR headset.")
+ADE_FUNC(isVR, l_Graphics, nullptr, "Queries whether or not FSO is currently trying to render to a head-mounted VR display.", "boolean", "true if FSO is currently outputting frames to a VR headset.")
 {
 	return ade_set_args(L, "b", openxr_enabled());
 }
