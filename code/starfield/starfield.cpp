@@ -50,7 +50,6 @@ typedef struct {
 	float size;
 } motion_debris_instance;
 
-const int MAX_STARS = 2000;
 const float MAX_DIST_RANGE = 80.0f;
 const float MIN_DIST_RANGE = 14.0f;
 const float BASE_SIZE = 0.04f;
@@ -137,18 +136,12 @@ int last_stars_filled = 0;
 color star_colors[8];
 color star_aacolors[8];
 
-typedef struct star {
-	vec3d pos;
-	vec3d last_star_pos;
-	color col;
-} star;
-
 typedef struct vDist {
 	int x;
 	int y;
 } vDist;
 
-star Stars[MAX_STARS];
+std::unique_ptr<star[]> Stars = make_unique<star[]>(MAX_STARS);
 
 motion_debris_instance Motion_debris[MAX_MOTION_DEBRIS];
 

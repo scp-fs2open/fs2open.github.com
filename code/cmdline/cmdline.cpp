@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
+#include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "hud/hudconfig.h"
 #include "io/joy.h"
@@ -196,6 +197,7 @@ Flag exe_params[] =
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
+	{ "-vr",				"Enable Virtual Reality Mode",				true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vr", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
@@ -409,6 +411,7 @@ cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
+cmdline_parm vr("-vr", nullptr, AT_NONE);
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
@@ -419,6 +422,7 @@ int Cmdline_stretch_menu = 0;
 bool Cmdline_capture_mouse = false;
 int Cmdline_no_screenshake = 0;
 int Cmdline_deadzone = -1;
+bool Cmdline_enable_vr = false;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -1757,6 +1761,7 @@ bool SetCmdlineParams()
 			Warning(LOCATION, "Failed to parse -window_res parameter \"%s\". Must be in format \"<width>x<height>\".\n", window_res_arg.str());
 		}
 	}
+	
 	if(center_res_arg.found()){
 		Cmdline_center_res = center_res_arg.str();
 	}
@@ -1863,6 +1868,14 @@ bool SetCmdlineParams()
 		else {
 			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
 		}
+	}
+
+	if (vr.found()) {
+		Cmdline_enable_vr = true;
+		if (fov_arg.found() || fov_cockpit_arg.found()) {
+			Warning(LOCATION, "FoV Command line settings found. VR-Mode will override these with the HMD's native FoV...");
+		}
+		openxr_prepare();
 	}
 
 	if (orb_radar.found())

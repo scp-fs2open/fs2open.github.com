@@ -142,6 +142,11 @@ namespace io
 			}
 		}
 
+		int Cursor::getBitmapHandle()
+		{
+			return mBitmapHandle;
+		}
+
 		CursorManager* CursorManager::mSingleton = nullptr;
 
 		CursorManager::CursorManager() : mCurrentCursor(nullptr)

@@ -203,6 +203,7 @@ enum shader_type {
 	SDR_TYPE_VOLUMETRIC_FOG,
 	SDR_TYPE_ROCKET_UI,
 	SDR_TYPE_COPY,
+	SDR_TYPE_COPY_WORLD,
 	SDR_TYPE_MSAA_RESOLVE,
 
 	SDR_TYPE_POST_PROCESS_SMAA_EDGE,
@@ -236,6 +237,10 @@ enum shader_type {
 
 #define SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING (1<<0)
 #define SDR_FLAG_VOLUMETRICS_NOISE (1<<1)
+
+#define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
+
+#define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
 
 enum class uniform_block_type {
@@ -914,6 +919,14 @@ typedef struct screen {
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
 
 	std::function<void(bool set_override)> gf_override_fog;
+
+	//OpenXR functions
+	std::function<SCP_vector<const char*>()> gf_openxr_get_extensions;
+	std::function<bool()> gf_openxr_test_capabilities;
+	std::function<bool()> gf_openxr_create_session;
+	std::function<int64_t(const SCP_vector<int64_t>&)> gf_openxr_get_swapchain_format;
+	std::function<bool()> gf_openxr_acquire_swapchain_buffers;
+	std::function<bool()> gf_openxr_flip;
 } screen;
 
 // handy macro
@@ -968,6 +981,7 @@ extern screen gr_screen;
 #define GR_RESIZE_MENU				3
 #define GR_RESIZE_MENU_ZOOMED		4
 #define GR_RESIZE_MENU_NO_OFFSET	5
+#define GR_RESIZE_REPLACE			6
 
 void gr_set_screen_scale(int x, int y, int zoom_x = -1, int zoom_y = -1, int max_x = gr_screen.max_w, int max_y = gr_screen.max_h, int center_x = gr_screen.center_w, int center_y = gr_screen.center_h, bool force_stretch = false);
 void gr_reset_screen_scale();
@@ -1277,6 +1291,14 @@ inline void gr_sync_delete(gr_sync sync)
 {
 	gr_screen.gf_sync_delete(sync);
 }
+
+//OpenXR
+#define gr_openxr_get_extensions GR_CALL(gr_screen.gf_openxr_get_extensions)
+#define gr_openxr_test_capabilities GR_CALL(gr_screen.gf_openxr_test_capabilities)
+#define gr_openxr_create_session GR_CALL(gr_screen.gf_openxr_create_session)
+#define gr_openxr_get_swapchain_format GR_CALL(gr_screen.gf_openxr_get_swapchain_format)
+#define gr_openxr_acquire_swapchain_buffers GR_CALL(gr_screen.gf_openxr_acquire_swapchain_buffers)
+#define gr_openxr_flip GR_CALL(gr_screen.gf_openxr_flip)
 
 // color functions
 void gr_init_color(color *c, int r, int g, int b);

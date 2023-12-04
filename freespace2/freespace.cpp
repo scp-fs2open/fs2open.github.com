@@ -64,6 +64,7 @@
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "headtracking/headtracking.h"
 #include "hud/hud.h"
@@ -1786,7 +1787,12 @@ void game_init()
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
-	if (!gr_init(std::move(sdlGraphicsOperations))) {
+
+	int graphics_api = GR_DEFAULT;
+	if (Cmdline_vulkan)
+		graphics_api = GR_VULKAN;
+
+	if (!gr_init(std::move(sdlGraphicsOperations), graphics_api)) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
@@ -3344,7 +3350,7 @@ void clip_frame_view();
 // Does everything needed to render a frame
 extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
-void game_render_frame( camid cid )
+void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset, const fov_t* fov_override)
 {
 	GR_DEBUG_SCOPE("Main Frame");
 	TRACE_SCOPE(tracing::RenderMainFrame);
@@ -3353,6 +3359,7 @@ void game_render_frame( camid cid )
 
 	camera *cam = cid.getCamera();
 	matrix eye_no_jitter = vmd_identity_matrix;
+
 	if(cam != nullptr)
 	{
 		vec3d eye_pos;
@@ -3360,6 +3367,16 @@ void game_render_frame( camid cid )
 
 		//Get current camera info
 		cam->get_info(&eye_pos, &eye_orient);
+		if (offset != nullptr) {
+			vec3d offset_local;
+			vm_vec_unrotate(&offset_local, offset, &eye_orient);
+			eye_pos += offset_local;
+		}
+		if (rot_offset != nullptr) {
+			//matrix m;
+			//vm_copy_transpose(&m, rot_offset);
+			eye_orient = *rot_offset * eye_orient;
+		}
 
 		//Handle jitter if not cutscene camera
 		eye_no_jitter = eye_orient;
@@ -3370,13 +3387,13 @@ void game_render_frame( camid cid )
 
 		//Maybe override FOV from SEXP
 		if(Sexp_fov <= 0.0f)
-			g3_set_view_matrix(&eye_pos, &eye_orient, cam->get_fov());
+			g3_set_view_matrix(&eye_pos, &eye_orient, fov_override ? *fov_override : cam->get_fov());
 		else
-			g3_set_view_matrix(&eye_pos, &eye_orient, Sexp_fov);
+			g3_set_view_matrix(&eye_pos, &eye_orient, fov_override ? *fov_override : Sexp_fov);
 	}
 	else
 	{
-		g3_set_view_matrix(&vmd_zero_vector, &vmd_identity_matrix, VIEWER_ZOOM_DEFAULT);
+		g3_set_view_matrix(&vmd_zero_vector, &vmd_identity_matrix, fov_override ? *fov_override : VIEWER_ZOOM_DEFAULT);
 	}
 
 	if (!(Game_mode & GM_LAB)) {
@@ -3451,7 +3468,7 @@ void game_render_frame( camid cid )
 
 		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
-		ship_render_player_ship(Viewer_obj);
+		ship_render_player_ship(Viewer_obj, offset, rot_offset, fov_override);
 		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -3780,13 +3797,16 @@ int game_actually_playing()
 		return 1;
 }
 
-void game_render_hud(camid cid)
+void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
 {
 	gr_reset_clip();
 
 	if(cid.isValid()) {
 		g3_start_frame(0);		// 0 = turn zbuffering off
 		g3_set_view( cid.getCamera() );
+
+		if (fov_override)
+			g3_set_fov(*fov_override);
 
 		hud_render_preprocess(flFrametime);
 
@@ -3938,9 +3958,123 @@ void game_render_post_frame()
 
 #ifndef NDEBUG
 #define DEBUG_GET_TIME(x)	{ x = timer_get_fixed_seconds(); }
+#define DEBUG_TIMER_SIG fix& clear_time2, fix& render3_time1, fix& render3_time2, fix& render2_time1, fix& render2_time2, fix& flip_time1, fix& flip_time2,
+#define DEBUG_TIMER_CALL_CLEAN clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2
+#define DEBUG_TIMER_CALL DEBUG_TIMER_CALL_CLEAN ,
 #else
 #define DEBUG_GET_TIME(x)
+#define DEBUG_TIMER_SIG
+#define DEBUG_TIMER_CALL_CLEAN
+#define DEBUG_TIMER_CALL
 #endif
+
+void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr) {
+	// clear the screen to black
+	gr_reset_clip();
+	if ((Game_detail_flags & DETAIL_FLAG_CLEAR)) {
+		gr_clear();
+	}
+
+	DEBUG_GET_TIME(clear_time2)
+	DEBUG_GET_TIME(render3_time1)
+
+	camid cid = game_render_frame_setup();
+
+	game_render_frame(cid, offset, rot_offset, fov_override);
+
+	//Cutscene bars
+	clip_frame_view();
+
+	// save the eye position and orientation
+	if (Game_mode & GM_MULTIPLAYER) {
+		cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
+	}
+
+	Scripting_didnt_draw_hud = 1;
+	auto scripting_param_list = scripting::hook_param_list(
+		scripting::hook_param("Self", 'o', Viewer_obj),
+		scripting::hook_param("Player", 'o', Player_obj)
+	);
+
+	if (scripting::hooks::OnHudDraw->isActive()) {
+		Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
+	}
+
+	if (Scripting_didnt_draw_hud) {
+		GR_DEBUG_SCOPE("Render HUD");
+		TRACE_SCOPE(tracing::RenderHUD);
+
+		game_render_hud(cid, fov_override);
+	}
+	HUD_reset_clip();
+
+	if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
+		anim_render_all(0, flFrametime);
+	}
+
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+	{
+		TRACE_SCOPE(tracing::RenderHUDHook);
+
+		if (scripting::hooks::OnHudDraw->isActive()) {
+			if (fov_override)
+				g3_set_fov(*fov_override);
+
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+		}
+	}
+
+	// check to see if we should display the death died popup
+	if (Game_mode & GM_DEAD_BLEW_UP) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			// catch the situation where we're supposed to be warping out on this transition
+			if (Net_player->flags & NETINFO_FLAG_WARPING_OUT) {
+				multi_handle_sudden_mission_end();
+				send_debrief_event();
+			}
+			else if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+				Player_died_popup_wait = UI_TIMESTAMP::invalid();
+				popupdead_start();
+			}
+		}
+		else {
+			if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+				Player_died_popup_wait = UI_TIMESTAMP::invalid();
+				popupdead_start();
+			}
+		}
+	}
+
+	DEBUG_GET_TIME(render3_time2)
+	DEBUG_GET_TIME(render2_time1)
+
+	gr_reset_clip();
+	game_get_framerate();
+	game_show_framerate();
+	game_show_eye_pos(cid);
+
+	game_show_time_left();
+
+	gr_reset_clip();
+	game_render_post_frame();
+
+	game_tst_frame();
+
+	DEBUG_GET_TIME(render2_time2)
+
+	// maybe render and process the dead popup
+	game_maybe_do_dead_popup(flFrametime);
+
+	// If a regular popup is active, don't flip (popup code flips)
+	if (!popup_running_state()) {
+		if (fov_override)
+			g3_set_fov(*fov_override);
+
+		DEBUG_GET_TIME(flip_time1)
+		game_flip_page_and_time_it();
+		DEBUG_GET_TIME(flip_time2)
+	}
+}
 
 void game_frame(bool paused)
 {
@@ -4038,104 +4172,32 @@ void game_frame(bool paused)
 	if (!Pre_player_entry) {
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
 			DEBUG_GET_TIME( clear_time1 )
-			// clear the screen to black
-			gr_reset_clip();
-			if ( (Game_detail_flags & DETAIL_FLAG_CLEAR) ) {
-				gr_clear();
+			if (!openxr_enabled()) {
+				game_do_full_frame(DEBUG_TIMER_CALL_CLEAN);
 			}
+			else {
+				// This is a VR frame. Essentially like a normal frame, but we need some additional cleanup
+				// 1. Make sure both eyes have identical random for stuff like screenshakes
+				// 2. Save and restore anything that makes a visual delta to the last frame (currently only retail stars)
+				// 3. Make sure we don't allow the rendering to mess up the lighting data
+				extern std::unique_ptr<star[]> Stars, Stars_XRBuffer;
+				int random = util::Random::next();
 
-			DEBUG_GET_TIME( clear_time2 )
-			DEBUG_GET_TIME( render3_time1 )
-			
-			camid cid = game_render_frame_setup();
+				SCP_vector<light> Lights_copy = Lights, Static_light_copy = Static_light;
 
-			game_render_frame( cid );
-			
-			//Cutscene bars
-			clip_frame_view();
+				const auto& pose = openxr_start_stereo_frame();
 
-			// save the eye position and orientation
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
+				util::Random::seed(random);
+				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation, &pose.eyes[0].zoom);
+				std::swap(Stars, Stars_XRBuffer);
+
+				Lights = std::move(Lights_copy);
+				Static_light = std::move(Static_light_copy);
+
+				util::Random::seed(random);
+				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation, &pose.eyes[1].zoom);
+				std::swap(Stars, Stars_XRBuffer);
 			}
-
-			Scripting_didnt_draw_hud = 1;
-			auto scripting_param_list = scripting::hook_param_list(
-				scripting::hook_param("Self", 'o', Viewer_obj),
-				scripting::hook_param("Player", 'o', Player_obj)
-			);
-
-			if (scripting::hooks::OnHudDraw->isActive()) {
-				Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
-			}
-
-			if(Scripting_didnt_draw_hud) {
-				GR_DEBUG_SCOPE("Render HUD");
-				TRACE_SCOPE(tracing::RenderHUD);
-
-				game_render_hud(cid);
-			}
-			HUD_reset_clip();
-
-			if( (Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) ) {
-				anim_render_all(0, flFrametime);
-			}
-
-			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
-			{
-				TRACE_SCOPE(tracing::RenderHUDHook);
-
-				if (scripting::hooks::OnHudDraw->isActive()) {
-					scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
-				}
-			}
-			
-			// check to see if we should display the death died popup
-			if(Game_mode & GM_DEAD_BLEW_UP){				
-				if(Game_mode & GM_MULTIPLAYER){
-					// catch the situation where we're supposed to be warping out on this transition
-					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
-						multi_handle_sudden_mission_end();
-						send_debrief_event();
-					} else if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
-						Player_died_popup_wait = UI_TIMESTAMP::invalid();
-						popupdead_start();
-					}
-				} else {
-					if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
-						Player_died_popup_wait = UI_TIMESTAMP::invalid();
-						popupdead_start();
-					}
-				}
-			}
-
-			DEBUG_GET_TIME( render3_time2 )
-			DEBUG_GET_TIME( render2_time1 )
-
-			gr_reset_clip();
-			game_get_framerate();
-			game_show_framerate();
-			game_show_eye_pos(cid);
-
-			game_show_time_left();
-
-			gr_reset_clip();
-			game_render_post_frame();
-
-			game_tst_frame();
-
-			DEBUG_GET_TIME( render2_time2 )
-
-			// maybe render and process the dead popup
-			game_maybe_do_dead_popup(flFrametime);
-			
-			// If a regular popup is active, don't flip (popup code flips)
-			if( !popup_running_state() ){
-				DEBUG_GET_TIME( flip_time1 )
-				game_flip_page_and_time_it();
-				DEBUG_GET_TIME( flip_time2 )
-			}
-
 		} else {
 			game_show_standalone_framerate();
 		}
@@ -4751,6 +4813,8 @@ void game_process_event( int current_state, int event )
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
+
+			openxr_start_mission();
 			break;
 
 		case GS_EVENT_END_GAME:

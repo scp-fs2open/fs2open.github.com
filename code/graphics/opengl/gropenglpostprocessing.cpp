@@ -13,6 +13,7 @@
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/grinternal.h"
+#include "graphics/openxr.h"
 #include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -66,7 +67,7 @@ void opengl_post_pass_tonemap()
 	GR_DEBUG_SCOPE("Tonemapping");
 	TRACE_SCOPE(tracing::Tonemapping);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0));
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, openxr_enabled() ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0));
 
 	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 	

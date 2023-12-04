@@ -15,6 +15,7 @@
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/openxr.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
@@ -1865,6 +1866,9 @@ void hud_render_gauges(int cockpit_display_num)
 		}
 	}
 
+	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
+	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
+
 	// Check if this ship has its own HUD gauges. 
 	if ( sip->hud_enabled ) {
 		num_gauges = sip->hud_gauges.size();
@@ -1877,7 +1881,7 @@ void hud_render_gauges(int cockpit_display_num)
 				sip->hud_gauges[j]->preprocess();
 			}
 
-			sip->hud_gauges[j]->onFrame(flFrametime);
+			sip->hud_gauges[j]->onFrame(frametime);
 
 			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
 				continue;
@@ -1891,7 +1895,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			sip->hud_gauges[j]->resetClip();
 			sip->hud_gauges[j]->setFont();
-			sip->hud_gauges[j]->render(flFrametime);
+			sip->hud_gauges[j]->render(frametime);
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
@@ -1901,7 +1905,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			default_hud_gauges[j]->preprocess();
 
-			default_hud_gauges[j]->onFrame(flFrametime);
+			default_hud_gauges[j]->onFrame(frametime);
 
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;
@@ -1911,7 +1915,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();
-			default_hud_gauges[j]->render(flFrametime);
+			default_hud_gauges[j]->render(frametime);
 		}
 	}
 
@@ -3775,7 +3779,7 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	*x = 0;
 	*y = 0;
 	
-	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 10000.0f);
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 1000.0f);
 	g3_rotate_vertex(&v0, &p0);
 
 	if (v0.codes == 0) {
@@ -3833,6 +3837,7 @@ void hud_save_restore_camera_data(int save)
 {
 	static vec3d	save_view_position;
 	static fov_t	save_view_zoom;
+	static fov_t	save_proj_fov;
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
@@ -3840,6 +3845,7 @@ void hud_save_restore_camera_data(int save)
 	if ( save ) {
 		save_view_position		= View_position;
 		save_view_zoom			= View_zoom;
+		save_proj_fov			= Proj_fov;
 		save_view_matrix		= View_matrix;
 		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
@@ -3848,6 +3854,7 @@ void hud_save_restore_camera_data(int save)
 		// restore global view variables
 		View_position	= save_view_position;
 		View_zoom		= save_view_zoom;
+		Proj_fov		= save_proj_fov;
 		View_matrix		= save_view_matrix;
 		Eye_matrix		= save_eye_matrix;
 		Eye_position	= save_eye_position;

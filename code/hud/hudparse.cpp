@@ -10,6 +10,7 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/font.h" //for gr_force_fit_string
+#include "graphics/openxr.h"
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h" // for retrieving user's hud config
@@ -41,6 +42,7 @@ extern bool Ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 float Hud_speed_multiplier = 1.0f;	//The E
+float Hud_global_scale = 1.0f;
 
 // Goober5000
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
@@ -1212,12 +1214,12 @@ void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
 	float scale_w = (float)gr_screen.center_w / (float)base_res[0];
 	float scale_h = (float)gr_screen.center_h / (float)base_res[1];
 
-	base_res[0] = fl2ir(base_res[0] * ((float)gr_screen.max_w / (float)gr_screen.center_w));
-	base_res[1] = fl2ir(base_res[1] * ((float)gr_screen.max_h / (float)gr_screen.center_h));
+	base_res[0] = fl2ir(base_res[0] * ((float)gr_screen.max_w / (float)gr_screen.center_w / Hud_global_scale));
+	base_res[1] = fl2ir(base_res[1] * ((float)gr_screen.max_h / (float)gr_screen.center_h / Hud_global_scale));
 
 	if (set_position) {
-		coords[0] += fl2ir(gr_screen.center_offset_x / scale_w);
-		coords[1] += fl2ir(gr_screen.center_offset_y / scale_h);
+		coords[0] += fl2ir(gr_screen.center_offset_x / scale_w + ((1.0f - Hud_global_scale) * 0.5f * (float)base_res[0]));
+		coords[1] += fl2ir(gr_screen.center_offset_y / scale_h + ((1.0f - Hud_global_scale) * 0.5f * (float)base_res[1]));
 	}
 }
 
@@ -1385,6 +1387,11 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 	if (settings->set_colour) {
 		instance->updateColor(colors[0], colors[1], colors[2]);
 		instance->lockConfigColor(lock_color);
+	}
+
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		instance->initSlew(true);
 	}
 
 	return instance;

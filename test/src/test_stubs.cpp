@@ -243,7 +243,7 @@ fix game_get_overall_frametime() { return 0; }
 void game_level_init(){}
 void game_post_level_init(){}
 camid game_render_frame_setup(){return camid();}
-void game_render_frame(camid  /*cid*/){}
+void game_render_frame(camid  /*cid*/, const vec3d* /*offset*/ = nullptr, const matrix* /*rot_offset*/ = nullptr, const fov_t* /*fov_override*/ = nullptr) {}
 void game_simulation_frame(){}
 void game_update_missiontime(){}
 void game_render_post_frame(){}

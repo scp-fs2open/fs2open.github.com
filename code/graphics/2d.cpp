@@ -25,6 +25,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
+#include "graphics/openxr.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/post_processing.h"
 #include "graphics/util/GPUMemoryHeap.h"
@@ -704,7 +705,7 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
  */
 bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 {
-	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
+	if ( resize_mode == GR_RESIZE_NONE || resize_mode == GR_RESIZE_REPLACE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
@@ -1025,6 +1026,9 @@ void gr_close()
 		return;
 	}
 
+	if(Cmdline_enable_vr)
+		openxr_close();
+
 	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
 		                       (Gr_original_gamma_ramp + 512));
@@ -1256,13 +1260,37 @@ static void init_colors()
 	Gr_ta_alpha.scale = 17;
 }
 
+static void gr_init_function_pointers(int mode) {
+	gr_screen = {};
+
+	switch (mode) {
+	case GR_OPENGL:
+#ifdef WITH_OPENGL
+		gr_opengl_init_function_pointers();
+#else
+		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
+#endif
+		break;
+	case GR_VULKAN:
+#ifdef WITH_VULKAN
+		graphics::vulkan::initialize_function_pointers();
+#else
+		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
+#endif
+		break;
+	case GR_STUB:
+		gr_stub_init_function_pointers();
+		break;
+	default:
+		UNREACHABLE("Invalid graphics mode requested"); // Invalid graphics mode
+	}
+}
+
 static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height,
 						int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
-
-	gr_screen = {};
 
 	float aspect_ratio = (float)width / (float)height;
 
@@ -1562,9 +1590,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
-	if (Cmdline_vulkan)
-		mode = GR_VULKAN;
-
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
@@ -1573,6 +1598,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = 16;
 		center_aspect_ratio = -1.0f;
 	}
+
+	gr_init_function_pointers(mode);
 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
@@ -1588,6 +1615,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 				height = 600;
 				center_aspect_ratio = -1.0f;
 			}
+		}
+	}
+
+	if (Cmdline_enable_vr) {
+		float user_ar = i2fl(width) / i2fl(height);
+		float xr_ar = openxr_preinit(user_ar);
+
+		if (MAX(user_ar, xr_ar) / MIN(user_ar, xr_ar) > 1.05f) {
+			int newWidth = fl2i(i2fl(height) * xr_ar);
+			mprintf(("User specified resolution does not match OpenXR HMD aspect ratio. Adjusting width from %dpx to %dpx.", width, newWidth));
+			width = newWidth;
 		}
 	}
 
@@ -1708,6 +1746,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
 		Shadow_quality = ShadowQuality::Disabled;
 	}
+
+	if(Cmdline_enable_vr)
+		openxr_init();
 
 	return true;
 }
@@ -2597,8 +2638,12 @@ void gr_flip(bool execute_scripting)
 	uniform_buffer_managers_retire_buffers();
 
 	TRACE_SCOPE(tracing::PageFlip);
-	gr_screen.gf_flip();
-	gr_setup_frame();
+
+	//Prevent a real page flip if OpenXR is on and claims that that wasn't the full image yet
+	if (!gr_openxr_flip()) {
+		gr_screen.gf_flip();
+		gr_setup_frame();
+	}
 }
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)

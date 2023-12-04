@@ -12,6 +12,7 @@
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "graphics/openxr.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -782,6 +783,8 @@ void os_poll()
 	while (SDL_PollEvent(&event)) {
 		handle_sdl_event(event);
 	}
+
+	openxr_poll();
 }
 
 SCP_string os_get_config_path(const SCP_string& subpath)
