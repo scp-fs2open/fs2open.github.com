@@ -3822,18 +3822,18 @@ str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool st
 
 	SCP_vector<SCP_string> lines = SCP_vector<SCP_string>();
 
-	while (strip_leading_whitespace && new_string.length() > 0 && is_white_space(new_string[0])) {
+	while (strip_leading_whitespace && !new_string.empty() && is_white_space(new_string[0])) {
 		new_string.erase(0, 1);
 	}
-	if (new_string.length() == 0)
+	if (new_string.empty())
 		return lines;
 
 	// Handle existing line breaks in the string recursively, then append the results.
 	auto newline_at = new_string.find_first_of(UNICODE_CHAR('\n'));
-	while (new_string.length() > 0 && newline_at < std::string::npos) {
+	while (!new_string.empty() && newline_at < std::string::npos) {
 		if (newline_at == 0) {
 			// No content to split so just pushing a new string on.
-			lines.emplace_back(SCP_string());
+			lines.emplace_back();
 		} else {
 			SCP_vector<SCP_string> sublines =
 				str_wrap_to_width(new_string.substr(0, newline_at), max_pixel_length, strip_leading_whitespace);
@@ -3845,7 +3845,7 @@ str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool st
 		newline_at = new_string.find_first_of(UNICODE_CHAR('\n'));
 	}
 	// With newlines handled, now moving into actually wrapping the content.
-	while (new_string.length() > 0) {
+	while (!new_string.empty()) {
 		auto split_at = std::string::npos;
 		// no newlines found, check length.
 		size_t stringlen = new_string.length();
@@ -3901,7 +3901,7 @@ str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool st
 		lines.emplace_back(new_string.substr(0, split_at));
 		new_string.erase(0, split_at);
 		// To trim the front whitespace off the next line
-		while (new_string.length() > 0 && is_white_space(new_string[0])) {
+		while (!new_string.empty() && is_white_space(new_string[0])) {
 			new_string.erase(0, 1);
 		}
 	}
