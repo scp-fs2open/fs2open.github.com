@@ -62,7 +62,8 @@ enum ConditionalType {
 	CHC_KEYPRESS,    
 	CHC_VERSION,    
 	CHC_APPLICATION, 
-	CHC_MULTI_SERVER
+	CHC_MULTI_SERVER,
+	CHC_VR_MODE
 };
 
 //Actions
