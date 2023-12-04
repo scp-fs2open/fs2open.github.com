@@ -7,6 +7,8 @@
 #include "render/3d.h"
 #include "starfield/starfield.h"
 
+#ifndef __APPLE_CC__
+
 #define XR_MAKE_VERSION_SHORT(major, minor, patch) \
     ((((major) & 0x3ffU) << 20) | (((minor) & 0x3ffU) << 10) | ((patch) & 0x3ffU))
 
@@ -518,3 +520,29 @@ void openxr_start_frame() {
 	XrFrameBeginInfo beginFrameInfo{ XR_TYPE_FRAME_BEGIN_INFO, nullptr };
 	xrBeginFrame(xr_session, &beginFrameInfo);
 }
+
+#else
+//Stubs for Mac, as linking with OpenXR causes issues there.
+
+void openxr_prepare(float hudscale) {}
+
+float openxr_preinit(float req_ar, float scale) {
+	mprintf(("Cannot create OpenXR session on macOS.\n"));
+	return 0.0f;
+}
+
+void openxr_init() {}
+
+void openxr_close() {}
+
+void openxr_poll() {}
+
+void openxr_start_mission() {}
+
+bool openxr_enabled() { return false; }
+
+bool openxr_requested() { return false; }
+
+OpenXRTrackingInfo openxr_start_stereo_frame() { return OpenXRTrackingInfo{}; }
+
+#endif

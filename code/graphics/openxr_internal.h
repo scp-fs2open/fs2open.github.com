@@ -4,11 +4,13 @@
 
 #include "openxr.h"
 
-#include <openxr/openxr.h>
-#include <openxr/openxr_platform.h>
-
 #include <type_traits>
 #include <tl/optional.hpp>
+
+#ifndef __APPLE_CC__
+
+#include <openxr/openxr.h>
+#include <openxr/openxr_platform.h>
 
 struct XrSwapchainHandler {
 	XrSwapchain swapchain;
@@ -48,3 +50,5 @@ tl::optional<typename std::result_of<openxr_fnc(arg_t...)>::type> openxr_callExt
 
 	return func(std::forward<arg_t>(args)...);
 }
+
+#endif

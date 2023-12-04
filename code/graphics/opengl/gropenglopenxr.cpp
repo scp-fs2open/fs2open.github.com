@@ -33,6 +33,8 @@
 
 #include <SDL_syswm.h>
 
+#ifndef __APPLE_CC__
+
 //SETUP FUNCTIONS OGL
 SCP_vector<const char*> gr_opengl_openxr_get_extensions() {
 	return { XR_KHR_OPENGL_ENABLE_EXTENSION_NAME };
@@ -87,11 +89,6 @@ bool gr_opengl_openxr_create_session() {
 	}
 
 	return true;
-}
-#elif defined __APPLE_CC__
-bool gr_opengl_openxr_create_session() {
-	mprintf(("Cannot create OpenXR session on macOS.\n"));
-	return false;
 }
 #elif defined SCP_UNIX
 bool gr_opengl_openxr_create_session() {
@@ -455,3 +452,20 @@ bool gr_opengl_openxr_flip() {
 
 	return false;
 }
+
+#else
+//Stubs for Mac, as linking with OpenXR causes issues there.
+
+SCP_vector<const char*> gr_opengl_openxr_get_extensions() { return SCP_vector<const char*>{}; }
+
+bool gr_opengl_openxr_test_capabilities() { return false; }
+
+bool gr_opengl_openxr_create_session() { return false; }
+
+int64_t gr_opengl_openxr_get_swapchain_format(const SCP_vector<int64_t>& allowed) { return 0; }
+
+bool gr_opengl_openxr_acquire_swapchain_buffers() { return false; }
+
+bool gr_opengl_openxr_flip() { return false; }
+
+#endif
