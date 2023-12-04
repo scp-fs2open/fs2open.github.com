@@ -11,6 +11,7 @@
 #include "bmpman/bmpman.h"
 #include "controlconfig/controlsconfig.h"
 #include "gamesequence/gamesequence.h"
+#include "graphics/openxr.h"
 #include "hud/hud.h"
 #include "io/key.h"
 #include "mission/missioncampaign.h"
@@ -41,6 +42,7 @@ flag_def_list Script_conditions[] =
 	{"Version", CHC_VERSION, 0},
 	{"Application", CHC_APPLICATION, 0},
 	{"Multi type", CHC_MULTI_SERVER, 0},
+	{"VR device", CHC_VR_MODE, 0}
 };
 
 int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
@@ -263,6 +265,10 @@ static bool global_condition_valid(const script_condition& condition)
 		return static_cast<bool>(condition.condition_cached_value == 1) == static_cast<bool>(MULTIPLAYER_MASTER);
 	}
 
+	case CHC_VR_MODE: {
+		return static_cast<bool>(condition.condition_cached_value == 1) == openxr_enabled();
+	}
+
 	default:
 		break;
 	}
@@ -302,6 +308,17 @@ int cache_condition(ConditionalType type, const SCP_string& value){
 	case CHC_MULTI_SERVER:
 	{
 		if (stricmp("Server", value.c_str()) == 0 || stricmp("Master", value.c_str()) == 0)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	case CHC_VR_MODE:
+	{
+		if (stricmp("VR", value.c_str()) == 0 || stricmp("HMD", value.c_str()) == 0 || stricmp("enabled", value.c_str()) == 0)
 		{
 			return 1;
 		}
