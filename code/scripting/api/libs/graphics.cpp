@@ -23,6 +23,7 @@
 #include <freespace.h>
 #include <globalincs/systemvars.h>
 #include <graphics/2d.h>
+#include <graphics/openxr.h>
 #include <graphics/material.h>
 #include <graphics/matrix.h>
 #include <hud/hudbrackets.h>
@@ -2267,6 +2268,11 @@ ADE_FUNC(createColor,
 	gr_init_alphacolor(&thisColor, r, g, b, a);
 
 	return ade_set_args(L, "o", l_Color.Set(thisColor));
+}
+
+ADE_FUNC(isVR, l_Graphics, nullptr, "", "boolean", "true if FSO is currently outputting frames to a VR headset.")
+{
+	return ade_set_args(L, "b", openxr_enabled());
 }
 
 } // namespace api
