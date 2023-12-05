@@ -23,20 +23,19 @@ namespace animation {
 				};
 			}
 			default:
-				error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
 				return {};
 		}
 	}
 
 	template<typename property, property object::* property_ptr, float property::* subproperty_ptr>
 	static float get_object_subproperty_float(polymodel_instance* pmi){
-		Assertion(pmi->objnum > 0, "Invalid object used in animation property driver!");
+		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
 		return Objects[pmi->objnum].*property_ptr.*subproperty_ptr;
 	}
 
 	template<matrix object::* property_ptr, float angles::* angle>
 	static float get_object_matrix_angle(polymodel_instance* pmi){
-		Assertion(pmi->objnum > 0, "Invalid object used in animation property driver!");
+		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
 		angles a;
 		vm_extract_angles_matrix(&a, &(Objects[pmi->objnum].*property_ptr));
 		return a.*angle;
@@ -48,16 +47,16 @@ namespace animation {
 			return precedence;
 
 		switch(optional_string_one_of(5,
-				"Speed",
 				"SpeedForward",
+				"Speed",
 				"Pitch",
 				"Bank",
 				"Heading"
 				)){
 			case 0:
-				return get_object_subproperty_float<physics_info, &object::phys_info, &physics_info::speed>;
-			case 1:
 				return get_object_subproperty_float<physics_info, &object::phys_info, &physics_info::fspeed>;
+			case 1:
+				return get_object_subproperty_float<physics_info, &object::phys_info, &physics_info::speed>;
 			case 2:
 				return get_object_matrix_angle<&object::orient, &angles::p>;
 			case 3:
@@ -71,14 +70,14 @@ namespace animation {
 
 	template<typename property, property ship::* property_ptr, float property::* subproperty_ptr>
 	static float get_ship_subproperty_float(polymodel_instance* pmi){
-		Assertion(pmi->objnum > 0, "Invalid object used in animation property driver!");
+		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
 		Assertion(Objects[pmi->objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
 		return Ships[Objects[pmi->objnum].instance].*property_ptr.*subproperty_ptr;
 	}
 
 	template<int ship::* ets_property>
 	static float get_ship_ets_property(polymodel_instance* pmi){
-		Assertion(pmi->objnum > 0, "Invalid object used in animation property driver!");
+		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
 		Assertion(Objects[pmi->objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
 		return Energy_levels[Ships[Objects[pmi->objnum].instance].*ets_property];
 	}

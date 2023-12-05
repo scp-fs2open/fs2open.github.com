@@ -1458,6 +1458,10 @@ namespace animation {
 			if (optional_string("+Time Remap:")) {
 				required_string("+Source:");
 				std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
+				if (!remap_driver_source) {
+					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
+					continue;
+				}
 
 				tl::optional<Curve> curve = tl::nullopt;
 				if (optional_string("+Curve:")) {
@@ -1476,6 +1480,11 @@ namespace animation {
 			while (optional_string("+Property Driver:")){
 				required_string("+Source:");
 				std::function<float(polymodel_instance *)> driver_source = parse_ship_property_driver_source();
+				if (!driver_source) {
+					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
+					continue;
+				}
+
 				required_string("+Target:");
 				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
 
@@ -1497,6 +1506,11 @@ namespace animation {
 			while (optional_string("+Startup Driver:")){
 				required_string("+Source:");
 				std::function<float(polymodel_instance *)> driver_source = parse_ship_property_driver_source();
+				if (!driver_source) {
+					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
+					continue;
+				}
+
 				required_string("+Target:");
 				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
 
