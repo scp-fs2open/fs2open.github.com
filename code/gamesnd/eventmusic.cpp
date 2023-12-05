@@ -970,11 +970,13 @@ int event_music_friendly_arrival()
 		// overlay
 		if (Soundtracks[Current_soundtrack_num].flags & EMF_ALLIED_ARRIVAL_OVERLAY)
 		{
-			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
+			// Goober5000 - This is how retail did it.  For some reason, FS2 only has one
 			// arrival music pattern, and this is it
-			Assert(Patterns[SONG_AARV_1].handle >= 0 );
-			audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
-			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
+			if (Patterns[SONG_AARV_1].handle >= 0)
+			{
+				audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
+				audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure));
+			}
 		}
 		// don't overlay
 		else
