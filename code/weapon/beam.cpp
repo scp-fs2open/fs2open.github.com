@@ -532,6 +532,8 @@ int beam_fire(beam_fire_info *fire_info)
     flagset<Object::Object_Flags> default_flags;
 	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
 		default_flags.set(Object::Object_Flags::Collides);
+	if (wip->wi_flags[Weapon::Info_Flags::Can_damage_shooter])
+		default_flags.set(Object::Object_Flags::Collides_with_parent);
 
 	// create the associated object
 	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
@@ -2993,7 +2995,7 @@ int beam_collide_ship(obj_pair *pair)
 	}
 	
 	// if the colliding object is the shooting object, return 1 so this is culled
-	if (pair->b == a_beam->objp) {
+	if (!pair->a->flags[Object::Object_Flags::Collides_with_parent] && pair->b == a_beam->objp) {
 		return 1;
 	}	
 
@@ -4067,9 +4069,9 @@ int beam_ok_to_fire(beam *b)
 		return -1;
 	}	
 
+	ship* shipp = &Ships[b->objp->instance];
 	// targeting type beams are ok to fire all the time
 	if (b->type == BeamType::TARGETING) {
-		ship *shipp = &Ships[b->objp->instance];
 
 		if (shipp->weapon_energy <= 0.0f ) {
 
@@ -4104,6 +4106,8 @@ int beam_ok_to_fire(beam *b)
 		vec3d aim_dir;
 		vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 		vm_vec_normalize(&aim_dir);
+		vec3d turret_dir, turret_pos, temp;
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
 			vec3d turret_normal;
@@ -4119,10 +4123,28 @@ int beam_ok_to_fire(beam *b)
 				return 0;
 			}
 		} else {
-			vec3d turret_dir, turret_pos, temp;
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 			if (vm_vec_dot(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
 				nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+				return 0;
+			}
+		}
+
+		if (b->subsys->system_info->flags[Model::Subsystem_Flags::Turret_hull_check]) {
+			int model_num = Ship_info[shipp->ship_info_index].model_num;
+			vec3d end;
+			vm_vec_scale_add(&end, &turret_pos, &aim_dir, model_get_radius(model_num));
+
+			mc_info hull_check;
+			hull_check.model_instance_num = shipp->model_instance_num;
+			hull_check.model_num = model_num;
+			hull_check.orient = &b->objp->orient;
+			hull_check.pos = &b->objp->pos;
+			hull_check.p0 = &turret_pos;
+			hull_check.p1 = &end;
+			hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
+
+			if (model_collide(&hull_check)) {
+				nprintf(("BEAM", "BEAM : powering beam down because of hull check condition!\n"));
 				return 0;
 			}
 		}
