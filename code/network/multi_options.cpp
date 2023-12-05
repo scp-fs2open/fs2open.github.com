@@ -23,6 +23,7 @@
 #include "network/multi_team.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "cfile/cfile.h"
@@ -49,6 +50,82 @@ multi_global_options Multi_options_g;
 char Multi_options_proxy[512] = "";
 ushort Multi_options_proxy_port = 0;
 bool Multi_cfg_missing = true;
+
+static bool local_broadcast_change(bool val, bool)
+{
+	if (!val) {
+		Player->m_local_options.flags |= MLO_FLAG_LOCAL_BROADCAST;
+	} else {
+		Player->m_local_options.flags &= ~(MLO_FLAG_LOCAL_BROADCAST);
+	}
+	return true;
+}
+
+auto LocalBroadcastOption = options::OptionBuilder<int>("Multi.LocalBroadcast",
+									std::pair<const char*, int>{"Broadcast Locally", -1}, //todo xstr
+									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", -1}) //todo xstr
+									.category("Multi")
+									.level(options::ExpertLevel::Beginner)
+									.default_val(false)
+									.change_listener(local_broadcast_change) //May need to use Bind_to() instead so that it only changes on Options Save
+									.importance(10)
+									.finish();
+
+auto TogglePXOOption = options::OptionBuilder<int>("Multi.TogglePXO",
+									std::pair<const char*, int>{"PXO", -1}, //todo xstr
+									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", -1}) //todo xstr
+									.category("Multi")
+									.level(options::ExpertLevel::Beginner)
+									.default_val(true)
+									.bind_to(&Multi_options_g.pxo)
+									.importance(10)
+									.finish();
+
+static bool flush_cache_change(bool val, bool)
+{
+	if (!val) {
+		Player->m_local_options.flags &= ~(MLO_FLAG_FLUSH_CACHE);
+	} else {
+		Player->m_local_options.flags |= MLO_FLAG_FLUSH_CACHE;
+	}
+	return true;
+}
+
+static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", -1) : XSTR("Before Game", -1); } //todo xstr
+
+auto FlushCacheOption = options::OptionBuilder<int>("Multi.FlushCache",
+									std::pair<const char*, int>{"Flush Cache", -1}, //todo xstr
+									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", -1}) //todo xstr
+									.category("Multi")
+									.level(options::ExpertLevel::Beginner)
+                                    .display(flush_cache_display) 
+									.default_val(false)
+									.change_listener(flush_cache_change) //May need to use Bind_to() instead so that it only changes on Options Save
+									.importance(10)
+									.finish();
+
+static bool transfer_missions_change(bool val, bool)
+{
+	if (!val) {
+		Player->m_local_options.flags &= ~(MLO_FLAG_XFER_MULTIDATA);
+	} else {
+		Player->m_local_options.flags |= MLO_FLAG_XFER_MULTIDATA;
+	}
+	return true;
+}
+
+static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/multidata", -1) : XSTR("/missions", -1); } //todo xstr
+
+auto TransferMissionsOption = options::OptionBuilder<int>("Multi.TransferMissions",
+									std::pair<const char*, int>{"Transfer Missions", -1}, //todo xstr
+									std::pair<const char*, int>{"What appdata folder to save missions to", -1}) //todo xstr
+									.category("Multi")
+									.level(options::ExpertLevel::Beginner)
+                                    .display(transfer_missions_display) 
+									.default_val(false)
+									.change_listener(transfer_missions_change) //May need to use Bind_to() instead so that it only changes on Options Save
+									.importance(10)
+									.finish();
 
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS FUNCTIONS
