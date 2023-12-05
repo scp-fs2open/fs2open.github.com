@@ -1467,7 +1467,11 @@ namespace animation {
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
-					curve = Curves[curve_get_by_name(curve_name)];
+					int curve_id = curve_get_by_name(curve_name);
+					if (curve_id < 0) 
+						error_display(0, "Unknown curve specified! The driver will not use a curve.");
+					else
+						curve = Curves[curve_id];
 				}
 
 				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
@@ -1492,7 +1496,11 @@ namespace animation {
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
-					curve = Curves[curve_get_by_name(curve_name)];
+					int curve_id = curve_get_by_name(curve_name);
+					if (curve_id < 0)
+						error_display(0, "Unknown curve specified! The driver will not use a curve.");
+					else
+						curve = Curves[curve_id];
 				}
 
 				propertyDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
@@ -1518,7 +1526,11 @@ namespace animation {
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
-					curve = Curves[curve_get_by_name(curve_name)];
+					int curve_id = curve_get_by_name(curve_name);
+					if (curve_id < 0)
+						error_display(0, "Unknown curve specified! The driver will not use a curve.");
+					else
+						curve = Curves[curve_id];
 				}
 
 				startupDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
