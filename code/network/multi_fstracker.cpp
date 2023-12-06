@@ -532,7 +532,7 @@ void multi_fs_tracker_send_game_request()
 // if the API has successfully been initialized and is running
 int multi_fs_tracker_inited()
 {
-	return (Multi_fs_tracker_inited && Multi_options_g.pxo);
+	return (Multi_fs_tracker_inited && (Multi_options_g.pxo));
 }
 
 // update our settings on the tracker regarding the current netgame stuff

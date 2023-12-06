@@ -246,7 +246,7 @@ UI_INPUTBOX Om_ip_input;									// input box for adding new ip addresses
 
 // setting vars
 int Om_local_broadcast;										// whether the player has local broadcast selected or not
-int Om_tracker_flag;											// if the guy has the tracker selected
+bool Om_tracker_flag;											// if the guy has the tracker selected
 int Om_protocol;												// protocol in use
 
 // load all the controls for the protocol section
@@ -799,7 +799,7 @@ void options_multi_init_protocol_vars()
 	Om_local_broadcast = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
 
 	// whether or not we're playing on the tracker
-	Om_tracker_flag = Multi_options_g.pxo ? 1 : 0;
+	Om_tracker_flag = Multi_options_g.pxo;
 
 	// load the ip address list	
 	Om_ip_disp_count = 0;

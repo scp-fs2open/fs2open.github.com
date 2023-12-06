@@ -1372,7 +1372,7 @@ void multi_pxo_do_normal()
 						nprintf(("Network","PXO CANCEL\n"));
 
 						// flip his "pxo" bit temporarily and push him to the join game screen
-						Multi_options_g.pxo = 0;
+						Multi_options_g.pxo = false;
 						// Net_game_tcp_mode = NET_TCP;
 						gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 						break;
