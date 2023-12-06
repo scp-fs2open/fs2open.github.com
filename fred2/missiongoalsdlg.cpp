@@ -114,7 +114,7 @@ BEGIN_MESSAGE_MAP(CMissionGoalsDlg, CDialog)
 	ON_EN_CHANGE(IDC_GOAL_RATING, OnChangeGoalRating)
 	ON_CBN_SELCHANGE(IDC_GOAL_TYPE_DROP, OnSelchangeGoalTypeDrop)
 	ON_EN_CHANGE(IDC_GOAL_NAME, OnChangeGoalName)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_GOAL_INVALID, OnGoalInvalid)
 	ON_EN_CHANGE(IDC_GOAL_SCORE, OnChangeGoalScore)
@@ -330,7 +330,7 @@ int CMissionGoalsDlg::query_modified()
 	return 0;
 }
 
-void CMissionGoalsDlg::OnOk()
+void CMissionGoalsDlg::OnButtonOk()
 {
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
 	int i;
@@ -381,6 +381,8 @@ void CMissionGoalsDlg::OnOk()
 
 	theApp.record_window_data(&Mission_goals_wnd_data, this);
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("goal editor");
 }
 
 void CMissionGoalsDlg::OnButtonNewGoal() 
@@ -514,7 +516,7 @@ void CMissionGoalsDlg::OnClose()
 			return;
 
 		if (z == IDYES) {
-			OnOk();
+			OnButtonOk();
 			return;
 		}
 	}

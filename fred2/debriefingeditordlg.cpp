@@ -438,6 +438,8 @@ void debriefing_editor_dlg::OnClose()
 	Mission_music[SCORE_DEBRIEFING_FAILURE] = m_debriefFail_music - 1;
 
 	CDialog::OnClose();
+
+	FREDDoc_ptr->autosave("debriefing editor");
 }
 
 void debriefing_editor_dlg::OnOK()

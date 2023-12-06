@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+#include "freddoc.h"
 #include "CmdBrief.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
@@ -315,6 +316,11 @@ BOOL cmd_brief_dlg::DestroyWindow()
 
 	update_data();
 	m_play_bm.DeleteObject();
+
+	// the command briefing is updated whether we close it, click OK, or click Cancel,
+	// so autosave here instead of in the OK case
+	FREDDoc_ptr->autosave("command briefing editor");
+
 	return CDialog::DestroyWindow();
 }
 
