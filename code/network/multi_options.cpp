@@ -63,7 +63,7 @@ auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 
 // These next few options are a little messy because the values are stored in the player file
 // rather than a global. The Change_Listener runs on game start and when the option is changed.
-// The "innitial" paramter is used to skip setting the player flag on game start because Player
+// The "initial" paramter is used to skip setting the player flag on game start because Player
 // hasn't been initialized yet. On Player Load the static local globals are set based on the
 // player flags and the options will read/save those as necessary. When an option is changed
 // any time after startup the Change_Listener will set the player flags. We don't need to manually
@@ -72,9 +72,9 @@ auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 
 static bool BroadcastGamesLocally = false;
 
-static bool local_broadcast_change(bool val, bool innitial)
+static bool local_broadcast_change(bool val, bool initial)
 {
-	if (innitial) {
+	if (initial) {
 		return false;
 	} else {
 		if (!val) {
@@ -100,9 +100,9 @@ auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBr
 
 static bool AlwaysFlushCache = false;
 
-static bool flush_cache_change(bool val, bool innitial)
+static bool flush_cache_change(bool val, bool initial)
 {
-	if (innitial) {
+	if (initial) {
 		return false;
 	} else {
 		if (!val) {
@@ -131,9 +131,9 @@ auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache"
 
 static bool CacheMissionsToMultidata = false;
 
-static bool transfer_missions_change(bool val, bool innitial)
+static bool transfer_missions_change(bool val, bool initial)
 {
-	if (innitial) {
+	if (initial) {
 		return false;
 	} else {
 		if (!val) {
