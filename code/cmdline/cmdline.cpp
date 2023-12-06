@@ -1756,7 +1756,7 @@ bool SetCmdlineParams()
 		int height = 0;
 
 		if ( sscanf(window_res_arg.str(), "%dx%d", &width, &height) == 2 ) {
-			Cmdline_window_res.emplace(width, height);
+			Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
 		} else {
 			Warning(LOCATION, "Failed to parse -window_res parameter \"%s\". Must be in format \"<width>x<height>\".\n", window_res_arg.str());
 		}
