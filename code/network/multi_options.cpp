@@ -62,8 +62,8 @@ static bool local_broadcast_change(bool val, bool)
 }
 
 auto LocalBroadcastOption = options::OptionBuilder<int>("Multi.LocalBroadcast",
-									std::pair<const char*, int>{"Broadcast Locally", -1}, //todo xstr
-									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", -1}) //todo xstr
+									std::pair<const char*, int>{"Broadcast Locally", 1387},
+									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1808})
 									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
 									.default_val(false)
@@ -72,8 +72,8 @@ auto LocalBroadcastOption = options::OptionBuilder<int>("Multi.LocalBroadcast",
 									.finish();
 
 auto TogglePXOOption = options::OptionBuilder<int>("Multi.TogglePXO",
-									std::pair<const char*, int>{"PXO", -1}, //todo xstr
-									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", -1}) //todo xstr
+									std::pair<const char*, int>{"PXO", 1383},
+									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", 1809})
 									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
 									.default_val(true)
@@ -91,11 +91,11 @@ static bool flush_cache_change(bool val, bool)
 	return true;
 }
 
-static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", -1) : XSTR("Before Game", -1); } //todo xstr
+static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", 1400) : XSTR("Before Game", 1401); }
 
 auto FlushCacheOption = options::OptionBuilder<int>("Multi.FlushCache",
-									std::pair<const char*, int>{"Flush Cache", -1}, //todo xstr
-									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", -1}) //todo xstr
+									std::pair<const char*, int>{"Flush Cache", 1399},
+									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1810})
 									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
                                     .display(flush_cache_display) 
@@ -114,11 +114,11 @@ static bool transfer_missions_change(bool val, bool)
 	return true;
 }
 
-static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/multidata", -1) : XSTR("/missions", -1); } //todo xstr
+static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/multidata", 1397) : XSTR("/missions", 1398); }
 
 auto TransferMissionsOption = options::OptionBuilder<int>("Multi.TransferMissions",
-									std::pair<const char*, int>{"Transfer Missions", -1}, //todo xstr
-									std::pair<const char*, int>{"What appdata folder to save missions to", -1}) //todo xstr
+									std::pair<const char*, int>{"Transfer Missions", 1396},
+									std::pair<const char*, int>{"What appdata folder to save missions to", 1811})
 									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
                                     .display(transfer_missions_display) 
