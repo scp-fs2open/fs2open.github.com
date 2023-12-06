@@ -51,10 +51,10 @@ char Multi_options_proxy[512] = "";
 ushort Multi_options_proxy_port = 0;
 bool Multi_cfg_missing = true;
 
-auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Other.TogglePXO",
+auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 									std::pair<const char*, int>{"PXO", 1383},
 									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", 1809})
-									.category("Other")
+									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
 									.default_val(true)
 									.bind_to(&Multi_options_g.pxo)
@@ -87,15 +87,14 @@ static bool local_broadcast_change(bool val, bool innitial)
 	}
 }
 
-//Change all "Other" to "Multi" after testing!
-auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Other.LocalBroadcast",
+auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBroadcast",
 									std::pair<const char*, int>{"Broadcast Locally", 1387},
 									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1808})
-									.category("Other")
+									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
 									.default_val(false)
                                     .bind_to(&BroadcastGamesLocally)
-									.change_listener(local_broadcast_change) //May need to use Bind_to() instead so that it only changes on Options Save
+									.change_listener(local_broadcast_change)
 									.importance(10)
 									.finish();
 
@@ -118,15 +117,15 @@ static bool flush_cache_change(bool val, bool innitial)
 
 static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", 1400) : XSTR("Before Game", 1401); }
 
-auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Other.FlushCache",
+auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache",
 									std::pair<const char*, int>{"Flush Cache", 1399},
 									std::pair<const char*, int>{"Whether or not flush the multidata cache before games", 1810})
-									.category("Other")
+									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
                                     .display(flush_cache_display) 
 									.default_val(false)
                                     .bind_to(&AlwaysFlushCache)
-									.change_listener(flush_cache_change) //May need to use Bind_to() instead so that it only changes on Options Save
+									.change_listener(flush_cache_change)
 									.importance(10)
 									.finish();
 
@@ -149,15 +148,15 @@ static bool transfer_missions_change(bool val, bool innitial)
 
 static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/multidata", 1397) : XSTR("/missions", 1398); }
 
-auto TransferMissionsOption __UNUSED = options::OptionBuilder<bool>("Other.TransferMissions",
+auto TransferMissionsOption __UNUSED = options::OptionBuilder<bool>("Multi.TransferMissions",
 									std::pair<const char*, int>{"Transfer Missions", 1396},
 									std::pair<const char*, int>{"What appdata folder to save missions to", 1811})
-									.category("Other")
+									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
                                     .display(transfer_missions_display) 
 									.default_val(false)
                                     .bind_to(&CacheMissionsToMultidata)
-									.change_listener(transfer_missions_change) //May need to use Bind_to() instead so that it only changes on Options Save
+									.change_listener(transfer_missions_change)
 									.importance(10)
 									.finish();
 
