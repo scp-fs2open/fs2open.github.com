@@ -67,7 +67,7 @@ auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Other.TogglePXO",
 // hasn't been initialized yet. On Player Load the static local globals are set based on the
 // player flags and the options will read/save those as necessary. When an option is changed
 // any time after startup the Change_Listener will set the player flags. We don't need to manually
-// save the player flags because the player file already does that. So after the local globals are
+// save the player flags because the player file already does that. So after the local globals
 // and player flags are sync'd up at game start then we are good to go for the entire runtime.
 
 static bool BroadcastGamesLocally = false;

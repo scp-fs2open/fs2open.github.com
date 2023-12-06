@@ -127,8 +127,6 @@ void multi_common_move_to_bottom();
 void multi_common_render_text();
 void multi_common_split_text();
 
-#define MAX_IP_STRING		255				// maximum length for ip string
-
 void multi_common_scroll_text_up()
 {
 	Multi_common_top_text_line--;
@@ -1442,60 +1440,100 @@ void multi_join_blit_game_status(active_game *game, int y)
 	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text,GR_RESIZE_MENU);
 }
 
-void multi_join_load_tcp_addrs()
+void multi_join_read_ip_address_file(SCP_list<SCP_string>& list)
 {
-	char line[MAX_IP_STRING];
-	net_addr addr;	
-	server_item *item;
-	CFILE *file = NULL;
+	char line[IP_STRING_LEN];
+	CFILE* file = NULL;
 
 	// attempt to open the ip list file
-	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file!\n"));
+	file = cfopen(IP_CONFIG_FNAME, "rt", CFILE_NORMAL, CF_TYPE_DATA);
+	if (file == NULL) {
+		nprintf(("Network", "Error loading tcp.cfg file!\n"));
 		return;
 	}
 
-	// free up any existing server list
-	multi_free_server_list();
-
 	// read in all the strings in the file
-	while(!cfeof(file)){
+	while (!cfeof(file)) {
 		line[0] = '\0';
-		cfgets(line,MAX_IP_STRING,file);
+		cfgets(line, IP_STRING_LEN, file);
 
 		// strip off any newline character
-		if(line[strlen(line) - 1] == '\n'){
+		if (line[strlen(line) - 1] == '\n') {
 			line[strlen(line) - 1] = '\0';
 		}
 
-		// empty lines don't get processed
-		if( (line[0] == '\0') || (line[0] == '\n') ){
+		// 0 length lines don't get processed
+		if ((line[0] == '\0') || (line[0] == '\n'))
 			continue;
-		}
 
-		if ( !psnet_is_valid_ip_string(line) ) {
-			nprintf(("Network","Invalid ip string (%s)\n",line));
-		} else {			 
-			// copy the server ip address
-			if ( !psnet_string_to_addr(line, &addr) ) {
-				continue;
-			}
-
-			if (addr.port == 0) {
-				addr.port = DEFAULT_GAME_PORT;
-			}
-
-			// create a new server item on the list
-			item = multi_new_server_item();
-
-			if (item != nullptr) {
-				memcpy(&item->server_addr, &addr, sizeof(item->server_addr));
+		if (!psnet_is_valid_ip_string(line)) {
+			nprintf(("Network", "Invalid ip string (%s)\n", line));
+		} else {
+			if (list.size() < MAX_IP_ADDRS - 1) {
+				list.push_back(line);
 			}
 		}
 	}
 
 	cfclose(file);
+}
+
+bool multi_join_write_ip_address_file(SCP_list<SCP_string>& list)
+{
+	CFILE* file = NULL;
+
+	// attempt to open the ip list file for writing
+	file = cfopen(IP_CONFIG_FNAME, "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	if (file == NULL) {
+		nprintf(("Network", "Error loading tcp.cfg file\n"));
+		return false;
+	}
+
+	for (auto ip : list) {
+		if (!psnet_is_valid_ip_string(ip.c_str())) {
+			nprintf(("Network", "Invalid ip string (%s)\n", ip.c_str()));
+		} else {
+			cfputs(ip.c_str(), file);
+
+			// make sure to tack on a newline if necessary
+			if (ip[strlen(&ip[0]) - 1] != '\n') {
+				cfputs(NOX("\n"), file);
+			}
+		}
+	}
+
+	cfclose(file);
+
+	return true;
+}
+
+void multi_join_load_tcp_addrs()
+{
+	net_addr addr;	
+	server_item *item;
+
+	// free up any existing server list
+	multi_free_server_list();
+
+	SCP_list<SCP_string> list;
+	multi_join_read_ip_address_file(list);
+
+	for (auto const& ip : list) {
+		if (!psnet_string_to_addr(ip.c_str(), &addr)) {
+			continue;
+		}
+
+		if (addr.port == 0) {
+			addr.port = DEFAULT_GAME_PORT;
+		}
+
+		// create a new server item on the list
+		item = multi_new_server_item();
+
+		if (item != nullptr) {
+			memcpy(&item->server_addr, &addr, sizeof(item->server_addr));
+		}
+	}
 }
 
 // do stuff like pinging servers, sending out requests, etc
