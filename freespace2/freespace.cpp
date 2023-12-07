@@ -269,6 +269,18 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
                      .importance(1)
                      .finish();
 
+bool Screenshake_enabled = true;
+
+auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
+	std::pair<const char*, int>{"Screen Shudder Effect", -1}, // do xstr
+	std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", -1})
+							 .category("Graphics")
+							 .default_val(Screenshake_enabled)
+							 .level(options::ExpertLevel::Advanced)
+							 .importance(55)
+							 .bind_to(&Screenshake_enabled)
+							 .finish();
+
 #define EXE_FNAME			("fs2.exe")
 
 // JAS: Code for warphole camera.
@@ -2948,6 +2960,19 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 	return shake;
 }
 
+bool is_screenshake_enabled()
+{
+	if (Game_mode & GM_MULTIPLAYER) {
+		return true;
+	} else {
+		if (Using_in_game_options) {
+			return Screenshake_enabled;
+		} else {
+			return !Cmdline_no_screenshake;
+		}
+	}
+}
+
 #define FF_SCALE	10000
 extern int Wash_on;
 extern float sn_shudder;
@@ -2964,8 +2989,8 @@ void apply_view_shake(matrix *eye_orient)
 	if ((Viewer_mode & VM_CHASE) && Apply_shudder_to_chase_view)
 		do_hud_shudder = true;
 
-	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer or enabled by mod flag)
-	if (do_hud_shudder && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
+	// do shakes that only affect the HUD (unless disabled by some combination of game type and settings)
+	if (do_hud_shudder && is_screenshake_enabled()) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
