@@ -1720,13 +1720,13 @@ bool SetCmdlineParams()
 	// d3d windowed
 	if(window_arg.found()) {
 		// We need to set both values since we don't know if we are going to use the new config system
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
+		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
 		Cmdline_window = 1;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
+		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
 		Cmdline_fullscreen_window = 1;
 		Cmdline_window = 0; /* Make sure no-one sets both */
 	}
@@ -1743,13 +1743,13 @@ bool SetCmdlineParams()
 		int width = 0;
 		int height = 0;
 
-		if ( sscanf(Cmdline_res, "%dx%d", &width, &height) == 2 ) {
+		/*if (sscanf(Cmdline_res, "%dx%d", &width, &height) == 2) {
 			SCP_string override;
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
 			Warning(LOCATION, "Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res);
-		}
+		}*/
 	}
 	if(window_res_arg.found()){
 		int width = 0;
