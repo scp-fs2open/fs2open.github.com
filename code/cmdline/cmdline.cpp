@@ -222,6 +222,7 @@ Flag exe_params[] =
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
+	{ "-no_ingame_options",	"Disable using ingame options",				true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ingame_options", },
 	{ "-nomovies",			"Disable video playback",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
@@ -460,6 +461,7 @@ SCP_string Cmdline_lang;
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
+cmdline_parm no_ingame_options_arg("-no_ingame_options", NULL, AT_NONE); // Cmdline_no_ingame_options
 cmdline_parm no_fbo_arg("-disable_fbo", NULL, AT_NONE);		// Cmdline_no_fbo
 cmdline_parm no_pbo_arg("-disable_pbo", NULL, AT_NONE);		// Cmdline_no_pbo
 cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
@@ -483,6 +485,7 @@ cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
+bool Cmdline_no_ingame_options = false;
 int Cmdline_no_fbo = 0;
 int Cmdline_no_pbo = 0;
 int Cmdline_ati_color_swap = 0;
@@ -1931,6 +1934,10 @@ bool SetCmdlineParams()
 	if( no_set_gamma_arg.found() )
 	{
 		Cmdline_no_set_gamma = 1;
+	}
+
+	if (no_ingame_options_arg.found()) {
+		Cmdline_no_ingame_options = true;
 	}
 
 	if(no_vsync_arg.found() )

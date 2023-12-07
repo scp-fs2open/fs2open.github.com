@@ -114,6 +114,7 @@ extern SCP_string Cmdline_lang;
 extern int Cmdline_load_all_weapons;
 extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
+extern bool Cmdline_no_ingame_options;
 extern int Cmdline_no_fbo;
 extern int Cmdline_no_pbo;
 extern int Cmdline_mipmap;
