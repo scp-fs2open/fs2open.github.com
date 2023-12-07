@@ -272,14 +272,29 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
 bool Screenshake_enabled = true;
 
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
-	std::pair<const char*, int>{"Screen Shudder Effect", -1}, // do xstr
-	std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", -1})
-							 .category("Graphics")
-							 .default_val(Screenshake_enabled)
-							 .level(options::ExpertLevel::Advanced)
-							 .importance(55)
-							 .bind_to(&Screenshake_enabled)
-							 .finish();
+                     std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
+                     std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
+                     .category("Graphics")
+                     .default_val(Screenshake_enabled)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(55)
+                     .bind_to(&Screenshake_enabled)
+                     .finish();
+
+bool Allow_unfocused_pause = true;
+
+static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes", 1394) : XSTR("No", 1395); }
+
+auto UnfocusedPauseOption = options::OptionBuilder<bool>("Graphics.UnfocusedPause",
+                     std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
+                     std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
+                     .category("Graphics")
+                     .default_val(Allow_unfocused_pause)
+                     .level(options::ExpertLevel::Advanced)
+                     .display(unfocused_pause_display) 
+                     .importance(55)
+                     .bind_to(&Allow_unfocused_pause)
+                     .finish();
 
 #define EXE_FNAME			("fs2.exe")
 
@@ -4538,13 +4553,22 @@ int game_check_key()
 	return k;
 }
 
+bool pause_if_unfocused()
+{
+	if (Using_in_game_options) {
+		return Allow_unfocused_pause;
+	} else {
+		return !Cmdline_no_unfocus_pause;
+	}
+}
+
 // same as game_check_key(), except this is used while actually in the game.  Since there
 // generally are differences between game control keys and general UI keys, makes sense to
 // have seperate functions for each case.  If you are not checking a game control while in a
 // mission, you should probably be using game_check_key() instead.
 int game_poll()
 {
-	if (!Cmdline_no_unfocus_pause)
+	if (pause_if_unfocused())
 	{
 		// If we're in a single player game, pause it.  
 		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
