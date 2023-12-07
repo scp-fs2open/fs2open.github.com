@@ -1743,10 +1743,10 @@ bool SetCmdlineParams()
 			mprintf(("Deprecated -res argument. Use -render_res instead...\n"));
 		}
 
-		int width = 0;
+		/*int width = 0;
 		int height = 0;
 
-		/*if (sscanf(Cmdline_res, "%dx%d", &width, &height) == 2) {
+		if (sscanf(Cmdline_res, "%dx%d", &width, &height) == 2) {
 			SCP_string override;
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
