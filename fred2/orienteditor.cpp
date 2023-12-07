@@ -336,6 +336,8 @@ void orient_editor::OnOK()
 
 	theApp.record_window_data(&Object_wnd_data, this);
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("object editor");
 }
 
 void orient_editor::actually_point_object(object *ptr)

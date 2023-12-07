@@ -110,7 +110,7 @@ BEGIN_MESSAGE_MAP(CMissionCutscenesDlg, CDialog)
 	ON_CBN_SELCHANGE(IDC_CUTSCENE_TYPE_DROP, OnSelchangeCutsceneTypeDrop)
 	ON_EN_CHANGE(IDC_CUTSCENE_NAME, OnChangeCutsceneName)
 	ON_EN_CHANGE(IDC_CUTSCENE_HELP_BOX, OnChangeCutsceneName)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	ON_WM_CLOSE()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -281,7 +281,7 @@ int CMissionCutscenesDlg::query_modified()
 	return 0;
 }
 
-void CMissionCutscenesDlg::OnOk()
+void CMissionCutscenesDlg::OnButtonOk()
 {
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
 
@@ -406,7 +406,7 @@ void CMissionCutscenesDlg::OnClose()
 			return;
 
 		if (z == IDYES) {
-			OnOk();
+			OnButtonOk();
 			return;
 		}
 	}

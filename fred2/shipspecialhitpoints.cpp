@@ -43,7 +43,7 @@ BEGIN_MESSAGE_MAP(ShipSpecialHitpoints, CDialog)
 	//{{AFX_MSG_MAP(ShipSpecialHitpoints)
 	ON_BN_CLICKED(IDC_ENABLE_SPECIAL_HITPOINTS, OnEnableSpecialHitpoints)
 	ON_BN_CLICKED(IDC_ENABLE_SPECIAL_SHIELD, OnEnableSpecialShieldpoints)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	ON_BN_CLICKED(ID_CANCEL, OnCancel)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -146,7 +146,7 @@ void ShipSpecialHitpoints::OnCancel()
 	CDialog::OnCancel();
 }
 
-void ShipSpecialHitpoints::OnOk() 
+void ShipSpecialHitpoints::OnButtonOk()
 {
 	float temp_max_hull_strength;
 	int new_shield_strength, new_hull_strength;

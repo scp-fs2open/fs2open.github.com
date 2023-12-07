@@ -1004,6 +1004,8 @@ void player_start_editor::OnOK()
 
 	theApp.record_window_data(&Player_wnd_data, this);
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("loadout editor");
 }
 
 // Returns the ship_info index of the selected and checked ship_list item or -1 if nothing is checked or 

@@ -367,6 +367,8 @@ void CMissionNotesDlg::OnOK()
 	}
 
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("mission specs editor");
 }
 
 void CMissionNotesDlg::OnCancel()
