@@ -1,6 +1,7 @@
 
 
 #include "gropengldeferred.h"
+#include "globalincs/vmallocator.h"
 
 #include "ShaderProgram.h"
 #include "gropengldraw.h"
@@ -170,11 +171,42 @@ void gr_opengl_deferred_lighting_end()
 	GL_state.ColorMask(true, true, true, false);
 }
 
+static GLuint deferred_light_cylinder_vbo = 0;
+static GLuint deferred_light_cylinder_ibo = 0;
+static GLushort deferred_light_cylinder_vcount = 0;
+static GLuint deferred_light_cylinder_icount = 0;
+
+static GLuint deferred_light_sphere_vbo = 0;
+static GLuint deferred_light_sphere_ibo = 0;
+static GLushort deferred_light_sphere_vcount = 0;
+static GLuint deferred_light_sphere_icount = 0;
+
 extern SCP_vector<light> Lights;
 extern int Num_lights;
 namespace ltp = lighting_profiles;
 using namespace ltp; 
 static bool override_fog = false;
+graphics::deferred_light_data*
+
+// common conversion operations to translate a game light data structure into a render-ready light uniform.
+prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner)
+{
+	graphics::deferred_light_data* light_data = uniformAligner.addTypedElement<graphics::deferred_light_data>();
+
+	light_data->lightType = static_cast<int>(l.type);
+
+	vec3d diffuse;
+	diffuse.xyz.x = l.r * l.intensity;
+	diffuse.xyz.y = l.g * l.intensity;
+	diffuse.xyz.z = l.b * l.intensity;
+
+	light_data->diffuseLightColor = diffuse;
+
+	// Set a default value for all lights. Only the first directional light will change this.
+	light_data->enable_shadows = false;
+	light_data->sourceRadius = l.source_radius;
+	return light_data;
+}
 
 void gr_opengl_deferred_lighting_finish()
 {
@@ -188,8 +220,8 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	//GL_state.DepthFunc(GL_GREATER);
-	//GL_state.DepthMask(GL_FALSE);
+	// GL_state.DepthFunc(GL_GREATER);
+	// GL_state.DepthMask(GL_FALSE);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0));
 
@@ -214,7 +246,7 @@ void gr_opengl_deferred_lighting_finish()
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
-	
+
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
 	// the rest of the code. Otherwise the shadow mapping would be applied while rendering the wrong light which would
 	// lead to flickering lights in some circumstances
@@ -225,19 +257,43 @@ void gr_opengl_deferred_lighting_finish()
 	size_t num_data_elements = Lights.size();
 
 	// Get a uniform buffer for our data
-	auto buffer          = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
-	auto& uniformAligner = buffer.aligner();
+	auto light_buffer = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
+	auto& light_uniform_aligner = light_buffer.aligner();
+	auto matrix_buffer = gr_get_uniform_buffer(uniform_block_type::Matrices, num_data_elements);
+	auto& matrix_uniform_aligner = matrix_buffer.aligner();
 
 	// This is the light which is responsible for shadows and volumetric nebula lighting
 	const light* global_light = nullptr;
 	vec3d global_light_diffuse;
 
+	// To allow reduced bind calls, we sort lights into subsets based on rendering methods.
+	// It might seem optimal to create these subsets as lights are added, or some other method,
+	// but this keeps the graphics implementation methods better contained and profiling currently
+	// (dec 2023) shows negligable cost of doing it this way.
+	SCP_vector<light> full_frame_lights = SCP_vector<light>();
+	SCP_vector<light> sphere_lights = SCP_vector<light>();
+	SCP_vector<light> cylinder_lights = SCP_vector<light>();
+	for (auto& l : Lights) {
+		switch (l.type) {
+		case Light_Type::Directional:
+			full_frame_lights.push_back(l);
+			break;
+		case Light_Type::Cone:
+			FALLTHROUGH;
+		case Light_Type::Point:
+			sphere_lights.push_back(l);
+			break;
+		case Light_Type::Tube:
+			cylinder_lights.push_back(l);
+			break;
+		}
+	}
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
 		auto lp = ltp::current();
 
-		auto header = uniformAligner.getHeader<deferred_global_data>();
+		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
 			header->shadow_mv_matrix = Shadow_view_matrix_light;
@@ -258,133 +314,178 @@ void gr_opengl_deferred_lighting_finish()
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;
-		for (auto& l : Lights) {
-			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
-			light_data->lightType = static_cast<int>(l.type);
+		for (auto& l : full_frame_lights) {
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
+			if (Shadow_quality != ShadowQuality::Disabled) {
+				light_data->enable_shadows = first_directional ? 1 : 0;
+			}
 
-			vec3d diffuse;
-			diffuse.xyz.x = l.r * l.intensity;
-			diffuse.xyz.y = l.g * l.intensity;
-			diffuse.xyz.z = l.b * l.intensity;
+			// Global light direction should match shadow light direction
+			if (first_directional) {
+				global_light = &l;
+				global_light_diffuse = light_data->diffuseLightColor;
+			}
 
-			light_data->diffuseLightColor = diffuse;
+			vec4 light_dir;
+			light_dir.xyzw.x = -l.vec.xyz.x;
+			light_dir.xyzw.y = -l.vec.xyz.y;
+			light_dir.xyzw.z = -l.vec.xyz.z;
+			light_dir.xyzw.w = 0.0f;
+			vec4 view_dir;
 
-			// Set a default value for all lights. Only the first directional light will change this.
-			light_data->enable_shadows = false;
-			light_data->sourceRadius = l.source_radius;
+			vm_vec_transform(&view_dir, &light_dir, &gr_view_matrix);
 
-			switch (l.type) {
-			case Light_Type::Directional:
-				if (Shadow_quality != ShadowQuality::Disabled) {
-					light_data->enable_shadows = first_directional ? 1 : 0;
-				}
+			light_data->lightDir.xyz.x = view_dir.xyzw.x;
+			light_data->lightDir.xyz.y = view_dir.xyzw.y;
+			light_data->lightDir.xyz.z = view_dir.xyzw.z;
 
-				// Global light direction should match shadow light direction
-				if (first_directional) {
-					global_light = &l;
-					global_light_diffuse = diffuse;
-				}
-				
-				vec4 light_dir;
-				light_dir.xyzw.x = -l.vec.xyz.x;
-				light_dir.xyzw.y = -l.vec.xyz.y;
-				light_dir.xyzw.z = -l.vec.xyz.z;
-				light_dir.xyzw.w = 0.0f;
-				vec4 view_dir;
+			first_directional = false;
+		}
+		for (auto& l : sphere_lights) {
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
 
-				vm_vec_transform(&view_dir, &light_dir, &gr_view_matrix);
-
-				light_data->lightDir.xyz.x = view_dir.xyzw.x;
-				light_data->lightDir.xyz.y = view_dir.xyzw.y;
-				light_data->lightDir.xyz.z = view_dir.xyzw.z;
-
-				first_directional = false;
-				break;
-			case Light_Type::Cone:
+			if (l.type == Light_Type::Cone) {
 				light_data->dualCone = l.dual_cone ? 1.0f : 0.0f;
 				light_data->coneAngle = l.cone_angle;
 				light_data->coneInnerAngle = l.cone_inner_angle;
 				light_data->coneDir = l.vec2;
-				FALLTHROUGH;
-			case Light_Type::Point: {
-				float rad = (Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb)) : MAX(l.rada, l.radb);
-				light_data->lightRadius = rad;
-				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
-				light_data->scale.xyz.x = rad * 1.05f;
-				light_data->scale.xyz.y = rad * 1.05f;
-				light_data->scale.xyz.z = rad * 1.05f;
-				break;
 			}
-			case Light_Type::Tube: {
-				float rad = (Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
-
-				light_data->lightRadius = rad;
-				light_data->lightType = LT_TUBE;
-
-				vec3d a;
-				vm_vec_sub(&a, &l.vec, &l.vec2);
-				auto length = vm_vec_mag(&a);
-				//Tube light volumes must be extended past the length of their requested light vector
-				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
-				//origin we must extend it here. Later the position will be adjusted as well.
-				length += light_data->lightRadius * 2.0f;
-
-				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
-				light_data->scale.xyz.x = rad * 1.05f;
-				light_data->scale.xyz.y = rad * 1.05f;
-				light_data->scale.xyz.z = length;
-
-				break;
-			}
-			}
+			float rad = (Lighting_mode == lighting_mode::COCKPIT)
+							? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb))
+							: MAX(l.rada, l.radb);
+			light_data->lightRadius = rad;
+			// A small padding factor is added to guard against potentially clipping the edges of the light with facets
+			// of the volume mesh.
+			light_data->scale.xyz.x = rad * 1.05f;
+			light_data->scale.xyz.y = rad * 1.05f;
+			light_data->scale.xyz.z = rad * 1.05f;
 		}
+		for (auto& l : cylinder_lights) {
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
+			float rad =
+				(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
 
+			light_data->lightRadius = rad;
+			light_data->lightType = LT_TUBE;
+
+			vec3d a;
+			vm_vec_sub(&a, &l.vec, &l.vec2);
+			auto length = vm_vec_mag(&a);
+			// Tube light volumes must be extended past the length of their requested light vector
+			// to allow smooth fall-off from all angles. Since the light volume starts at the mesh
+			// origin we must extend it here. Later the position will be adjusted as well.
+			length += light_data->lightRadius * 2.0f;
+
+			// A small padding factor is added to guard against potentially clipping the edges of the light with facets
+			// of the volume mesh.
+			light_data->scale.xyz.x = rad * 1.05f;
+			light_data->scale.xyz.y = rad * 1.05f;
+			light_data->scale.xyz.z = length;
+		}
 		// Uniform data has been assembled, upload it to the GPU and issue the draw calls
-		buffer.submitData();
+		light_buffer.submitData();
+	}
+	{
+		for (size_t i = 0; i<full_frame_lights.size(); i++) {
+			// just keeping things aligned really.
+			matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
+		}
+		for (auto& l : sphere_lights) {
+			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
+			g3_start_instance_matrix(&l.vec, &vmd_identity_matrix, true);
+			matrix_data->modelViewMatrix = gr_model_view_matrix;
+			matrix_data->projMatrix = gr_projection_matrix;
+			g3_done_instance(true);
+		}
+		for (auto& l : cylinder_lights ) {
+			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
+			vec3d dir, newPos;
+			matrix orient;
+			vm_vec_sub(&dir, &l.vec, &l.vec2);
+			vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
+			// Tube light volumes must be extended past the length of their requested light vector
+			// to allow smooth fall-off from all angles. Since the light volume starts at the mesh
+			// origin we must extend it, which has been done above, and then move it backwards one radius.
+			vm_vec_normalize(&dir);
+			vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
+
+			g3_start_instance_matrix(&newPos, &orient, true);
+			matrix_data->modelViewMatrix = gr_model_view_matrix;
+			matrix_data->projMatrix = gr_projection_matrix;
+			g3_done_instance(true);
+		}
+		matrix_buffer.submitData();
 	}
 	{
 		GR_DEBUG_SCOPE("Render light geometry");
-		gr_bind_uniform_buffer(uniform_block_type::DeferredGlobals, buffer.getBufferOffset(0),
-		                       sizeof(graphics::deferred_global_data), buffer.bufferHandle());
+		gr_bind_uniform_buffer(uniform_block_type::DeferredGlobals,
+			light_buffer.getBufferOffset(0),
+			sizeof(graphics::deferred_global_data),
+			light_buffer.bufferHandle());
+		gr_bind_uniform_buffer(uniform_block_type::Matrices,
+			matrix_buffer.getBufferOffset(0),
+			sizeof(graphics::matrix_uniforms),
+			matrix_buffer.bufferHandle());
 
 		size_t element_index = 0;
-		for (auto& l : Lights) {
-			GR_DEBUG_SCOPE("Deferred apply single light");
+		vertex_layout vertex_declare;
+		vertex_declare.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
-			switch (l.type) {
-			case Light_Type::Directional:
-				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
-				opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
-				++element_index;
-				break;
-			case Light_Type::Cone:
-			case Light_Type::Point:
-				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
-				gr_opengl_draw_deferred_light_sphere(&l.vec);
-				++element_index;
-				break;
-			case Light_Type::Tube:
-				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+		for (size_t i = 0; i<full_frame_lights.size(); i++) {
+			GR_DEBUG_SCOPE("Deferred apply single dir light");
 
-				vec3d dir, newPos;
-				matrix orient;
-				vm_vec_sub(&dir, &l.vec, &l.vec2);
-				vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
-				//Tube light volumes must be extended past the length of their requested light vector
-				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
-				//origin we must extend it, which has been done above, and then move it backwards one radius.
-				vm_vec_normalize(&dir);
-				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
-				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
-				++element_index;
-				break;
-			default:
-				continue;
-			}
+			gr_bind_uniform_buffer(uniform_block_type::Lights,
+				light_buffer.getAlignerElementOffset(element_index),
+				sizeof(graphics::deferred_light_data),
+				light_buffer.bufferHandle());
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+			++element_index;
+		}
+		if (!sphere_lights.empty()) {
+			opengl_bind_vertex_layout(vertex_declare, deferred_light_sphere_vbo, deferred_light_sphere_ibo);
+		}
+		for (size_t i = 0; i<sphere_lights.size(); i++) {
+
+			gr_bind_uniform_buffer(uniform_block_type::Lights,
+				light_buffer.getAlignerElementOffset(element_index),
+				sizeof(graphics::deferred_light_data),
+				light_buffer.bufferHandle());
+			gr_bind_uniform_buffer(uniform_block_type::Matrices,
+				matrix_buffer.getAlignerElementOffset(element_index),
+				sizeof(graphics::matrix_uniforms),
+				matrix_buffer.bufferHandle());
+
+			glDrawRangeElements(GL_TRIANGLES,
+				0,
+				deferred_light_sphere_vcount,
+				deferred_light_sphere_icount,
+				GL_UNSIGNED_SHORT,
+				0);
+			opengl_draw_sphere();
+			++element_index;
+		}
+		if (!cylinder_lights.empty()) {
+			opengl_bind_vertex_layout(vertex_declare, deferred_light_cylinder_vbo, deferred_light_cylinder_ibo);
+		}
+		for (size_t i = 0; i<cylinder_lights.size(); i++) {
+			gr_bind_uniform_buffer(uniform_block_type::Lights,
+				light_buffer.getAlignerElementOffset(element_index),
+				sizeof(graphics::deferred_light_data),
+				light_buffer.bufferHandle());
+			gr_bind_uniform_buffer(uniform_block_type::Matrices,
+				matrix_buffer.getAlignerElementOffset(element_index),
+				sizeof(graphics::matrix_uniforms),
+				matrix_buffer.bufferHandle());
+
+			glDrawRangeElements(GL_TRIANGLES,
+				0,
+				deferred_light_cylinder_vcount,
+				deferred_light_cylinder_icount,
+				GL_UNSIGNED_SHORT,
+				0);
+
+			++element_index;
 		}
 	}
 
@@ -535,11 +636,6 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position)
 }
 
 
-static GLuint deferred_light_cylinder_vbo = 0;
-static GLuint deferred_light_cylinder_ibo = 0;
-static GLushort deferred_light_cylinder_vcount = 0;
-static GLuint deferred_light_cylinder_icount = 0;
-
 void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a cylinder of radius and height 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
 {
 	unsigned int nVertex = (segments + 1) * 2 * 3 + 6; // Can someone verify this?
@@ -655,11 +751,6 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 	vm_free(Vertices);
 	Vertices = nullptr;
 }
-
-static GLuint deferred_light_sphere_vbo = 0;
-static GLuint deferred_light_sphere_ibo = 0;
-static GLushort deferred_light_sphere_vcount = 0;
-static GLuint deferred_light_sphere_icount = 0;
 
 void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a VBO of a sphere of radius 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
 {

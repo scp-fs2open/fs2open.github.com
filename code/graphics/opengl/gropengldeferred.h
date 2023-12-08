@@ -1,6 +1,9 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "graphics/util/UniformAligner.h"
+#include "graphics/util/uniform_structs.h"
+#include "lighting/lighting.h"
 
 void gr_opengl_deferred_init();
 
@@ -9,6 +12,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs = false);
 void gr_opengl_deferred_lighting_msaa();
 void gr_opengl_deferred_lighting_end();
 void gr_opengl_deferred_lighting_finish();
+graphics::deferred_light_data* prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner);
 
 void gr_opengl_deferred_light_sphere_init(int rings, int segments);
 void gr_opengl_deferred_light_cylinder_init(int segments);
