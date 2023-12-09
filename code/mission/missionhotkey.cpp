@@ -633,8 +633,8 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		char wing_name[NAME_LENGTH];
 
 		// the wing has to be valid
-		if (Wings[i].current_count && Wings[i].ship_index[Wings[i].special_ship] >= 0) {
-			ship *shipp = &Ships[Wings[i].ship_index[Wings[i].special_ship]];
+		if (Wings[i].current_count && Wings[i].ship_index[0] >= 0) {
+			ship *shipp = &Ships[Wings[i].ship_index[0]];
 
 			// check IFF override and team mask
 			if (Iff_info[shipp->team].hotkey_team == IFF_hotkey_team::Default) {

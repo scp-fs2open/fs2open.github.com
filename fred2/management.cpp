@@ -1349,11 +1349,6 @@ int delete_ship_from_wing(int ship)
 			}
 
 			Assert(i != -1);  // Error, object should be in wing.
-			if (Wings[wing].special_ship == i){
-				Wings[wing].special_ship = 0;
-			} else if (Wings[wing].special_ship > i) {
-				Wings[wing].special_ship--;
-			}
 
 			if (i != end) {
 				wing_objects[wing][i] = wing_objects[wing][end];

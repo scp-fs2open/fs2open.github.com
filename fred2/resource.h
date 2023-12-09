@@ -170,7 +170,6 @@
 #define IDC_SHIP_WEAPON1                1019
 #define IDC_WEAPON_ENERGY_AMMO_USAGE    1019
 #define IDC_SHIP_WEAPON2                1020
-#define IDC_WING_SPECIAL_SHIP           1021
 #define IDC_MODEL_NAME                  1021
 #define IDC_WEAPON_LIGHT_CAST           1021
 #define IDC_AI_DETERMINATION            1022

@@ -584,7 +584,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 		buffer += "\tFighter wings:\r\n";
 		for (i=0; i<MAX_WINGS; i++) {
 			if (Wings[i].wave_count > 0) {
-				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
+				int wing_leader_shipnum = Wings[i].ship_index[0];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
 					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Fighter]) {
 						temp.Format("\t\tWing: %s, count: %d, waves: %d, type: %s\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves, Ship_info[Ships[wing_leader_shipnum].ship_info_index].name);
@@ -598,7 +598,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 		buffer += "\tBomber wings:\r\n";
 		for (i=0; i<MAX_WINGS; i++) {
 			if (Wings[i].wave_count > 0) {
-				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
+				int wing_leader_shipnum = Wings[i].ship_index[0];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
 					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Bomber]) {
 						temp.Format("\t\tWing: %s, count: %d, waves: %d, type: %s\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves, Ship_info[Ships[wing_leader_shipnum].ship_info_index].name);
@@ -765,7 +765,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 		buffer += "\tFighter wings:\r\n";
 		for (i=0; i<MAX_WINGS; i++) {
 			if (Wings[i].wave_count > 0) {
-				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
+				int wing_leader_shipnum = Wings[i].ship_index[0];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
 					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Fighter]) {
 						temp.Format("\t\tWing: %s\r\n", Wings[i].name);
@@ -781,7 +781,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 		buffer += "\tBomber wings:\r\n";
 		for (i=0; i<MAX_WINGS; i++) {
 			if (Wings[i].wave_count > 0) {
-				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
+				int wing_leader_shipnum = Wings[i].ship_index[0];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
 					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Bomber]) {
 						temp.Format("\t\tWing: %s\r\n", Wings[i].name);

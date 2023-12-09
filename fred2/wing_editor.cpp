@@ -45,7 +45,6 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 	//{{AFX_DATA_INIT(wing_editor)
 	m_wing_name = _T("");
 	m_wing_squad_filename = _T("");
-	m_special_ship = -1;
 	m_waves = 0;
 	m_threshold = 0;
 	m_formation = 0;	// retail formation (no formation) is -1, but it's the 0-offset in the combo box
@@ -90,7 +89,6 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SPIN_WAVES, m_waves_spin);
 	DDX_Text(pDX, IDC_WING_NAME, m_wing_name);
 	DDX_Text(pDX, IDC_WING_SQUAD_LOGO, m_wing_squad_filename);
-	DDX_CBIndex(pDX, IDC_WING_SPECIAL_SHIP, m_special_ship);
 	DDX_CBIndex(pDX, IDC_WING_FORMATION, m_formation);
 	DDX_Text(pDX, IDC_WING_FORMATION_SCALE, m_formation_scale);
 	DDX_CBIndex(pDX, IDC_ARRIVAL_LOCATION, m_arrival_location);
@@ -286,7 +284,6 @@ void wing_editor::initialize_data_safe(int full_update)
 	m_ignore_count = 0;
 	if (cur_wing < 0) {
 		m_wing_squad_filename = _T("");
-		m_special_ship = -1;
 		m_formation = 0;
 		m_formation_scale = _T("1.0");
 		m_arrival_location = -1;
@@ -316,8 +313,6 @@ void wing_editor::initialize_data_safe(int full_update)
 		player_enabled = enable = FALSE;
 
 	} else {
-		CComboBox *ptr;
-
 		if (The_mission.game_type & MISSION_TYPE_MULTI)
 		{
 			if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
@@ -348,7 +343,6 @@ void wing_editor::initialize_data_safe(int full_update)
 				player_wing = 1;
 
 		m_wing_squad_filename = _T(Wings[cur_wing].wing_squad_filename);
-		m_special_ship = Wings[cur_wing].special_ship;
 		m_waves = Wings[cur_wing].num_waves;
 		m_threshold = Wings[cur_wing].threshold;
 		m_formation = Wings[cur_wing].formation + 1;
@@ -430,11 +424,6 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_same_arrival_warp_when_docked = Wings[cur_wing].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked] ? TRUE : FALSE;
 		m_same_departure_warp_when_docked = Wings[cur_wing].flags[Ship::Wing_Flags::Same_departure_warp_when_docked] ? TRUE : FALSE;
 
-		ptr = (CComboBox *) GetDlgItem(IDC_WING_SPECIAL_SHIP);
-		ptr->ResetContent();
-		for (i=0; i<Wings[cur_wing].wave_count; i++)
-			ptr->AddString(Ships[Wings[cur_wing].ship_index[i]].ship_name);
-
 		m_threshold_spin.SetRange(0, static_cast<short>(calc_max_wave_treshold()));
 		for (i=0; i<Num_reinforcements; i++)
 			if (!stricmp(Reinforcements[i].name, Wings[cur_wing].name))
@@ -451,7 +440,6 @@ void wing_editor::initialize_data_safe(int full_update)
 
 	GetDlgItem(IDC_WING_NAME)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_SQUAD_LOGO_BUTTON)->EnableWindow(enable);
-	GetDlgItem(IDC_WING_SPECIAL_SHIP)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_WAVES)->EnableWindow(player_enabled);
 	GetDlgItem(IDC_WING_WAVE_THRESHOLD)->EnableWindow(player_enabled);
 	GetDlgItem(IDC_DISBAND_WING)->EnableWindow(enable);
@@ -794,7 +782,6 @@ void wing_editor::update_data_safe()
 		}
 	}
 
-	MODIFY(Wings[cur_wing].special_ship, m_special_ship);
 	MODIFY(Wings[cur_wing].num_waves, m_waves);
 	MODIFY(Wings[cur_wing].threshold, m_threshold);
 	MODIFY(Wings[cur_wing].formation, m_formation - 1);

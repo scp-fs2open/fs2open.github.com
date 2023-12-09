@@ -2222,8 +2222,8 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
 
 		// if it's wing leader, take the opportunity to set the wing leader's info index in the wing struct
-		if (!Fred_running && p_objp->pos_in_wing == 0 && wingp->special_ship_ship_info_index != -1) {
-			wingp->special_ship_ship_info_index = p_objp->ship_class;
+		if (!Fred_running && p_objp->pos_in_wing == 0) {
+			wingp->wing_leader_ship_class = p_objp->ship_class;
 		}
 	}
 
@@ -3968,8 +3968,8 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// First things first. Change the class of the p_object
 	p_obj->ship_class = new_ship_class;
 
-	if (p_obj->wingnum > -1 && p_obj->pos_in_wing == 0) {
-		Wings[p_obj->wingnum].special_ship_ship_info_index = new_ship_class;
+	if (!Fred_running && p_obj->wingnum >= 0 && p_obj->pos_in_wing == 0) {
+		Wings[p_obj->wingnum].wing_leader_ship_class = new_ship_class;
 	}
 
 	// Hitpoints
@@ -4415,10 +4415,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			for (j = i; j < length - 1; j++)
 			{
 				wingp->ship_index[j] = wingp->ship_index[j+1];
-
-				// update "special" ship too
-				if (wingp->special_ship == j+1)
-					wingp->special_ship--;
 			}
 
 			// last value becomes -1
@@ -4469,12 +4465,9 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// test code to check to be sure that all ships in the wing are ignoring the same types
 		// of orders from the leader
 		if ( Fred_running ) {
-			Assert( wingp->ship_index[wingp->special_ship] != -1 );
+			Assert( wingp->ship_index[0] != -1 );
 			const std::set<size_t>& orders = Ships[wingp->ship_index[0]].orders_accepted;
-			for (it = 0; it < wingp->current_count; it++ ) {
-				if (it == wingp->special_ship)
-					continue;
-
+			for (it = 1; it < wingp->current_count; it++ ) {
 				if ( orders != Ships[wingp->ship_index[it]].orders_accepted ) {
 					Warning(LOCATION, "ships in wing %s are ignoring different player orders.  Please find Mark A\nto talk to him about this.", wingp->name );
 					break;
@@ -4551,8 +4544,8 @@ void parse_wing(mission *pm)
 	required_string("$Wave Threshold:");
 	stuff_int(&wingp->threshold);
 
-	required_string("$Special Ship:");
-	stuff_int(&wingp->special_ship);
+	if (optional_string("$Special Ship:"))
+		stuff_int(&i);	// not used
 
 	// Use a custom formation if specified
 	if (optional_string("+Formation:")) {
@@ -4816,9 +4809,9 @@ void parse_wing(mission *pm)
 			p_objp->wingnum = wingnum;
 			p_objp->pos_in_wing = i;
 
-			// we have found our "special ship" (our wing leader)
+			// we have found our wing leader
 			if (!Fred_running && i == 0){
-				wingp->special_ship_ship_info_index = p_objp->ship_class;
+				wingp->wing_leader_ship_class = p_objp->ship_class;
 			}
 
 			// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
@@ -7825,7 +7818,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 		if(MULTI_TEAM)
 		{
 			// send a hostile wing arrived message
-			rship = wingp->ship_index[wingp->special_ship];
+			rship = wingp->ship_index[0];
 
 			int multi_team_filter = Ships[rship].team;
 

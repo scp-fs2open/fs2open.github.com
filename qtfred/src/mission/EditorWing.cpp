@@ -94,14 +94,13 @@ int Editor::create_wing()
 {
 	char msg[1024];
 	int i, ship, wing = -1, waypoints = 0, count = 0, illegal_ships = 0;
-	int leader, leader_team;
+	int leader_team;
 	object* ptr;
 
 	if (!query_valid_object(currentObject)) {
 		return -1;
 	}
 
-	leader = currentObject;
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
@@ -270,9 +269,6 @@ int Editor::create_wing()
 			Ships[ship].departure_cue = Locked_sexp_false;
 
 			wing_objects[wing][i] = OBJ_INDEX(ptr);
-			if (OBJ_INDEX(ptr) == leader) {
-				Wings[wing].special_ship = i;
-			}
 		}
 
 		ptr = GET_NEXT(ptr);
@@ -306,7 +302,7 @@ int Editor::create_wing()
 			{DialogButton::Ok});
 	}
 
-	leader_team = Ships[Wings[wing].ship_index[Wings[wing].special_ship]].team;
+	leader_team = Ships[Wings[wing].ship_index[0]].team;
 	for (i = 0; i < Wings[wing].wave_count; i++) {
 		if (Ships[Wings[wing].ship_index[i]].team != leader_team) {
 			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
@@ -347,9 +343,6 @@ void Editor::remove_ship_from_wing(int ship, int min)
 			}
 
 			Assert(i != -1); // Error, object should be in wing.
-			if (Wings[wing].special_ship == i) {
-				Wings[wing].special_ship = 0;
-			}
 
 			// if not last element, move last element to position to fill gap
 			if (i != end) {
@@ -392,8 +385,7 @@ void Editor::mark_wing(int wing)
 	int i;
 
 	unmark_all();
-	Assert(Wings[wing].special_ship >= 0 && Wings[wing].special_ship < Wings[wing].wave_count);
-	setupCurrentObjectIndices(wing_objects[wing][Wings[wing].special_ship]);
+	setupCurrentObjectIndices(wing_objects[wing][0]);
 	for (i = 0; i < Wings[wing].wave_count; i++) {
 		markObject(wing_objects[wing][i]);
 	}

@@ -1371,11 +1371,6 @@ int Editor::delete_ship_from_wing(int ship) {
 			}
 
 			Assert(i != -1);  // Error, object should be in wing.
-			if (Wings[wing].special_ship == i) {
-				Wings[wing].special_ship = 0;
-			} else if (Wings[wing].special_ship > i) {
-				Wings[wing].special_ship--;
-			}
 
 			if (i != end) {
 				wing_objects[wing][i] = wing_objects[wing][end];
@@ -2192,10 +2187,6 @@ int Editor::global_error_check_impl() {
 						return 1;
 					}
 				}
-			}
-
-			if ((Wings[i].special_ship < 0) || (Wings[i].special_ship >= Wings[i].wave_count)) {
-				return internal_error("Special ship out of range for \"%s\"", Wings[i].name);
 			}
 
 			if (Wings[i].num_waves < 0) {
