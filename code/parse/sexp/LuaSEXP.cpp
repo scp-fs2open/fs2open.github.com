@@ -178,12 +178,12 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->name : "");
 		}
 
-		if (!ship_entry || !ship_entry->objp) {
+		if (!ship_entry || !ship_entry->has_objp()) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		auto objp = ship_entry->objp;
+		auto objp = ship_entry->objp();
 
 		// The other SEXP code does not validate the object type so this should be safe
 		Assertion(objp->type == OBJ_SHIP,
@@ -259,14 +259,14 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		auto ship_entry = eval_ship(this_node);
 
-		if (!ship_entry || !ship_entry->shipp) {
+		if (!ship_entry || !ship_entry->has_shipp()) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		ship_subsys* ss = ship_get_subsys(ship_entry->shipp, name);
+		ship_subsys* ss = ship_get_subsys(ship_entry->shipp(), name);
 		
-		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp, ss)));
+		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp(), ss)));
 	}
 	case OPF_DOCKER_POINT: {
 		auto name = CTEXT(node);
@@ -287,13 +287,13 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		}
 
 		auto ship_entry = eval_ship(this_node);
-		if (!ship_entry || !ship_entry->shipp) {
+		if (!ship_entry || !ship_entry->has_shipp()) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		auto docker_pm = model_get(Ship_info[ship_entry->shipp->ship_info_index].model_num);
-		auto dockindex = model_find_dock_name_index(Ship_info[ship_entry->shipp->ship_info_index].model_num, name);
+		auto docker_pm = model_get(Ship_info[ship_entry->shipp()->ship_info_index].model_num);
+		auto dockindex = model_find_dock_name_index(Ship_info[ship_entry->shipp()->ship_info_index].model_num, name);
 
 		return LuaValue::createValue(_action.getLuaState(), l_Dockingbay.Set(dockingbay_h(docker_pm, dockindex)));
   }

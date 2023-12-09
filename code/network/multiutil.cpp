@@ -1857,7 +1857,7 @@ int multi_can_message(net_player *p)
 
 		// verify that it's valid.
 		Assertion(ship_regp != nullptr, "Ship register entry is a nullptr for the player's ship.");
-		if (ship_regp->p_objp->pos_in_wing != 0) 
+		if (ship_regp->p_objp()->pos_in_wing != 0)
 		{
 			return 0;
 		}	
@@ -1909,7 +1909,7 @@ int multi_can_end_mission(net_player *p)
 
 		// double check that the entry is valid.
 		Assertion(ship_regp != nullptr, "Ship register entry is a nullptr for the player's ship.");
-		if (ship_regp->p_objp->pos_in_wing != 0) 
+		if (ship_regp->p_objp()->pos_in_wing != 0)
 		{
 			return 0;
 		}	

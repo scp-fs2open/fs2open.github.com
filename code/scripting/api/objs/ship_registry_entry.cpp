@@ -65,7 +65,7 @@ ADE_FUNC(getParsedShip, l_ShipRegistryEntry, nullptr, "Return the parsed ship as
 	if (idx < 0 || (size_t)idx >= Ship_registry.size())
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(Ship_registry[idx].p_objp)));
+	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(Ship_registry[idx].p_objp_or_null())));
 }
 
 ADE_FUNC(getShip, l_ShipRegistryEntry, nullptr, "Return the ship associated with this ship registry entry", "ship", "The ship, or nil if handle is invalid.  The returned handle will be invalid if the ship has not yet arrived in-mission.")
@@ -77,7 +77,7 @@ ADE_FUNC(getShip, l_ShipRegistryEntry, nullptr, "Return the ship associated with
 	if (idx < 0 || (size_t)idx >= Ship_registry.size())
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "o", l_Ship.Set(object_h(Ship_registry[idx].objp)));
+	return ade_set_args(L, "o", l_Ship.Set(object_h(Ship_registry[idx].objnum)));
 }
 
 

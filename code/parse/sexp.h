@@ -1283,7 +1283,7 @@ struct sexp_cached_data
 	int sexp_node_data_type = OPF_NONE;		// an OPF_ #define
 	int numeric_literal = 0;				// i.e. a number
 	int ship_registry_index = -1;			// because ship status is pretty common
-	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+	int other_index = -1;					// could be an IFF, a wing, a goal, or other index
 	// jg18 - used to store result from sexp_container_CTEXT()
 	char container_CTEXT_result[TOKEN_LENGTH] = "";
 
@@ -1293,8 +1293,8 @@ struct sexp_cached_data
 		: sexp_node_data_type(_sexp_node_data_type)
 	{}
 
-	sexp_cached_data(int _sexp_node_data_type, void *_pointer)
-		: sexp_node_data_type(_sexp_node_data_type), pointer(_pointer)
+	sexp_cached_data(int _sexp_node_data_type, int _other_index)
+		: sexp_node_data_type(_sexp_node_data_type), other_index(_other_index)
 	{}
 
 	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
@@ -1569,23 +1569,45 @@ struct lua_State;
 // Goober5000
 struct object_ship_wing_point_team
 {
-	const char* object_name = nullptr;
+	char object_name[NAME_LENGTH] = { 0 };
 	oswpt_type type = oswpt_type::NONE;
 
-	const ship_registry_entry* ship_entry = nullptr;
-	object* objp = nullptr;
-	wing* wingp = nullptr;
-	waypoint* waypointp = nullptr;
-	int team = -1;
-
 	int ship_registry_index = -1;
-	int wing_index = -1;
+	int objnum = -1;
+	int wingnum = -1;
+	int wp_list = -1;
+	int wp_index = -1;
+	int team = -1;
 
 	object_ship_wing_point_team() = default;
 	object_ship_wing_point_team(ship* sp);
 	object_ship_wing_point_team(p_object* pop);
 	object_ship_wing_point_team(ship_obj* sop);
 	object_ship_wing_point_team(wing* wp);
+
+	inline bool has_ship_entry() const { return ship_registry_index >= 0; }
+	inline bool has_objp() const { return objnum >= 0; }
+	inline bool has_wingp() const { return wingnum >= 0; }
+	inline bool has_waypointp() const { return wp_list >= 0 && wp_index >= 0; }
+
+	const ship_registry_entry* ship_entry() const;
+	object* objp() const;
+	wing* wingp() const;
+	waypoint* waypointp() const;
+
+	const ship_registry_entry* ship_entry_or_null() const;
+	object* objp_or_null() const;
+	wing* wingp_or_null() const;
+	waypoint* waypointp_or_null() const;
+
+	bool has_p_objp() const;
+	bool has_shipp() const;
+
+	p_object* p_objp() const;
+	ship* shipp() const;
+
+	p_object* p_objp_or_null() const;
+	ship* shipp_or_null() const;
 
 	bool matches(const ship* shipp) const;
 	void clear();

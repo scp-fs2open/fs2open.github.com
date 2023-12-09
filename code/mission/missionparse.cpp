@@ -2567,13 +2567,13 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		if (entry->status == ShipStatus::INVALID) {
 			Warning(LOCATION, "Potential bug: ship registry status for %s is INVALID", shipp->ship_name);
 		}
-		if (entry->p_objp == nullptr) {
-			Warning(LOCATION, "Potential bug: ship registry parse object for %s is nullptr", shipp->ship_name);
-		} else if (entry->p_objp != p_objp) {
+		if (entry->pobj_num < 0) {
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is not assigned", shipp->ship_name);
+		} else if (entry->pobj_num != POBJ_INDEX(p_objp)) {
 			Warning(LOCATION, "Potential bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
 		}
 
-		entry->p_objp = p_objp;
+		entry->pobj_num = POBJ_INDEX(p_objp);
 	}
 
 	return objnum;
@@ -3641,8 +3641,8 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 				// Same with the ship registry so that SEXPs don't refer to phantom ships
 				auto entry = &Ship_registry[Ship_registry_map[pobjp->name]];
 				entry->status = ShipStatus::EXITED;
-				entry->objp = nullptr;
-				entry->shipp = nullptr;
+				entry->objnum = -1;
+				entry->shipnum = -1;
 				entry->cleanup_mode = SHIP_DESTROYED;
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
@@ -4322,7 +4322,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			{
 				ship_registry_entry entry(p_objp->name);
 				entry.status = ShipStatus::NOT_YET_PRESENT;
-				entry.p_objp = p_objp;
+				entry.pobj_num = POBJ_INDEX(p_objp);
 
 				Ship_registry.push_back(entry);
 				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
@@ -4972,7 +4972,7 @@ void post_process_ships_wings()
 	{
 		ship_registry_entry entry(p_obj.name);
 		entry.status = ShipStatus::NOT_YET_PRESENT;
-		entry.p_objp = &p_obj;
+		entry.pobj_num = POBJ_INDEX(&p_obj);
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
@@ -8513,7 +8513,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	{
 		ship_registry_entry entry(pobj->name);
 		entry.status = ShipStatus::NOT_YET_PRESENT;
-		entry.p_objp = pobj;
+		entry.pobj_num = POBJ_INDEX(pobj);
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[pobj->name] = static_cast<int>(Ship_registry.size() - 1);

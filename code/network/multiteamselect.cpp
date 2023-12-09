@@ -1677,26 +1677,26 @@ void multi_ts_get_team_and_slot(char* ship_name, int* team_index, int* slot_inde
 	const ship_registry_entry* ship_regp = ship_registry_get(ship_name);
 
 	// For a player usable ship, there has to be a parse object, a team and a position within a wing.
-	Assert(ship_regp != nullptr && ship_regp->p_objp != nullptr); 
-	if (ship_regp == nullptr || ship_regp->p_objp == nullptr) {
+	Assert(ship_regp != nullptr && ship_regp->has_p_objp()); 
+	if (ship_regp == nullptr || !ship_regp->has_p_objp()) {
 		return;
 	}
 
 	// this should send the original team, in case the team changes via sexp or scripting
-	*team_index = ship_regp->p_objp->loadout_team;
+	*team_index = ship_regp->p_objp()->loadout_team;
 
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		// get the slot within the wing, since there's only one wing each in team vs. team.
-		*slot_index = ship_regp->p_objp->pos_in_wing;
+		*slot_index = ship_regp->p_objp()->pos_in_wing;
 	} 
 	// if we're _not_ in team vs. team mode
 	else {
 		// get the wing index first.
-		int wing_index = ship_regp->p_objp->wing_status_wing_index;
+		int wing_index = ship_regp->p_objp()->wing_status_wing_index;
 		// only if the wing index is valid do we set a slot index.
 		if (wing_index >= 0 && wing_index < MAX_STARTING_WINGS) {
-			*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship_regp->p_objp->pos_in_wing; 
+			*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship_regp->p_objp()->pos_in_wing;
 		}
 	}
 }

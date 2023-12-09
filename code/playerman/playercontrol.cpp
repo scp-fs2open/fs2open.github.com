@@ -1768,7 +1768,8 @@ void player_generate_death_message(player *player_p)
 
 	// killer_parent_name is always a ship name or a callsign (or blank).  If it's a ship name, get the ship and use the ship's display name
 	auto ship_entry = ship_registry_get(player_p->killer_parent_name);
-	auto killer_display_name = (ship_entry && ship_entry->shipp) ? ship_entry->shipp->get_display_name() : player_p->killer_parent_name;
+	auto shipp = ship_entry && ship_entry->has_shipp() ? ship_entry->shipp() : nullptr;
+	auto killer_display_name = shipp ? shipp->get_display_name() : player_p->killer_parent_name;
 
 	switch (player_p->killer_objtype)
 	{
@@ -1785,7 +1786,7 @@ void player_generate_death_message(player *player_p)
 
 		case OBJ_WEAPON:
 			// is this from a friendly ship?
-			if (ship_entry && ship_entry->shipp && Player_ship && (Player_ship->team == ship_entry->shipp->team))
+			if (shipp && Player_ship && (Player_ship->team == shipp->team))
 			{
 				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, killer_display_name);
 			}
@@ -1827,7 +1828,7 @@ void player_generate_death_message(player *player_p)
 			else
 			{
 				// is this from a friendly ship?
-				if (ship_entry && ship_entry->shipp && Player_ship && (Player_ship->team == ship_entry->shipp->team))
+				if (shipp && Player_ship && (Player_ship->team == shipp->team))
 				{
 					sprintf(msg, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, killer_display_name);
 				}
