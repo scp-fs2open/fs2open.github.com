@@ -282,6 +282,7 @@ void briefing_editor_dlg::OnCancel()
 void briefing_editor_dlg::OnClose() 
 {
 	int bs, i, j, s, t, dup = 0;
+	briefing_editor_dlg *ptr;
 	brief_stage *sp;
 
 	m_cur_stage = -1;
@@ -305,8 +306,9 @@ void briefing_editor_dlg::OnClose()
 		MessageBox("You have duplicate icon names.  You should resolve these.", "Warning");
 
 	theApp.record_window_data(&Briefing_wnd_data, this);
-	delete Briefing_dialog;
+	ptr = Briefing_dialog;	// this juggling prevents a crash in certain situations
 	Briefing_dialog = NULL;
+	delete ptr;
 
 	FREDDoc_ptr->autosave("briefing editor");
 }
