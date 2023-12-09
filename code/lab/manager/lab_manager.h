@@ -4,7 +4,7 @@
 #include "lab/labv2.h"
 #include "lab/dialogs/lab_ui.h"
 #include "lab/renderer/lab_renderer.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 
 #include <gamesequence/gamesequence.h>
 #include "osapi/osapi.h"

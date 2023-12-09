@@ -35,7 +35,7 @@ public :
 	Curve(SCP_string in_name);
 
 	//Get
-	float GetValue(float x_val);
+	float GetValue(float x_val) const;
 
 	//Set
 	void ParseData();

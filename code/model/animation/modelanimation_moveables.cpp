@@ -1,5 +1,5 @@
-#include "model/modelanimation_moveables.h"
-#include "model/modelanimation_segments.h"
+#include "model/animation/modelanimation_moveables.h"
+#include "model/animation/modelanimation_segments.h"
 
 namespace animation {
 

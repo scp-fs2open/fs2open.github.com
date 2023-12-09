@@ -189,9 +189,9 @@ void Curve::ParseData()
 }
 
 
-float Curve::GetValue(float x_val) {
-	curve_keyframe* kframe = &keyframes[0];
-	vec2d* next_pos = &kframe->pos;
+float Curve::GetValue(float x_val) const {
+	const curve_keyframe* kframe = &keyframes[0];
+	const vec2d* next_pos = &kframe->pos;
 	for (size_t i = 0; i < keyframes.size(); i++) {
 		kframe = &keyframes[i];
 		if (x_val < kframe->pos.x) {

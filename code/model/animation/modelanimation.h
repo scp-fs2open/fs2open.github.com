@@ -31,7 +31,7 @@ namespace animation {
 
 	enum class ModelAnimationDirection { FWD, RWD };
 
-	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD, PAUSED, NEED_RECALC };
+	enum class ModelAnimationState { UNTRIGGERED, RUNNING, PAUSED, NEED_RECALC };
 
 	enum class ModelAnimationTriggerType : int {
 		None = -1,       // No animation
@@ -206,13 +206,17 @@ namespace animation {
 	};
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
+	public:
 		struct instance_data {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
+			ModelAnimationDirection canonicalDirection = ModelAnimationDirection::FWD;
 			float time = 0.0f;
 			float duration = 0.0f;
 			flagset<animation::Animation_Instance_Flags> instance_flags;
 			float speed = 1.0f;
 		};
+
+	private:
 		//PMI ID -> Instance Data
 		SCP_unordered_map<int, instance_data> m_instances;
 
@@ -234,7 +238,15 @@ namespace animation {
 		} m_flagData;
 
 	private:
+		static void driverTime(ModelAnimation& anim, instance_data& instance, polymodel_instance* pmi, float frametime);
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
+
+		//The main driver for the animation "time"
+		std::function<void(ModelAnimation&, instance_data&, polymodel_instance*, float)> m_driver = driverTime;
+		//The registered animation property drivers
+		std::vector<std::function<void(ModelAnimation&, instance_data&, polymodel_instance*)>> m_propertyDrivers;
+		//The registered animation startup property drivers
+		std::vector<std::function<void(ModelAnimation&, instance_data&, polymodel_instance*)>> m_startupDrivers;
 
 		friend class ModelAnimationSet;
 		friend class ModelAnimationParseHelper;
@@ -314,7 +326,7 @@ namespace animation {
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
 		//Helper function to shorten animation emplaces
-		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
+		std::shared_ptr<ModelAnimation> emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
 
 		void changeShipName(const SCP_string& name);
 
@@ -403,6 +415,7 @@ namespace animation {
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);
 		static void parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName);
+		static void parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip);
 		static void parseMoveablesetInfo(ModelAnimationSet& set);
 		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
 		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);

@@ -23,7 +23,7 @@
 #include "graphics/color.h"
 #include "graphics/generic.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 #include "particle/ParticleManager.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
