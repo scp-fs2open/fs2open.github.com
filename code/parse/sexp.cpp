@@ -383,6 +383,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "when-argument",					OP_WHEN_ARGUMENT,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "every-time",						OP_EVERY_TIME,							2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "every-time-argument",			OP_EVERY_TIME_ARGUMENT,					3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
+	{ "on-mission-skip",				OP_ON_MISSION_SKIP,						1,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "functional-when",				OP_FUNCTIONAL_WHEN,						4,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "if-then-else",					OP_IF_THEN_ELSE,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "functional-if-then-else",		OP_FUNCTIONAL_IF_THEN_ELSE,				3,	3,			SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
@@ -10521,6 +10522,24 @@ int eval_perform_actions(int n, int op_num)
 		n = CDR(n);
 
 		actions = n;
+	}
+	else if (op_num == OP_ON_MISSION_SKIP)
+	{
+		retval_first = true;
+		actions = n;
+
+		// if the player is skipping the mission, we'll unconditionally perform the actions
+		if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_SKIPPED))
+		{
+			return_cond = Locked_sexp_true;
+			actions_cond = Locked_sexp_true;
+		}
+		// if the player isn't skipping the mission (which is most of the time), we'll return false
+		else
+		{
+			return_cond = Locked_sexp_false;
+			actions_cond = Locked_sexp_false;
+		}
 	}
 	else
 	{
@@ -27294,6 +27313,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_PERFORM_ACTIONS_BOOL_FIRST:
 			case OP_PERFORM_ACTIONS_BOOL_LAST:
 			case OP_FUNCTIONAL_WHEN:
+			case OP_ON_MISSION_SKIP:
 				sexp_val = eval_perform_actions( node, op_num );
 				break;
 
@@ -30045,6 +30065,7 @@ int query_operator_return_type(int op)
 		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
+		case OP_ON_MISSION_SKIP:
 		case OP_IF_THEN_ELSE:
 		case OP_SWITCH:
 		case OP_INVALIDATE_ARGUMENT:
@@ -31293,6 +31314,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NULL;
 			
 		case OP_DO_FOR_VALID_ARGUMENTS:
+		case OP_ON_MISSION_SKIP:
 			return OPF_NULL;
 
 		case OP_RANDOM_OF:
@@ -35034,6 +35056,7 @@ int get_category(int op_id)
 		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
+		case OP_ON_MISSION_SKIP:
 		case OP_ANY_OF:
 		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
@@ -37044,6 +37067,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe arguments to evaluate (see any-of, all-of, random-of, etc.).\r\n"
 		"\t2:\tBoolean expression that must be true for actions to take place.\r\n"
 		"\tRest:\tActions to take when the boolean expression becomes true." },
+
+	// Goober5000
+	{ OP_ON_MISSION_SKIP, "on-mission-skip (Conditional operator)\r\n"
+		"\tThis is a special operator that performs its actions when, and only when, the player chooses to skip the current mission.  "
+		"Since the player may do this in the debriefing, mission designers should limit these actions to campaign-specific things like "
+		"adding entries to the tech room, allowing ships and weapons, and calling scripts.  Note that this operator must be the top-level "
+		"operator in its event in order to work.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tActions to take if the player chooses to skip the current mission.\r\n" },
 
 	// Goober5000
 	{ OP_IF_THEN_ELSE, "If-then-else (Conditional operator)\r\n"
