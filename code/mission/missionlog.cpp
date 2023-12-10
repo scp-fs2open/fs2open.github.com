@@ -26,7 +26,7 @@
 
 
 
-#define MAX_LOG_ENTRIES		700
+#define MAX_LOG_ENTRIES		1500
 
 // used for high water mark for culling out log entries
 #define LOG_CULL_MARK				((int)(MAX_LOG_ENTRIES * 0.95f))
