@@ -285,10 +285,10 @@ bool Allow_unfocused_pause = true;
 
 static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes", 1394) : XSTR("No", 1395); }
 
-auto UnfocusedPauseOption = options::OptionBuilder<bool>("Graphics.UnfocusedPause",
+auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
-                     .category("Graphics")
+                     .category("Game")
                      .default_val(Allow_unfocused_pause)
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 
