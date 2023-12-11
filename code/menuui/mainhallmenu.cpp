@@ -378,7 +378,7 @@ void main_hall_do_multi_ready()
 	Game_mode = GM_MULTIPLAYER;
 
 	// go to parallax online
-	if (Multi_options_g.pxo == 1) {
+	if (Multi_options_g.pxo) {
 		gameseq_post_event(GS_EVENT_PXO);
 	} else {
 		// go to the regular join game screen 

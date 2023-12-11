@@ -923,6 +923,10 @@ extern char Multi_tracker_id_string[255];
 extern ushort Multi_current_file_checksum;
 extern int Multi_current_file_length;
 
+// ip address list vars
+#define IP_STRING_LEN 60
+#define MAX_IP_ADDRS 100
+
 
 // ----------------------------------------------------------------------------------------
 // Multiplayer main functions

@@ -688,6 +688,9 @@ int barracks_pilot_accepted()
 
 	os_config_write_string(NULL, "LastPlayer", Cur_pilot->callsign);
 
+	// set the local multi options from the player flags
+	multi_options_init_globals();
+
 	return 0;
 }
 
@@ -704,6 +707,9 @@ void barracks_accept_pilot(player* plr) {
 
 	Player = &Players[Player_num];
 	Player->assign(plr);
+
+	// set the local multi options from the player flags
+	multi_options_init_globals();
 
 	os_config_write_string(nullptr, "LastPlayer", plr->callsign);
 	gameseq_post_event(GS_EVENT_MAIN_MENU);

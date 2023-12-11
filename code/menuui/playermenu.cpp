@@ -557,6 +557,9 @@ void player_select_close()
 		Player = NULL;
 		return;
 	}
+
+	// set the local multi options from the player flags
+	multi_options_init_globals();
 	
 	// read in the current campaign
 	// NOTE: this may fail if there is no current campaign, it's not fatal
@@ -1537,6 +1540,9 @@ void player_finish_select(const char* callsign, bool is_multi) {
 	} else {
 		Player->player_was_multi = 0;
 	}
+
+	// set the local multi options from the player flags
+	multi_options_init_globals();
 
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 

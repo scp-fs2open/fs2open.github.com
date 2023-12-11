@@ -420,7 +420,7 @@ void pilotfile::plr_read_multiplayer()
 
 	if (Multi_options_g.protocol == NET_VMT) {
 		Multi_options_g.protocol = NET_TCP;
-		Multi_options_g.pxo = 1;
+		Multi_options_g.pxo = true;
 	} else if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
@@ -448,7 +448,7 @@ void pilotfile::plr_write_multiplayer()
 	handler->writeInt("obj_update_level", p->m_local_options.obj_update_level);
 
 	// netgame protocol
-	if (Multi_options_g.pxo == 1) {
+	if (Multi_options_g.pxo) {
 		const int protocol = NET_VMT;
 		handler->writeInt("protocol", protocol);
 	} else {

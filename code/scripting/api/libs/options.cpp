@@ -3,6 +3,8 @@
 
 #include "options.h"
 #include "options/OptionsManager.h"
+#include "network/multi.h"
+#include "network/multiui.h"
 #include "scripting/api/objs/option.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -57,6 +59,93 @@ ADE_FUNC(discardChanges, l_Options, nullptr, "Discard any changes made to the op
 {
 	options::OptionsManager::instance()->discardChanges();
 	return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(MultiLogin, l_Options, "string", "The multiplayer PXO login name", "string", "The login name")
+{
+	const char* login = nullptr;
+	ade_get_args(L, "|s", &login);
+	
+	if (ADE_SETTING_VAR && (login != nullptr)) {
+		strcpy_s(Multi_tracker_login, login);
+	}
+
+	return ade_set_args(L, "s", Multi_tracker_login);
+}
+
+ADE_VIRTVAR(MultiPassword, l_Options, "string", "The multiplayer PXO login password", "boolean", "True if a password is set, false otherwise")
+{
+	const char* pswd = nullptr;
+	ade_get_args(L, "|s", &pswd);
+
+	if (ADE_SETTING_VAR && (pswd != nullptr)) {
+		strcpy_s(Multi_tracker_passwd, pswd);
+	}
+
+	return ade_set_args(L, "b", (strlen(Multi_tracker_passwd) != 0));
+}
+
+ADE_VIRTVAR(MultiSquad, l_Options, "string", "The multiplayer PXO squad name", "string", "The squad name")
+{
+	const char* squad = nullptr;
+	ade_get_args(L, "|s", &squad);
+
+	if (ADE_SETTING_VAR && (squad != nullptr)) {
+		strcpy_s(Multi_tracker_squad_name, squad);
+	}
+
+	return ade_set_args(L, "s", Multi_tracker_squad_name);
+}
+
+ADE_FUNC(readIPAddressTable, l_Options, nullptr, "Gets the current multiplayer IP Address list as a table", "table", "The IP Address table")
+{
+	auto table = luacpp::LuaTable::create(L);
+
+	SCP_list<SCP_string> list;
+	multi_join_read_ip_address_file(list);
+
+	int idx = 1;
+	for (auto const& ip : list) {
+		table.addValue(idx++, ip);
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_FUNC(writeIPAddressTable, l_Options, "table", "Saves the table to the multiplayer IP Address list", "boolean", "True if successful, false otherwise")
+{
+	
+	auto ip_list = luacpp::LuaTable::create(L);
+
+	if (!ade_get_args(L, "t", &ip_list)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_list<SCP_string> list;
+
+	if (ip_list.isValid()) {
+		for (const auto& item : ip_list) {
+			if (item.second.is(luacpp::ValueType::STRING)) {
+				// This'll lua-error internally if it's not fed only strings. Additionally, catch the lua exception and
+				// then carry on
+				try {
+					SCP_string ip = item.second.getValue<SCP_string>();
+					list.push_back(ip);
+				} catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a userdata that was not an string.
+					// Since we can't actually tell whether that's the case before we try to get the value, and the
+					// attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			} else {
+				// This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Table with strings to be written contained non-string values! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	return ade_set_args(L, "b", multi_join_write_ip_address_file(list));
 }
 
 } // namespace api

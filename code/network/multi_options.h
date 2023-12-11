@@ -36,7 +36,7 @@ typedef struct multi_global_options {
 
 	char		user_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of user tracker
 	char		game_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of game tracker
-	int			pxo;
+	bool			pxo;
 	char		pxo_ip[MULTI_OPTIONS_STRING_LEN];					// ip address of pxo chat server
 	char		pxo_rank_url[MULTI_OPTIONS_STRING_LEN];			// URL of pxo rankings page
 	char		pxo_create_url[MULTI_OPTIONS_STRING_LEN];			// URL of pxo create account page
@@ -58,7 +58,7 @@ typedef struct multi_global_options {
 
 	void reset() {
 		protocol = 1;//NET_TCP
-		pxo = 0;
+		pxo = false;
 
 		port = DEFAULT_GAME_PORT;
 
@@ -191,6 +191,9 @@ void multi_options_update_mission(netgame_info *ng, int campaign_mode);
 
 // process an incoming multi options packet
 void multi_options_process_packet(unsigned char *data, header *hinfo);
+
+// set local globals based on player data
+void multi_options_init_globals();
 
 
 #endif

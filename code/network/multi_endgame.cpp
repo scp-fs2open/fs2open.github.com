@@ -383,7 +383,7 @@ void multi_endgame_cleanup()
 		multi_mdns_service_close();
 
 		// if we're in Parallax Online mode, log back in there	
-		if (Multi_options_g.pxo == 1) {
+		if (Multi_options_g.pxo) {
 			Assert(Multi_options_g.protocol == NET_TCP);
 			gameseq_post_event(GS_EVENT_PXO);
 		} else {
