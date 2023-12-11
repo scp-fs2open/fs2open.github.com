@@ -1387,6 +1387,14 @@ void mod_table_init()
 
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
+
+	// if we have the troubleshoot commandline flag to override ingame options then disable them right after all
+	// parsing so we can be sure it doesn't affect anything past this point during engine init.
+	if (Cmdline_no_ingame_options && Using_in_game_options) {
+		Using_in_game_options = false;
+		mprintf((
+			"Game Settings Table: Disabling in-game options system because the commandline override was detected!.\n"));
+	}
 }
 
 // game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time
