@@ -68,7 +68,7 @@ protected:
 	afx_msg void OnButtonNewCutscene();
 	afx_msg void OnSelchangeCutsceneTypeDrop();
 	afx_msg void OnChangeCutsceneName();
-	afx_msg void OnOk();
+	afx_msg void OnButtonOk();
 	afx_msg void OnClose();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

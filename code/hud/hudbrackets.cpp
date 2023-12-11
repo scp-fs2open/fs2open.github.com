@@ -672,7 +672,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				break;
 			case OBJ_JUMP_NODE:
 				for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-					if(jnp->GetSCPObject() == t_objp)
+					if(jnp->GetSCPObjectNumber() == target_objnum)
 						break;
 				}
 				tinfo_name = jnp->GetDisplayName();

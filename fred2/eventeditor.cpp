@@ -602,6 +602,8 @@ void event_editor::OnButtonOk()
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
+
+	FREDDoc_ptr->autosave("event editor");
 }
 
 // load controls with structure data

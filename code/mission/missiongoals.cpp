@@ -1280,21 +1280,24 @@ void mission_goal_fail_incomplete()
 // to skip past training misisons
 void mission_goal_mark_objectives_complete()
 {
-	int i;
-
-	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
-		Mission_goals[i].satisfied = GOAL_COMPLETE;
+	for (auto &g: Mission_goals) {
+		g.satisfied = GOAL_COMPLETE;
 	}
 }
 
 // small function used to mark all events as completed.  Used in the skipping of missions.
 void mission_goal_mark_events_complete()
 {
-	int i;
+	for (auto &e: Mission_events) {
+		// Handle on-mission-skip SEXPs if we have any.  We could search the entire
+		// SEXP tree, but requiring the operator to be at the root limits potential
+		// unexpected side-effects.
+		if ((e.formula >= 0) && (get_operator_const(e.formula) == OP_ON_MISSION_SKIP)) {
+			eval_sexp(e.formula);
+		}
 
-	for (i = 0; i < (int)Mission_events.size(); i++ ) {
-		Mission_events[i].result = 1;
-		Mission_events[i].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
+		e.result = 1;
+		e.flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 	}
 }
 

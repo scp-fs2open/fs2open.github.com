@@ -316,6 +316,8 @@ void asteroid_editor::OnOK()
 	update_map_window();
 	theApp.record_window_data(&Asteroid_wnd_data, this);
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("asteroid field editor");
 }
 
 BOOL asteroid_editor::OnInitDialog() 

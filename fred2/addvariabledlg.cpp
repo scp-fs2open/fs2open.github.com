@@ -138,7 +138,7 @@ void CAddVariableDlg::OnOK() {
 		//		}
 		//
 		//		m_sexp_var_index = sexp_add_variable(temp_value, temp_name, type);
-		//		this get done for free CDialog::OnOk() UpdateData(TRUE);
+		//		this get done for free CDialog::OnOK() UpdateData(TRUE);
 		m_create = true;
 
 		CDialog::OnOK();

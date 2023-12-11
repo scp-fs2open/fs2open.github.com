@@ -76,7 +76,7 @@ protected:
 	afx_msg void OnChangeGoalRating();
 	afx_msg void OnSelchangeGoalTypeDrop();
 	afx_msg void OnChangeGoalName();
-	afx_msg void OnOk();
+	afx_msg void OnButtonOk();
 	afx_msg void OnClose();
 	afx_msg void OnGoalInvalid();
 	afx_msg void OnChangeGoalScore();

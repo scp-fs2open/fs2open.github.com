@@ -19,7 +19,7 @@
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"

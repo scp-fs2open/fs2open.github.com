@@ -22,15 +22,14 @@ void object_ship_wing_point_team::serialize(lua_State* /*L*/, const scripting::a
 	switch (oswpt.type) {
 	case oswpt_type::SHIP:
 	case oswpt_type::WAYPOINT:
-		ADD_USHORT(oswpt.objp->net_signature);
+		ADD_USHORT(oswpt.objp()->net_signature);
 		break;
 	case oswpt_type::PARSE_OBJECT:
-		ADD_USHORT(oswpt.ship_entry->p_objp->net_signature);
+		ADD_USHORT(oswpt.p_objp()->net_signature);
 		break;
 	case oswpt_type::WING:
 	case oswpt_type::WING_NOT_PRESENT: {
-		int wingidx = WING_INDEX(oswpt.wingp);
-		ADD_INT(wingidx);
+		ADD_INT(oswpt.wingnum);
 		break;
 	}
 	case oswpt_type::SHIP_ON_TEAM:
@@ -55,7 +54,8 @@ void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting:
 		object_ship_wing_point_team oswpt;
 		oswpt.type = static_cast<oswpt_type>(oswpttype);
 		//This doesn't constitute a valid waypoint oswpt, but it will work for everything that lua has access to, so it's fine
-		oswpt.objp = multi_get_network_object(net_signature);
+		auto objp = multi_get_network_object(net_signature);
+		oswpt.objnum = (objp == nullptr) ? -1 : OBJ_INDEX(objp);
 		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
 		break;
 	}
@@ -150,17 +150,17 @@ ADE_FUNC(get, l_OSWPT, nullptr, "Returns the data held by this OSWPT.", "ship | 
 
 	switch (oswpt.type) {
 	case OSWPT_TYPE_SHIP:
-		return ade_set_args(L, "o", l_Ship.Set(object_h(oswpt.objp)));
+		return ade_set_args(L, "o", l_Ship.Set(object_h(oswpt.objnum)));
 	case OSWPT_TYPE_PARSE_OBJECT:
-		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(oswpt.ship_entry->p_objp)));
+		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(oswpt.p_objp())));
 	case OSWPT_TYPE_WING:
 	case OSWPT_TYPE_WING_NOT_PRESENT:
-		return ade_set_args(L, "o", l_Wing.Set(WING_INDEX(oswpt.wingp)));
+		return ade_set_args(L, "o", l_Wing.Set(oswpt.wingnum));
 	case OSWPT_TYPE_SHIP_ON_TEAM:
 	case OSWPT_TYPE_WHOLE_TEAM:
 		return ade_set_args(L, "o", l_Team.Set(oswpt.team));
 	case OSWPT_TYPE_WAYPOINT:
-		return ade_set_args(L, "o", l_Waypoint.Set(object_h(oswpt.objp)));
+		return ade_set_args(L, "o", l_Waypoint.Set(object_h(oswpt.objnum)));
 	case OSWPT_TYPE_NONE:
 	case OSWPT_TYPE_EXITED:
 	default:
@@ -179,14 +179,14 @@ ADE_FUNC(forAllShips, l_OSWPT, "function(ship ship) => void body", "Applies this
 	case OSWPT_TYPE_SHIP:
 	{
 		luacpp::LuaValueList args;
-		args.push_back(luacpp::LuaValue::createValue(L, l_Ship.Set(object_h(oswpt.objp))));
+		args.push_back(luacpp::LuaValue::createValue(L, l_Ship.Set(object_h(oswpt.objnum))));
 
 		body.call(L, args);
 		break;
 	}
 	case OSWPT_TYPE_WING:
 	{
-		auto wp = oswpt.wingp;
+		auto wp = &Wings[oswpt.wingnum];
 		for (int i = 0; i < wp->current_count; ++i)
 		{
 			luacpp::LuaValueList args;
@@ -236,7 +236,7 @@ ADE_FUNC(forAllParseObjects, l_OSWPT, "function(parse_object po) => void body", 
 	case OSWPT_TYPE_PARSE_OBJECT:
 	{
 		luacpp::LuaValueList args;
-		args.push_back(luacpp::LuaValue::createValue(L, l_ParseObject.Set(parse_object_h(oswpt.ship_entry->p_objp))));
+		args.push_back(luacpp::LuaValue::createValue(L, l_ParseObject.Set(parse_object_h(oswpt.p_objp()))));
 
 		body.call(L, args);
 		break;
@@ -245,7 +245,7 @@ ADE_FUNC(forAllParseObjects, l_OSWPT, "function(parse_object po) => void body", 
 	{
 		for (p_object* p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 		{
-			if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+			if (p_objp->wingnum == oswpt.wingnum)
 			{
 				luacpp::LuaValueList args;
 				args.push_back(luacpp::LuaValue::createValue(L, l_ParseObject.Set(parse_object_h(p_objp))));

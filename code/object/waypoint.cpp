@@ -24,10 +24,9 @@ waypoint::waypoint()
 	this->m_position.xyz.z = 0.0f;
 
 	this->m_objnum = -1;
-	this->m_list_index = -1;
 }
 
-waypoint::waypoint(const vec3d *position, int list_index)
+waypoint::waypoint(const vec3d *position)
 {
 	Assert(position != NULL);
 
@@ -36,7 +35,6 @@ waypoint::waypoint(const vec3d *position, int list_index)
 	this->m_position.xyz.z = position->xyz.z;
 
 	this->m_objnum = -1;
-	this->m_list_index = list_index;
 }
 
 waypoint::~waypoint()
@@ -56,16 +54,36 @@ int waypoint::get_objnum() const
 
 const waypoint_list *waypoint::get_parent_list() const
 {
-	if (m_list_index < 0)
+	int list_index = get_parent_list_index();
+	if (list_index < 0 || list_index >= static_cast<int>(Waypoint_lists.size()))
 		return nullptr;
-	return &Waypoint_lists[m_list_index];
+
+	return &Waypoint_lists[list_index];
 }
 
 waypoint_list *waypoint::get_parent_list()
 {
-	if (m_list_index < 0)
+	int list_index = get_parent_list_index();
+	if (list_index < 0 || list_index >= static_cast<int>(Waypoint_lists.size()))
 		return nullptr;
-	return &Waypoint_lists[m_list_index];
+
+	return &Waypoint_lists[list_index];
+}
+
+int waypoint::get_parent_list_index() const
+{
+	if (m_objnum < 0)
+		return -1;
+
+	return calc_waypoint_list_index(Objects[m_objnum].instance);
+}
+
+int waypoint::get_index() const
+{
+	if (m_objnum < 0)
+		return -1;
+
+	return calc_waypoint_index(Objects[m_objnum].instance);
 }
 
 void waypoint::set_pos(const vec3d *pos)
@@ -98,12 +116,12 @@ const char *waypoint_list::get_name() const
 
 const SCP_vector<waypoint> &waypoint_list::get_waypoints() const
 {
-	return waypoints;
+	return m_waypoints;
 }
 
 SCP_vector<waypoint> &waypoint_list::get_waypoints()
 {
-	return waypoints;
+	return m_waypoints;
 }
 
 void waypoint_list::set_name(const char *name)
@@ -372,21 +390,18 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)
 		return;
 	}
 
-	waypoint_list new_list(name);
-	int wp_list_index = static_cast<int>(Waypoint_lists.size());
-	Waypoint_lists.push_back(new_list);
-	waypoint_list *wp_list = &Waypoint_lists.back();
+	Waypoint_lists.emplace_back(name);
+	auto& wp_list = Waypoint_lists.back();
 
-	wp_list->get_waypoints().reserve(vec_list.size());
+	wp_list.get_waypoints().reserve(vec_list.size());
 	for (const auto &ii: vec_list)
 	{
-		waypoint new_waypoint(&ii, wp_list_index);
-		wp_list->get_waypoints().push_back(new_waypoint);
+		wp_list.get_waypoints().emplace_back(&ii);
 	}
 
 	// so that masking in the other function works
 	// though if you actually hit this Assert, you have other problems
-	Assert(wp_list->get_waypoints().size() <= 0xffff);
+	Assert(wp_list.get_waypoints().size() <= 0xffff);
 }
 
 int waypoint_add(const vec3d *pos, int waypoint_instance)
@@ -439,7 +454,7 @@ int waypoint_add(const vec3d *pos, int waypoint_instance)
 	Assert(wp_index < 0x10000);
 
 	// create the waypoint object
-	waypoint new_waypoint(pos, wp_list_index);
+	waypoint new_waypoint(pos);
 
 	// add it at its appropriate spot, which may be the end of the list
 	wp_list->get_waypoints().insert(wp_list->get_waypoints().begin() + wp_index, new_waypoint);

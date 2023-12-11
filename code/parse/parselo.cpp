@@ -15,7 +15,10 @@
 #include <csetjmp>
 
 #include <cctype>
+#include <string>
+#include "globalincs/safe_strings.h"
 #include "globalincs/version.h"
+#include "globalincs/vmallocator.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
 #include "mission/missionparse.h"
@@ -29,6 +32,8 @@
 #include "utils/encoding.h"
 #include "utils/unicode.h"
 
+#include <stdint.h>
+#include <string.h>
 #include <utf8.h>
 
 using namespace parse;
@@ -3805,6 +3810,108 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	}
 
 	return line_num;
+}
+
+// A narrower but much faster alternative to split_str(), takes a string and a max pixel length, returns a vector with
+// one string per line. Does not currently support a max line count or ignoring of characters.
+SCP_vector<SCP_string>
+str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool strip_leading_whitespace)
+{
+	// To avoid any unexpected side effects, we're copying the orignal string.
+	SCP_string new_string = SCP_string(source_string);
+
+	SCP_vector<SCP_string> lines = SCP_vector<SCP_string>();
+
+	while (strip_leading_whitespace && !new_string.empty() && is_white_space(new_string[0])) {
+		new_string.erase(0, 1);
+	}
+	if (new_string.empty())
+		return lines;
+
+	// Handle existing line breaks in the string recursively, then append the results.
+	auto newline_at = new_string.find_first_of(UNICODE_CHAR('\n'));
+	while (!new_string.empty() && newline_at < std::string::npos) {
+		if (newline_at == 0) {
+			// No content to split so just pushing a new string on.
+			lines.emplace_back();
+		} else {
+			SCP_vector<SCP_string> sublines =
+				str_wrap_to_width(new_string.substr(0, newline_at), max_pixel_length, strip_leading_whitespace);
+			for (auto line : sublines) {
+				lines.emplace_back(line);
+			}
+		}
+		new_string.erase(0, newline_at + 1);
+		newline_at = new_string.find_first_of(UNICODE_CHAR('\n'));
+	}
+	// With newlines handled, now moving into actually wrapping the content.
+	while (!new_string.empty()) {
+		auto split_at = std::string::npos;
+		// no newlines found, check length.
+		size_t stringlen = new_string.length();
+		int linelen = 0;
+		gr_get_string_size(&linelen, nullptr, new_string.c_str());
+		if (stringlen <= 1) {
+			// in this case checking is pointless, single-character strings can't wrap.
+			// copy into the return vector and then bail.
+			lines.emplace_back(new_string.c_str());
+			break;
+		} else if (linelen < max_pixel_length) {
+			// The remaining string is shorter than our limit so we're done.
+			// copy into the return vector and then bail.
+			lines.emplace_back(new_string.c_str());
+			break;
+		} else {
+			size_t search_min = 0;
+			size_t search_max = stringlen;
+			size_t center = 0;
+			while ((search_max - search_min) > 0) {
+				center = search_min + ((search_max - search_min) / 2);
+				gr_get_string_size(&linelen, nullptr, new_string.substr(0, center).c_str());
+				if (linelen == max_pixel_length) {
+					search_max = center;
+					search_min = center;
+					split_at = center;
+				} else if (linelen > max_pixel_length) {
+					search_max = MIN(center, search_max - 1);
+					split_at = search_max;
+				} else {
+					search_min = MAX(center, search_min + 1);
+					split_at = search_min;
+				}
+			}
+		}
+		if (split_at >= stringlen) { // don't split out of bounds
+			split_at = stringlen - 1;
+		}
+		if (split_at <= 0) {
+			// we need to always remove something from the current line or we're stuck
+			split_at = 1;
+		} else if (!is_white_space(new_string.at(split_at))) {
+			// split_at is now the last point where we can split, but could be mid-word
+			// work backwards to find whitespace.
+			for (int n = ((int)split_at) - 1; n >= 0; n--) {
+				if (is_white_space(new_string.at(n))) {
+					split_at = (size_t)n;
+					n = -1;
+				}
+			}
+		}
+
+		lines.emplace_back(new_string.substr(0, split_at));
+		new_string.erase(0, split_at);
+		// To trim the front whitespace off the next line
+		while (!new_string.empty() && is_white_space(new_string[0])) {
+			new_string.erase(0, 1);
+		}
+	}
+	return lines;
+}
+
+SCP_vector<SCP_string> str_wrap_to_width(const char* source_string, int max_pixel_length, bool strip_leading_whitespace)
+{
+	// SCP_string temp = SCP_string(source_string);
+	return str_wrap_to_width(SCP_string(source_string), max_pixel_length, strip_leading_whitespace);
 }
 
 // Goober5000

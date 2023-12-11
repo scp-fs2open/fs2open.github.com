@@ -1,6 +1,8 @@
-#include "model/modelanimation.h"
-#include "model/modelanimation_segments.h"
-#include "model/modelanimation_moveables.h"
+#include "math/curve.h"
+#include "model/animation/modelanimation.h"
+#include "model/animation/modelanimation_driver.h"
+#include "model/animation/modelanimation_segments.h"
+#include "model/animation/modelanimation_moveables.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "parse/encrypt.h"
@@ -47,7 +49,6 @@ namespace animation {
 		instance_data& instanceData = m_instances[pmi->id];
 
 		instanceData.state = ModelAnimationState::NEED_RECALC;
-		instanceData.time = 0;
 	}
 
 	enum class AnimationTimeWrapMode { BOUNCE, BOUNCE_ONCE, TRUNC, WRAP };
@@ -82,6 +83,105 @@ namespace animation {
 		return std::make_pair(frametime, flip);
 	}
 
+	void ModelAnimation::driverTime(ModelAnimation& anim, instance_data& instanceData, polymodel_instance* pmi, float frametime) {
+		switch (instanceData.canonicalDirection){
+		case ModelAnimationDirection::FWD:
+			instanceData.time += frametime;
+
+			if (anim.m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_fully_started] && instanceData.time > anim.m_flagData.loopsFrom){
+				instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_fully_started);
+			}
+
+			//Cap time if needed
+			if (instanceData.time > instanceData.duration) {
+				if (anim.m_flags[Animation_Flags::Auto_Reverse]) {
+					// Reverse
+					instanceData.canonicalDirection = ModelAnimationDirection::RWD;
+					instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE_ONCE).first;
+				}
+				else if (anim.m_flags[Animation_Flags::Loop]) {
+					if (anim.m_flags[Animation_Flags::Reset_at_completion]) {
+						//Loop from start
+						instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
+
+						//Reset at completion triggers count as a full next loop, so we need to stop here.
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+							anim.stop(pmi, false);
+					}
+					else if (anim.m_flags[Animation_Flags::Seamless_with_startup]) {
+						//We need to go into final shutdown mode. Go to start of seamless segment, and play backwards
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop]) {
+							instanceData.time = animationTimeWrap(instanceData.time - instanceData.duration, 0, anim.m_flagData.loopsFrom, AnimationTimeWrapMode::BOUNCE_ONCE).first;
+							instanceData.canonicalDirection = ModelAnimationDirection::RWD;
+							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+						}
+						else {
+							//Loop from start
+							instanceData.time = animationTimeWrap(instanceData.time, anim.m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
+						}
+					}
+					else {
+						//Loop back
+						auto newState = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE);
+						instanceData.time = newState.first;
+						instanceData.canonicalDirection = newState.second ? ModelAnimationDirection::RWD : ModelAnimationDirection::FWD;
+					}
+				}
+				else if (anim.m_flags[Animation_Flags::Reset_at_completion])
+					//Stop animation at start, not end
+					anim.stop(pmi, false);
+				else {
+					instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::TRUNC).first;
+					// Normal execution, stop aniamtion at end
+					instanceData.state = ModelAnimationState::PAUSED;
+					instanceData.canonicalDirection = ModelAnimationDirection::RWD;
+				}
+			}
+			return;
+
+		case ModelAnimationDirection::RWD:
+			instanceData.time -= frametime;
+
+			//Cap time at 0, but don't clean up the animations here since this function is called in a loop over the running animations, and cleaning now would invalidate the iterator
+			if (instanceData.time < 0) {
+				if (anim.m_flags[Animation_Flags::Loop]) {
+					if (anim.m_flags[Animation_Flags::Reset_at_completion]) {
+						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
+						instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
+					}
+					else if (anim.m_flags[Animation_Flags::Seamless_with_startup]) {
+						if (instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] || !instanceData.instance_flags[Animation_Instance_Flags::Seamless_fully_started]) {
+							// We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
+							instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+						}
+						else {
+							instanceData.time = animationTimeWrap(instanceData.time, anim.m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
+						}
+					}
+					else {
+						//Loop back
+						auto newState = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE);
+						instanceData.time = newState.first;
+						instanceData.canonicalDirection = newState.second ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
+					}
+					//For backwards, ALL completion triggers are considered finishes, so always stop if we need to
+					if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+						anim.stop(pmi, false);
+				}
+				else
+					anim.stop(pmi, false);
+			}
+			else if (anim.m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] && instanceData.time < anim.m_flagData.loopsFrom) {
+				//Loop from end. This happens when a seamless loop is reversed after entering the seamless part. If stop is set, set the shutdown flag instead
+				if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+					instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+				else
+					instanceData.time = animationTimeWrap(instanceData.time, anim.m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
+			}
+			return;
+		}
+	}
+
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly) {
 		instance_data& instanceData = m_instances[pmi->id];
 		
@@ -101,7 +201,7 @@ namespace animation {
 				animEntry.parentSet = m_set;
 
 				auto thisPtr = shared_from_this();
-				
+
 				animEntry.animationList.push_back(thisPtr);
 			}
 
@@ -113,122 +213,36 @@ namespace animation {
 			m_animation->recalculate(applyBuffer, currentAnimationDelta, pmi);
 
 			instanceData.duration = m_animation->getDuration(pmi->id);
-			instanceData.state = ModelAnimationState::RUNNING_FWD;
+			instanceData.canonicalDirection = ModelAnimationDirection::FWD;
+			instanceData.state = ModelAnimationState::RUNNING;
+			instanceData.time = 0;
+
+			for (const auto& initialDriver : m_startupDrivers) {
+				initialDriver(*this, instanceData, pmi);
+			}
 
 			if (m_flags[Animation_Flags::Random_starting_phase]) {
 				instanceData.time = util::Random::next() * util::Random::INV_F_MAX_VALUE * instanceData.duration;
 				//Check if we might be on the way backwards
 				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
-					instanceData.state = ModelAnimationState::RUNNING_RWD;
-					break; //In this case, we must delay for a frame
+					prevTime = instanceData.duration;
+					instanceData.canonicalDirection = ModelAnimationDirection::RWD;
 				}
 			}
 		}
 
 			/* fall-thru */
-		case ModelAnimationState::RUNNING_FWD:
-			instanceData.time += frametime;
+		case ModelAnimationState::RUNNING:
+			m_driver(*this, instanceData, pmi, frametime);
 
-			if (m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_fully_started] && instanceData.time > m_flagData.loopsFrom){
-				instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_fully_started);
-			}
-
-			//Cap time if needed
-			if (instanceData.time > instanceData.duration) {
-				if (m_flags[Animation_Flags::Auto_Reverse]) {
-					// Reverse
-					instanceData.state = ModelAnimationState::RUNNING_RWD;
-					instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE_ONCE).first;
-				}
-				else if (m_flags[Animation_Flags::Loop]) {
-					if (m_flags[Animation_Flags::Reset_at_completion]) {
-						//Loop from start
-						instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
-
-						//Reset at completion triggers count as a full next loop, so we need to stop here.
-						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
-							stop(pmi, false);
-					}
-					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
-						//We need to go into final shutdown mode. Go to start of seamless segment, and play backwards
-						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop]) {
-							instanceData.time = animationTimeWrap(instanceData.time - instanceData.duration, 0, m_flagData.loopsFrom, AnimationTimeWrapMode::BOUNCE_ONCE).first;
-							instanceData.state = ModelAnimationState::RUNNING_RWD;
-							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
-						}
-						else {
-							//Loop from start
-							instanceData.time = animationTimeWrap(instanceData.time, m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
-						}
-					}
-					else {
-						//Loop back
-						auto newState = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE);
-						instanceData.time = newState.first;
-						instanceData.state = newState.second ? ModelAnimationState::RUNNING_RWD : ModelAnimationState::RUNNING_FWD;
-					}
-				}
-				else if (m_flags[Animation_Flags::Reset_at_completion])
-					//Stop animation at start, not end
-					stop(pmi, false);
-				else {
-					instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::TRUNC).first;
-					// Normal execution, stop aniamtion at end
-					instanceData.state = ModelAnimationState::COMPLETED;
-				}
+			for (const auto& driver : m_propertyDrivers) {
+				driver(*this, instanceData, pmi);
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
-			m_animation->executeAnimation(applyBuffer, prevTime, instanceData.time, ModelAnimationDirection::FWD, pmi->id);
+			m_animation->executeAnimation(applyBuffer, MIN(prevTime, instanceData.time), MAX(prevTime, instanceData.time), instanceData.canonicalDirection, pmi->id);
 			break;
 
-		case ModelAnimationState::COMPLETED:
-			//This means someone requested to start once we were complete, so start moving backwards.
-			instanceData.state = ModelAnimationState::RUNNING_RWD;
-			/* fall-thru */
-		case ModelAnimationState::RUNNING_RWD:
-			instanceData.time -= frametime;
-
-			//Cap time at 0, but don't clean up the animations here since this function is called in a loop over the running animations, and cleaning now would invalidate the iterator
-			if (instanceData.time < 0) {
-				if (m_flags[Animation_Flags::Loop]) {
-					if (m_flags[Animation_Flags::Reset_at_completion]) {
-						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
-						instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
-					}
-					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
-						if (instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] || !instanceData.instance_flags[Animation_Instance_Flags::Seamless_fully_started]) {
-							// We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
-							instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
-						}
-						else {
-							instanceData.time = animationTimeWrap(instanceData.time, m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
-						}
-					}
-					else {
-						//Loop back
-						auto newState = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE);
-						instanceData.time = newState.first;
-						instanceData.state = newState.second ? ModelAnimationState::RUNNING_FWD : ModelAnimationState::RUNNING_RWD;
-					}
-					//For backwards, ALL completion triggers are considered finishes, so always stop if we need to
-					if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
-						stop(pmi, false);
-				}
-				else
-					stop(pmi, false);
-			}
-			else if (m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] && instanceData.time < m_flagData.loopsFrom) {
-				//Loop from end. This happens when a seamless loop is reversed after entering the seamless part. If stop is set, set the shutdown flag instead
-				if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
-					instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
-				else
-					instanceData.time = animationTimeWrap(instanceData.time, m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
-			}
-
-			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
-			m_animation->executeAnimation(applyBuffer, instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi->id);
-			break;
 		case ModelAnimationState::PAUSED:
 			//Shouldn't happen. Paused Animations are only allowed to be apply only.
 			UNREACHABLE("Tried to play a paused animation without starting it. Get a coder.");
@@ -261,15 +275,13 @@ namespace animation {
 		}
 
 		if (pause || (direction == ModelAnimationDirection::RWD && m_flags[Animation_Flags::Pause_on_reverse])) {
-			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::NEED_RECALC && instanceData.state != ModelAnimationState::COMPLETED)
+			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::NEED_RECALC)
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
 		}
 		else if (instanceData.state == ModelAnimationState::PAUSED) {
-			if (direction == ModelAnimationDirection::FWD)
-				instanceData.state = ModelAnimationState::RUNNING_FWD;
-			else
-				instanceData.state = ModelAnimationState::RUNNING_RWD;
+			instanceData.state = ModelAnimationState::RUNNING;
+			return;
 		}
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
@@ -286,13 +298,13 @@ namespace animation {
 		play(0, pmi, applyBuffer);
 		
 		if (direction == ModelAnimationDirection::RWD) {
-			instanceData.state = ModelAnimationState::RUNNING_RWD;
+			instanceData.state = ModelAnimationState::RUNNING;
 			instanceData.time -= timeOffset;
 			if (force)
 				instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
 		}
 		else {
-			instanceData.state = ModelAnimationState::RUNNING_FWD;
+			instanceData.state = ModelAnimationState::RUNNING;
 			instanceData.time += timeOffset;
 			if (force)
 				instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
@@ -351,12 +363,10 @@ namespace animation {
 		for (const auto& anim : animList.animationList) {
 			const auto& instanceData = anim->m_instances[pmi->id];
 			switch (instanceData.state) {
-			case ModelAnimationState::RUNNING_FWD:
-			case ModelAnimationState::RUNNING_RWD:
+			case ModelAnimationState::RUNNING:
 			case ModelAnimationState::NEED_RECALC:
 				anim->play(frametime * instanceData.speed, pmi, applyBuffer);
 				break;
-			case ModelAnimationState::COMPLETED:
 			case ModelAnimationState::PAUSED:
 				anim->play(frametime, pmi, applyBuffer, true);
 				//Currently not moving. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
@@ -678,7 +688,7 @@ namespace animation {
 		return *this;
 	}
 
-	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
+	std::shared_ptr<ModelAnimation> ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
 		auto newAnim = std::shared_ptr<ModelAnimation>(new ModelAnimation(*animation));
 		newAnim->m_set = this;
 		newAnim->m_animation = std::shared_ptr<ModelAnimationSegment>(animation->m_animation->copy());
@@ -687,6 +697,7 @@ namespace animation {
 		newAnim->request = request;
 		ModelAnimationSet::s_animationById[uniqueId] = newAnim;
 		m_animationSet[{type, subtype}][name].push_back(newAnim);
+		return newAnim;
 	}
 
 	void ModelAnimationSet::changeShipName(const SCP_string& name) {
@@ -1433,6 +1444,124 @@ namespace animation {
 		set.changeShipName(sip->name);
 		
 		ModelAnimationParseHelper::parseAnimsetInfo(set, 's', sip->name);
+	}
+
+	void ModelAnimationParseHelper::parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip) {
+		set.m_animationSet.clear();
+		set.changeShipName(sip->name);
+
+		while(optional_string("+Driver Set:")) {
+			decltype(ModelAnimation::m_driver) driver;
+			decltype(ModelAnimation::m_propertyDrivers) propertyDrivers;
+			decltype(ModelAnimation::m_startupDrivers) startupDrivers;
+
+			if (optional_string("+Time Remap:")) {
+				required_string("+Source:");
+				std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
+				if (!remap_driver_source) {
+					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
+					continue;
+				}
+
+				tl::optional<Curve> curve = tl::nullopt;
+				if (optional_string("+Curve:")) {
+					SCP_string curve_name;
+					stuff_string(curve_name, F_NAME);
+					int curve_id = curve_get_by_name(curve_name);
+					if (curve_id < 0) 
+						error_display(0, "Unknown curve specified! The driver will not use a curve.");
+					else
+						curve = Curves[curve_id];
+				}
+
+				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
+					float oldFrametime = instance.time;
+					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
+					CLAMP(instance.time, 0, instance.duration);
+					instance.canonicalDirection = oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
+				};
+			}
+			while (optional_string("+Property Driver:")){
+				required_string("+Source:");
+				std::function<float(polymodel_instance *)> driver_source = parse_ship_property_driver_source();
+				if (!driver_source) {
+					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
+					continue;
+				}
+
+				required_string("+Target:");
+				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
+
+				tl::optional<Curve> curve = tl::nullopt;
+				if (optional_string("+Curve:")) {
+					SCP_string curve_name;
+					stuff_string(curve_name, F_NAME);
+					int curve_id = curve_get_by_name(curve_name);
+					if (curve_id < 0)
+						error_display(0, "Unknown curve specified! The driver will not use a curve.");
+					else
+						curve = Curves[curve_id];
+				}
+
+				propertyDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
+					float& property = instance.*(target.target);
+					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
+					if(target.clamp) {
+						CLAMP(property, 0, instance.*(*target.clamp));
+					}
+				});
+			}
+			while (optional_string("+Startup Driver:")){
+				required_string("+Source:");
+				std::function<float(polymodel_instance *)> driver_source = parse_ship_property_driver_source();
+				if (!driver_source) {
+					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
+					continue;
+				}
+
+				required_string("+Target:");
+				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
+
+				tl::optional<Curve> curve = tl::nullopt;
+				if (optional_string("+Curve:")) {
+					SCP_string curve_name;
+					stuff_string(curve_name, F_NAME);
+					int curve_id = curve_get_by_name(curve_name);
+					if (curve_id < 0)
+						error_display(0, "Unknown curve specified! The driver will not use a curve.");
+					else
+						curve = Curves[curve_id];
+				}
+
+				startupDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
+					float& property = instance.*(target.target);
+					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
+					if(target.clamp) {
+						CLAMP(property, 0, instance.*(*target.clamp));
+					}
+				});
+			}
+
+			required_string("+Affected Animations:");
+			SCP_vector<SCP_string> requestedAnimations;
+			stuff_string_list(requestedAnimations);
+
+			for (const SCP_string& request : requestedAnimations) {
+				auto animIt = s_animationsById.find(request);
+				if (animIt != s_animationsById.end()) {
+					const ParsedModelAnimation& foundAnim = animIt->second;
+					auto anim = set.emplace(foundAnim.anim, request, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, 's', sip->name));
+
+					if (driver)
+						anim->m_driver = driver;
+					anim->m_propertyDrivers = propertyDrivers;
+					anim->m_startupDrivers = startupDrivers;
+				}
+				else {
+					error_display(0, "Animation with name %s not found!", request.c_str());
+				}
+			}
+		}
 	}
 
 	void ModelAnimationParseHelper::parseMoveablesetInfo(ModelAnimationSet& set) {

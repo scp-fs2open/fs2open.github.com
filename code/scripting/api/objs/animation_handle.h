@@ -1,7 +1,7 @@
 #pragma once
 
 #include "scripting/ade_api.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 
 namespace scripting {
 	namespace api {

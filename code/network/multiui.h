@@ -165,5 +165,11 @@ void multi_common_add_notify(const char *str);
 // bring up the password string popup, fill in passwd (return 1 if accept was pressed, 0 if cancel was pressed)
 int multi_passwd_popup(char *passwd);
 
+// read the list of IPs from the ip file
+void multi_join_read_ip_address_file(SCP_list<SCP_string> &list);
+
+// write the list of IPs to the ip file
+bool multi_join_write_ip_address_file(SCP_list<SCP_string>& list);
+
 
 #endif

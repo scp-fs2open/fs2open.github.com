@@ -11,7 +11,7 @@ class waypoint
 {
 	public:
 		waypoint();
-		waypoint(const vec3d *pos, int list_index);
+		waypoint(const vec3d *pos);
 		~waypoint();
 
 		// accessors
@@ -19,6 +19,8 @@ class waypoint
 		int get_objnum() const;
 		const waypoint_list *get_parent_list() const;
 		waypoint_list *get_parent_list();
+		int get_parent_list_index() const;
+		int get_index() const;
 
 		// mutators
 		void set_pos(const vec3d *pos);
@@ -26,7 +28,6 @@ class waypoint
 	private:
 		vec3d m_position;
 		int m_objnum;
-		int m_list_index;
 
 	friend void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index);
 };
@@ -48,7 +49,7 @@ class waypoint_list
 
 	private:
 		char m_name[NAME_LENGTH];
-		SCP_vector<waypoint> waypoints;
+		SCP_vector<waypoint> m_waypoints;
 };
 
 //********************GLOBALS********************

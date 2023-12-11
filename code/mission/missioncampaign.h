@@ -239,7 +239,7 @@ void mission_campaign_eval_next_mission();
 int mission_campaign_previous_mission();
 
 // proceeds to next mission in campaign
-void mission_campaign_skip_to_next(int start_game = 1);
+void mission_campaign_skip_to_next();
 
 // break out of loop
 void mission_campaign_exit_loop();

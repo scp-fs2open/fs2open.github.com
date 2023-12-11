@@ -1,4 +1,4 @@
-#include "model/modelanimation_segments.h"
+#include "model/animation/modelanimation_segments.h"
 
 #include "render/3d.h"
 

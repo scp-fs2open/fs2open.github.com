@@ -22,7 +22,7 @@
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -927,18 +927,28 @@ enum class ShipStatus
 struct ship_registry_entry
 {
 	ShipStatus status = ShipStatus::INVALID;
-	char name[NAME_LENGTH];
+	char name[NAME_LENGTH] = { 0 };
 
-	p_object *p_objp = nullptr;
-	object *objp = nullptr;
-	ship *shipp = nullptr;
+	int pobj_num = -1;
+	int objnum = -1;
+	int shipnum = -1;
+
 	int cleanup_mode = 0;
 	int exited_index = -1;
 
-	ship_registry_entry(const char *_name)
-	{
-		strcpy_s(name, _name);
-	}
+	ship_registry_entry(const char* _name);
+
+	inline bool has_p_objp() const { return pobj_num >= 0; }
+	inline bool has_objp() const { return objnum >= 0; }
+	inline bool has_shipp() const { return shipnum >= 0; }
+
+	p_object* p_objp() const;
+	object* objp() const;
+	ship* shipp() const;
+
+	p_object* p_objp_or_null() const;
+	object* objp_or_null() const;
+	ship* shipp_or_null() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
@@ -1648,8 +1658,9 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) ((int)(wingp-Wings))
-#define SHIP_INDEX(shipp) ((int)(shipp-Ships))
+#define WING_INDEX(wingp) (static_cast<int>(wingp-Wings))
+#define SHIP_INDEX(shipp) (static_cast<int>(shipp-Ships))
+#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>(ship_entry-Ship_registry.data()))
 
 
 extern void ship_init();				// called once	at game start

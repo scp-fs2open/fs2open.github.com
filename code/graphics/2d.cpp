@@ -266,6 +266,7 @@ static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
                      .serializer(videodisplay_serializer)
                      .enumerator(videodisplay_enumerator)
                      .display(videodisplay_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
                      .default_val(0)
                      .change_listener(videodisplay_change)
                      .importance(99)

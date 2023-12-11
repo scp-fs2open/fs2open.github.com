@@ -175,6 +175,44 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
 
+ship_registry_entry::ship_registry_entry(const char* _name)
+{
+	strcpy_s(name, _name);
+}
+
+p_object* ship_registry_entry::p_objp() const
+{
+	Assertion(has_p_objp(), "ship_registry_entry::p_objp() was called on a ship entry that does not have a parse object");
+	return &Parse_objects[pobj_num];
+}
+
+object* ship_registry_entry::objp() const
+{
+	Assertion(has_objp(), "ship_registry_entry::objp() was called on a ship entry that does not have an object");
+	return &Objects[objnum];
+}
+
+ship* ship_registry_entry::shipp() const
+{
+	Assertion(has_shipp(), "ship_registry_entry::shipp() was called on a ship entry that does not have a ship");
+	return &Ships[shipnum];
+}
+
+p_object* ship_registry_entry::p_objp_or_null() const
+{
+	return (pobj_num < 0) ? nullptr : &Parse_objects[pobj_num];
+}
+
+object* ship_registry_entry::objp_or_null() const
+{
+	return (objnum < 0) ? nullptr : &Objects[objnum];
+}
+
+ship* ship_registry_entry::shipp_or_null() const
+{
+	return (shipnum < 0) ? nullptr : &Ships[shipnum];
+}
+
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
@@ -5024,6 +5062,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->animations, sip);
 	}
 
+	if (optional_string("$Driven Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(sip->animations, sip);
+	}
+
 	if (optional_string("$Animation Moveables:")) {
 		animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->animations);
 	}
@@ -8528,8 +8570,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Goober5000 - handle ship registry
 	auto entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
 	entry->status = ShipStatus::EXITED;
-	entry->objp = nullptr;
-	entry->shipp = nullptr;
+	entry->objnum = -1;
+	entry->shipnum = -1;
 	entry->cleanup_mode = cleanup_mode;
 
 	// add the information to the exited ship list
@@ -10706,7 +10748,7 @@ static void ship_init_afterburners(ship *shipp)
  */
 int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name, bool standalone_ship)
 {
-	int			i, n, objnum, j, k, t;
+	int			i, shipnum, objnum, j, k, t;
 	ship_info	*sip;
 	ship			*shipp;
 
@@ -10728,19 +10770,19 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		}
 	}
 
-	for (n=0; n<MAX_SHIPS; n++){
-		if (Ships[n].objnum == -1){
+	for (shipnum=0; shipnum<MAX_SHIPS; shipnum++){
+		if (Ships[shipnum].objnum == -1){
 			break;
 		}
 	}
 
-	if (n == MAX_SHIPS){
+	if (shipnum == MAX_SHIPS){
 		return -1;
 	}
 
 	Assertion((ship_type >= 0) && (ship_type < ship_info_size()), "Invalid ship_type %d passed to ship_create() (expected value in the range 0-%d)\n", ship_type, ship_info_size()-1);
 	sip = &(Ship_info[ship_type]);
-	shipp = &Ships[n];
+	shipp = &Ships[shipnum];
 	shipp->clear();
 	shipp->orders_allowed_against = ship_set_default_orders_against();
 
@@ -10799,7 +10841,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
 	default_ship_object_flags.set(Object::Object_Flags::Collides, !sip->flags[Ship::Info_Flags::No_collide]);
 
-	objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
+	objnum = obj_create(OBJ_SHIP, -1, shipnum, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
 
 	// Init multiplayer interpolation info
@@ -10807,7 +10849,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	shipp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
-	shipp->ai_index = ai_get_slot(n);
+	shipp->ai_index = ai_get_slot(shipnum);
 	Assert( shipp->ai_index >= 0 );
 
 	// Goober5000 - if no ship name specified, or if specified ship already exists,
@@ -10819,7 +10861,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
 		strcpy_s(base_name, Ship_info[ship_type].name);
-		sprintf(suffix, NOX(" %d"), n);
+		sprintf(suffix, NOX(" %d"), shipnum);
 
 		// default names shouldn't have a hashed suffix
 		end_string_at_first_hash_symbol(base_name);
@@ -10844,10 +10886,10 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	}
 
 	ship_set_default_weapons(shipp, sip);	//	Moved up here because ship_set requires that weapon info be valid.  MK, 4/28/98
-	ship_set(n, objnum, ship_type);
+	ship_set(shipnum, objnum, ship_type);
 
 	init_ai_object(objnum);
-	ai_clear_ship_goals( &Ai_info[Ships[n].ai_index] );		// only do this one here.  Can't do it in init_ai because it might wipe out goals in mission file
+	ai_clear_ship_goals( &Ai_info[shipp->ai_index] );		// only do this one here.  Can't do it in init_ai because it might wipe out goals in mission file
 
 	// Bump the object radius to ensure that collision detection works right
 	// even when spread shields extend outside the model's natural radius
@@ -10893,22 +10935,20 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 				for ( k = 0; k < pm->paths[i].verts[j].nturrets; k++ )
 				{
 					int ptindex = pm->paths[i].verts[j].turret_ids[k];		// this index is a submodel number (ala bspgen)
-					int index;
-					ship_subsys *ss;
 
 					// iterate through the ship_subsystems looking for an id that matches
-					index = 0;
-					ss = GET_FIRST(&Ships[n].subsys_list);
-					while ( ss != END_OF_LIST( &Ships[n].subsys_list ) ) {
+					int index = 0;
+					bool found = false;
+					for (auto ss: list_range(&shipp->subsys_list)) {
 						if ( ss->system_info->subobj_num == ptindex ) {			// when these are equal, fix up the ref
 							pm->paths[i].verts[j].turret_ids[k] = index;				// in path structure to index a ship_subsys
+							found = true;
 							break;											
 						}
 						index++;
-						ss = GET_NEXT( ss );
 					}
 
-					if ( ss == END_OF_LIST(&Ships[n].subsys_list) )
+					if (!found)
 						Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means that the turret was not specified in the ship table(s).", sip->pof_file, pm->paths[i].name, j, ptindex );
 				}
 			}
@@ -10940,8 +10980,8 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	{
 		ship_registry_entry entry(shipp->ship_name);
 		entry.status = ShipStatus::PRESENT;
-		entry.objp = &Objects[objnum];
-		entry.shipp = shipp;
+		entry.objnum = objnum;
+		entry.shipnum = shipnum;
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[shipp->ship_name] = static_cast<int>(Ship_registry.size() - 1);
@@ -10950,8 +10990,8 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	{
 		auto entry = &Ship_registry[ship_it->second];
 		entry->status = ShipStatus::PRESENT;
-		entry->objp = &Objects[objnum];
-		entry->shipp = shipp;
+		entry->objnum = objnum;
+		entry->shipnum = shipnum;
 	}
 	
 	// Start up stracking for this ship in multi.

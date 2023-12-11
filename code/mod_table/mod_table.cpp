@@ -150,10 +150,10 @@ bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
 
-static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
                      std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
-                     .category("Other")
+                     .category("Game")
                      .default_val(Discord_presence)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
@@ -1387,6 +1387,14 @@ void mod_table_init()
 
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
+
+	// if we have the troubleshoot commandline flag to override ingame options then disable them right after all
+	// parsing so we can be sure it doesn't affect anything past this point during engine init.
+	if (Cmdline_no_ingame_options && Using_in_game_options) {
+		Using_in_game_options = false;
+		mprintf((
+			"Game Settings Table: Disabling in-game options system because the commandline override was detected!.\n"));
+	}
 }
 
 // game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time

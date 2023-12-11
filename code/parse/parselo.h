@@ -334,6 +334,11 @@ int split_str(const char* src,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 
+SCP_vector<SCP_string> str_wrap_to_width(const SCP_string& source_string, int max_pixel_length,
+			  bool strip_leading_whitespace = true);
+
+SCP_vector<SCP_string> str_wrap_to_width(const char* source_string, int max_pixel_length,
+			  bool strip_leading_whitespace = true);
 // fred
 extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);

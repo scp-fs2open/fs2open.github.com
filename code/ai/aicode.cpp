@@ -395,10 +395,10 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 			continue;
 
 		auto ship_entry = &Ship_registry[hfi->ship_registry_index];
-		if (!ship_entry->objp)
+		if (!ship_entry->has_objp())
 			continue;
 
-		int signature = ship_entry->objp->signature;
+		int signature = ship_entry->objp()->signature;
 
 		// sigatures, weapon_index, and team must match
 		if ( (signature == target_signature) && (hfi->weapon_index == weapon_num) && (hfi->team == firer_team) )
