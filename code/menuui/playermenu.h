@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 
 // general defines
+#define PLAYER_SELECT_UNINITED 		-1							// Used only on program start
 #define PLAYER_SELECT_MODE_SINGLE	0							// looking through single player pilots
 #define PLAYER_SELECT_MODE_MULTI    1							// looking through multi player pilots
 
