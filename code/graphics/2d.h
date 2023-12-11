@@ -1002,7 +1002,7 @@ extern void gr_printf_menu_zoomed( int x, int y, const char * format, SCP_FORMAT
 extern void gr_printf_no_resize( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
 
 // Returns the size of the string in pixels in w and h
-extern void gr_get_string_size( int *w, int *h, const char * text, int len = 9999 );
+extern void gr_get_string_size( int *w, int *h, const char * text, size_t len = std::string::npos );
 
 // Returns the height of the current font
 extern int gr_get_font_height();

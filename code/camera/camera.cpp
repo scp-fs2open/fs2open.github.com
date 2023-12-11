@@ -754,7 +754,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		//Get text size
 		for(int i = 0; i < num_text_lines; i++)
 		{
-			gr_get_string_size(&w, &h, text_line_ptrs[i], text_line_lens[i]);
+			gr_get_string_size(&w, &h, text_line_ptrs[i], static_cast<size_t>(text_line_lens[i]));
 
 			if(w > tw)
 				tw = w;

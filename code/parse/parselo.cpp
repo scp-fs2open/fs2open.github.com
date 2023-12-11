@@ -3471,7 +3471,6 @@ void display_parse_diagnostics()
 char *split_str_once(char *src, int max_pixel_w)
 {
 	char *brk = nullptr;
-	int i, w, len;
 	bool last_was_white = false;
 
 	Assert(src);
@@ -3479,12 +3478,14 @@ char *split_str_once(char *src, int max_pixel_w)
 	if (max_pixel_w <= 0)
 		return src;  // if there's no width, skip everything else
 
+	int w;
 	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return nullptr;  // string doesn't require a cut
 	}
 
-	len = (int)strlen(src);
+	size_t i;
+	size_t len = strlen(src);
 	for (i=0; i<len; i++) {
 		gr_get_string_size(&w, nullptr, src, i + 1);
 
