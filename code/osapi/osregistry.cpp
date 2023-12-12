@@ -108,10 +108,10 @@ namespace
 		if (!alternate_path) {
 			// Use the original registry path, sometimes breaks for no reason which can be fixed by the code below
 			if (section) {
-				sprintf(out_keyname, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
+				snprintf(out_keyname, 1024, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
 			}
 			else {
-				sprintf(out_keyname, "Software\\%s\\%s", szCompanyName, szAppName);
+				snprintf(out_keyname, 1024, "Software\\%s\\%s", szCompanyName, szAppName);
 			}
 			return HKEY_LOCAL_MACHINE;
 		}
@@ -136,19 +136,19 @@ namespace
 			if (needsWOW64())
 			{
 				if (section) {
-					sprintf(out_keyname, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\WOW6432Node\\%s\\%s\\%s", userSID.c_str(), szCompanyName, szAppName, section);
+					snprintf(out_keyname, 1024, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\WOW6432Node\\%s\\%s\\%s", userSID.c_str(), szCompanyName, szAppName, section);
 				}
 				else {
-					sprintf(out_keyname, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\WOW6432Node\\%s\\%s", userSID.c_str(), szCompanyName, szAppName);
+					snprintf(out_keyname, 1024, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\WOW6432Node\\%s\\%s", userSID.c_str(), szCompanyName, szAppName);
 				}
 			}
 			else
 			{
 				if (section) {
-					sprintf(out_keyname, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\%s\\%s\\%s", userSID.c_str(), szCompanyName, szAppName, section);
+					snprintf(out_keyname, 1024, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\%s\\%s\\%s", userSID.c_str(), szCompanyName, szAppName, section);
 				}
 				else {
-					sprintf(out_keyname, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\%s\\%s", userSID.c_str(), szCompanyName, szAppName);
+					snprintf(out_keyname, 1024, "%s_Classes\\VirtualStore\\MACHINE\\SOFTWARE\\%s\\%s", userSID.c_str(), szCompanyName, szAppName);
 				}
 			}
 
@@ -158,20 +158,20 @@ namespace
 		{
 			// This will probably fail
 			if (section) {
-				sprintf(out_keyname, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
+				snprintf(out_keyname, 1024, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
 			}
 			else {
-				sprintf(out_keyname, "Software\\%s\\%s", szCompanyName, szAppName);
+				snprintf(out_keyname, 1024, "Software\\%s\\%s", szCompanyName, szAppName);
 			}
 
 			return HKEY_LOCAL_MACHINE;
 		}
 #else
 		if (section) {
-			sprintf(out_keyname, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
+			snprintf(out_keyname, 1024, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
 		}
 		else {
-			sprintf(out_keyname, "Software\\%s\\%s", szCompanyName, szAppName);
+			snprintf(out_keyname, 1024, "Software\\%s\\%s", szCompanyName, szAppName);
 		}
 
 		return HKEY_LOCAL_MACHINE;
@@ -817,12 +817,12 @@ static void profile_save(Profile *profile, const char *file)
 	Section *sp = profile->sections;
 
 	while (sp != NULL) {
-		sprintf(tmp, NOX("[%s]\n"), sp->name);
+		snprintf(tmp, 255, NOX("[%s]\n"), sp->name);
 		fputs(tmp, fp);
 
 		KeyValue *kvp = sp->pairs;
 		while (kvp != NULL) {
-			sprintf(tmp2, NOX("%s=%s\n"), kvp->key, kvp->value);
+			snprintf(tmp2, 255, NOX("%s=%s\n"), kvp->key, kvp->value);
 			fputs(tmp2, fp);
 			kvp = kvp->next;
 		}

@@ -4221,7 +4221,7 @@ void get_sexp_text_for_variable(char *text, int sexp_var_index)
 	if (Fred_running) {
 		strcpy(text, Sexp_variables[sexp_var_index].variable_name);
 	} else {
-		sprintf(text, "%d", sexp_var_index);
+		snprintf(text, TOKEN_LENGTH, "%d", sexp_var_index);
 	}
 }
 
