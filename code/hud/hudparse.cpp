@@ -1611,6 +1611,7 @@ void load_gauge_lag(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -1666,6 +1667,7 @@ void load_gauge_mini_shields(gauge_settings* settings)
 	hud_gauge->init2DigitOffsets(Mini_2digit_offsets[0], Mini_2digit_offsets[1]);
 	hud_gauge->init3DigitOffsets(Mini_3digit_offsets[0], Mini_3digit_offsets[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -1762,6 +1764,7 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initEnergyHeight(Wenergy_h);
 	hud_gauge->initTextOffsets(Wenergy_text_offsets[0], Wenergy_text_offsets[1]);
 	hud_gauge->initAlignments(text_alignment, weapon_alignment);
@@ -1915,6 +1918,7 @@ void load_gauge_escort_view(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
+	hud_gauge->initHiRes(fname_top);
 	hud_gauge->initEntryHeight(entry_h);
 	hud_gauge->initEntryStaggerWidth(entry_stagger_w);
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
@@ -1976,6 +1980,7 @@ void load_gauge_afterburner(gauge_settings* settings)
 
 	hud_gauge->initEnergyHeight(energy_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -2018,6 +2023,7 @@ void load_gauge_mission_time(gauge_settings* settings)
 	hud_gauge->initTextOffsets(time_text_offsets[0], time_text_offsets[1]);
 	hud_gauge->initValueOffsets(time_val_offsets[0], time_val_offsets[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -2111,6 +2117,7 @@ void load_gauge_threat_indicator(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_arc, fname_laser, fname_lock);
+	hud_gauge->initHiRes(fname_arc);
 	hud_gauge->initLaserWarnOffsets(Laser_warn_offsets[0], Laser_warn_offsets[1]);
 	hud_gauge->initLockWarnOffsets(Lock_warn_offsets[0], Lock_warn_offsets[1]);
 
@@ -2178,6 +2185,7 @@ void load_gauge_center_reticle(gauge_settings* settings)
 		stuff_int(&autoaim_frame);
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
 	hud_gauge->setAutoaimFrame(autoaim_frame);
 
@@ -2351,6 +2359,7 @@ void load_gauge_throttle(gauge_settings* settings)
 	hud_gauge->initGlideOffsets(glide_offset[0], glide_offset[1], custom_glide);
 	hud_gauge->initMatchSpeedOffsets(match_speed_offset[0], match_speed_offset[1], custom_match);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->showBackground(show_background);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
@@ -2435,6 +2444,7 @@ void load_gauge_ets_retail(gauge_settings* settings)
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initGaugePositions(gauge_positions);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
@@ -2502,6 +2512,7 @@ void load_gauge_ets_weapons(gauge_settings* settings)
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -2565,6 +2576,7 @@ void load_gauge_ets_shields(gauge_settings* settings)
 
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initLetter(letter);
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
@@ -2633,6 +2645,7 @@ void load_gauge_ets_engines(gauge_settings* settings)
 
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initLetter(letter);
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
@@ -2708,6 +2721,7 @@ void load_gauge_extra_target_data(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initBracketOffsets(bracket_offsets[0], bracket_offsets[1]);
 	hud_gauge->initDockOffsets(dock_offsets[0], dock_offsets[1]);
 	hud_gauge->initDockMaxWidth(dock_max_w);
@@ -2830,6 +2844,7 @@ void load_gauge_radar_std(gauge_settings* settings)
 	// Only load this if the user hasn't specified a preference
 	if (Cmdline_orb_radar == 0) {
 		hud_gauge->initBitmaps(fname);
+		hud_gauge->initHiRes(fname);
 		hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
 		hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
 		hud_gauge->initDistanceInfinityOffsets(Radar_dist_offsets[2][0], Radar_dist_offsets[2][1]);
@@ -2926,6 +2941,7 @@ void load_gauge_radar_orb(gauge_settings* settings)
 	//only load this if the user actually wants to use the orb radar.
 	if (Cmdline_orb_radar == 1) {
 		hud_gauge->initBitmaps(fname);
+		hud_gauge->initHiRes(fname);
 		hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
 		hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
 		hud_gauge->initDistanceInfinityOffsets(Radar_dist_offsets[2][0], Radar_dist_offsets[2][1]);
@@ -3126,6 +3142,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 
 	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
 	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
+	hud_gauge->initHiRes(xy_fname);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
@@ -3345,6 +3362,7 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	hud_gauge->initGaugeWirecolor(wirecolor);
 	hud_gauge->initGaugeWirecolorOverride(wirecoloroverride);
 	hud_gauge->initBitmaps(fname_monitor, fname_monitor_mask, fname_integrity, fname_static);
+	hud_gauge->initHiRes(fname_monitor);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -3429,6 +3447,7 @@ void load_gauge_squad_message(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
+	hud_gauge->initHiRes(fname_top);
 	hud_gauge->initHeaderOffsets(Header_offsets[0], Header_offsets[1]);
 	hud_gauge->initItemStartOffsets(Item_start_offsets[0], Item_start_offsets[1]);
 	hud_gauge->initMiddleFrameStartOffsetY(Middle_frame_start_offset_y);
@@ -3501,6 +3520,7 @@ void load_gauge_objective_notify(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initObjTextOffsetY(Objective_text_offset_y);
 	hud_gauge->initObjValueOffsetY(Objective_text_val_offset_y);
 	hud_gauge->initSubspaceTextOffsetY(Subspace_text_offset_y);
@@ -3769,6 +3789,7 @@ void load_gauge_directives(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
+	hud_gauge->initHiRes(fname_top);
 	hud_gauge->initMiddleFrameOffsetY(middle_frame_offset_y);
 	hud_gauge->initTextHeight(text_h);
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
@@ -3827,6 +3848,7 @@ void load_gauge_talking_head(gauge_settings* settings)
 	hud_gauge->initAnimOffsets(Anim_offsets[0], Anim_offsets[1]);
 	hud_gauge->initAnimSizes(Anim_size[0], Anim_size[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initHeaderOffsets(Header_offsets[0], Header_offsets[1]);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
@@ -3866,6 +3888,7 @@ void load_gauge_countermeasures(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initCountTextOffsets(cm_text_offset[0], cm_text_offset[1]);
 	hud_gauge->initCountValueOffsets(cm_text_val_offset[0], cm_text_val_offset[1]);
 
@@ -3924,6 +3947,7 @@ void load_gauge_auto_target(gauge_settings* settings)
 
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initTargetTextOffsets(target_text_offset[0], target_text_offset[1]);
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
@@ -3982,6 +4006,7 @@ void load_gauge_auto_speed(gauge_settings* settings)
 
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initSpeedTextOffsets(speed_text_offset[0], speed_text_offset[1]);
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
@@ -4121,6 +4146,7 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_left, fname_middle, fname_right, fname_dots);
+	hud_gauge->initHiRes(fname_left);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initFixedHeaderPosition(fixed_header_position);
 	hud_gauge->initLeftFrameEndX(left_frame_end_x);
@@ -4218,6 +4244,7 @@ void load_gauge_damage(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
+	hud_gauge->initHiRes(fname_top);
 	hud_gauge->initHullIntegOffsets(hull_integ_offsets[0], hull_integ_offsets[1]);
 	hud_gauge->initHullIntegValueOffsetX(hull_integ_val_offset_x);
 	hud_gauge->initLineHeight(line_h);
@@ -4285,6 +4312,7 @@ void load_gauge_support(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initTextDockOffsetX(text_dock_offset_x);
 	hud_gauge->initTextDockValueOffsetX(text_dock_val_offset_x);
@@ -4504,6 +4532,7 @@ void load_gauge_weapon_linking(gauge_settings* settings)
 	hud_gauge->init2SecondaryOffsets(Weapon_link_offsets[LINK_TWO_SECONDARY][0], Weapon_link_offsets[LINK_TWO_SECONDARY][1]);
 	hud_gauge->init3SecondaryOffsets(Weapon_link_offsets[LINK_THREE_SECONDARY][0], Weapon_link_offsets[LINK_THREE_SECONDARY][1]);
 	hud_gauge->initBitmaps(fname_arc, fname_primary_link_1, fname_primary_link_2, fname_secondary_link_1, fname_secondary_link_2, fname_secondary_link_3);
+	hud_gauge->initHiRes(fname_arc);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -4692,6 +4721,7 @@ void load_gauge_lock(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
+	hud_gauge->initHiRes(fname_lock);
 	hud_gauge->initLoopLockedAnim(loop_locked_anim);
 	hud_gauge->initBlinkLockedAnim(blink_locked_anim);
 	hud_gauge->initGaugeHalfSize(Lock_gauge_half_w, Lock_gauge_half_h);
@@ -4766,6 +4796,7 @@ void load_gauge_brackets(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initMinSubTargetBoxSizes(min_subtarget_box[0], min_subtarget_box[1]);
 	hud_gauge->initMinTargetBoxSizes(min_target_box[0], min_target_box[1]);
 
@@ -4957,6 +4988,7 @@ void load_gauge_lead(gauge_settings* settings)
 
 	hud_gauge->initHalfSize(Lead_indicator_half[0], Lead_indicator_half[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -5015,6 +5047,7 @@ void load_gauge_lead_sight(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -5059,6 +5092,7 @@ void load_gauge_kills(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
 	hud_gauge->initTextOffsets(text_offsets[0], text_offsets[1]);
 	hud_gauge->initTextValueOffsets(text_value_offsets[0], text_value_offsets[1]);
 
@@ -5299,6 +5333,7 @@ void load_gauge_primary_weapons(gauge_settings* settings)
 	}
 	
 	hud_gauge->initBitmaps(fname_first, fname_entry, fname_last);
+	hud_gauge->initHiRes(fname_first);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initHeaderText(header_text);
 	hud_gauge->initBgFirstHeight(first_bg_h);
@@ -5413,6 +5448,7 @@ void load_gauge_secondary_weapons(gauge_settings* settings)
 	}
 
 	hud_gauge->initBitmaps(fname_first, fname_entry, fname_last);
+	hud_gauge->initHiRes(fname_first);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initHeaderText(header_text);
 	hud_gauge->initBgFirstHeight(first_bg_h);
