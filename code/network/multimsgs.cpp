@@ -971,17 +971,17 @@ void process_join_packet(ubyte* data, header* hinfo)
 
 				if(team0_avail && team1_avail){
 					host_restr_mode = MULTI_JOIN_RESTR_MODE_4;
-					sprintf(join_string,"Player %s has tried to join. Accept on team 1 or 2 ?",jr.callsign);
+					snprintf(join_string, 255, "Player %s has tried to join. Accept on team 1 or 2 ?",jr.callsign);
 				} else if(team0_avail && !team1_avail){
 					host_restr_mode = MULTI_JOIN_RESTR_MODE_2;
-					sprintf(join_string,"Player %s has tried to join team 0, accept y/n ? ?",jr.callsign);
+					snprintf(join_string, 255, "Player %s has tried to join team 0, accept y/n ? ?",jr.callsign);
 				} else if(!team0_avail && team1_avail){
 					host_restr_mode = MULTI_JOIN_RESTR_MODE_3;
-					sprintf(join_string,"Player %s has tried to join team 1, accept y/n ?",jr.callsign);
+					snprintf(join_string, 255, "Player %s has tried to join team 1, accept y/n ?",jr.callsign);
 				}
 			} else if(Netgame.mode == NG_MODE_RESTRICTED){
 				host_restr_mode = MULTI_JOIN_RESTR_MODE_1;
-				sprintf(join_string,XSTR("Player %s has tried to join, accept y/n ?",715),jr.callsign);
+				snprintf(join_string,255,XSTR("Player %s has tried to join, accept y/n ?",715),jr.callsign);
 			}
 			Assert(host_restr_mode != -1);
 
@@ -1153,7 +1153,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 
 		// add a chat message
 		if(*Net_players[new_player_num].m_player->callsign){
-			sprintf(notify_string,XSTR("<%s has joined>",717),Net_players[new_player_num].m_player->callsign);
+			snprintf(notify_string, 256, XSTR("<%s has joined>",717),Net_players[new_player_num].m_player->callsign);
 			multi_display_chat_msg(notify_string,0,0);
 		}
 	}		
@@ -1542,7 +1542,7 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 
 	// add a chat message
 	if(*Net_players[new_player_num].m_player->callsign){
-		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].m_player->callsign);
+		snprintf(notify_string,256,XSTR("<%s has joined>",717), Net_players[new_player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string, 0, 0);
 	}	
 
@@ -1794,7 +1794,7 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		char msg[255];
 
-		sprintf(msg, XSTR("%s has left the game",719), Net_players[player_num].m_player->callsign );
+		snprintf(msg, 255, XSTR("%s has left the game",719), Net_players[player_num].m_player->callsign );
 
 		if (!(Game_mode & GM_STANDALONE_SERVER)){
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", msg);

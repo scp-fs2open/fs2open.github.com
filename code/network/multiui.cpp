@@ -791,7 +791,7 @@ DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 	for(idx = 0; idx < idx_max; idx++){
 		// stuff some fake info
 		ag.init();
-		sprintf(ag.name, "Game %d", idx);
+		snprintf(ag.name, 33, "Game %d", idx);
 		ag.version = MULTI_FS_SERVER_VERSION;
 		ag.comp_version = MULTI_FS_SERVER_VERSION;
 		ag.server_addr.addr[0] = (char)idx;
@@ -1341,7 +1341,7 @@ void multi_join_display_games()
 						gr_set_color_fast(&Color_bright_green);
 					}
 
-					sprintf(str,"%d",moveup->ping.ping_avg);
+					snprintf(str, 300, "%d",moveup->ping.ping_avg);
 					strcat_s(str,XSTR(" ms",762));  // [[ Milliseconds ]]
 				}
 
@@ -1354,7 +1354,7 @@ void multi_join_display_games()
 			} else {
 				gr_set_color_fast(&Color_text_normal);
 			}
-			sprintf(str,"%d",moveup->num_players);			
+			snprintf(str,200,"%d",moveup->num_players);			
 			gr_get_string_size(&w,&h,str);
 			gr_string(Mj_players_coords[gr_screen.res][MJ_X_COORD] + (Mj_players_coords[gr_screen.res][MJ_W_COORD] - w)/2,y_start,str,GR_RESIZE_MENU);			
 
@@ -2764,7 +2764,7 @@ void multi_sg_init_gamenet()
 	memset(out_name,0,128);
 	memset(buf,0,128);
 	pilot_format_callsign_personal(Player->callsign,out_name);
-	sprintf(buf, XSTR("%s game",782), out_name);  // [[ %s will be a pilot's name ]]
+	snprintf(buf, 128, XSTR("%s game",782), out_name);  // [[ %s will be a pilot's name ]]
 	if ( strlen(buf) > MAX_GAMENAME_LEN ){
 		strcpy_s(buf, XSTR("Temporary name",783));
 	}
@@ -2937,7 +2937,8 @@ void multi_sg_rank_process_select()
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				memset(string,0,255);
-				sprintf(string,
+				snprintf(string, 
+					255,
 					XSTR("Illegal value for a host of your rank (%s)\n", 784),
 					get_rank_display_name(&Ranks[verify_rank(Net_player->m_player->stats.rank)]).c_str());
 				multi_common_add_notify(string);
@@ -4708,7 +4709,7 @@ void multi_create_list_do()
 		gr_string(Mc_mission_name_x[gr_screen.res], y_start, selected_name, GR_RESIZE_MENU);
 
 		// draw the max players if in mission mode		
-		sprintf(selected_name, "%d", (int)mcip->max_players);
+		snprintf(selected_name, 255, "%d", (int)mcip->max_players);
 		gr_string(Mc_mission_count_x[gr_screen.res], y_start, selected_name, GR_RESIZE_MENU);		
 
 		// force fit the mission filename string
@@ -5274,9 +5275,9 @@ int multi_create_ok_to_commit()
 
 			// message everyone - haha
 			if(Net_players[idx].m_player != NULL){
-				sprintf(err_string, "%s %s", Net_players[idx].m_player->callsign, XSTR("has hacked tables/data", 1271)); 
+				snprintf(err_string, 255, "%s %s", Net_players[idx].m_player->callsign, XSTR("has hacked tables/data", 1271)); 
 			} else {
-				sprintf(err_string, "somebody %s", XSTR("has hacked tables/data", 1271)); 
+				snprintf(err_string, 255, "somebody %s", XSTR("has hacked tables/data", 1271)); 
 			}
 			send_game_chat_packet(Net_player, err_string, MULTI_MSG_ALL, NULL, NULL, 1);
 		}
@@ -5312,7 +5313,7 @@ int multi_create_ok_to_commit()
 	observer_count = multi_num_observers();
 	if(observer_count > Netgame.options.max_observers){
 		// print up the error string
-		sprintf(err_string,XSTR("There are too many observers in the game\n\nMax : %d\nCurrently %d\n\nPlease dump a few",791),Netgame.options.max_observers,observer_count);
+		snprintf(err_string,255,XSTR("There are too many observers in the game\n\nMax : %d\nCurrently %d\n\nPlease dump a few",791),Netgame.options.max_observers,observer_count);
 
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, err_string);
 		return 0;
@@ -5322,7 +5323,7 @@ int multi_create_ok_to_commit()
 	player_count = multi_num_players();
 	if(player_count > Netgame.max_players){
 		// print up the error string
-		sprintf(err_string,XSTR("There are too many players in the game\n\nMax : %d\nCurrently %d\n\nPlease dump a few", 792), Netgame.max_players,player_count);
+		snprintf(err_string,255,XSTR("There are too many players in the game\n\nMax : %d\nCurrently %d\n\nPlease dump a few", 792), Netgame.max_players,player_count);
 
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, err_string);
 		return 0;
@@ -6296,30 +6297,30 @@ void multi_ho_get_options()
 
 	// get the # of observers
 	memset(resp_str,0,10);
-	sprintf(resp_str,"%d",Netgame.options.max_observers);
+	snprintf(resp_str,10,"%d",Netgame.options.max_observers);
 	Multi_ho_obs.set_text(resp_str);
 
 	// set the respawn count
 	if(Netgame.campaign_mode == MP_SINGLE_MISSION){
 		memset(resp_str,0,10);
-		sprintf(resp_str,"%u",Netgame.respawn);
+		snprintf(resp_str,10,"%u",Netgame.respawn);
 		Multi_ho_respawns.set_text(resp_str);	
 	}
 
 	// set the mission time limit
 	memset(resp_str,0,10);
 	float tl = f2fl(Netgame.options.mission_time_limit);
-	sprintf(resp_str,"%d",(int)(tl / 60.0f));
+	snprintf(resp_str,10,"%d",(int)(tl / 60.0f));
 	Multi_ho_time_limit.set_text(resp_str);
 
 	// set the furball kill limit
 	memset(resp_str,0,10);
-	sprintf(resp_str,"%d",Netgame.options.kill_limit);
+	snprintf(resp_str,10,"%d",Netgame.options.kill_limit);
 	Multi_ho_kill_limit.set_text(resp_str);
 
 	// set the token wait time
 	memset(resp_str,0,10);
-	sprintf(resp_str,"%d",Netgame.options.voice_token_wait / 1000);
+	snprintf(resp_str,10,"%d",Netgame.options.voice_token_wait / 1000);
 	Multi_ho_voice_wait.set_text(resp_str);	
 
 	// get whether we're in host/captains only modify mode
@@ -6355,7 +6356,7 @@ void multi_ho_display_record_time()
 	half_seconds = ((((Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_DUR].slider.pos + 1) * 500) % 1000) / 500) * 5;
 
 	// format the string
-	sprintf(time_str,"%d.%d",full_seconds,half_seconds);
+	snprintf(time_str,30,"%d.%d",full_seconds,half_seconds);
 	gr_set_color_fast(&Color_bright);
 	gr_string(Ho_vd_coords[gr_screen.res][MULTI_HO_X_COORD],Ho_vd_coords[gr_screen.res][MULTI_HO_Y_COORD],time_str,GR_RESIZE_MENU);
 }
@@ -6372,7 +6373,7 @@ int multi_ho_check_values()
 		// if the value is invalid, let the user know
 		if(atoi(val_txt) > Multi_ho_mission_respawn){
 			memset(val_txt,0,255);
-			sprintf(val_txt,XSTR("Warning\nRespawn count in greater than mission specified max (%d)",796),Multi_ho_mission_respawn);			
+			snprintf(val_txt,255,XSTR("Warning\nRespawn count in greater than mission specified max (%d)",796),Multi_ho_mission_respawn);			
 			popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,val_txt);
 			return 0;
 		}
@@ -6383,7 +6384,7 @@ int multi_ho_check_values()
 	// if the value is invalid, force it to be valid
 	if(atoi(val_txt) > MULTI_HO_MAX_TIME_LIMIT){
 		memset(val_txt,0,255);
-		sprintf(val_txt,XSTR("Warning\nMission time limit is greater than max allowed (%d)",797),MULTI_HO_MAX_TIME_LIMIT);		
+		snprintf(val_txt,255,XSTR("Warning\nMission time limit is greater than max allowed (%d)",797),MULTI_HO_MAX_TIME_LIMIT);		
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,val_txt);
 		return 0;
 	}
@@ -6393,7 +6394,7 @@ int multi_ho_check_values()
 	// if the value is invalid, force it to be valid
 	if(atoi(val_txt) > MULTI_HO_MAX_OBS){
 		memset(val_txt,0,255);
-		sprintf(val_txt,XSTR("Warning\nObserver count is greater than max allowed (%d)",798),MULTI_HO_MAX_OBS);		
+		snprintf(val_txt,255,XSTR("Warning\nObserver count is greater than max allowed (%d)",798),MULTI_HO_MAX_OBS);		
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,val_txt);
 		return 0;
 	}
@@ -6403,7 +6404,7 @@ int multi_ho_check_values()
 	// if the value is invalid, force it to be valid
 	if(atoi(val_txt) > MULTI_HO_MAX_KILL_LIMIT){
 		memset(val_txt,0,255);
-		sprintf(val_txt,XSTR("Warning\nMission kill limit is greater than max allowed (%d)",799),MULTI_HO_MAX_KILL_LIMIT);		
+		snprintf(val_txt,255,XSTR("Warning\nMission kill limit is greater than max allowed (%d)",799),MULTI_HO_MAX_KILL_LIMIT);		
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,val_txt);
 		return 0;
 	}
@@ -6412,7 +6413,7 @@ int multi_ho_check_values()
 	Multi_ho_voice_wait.get_text(val_txt);
 	if(atoi(val_txt) > MULTI_HO_MAX_TOKEN_WAIT){
 		memset(val_txt,0,255);
-		sprintf(val_txt,XSTR("Warning\nvoice wait time is greater than max allowed (%d)",800),MULTI_HO_MAX_TOKEN_WAIT);		
+		snprintf(val_txt,255,XSTR("Warning\nvoice wait time is greater than max allowed (%d)",800),MULTI_HO_MAX_TOKEN_WAIT);		
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,val_txt);
 		return 0;
 	}
@@ -6470,7 +6471,7 @@ void multi_ho_blit_max_respawns()
 	}
 	
 	// otherwise blit the max as specified by the current mission file	
-	sprintf(string,"(%d)",Multi_ho_mission_respawn);	
+	shprintf(string,50,"(%d)",Multi_ho_mission_respawn);	
 	gr_set_color_fast(&Color_normal);
 	gr_string(Ho_max_rsp_coords[gr_screen.res][MULTI_HO_X_COORD], Ho_max_rsp_coords[gr_screen.res][MULTI_HO_Y_COORD], string, GR_RESIZE_MENU);
 }
@@ -7724,7 +7725,7 @@ void multi_sync_blit_screen_all()
 
 						// if we've got a valid xfer handle
 						if((pct_complete >= 0.0) && (pct_complete <= 1.0)){						
-							sprintf(txt,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
+							snprintf(txt,255,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
 						}
 						// otherwise
 						else {
@@ -7742,7 +7743,7 @@ void multi_sync_blit_screen_all()
 
 						// if we've got a valid xfer handle
 						if((pct_complete >= 0.0) && (pct_complete <= 1.0)){						
-							sprintf(txt,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
+							snprintf(txt,255,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
 						}
 						// otherwise
 						else {

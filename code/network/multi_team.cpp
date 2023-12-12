@@ -557,7 +557,7 @@ void multi_team_get_player_counts(int *team0, int *team1)
 void multi_team_report()
 {
 	int i;
-	char report[400] = "";	
+	SCP_string report = "";	
 
 	// a little header
 	SEND_AND_DISPLAY("----****");	
@@ -576,7 +576,7 @@ void multi_team_report()
 			sprintf(report, "Team %d had %d points>", (i+1), Multi_team_score[i]);
 		}
 
-		SEND_AND_DISPLAY(report);
+		SEND_AND_DISPLAY(report.c_str());
 	}
 
 	// display winner

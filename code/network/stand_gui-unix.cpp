@@ -450,7 +450,7 @@ json_t* playerGet(ResourceContext * /*context*/) {
         net_player p = iter->second;
 
         char address[256];
-        sprintf(address, "%u.%u.%u.%u:%u", p.p_info.addr.addr[0], p.p_info.addr.addr[1], p.p_info.addr.addr[2],
+        snprintf(address, 256, "%u.%u.%u.%u:%u", p.p_info.addr.addr[0], p.p_info.addr.addr[1], p.p_info.addr.addr[2],
                 p.p_info.addr.addr[3], p.p_info.addr.port);
 
         json_t *obj = json_object();
@@ -713,7 +713,7 @@ void std_configLoaded(multi_global_options *options) {
     webapi_shutdown();
 
     char buffer[16];
-    sprintf(buffer, "%d", options->webapiPort);
+    snprintf(buffer, 16, "%d", options->webapiPort);
 
     const char *mgOptions[] = {
         "listening_ports", buffer,
