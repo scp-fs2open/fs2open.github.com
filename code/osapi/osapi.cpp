@@ -269,7 +269,7 @@ void os_check_debugger()
 	if ( strlen(p) < 1 ) return;
 
 	// Build what the debugger's window title would be if the debugger is running...
-	sprintf( search_string, 256, "[run] - %s -", p );
+	snprintf( search_string, 256, "[run] - %s -", p );
 
 	// ... and then search for it.
 	EnumWindows(os_enum_windows, reinterpret_cast<LPARAM>(&search_string));
