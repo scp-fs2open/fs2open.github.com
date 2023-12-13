@@ -1341,7 +1341,7 @@ void multi_join_display_games()
 						gr_set_color_fast(&Color_bright_green);
 					}
 
-					snprintf(str, 300, "%d",moveup->ping.ping_avg);
+					snprintf(str, 200, "%d",moveup->ping.ping_avg);
 					strcat_s(str,XSTR(" ms",762));  // [[ Milliseconds ]]
 				}
 
