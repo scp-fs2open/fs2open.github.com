@@ -19,9 +19,9 @@ void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to
 		iff_name = "enemy";
 
 	if (restrict_to_players)
-		sprintf(buf, "<any %s player>", iff_name);
+		snprintf(buf, NAME_LENGTH + 15, "<any %s player>", iff_name);
 	else
-		sprintf(buf, "<any %s>", iff_name);
+		snprintf(buf, NAME_LENGTH + 15, "<any %s>", iff_name);
 
 	strlwr(buf);
 }

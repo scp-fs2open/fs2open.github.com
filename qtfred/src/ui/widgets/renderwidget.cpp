@@ -407,7 +407,7 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 			int ship;
 			object* objp;
 
-			sprintf(msg, "Add cloned ships to wing %s?", Wings[_viewport->Duped_wing].name);
+			snprintf(msg, 256, "Add cloned ships to wing %s?", Wings[_viewport->Duped_wing].name);
 			if (QMessageBox::question(this, tr("Query"), msg) == QMessageBox::Yes) {
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list)) {

@@ -101,7 +101,7 @@ void ObjectOrientEditorDialogModel::initializeData() {
 				int waypoint_num;
 				waypoint_list *wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
 				Assert(wp_list != NULL);
-				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+				snprintf(text, 80, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 
 				_entries.push_back(ObjectEntry(text, OBJ_INDEX(ptr)));
 			} else if ((ptr->type == OBJ_POINT) || (ptr->type == OBJ_JUMP_NODE)) {
