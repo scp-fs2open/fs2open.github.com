@@ -1113,7 +1113,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 				break;
 			}
 
-			snprintf(sexp_str_token, 32 "%d", temp);
+			snprintf(sexp_str_token, 32, "%d", temp);
 			item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (Operators[op].value == OP_CHANGE_BACKGROUND) {
 			item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
