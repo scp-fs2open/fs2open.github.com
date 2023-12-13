@@ -293,9 +293,9 @@ void get_combined_variable_name(char* combined_name, const char* sexp_var_name) 
 	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
 
 	if (sexp_var_index >= 0)
-		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+		snprintf(combined_name, 66, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
 	else
-		sprintf(combined_name, "%s(undefined)", sexp_var_name);
+		snprintf(combined_name, 66, "%s(undefined)", sexp_var_name);
 }
 
 // creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
@@ -653,7 +653,7 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 
 	// check for single argument operator case (prints as one line)
 /*	if (node2 != -1 && tree_nodes[node2].child == -1 && tree_nodes[node2].next == -1) {
-		sprintf(str, "%s %s", tree_nodes[node].text, tree_nodes[node2].text);
+		snprintf(str, 66, "%s %s", tree_nodes[node].text, tree_nodes[node2].text);
 		tree_nodes[node].handle = insert(str, root);
 		tree_nodes[node].flags = OPERAND | EDITABLE;
 		tree_nodes[node2].flags = COMBINED;
@@ -979,7 +979,7 @@ int sexp_tree::add_default_operator(int op_index, int argnum) {
 			}
 
 			char node_text[2 * TOKEN_LENGTH + 2];
-			sprintf(node_text, "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
+			snprintf(node_text, 66, "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
 			add_variable_data(node_text, type);
 		}
 		else if (item.type & SEXPT_CONTAINER_NAME) {
@@ -1095,7 +1095,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 				break;
 			}
 
-			sprintf(sexp_str_token, "%d", temp);
+			snprintf(sexp_str_token, 32, "%d", temp);
 			item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (Operators[op].value == OP_WARP_EFFECT) {
 			int temp;
@@ -1113,7 +1113,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 				break;
 			}
 
-			sprintf(sexp_str_token, "%d", temp);
+			snprintf(sexp_str_token, 32 "%d", temp);
 			item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (Operators[op].value == OP_CHANGE_BACKGROUND) {
 			item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
@@ -1133,7 +1133,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 				break;
 			}
 
-			sprintf(sexp_str_token, "%d", temp);
+			snprintf(sexp_str_token, 32, "%d", temp);
 			item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (Operators[op].value == OP_ADD_SUN_BITMAP || Operators[op].value == OP_ADD_SUN_BITMAP_NEW) {
 			int temp = 0;
@@ -1143,7 +1143,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 				temp = 100;
 			}
 
-			sprintf(sexp_str_token, "%d", temp);
+			snprintf(sexp_str_token, 32, "%d", temp);
 			item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (Operators[op].value == OP_MISSION_SET_NEBULA) {
 			if (i == 0) {
@@ -1229,7 +1229,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 				else
 				{
 					char num_str[NAME_LENGTH];
-					sprintf(num_str, "%d", fireball_index);
+					snprintf(num_str, NAME_LENGTH, "%d", fireball_index);
 					item->set_data(num_str, (SEXPT_NUMBER | SEXPT_VALID));
 				}
 				return 0;
@@ -1735,7 +1735,7 @@ void sexp_tree::merge_operator(int  /*node*/) {
 	if (node != -1) {
 		child = tree_nodes[node].child;
 		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
-			sprintf(buf, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
+			snprintf(buf, 256, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
 			SetItemText(tree_nodes[node].handle, buf);
 			tree_nodes[node].flags = OPERAND | EDITABLE;
 			tree_nodes[child].flags = COMBINED;
@@ -1846,7 +1846,7 @@ int sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	node2 = allocate_node(node1);
 	set_node(node1, SEXPT_OPERATOR, op);
 	set_node(node2, type, data);
-	sprintf(str, "%s %s", op, data);
+	snprintf(str, 80, "%s %s", op, data);
 	tree_nodes[node1].handle = insert(str, tree_nodes[item_index].handle);
 	tree_nodes[node1].flags = OPERAND | EDITABLE;
 	tree_nodes[node2].flags = COMBINED;
@@ -2339,7 +2339,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 	}
 
 	// Assemble name
-	sprintf(buf, "%s(%s)", Sexp_variables[var_idx].variable_name, Sexp_variables[var_idx].text);
+	snprintf(buf, 128, "%s(%s)", Sexp_variables[var_idx].variable_name, Sexp_variables[var_idx].text);
 
 	set_node(item_index, type, buf);
 	h->setText(0, QString::fromUtf8(buf));
@@ -2502,7 +2502,7 @@ void sexp_tree::replace_operator(const char* op) {
 	node = allocate_node(item_index);
 	set_node(item_index, SEXPT_OPERATOR, op);
 	set_node(node, type, data);
-	sprintf(str, "%s %s", op, data);
+	snprintf(str, 80, "%s %s", op, data);
 	SetItemText(h, str);
 	tree_nodes[item_index].flags = OPERAND | EDITABLE;
 	tree_nodes[node].flags = COMBINED;
@@ -2807,20 +2807,20 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 				const char* loc = NULL, * loc2 = NULL;
 
 				if (loc == NULL) {
-					sprintf(searchstr, "\n%d:", sibling_place);
+					snprintf(searchstr, 32, "\n%d:", sibling_place);
 					loc = strstr(helpstr, searchstr);
 				}
 
 				if (loc == NULL) {
-					sprintf(searchstr, "\t%d:", sibling_place);
+					snprintf(searchstr, 32, "\t%d:", sibling_place);
 					loc = strstr(helpstr, searchstr);
 				}
 				if (loc == NULL) {
-					sprintf(searchstr, " %d:", sibling_place);
+					snprintf(searchstr, 32, " %d:", sibling_place);
 					loc = strstr(helpstr, searchstr);
 				}
 				if (loc == NULL) {
-					sprintf(searchstr, "%d:", sibling_place);
+					snprintf(searchstr, 32, "%d:", sibling_place);
 					loc = strstr(helpstr, searchstr);
 				}
 				if (loc == NULL) {
@@ -2854,7 +2854,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 
 			//Display argument number
 			if (display_number) {
-				sprintf(buffer, "%d:", sibling_place);
+				snprintf(buffer, 10240, "%d:", sibling_place);
 			}
 
 			miniHelpChanged(QString::fromUtf8(buffer));
@@ -4064,7 +4064,7 @@ sexp_list_item* sexp_tree::get_listing_opf_point() {
 
 	for (const auto &ii: Waypoint_lists) {
 		for (int j = 0; (uint) j < ii.get_waypoints().size(); ++j) {
-			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
+			snprintf(buf, NAME_LENGTH + 8, "%s:%d", ii.get_name(), j + 1);
 			head.add_data(buf);
 		}
 	}
@@ -5510,7 +5510,7 @@ void sexp_tree::delete_sexp_tree_variable(const char* var_name) {
 	char search_str[64];
 	char replace_text[TOKEN_LENGTH];
 
-	sprintf(search_str, "%s(", var_name);
+	snprintf(search_str, 64, "%s(", var_name);
 
 	// store old item index
 	int old_item_index = item_index;
@@ -5564,7 +5564,7 @@ void sexp_tree::modify_sexp_tree_variable(const char* old_name, int sexp_var_ind
 	int old_item_index = item_index;
 
 	// Search string in sexp_tree nodes
-	sprintf(search_str, "%s(", old_name);
+	snprintf(search_str, 64, "%s(", old_name);
 
 	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
@@ -5906,7 +5906,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						char buf[128];
 						// append list of variable names and values
 						// set id as ID_VARIABLE_MENU + idx
-						sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
+						snprintf(buf, 128, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
 
 						auto action = replace_variable_menu->addAction(QString::fromUtf8(buf),
 																	   this,
