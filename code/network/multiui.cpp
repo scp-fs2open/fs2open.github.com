@@ -6471,7 +6471,7 @@ void multi_ho_blit_max_respawns()
 	}
 	
 	// otherwise blit the max as specified by the current mission file	
-	shprintf(string,50,"(%d)",Multi_ho_mission_respawn);	
+	snprintf(string,50,"(%d)",Multi_ho_mission_respawn);	
 	gr_set_color_fast(&Color_normal);
 	gr_string(Ho_max_rsp_coords[gr_screen.res][MULTI_HO_X_COORD], Ho_max_rsp_coords[gr_screen.res][MULTI_HO_Y_COORD], string, GR_RESIZE_MENU);
 }
