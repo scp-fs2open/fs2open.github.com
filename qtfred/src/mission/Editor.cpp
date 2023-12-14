@@ -2505,45 +2505,55 @@ int Editor::internal_error(const char* msg, ...) {
 
 	return -1;
 }
-int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
-	SCP_string buf, sexp_buf, error_buf, bad_node_str;
+int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
+	SCP_string location_buf, sexp_buf, error_buf, bad_node_str, issue_msg;
 	int err = 0, z, faulty_node;
 	va_list args;
 
-	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	va_start(args, location);
+	vsprintf(location_buf, location, args);
 	va_end(args);
 
 	if (sexp == -1)
 		return 0;
 
 	z = check_sexp_syntax(sexp, type, 1, &faulty_node);
-	if (!z)
-		return 0;
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
-	truncate_message_lines(sexp_buf, 30);
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
-	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
-		bad_node_str.pop_back();
+		sprintf(error_buf, "Error in %s: %s\n\n%s\n\n(Bad node appears to be: %s)", location_buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+
+		if (z < 0 && z > -100)
+			err = 1;
+
+		if (err)
+			return internal_error("%s", error_buf.c_str());
+
+		if (error("%s", error_buf.c_str()))
+			return 1;
 	}
 
-	sprintf(error_buf,
-			"Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)",
-			buf.c_str(),
-			sexp_error_message(z),
-			sexp_buf.c_str(),
-			bad_node_str.c_str());
+	z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	if (z < 0 && z > -100)
-		err = 1;
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	if (err)
-		return internal_error("%s", error_buf.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
-	if (error("%s", error_buf.c_str()))
-		return 1;
+		if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", error_buf.c_str(), { DialogButton::Ok, DialogButton::Cancel }) != DialogButton::Ok)
+			return 1;
+	}
 
 	return 0;
 }
