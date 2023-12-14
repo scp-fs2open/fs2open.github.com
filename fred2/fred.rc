@@ -385,6 +385,7 @@ BEGIN
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
+        MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
         MENUITEM "Error checker\tShift+H",      32978
     END
     POPUP "&Help"
