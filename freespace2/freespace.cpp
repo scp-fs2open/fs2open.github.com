@@ -269,6 +269,33 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
                      .importance(1)
                      .finish();
 
+bool Screenshake_enabled = true;
+
+auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
+                     std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
+                     std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
+                     .category("Graphics")
+                     .default_val(Screenshake_enabled)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(55)
+                     .bind_to(&Screenshake_enabled)
+                     .finish();
+
+bool Allow_unfocused_pause = true;
+
+static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes", 1394) : XSTR("No", 1395); }
+
+auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
+                     std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
+                     std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
+                     .category("Game")
+                     .default_val(Allow_unfocused_pause)
+                     .level(options::ExpertLevel::Advanced)
+                     .display(unfocused_pause_display) 
+                     .importance(55)
+                     .bind_to(&Allow_unfocused_pause)
+                     .finish();
+
 #define EXE_FNAME			("fs2.exe")
 
 // JAS: Code for warphole camera.
@@ -2948,6 +2975,19 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 	return shake;
 }
 
+bool is_screenshake_enabled()
+{
+	if (Game_mode & GM_MULTIPLAYER) {
+		return true;
+	} else {
+		if (Using_in_game_options) {
+			return Screenshake_enabled;
+		} else {
+			return !Cmdline_no_screenshake;
+		}
+	}
+}
+
 #define FF_SCALE	10000
 extern int Wash_on;
 extern float sn_shudder;
@@ -2964,8 +3004,8 @@ void apply_view_shake(matrix *eye_orient)
 	if ((Viewer_mode & VM_CHASE) && Apply_shudder_to_chase_view)
 		do_hud_shudder = true;
 
-	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer or enabled by mod flag)
-	if (do_hud_shudder && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
+	// do shakes that only affect the HUD (unless disabled by some combination of game type and settings)
+	if (do_hud_shudder && is_screenshake_enabled()) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
@@ -4513,13 +4553,22 @@ int game_check_key()
 	return k;
 }
 
+bool pause_if_unfocused()
+{
+	if (Using_in_game_options) {
+		return Allow_unfocused_pause;
+	} else {
+		return !Cmdline_no_unfocus_pause;
+	}
+}
+
 // same as game_check_key(), except this is used while actually in the game.  Since there
 // generally are differences between game control keys and general UI keys, makes sense to
 // have seperate functions for each case.  If you are not checking a game control while in a
 // mission, you should probably be using game_check_key() instead.
 int game_poll()
 {
-	if (!Cmdline_no_unfocus_pause)
+	if (pause_if_unfocused())
 	{
 		// If we're in a single player game, pause it.  
 		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
