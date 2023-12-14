@@ -2539,7 +2539,8 @@ int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
 			return 1;
 	}
 
-	z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (_lastActiveViewport->Error_checker_checks_potential_issues)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
 	{
 		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);

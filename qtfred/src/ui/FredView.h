@@ -125,6 +125,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionMove_Ships_When_Undocking_triggered(bool);
 
+	void on_actionError_Checker_Checks_Potential_Issues_triggered(bool);
 	void on_actionError_Checker_triggered(bool);
 
 	void on_actionAbout_triggered(bool);

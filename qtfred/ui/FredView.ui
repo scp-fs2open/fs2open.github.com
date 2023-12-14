@@ -230,6 +230,7 @@
     <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
+    <addaction name="actionError_Checker_Checks_Potential_Issues"/>
     <addaction name="actionError_Checker"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1422,6 +1423,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
+   </property>
+  </action>
+  <action name="actionError_Checker_Checks_Potential_Issues">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Error checker checks for potential issues</string>
    </property>
   </action>
   <action name="actionError_Checker">

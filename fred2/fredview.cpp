@@ -268,6 +268,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
+	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
+	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -3400,7 +3402,8 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 			return 1;
 	}
 
-	z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (Error_checker_checks_potential_issues)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
 	{
 		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
@@ -3821,6 +3824,18 @@ void CFREDView::OnViewOutlineAtWarpin()
 void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
+}
+
+void CFREDView::OnErrorCheckerChecksPotentialIssues()
+{
+	Error_checker_checks_potential_issues = !Error_checker_checks_potential_issues;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
