@@ -771,7 +771,7 @@
   </action>
   <action name="actionDraw_Outline_At_Warpin_Position">
    <property name="checkable">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Draw Outline At Warpin Position</string>
