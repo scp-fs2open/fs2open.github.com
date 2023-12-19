@@ -1600,20 +1600,19 @@ int multi_message_should_broadcast(int type)
 // active game list handling functions
 active_game *multi_new_active_game( void )
 {
-	active_game *new_game;
+	active_game new_game;
 
-	new_game = new active_game;
-
-	if ( new_game == nullptr ) {
-		nprintf(("Network", "Cannot allocate space for new active game structure\n"));
-		return nullptr;
+	try {
+			Active_games.push_back(new_game);
+	} catch (const std::bad_alloc&) {
+			// Handle memory allocation failure
+			nprintf(("Network", "Cannot allocate space for new active game structure\n"));
+			return nullptr;
 	}
 
-	Active_games.push_back(*new_game);
-
-	// notify the join game screen of this new item
+	// Notify the join game screen of this new item
 	multi_join_notify_new_game();
-		
+
 	return &Active_games.back();
 }
 
@@ -1627,10 +1626,8 @@ active_game *multi_update_active_games(active_game *ag)
 
 		bool on_list = false;
 
-		for (size_t i = 0; i < Active_games.size(); i++) {
-			SCP_list<active_game>::iterator game = Active_games.begin();
-			std::advance(game, i);
-			if ( psnet_same(&game->server_addr, &ag->server_addr)) {
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+			if (psnet_same(&game->server_addr, &ag->server_addr)) {
 				on_list = true;
 				gp = &(*game);
 				break;

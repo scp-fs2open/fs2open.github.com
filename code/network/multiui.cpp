@@ -1285,9 +1285,7 @@ void multi_join_display_games()
 		int y_start = Mj_list_y[gr_screen.res];
 		int line_height = gr_get_font_height() + 1;
 
-		for (int i = Multi_join_list_start; i < static_cast<int>(Active_games.size()); i++){
-			SCP_list<active_game>::iterator game = Active_games.begin();
-			std::advance(game, i);
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
 			// stop displaying if we are going to overrun the container
 			if (count >= Mj_max_game_items[gr_screen.res]) {
 				break;
@@ -1308,7 +1306,7 @@ void multi_join_display_games()
 			gr_set_color_fast(Multi_join_speed_colors[con_type]);
 			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, str, GR_RESIZE_MENU);
 
-			bool selected = (i == Multi_join_list_selected ? true : false);
+			bool selected = (count == Multi_join_list_selected ? true : false);
 
 			// we'll want to have different colors for highlighted items, etc.
 			if(selected){
@@ -1605,9 +1603,7 @@ void multi_join_do_netstuff()
 void multi_join_eval_pong(net_addr *addr, fix pong_time)
 {	
 	if(!Active_games.empty()){
-		for (size_t i = 0; i < Active_games.size(); i++) {
-			SCP_list<active_game>::iterator game = Active_games.begin();
-			std::advance(game, i);
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
 			if(psnet_same(&game->server_addr,addr)){
 				multi_ping_eval_pong(&game->ping, pong_time);
 				
@@ -1621,9 +1617,7 @@ void multi_join_eval_pong(net_addr *addr, fix pong_time)
 void multi_join_ping_all()
 {
 	if(!Active_games.empty()){
-		for (size_t i = 0; i < Active_games.size(); i++) {
-			SCP_list<active_game>::iterator game = Active_games.begin();
-			std::advance(game, i);
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
 			send_server_query(&game->server_addr);
 			multi_ping_send(&game->server_addr, &game->ping);
 		}
@@ -1772,17 +1766,17 @@ void multi_join_cull_timeouts()
 {
 	// traverse through the entire list if any items exist	
 	if(!Active_games.empty()){
-		for (int i = static_cast<int>(Active_games.size()) - 1; i >= 0; i--) {
-			SCP_list<active_game>::iterator game = Active_games.begin();
-			std::advance(game, i);
+		int i = 0;
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
 			if (game->heard_from_timer.isValid() && (ui_timestamp_elapsed(game->heard_from_timer))) {
 
 				// handle any gui details related to deleting this item
 				multi_join_handle_item_cull(i);
-					
+				
 				// delete the item
 				Active_games.erase(game);
 			}
+			i++;
 		}
 	}
 }
