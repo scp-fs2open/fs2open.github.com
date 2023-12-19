@@ -962,8 +962,8 @@ void game_level_close()
 	}
 }
 
-uint load_gl_init;
-uint load_mission_load;
+time_t load_gl_init;
+time_t load_mission_load;
 uint load_post_level_init;
 extern bool Cmdline_reuse_rng_seed;
 extern uint Cmdline_rng_seed;
@@ -975,7 +975,7 @@ extern uint Cmdline_rng_seed;
 void game_level_init()
 {
 	game_busy( NOX("** starting game_level_init() **") );
-	load_gl_init = (uint) time(nullptr);
+	load_gl_init = time(nullptr);
 
 	// seed the random number generator in multiplayer
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -1076,7 +1076,8 @@ void game_level_init()
 	// campaign wasn't ended
 	Campaign_ending_via_supernova = 0;
 
-	load_gl_init = (uint) (time(nullptr) - load_gl_init);
+	load_gl_init = (time(nullptr) - load_gl_init);
+	mprintf(("Game_level_init took %d seconds", load_gl_init));
 
 	//WMC - Init multi players for level
 	if (Game_mode & GM_MULTIPLAYER && Player != nullptr) {
@@ -1431,9 +1432,10 @@ bool game_start_mission()
 	}
 
 	game_busy( NOX("** starting mission_load() **") );
-	load_mission_load = (uint) time(nullptr);
+	load_mission_load = time(nullptr);
 	bool load_success = mission_load(Game_current_mission_filename);
-	load_mission_load = (uint)(time(nullptr) - load_mission_load);
+	load_mission_load = (time(nullptr) - load_mission_load);
+	mprintf(("Mission load took %d seconds", load_mission_load));
 
 	// free up memory from parsing the mission
 	stop_parse();
@@ -2535,7 +2537,7 @@ void game_set_view_clip(float  /*frametime*/)
 
 extern int Tool_enabled;
 int tst = 0;
-int tst_time = 0;
+time_t tst_time = 0;
 int tst_big = 0;
 vec3d tst_pos;
 int tst_bitmap = -1;
@@ -2590,7 +2592,7 @@ void game_tst_frame()
 	
 	// setup tst
 	if(tst == 2){		
-		tst_time = (int) time(nullptr);
+		tst_time = time(nullptr);
 
 		// load the tst bitmap		
 		switch(Random::next(4)){
