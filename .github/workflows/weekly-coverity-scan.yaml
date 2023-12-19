@@ -44,13 +44,6 @@ jobs:
           echo "$(pwd)/cov-scan/bin" >> $GITHUB_PATH
           echo "NPROC=$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
 
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: 1.3.204.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
-
       - name: Configure CMake for FSO
         env:
           CONFIGURATION: Release
