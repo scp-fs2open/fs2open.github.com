@@ -135,6 +135,7 @@ static auto BriefingVoiceOption __UNUSED = options::OptionBuilder<bool>("Audio.B
                      .default_val(true)
                      .bind_to(&Briefing_voice_enabled)
                      .importance(4)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 // --------------------------------------------------------------------------------------

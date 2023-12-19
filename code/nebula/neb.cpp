@@ -145,6 +145,7 @@ const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.N
                           Detail.nebula_detail = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 // --------------------------------------------------------------------------------------------------------

@@ -164,6 +164,19 @@ int OptionBase::getImportance() const {
 void OptionBase::setImportance(int importance) {
 	_importance = importance;
 }
+
+//Get option min/max range values
+std::pair<float, float> OptionBase::getRangeValues() const {
+	return std::make_pair(_min, _max);
+}
+
+//Set option min/max range values
+void OptionBase::setRangeValues(float min, float max)
+{
+	_min = min;
+	_max = max;
+}
+
 bool operator<(const OptionBase& lhs, const OptionBase& rhs) {
 	if (lhs._category < rhs._category)
 		return true;

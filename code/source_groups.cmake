@@ -1039,6 +1039,16 @@ add_file_folder("Options"
 	options/OptionsManager.h
 )
 
+add_file_folder("Options\\\\Dialogs"
+	options/dialogs/ingame_options_ui.h
+	options/dialogs/ingame_options_ui.cpp
+)
+
+add_file_folder("Options\\\\Manager"
+	options/manager/ingame_options_manager.h
+	options/manager/ingame_options_manager.cpp
+)
+
 # OsApi files
 add_file_folder("OsApi"
 	osapi/DebugWindow.h

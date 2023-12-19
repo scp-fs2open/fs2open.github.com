@@ -59,6 +59,7 @@ auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 									.default_val(true)
 									.bind_to(&Multi_options_g.pxo)
 									.importance(10)
+									.flags({options::OptionFlags::RetailBuiltinOption})
 									.finish();
 
 // These next few options are a little messy because the values are stored in the player file
@@ -96,6 +97,7 @@ auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBr
                                     .bind_to(&BroadcastGamesLocally)
 									.change_listener(local_broadcast_change)
 									.importance(10)
+									.flags({options::OptionFlags::RetailBuiltinOption})
 									.finish();
 
 static bool AlwaysFlushCache = false;
@@ -122,7 +124,7 @@ auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache"
 									std::pair<const char*, int>{"Whether or not flush the multidata cache before games", 1810})
 									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
-                                    .flags({options::OptionFlags::ForceMultiValueSelection})
+                                    .flags({options::OptionFlags::ForceMultiValueSelection, options::OptionFlags::RetailBuiltinOption})
                                     .display(flush_cache_display) 
 									.default_val(false)
                                     .bind_to(&AlwaysFlushCache)
@@ -154,7 +156,7 @@ auto TransferMissionsOption __UNUSED = options::OptionBuilder<bool>("Multi.Trans
 									std::pair<const char*, int>{"What appdata folder to save missions to", 1811})
 									.category("Multi")
 									.level(options::ExpertLevel::Beginner)
-                                    .flags({options::OptionFlags::ForceMultiValueSelection})
+                                    .flags({options::OptionFlags::ForceMultiValueSelection, options::OptionFlags::RetailBuiltinOption})
                                     .display(transfer_missions_display) 
 									.default_val(false)
                                     .bind_to(&CacheMissionsToMultidata)

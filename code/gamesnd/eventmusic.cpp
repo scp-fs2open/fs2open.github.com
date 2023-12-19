@@ -53,6 +53,7 @@ static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Mu
                      .range(0.0f, 1.0f)
                      .change_listener(music_volume_change_listener)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 typedef struct tagSNDPATTERN {

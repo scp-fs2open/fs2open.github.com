@@ -54,6 +54,7 @@ auto DeadZoneOption = options::OptionBuilder<int>("Input.JoystickDeadZone",
                      .default_val(10)
                      .bind_to(&Joy_dead_zone_size)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 int Joy_sensitivity = 9;
@@ -67,6 +68,7 @@ auto SensitivityOption = options::OptionBuilder<int>("Input.JoystickSensitivity"
                      .default_val(9)
                      .bind_to(&Joy_sensitivity)
                      .importance(2)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 //! arrays which hold the key mappings.  The array index represents a key-independent action.

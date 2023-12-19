@@ -70,6 +70,7 @@ static auto EffectVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.E
                      .range(0.0f, 1.0f)
                      .change_listener(effects_volume_change_listener)
                      .importance(2)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 float Default_voice_volume = 0.7f; // range is 0 -> 1, used for all voice playback
@@ -92,6 +93,7 @@ static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Vo
                      .range(0.0f, 1.0f)
                      .change_listener(voice_volume_change_listener)
                      .importance(0)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 unsigned int SND_ENV_DEFAULT = 0;

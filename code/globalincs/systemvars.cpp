@@ -255,6 +255,7 @@ const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.De
                           Detail.detail_distance = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
@@ -268,6 +269,7 @@ const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Textu
                           Detail.hardware_textures = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
@@ -281,6 +283,7 @@ const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Part
                           Detail.num_particles = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
@@ -294,6 +297,7 @@ const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.Sm
                           Detail.num_small_debris = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
@@ -307,6 +311,7 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
                           Detail.shield_effects = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
@@ -320,6 +325,7 @@ const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars",
                           Detail.num_stars = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 // Call this with:

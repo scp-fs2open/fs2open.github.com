@@ -121,6 +121,7 @@ static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma
                      .enumerator(gamma_value_enumerator)
                      .display(gamma_display)
                      .change_listener(gamma_change_listener)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 
@@ -144,6 +145,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                           }
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;

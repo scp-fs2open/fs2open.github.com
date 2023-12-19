@@ -28,6 +28,19 @@ FLAG_LIST(OptionFlags) {
 	 * boolean option even though the option is not designed for that.
 	 */
 	ForceMultiValueSelection = 0,
+	/**
+	 * @brief Whether or not the option is built-in to FSO's retail Options UI
+	 *
+	 * This can be useful if an option should be ignored in cases like the SCP Options UI where
+	 * it's only appropriate to display options that are not otherwise accessible to retail players.
+	 */
+	RetailBuiltinOption = 1,
+	/**
+	 * @brief Forces the range type slider to use an integer instead of a float
+	 *
+	 * This can be useful if an option cannot accept float values.
+	 */
+	RangeTypeInteger = 2,
 
 	NUM_VALUES
 };
@@ -57,6 +70,9 @@ class OptionBase {
 
 	int _importance = 0;
 
+	float _min = 0;
+	float _max = 1;
+
 	SCP_unordered_map<PresetKind, SCP_string> _preset_values;
 
 	flagset<OptionFlags> _flags;
@@ -76,6 +92,9 @@ class OptionBase {
 
 	int getImportance() const;
 	void setImportance(int importance);
+
+	std::pair<float, float> getRangeValues() const;
+	void setRangeValues(float min, float max);
 
 	const flagset<OptionFlags>& getFlags() const;
 	void setFlags(const flagset<OptionFlags>& flags);
@@ -505,6 +524,7 @@ class OptionBuilder {
 	OptionBuilder& range(T min, T max)
 	{
 		Assertion(min <= max, "Invalid number range!");
+		_instance.setRangeValues(static_cast<float>(min), static_cast<float>(max));
 		_instance.setInterpolator(
 		    [min, max](float f) { return min + static_cast<T>((max - min) * f); },
 		    [min, max](T f) { return static_cast<float>(f - min) / static_cast<float>(max - min); });

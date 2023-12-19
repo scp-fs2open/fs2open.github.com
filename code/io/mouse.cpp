@@ -65,6 +65,7 @@ static auto MouseSensitivityOption __UNUSED = options::OptionBuilder<int>("Input
                      .default_val(4)
                      .bind_to(&Mouse_sensitivity)
                      .importance(0)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 bool Use_mouse_to_fly = false;
@@ -80,6 +81,7 @@ static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMou
                      .default_val(false)
                      .bind_to(&Use_mouse_to_fly)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::Factory(

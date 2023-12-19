@@ -61,6 +61,7 @@ static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphic
                      .default_val(25)
                      .bind_to(&Post_processing_bloom_intensity)
                      .importance(55)
+                     .flags({options::OptionFlags::RangeTypeInteger})
                      .finish();
 } // namespace
 

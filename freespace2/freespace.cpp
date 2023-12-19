@@ -268,6 +268,7 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 bool Screenshake_enabled = true;
