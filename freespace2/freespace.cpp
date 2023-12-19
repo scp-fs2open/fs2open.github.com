@@ -146,6 +146,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/Ingame_Options.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
@@ -5155,6 +5156,10 @@ void game_process_event( int current_state, int event )
 			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
 			break;
 
+		case GS_EVENT_INGAME_OPTIONS:
+			gameseq_push_state(GS_STATE_INGAME_OPTIONS);
+			break;
+
 		default:
 			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
@@ -5222,6 +5227,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_GAMEPLAY_HELP:
 		case GS_STATE_LAB:
 		case GS_STATE_SCRIPTING_MISSION:
+		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
@@ -5667,6 +5673,10 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}
 			scripting_state_close();
+			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_close();
 			break;
 	}
 
@@ -6237,6 +6247,9 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_SCRIPTING_MISSION:
 			scripting_state_init();
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_init();
 	} // end switch
 
 	//WMC - now do user scripting stuff
@@ -6583,6 +6596,10 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_SCRIPTING_MISSION);
 			scripting_state_do_frame(flFrametime, false);
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			game_set_frametime(GS_STATE_INGAME_OPTIONS);
+			ingame_options_do_frame(flFrametime);
 
    } // end switch(gs_current_state)
 

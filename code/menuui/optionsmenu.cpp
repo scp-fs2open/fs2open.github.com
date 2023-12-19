@@ -1178,6 +1178,11 @@ void options_menu_do_frame(float  /*frametime*/)
 
 		case KEY_ENTER:			
 			break;
+
+		case KEY_F3: //This is temporary. Should be changed to a clickable button using retail graphics before merge.
+			gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+			gameseq_post_event(GS_EVENT_INGAME_OPTIONS);
+			break;
 	}	
 
 	for (i=0; i<NUM_BUTTONS; i++) {
