@@ -55,8 +55,7 @@ jobs:
         working-directory: ./build
         env:
           CONFIGURATION: Release
-        #run: cov-build --dir cov-int ninja -k 20 all
-        run: ninja -k 20 all
+        run: cov-build --dir cov-int ninja -k 20 all
 
       - name: Compress Results
         working-directory: ./build
