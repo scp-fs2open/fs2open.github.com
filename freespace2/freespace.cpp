@@ -963,7 +963,6 @@ void game_level_close()
 }
 
 time_t load_gl_init;
-time_t load_mission_load;
 uint load_post_level_init;
 extern bool Cmdline_reuse_rng_seed;
 extern uint Cmdline_rng_seed;
@@ -1432,10 +1431,7 @@ bool game_start_mission()
 	}
 
 	game_busy( NOX("** starting mission_load() **") );
-	load_mission_load = time(nullptr);
 	bool load_success = mission_load(Game_current_mission_filename);
-	load_mission_load = (time(nullptr) - load_mission_load);
-	mprintf(("Mission load took %d seconds", load_mission_load));
 
 	// free up memory from parsing the mission
 	stop_parse();
