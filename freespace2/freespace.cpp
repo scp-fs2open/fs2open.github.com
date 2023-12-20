@@ -1076,7 +1076,7 @@ void game_level_init()
 	Campaign_ending_via_supernova = 0;
 
 	load_gl_init = (time(nullptr) - load_gl_init);
-	mprintf(("Game_level_init took %d seconds", load_gl_init));
+	mprintf(("Game_level_init took %ld seconds", load_gl_init));
 
 	//WMC - Init multi players for level
 	if (Game_mode & GM_MULTIPLAYER && Player != nullptr) {
