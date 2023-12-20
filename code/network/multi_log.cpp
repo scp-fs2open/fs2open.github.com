@@ -75,7 +75,7 @@ void multi_log_write_update()
 	seconds = (diff - (hours * 3600) - (mins * 60));
 
 	// print it out
-	ml_printf("Server has been active for %d hours, %d minutes, and %d seconds", hours, mins, seconds);
+	ml_printf("Server has been active for %ld hours, %ld minutes, and %ld seconds", hours, mins, seconds);
 }
 
 // write out some info helpful for debugging
