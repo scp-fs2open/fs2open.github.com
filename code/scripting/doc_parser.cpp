@@ -202,8 +202,8 @@ class TypeVisitor : public BaseVisitor {
 
 	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* context) override
 	{
-		auto keyType = visit(context->type(0)).as<ade_type_info>();
-		auto valueType = visit(context->type(1)).as<ade_type_info>();
+		const auto keyType = visit(context->type(0)).as<ade_type_info>();
+		const auto valueType = visit(context->type(1)).as<ade_type_info>();
 
 		return ade_type_info(ade_type_map(keyType, valueType));
 	}
