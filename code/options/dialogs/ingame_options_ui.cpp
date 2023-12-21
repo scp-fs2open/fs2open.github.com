@@ -107,6 +107,10 @@ void OptUi::build_options_list(const char* category) const
 					}
 				}
 			}
+
+			// Add a tooltip with the option description on mouseover
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay))
+				ImGui::SetTooltip(thisOpt->getDescription().c_str());
 		}
 	}
 }
@@ -158,7 +162,7 @@ void OptUi::create_ui()
 			with_Window(title.c_str())
 			{
 				build_options_list(cat.first.c_str());
-				ImGui::SetNextWindowSize(ImVec2(0, 0)); //Force window to fit content
+				ImGui::SetWindowSize(ImVec2(0, 0)); //Force window to fit content
 				// It would be nice if there was a way to auto-position windows to avoid overlap here
 				// but I don't see that functionality currently in ImGui, so we'll have to go without
 			}
