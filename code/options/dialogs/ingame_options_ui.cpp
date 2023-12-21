@@ -38,14 +38,15 @@ void OptUi::build_options_list(const char* category) const
 
 					int idx = getOptConfigurator()->get_binary_option_index(thisOpt->getTitle());
 
-					Assertion((idx >= 0), "Could not find binary option in ui list! Get a coder!");
+					Assertion(SCP_vector_inbounds(getOptConfigurator()->binary_options, idx),
+						"Could not find binary option in ui list! Get a coder!");
 
 					if (ImGui::Checkbox(thisOpt->getTitle().c_str(), &getOptConfigurator()->binary_options[idx].second)) {
 						if (getOptConfigurator()->binary_options[idx].second) {
-							thisOpt->setValueDescription({val.display, "true"});
+							thisOpt->setValueDescription({val.display, "true"}); // OptionsManager stores values as serialized strings
 							getOptConfigurator()->options_changed = true;
 						} else {
-							thisOpt->setValueDescription({val.display, "false"});
+							thisOpt->setValueDescription({val.display, "false"}); // OptionsManager stores values as serialized strings
 							getOptConfigurator()->options_changed = true;
 						}
 					}
@@ -75,7 +76,8 @@ void OptUi::build_options_list(const char* category) const
 
 					int idx = getOptConfigurator()->get_int_range_option_index(thisOpt->getTitle());
 
-					Assertion((idx >= 0), "Could not find int range option in ui list! Get a coder!");
+					Assertion(SCP_vector_inbounds(getOptConfigurator()->range_int_options, idx),
+						"Could not find int range option in ui list! Get a coder!");
 
 					SliderInt(thisOpt->getTitle().c_str(),
 						&getOptConfigurator()->range_int_options[idx].second,
@@ -83,8 +85,8 @@ void OptUi::build_options_list(const char* category) const
 						static_cast<int>(min_max.second),
 						val.display.c_str());
 					if (IsItemEdited()) {
-						SCP_string newVal = std::to_string(getOptConfigurator()->range_int_options[idx].second);
-						thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+						SCP_string newVal = std::to_string(getOptConfigurator()->range_int_options[idx].second); // OptionsManager stores values as serialized strings
+						thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()}); // OptionsManager handles updating the display values if necessary
 						getOptConfigurator()->options_changed = true;
 					}
 
@@ -93,7 +95,8 @@ void OptUi::build_options_list(const char* category) const
 
 					int idx = getOptConfigurator()->get_float_range_option_index(thisOpt->getTitle());
 
-					Assertion((idx >= 0), "Could not find float range option in ui list! Get a coder!");
+					Assertion(SCP_vector_inbounds(getOptConfigurator()->range_float_options, idx),
+						"Could not find float range option in ui list! Get a coder!");
 
 					SliderFloat(thisOpt->getTitle().c_str(),
 						&getOptConfigurator()->range_float_options[idx].second,
@@ -101,8 +104,8 @@ void OptUi::build_options_list(const char* category) const
 						min_max.second,
 						val.display.c_str());
 					if (IsItemEdited()) {
-						SCP_string newVal = std::to_string(getOptConfigurator()->range_float_options[idx].second);
-						thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+						SCP_string newVal = std::to_string(getOptConfigurator()->range_float_options[idx].second); // OptionsManager stores values as serialized strings
+						thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()}); // OptionsManager handles updating the display values if necessary
 						getOptConfigurator()->options_changed = true;
 					}
 				}

@@ -7,7 +7,7 @@
 
 static std::unique_ptr<OptConfigurator> OCGR;
 
-// A list of all options categories
+// A list of all options categories: the category name and a boolean value for whether or not the window is active
 SCP_vector<std::pair<SCP_string, bool>> Option_categories;
 
 const std::unique_ptr<OptConfigurator>& getOptConfigurator()
@@ -59,6 +59,7 @@ void ingame_options_init()
 				if (getOptConfigurator()->get_binary_option_index(thisOpt->getTitle()) < 0) {
 					std::pair<SCP_string, bool> thisPair = std::make_pair(thisOpt->getTitle(), false);
 
+					// Options manager stores the boolean as a serialized string, so we need to set our own bool
 					if (val.serialized == "true") {
 						thisPair.second = true;
 					}
@@ -68,6 +69,8 @@ void ingame_options_init()
 			}
 		// If it's a range option then setup the necessary float or int variables for imgui
 		} else if (thisOpt->getType() == options::OptionType::Range) {
+
+			// OptionsManager stores the value as a serialized string, so we need to return it to a float
 			auto f_val = std::stof(val.serialized.c_str());
 
 			// Integer Ranges
