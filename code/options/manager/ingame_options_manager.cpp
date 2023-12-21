@@ -10,18 +10,41 @@
 #include "freespace.h"
 
 
-void opt_exit() {
-	getOptConfigurator()->notify_close();
-}
-
 OptConfigurator::OptConfigurator() {
-
 	optUi = OptUi();
 }
 
-OptConfigurator::~OptConfigurator()
+int OptConfigurator::get_binary_option_index(const SCP_string& title)
 {
-	//obj_delete_all();
+	for (size_t i = 0; i < getOptConfigurator()->binary_options.size(); i++) {
+		if (getOptConfigurator()->binary_options[i].first == title) {
+			return static_cast<int>(i);
+		}
+	}
+
+	return -1;
+}
+
+int OptConfigurator::get_float_range_option_index(const SCP_string& title)
+{
+	for (size_t i = 0; i < getOptConfigurator()->range_float_options.size(); i++) {
+		if (getOptConfigurator()->range_float_options[i].first == title) {
+			return static_cast<int>(i);
+		}
+	}
+
+	return -1;
+}
+
+int OptConfigurator::get_int_range_option_index(const SCP_string& title)
+{
+	for (size_t i = 0; i < getOptConfigurator()->range_int_options.size(); i++) {
+		if (getOptConfigurator()->range_int_options[i].first == title) {
+			return static_cast<int>(i);
+		}
+	}
+
+	return -1;
 }
 
 void OptConfigurator::maybe_persist_changes()
@@ -52,6 +75,10 @@ void OptConfigurator::offer_restart_popup()
 {
 	ImGui::OpenPopup("Restart Required");
 
+	// Always center this window when appearing
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
 	if (ImGui::BeginPopupModal("Restart Required", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text(persist_options.c_str());
 		ImGui::Separator();
@@ -75,20 +102,31 @@ void OptConfigurator::offer_save_options_popup()
 
 	ImGui::OpenPopup("Save Changes?");
 
+	// Always center this window when appearing
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
 	if (ImGui::BeginPopupModal("Save Changes?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text(dialog_text.c_str());
 		ImGui::NewLine();
-		if (ImGui::Button("Yes", ImVec2(200, 0))) {
+		if (ImGui::Button("Yes", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 			show_save_options_popup = false;
+			options_changed = false;
 			maybe_persist_changes();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("No", ImVec2(200, 0))) {
+		if (ImGui::Button("No", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 			show_save_options_popup = false;
+			options_changed = false;
 			discard_changes();
 			notify_close();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+			show_save_options_popup = false;
 		}
 		ImGui::EndPopup();
 	}
@@ -112,7 +150,11 @@ void OptConfigurator::onFrame(float frametime) {
 		switch (key) {
 
 		case KEY_ESC:
-			show_save_options_popup = true;
+			if (options_changed) {
+				show_save_options_popup = true;
+			} else {
+				notify_close();
+			}
 			break;
 
 		default:

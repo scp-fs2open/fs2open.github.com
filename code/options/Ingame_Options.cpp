@@ -12,6 +12,7 @@
 
 static std::unique_ptr<OptConfigurator> OMGR;
 
+// A list of all options categories
 SCP_vector<std::pair<SCP_string, bool>> Option_categories;
 
 const std::unique_ptr<OptConfigurator>& getOptConfigurator()
@@ -36,6 +37,7 @@ void ingame_options_init()
 			continue;
 		}
 
+		// Get the category and save it for the window list
 		SCP_string cat = thisOpt->getCategory();
 
 		bool found = false;
@@ -48,6 +50,45 @@ void ingame_options_init()
 
 		if (!found) {
 			Option_categories.push_back(std::make_pair(cat, true));
+		}
+
+		auto val = thisOpt->getCurrentValueDescription();
+
+		// If it's a binary option then setup the necessary boolean for imgui
+		if (thisOpt->getType() == options::OptionType::Selection) {
+			auto values = thisOpt->getValidValues();
+
+			if ((values.size() == 2) && !(thisOpt->getFlags()[options::OptionFlags::ForceMultiValueSelection])) {
+
+				// On/Off options
+				if (getOptConfigurator()->get_binary_option_index(thisOpt->getTitle()) < 0) {
+					std::pair<SCP_string, bool> thisPair = std::make_pair(thisOpt->getTitle(), false);
+
+					if (val.serialized == "true") {
+						thisPair.second = true;
+					}
+
+					getOptConfigurator()->binary_options.push_back(thisPair);
+				}
+			}
+		// If it's a range option then setup the necessary float or int variables for imgui
+		} else if (thisOpt->getType() == options::OptionType::Range) {
+			auto f_val = std::stof(val.serialized.c_str());
+
+			// Integer Ranges
+			if (thisOpt->getFlags()[options::OptionFlags::RangeTypeInteger]) {
+				if (getOptConfigurator()->get_int_range_option_index(thisOpt->getTitle()) < 0) {
+					std::pair<SCP_string, int> thisPair = std::make_pair(thisOpt->getTitle().c_str(), static_cast<int>(f_val));
+					getOptConfigurator()->range_int_options.push_back(thisPair);
+				}
+
+			// Float Ranges
+			} else {
+				if (getOptConfigurator()->get_float_range_option_index(thisOpt->getTitle()) < 0) {
+					std::pair<SCP_string, float> thisPair = std::make_pair(thisOpt->getTitle().c_str(), f_val);
+					getOptConfigurator()->range_float_options.push_back(thisPair);
+				}
+			}
 		}
 
 	}

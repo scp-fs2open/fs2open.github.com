@@ -1474,7 +1474,7 @@ void mod_table_reset()
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
-	Using_in_game_options = false;
+	Using_in_game_options = true;
 	Dinky_shockwave_default_multiplier = 1.0f;
 	Shockwaves_always_damage_bombs = false;
 	Shockwaves_damage_all_obj_types_once = false;

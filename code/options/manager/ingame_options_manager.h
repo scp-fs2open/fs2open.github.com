@@ -8,7 +8,6 @@
 class OptConfigurator {
   public:
 	OptConfigurator();
-	~OptConfigurator();
 
 	// Do rendering and handle keyboard/mouse events
 	void onFrame(float frametime);
@@ -30,9 +29,22 @@ class OptConfigurator {
 
 	void discard_changes();
 
+	int get_binary_option_index(const SCP_string& title);
+	int get_float_range_option_index(const SCP_string& title);
+	int get_int_range_option_index(const SCP_string& title);
+
 	bool show_save_options_popup = false;
 	bool show_persist_popup = false;
 	SCP_string persist_options = "";
+	bool options_changed = false;
+
+	// These are used to store options values for imgui since we can't get to the
+	// actual globals through the Options Manager. Imgui does not need a value to
+	// store multi select options, so that can be done directly instead of through
+	// a vector here.
+	SCP_vector<std::pair<SCP_string, bool>> binary_options;
+	SCP_vector<std::pair<SCP_string, float>> range_float_options;
+	SCP_vector<std::pair<SCP_string, int>> range_int_options;
   private:
 	bool CloseThis = false;
 	OptUi optUi;

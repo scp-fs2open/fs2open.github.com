@@ -7,15 +7,6 @@
 
 using namespace ImGui;
 
-void OptUi::object_changed()
-{
-	rebuild_after_object_change = true;
-}
-
-SCP_vector<std::pair<SCP_string, bool>> Binary_options;
-SCP_vector<std::pair<SCP_string, float>> Range_float_options;
-SCP_vector<std::pair<SCP_string, int>> Range_int_options;
-
 void OptUi::build_options_list(const char* category) const
 {
 	auto& optionsList = options::OptionsManager::instance()->getOptions();
@@ -38,32 +29,18 @@ void OptUi::build_options_list(const char* category) const
 				if ((values.size() == 2) && !(thisOpt->getFlags()[options::OptionFlags::ForceMultiValueSelection])) {
 
 					// On/Off options
-					bool found = false;
-					size_t idx = 0;
-					for (size_t i = 0; i < Binary_options.size(); i++) {
-						if (Binary_options[i].first == thisOpt->getTitle()) {
-							found = true;
-							idx = i;
-							break;
-						}
-					}
 
-					if (!found) {
-						std::pair<SCP_string, bool> thisPair = std::make_pair(thisOpt->getTitle(), false);
+					int idx = getOptConfigurator()->get_binary_option_index(thisOpt->getTitle());
 
-						if (val.serialized == "true") {
-							thisPair.second = true;
-						}
+					Assertion((idx >= 0), "Could not find binary option in ui list! Get a coder!");
 
-						Binary_options.push_back(thisPair);
-						idx = Binary_options.size() - 1;
-					}
-
-					if (ImGui::Checkbox(thisOpt->getTitle().c_str(), &Binary_options[idx].second)) {
-						if (Binary_options[idx].second) {
+					if (ImGui::Checkbox(thisOpt->getTitle().c_str(), &getOptConfigurator()->binary_options[idx].second)) {
+						if (getOptConfigurator()->binary_options[idx].second) {
 							thisOpt->setValueDescription({val.display, "true"});
+							getOptConfigurator()->options_changed = true;
 						} else {
 							thisOpt->setValueDescription({val.display, "false"});
+							getOptConfigurator()->options_changed = true;
 						}
 					}
 				} else {
@@ -73,63 +50,54 @@ void OptUi::build_options_list(const char* category) const
 					{
 						for (int n = 0; n < static_cast<int>(values.size()); n++) {
 							bool is_selected = (values[n].serialized == val.serialized);
-							if (Selectable(values[n].display.c_str(), is_selected))
+							if (Selectable(values[n].display.c_str(), is_selected)) {
 								thisOpt->setValueDescription(values[n]);
-
-							if (is_selected)
+								getOptConfigurator()->options_changed = true;
+							}
+							if (is_selected) {
 								SetItemDefaultFocus();
+							}
 						}
 					}
 				}
 			// Range Sliders
 			} else if (thisOpt->getType() == options::OptionType::Range) {
-				auto f_val = std::stof(val.serialized.c_str());
-				auto min_max = thisOpt->getRangeValues();
+				std::pair<float, float> min_max = thisOpt->getRangeValues();
 
 				// Integer Ranges
 				if (thisOpt->getFlags()[options::OptionFlags::RangeTypeInteger]){
-					bool found = false;
-					size_t idx = 0;
-					for (size_t i = 0; i < Range_int_options.size(); i++) {
-						if (Range_int_options[i].first == thisOpt->getTitle()) {
-							found = true;
-							idx = i;
-							break;
-						}
+
+					int idx = getOptConfigurator()->get_int_range_option_index(thisOpt->getTitle());
+
+					Assertion((idx >= 0), "Could not find int range option in ui list! Get a coder!");
+
+					SliderInt(thisOpt->getTitle().c_str(),
+						&getOptConfigurator()->range_int_options[idx].second,
+						static_cast<int>(min_max.first),
+						static_cast<int>(min_max.second),
+						val.display.c_str());
+					if (IsItemEdited()) {
+						SCP_string newVal = std::to_string(getOptConfigurator()->range_int_options[idx].second);
+						thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+						getOptConfigurator()->options_changed = true;
 					}
 
-					if (!found) {
-						std::pair<SCP_string, int> thisPair = std::make_pair(thisOpt->getTitle().c_str(), static_cast<int>(f_val));
-
-						Range_int_options.push_back(thisPair);
-						idx = Range_int_options.size() - 1;
-					}
-
-					SliderInt(thisOpt->getTitle().c_str(), &Range_int_options[idx].second, static_cast<int>(min_max.first), static_cast<int>(min_max.second), val.display.c_str());
-					if (IsItemDeactivatedAfterEdit()) {
-						thisOpt->setValueDescription({std::to_string(Range_int_options[idx].second).c_str(), std::to_string(Range_int_options[idx].second).c_str()});
-					}
+				// Float Ranges
 				} else {
-					bool found = false;
-					size_t idx = 0;
-					for (size_t i = 0; i < Range_float_options.size(); i++) {
-						if (Range_float_options[i].first == thisOpt->getTitle()) {
-							found = true;
-							idx = i;
-							break;
-						}
-					}
 
-					if (!found) {
-						std::pair<SCP_string, float> thisPair = std::make_pair(thisOpt->getTitle().c_str(), f_val);
+					int idx = getOptConfigurator()->get_float_range_option_index(thisOpt->getTitle());
 
-						Range_float_options.push_back(thisPair);
-						idx = Range_float_options.size() - 1;
-					}
+					Assertion((idx >= 0), "Could not find float range option in ui list! Get a coder!");
 
-					SliderFloat(thisOpt->getTitle().c_str(), &Range_float_options[idx].second, min_max.first, min_max.second, val.display.c_str());
-					if (IsItemDeactivatedAfterEdit()) {
-						thisOpt->setValueDescription({std::to_string(Range_float_options[idx].second).c_str(), std::to_string(Range_float_options[idx].second).c_str()});
+					SliderFloat(thisOpt->getTitle().c_str(),
+						&getOptConfigurator()->range_float_options[idx].second,
+						min_max.first,
+						min_max.second,
+						val.display.c_str());
+					if (IsItemEdited()) {
+						SCP_string newVal = std::to_string(getOptConfigurator()->range_float_options[idx].second);
+						thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+						getOptConfigurator()->options_changed = true;
 					}
 				}
 			}
@@ -160,11 +128,13 @@ void OptUi::build_toolbar_entries()
 	if (close_and_save) {
 		getOptConfigurator()->maybe_persist_changes();
 		close_and_save = false;
+		getOptConfigurator()->options_changed = false;
 	}
 
 	if (close_and_discard) {
 		getOptConfigurator()->discard_changes();
 		close_and_discard = false;
+		getOptConfigurator()->options_changed = false;
 		getOptConfigurator()->notify_close();
 	}
 }
@@ -193,7 +163,5 @@ void OptUi::create_ui()
 			}
 		}
 	}
-
-	//rebuild_after_object_change = false;
 }
 
