@@ -113,7 +113,7 @@ void OptUi::build_options_list(const char* category) const
 
 			// Add a tooltip with the option description on mouseover
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay))
-				ImGui::SetTooltip(thisOpt->getDescription().c_str());
+				ImGui::SetTooltip("%s", thisOpt->getDescription().c_str());
 		}
 	}
 }

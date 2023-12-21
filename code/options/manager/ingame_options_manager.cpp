@@ -84,7 +84,7 @@ void OptConfigurator::offer_restart_popup()
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 	if (ImGui::BeginPopupModal(XSTR("Restart Required", 1821), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text(persist_options.c_str());
+		ImGui::Text("%s", persist_options.c_str());
 		ImGui::Separator();
 		ImGui::NewLine();
 		if (ImGui::Button(XSTR("OK", 925), ImVec2(120, 0))) {
@@ -111,7 +111,7 @@ void OptConfigurator::offer_save_options_popup()
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 	if (ImGui::BeginPopupModal(XSTR("Save Changes?", 1823), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text(dialog_text.c_str());
+		ImGui::Text("%s", dialog_text.c_str());
 		ImGui::NewLine();
 		if (ImGui::Button(XSTR("Yes", 1394), ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
