@@ -6600,7 +6600,7 @@ void game_do_state(int state)
 
 		case GS_STATE_INGAME_OPTIONS:
 			game_set_frametime(GS_STATE_INGAME_OPTIONS);
-			ingame_options_do_frame(flFrametime);
+			ingame_options_do_frame();
 
    } // end switch(gs_current_state)
 

@@ -97,7 +97,7 @@ void ingame_options_close()
 	OCGR.reset();
 }
 
-void ingame_options_do_frame(float frametime)
+void ingame_options_do_frame()
 {
-	getOptConfigurator()->onFrame(frametime);
+	getOptConfigurator()->onFrame();
 }

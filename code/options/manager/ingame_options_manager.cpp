@@ -137,7 +137,7 @@ void OptConfigurator::offer_save_options_popup()
 }
 
 // The main Imgui rendering happens here as well as any i/o checking
-void OptConfigurator::onFrame(float frametime) {
+void OptConfigurator::onFrame() {
 	if (gr_screen.mode == GR_OPENGL)
 		ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();

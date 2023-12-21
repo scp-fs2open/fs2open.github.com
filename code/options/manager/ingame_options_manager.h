@@ -10,7 +10,7 @@ class OptConfigurator {
 	OptConfigurator();
 
 	// Do rendering and handle keyboard/mouse events
-	void onFrame(float frametime);
+	void onFrame();
 
 	void close() {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
