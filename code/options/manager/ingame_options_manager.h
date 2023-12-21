@@ -3,7 +3,7 @@
 #include "options/ingame_options.h"
 #include "options/dialogs/ingame_options_ui.h"
 
-#include <gamesequence/gamesequence.h>
+#include "gamesequence/gamesequence.h"
 
 class OptConfigurator {
   public:
@@ -16,17 +16,15 @@ class OptConfigurator {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
 
-	// Call this function from outside LabManager::onFrame to signal that the lab should close.
+	// Call this function from outside OptConfigurator::onFrame to signal that the SCP Options should close.
 	void notify_close() {
 		CloseThis = true;
 	}
 
 	void offer_restart_popup();
-
 	void offer_save_options_popup();
 
 	void maybe_persist_changes();
-
 	void discard_changes();
 
 	int get_binary_option_index(const SCP_string& title);

@@ -47,6 +47,10 @@ int OptConfigurator::get_int_range_option_index(const SCP_string& title)
 	return -1;
 }
 
+// OptionsManager->persistChanges will try to update all changed options. If any
+// are unable to change, they will be returned in the `unchanged` Vector. This usually
+// means those options need the game to be restarted. So here we check if we have any
+// of those and notify the player of them and that a restart will be necessary.
 void OptConfigurator::maybe_persist_changes()
 {
 	auto unchanged = options::OptionsManager::instance()->persistChanges();
@@ -132,6 +136,7 @@ void OptConfigurator::offer_save_options_popup()
 	}
 }
 
+// The main Imgui rendering happens here as well as any i/o checking
 void OptConfigurator::onFrame(float frametime) {
 	if (gr_screen.mode == GR_OPENGL)
 		ImGui_ImplOpenGL3_NewFrame();

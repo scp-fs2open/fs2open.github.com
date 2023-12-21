@@ -5,23 +5,18 @@
 #include "options/OptionsManager.h"
 #include "options/Option.h"
 
-#include "gamesequence/gamesequence.h"
-#include "io/key.h"
-
-#include "freespace.h"
-
-static std::unique_ptr<OptConfigurator> OMGR;
+static std::unique_ptr<OptConfigurator> OCGR;
 
 // A list of all options categories
 SCP_vector<std::pair<SCP_string, bool>> Option_categories;
 
 const std::unique_ptr<OptConfigurator>& getOptConfigurator()
 {
-	if (OMGR == nullptr) {
-		OMGR.reset(new OptConfigurator());
+	if (OCGR == nullptr) {
+		OCGR.reset(new OptConfigurator());
 	}
 
-	return OMGR;
+	return OCGR;
 }
 
 void ingame_options_init()
@@ -96,8 +91,7 @@ void ingame_options_init()
 
 void ingame_options_close()
 {
-	OMGR.reset();
-	game_flush();
+	OCGR.reset();
 }
 
 void ingame_options_do_frame(float frametime)

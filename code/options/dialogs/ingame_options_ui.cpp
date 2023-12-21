@@ -7,6 +7,12 @@
 
 using namespace ImGui;
 
+// This is the magic right here. It takes a category and searches for relevant options,
+// building a control for each one as it goes. It's notable that binary and range options
+// in ImGui require a variable reference. But since we're hooking in to the OptionsManager
+// system here we can't get to the global references. So isntead we use a local one and when
+// that one changes we notify OptionsManager that the option value has been changed and it
+// handles updating the global values.
 void OptUi::build_options_list(const char* category) const
 {
 	auto& optionsList = options::OptionsManager::instance()->getOptions();
@@ -105,6 +111,7 @@ void OptUi::build_options_list(const char* category) const
 	}
 }
 
+// Build the main menu with selectors for each category and a way to save/discard/close
 void OptUi::build_options_menu()
 {
 	with_Menu(XSTR("SCP Options", 1817))
@@ -118,6 +125,7 @@ void OptUi::build_options_menu()
 	}
 }
 
+// Build the toolbar and handle notifications when closing the ui via this menu
 void OptUi::build_toolbar_entries()
 {
 	with_MainMenuBar
@@ -139,17 +147,7 @@ void OptUi::build_toolbar_entries()
 	}
 }
 
-void OptUi::show_options_menus() const
-{
-	for (auto cat : Option_categories) {
-		SCP_string title = cat.first + " " + XSTR("Options", 1036);
-		with_Window(title.c_str()) 
-		{
-			build_options_list(cat.first.c_str());
-		}
-	}
-}
-
+// For each category create a rollout that contains the actual options
 void OptUi::create_ui()
 {
 	build_toolbar_entries();
@@ -160,6 +158,9 @@ void OptUi::create_ui()
 			with_Window(title.c_str())
 			{
 				build_options_list(cat.first.c_str());
+				ImGui::SetNextWindowSize(ImVec2(0, 0)); //Force window to fit content
+				// It would be nice if there was a way to auto-position windows to avoid overlap here
+				// but I don't see that functionality currently in ImGui, so we'll have to go without
 			}
 		}
 	}
