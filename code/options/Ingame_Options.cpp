@@ -1,5 +1,5 @@
-#include "options/ingame_options.h"
-#include "options/ingame_options_internal.h"
+#include "options/Ingame_Options.h"
+#include "options/Ingame_Options_internal.h"
 #include "options/manager/ingame_options_manager.h"
 
 #include "options/OptionsManager.h"

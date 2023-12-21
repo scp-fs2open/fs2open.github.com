@@ -1,6 +1,6 @@
 #pragma once
 
-#include "options/ingame_options.h"
+#include "options/Ingame_Options.h"
 #include "options/dialogs/ingame_options_ui.h"
 
 #include "gamesequence/gamesequence.h"

@@ -3,7 +3,7 @@
 #include "options/OptionsManager.h"
 #include "options/Option.h"
 
-#include "options/ingame_options_internal.h"
+#include "options/Ingame_Options_internal.h"
 
 using namespace ImGui;
 
