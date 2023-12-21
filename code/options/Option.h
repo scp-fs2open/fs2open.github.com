@@ -63,7 +63,7 @@ class OptionBase {
 
 	SCP_string _config_key;
 
-	SCP_string _category = "Other";
+	std::pair<const char*, int> _category = {"Other", 1829};
 
 	SCP_string _title;
 	SCP_string _description;
@@ -87,8 +87,8 @@ class OptionBase {
 	ExpertLevel getExpertLevel() const;
 	void setExpertLevel(ExpertLevel expert_level);
 
-	const SCP_string& getCategory() const;
-	void setCategory(const SCP_string& category);
+	const SCP_string getCategory() const;
+	void setCategory(const std::pair<const char*, int>& category);
 
 	int getImportance() const;
 	void setImportance(int importance);
@@ -434,7 +434,7 @@ class OptionBuilder {
 	OptionBuilder(OptionBuilder&&) noexcept = delete;
 	OptionBuilder& operator=(OptionBuilder&&) noexcept = delete;
 	//Set the category of the option
-	OptionBuilder& category(const SCP_string& category)
+	OptionBuilder& category(const std::pair<const char*, int>& category)
 	{
 		_instance.setCategory(category);
 		return *this;

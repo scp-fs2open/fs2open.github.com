@@ -153,7 +153,7 @@ bool Contrails_use_absolute_speed;
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
                      std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .default_val(Discord_presence)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)

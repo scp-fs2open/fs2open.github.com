@@ -48,7 +48,7 @@ int Joy_dead_zone_size = 10;
 auto DeadZoneOption = options::OptionBuilder<int>("Input.JoystickDeadZone",
                      std::pair<const char*, int>{"Deadzone", 1377},
                      std::pair<const char*, int>{"The deadzone used for all joysticks", 1744})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .range(0, 45)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(10)
@@ -62,7 +62,7 @@ int Joy_sensitivity = 9;
 auto SensitivityOption = options::OptionBuilder<int>("Input.JoystickSensitivity",
                      std::pair<const char*, int>{"Sensitivity", 1745},
                      std::pair<const char*, int>{"The sensitivity used for all joysticks", 1746})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .range(0, 9)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(9)

@@ -135,10 +135,13 @@ void OptionBase::setExpertLevel(ExpertLevel expert_level) { _expert_level = expe
 void OptionBase::setPreset(PresetKind preset, const SCP_string& value) { _preset_values.emplace(preset, value); }
 
 //Return the option category
-const SCP_string& OptionBase::getCategory() const { return _category; }
+const SCP_string OptionBase::getCategory() const { return XSTR(_category.first, _category.second); }
 
 //Set the option category
-void OptionBase::setCategory(const SCP_string& category) { _category = category; }
+void OptionBase::setCategory(const std::pair<const char*, int>& category)
+{
+	_category = category;
+}
 
 //Return unique built-in key for the option
 const SCP_string& OptionBase::getConfigKey() const {

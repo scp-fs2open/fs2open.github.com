@@ -27,7 +27,7 @@ bool Fireball_warp_flash = false;
 static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.WarpFlash",
                      std::pair<const char*, int>{"Warp Flash", 1768},
                      std::pair<const char*, int>{"Show flash upon warp open or close", 1769})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(true)
                      .level(options::ExpertLevel::Advanced)
                      .bind_to_once(&Fireball_warp_flash)

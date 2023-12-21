@@ -64,7 +64,7 @@ static SCP_string fov_display(float val)
 auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 std::pair<const char*, int>{"Field Of View", 1703},
 					 std::pair<const char*, int>{"The vertical field of view", 1704})
-					 .category("Graphics")
+					 .category(std::make_pair("Graphics", 1825))
 					 .range(0.436332f, 1.5708f)
 					 .change_listener([](const float& val, bool) {
 					      VIEWER_ZOOM_DEFAULT = val;

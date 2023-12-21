@@ -59,7 +59,7 @@ int Mouse_sensitivity = 4;
 static auto MouseSensitivityOption __UNUSED = options::OptionBuilder<int>("Input.MouseSensitivity",
                      std::pair<const char*, int>{"Sensitivity", 1374},
                      std::pair<const char*, int>{"The sensitivity of the mouse input", 1747})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .range(0, 9)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(4)
@@ -75,7 +75,7 @@ static SCP_string mouse_mode_display(bool mode) { return mode ? XSTR("Joy-0", 16
 static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse",
                      std::pair<const char*, int>{"Mouse", 1373},
                      std::pair<const char*, int>{"Whether or not to use the mouse for flying", 1765})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .display(mouse_mode_display) 
                      .level(options::ExpertLevel::Beginner)
                      .default_val(false)

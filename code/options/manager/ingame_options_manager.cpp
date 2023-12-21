@@ -62,7 +62,7 @@ void OptConfigurator::maybe_persist_changes()
 		opts += "\n";
 	}
 
-	sprintf(persist_options, XSTR("The following options will require a restart. \n\n%s", -1), opts.c_str()); // XSTR ID needed before merge
+	sprintf(persist_options, XSTR("The following options will require a restart. \n\n%s", 1820), opts.c_str());
 	show_persist_popup = true;
 }
 
@@ -73,17 +73,17 @@ void OptConfigurator::discard_changes()
 
 void OptConfigurator::offer_restart_popup()
 {
-	ImGui::OpenPopup("Restart Required");
+	ImGui::OpenPopup(XSTR("Restart Required", 1821));
 
 	// Always center this window when appearing
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-	if (ImGui::BeginPopupModal("Restart Required", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+	if (ImGui::BeginPopupModal(XSTR("Restart Required", 1821), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text(persist_options.c_str());
 		ImGui::Separator();
 		ImGui::NewLine();
-		if (ImGui::Button("OK", ImVec2(120, 0))) {
+		if (ImGui::Button(XSTR("OK", 925), ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 			persist_options = "";
 			show_persist_popup = false;
@@ -96,27 +96,27 @@ void OptConfigurator::offer_restart_popup()
 
 void OptConfigurator::offer_save_options_popup()
 {
-	SCP_string dialog_text = XSTR("Option selections have not been saved. Do you wish to apply your changes?", -1); // XSTR ID needed before merge
+	SCP_string dialog_text = XSTR("Option selections have not been saved. Do you wish to apply your changes?", 1822);
 
 	game_flush();
 
-	ImGui::OpenPopup("Save Changes?");
+	ImGui::OpenPopup(XSTR("Save Changes?", 1823));
 
 	// Always center this window when appearing
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-	if (ImGui::BeginPopupModal("Save Changes?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+	if (ImGui::BeginPopupModal(XSTR("Save Changes?", 1823), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text(dialog_text.c_str());
 		ImGui::NewLine();
-		if (ImGui::Button("Yes", ImVec2(120, 0))) {
+		if (ImGui::Button(XSTR("Yes", 1394), ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 			show_save_options_popup = false;
 			options_changed = false;
 			maybe_persist_changes();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("No", ImVec2(120, 0))) {
+		if (ImGui::Button(XSTR("No", 1395), ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 			show_save_options_popup = false;
 			options_changed = false;
@@ -124,7 +124,7 @@ void OptConfigurator::offer_save_options_popup()
 			notify_close();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+		if (ImGui::Button(XSTR("Cancel", 1516), ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 			show_save_options_popup = false;
 		}

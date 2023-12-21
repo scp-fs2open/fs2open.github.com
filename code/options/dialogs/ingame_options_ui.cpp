@@ -107,14 +107,14 @@ void OptUi::build_options_list(const char* category) const
 
 void OptUi::build_options_menu()
 {
-	with_Menu("SCP Options")
+	with_Menu(XSTR("SCP Options", 1817))
 	{
 		for (size_t i = 0; i < Option_categories.size(); i++) {
-			SCP_string title = Option_categories[i].first + " options"; // needs XSTR support
+			SCP_string title = Option_categories[i].first + " " + XSTR("Options", 1036);
 			MenuItem(title.c_str(), nullptr, &Option_categories[i].second);
 		}
-		MenuItem("Save & Close", "ESC", &close_and_save);
-		MenuItem("Discard & Close", nullptr, &close_and_discard);
+		MenuItem(XSTR("Save & Close", 1818), XSTR("ESC", 160), &close_and_save);
+		MenuItem(XSTR("Discard & Close", 1819), nullptr, &close_and_discard);
 	}
 }
 
@@ -142,7 +142,7 @@ void OptUi::build_toolbar_entries()
 void OptUi::show_options_menus() const
 {
 	for (auto cat : Option_categories) {
-		SCP_string title = cat.first + " options";
+		SCP_string title = cat.first + " " + XSTR("Options", 1036);
 		with_Window(title.c_str()) 
 		{
 			build_options_list(cat.first.c_str());
@@ -156,7 +156,7 @@ void OptUi::create_ui()
 
 	for (auto cat : Option_categories) {
 		if (cat.second) {
-			SCP_string title = cat.first + " options"; // needs XSTR support
+			SCP_string title = cat.first + " " + XSTR("Options", 1036);
 			with_Window(title.c_str())
 			{
 				build_options_list(cat.first.c_str());

@@ -56,7 +56,7 @@ static bool Use_3D_shockwaves = true;
 static auto Shockwave3DMode __UNUSED = options::OptionBuilder<bool>("Graphics.3DShockwaves",
                      std::pair<const char*, int>{"Shockwaves", 1722},
                      std::pair<const char*, int>{"The way shockwaves are displayed", 1723})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .display(shockwave_mode_display)
                      .default_val(true)
                      .bind_to_once(&Use_3D_shockwaves)

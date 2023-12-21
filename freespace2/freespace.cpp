@@ -261,7 +261,7 @@ static SCP_string skill_level_display(int value)
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(DEFAULT_SKILL_LEVEL)
@@ -276,7 +276,7 @@ bool Screenshake_enabled = true;
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(Screenshake_enabled)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
@@ -290,7 +290,7 @@ static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes",
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .default_val(Allow_unfocused_pause)
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 

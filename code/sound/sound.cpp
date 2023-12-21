@@ -65,7 +65,7 @@ static bool effects_volume_change_listener(float new_val, bool /*initial*/)
 static auto EffectVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Effects",
                      std::pair<const char*, int>{"Effects", 1370},
                      std::pair<const char*, int>{"Volume used for playing in-game effects", 1734})
-                     .category("Audio")
+                     .category(std::make_pair("Audio", 1826))
                      .default_val(Default_sound_volume)
                      .range(0.0f, 1.0f)
                      .change_listener(effects_volume_change_listener)
@@ -88,7 +88,7 @@ static bool voice_volume_change_listener(float new_val, bool /*initial*/)
 static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Voice",
                      std::pair<const char*, int>{"Voice", 1372},
                      std::pair<const char*, int>{"Volume used for playing voice audio", 1735})
-                     .category("Audio")
+                     .category(std::make_pair("Audio", 1826))
                      .default_val(Default_voice_volume)
                      .range(0.0f, 1.0f)
                      .change_listener(voice_volume_change_listener)

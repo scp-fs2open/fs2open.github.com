@@ -164,7 +164,7 @@ bool Motion_debris_enabled = true;
 auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
                      std::pair<const char*, int>{"Motion Debris", 1713},
                      std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .bind_to_once(&Motion_debris_enabled)
                      .default_val(true)
                      .level(options::ExpertLevel::Advanced)
