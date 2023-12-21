@@ -923,8 +923,8 @@ bool control_config_do_reset(bool cycle, bool API_Access)
 
 	// first, determine how many bindings need to be changed
 	for (size_t e = 0; e < Control_config.size(); ++e) {
-		auto item = Control_config[e];
-		auto default_item = default_bindings[e];
+		const auto& item = Control_config[e];
+		const auto& default_item = default_bindings[e];
 
 		if (item.disabled) {
 			// skip
