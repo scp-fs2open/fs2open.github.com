@@ -177,7 +177,7 @@ class TypeVisitor : public BaseVisitor {
 	}
 	antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext* context) override
 	{
-		const auto& typeValue = visitChildren(context).as<ade_type_info>();
+		const auto typeValue = visitChildren(context).as<ade_type_info>();
 
 		// We can't properly distinguish between alternate types and tuple types in aggregateResult so instead we do
 		// that here. For a single type, we just return that type
@@ -202,15 +202,15 @@ class TypeVisitor : public BaseVisitor {
 
 	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* context) override
 	{
-		const auto& keyType = visit(context->type(0)).as<ade_type_info>();
-		const auto& valueType = visit(context->type(1)).as<ade_type_info>();
+		auto keyType = visit(context->type(0)).as<ade_type_info>();
+		auto valueType = visit(context->type(1)).as<ade_type_info>();
 
 		return ade_type_info(ade_type_map(keyType, valueType));
 	}
 
 	antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext* context) override
 	{
-		const auto& valueType = visit(context->type()).as<ade_type_info>();
+		const auto valueType = visit(context->type()).as<ade_type_info>();
 
 		return ade_type_info(ade_type_iterator(valueType));
 	}
