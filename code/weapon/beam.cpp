@@ -840,10 +840,13 @@ void beam_unpause_sounds()
 
 void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam)
 {
-	ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
-
 	if (fighter_beam)
+	{
+		ship_get_global_turret_gun_info(objp, ssp, gpos, nullptr, use_angles, targetp);
 		*gvec = objp->orient.vec.fvec;
+	}
+	else
+		ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
 }
 
 // -----------------------------===========================------------------------------
@@ -854,12 +857,11 @@ void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 void beam_type_direct_fire_move(beam *b)
 {
 	vec3d dir;
-	vec3d temp, temp2;	
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
 	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -878,13 +880,12 @@ void beam_type_direct_fire_move(beam *b)
 void beam_type_slashing_move(beam *b)
 {		
 	vec3d actual_dir;
-	vec3d temp, temp2;
 	float dot_save;	
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
 	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -933,12 +934,12 @@ void beam_type_targeting_move(beam *b)
 void beam_type_antifighter_move(beam *b)
 {
 	int shot_index, fire_wait;
-	vec3d temp, temp2, dir;	
+	vec3d dir;
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
 	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -995,7 +996,7 @@ void beam_type_antifighter_get_status(beam *b, int *shot_index, int *fire_wait)
 // down-the-normal type beam functions
 void beam_type_normal_move(beam *b)
 {
-	vec3d temp, turret_norm;
+	vec3d turret_norm;
 
 	if (b->subsys == NULL) {	// If we're a free-floating beam, there's nothing to calculate here.
 		return;
@@ -1003,7 +1004,7 @@ void beam_type_normal_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &turret_norm, 1, &temp, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &turret_norm, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1017,7 +1018,6 @@ void beam_type_normal_move(beam *b)
 
 void beam_type_omni_move(beam* b)
 {
-	
 	// keep this updated even if still warming up 
 	if (b->flags & BF_IS_FIGHTER_BEAM) {
 		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
@@ -1036,8 +1036,7 @@ void beam_type_omni_move(beam* b)
 		vm_vec_rotate(&b->binfo.rot_axis, &old_rot_axis, &transform_matrix);
 	}
 	else if (b->subsys != nullptr) {
-		vec3d temp, temp2;
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, false);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, false);
 	}
 
 	// if the "warming up" timestamp has not expired
@@ -2340,7 +2339,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		b->subsys->turret_next_fire_pos = b->firingpoint;
 
 		// where the shot is originating from (b->last_start gets filled in)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 		b->subsys->turret_next_fire_pos = temp;
 	} else {
@@ -2724,12 +2723,8 @@ void beam_aim(beam *b)
 		if (!(b->flags & BF_IS_FIGHTER_BEAM))
 			b->subsys->turret_next_fire_pos = b->firingpoint;
 
-		if (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction]) {
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-		} else {
-			// where the shot is originating from (b->last_start gets filled in)
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-		}
+		// where the shot is originating from (b->last_start gets filled in)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 		b->subsys->turret_next_fire_pos = temp_int;
 	}
@@ -4106,8 +4101,8 @@ int beam_ok_to_fire(beam *b)
 		vec3d aim_dir;
 		vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 		vm_vec_normalize(&aim_dir);
-		vec3d turret_dir, turret_pos, temp;
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		vec3d turret_dir, turret_pos;
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
 			vec3d turret_normal;

@@ -1200,7 +1200,7 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
  * @param gpos          Absolute position of gun firing point
  * @param gvec          Vector from *gpos to *targetp
  * @param use_angles    Use current angles
- * @param targetp       Pointer to target object
+ * @param targetp       Absolute position of target object
  */
 void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp)
 {
@@ -1220,6 +1220,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 	if (use_angles) {
 		model_instance_local_to_global_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
 	} else if (tp->flags[Model::Subsystem_Flags::Share_fire_direction]) {
+		Assertion(targetp != nullptr, "The targetp parameter must not be null here!");
 		vec3d avg_gun_pos, avg_gpos;
 		vm_vec_avg_n(&avg_gun_pos, tp->turret_num_firing_points, tp->turret_firing_point);
 
@@ -1227,6 +1228,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 		vm_vec_normalized_dir(gvec, targetp, &avg_gpos);
 	} else {
+		Assertion(targetp != nullptr, "The targetp parameter must not be null here!");
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 }
