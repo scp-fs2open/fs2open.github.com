@@ -2493,7 +2493,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						{
 							if (verify_vector(CTEXT(node)))					// verify return non-zero on invalid point
 							{
-								return SEXP_CHECK_INVALID_POINT;
+								return SEXP_CHECK_INVALID_SHIP_POINT;
 							}
 						}
 					}
@@ -2552,16 +2552,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				// only other possibility is waypoints
 				if (type == OPF_SHIP_WING_SHIPONTEAM_POINT || type == OPF_SHIP_WING_POINT || type == OPF_SHIP_WING_POINT_OR_NONE) {
-						if (find_matching_waypoint(CTEXT(node)) == nullptr){
-							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
-									return SEXP_CHECK_INVALID_POINT;
-								}
-							}
+					if (find_matching_waypoint(CTEXT(node)) == nullptr) {
+						if (verify_vector(CTEXT(node))) {  // non-zero on verify vector mean invalid!
+							return (type == OPF_SHIP_WING_SHIPONTEAM_POINT) ? SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT : SEXP_CHECK_INVALID_SHIP_WING_POINT;
+						}
+					}
 					break;
 				}
 
 				// nothing left
-				return SEXP_CHECK_INVALID_SHIP_WING;
+				if (type == OPF_ORDER_RECIPIENT)
+					return SEXP_CHECK_INVALID_ORDER_RECIPIENT;
+				else if (type == OPF_SHIP_WING_WHOLETEAM)
+					return SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM;
+				else
+					return SEXP_CHECK_INVALID_SHIP_WING;
 
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
@@ -33743,7 +33748,7 @@ const char *sexp_error_message(int num)
 			return "Negative number not allowed";
 
 		case SEXP_CHECK_INVALID_SHIP_WING:
-			return "Invalid ship/wing name";
+			return "Invalid ship or wing name";
 
 		case SEXP_CHECK_INVALID_SHIP_TYPE:
 			return "Invalid ship type";
@@ -33839,7 +33844,7 @@ const char *sexp_error_message(int num)
 			return "Invalid variable type";
 
 		case SEXP_CHECK_INVALID_FONT:
-			return "Invalid font";
+			return "Invalid font name";
 
 		case SEXP_CHECK_INVALID_HUD_ELEMENT:
 			return "Invalid HUD element magic name";
@@ -33908,7 +33913,7 @@ const char *sexp_error_message(int num)
 			return "Invalid fireball";
 
 		case SEXP_CHECK_INVALID_SPECIES:
-			return "Invalid species";
+			return "Invalid species name";
 
 		case SEXP_CHECK_INVALID_FUNCTIONAL_WHEN_EVAL_TYPE:
 			return "Invalid functional-when evaluation type";
@@ -33959,7 +33964,22 @@ const char *sexp_error_message(int num)
 			return "Invalid traitor override";
 
 		case SEXP_CHECK_INVALID_LUA_GENERAL_ORDER:
-			return "Invalid lua general order";
+			return "Invalid Lua general order";
+
+		case SEXP_CHECK_INVALID_SHIP_POINT:
+			return "Invalid ship or waypoint name";
+
+		case SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT:
+			return "Invalid ship, wing, ship on team, or waypoint name";
+
+		case SEXP_CHECK_INVALID_SHIP_WING_POINT:
+			return "Invalid ship, wing, or waypoint name";
+
+		case SEXP_CHECK_INVALID_ORDER_RECIPIENT:
+			return "Invalid order recipient";
+
+		case SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM:
+			return "Invalid ship, wing, or team name";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
