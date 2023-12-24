@@ -865,7 +865,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	//Get default turret info
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
+	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, false, &gvec, true, nullptr);
 	if (override_gvec != nullptr)
 		gvec = *override_gvec;
 
@@ -961,7 +961,7 @@ ADE_FUNC(
 
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
+	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, false, &gvec, true, nullptr);
 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }

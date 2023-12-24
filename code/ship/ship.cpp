@@ -7407,6 +7407,7 @@ void ship_subsys::clear()
 	targeted_subsys = NULL;
 	scripting_target_override = false;
 	last_fired_weapon_info_index = -1;
+	shared_fire_direction_beam_objnum = -1;
 
 	turret_pick_big_attack_point_timestamp = timestamp(0);
 	turret_big_attack_point = vmd_zero_vector;
@@ -7603,6 +7604,9 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->disruption_timestamp=timestamp(0);
 		ship_system->turret_pick_big_attack_point_timestamp = timestamp(0);
 		ship_system->scripting_target_override = false;
+		ship_system->last_fired_weapon_info_index = -1;
+		ship_system->shared_fire_direction_beam_objnum = -1;
+
 		vm_vec_zero(&ship_system->turret_big_attack_point);
 		for(j = 0; j < NUM_TURRET_ORDER_TYPES; j++)
 		{

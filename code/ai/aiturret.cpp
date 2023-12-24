@@ -1198,18 +1198,25 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
  * @param objp          Pointer to object
  * @param ssp           Pointer to turret subsystem
  * @param gpos          Absolute position of gun firing point
+ * @param avg_origin	Use virtual gun pos corresponding to the average of the firing points
  * @param gvec          Vector from *gpos to *targetp
  * @param use_angles    Use current angles
  * @param targetp       Absolute position of target object
  */
-void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp)
+void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, vec3d *targetp)
 {
-	vec3d * gun_pos;
+	vec3d *gun_pos;
 	model_subsystem *tp = ssp->system_info;
 	polymodel_instance *pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);
 
-	gun_pos = &tp->turret_firing_point[ssp->turret_next_fire_pos % tp->turret_num_firing_points];
+	vec3d avg_gun_pos;
+	if (avg_origin) {
+		vm_vec_avg_n(&avg_gun_pos, tp->turret_num_firing_points, tp->turret_firing_point);
+		gun_pos = &avg_gun_pos;
+	} else {
+		gun_pos = &tp->turret_firing_point[ssp->turret_next_fire_pos % tp->turret_num_firing_points];
+	}
 
 	model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
@@ -1219,14 +1226,6 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 	if (use_angles) {
 		model_instance_local_to_global_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
-	} else if (tp->flags[Model::Subsystem_Flags::Share_fire_direction]) {
-		Assertion(targetp != nullptr, "The targetp parameter must not be null here!");
-		vec3d avg_gun_pos, avg_gpos;
-		vm_vec_avg_n(&avg_gun_pos, tp->turret_num_firing_points, tp->turret_firing_point);
-
-		model_instance_local_to_global_point(&avg_gpos, &avg_gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
-
-		vm_vec_normalized_dir(gvec, targetp, &avg_gpos);
 	} else {
 		Assertion(targetp != nullptr, "The targetp parameter must not be null here!");
 		vm_vec_normalized_dir(gvec, targetp, gpos);
@@ -1964,7 +1963,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
-				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, &firing_pos_buf, nullptr, 1, nullptr);
+				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, &firing_pos_buf, false, nullptr, true, nullptr);
 
 				weapon_objnum = weapon_create(firing_pos, &firing_orient, turret_weapon_class, parent_objnum, -1, 1, 0, 0.0f, turret);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
@@ -2075,7 +2074,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		tsi->turret->turret_next_fire_pos = tsi->weapon_num;
 
 	//	change firing point
-	ship_get_global_turret_gun_info(&Objects[tsi->parent_objnum], tsi->turret, &turret_pos, &turret_fvec, 1, NULL);
+	ship_get_global_turret_gun_info(&Objects[tsi->parent_objnum], tsi->turret, &turret_pos, false, &turret_fvec, true, nullptr);
 	tsi->turret->turret_next_fire_pos++;
 
 	//check if this really is a swarm. If not, how the hell did it get here?
@@ -2241,7 +2240,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
 		//The firing point of this turret is so far away from the its center that we should consider this for firing calculations
 		//This will do the enemy position prediction based on their relative position and speed to the firing point, not the turret center.
-		ship_get_global_turret_gun_info(objp, ss, &global_gun_pos, &global_gun_vec, true, nullptr);
+		ship_get_global_turret_gun_info(objp, ss, &global_gun_pos, false, &global_gun_vec, true, nullptr);
 	} else {
 		// Use the turret info for all guns, not one gun in particular.
 		ship_get_global_turret_info(objp, tp, &global_gun_pos, &global_gun_vec);
@@ -2620,7 +2619,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 
 			// We're ready to fire... now get down to specifics, like where is the
 			// actual gun point and normal, not just the one for whole turret.
-			ship_get_global_turret_gun_info(objp, ss, &global_gun_pos, &global_gun_vec, use_angles, &predicted_enemy_pos);
+			ship_get_global_turret_gun_info(objp, ss, &global_gun_pos, false, &global_gun_vec, use_angles, &predicted_enemy_pos);
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			// [Yet this retail comment precedes the calculation of vector-to-enemy...]

@@ -838,15 +838,15 @@ void beam_unpause_sounds()
 	}
 }
 
-void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam)
+void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, vec3d *targetp, bool fighter_beam)
 {
 	if (fighter_beam)
 	{
-		ship_get_global_turret_gun_info(objp, ssp, gpos, nullptr, use_angles, targetp);
+		ship_get_global_turret_gun_info(objp, ssp, gpos, avg_origin, nullptr, use_angles, targetp);
 		*gvec = objp->orient.vec.fvec;
 	}
 	else
-		ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
+		ship_get_global_turret_gun_info(objp, ssp, gpos, avg_origin, gvec, use_angles, targetp);
 }
 
 // -----------------------------===========================------------------------------
@@ -861,7 +861,7 @@ void beam_type_direct_fire_move(beam *b)
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
 	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, nullptr, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -885,19 +885,32 @@ void beam_type_slashing_move(beam *b)
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
 	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, nullptr, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
 		return;
-	}	
+	}
+
+	// see if we are sharing a firing direction with another beam that is not this beam
+	// (beam_aim took care of most of the bookkeeping)
+	if ((b->subsys != nullptr) && (b->subsys->shared_fire_direction_beam_objnum >= 0) && (b->subsys->shared_fire_direction_beam_objnum != b->objnum)) {
+		auto shared_candidate_objp = &Objects[b->subsys->shared_fire_direction_beam_objnum];
+		auto shared_fire_reference = &Beams[shared_candidate_objp->instance];
+
+		// use the same vector, then we're done
+		vec3d beam_vector;
+		vm_vec_sub(&beam_vector, &shared_fire_reference->last_shot, &shared_fire_reference->last_start);
+		vm_vec_add(&b->last_shot, &b->last_start, &beam_vector);
+		return;
+	}
 
 	// if the two direction vectors are _really_ close together, just use the original direction
 	dot_save = vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b);
 	if((double)dot_save >= 0.999999999){
 		actual_dir = b->binfo.dir_a;
 	} 
-	// otherwise move towards the dir	we calculated when firing this beam	
+	// otherwise move towards the dir we calculated when firing this beam
 	else {
 		vm_vec_interp_constant(&actual_dir, &b->binfo.dir_a, &b->binfo.dir_b, BEAM_T(b));
 	}
@@ -939,7 +952,7 @@ void beam_type_antifighter_move(beam *b)
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
 	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, nullptr, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1004,7 +1017,7 @@ void beam_type_normal_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &turret_norm, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1036,11 +1049,24 @@ void beam_type_omni_move(beam* b)
 		vm_vec_rotate(&b->binfo.rot_axis, &old_rot_axis, &transform_matrix);
 	}
 	else if (b->subsys != nullptr) {
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, nullptr, 1, nullptr, false);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, nullptr, true, nullptr, false);
 	}
 
 	// if the "warming up" timestamp has not expired
 	if ((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)) {
+		return;
+	}
+
+	// see if we are sharing a firing direction with another beam that is not this beam
+	// (beam_aim took care of most of the bookkeeping)
+	if ((b->subsys != nullptr) && (b->subsys->shared_fire_direction_beam_objnum >= 0) && (b->subsys->shared_fire_direction_beam_objnum != b->objnum)) {
+		auto shared_candidate_objp = &Objects[b->subsys->shared_fire_direction_beam_objnum];
+		auto shared_fire_reference = &Beams[shared_candidate_objp->instance];
+
+		// use the same vector, then we're done
+		vec3d beam_vector;
+		vm_vec_sub(&beam_vector, &shared_fire_reference->last_shot, &shared_fire_reference->last_start);
+		vm_vec_add(&b->last_shot, &b->last_start, &beam_vector);
 		return;
 	}
 
@@ -2338,8 +2364,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 		b->subsys->turret_next_fire_pos = b->firingpoint;
 
-		// where the shot is originating from (b->last_start gets filled in)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		// where the shot is originating from (turret_point gets filled in)
+		// (we'll use the average origin if this turret is sharing fire direction)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction], &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 		b->subsys->turret_next_fire_pos = temp;
 	} else {
@@ -2698,7 +2725,33 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 // aim the beam (setup last_start and last_shot - the endpoints). also recalculates collision pairs
 void beam_aim(beam *b)
 {
-	vec3d temp, p2;
+	// figure out if we are sharing a fire direction, and if so, the reference to share
+	// incidentally, sharing fire direction isn't applicable to fighter beams, targeting beams, or normal beams, so check for those too
+	bool shared_fire_direction = false;
+	beam *shared_fire_reference = nullptr;
+	if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])
+		&& !(b->flags & BF_IS_FIGHTER_BEAM) && (b->type != BeamType::TARGETING) && (b->type != BeamType::NORMAL_FIRE))
+	{
+		shared_fire_direction = true;
+
+		if (b->subsys->shared_fire_direction_beam_objnum >= 0) {
+			auto shared_candidate_objp = &Objects[b->subsys->shared_fire_direction_beam_objnum];
+
+			// if beam reference is no longer valid, clear the objnum
+			if (shared_candidate_objp->type != OBJ_BEAM || shared_candidate_objp->flags[Object::Object_Flags::Should_be_dead]) {
+				b->subsys->shared_fire_direction_beam_objnum = -1;
+			}
+			// reference is probably valid...
+			else {
+				shared_fire_reference = &Beams[shared_candidate_objp->instance];
+				// ...but clear it if we have cycled back to the first point
+				if (shared_fire_reference->firingpoint == 0) {
+					shared_fire_reference = nullptr;
+					b->subsys->shared_fire_direction_beam_objnum = -1;
+				}
+			}
+		}
+	}
 	
 	if (!(b->flags & BF_TARGETING_COORDS)) {
 		// targeting type beam weapons have no target
@@ -2717,6 +2770,8 @@ void beam_aim(beam *b)
 		}
 	}
 
+	vec3d turret_norm = vmd_zero_vector;
+	vec3d shared_last_start = vmd_zero_vector;
 	if (b->subsys != nullptr && b->type != BeamType::TARGETING) {	// targeting type beams don't use this information.
 		int temp_int = b->subsys->turret_next_fire_pos;
 
@@ -2724,143 +2779,144 @@ void beam_aim(beam *b)
 			b->subsys->turret_next_fire_pos = b->firingpoint;
 
 		// where the shot is originating from (b->last_start gets filled in)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
+
+		// for shared beams that don't currently have a reference, we'll need a virtual origin
+		if (shared_fire_direction && !shared_fire_reference)
+			beam_get_global_turret_gun_info(b->objp, b->subsys, &shared_last_start, true, nullptr, true, nullptr, false);
 
 		b->subsys->turret_next_fire_pos = temp_int;
 	}
 
 	// setup our initial shot point and aim direction
+	vec3d beam_vector;
 	switch(b->type){
 	case BeamType::DIRECT_FIRE:
 		// if we're targeting a subsystem - shoot directly at it
 		if(b->target_subsys != nullptr){
-			vm_vec_unrotate(&b->last_shot, &b->target_subsys->system_info->pnt, &b->target->orient);
-			vm_vec_add2(&b->last_shot, &b->target->pos);
-
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-				float dist = vm_vec_dist(&b->last_shot,&b->last_start);
-				vm_vec_scale(&temp, dist);
+			if (shared_fire_reference) {
+				vm_vec_sub(&beam_vector, &shared_fire_reference->last_shot, &shared_fire_reference->last_start);
 			} else {
-				vm_vec_sub(&temp, &b->last_shot, &b->last_start);
-			}
+				// find the location of the subsystem
+				vm_vec_unrotate(&b->last_shot, &b->target_subsys->system_info->pnt, &b->target->orient);
+				vm_vec_add2(&b->last_shot, &b->target->pos);
 
-			vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, 2.0f);
+				// if this beam will be the reference for shared firing
+				if (shared_fire_direction) {
+					// find the vector from the virtual origin
+					vm_vec_sub(&beam_vector, &b->last_shot, &shared_last_start);
+					// update the reference
+					shared_fire_reference = b;
+					b->subsys->shared_fire_direction_beam_objnum = b->objnum;
+				}
+				// otherwise find the vector from the regular origin
+				else
+					vm_vec_sub(&beam_vector, &b->last_shot, &b->last_start);
+			}
+			vm_vec_scale_add(&b->last_shot, &b->last_start, &beam_vector, 2.0f);
 			break;
 		}
 
 		// if we're shooting at a big ship - shoot directly at the model
 		if((b->target != nullptr) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].is_big_or_huge())){
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-				vec3d pnt;
-				vm_vec_unrotate(&pnt, &b->binfo.dir_a, &b->target->orient);
-				vm_vec_add2(&pnt, &b->target->pos);
-
-				float dist = vm_vec_dist(&pnt, &b->last_start);
-				vm_vec_scale(&temp, dist);
-				p2 = temp;
+			if (shared_fire_reference) {
+				vm_vec_sub(&beam_vector, &shared_fire_reference->last_shot, &shared_fire_reference->last_start);
 			} else {
-				// rotate into world coords
-				vm_vec_unrotate(&temp, &b->binfo.dir_a, &b->target->orient);
-				vm_vec_add2(&temp, &b->target->pos);
+				// rotate the random model point into world coords
+				vm_vec_unrotate(&b->last_shot, &b->binfo.dir_a, &b->target->orient);
+				vm_vec_add2(&b->last_shot, &b->target->pos);
 
-				// get the shot point
-				vm_vec_sub(&p2, &temp, &b->last_start);
+				// if this beam will be the reference for shared firing
+				if (shared_fire_direction) {
+					// find the vector from the virtual origin
+					vm_vec_sub(&beam_vector, &b->last_shot, &shared_last_start);
+					// update the reference
+					shared_fire_reference = b;
+					b->subsys->shared_fire_direction_beam_objnum = b->objnum;
+				}
+				// otherwise find the vector from the regular origin
+				else
+					vm_vec_sub(&beam_vector, &b->last_shot, &b->last_start);
 			}
-			vm_vec_scale_add(&b->last_shot, &b->last_start, &p2, 2.0f);
+			vm_vec_scale_add(&b->last_shot, &b->last_start, &beam_vector, 2.0f);
 			break;
 		}
 
-		// point at the center of the target...
-		if (b->flags & BF_TARGETING_COORDS) {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target_pos1, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-				float dist = vm_vec_dist(&b->target_pos1, &b->last_start);
-				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
-			} else {
-				b->last_shot = b->target_pos1;
-			}
+		// all other direct-fire cases
+		FALLTHROUGH;
+
+	// antifighter beams are aimed the same way as direct fire beams in the general case 
+	case BeamType::ANTIFIGHTER:
+		if (shared_fire_reference) {
+			vm_vec_sub(&beam_vector, &shared_fire_reference->last_shot, &shared_fire_reference->last_start);
+			vm_vec_add(&b->last_shot, &b->last_start, &beam_vector);
 		} else {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target->pos, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-				float dist = vm_vec_dist(&b->target->pos, &b->last_start);
-				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
+			// point at the center of the target
+			if (b->flags & BF_TARGETING_COORDS) {
+				b->last_shot = b->target_pos1;
 			} else {
 				b->last_shot = b->target->pos;
 			}
-			// ...then jitter based on shot_aim (requires target)
-			beam_jitter_aim(b, b->binfo.shot_aim[0]);
+
+			// if this beam will be the reference for shared firing
+			if (shared_fire_direction) {
+				// find the vector from the virtual origin
+				vm_vec_sub(&beam_vector, &b->last_shot, &shared_last_start);
+				// adjust the beam based on the true origin
+				vm_vec_add(&b->last_shot, &b->last_start, &beam_vector);
+				// update the reference
+				shared_fire_reference = b;
+				b->subsys->shared_fire_direction_beam_objnum = b->objnum;
+			}
+
+			// after pointing, jitter based on shot_aim
+			beam_jitter_aim(b, b->binfo.shot_aim[b->shot_index]);
 		}
 		break;
 
+	// slashing and omni beams are aimed the same way here, since everything is based on dir_a
 	case BeamType::SLASHING:
-		if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-			vm_vec_scale(&b->binfo.dir_a, b->range);
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->binfo.dir_a, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-			vm_vec_add(&b->last_shot, &b->last_start, &temp);
-		} else {
-			// set the shot point
-			vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
+	case BeamType::OMNI:
+		// if we share directions, copy them
+		if (shared_fire_reference) {
+			b->binfo.dir_a = shared_fire_reference->binfo.dir_a;
+			b->binfo.dir_b = shared_fire_reference->binfo.dir_b;
 		}
+
+		// set the shot point (no need to adjust based on virtual origin since dir_a controls everything)
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
 		Assert(is_valid_vec(&b->last_shot));
+
+		// if this beam will be the reference for shared firing
+		// (the beam vector update will happen in the relevant _move function)
+		if (!shared_fire_reference && shared_fire_direction) {
+			// update the reference
+			shared_fire_reference = b;
+			b->subsys->shared_fire_direction_beam_objnum = b->objnum;
+		}
 		break;
 
 	case BeamType::TARGETING:
 		// start point
-		temp = b->local_fire_postion;
-		vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
+		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
 		vm_vec_add2(&b->last_start, &b->objp->pos);
+		// end point
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
-		break;
-
-	case BeamType::ANTIFIGHTER:
-		// point at the center of the target...
-		if (b->flags & BF_TARGETING_COORDS) {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target_pos1, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-				float dist = vm_vec_dist(&b->target_pos1, &b->last_start);
-				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
-			} else {
-				b->last_shot = b->target_pos1;
-			}
-		} else {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target->pos, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-				float dist = vm_vec_dist(&b->target->pos, &b->last_start);
-				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
-			} else {
-				b->last_shot = b->target->pos;
-			}
-			// ...then jitter based on shot_aim (requires target)
-			beam_jitter_aim(b, b->binfo.shot_aim[b->shot_index]);
-		}
-		nprintf(("AI", "Frame %i: FIRING\n", Framecount));
 		break;
 
 	case BeamType::NORMAL_FIRE:
 		// point directly in the direction of the turret
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, b->range);
-		break;
-
-	case BeamType::OMNI:
-		if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
-			vm_vec_scale(&b->binfo.dir_a, b->range);
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->binfo.dir_a, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-			vm_vec_add(&b->last_shot, &b->last_start, &temp);
-		}
-		else {
-			// set the shot point
-			vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
-		}
-		Assert(is_valid_vec(&b->last_shot));
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &turret_norm, b->range);
 		break;
 
 	default:
 		UNREACHABLE("Impossible beam type (%d); get a coder!\n", (int)b->type);
 	}
 
-	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide])
+	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide]) {
 		// recalculate object pairs
 		OBJ_RECALC_PAIRS((&Objects[b->objnum]));
+	}
 }
 
 // given a model #, and an object, stuff 2 good world coord points
@@ -4102,7 +4158,7 @@ int beam_ok_to_fire(beam *b)
 		vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 		vm_vec_normalize(&aim_dir);
 		vec3d turret_dir, turret_pos;
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, false, &turret_dir, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
 			vec3d turret_normal;
