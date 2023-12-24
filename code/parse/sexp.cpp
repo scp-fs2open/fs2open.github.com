@@ -33748,7 +33748,7 @@ const char *sexp_error_message(int num)
 			return "Negative number not allowed";
 
 		case SEXP_CHECK_INVALID_SHIP_WING:
-			return "Invalid ship/wing name";
+			return "Invalid ship or wing name";
 
 		case SEXP_CHECK_INVALID_SHIP_TYPE:
 			return "Invalid ship type";
@@ -33967,19 +33967,19 @@ const char *sexp_error_message(int num)
 			return "Invalid Lua general order";
 
 		case SEXP_CHECK_INVALID_SHIP_POINT:
-			return "Invalid ship/waypoint name";
+			return "Invalid ship or waypoint name";
 
 		case SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT:
-			return "Invalid ship/wing/ship on team/waypoint name";
+			return "Invalid ship, wing, ship on team, or waypoint name";
 
 		case SEXP_CHECK_INVALID_SHIP_WING_POINT:
-			return "Invalid ship/wing/waypoint name";
+			return "Invalid ship, wing, or waypoint name";
 
 		case SEXP_CHECK_INVALID_ORDER_RECIPIENT:
 			return "Invalid order recipient";
 
 		case SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM:
-			return "Invalid ship/wing/team name";
+			return "Invalid ship, wing, or team name";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
