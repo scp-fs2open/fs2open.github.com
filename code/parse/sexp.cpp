@@ -2242,6 +2242,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			if (*ptr == '-') {
 				type2 = OPR_NUMBER;
 				ptr++;
+			} else if (*ptr == '+') {
+				ptr++;
 			}
 
 			if (type == OPF_BOOL)  // allow numbers to be used where boolean is required.
@@ -2250,6 +2252,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			// Only check that this is a number if it's not <argument>.
 			if (!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)) {
 				while (*ptr) {
+					if (*ptr == '.' || *ptr == ',')
+						return SEXP_CHECK_MUST_BE_INTEGER;
 					if (!isdigit(*ptr))
 						return SEXP_CHECK_INVALID_NUM;  // not a valid number
 
@@ -2430,7 +2434,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			case OPF_POSITIVE:
 				if (type2 == OPR_NUMBER){
-					// Goober5000's number hack
+					// for numeric literals, check whether the number is negative
+					if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER){
+						if (*Sexp_nodes[node].text == '-')
+							return SEXP_CHECK_NEGATIVE_NUM;
+					}
+
+					// Goober5000's number hack - for numeric return values of operators, skip the check (assume all return values will be positive)
 					break;
 					// return SEXP_CHECK_NEGATIVE_NUM;
 				}
@@ -33714,6 +33724,15 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_NUM:
 			return "Not a number";
 
+		case SEXP_CHECK_MUST_BE_INTEGER:
+			return "Number must be an integer";
+
+		case SEXP_CHECK_NEGATIVE_NUM:
+			return "Negative number not allowed";
+
+		case SEXP_CHECK_NUM_RANGE_INVALID:
+			return "Number is out of range";
+
 		case SEXP_CHECK_INVALID_SHIP:
 			return "Invalid ship name";
 
@@ -33743,9 +33762,6 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_POINT:
 			return "Invalid waypoint";
-
-		case SEXP_CHECK_NEGATIVE_NUM:
-			return "Negative number not allowed";
 
 		case SEXP_CHECK_INVALID_SHIP_WING:
 			return "Invalid ship or wing name";
@@ -33782,9 +33798,6 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_DOCKING_NOT_ALLOWED:
 			return "Ship can't dock with target ship";
-
-		case SEXP_CHECK_NUM_RANGE_INVALID:
-			return "Number is out of range";
 
 		case SEXP_CHECK_INVALID_EVENT_NAME:
 			return "Event name is invalid (not known)";
