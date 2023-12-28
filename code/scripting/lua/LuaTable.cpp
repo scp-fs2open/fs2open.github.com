@@ -42,7 +42,7 @@ void LuaTable::setReference(const LuaReference& ref) {
 
 	if (lua_type(L, -1) != LUA_TTABLE) {
 		lua_pop(L, 1);
-		throw LuaException("Reference does not refere to a table!");
+		throw LuaException("Reference does not refer to a table!");
 	} else {
 		lua_pop(L, 1);
 		LuaValue::setReference(ref);
