@@ -127,10 +127,10 @@ class object
 public:
 	class object	*next, *prev;	// for linked lists of objects
 	int				signature;		// Every object ever has a unique signature...
-	char			type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
+	char			type;			// what type of object this is... ship, weapon, debris, asteroid, fireball, see OBJ_* defines above
 	int				parent;			// This object's parent.
 	int				parent_sig;		// This object's parent's signature
-	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
+	int				instance;		// index into the corresponding type array, i.e. if type == OBJ_SHIP then instance indexes the Ships array
 	flagset<Object::Object_Flags> flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
 	matrix			orient;			// orientation of object in world
