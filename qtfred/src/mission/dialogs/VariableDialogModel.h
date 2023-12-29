@@ -10,24 +10,21 @@ namespace dialogs {
 
 struct variable_info {
 	SCP_string name = "<unnamed>";
-	bool container = false;
-	bool map = false;
 	bool string = true;
 	
-	SCP_vector<int> number_values;
-	SCP_vector<string_values> string_values;
+	int number_values;
+	SCP_string string_values;
 };
 
 
-struct variable_or_container_info {
+struct container_info {
 	SCP_string name = "<unnamed>";
-	bool container = false;
 	bool map = false;
 	bool string = true;
 	
 	SCP_vector<SCP_string> keys;
 	SCP_vector<int> number_values;
-	SCP_vector<string_values> number_values;
+	SCP_vector<SCP_string> number_values;
 };
 
 class VariableDialogModel : public AbstractDialogModel {
@@ -41,8 +38,8 @@ public:
 	void reject() override;
 
 private:
-	SCP_vector<variable_or_container_info> _items;
-
+	SCP_vector<variable_info> _variableItems;
+	SCP_vector<container_info> _containerItems;
 };
 
 } // namespace dialogs
