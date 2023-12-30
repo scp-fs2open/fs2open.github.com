@@ -1211,7 +1211,7 @@ void get_turret_cam_pos(camera *cam, vec3d *pos)
 	{
 		if(ssp->system_info->subobj_num == cam->get_object_host_submodel())
 		{
-			ship_get_global_turret_gun_info(cam->get_object_host(), ssp, pos, &normal_cache, 1, NULL);
+			ship_get_global_turret_gun_info(cam->get_object_host(), ssp, pos, true, &normal_cache, true, nullptr);
 			vec3d offset = vmd_zero_vector;
 			offset.xyz.x = 0.0001f;
 			vm_vec_add2(pos, &offset); // prevent beam turrets from crashing with a nullvec

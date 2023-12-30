@@ -6558,7 +6558,7 @@ float compute_incoming_payload(object *target_objp)
 //			OR: secondary los flag is set but no line of sight is availabe
 //	Note: If player is attacking a ship, that ship is allowed to fire at player.  Otherwise, we get in a situation in which
 //	player is attacking a large ship, but that large ship is not defending itself with missiles.
-int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secondary_bank, ship_subsys* turret)
+bool check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secondary_bank, vec3d *firing_pos_global)
 {
 	int	num_homers = 0;
 
@@ -6574,8 +6574,8 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
 			//Check if th AI has Line of Sight and is allowed to fire
-			if (!check_los(objnum, target_objnum, 10.0f, -1, secondary_bank, turret)) {
-				return 0;
+			if (!check_los(objnum, target_objnum, 10.0f, -1, secondary_bank, firing_pos_global)) {
+				return false;
 			}
 		}
 
@@ -6589,14 +6589,14 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 					//	At Easy, 2/7...at Expert, 5/7
 					int t = ((Missiontime /(65536*10)) ^ target_objnum ^ 0x01) % (NUM_SKILL_LEVELS+2);
 					if (t > Ai_info[Ships[tobjp->instance].ai_index].ai_chance_to_use_missiles_on_plr) {
-						return 0;
+						return false;
 					}
 				}
 				int	swarmers = 0;
 				if (wip->wi_flags[Weapon::Info_Flags::Swarm])
 					swarmers = 2;	//	Note, always want to be able to fire swarmers if no currently incident homers.
 				if (The_mission.ai_profile->max_allowed_player_homers[Game_skill_level] < num_homers + swarmers) {
-					return 0;
+					return false;
 				}
 			} else if (num_homers > 3) {
 				float	incoming_payload;
@@ -6604,22 +6604,22 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 				incoming_payload = compute_incoming_payload(&Objects[target_objnum]);
 
 				if (incoming_payload > tobjp->hull_strength) {
-					return 0;
+					return false;
 				}
 			}
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
 //	threshold defines the minimum radius for an object to be considered relevant for LoS
-bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, ship_subsys* turret) {
+bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, vec3d *firing_pos_global) {
 
 	//Do both checks over an XOR-Check for more detailed messages
-	int sources = (primary_bank != -1 ? 1 : 0) + (secondary_bank != -1 ? 1 : 0) + (turret != nullptr ? 1 : 0);
+	int sources = (primary_bank != -1 ? 1 : 0) + (secondary_bank != -1 ? 1 : 0) + (firing_pos_global != nullptr ? 1 : 0);
 	Assertion(sources >= 1, "Cannot check line of sight from a model with neither a primar bank, nor secondary bank nor a turret set as a source.");
 	Assertion(sources <= 1, "Cannot check line of sight from a model with more than one source set.");
 
@@ -6627,10 +6627,8 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 
 	object* firing_ship = &Objects[objnum];
 
-	if (turret != nullptr) {
-		vec3d turret_fvec;
-		//It doesn't like not having an fvec output vector, so give it a dummy vector
-		ship_get_global_turret_gun_info(firing_ship, turret, &start, &turret_fvec, 1, nullptr);
+	if (firing_pos_global != nullptr) {
+		start = *firing_pos_global;
 	} else {
 		bool is_primary = secondary_bank == -1;
 		ship *shipp = &Ships[firing_ship->instance];
