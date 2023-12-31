@@ -119,8 +119,8 @@ void hud_close();
 void hud_level_close();
 void hud_update_frame(float frametime);		// updates hud systems not dependant on rendering
 void hud_render_preprocess(float frametime);			// renders 3d dependant gauges
-void hud_render_all();
-void hud_render_gauges(int cockpit_display_num = -1);
+void hud_render_all(float frametime);
+void hud_render_gauges(int cockpit_display_num, float frametime);
 void hud_stop_looped_engine_sounds();
 
 // set the offset values for this render frame

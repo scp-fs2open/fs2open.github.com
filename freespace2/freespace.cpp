@@ -3841,6 +3841,9 @@ void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
 {
 	gr_reset_clip();
 
+	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
+	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
+
 	if(cid.isValid()) {
 		g3_start_frame(0);		// 0 = turn zbuffering off
 		g3_set_view( cid.getCamera() );
@@ -3848,13 +3851,13 @@ void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
 		if (fov_override)
 			g3_set_fov(*fov_override);
 
-		hud_render_preprocess(flFrametime);
+		hud_render_preprocess(frametime);
 
 		g3_end_frame();
 	}
 
 	// main HUD rendering function
-	hud_render_all();
+	hud_render_all(frametime);
 
 	// Diminish the palette effect
 	game_flash_diminish(flFrametime);

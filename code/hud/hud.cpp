@@ -1697,7 +1697,7 @@ void hud_render_preprocess(float frametime)
 
 	if ( hud_disabled() ) {
 		// if the hud is disabled, we still need to make sure that the indicators are properly handled
-		hud_do_lock_indicators(flFrametime);
+		hud_do_lock_indicators(frametime);
 		return;
 	}
 
@@ -1823,15 +1823,15 @@ void hud_maybe_display_supernova()
 /**
  * @brief Undertakes main HUD render. 
  */
-void hud_render_all()
+void hud_render_all(float frametime)
 {
 	int i;
 
-	hud_render_gauges();
+	hud_render_gauges(-1, frametime);
 
 	// start rendering cockpit dependent gauges if possible
 	for ( i = 0; i < (int)Player_displays.size(); ++i ) {
-		hud_render_gauges(i);
+		hud_render_gauges(i, frametime);
 	}
 
 	hud_clear_msg_buffer();
@@ -1840,7 +1840,7 @@ void hud_render_all()
 	font::set_font(font::FONT1);
 }
 
-void hud_render_gauges(int cockpit_display_num)
+void hud_render_gauges(int cockpit_display_num, float frametime)
 {
 	size_t j, num_gauges;
 	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
@@ -1865,9 +1865,6 @@ void hud_render_gauges(int cockpit_display_num)
 			return;
 		}
 	}
-
-	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
-	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
 
 	// Check if this ship has its own HUD gauges. 
 	if ( sip->hud_enabled ) {
