@@ -634,19 +634,25 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		if ((Game_mode & GM_MULTIPLAYER) && Campaign.num_missions > UINT8_MAX)
 			throw parse::ParseException("Number of campaign missions is too high and breaks multi!");
 	}
-	catch (const parse::ParseException& e)
+	catch (const parse::FileOpenException& foe)
 	{
-		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, e.what()));
+		mprintf(("Error opening '%s'\r\nError message = %s.\r\n", filename, foe.what()));
 
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
 
-		if (!Fred_running && !(Game_mode & GM_MULTIPLAYER)) {
-			Campaign_file_missing = 1;
-			Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
-			return CAMPAIGN_ERROR_MISSING;
-		}
+		Campaign_file_missing = 1;
+		Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
+		return CAMPAIGN_ERROR_MISSING;
+	}
+	catch (const parse::ParseException& pe)
+	{
+		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, pe.what()));
 
+		Campaign.filename[0] = 0;
+		Campaign.num_missions = 0;
+
+		Campaign_file_missing = 1;
 		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
 		return CAMPAIGN_ERROR_CORRUPT;
 	}
