@@ -5691,7 +5691,7 @@ void game_enter_state( int old_state, int new_state )
 	}
 
 	switch (new_state) {
-		case GS_STATE_MAIN_MENU:				
+		case GS_STATE_MAIN_MENU: {
 			// in multiplayer mode, be sure that we are not doing networking anymore.
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Assert( Net_player != nullptr );
@@ -5711,13 +5711,18 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			mission_load_up_campaign(Player);
+			const auto result = mission_load_up_campaign(Player);
 
+			// if there was a problem, pass an empty main hall which will set up appropriate defaults
+			if (result != 0) {
+				main_hall_init("");
+			}
 			// if we're coming from the end of a campaign, we want to load the first mainhall of the campaign
-			// otherwise load the mainhall for the mission the player's up to
-			if (Campaign.next_mission == -1) {
+			else if (Campaign.next_mission == -1) {
 				main_hall_init(Campaign.missions[0].main_hall);
-			} else {
+			}
+			// otherwise load the mainhall for the mission the player's up to
+			else {
 				main_hall_init(Campaign.missions[Campaign.next_mission].main_hall);
 			}
 
@@ -5745,6 +5750,7 @@ void game_enter_state( int old_state, int new_state )
 				Cmdline_start_mission = nullptr;
 			}
 			break;
+		}
 
 		case GS_STATE_START_GAME:
 			main_hall_stop_music(true);
