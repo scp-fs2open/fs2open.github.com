@@ -60,7 +60,7 @@ char *Campaign_names[MAX_CAMPAIGNS] = { NULL };
 char *Campaign_file_names[MAX_CAMPAIGNS] = { NULL };
 char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
 int	Num_campaigns;
-int Campaign_file_missing;
+bool Campaign_file_missing = false;
 int Campaign_load_failure = 0;
 int Campaign_names_inited = 0;
 SCP_vector<SCP_string> Ignored_campaigns;
@@ -428,7 +428,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
 	if (campaign_is_ignored(filename)) {
-		Campaign_file_missing = 1;
+		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_IGNORED;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
@@ -641,7 +641,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
 
-		Campaign_file_missing = 1;
+		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
 		return CAMPAIGN_ERROR_MISSING;
 	}
@@ -652,7 +652,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
 
-		Campaign_file_missing = 1;
+		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
 		return CAMPAIGN_ERROR_CORRUPT;
 	}
@@ -687,7 +687,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 	}
 
 	// all is good here, move along
-	Campaign_file_missing = 0;
+	Campaign_file_missing = false;
 
 	return 0;
 }
@@ -727,7 +727,7 @@ void mission_campaign_init()
 {
 	mission_campaign_clear();
 
-	Campaign_file_missing = 0;
+	Campaign_file_missing = false;
 
 	player_loadout_init();
 }
@@ -1564,7 +1564,7 @@ int mission_load_up_campaign( player *pl )
 			return mission_campaign_load(pl->current_campaign, nullptr, pl);
 		}
 		else {
-			Campaign_file_missing = 1;
+			Campaign_file_missing = true;
 		}
 	}
 

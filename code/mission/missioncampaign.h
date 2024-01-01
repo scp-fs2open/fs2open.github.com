@@ -161,8 +161,8 @@ extern SCP_vector<SCP_string> Ignored_campaigns;
 
 extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 
-// if the campaign file is missing this will get set for us to check against
-extern int Campaign_file_missing;
+extern bool Campaign_file_missing;	// if the campaign file is missing this will get set for us to check against
+extern int Campaign_load_failure;
 
 /*
  * initialise Player_loadout with default values
