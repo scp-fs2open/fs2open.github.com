@@ -30,6 +30,8 @@ struct sexp_variable;
 #define CAMPAIGN_ERROR_SAVEFILE			-4
 #define CAMPAIGN_ERROR_IGNORED			-5
 
+inline bool campaign_reportable_error(int val) { return val != 0 && val != CAMPAIGN_ERROR_MISSING && val != CAMPAIGN_ERROR_IGNORED; }
+
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
 // missions.
@@ -218,7 +220,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 int mission_campaign_get_mission_list(const char *filename, char **list, int max);
 
 // load up a campaign for the current player.
-int mission_load_up_campaign( player *p = NULL );
+int mission_load_up_campaign(bool fall_back_from_current = false);
 
 // stores mission goals and events in Campaign struct
 void mission_campaign_store_goals_and_events();

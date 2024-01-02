@@ -1546,25 +1546,25 @@ bool campaign_is_ignored(const char *filename)
 }
 
 // returns 0: loaded, !0: error
-int mission_load_up_campaign( player *pl )
+int mission_load_up_campaign(bool fall_back_from_current)
 {
 	int rc = -1, idx;
-
-	if ( pl == NULL )
-		pl = Player;
+	auto pl = Player;
 
 	// find best campaign to use:
 	//   1) last used
 	//   2) builtin
 	//   3) anything else
+	// Note that in each step we only fall back when the error is benign, e.g. ignored or missing;
+	// if there's some other real error with the campaign file, we report it.
+	// Also note that if we *have* a current campaign, we shouldn't fall back *at all*, lest we repeatedly
+	// reset what the current campaign is, *unless* we are starting a brand new session or loading a new pilot.
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
-		if (!campaign_is_ignored(pl->current_campaign)) {
-			return mission_campaign_load(pl->current_campaign, nullptr, pl);
-		}
-		else {
-			Campaign_file_missing = true;
+		rc = mission_campaign_load(pl->current_campaign, nullptr, pl);
+		if (rc == 0 || !fall_back_from_current || campaign_reportable_error(rc)) {
+			return rc;
 		}
 	}
 
@@ -1572,7 +1572,7 @@ int mission_load_up_campaign( player *pl )
 	rc = mission_campaign_load(Default_campaign_file_name, nullptr, pl);
 
 	// everything else...
-	if (rc < 0) {
+	if (rc < 0 && !campaign_reportable_error(rc)) {
 		// no descriptions, no sorting
 		mission_campaign_build_list(false, false);
 

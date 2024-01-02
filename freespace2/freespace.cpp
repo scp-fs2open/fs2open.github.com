@@ -5711,7 +5711,8 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			const auto result = mission_load_up_campaign(Player);
+			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
 			if (result != 0) {
