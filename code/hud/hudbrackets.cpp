@@ -205,7 +205,7 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
 	// scale by distance modifier from hud_guages.tbl for display purposes
 	displayed_distance = distance * Hud_unit_multiplier;
 
-	sprintf(text_dist, "%d", (int)std::lround(displayed_distance));
+	snprintf(text_dist, 64, "%d", (int)std::lround(displayed_distance));
 	hud_num_make_mono(text_dist, font_num);
 	gr_get_string_size(&w,&h,text_dist);
 
@@ -647,7 +647,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 					hud_stuff_ship_callsign(temp_callsign, &Ships[t_objp->instance]);
 					if (*temp_callsign)
-						sprintf(&temp_name[strlen(temp_name)], " (%s)", temp_callsign);
+						snprintf(&temp_name[strlen(temp_name)], NAME_LENGTH*2+3 - strlen(temp_name)," (%s)", temp_callsign);
 				} else { // maybe substitute the callsign
 					hud_stuff_ship_callsign(temp_name, &Ships[t_objp->instance]);
 				}

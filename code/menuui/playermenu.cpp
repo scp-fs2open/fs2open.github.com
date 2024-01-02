@@ -402,7 +402,7 @@ void player_select_do()
 	// Goober5000 - display a popup warning about problems in the mod
 	if ((Global_warning_count > 10 || Global_error_count > 0) && !Startup_warning_dialog_displayed) {
 		char text[512];
-		sprintf(text, XSTR ("Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formatted table files to corrupt models.\n\nWhile FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.\n\nPlease contact the authors of the mod for assistance.", 1640), Global_warning_count + Global_error_count);
+		snprintf(text, 512, XSTR ("Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formated table files to corrupt models.\n\nWhile FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.\n\nPlease contact the authors of the mod for assistance.", 1640), Global_warning_count + Global_error_count);
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, text);
 		Startup_warning_dialog_displayed = true;
 	}
@@ -1210,13 +1210,13 @@ void player_select_display_copyright()
 //	strcpy_s(Copyright_msg1, XSTR("Descent: FreeSpace - The Great War, Copyright c 1998, Volition, Inc.", -1));
 	gr_set_color_fast(&Color_white);
 
-//	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
+//	snprintf(Copyright_msg1, NOX("FreeSpace 2"));
 	auto Copyright_msg1 = gameversion::get_version_string();
 	if (Unicode_text_mode) {
 		// Use a Unicode character if we are in unicode mode instead of using special characters
 		strcpy_s(Copyright_msg2, XSTR("Copyright \xC2\xA9 1999, Volition, Inc.  All rights reserved.", 385));
 	} else {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), lcl_get_font_index(font::get_current_fontnum()) + 4);
+		snprintf(Copyright_msg2, 256, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), lcl_get_font_index(font::get_current_fontnum()) + 4);
 	}
 
 	gr_get_string_size(&w, nullptr, Copyright_msg1.c_str());

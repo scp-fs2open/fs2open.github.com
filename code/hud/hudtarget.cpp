@@ -5849,9 +5849,9 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 			}
 
 			if ( Show_ballistic ) {
-				sprintf(buf, "%d", ballistic_ammo);
+				snprintf(buf, 10, "%d", ballistic_ammo);
 			} else {
-				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround(percent_left*100));
+				snprintf(buf, 10, XSTR( "%d%%", 326), (int)std::lround(percent_left*100));
 			}
 
 			if ( Moving_text ) {
@@ -6209,7 +6209,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		// if this is a ballistic primary with ammo, render the ammo count
 		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
-			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
+			snprintf(ammo_str, 32, "%d", sw->primary_bank_ammo[i]);
 
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
@@ -6292,7 +6292,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			int ammo=sw->secondary_bank_ammo[i];
 
 			// print out the ammo right justified
-			sprintf(ammo_str, "%d", ammo);
+			snprintf(ammo_str, 32, "%d", ammo);
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 
@@ -6660,7 +6660,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 	gr_set_screen_scale(base_w, base_h);
 
 	if (displayed_distance > 0.0f) {
-		sprintf(buf, "%d", (int)std::lround(displayed_distance));
+		snprintf(buf, 32, "%d", (int)std::lround(displayed_distance));
 		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 	} else {
@@ -6843,7 +6843,7 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 	if ( ammo > Max_symbols ) {
 		char ammo_str[32];
 
-		sprintf(ammo_str, "%d", ammo);
+		snprintf(ammo_str, 32, "%d", ammo);
 		hud_num_make_mono(ammo_str, font_num);
 
 		if ( Text_align == HudAlignment::RIGHT ) {
@@ -7084,7 +7084,7 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 		// if this is a ballistic primary with ammo, render the ammo count
 		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
-			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
+			snprintf(ammo_str, 32, "%d", sw->primary_bank_ammo[i]);
 
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
@@ -7210,7 +7210,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			int ammo = sw->secondary_bank_ammo[i];
 
 			// print out the ammo right justified
-			sprintf(ammo_str, "%d", ammo);
+			snprintf(ammo_str, 32, "%d", ammo);
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 

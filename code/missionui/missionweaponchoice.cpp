@@ -2959,7 +2959,7 @@ void wl_render_icon_count(int num, int x, int y)
 	int number_to_draw = (num >= 10000) ? 9999 : num;	// cap count @ 9999 - Goober5000 bumped from 999
 	Assert(number_to_draw >= 0);
 
-	sprintf(buf, "%d", number_to_draw);
+	snprintf(buf, 32, "%d", number_to_draw);
 	gr_get_string_size(&num_w, &num_h, buf, (int)strlen(buf));
 
 	// render

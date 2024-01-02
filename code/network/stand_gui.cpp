@@ -221,7 +221,7 @@ int std_connect_set_connect_count()
 	}
 	
 	// tack on the player count to the end of the string
-	sprintf(val,"%d",count);
+	snprintf(val,10,"%d",count);
 	strcat_s(str,val);
 
 	// set the text itself
@@ -343,7 +343,7 @@ void std_connect_update_ping(net_player *p)
 			strcpy_s(sml_ping,XSTR("> 1 sec",914));
 		}
 		else {
-			sprintf(ping,"%d",p->s_info.ping.ping_avg); 
+			snprintf(ping,10,"%d",p->s_info.ping.ping_avg); 
 			strcat_s(str,ping);
 			strcat_s(str,XSTR(" ms",915));
 			strcpy_s(sml_ping,ping); strcat_s(sml_ping,XSTR(" ms",915));
@@ -590,7 +590,7 @@ void std_multi_set_standalone_missiontime(float mission_time)
 
 	// format the time string and set the text
 	game_format_time(m_time,time_txt);	
-	sprintf(txt,"  :  %.1f", mission_time);
+	snprintf(txt,20,"  :  %.1f", mission_time);
 	strcat_s(time_txt,txt);
 	SetWindowText(Standalone_missiontime,time_txt);
 }
@@ -811,7 +811,7 @@ void std_multi_set_framerate(float f)
 	char fr[10];
 
 	// set the window text
-	sprintf(fr,"%.1f",f);
+	snprintf(fr,10,"%.1f",f);
 	SetWindowText(Standalone_FPS,fr);
 }
 
@@ -851,19 +851,19 @@ void std_multi_update_netgame_info_controls()
 	// update the 
 	
 	// update the max players control
-	sprintf(buf,"%d",Netgame.max_players);
+	snprintf(buf,40,"%d",Netgame.max_players);
 	SetWindowText(Std_ng_max_players,buf);
 
 	// update the max observers control
-	sprintf(buf,"%d",Netgame.options.max_observers);
+	snprintf(buf,40,"%d",Netgame.options.max_observers);
 	SetWindowText(Std_ng_max_observers,buf);
 
 	// update the netgame security control
-	sprintf(buf,"%d",Netgame.security);
+	snprintf(buf,40,"%d",Netgame.security);
 	SetWindowText(Std_ng_security,buf);
 
 	// update the netgame respawns # control
-	sprintf(buf,"%u",Netgame.respawn);
+	snprintf(buf,40,"%u",Netgame.respawn);
 	SetWindowText(Std_ng_respawns,buf);
 }
 
@@ -877,7 +877,7 @@ void std_multi_handle_framecap_scroll(HWND ctrl)
 	pos = (int)SendMessage(ctrl,TBM_GETPOS,(WPARAM)0,(LPARAM)0);
 
 	// update the text display 
-	sprintf(pos_text,"%d",pos);
+	snprintf(pos_text,10,"%d",pos);
 	SetWindowText(GetDlgItem(Page_handles[MULTIPLAYER_PAGE],(int)(uintptr_t)MAKEINTRESOURCE(IDC_FRAMECAP_STATIC)),pos_text);
 	
 	// set the framecap var
@@ -1167,7 +1167,7 @@ void std_pinfo_update_ping(net_player *p)
 	}
 	// use the ping itself
 	else {
-		sprintf(sml_ping,"%d",p->s_info.ping.ping_avg); 		
+		snprintf(sml_ping,30,"%d",p->s_info.ping.ping_avg); 		
 		strcat_s(sml_ping,XSTR(" ms",915));
 	}
 	
@@ -1391,7 +1391,7 @@ void std_gs_set_framerate(float f)
 	char fr[10];
 
 	// set the window text
-	sprintf(fr,"%.1f",f);
+	snprintf(fr,10,"%.1f",f);
 	SetWindowText(Godstuff_fps,fr);
 }
 
@@ -1813,9 +1813,9 @@ void std_add_chat_text(const char *text,int player_index,int add_id)
 	// format the chat text nicely
 	if (add_id) {
 		if ( MULTI_STANDALONE(Net_players[player_index]) ) {
-			sprintf(format, XSTR("<SERVER> %s", 924), text);
+			snprintf(format, 512, XSTR("<SERVER> %s", 924), text);
 		} else {
-			sprintf(format, "%s: %s", Net_players[player_index].m_player->callsign, text);
+			snprintf(format, 512, "%s: %s", Net_players[player_index].m_player->callsign, text);
 		}
 	} else {
 		strcpy_s(format, text);

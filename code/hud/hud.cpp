@@ -2247,7 +2247,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		}
 
 		char buf[128];
-		sprintf(buf, XSTR( "%d%%", 219), best_str);
+		snprintf(buf, 128, XSTR( "%d%%", 219), best_str);
 		hud_num_make_mono(buf, font_num);
 
 		int w, h;
@@ -2288,7 +2288,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		info.strength = screen_integrity;
 
 		char buf[128];
-		sprintf(buf, XSTR( "%d%%", 219), screen_integrity);
+		snprintf(buf, 128, XSTR( "%d%%", 219), screen_integrity);
 		hud_num_make_mono(buf, font_num);
 
 		int w, h;
@@ -2330,7 +2330,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		}
 
 		char buf[128];
-		sprintf(buf, XSTR( "%d%%", 219), line.strength);
+		snprintf(buf, 128, XSTR( "%d%%", 219), line.strength);
 		hud_num_make_mono(buf, font_num);
 
 		if (line.color_override != nullptr) {
@@ -2613,7 +2613,7 @@ void HudGaugeKills::render(float  /*frametime*/)
 		return;
 	}
 
-	sprintf(num_kills_string, "%d", Player->stats.m_kill_count_ok);
+	snprintf(num_kills_string, 32, "%d", Player->stats.m_kill_count_ok);
 
 	gr_get_string_size(&w, &h, num_kills_string);
 	renderString(position[0]+text_value_offsets[0]-w, position[1]+text_value_offsets[1], num_kills_string);
@@ -3040,7 +3040,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 				sec = (int)Player_rearm_eta % 60;
 				hund = (int)(Player_rearm_eta * 100) % 100;
 
-				sprintf(outstr, "%02d:%02d.%02d", min, sec, hund);
+				snprintf(outstr, 64, "%02d:%02d.%02d", min, sec, hund);
 			}
 			else
 			{
@@ -3681,11 +3681,11 @@ void HudGaugeObjectiveNotify::renderObjective()
 	case SECONDARY_GOAL:
 		switch(Objective_display.goal_status) {
 		case GOAL_FAILED:
-			sprintf(buf, XSTR( "failed (%d/%d)", 240), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
+			snprintf(buf, 128, XSTR( "failed (%d/%d)", 240), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
 			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, buf);
 			break;
 		default:
-			sprintf(buf, XSTR( "complete (%d/%d)", 241), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
+			snprintf(buf, 128, XSTR( "complete (%d/%d)", 241), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
 			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, buf);
 			break;
 		}		
@@ -4070,7 +4070,7 @@ void HudGaugePing::render(float  /*frametime*/)
 			if(Netgame.server->s_info.ping.ping_avg >= 1000){
 				strcpy_s(ping_str,XSTR("> 1 sec",628));
 			} else {
-				sprintf(ping_str,XSTR("%d ms",629),Netgame.server->s_info.ping.ping_avg);
+				snprintf(ping_str, 50, XSTR("%d ms",629),Netgame.server->s_info.ping.ping_avg);
 			}
 
 			// Blit the string out

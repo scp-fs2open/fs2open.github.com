@@ -128,17 +128,17 @@ DCF(objsnd, "Persistent sound stuff" )
 				continue;
 				//sprintf(buf1,"OFF");
 			} else {
-				sprintf(buf1,"ON");
+				snprintf(buf1,4,"ON");
 			}
 
 			if ( Objects[osp->objnum].type == OBJ_SHIP ) {
 				strcpy_s(buf2, Ships[Objects[osp->objnum].instance].ship_name);
 			}
 			else if ( Objects[osp->objnum].type == OBJ_DEBRIS ) {
-				sprintf(buf2, "Debris");
+				snprintf(buf2, 32, "Debris");
 			}
 			else {
-				sprintf(buf2, "Unknown");
+				snprintf(buf2, 32, "Unknown");
 			}
 
 			obj_snd_source_pos(&source_pos, osp);

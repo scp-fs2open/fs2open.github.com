@@ -4472,7 +4472,7 @@ void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four
 	char backward_buf[32];
 
 	// print an initial string of just the digits
-	sprintf(buf, "%d", integer);
+	snprintf(buf, 32, "%d", integer);
 
 	// no commas needed?
 	if ((integer < 1000) || (integer < 10000 && !use_comma_with_four_digits))

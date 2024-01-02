@@ -839,7 +839,7 @@ void multi_ts_assign_players_all()
 	memset(name_lookup,0,100);
 
 	if(Netgame.type_flags & NG_TYPE_TEAM) {
-		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
+		snprintf(name_lookup, 100, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
 	}
 	else {
 		// To account for cases where <Wingname> 1 is not a player ship
@@ -1306,7 +1306,7 @@ void multi_ts_blit_avail_ships()
 				ss_blit_ship_icon(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD],Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],idx,multi_ts_avail_bmap_num(display_count));
 
 				// blit the ship count available
-				sprintf(count,"%d",Ss_pool[idx]);
+				snprintf(count, 6, "%d",Ss_pool[idx]);
 				gr_set_color_fast(&Color_normal);
 				gr_string(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD] - 20,Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],count,GR_RESIZE_MENU);
 
@@ -1528,7 +1528,7 @@ void multi_ts_blit_ship_info()
 	// blit the max velocity
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Max Velocity",742), GR_RESIZE_MENU);	
-	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
+	snprintf(str, 100, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(&Color_bright);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,str,GR_RESIZE_MENU);	
 	y_start += line_height;

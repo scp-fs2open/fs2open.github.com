@@ -17,7 +17,7 @@ void reset_arrival_to_false(int shipnum, bool reset_wing, EditorViewport* _viewp
 
 	// falsify the ship cue
 	if (set_cue_to_false(&shipp->arrival_cue)) {
-		sprintf(buf, "Setting arrival cue of ship %s\nto false for initial docking purposes.", shipp->ship_name);
+		snprintf(buf, 256, "Setting arrival cue of ship %s\nto false for initial docking purposes.", shipp->ship_name);
 		// MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
 		_viewport->dialogProvider->showButtonDialog(DialogType::Information, "Notice", buf, {DialogButton::Ok});
 	}
@@ -29,7 +29,7 @@ void reset_arrival_to_false(int shipnum, bool reset_wing, EditorViewport* _viewp
 
 		if (set_cue_to_false(&wingp->arrival_cue)) {
 
-			sprintf(buf, "Setting arrival cue of wing %s\nto false for initial docking purposes.", wingp->name);
+			snprintf(buf, 256, "Setting arrival cue of wing %s\nto false for initial docking purposes.", wingp->name);
 			// MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
 			_viewport->dialogProvider->showButtonDialog(DialogType::Information, "Notice", buf, {DialogButton::Ok});
 		}

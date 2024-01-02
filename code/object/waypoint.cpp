@@ -372,7 +372,7 @@ void waypoint_find_unique_name(char *dest_name, int start_index)
 	waypoint_list *collision;
 
 	do {
-		sprintf(dest_name, "Waypoint path %d", index);
+		snprintf(dest_name, NAME_LENGTH, "Waypoint path %d", index);
 		index++;
 
 		// valid name if no collision

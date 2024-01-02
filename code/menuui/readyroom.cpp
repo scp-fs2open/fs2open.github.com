@@ -1360,7 +1360,7 @@ void sim_room_do_frame(float  /*frametime*/)
 		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 		if (Campaign.filename[0] != '\0') {			
-			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
+			snprintf(buf, CF_MAX_PATHNAME_LENGTH + 4, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
 			font::force_fit_string(buf, 255, list_w2);
 			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], "%s", buf);
 

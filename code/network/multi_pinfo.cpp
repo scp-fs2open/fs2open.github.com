@@ -661,10 +661,10 @@ void multi_pinfo_build_stats()
 	scoring_struct *sc = &Multi_pinfo_popup_player->m_player->stats;
 
 	// build alltime fighter and non-fighter kills
-	sprintf(Multi_pinfo_stats_vals[MPI_FIGHTER_KILLS], "%d", sc->kill_count);
+	snprintf(Multi_pinfo_stats_vals[MPI_FIGHTER_KILLS], 50, "%d", sc->kill_count);
 
 	// missions flown
-	sprintf(Multi_pinfo_stats_vals[MPI_MISSIONS_FLOWN],"%d",(int)sc->missions_flown);
+	snprintf(Multi_pinfo_stats_vals[MPI_MISSIONS_FLOWN], 50, "%d",(int)sc->missions_flown);
 
 	// flight time		
 	game_format_time(fl2f((float)sc->flight_time),Multi_pinfo_stats_vals[MPI_FLIGHT_TIME]);		
@@ -686,22 +686,22 @@ void multi_pinfo_build_stats()
 	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK], get_rank_display_name(&Ranks[verify_rank(sc->rank)]).c_str());
 
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
+	snprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED], 50, "%u",sc->p_shots_fired);
 	
 	// primary hit pct
 	if (sc->p_shots_fired > 0) {
-		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", (int)(100.0f * ((float)sc->p_shots_hit / (float)sc->p_shots_fired)));
+		snprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], 50, "%d%%", (int)(100.0f * ((float)sc->p_shots_hit / (float)sc->p_shots_fired)));
 	} else {
-		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", 0);
+		snprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], 50, "%d%%", 0);
 	}
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%u",sc->s_shots_fired);
+	snprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED], 50, "%u",sc->s_shots_fired);
 	
 	// primary hit pct
 	if (sc->s_shots_fired > 0) {
-		sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT], "%d%%", (int)(100.0f * ((float)sc->s_shots_hit / (float)sc->s_shots_fired)));
+		snprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT], 50, "%d%%", (int)(100.0f * ((float)sc->s_shots_hit / (float)sc->s_shots_fired)));
 	} else {
-		sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT], "%d%%", 0);
+		snprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT], 50, "%d%%", 0);
 	}
 }
 

@@ -687,7 +687,7 @@ void options_change_gamma(float delta)
 	}
 
 	gr_set_gamma(gamma);
-	sprintf(tmp_gamma_string, NOX("%.2f"), gamma);
+	snprintf(tmp_gamma_string, 32, NOX("%.2f"), gamma);
 
 	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
 }

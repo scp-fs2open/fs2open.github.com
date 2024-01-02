@@ -631,10 +631,10 @@ void HudGaugeThrottle::render(float  /*frametime*/)
 			if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
 				strcpy_s(buf, XSTR( "A/B", 1669 ));
 			} else {
-				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround( (desired_speed/max_speed)*100 ));
+				snprintf(buf, 32, XSTR( "%d%%", 326), (int)std::lround( (desired_speed/max_speed)*100 ));
 			}
 		} else {
-			sprintf(buf, "%d", (int)std::lround(desired_speed * Hud_speed_multiplier));
+			snprintf(buf, 32, "%d", (int)std::lround(desired_speed * Hud_speed_multiplier));
 		}
 
 		hud_num_make_mono(buf, font_num);
@@ -664,7 +664,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 	int sx, sy, x_pos, y_pos, w, h;
 
 	//setGaugeColor();
-	sprintf(buf, "%d", (int)std::lround(current_speed));
+	snprintf(buf, 32, "%d", (int)std::lround(current_speed));
 	hud_num_make_mono(buf, font_num);
 	gr_get_string_size(&w, &h, buf);
 

@@ -1003,7 +1003,7 @@ void delete_player(int player_num,int kicked_reason)
 
 	// display a message that this guy has left
 	if(*Net_players[player_num].m_player->callsign){
-		sprintf(notify_string,XSTR("<%s has left>",901),Net_players[player_num].m_player->callsign);
+		snprintf(notify_string,256,XSTR("<%s has left>",901),Net_players[player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string,0,0);
 	}
 	
@@ -1949,7 +1949,7 @@ int multi_eval_join_request(join_request *jr, net_addr *addr)
 
 		// If the game isn't password protected pass it on that someone wants to join
 		if (Netgame.mode != NG_MODE_PASSWORD ) {
-			sprintf(knock_message, "%s has tried to join!", knock_callsign);
+			snprintf(knock_message, 256, "%s has tried to join!", knock_callsign);
 			switch(Netgame.game_state) {
 				case NETGAME_STATE_BRIEFING:
 				case NETGAME_STATE_PAUSED:
@@ -2062,7 +2062,7 @@ int multi_eval_join_request(join_request *jr, net_addr *addr)
 	// if the player was banned by the standalone
 	if ( (Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign) ) {
 		// maybe we should log this
-		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(addr, jr_ip_string, sizeof(jr_ip_string)));
+		snprintf(knock_message, 256, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(addr, jr_ip_string, sizeof(jr_ip_string)));
 		ml_string(knock_message);
 		return JOIN_DENY_JR_BANNED;
 	}
@@ -3298,7 +3298,7 @@ void multi_make_fake_players(int count)
 	for(idx=0;idx<count;idx++){
 		if(!MULTI_CONNECTED(Net_players[idx])){
 			Net_players[idx].m_player = &Players[idx];
-			sprintf(Net_players[idx].m_player->callsign,"Player %d",idx);
+			snprintf(Net_players[idx].m_player->callsign,28,"Player %d",idx);
 			Net_players[idx].flags |= NETINFO_FLAG_CONNECTED;
 		}
 	}

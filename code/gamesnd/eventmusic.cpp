@@ -1328,7 +1328,7 @@ void parse_soundtrack()
 		for(i = 0; i < Num_pattern_types; i++)
 		{
 			//Check for the tag based on description
-			sprintf(tagbuf, "$%s:", Pattern_info[i].pattern_desc);
+			snprintf(tagbuf, 64, "$%s:", Pattern_info[i].pattern_desc);
 			if(optional_string(tagbuf))
 			{
 				//Parse it
@@ -1627,7 +1627,7 @@ void event_music_get_info(char *outbuf)
 		strcpy(outbuf,XSTR( "Event music is not playing", 213));
 	}
 	else {	
-		sprintf(outbuf,XSTR( "soundtrack: %s [%s]", 214), Soundtracks[Current_soundtrack_num].name, Pattern_info[Current_pattern].pattern_desc);
+		snprintf(outbuf, 256, XSTR( "soundtrack: %s [%s]", 214), Soundtracks[Current_soundtrack_num].name, Pattern_info[Current_pattern].pattern_desc);
 	}
 }
 

@@ -747,7 +747,7 @@ void cmd_brief_do_frame(float frametime)
 	font::set_font(font::FONT1);
 	gr_set_color_fast(&Color_text_heading);
 
-	sprintf(buf, XSTR( "Stage %d of %d", 464), Cur_stage + 1, Cur_cmd_brief->num_stages);
+	snprintf(buf, 40, XSTR( "Stage %d of %d", 464), Cur_stage + 1, Cur_cmd_brief->num_stages);
 	gr_get_string_size(&w, NULL, buf);
 	gr_string(Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD] - w, Cmd_stage_y[gr_screen.res], buf, GR_RESIZE_MENU);
 

@@ -1933,15 +1933,14 @@ void multi_voice_alg_play_window(int stream_index)
 
 		// if we can play sound and we know who this is from, display it
 		if(Multi_voice_can_play){
-			char voice_msg[256];
+			SCP_string voice_msg = "";
 			int player_index = find_player_index(Multi_voice_stream[stream_index].stream_from);
 
 			if(player_index != -1){
-				memset(voice_msg,0,256);
 				sprintf(voice_msg,XSTR("<%s is speaking>",712),Net_players[player_index].m_player->callsign);
 
 				// display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
-				multi_display_chat_msg(voice_msg,player_index,0);
+				multi_display_chat_msg(voice_msg.c_str(),player_index,0);
 			}
 		}
 	

@@ -462,7 +462,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	memset(temp_string,0,100);	
 
 	// add the message header
-	sprintf(hud_string,XSTR("ORDER FROM <%s> : ",699),source->m_player->callsign);
+	snprintf(hud_string, 255, XSTR("ORDER FROM <%s> : ",699),source->m_player->callsign);
 
 	// get the target obj if possible
 	target_obj = NULL;
@@ -475,7 +475,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// attack my target
 	case ATTACK_TARGET_ITEM :
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Attack %s",700),Ships[target_obj->instance].get_display_name());
+			snprintf(temp_string, 100, XSTR("Attack %s",700),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -485,7 +485,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// disable my target
 	case DISABLE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Disable %s",701),Ships[target_obj->instance].get_display_name());
+			snprintf(temp_string, 100, XSTR("Disable %s",701),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -495,7 +495,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// protect my target
 	case PROTECT_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Protect %s",702),Ships[target_obj->instance].get_display_name());
+			snprintf(temp_string, 100, XSTR("Protect %s",702),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -505,7 +505,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// ignore my target
 	case IGNORE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Ignore %s",703),Ships[target_obj->instance].get_display_name());
+			snprintf(temp_string, 100, XSTR("Ignore %s",703),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -515,7 +515,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// disarm my target
 	case DISARM_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Disarm %s",704),Ships[target_obj->instance].get_display_name());
+			snprintf(temp_string, 100, XSTR("Disarm %s",704),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -525,7 +525,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// disable subsystem on my target
 	case DISABLE_SUBSYSTEM_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP) && (subsys_type != -1) && (subsys_type != 0)){
-			sprintf(temp_string,XSTR("Disable subsystem %s on %s",705),Multi_msg_subsys_name[subsys_type],Ships[target_obj->instance].get_display_name());
+			snprintf(temp_string, 100, XSTR("Disable subsystem %s on %s",705),Multi_msg_subsys_name[subsys_type],Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;

@@ -366,7 +366,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 
 			hud_stuff_ship_callsign(callsign, sp);
 			if (*callsign)
-				sprintf(&buf[strlen(buf)], " (%s)", callsign);
+				snprintf(&buf[strlen(buf)], 255, " (%s)", callsign);
 		}
 		// maybe substitute the callsign
 		else
