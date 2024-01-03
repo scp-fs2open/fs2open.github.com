@@ -864,7 +864,7 @@ void os_init_registry_stuff(const char* company, const char* app)
 		// Trim any trailing folders so we get just the name of the root mod folder
 		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
 		// Now trim off any Knossos versioning details so that settings are not mod version specific
-		size_t pos = str.find("-");
+		size_t pos = str.rfind("-");
 		str = (pos != std::string::npos) ? str.substr(0, pos) : str;
 		// Make sure we have a usable string
 		if (str.length() > 0) {
