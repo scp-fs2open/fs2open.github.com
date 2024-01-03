@@ -464,6 +464,7 @@ const char *Osreg_app_name = "FreeSpace2";
 const char *Osreg_title = "FreeSpace 2";
 
 const char *Osreg_config_file_name = "fs2_open.ini";
+SCP_string Mod_options_file_name = "data/retail_fs2_settings.ini";
 
 #define DEFAULT_SECTION "Default"
 
@@ -838,25 +839,48 @@ static void profile_save(Profile *profile, const char *file)
 // os registry functions -------------------------------------------------------------
 
 static Profile* Osreg_profile = nullptr;
+static Profile* Mod_Options_profile = nullptr;
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff(const char *company, const char *app)
+void os_init_registry_stuff(const char* company, const char* app)
 {
 	if (company) {
 		strcpy_s(szCompanyName, company);
-	}
-	else {
+	} else {
 		strcpy_s(szCompanyName, Osreg_company_name);
 	}
 
 	if (app) {
 		strcpy_s(szAppName, app);
-	}
-	else {
+	} else {
 		strcpy_s(szAppName, Osreg_app_name);
 	}
 
 	Osreg_profile = profile_read(Osreg_config_file_name);
+
+	if (Cmdline_mod != nullptr) {
+		SCP_string str = Cmdline_mod;
+
+		// Trim any trailing folders so we get just the name of the root mod folder
+		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
+		// Now trim off any Knossos versioning details so that settings are not mod version specific
+		size_t pos = str.find("-");
+		str = (pos != std::string::npos) ? str.substr(0, pos) : str;
+		// Make sure we have a usable string
+		if (str.length() > 0) {
+			// Append "_settings.ini" and use the data/ directory
+			Mod_options_file_name = "data/" + str + "_settings.ini";
+		} else {
+			// If we can't find the mod specific string then fallback to the fs2_open ini
+			Mod_options_file_name = Osreg_config_file_name;
+		}
+	}
+
+	// Check if the file exists, create it if it doesn't
+	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
+	fclose(fp);
+
+	Mod_Options_profile = profile_read(Mod_options_file_name.c_str());
 
 	Os_reg_inited = 1;
 }
@@ -866,37 +890,53 @@ void os_deinit_registry_stuff()
 		profile_free(Osreg_profile);
 		Osreg_profile = nullptr;
 	}
+
+	if (Mod_Options_profile != nullptr) {
+		profile_free(Mod_Options_profile);
+		Mod_Options_profile = nullptr;
+	}
 }
-bool os_config_has_value(const char* section, const char* name) {
+bool os_config_has_value(const char* section, const char* name, bool use_mod_file)
+{
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, nullptr) != nullptr;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_Options_profile;
+	}
+
 	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
 	return ptr != nullptr;
 }
 
-const char *os_config_read_string(const char *section, const char *name, const char *default_value)
+const char* os_config_read_string(const char* section, const char* name, const char* default_value, bool use_mod_file)
 {
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, default_value);
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_Options_profile;
+	}
+
 	nprintf(("Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
 		(section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL")));
 
 	if (section == NULL)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
 	if (ptr != NULL) {
 		strncpy(tmp_string_data, ptr, 1023);
@@ -906,19 +946,23 @@ const char *os_config_read_string(const char *section, const char *name, const c
 	return default_value;
 }
 
-unsigned int os_config_read_uint(const char *section, const char *name, unsigned int default_value)
+unsigned int os_config_read_uint(const char* section, const char* name, unsigned int default_value, bool use_mod_file)
 {
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_uint(section, name, default_value);
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_Options_profile;
+	}
 
 	if (section == NULL)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
 	if (ptr != NULL) {
 		default_value = atoi(ptr);
@@ -927,34 +971,46 @@ unsigned int os_config_read_uint(const char *section, const char *name, unsigned
 	return default_value;
 }
 
-void os_config_write_string(const char *section, const char *name, const char *value)
+void os_config_write_string(const char* section, const char* name, const char* value, bool use_mod_file)
 {
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		registry_write_string(section, name, value);
 		return;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	const char* file = Osreg_config_file_name;
+	if (use_mod_file) {
+		profile = Mod_Options_profile;
+		file = Mod_options_file_name.c_str();
+	}
 
 	if (section == NULL)
 		section = DEFAULT_SECTION;
 
-	Osreg_profile = profile_update(Osreg_profile, section, name, value);
-	profile_save(Osreg_profile, Osreg_config_file_name);
+	profile = profile_update(profile, section, name, value);
+	profile_save(profile, file);
 }
 
-void os_config_write_uint(const char *section, const char *name, unsigned int value)
+void os_config_write_uint(const char* section, const char* name, unsigned int value, bool use_mod_file)
 {
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		registry_write_uint(section, name, value);
 		return;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	const char* file = Osreg_config_file_name;
+	if (use_mod_file) {
+		profile = Mod_Options_profile;
+		file = Mod_options_file_name.c_str();
+	}
 
 	if (section == NULL)
 		section = DEFAULT_SECTION;
@@ -963,7 +1019,7 @@ void os_config_write_uint(const char *section, const char *name, unsigned int va
 
 	snprintf(buf, 20, "%u", value);
 
-	Osreg_profile = profile_update(Osreg_profile, section, name, buf);
-	profile_save(Osreg_profile, Osreg_config_file_name);
+	profile = profile_update(profile, section, name, buf);
+	profile_save(profile, file);
 }
 

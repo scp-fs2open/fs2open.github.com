@@ -57,7 +57,7 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 		throw std::runtime_error("Invalid key");
 	}
 
-	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str());
+	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str(), (const char*)0, true);
 
 	if (value == nullptr) {
 		// TODO: This is not really an error but I would like to avoid return nullptr here...
@@ -156,7 +156,7 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 
 	auto val = json_dump_string(iter->second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 
-	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 
 	auto changed = option->valueChanged(iter->second.get());
 
@@ -178,7 +178,7 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 
 		auto val = json_dump_string(entry.second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 
-		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 	}
 	SCP_vector<const options::OptionBase*> unchanged;
 
