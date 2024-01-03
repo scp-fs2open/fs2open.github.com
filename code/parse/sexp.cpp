@@ -29352,8 +29352,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			return sexp_val;
 		}
 
-#ifndef NDEBUG
-		// now, reconcile positive and negative - Goober5000
+		// Goober5000's number hack - now, ensure negative numbers aren't sent to parameters that expect OPF_POSITIVE
 		if (sexp_val < 0 && sexp_val > SEXP_UNLIKELY_RETURN_VALUE_BOUND)
 		{
 			int parent_node = find_parent_operator(cur_node);
@@ -29364,15 +29363,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				int arg_num = find_argnum(parent_node, cur_node);
 				Assertion(arg_num >= 0, "Error finding sexp argument.  The SEXP is not listed among its parent's children.");
 
-				// if we need a positive value, make it positive
+				// if we need a positive value, clamp it to avoid an underflow
 				if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
 				{
 					Warning(LOCATION, "Parent node %s, argument %d (value %d) is negative, but is required to be positive!", Sexp_nodes[parent_node].text, arg_num + 1, sexp_val);
-					sexp_val *= -1;
+					sexp_val = 0;
 				}
 			}
 		}
-#endif
 
 		if ( sexp_val ){
 			Sexp_nodes[cur_node].value = SEXP_TRUE;
@@ -32005,7 +32003,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_NUM_PLAYERS:
-			return OPF_POSITIVE;
+			return OPF_NONE;
 
 		case OP_SKILL_LEVEL_AT_LEAST:
 			return OPF_SKILL_LEVEL;
@@ -32748,6 +32746,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DEACTIVATE_GLOW_MAPS:	//-Bobboau
 		case OP_ACTIVATE_GLOW_MAPS:		//-Bobboau
 			return OPF_SHIP;	//a list of ships that are to be activated/deactivated
+
 		case OP_DEACTIVATE_GLOW_POINT_BANK:
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 			if (!argnum)
