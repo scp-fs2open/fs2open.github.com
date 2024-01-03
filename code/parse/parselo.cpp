@@ -2105,6 +2105,8 @@ int parse_get_line(char *lineout, int max_line_len, const char *start, int max_s
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	Assertion(filename, "Filename must not be null!");
+	if (!filename)
+		throw parse::FileOpenException("Filename must not be null!");
 
 	// copy the filename
 	strcpy_s(Current_filename_sub, filename);
@@ -2231,6 +2233,8 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	int	file_is_encrypted;
 
 	Assertion(filename, "Filename must not be null!");
+	if (!filename)
+		throw parse::FileOpenException("Filename must not be null!");
 
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
@@ -2469,6 +2473,8 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 	CFILE	*mf;
 
 	Assertion(filename, "Filename must not be null!");
+	if (!filename)
+		throw parse::FileOpenException("Filename must not be null!");
 
 	// copy the filename
 	strcpy_s(Current_filename_sub, filename);
