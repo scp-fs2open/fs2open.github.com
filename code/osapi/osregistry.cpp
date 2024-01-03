@@ -839,7 +839,7 @@ static void profile_save(Profile *profile, const char *file)
 // os registry functions -------------------------------------------------------------
 
 static Profile* Osreg_profile = nullptr;
-static Profile* Mod_Options_profile = nullptr;
+static Profile* Mod_settings_profile = nullptr;
 
 // initialize the registry. setup default keys to use
 void os_init_registry_stuff(const char* company, const char* app)
@@ -858,6 +858,9 @@ void os_init_registry_stuff(const char* company, const char* app)
 
 	Osreg_profile = profile_read(Osreg_config_file_name);
 
+	// Handle mod specific settings and in-game options through a mod specific file
+	// This gets the mod file using the mod cmdline string, stripping Launcher version data
+	// so that mod settings are mod-version agnostic but still specific to a unique mod.
 	if (Cmdline_mod != nullptr) {
 		SCP_string str = Cmdline_mod;
 
@@ -876,11 +879,13 @@ void os_init_registry_stuff(const char* company, const char* app)
 		}
 	}
 
-	// Check if the file exists, create it if it doesn't
+	// Check if the mod settings file exists, create it if it doesn't so that the
+	// Mod_options_profile can be written to later during runtime.
 	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
 	fclose(fp);
 
-	Mod_Options_profile = profile_read(Mod_options_file_name.c_str());
+	// Load the mod settings profile
+	Mod_settings_profile = profile_read(Mod_options_file_name.c_str());
 
 	Os_reg_inited = 1;
 }
@@ -891,9 +896,9 @@ void os_deinit_registry_stuff()
 		Osreg_profile = nullptr;
 	}
 
-	if (Mod_Options_profile != nullptr) {
-		profile_free(Mod_Options_profile);
-		Mod_Options_profile = nullptr;
+	if (Mod_settings_profile != nullptr) {
+		profile_free(Mod_settings_profile);
+		Mod_settings_profile = nullptr;
 	}
 }
 bool os_config_has_value(const char* section, const char* name, bool use_mod_file)
@@ -906,7 +911,7 @@ bool os_config_has_value(const char* section, const char* name, bool use_mod_fil
 #endif
 	Profile* profile = Osreg_profile;
 	if (use_mod_file) {
-		profile = Mod_Options_profile;
+		profile = Mod_settings_profile;
 	}
 
 	if (section == nullptr)
@@ -927,18 +932,18 @@ const char* os_config_read_string(const char* section, const char* name, const c
 #endif
 	Profile* profile = Osreg_profile;
 	if (use_mod_file) {
-		profile = Mod_Options_profile;
+		profile = Mod_settings_profile;
 	}
 
 	nprintf(("Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
 		(section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL")));
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
 	char* ptr = profile_get_value(profile, section, name);
 
-	if (ptr != NULL) {
+	if (ptr != nullptr) {
 		strncpy(tmp_string_data, ptr, 1023);
 		default_value = tmp_string_data;
 	}
@@ -956,15 +961,15 @@ unsigned int os_config_read_uint(const char* section, const char* name, unsigned
 #endif
 	Profile* profile = Osreg_profile;
 	if (use_mod_file) {
-		profile = Mod_Options_profile;
+		profile = Mod_settings_profile;
 	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
 	char* ptr = profile_get_value(profile, section, name);
 
-	if (ptr != NULL) {
+	if (ptr != nullptr) {
 		default_value = atoi(ptr);
 	}
 
@@ -984,11 +989,11 @@ void os_config_write_string(const char* section, const char* name, const char* v
 	Profile* profile = Osreg_profile;
 	const char* file = Osreg_config_file_name;
 	if (use_mod_file) {
-		profile = Mod_Options_profile;
+		profile = Mod_settings_profile;
 		file = Mod_options_file_name.c_str();
 	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
 	profile = profile_update(profile, section, name, value);
@@ -1008,11 +1013,11 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 	Profile* profile = Osreg_profile;
 	const char* file = Osreg_config_file_name;
 	if (use_mod_file) {
-		profile = Mod_Options_profile;
+		profile = Mod_settings_profile;
 		file = Mod_options_file_name.c_str();
 	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
 	char buf[21];
