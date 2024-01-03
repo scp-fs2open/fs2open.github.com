@@ -2886,6 +2886,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	create_family_tree(pm);
 
+	// Now do submodel movement post-processing.  This should come before all other error checking.
+
 	// ---------- submodel movement sanity checks ----------
 
 	for (i = 0; i < pm->n_models; i++) {
@@ -2931,6 +2933,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
+	// And now look through all the submodels and set the model flag if any are intrinsic-moving
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[i].translation_type == MOVEMENT_TYPE_INTRINSIC) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
+			break;
+		}
+	}
+
+	// -------------------- Now do any other error checking that validates data in the POF --------------------
+
 	// some dockpoint checks
 	for (i = 0; i < pm->n_docks; i++) {
 		auto dock = &pm->docking_bays[i];
@@ -2966,11 +2978,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-	// And now look through all the submodels and set the model flag if any are intrinsic-moving
-	for (i = 0; i < pm->n_models; i++) {
-		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[i].translation_type == MOVEMENT_TYPE_INTRINSIC) {
-			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
-			break;
+	// For several revisions, Pof Tools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
+	// but should at least head off potential crashes before they happen
+	for (i = 0; i < pm->n_view_positions; ++i) {
+		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent >= pm->n_models) {
+			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of Pof Tools to fix the model.\n", pm->filename, i));
+			pm->view_positions[i].parent = 0;
+			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
 
@@ -3095,17 +3110,6 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 			if (snum == n_subsystems) {
 				nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", subsystem.first, subsystem.second.turret_nr, pm->filename));
 			}
-		}
-	}
-
-	// For several revisions, poftools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
-	// but should at least head off potential crashes before they happen
-	for (auto i = 0; i < pm->n_view_positions; ++i) {
-		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent > pm->n_models) {
-			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of poftools to fix the model", pm->filename, i));
-			pm->view_positions[i].parent = 0;
-			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
-			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
 
