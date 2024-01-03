@@ -3098,6 +3098,17 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 		}
 	}
 
+	// For several revisions, poftools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
+	// but should at least head off potential crashes before they happen
+	for (auto i = 0; i < pm->n_view_positions; ++i) {
+		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent > pm->n_models) {
+			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of poftools to fix the model", pm->filename, i));
+			pm->view_positions[i].parent = 0;
+			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].pnt = ZERO_VECTOR;
+		}
+	}
+
 	return status;
 }
 

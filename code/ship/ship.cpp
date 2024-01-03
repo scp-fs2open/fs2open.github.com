@@ -14703,7 +14703,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	// element.
 	eye *ep = &(pm->view_positions[shipp->current_viewpoint]);
 
-	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
+	if (ep->parent >= 0 && ep->parent < pm->n_models && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
 		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
