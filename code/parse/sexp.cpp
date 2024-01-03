@@ -1847,11 +1847,15 @@ int find_argnum(int parent_node, int arg_node)
 
 	n = CDR(parent_node);
 	tally = 0;
-	
+
 	while (n >= 0)
 	{
-		// check if there is an operator node at this position which matches our expected node
+		// check if there is an operator node at this position that matches our expected node
 		if (CAR(n) == arg_node)
+			return tally;
+
+		// check if there is a regular node at this position that matches our expected node
+		if (n == arg_node)
 			return tally;
 
 		tally++;
@@ -5152,6 +5156,52 @@ void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode)
 // Helper methods for getting data from nodes. Cause it's stupid to keep re-rolling this stuff for every single SEXP
 // -----------------------------------------------------------------------------------
 
+bool is_node_opf_positive(int node)
+{
+	if (node < 0)
+		return false;
+
+	if (!(Sexp_nodes[node].flags & SNF_CHECKED_NODE_FOR_OPF_POSITIVE))
+	{
+		int parent_node = find_parent_operator(node);
+
+		// if the SEXP has no parent, the point is moot
+		if (parent_node >= 0)
+		{
+			int arg_num = find_argnum(parent_node, node);
+			Assertion(arg_num >= 0, "Error finding sexp argument.  The SEXP is not listed among its parent's children.");
+
+			if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
+				Sexp_nodes[node].flags |= SNF_NODE_IS_OPF_POSITIVE;
+		}
+
+		Sexp_nodes[node].flags |= SNF_CHECKED_NODE_FOR_OPF_POSITIVE;
+	}
+
+	return (Sexp_nodes[node].flags & SNF_NODE_IS_OPF_POSITIVE);
+}
+
+// Goober5000's number hack - ensure negative numbers aren't sent to parameters that expect OPF_POSITIVE
+void ensure_opf_positive_is_positive(int node, int &val)
+{
+	if (is_node_opf_positive(node) && (val < 0) && (val > SEXP_UNLIKELY_RETURN_VALUE_BOUND))
+	{
+		// warn about it, but only once
+		static bool Warned_about_opf_positive = false;
+		if (!Warned_about_opf_positive)
+		{
+			int parent_node = find_parent_operator(node);	// these calls are known to be valid because
+			int arg_num = find_argnum(parent_node, node);	// they are prerequisites to marking the node
+
+			Warning(LOCATION, "Parent node \"%s\", argument %d (token \"%s\", value %d) is negative, but is required to be positive!", Sexp_nodes[parent_node].text, arg_num + 1, Sexp_nodes[node].text, val);
+			Warned_about_opf_positive = true;
+		}
+
+		// clamp it to avoid an underflow
+		val = 0;
+	}
+}
+
 /**
  * Evaluate number which may result from an operator or may be text
  */
@@ -5165,26 +5215,29 @@ int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 		return 0;
 	Assert(n >= 0);
 
-	if (CAR(n) != -1)				// if argument is a sexp
+	int op_n = CAR(n);
+	if (op_n >= 0)				// if argument is a sexp
 	{
-		int val = eval_sexp(CAR(n));
+		int val = eval_sexp(op_n);
 
 		// NaNs will propagate through operations, so let the calling function know
-		if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+		if (Sexp_nodes[op_n].value == SEXP_NAN)
 		{
 			val = 0;
 			is_nan = true;
 		}
-		else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+		else if (Sexp_nodes[op_n].value == SEXP_NAN_FOREVER)
 		{
 			val = 0;
 			is_nan_forever = true;
 		}
+		else
+			ensure_opf_positive_is_positive(op_n, val);
 
 		return val;
 	}
 	else
-		return sexp_atoi(n);		// otherwise, just get the number
+		return sexp_atoi(n);		// otherwise, just get the number (this function already contains an OPF_POSITIVE check)
 }
 
 template <typename T>
@@ -5499,6 +5552,7 @@ int sexp_atoi(int node)
 	}
 
 	int num = atoi(CTEXT(node));
+	ensure_opf_positive_is_positive(node, num);
 
 	// cache the value if it can't change later
 	if (!is_node_value_dynamic(node))
@@ -29350,26 +29404,6 @@ int eval_sexp(int cur_node, int referenced_node)
 		if ( Sexp_nodes[cur_node].value == SEXP_NAN ) {	// if we had a nan, but now don't, reset the value
 			Sexp_nodes[cur_node].value = SEXP_UNKNOWN;
 			return sexp_val;
-		}
-
-		// Goober5000's number hack - now, ensure negative numbers aren't sent to parameters that expect OPF_POSITIVE
-		if (sexp_val < 0 && sexp_val > SEXP_UNLIKELY_RETURN_VALUE_BOUND)
-		{
-			int parent_node = find_parent_operator(cur_node);
-
-			// if the SEXP has no parent, the point is moot
-			if (parent_node >= 0)
-			{
-				int arg_num = find_argnum(parent_node, cur_node);
-				Assertion(arg_num >= 0, "Error finding sexp argument.  The SEXP is not listed among its parent's children.");
-
-				// if we need a positive value, clamp it to avoid an underflow
-				if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
-				{
-					Warning(LOCATION, "Parent node %s, argument %d (value %d) is negative, but is required to be positive!", Sexp_nodes[parent_node].text, arg_num + 1, sexp_val);
-					sexp_val = 0;
-				}
-			}
 		}
 
 		if ( sexp_val ){
