@@ -863,12 +863,56 @@ void os_init_registry_stuff(const char* company, const char* app)
 	// so that mod settings are mod-version agnostic but still specific to a unique mod.
 	if (Cmdline_mod != nullptr) {
 		SCP_string str = Cmdline_mod;
-
 		// Trim any trailing folders so we get just the name of the root mod folder
 		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
+		
 		// Now trim off any Knossos versioning details so that settings are not mod version specific
+		// This is a little silly because Knossos and KNet sometimes append other stuff to the mod folder
+		// like "-DevEnv". So what we do here is go section by section across the string using "-" as a
+		// delimiter. If that section is not the semantic version for the mod we discard it. Once we find
+		// the semantic version, we know we're done. Drop the version and we have the full mod folder string.
+		// This allows for mods that have a "-" in the folder string while also handling any number of trailing
+		// data sections.
+		auto isSemanticVersion = [](const SCP_string& input) {
+			int dotCount = 0;
+			bool isNumeric = true;
+
+			for (char c : input) {
+				if (c == '.') {
+					dotCount++;
+				} else if (!(c >= '0' && c <= '9')) {
+					isNumeric = false;
+					break;
+				}
+			}
+
+			// I don't think true Semantic versioning allows for additional dots
+			// and anything after a dash would be handled in a previous run of this lambda
+			// but in our limited use-case here, allowing for 2 or more dots is probably fine.
+			// The point is to find the version so we have a reference point in the string
+			// so the exact format isn't super important here.
+			return (dotCount >= 2 && isNumeric);
+		};
+
+		auto getLastSection = [](const SCP_string& input)
+		{
+			// Find the position of the last dash in the string
+			size_t pos = input.rfind('-');
+			// Extract the substring before the last dash (if found)
+			SCP_string result = (pos != SCP_string::npos) ? input.substr(pos + 1) : input;
+
+			return result;
+		};
+
+		while (!isSemanticVersion(getLastSection(str))) {
+			size_t dashPos = str.rfind("-");
+			str = (dashPos != std::string::npos) ? str.substr(0, dashPos) : str;
+		}
+
+		// Now we know we have just the mod root and the version. So drop the version and we're done!
 		size_t pos = str.rfind("-");
 		str = (pos != std::string::npos) ? str.substr(0, pos) : str;
+
 		// Make sure we have a usable string
 		if (str.length() > 0) {
 			// Append "_settings.ini" and use the data/ directory
@@ -878,6 +922,8 @@ void os_init_registry_stuff(const char* company, const char* app)
 			Mod_options_file_name = Osreg_config_file_name;
 		}
 	}
+
+	mprintf(("Setting local mod settings ini file to '%s'\n", Mod_options_file_name.c_str()));
 
 	// Check if the mod settings file exists, create it if it doesn't so that the
 	// Mod_options_profile can be written to later during runtime.
