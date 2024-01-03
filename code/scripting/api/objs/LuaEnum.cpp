@@ -15,14 +15,23 @@ dynamic_sexp_enum_list* lua_enum_h::getEnum() const
 	return &Dynamic_enums[lua_enum];
 }
 
+bool lua_enum_h::isValid() const
+{
+	return SCP_vector_inbounds(Dynamic_enums, lua_enum);
+}
+
 ADE_OBJ(l_LuaEnum, lua_enum_h, "LuaEnum", "Lua Enum handle");
 
-ADE_VIRTVAR(Name, l_LuaEnum, "string", "The enum name", "string", "The enum name")
+ADE_VIRTVAR(Name, l_LuaEnum, "string", "The enum name", "string", "The enum name or nil if handle is invalid")
 {
 	lua_enum_h lua_enum;
 	const char* enum_name;
 	if (!ade_get_args(L, "o|s", l_LuaEnum.Get(&lua_enum), &enum_name))
 		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+
+	if (!lua_enum.isValid()) {
+		return ADE_RETURN_NIL;
+	}
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
@@ -38,6 +47,10 @@ ADE_INDEXER(l_LuaEnum, "number Index", "Array of enum items", "string", "enum it
 	if (!ade_get_args(L, "o|i", l_LuaEnum.Get(&lua_enum), &idx))
 		return ADE_RETURN_NIL;
 
+	if (!lua_enum.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
 	idx--; //Convert from lua 1 based index
 	if ((idx < 0) || (idx >= static_cast<int>(lua_enum.getEnum()->list.size())))
 		return ADE_RETURN_NIL;
@@ -45,11 +58,15 @@ ADE_INDEXER(l_LuaEnum, "number Index", "Array of enum items", "string", "enum it
 	return ade_set_args(L, "s", lua_enum.getEnum()->list[idx].c_str());
 }
 
-ADE_FUNC(__len, l_LuaEnum, nullptr, "The number of Lua enum items", "number", "The number of Lua enums item.")
+ADE_FUNC(__len, l_LuaEnum, nullptr, "The number of Lua enum items", "number", "The number of Lua enums item or nil if handle is invalid")
 {
 	lua_enum_h lua_enum;
 	if (!ade_get_args(L, "o", l_LuaEnum.Get(&lua_enum)))
 		return ade_set_error(L, "i", 0);
+
+	if (!lua_enum.isValid()) {
+		return ADE_RETURN_NIL;
+	}
 
 	return ade_set_args(L, "i", static_cast<int>(lua_enum.getEnum()->list.size()));
 }
@@ -65,6 +82,10 @@ ADE_FUNC(addEnumItem,
 	const char* item_name;
 	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum) , &item_name))
 		return ADE_RETURN_FALSE;
+
+	if (!lua_enum.isValid()) {
+		return ADE_RETURN_FALSE;
+	}
 
 	for (size_t i = 0; i < lua_enum.getEnum()->list.size(); i++) {
 		if (!stricmp(item_name, lua_enum.getEnum()->list[i].c_str())) {
@@ -89,6 +110,10 @@ ADE_FUNC(removeEnumItem,
 	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum), &item_name))
 		return ADE_RETURN_FALSE;
 
+	if (!lua_enum.isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
 	size_t i;
 
 	for (i = 0; i < lua_enum.getEnum()->list.size(); i++) {
@@ -101,6 +126,15 @@ ADE_FUNC(removeEnumItem,
 	
 
 	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isValid, l_LuaEnum, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	lua_enum_h lua_enum;
+	if (!ade_get_args(L, "o", l_LuaEnum.Get(&lua_enum)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", lua_enum.isValid());
 }
 
 } // namespace api
