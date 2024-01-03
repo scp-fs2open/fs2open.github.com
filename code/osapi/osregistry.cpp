@@ -904,9 +904,15 @@ void os_init_registry_stuff(const char* company, const char* app)
 			return result;
 		};
 
-		while (!isSemanticVersion(getLastSection(str))) {
+		int count = 0;
+
+		// The count is used here as a limiter. If we don't find the semantic version after a
+		// few tries then we are probably running the game outside of the Knossos/KNet environment. 
+		// So after that we should give up and go with the string we have.
+		while (!isSemanticVersion(getLastSection(str)) && (count <= 4)) {
 			size_t dashPos = str.rfind("-");
 			str = (dashPos != std::string::npos) ? str.substr(0, dashPos) : str;
+			count++;
 		}
 
 		// Now we know we have just the mod root and the version. So drop the version and we're done!
