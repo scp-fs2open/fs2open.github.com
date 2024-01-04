@@ -789,8 +789,6 @@ add_file_folder("MenuUI"
 	menuui/fishtank.h
 	menuui/mainhallmenu.cpp
 	menuui/mainhallmenu.h
-	menuui/mainhalltemp.cpp
-	menuui/mainhalltemp.h
 	menuui/optionsmenu.cpp
 	menuui/optionsmenu.h
 	menuui/optionsmenumulti.cpp
