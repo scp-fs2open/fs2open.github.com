@@ -1545,6 +1545,11 @@ bool campaign_is_ignored(const char *filename)
 	return false;
 }
 
+static bool campaign_reportable_error(int val)
+{
+	return val != 0 && val != CAMPAIGN_ERROR_MISSING && val != CAMPAIGN_ERROR_IGNORED;
+}
+
 // returns 0: loaded, !0: error
 int mission_load_up_campaign(bool fall_back_from_current)
 {

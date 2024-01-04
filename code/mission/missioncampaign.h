@@ -30,8 +30,6 @@ struct sexp_variable;
 #define CAMPAIGN_ERROR_SAVEFILE			-4
 #define CAMPAIGN_ERROR_IGNORED			-5
 
-inline bool campaign_reportable_error(int val) { return val != 0 && val != CAMPAIGN_ERROR_MISSING && val != CAMPAIGN_ERROR_IGNORED; }
-
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
 // missions.
