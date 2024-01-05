@@ -2104,10 +2104,11 @@ int parse_get_line(char *lineout, int max_line_len, const char *start, int max_s
 // Goober5000 - added ability to read somewhere other than Parse_text
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
-	// copy the filename
+	Assertion(filename, "Filename must not be null!");
 	if (!filename)
-		throw parse::ParseException("Invalid filename");
+		throw parse::FileOpenException("Filename must not be null!");
 
+	// copy the filename
 	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
@@ -2231,13 +2232,15 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	CFILE	*mf;
 	int	file_is_encrypted;
 
-	Assert(filename);
+	Assertion(filename, "Filename must not be null!");
+	if (!filename)
+		throw parse::FileOpenException("Filename must not be null!");
 
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-		throw parse::ParseException("Failed to open file");
+		throw parse::FileOpenException("Failed to open file");
 	}
 
 	// read the entire file in
@@ -2245,7 +2248,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 	if(!file_len) {
 		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-		throw parse::ParseException("Failed to open file");
+		throw parse::ParseException("File is empty");
 	}
 
 	// For the possible Latin1 -> UTF-8 conversion we need to reallocate the raw_text at some point and we can only do
@@ -2469,10 +2472,11 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 {
 	CFILE	*mf;
 
-	// copy the filename
+	Assertion(filename, "Filename must not be null!");
 	if (!filename)
-		throw parse::ParseException("Invalid filename");
+		throw parse::FileOpenException("Filename must not be null!");
 
+	// copy the filename
 	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then raw_bytes must not be NULL!!
@@ -2484,7 +2488,7 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 	if (mf == nullptr)
 	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-		throw parse::ParseException("Failed to open file");
+		throw parse::FileOpenException("Failed to open file");
 	}
 
 	// read the entire file in
@@ -2492,7 +2496,7 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 
 	if(!file_len) {
 		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-		throw parse::ParseException("Failed to open file");
+		throw parse::ParseException("File is empty");
 	}
 
 	if (raw_bytes == nullptr) {

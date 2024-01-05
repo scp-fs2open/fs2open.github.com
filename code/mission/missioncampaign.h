@@ -161,8 +161,8 @@ extern SCP_vector<SCP_string> Ignored_campaigns;
 
 extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 
-// if the campaign file is missing this will get set for us to check against
-extern int Campaign_file_missing;
+extern bool Campaign_file_missing;	// if the campaign file is missing this will get set for us to check against
+extern int Campaign_load_failure;
 
 /*
  * initialise Player_loadout with default values
@@ -218,7 +218,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 int mission_campaign_get_mission_list(const char *filename, char **list, int max);
 
 // load up a campaign for the current player.
-int mission_load_up_campaign( player *p = NULL );
+int mission_load_up_campaign(bool fall_back_from_current = false);
 
 // stores mission goals and events in Campaign struct
 void mission_campaign_store_goals_and_events();

@@ -192,6 +192,8 @@ void campaign_editor::load_campaign(const char *filename, const char *full_path)
 			MessageBox("Requested campaign file is corrupt.", "Could not load campaign file");
 		else if (result == CAMPAIGN_ERROR_SEXP_EXHAUSTED)
 			MessageBox("Requested campaign requires too many SEXPs.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_MISSING)
+			MessageBox("Requested campaign file could not be found.", "Could not load campaign file");
 		else if (result == CAMPAIGN_ERROR_SAVEFILE)
 			MessageBox("The pilot savefile for this campaign is invalid for the current mod.", "Could not load campaign file");
 		else if (result == CAMPAIGN_ERROR_IGNORED)

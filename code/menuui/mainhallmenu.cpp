@@ -906,8 +906,7 @@ void main_hall_do(float frametime)
 					Game_mode = GM_NORMAL;
 
 					// see if we have a missing campaign and force the player to select a new campaign if so
-					if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing &&
-						!Campaign_room_no_campaigns) {
+					if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
 						int rc = popup(0,
 							3,
 							XSTR("Go to Campaign Room", 1607),
@@ -933,7 +932,6 @@ void main_hall_do(float frametime)
 							break;
 						}
 					} else {
-
 						gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
 						gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					}

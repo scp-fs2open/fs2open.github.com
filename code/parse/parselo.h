@@ -418,6 +418,13 @@ namespace parse
 		~ParseException() noexcept override = default;
 	};
 
+	class FileOpenException : public ParseException
+	{
+	public:
+		explicit FileOpenException(const std::string& msg) : ParseException(msg) {}
+		~FileOpenException() noexcept override = default;
+	};
+
 	class VersionException : public std::runtime_error
 	{
 	private:
