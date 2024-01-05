@@ -120,7 +120,7 @@ void OptUi::build_options_list(const char* category) const
 // Build the main menu with selectors for each category and a way to save/discard/close
 void OptUi::build_options_menu()
 {
-	with_Menu(XSTR("SCP Options", 1817))
+	with_Menu(XSTR("SCP Options", 1830))
 	{
 		for (size_t i = 0; i < Option_categories.size(); i++) {
 			SCP_string title = Option_categories[i].first + " " + XSTR("Options", 1036);
