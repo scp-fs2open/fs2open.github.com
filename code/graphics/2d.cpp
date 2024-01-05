@@ -1754,17 +1754,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	return true;
 }
 
-void gr_force_windowed()
-{
-	if ( !Gr_inited ) {
-		return;
-	}
-
-	if ( Os_debugger_running ) {
-		os_sleep(1000);
-	}
-}
-
 int gr_activated = 0;
 void gr_activate(int active)
 {
