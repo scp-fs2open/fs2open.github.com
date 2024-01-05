@@ -71,7 +71,13 @@ void ingame_options_init()
 		} else if (thisOpt->getType() == options::OptionType::Range) {
 
 			// OptionsManager stores the value as a serialized string, so we need to return it to a float
-			auto f_val = std::stof(val.serialized.c_str());
+			float f_val;
+			try {
+				f_val = std::stof(val.serialized.c_str());
+			} catch (...) {
+				Warning(LOCATION, "Error getting value for option '%s'. Setting to 0.0f!", thisOpt->getTitle().c_str());
+				f_val = 0.0f;
+			}
 
 			// Integer Ranges
 			if (thisOpt->getFlags()[options::OptionFlags::RangeTypeInteger]) {

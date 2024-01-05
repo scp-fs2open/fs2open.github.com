@@ -35,7 +35,6 @@ void OptUi::build_options_list(const char* category) const
 				if ((values.size() == 2) && !(thisOpt->getFlags()[options::OptionFlags::ForceMultiValueSelection])) {
 
 					// On/Off options
-
 					int idx = getOptConfigurator()->get_binary_option_index(thisOpt->getTitle());
 
 					Assertion(SCP_vector_inbounds(getOptConfigurator()->binary_options, idx),
