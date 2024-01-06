@@ -8056,7 +8056,9 @@ void ship_init_cockpit_displays(ship *shipp)
 		return;
 	}
 
-	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num);
+	//-2 is reserved for cockpits as special PMI objnum, as they are NOT simply handleable as the ships objnum.
+	//Functions that know what they are doing can replace the -2 with Player->objnum, otherwise it must be configured as "without object"
+	shipp->cockpit_model_instance = model_create_instance(-2, cockpit_model_num);
 	sip->cockpit_animations.initializeMoveables(model_get_instance(shipp->cockpit_model_instance));
 
 	// check if we even have cockpit displays
