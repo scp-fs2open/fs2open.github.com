@@ -14,8 +14,9 @@
 #include "ship/ship.h"        //compute_slew_matrix
 
 //*************************IMPORTANT GLOBALS*************************
-fov_t VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
-fov_t COCKPIT_ZOOM_DEFAULT = 0.75f;
+#define DEFAULT_FOV 0.75f;
+fov_t VIEWER_ZOOM_DEFAULT = DEFAULT_FOV;
+fov_t COCKPIT_ZOOM_DEFAULT = DEFAULT_FOV;
 float Sexp_fov = 0.0f;
 warp_camera Warp_camera;
 
@@ -54,6 +55,9 @@ APPLY_TO_FOV_T(*, mul)
 APPLY_TO_FOV_T(+, add)
 APPLY_TO_FOV_T(-, sub)
 
+// Used to set the default value for in-game options
+static float fov_default = DEFAULT_FOV;
+
 static SCP_string fov_display(float val)
 {
 	auto degrees = fl_degrees(val);
@@ -71,7 +75,22 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					      return true;
 					 })
 					 .display(fov_display)
-					 .default_val(0.75f)
+					 .default_val(fov_default)
+					 .level(options::ExpertLevel::Advanced)
+					 .importance(60)
+					 .finish();
+
+auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
+					 std::pair<const char*, int>{"Cockpit Field Of View", -1}, // Do XSTR before merging
+					 std::pair<const char*, int>{"The vertical field of view for cockpit rendering. Only works if cockpits are active.", -1})
+					 .category("Graphics")
+					 .range(0.436332f, 1.5708f)
+					 .change_listener([](const float& val, bool) {
+					      COCKPIT_ZOOM_DEFAULT = val;
+					      return true;
+					 })
+					 .display(fov_display)
+					 .default_val(fov_default)
 					 .level(options::ExpertLevel::Advanced)
 					 .importance(60)
 					 .finish();
