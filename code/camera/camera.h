@@ -20,6 +20,8 @@
 #define	EXTERN_CAM_BBOX_CONSTANT_PADDING			5.0f
 #define	EXTERN_CAM_BBOX_MULTIPLIER_PADDING			1.5f
 
+#define DEFAULT_FOV 0.75f;
+
 struct asymmetric_fov {
 	float left, right, up, down;
 	friend asymmetric_fov operator* (const asymmetric_fov&, const float&);

@@ -14,7 +14,6 @@
 #include "ship/ship.h"        //compute_slew_matrix
 
 //*************************IMPORTANT GLOBALS*************************
-#define DEFAULT_FOV 0.75f;
 fov_t VIEWER_ZOOM_DEFAULT = DEFAULT_FOV;
 fov_t COCKPIT_ZOOM_DEFAULT = DEFAULT_FOV;
 float Sexp_fov = 0.0f;
@@ -80,19 +79,41 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 .importance(60)
 					 .finish();
 
+bool Use_cockpit_fov = false;
+
+auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
+					 std::pair<const char*, int>{"Cockpit FOV Toggle", -1},
+					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", -1})
+					 .category("Graphics")
+					 .default_val(false)
+					 .change_listener([](bool val, bool) {
+					      if (!val) {
+					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
+					      }
+					      return true; // This option will always persist so we never return false
+					 })
+					 .level(options::ExpertLevel::Advanced)
+					 .bind_to(&Use_cockpit_fov)
+					 .importance(61)
+					 .finish();
+
 auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
 					 std::pair<const char*, int>{"Cockpit Field Of View", -1}, // Do XSTR before merging
-					 std::pair<const char*, int>{"The vertical field of view for cockpit rendering. Only works if cockpits are active.", -1})
+					 std::pair<const char*, int>{"The vertical field of view for cockpit rendering. Only works if cockpits are active and cockpit FOV toggle is turned on.", -1})
 					 .category("Graphics")
 					 .range(0.436332f, 1.5708f)
 					 .change_listener([](const float& val, bool) {
-					      COCKPIT_ZOOM_DEFAULT = val;
+					      if (Use_cockpit_fov){
+					           COCKPIT_ZOOM_DEFAULT = val;
+						  } else {
+							  COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
+						  }
 					      return true;
 					 })
 					 .display(fov_display)
 					 .default_val(fov_default)
 					 .level(options::ExpertLevel::Advanced)
-					 .importance(60)
+					 .importance(62)
 					 .finish();
 
 //*************************CLASS: camera*************************
