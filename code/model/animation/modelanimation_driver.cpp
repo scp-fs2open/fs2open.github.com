@@ -2,12 +2,24 @@
 
 #include "hud/hudets.h"
 #include "model/animation/modelanimation.h"
+#include "playerman/player.h"
 #include "ship/ship.h"
 
 namespace animation {
+	template<float control_info::* ci_property>
+	static float get_player_ci_property(polymodel_instance* /*pmi*/){
+		return Player->ci.*ci_property;
+	}
+
 	std::function<float(polymodel_instance*)> parse_generic_property_driver_source() {
-		switch(optional_string_one_of(1,
-				"Random"
+		switch(optional_string_one_of(7,
+				"Random",
+				"ControlAccelForward",
+				"ControlAccelLateral",
+				"ControlAccelVertical",
+				"ControlRotationPitch",
+				"ControlRotationBank",
+				"ControlRotationHeading"
 				)){
 			case 0: {
 				float min, max;
@@ -22,6 +34,18 @@ namespace animation {
 					return static_cast<float>(std::mt19937(seed ^ pmi->objnum)()) / static_cast<float>(std::mt19937::max()) * (max - min) + min;
 				};
 			}
+			case 1:
+				return get_player_ci_property<&control_info::forward>;
+			case 2:
+				return get_player_ci_property<&control_info::sideways>;
+			case 3:
+				return get_player_ci_property<&control_info::vertical>;
+			case 4:
+				return get_player_ci_property<&control_info::pitch>;
+			case 5:
+				return get_player_ci_property<&control_info::bank>;
+			case 6:
+				return get_player_ci_property<&control_info::heading>;
 			default:
 				return {};
 		}
