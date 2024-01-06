@@ -11,9 +11,9 @@ namespace dialogs {
 struct variable_info {
 	SCP_string name = "<unnamed>";
 	bool string = true;
-	
-	int number_values;
-	SCP_string string_values;
+	int flags = 0;
+	int number_value;
+	SCP_string string_value;
 };
 
 
@@ -21,6 +21,7 @@ struct container_info {
 	SCP_string name = "<unnamed>";
 	bool map = false;
 	bool string = true;
+	int flags = 0;
 	
 	SCP_vector<SCP_string> keys;
 	SCP_vector<int> number_values;
