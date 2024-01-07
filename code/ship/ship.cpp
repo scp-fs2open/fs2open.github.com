@@ -55,6 +55,7 @@
 #include "model/model.h"
 #include "model/modelrender.h"
 #include "model/modelreplace.h"
+#include "model/animation/modelanimation_driver.h"
 #include "nebula/neb.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -2952,6 +2953,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		if (optional_string("$Cockpit Animations:")) {
 			animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
+		}
+		if (optional_string("$Driven Cockpit Animations:")) {
+			//Despite not being a ship, cockpits have access to full ship driver sources as they can get data fed from the player ship
+			animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(sip->cockpit_animations, 'c', sip->name, animation::parse_ship_property_driver_source);
 		}
 		if (optional_string("$Cockpit Moveables:")) {
 			animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->cockpit_animations);

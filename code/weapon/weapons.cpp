@@ -31,6 +31,7 @@
 #include "math/staticrand.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/animation/modelanimation_driver.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -3610,6 +3611,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations, 'w', wip->name);
 	}
 
+	if (optional_string("$Driven Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(wip->animations, 'w', wip->name, animation::parse_object_property_driver_source);
+	}
+	
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
