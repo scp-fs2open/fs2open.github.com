@@ -259,6 +259,11 @@ ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, 
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(isCutscenePlaying, l_UserInterface, nullptr, "Checks if a cutscene is playing.", "boolean", "Returns true if cutscene is playing, false otherwise")
+{
+	return ade_set_args(L, "b", Movie_active);
+}
+
 ADE_FUNC(launchURL, l_UserInterface, "string url", "Launches the given URL in a web browser", nullptr, nullptr)
 {
 	const char* url;
