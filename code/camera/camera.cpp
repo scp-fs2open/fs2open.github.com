@@ -55,7 +55,7 @@ APPLY_TO_FOV_T(+, add)
 APPLY_TO_FOV_T(-, sub)
 
 // Used to set the default value for in-game options
-static float fov_default = DEFAULT_FOV;
+static constexpr float fov_default = DEFAULT_FOV;
 
 static SCP_string fov_display(float val)
 {
