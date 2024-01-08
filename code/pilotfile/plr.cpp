@@ -806,7 +806,7 @@ void pilotfile::plr_read_settings()
 		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
 		event_music_set_volume(temp_volume);
 
-		temp_volume = handler->readFloat("aster_voice_volume");
+		temp_volume = handler->readFloat("master_voice_volume");
 		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
 		snd_set_voice_volume(temp_volume);
 
@@ -816,7 +816,7 @@ void pilotfile::plr_read_settings()
 		// correct offset
 		handler->readFloat("master_sound_volume");
 		handler->readFloat("master_event_music_volume");
-		handler->readFloat("aster_voice_volume");
+		handler->readFloat("master_voice_volume");
 
 		handler->readInt("briefing_voice_enabled");
 	}
@@ -894,7 +894,7 @@ void pilotfile::plr_write_settings()
 	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	handler->writeFloat("master_event_music_volume", Master_event_music_volume);
 	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
-	handler->writeFloat("aster_voice_volume", Master_voice_volume);
+	handler->writeFloat("master_voice_volume", Master_voice_volume);
 
 	handler->writeInt("briefing_voice_enabled", Briefing_voice_enabled ? 1 : 0);
 
