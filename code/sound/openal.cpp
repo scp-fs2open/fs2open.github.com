@@ -101,7 +101,7 @@ static SCP_string playbackdevice_display(int id)
 	sprintf(out, "(%d) %s", id + 1, PlaybackDeviceList[id].c_str());
 	return out;
 }
-static bool playbackdevice_change(int device, bool initial)
+static bool playbackdevice_change(int /*device*/, bool initial)
 {
 	if (initial) {
 		return false; // On game boot always return false
@@ -176,7 +176,7 @@ static SCP_string capturedevice_display(int id)
 	sprintf(out, "(%d) %s", id + 1, CaptureDeviceList[id].c_str());
 	return out;
 }
-static bool capturedevice_change(int device, bool initial)
+static bool capturedevice_change(int /*device*/, bool initial)
 {
 	if (initial) {
 		return false; // On game boot always return false
