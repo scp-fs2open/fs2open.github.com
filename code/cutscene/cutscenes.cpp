@@ -60,6 +60,18 @@ static cutscene_info *get_cutscene_pointer(char *cutscene_filename)
 	return NULL;
 }
 
+int get_cutscene_index_by_name(const char* name)
+{
+	for (int i = 0; i < (int)Cutscenes.size(); i++) {
+		if (!stricmp(name, Cutscenes[i].name)) {
+			return i;
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
+}
+
 static void cutscene_info_init(cutscene_info *csni)
 {
 	csni->filename[0] = '\0';

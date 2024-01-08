@@ -21,7 +21,7 @@ struct cutscene_info_h {
 	cutscene_info_h();
 	explicit cutscene_info_h(int scene);
 	bool IsValid() const;
-	cutscene_info* getStage() const;
+	cutscene_info* getScene() const;
 };
 
 DECLARE_ADE_OBJ(l_TechRoomMission, sim_mission_h);

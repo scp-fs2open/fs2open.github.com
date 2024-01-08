@@ -1620,12 +1620,28 @@ ADE_LIB_DERIV(l_UserInterface_Cutscenes, "Cutscenes", nullptr, nullptr, l_UserIn
 ADE_INDEXER(l_UserInterface_Cutscenes,
 	"number Index",
 	"Array of cutscenes",
-	"custscene_info",
+	"cutscene_info",
 	"Cutscene handle, or invalid handle if index is invalid")
 {
-	int idx;
-	if (!ade_get_args(L, "*i", &idx))
-		return ade_set_error(L, "s", "");
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
+
+	int idx = get_cutscene_index_by_name(name);
+
+	if (idx < 0) {
+		try {
+			idx = std::stoi(name);
+			idx--; // Lua->FS2
+		} catch (const std::exception&) {
+			// Not a number
+			return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
+		}
+
+		if (!SCP_vector_inbounds(Cutscenes, idx)) {
+			return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
+		}
+	}
 
 	return ade_set_args(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(idx)));
 }
