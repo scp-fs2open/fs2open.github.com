@@ -23,6 +23,8 @@
 #include <sddl.h>
 #endif
 
+bool Ingame_options_save_found = true;
+
 namespace
 {
 	// ------------------------------------------------------------------------------------------------------------
@@ -923,21 +925,37 @@ void os_init_registry_stuff(const char* company, const char* app)
 		if (str.length() > 0) {
 			// Append "_settings.ini" and use the data/ directory
 			Mod_options_file_name = "data/" + str + "_settings.ini";
+
+			// Test if the new save file exists
+			FILE* file = fopen(os_get_config_path(Mod_options_file_name).c_str(), "r");
+			if (file != nullptr) {
+				fclose(file);
+			} else {
+				Ingame_options_save_found = false;
+			}
 		} else {
 			// If we can't find the mod specific string then fallback to the fs2_open ini
+			// We don't set Ingame_options_save_found to false here because if we do that
+			// then we are assuming we have a proper save file to use later during runtime,
+			// but in this case we do not.
 			Mod_options_file_name = Osreg_config_file_name;
 		}
 	}
 
 	mprintf(("Setting local mod settings ini file to '%s'\n", Mod_options_file_name.c_str()));
 
-	// Check if the mod settings file exists, create it if it doesn't so that the
+	// If the mod settings file doesn't exist create it if it doesn't so that the
 	// Mod_options_profile can be written to later during runtime.
 	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
 	fclose(fp);
 
-	// Load the mod settings profile
-	Mod_settings_profile = profile_read(Mod_options_file_name.c_str());
+	// Load the mod settings profile if we have one, otherwise pull the settings from the
+	// fs2_open.ini to start with.
+	if (Ingame_options_save_found) {
+		Mod_settings_profile = profile_read(Mod_options_file_name.c_str());
+	} else {
+		Mod_settings_profile = profile_read(Osreg_config_file_name);
+	}
 
 	Os_reg_inited = 1;
 }
