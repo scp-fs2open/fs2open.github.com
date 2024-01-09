@@ -25,6 +25,8 @@ extern const char *Osreg_title;
 
 extern const char *Osreg_config_file_name;
 
+extern bool Ingame_options_save_found;
+
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY FUNCTIONS
 //
