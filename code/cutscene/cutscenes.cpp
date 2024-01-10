@@ -25,6 +25,8 @@
 
 extern int Cmdline_nomovies;
 
+bool Movie_active = false;
+
 
 const char* Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 		"ViewFootage",

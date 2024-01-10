@@ -278,6 +278,7 @@ bool play(const char* name) {
 	// clear the screen and hide the mouse cursor
 	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(false);
+	Movie_active = true;
 	gr_reset_clip();
 	gr_set_color(255, 255, 255);
 	gr_set_clear_color(0, 0, 0);
@@ -303,6 +304,8 @@ bool play(const char* name) {
 		// uh-oh, movie is invalid... Abory, Retry, Fail?
 		mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
 	}
+
+	Movie_active = false;
 
 	// show the mouse cursor again
 	io::mouse::CursorManager::get()->popStatus();

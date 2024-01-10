@@ -37,6 +37,8 @@ typedef struct cutscene_info
 
 extern SCP_vector<cutscene_info> Cutscenes;
 
+extern bool Movie_active;
+
 // initializa table data
 void cutscene_init();
 
