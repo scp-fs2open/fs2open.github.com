@@ -513,6 +513,7 @@ enum : int {
 	OP_FOR_CONTAINER_DATA,	// jg18
 	OP_FOR_MAP_CONTAINER_KEYS,	// jg18
 	OP_ON_MISSION_SKIP,	// Goober5000
+	OP_FOR_SUBSYSTEMS,	// Goober5000
 
 	// OP_CATEGORY_CHANGE
 	// sexpressions with side-effects

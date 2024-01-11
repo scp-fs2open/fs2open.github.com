@@ -3351,7 +3351,7 @@ int string_lookup(const char *str1, const char* const *strlist, size_t max, cons
 void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description)
 {
 	char	token[128];
-	int checking_ship_classes = (stricmp(id, "$class:") == 0);
+	bool checking_ship_classes = (stricmp(id, "$class:") == 0);
 
 	// Goober5000 - don't say errors when we're checking classes because 1) we have more checking to do; and 2) we will say a redundant error later
 	required_string(id);
@@ -3364,7 +3364,7 @@ void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[]
 		int idx = ship_info_lookup(token);
 
 		if (idx >= 0)
-			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, 0);
+			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, false);
 		else
 			*addr = -1;
 	}
@@ -3377,7 +3377,7 @@ void find_and_stuff_optional(const char *id, int *addr, int f_type, const char *
 	if(optional_string(id))
 	{
 		stuff_string(token, f_type, sizeof(token));
-		*addr = string_lookup(token, strlist, max, description, 1);
+		*addr = string_lookup(token, strlist, max, description, true);
 	}
 }
 
@@ -3389,7 +3389,7 @@ int match_and_stuff(int f_type, const char * const *strlist, int max, const char
 	char	token[128];
 
 	stuff_string(token, f_type, sizeof(token));
-	return string_lookup(token, strlist, max, description, 0);
+	return string_lookup(token, strlist, max, description, false);
 }
 
 void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[], int *total,
@@ -3401,7 +3401,7 @@ void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[
 	required_string(id);
 	stuff_string(token, f_type, sizeof(token));
 	if (*total)
-		*addr = string_lookup(token, strlist, *total, description, 0);
+		*addr = string_lookup(token, strlist, *total, description, false);
 
 	if (*addr == -1)  // not in list, so lets try and add it.
 	{
