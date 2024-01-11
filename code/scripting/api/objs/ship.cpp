@@ -8,6 +8,7 @@
 #include "message.h"
 #include "object.h"
 #include "order.h"
+#include "parse_object.h"
 #include "ship.h"
 #include "ship_bank.h"
 #include "shipclass.h"
@@ -2387,6 +2388,23 @@ ADE_FUNC(EtsSetIndexes, l_Ship, "number EngineIndex, number ShieldIndex, number 
 	} else {
 		return ADE_RETURN_FALSE;
 	}
+}
+
+ADE_FUNC(getParsedShip, l_Ship, nullptr, "Returns the parsed ship that was used to create this ship, if any", "parse_object", "The parsed ship, an invalid handle if no parsed ship exists, or nil if the current handle is invalid")
+{
+	object_h *objh = nullptr;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+
+	auto shipp = &Ships[objh->objp->instance];
+	auto ship_entry = ship_registry_get(shipp->ship_name);
+	if (!ship_entry || !ship_entry->has_p_objp())
+		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+
+	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(ship_entry->p_objp())));
 }
 
 ADE_FUNC(getWing, l_Ship, NULL, "Returns the ship's wing", "wing", "Wing handle, or invalid wing handle if ship is not part of a wing")
