@@ -956,8 +956,11 @@ extern SCP_vector<ship_registry_entry> Ship_registry;
 extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern int ship_registry_get_index(const char *name);
+extern int ship_registry_get_index(const SCP_string &name);
 extern bool ship_registry_exists(const char *name);
+extern bool ship_registry_exists(const SCP_string &name);
 extern const ship_registry_entry *ship_registry_get(const char *name);
+extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
