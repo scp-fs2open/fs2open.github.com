@@ -131,6 +131,17 @@ BOOL VoiceActingManager::OnInitDialog()
 	box->AddString(".OGG");
 	box->SetCurSel(0);
 
+	// this text is too long for the .rc file, so set it here
+	GetDlgItem(IDC_ENTRY_FORMAT_DESC)->SetWindowText(
+		"$name - name of the message\r\n"
+		"$filename - name of the message file\r\n"
+		"$message - text of the message\r\n"
+		"$persona - persona of the sender\r\n"
+		"$sender - name of the sender\r\n"
+		"$note - message notes\r\n\r\n"
+		"Note that $persona and $sender will only appear for the Message section."
+	);
+
 	// load saved data for file names
 	m_abbrev_briefing = _T(Voice_abbrev_briefing);
 	m_abbrev_campaign = _T(Voice_abbrev_campaign);
@@ -436,6 +447,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 			entry.Replace("$name", "<no name specified>");
+			entry.Replace("$note", "<no note specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -456,6 +468,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 			entry.Replace("$name", "<no name specified>");
+			entry.Replace("$note", "<no note specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -476,6 +489,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 			entry.Replace("$name", "<no name specified>");
+			entry.Replace("$note", "<no note specified>");
 	
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -527,6 +541,8 @@ void VoiceActingManager::export_one_message(const MMessage *message)
 
 	// replace message
 	entry.Replace("$message", message->message);
+
+	entry.Replace("$note", message->note.c_str());
 
 	// determine and replace persona
 	if (message->persona_index >= 0)

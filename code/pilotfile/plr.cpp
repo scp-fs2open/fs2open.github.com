@@ -420,7 +420,7 @@ void pilotfile::plr_read_multiplayer()
 
 	if (Multi_options_g.protocol == NET_VMT) {
 		Multi_options_g.protocol = NET_TCP;
-		Multi_options_g.pxo = 1;
+		Multi_options_g.pxo = true;
 	} else if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
@@ -448,7 +448,7 @@ void pilotfile::plr_write_multiplayer()
 	handler->writeInt("obj_update_level", p->m_local_options.obj_update_level);
 
 	// netgame protocol
-	if (Multi_options_g.pxo == 1) {
+	if (Multi_options_g.pxo) {
 		const int protocol = NET_VMT;
 		handler->writeInt("protocol", protocol);
 	} else {
@@ -1153,8 +1153,6 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	pilot_set_short_callsign(p, SHORT_CALLSIGN_PIXEL_W);
 
 	player_set_squad_bitmap(p, p->m_squad_filename, true);
-
-	hud_squadmsg_save_keys();
 
 	// Flags to signal the main UI the state of the loaded player file
 	// Do these here after player_read_flags() so they don't get trashed!

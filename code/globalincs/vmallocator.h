@@ -26,6 +26,16 @@ bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
 }
 
 template <typename T>
+inline bool SCP_vector_inbounds(SCP_vector<T>& vector, int idx) {
+	return ((idx >= 0) && (idx < static_cast<int>(vector.size())));
+}
+
+template <typename T>
+inline bool SCP_vector_inbounds(SCP_vector<T>& vector, size_t idx) {
+	return idx < vector.size();
+}
+
+template <typename T>
 using SCP_list = std::list<T, std::allocator<T>>;
 
 

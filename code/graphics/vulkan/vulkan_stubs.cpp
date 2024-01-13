@@ -15,6 +15,8 @@ gr_buffer_handle stub_create_buffer(BufferType, BufferUsageHint)
 	return gr_buffer_handle::invalid();
 }
 
+void stub_setup_frame() {}
+
 void stub_delete_buffer(gr_buffer_handle /*handle*/) {}
 
 int stub_preload(int /*bitmap_num*/, int /*is_aabitmap*/) { return 0; }
@@ -232,11 +234,24 @@ std::uint64_t stub_get_query_value(int /*obj*/) { return 0; }
 
 void stub_delete_query_object(int /*obj*/) {}
 
+SCP_vector<const char*> stub_openxr_get_extensions() { return {}; }
+
+bool stub_openxr_test_capabilities() { return false; }
+
+bool stub_openxr_create_session() { return false; }
+
+int64_t stub_openxr_get_swapchain_format(const SCP_vector<int64_t>& /*allowed*/) { return 0; }
+
+bool stub_openxr_acquire_swapchain_buffers() { return false; }
+
+bool stub_openxr_flip() { return false; }
+
 } // namespace
 
 void init_stub_pointers()
 {
 	// function pointers...
+	gr_screen.gf_setup_frame = stub_setup_frame;
 	gr_screen.gf_set_clip = stub_set_clip;
 	gr_screen.gf_reset_clip = stub_reset_clip;
 
@@ -353,6 +368,13 @@ void init_stub_pointers()
 	gr_screen.gf_sync_delete = [](gr_sync /*sync*/) {};
 
 	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
+
+	gr_screen.gf_openxr_get_extensions = stub_openxr_get_extensions;
+	gr_screen.gf_openxr_test_capabilities = stub_openxr_test_capabilities;
+	gr_screen.gf_openxr_create_session = stub_openxr_create_session;
+	gr_screen.gf_openxr_get_swapchain_format = stub_openxr_get_swapchain_format;
+	gr_screen.gf_openxr_acquire_swapchain_buffers = stub_openxr_acquire_swapchain_buffers;
+	gr_screen.gf_openxr_flip = stub_openxr_flip;
 }
 
 } // namespace vulkan

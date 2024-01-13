@@ -774,18 +774,19 @@ void mission_goal_status_change( int goal_num, int new_status)
 }
 
 // return value:
-//   EVENT_UNBORN    = event has yet to be available (not yet evaluatable)
-//   EVENT_CURRENT   = current (evaluatable), but not yet true
-//   EVENT_SATISFIED = event has occured (true)
-//   EVENT_FAILED    = event failed, can't possibly become true anymore
-int mission_get_event_status(int event)
+//   UNBORN    = event has yet to be available (not yet evaluatable)
+//   CURRENT   = current (evaluatable), but not yet true
+//   SATISFIED = event has occured (true)
+//   FAILED    = event failed, can't possibly become true anymore
+EventStatus mission_get_event_status(int event)
 {
 	// check for directive special events first.  We will always return from this part of the if statement
 	if ( Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL ) {
+		Assertion(Mission_events[event].flags & MEF_CURRENT, "An event should have MEF_CURRENT set if it also has MEF_DIRECTIVE_SPECIAL set");
 
 		// if this event is temporarily true, return as such
 		if ( Mission_events[event].flags & MEF_DIRECTIVE_TEMP_TRUE ){
-			return EVENT_SATISFIED;
+			return EventStatus::SATISFIED;
 		}
 
 		// if the timestamp has elapsed, we can "mark" this directive as true although it's really not.
@@ -794,24 +795,24 @@ int mission_get_event_status(int event)
 			Mission_events[event].flags |= MEF_DIRECTIVE_TEMP_TRUE;
 		}
 
-		return EVENT_CURRENT;
+		return EventStatus::CURRENT;
 	} else if (Mission_events[event].flags & MEF_CURRENT) {
 		if (!Mission_events[event].born_on_date.isValid()) {
 			Mission_events[event].born_on_date = _timestamp();
 		}
 
 		if (Mission_events[event].result) {
-			return EVENT_SATISFIED;
+			return EventStatus::SATISFIED;
 		}
 
-		if (Mission_events[event].formula < 0) {
-			return EVENT_FAILED;
+		if (Mission_events[event].flags & MEF_EVENT_IS_DONE) {
+			return EventStatus::FAILED;
 		}
 
-		return EVENT_CURRENT;
+		return EventStatus::CURRENT;
 	}
 
-	return EVENT_UNBORN;
+	return EventStatus::UNBORN;
 }
 
 void mission_event_set_directive_special(int event)
@@ -820,6 +821,8 @@ void mission_event_set_directive_special(int event)
 	if((event < 0) || (event >= (int)Mission_events.size())){
 		return;
 	}
+
+	Assertion(Mission_events[event].flags & MEF_CURRENT, "An event should have MEF_CURRENT set before it has MEF_DIRECTIVE_SPECIAL set");
 
 	Mission_events[event].flags |= MEF_DIRECTIVE_SPECIAL;
 
@@ -854,7 +857,6 @@ void mission_event_set_completion_sound_timestamp()
 void mission_process_event( int event )
 {
 	int store_flags = Mission_events[event].flags;
-	int store_formula = Mission_events[event].formula;
 	int store_result = Mission_events[event].result;
 	int store_count = Mission_events[event].count;
 
@@ -866,6 +868,11 @@ void mission_process_event( int event )
 	Event_index = event;
 	sindex = Mission_events[event].formula;
 	result = Mission_events[event].result;
+
+	// In retail, known-false or no-longer-repeating events would set the formula to -1, so sindex would be -1 for those events.
+	// However, the formula would be checked before this function is called, so that situation shouldn't happen here.  Furthermore,
+	// we now use a flag rather than setting the formula.  We should check all that now.
+	Assertion((sindex >= 0) && !(Mission_events[event].flags & MEF_EVENT_IS_DONE), "mission_process_event was called for an event that should not be processed!");
 
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
@@ -937,7 +944,7 @@ void mission_process_event( int event )
 	}
 
 	if (sindex >= 0) {
-		Sexp_useful_number = 1;
+		Assume_event_is_current = true;
 		if (Snapshot_all_events || Mission_events[event].mission_log_flags != 0) {
 			Log_event = true;
 			
@@ -950,9 +957,12 @@ void mission_process_event( int event )
 
 		// if the directive count is a special value, deal with that first.  Mark the event as a special
 		// event, and unmark it when the directive is true again.
-		if ( (Directive_count == DIRECTIVE_WING_ZERO) && !(Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL) ) {			
-			// make it special - which basically just means that its true until the next wave arrives
-			mission_event_set_directive_special(event);
+		if ( (Directive_count == DIRECTIVE_WING_ZERO) && !(Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL) ) {
+			// only mark it special if it's actually current
+			if (Mission_events[event].flags & MEF_CURRENT) {
+				// make it special - which basically just means that its true until the next wave arrives
+				mission_event_set_directive_special(event);
+			}
 
 			Directive_count = 0;
 		} else if ( (Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL) && Directive_count > 1 ) {			
@@ -964,7 +974,7 @@ void mission_process_event( int event )
 			Mission_events[event].count = Directive_count;
 		}
 
-		if (Sexp_useful_number){
+		if (Assume_event_is_current){
 			Mission_events[event].flags |= MEF_CURRENT;
 		}
 
@@ -985,10 +995,11 @@ void mission_process_event( int event )
 		Mission_events[event].satisfied_time = _timestamp();
 		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
 		Mission_events[event].repeat_count = 0;
-		Mission_events[event].formula = -1;
+		Mission_events[event].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 
-		// Also send an update, if necessary.
-		if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (sindex != Mission_events[event].formula) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+		// Also send an update.
+		// (This would always fire on MULTIPLAYER_MASTER on retail because sindex and the formula were guaranteed to be different)
+		if (MULTIPLAYER_MASTER) {
 			send_event_update_packet(event);
 		}
 		return;
@@ -1021,7 +1032,7 @@ void mission_process_event( int event )
 		if ( Mission_events[event].repeat_count == 0 ) {
 			Mission_events[event].timestamp = _timestamp();
 			Mission_events[event].flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
-			Mission_events[event].formula = -1;
+			Mission_events[event].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 
 			if(Game_mode & GM_MULTIPLAYER){
 				// multiplayer missions (scoring is scaled in the multi_team_maybe_add_score() function)
@@ -1046,7 +1057,7 @@ void mission_process_event( int event )
 	}
 
 	// see if anything has changed	
-	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
 		send_event_update_packet(event);
 	}
 }
@@ -1069,7 +1080,7 @@ void mission_eval_goals()
 	// before checking whether or not we should evaluate goals, we should run through the events and
 	// process any whose timestamp is valid and has expired.  This would catch repeating events only
 	for (i=0; i<(int)Mission_events.size(); i++) {
-		if (Mission_events[i].formula != -1) {
+		if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE)) {
 			if ( !Mission_events[i].timestamp.isValid() || !timestamp_elapsed(Mission_events[i].timestamp) ){
 				continue;
 			}
@@ -1106,7 +1117,7 @@ void mission_eval_goals()
 
 	// now evaluate any mission events
 	for (i=0; i<(int)Mission_events.size(); i++) {
-		if ( Mission_events[i].formula != -1 ) {
+		if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE)) {
 			// only evaluate this event if the timestamp is not valid.  We do this since
 			// we will evaluate repeatable events at the top of the file so we can get
 			// the exact interval that the designer asked for.
@@ -1256,9 +1267,10 @@ void mission_goal_fail_incomplete()
 
 	// now for the events.  Must set the formula to -1 and the result to 0 to be a failed
 	// event.
+	// Goober5000 - we no longer set the formula to -1; instead we use a flag
 	for ( i = 0; i < (int)Mission_events.size(); i++ ) {
-		if ( Mission_events[i].formula != -1 ) {
-			Mission_events[i].formula = -1;
+		if (!(Mission_events[i].flags & MEF_EVENT_IS_DONE)) {
+			Mission_events[i].flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 			Mission_events[i].result = 0;
 		}
 	}
@@ -1268,21 +1280,24 @@ void mission_goal_fail_incomplete()
 // to skip past training misisons
 void mission_goal_mark_objectives_complete()
 {
-	int i;
-
-	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
-		Mission_goals[i].satisfied = GOAL_COMPLETE;
+	for (auto &g: Mission_goals) {
+		g.satisfied = GOAL_COMPLETE;
 	}
 }
 
 // small function used to mark all events as completed.  Used in the skipping of missions.
 void mission_goal_mark_events_complete()
 {
-	int i;
+	for (auto &e: Mission_events) {
+		// Handle on-mission-skip SEXPs if we have any.  We could search the entire
+		// SEXP tree, but requiring the operator to be at the root limits potential
+		// unexpected side-effects.
+		if ((e.formula >= 0) && (get_operator_const(e.formula) == OP_ON_MISSION_SKIP)) {
+			eval_sexp(e.formula);
+		}
 
-	for (i = 0; i < (int)Mission_events.size(); i++ ) {
-		Mission_events[i].result = 1;
-		Mission_events[i].formula = -1;
+		e.result = 1;
+		e.flags |= MEF_EVENT_IS_DONE;	// in lieu of setting formula to -1
 	}
 }
 

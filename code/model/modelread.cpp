@@ -80,6 +80,9 @@ static bool ss_warning_shown_mismatch = false;	// ditto but for a different warn
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
 
+// This begins the FS2 version history
+#define PM_FIRST_FREESPACE2_VERSION 2100
+
 // Anything greater than or equal to PM_COMPATIBLE_VERSION and 
 // whose major version is less than or equal to this is considered
 // compatible.  
@@ -1313,7 +1316,7 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 	return swap_was_necessary;
 }
 
-void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
+void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx)
 {
 	box[0].xyz.x = big_mn->xyz.x; box[0].xyz.y = big_mn->xyz.y; box[0].xyz.z = big_mn->xyz.z;
 	box[1].xyz.x = big_mx->xyz.x; box[1].xyz.y = big_mn->xyz.y; box[1].xyz.z = big_mn->xyz.z;
@@ -1668,22 +1671,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 		switch (id) {
 
+			case ID_HDR2:
 			case ID_OHDR: {		//Object header
 				//vector v;
 
 				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
-#if defined( FREESPACE1_FORMAT )
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-#elif defined( FREESPACE2_FORMAT )
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-#endif
+				if (id == ID_OHDR) {
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+				}
+				if (id == ID_HDR2) {
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+				}
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
@@ -1818,6 +1823,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				break;
 			}
 			
+			case ID_OBJ2:
 			case ID_SOBJ: {		//Subobject header
 				int n, parent;
 				char *p, props[MAX_PROP_LEN];
@@ -1830,9 +1836,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				Assert(n < pm->n_models );
 				auto sm = &pm->submodel[n];
 
-#if defined( FREESPACE2_FORMAT )	
-				sm->rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_OBJ2) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
 				parent = cfread_int(fp);
 				sm->parent = parent;
@@ -1855,9 +1861,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 //			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, sm->offset.xyz.x, sm->offset.xyz.y, sm->offset.xyz.z ));
 	
-#if defined ( FREESPACE1_FORMAT )
-				sm->rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_SOBJ) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
 //				sm->tree_offset = cfread_int(fp);	//offset
 //				sm->data_offset = cfread_int(fp);	//offset
@@ -2941,7 +2947,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			if (path_num < 0) {
 				continue;
 			} else if (path_num >= pm->n_paths) {
-				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d.", pm->filename, j, dock->name, path_num, pm->n_paths);
+				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d (the index should be between 0 and %d).", pm->filename, j, dock->name, path_num, pm->n_paths, pm->n_paths - 1);
 				dock->splines[j] = -1;
 				continue;
 			}
@@ -2954,7 +2960,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			}
 			// for paths that have a parent, it had better match
 			if (path->parent_submodel != dock->parent_submodel) {
-				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!", pm->filename, dock->name);
+				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!  This could be due to an incorrect dockpoint path, an incorrect dockpoint parent submodel, or an incorrect path parent submodel.  Be sure to check all three.", pm->filename, dock->name);
 				continue;
 			}
 		}
@@ -2995,7 +3001,7 @@ modelread_status read_model_file(polymodel* pm, const char* filename, int ferror
 	modelread_status status;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, depth, ferror, deferredTasks)) {
+	if (read_virtual_model_file(pm, filename, std::move(depth), ferror, deferredTasks)) {
 		status = modelread_status::SUCCESS_VIRTUAL;
 	}
 	else {
@@ -4369,10 +4375,10 @@ void submodel_translate(bsp_info *sm, submodel_instance *smi)
 	submodel_canonicalize_translation(sm, smi);
 }
 
-// Tries to move joints so that the turret points to the point dst.
+// Tries to move joints so that the turret points to the point dst.  If dst is nullptr, the turret's joints are reset.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst)
 {
 	model_subsystem *turret = ss->system_info;
 
@@ -4395,7 +4401,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	// Find the heading and pitch that the gun needs to turn to
 	float desired_base_angle, desired_gun_angle;
 
-	if (!reset) {
+	if (dst) {
 		vec3d world_axis, world_pos, planar_dst, dir, rotated_vec;
 		matrix save_base_orient;
 
@@ -4470,10 +4476,10 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	float step_size = turret->turret_turning_rate * calc_time;
 	float base_delta, gun_delta;
 
-	if (reset)
-		step_size /= 3.0f;
-	else
+	if (dst)
 		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
+	else
+		step_size /= 3.0f;
 
 	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, turret->turret_base_fov > -1.0f);
 	gun_delta = vm_interp_angle(&gun_smi->cur_angle, desired_gun_angle, step_size);
@@ -4757,6 +4763,51 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 	}
 
 	*out_dir = resultDir;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
+}
+
+void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorient, const vec3d* submodel_pnt, const matrix* submodel_orient, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+	Assert(pm->id == pmi->model_num);
+
+	constexpr int preallocatedStackDepth = 5;
+	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
+
+	int mn = submodel_num;
+
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_orient;
+		std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_offset;
+		std::get<2>(submodelStack[stackCounter++]) = &pm->submodel[mn].offset;
+		mn = pm->submodel[mn].parent;
+	}
+
+	if (objorient != nullptr && objpos != nullptr) {
+		std::get<0>(submodelStack[stackCounter]) = objorient;
+		std::get<1>(submodelStack[stackCounter]) = &vmd_zero_vector;
+		std::get<2>(submodelStack[stackCounter++]) = objpos;
+	}
+	stackCounter--;
+
+	vec3d resultPnt = *submodel_pnt;
+	matrix resultMat = *submodel_orient;
+
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
+
+		vm_vec_sub2(&resultPnt, std::get<2>(transform));
+		vm_vec_sub2(&resultPnt, std::get<1>(transform));
+		vm_vec_rotate(&resultPnt, &resultPnt, std::get<0>(transform));
+		resultMat = *std::get<0>(transform) * resultMat;
+	}
+
+	*outpnt = resultPnt;
+	*outorient = resultMat;
 
 	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;

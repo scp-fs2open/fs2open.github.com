@@ -66,6 +66,10 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	m_ignore_orders_checklistbox.SubclassDlgItem(IDC_IGNORE_ORDERS_LIST, this);
 	m_ignore_orders_checklistbox.SetCheckStyle(BS_AUTO3STATE);
 
+	// and because MFC, fix the overlapping checkboxes problem
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_ignore_orders_checklistbox.SetFont(GetFont());
+
 	// change the labels on the check boxes to reflect the set of default
 	// orders for this ship
 	if ( m_ship >= 0 ) {

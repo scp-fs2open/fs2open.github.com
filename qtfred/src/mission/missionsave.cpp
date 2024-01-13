@@ -10,6 +10,7 @@
 #include <freespace.h>
 
 #include <ai/aigoals.h>
+#include <ai/ailua.h>
 #include <asteroid/asteroid.h>
 #include <cfile/cfile.h>
 #include <hud/hudsquadmsg.h>
@@ -680,8 +681,16 @@ void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 					str = "ai-disable-ship";
 					break;
 
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
+					str = "ai-disable-ship-tactical";
+					break;
+
 				case AI_GOAL_DISARM_SHIP:
 					str = "ai-disarm-ship";
+					break;
+
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
+					str = "ai-disarm-ship-tactical";
 					break;
 
 				case AI_GOAL_IGNORE:
@@ -2257,6 +2266,22 @@ int CFred_mission_save::save_messages()
 			fout(" %s", Messages[i].wave_info.name);
 		}
 
+		if (Messages[i].note != "") {
+			if (optional_string_fred("+Note:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Note:");
+
+			auto copy = Messages[i].note;
+			lcl_fred_replace_stuff(copy);
+			fout(" %s", copy.c_str());
+
+			if (optional_string_fred("$end_multi_text", "$Name:"))
+				parse_comments();
+			else
+				fout_version("\n$end_multi_text");
+		}
+
 		fso_comment_pop();
 	}
 
@@ -3010,6 +3035,17 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 	// Migrate the version!
 	The_mission.required_fso_version = MISSION_VERSION;
 
+	// Additional incremental version update for some features
+	auto newer_version = gameversion::version(23, 3);
+	if (MISSION_VERSION >= newer_version)
+	{
+		Warning(LOCATION, "Notify an SCP coder: now that the required mission version is at least 23.3, the incremental version code can be removed");
+	}
+	else if (check_for_23_3_data())
+	{
+		The_mission.required_fso_version = newer_version;
+	}
+
 	reset_parse();
 	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
@@ -3066,6 +3102,8 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 		err = -15;
 	} else if (save_music()) {
 		err = -16;
+	} else if (save_custom_data()) {
+		err = -17;
 	} else {
 		required_string_fred("#End");
 		parse_comments(2);
@@ -3181,6 +3219,65 @@ int CFred_mission_save::save_music()
 	return err;
 }
 
+int CFred_mission_save::save_custom_data()
+{
+	if (save_format != MissionFormat::RETAIL && !The_mission.custom_data.empty()) {
+		if (optional_string_fred("#Custom Data", "#End")) {
+			parse_comments(2);
+		} else {
+			fout("\n\n#Custom Data");
+		}
+
+		if (The_mission.custom_data.size() > 0) {
+			if (optional_string_fred("$begin_data_map")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n$begin_data_map");
+			}
+
+			for (const auto& pair : The_mission.custom_data) {
+				fout("\n+Val: %s %s", pair.first.c_str(), pair.second.c_str());
+			}
+
+			if (optional_string_fred("$end_data_map")) {
+				parse_comments();
+			} else {
+				fout("\n$end_data_map");
+			}
+		}
+
+		if (The_mission.custom_strings.size() > 0) {
+			required_string_fred("$begin_custom_strings");
+			parse_comments(2);
+
+			for (const auto& cs : The_mission.custom_strings) {
+				if (optional_string_fred("$Name:")) {
+					parse_comments(2);
+				} else {
+					fout("\n$Note:");
+				}
+
+				fout("%s", cs.name.c_str());
+				parse_comments(2);
+				fout("\n+Value: %s", cs.value.c_str());
+				parse_comments(2);
+
+				auto copy = cs.text;
+				lcl_fred_replace_stuff(copy);
+				fout("+String: %s", copy.c_str());
+
+				if (optional_string_fred("$end_multi_text", "$Name:"))
+					parse_comments();
+				else
+					fout_version("\n$end_multi_text");
+			}
+			required_string_fred("$end_custom_strings");
+		}
+	}
+
+	return err;
+}
+
 int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 {
 	if (save_format == MissionFormat::RETAIL)
@@ -3269,6 +3366,11 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 	{
 		if (strlen(shipp_params->anim) > 0)
 			fout("\n%s animation: %s", prefix, shipp_params->anim);
+	}
+
+	if (shipp_params->supercap_warp_physics != sip_params->supercap_warp_physics)
+	{
+		fout("\n$Supercap warp%s physics: %s", direction == WarpDirection::WARP_IN ? "in" : "out", shipp_params->supercap_warp_physics ? "YES" : "NO");
 	}
 
 	if (direction == WarpDirection::WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)
@@ -4142,11 +4244,50 @@ int CFred_mission_save::save_players()
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Player_starts);
 
+	SCP_vector<SCP_string> e_list = ai_lua_get_general_orders(true);
+
+	if (save_format != MissionFormat::RETAIL && (e_list.size() > 0)) {
+		if (optional_string_fred("+General Orders Enabled:", "#Players"))
+			parse_comments();
+		else
+			fout("\n+General Orders Enabled:");
+
+		fout(" (");
+
+		for (const SCP_string& order : e_list) {
+			fout(" \"%s\"", order.c_str());
+		}
+		fout(" )\n");
+	}
+
+	SCP_vector<SCP_string> v_list = ai_lua_get_general_orders(false, true);
+
+	if (save_format != MissionFormat::RETAIL && (v_list.size() > 0)) {
+		if (optional_string_fred("+General Orders Valid:", "#Players"))
+			parse_comments();
+		else
+			fout("\n+General Orders Valid:");
+
+		fout(" (");
+
+		for (const SCP_string& order : v_list) {
+			fout(" \"%s\"", order.c_str());
+		}
+		fout(" )\n");
+	}
+
 	for (i = 0; i < Num_teams; i++) {
 		required_string_fred("$Starting Shipname:");
 		parse_comments();
 		Assert(Player_start_shipnum >= 0);
 		fout(" %s", Ships[Player_start_shipnum].ship_name);
+
+		if (save_format != MissionFormat::RETAIL) {
+			if (Team_data[i].do_not_validate) {
+				required_string_fred("+Do Not Validate");
+				parse_comments();
+			}
+		}
 
 		required_string_fred("$Ship Choices:");
 		parse_comments();
@@ -4246,9 +4387,11 @@ int CFred_mission_save::save_players()
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (used_pool[j] > 0) {
-				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+		if (!Team_data[i].do_not_validate) {
+			for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
+				if (used_pool[j] > 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+				}
 			}
 		}
 
@@ -4763,7 +4906,7 @@ void CFred_mission_save::save_container_options(const sexp_container &container)
 	fout("\n");
 }
 
-int CFred_mission_save::save_vector(vec3d& v)
+int CFred_mission_save::save_vector(const vec3d& v)
 {
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
 	return 0;
@@ -4827,7 +4970,7 @@ int CFred_mission_save::save_waypoints()
 					fout("\n+Alphacolor:");
 				}
 
-				color jn_color = jnp->GetColor();
+				const auto &jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 
@@ -4853,18 +4996,18 @@ int CFred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	bool first_wpt_list = true;
+	for (const auto &ii: Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");
 		required_string_fred("$Name:");
-		parse_comments((ii == Waypoint_lists.begin()) ? 1 : 2);
-		fout(" %s", ii->get_name());
+		parse_comments(first_wpt_list ? 1 : 2);
+		fout(" %s", ii.get_name());
 
 		required_string_fred("$List:");
 		parse_comments();
-		fout(" (\t\t;! %d points in list\n", ii->get_waypoints().size());
+		fout(" (\t\t;! %d points in list\n", ii.get_waypoints().size());
 
-		save_waypoint_list(&(*ii));
+		save_waypoint_list(&ii);
 		fout(")");
 
 		fso_comment_pop();
@@ -4875,13 +5018,12 @@ int CFred_mission_save::save_waypoints()
 	return err;
 }
 
-int CFred_mission_save::save_waypoint_list(waypoint_list* wp_list)
+int CFred_mission_save::save_waypoint_list(const waypoint_list* wp_list)
 {
 	Assert(wp_list != NULL);
-	SCP_vector<waypoint>::iterator ii;
 
-	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii) {
-		vec3d* pos = ii->get_pos();
+	for (const auto &ii: wp_list->get_waypoints()) {
+		auto pos = ii.get_pos();
 		fout("\t( %f, %f, %f )\n", pos->xyz.x, pos->xyz.y, pos->xyz.z);
 	}
 

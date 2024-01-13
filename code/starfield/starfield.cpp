@@ -50,7 +50,6 @@ typedef struct {
 	float size;
 } motion_debris_instance;
 
-const int MAX_STARS = 2000;
 const float MAX_DIST_RANGE = 80.0f;
 const float MIN_DIST_RANGE = 14.0f;
 const float BASE_SIZE = 0.04f;
@@ -137,18 +136,12 @@ int last_stars_filled = 0;
 color star_colors[8];
 color star_aacolors[8];
 
-typedef struct star {
-	vec3d pos;
-	vec3d last_star_pos;
-	color col;
-} star;
-
 typedef struct vDist {
 	int x;
 	int y;
 } vDist;
 
-star Stars[MAX_STARS];
+std::unique_ptr<star[]> Stars = make_unique<star[]>(MAX_STARS);
 
 motion_debris_instance Motion_debris[MAX_MOTION_DEBRIS];
 
@@ -165,19 +158,18 @@ int Nmodel_bitmap = -1;						// model texture
 
 bool Dynamic_environment = false;
 
-bool Subspace_sexp_used = false;
-
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
-auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris", "Motion Debris",
-                                                       "Controls whether motion debris are shown or not")
-                              .category("Graphics")
-                              .bind_to_once(&Motion_debris_enabled)
-                              .default_val(true)
-                              .level(options::ExpertLevel::Advanced)
-                              .importance(67)
-                              .finish();
+auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
+                     std::pair<const char*, int>{"Motion Debris", 1713},
+                     std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
+                     .category("Graphics")
+                     .bind_to_once(&Motion_debris_enabled)
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(67)
+                     .finish();
 
 static int Default_env_map = -1;
 static int Mission_env_map = -1;
@@ -886,8 +878,6 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	// also clear the preload indexes
 	Preload_background_indexes.clear();
-
-	Subspace_sexp_used = false;
 
 	Dynamic_environment = false;
 	Motion_debris_override = false;
@@ -2086,7 +2076,7 @@ void stars_page_in()
 
 	// Initialize the subspace stuff
 
-	if ( Game_subspace_effect || Subspace_sexp_used ) {
+	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
 		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
 		Assert(Subspace_model_inner >= 0);
 
@@ -3031,7 +3021,7 @@ void stars_pack_backgrounds()
 		stars_add_blank_background(true);
 }
 
-static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
+static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, fov_t new_zoom)
 {
 	bm_set_render_target(gr_screen.envmap_render_target, i);
 
@@ -3039,7 +3029,7 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 
 	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
 
-	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
+	gr_set_proj_matrix( new_zoom * PI_2, 1.0f, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix( &Eye_position, &Eye_matrix );
 
 	if ( Game_subspace_effect ) {
@@ -3055,8 +3045,8 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 void stars_setup_environment_mapping(camid cid) {
 	matrix new_orient = IDENTITY_MATRIX;
 
-	extern float View_zoom;
-	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
+	extern fov_t View_zoom;
+	fov_t old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 
 	if (gr_screen.mode == GR_STUB) {
 		return;

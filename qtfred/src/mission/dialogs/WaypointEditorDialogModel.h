@@ -33,6 +33,9 @@ class WaypointEditorDialogModel: public AbstractDialogModel {
 
 	void idSelected(int elementId);
 	void setNameEditText(const SCP_string& name);
+
+	inline bool query_modified() const { return modified; }	// TODO: needs handling in the waypoint dialog
+
  private:
 	bool showErrorDialog(const SCP_string& message, const SCP_string& title);
 
@@ -50,6 +53,7 @@ class WaypointEditorDialogModel: public AbstractDialogModel {
 	SCP_vector<PointListElement> _elements;
 
 	bool bypass_errors = false;
+	bool modified = false;
 };
 
 }

@@ -734,6 +734,28 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 	}
 }
 
+void generic_anim_bitmap_set(generic_anim* ga, float frametime, const generic_extras* ge)
+{
+	if ((ge != nullptr) && (ga->use_hud_color == true)) {
+		Warning(LOCATION, "Monochrome generic anims can't use extra info (yet)");
+		return;
+	}
+
+	float a = 1.0f;
+	if (ge != nullptr) {
+		a = ge->alpha;
+	}
+	if (ga->type == BM_TYPE_PNG) {
+		generic_anim_render_variable_frame_delay(ga, frametime, a);
+	}
+	else {
+		generic_anim_render_fixed_frame_delay(ga, frametime, a);
+	}
+
+	if (ga->num_frames > 0)
+		ga->previous_frame = ga->current_frame;
+}
+
 /*
  * @brief reset an animation back to the start
  *

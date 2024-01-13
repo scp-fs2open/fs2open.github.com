@@ -133,7 +133,7 @@ CJumpNode::~CJumpNode()
 /**
  * @return Name of jump node
  */
-const char *CJumpNode::GetName()
+const char *CJumpNode::GetName() const
 {
 	return m_name;
 }
@@ -141,7 +141,7 @@ const char *CJumpNode::GetName()
 /**
  * @return Display Name of jump node
  */
-const char* CJumpNode::GetDisplayName()
+const char* CJumpNode::GetDisplayName() const
 {
 	if (HasDisplayName())
 		return m_display;
@@ -152,7 +152,7 @@ const char* CJumpNode::GetDisplayName()
 /**
  * @return Handle to model
  */
-int CJumpNode::GetModelNumber()
+int CJumpNode::GetModelNumber() const
 {
 	return m_modelnum;
 }
@@ -160,7 +160,7 @@ int CJumpNode::GetModelNumber()
 /**
  * @return Index into Objects[]
  */
-int CJumpNode::GetSCPObjectNumber()
+int CJumpNode::GetSCPObjectNumber() const
 {
 	return m_objnum;
 }
@@ -168,7 +168,7 @@ int CJumpNode::GetSCPObjectNumber()
 /**
  * @return Object
  */
-object *CJumpNode::GetSCPObject()
+const object *CJumpNode::GetSCPObject() const
 {
 	Assert(m_objnum != -1);
     return &Objects[m_objnum];
@@ -177,7 +177,7 @@ object *CJumpNode::GetSCPObject()
 /**
  * @return Color of jump node when rendered
  */
-color CJumpNode::GetColor()
+const color &CJumpNode::GetColor() const
 {
 	return m_display_color;
 }
@@ -185,7 +185,7 @@ color CJumpNode::GetColor()
 /**
  * @return World position of jump node
  */
-vec3d *CJumpNode::GetPosition()
+const vec3d *CJumpNode::GetPosition() const
 {
 	return &m_pos;
 }
@@ -193,7 +193,7 @@ vec3d *CJumpNode::GetPosition()
 /*
 * @return Polymodel Instance Index
 */
-int CJumpNode::GetPolymodelInstanceNum() 
+int CJumpNode::GetPolymodelInstanceNum() const
 {
 	return m_polymodel_instance_num;
 }
@@ -272,7 +272,7 @@ void CJumpNode::SetName(const char *new_name)
 	Assert(new_name != NULL);
     
 	#ifndef NDEBUG
-	CJumpNode* check = jumpnode_get_by_name(new_name);
+	auto check = jumpnode_get_by_name(new_name);
 	Assertion((check == this || !check), "Jumpnode %s is being renamed to %s, but a jump node with that name already exists in the mission!\n", m_name, new_name);
 	#endif
 
@@ -323,8 +323,9 @@ void CJumpNode::SetVisibility(bool enabled)
 	else
 	{
 		// Untarget this node if it is already targeted
-		if ( Player_ai->target_objnum == m_objnum )
+		if ((Game_mode & GM_IN_MISSION) && Player_ai->target_objnum == m_objnum) {
 			Player_ai->target_objnum = -1;
+		}
 		m_flags|=JN_HIDE;
 	}
 }
@@ -372,7 +373,7 @@ bool CJumpNode::HasDisplayName() const
 * @param pos		World position
 * @param view_pos	Viewer's world position, can be NULL
 */
-void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
+void CJumpNode::Render(const vec3d *pos, const vec3d *view_pos) const
 {
 	model_draw_list scene;
 
@@ -393,7 +394,7 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 * @param pos		World position
 * @param view_pos	Viewer's world position, can be NULL
 */
-void CJumpNode::Render(model_draw_list* scene, vec3d *pos, vec3d *view_pos)
+void CJumpNode::Render(model_draw_list *scene, const vec3d *pos, const vec3d *view_pos) const
 {
 	Assert(pos != NULL);
 	// Assert(view_pos != NULL); - view_pos can be NULL

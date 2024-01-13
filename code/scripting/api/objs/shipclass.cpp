@@ -12,6 +12,7 @@
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
+#include "mission/missioncampaign.h"
 #include "missionui/missionweaponchoice.h"
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
@@ -674,7 +675,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
-ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
+ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This property is read-only")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
@@ -930,7 +931,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleratio
 	return ade_set_args(L, "f", Ship_info[idx].forward_accel);
 }
 
-ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
+ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward deceleration time, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -1068,6 +1069,23 @@ ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this s
 	}
 
 	return ade_set_args(L, "b", Ship_info[idx].flags[flag]);
+}
+
+ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether this ship class is allowed in loadouts in campaign mode", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Campaign.ships_allowed[idx] = new_value;
+	}
+
+	return Campaign.ships_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")
@@ -1324,7 +1342,7 @@ ADE_FUNC(renderSelectModel,
 
 ADE_FUNC(renderOverheadModel,
 	l_Shipclass,
-	"number x, number y, [number width = 467, number height = 362, number selectedSlot = -1, number selectedWeapon = -1, number hoverSlot = -1, "
+	"number x, number y, [number width = 467, number height = 362, number|table /* selectedSlot = -1 or empty table */, number selectedWeapon = -1, number hoverSlot = -1, "
 	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
 	"number bank7_x = 552, number bank7_y = 333, number style = 0]",
@@ -1345,6 +1363,7 @@ ADE_FUNC(renderOverheadModel,
 	int x2 = 467;
 	int y2 = 362;
 	int selectedSlot = -1;
+	auto weapon_table = luacpp::LuaTable::create(L);
 	int selectedWeapon = -1;
 	int hoverSlot = -1;
 
@@ -1365,43 +1384,106 @@ ADE_FUNC(renderOverheadModel,
 	int bank7_y = 333;
 	int style = 0;
 
-	if (!ade_get_args(L,
-			"oii|iiiiiiiiiiiiiiiiiiii",
-			l_Shipclass.Get(&idx),
-			&x1,
-			&y1,
-			&x2,
-			&y2,
-			&selectedSlot,
-			&selectedWeapon,
-			&hoverSlot,
-			&bank1_x,
-			&bank1_y,
-			&bank2_x,
-			&bank2_y,
-			&bank3_x,
-			&bank3_y,
-			&bank4_x,
-			&bank4_y,
-			&bank5_x,
-			&bank5_y,
-			&bank6_x,
-			&bank6_y,
-			&bank7_x,
-			&bank7_y,
-			&style))
-		return ADE_RETURN_NIL;
+	int weapon_list[MAX_SHIP_WEAPONS] = {-1, -1, -1, -1, -1, -1, -1};
+
+	if (lua_isnumber(L, 6)) {
+
+		if (!ade_get_args(L,
+				"oii|iiiiiiiiiiiiiiiiiiii",
+				l_Shipclass.Get(&idx),
+				&x1,
+				&y1,
+				&x2,
+				&y2,
+				&selectedSlot,
+				&selectedWeapon,
+				&hoverSlot,
+				&bank1_x,
+				&bank1_y,
+				&bank2_x,
+				&bank2_y,
+				&bank3_x,
+				&bank3_y,
+				&bank4_x,
+				&bank4_y,
+				&bank5_x,
+				&bank5_y,
+				&bank6_x,
+				&bank6_y,
+				&bank7_x,
+				&bank7_y,
+				&style))
+			return ADE_RETURN_NIL;
+
+		// Convert this from the Lua index
+		selectedSlot--;
+
+		if (selectedSlot < 0)
+			return ADE_RETURN_FALSE;
+
+		for (int i = 0; i < (MAX_SHIP_WEAPONS); i++) {
+			weapon_list[i] = Wss_slots[selectedSlot].wep[i];
+		}
+	} else {
+		if (!ade_get_args(L,
+				"oii|iitiiiiiiiiiiiiiiiii",
+				l_Shipclass.Get(&idx),
+				&x1,
+				&y1,
+				&x2,
+				&y2,
+				&weapon_table,
+				&selectedWeapon,
+				&hoverSlot,
+				&bank1_x,
+				&bank1_y,
+				&bank2_x,
+				&bank2_y,
+				&bank3_x,
+				&bank3_y,
+				&bank4_x,
+				&bank4_y,
+				&bank5_x,
+				&bank5_y,
+				&bank6_x,
+				&bank6_y,
+				&bank7_x,
+				&bank7_y,
+				&style))
+			return ADE_RETURN_NIL;
+
+		int count = 0;
+		if (weapon_table.isValid()) {
+			for (const auto& item : weapon_table) {
+				if (item.second.is(luacpp::ValueType::NUMBER)) {
+					// This'll lua-error internally if it's not fed only numbers. Additionally, catch the lua exception
+					// and then carry on
+					try {
+						int wep = item.second.getValue<int>();
+						wep--; // convert from the lua index
+						weapon_list[count++] = wep;
+					} catch (const luacpp::LuaException& /*e*/) {
+						// We were likely fed a userdata that was not a number.
+						// Since we can't actually tell whether that's the case before we try to get the value, and the
+						// attempt to get the value is printing a LuaError itself, just eat the exception here and
+						// return
+						return ADE_RETURN_FALSE;
+					}
+				} else {
+					// This happens on a non-userdata value, i.e. a string
+					LuaError(L, "Weapon index table contained non-number values! Aborting...");
+					return ADE_RETURN_FALSE;
+				}
+			}
+		}
+	}
 
 	if (idx < 0 || idx >= ship_info_size())
 		return ade_set_args(L, "b", false);
 
 	//Convert these from Lua indecies
-	selectedSlot--;
 	selectedWeapon--;
 	hoverSlot--;
-
-	if (selectedSlot < 0)
-		return ade_set_args(L, "b", false);
 
 	if ((style < 0) || (style > 1))
 		LuaError(L, "Overhead style can only be 0 or 1!");
@@ -1422,7 +1504,7 @@ ADE_FUNC(renderOverheadModel,
 		idx,
 		&ShipRot,
 		flFrametime,
-		selectedSlot,
+		weapon_list,
 		selectedWeapon,
 		hoverSlot,
 		x1,

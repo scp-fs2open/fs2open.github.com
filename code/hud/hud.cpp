@@ -15,6 +15,7 @@
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/openxr.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
@@ -71,7 +72,7 @@ SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 #define HUD_NEW_ALPHA_BRIGHT_HI			255
 
 // Externals not related to the HUD code itself
-extern float View_zoom;
+extern fov_t View_zoom;
 
 // globals that will control the color of the HUD gauges
 int HUD_color_red = 0;
@@ -90,10 +91,6 @@ color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with differe
 color HUD_color_debug;										// grey debug text shown on HUD
 
 static sound_handle Player_engine_snd_loop = sound_handle::invalid();
-
-// HUD render frame offsets
-float HUD_offset_x = 0.0f;
-float HUD_offset_y = 0.0f;
 
 // the offset of the player's view vector and the ship forward vector in pixels (Swifty)
 int HUD_nose_x;
@@ -1033,8 +1030,8 @@ void HudGauge::renderCircle(int x, int y, int diameter, bool filled)
 
 void HudGauge::setClip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
+	int hx = 0;
+	int hy = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
@@ -1051,17 +1048,22 @@ void HudGauge::setClip(int x, int y, int w, int h)
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		if ( reticle_follow ) {
+		if (reticle_follow) {
 			hx += HUD_nose_x;
 			hy += HUD_nose_y;
+
+			gr_resize_screen_pos(&hx, &hy);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&hx, &hy);
+		}
+		else {
+			gr_set_screen_scale(base_w, base_h);
 		}
 
-		gr_resize_screen_pos(&hx, &hy);
-
-		gr_set_screen_scale(base_w, base_h);
+		x += hx;
+		y += hy;
 		gr_resize_screen_pos(&x, &y, &w, &h);
-
-		gr_set_clip(hx+x, hy+y, w, h, GR_RESIZE_NONE);
+		gr_set_clip(x, y, w, h, GR_RESIZE_NONE);
 	}
 
 	gr_reset_screen_scale();
@@ -1085,9 +1087,6 @@ void HudGauge::resetClip()
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
-
 		gr_resize_screen_pos(&hx, &hy);
 		gr_set_screen_scale(base_w, base_h);
 
@@ -1180,9 +1179,9 @@ bool HudGauge::canRender()
 	if (render_for_cockpit_toggle > 0) {
 		if ((Viewer_mode & VM_CHASE) && (render_for_cockpit_toggle == 2)) {
 			return true;
-		} else if (cockpitActive && (render_for_cockpit_toggle == 2)) {
+		} else if (Cockpit_active && (render_for_cockpit_toggle == 2)) {
 			return false;
-		} else if (!cockpitActive && (render_for_cockpit_toggle == 1)) {
+		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
 			return false;
 		}
 	}
@@ -1698,7 +1697,7 @@ void hud_render_preprocess(float frametime)
 
 	if ( hud_disabled() ) {
 		// if the hud is disabled, we still need to make sure that the indicators are properly handled
-		hud_do_lock_indicators(flFrametime);
+		hud_do_lock_indicators(frametime);
 		return;
 	}
 
@@ -1778,8 +1777,8 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 	int minutes=0;
 	int seconds=0;
 	
-	mission_time = f2fl(Missiontime);  // convert to seconds
-
+	mission_time = f2fl(Missiontime) + (float)The_mission.HUD_timer_padding;  // convert to seconds
+	
 	minutes=(int)(mission_time/60);
 	seconds=(int)mission_time%60;
 
@@ -1824,15 +1823,15 @@ void hud_maybe_display_supernova()
 /**
  * @brief Undertakes main HUD render. 
  */
-void hud_render_all()
+void hud_render_all(float frametime)
 {
 	int i;
 
-	hud_render_gauges();
+	hud_render_gauges(-1, frametime);
 
 	// start rendering cockpit dependent gauges if possible
 	for ( i = 0; i < (int)Player_displays.size(); ++i ) {
-		hud_render_gauges(i);
+		hud_render_gauges(i, frametime);
 	}
 
 	hud_clear_msg_buffer();
@@ -1841,7 +1840,7 @@ void hud_render_all()
 	font::set_font(font::FONT1);
 }
 
-void hud_render_gauges(int cockpit_display_num)
+void hud_render_gauges(int cockpit_display_num, float frametime)
 {
 	size_t j, num_gauges;
 	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
@@ -1879,7 +1878,7 @@ void hud_render_gauges(int cockpit_display_num)
 				sip->hud_gauges[j]->preprocess();
 			}
 
-			sip->hud_gauges[j]->onFrame(flFrametime);
+			sip->hud_gauges[j]->onFrame(frametime);
 
 			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
 				continue;
@@ -1893,7 +1892,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			sip->hud_gauges[j]->resetClip();
 			sip->hud_gauges[j]->setFont();
-			sip->hud_gauges[j]->render(flFrametime);
+			sip->hud_gauges[j]->render(frametime);
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
@@ -1903,7 +1902,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			default_hud_gauges[j]->preprocess();
 
-			default_hud_gauges[j]->onFrame(flFrametime);
+			default_hud_gauges[j]->onFrame(frametime);
 
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;
@@ -1913,7 +1912,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();
-			default_hud_gauges[j]->render(flFrametime);
+			default_hud_gauges[j]->render(frametime);
 		}
 	}
 
@@ -2021,7 +2020,7 @@ void hud_damage_popup_init()
 	Damage_flash_timer =	1;
 
 	for ( i = 0; i < SUBSYSTEM_MAX; i++ ) {
-		Pl_hud_subsys_info[i].last_str = 1000.0f;
+		Pl_hud_subsys_info[i].last_str = 1.0f;
 		Pl_hud_subsys_info[i].flash_duration_timestamp = 1;
 		Pl_hud_next_flash_timestamp = 1;
 		Pl_hud_is_bright = 0;
@@ -2074,6 +2073,11 @@ void HudGaugeDamage::initBottomBgOffset(int offset)
 void HudGaugeDamage::initLineHeight(int h)
 {
 	line_h = h;
+}
+
+void HudGaugeDamage::initDisplayValue(bool value)
+{
+	always_display = value;
 }
 
 void HudGaugeDamage::initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom)
@@ -2136,7 +2140,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 	for ( pss = GET_FIRST(&Player_ship->subsys_list); pss !=END_OF_LIST(&Player_ship->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 		strength = ship_get_subsystem_strength(Player_ship, psub->type);
-		if ( strength < 1 ) {
+		if ( always_display || strength < 1 ) {
 			// display the actual health of this specific subsystem --wookieejedi
 			if (pss->max_hits > 0) {
 				// get percentage if this subsystem has hitpoints to begin with
@@ -2273,7 +2277,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 	// Show hull integrity if it's below 100% or if a subsystem is damaged
 	// The second case is just to make the display look complete
 	// The third case is there to make the gauge appear only if needed if the right option is set
-	if ( screen_integrity < 100 || !info_lines.empty() ) {
+	if ( always_display || screen_integrity < 100 || !info_lines.empty() ) {
 		DamageInfo info;
 
 		info.name = XSTR( "Hull Integrity", 220);
@@ -3746,42 +3750,8 @@ int hud_objective_notify_active()
  * @param wiggedy_wack
  * @param eye_orient 
  */
-void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
+void HUD_set_offsets()
 {
-	if ( (viewer_obj == Player_obj) && wiggedy_wack ){		
-		vec3d tmp;
-		vertex pt;
-
-		HUD_offset_x = 0.0f;
-		HUD_offset_y = 0.0f;
-
-		vm_vec_scale_add( &tmp, &Eye_position, &eye_orient->vec.fvec, 100.0f );
-		
-		(void) g3_rotate_vertex(&pt,&tmp);
-
-		g3_project_vertex(&pt);
-
-		gr_unsize_screen_posf( &pt.screen.xyw.x, &pt.screen.xyw.y );
-		HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.screen.xyw.x);
-		HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.screen.xyw.y);
-
-		if ( HUD_offset_x > 100.0f )	{
-			HUD_offset_x = 100.0f;
-		} else if ( HUD_offset_x < -100.0f )	{
-			HUD_offset_x += 100.0f;
-		}
-
-		if ( HUD_offset_y > 100.0f )	{
-			HUD_offset_y = 100.0f;
-		} else if ( HUD_offset_y < -100.0f )	{
-			HUD_offset_y += 100.0f;
-		}
-
-	} else {
-		HUD_offset_x = 0.0f;
-		HUD_offset_y = 0.0f;
-	}
-
 	if ( Viewer_mode & ( VM_TOPDOWN | VM_CHASE ) ) {
 		HUD_nose_x = 0;
 		HUD_nose_y = 0;
@@ -3808,7 +3778,7 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	*x = 0;
 	*y = 0;
 	
-	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 10000.0f);
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 1000.0f);
 	g3_rotate_vertex(&v0, &p0);
 
 	if (v0.codes == 0) {
@@ -3847,10 +3817,7 @@ void HUD_get_nose_coordinates(int *x, int *y)
  */
 void HUD_reset_clip()
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
-
-	gr_set_clip(hx, hy, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
+	gr_set_clip(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
 }
 
 /**
@@ -3858,10 +3825,7 @@ void HUD_reset_clip()
  */
 void HUD_set_clip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
-
-	gr_set_clip(hx+x, hy+y, w, h);
+	gr_set_clip(x, y, w, h);
 }
 
 /**
@@ -3871,7 +3835,8 @@ void HUD_set_clip(int x, int y, int w, int h)
 void hud_save_restore_camera_data(int save)
 {
 	static vec3d	save_view_position;
-	static float	save_view_zoom;
+	static fov_t	save_view_zoom;
+	static fov_t	save_proj_fov;
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
@@ -3879,6 +3844,7 @@ void hud_save_restore_camera_data(int save)
 	if ( save ) {
 		save_view_position		= View_position;
 		save_view_zoom			= View_zoom;
+		save_proj_fov			= Proj_fov;
 		save_view_matrix		= View_matrix;
 		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
@@ -3887,6 +3853,7 @@ void hud_save_restore_camera_data(int save)
 		// restore global view variables
 		View_position	= save_view_position;
 		View_zoom		= save_view_zoom;
+		Proj_fov		= save_proj_fov;
 		View_matrix		= save_view_matrix;
 		Eye_matrix		= save_eye_matrix;
 		Eye_position	= save_eye_position;
@@ -4137,7 +4104,7 @@ void HudGaugeSupernova::render(float  /*frametime*/)
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():
-HudGauge(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
 {
 }
 

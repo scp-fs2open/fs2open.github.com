@@ -1019,7 +1019,7 @@ void debrief_award_init()
 		// choose appropriate promotion voice for this mission
 		debrief_choose_voice(Promotion_stage.voice, sizeof(Promotion_stage.voice), Ranks[Promoted].promotion_voice_base, persona_index);
 
-		debrief_add_award_text(Ranks[Promoted].name);
+		debrief_add_award_text(get_rank_display_name(&Ranks[Promoted]).c_str());
 	}
 
 	// handle badge earned
@@ -2013,6 +2013,14 @@ void debrief_init(bool API_Access)
 	// start up the appropriate music only if we're not in API mode - Mjn
 	if (!API_Access) {
 		debrief_init_music();
+	}
+
+	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
+		// Better luck next time; increase retries.
+		Player->failures_this_session++;
+	} else {
+		// Clear retry count regardless of whether or not the player accepts.
+		Player->failures_this_session = 0;
 	}
 
 	if (Game_mode & GM_MULTIPLAYER) {

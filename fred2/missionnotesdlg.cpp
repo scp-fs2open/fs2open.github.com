@@ -20,6 +20,7 @@
 #include "gamesnd/eventmusic.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
+#include "scripting/global_hooks.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -75,6 +76,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_toggle_showing_goals = FALSE;
 	m_end_to_mainhall = FALSE;
 	m_override_hashcommand = FALSE;
+	m_preload_subspace = FALSE;
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -128,6 +130,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_TOGGLE_SHOWING_GOALS, m_toggle_showing_goals);
 	DDX_Check(pDX, IDC_END_TO_MAINHALL, m_end_to_mainhall);
 	DDX_Check(pDX, IDC_OVERRIDE_HASHCOMMAND, m_override_hashcommand);
+	DDX_Check(pDX, IDC_PRELOAD_SUBSPACE, m_preload_subspace);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
@@ -150,6 +153,8 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_CONTRAIL_THRESHOLD_CHECK, OnToggleContrailThreshold)
 	ON_BN_CLICKED(IDC_CUSTOM_WING_NAMES, OnCustomWingNames)
 	ON_BN_CLICKED(IDC_SOUND_ENVIRONMENT_BUTTON, OnSoundEnvironment)
+	ON_BN_CLICKED(IDC_OPEN_CUSTOM_DATA, OnCustomData)
+	ON_BN_CLICKED(IDC_OPEN_CUSTOM_STRINGS, OnCustomStrings)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -297,6 +302,9 @@ void CMissionNotesDlg::OnOK()
 	// Override #Command
 	The_mission.flags.set(Mission::Mission_Flags::Override_hashcommand, m_override_hashcommand != 0);
 
+	// Preload Subspace Tunnel
+	The_mission.flags.set(Mission::Mission_Flags::Preload_subspace, m_preload_subspace != 0);
+
 	if ( flags != The_mission.flags ){
 		set_modified();
 	}
@@ -352,7 +360,15 @@ void CMissionNotesDlg::OnOK()
 		Num_teams = 2;
 	}
 
+	// This hook will allow for scripts to know when custom data or strings may be updated
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionSpecsSave->isActive()) {
+		scripting::hooks::FredOnMissionSpecsSave->run();
+	}
+
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("mission specs editor");
 }
 
 void CMissionNotesDlg::OnCancel()
@@ -401,6 +417,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_toggle_showing_goals = (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals]) ? 1 : 0;
 	m_end_to_mainhall = (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ? 1 : 0;
 	m_override_hashcommand = (The_mission.flags[Mission::Mission_Flags::Override_hashcommand]) ? 1 : 0;
+	m_preload_subspace = (The_mission.flags[Mission::Mission_Flags::Preload_subspace]) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);
@@ -699,6 +716,27 @@ void CMissionNotesDlg::OnSoundEnvironment()
 	UpdateData(TRUE);
 
 	SoundEnvironment dlg;
+	dlg.DoModal();
+
+	UpdateData(FALSE);
+}
+
+void CMissionNotesDlg::OnCustomData()
+{
+	UpdateData(TRUE);
+
+	CustomDataDlg dlg;
+	dlg.DoModal();
+
+	UpdateData(FALSE);
+}
+
+
+void CMissionNotesDlg::OnCustomStrings()
+{
+	UpdateData(TRUE);
+
+	CustomStringsDlg dlg;
 	dlg.DoModal();
 
 	UpdateData(FALSE);

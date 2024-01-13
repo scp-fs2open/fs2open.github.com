@@ -12,6 +12,7 @@
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "graphics/openxr.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -147,7 +148,7 @@ namespace
 	}
 	
 	bool quit_handler(const SDL_Event&  /*e*/) {
-		mprintf(("Recevied quit signal\n"));
+		mprintf(("Received quit signal\n"));
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
 	}
@@ -309,10 +310,11 @@ static SCP_vector<SDL_Event> deferred_events;
 int Os_debugger_running = 0;
 
 #ifdef SCP_UNIX
-static bool user_dir_initialized = false;
-static SCP_string Os_user_dir_legacy;
+const char* os_get_legacy_user_dir()
+{
+	static bool user_dir_initialized = false;
+	static SCP_string Os_user_dir_legacy;
 
-const char* os_get_legacy_user_dir() {
 	if (user_dir_initialized) {
 		return Os_user_dir_legacy.c_str();
 	}
@@ -781,6 +783,8 @@ void os_poll()
 	while (SDL_PollEvent(&event)) {
 		handle_sdl_event(event);
 	}
+
+	openxr_poll();
 }
 
 SCP_string os_get_config_path(const SCP_string& subpath)

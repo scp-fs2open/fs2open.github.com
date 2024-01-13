@@ -54,6 +54,10 @@ BOOL restrict_paths::OnInitDialog()
 	CDialog::OnInitDialog();
 	theApp.init_window(&Player_wnd_data, this);
 
+	// fix overlapping checkboxes issue
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_path_list.SetFont(GetFont());
+
 	// set up gui
 	reset_controls();
 

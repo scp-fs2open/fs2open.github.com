@@ -24,10 +24,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-// aww mumford
-bool is_blank_argument_op(int op_const);
-
-
 CMessageEditorDlg *Message_editor_dlg = NULL;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,7 +80,7 @@ BEGIN_MESSAGE_MAP(CMessageEditorDlg, CDialog)
 	ON_NOTIFY(NM_RCLICK, IDC_TREE, OnRclickTree)
 	ON_NOTIFY(TVN_BEGINLABELEDIT, IDC_TREE, OnBeginlabeleditTree)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_TREE, OnEndlabeleditTree)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -213,12 +209,15 @@ void CMessageEditorDlg::OnOK()
 {
 }
 
-void CMessageEditorDlg::OnOk()
+void CMessageEditorDlg::OnButtonOk()
 {
 	update(m_cur_msg);
+
 	theApp.record_window_data(&Messages_wnd_data, this);
 	delete Message_editor_dlg;
 	Message_editor_dlg = NULL;
+
+	FREDDoc_ptr->autosave("message editor");
 }
 
 void CMessageEditorDlg::OnCancel()
@@ -306,7 +305,7 @@ int CMessageEditorDlg::find_event()
 			|| op_const == OP_PERFORM_ACTIONS_BOOL_FIRST || op_const == OP_PERFORM_ACTIONS_BOOL_LAST )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
-			if (is_blank_argument_op(op_const))
+			if (is_when_argument_op(op_const))
 				node = CDR(node);
 
 			node = CDR(node);
@@ -505,7 +504,7 @@ void CMessageEditorDlg::OnClose()
 			return;
 
 		if (z == IDYES) {
-			OnOK();
+			OnButtonOk();
 			return;
 		}
 	}

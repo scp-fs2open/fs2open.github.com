@@ -23,6 +23,8 @@
 #include "JumpNodeDlg.h"
 #include "wing_editor.h"
 #include "musicplayerdlg.h"
+#include "customdatadlg.h"
+#include "customstringsdlg.h"
 
 #include "globalincs/systemvars.h"
 #include "globalincs/systemvars.h"
@@ -74,7 +76,7 @@ public:
 	 * @param[in]     adjust Height, in pixels, to adjust the window by
 	 * @param[in]     pre    Pre-placement?
 	 *
-	 * @returns  0 If sucessful, or
+	 * @returns  0 If successful, or
 	 * @returns -1 If pre is nonzero and the window is not visible, or
 	 * @returns -2 If the window has been already initialized
 	 */
@@ -192,6 +194,7 @@ extern window_data Ship_wnd_data;
 extern window_data Wing_wnd_data;
 extern window_data Object_wnd_data;
 extern window_data Mission_goals_wnd_data;
+extern window_data Mission_cutscenes_wnd_data;
 extern window_data Messages_wnd_data;
 extern window_data Player_wnd_data;
 extern window_data Events_wnd_data;
@@ -204,5 +207,6 @@ extern window_data MusPlayer_wnd_data;
 extern window_data Starfield_wnd_data;
 extern window_data Asteroid_wnd_data;
 extern window_data Mission_notes_wnd_data;
+extern window_data Custom_data_wnd_data;
 
 #endif // _FRED_H

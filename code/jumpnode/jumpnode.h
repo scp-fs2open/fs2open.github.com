@@ -34,57 +34,57 @@ class model_draw_list;
 class CJumpNode
 {
 private:
-    char m_name[NAME_LENGTH];
-    char m_display[NAME_LENGTH];
-    float m_radius {0.0f};
+	char m_name[NAME_LENGTH];
+	char m_display[NAME_LENGTH];
+	float m_radius {0.0f};
 
-    int	m_modelnum {-1};
+	int	m_modelnum {-1};
 	int m_objnum {-1};                 // objnum of this jump node
 	int m_polymodel_instance_num {-1}; // polymodel instance number, used for rotations 
 
-    int m_flags {0};
-    color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
+	int m_flags {0};
+	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
 	vec3d m_pos;
 
 	CJumpNode(const CJumpNode&);
-	CJumpNode& operator=(const CJumpNode&);
+	CJumpNode& operator=(const CJumpNode&) = delete;
 public:
-    //Constructors
-    CJumpNode();
-    CJumpNode(const vec3d *position);
+	//Constructors
+	CJumpNode();
+	CJumpNode(const vec3d *position);
 	CJumpNode(CJumpNode&& other) noexcept;
 
 	CJumpNode& operator=(CJumpNode&&) noexcept;
-    
-    //Destructor
-    ~CJumpNode();
-	
+
+	//Destructor
+	~CJumpNode();
+
 	//Getting
-    const char *GetName();
-	const char* GetDisplayName();
-    int GetModelNumber();
-    int GetSCPObjectNumber();
-	int GetPolymodelInstanceNum(); 
-    object *GetSCPObject();
-    color GetColor();
-    vec3d *GetPosition();
+	const char *GetName() const;
+	const char *GetDisplayName() const;
+	int GetModelNumber() const;
+	int GetSCPObjectNumber() const;
+	int GetPolymodelInstanceNum() const;
+	const object *GetSCPObject() const;
+	const color &GetColor() const;
+	const vec3d *GetPosition() const;
 
-    //Setting
-    void SetAlphaColor(int r, int g, int b, int alpha);
-    void SetModel(const char *model_name, bool show_polys=false);
-    void SetName(const char *new_name);
+	//Setting
+	void SetAlphaColor(int r, int g, int b, int alpha);
+	void SetModel(const char *model_name, bool show_polys = false);
+	void SetName(const char *new_name);
 	void SetDisplayName(const char* new_name);
-    void SetVisibility(bool enabled);
-    
-    //Query
-    bool IsHidden() const;
-    bool IsColored() const;
-    bool IsSpecialModel() const;
-    bool HasDisplayName() const;
+	void SetVisibility(bool enabled);
 
-    //Rendering
-	void Render(vec3d *pos, vec3d *view_pos = NULL);
-	void Render(model_draw_list *scene, vec3d *pos, vec3d *view_pos = NULL);
+	//Query
+	bool IsHidden() const;
+	bool IsColored() const;
+	bool IsSpecialModel() const;
+	bool HasDisplayName() const;
+
+	//Rendering
+	void Render(const vec3d *pos, const vec3d *view_pos = nullptr) const;
+	void Render(model_draw_list *scene, const vec3d *pos, const vec3d *view_pos = nullptr) const;
 };
 
 //-----Globals------

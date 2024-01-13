@@ -127,8 +127,6 @@ void multi_common_move_to_bottom();
 void multi_common_render_text();
 void multi_common_split_text();
 
-#define MAX_IP_STRING		255				// maximum length for ip string
-
 void multi_common_scroll_text_up()
 {
 	Multi_common_top_text_line--;
@@ -481,19 +479,6 @@ void multi_common_unload_palette()
 	}
 }
 
-void multi_common_verify_cd()
-{
-#ifdef GAME_CD_CHECK
-	// otherwise, call the freespace function to determine if we have a cd
-	Multi_has_cd = 0;
-	if((find_freespace_cd(FS_CDROM_VOLUME_1) >= 0) || (find_freespace_cd(FS_CDROM_VOLUME_2) >= 0) || (find_freespace_cd(FS_CDROM_VOLUME_3) >= 0) ){
-		Multi_has_cd = 1;
-	} 
-#else
-	Multi_has_cd = 1;
-#endif
-}
-
 
 // -------------------------------------------------------------------------------------------------------------
 // 
@@ -786,7 +771,6 @@ void multi_join_cull_timeouts();
 void multi_join_handle_item_cull(active_game *item, int item_index);
 void multi_join_send_join_request(int as_observer);
 void multi_join_create_game();
-void multi_join_blit_top_stuff();
 int multi_join_maybe_warn();
 int multi_join_warn_pxo();
 void multi_join_blit_protocol();
@@ -818,7 +802,7 @@ DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 
 		// timestamp it so we get random timeouts
 		if(newitem != NULL){
-			// newitem->heard_from_timer = timestamp((int)frand_range(500.0f, 10000.0f));
+			// newitem->heard_from_timer = timestamp(Random::next(500, 10000));
 		}
 	}
 }
@@ -863,9 +847,6 @@ void multi_join_game_init()
 	Net_player->flags |= NETINFO_FLAG_DO_NETWORKING;	
 	Net_player->m_player = Player;
 	memcpy(&Net_player->p_info.addr, &Psnet_my_addr, sizeof(Net_player->p_info.addr));
-
-	// check for the existence of a CD
-	multi_common_verify_cd();
 
 	// load my local netplayer options
 	multi_options_local_load(&Net_player->p_info.options, Net_player);	
@@ -991,7 +972,7 @@ void multi_join_game_do_frame()
 {
 	// Because we can get to here through the options screen, we may have PXO games enabled when we're not connected.
 	// So we should go back and connect if that's true.
-	if ((Multi_options_g.pxo == 1) && !multi_fs_tracker_inited()) {
+	if (Multi_options_g.pxo && !multi_fs_tracker_inited()) {
 		gameseq_post_event(GS_EVENT_PXO);
 		return;
 	}
@@ -1118,9 +1099,6 @@ void multi_join_game_do_frame()
 
 	// display any pending notification messages
 	multi_common_notify_do();
-
-	// blit the CD icon and any PXO filter stuff
-	multi_join_blit_top_stuff();
 
 	// draw the help overlay
 	help_overlay_maybe_blit(Multi_join_overlay_id, gr_screen.res);
@@ -1462,60 +1440,100 @@ void multi_join_blit_game_status(active_game *game, int y)
 	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text,GR_RESIZE_MENU);
 }
 
-void multi_join_load_tcp_addrs()
+void multi_join_read_ip_address_file(SCP_list<SCP_string>& list)
 {
-	char line[MAX_IP_STRING];
-	net_addr addr;	
-	server_item *item;
-	CFILE *file = NULL;
+	char line[IP_STRING_LEN];
+	CFILE* file = NULL;
 
 	// attempt to open the ip list file
-	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file!\n"));
+	file = cfopen(IP_CONFIG_FNAME, "rt", CFILE_NORMAL, CF_TYPE_DATA);
+	if (file == NULL) {
+		nprintf(("Network", "Error loading tcp.cfg file!\n"));
 		return;
 	}
 
-	// free up any existing server list
-	multi_free_server_list();
-
 	// read in all the strings in the file
-	while(!cfeof(file)){
+	while (!cfeof(file)) {
 		line[0] = '\0';
-		cfgets(line,MAX_IP_STRING,file);
+		cfgets(line, IP_STRING_LEN, file);
 
 		// strip off any newline character
-		if(line[strlen(line) - 1] == '\n'){
+		if (line[strlen(line) - 1] == '\n') {
 			line[strlen(line) - 1] = '\0';
 		}
 
-		// empty lines don't get processed
-		if( (line[0] == '\0') || (line[0] == '\n') ){
+		// 0 length lines don't get processed
+		if ((line[0] == '\0') || (line[0] == '\n'))
 			continue;
-		}
 
-		if ( !psnet_is_valid_ip_string(line) ) {
-			nprintf(("Network","Invalid ip string (%s)\n",line));
-		} else {			 
-			// copy the server ip address
-			if ( !psnet_string_to_addr(line, &addr) ) {
-				continue;
-			}
-
-			if (addr.port == 0) {
-				addr.port = DEFAULT_GAME_PORT;
-			}
-
-			// create a new server item on the list
-			item = multi_new_server_item();
-
-			if (item != nullptr) {
-				memcpy(&item->server_addr, &addr, sizeof(item->server_addr));
+		if (!psnet_is_valid_ip_string(line)) {
+			nprintf(("Network", "Invalid ip string (%s)\n", line));
+		} else {
+			if (list.size() < MAX_IP_ADDRS - 1) {
+				list.push_back(line);
 			}
 		}
 	}
 
 	cfclose(file);
+}
+
+bool multi_join_write_ip_address_file(SCP_list<SCP_string>& list)
+{
+	CFILE* file = NULL;
+
+	// attempt to open the ip list file for writing
+	file = cfopen(IP_CONFIG_FNAME, "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	if (file == NULL) {
+		nprintf(("Network", "Error loading tcp.cfg file\n"));
+		return false;
+	}
+
+	for (auto ip : list) {
+		if (!psnet_is_valid_ip_string(ip.c_str())) {
+			nprintf(("Network", "Invalid ip string (%s)\n", ip.c_str()));
+		} else {
+			cfputs(ip.c_str(), file);
+
+			// make sure to tack on a newline if necessary
+			if (ip[strlen(&ip[0]) - 1] != '\n') {
+				cfputs(NOX("\n"), file);
+			}
+		}
+	}
+
+	cfclose(file);
+
+	return true;
+}
+
+void multi_join_load_tcp_addrs()
+{
+	net_addr addr;	
+	server_item *item;
+
+	// free up any existing server list
+	multi_free_server_list();
+
+	SCP_list<SCP_string> list;
+	multi_join_read_ip_address_file(list);
+
+	for (auto const& ip : list) {
+		if (!psnet_string_to_addr(ip.c_str(), &addr)) {
+			continue;
+		}
+
+		if (addr.port == 0) {
+			addr.port = DEFAULT_GAME_PORT;
+		}
+
+		// create a new server item on the list
+		item = multi_new_server_item();
+
+		if (item != nullptr) {
+			memcpy(&item->server_addr, &addr, sizeof(item->server_addr));
+		}
+	}
 }
 
 // do stuff like pinging servers, sending out requests, etc
@@ -2018,19 +2036,6 @@ void multi_join_reset_join_stamp()
 	multi_common_add_notify("");
 }
 
-void multi_join_blit_top_stuff()
-{	
-	// blit the cd icon if he has one
-	if(Multi_has_cd && (Multi_common_icons[MICON_CD] != -1)){
-		// get bitmap width
-		int cd_w;
-		bm_get_info(Multi_common_icons[MICON_CD], &cd_w, NULL, NULL, NULL, NULL);
-
-		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap((gr_screen.max_w_unscaled / 2) - (cd_w / 2), Mj_cd_coords[gr_screen.res], GR_RESIZE_MENU);
-	} 	
-}
-
 #define CW_CODE_CANCEL				0				// cancel the action
 #define CW_CODE_OK					1				// continue anyway
 #define CW_CODE_INFO					2				// gimme some more information
@@ -2292,7 +2297,7 @@ void multi_sg_rank_scroll_up();
 void multi_sg_rank_scroll_down();
 void multi_sg_rank_display_stuff();
 void multi_sg_rank_process_select();
-void multi_sg_rank_build_name(char *in,char *out);
+void multi_sg_rank_build_name(const char *in,char *out);
 void multi_sg_check_passwd();
 void multi_sg_check_name();
 void multi_sg_release_passwd();
@@ -2781,11 +2786,6 @@ void multi_sg_init_gamenet()
 		Netgame.server = server_save;
 	}
 
-	// if I have a cd or not
-	if(Multi_has_cd){
-		Net_player->flags |= NETINFO_FLAG_HAS_CD;
-	}	
-
 	// if I have hacked data
 	if(game_hacked_data()){
 		Net_player->flags |= NETINFO_FLAG_HAXOR;
@@ -2892,7 +2892,7 @@ void multi_sg_rank_display_stuff()
 		}
 
 		// print the text
-		multi_sg_rank_build_name(Ranks[idx].name,rank_name);
+		multi_sg_rank_build_name(get_rank_display_name(&Ranks[idx]).c_str(), rank_name);
 		gr_string(Msg_rank_list_coords[gr_screen.res][MSG_X_COORD],y,rank_name,GR_RESIZE_MENU);
 
 		// increment stuff
@@ -2937,14 +2937,16 @@ void multi_sg_rank_process_select()
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				memset(string,0,255);
-				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[verify_rank(Net_player->m_player->stats.rank)].name);
+				sprintf(string,
+					XSTR("Illegal value for a host of your rank (%s)\n", 784),
+					get_rank_display_name(&Ranks[verify_rank(Net_player->m_player->stats.rank)]).c_str());
 				multi_common_add_notify(string);
 			}
 		}		
 	}
 }
 
-void multi_sg_rank_build_name(char *in,char *out)
+void multi_sg_rank_build_name(const char *in,char *out)
 {
 	char use[100];
 	char *first;
@@ -2955,6 +2957,7 @@ void multi_sg_rank_build_name(char *in,char *out)
 	// just copy the string
 	if(first == NULL){
 		strcpy(out,in);
+		return;
 	}
 	
 	// if the first part of the string is lieutenant, then abbreivate it and tack on the rest of the string	
@@ -3381,7 +3384,6 @@ void multi_create_draw_filter_buttons();
 void multi_create_set_selected_team(int team);
 short multi_create_get_mouse_id();
 int multi_create_ok_to_commit();
-int multi_create_verify_cds();
 void multi_create_refresh_pxo();
 void multi_create_sw_clicked();
 
@@ -3687,8 +3689,7 @@ void multi_create_game_do()
 
 		char mission_name[NAME_LENGTH+1];
 		int flags;
-		char *filename; 
-		filename = cf_add_ext( Cmdline_almission, FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
+		auto filename = cf_add_ext( Cmdline_almission, FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
 		flags = mission_parse_is_multi(filename, mission_name); //DTP flags will set if mission is multi
 
 		if (flags) { //only continue if mission is multiplayer mission
@@ -4281,15 +4282,7 @@ void multi_create_plist_blit_normal()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-			
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 			
 			// make sure the string will fit, then display it
 			strcpy_s(str,Net_players[idx].m_player->callsign);
@@ -4338,15 +4331,7 @@ void multi_create_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);				
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 
 			// blit the red team indicator			
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
@@ -4404,15 +4389,7 @@ void multi_create_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 
 			// blit the red team indicator			
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
@@ -4496,14 +4473,13 @@ void multi_create_list_load_missions()
 
 	for (idx = 0; idx < file_count; idx++) {
 		int flags, max_players;
-		char *filename;
 		uint m_respawn;
 		bool lcl_weirdness = false;
 
 		fname = file_list[idx];
 		
 		// tack on any necessary file extension
-		filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
+		auto filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
 
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
@@ -4535,7 +4511,7 @@ void multi_create_list_load_missions()
 			mcip.max_players = (ubyte)max_players;
 
 			// get any additional information for possibly builtin missions
-			fs_builtin_mission *fb = game_find_builtin_mission(filename);
+			auto fb = game_find_builtin_mission(filename);
 			if(fb != NULL){					
 			}
 
@@ -4564,8 +4540,7 @@ void multi_create_list_load_missions()
 }
 
 void multi_create_list_load_campaigns()
-{	
-	char *fname;
+{
 	int idx, file_count;
 	int campaign_type,max_players;
 	char title[255];
@@ -4593,12 +4568,12 @@ void multi_create_list_load_campaigns()
 
 	for (idx = 0; idx < file_count; idx++) {
 		int flags;
-		char *filename, name[NAME_LENGTH];
+		char name[NAME_LENGTH];
 
-		fname = file_list[idx];
+		auto fname = file_list[idx];
 		
 		// tack on any necessary file extension
-		filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
+		auto filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
 
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
@@ -4629,7 +4604,7 @@ void multi_create_list_load_campaigns()
 			mcip.max_players = (unsigned char)max_players;
 
 			// get any additional information for possibly builtin missions
-			fs_builtin_mission *fb = game_find_builtin_mission(filename);
+			auto fb = game_find_builtin_mission(filename);
 			if(fb != NULL){					
 			}
 
@@ -4927,7 +4902,6 @@ void multi_create_list_select_item(int n)
 void multi_create_list_blit_icons(int list_index, int y_start)
 {
 	multi_create_info *mcip;
-	fs_builtin_mission *fb;	
 	int max_index;
 
 	// get a pointer to the list item
@@ -4969,8 +4943,8 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 		}
 	}
 
-	// now see if its a builtin mission
-	fb = game_find_builtin_mission(mcip->filename);	
+	// now see if it's a builtin mission
+	auto fb = game_find_builtin_mission(mcip->filename);
 	// if the mission is from volition, blit the volition icon
 	if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 		if(Multi_common_icons[MICON_VOLITION] >= 0){
@@ -5361,15 +5335,6 @@ int multi_create_ok_to_commit()
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Teams and/or team captains are not assigned properly", 793));			
 			return 0;
 		}
-	}
-
-	// verify cd's	
-	if(!multi_create_verify_cds()){
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
-
-		return 0;
 	}	
 	
 	// if we're playing on the tracker
@@ -5399,31 +5364,6 @@ int multi_create_ok_to_commit()
 		}
 	}	
 		
-	return 1;
-}
-
-int multi_create_verify_cds()
-{
-	int player_count = multi_num_players();
-	int multi_cd_count;
-	int idx;
-
-	// count how many cds we have
-	multi_cd_count = 0;
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && (Net_players[idx].flags & NETINFO_FLAG_HAS_CD)){
-			multi_cd_count++;
-		}
-	}
-
-	// determine if we have enough
-	float ratio = (float)player_count / (float)multi_cd_count;
-	// greater than a 4 to 1 ratio
-	if(ratio > 4.0f){
-		return 0;
-	} 
-
-	// we meet the conditions
 	return 1;
 }
 
@@ -7058,15 +6998,7 @@ void multi_jw_plist_blit_normal()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 			
 			// make sure the string will fit, then display it
 			strcpy_s(str,Net_players[idx].m_player->callsign);
@@ -7116,15 +7048,7 @@ void multi_jw_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1, GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
-			}			
+			}		
 
 			// blit the red team indicator
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
@@ -7173,14 +7097,6 @@ void multi_jw_plist_blit_team()
 				} else {
 					gr_set_color_fast(&Color_text_normal);
 				}
-			}
-
-			// optionally draw his CD status
-			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
-
-				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
 
 			// blit the red team indicator
@@ -7802,7 +7718,7 @@ void multi_sync_blit_screen_all()
 			case NETPLAYER_STATE_MISSION_XFER :				
 				memset(txt,0,255);
 				// server should display the pct completion of all clients				
-				if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+				if(Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER){
 					if(Net_players[idx].s_info.xfer_handle != -1){					
 						pct_complete = multi_xfer_pct_complete(Net_players[idx].s_info.xfer_handle);
 
@@ -8460,12 +8376,6 @@ void multi_sync_display_name(const char *name,int index,int np_index)
 
 		// blit the string
 		gr_string(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height),fit,GR_RESIZE_MENU);
-	}
-
-	// maybe blit his CD status icon
-	if((Net_players[np_index].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
-		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height), GR_RESIZE_MENU);
 	}
 }
 

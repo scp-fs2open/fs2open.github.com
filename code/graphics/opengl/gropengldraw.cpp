@@ -25,6 +25,7 @@
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/uniform_structs.h"
+#include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
@@ -48,6 +49,10 @@ GLuint Scene_depth_texture;
 GLuint Scene_depth_texture_ms;
 GLuint Cockpit_depth_texture;
 GLuint Scene_stencil_buffer;
+
+GLuint Back_framebuffer;
+GLuint Back_texture;
+GLuint Back_depth_texture;
 
 GLuint Distortion_framebuffer = 0;
 GLuint Distortion_texture[2];
@@ -524,6 +529,53 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	}
 
+	if (Cmdline_window_res) {
+		//Gen Framebuffer
+		glGenFramebuffers(1, &Back_framebuffer);
+		GL_state.BindFrameBuffer(Back_framebuffer);
+		opengl_set_object_label(GL_FRAMEBUFFER, Back_framebuffer, "Backbuffer");
+
+		// setup main render texture
+
+		// setup high dynamic range color texture
+		glGenTextures(1, &Back_texture);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Back_texture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Back_texture, 0);
+		opengl_set_object_label(GL_TEXTURE, Back_texture, "Backbuffer texture");
+
+		glGenTextures(1, &Back_depth_texture);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Back_depth_texture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, gr_screen.max_w, gr_screen.max_h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		opengl_set_object_label(GL_TEXTURE, Back_depth_texture, "Backbuffer depth texture");
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Back_depth_texture, 0);
+		gr_zbuffer_set(GR_ZBUFF_FULL);
+		glClear(GL_DEPTH_BUFFER_BIT);
+	}
+
 	//Setup thruster distortion framebuffer
     if (Gr_framebuffer_effects.any_set())
     {
@@ -673,7 +725,7 @@ void gr_opengl_scene_texture_begin()
 		Scene_texture_v_scale = 1.0f;
 	}
 
-	if ( Cmdline_no_deferred_lighting ) {
+	if (!light_deferred_enabled()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {

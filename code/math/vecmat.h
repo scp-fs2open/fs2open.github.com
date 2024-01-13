@@ -498,6 +498,9 @@ bool is_valid_vec(const vec3d *vec);
 //	Return true if all elements of *m are legal, that is, not a NAN.
 bool is_valid_matrix(const matrix *m);
 
+// Converts quaterions to a respective rotation matrix
+void vm_quaternion_to_matrix(matrix* M, float a, float b, float c, float s);
+
 // Finds the rotation matrix corresponding to a rotation of theta about axis u
 void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
 
@@ -565,7 +568,7 @@ void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
 
 void vm_matrix4_get_orientation(matrix *out, const matrix4 *m);
 
-void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
+void vm_matrix4_get_offset(vec3d *out, const matrix4 *m);
 
 void vm_vec_transform(vec4 *dest, const vec4 *src, const matrix4 *m);
 void vm_vec_transform(vec3d *dest, const vec3d *src, const matrix4 *m, bool pos = true);
@@ -667,6 +670,12 @@ inline vec3d operator*(const vec3d& left, float right)
 {
 	vec3d out;
 	vm_vec_copy_scale(&out, &left, right);
+	return out;
+}
+inline vec3d operator*(float left, const vec3d& right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &right, left);
 	return out;
 }
 inline vec3d& operator*=(vec3d& left, float right)

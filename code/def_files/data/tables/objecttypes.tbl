@@ -1,5 +1,5 @@
-																		
-#Ship types																
+#Ship types
+
 $Name:					Navbuoy											
 $Max Debris Speed:		200												
 $FF Multiplier:			1.0												
@@ -11,7 +11,8 @@ $AI:
 	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Turrets attack this:	YES											
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Sentry Gun										
 $Counts for Alone:		YES												
 $On Hotkey List:		YES												
@@ -31,7 +32,8 @@ $AI:
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Escape Pod										
 $Praise Destruction:	YES												
 $On Hotkey List:		YES												
@@ -49,7 +51,8 @@ $AI:
 	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Turrets attack this:	YES											
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Cargo											
 $Scannable:				YES												
 $Max Debris Speed:		200												
@@ -62,7 +65,8 @@ $Fog:
 	+Compl dist:			500.0										
 $AI:																	
 	+Passive docks:			( "cargo" )								
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Support											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -88,7 +92,8 @@ $AI:
 	+Turrets attack this:	YES											
 	+Active docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 ;;WMC - Stealth ships always have another type, so this isn't used		
 $Name:					Stealth											
 $Counts for Alone:		YES												
@@ -113,7 +118,8 @@ $AI:
 	+Turrets attack this:	YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Fighter											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -140,7 +146,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Bomber											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -167,8 +174,9 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
-;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber																																																								
+$Skip Death Roll Percent Chance: 0.0											
+
+;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber
 $Name:					Fighter/bomber									
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -194,7 +202,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Transport										
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -204,6 +213,7 @@ $Show Attack Direction:	YES
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		2.0												
+$Warp Sound Range Multiplier:	6.0										
 $Beams Easily Hit:		YES												
 $Protected on cripple:	YES												
 $Fog:																	
@@ -222,7 +232,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Freighter										
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -233,6 +244,7 @@ $Scannable:				YES
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		1.75											
+$Warp Sound Range Multiplier:	6.0										
 $Beams Easily Hit:		YES												
 $Protected on cripple:	YES												
 $Fog:																	
@@ -252,7 +264,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					AWACS											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -262,6 +275,7 @@ $Show Attack Direction:	YES
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		0.8												
+$Warp Sound Range Multiplier:	6.0										
 $Beams Easily Hit:		YES												
 $Protected on cripple:	YES												
 $Fog:																	
@@ -280,7 +294,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Gas Miner										
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -290,6 +305,7 @@ $Show Attack Direction:	YES
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		1.0												
+$Warp Sound Range Multiplier:	6.0										
 $Beams Easily Hit:		YES												
 $Protected on cripple:	YES												
 $Fog:																	
@@ -308,7 +324,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES	
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Cruiser											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -318,6 +335,7 @@ $Show Attack Direction:	YES
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		0.9												
+$Warp Sound Range Multiplier:	6.0										
 $Beams Easily Hit:		YES												
 $Protected on cripple:	YES												
 $Fog:																	
@@ -336,7 +354,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Corvette										
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -346,6 +365,7 @@ $Show Attack Direction:	YES
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		0.3333											
+$Warp Sound Range Multiplier:	6.0										
 $Beams Easily Hit:		YES												
 $Protected on cripple:	YES												
 $Fog:																	
@@ -364,7 +384,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Capital											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -393,7 +414,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Super Cap										
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -420,7 +442,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Drydock											
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -445,7 +468,8 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
+$Skip Death Roll Percent Chance: 0.0											
+
 $Name:					Knossos Device									
 $Counts for Alone:		YES												
 $Praise Destruction:	YES												
@@ -468,5 +492,6 @@ $AI:
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
-$Vaporize Percent Chance: 0.0											
-#End																	
+$Skip Death Roll Percent Chance: 0.0											
+
+#End

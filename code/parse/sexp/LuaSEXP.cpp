@@ -39,26 +39,28 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "string",       OPF_STRING },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
+														  { "waypoint",     OPF_POINT },
 														  { "variable",     OPF_VARIABLE_NAME },
 														  { "message",      OPF_MESSAGE },
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, 
-														  { "ship+waypoint",   OPF_SHIP_POINT },
-														  { "ship+wing",   OPF_SHIP_WING },
+														  { "ship+waypoint",OPF_SHIP_POINT },
+														  { "ship+wing",    OPF_SHIP_WING },
 														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
-														  { "subsystem",   OPF_SUBSYSTEM },
-														  { "dockpoint",   OPF_DOCKER_POINT },
-														  { "hudgauge",   OPF_ANY_HUD_GAUGE },
-														  { "event",   OPF_EVENT_NAME },
-														  { "enum",   First_available_opf_id } };
+														  { "subsystem",    OPF_SUBSYSTEM },
+														  { "dockpoint",    OPF_DOCKER_POINT },
+														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
+														  { "event",        OPF_EVENT_NAME },
+														  { "child_enum",   OPF_CHILD_LUA_ENUM },
+														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
-static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint"};
+static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint", "child_enum"};
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -176,12 +178,12 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->name : "");
 		}
 
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->has_objp()) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		auto objp = ship_entry->objp;
+		auto objp = ship_entry->objp();
 
 		// The other SEXP code does not validate the object type so this should be safe
 		Assertion(objp->type == OBJ_SHIP,
@@ -207,7 +209,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	}
 	case OPF_WING: {
 		auto wingp = eval_wing(node);
-		int wingnum = static_cast<int>(wingp - Wings);
+		int wingnum = WING_INDEX(wingp);
 
 		return LuaValue::createValue(_action.getLuaState(), l_Wing.Set(wingnum));
 	}
@@ -232,6 +234,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_SHIP_WING_WHOLETEAM:
 	case OPF_SHIP_WING_SHIPONTEAM_POINT:
 	case OPF_SHIP_WING_POINT:
+	case OPF_POINT:
 	case OPF_SHIP_WING_POINT_OR_NONE: {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
@@ -256,14 +259,14 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		auto ship_entry = eval_ship(this_node);
 
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->has_shipp()) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		ship_subsys* ss = ship_get_subsys(ship_entry->shipp, name);
+		ship_subsys* ss = ship_get_subsys(ship_entry->shipp(), name);
 		
-		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp, ss)));
+		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp(), ss)));
 	}
 	case OPF_DOCKER_POINT: {
 		auto name = CTEXT(node);
@@ -284,13 +287,13 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		}
 
 		auto ship_entry = eval_ship(this_node);
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->has_shipp()) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		auto docker_pm = model_get(Ship_info[ship_entry->shipp->ship_info_index].model_num);
-		auto dockindex = model_find_dock_name_index(Ship_info[ship_entry->shipp->ship_info_index].model_num, name);
+		auto docker_pm = model_get(Ship_info[ship_entry->shipp()->ship_info_index].model_num);
+		auto dockindex = model_find_dock_name_index(Ship_info[ship_entry->shipp()->ship_info_index].model_num, name);
 
 		return LuaValue::createValue(_action.getLuaState(), l_Dockingbay.Set(dockingbay_h(docker_pm, dockindex)));
   }
@@ -307,6 +310,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 				break;
 			}
 		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
+	}
+	case OPF_CHILD_LUA_ENUM: {
+		auto text = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), text);
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
@@ -474,15 +481,18 @@ void LuaSEXP::parseTable() {
 		_category = sexp::add_category(category);
 	}
 
-	required_string("$Subcategory:");
-	SCP_string subcategory;
-	stuff_string(subcategory, F_NAME);
+	if (optional_string("$Subcategory:")) {
+		SCP_string subcategory;
+		stuff_string(subcategory, F_NAME);
 
-	_subcategory = get_subcategory(subcategory, _category);
-	if (_subcategory == OP_SUBCATEGORY_NONE) {
-		// Unknown subcategory so we need to add this one
-		_subcategory = sexp::add_subcategory(_category, subcategory);
-	} 
+		_subcategory = get_subcategory(subcategory, _category);
+		if (_subcategory == OP_SUBCATEGORY_NONE) {
+			// Unknown subcategory so we need to add this one
+			_subcategory = sexp::add_subcategory(_category, subcategory);
+		}
+	} else {
+		_subcategory = OP_SUBCATEGORY_NONE;
+	}
 
 	required_string("$Minimum Arguments:");
 
@@ -659,7 +669,7 @@ void LuaSEXP::parseTable() {
 			}
 
 			if (thisList.list.size() == 0) {
-				error_display(0, "Parsed empty enum list '%s'\n", thisList.name.c_str());
+				mprintf(("Parsed empty enum list '%s'. Adding <none>.\n", thisList.name.c_str()));
 				thisList.list.push_back("<none>");
 			}
 
@@ -693,7 +703,7 @@ void LuaSEXP::parseTable() {
 
 			if (this_index >= (param_index + 1)) {
 				error_display(1,
-					"Ship Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
+					"Parent Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
 					this_index,
 					param_index + 1);
 			}
@@ -718,6 +728,14 @@ void LuaSEXP::parseTable() {
 				Dynamic_parameters.push_back(dyn_param);
 			}
 
+		}
+
+		if (type_str == "child_enum") {
+			if (optional_string("+Suffix:")) {
+				SCP_string suffix;
+				stuff_string(suffix, F_NAME);
+				Dynamic_enum_suffixes.push_back({_name, param_index, suffix});
+			}
 		}
 
 		if (variable_arg_part) {

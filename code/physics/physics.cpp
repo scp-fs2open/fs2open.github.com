@@ -39,7 +39,9 @@
 #define	REDUCED_DAMP_VEL		30		// change in velocity at which reduced_damp_time is 2000 ms
 #define	REDUCED_DAMP_TIME		2000	// ms (2.0 sec)
 #define	WEAPON_SHAKE_TIME		500	//	ms (0.5 sec)	viewer shake time after hit by weapon (implemented via afterburner shake)
-#define	SPECIAL_WARP_T_CONST	0.651	// special warp time constant (loose 99 % of excess speed in 3 sec)
+
+const float SUPERCAP_WARP_T_CONST = 0.651f;	// special warp time constant (lose 99 % of excess speed in 3 sec)
+const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD = 5.0f;	// more than this many m/s faster than the ship's max speed and we use the above damp constant instead
 
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
 float velocity_ramp (float v_in, float v_goal, float time_const, float t);
@@ -56,7 +58,7 @@ void physics_init( physics_info * pi )
 	pi->max_vel.xyz.x = 100.0f;		//sideways
 	pi->max_vel.xyz.y = 100.0f;		//up/down
 	pi->max_vel.xyz.z = 100.0f;		//forward
-	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
+	pi->max_rear_vel = 100.0f;	//backward -- controlled separately
 
 	pi->max_rotvel = vm_vec_new(2.0f, 1.0f, 2.0f);
 
@@ -345,18 +347,18 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	vec3d grav_vel = vmd_zero_vector;
 	int special_warp_in = FALSE;
 	float excess = local_v_in.xyz.z - pi->max_vel.xyz.z;
-	if (excess > 5 && (pi->flags & PF_SPECIAL_WARP_IN)) {
+	if (excess > SUPERCAP_WARP_EXCESS_SPD_THRESHOLD && (pi->flags & PF_SUPERCAP_WARP_IN)) {
 		special_warp_in = TRUE;
-		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
+		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		local_v_out.xyz.z = pi->max_vel.xyz.z + excess * exp_factor;
-		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor));
-	} else if (pi->flags & PF_SPECIAL_WARP_OUT) {
-		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
+		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SUPERCAP_WARP_T_CONST) * (1.0f - exp_factor));
+	} else if (pi->flags & PF_SUPERCAP_WARP_OUT) {
+		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		vec3d temp;
 		vm_vec_rotate(&temp, &pi->prev_ramp_vel, orient);
 		float deficeit = temp.xyz.z - local_v_in.xyz.z;
 		local_v_out.xyz.z = local_v_in.xyz.z + deficeit * (1.0f - exp_factor);
-		local_disp.xyz.z = (local_v_in.xyz.z * sim_time) + deficeit * (sim_time - (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor)));
+		local_disp.xyz.z = (local_v_in.xyz.z * sim_time) + deficeit * (sim_time - (float(SUPERCAP_WARP_T_CONST) * (1.0f - exp_factor)));
 	} else {
 		apply_physics (damp.xyz.z, local_desired_vel.xyz.z, local_v_in.xyz.z, sim_time, &local_v_out.xyz.z, &local_disp.xyz.z);
 		if (pi->gravity_const != 0.0f) {
@@ -366,8 +368,8 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	}
 
 	// maybe turn off special warp in flag
-	if ((pi->flags & PF_SPECIAL_WARP_IN) && (excess < 5)) {
-		pi->flags &= ~(PF_SPECIAL_WARP_IN);
+	if ((pi->flags & PF_SUPERCAP_WARP_IN) && (excess < SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) {
+		pi->flags &= ~(PF_SUPERCAP_WARP_IN);
 	}
 
 	// update world position from local to world coords using orient
@@ -606,7 +608,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		if (pi->flags & PF_SLIDE_ENABLED)  {
 			// determine the local velocity
-			// deterimine whether accelerating or decleration toward goal for x
+			// deterimine whether accelerating or deceleration toward goal for x
 			if ( goal_vel.xyz.x > 0.0f )  {
 				if ( goal_vel.xyz.x >= pi->prev_ramp_vel.xyz.x )
 					ramp_time_const = pi->slide_accel_time_const;
@@ -626,7 +628,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			}
 			pi->prev_ramp_vel.xyz.x = velocity_ramp(pi->prev_ramp_vel.xyz.x, goal_vel.xyz.x, ramp_time_const, sim_time);
 
-			// deterimine whether accelerating or decleration toward goal for y
+			// deterimine whether accelerating or deceleration toward goal for y
 			if ( goal_vel.xyz.y > 0.0f )  {
 				if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.y )
 					ramp_time_const = pi->slide_accel_time_const;
@@ -651,7 +653,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			pi->prev_ramp_vel.xyz.y = 0.0f;
 		}
 
-		// deterimine whether accelerating or decleration toward goal for z
+		// deterimine whether accelerating or deceleration toward goal for z
 		if ( goal_vel.xyz.z > 0.0f )  {
 			if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
 				if ( pi->flags & PF_AFTERBURNER_ON )
@@ -1313,8 +1315,24 @@ void avd_movement::setAVD(float final_position, float total_movement_time, float
 	TSi = timestamp();
 	
 	Vm = (Pf-Pi-0.5f*(Vi*Tai)-0.5f*(Vf*Taf)) / (Tf - 0.5f*Tai - 0.5f*Taf);
-	Ai = (Vm-Vi)/Tai;
-	Af = (Vf-Vm)/Taf;
+
+	// Cyborg - Many coverity dividing by zero issues were caused by this piece of low level code. Most places that called this function were also not checking inputs. 
+	// The two if blocks in this function do not guarantee that they will not be float zero (e.g. tai = 2.0 taf = 0.0 Tf = 1.0)
+	// The reason why this code used to work even when there were divisions by zero is that the NAN results were gated behind Taf > 0.0 and Tai > 0.0
+	// checks in other functions. Ai, initial Acceleration, and Af, final Acceleration, are completely meaningless and explicitly disabled if their respective
+	// time amounts are zero or less than zero. So instead of just letting some NAN's chill out in memory, waiting for someone else to unwisely access them,
+	// we are going to explicitly set them to zero, like a good engine should.
+	if (Tai <= 0.0f){
+		Ai = 0.0;
+	} else {
+		Ai = (Vm-Vi)/Tai;
+	}
+
+	if (Taf <= 0.0f){
+		Af = 0.0f;
+	} else {
+		Af = (Vf-Vm)/Taf;
+	}
 }
 
 void avd_movement::setVD(float total_movement_time, float ending_acceleration_time, float final_velocity)
@@ -1332,7 +1350,14 @@ void avd_movement::setVD(float total_movement_time, float ending_acceleration_ti
 
 	TSi = timestamp();
 	Ai = 0.0f;
-	Af = (Vf-Vm)/Taf;
+
+	// Avoid division by float zero. See the note in setAVD for more info.
+	if (Taf <= 0.0f){
+		Af = 0.0f;
+	} else {
+		Af = (Vf-Vm)/Taf;
+	}
+	
 	Pf = Pi + Pf*(Tf - Taf) + Vm*Taf + 0.5f*Af*(Taf*Taf);
 }
 

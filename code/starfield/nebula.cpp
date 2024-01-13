@@ -73,7 +73,7 @@ void project_2d_onto_sphere( vec3d *pnt, float u, float v )
 // 1.00 - initial version
 
 // returns 0 if failed
-int load_nebula_sub(char *filename)
+int load_nebula_sub(const char *filename)
 {
 	CFILE *fp;
 	char id[16];
@@ -103,6 +103,10 @@ int load_nebula_sub(char *filename)
 	Assert( num_pts < MAX_POINTS );
 	cfread( &num_tris, sizeof(int), 1, fp );
 	Assert( num_tris < MAX_TRIS );
+
+	// Cyborg - can't load nonsense.
+	if (num_pts <= 0 || num_pts >= MAX_POINTS || num_tris <= 0 || num_tris >= MAX_TRIS)
+		return 0;
 
 	int i;
 	for (i=0; i<num_pts; i++ )	{

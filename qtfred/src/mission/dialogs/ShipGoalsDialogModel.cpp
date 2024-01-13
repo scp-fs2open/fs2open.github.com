@@ -107,7 +107,9 @@ namespace fso {
 				case AI_GOAL_WAYPOINTS:
 				case AI_GOAL_WAYPOINTS_ONCE:
 				case AI_GOAL_DISABLE_SHIP:
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
 				case AI_GOAL_IGNORE:
 				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_EVADE_SHIP:
@@ -427,7 +429,9 @@ namespace fso {
 					case AI_GOAL_CHASE:
 					case AI_GOAL_GUARD:
 					case AI_GOAL_DISABLE_SHIP:
+					case AI_GOAL_DISABLE_SHIP_TACTICAL:
 					case AI_GOAL_DISARM_SHIP:
+					case AI_GOAL_DISARM_SHIP_TACTICAL:
 					case AI_GOAL_IGNORE:
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
@@ -505,7 +509,7 @@ namespace fso {
 					}
 
 					if (flag & 0x4) { // data is a waypoint path name
-						SCP_list<waypoint_list>::iterator ii;
+						SCP_vector<waypoint_list>::iterator ii;
 						for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
 							if (!stricmp(goalp[item].target_name, ii->get_name())) {
 								m_object[item] = i | TYPE_PATH;

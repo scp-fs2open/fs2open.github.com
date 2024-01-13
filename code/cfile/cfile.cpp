@@ -438,7 +438,7 @@ int cfile_flush_dir(int dir_type)
 //    filename = name of filename or filepath to process
 //    ext = extension to add.  Must start with the period
 //    Returns: new filename or filepath with extension.
-char *cf_add_ext(const char *filename, const char *ext)
+const char *cf_add_ext(const char *filename, const char *ext)
 {
 	static char path[MAX_PATH_LEN];
 
@@ -681,6 +681,8 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 		} else {
 			// Path type given?
 			Assert( dir_type != CF_TYPE_ANY );
+			if (dir_type == CF_TYPE_ANY)
+				return NULL;
 
 			// Create the directory if necessary
 			cf_create_directory(dir_type, location_flags);

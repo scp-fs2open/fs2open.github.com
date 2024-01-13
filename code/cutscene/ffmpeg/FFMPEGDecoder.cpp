@@ -503,6 +503,7 @@ MovieProperties FFMPEGDecoder::getProperties() const
 	props.size.height = static_cast<size_t>(m_status->videoCodecPars.height);
 
 	props.fps = static_cast<float>(getFrameRate(m_status->videoStream, m_status->videoCodecCtx));
+	props.duration = static_cast<float>(m_status->videoStream->duration * av_q2d(m_status->videoStream->time_base));
 
 	props.pixelFormat = getPixelFormat(getConversionFormat(m_status->videoCodecPars.pixel_format));
 

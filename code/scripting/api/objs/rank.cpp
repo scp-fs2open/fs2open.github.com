@@ -50,6 +50,40 @@ ADE_VIRTVAR(Name, l_Rank, nullptr, "The name of the rank", "string", "The name")
 	return ade_set_args(L, "s", current.getRank()->name);
 }
 
+ADE_VIRTVAR(AltName, l_Rank, nullptr, "The alt name of the rank", "string", "The alt name")
+{
+	rank_h current;
+	if (!ade_get_args(L, "o", l_Rank.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", current.getRank()->alt_name.c_str());
+}
+
+ADE_VIRTVAR(Title, l_Rank, nullptr, "The title of the rank", "string", "The title")
+{
+	rank_h current;
+	if (!ade_get_args(L, "o", l_Rank.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", current.getRank()->title.c_str());
+}
+
 ADE_VIRTVAR(Bitmap, l_Rank, nullptr, "The bitmap of the rank", "string", "The bitmap")
 {
 	rank_h current;

@@ -444,6 +444,10 @@ void HudGaugeMessages::render(float  /*frametime*/)
 	// dependant on max_width, max_lines, and line_height
 	setClip(position[0], position[1], Window_width, Window_height+2);
 
+	//Since setClip already sets makes drawing local, further renderings mustn't additionally slew
+	bool doSlew = reticle_follow;
+	reticle_follow = false;
+
 	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
 		if ( !timestamp_elapsed(m->total_life) ) {
 			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
@@ -459,6 +463,8 @@ void HudGaugeMessages::render(float  /*frametime*/)
 			}
 		}
 	}
+
+	reticle_follow = doSlew;
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
@@ -639,7 +645,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 	}
 
 	// create the new node for the vector
-	line_node newLine = {t, source, 0, 1, w, ""};
+	line_node newLine = {t, The_mission.HUD_timer_padding, source, 0, 1, w, ""};
 	newLine.text = text;
 
 	Msg_scrollback_vec.push_back(newLine);
@@ -847,7 +853,7 @@ void hud_initialize_scrollback_lines()
 				char* text = c_text;
 
 				char* split = split_str_once(text, max_width);
-				Msg_scrollback_lines.push_back({node_msg.time, node_msg.source, node_msg.x, 1, node_msg.underline_width, text});
+				Msg_scrollback_lines.push_back({node_msg.time, The_mission.HUD_timer_padding, node_msg.source, node_msg.x, 1, node_msg.underline_width, text});
 
 				while (split != nullptr) {
 					text = split;
@@ -858,7 +864,7 @@ void hud_initialize_scrollback_lines()
 					if (split == nullptr)
 						offset = height / 3;
 
-					Msg_scrollback_lines.push_back({0, node_msg.source, node_msg.x, offset, 0, text});
+					Msg_scrollback_lines.push_back({0, 0, node_msg.source, node_msg.x, offset, 0, text});
 				}
 			} else {
 				node_msg.y = height / 3;
@@ -874,6 +880,7 @@ void hud_scrollback_init()
 	// pause all game sounds
 	weapon_pause_sounds();
 	audiostream_pause_all();
+	message_pause_all();
 
 	hud_initialize_scrollback_lines();
 
@@ -934,6 +941,7 @@ void hud_scrollback_close()
 	// unpause all game sounds
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
+	message_resume_all();
 
 }
 
@@ -1180,19 +1188,51 @@ void HudGaugeTalkingHead::render(float frametime)
 			// hud_set_default_color();
 			setGaugeColor();
 
+			int tablePosX = position[0];
+			int tablePosY = position[1];
+			if (reticle_follow && gr_screen.rendering_to_texture == -1) {
+				int nx = HUD_nose_x;
+				int ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+				gr_reset_screen_scale();
+
+				tablePosX += nx;
+				tablePosY += ny;
+			}
+
 			// clear
 			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
 			gr_clear();
 			resetClip();
 
+			//renderBitmap is slew corrected, so use uncorrected position
 			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
-			float scale_x = i2fl(Anim_size[0]) / i2fl(head_anim->width);
-			float scale_y = i2fl(Anim_size[1]) / i2fl(head_anim->height);
-			gr_set_screen_scale(fl2ir(base_w / scale_x), fl2ir(base_h / scale_y));
-			setGaugeColor();
-			generic_anim_render(head_anim,frametime, fl2ir((position[0] + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((position[1] + Anim_offsets[1] + HUD_offset_y) / scale_y));
+
+			int hx = tablePosX + Anim_offsets[0];
+			int hy = tablePosY + Anim_offsets[1];
+
+			if (gr_screen.rendering_to_texture != -1) {
+				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+				hx += gr_screen.offset_x_unscaled;
+				hy += gr_screen.offset_y_unscaled;
+			}
+			else
+				gr_set_screen_scale(base_w, base_h);
+
+			generic_anim_bitmap_set(head_anim, frametime);
+			bitmap_rect_list brl = bitmap_rect_list(hx, hy, Anim_size[0], Anim_size[1]);
+
+			if (head_anim->use_hud_color)
+				gr_aabitmap_list(&brl, 1, GR_RESIZE_FULL);
+			else
+				gr_bitmap_list(&brl, 1, GR_RESIZE_FULL);
+
+			gr_reset_screen_scale();
+
 			// draw title
-			gr_set_screen_scale(base_w, base_h);
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			for (int j = 0; j < Num_messages_playing; ++j) {

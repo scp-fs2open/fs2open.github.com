@@ -37,6 +37,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -1118,6 +1119,10 @@ void wss_maybe_restore_loadout()
 
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
+	if (Disable_internal_loadout_restoration_system) {
+		return;
+	}
+
 	// only restore if mission hasn't changed
 	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
@@ -1582,7 +1587,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
@@ -1623,7 +1628,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, 0.05f, 1000.0f);
 	}
 
 	model_render_params render_info;

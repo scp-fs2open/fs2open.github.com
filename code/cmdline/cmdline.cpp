@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
+#include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "hud/hudconfig.h"
 #include "io/joy.h"
@@ -188,6 +189,7 @@ Flag exe_params[] =
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-window",			"Run in window",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
 	{ "-fullscreen_window",	"Run in fullscreen window",					false,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fullscreen_window", },
+	{ "-capture_mouse",		"Capture the mouse within the window",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-capture_mouse", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
@@ -195,6 +197,8 @@ Flag exe_params[] =
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
+	{ "-vr",				"Enable Virtual Reality Mode",				true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vr", },
+	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -218,6 +222,7 @@ Flag exe_params[] =
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
+	{ "-no_ingame_options",	"Disable using ingame options",				true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ingame_options", },
 	{ "-nomovies",			"Disable video playback",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
@@ -263,7 +268,6 @@ Flag exe_params[] =
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
-	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
 	{ "-profile_frame_time","Profile frame time",						true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_time", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
@@ -406,7 +410,9 @@ cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3
 cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
+cmdline_parm vr("-vr", nullptr, AT_NONE);
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
@@ -414,8 +420,10 @@ int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
+bool Cmdline_capture_mouse = false;
 int Cmdline_no_screenshake = 0;
 int Cmdline_deadzone = -1;
+bool Cmdline_enable_vr = false;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -453,6 +461,7 @@ SCP_string Cmdline_lang;
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
+cmdline_parm no_ingame_options_arg("-no_ingame_options", NULL, AT_NONE); // Cmdline_no_ingame_options
 cmdline_parm no_fbo_arg("-disable_fbo", NULL, AT_NONE);		// Cmdline_no_fbo
 cmdline_parm no_pbo_arg("-disable_pbo", NULL, AT_NONE);		// Cmdline_no_pbo
 cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
@@ -476,6 +485,7 @@ cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
+bool Cmdline_no_ingame_options = false;
 int Cmdline_no_fbo = 0;
 int Cmdline_no_pbo = 0;
 int Cmdline_ati_color_swap = 0;
@@ -510,7 +520,9 @@ cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
 cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
-cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm deprecated_res_arg("-res", "Deprecated, resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm render_res_arg("-render_res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm window_res_arg("-window_res", "Window resolution, formatted like 1600x900.", AT_STRING);
 cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
@@ -548,6 +560,7 @@ int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
+tl::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = tl::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
@@ -1646,7 +1659,7 @@ bool SetCmdlineParams()
 
 		// be sure that this string fits in our limits
 		if ( strlen(Cmdline_game_password) >= MAX_PASSWD_LEN ) {
-			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d charaters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
+			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d characters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
 			Cmdline_game_password[MAX_PASSWD_LEN-1] = '\0';
 		}
 	}
@@ -1710,31 +1723,48 @@ bool SetCmdlineParams()
 	// d3d windowed
 	if(window_arg.found()) {
 		// We need to set both values since we don't know if we are going to use the new config system
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
+		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
 		Cmdline_window = 1;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
+		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
 		Cmdline_fullscreen_window = 1;
 		Cmdline_window = 0; /* Make sure no-one sets both */
 	}
 
-	if(res_arg.found()){
-		Cmdline_res = res_arg.str();
+	if(render_res_arg.found() || deprecated_res_arg.found()){
+		if (render_res_arg.found()) {
+			Cmdline_res = render_res_arg.str();
+		}
+		else {
+			Cmdline_res = deprecated_res_arg.str();
+			mprintf(("Deprecated -res argument. Use -render_res instead...\n"));
+		}
 
-		int width = 0;
+		/*int width = 0;
 		int height = 0;
 
-		if ( sscanf(Cmdline_res, "%dx%d", &width, &height) == 2 ) {
+		if (sscanf(Cmdline_res, "%dx%d", &width, &height) == 2) {
 			SCP_string override;
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
+			Warning(LOCATION, "Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res);
+		}*/
+	}
+	if(window_res_arg.found()){
+		int width = 0;
+		int height = 0;
+
+		if ( sscanf(window_res_arg.str(), "%dx%d", &width, &height) == 2 ) {
+			Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
+		} else {
+			Warning(LOCATION, "Failed to parse -window_res parameter \"%s\". Must be in format \"<width>x<height>\".\n", window_res_arg.str());
 		}
 	}
+	
 	if(center_res_arg.found()){
 		Cmdline_center_res = center_res_arg.str();
 	}
@@ -1843,6 +1873,14 @@ bool SetCmdlineParams()
 		}
 	}
 
+	if (vr.found()) {
+		Cmdline_enable_vr = true;
+		if (fov_arg.found() || fov_cockpit_arg.found()) {
+			Warning(LOCATION, "FoV Command line settings found. VR-Mode will override these with the HMD's native FoV...");
+		}
+		openxr_prepare();
+	}
+
 	if (orb_radar.found())
 	{
 		Cmdline_orb_radar = 1;
@@ -1871,6 +1909,10 @@ bool SetCmdlineParams()
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
+
+	if ( capture_mouse.found() ) {
+		Cmdline_capture_mouse = true;
+	}
 	// new lighting lines
 	if ( ambient_power_arg.found() )
 		Cmdline_ambient_power = ambient_power_arg.get_float();
@@ -1892,6 +1934,10 @@ bool SetCmdlineParams()
 	if( no_set_gamma_arg.found() )
 	{
 		Cmdline_no_set_gamma = 1;
+	}
+
+	if (no_ingame_options_arg.found()) {
+		Cmdline_no_ingame_options = true;
 	}
 
 	if(no_vsync_arg.found() )

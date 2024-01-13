@@ -60,6 +60,7 @@ struct log_entry {
 	LogType type;            // one of the log #defines in MissionLog.h
 	int flags;               // flags used for status of this log entry
 	fix timestamp;           // time in fixed seconds when entry was made from beginning of mission
+	int timer_padding;		 // the mission timer padding, in seconds, when the entry was created
 	char pname[NAME_LENGTH]; // name of primary object of this action
 	char sname[NAME_LENGTH]; // name of secondary object of this action
 	int index;               // a generic entry which can contain things like wave # (for wing arrivals), goal #, etc
@@ -81,6 +82,7 @@ struct log_text_seg {
 
 struct log_line_complete {
 	fix timestamp;
+	int timer_padding;
 	log_text_seg objective;
 	SCP_vector<log_text_seg> segments;
 };

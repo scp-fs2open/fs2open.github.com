@@ -51,7 +51,7 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void DoGray();
 	virtual void OnCancel();
-	virtual void OnOk();
+	virtual void OnButtonOk();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

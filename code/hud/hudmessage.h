@@ -18,6 +18,7 @@
 
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
 
+// If these are changed, the lua 'addMessageToScrollback' method in mission.cpp should be updated.
 #define HUD_SOURCE_COMPUTER		0
 #define HUD_SOURCE_TRAINING		1
 #define HUD_SOURCE_HIDDEN		2
@@ -37,6 +38,7 @@ typedef struct HUD_message_data {
 
 typedef struct line_node {
 	fix time;  // timestamp when message was added
+	int timer_padding; // the mission timer padding, in seconds, at the time the message was added
 	int source;  // who/what the source of the message was (for color coding)
 	int x;
 	int y;

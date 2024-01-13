@@ -1,9 +1,17 @@
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 
+#ifdef COPY_ARRAY
+uniform sampler2DArray tex;
+#else
 uniform sampler2D tex;
+#endif
 
 void main()
 {
+#ifdef COPY_ARRAY
+	fragOut0 = texture(tex, vec3(fragTexCoord.xy, 0));
+#else
 	fragOut0 = texture(tex, fragTexCoord.xy);
+#endif
 }

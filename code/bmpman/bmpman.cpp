@@ -425,6 +425,7 @@ DCF(bm_used, "Shows BmpMan Slot Usage") {
 
 	SCP_stringstream text;
 	text << "BmpMan Used Slots\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << none << ", NONE\n";
 	text << "  " << std::dec << std::setw(4) << std::setfill('0') << pcx  << ", PCX\n";
 	text << "  " << std::dec << std::setw(4) << std::setfill('0') << user << ", User\n";
 	text << "  " << std::dec << std::setw(4) << std::setfill('0') << tga  << ", TGA\n";
@@ -598,7 +599,7 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data) {
 
 	// make sure that we have valid data
 	if (data == nullptr) {
-		UNREACHABLE("No valid data recieved for 3D Bitmap creation!");
+		UNREACHABLE("No valid data received for 3D Bitmap creation!");
 		return -1;
 	}
 

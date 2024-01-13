@@ -17,6 +17,7 @@
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
@@ -776,17 +777,23 @@ int sexp_tree::identify_arg_type(int node) {
 }
 
 // given a tree node, returns the argument type it should be.
+// OPF_NULL means no value (or a "void" value) is returned.  OPF_NONE means there shouldn't be any argument at this position at all.
 int sexp_tree::query_node_argument_type(int node) const {
 	int parent_node = tree_nodes[node].parent;
-	Assert(parent_node >= 0);
+	if (parent_node < 0) {		// parent nodes are -1 for a top-level operator like 'when'
+		return OPF_NULL;
+	}
+
 	int argnum = find_argument_number(parent_node, node);
 	if (argnum < 0) {
 		return OPF_NONE;
 	}
+
 	int op_num = get_operator_index(tree_nodes[parent_node].text);
 	if (op_num < 0) {
 		return OPF_NONE;
 	}
+
 	return query_operator_argument_type(op_num, argnum);
 }
 
@@ -1506,6 +1513,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_ANIMATION_NAME:	
 	case OPF_CONTAINER_VALUE:
 	case OPF_WING_FORMATION:
+	case OPF_CHILD_LUA_ENUM:
 		return 1;
 
 	case OPF_SHIP:
@@ -1666,6 +1674,9 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 
 	case OPF_TRAITOR_OVERRIDE:
 		return Traitor_overrides.empty() ? 0 : 1;
+
+	case OPF_LUA_GENERAL_ORDER:
+		return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
 
 	default:
 		if (!Dynamic_enums.empty()) {
@@ -3449,6 +3460,14 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_traitor_overrides();
 		break;
 
+	case OPF_LUA_GENERAL_ORDER:
+		list = get_listing_opf_lua_general_orders();
+		break;
+
+	case OPF_CHILD_LUA_ENUM:
+		list = get_listing_opf_lua_enum(parent_node, arg_index);
+		break;
+
 	default:
 		// We're at the end of the list so check for any dynamic enums
 		list = check_for_dynamic_sexp_enum(opf);
@@ -3926,6 +3945,20 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if (child < 0)
 		return nullptr;
 
+	
+	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
+	if (special_subsys == OPS_STRENGTH) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+
+	// if setting armor type we only need Hull and Shields
+	if (special_subsys == OPS_ARMOR) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SHIELD_STRING);
+	}
+
+
 	// now find the ship and add all relevant subsystems
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
@@ -3973,17 +4006,6 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			// next subsystem
 			subsys = GET_NEXT(subsys);
 		}
-	}
-
-	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
-	if (special_subsys == OPS_STRENGTH) {
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SIM_HULL_STRING);
-	}
-	// if setting armor type we only need Hull and Shields
-	if (special_subsys == OPS_ARMOR) {
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SHIELD_STRING);
 	}
 
 	return head.next;
@@ -4038,13 +4060,11 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem_type(int parent_node) {
 
 sexp_list_item* sexp_tree::get_listing_opf_point() {
 	char buf[NAME_LENGTH + 8];
-	SCP_list<waypoint_list>::iterator ii;
-	int j;
 	sexp_list_item head;
 
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		for (j = 0; (uint) j < ii->get_waypoints().size(); ++j) {
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+	for (const auto &ii: Waypoint_lists) {
+		for (int j = 0; (uint) j < ii.get_waypoints().size(); ++j) {
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			head.add_data(buf);
 		}
 	}
@@ -4481,11 +4501,10 @@ sexp_list_item* sexp_tree::get_listing_opf_explosion_option() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_waypoint_path() {
-	SCP_list<waypoint_list>::iterator ii;
 	sexp_list_item head;
 
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		head.add_data(ii->get_name());
+	for (const auto &ii: Waypoint_lists) {
+		head.add_data(ii.get_name());
 	}
 
 	return head.next;
@@ -5137,6 +5156,19 @@ sexp_list_item* sexp_tree::get_listing_opf_traitor_overrides()
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
+{
+	sexp_list_item head;
+
+	SCP_vector<SCP_string> orders = ai_lua_get_general_orders();
+
+	for (const auto& val : orders) {
+		head.add_data(val.c_str());
+	}
+
+	return head.next;
+}
+
 sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
 {
 	sexp_list_item head;
@@ -5150,6 +5182,48 @@ sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
 		}
 	}
 
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_index)
+{
+
+	// first child node
+	int child = tree_nodes[parent_node].child;
+	if (child < 0)
+		return nullptr;
+
+	int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
+
+	if (this_index >= 0) {
+		for (int count = 0; count < this_index; count++) {
+			child = tree_nodes[child].next;
+		}
+	} else {
+		error_display(1,
+			"Expected to find an enum parent parameter for node %i in operator %s but found nothing!",
+			arg_index,
+			tree_nodes[parent_node].text);
+		return nullptr;
+	}
+
+	// Append the suffix if it exists
+	SCP_string enum_name = tree_nodes[child].text + get_child_enum_suffix(tree_nodes[parent_node].text, arg_index);
+
+	sexp_list_item head;
+
+	int item = get_dynamic_enum_position(enum_name);
+
+	if (item >= 0 && item < static_cast<int>(Dynamic_enums.size())) {
+
+		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
+			head.add_data(enum_item.c_str());
+		}
+	} else {
+		// else if enum is invalid do this
+		mprintf(("Could not find Lua Enum %s! Using <none> instead!", enum_name.c_str()));
+		head.add_data("<none>");
+	}
 	return head.next;
 }
 
@@ -5872,7 +5946,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				// Replace Container Data submenu
 				// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
 				// also disallowed for special argument options (not supported for now)
-				if (op_type != OPF_VARIABLE_NAME && op_type != OPF_ANYTHING && op_type != OPF_DATA_OR_STR_CONTAINER) {
+				if (op_type != OPF_VARIABLE_NAME && !is_argument_provider_op(Operators[op].value)) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];

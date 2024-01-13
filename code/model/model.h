@@ -711,10 +711,10 @@ public:
 	texture_info(int bm_handle);
 	void clear();
 
-	int GetNumFrames();
-	int GetOriginalTexture();
-	int GetTexture();
-	float GetTotalTime();
+	int GetNumFrames() const;
+	int GetOriginalTexture() const;
+	int GetTexture() const;
+	float GetTotalTime() const;
 
 	int LoadTexture(const char *filename, const char *dbg_name = "<UNKNOWN>");
 
@@ -1091,7 +1091,7 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset = false);
+extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
@@ -1165,6 +1165,10 @@ extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_d
 // If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
 extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, bool use_last_frame = false);
 
+// Combines model_instance_local_to_global_point and the matrix equivalent of model_instance_local_to_global_dir into one function.
+extern void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorient, const vec3d* submodel_pnt, const matrix* submodel_orient, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient = nullptr, const vec3d* objpos = nullptr);
+
+
 // ------- end of submodel transformations -------
 
 // Given a polygon model index, find a list of moving submodels to be used for collision
@@ -1233,10 +1237,10 @@ typedef struct mc_info {
 	int     model_instance_num = -1;
 	int     model_num = -1;             // What model to check
 	int     submodel_num = -1;          // What submodel to check if MC_SUBMODEL is set
-	matrix  *orient = nullptr;          // The orient of the model
-	vec3d   *pos = nullptr;             // The pos of the model in world coordinates
-	vec3d   *p0 = nullptr;              // The starting point of the ray (sphere) to check
-	vec3d   *p1 = nullptr;              // The ending point of the ray (sphere) to check
+	const matrix  *orient = nullptr;        // The orient of the model
+	const vec3d   *pos = nullptr;           // The pos of the model in world coordinates
+	const vec3d   *p0 = nullptr;            // The starting point of the ray (sphere) to check
+	const vec3d   *p1 = nullptr;            // The ending point of the ray (sphere) to check
 	int     flags = 0;                  // Flags that the model_collide code looks at.  See MC_??? defines
 	float   radius = 0;                 // If MC_CHECK_THICK is set, checks a sphere moving with the radius.
 	int     lod = 0;                    // Which detail level of the submodel to check instead
@@ -1414,7 +1418,7 @@ bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_str
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
 
-void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags);
 
 void model_render_shields( polymodel * pm, uint flags );
 

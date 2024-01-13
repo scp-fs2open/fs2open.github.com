@@ -31,6 +31,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "wing.h"
 #include "ship_select.h"
 #include "PlayerStartEditor.h"
@@ -60,6 +61,8 @@
 #include "calcrelativecoordsdlg.h"
 #include "musicplayerdlg.h"
 #include "volumetricsdlg.h"
+#include "customdatadlg.h"
+#include "customstringsdlg.h"
 
 #include "osapi/osapi.h"
 
@@ -167,6 +170,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
+	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
 	ON_COMMAND(ID_SPEED2, OnSpeed2)
 	ON_COMMAND(ID_SPEED5, OnSpeed5)
@@ -263,6 +267,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
 	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
+	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -1632,6 +1638,13 @@ void CFREDView::OnEditorsGoals()
 	dlg.DoModal();
 }
 
+void CFREDView::OnEditorsCutscenes()
+{
+	CMissionCutscenesDlg dlg;
+
+	dlg.DoModal();
+}
+
 void CFREDView::OnSpeed1() 
 {
 	physics_speed = 1;
@@ -2835,18 +2848,17 @@ int CFREDView::global_error_check()
 		return internal_error("Num_wings is incorrect");
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	for (const auto &ii: Waypoint_lists) {
 		for (z=0; z<obj_count; z++){
 			if (names[z]){
-				if (!stricmp(names[z], ii->get_name())){
+				if (!stricmp(names[z], ii.get_name())){
 					return internal_error("Waypoint path name is also used by an object (%s)", names[z]);
 				}
 			}
 		}
 
-		for (j = 0; (uint) j < ii->get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			for (z=0; z<obj_count; z++){
 				if (names[z]){
 					if (!stricmp(names[z], buf)){
@@ -3460,7 +3472,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_IGNORE:
@@ -3636,7 +3650,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE_WING:
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				if (team == team2) {
 					if (ship >= 0)
 						return "Ship assigned to attack same team";
@@ -3767,6 +3783,18 @@ void CFREDView::OnViewOutlinesOnSelected()
 void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
+}
+
+void CFREDView::OnViewOutlineAtWarpin()
+{
+	Draw_outline_at_warpin_position = !Draw_outline_at_warpin_position;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 

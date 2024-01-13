@@ -43,6 +43,13 @@ typedef struct background_t {
 	SCP_vector<starfield_list_entry> suns;
 } background_t;
 
+typedef struct star {
+	vec3d pos;
+	vec3d last_star_pos;
+	color col;
+} star;
+constexpr int MAX_STARS = 2000;
+
 extern int Cur_background;
 extern SCP_vector<background_t> Backgrounds;
 
@@ -52,8 +59,6 @@ extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
 extern int Nmodel_flags;
 extern int Nmodel_bitmap;
-
-extern bool Subspace_sexp_used;
 
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
@@ -110,7 +115,6 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun);
 #define stars_get_sun_name(x)		stars_get_name_from_instance((x),true)
 #define stars_get_bitmap_name(x)	stars_get_name_from_instance((x),false)
 
-extern const int MAX_STARS;
 extern int Num_stars;
 extern TIMESTAMP Skybox_timestamp;
 

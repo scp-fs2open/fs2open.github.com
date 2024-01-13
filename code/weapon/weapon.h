@@ -23,7 +23,7 @@
 #include "graphics/color.h"
 #include "graphics/generic.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 #include "particle/ParticleManager.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
@@ -228,6 +228,7 @@ typedef struct beam_weapon_info {
 	generic_anim beam_glow;				// muzzle glow bitmap
 	float glow_length;					// (DahBlount) determines the length the muzzle glow when using a directional glow
 	bool directional_glow;				// (DahBlount) makes the muzzle glow render to a poly that is oriented along the direction of fire
+	int beam_alpha_curve_idx;			// alpha multiplier over the lifetime of the beam
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
@@ -340,10 +341,13 @@ struct weapon_info
 	float laser_headon_switch_ang;			// at what angle
 
 	float laser_length;
+	int laser_length_curve_idx;				// length over time curve
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
+	int	laser_radius_curve_idx;				// tail + head radius over time curve
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
+	int laser_alpha_curve_idx;			// alpha over time curve
 
 	bool 		light_color_set;
 	hdr_color 	light_color;		//For the light cast by the projectile
@@ -362,6 +366,7 @@ struct weapon_info
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
+	int   damage_curve_idx;					// damage over time curve
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
 	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
 	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
@@ -382,14 +387,14 @@ struct weapon_info
 
 	float life_min;
 	float life_max;
-	float max_lifetime ;						// How long this weapon will actually live for
-	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
+	float	lifetime;						// How long this weapon will live for
 
 	float energy_consumed;					// Energy used up when weapon is fired
 
 	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 
 	float turn_time;
+	int turn_rate_curve_idx;					// turn rate over time curve
 	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float autoaim_fov;							// the weapon specific auto-aim field of view
@@ -448,6 +453,9 @@ struct weapon_info
 	gamesnd_id  shield_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	gamesnd_id	ambient_snd;
+	gamesnd_id  start_firing_snd;
+	gamesnd_id  loop_firing_snd;
+	gamesnd_id  end_firing_snd;
 	
 	gamesnd_id hud_tracking_snd; // Sound played when the player is tracking a target with this weapon
 	gamesnd_id hud_locked_snd; // Sound played when the player is locked onto a target with this weapon

@@ -242,7 +242,7 @@ void FillSDLArray ()
 }
 
 SDL_Scancode fs2_to_sdl(int scancode) {
-	for (auto code : SDLtoFS2) {
+	for (const auto& code : SDLtoFS2) {
 		if (code.second == scancode)
 			return code.first;
 	}
@@ -382,15 +382,12 @@ int key_inkey()
 //	Else returns pending key (or waits for one if none waiting).
 int key_getch()
 {
-	int dummy=0;
 	int in;
 
 	if ( !key_inited ) return 0;
 	
 	while (!key_checkch()){
 		os_poll();
-
-		dummy++;
 	}
 	in = key_inkey();
 

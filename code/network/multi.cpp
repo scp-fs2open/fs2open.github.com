@@ -122,7 +122,6 @@ int Multi_button_info_id = 0;										// identifier of the stored button info t
 active_game* Active_game_head;									// linked list of active games displayed on Join screen
 int Active_game_count;												// for interface screens as well
 CFILE* Multi_chat_stream;											// for streaming multiplayer chat strings to a file
-int Multi_has_cd = 0;												// if this machine has a cd or not (call multi_common_verify_cd() to set this)
 int Multi_connection_speed;										// connection speed of this machine.
 int Multi_num_players_at_start = 0;								// the # of players present (kept track of only on the server) at the very start of the mission
 short Multi_id_num = 0;												// for assigning player id #'s
@@ -245,11 +244,6 @@ void multi_vars_init()
 
 	// reentrant variable
 	Multi_read_count = 0;
-
-	// unset the "have cd" var
-	// NOTE: we unset this here because we are going to be calling multi_common_verify_cd() 
-	//       immediately after this (in multi_level_init() to re-check the status)
-	Multi_has_cd = 0;
 
 	// current file checksum
 	Multi_current_file_checksum = 0;

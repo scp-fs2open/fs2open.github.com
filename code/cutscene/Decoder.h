@@ -52,6 +52,7 @@ struct MovieProperties {
 	FrameSize size;
 
 	float fps = -1.0f;
+	float duration = 0.0f;
 
 	FramePixelFormat pixelFormat = FramePixelFormat::Invalid;
 };
@@ -108,7 +109,7 @@ class Decoder {
 	 * @note A implementation should initialize the datastructures required for decoding here.
 	 *
 	 * @param fileName The name of the file that should be opened
-	 * @return @c true if the initialization was successfull, @c false otherwise
+	 * @return @c true if the initialization was successful, @c false otherwise
 	 */
 	virtual bool initialize(const SCP_string& fileName, const PlaybackProperties& properties) = 0;
 

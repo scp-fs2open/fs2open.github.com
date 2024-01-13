@@ -231,8 +231,7 @@ void multi_data_handle_incoming(int handle)
 
 // send all my files as necessary
 void multi_data_send_my_junk()
-{		
-	char *with_ext;	
+{
 	int bmap, w, h;
 	int ok_to_send = 1;
 
@@ -265,7 +264,7 @@ void multi_data_send_my_junk()
 	}
 
 	if(ok_to_send){
-		with_ext = cf_add_ext(Net_player->m_player->image_filename, NOX(".pcx"));
+		auto with_ext = cf_add_ext(Net_player->m_player->image_filename, NOX(".pcx"));
 		if(with_ext != NULL){
 			strcpy_s(Net_player->m_player->image_filename, with_ext);
 		}
@@ -312,7 +311,7 @@ void multi_data_send_my_junk()
 	}
 
 	if(ok_to_send){
-		with_ext = cf_add_ext(Net_player->m_player->m_squad_filename, NOX(".pcx"));
+		auto with_ext = cf_add_ext(Net_player->m_player->m_squad_filename, NOX(".pcx"));
 		if(with_ext != NULL){
 			strcpy_s(Net_player->m_player->m_squad_filename,with_ext);
 		}

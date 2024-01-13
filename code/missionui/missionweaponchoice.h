@@ -15,6 +15,7 @@
 class p_object;
 struct wss_unit;
 class ship_weapon;
+struct team_data;
 
 // mask regions for icons in the scrollable lists
 #define ICON_PRIMARY_0				28
@@ -50,7 +51,7 @@ void draw_3d_overhead_view(int model_num,
 	int ship_class,
 	float* rotation_buffer,
 	float frametime,
-	int selected_ship_slot,
+	int weapon_array[MAX_SHIP_WEAPONS],
 	int selected_weapon_class,
 	int hovered_weapon_slot,
 	int x1,
@@ -83,6 +84,7 @@ void	wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot);
 
 void wl_set_default_weapons(int index, int ship_class);
 void wl_reset_to_defaults();
+void wl_init_pool(team_data* td);
 void wl_fill_slots();
 
 // Set selected slot to first placed ship

@@ -183,6 +183,9 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	if (props.flags[os::ViewPortFlags::Resizeable]) {
 		windowflags |= SDL_WINDOW_RESIZABLE;
 	}
+	if (props.flags[os::ViewPortFlags::Capture_Mouse]) {
+		windowflags |= SDL_WINDOW_INPUT_GRABBED;
+	}
 
 	SDL_Rect bounds;
 	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
@@ -192,8 +195,15 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 
 	int x;
 	int y;
+	uint32_t width = props.width;
+	uint32_t height = props.height;
 
-	if (bounds.w == (int)props.width && bounds.h == (int)props.height) {
+	if (Cmdline_window_res) {
+		width = Cmdline_window_res->first;
+		height = Cmdline_window_res->second;
+	}
+
+	if (bounds.w == (int)width && bounds.h == (int)height) {
 		// If we have the same size as the desktop we explicitly specify 0,0 to make sure that the window borders aren't hidden
 		mprintf(("SDL: Creating window at %d,%d because window has same size as desktop.\n", bounds.x, bounds.y));
 		x = bounds.x;
@@ -206,13 +216,15 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
 										  x,
 										  y,
-										  props.width,
-										  props.height,
+										  width,
+										  height,
 										  windowflags);
 	if (window == nullptr) {
 		mprintf(("Failed to create SDL Window: %s\n", SDL_GetError()));
 		return nullptr;
 	}
+
+	SDL_RaiseWindow(window);
 
 	return std::unique_ptr<os::Viewport>(new SDLWindowViewPort(window, props));
 }

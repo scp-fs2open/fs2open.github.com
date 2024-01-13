@@ -43,6 +43,7 @@
 #include "ship/ship.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
+#include "scripting/global_hooks.h"
 
 extern int Num_objects;
 
@@ -323,7 +324,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 		}
 		// double check the used pool is empty
 		for (j = 0; j < weapon_info_size(); j++) {
-			if (used_pool[j] != 0) {
+			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
 				Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[j].name, i + 1);
 
 				// add the weapon as a new entry
@@ -368,6 +369,12 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	stars_post_level_init();
 
 	recreate_dialogs();
+
+	// This hook will allow for scripts to know when a mission has been loaded
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionLoad->isActive()) {
+		scripting::hooks::FredOnMissionLoad->run();
+	}
 
 	return true;
 }
@@ -428,7 +435,6 @@ void CFREDDoc::OnFileImportFSM() {
 	// get location to save to
 	BROWSEINFO bi;
 	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
-	//bi.pidlRoot = &fs2_mission_pidl;
 	bi.pidlRoot = NULL;
 	bi.pszDisplayName = dest_directory;
 	bi.lpszTitle = "Select a location to save in";
@@ -444,6 +450,9 @@ void CFREDDoc::OnFileImportFSM() {
 
 	SHGetPathFromIDList(ret_val, dest_directory);
 
+	if (*dest_directory == '\0')
+		return;
+
 	// clean things up first
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);
@@ -451,7 +460,8 @@ void CFREDDoc::OnFileImportFSM() {
 	clear_mission();
 
 	int num_files = 0;
-	char dest_path[MAX_PATH_LEN];
+	int successes = 0;
+	char dest_path[MAX_PATH_LEN] = "";
 
 	// process all missions
 	POSITION pos(dlgFile.GetStartPosition());
@@ -519,6 +529,7 @@ void CFREDDoc::OnFileImportFSM() {
 			continue;
 
 		// success
+		successes++;
 	}
 
 	if (num_files > 1)
@@ -528,16 +539,20 @@ void CFREDDoc::OnFileImportFSM() {
 	}
 	else if (num_files == 1)
 	{
-		SetModifiedFlag(FALSE);
+		if (successes == 1)
+			SetModifiedFlag(FALSE);
 
 		if (Briefing_dialog) {
 			Briefing_dialog->restore_editor_state();
 			Briefing_dialog->update_data(1);
 		}
 
-		// these aren't done automatically for imports
-		theApp.AddToRecentFileList((LPCTSTR)dest_path);
-		SetTitle((LPCTSTR)Mission_filename);
+		if (successes == 1)
+		{
+			// these aren't done automatically for imports
+			theApp.AddToRecentFileList((LPCTSTR)dest_path);
+			SetTitle((LPCTSTR)Mission_filename);
+		}
 	}
 
 	recreate_dialogs();

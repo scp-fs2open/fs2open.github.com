@@ -70,7 +70,9 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
 	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
 	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
 	{ "Dock",					AI_GOAL_DOCK,				0 },
 	{ "Undock",					AI_GOAL_UNDOCK,				0 },
@@ -279,7 +281,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		}
 		// double check the used pool is empty
 		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (used_pool[j] != 0) {
+			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
 				Warning(LOCATION,
 						"%s is used in wings of team %d but was not in the loadout. Fixing now",
 						Weapon_info[j].name,
@@ -426,8 +428,8 @@ void Editor::clearMission() {
 	The_mission.author = userName;
 	strcpy_s(The_mission.created, time_buffer);
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
-	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
+	strcpy_s(The_mission.mission_desc, "Put mission description here");
 
 	// reset alternate name & callsign stuff
 	for (auto i = 0; i < MAX_SHIPS; i++) {
@@ -452,7 +454,7 @@ void Editor::clearMission() {
 
 		count = 0;
 		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {
@@ -842,7 +844,8 @@ int Editor::dup_object(object* objp) {
 }
 
 int Editor::common_object_delete(int obj) {
-	char msg[255], * name;
+	char msg[255];
+	const char *name;
 	int i, z, r, type;
 	object* objp;
 	SCP_list<CJumpNode>::iterator jnp;
@@ -2261,18 +2264,17 @@ int Editor::global_error_check_impl() {
 		return internal_error("Num_wings is incorrect");
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	for (const auto &ii: Waypoint_lists) {
 		for (z = 0; z < obj_count; z++) {
 			if (names[z]) {
-				if (!stricmp(names[z], ii->get_name())) {
+				if (!stricmp(names[z], ii.get_name())) {
 					return internal_error("Waypoint path name is also used by an object (%s)", names[z]);
 				}
 			}
 		}
 
-		for (j = 0; (uint) j < ii->get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			for (z = 0; z < obj_count; z++) {
 				if (names[z]) {
 					if (!stricmp(names[z], buf)) {
@@ -2600,7 +2602,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		case AI_GOAL_CHASE:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_IGNORE:
@@ -2775,7 +2779,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			if (team == team2) {
 				if (ship >= 0)
 					return "Ship assigned to attack same team";

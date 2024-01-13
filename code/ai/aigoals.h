@@ -73,15 +73,17 @@ struct ai_info;
 #define AI_GOAL_FLY_TO_SHIP				(1<<23) // 0x00800000
 #define AI_GOAL_IGNORE_NEW				(1<<24)	// 0x01000000
 #define AI_GOAL_CHASE_SHIP_CLASS		(1<<25)	// 0x02000000
-#define AI_GOAL_PLAY_DEAD_PERSISTENT	(1<<26)	// 0x03000000
-#define AI_GOAL_LUA						(1<<27) // 0x04000000
+#define AI_GOAL_PLAY_DEAD_PERSISTENT	(1<<26)	// 0x04000000
+#define AI_GOAL_LUA						(1<<27) // 0x08000000
+#define AI_GOAL_DISARM_SHIP_TACTICAL	(1<<28)	// 0x10000000
+#define AI_GOAL_DISABLE_SHIP_TACTICAL	(1<<29)	// 0x20000000
 
 // now the masks for ship types
 
 // Goober5000: added AI_GOAL_STAY_NEAR_SHIP and AI_GOAL_KEEP_SAFE_DISTANCE as valid for fighters
 //WMC - Don't need these anymore. Whee!
 /*
-#define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_IGNORE_NEW | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_PLAY_DEAD_PERSISTENT | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE )
+#define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_IGNORE_NEW | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_PLAY_DEAD_PERSISTENT | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE )
 #define AI_GOAL_ACCEPT_BOMBER			( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_FIGHTER | AI_GOAL_STAY_NEAR_SHIP )
 #define AI_GOAL_ACCEPT_STEALTH		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_FIGHTER | AI_GOAL_STAY_NEAR_SHIP )
 #define AI_GOAL_ACCEPT_TRANSPORT		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_DOCK | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_UNDOCK | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_PLAY_DEAD_PERSISTENT | AI_GOAL_STAY_NEAR_SHIP )
@@ -166,17 +168,17 @@ extern void ai_process_mission_orders( int objnum, ai_info *aip );
 extern int ai_goal_num(ai_goal *goals);
 
 // adds goals to ships/wing through sexpressions
-extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip);
+extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char *shipname, ai_info *aip);
 extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
-extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char *actor_name);
+extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name);
 
 extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders
-extern void ai_add_ship_goal_player(int type, int mode, int submode, char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
-extern void ai_add_wing_goal_player(int type, int mode, int submode, char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_ship_goal_player(int type, int mode, int submode, const char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_wing_goal_player(int type, int mode, int submode, const char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
 
 extern void ai_remove_ship_goal( ai_info *aip, int index );
 extern void ai_clear_ship_goals( ai_info *aip );

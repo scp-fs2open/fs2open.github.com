@@ -73,6 +73,7 @@
 #define MODE_GOALS		(1 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 #define MODE_EVENTS		(2 | ST_LABELED_ROOT | ST_ROOT_DELETABLE | ST_ROOT_EDITABLE)
 #define MODE_CAMPAIGN	(3 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
+#define MODE_CUTSCENES	(4 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED	1
@@ -310,6 +311,8 @@ public:
 	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
 	sexp_list_item *get_listing_opf_bolt_types();
 	sexp_list_item *get_listing_opf_traitor_overrides();
+	sexp_list_item *get_listing_opf_lua_general_orders();
+	sexp_list_item *get_listing_opf_lua_enum(int parent_node, int arg_index);
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

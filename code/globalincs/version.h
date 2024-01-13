@@ -57,6 +57,8 @@ struct version {
 
 	version(int major, int minor = 0, int build = 0, int revision = 0);
 
+	version(const SCP_string& semver, int missing = -1);
+	
 	bool isValid() const;
 
 	bool operator<(const version& other) const;

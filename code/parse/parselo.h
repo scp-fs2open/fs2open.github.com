@@ -100,6 +100,9 @@ extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
 extern void ignore_gray_space(const char **pp = nullptr);
 
+// other
+extern bool is_parenthesis(char ch);
+
 // error
 extern int get_line_num();
 extern char *next_tokens(bool terminate_before_parenthesis_or_comma = false);
@@ -252,6 +255,7 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
 int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
@@ -330,6 +334,11 @@ int split_str(const char* src,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 
+SCP_vector<SCP_string> str_wrap_to_width(const SCP_string& source_string, int max_pixel_length,
+			  bool strip_leading_whitespace = true);
+
+SCP_vector<SCP_string> str_wrap_to_width(const char* source_string, int max_pixel_length,
+			  bool strip_leading_whitespace = true);
 // fred
 extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);

@@ -36,6 +36,7 @@ class OverridableHook;
 
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
+extern float Min_draw_distance_cockpit;
 extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
@@ -102,7 +103,7 @@ public:
 		Stack.push_back(Current_transform);
 	}
 
-	matrix4 &get_transform()
+	const matrix4 &get_transform() const
 	{
 		return Current_transform;
 	}
@@ -115,7 +116,7 @@ public:
 		Stack.push_back(Current_transform);
 	}
 
-	void push_and_replace(matrix4 new_transform)
+	void push_and_replace(const matrix4 &new_transform)
 	{
 		Current_transform = new_transform;
 		Stack.push_back(Current_transform);
@@ -202,6 +203,7 @@ enum shader_type {
 	SDR_TYPE_VOLUMETRIC_FOG,
 	SDR_TYPE_ROCKET_UI,
 	SDR_TYPE_COPY,
+	SDR_TYPE_COPY_WORLD,
 	SDR_TYPE_MSAA_RESOLVE,
 
 	SDR_TYPE_POST_PROCESS_SMAA_EDGE,
@@ -235,6 +237,10 @@ enum shader_type {
 
 #define SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING (1<<0)
 #define SDR_FLAG_VOLUMETRICS_NOISE (1<<1)
+
+#define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
+
+#define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
 
 enum class uniform_block_type {
@@ -300,7 +306,7 @@ public:
 
 	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset);
 
-	size_t get_vertex_stride() { return Vertex_stride; }
+	size_t get_vertex_stride() const { return Vertex_stride; }
 
 	bool operator==(const vertex_layout& other) const;
 
@@ -696,6 +702,8 @@ typedef struct screen {
 	// switch onscreen, offscreen
 	std::function<void()> gf_flip;
 
+	std::function<void()> gf_setup_frame;
+
 	// sets the clipping region
 	std::function<void(int x, int y, int w, int h, int resize_mode)> gf_set_clip;
 
@@ -911,6 +919,14 @@ typedef struct screen {
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
 
 	std::function<void(bool set_override)> gf_override_fog;
+
+	//OpenXR functions
+	std::function<SCP_vector<const char*>()> gf_openxr_get_extensions;
+	std::function<bool()> gf_openxr_test_capabilities;
+	std::function<bool()> gf_openxr_create_session;
+	std::function<int64_t(const SCP_vector<int64_t>&)> gf_openxr_get_swapchain_format;
+	std::function<bool()> gf_openxr_acquire_swapchain_buffers;
+	std::function<bool()> gf_openxr_flip;
 } screen;
 
 // handy macro
@@ -965,6 +981,7 @@ extern screen gr_screen;
 #define GR_RESIZE_MENU				3
 #define GR_RESIZE_MENU_ZOOMED		4
 #define GR_RESIZE_MENU_NO_OFFSET	5
+#define GR_RESIZE_REPLACE			6
 
 void gr_set_screen_scale(int x, int y, int zoom_x = -1, int zoom_y = -1, int max_x = gr_screen.max_w, int max_y = gr_screen.max_h, int center_x = gr_screen.center_w, int center_y = gr_screen.center_h, bool force_stretch = false);
 void gr_reset_screen_scale();
@@ -1009,6 +1026,10 @@ extern void gr_activate(int active);
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
+
+inline void gr_setup_frame() {
+	gr_screen.gf_setup_frame();
+}
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
@@ -1270,6 +1291,14 @@ inline void gr_sync_delete(gr_sync sync)
 {
 	gr_screen.gf_sync_delete(sync);
 }
+
+//OpenXR
+#define gr_openxr_get_extensions GR_CALL(gr_screen.gf_openxr_get_extensions)
+#define gr_openxr_test_capabilities GR_CALL(gr_screen.gf_openxr_test_capabilities)
+#define gr_openxr_create_session GR_CALL(gr_screen.gf_openxr_create_session)
+#define gr_openxr_get_swapchain_format GR_CALL(gr_screen.gf_openxr_get_swapchain_format)
+#define gr_openxr_acquire_swapchain_buffers GR_CALL(gr_screen.gf_openxr_acquire_swapchain_buffers)
+#define gr_openxr_flip GR_CALL(gr_screen.gf_openxr_flip)
 
 // color functions
 void gr_init_color(color *c, int r, int g, int b);

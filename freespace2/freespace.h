@@ -150,7 +150,7 @@ bool game_using_low_mem();
 // misc ---------------------------------------------------------------
 
 // lookup the specified filename. return an fs_builtin_mission* if found, NULL otherwise
-fs_builtin_mission *game_find_builtin_mission(char *filename);
+const fs_builtin_mission *game_find_builtin_mission(const char *filename);
 
 
 
@@ -182,9 +182,6 @@ void game_shudder_apply(int time, float intensity, bool perpetual = false, bool 
 
 //===================================================================
 
-// make sure a CD is in the drive before continuing (returns 1 to continue, otherwise 0).
-int find_freespace_cd(char *volume_name=NULL);
-
 // Used to tell the player that a feature is disabled by build settings
 void game_feature_disabled_popup();
 
@@ -204,7 +201,7 @@ extern camid Main_camera;
 extern void game_level_init();
 extern void game_post_level_init();
 extern camid game_render_frame_setup();
-extern void game_render_frame(camid cid);
+extern void game_render_frame(camid cid, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void game_simulation_frame();
 extern void game_update_missiontime();
 extern void game_render_post_frame();

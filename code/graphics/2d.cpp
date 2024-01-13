@@ -25,6 +25,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
+#include "graphics/openxr.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/post_processing.h"
 #include "graphics/util/GPUMemoryHeap.h"
@@ -112,35 +113,38 @@ static bool gamma_change_listener(float new_val, bool initial)
 	return true;
 }
 
-static auto GammaOption __UNUSED =
-    options::OptionBuilder<float>("Graphics.Gamma", "Brightness", "The brighness value used for the game window")
-        .category("Graphics")
-        .default_val(1.0f)
-        .enumerator(gamma_value_enumerator)
-        .display(gamma_display)
-        .change_listener(gamma_change_listener)
-        .finish();
+static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma",
+                     std::pair<const char*, int>{"Brightness", 1375},
+                     std::pair<const char*, int>{"The brightness value used for the game window", 1738})
+                     .category("Graphics")
+                     .default_val(1.0f)
+                     .enumerator(gamma_value_enumerator)
+                     .display(gamma_display)
+                     .change_listener(gamma_change_listener)
+                     .finish();
 
 
-const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
-                                                                  { 1, "Low" },
-                                                                  { 2, "Medium" },
-                                                                  { 3, "High" },
-                                                                  { 4, "Ultra" }, };
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
+                                                                                   { 1, {"Low", 1161}},
+                                                                                   { 2, {"Medium", 1162}},
+                                                                                   { 3, {"High", 1163}},
+                                                                                   { 4, {"Ultra", 1721}}};
 
-const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Lighting", "Lighting", "Level of detail of the lighting")
-		.importance(1)
-		.category("Graphics")
-		.values(DetailLevelValues)
-		.default_val(MAX_DETAIL_LEVEL)
-		.change_listener([](int val, bool initial) {
-			Detail.lighting = val;
-			if (!initial) {
-				gr_recompile_all_shaders(nullptr);
-			}
-			return true;
-		})
-		.finish();
+const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Lighting",
+                     std::pair<const char*, int>{"Lighting", 1367},
+                     std::pair<const char*, int>{"Level of detail of the lighting", 1715})
+                     .importance(1)
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool initial) {
+                          Detail.lighting = val;
+                          if (!initial) {
+                               gr_recompile_all_shaders(nullptr);
+                          }
+                          return true;
+                     })
+                     .finish();
 
 os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;
 
@@ -162,17 +166,18 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
-static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
-																		 "Controls how the game window is created.")
-								   .category("Graphics")
-								   .level(options::ExpertLevel::Beginner)
-								   .values({{os::ViewportState::Fullscreen, "Fullscreen"},
-											{os::ViewportState::Borderless, "Borderless"},
-											{os::ViewportState::Windowed, "Windowed"}})
-								   .importance(98)
-								   .default_val(os::ViewportState::Fullscreen)
-								   .change_listener(mode_change_func)
-								   .finish();
+static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
+                     std::pair<const char*, int>{"Window Mode", 1772},
+                     std::pair<const char*, int>{"Controls how the game window is created", 1773})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Beginner)
+                     .values({{os::ViewportState::Fullscreen, {"Fullscreen", 1679}},
+                              {os::ViewportState::Borderless, {"Borderless", 1675}},
+                              {os::ViewportState::Windowed, {"Windowed", 1676}}})
+                     .importance(98)
+                     .default_val(os::ViewportState::Fullscreen)
+                     .change_listener(mode_change_func)
+                     .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
 	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
@@ -188,6 +193,7 @@ int gr_stencil_mode = 0;
 // Default clipping distances
 const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 1e10;
+float Min_draw_distance_cockpit = 0.02f;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
 
@@ -251,18 +257,20 @@ static bool videodisplay_change(int display, bool initial)
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	return true;
 }
-static auto VideoDisplayOption =
-    options::OptionBuilder<int>("Graphics.Display", "Primary display", "The display used for rendering.")
-        .category("Graphics")
-        .level(options::ExpertLevel::Beginner)
-        .deserializer(videodisplay_deserializer)
-        .serializer(videodisplay_serializer)
-        .enumerator(videodisplay_enumerator)
-        .display(videodisplay_display)
-        .default_val(0)
-        .change_listener(videodisplay_change)
-        .importance(99)
-        .finish();
+static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
+                     std::pair<const char*, int>{"Primary display", 1741},
+                     std::pair<const char*, int>{"The display used for rendering", 1742})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Beginner)
+                     .deserializer(videodisplay_deserializer)
+                     .serializer(videodisplay_serializer)
+                     .enumerator(videodisplay_enumerator)
+                     .display(videodisplay_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_val(0)
+                     .change_listener(videodisplay_change)
+                     .importance(99)
+                     .finish();
 
 struct ResolutionInfo {
 	uint32_t width  = 0;
@@ -359,80 +367,83 @@ static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 	}
 	 */
 }
-static auto ResolutionOption =
-    options::OptionBuilder<ResolutionInfo>("Graphics.Resolution", "Resolution", "The rendering resolution.")
-        .category("Graphics")
-        .level(options::ExpertLevel::Beginner)
-        .deserializer(resolution_deserializer)
-        .serializer(resolution_serializer)
-        .enumerator(resolution_enumerator)
-        .display(resolution_display)
-        .default_func(resolution_default)
-        .change_listener(resolution_change)
-        .importance(100)
-        .finish();
+static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.Resolution",
+                     std::pair<const char*, int>{"Resolution", 1748},
+                     std::pair<const char*, int>{"The rendering resolution", 1749})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Beginner)
+                     .deserializer(resolution_deserializer)
+                     .serializer(resolution_serializer)
+                     .enumerator(resolution_enumerator)
+                     .display(resolution_display)
+                     .default_func(resolution_default)
+                     .change_listener(resolution_change)
+                     .importance(100)
+                     .finish();
 
 bool Gr_enable_soft_particles = false;
 
-static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
-                                                               "Enable or disable soft particle rendering.")
-                                      .category("Graphics")
-                                      .level(options::ExpertLevel::Advanced)
-                                      .default_val(true)
-                                      .bind_to_once(&Gr_enable_soft_particles)
-                                      .importance(68)
-                                      .finish();
+static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles",
+                     std::pair<const char*, int>{"Soft Particles", 1761},
+                     std::pair<const char*, int>{"Enable or disable soft particle rendering", 1762})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(true)
+                     .bind_to_once(&Gr_enable_soft_particles)
+                     .importance(68)
+                     .finish();
 
 flagset<FramebufferEffects> Gr_framebuffer_effects;
 
-static auto FramebufferEffectsOption __UNUSED =
-    options::OptionBuilder<flagset<FramebufferEffects>>(
-        "Graphics.FramebufferEffects", "Framebuffer effects",
-        "Controls which framebuffer effects will be applied to the scene.")
-        .category("Graphics")
-        .level(options::ExpertLevel::Advanced)
-        .values({{{}, "None"},
-                 {{FramebufferEffects::Shockwaves}, "Shockwaves"},
-                 {{FramebufferEffects::Thrusters}, "Thrusters"},
-                 {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, "All"}})
-        .default_val({FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters})
-        .bind_to_once(&Gr_framebuffer_effects)
-        .importance(77)
-        .finish();
+static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<FramebufferEffects>>("Graphics.FramebufferEffects",
+                     std::pair<const char*, int>{"Framebuffer effects", 1732},
+                     std::pair<const char*, int>{"Controls which framebuffer effects will be applied to the scene", 1733})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Advanced)
+                     .values({{{}, {"None", 211}},
+                              {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
+                              {{FramebufferEffects::Thrusters}, {"Thrusters", 1689}},
+                              {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1690}}})
+                     .default_val({FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters})
+                     .bind_to_once(&Gr_framebuffer_effects)
+                     .importance(77)
+                     .finish();
 
 AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
 AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
 
-static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
-                                                             "Controls the anti aliasing mode of the engine.")
-                           .category("Graphics")
-                           .level(options::ExpertLevel::Advanced)
-                           .values({{AntiAliasMode::None, "None"},
-                                    {AntiAliasMode::FXAA_Low, "FXAA Low"},
-                                    {AntiAliasMode::FXAA_Medium, "FXAA Medium"},
-                                    {AntiAliasMode::FXAA_High, "FXAA High"},
-                                    {AntiAliasMode::SMAA_Low, "SMAA Low"},
-                                    {AntiAliasMode::SMAA_Medium, "SMAA Medium"},
-                                    {AntiAliasMode::SMAA_High, "SMAA High"},
-                                    {AntiAliasMode::SMAA_Ultra, "SMAA Ultra"}})
-                           .default_val(AntiAliasMode::None)
-                           .bind_to(&Gr_aa_mode)
-                           .importance(79)
-                           .finish();
+static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode",
+                     std::pair<const char*, int>{"Anti Aliasing", 1752},
+                     std::pair<const char*, int>{"Controls the anti aliasing mode of the engine.", 1753})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Advanced)
+                     .values({{AntiAliasMode::None, {"None", 211}},
+                              {AntiAliasMode::FXAA_Low, {"FXAA Low", 1681}},
+                              {AntiAliasMode::FXAA_Medium, {"FXAA Medium", 1682}},
+                              {AntiAliasMode::FXAA_High, {"FXAA High", 1683}},
+                              {AntiAliasMode::SMAA_Low, {"SMAA Low", 1684}},
+                              {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1685}},
+                              {AntiAliasMode::SMAA_High, {"SMAA High", 1686}},
+                              {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}}})
+                     .default_val(AntiAliasMode::None)
+                     .bind_to(&Gr_aa_mode)
+                     .importance(79)
+                     .finish();
 
 extern int Cmdline_msaa_enabled;
-static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples", "Multisample Anti Aliasing",
-                                                             "Controls whether multisample anti aliasing is enabled, and with how many samples.")
-                           .category("Graphics")
-                           .level(options::ExpertLevel::Advanced)
-                           .values({{0, "Off"},
-                                    {4, "4 Samples"},
-                                    {8, "8 Samples"},
-                                    {16, "16 Samples"}})
-                           .default_val(0)
-                           .bind_to(&Cmdline_msaa_enabled)
-                           .importance(78)
-                           .finish();
+static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples",
+                     std::pair<const char*, int>{"Multisample Anti Aliasing", 1758},
+                     std::pair<const char*, int>{"Controls whether multisample anti asliasing is enabled, and with how many samples", 1759})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Advanced)
+                     .values({{0, {"Off", 1693}},
+                              {4, {"4 Samples", 1694}},
+                              {8, {"8 Samples", 1695}},
+                              {16, {"16 Samples", 1696}}})
+                     .default_val(0)
+                     .bind_to_once(&Cmdline_msaa_enabled)
+                     .importance(78)
+                     .finish();
 
 bool gr_is_fxaa_mode(AntiAliasMode mode)
 {
@@ -444,26 +455,27 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 
 bool Gr_post_processing_enabled = true;
 
-static auto PostProcessOption __UNUSED =
-    options::OptionBuilder<bool>("Graphics.PostProcessing", "Post processing",
-                                 "Controls whether post processing is enabled in the engine")
-        .category("Graphics")
-        .level(options::ExpertLevel::Advanced)
-        .default_val(false)
-        .bind_to_once(&Gr_post_processing_enabled)
-        .importance(69)
-        .finish();
+static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
+                     std::pair<const char*, int>{"Post processing", 1726},
+                     std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(false)
+                     .bind_to_once(&Gr_post_processing_enabled)
+                     .importance(69)
+                     .finish();
 
 bool Gr_enable_vsync = true;
 
-static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
-                                                       "Controls how the engine does vertical synchronization")
-                              .category("Graphics")
-                              .level(options::ExpertLevel::Advanced)
-                              .default_val(true)
-                              .bind_to_once(&Gr_enable_vsync)
-                              .importance(70)
-                              .finish();
+static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync",
+                     std::pair<const char*, int>{"Vertical Sync", 1766},
+                     std::pair<const char*, int>{"Controls how the engine does vertical synchronization", 1767})
+                     .category("Graphics")
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(true)
+                     .bind_to_once(&Gr_enable_vsync)
+                     .importance(70)
+                     .finish();
 
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
@@ -694,7 +706,7 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
  */
 bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 {
-	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
+	if ( resize_mode == GR_RESIZE_NONE || resize_mode == GR_RESIZE_REPLACE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
@@ -1015,6 +1027,9 @@ void gr_close()
 		return;
 	}
 
+	if(Cmdline_enable_vr)
+		openxr_close();
+
 	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
 		                       (Gr_original_gamma_ramp + 512));
@@ -1246,13 +1261,37 @@ static void init_colors()
 	Gr_ta_alpha.scale = 17;
 }
 
+static void gr_init_function_pointers(int mode) {
+	gr_screen = {};
+
+	switch (mode) {
+	case GR_OPENGL:
+#ifdef WITH_OPENGL
+		gr_opengl_init_function_pointers();
+#else
+		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
+#endif
+		break;
+	case GR_VULKAN:
+#ifdef WITH_VULKAN
+		graphics::vulkan::initialize_function_pointers();
+#else
+		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
+#endif
+		break;
+	case GR_STUB:
+		gr_stub_init_function_pointers();
+		break;
+	default:
+		UNREACHABLE("Invalid graphics mode requested"); // Invalid graphics mode
+	}
+}
+
 static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height,
 						int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
-
-	gr_screen = {};
 
 	float aspect_ratio = (float)width / (float)height;
 
@@ -1552,9 +1591,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
-	if (Cmdline_vulkan)
-		mode = GR_VULKAN;
-
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
@@ -1563,6 +1599,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = 16;
 		center_aspect_ratio = -1.0f;
 	}
+
+	gr_init_function_pointers(mode);
 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
@@ -1578,6 +1616,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 				height = 600;
 				center_aspect_ratio = -1.0f;
 			}
+		}
+	}
+
+	if (Cmdline_enable_vr) {
+		float user_ar = i2fl(width) / i2fl(height);
+		float xr_ar = openxr_preinit(user_ar);
+
+		if (MAX(user_ar, xr_ar) / MIN(user_ar, xr_ar) > 1.05f) {
+			int newWidth = fl2i(i2fl(height) * xr_ar);
+			mprintf(("User specified resolution does not match OpenXR HMD aspect ratio. Adjusting width from %dpx to %dpx.", width, newWidth));
+			width = newWidth;
 		}
 	}
 
@@ -1698,6 +1747,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
 		Shadow_quality = ShadowQuality::Disabled;
 	}
+
+	if(Cmdline_enable_vr)
+		openxr_init();
 
 	return true;
 }
@@ -2587,7 +2639,12 @@ void gr_flip(bool execute_scripting)
 	uniform_buffer_managers_retire_buffers();
 
 	TRACE_SCOPE(tracing::PageFlip);
-	gr_screen.gf_flip();
+
+	//Prevent a real page flip if OpenXR is on and claims that that wasn't the full image yet
+	if (!gr_openxr_flip()) {
+		gr_screen.gf_flip();
+		gr_setup_frame();
+	}
 }
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)

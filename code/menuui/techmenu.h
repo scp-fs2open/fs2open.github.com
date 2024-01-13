@@ -15,11 +15,12 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-typedef struct {
+typedef struct intel_data {
 	char name[NAME_LENGTH];
 	SCP_string desc;
 	char anim_filename[NAME_LENGTH];
 	int  flags;
+	SCP_map<SCP_string, SCP_string> custom_data;
 } intel_data;
 
 // flags by Goober5000

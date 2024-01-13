@@ -14,7 +14,7 @@
 
 #include "gamesnd/gamesnd.h"
 
-#define	OS_USED					(1<<0)
+#define	OS_IN_USE				(1<<0)		// changed from OS_USED since it shadowed another macOS macro
 #define OS_MAIN					(1<<1)		// "main" sound. attentuation does not apply until outside the radius of the object
 #define OS_ENGINE				(1<<2)		// the engine sound; only played when engines are on
 #define OS_TURRET_BASE_ROTATION	(1<<3)

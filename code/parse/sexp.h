@@ -140,6 +140,8 @@ enum sexp_opf_t : int {
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
 	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
+	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
+	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -159,9 +161,19 @@ struct dynamic_sexp_parameter_list {
 
 extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
+struct dynamic_sexp_child_enum_suffixes {
+	SCP_string operator_name;
+	int param_index;
+	SCP_string suffix;
+};
+
+extern SCP_vector<dynamic_sexp_child_enum_suffixes> Dynamic_enum_suffixes;
+
 int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 
 int get_dynamic_enum_position(const SCP_string &enum_name);
+
+SCP_string get_child_enum_suffix(const SCP_string& op_name, int param_index);
 
 // Operand return types
 enum sexp_opr_t : int {
@@ -314,7 +326,9 @@ enum : int {
 	OP_PREVIOUS_GOAL_FALSE,
 	OP_EVENT_TRUE_MSECS_DELAY,
 	OP_EVENT_FALSE_MSECS_DELAY,
-	
+	OP_RESET_EVENT,
+	OP_RESET_GOAL,
+
 	// OP_CATEGORY_OBJECTIVE
 	
 	OP_IS_DESTROYED_DELAY,
@@ -350,6 +364,7 @@ enum : int {
 	OP_TIME_DOCKED,
 	OP_TIME_UNDOCKED,
 	OP_TIME_TO_GOAL, // tcrayford
+	OP_SET_HUD_TIME_PAD, // MjnMixael
 	
 	// OP_CATEGORY_STATUS
 	
@@ -497,7 +512,8 @@ enum : int {
 	OP_FUNCTIONAL_WHEN,	// Goober5000
 	OP_FOR_CONTAINER_DATA,	// jg18
 	OP_FOR_MAP_CONTAINER_KEYS,	// jg18
-	
+	OP_ON_MISSION_SKIP,	// Goober5000
+
 	// OP_CATEGORY_CHANGE
 	// sexpressions with side-effects
 	
@@ -672,6 +688,7 @@ enum : int {
 	OP_REMOVE_SUN_BITMAP,
 	OP_NEBULA_CHANGE_STORM,
 	OP_NEBULA_TOGGLE_POOF,
+	OP_NEBULA_FADE_POOF,
 	
 	OP_TURRET_CHANGE_WEAPON,
 	OP_TURRET_SET_TARGET_ORDER,
@@ -876,11 +893,17 @@ enum : int {
 	OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
 	OP_HUD_FORCE_EMP_EFFECT, // MjnMixael
 	OP_SET_GRAVITY_ACCEL,	// Asteroth
+	OP_FORCE_REARM,	 // MjnMixael
+	OP_ABORT_REARM,  // MjnMixael
 	OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
+	OP_ENABLE_GENERAL_ORDERS,	// MjnMixael
+	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
+
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
+	OP_GOOD_PRIMARY_TIME,	// plieblang
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -908,7 +931,9 @@ enum : int {
 	OP_AI_PLAY_DEAD_PERSISTENT,	// Goober5000
 	OP_AI_FLY_TO_SHIP,	// Goober5000
 	OP_AI_REARM_REPAIR,	// Goober5000
-	
+	OP_AI_DISABLE_SHIP_TACTICAL,	// Goober5000
+	OP_AI_DISARM_SHIP_TACTICAL,	// Goober5000
+
 	// OP_CATEGORY_UNLISTED
 	
 	OP_GOALS_ID,
@@ -1029,6 +1054,7 @@ enum class sexp_src
 	WING_DEPARTURE,
 	EVENT,
 	MISSION_GOAL,
+	MISSION_CUTSCENE,
 	SHIP_ORDER,
 	WING_ORDER,
 	DEBRIEFING,
@@ -1216,6 +1242,13 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_MOTION_DEBRIS,
 	SEXP_CHECK_INVALID_BOLT_TYPE,
 	SEXP_CHECK_INVALID_TRAITOR_OVERRIDE,
+	SEXP_CHECK_INVALID_LUA_GENERAL_ORDER,
+	SEXP_CHECK_INVALID_SHIP_POINT,
+	SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT,
+	SEXP_CHECK_INVALID_SHIP_WING_POINT,
+	SEXP_CHECK_INVALID_ORDER_RECIPIENT,
+	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
+	SEXP_CHECK_MUST_BE_INTEGER,
 };
 
 
@@ -1256,7 +1289,7 @@ struct sexp_cached_data
 	int sexp_node_data_type = OPF_NONE;		// an OPF_ #define
 	int numeric_literal = 0;				// i.e. a number
 	int ship_registry_index = -1;			// because ship status is pretty common
-	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+	int other_index = -1;					// could be an IFF, a wing, a goal, or other index
 	// jg18 - used to store result from sexp_container_CTEXT()
 	char container_CTEXT_result[TOKEN_LENGTH] = "";
 
@@ -1266,8 +1299,8 @@ struct sexp_cached_data
 		: sexp_node_data_type(_sexp_node_data_type)
 	{}
 
-	sexp_cached_data(int _sexp_node_data_type, void *_pointer)
-		: sexp_node_data_type(_sexp_node_data_type), pointer(_pointer)
+	sexp_cached_data(int _sexp_node_data_type, int _other_index)
+		: sexp_node_data_type(_sexp_node_data_type), other_index(_other_index)
 	{}
 
 	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
@@ -1345,20 +1378,7 @@ extern size_t Max_operator_length;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
-extern int Training_context;
-extern int Training_context_speed_min;
-extern int Training_context_speed_max;
-extern int Training_context_speed_set;
-extern int Training_context_speed_timestamp;
-extern waypoint_list *Training_context_path;
-extern int Training_context_goal_waypoint;
-extern int Training_context_at_waypoint;
-extern float Training_context_distance;
-extern int Players_target;
-extern int Players_mlocked;
-extern ship_subsys *Players_targeted_subsys;
-extern int Players_target_timestamp;
-extern int Players_mlocked_timestamp;
+extern bool Assume_event_is_current;
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;
@@ -1413,6 +1433,7 @@ extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
+
 struct ship_registry_entry;
 struct wing;
 
@@ -1428,6 +1449,12 @@ extern bool sexp_can_construe_as_integer(int node);
 void do_action_for_each_special_argument(int cur_node);
 bool special_argument_appears_in_sexp_tree(int node);
 bool special_argument_appears_in_sexp_list(int node);
+
+// Goober5000 - for special-arg SEXPs
+extern bool is_when_argument_op(int op_const);
+extern bool is_argument_provider_op(int op_const);
+extern bool is_implicit_argument_provider_op(int op_const); // jg18
+extern int find_argument_provider(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
@@ -1548,13 +1575,14 @@ struct lua_State;
 // Goober5000
 struct object_ship_wing_point_team
 {
-	const char* object_name = nullptr;
+	char object_name[NAME_LENGTH] = { 0 };
 	oswpt_type type = oswpt_type::NONE;
 
-	const ship_registry_entry* ship_entry = nullptr;
-	object* objp = nullptr;
-	wing* wingp = nullptr;
-	waypoint* waypointp = nullptr;
+	int ship_registry_index = -1;
+	int objnum = -1;
+	int wingnum = -1;
+	int wp_list = -1;
+	int wp_index = -1;
 	int team = -1;
 
 	object_ship_wing_point_team() = default;
@@ -1563,7 +1591,35 @@ struct object_ship_wing_point_team
 	object_ship_wing_point_team(ship_obj* sop);
 	object_ship_wing_point_team(wing* wp);
 
+	inline bool has_ship_entry() const { return ship_registry_index >= 0; }
+	inline bool has_objp() const { return objnum >= 0; }
+	inline bool has_wingp() const { return wingnum >= 0; }
+	inline bool has_waypointp() const { return wp_list >= 0 && wp_index >= 0; }
+
+	const ship_registry_entry* ship_entry() const;
+	object* objp() const;
+	wing* wingp() const;
+	waypoint* waypointp() const;
+
+	const ship_registry_entry* ship_entry_or_null() const;
+	object* objp_or_null() const;
+	wing* wingp_or_null() const;
+	waypoint* waypointp_or_null() const;
+
+	bool has_p_objp() const;
+	bool has_shipp() const;
+
+	p_object* p_objp() const;
+	ship* shipp() const;
+
+	p_object* p_objp_or_null() const;
+	ship* shipp_or_null() const;
+
+	bool matches(const ship* shipp) const;
 	void clear();
+
+	bool operator==(const object_ship_wing_point_team &other) const;
+	bool operator!=(const object_ship_wing_point_team &other) const;
 
 	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
 	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);

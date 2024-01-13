@@ -44,6 +44,7 @@
 #include "MessageEditorDlg.h"
 #include "EventEditor.h"
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "ShieldSysDlg.h"
 #include "gamesnd/eventmusic.h"
 #include "DebriefingEditorDlg.h"
@@ -127,7 +128,9 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
 	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
 	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
 	{ "Dock",					AI_GOAL_DOCK,				0 },
 	{ "Undock",					AI_GOAL_UNDOCK,				0 },
@@ -828,8 +831,10 @@ void clear_mission()
 	The_mission.author = str;
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
-	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
+	strcpy_s(The_mission.mission_desc, "Put mission description here");
+
+	apply_default_custom_data(&The_mission);
 
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
@@ -854,7 +859,7 @@ void clear_mission()
 
 		count = 0;
 		for ( j = 0; j < weapon_info_size(); j++ ) {
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {
@@ -1128,7 +1133,8 @@ int delete_ship(int ship)
 
 int common_object_delete(int obj)
 {
-	char msg[255], *name;
+	char msg[255];
+	const char *name;
 	int i, z, r, type;
 	object *objp;
 	SCP_list<CJumpNode>::iterator jnp;
@@ -1720,7 +1726,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, sexp_ref_type type)
+int invalidate_references(const char *name, sexp_ref_type type)
 {
 	char new_name[512];
 	int i;
@@ -1885,7 +1891,7 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, sexp_ref_type type, int obj)
+int reference_handler(const char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
 	int r, node;
@@ -1950,6 +1956,14 @@ int reference_handler(char *name, sexp_ref_type type, int obj)
 					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 				else
 					sprintf(text, "mission goal #%d", n);
+
+				break;
+
+			case sexp_src::MISSION_CUTSCENE:
+				if (The_mission.cutscenes[n].filename[0] != '\0')
+					sprintf(text, "mission cutscene \"%s\"", The_mission.cutscenes[n].filename);
+				else
+					sprintf(text, "mission cutscene #%d", n);
 
 				break;
 
@@ -2149,6 +2163,14 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 
 		case sexp_src::MISSION_GOAL: {
 			CMissionGoalsDlg dlg;
+
+			dlg.select_sexp_node = node;
+			dlg.DoModal();
+			break;
+		}
+
+		case sexp_src::MISSION_CUTSCENE: {
+			CMissionCutscenesDlg dlg;
 
 			dlg.select_sexp_node = node;
 			dlg.DoModal();

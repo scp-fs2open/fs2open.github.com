@@ -24,6 +24,8 @@ layout (std140) uniform globalDeferredData {
 
 	float invScreenWidth;
 	float invScreenHeight;
+
+	float nearPlane;
 };
 
 layout (std140) uniform matrixData {
@@ -79,7 +81,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			lightDirOut = lightPosition - position.xyz;
 			float dist = length(lightDirOut);
 
-			// this chunk is unneccessary if sourceRadius= 0.0, but let's avoid a branch.
+			// this chunk is unnecessary if sourceRadius= 0.0, but let's avoid a branch.
 			// given a sphere of radius sourceRadius centered at lightDirOut,
 			// move lightDirOut towards the ray defined by reflectDir
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
@@ -122,7 +124,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			// should figure out how to optimise these calcs - qaz
 
 
-			// this chunk is unneccessary if sourceRadius = 0.0, but let's avoid a branch.
+			// this chunk is unnecessary if sourceRadius = 0.0, but let's avoid a branch.
 			// Same principle as in LT_POINT, treat chosen location as a spherelight.
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			float dist = length(lightDirOut);
@@ -168,7 +170,7 @@ void main()
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
 	vec3 position = texture(PositionBuffer, screenPos).xyz;
 
-	if(abs(dot(position, position)) < 0.1)
+	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;
 
 	vec3 diffColor = texture(ColorBuffer, screenPos).rgb;

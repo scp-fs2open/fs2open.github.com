@@ -14,6 +14,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 
+void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free);
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
 
 namespace scripting {
@@ -473,7 +474,7 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
 }
 
-ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets resets after a certain time of inactivity", "boolean", "true if turret resets, false otherwise")
+ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies whether this turrets resets after a certain time of inactivity", "boolean", "true if turret resets, false otherwise")
 {
 	ship_subsys_h *sso;
 	bool newVal = false;
@@ -569,7 +570,7 @@ ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "numb
 	return ade_set_args(L, "f", sso->ss->system_info->radius);
 }
 
-ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked. Setting to true locks the turret, setting to false frees it.", "boolean", "True if turret is locked, false otherwise")
+ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked. Setting to true locks the turret; setting to false frees it.", "boolean", "True if turret is locked, false otherwise")
 {
 	ship_subsys_h *sso;
 	bool newVal = false;
@@ -585,6 +586,60 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 	}
 
 	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
+}
+
+ADE_VIRTVAR(TurretLockedWithTimestamp, l_Subsystem, "boolean", "Behaves like TurretLocked, but when the turret is freed, there will be a short random delay (between 50 and 4000 milliseconds) before firing, to be consistent with SEXP behavior.", "boolean", "True if turret is locked, false otherwise")
+{
+	ship_subsys_h *sso;
+	bool newVal = false;
+	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "b", false);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "b", false);
+
+	if(ADE_SETTING_VAR)
+	{
+		sexp_beam_or_turret_free_one(sso->ss, false, !newVal);
+	}
+
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
+}
+
+ADE_VIRTVAR(BeamFree, l_Subsystem, "boolean", "Whether the turret is beam-freed. Setting to true beam-frees the turret; setting to false beam-locks it.", "boolean", "True if turret is beam-freed, false otherwise")
+{
+	ship_subsys_h *sso;
+	bool newVal = false;
+	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "b", false);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "b", false);
+
+	if(ADE_SETTING_VAR)
+	{
+		sso->ss->weapons.flags.set(Ship::Weapon_Flags::Beam_Free, newVal);
+	}
+
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Beam_Free]));
+}
+
+ADE_VIRTVAR(BeamFreeWithTimestamp, l_Subsystem, "boolean", "Behaves like BeamFree, but when the turret is freed, there will be a short random delay (between 50 and 4000 milliseconds) before firing, to be consistent with SEXP behavior.", "boolean", "True if turret is beam-freed, false otherwise")
+{
+	ship_subsys_h *sso;
+	bool newVal = false;
+	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "b", false);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "b", false);
+
+	if(ADE_SETTING_VAR)
+	{
+		sexp_beam_or_turret_free_one(sso->ss, true, newVal);
+	}
+
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Beam_Free]));
 }
 
 ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
@@ -810,7 +865,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	//Get default turret info
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
+	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, false, &gvec, true, nullptr);
 	if (override_gvec != nullptr)
 		gvec = *override_gvec;
 
@@ -841,7 +896,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, &pos, reset);
+	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, reset ? nullptr : &pos);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;
@@ -906,7 +961,7 @@ ADE_FUNC(
 
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
+	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, false, &gvec, true, nullptr);
 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }

@@ -713,7 +713,7 @@ void draw_3d_overhead_view(int model_num,
 	int ship_class,
 	float* rotation_buffer,
 	float frametime,
-	int selected_ship_slot,
+	int weapon_array[MAX_SHIP_WEAPONS],
 	int selected_weapon_class,
 	int hovered_weapon_slot,
 	int x1,
@@ -852,7 +852,7 @@ void draw_3d_overhead_view(int model_num,
 
 		// Render selected primary lines
 		for (x = 0; x < pm->n_guns; x++) {
-			if ((Wss_slots[selected_ship_slot].wep[x] == selected_weapon_class && hovered_weapon_slot < 0) ||
+			if ((weapon_array[x] == selected_weapon_class && hovered_weapon_slot < 0) ||
 				x == hovered_weapon_slot) {
 				Assert(num_found < NUM_ICON_FRAMES);
 				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
@@ -923,7 +923,7 @@ void draw_3d_overhead_view(int model_num,
 		num_found = 2;
 		// Render selected secondary lines
 		for (x = 0; x < pm->n_missiles; x++) {
-			if ((Wss_slots[selected_ship_slot].wep[x + MAX_SHIP_PRIMARY_BANKS] == selected_weapon_class &&
+			if ((weapon_array[x + MAX_SHIP_PRIMARY_BANKS] == selected_weapon_class &&
 					hovered_weapon_slot < 0) ||
 				x + MAX_SHIP_PRIMARY_BANKS == hovered_weapon_slot) {
 				Assert(num_found < NUM_ICON_FRAMES);
@@ -1117,7 +1117,7 @@ void wl_render_overhead_view(float frametime)
 			ship_class,
 			&WeapSelectScreenShipRot,
 			frametime,
-			Selected_wl_slot,
+			Wss_slots[Selected_wl_slot].wep,
 			Selected_wl_class,
 			Hot_weapon_bank,
 			Wl_overhead_coords[gr_screen.res][0],
@@ -1515,13 +1515,13 @@ void wl_maybe_reset_selected_slot()
 
 /**
  * If Selected_wl_class is -1, choose the first weapon available from the pool for an animation
- *  - on second thought, choose the first weapon that is oin the ship, then go to the pools
+ *  - on second thought, choose the first weapon that is on the ship, then go to the pools
  */
 void wl_maybe_reset_selected_weapon_class()
 {
 	int i;
 
-	if ( Selected_wl_class >= 0 ) 
+	if ( (Selected_wl_class >= 0) && !(Always_reset_selected_wep_on_loadout_open) ) 
 		return;
 
 	Assert( Wss_slots != NULL );
@@ -4029,6 +4029,10 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 		// get the slot for this ship
 		cur_wss_slot = cur_wing_block * MAX_WING_SLOTS + cur_wing_slot;
+
+		// make sure there is actually a ship here
+		if (Wss_slots[cur_wss_slot].ship_class < 0)
+			continue;
 
 		// get the ship's name and class
 		sip = &Ship_info[Wss_slots[cur_wss_slot].ship_class];	

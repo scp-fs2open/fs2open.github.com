@@ -66,6 +66,7 @@ public:
 	BOOL		m_toggle_showing_goals;
 	BOOL		m_end_to_mainhall;
 	BOOL		m_override_hashcommand;
+	BOOL        m_preload_subspace;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;
@@ -102,6 +103,8 @@ protected:
 	afx_msg void OnToggleContrailThreshold();
 	afx_msg void OnCustomWingNames();
 	afx_msg void OnSoundEnvironment();
+	afx_msg void OnCustomData();
+	afx_msg void OnCustomStrings();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

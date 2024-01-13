@@ -130,16 +130,19 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 		}
 	}
 	
-	b->time_since_update += flFrametime;
 	// If the blip has been pinged by the local x-axis sweep, update
 	if (std::abs(vm_vec_dot(&sweep_normal_x, pos)) < 0.01f) {
-		b->time_since_update = 0.0f;
+		b->last_update = _timestamp();
 	}
 
-	*alpha = ((sweep_duration - b->time_since_update)/sweep_duration)*fade_multi/2.0f;
-	
-	if (*alpha < 0.0f) {
+	if (b->last_update.isNever()) {
 		*alpha = 0.0f;
+	} else {
+		*alpha = ((sweep_duration - timestamp_since(b->last_update)) / sweep_duration) * fade_multi / 2.0f;
+
+		if (*alpha < 0.0f) {
+			*alpha = 0.0f;
+		}
 	}
 }
 
@@ -234,8 +237,8 @@ void HudGaugeRadarDradis::blipDrawFlicker(blip *b, vec3d *pos, float alpha)
 	
 
 	if (timestamp_elapsed(Radar_flicker_timer[flicker_index])) {
-		Radar_flicker_timer[flicker_index] = timestamp_rand(50,1000);
-		Radar_flicker_on[flicker_index] ^= 1;
+		Radar_flicker_timer[flicker_index] = _timestamp_rand(50,1000);
+		Radar_flicker_on[flicker_index] = !Radar_flicker_on[flicker_index];
 	}
 
 	if (!Radar_flicker_on[flicker_index])
@@ -499,28 +502,28 @@ void HudGaugeRadarDradis::render(float  /*frametime*/)
 	// note that on lowest skill level, there is no radar effects due to sensors damage
 	if ( ((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced )
 	{
-		Radar_static_playing = 0;
-		Radar_static_next = 0;
-		Radar_death_timer = 0;
-		Radar_avail_prev_frame = 1;
+		Radar_static_playing = false;
+		Radar_static_next = TIMESTAMP::never();
+		Radar_death_timer = TIMESTAMP::never();
+		Radar_avail_prev_frame = true;
 	}
 	else
 		if (sensors_str < MIN_SENSOR_STR_TO_RADAR)
 		{
 			if (Radar_avail_prev_frame)
 			{
-				Radar_death_timer = timestamp(2000);
-				Radar_static_next = 1;
+				Radar_death_timer = _timestamp(2000);
+				Radar_static_next = TIMESTAMP::immediate();
 			}
 
-			Radar_avail_prev_frame = 0;
+			Radar_avail_prev_frame = false;
 		}
 		else
 		{
-			Radar_death_timer = 0;
+			Radar_death_timer = TIMESTAMP::never();
 
-			if (Radar_static_next == 0)
-				Radar_static_next = 1;
+			if (Radar_static_next.isNever())
+				Radar_static_next = TIMESTAMP::immediate();
 		}
 
 	if (timestamp_elapsed(Radar_death_timer))
@@ -537,13 +540,13 @@ void HudGaugeRadarDradis::render(float  /*frametime*/)
 
 	if (timestamp_elapsed(Radar_static_next))
 	{
-		Radar_static_playing ^= 1;
-		Radar_static_next = timestamp_rand(50, 750);
+		Radar_static_playing = !Radar_static_playing;
+		Radar_static_next = _timestamp_rand(50, 750);
 	}
 
 	// if the emp effect is active, always draw the radar wackily
 	if (emp_active_local())
-		Radar_static_playing = 1;
+		Radar_static_playing = true;
 
 	if (ok_to_blit_radar)
 	{
@@ -620,7 +623,7 @@ void HudGaugeRadarDradis::doBeeps()
 
 	if (!arrival_beep_snd.isValid() &&
 		!departure_beep_snd.isValid() &&
-		!m_stealth_arrival_snd.isValid() &&
+		!stealth_arrival_snd.isValid() &&
 		!stealth_departure_snd.isValid())
 	{
 		return;
@@ -672,13 +675,13 @@ void HudGaugeRadarDradis::doBeeps()
 		{
 			snd_play(gamesnd_get_game_sound(arrival_beep_snd));
 
-			arrival_beep_next_check = timestamp(arrival_beep_delay);
+			arrival_beep_next_check = _timestamp(arrival_beep_delay);
 		}
-		else if (m_stealth_arrival_snd.isValid() && stealth_arrival_happened)
+		else if (stealth_arrival_snd.isValid() && stealth_arrival_happened)
 		{
-			snd_play(gamesnd_get_game_sound(m_stealth_arrival_snd));
+			snd_play(gamesnd_get_game_sound(stealth_arrival_snd));
 
-			arrival_beep_next_check = timestamp(arrival_beep_delay);
+			arrival_beep_next_check = _timestamp(arrival_beep_delay);
 		}
 
 	}
@@ -689,18 +692,18 @@ void HudGaugeRadarDradis::doBeeps()
 		{
 			snd_play(gamesnd_get_game_sound(departure_beep_snd));
 
-			departure_beep_next_check = timestamp(departure_beep_delay);
+			departure_beep_next_check = _timestamp(departure_beep_delay);
 		}
 		else if (stealth_departure_snd.isValid() && stealth_departure_happened)
 		{
 			snd_play(gamesnd_get_game_sound(stealth_departure_snd));
 
-			departure_beep_next_check = timestamp(departure_beep_delay);
+			departure_beep_next_check = _timestamp(departure_beep_delay);
 		}
 	}
 }
 
-void HudGaugeRadarDradis::initSound(gamesnd_id loop_snd, float _loop_snd_volume, gamesnd_id arrival_snd, gamesnd_id departure_snd, gamesnd_id stealth_arrival_snd, gamesnd_id stealth_departue_snd, float arrival_delay, float departure_delay)
+void HudGaugeRadarDradis::initSound(gamesnd_id loop_snd, float _loop_snd_volume, gamesnd_id arrival_snd, gamesnd_id departure_snd, gamesnd_id _stealth_arrival_snd, gamesnd_id _stealth_departure_snd, float arrival_delay, float departure_delay)
 {
 	this->m_loop_snd = loop_snd;
 	this->loop_sound_handle = sound_handle::invalid();
@@ -709,8 +712,8 @@ void HudGaugeRadarDradis::initSound(gamesnd_id loop_snd, float _loop_snd_volume,
 	this->arrival_beep_snd = arrival_snd;
 	this->departure_beep_snd = departure_snd;
 
-	this->m_stealth_arrival_snd = stealth_arrival_snd;
-	this->stealth_departure_snd = stealth_departue_snd;
+	this->stealth_arrival_snd = _stealth_arrival_snd;
+	this->stealth_departure_snd = _stealth_departure_snd;
 
 	this->arrival_beep_delay = fl2i(arrival_delay * 1000.0f);
 	this->departure_beep_delay = fl2i(departure_delay * 1000.0f);
@@ -729,8 +732,8 @@ void HudGaugeRadarDradis::initialize()
 {
 	HudGaugeRadar::initialize();
 
-	this->arrival_beep_next_check = timestamp();
-	this->departure_beep_next_check = timestamp();
+	this->arrival_beep_next_check = _timestamp();
+	this->departure_beep_next_check = _timestamp();
 }
 
 bool HudGaugeRadarDradis::shouldDoSounds()

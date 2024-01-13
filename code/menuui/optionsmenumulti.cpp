@@ -19,6 +19,7 @@
 #include "menuui/optionsmenu.h"
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
+#include "network/multiui.h"
 #include "network/multi_voice.h"
 #include "osapi/osregistry.h"
 #include "parse/parselo.h"
@@ -203,10 +204,6 @@ UI_INPUTBOX Om_tracker_squad_name;
 #define TRACKER_FOCUS_SQUADRON	3
 static int Om_tracker_focus = 0;
 
-// ip address list vars
-#define IP_STRING_LEN								60
-#define MAX_IP_ADDRS									100
-
 #define IP_CONFIG_FNAME								NOX("Tcp.cfg")
 
 #define IP_EMPTY_STRING								""
@@ -246,7 +243,7 @@ UI_INPUTBOX Om_ip_input;									// input box for adding new ip addresses
 
 // setting vars
 int Om_local_broadcast;										// whether the player has local broadcast selected or not
-int Om_tracker_flag;											// if the guy has the tracker selected
+bool Om_tracker_flag;											// if the guy has the tracker selected
 int Om_protocol;												// protocol in use
 
 // load all the controls for the protocol section
@@ -799,7 +796,7 @@ void options_multi_init_protocol_vars()
 	Om_local_broadcast = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
 
 	// whether or not we're playing on the tracker
-	Om_tracker_flag = Multi_options_g.pxo ? 1 : 0;
+	Om_tracker_flag = Multi_options_g.pxo;
 
 	// load the ip address list	
 	Om_ip_disp_count = 0;
@@ -1121,74 +1118,31 @@ void options_multi_protocol_button_pressed(int n)
 // load the ip address file
 void options_multi_protocol_load_ip_file()
 {
-	char line[IP_STRING_LEN];
-	CFILE *file = NULL;
-
 	// reset the ip address count
 	Om_num_ips = 0;
 
-	// attempt to open the ip list file
-	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file!\n"));
-		return;
-	}
+	SCP_list<SCP_string> list;
+	multi_join_read_ip_address_file(list);
 
-	// read in all the strings in the file
-	while(!cfeof(file)){
-		line[0] = '\0';
-		cfgets(line,IP_STRING_LEN,file);
-
-		// strip off any newline character
-		if(line[strlen(line) - 1] == '\n'){
-			line[strlen(line) - 1] = '\0';
-		}
-
-		// 0 length lines don't get processed
-		if((line[0] == '\0') || (line[0] == '\n') )
-			continue;
-
-		if ( !psnet_is_valid_ip_string(line) ) {
-			nprintf(("Network","Invalid ip string (%s)\n",line));
-		} else {
-			if(Om_num_ips < MAX_IP_ADDRS-1){
-				strcpy_s(Om_ip_addrs[Om_num_ips++],line);
-			}
+	for (auto const &ip : list)
+	{
+		if (Om_num_ips < MAX_IP_ADDRS - 1) {
+			strcpy_s(Om_ip_addrs[Om_num_ips++], ip.c_str());
 		}
 	}
-
-	cfclose(file);
 }
 
 // save the ip address file
 void options_multi_protocol_save_ip_file()
 {
-	int idx;
-	CFILE *file = NULL;
+	SCP_list<SCP_string> list;
 
-	// attempt to open the ip list file for writing
-	file = cfopen(IP_CONFIG_FNAME,"wt",CFILE_NORMAL,CF_TYPE_DATA );
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file\n"));
-		return;
+	// make a quick list
+	for(int idx=0;idx<Om_num_ips;idx++){
+		list.push_back(Om_ip_addrs[idx]);
 	}
 
-	// write out all the string we have
-	for(idx=0;idx<Om_num_ips;idx++){
-		// make _absolutely_ sure its a valid address
-		// MWA -- commented out next line because name resolution might fail when
-		// it was added.  We'll only grab games that we can actually get to.
-		//Assert(psnet_is_valid_ip_string(Multi_ip_addrs[idx]));
-
-		cfputs(Om_ip_addrs[idx],file);
-				
-	   // make sure to tack on a newline if necessary
-		if(Om_ip_addrs[idx][strlen(&Om_ip_addrs[idx][0]) - 1] != '\n'){
-			cfputs(NOX("\n"),file);
-		}
-	}
-
-	cfclose(file);
+	multi_join_write_ip_address_file(list);
 }
 
 // draw the list of ip addresses
@@ -1804,7 +1758,7 @@ void options_multi_vox_do()
 	}
 
 	// if the currently selected player is muted
-	if((Om_vox_player_select != NULL) && !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)]){
+	if((Om_vox_player_select != NULL) && options_multi_vox_plist_get(Om_vox_player_select) > -1 && !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)]){
 		Om_vox_buttons[gr_screen.res][OM_VOX_VOICE_MUTE].button.draw_forced(2);
 	}
 
@@ -1910,7 +1864,15 @@ void options_multi_vox_button_pressed(int n)
 	// mute/unmute button
 	case OM_VOX_VOICE_MUTE:
 		if(Om_vox_player_select != NULL){
-			Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)] = !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)];
+			int index = options_multi_vox_plist_get(Om_vox_player_select);
+
+			// there's already an assertion for this in options_multi_vox_plist_get, just ignore in release
+			if (index < 0){
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+				break;
+			}
+				
+			Om_vox_player_flags[index] = !Om_vox_player_flags[index];
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -2105,13 +2067,17 @@ int options_multi_vox_plist_get(net_player *pl)
 
 	for(idx=0;idx<Om_vox_num_players;idx++){
 		if(pl == Om_vox_players[idx]){
-			return idx;
+			break;
 		}
 	}
 
-	// should neve get here. hmmm.
-	Int3();
-	return -1;
+	// Should never get a bad value here, but the places where this is called can now handle the negative return value, as it's not catastrophic.
+	// Still Assert to assist with bug tracking in debug.
+	Assertion(idx < Om_vox_num_players, "options_multi_vox_plist_get() could not find the correct net player.  Please report to an SCP member!");
+	if (idx >= Om_vox_num_players)
+		return -1;
+	else
+		return idx;
 }
 
 // scroll the player list down

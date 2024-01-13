@@ -45,13 +45,15 @@ static bool music_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
-static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Music", "Music", "Volume used for playing music")
-                                    .category("Audio")
-                                    .default_val(Default_music_volume)
-                                    .range(0.0f, 1.0f)
-                                    .change_listener(music_volume_change_listener)
-                                    .importance(1)
-                                    .finish();
+static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Music",
+                     std::pair<const char*, int>{"Music", 1371},
+                     std::pair<const char*, int>{"Volume used for playing music", 1760})
+                     .category("Audio")
+                     .default_val(Default_music_volume)
+                     .range(0.0f, 1.0f)
+                     .change_listener(music_volume_change_listener)
+                     .importance(1)
+                     .finish();
 
 typedef struct tagSNDPATTERN {
 	int default_next_pattern;	// Needed so the next_pattern member can be reset
@@ -338,7 +340,7 @@ void event_music_init()
 					Warning(LOCATION, "Soundtrack file %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
 #endif
 
-				Warning(LOCATION, "One or more files in '%s' could not be loaded.  The soundtrack will not be used.", soundtrack.name);
+				Warning(LOCATION, "Soundtrack file %s was not found.  The soundtrack '%s' will not be used.", filename, soundtrack.name);
 				all_patterns_valid = false;
 				break;
 			}
@@ -604,7 +606,10 @@ void event_music_level_start(int force_soundtrack)
 
 	// Check that soundtrack index is in range, except that < 0 means no soundtrack
 	if (Current_soundtrack_num < 0)
+	{
+		Pattern_timer_id = TIMESTAMP::never();	// update the timestamp as if a soundtrack did start
 		return;
+	}
 	Assert(Current_soundtrack_num < (int)Soundtracks.size());
 	if (Current_soundtrack_num >= (int)Soundtracks.size())
 		return;
@@ -965,11 +970,13 @@ int event_music_friendly_arrival()
 		// overlay
 		if (Soundtracks[Current_soundtrack_num].flags & EMF_ALLIED_ARRIVAL_OVERLAY)
 		{
-			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
+			// Goober5000 - This is how retail did it.  For some reason, FS2 only has one
 			// arrival music pattern, and this is it
-			Assert(Patterns[SONG_AARV_1].handle >= 0 );
-			audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
-			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
+			if (Patterns[SONG_AARV_1].handle >= 0)
+			{
+				audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
+				audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure));
+			}
 		}
 		// don't overlay
 		else

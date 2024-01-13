@@ -19,7 +19,7 @@
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
@@ -50,6 +50,10 @@ int get_special_anchor(const char *name);
 // not be updated simply because the engine's version changed.
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
+
+// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// a "soft version bump" rather than a hard bump because not all missions are affected.
+extern bool check_for_23_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -94,13 +98,20 @@ typedef struct support_ship_info {
 } support_ship_info;
 
 // movie type defines
-#define	MOVIE_PRE_FICTION		0
-#define	MOVIE_PRE_CMD_BRIEF		1
-#define	MOVIE_PRE_BRIEF			2
-#define	MOVIE_PRE_GAME			3
-#define	MOVIE_PRE_DEBRIEF		4
-#define	MOVIE_POST_DEBRIEF		5
-#define	MOVIE_END_CAMPAIGN		6
+// If you add one here, you must also add a description to missioncutscenedlg.cpp for FRED
+// and update the dropdown list in fred.rc for the mission cutscene dialog editor.
+enum : int {
+	MOVIE_PRE_FICTION,
+	MOVIE_PRE_CMD_BRIEF,
+	MOVIE_PRE_BRIEF,
+	MOVIE_PRE_GAME,
+	MOVIE_PRE_DEBRIEF,
+	MOVIE_POST_DEBRIEF,
+	MOVIE_END_CAMPAIGN,
+
+	// Must always be at the end of the list
+	Num_movie_types
+};
 
 // defines a mission cutscene.
 typedef struct mission_cutscene {
@@ -108,6 +119,18 @@ typedef struct mission_cutscene {
 	char filename[MAX_FILENAME_LEN];
 	int formula;
 } mission_cutscene;
+
+typedef struct mission_default_custom_data {
+	SCP_string key;
+	SCP_string value;
+	SCP_string description;
+} mission_default_custom_data;
+
+typedef struct mission_custom_string {
+	SCP_string name;
+	SCP_string value;
+	SCP_string text;
+} mission_custom_string;
 
 // descriptions of flags for FRED
 template <class T>
@@ -145,6 +168,7 @@ typedef struct mission {
 	tl::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
+	int     HUD_timer_padding;
 
 	// Goober5000
 	int	command_persona;
@@ -165,6 +189,10 @@ typedef struct mission {
 
 	SCP_vector<mission_cutscene> cutscenes;
 
+	SCP_map<SCP_string, SCP_string> custom_data;
+
+	SCP_vector<mission_custom_string> custom_strings;
+
 	void Reset( );
 
 	mission( )
@@ -179,7 +207,7 @@ typedef struct mission {
 // must be reworked so that all the flags are maintained from function to function
 #define CARGO_INDEX_MASK	0xBF
 #define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
-#define MAX_CARGO				30
+#define MAX_CARGO				60
 
 
 // Goober5000 - contrail threshold (previously defined in ShipContrails.cpp)
@@ -261,6 +289,8 @@ extern int Num_unknown_loadout_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
+
+extern SCP_vector<mission_default_custom_data> Default_custom_data;
 
 #define SUBSYS_STATUS_NO_CHANGE	-999
 
@@ -399,7 +429,7 @@ extern SCP_vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct {
+typedef struct team_data {
 	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		num_ship_choices; // number of ship choices inside ship_list 
@@ -411,6 +441,7 @@ typedef struct {
 
 	// weapons
 	int		num_weapon_choices;
+	bool    do_not_validate;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
 	int		weaponry_count[MAX_WEAPON_TYPES];
 	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
@@ -458,6 +489,9 @@ int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
+
+// used in fred management.cpp when creating a new mission
+void apply_default_custom_data(mission* pm);
 
 bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false);
 bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);

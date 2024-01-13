@@ -60,3 +60,7 @@ set(HIDAPI_WITH_HIDRAW ON)
 add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)
+
+if(NOT APPLE)
+	add_subdirectory(openxr)
+endif()

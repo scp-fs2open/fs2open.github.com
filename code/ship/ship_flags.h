@@ -8,8 +8,9 @@ namespace Ship {
 	FLAG_LIST(Weapon_Flags){
 		Beam_Free = 0,	// if this is a beam weapon, its free to fire
 		Turret_Lock,	// is this turret is free to fire or locked
-		Tagged_Only,	// only fire if target is tagged
-		Trigger_Lock,	// // indicates that the trigger is held down
+		Tagged_Only,	// only fire if target is tagged		
+		Secondary_trigger_down,	// indicates that the trigger is held down, used for multilock hold-to-lock type missiles
+		Primary_trigger_down,	// indicates that the trigger is held down
 
 		NUM_VALUES
 	};
@@ -72,7 +73,7 @@ namespace Ship {
 		Secondary_dual_fire,		// ship is firing two missiles from the current secondary bank
 		Warp_broken,				// set when warp drive is not working, but is repairable
 		Warp_never,					// set when ship can never warp
-		Trigger_down,				// ship has its "trigger" held down
+		Trigger_down,				// ship has its "trigger" held down, PLAYER ONLY
 		Ammo_count_recorded,		// we've recorded the initial secondary weapon count (which is used to limit support ship rearming)
 		Hidden_from_sensors,		// ship doesn't show up on sensors, blinks in/out on radar
 		Scannable,					// ship is "scannable".  Play scan effect and report as "Scanned" or "not scanned".
@@ -107,7 +108,6 @@ namespace Ship {
 		No_thrusters,				// The E - Thrusters on this ship are not rendered.
 		Ship_locked,				// Karajorma - Prevents the player from changing the ship class on loadout screen
 		Weapons_locked,				// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
-		Ship_selective_linking,		// RSAXVC - Allow pilot to pick firing configuration
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
@@ -137,6 +137,8 @@ namespace Ship {
 		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
 		Cannot_perform_scan,		// Goober5000 - ship cannot scan other ships
 		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
+		Maneuver_despite_engines,	// Goober5000 - ship can move even when engines are disabled or disrupted
+		Force_primary_unlinking,	// plieblang - turned on when the ship is under good-primary-time
 
 		NUM_VALUES
 
@@ -149,6 +151,7 @@ namespace Ship {
 		Player_deleted,
 		Been_tagged,
 		Red_alert_carry,
+		From_player_wing,
 
 		NUM_VALUES
 	};

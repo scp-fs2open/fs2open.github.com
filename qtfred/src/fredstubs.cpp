@@ -190,7 +190,6 @@ void game_start_time(bool){}
 bool game_time_is_stopped(){return false;}
 void game_stop_time(bool){}
 int game_get_default_skill_level(){return 0;}
-int find_freespace_cd(char*){return 0;}
 void game_do_state_common(int, int){}
 void game_set_frametime(int){}
 void game_increase_skill_level(){}
@@ -198,7 +197,7 @@ int Show_target_weapons;
 int Show_target_debug_info;
 int Game_do_state_should_skip;
 fix Game_time_compression;
-struct fs_builtin_mission *game_find_builtin_mission(char*){return NULL;}
+const struct fs_builtin_mission *game_find_builtin_mission(const char*){return NULL;}
 void game_format_time(fix, char*){}
 void game_do_state(int){}
 void game_process_event(int, int){}
@@ -239,7 +238,7 @@ fix game_get_overall_frametime() { return 0; }
 void game_level_init(){}
 void game_post_level_init(){}
 camid game_render_frame_setup(){return camid();}
-void game_render_frame(camid  /*cid*/){}
+void game_render_frame(camid  /*cid*/, const vec3d* /*offset*/ = nullptr, const matrix* /*rot_offset*/ = nullptr, const fov_t* /*fov_override*/ = nullptr) {}
 void game_simulation_frame(){}
 void game_update_missiontime(){}
 void game_render_post_frame(){}

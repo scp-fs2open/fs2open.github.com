@@ -62,7 +62,8 @@ enum ConditionalType {
 	CHC_KEYPRESS,    
 	CHC_VERSION,    
 	CHC_APPLICATION, 
-	CHC_MULTI_SERVER
+	CHC_MULTI_SERVER,
+	CHC_VR_MODE
 };
 
 //Actions
@@ -85,7 +86,7 @@ enum ConditionalActions : int32_t {
 // management stuff
 void scripting_state_init();
 void scripting_state_close();
-void scripting_state_do_frame(float frametime);
+void scripting_state_do_frame(float frametime, bool doKeys);
 
 const scripting::HookBase* scripting_string_to_action(const char* action);
 ConditionalType scripting_string_to_condition(const char* condition);

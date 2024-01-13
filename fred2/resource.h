@@ -32,6 +32,7 @@
 #define IDD_WEAPON_EDITOR               177
 #define IDD_SHIP_MARKINGS               178
 #define IDD_MISSION_GOALS               179
+#define IDD_MISSION_CUTSCENES           180
 #define IDD_SHIP_SELECT                 181
 #define IDD_GRID                        182
 #define IDR_MENU_SHIP_POPUP             183
@@ -46,6 +47,7 @@
 #define IDD_PLAYER_EDITOR               199
 #define IDD_LOADOUT_EDITOR              199
 #define IDD_ORIENT_EDITOR               200
+#define IDD_EDIT_CUSTOM_DATA            201
 #define IDR_PLAYER_EDIT_MENU            202
 #define IDD_EVENT_EDITOR                203
 #define IDD_EDITORS_MESSAGES            205
@@ -56,7 +58,7 @@
 #define IDD_WAYPOINT_PATH_EDITOR        210
 #define IDR_WAYPOINT_PATH_EDIT_MENU     211
 #define IDD_WING_CREATE                 212
-#define IDD_JUMPNODE_EDITOR				213
+#define IDD_JUMPNODE_EDITOR             213
 #define IDD_INITIAL_STATUS              214
 #define IDD_ASTEROID_EDITOR             215
 #define IDD_CAMPAIGN                    216
@@ -67,7 +69,7 @@
 #define IDD_BRIEFING_EDITOR             221
 #define IDD_IGNORE_ORDERS               222
 #define IDD_DEBRIEFING_EDITOR           223
-#define IDR_JUMPNODE_EDIT_MENU     224
+#define IDR_JUMPNODE_EDIT_MENU          224
 #define IDB_OPERATOR                    226
 #define IDB_DATA                        227
 #define IDB_ROOT                        228
@@ -132,6 +134,7 @@
 #define IDD_EDIT_CONTAINER_NAME         324
 #define IDD_MUSIC_PLAYER                330
 #define IDD_VOLUMETRICS                 332
+#define IDD_EDIT_CUSTOM_STRINGS         333
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -316,6 +319,7 @@
 #define IDC_AUTOGENERATE                1062
 #define IDC_GENERATE_FILE_NAMES         1062
 #define IDC_CONTAINER_ADD               1062
+#define IDC_CUSTOM_ADD                  1062
 #define IDC_NOISE_BASE                  1062
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
@@ -424,6 +428,7 @@
 #define IDC_SOUND_CLIP_DELETE           1139
 #define IDC_SOUND_CLIP_WINDOW           1140
 #define IDC_SHIP_PREVIOUS               1141
+#define IDC_CUSTOM_DATA_DESC            1142
 #define IDC_WEAPON_NAME                 1143
 #define IDC_WEAPON_DESCRIPTION          1144
 #define IDC_WEAPON_MASS                 1145
@@ -444,10 +449,15 @@
 #define IDC_GRID_XY_PLANE               1159
 #define IDC_GRID_YZ_PLANE               1160
 #define IDC_GRID_SIZE                   1162
+#define IDC_NEW_NOTE                    1163
 #define IDC_SPIN_GRID_SIZE              1164
 #define IDC_STATIC_GRID_SIZE            1165
 #define IDC_PREF_STARFIELD              1167
+#define IDC_CUTSCENE_NAME               1168
 #define IDC_GOALS_TREE                  1169
+#define IDC_CUTSCENES_TREE              1170
+#define IDC_DISPLAY_CUTSCENE_TYPES_DROP 1171
+#define IDC_CUTSCENE_TYPE_DROP          1172
 #define IDC_DISPLAY_GOAL_TYPES_DROP     1173
 #define IDC_BUTTON_NEXT_MUSIC           1174
 #define IDC_BUTTON_PREV_MUSIC           1175
@@ -459,6 +469,7 @@
 #define IDC_GOAL_TYPE_DROP              1181
 #define IDC_BUTTON_PLAY_MUSIC           1182
 #define IDC_BUTTON_NEW_GOAL             1183
+#define IDC_BUTTON_NEW_CUTSCENE         1183
 #define IDC_BUTTON_VERIFY               1184
 #define IDC_SHIP_TEAM                   1185
 #define IDC_DESIGNER                    1186
@@ -498,6 +509,7 @@
 #define IDC_ASCT2_CLASS_COMBO1          1194
 #define IDC_SHIP_VARIABLES_LIST         1194
 #define IDC_ASCT2_VARIABLES_COMBO1      1195
+#define IDC_CUTSCENE_HELP_BOX           1196
 #define IDC_NEW_WING                    1197
 #define IDC_DELETE_WING                 1197
 #define IDC_BUTTON2                     1198
@@ -541,12 +553,14 @@
 #define IDC_CURRENT_CONTAINER_NAME      1203
 #define IDC_NEBCOLOR                    1204
 #define IDC_SUBSTITUTE_EVENT_MUSIC      1205
+#define IDC_OPEN_CUSTOM_DATA            1206
 #define IDC_AI_PROFILE                  1207
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
 #define IDC_YES_MESSAGE_LIST            1208
 #define IDC_ALT_CLASS_LIST              1208
 #define IDC_LIGHT_PROFILE               1208
+#define IDC_OPEN_CUSTOM_STRINGS         1208
 #define IDC_COMMAND_SENDER              1209
 #define IDC_COMMAND_PERSONA             1210
 #define IDC_FILTER_WAYPOINTS            1211
@@ -720,6 +734,7 @@
 #define IDC_WEAPON_LIST                 1341
 #define IDC_SUN1_LIST                   1341
 #define IDC_CONTAINER_DATA_LISTER       1341
+#define IDC_CUSTOM_DATA_LISTER          1341
 #define IDC_EDIT1                       1342
 #define IDC_AMMO1                       1342
 #define IDC_GOAL_NAME                   1342
@@ -743,6 +758,7 @@
 #define IDC_SQUADRON_WING_NAME_1        1343
 #define IDC_SOUND_ENVIRONMENT_DAMPING   1343
 #define IDC_CONTAINER_KEY               1343
+#define IDC_CUSTOM_KEY                  1343
 #define IDC_EDIT3                       1344
 #define IDC_AMMO3                       1344
 #define IDC_TIME                        1344
@@ -758,6 +774,7 @@
 #define IDC_ASSIST_SCORE                1344
 #define IDC_SOUND_ENVIRONMENT_VOLUME    1344
 #define IDC_CONTAINER_DATA              1344
+#define IDC_CUSTOM_DATA                 1344
 #define IDC_EDIT4                       1345
 #define IDC_AMMO4                       1345
 #define IDC_VOICE                       1345
@@ -765,6 +782,8 @@
 #define IDC_SUN1_B                      1345
 #define IDC_ABBREV_COMMAND_BRIEFING     1345
 #define IDC_STARTING_WING_NAME_2        1345
+#define IDC_CUSTOM_KEY2                 1345
+#define IDC_CUSTOM_STRING               1345
 #define IDC_SUBSYS                      1346
 #define IDC_SPECIAL_SHOCK_SPEED         1346
 #define IDC_SBITMAP_B                   1346
@@ -906,6 +925,7 @@
 #define IDC_GUARDIAN                    1474
 #define IDC_SCANNABLE                   1475
 #define IDC_RED_ALERT                   1476
+#define IDC_PAD_TOGGLE                  1476
 #define IDC_VAPORIZE                    1476
 #define IDC_SCRAMBLE                    1477
 #define IDC_FRIENDLY_STEALTH_INVISIBLE  1477
@@ -948,6 +968,7 @@
 #define IDC_SET_AS_PLAYER_SHIP          1498
 #define IDC_IMPORT_BACKGROUND           1498
 #define IDC_CONTAINER_UPDATE            1498
+#define IDC_CUSTOM_UPDATE               1498
 #define IDC_FULLNEB                     1499
 #define IDC_NO_TRAITOR                  1499
 #define IDC_ADD_VARIABLE_NAME           1500
@@ -1100,6 +1121,7 @@
 #define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
+#define IDC_ENTRY_FORMAT_DESC           1588
 #define IDC_ENVMAP                      1589
 #define IDC_ENVMAP_BROWSE               1590
 #define IDC_ENTRY_FORMAT                1590
@@ -1115,6 +1137,7 @@
 #define IDC_ALT_CLASS_UP                1602
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
+#define IDC_PRELOAD_SUBSPACE            1605
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1177,6 +1200,7 @@
 #define IDC_NEW_CONTAINER_NAME          1661
 #define IDC_ADD_FIELD                   1661
 #define IDC_CONTAINER_REMOVE            1662
+#define IDC_CUSTOM_REMOVE               1662
 #define IDC_REMOVE_FIELD                1662
 #define IDC_ADD_NEW_CONTAINER           1663
 #define IDC_ADD_FIELD_TARGET            1663
@@ -1227,6 +1251,7 @@
 #define IDC_SPIN_EM_FALLOFF             1695
 #define IDC_SPIN_NOISE_COLOR_B          1696
 #define IDC_NOISE_COLOR_B               1697
+#define IDC_SUPERCAP_WARP_PHYSICS       1698
 #define IDC_NOISE_INTENSITY             1700
 #define IDC_SPIN_NOISE_INTENSITY        1701
 #define IDC_NOISE_RESOLUTION            1702
@@ -1263,6 +1288,7 @@
 #define ID_EDITORS_SOUND                32802
 #define ID_EDITORS_TERRAIN              32803
 #define ID_EDIT_DUPLICATE               32804
+#define ID_EDITORS_CUTSCENES            32805
 #define ID_VIEW_ELEVATIONS              32806
 #define ID_VIEW_WAYPOINTS               32807
 #define ID_VIEW_GRID                    32808
@@ -1422,6 +1448,7 @@
 #define ID_SHOW_SHIPS                   32990
 #define ID_SHOW_STARTS                  32991
 #define ID_TOGGLE_VIEWPOINT             32992
+#define ID_VIEW_OUTLINE_AT_WARPIN       32993
 #define ID_CPGN_FILE_NEW                32995
 #define ID_CPGN_FILE_OPEN               32996
 #define ID_CPGN_FILE_SAVE               32997

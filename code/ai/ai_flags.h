@@ -47,6 +47,7 @@ namespace AI {
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
 		Target_own_team,	// this attack goal is allowed to target friendlies
 		Afterburn_hard,		// afterburn as hard as possible to the goal
+		Waypoints_in_reverse,	// decrement instead of increment
 
 		NUM_VALUES
 	};
@@ -156,6 +157,7 @@ namespace AI {
 		Whackable_debris,
 		Whackable_asteroids,
 		Dynamic_goals_afterburn_hard,
+		Hudsquadmsg_tactical_disarm_disable,
 
 		NUM_VALUES
 	};

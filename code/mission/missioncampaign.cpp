@@ -267,6 +267,8 @@ int mission_campaign_maybe_add(const char *filename)
 
 			Num_campaigns++;
 
+			// Note that we're not freeing desc here because the pointer is getting copied to Campaign_descs which is freed later.
+
 			return 1;
 		}
 	}
@@ -724,31 +726,6 @@ void mission_campaign_init()
 	player_loadout_init();
 }
 
-/**
- * Fill in the root of the campaign save filename
- */
-void mission_campaign_savefile_generate_root(char *filename, player *pl)
-{
-	char base[_MAX_FNAME];
-
-	Assert ( strlen(Campaign.filename) != 0 ); //-V805
-
-	if (pl == NULL) {
-		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
-		pl = &Players[Player_num];
-	}
-
-	Assert( pl != NULL );
-
-	// build up the filename for the save file.  There could be a problem with filename length,
-	// but this problem can get fixed in several ways -- ignore the problem for now though.
-	_splitpath( Campaign.filename, NULL, NULL, base, NULL );
-
-	Assert ( (strlen(base) + strlen(pl->callsign) + 1) < _MAX_FNAME );
-
-	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
-}
-
 // the below two functions is internal to this module.  It is here so that I can group the save/load
 // functions together.
 //
@@ -965,17 +942,20 @@ void mission_campaign_store_goals_and_events()
 		} else
 			strncpy_s(stored_event.name, event.name.c_str(), NAME_LENGTH - 1);
 
+		// Old method:
 		// getting status for the events is a little different.  If the formula value for the event entry
 		// is -1, then we know the value of the result field will never change.  If the formula is
 		// not -1 (i.e. still being evaluated at mission end time), we will write "incomplete" for the
 		// event evaluation
-		if ( event.formula == -1 ) {
+		// New method: check a flag.  Also, even with the old method, events are always
+		// forced satisfied or failed at the end of a mission
+		if (event.flags & MEF_EVENT_IS_DONE) {
 			if ( event.result )
-				stored_event.status = EVENT_SATISFIED;
+				stored_event.status = static_cast<int>(EventStatus::SATISFIED);
 			else
-				stored_event.status = EVENT_FAILED;
+				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
-			UNREACHABLE("Mission event formula should be -1 at end-of-mission");
+			UNREACHABLE("Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
 	}
 }
 
@@ -1137,7 +1117,6 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 	// Goober5000 - player-persistent variables are handled when the mission is
 	// over, not necessarily when the mission is accepted
-	Player->failures_this_session = 0;
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
@@ -1491,7 +1470,7 @@ void mission_campaign_maybe_play_movie(int type)
 /**
  * Return the type of campaign of the passed filename
  */
-int mission_campaign_parse_is_multi(char *filename, char *name)
+int mission_campaign_parse_is_multi(const char *filename, char *name)
 {	
 	int i;
 	char temp[NAME_LENGTH];
@@ -1663,18 +1642,18 @@ void mission_campaign_end_close()
 
 /**
  * Skip to the next mission in the campaign
- * this also posts the state change by default.  pass 0 to override that
+ * this also posts the state change
  */
-void mission_campaign_skip_to_next(int start_game)
+void mission_campaign_skip_to_next()
 {
+	// mark mission as skipped
+	Campaign.missions[Campaign.current_mission].flags |= CMISSION_FLAG_SKIPPED;
+
 	// mark all goals/events complete
 	// these do not really matter, since is-previous-event-* and is-previous-goal-* sexps check
 	// to see if the mission was skipped, and use defaults accordingly.
 	mission_goal_mark_objectives_complete();
 	mission_goal_mark_events_complete();
-
-	// mark mission as skipped
-	Campaign.missions[Campaign.current_mission].flags |= CMISSION_FLAG_SKIPPED;
 
 	// store
 	mission_campaign_store_goals_and_events_and_variables();
@@ -1686,22 +1665,20 @@ void mission_campaign_skip_to_next(int start_game)
 	Player->failures_this_session = 0;
 	Player->show_skip_popup = 1;
 
-	if (start_game) {
-		// proceed to next mission or main hall
-		if ((Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1)) {
-			// go to loop solicitation
-			gameseq_post_event(GS_EVENT_LOOP_BRIEF);
-		} else {
-			// closes out mission stuff, sets up next one
-			mission_campaign_mission_over();
+	// proceed to next mission or main hall
+	if ((Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1)) {
+		// go to loop solicitation
+		gameseq_post_event(GS_EVENT_LOOP_BRIEF);
+	} else {
+		// closes out mission stuff, sets up next one
+		mission_campaign_mission_over();
 
-			if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
-				// go to main hall, either the campaign is over or the FREDer requested it.
-				gameseq_post_event(GS_EVENT_MAIN_MENU);
-			} else {
-				// go to next mission
-				gameseq_post_event(GS_EVENT_START_GAME);
-			}
+		if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
+			// go to main hall, either the campaign is over or the FREDer requested it.
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		} else {
+			// go to next mission
+			gameseq_post_event(GS_EVENT_START_GAME);
 		}
 	}
 }

@@ -287,6 +287,7 @@ add_file_folder("Default files\\\\data\\\\maps"
 
 add_file_folder("Default files\\\\data\\\\scripts"
 	def_files/data/scripts/cfile_require.lua
+	def_files/data/scripts/dkjson.lua
 )
 
 add_file_folder("Default files\\\\data\\\\tables"
@@ -452,6 +453,9 @@ add_file_folder("Graphics"
 	graphics/material.h
 	graphics/matrix.cpp
 	graphics/matrix.h
+	graphics/openxr.cpp
+	graphics/openxr.h
+	graphics/openxr_internal.h
 	graphics/post_processing.cpp
 	graphics/post_processing.h
 	graphics/render.cpp
@@ -474,6 +478,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/gropenglbmpman.cpp
 		graphics/opengl/gropengldeferred.cpp
 		graphics/opengl/gropengldraw.cpp
+		graphics/opengl/gropenglopenxr.cpp
 		graphics/opengl/gropenglpostprocessing.cpp
 		graphics/opengl/gropenglquery.cpp
 		graphics/opengl/gropenglshader.cpp
@@ -490,6 +495,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/gropenglbmpman.h
 		graphics/opengl/gropengldeferred.h
 		graphics/opengl/gropengldraw.h
+		graphics/opengl/gropenglopenxr.h
 		graphics/opengl/gropenglpostprocessing.h
 		graphics/opengl/gropenglquery.h
 		graphics/opengl/gropenglshader.h
@@ -861,12 +867,6 @@ add_file_folder("mod_table"
 # Model files
 add_file_folder("Model"
 	model/model.h
-	model/modelanimation.cpp
-	model/modelanimation.h
-	model/modelanimation_moveables.cpp
-	model/modelanimation_moveables.h
-	model/modelanimation_segments.cpp
-	model/modelanimation_segments.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
 	model/modelread.cpp
@@ -876,6 +876,18 @@ add_file_folder("Model"
 	model/modelreplace.cpp
 	model/modelsinc.h
 	model/model_flags.h
+)
+
+# Model Animation files
+add_file_folder("Model Animation"
+	model/animation/modelanimation.cpp
+	model/animation/modelanimation.h
+	model/animation/modelanimation_driver.cpp
+	model/animation/modelanimation_driver.h
+	model/animation/modelanimation_moveables.cpp
+	model/animation/modelanimation_moveables.h
+	model/animation/modelanimation_segments.cpp
+	model/animation/modelanimation_segments.h
 )
 
 # Nebula files

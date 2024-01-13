@@ -7,7 +7,7 @@ if (EXISTS "${PROJECT_SOURCE_DIR}/version_override.cmake")
 endif()
 
 set_if_not_defined(FSO_VERSION_MAJOR 23)
-set_if_not_defined(FSO_VERSION_MINOR 1)
+set_if_not_defined(FSO_VERSION_MINOR 3)
 set_if_not_defined(FSO_VERSION_BUILD 0)
 
 # A numeric revision e.g. the CI build number
@@ -35,7 +35,9 @@ ELSE()
     SET(FSO_BINARY_SUFFIX "${FSO_VERSION_MAJOR}_${FSO_VERSION_MINOR}_${FSO_VERSION_BUILD}_${FSO_VERSION_REVISION_STR}")
 ENDIF()
 
-IF(IS_64BIT)
+IF(IS_ARM64)
+    SET(FSO_BINARY_SUFFIX "${FSO_BINARY_SUFFIX}_arm64")
+ELSEIF(IS_64BIT)
 	# This is a 64-bit builds
     SET(FSO_BINARY_SUFFIX "${FSO_BINARY_SUFFIX}_x64")
 ENDIF()

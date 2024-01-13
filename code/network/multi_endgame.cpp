@@ -383,7 +383,7 @@ void multi_endgame_cleanup()
 		multi_mdns_service_close();
 
 		// if we're in Parallax Online mode, log back in there	
-		if (Multi_options_g.pxo == 1) {
+		if (Multi_options_g.pxo) {
 			Assert(Multi_options_g.protocol == NET_TCP);
 			gameseq_post_event(GS_EVENT_PXO);
 		} else {
@@ -479,7 +479,7 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 				strcat_s(err_msg,XSTR("Unable to create ingame join player ship",659));
 				break;
 			case MULTI_END_ERROR_INGAME_BOGUS :
-				strcat_s(err_msg,XSTR("Recevied bogus packet data while ingame joining",660));
+				strcat_s(err_msg,XSTR("Received bogus packet data while ingame joining",660));
 				break;
 			case MULTI_END_ERROR_STRANS_FAIL :
 				strcat_s(err_msg,XSTR("Server transfer failed (obsolete)",661));

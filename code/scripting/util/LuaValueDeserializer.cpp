@@ -46,7 +46,7 @@ luacpp::LuaValue LuaValueDeserializer::jsonToValue(json_t* json) const
 		{
 			objectTbl.addValue(std::get<0>(pair), jsonToValue(std::get<1>(pair)));
 		}
-		return std::move(objectTbl);
+		return objectTbl;
 	}
 	case JSON_ARRAY: {
 		auto arrayTbl = luacpp::LuaTable::create(m_L);
@@ -56,7 +56,7 @@ luacpp::LuaValue LuaValueDeserializer::jsonToValue(json_t* json) const
 			arrayTbl.addValue(i, jsonToValue(value));
 			++i;
 		}
-		return std::move(arrayTbl);
+		return arrayTbl;
 	}
 	case JSON_STRING: {
 		const auto val = json_string_value(json);

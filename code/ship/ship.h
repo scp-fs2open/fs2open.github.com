@@ -22,7 +22,7 @@
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -63,8 +63,7 @@ extern vec3d	Original_vec_to_deader;
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
-#define CYCLE_PRIMARY_NEXT		0
-#define CYCLE_PRIMARY_PREV		1
+enum class CycleDirection { NEXT, PREV };
 
 #define BANK_1		0
 #define BANK_2		1
@@ -148,6 +147,10 @@ public:
 	int remote_detonaters_active;
 	int detonate_weapon_time;			//	time at which last fired weapon can be detonated
 	int ai_class;
+
+	int firing_loop_sounds[MAX_SHIP_PRIMARY_BANKS]; // objsnd indices, 
+													// -2 is a special value used to mean 'a loop WOULD be going on right now' 
+													// but the modder did not actually specify a loop sound
 
 	flagset<Ship::Weapon_Flags> flags;
 
@@ -284,8 +287,9 @@ typedef struct cockpit_display {
 	char name[MAX_FILENAME_LEN];
 } cockpit_display;
 
-extern bool disableCockpits;
-extern bool cockpitActive;
+extern bool Disable_cockpits;
+extern bool Disable_cockpit_sway;
+extern bool Cockpit_active;
 
 extern SCP_vector<cockpit_display> Player_displays;
 
@@ -370,6 +374,7 @@ public:
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 	bool	scripting_target_override;
 	int		last_fired_weapon_info_index;		// which weapon class was last fired
+	int		shared_fire_direction_beam_objnum;		// reference beam for shared fire direction
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
@@ -484,7 +489,6 @@ extern const size_t Num_wing_flag_names;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
-#define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -646,7 +650,7 @@ public:
 	int	engine_recharge_index;			// index into array holding the engine recharge rate
 	float	weapon_energy;						// Number of EUs in energy reserves
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
-	float prev_engine_aggregate_strength;	// aggregate engine health to allow for minimzing overrides to max speed --Asteroth and wookieejedi
+	float prev_engine_strength;	// used only in update_ets() to allow for minimizing overrides to max speed --Asteroth and wookieejedi
 
 	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state
 	int	reinforcement_index;				// index into reinforcement struct or -1
@@ -796,8 +800,9 @@ public:
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
-	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
-	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
+	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
+																//Sound index for thrusters
+																//Thruster status
 
 	SCP_vector<alt_class> s_alt_classes;	
 
@@ -842,15 +847,15 @@ public:
 	void clear();
 
     //Helper functions
-	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false);
-	inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
-	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
+	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false) const;
+	inline bool is_departing() const { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
+	inline bool cannot_warp_flags() const { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
+	inline bool is_dying_or_departing() const { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
-	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
+	void apply_replacement_textures(const SCP_vector<texture_replace> &replacements);
 };
 
 struct ai_target_priority {
@@ -881,6 +886,7 @@ typedef struct exited_ship {
 	int		obj_signature;
 	int		ship_class;
 	int		team;
+	int		wingnum;
 	flagset<Ship::Exit_Flags> flags;
 	fix		time;
 	int		hull_strength;
@@ -900,40 +906,57 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
 enum class ShipStatus
 {
+	// The ship_registry_entry hasn't been initialized yet
+	INVALID = 0,
+
 	// A ship is on the arrival list as a parse object
-	NOT_YET_PRESENT = 0,
+	NOT_YET_PRESENT,
 
 	// A ship is currently in-mission, and its objp and shipp pointers are valid
 	PRESENT,
 
-	// A ship is destroyed, departed, or vanished.  Note however that for destroyed ships,
-	// ship_cleanup is not called until the death roll is complete, which means there is a
-	// period of time where the ship is "exited", but objp and shipp are still valid and
-	// exited_index is not yet assigned.
+	// A ship has been destroyed but is still doing its death roll (not yet "exited");
+	// the objp and shipp pointers are still valid
+	DEATH_ROLL,
+
+	// A ship is destroyed, departed, or vanished; the objp and shipp pointers are nullptr.
+	// Note that for destroyed ships, ship_cleanup is not called until the death roll is complete,
+	// so the ship will spend a period of time in DEATH_ROLL before moving to EXITED.
 	EXITED
 };
 
 struct ship_registry_entry
 {
-	ShipStatus status = ShipStatus::NOT_YET_PRESENT;
-	char name[NAME_LENGTH];
+	ShipStatus status = ShipStatus::INVALID;
+	char name[NAME_LENGTH] = { 0 };
 
-	p_object *p_objp = nullptr;
-	object *objp = nullptr;
-	ship *shipp = nullptr;
+	int pobj_num = -1;
+	int objnum = -1;
+	int shipnum = -1;
+
 	int cleanup_mode = 0;
 	int exited_index = -1;
 
-	ship_registry_entry(const char *_name)
-	{
-		strcpy_s(name, _name);
-	}
+	ship_registry_entry(const char* _name);
+
+	inline bool has_p_objp() const { return pobj_num >= 0; }
+	inline bool has_objp() const { return objnum >= 0; }
+	inline bool has_shipp() const { return shipnum >= 0; }
+
+	p_object* p_objp() const;
+	object* objp() const;
+	ship* shipp() const;
+
+	p_object* p_objp_or_null() const;
+	object* objp_or_null() const;
+	ship* shipp_or_null() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
 extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern int ship_registry_get_index(const char *name);
+extern bool ship_registry_exists(const char *name);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
 #define REGULAR_WEAPON	(1<<0)
@@ -978,8 +1001,15 @@ typedef struct ship_type_info {
 
 	float debris_max_speed;
 
+	// Damage multiplier for friendly fire, but only for purposes of scoring and traitor check, not actually damaging ships in-mission
 	float ff_multiplier;
+
+	// Not currently implemented. Originally used for "electronics" weapons. Deactivated in commit 941faf9ab9ed05a1b0efebf7de32c6e3c724baf7 
+	// as it broke retail compatibility.
 	float emp_multiplier;
+
+	// Modifies the audible range used for warp fireball 3d sound effects
+	float warp_sound_range_multiplier;
 
 	//Fog
 	float fog_start_dist;
@@ -994,7 +1024,7 @@ typedef struct ship_type_info {
 	SCP_vector<int> ai_cripple_ignores;
 
 	//Explosions
-	float vaporize_chance;
+	float skip_deathroll_chance;
 
 	//Resources
 	SCP_vector<int> explosion_bitmap_anims;
@@ -1005,10 +1035,10 @@ typedef struct ship_type_info {
 
 	ship_type_info( )
 		: debris_max_speed( 0.f ),
-		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		  ff_multiplier( 0.f ), emp_multiplier( 0.f ), warp_sound_range_multiplier( 1.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
 		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
-		  vaporize_chance( 0.f )
+		  skip_deathroll_chance( 0.f )
 
 	{
         flags.reset();
@@ -1018,7 +1048,7 @@ typedef struct ship_type_info {
 
 extern SCP_vector<ship_type_info> Ship_types;
 
-class man_thruster {
+class rcs_thruster_info {
     public:
 	flagset<Ship::Thruster_Flags> use_flags;
 
@@ -1142,6 +1172,7 @@ public:
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
+	float   cockpit_sway_val;					// multiplier for cockpit 'swaying'
 	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	char		pof_file_tech[MAX_FILENAME_LEN];	// POF file to load for the techroom
@@ -1197,7 +1228,7 @@ public:
 	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
-	float vaporize_chance;					
+	float skip_deathroll_chance;					
 
 	particle_effect		impact_spew;
 	particle_effect		damage_spew;
@@ -1422,8 +1453,7 @@ public:
 
 	SCP_map<SCP_string, SCP_string> custom_data;
 
-	int num_maneuvering;
-	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+	SCP_vector<rcs_thruster_info> rcs_thrusters;
 
 	int radar_image_2d_idx;
 	int radar_color_image_2d_idx;
@@ -1629,8 +1659,9 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) ((int)(wingp-Wings))
-#define SHIP_INDEX(shipp) ((int)(shipp-Ships))
+#define WING_INDEX(wingp) (static_cast<int>(wingp-Wings))
+#define SHIP_INDEX(shipp) (static_cast<int>(shipp-Ships))
+#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>(ship_entry-Ship_registry.data()))
 
 
 extern void ship_init();				// called once	at game start
@@ -1642,7 +1673,7 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
-extern void ship_render_player_ship( object * objp);
+extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
@@ -1684,7 +1715,7 @@ extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
 // for special targeting lasers
 extern void ship_process_targeting_lasers();
 
-extern int ship_select_next_primary(object *objp, int direction);
+extern bool ship_select_next_primary(object *objp, CycleDirection direction);
 extern int  ship_select_next_secondary(object *objp);
 
 // Goober5000
@@ -1764,7 +1795,8 @@ extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns ind
 extern int ship_find_subsys(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship_subsys *subsys);
 
-extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
+extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_check = false);
+extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
@@ -1889,7 +1921,7 @@ int is_support_allowed(object *objp, bool do_simple_check = false);
 //	Stuffs:
 //		*gpos: absolute position of gun firing point
 //		*gvec: vector fro *gpos to *targetp
-void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp);
+void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, vec3d *targetp);
 
 //	Given an object and a turret on that object, return the global position and forward vector
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
@@ -1899,12 +1931,12 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-bool object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
+bool object_in_turret_fov(const object *objp, const ship_subsys *ss, const vec3d *tvec, const vec3d *tpos, float dist);
 
 // functions for testing fov.. returns true if fov test is passed.
-bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
-bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
-bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_std_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod = 0);
+bool turret_adv_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod = 0);
+bool turret_fov_test(const ship_subsys *ss, const vec3d *gvec, const vec3d *v2e, float size_mod = 0);
 
 // function for checking adjusted turret rof
 float get_adjusted_turret_rof(ship_subsys *ss);

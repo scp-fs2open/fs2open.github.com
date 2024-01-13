@@ -20,6 +20,19 @@ typedef enum {
 	OH_ROTATING
 } overhead_style;
 
+// And one for splash screens
+struct splash_screen {
+	SCP_string filename;
+	float aspect_ratio_exact = 0.0f;
+	float aspect_ratio_min = 0.0f;
+	float aspect_ratio_max = 0.0f;
+
+	// for filtering
+	bool is_default = false;
+	bool match_exact = false;
+	bool match_range = false;
+};
+
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
 extern bool Fixed_turret_collisions;
@@ -43,6 +56,7 @@ extern bool Enable_external_default_scripts;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Dont_automatically_select_turret_when_targeting_ship;
+extern bool Always_reset_selected_wep_on_loadout_open;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;
@@ -62,11 +76,12 @@ extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
-extern SCP_vector<SCP_string> Splash_screens;
+extern SCP_vector<splash_screen> Splash_screens;
 extern int Splash_fade_in_time;
 extern int Splash_fade_out_time;
 extern bool Splash_logo_center;
 extern bool Use_tabled_strings_for_default_language;
+extern bool No_built_in_languages;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
@@ -140,6 +155,9 @@ extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
+extern bool Calculate_subsystem_hitpoints_after_parsing;
+extern bool Disable_internal_loadout_restoration_system;
+extern bool Contrails_use_absolute_speed;
 
 void mod_table_init();
 void mod_table_post_process();

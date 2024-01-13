@@ -47,20 +47,6 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
-find_program(CCACHE_PROGRAM ccache)
-# Currently only GCC support ccache properly without generating additional warnings
-# Enable ccache on Mac even for clang
-if(CCACHE_PROGRAM AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR APPLE))
-	if(NOT CMAKE_C_COMPILER_LAUNCHER)
-		message(STATUS "Using ccache for C compilation: ${CCACHE_PROGRAM}")
-		SET(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
-	endif()
-	if(NOT CMAKE_CXX_COMPILER_LAUNCHER)
-		message(STATUS "Using ccache for C++ compilation: ${CCACHE_PROGRAM}")
-		SET(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
-	endif()
-endif()
-
 IF(CMAKE_CROSSCOMPILING)
 	SET(IMPORT_EXE_DIR "IMPORT_EXE_DIR-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to binary directory of a cmake build for the real OS")
 	INCLUDE(${IMPORT_EXE_DIR}/ImportExecutables.cmake)
@@ -141,6 +127,8 @@ OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
+OPTION(FSO_BUILD_WITH_OPENXR_DEBUG "Enables debug option for OpenXR" OFF)
+
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
 MARK_AS_ADVANCED(FORCE FSO_USE_OPENALSOFT)
@@ -154,6 +142,7 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
 # Include cotire file from https://github.com/sakra/cotire/
 include(cotire)

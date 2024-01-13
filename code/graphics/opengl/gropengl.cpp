@@ -6,11 +6,19 @@
 #include <direct.h>
 #endif
 
+#if !defined __APPLE_CC__ && defined SCP_UNIX
+#include<glad/glad_glx.h>
+//Required because X defines none and always, which is used later
+#undef None
+#undef Always
+#endif
+
 #include "gropengl.h"
 #include "ShaderProgram.h"
 #include "gropenglbmpman.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
+#include "gropenglopenxr.h"
 #include "gropenglpostprocessing.h"
 #include "gropenglquery.h"
 #include "gropenglshader.h"
@@ -27,6 +35,7 @@
 #include "graphics/2d.h"
 #include "graphics/matrix.h"
 #include "libs/renderdoc/renderdoc.h"
+#include "lighting/lighting.h"
 #include "math/floating.h"
 #include "model/model.h"
 #include "options/Option.h"
@@ -106,6 +115,18 @@ void gr_opengl_flip()
 	if (!GL_initted)
 		return;
 
+	if (Cmdline_window_res) {
+		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(Back_framebuffer, GL_READ_FRAMEBUFFER);
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_BACK);
+		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glDrawBuffer(GL_NONE);
+
+		GL_state.PopFramebufferState();
+	}
+
 	if (Cmdline_gl_finish)
 		glFinish();
 
@@ -122,6 +143,17 @@ void gr_opengl_flip()
 #endif
 }
 
+void gr_opengl_setup_frame() {
+	if (!GL_initted)
+		return;
+
+	if (Cmdline_window_res) {
+		GL_state.PushFramebufferState();
+		GL_state.BindFrameBuffer(Back_framebuffer);
+		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+	}
+}
+
 void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 {
 	// check for sanity of parameters
@@ -133,7 +165,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 		y = 0;
 	}
 
-	int to_resize = (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
+	int to_resize = (resize_mode != GR_RESIZE_NONE && resize_mode != GR_RESIZE_REPLACE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
 
 	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
 	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
@@ -142,28 +174,30 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 		gr_unsize_screen_pos(&max_w, &max_h);
 	}
 
-	if (x >= max_w) {
-		x = max_w - 1;
-	}
+	if (resize_mode != GR_RESIZE_REPLACE) {
+		if (x >= max_w) {
+			x = max_w - 1;
+		}
 
-	if (y >= max_h) {
-		y = max_h - 1;
-	}
+		if (y >= max_h) {
+			y = max_h - 1;
+		}
 
-	if (x + w > max_w) {
-		w = max_w - x;
-	}
+		if (x + w > max_w) {
+			w = max_w - x;
+		}
 
-	if (y + h > max_h) {
-		h = max_h - y;
-	}
+		if (y + h > max_h) {
+			h = max_h - y;
+		}
 
-	if (w > max_w) {
-		w = max_w;
-	}
+		if (w > max_w) {
+			w = max_w;
+		}
 
-	if (h > max_h) {
-		h = max_h;
+		if (h > max_h) {
+			h = max_h;
+		}
 	}
 
 	gr_screen.offset_x_unscaled = x;
@@ -861,6 +895,9 @@ int opengl_init_display_device()
 		}
 	}
 
+	if (Cmdline_capture_mouse)
+		attrs.flags.set(os::ViewPortFlags::Capture_Mouse);
+
 	auto viewport = gr_opengl_create_viewport(attrs);
 	if (!viewport) {
 		return 1;
@@ -897,9 +934,10 @@ int opengl_init_display_device()
 	return 0;
 }
 
-void opengl_setup_function_pointers()
+void gr_opengl_init_function_pointers()
 {
 	gr_screen.gf_flip				= gr_opengl_flip;
+	gr_screen.gf_setup_frame		= gr_opengl_setup_frame;
 	gr_screen.gf_set_clip			= gr_opengl_set_clip;
 	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
 
@@ -1027,6 +1065,13 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
 	gr_screen.gf_override_fog = gr_opengl_override_fog;
+
+	gr_screen.gf_openxr_get_extensions = gr_opengl_openxr_get_extensions;
+	gr_screen.gf_openxr_test_capabilities = gr_opengl_openxr_test_capabilities;
+	gr_screen.gf_openxr_create_session = gr_opengl_openxr_create_session;
+	gr_screen.gf_openxr_get_swapchain_format = gr_opengl_openxr_get_swapchain_format;
+	gr_screen.gf_openxr_acquire_swapchain_buffers = gr_opengl_openxr_acquire_swapchain_buffers;
+	gr_screen.gf_openxr_flip = gr_opengl_openxr_flip;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -1177,7 +1222,7 @@ static void init_extensions() {
 
 	// we require a minimum GLSL version
 	if (GLSL_version < MIN_REQUIRED_GLSL_VERSION) {
-		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
+		Error(LOCATION,  "Current GL Shading Language Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
 	GLint max_texture_units;
@@ -1226,6 +1271,12 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
+#if !defined __APPLE_CC__ && defined SCP_UNIX
+	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
+		Error(LOCATION, "Failed to load GLX!");
+	}
+#endif
+
 	// version check
 	GL_version = (GLVersion.major * 10) + GLVersion.minor;
 
@@ -1257,11 +1308,6 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		}
 	}
 #endif
-
-
-	// this MUST be done before any other gr_opengl_* or
-	// opengl_* function calls!!
-	opengl_setup_function_pointers();
 
 	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
 	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
@@ -1342,11 +1388,15 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
+
+	gr_setup_frame();
 	gr_opengl_reset_clip();
 	gr_opengl_clear();
 	gr_opengl_flip();
+	gr_setup_frame();
 	gr_opengl_clear();
 	gr_opengl_flip();
+	gr_setup_frame();
 	gr_opengl_clear();
 
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
@@ -1399,7 +1449,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_POST_PROCESSING:
 		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
-		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
+		return !Cmdline_no_fbo && light_deferred_enabled();
 	case CAPABILITY_SHADOWS:
 	case CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;

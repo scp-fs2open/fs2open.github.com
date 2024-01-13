@@ -303,12 +303,14 @@ void briefing_editor_dlg::OnClose()
 	}
 
 	if (dup)
-		MessageBox("You have duplicate icons names.  You should resolve these.", "Warning");
+		MessageBox("You have duplicate icon names.  You should resolve these.", "Warning");
 
 	theApp.record_window_data(&Briefing_wnd_data, this);
-	ptr = Briefing_dialog;
+	ptr = Briefing_dialog;	// this juggling prevents a crash in certain situations
 	Briefing_dialog = NULL;
 	delete ptr;
+
+	FREDDoc_ptr->autosave("briefing editor");
 }
 
 void briefing_editor_dlg::reset_editor()
@@ -373,6 +375,8 @@ void briefing_editor_dlg::update_data(int update)
 
 		if (m_no_grid)
 			ptr->draw_grid = false;
+		else
+			ptr->draw_grid = true;
 
 		MODIFY(ptr->flags, i);
 		ptr->formula = m_tree.save_tree();
@@ -975,7 +979,7 @@ void briefing_editor_dlg::update_positions()
 void briefing_editor_dlg::OnMakeIcon() 
 {
 	const char *name;
-	int z, team, ship, waypoint, count = -1;
+	int team, ship, waypoint, count = -1;
 	int cargo = 0, cargo_count = 0, freighter_count = 0;
 	object *ptr;
 	vec3d min, max, pos;
@@ -1028,7 +1032,6 @@ void briefing_editor_dlg::OnMakeIcon()
 			if (ship >= 0) {
 				team = Ships[ship].team;
 
-				z = ship_query_general_type(ship);
 				if (Ship_info[Ships[ship].ship_info_index].flags[Ship::Info_Flags::Cargo])
 					cargo_count++;
 

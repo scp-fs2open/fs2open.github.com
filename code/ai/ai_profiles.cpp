@@ -258,7 +258,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Glide Attack Percent:")) {
 					parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
@@ -271,7 +271,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Circle Strafe Percent:")) {
 					parse_float_list(profile->circle_strafe_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
@@ -284,7 +284,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Glide Strafe Percent:")) {
 					parse_float_list(profile->glide_strafe_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
@@ -297,7 +297,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Random Sidethrust Percent:")) {
 					parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
@@ -552,7 +552,9 @@ void parse_ai_profiles_tbl(const char *filename)
                     profile->flags.set(AI::Profile_Flags::All_nonshielded_ships_can_manage_ets, temp);
 				}
 
-                set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
+				// ----------
+
+				set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
@@ -622,6 +624,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$asteroids affected by physics whacks:", AI::Profile_Flags::Whackable_asteroids);
 
 				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
+
+				set_flag(profile, "$hud squad messages use tactical disarm/disable:", AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -811,5 +815,8 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(23, 2, 0)) {
 		flags.set(AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
+	}
+	if (mod_supports_version(23, 4, 0)) {
+		flags.set(AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
 	}
 }

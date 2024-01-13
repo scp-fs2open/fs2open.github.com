@@ -126,6 +126,7 @@ protected:
 	afx_msg void OnUpdateChangeViewpointFollow(CCmdUI* pCmdUI);
 	afx_msg void OnChangeViewpointFollow();
 	afx_msg void OnEditorsGoals();
+	afx_msg void OnEditorsCutscenes();
 	afx_msg void OnSpeed1();
 	afx_msg void OnSpeed2();
 	afx_msg void OnSpeed5();
@@ -222,6 +223,8 @@ protected:
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
 	afx_msg void OnViewOutlinesOnSelected();
 	afx_msg void OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI);
+	afx_msg void OnViewOutlineAtWarpin();
+	afx_msg void OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);

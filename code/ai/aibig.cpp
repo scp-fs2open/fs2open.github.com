@@ -535,11 +535,10 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	// get world pos of eye (stored in geye)
 	ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
-	model_local_to_global_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
+	model_local_to_global_point(&geye, &ep->pnt, pm, 0, &Pl_objp->orient, &Pl_objp->pos);
 
 	// get world pos of subsystem
-	vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
-	vm_vec_add2(&gsubpos, &En_objp->pos);
+	get_subsystem_pos(&gsubpos, target_objp, aip->targeted_subsys);
 
 	// you're in sight! shoot it!
 	if (ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, 0))
@@ -547,6 +546,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	// not in sight, gotta get there
 	vec3d* good_pos = nullptr;
+	vec3d world_goal_pos;
 	// For performance reasons we only recheck once a second, otherwise we reuse the last found target.
 	if (timestamp_elapsed(aip->next_dynamic_path_check_time)) {
 		vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
@@ -568,7 +568,6 @@ bool ai_new_maybe_reposition_attack_subsys() {
 		vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
 
 		// then scale in (or out) towards our subsys
-		vec3d world_goal_pos;
 		float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
 		vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
 		world_goal_pos += target_objp->pos;
@@ -914,13 +913,13 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 			}
 
 			if (tswp->num_secondary_banks > 0) {
-				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
+				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL))) {
 					bool valid_secondary = ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
 					if (current_bank > -1 && valid_secondary) {
 						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
-						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
+						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
 							//	If ship is protected and very low on hits, don't fire missiles.
 							if (!(En_objp->flags[Object::Object_Flags::Protected]) || (En_objp->hull_strength > 10*swip->damage)) {
 								if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
@@ -1842,7 +1841,7 @@ void ai_big_strafe()
 
 /*
 	if ( aip->goal_objnum != aip->target_objnum ) {
-		Int3();	// what is going on here? - Get Alan
+		UNREACHABLE("The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
 		aip->mode = AIM_NONE;
 		return;
 	}

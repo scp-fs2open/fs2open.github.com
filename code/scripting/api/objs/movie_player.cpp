@@ -53,10 +53,10 @@ ADE_VIRTVAR(FPS, l_MoviePlayer, "number", "Determines the frames per second of t
 {
 	movie_player_h* ph = nullptr;
 	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
-		return ade_set_args(L, "i", -1);
+		return ade_set_args(L, "f", -1.0f);
 
 	if (ph == nullptr || !ph->isValid()) {
-		return ade_set_args(L, "i", -1);
+		return ade_set_args(L, "f", -1.0f);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -64,6 +64,24 @@ ADE_VIRTVAR(FPS, l_MoviePlayer, "number", "Determines the frames per second of t
 	}
 
 	return ade_set_args(L, "f", ph->player()->getMovieProperties().fps);
+}
+
+ADE_VIRTVAR(Duration, l_MoviePlayer, "number", "Determines the duration in seconds of this movie <b>Read-only</b>", "number",
+            "The duration of the movie or -1 if handle is invalid")
+{
+	movie_player_h* ph = nullptr;
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
+		return ade_set_args(L, "f", -1.0f);
+
+	if (ph == nullptr || !ph->isValid()) {
+		return ade_set_args(L, "f", -1.0f);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Tried to modify read-only member!");
+	}
+
+	return ade_set_args(L, "f", ph->player()->getMovieProperties().duration);
 }
 
 ADE_FUNC(update, l_MoviePlayer, "timespan step_time",

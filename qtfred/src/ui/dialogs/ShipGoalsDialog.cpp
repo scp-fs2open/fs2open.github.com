@@ -165,7 +165,7 @@ void ShipGoalsDialog::updateUI()
 		}
 		behaviors[i]->setCurrentIndex(behaviors[i]->findData(value));
 		auto mode = value;
-		SCP_list<waypoint_list>::iterator ii;
+		SCP_vector<waypoint_list>::iterator ii;
 		if (i >= MAX_AI_GOALS)
 			behaviors[i]->setEnabled(false);
 		if (value < 1) {
@@ -243,7 +243,9 @@ void ShipGoalsDialog::updateUI()
 			case AI_GOAL_DOCK:
 			case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:

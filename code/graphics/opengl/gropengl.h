@@ -16,6 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/grinternal.h"
 
+void gr_opengl_init_function_pointers();
 bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void gr_opengl_cleanup(bool closing, int minimize=1);
 int opengl_check_for_errors(const char *err_at = NULL);

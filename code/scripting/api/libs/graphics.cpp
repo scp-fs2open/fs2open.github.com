@@ -2,6 +2,7 @@
 //
 
 #include "graphics.h"
+#include "globalincs/vmallocator.h"
 
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/color.h"
@@ -23,6 +24,7 @@
 #include <freespace.h>
 #include <globalincs/systemvars.h>
 #include <graphics/2d.h>
+#include <graphics/openxr.h>
 #include <graphics/material.h>
 #include <graphics/matrix.h>
 #include <hud/hudbrackets.h>
@@ -375,7 +377,7 @@ ADE_FUNC(getScreenHeight, l_Graphics, NULL, "Gets screen height", "number", "Hei
 	return ade_set_args(L, "i", gr_screen.max_h);
 }
 
-ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should be used in conjuction with getCenterOffsetX)", "number", "Width of center monitor in pixels, or 0 if graphics are not initialized yet")
+ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should be used in conjunction with getCenterOffsetX)", "number", "Width of center monitor in pixels, or 0 if graphics are not initialized yet")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
@@ -383,7 +385,7 @@ ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should
 	return ade_set_args(L, "i", gr_screen.center_w);
 }
 
-ADE_FUNC(getCenterHeight, l_Graphics, NULL, "Gets height of center monitor (should be used in conjuction with getCenterOffsetY)", "number", "Height of center monitor in pixels, or 0 if graphics are not initialized yet")
+ADE_FUNC(getCenterHeight, l_Graphics, NULL, "Gets height of center monitor (should be used in conjunction with getCenterOffsetY)", "number", "Height of center monitor in pixels, or 0 if graphics are not initialized yet")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
@@ -1362,9 +1364,6 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 	}
 	else
 	{
-		SCP_vector<int> linelengths;
-		SCP_vector<const char*> linestarts;
-
 		// This would pass a <=0 value to split_str
 		if (x2 <= x)
 		{
@@ -1390,8 +1389,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 			std::swap(y, y2);
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
-
+		SCP_vector<SCP_string> lines = str_wrap_to_width(s,x2-x,false);
+		num_lines = (int) lines.size();
 		int line_ht = gr_get_font_height();
 		if (y2 < 0)
 			y2 = y + line_ht;
@@ -1402,17 +1401,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		int curr_y = y;
 		for(int i = 0; i < num_lines; i++)
 		{
-			//Contrary to WMC's previous comment, let's make a new string each line
-			int len = linelengths[i];
-			char *buf = new char[len+1];
-			strncpy(buf, linestarts[i], len);
-			buf[len] = '\0';
-
 			//Draw the string
-			gr_string(x,curr_y,buf,resize_mode);
-
-			//Free the string we made
-			delete[] buf;
+			gr_string(x,curr_y,lines[i].c_str(),resize_mode);
 
 			//Increment line height
 			curr_y += line_ht;
@@ -2225,6 +2215,15 @@ ADE_FUNC(createParticle,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(killAllParticles, l_Graphics, nullptr, "Clears all particles from a mission", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	particle::kill_all();
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target and encodes it into a blob-PNG", "string", "The png blob string")
 {
 	if (!Gr_inited)
@@ -2267,6 +2266,11 @@ ADE_FUNC(createColor,
 	gr_init_alphacolor(&thisColor, r, g, b, a);
 
 	return ade_set_args(L, "o", l_Color.Set(thisColor));
+}
+
+ADE_FUNC(isVR, l_Graphics, nullptr, "Queries whether or not FSO is currently trying to render to a head-mounted VR display.", "boolean", "true if FSO is currently outputting frames to a VR headset.")
+{
+	return ade_set_args(L, "b", openxr_enabled());
 }
 
 } // namespace api

@@ -34,6 +34,7 @@
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
+#include "network/multi_pxo.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
@@ -101,7 +102,7 @@ ADE_FUNC(enableInput,
 	"any context /* A libRocket Context value */",
 	"Enables input for the specified libRocket context",
 	"boolean",
-	"true if successfull")
+	"true if successful")
 {
 	using namespace Rocket::Core;
 
@@ -118,13 +119,17 @@ ADE_FUNC(enableInput,
 	}
 
 	scpui::enableInput(ctx);
+	game_flush();
+	Main_hall_poll_key = false;
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successfull")
+ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successful")
 {
 	scpui::disableInput();
+	game_flush();
+	Main_hall_poll_key = true;
 
 	return ADE_RETURN_TRUE;
 }
@@ -251,6 +256,17 @@ ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, 
 		return ADE_RETURN_NIL;
 
 	common_play_cutscene(filename, restart_music, score_index);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(launchURL, l_UserInterface, "string url", "Launches the given URL in a web browser", nullptr, nullptr)
+{
+	const char* url;
+	if (!ade_get_args(L, "s", &url))
+		return ADE_RETURN_NIL;
+
+	multi_pxo_url(url);
+
 	return ADE_RETURN_NIL;
 }
 
@@ -415,6 +431,23 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(toggleHelp,
+	l_UserInterface_MainHall,
+	"boolean",
+	"Sets the mainhall F1 help overlay to display. True to display, false to hide",
+	nullptr,
+	"nothing")
+{
+	bool toggle;
+	if (!ade_get_args(L, "b", &toggle))
+		return ADE_RETURN_NIL;
+
+	main_hall_toggle_help(toggle);
+
+
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/Barracks
 ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               "API for accessing values specific to the Barracks UI.",
@@ -449,7 +482,7 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the given player as the current player",
-         "boolean", "true on sucess, false otherwise")
+         "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
@@ -473,10 +506,25 @@ ADE_FUNC(playVoiceClip,
 	nullptr,
 	"Plays the example voice clip used for checking the voice volume",
 	"boolean",
-	"true on sucess, false otherwise")
+	"true on success, false otherwise")
 {
 	options_play_voice_clip();
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(savePlayerData,
+	l_UserInterface_Options,
+	nullptr,
+	"Saves all player data. This includes the player file and campaign file.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	Pilot.save_player();
+	Pilot.save_savefile();
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/CampaignMenu
@@ -770,7 +818,7 @@ ADE_FUNC(renderBriefingModel,
 		thisType = TECH_JUMP_NODE;
 	}
 
-	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
+	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, &closeup_pos));
 }
 
 ADE_FUNC(drawBriefingMap,
@@ -1005,7 +1053,7 @@ ADE_FUNC(getEarnedPromotion,
 	if (Player->stats.m_promotion_earned != -1) {
 		Promoted = Player->stats.m_promotion_earned;
 		debrief_choose_medal_variant(filename, Rank_medal_index, Promoted);
-		displayname = Ranks[Promoted].name;
+		displayname = get_rank_display_name(&Ranks[Promoted]).c_str();
 
 		return ade_set_args(L, "oss", l_DebriefStage.Set(debrief_stage_h(&Promotion_stage)), displayname, filename);
 	} else {
@@ -1425,12 +1473,16 @@ ADE_FUNC(resetSelect,
 	nullptr)
 {
 	// Note this does all the things from ss_reset_to_default() in missionshipchoice.cpp except
-	// resetting UI elements - Mjn
+	// resetting UI elements. It also resets the weapon pool. - Mjn
 
 	SCP_UNUSED(L); // unused parameter
 
+	//Reset ships pool
 	ss_init_pool(&Team_data[Common_team]);
 	ss_init_units();
+
+	//Reset weapons pool
+	wl_init_pool(&Team_data[Common_team]);
 
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		wl_fill_slots();
@@ -2030,7 +2082,7 @@ ADE_FUNC(createPreset,
 
 	SCP_string name = preset;
 
-	return ade_set_args(L, "b", control_config_create_new_preset(name));
+	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name)));
 }
 
 ADE_FUNC(undoLastChange,
@@ -2363,6 +2415,7 @@ ADE_FUNC(initPause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything
 
 	weapon_pause_sounds();
 	audiostream_pause_all();
+	message_pause_all();
 
 	Paused = true;
 
@@ -2375,6 +2428,7 @@ ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everythin
 
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
+	message_resume_all();
 
 	// FSO can run pause_init() before the actual games state change when the game loses focus
 	// so this is required to make sure that the saved screen is cleared if SCPUI takes over

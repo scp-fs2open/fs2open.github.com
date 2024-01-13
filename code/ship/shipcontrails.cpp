@@ -160,6 +160,8 @@ void ct_ship_process(ship *shipp)
 // if the object is below the limit for contrails
 int ct_below_limit(object *objp)
 {
+	if (Contrails_use_absolute_speed)
+		return objp->phys_info.speed < (float) The_mission.contrail_threshold;
 	return objp->phys_info.fspeed < (float) The_mission.contrail_threshold;
 }
 

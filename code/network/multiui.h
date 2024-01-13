@@ -81,9 +81,6 @@ void multi_common_load_palette();
 void multi_common_set_palette();
 void multi_common_unload_palette();
 
-// call this to verify if we have a CD in the drive or not
-void multi_common_verify_cd();
-
 // variables to hold the mission and campaign lists
 extern SCP_vector<multi_create_info> Multi_create_mission_list;
 extern SCP_vector<multi_create_info> Multi_create_campaign_list;
@@ -101,7 +98,7 @@ int multi_create_lookup_campaign(char *fname);
 
 extern int Multi_sg_overlay_id;
 
-void multi_sg_rank_build_name(char *in,char *out);
+void multi_sg_rank_build_name(const char *in,char *out);
 
 extern int Multi_join_overlay_id;
 
@@ -167,6 +164,12 @@ void multi_common_add_notify(const char *str);
 
 // bring up the password string popup, fill in passwd (return 1 if accept was pressed, 0 if cancel was pressed)
 int multi_passwd_popup(char *passwd);
+
+// read the list of IPs from the ip file
+void multi_join_read_ip_address_file(SCP_list<SCP_string> &list);
+
+// write the list of IPs to the ip file
+bool multi_join_write_ip_address_file(SCP_list<SCP_string>& list);
 
 
 #endif

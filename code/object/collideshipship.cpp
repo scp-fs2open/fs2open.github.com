@@ -110,7 +110,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 {
 	object *heavy_obj	= ship_ship_hit_info->heavy;
 	object *light_obj = ship_ship_hit_info->light;
-	int	player_involved;	// flag to indicate that A or B is the Player_obj
+	__UNUSED int player_involved;	// flag to indicate that A or B is the Player_obj
 
 	Assert( heavy_obj->type == OBJ_SHIP );
 	Assert( light_obj->type == OBJ_SHIP );
@@ -226,10 +226,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 	}
 	
 	// copy important data
-	int copy_flags = mc.flags;  // make a copy of start end positions of sphere in  big ship RF
-	vec3d copy_p0, copy_p1;
-	copy_p0 = *mc.p0;
-	copy_p1 = *mc.p1;
+	int orig_flags = mc.flags;  // make a copy of start end positions of sphere in big ship RF
+	vec3d orig_p0 = *mc.p0;
+	vec3d orig_p1 = *mc.p1;
 
 	// first test against the sphere - if this fails then don't do any submodel tests
 	mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
@@ -264,7 +263,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 			}
 
 			// Only check single submodel now, since children of moving submodels are handled as moving as well
-			mc.flags = copy_flags | MC_SUBMODEL;
+			mc.flags = orig_flags | MC_SUBMODEL;
 
 			if (heavy_sip->collision_lod > -1) {
 				mc.lod = heavy_sip->collision_lod;
@@ -318,9 +317,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		}
 
 		// Now complete base model collision checks that do not take into account rotating submodels.
-		mc.flags = copy_flags;
-		*mc.p0 = copy_p0;
-		*mc.p1 = copy_p1;
+		mc.flags = orig_flags;
+		mc.p0 = &orig_p0;
+		mc.p1 = &orig_p1;
 		mc.orient = &heavy_obj->orient;
 
 		// usual ship_ship collision test
@@ -1057,7 +1056,8 @@ static void do_kamikaze_crash(object *obj1, object *obj2)
 				obj1->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj1, 0.0f);
 			}
-		} if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
+		}
+		if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
             if (Ship_info[ship1->ship_info_index].is_big_or_huge()) {
 				obj2->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj2, 0.0f);

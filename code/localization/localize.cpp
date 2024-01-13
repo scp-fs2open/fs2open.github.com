@@ -19,7 +19,9 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 
+#include <tl/optional.hpp>
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -34,10 +36,10 @@ SCP_vector<lang_info> Lcl_languages;
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",		"",		{127,0,176,0,0},	589986744},				// English ("" is correct; the game data files do not use a language extension for English)
-	{ "German",			"gr",	{164,0,176,0,0},	-1132430286 },			// German
-	{ "French",			"fr",	{164,0,176,0,0},	0 },					// French
-	{ "Polish",			"pl",	{127,0,176,0,0},	-1131728960},			// Polish
+	{ "English",  -1, "",   {127,0,176,0,0}, 589986744},    // English ("" is correct; the game data files do not use a language extension for English)
+	{ "German",   -1, "gr", {164,0,176,0,0}, -1132430286 }, // German
+	{ "French",   -1, "fr", {164,0,176,0,0}, 0 },           // French
+	{ "Polish",   -1, "pl", {127,0,176,0,0}, -1131728960},  // Polish
 };
 
 int Lcl_special_chars;
@@ -62,7 +64,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1675
+// #define XSTR_SIZE	1816 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -96,17 +98,87 @@ SCP_unordered_map<int, char*> Lcl_ext_str_explicit_default;
 // parses the string.tbl and reports back only on the languages it found
 void parse_stringstbl_quick(const char *filename);
 
+int language_deserializer(const json_t* value)
+{
+	const char* lang;
+	const char* ext;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "{s:s, s:s}", "name", &lang, "ext", &ext) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = lcl_find_lang_index_by_name(lang);
+
+	//does the extension also match? If not then we probably have a new language, so use default instead
+	if (SCP_vector_inbounds(Lcl_languages, id) && !stricmp(Lcl_languages[id].lang_ext, ext)) {
+		return id;
+	}
+
+	return -1;
+}
+
+/**
+ * Converts/serializes language reference data into a json line
+ */
+json_t* language_serializer(int lang)
+{
+	return json_pack("{ssss}", "name", Lcl_languages[lang].lang_name, "ext", Lcl_languages[lang].lang_ext);
+}
+
+static SCP_vector<int> language_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(Lcl_languages.size()); i++) {
+		vals.push_back(i);
+	}
+
+	return vals;
+}
+
+static SCP_string language_display(int value)
+{
+	return XSTR(Lcl_languages[value].lang_name, Lcl_languages[value].xstr);
+}
+
+auto LanguageOption = options::OptionBuilder<int>("Game.Language",
+							   std::pair<const char*, int>{"Select Language", 1143},
+							   std::pair<const char*, int>{"The language to display", 1807})
+							   .deserializer(language_deserializer)
+							   .serializer(language_serializer)
+							   .enumerator(language_enumerator)
+							   .display(language_display)
+							   .change_listener([](int, bool){
+							       return false; //This makes it so that changing the language requires a game restart
+							   })
+							   .flags({options::OptionFlags::ForceMultiValueSelection})
+							   .category("Game")
+							   .default_val(0)
+							   .finish();
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
 //
+
+// find a language's index
+int lcl_find_lang_index_by_name(const SCP_string& lang)
+{
+	for (int i = 0; i < static_cast<int>(Lcl_languages.size()); i++) {
+		if (!stricmp(Lcl_languages[i].lang_name, lang.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
+}
 
 // get an index we can use to look into the array
 int lcl_get_current_lang_index()
 {
 	Assertion(Lcl_current_lang >= 0, "Lcl_current_lang should never be negative!");
 
-	if (Lcl_current_lang < (int)Lcl_languages.size())
+	if (Lcl_current_lang < static_cast<int>(Lcl_languages.size()))
 		return Lcl_current_lang;
 
 	return LCL_DEFAULT;
@@ -115,10 +187,6 @@ int lcl_get_current_lang_index()
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang_init)
 {
-	char lang_string[128];
-	const char *ret;
-	int lang, idx, i;
-
 	// initialize encryption
 	encrypt_init();
 
@@ -139,42 +207,44 @@ void lcl_init(int lang_init)
 
 	// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
 	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
-	if ((int)Lcl_languages.size() == 1) {
-		for (i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
+	if (!No_built_in_languages && (static_cast<int>(Lcl_languages.size()) == 1)) {
+		for (int i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
 			Lcl_languages.push_back(Lcl_builtin_languages[i]);
 		}
 	}
 
 	// read the language from the commandline and then registry
+	int lang = -1;
 	if (lang_init < 0) {
 
-		lang = -1;
+		// first we start with any persisted in-game option choice
+		if (Using_in_game_options) {
+			lang = LanguageOption->getValue();
 
-		// first try the commandline
-		if (!Cmdline_lang.empty()) {
-			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
-				if (!stricmp(Lcl_languages[idx].lang_name, Cmdline_lang.c_str())) {
-					lang = idx;
-					break;
-				}
+			// make sure the language index is valid for the current mod
+			if (!SCP_vector_inbounds(Lcl_languages, lang)) {
+				lang = -1;
 			}
 		}
 
+		// now try the the commandline
 		if (lang < 0) {
-			// now go the the registry if it's not found
+			if (!Cmdline_lang.empty()) {
+				lang = lcl_find_lang_index_by_name(Cmdline_lang);
+			}
+		}
+
+		// still nothing, so go to the ini file
+		if (lang < 0) {
+			char lang_string[128];
 			memset(lang_string, 0, 128);
 			// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
 			// in tstrings in the #default section)
-			ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+			const char* ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
 			strcpy_s(lang_string, ret);
 
 			// look it up
-			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
-				if (!stricmp(Lcl_languages[idx].lang_name, lang_string)) {
-					lang = idx;
-					break;
-				}
-			}
+			lang = lcl_find_lang_index_by_name(lang_string);
 			if (lang < 0) {
 				lang = LCL_DEFAULT;
 			}
@@ -212,6 +282,11 @@ void parse_stringstbl_quick(const char *filename)
 			while (required_string_either("#End","$Language:")) {
 				required_string("$Language:");
 				stuff_string(language.lang_name, F_RAW, LCL_LANG_NAME_LEN + 1);
+				if (optional_string("+XSTR:")) {
+					stuff_int(&language.xstr);
+				} else {
+					language.xstr = -1;
+				}
 				required_string("+Extension:");
 				stuff_string(language.lang_ext, F_RAW, LCL_LANG_NAME_LEN + 1);
 
@@ -481,6 +556,35 @@ void parse_tstringstbl(const char *filename)
 	parse_stringstbl_common(filename, true);
 }
 
+struct xstr_delayed_order {
+	SCP_string& toFill;
+	const char* name;
+	int xstr;
+};
+
+static void lcl_delayed_xstr_internal(tl::optional<xstr_delayed_order> to_init) {
+	static SCP_vector<xstr_delayed_order> delayed_init;
+
+	if (to_init) {
+		if (Xstr_inited)
+			to_init->toFill = XSTR(to_init->name, to_init->xstr);
+		else
+			delayed_init.emplace_back(std::move(*to_init));
+	}
+	else {
+		Assertion(Xstr_inited, "Tried to resolve delayed XSTR before XSTR init!");
+
+		for (const auto& delayed : delayed_init)
+			delayed.toFill = XSTR(delayed.name, delayed.xstr);
+
+		delayed_init.clear();
+	}
+}
+
+void lcl_delayed_xstr(SCP_string& str, const char* name, int xstr) {
+	lcl_delayed_xstr_internal(xstr_delayed_order{ str, name, xstr });
+}
+
 // initialize the xstr table
 void lcl_xstr_init()
 {
@@ -549,6 +653,8 @@ void lcl_xstr_init()
 
 
 	Xstr_inited = true;
+
+	lcl_delayed_xstr_internal(tl::nullopt);
 }
 
 
@@ -730,7 +836,8 @@ void lcl_replace_stuff(SCP_string &text, bool force)
 	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
-		replace_all(text, "$rank", Ranks[verify_rank(Player->stats.rank)].name);
+		replace_all(text, "$rank", get_rank_display_name(&Ranks[verify_rank(Player->stats.rank)]).c_str());
+		replace_all(text, "$rtitle", Ranks[verify_rank(Player->stats.rank)].title.c_str());
 	}
 
 	replace_all(text, "$quote", "\"");
@@ -1183,9 +1290,14 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 {
 	if(!Xstr_inited)
 	{
+		//If you're here then you should use lcl_delayed_xstr instead!
 		Int3();
 		return str;
 	}
+
+#ifndef NDEBUG
+	nprintf(("XSTR", "Localizing String: %i, \"%s\"\n", index, str));
+#endif
 
 	// for some internal strings, such as the ones we loaded using $Has XStr:,
 	// we want to force a lookup even if we're normally untranslated

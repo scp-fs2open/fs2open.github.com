@@ -39,7 +39,7 @@
 #endif
 
 
-extern float View_zoom;
+extern fov_t View_zoom;
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {
@@ -121,7 +121,7 @@ static int Last_ts;	// holds last target status.
  */
 void hud_targetbox_truncate_subsys_name(char *outstr)
 {	
-	if(Lcl_gr){
+	if (Lcl_gr && !Disable_built_in_translations) {
 		if ( strstr(outstr, "communication") )	{
 			strcpy(outstr, "Komm");
 		} else if ( !stricmp(outstr, "weapons") ) {
@@ -149,7 +149,7 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if (!stricmp(outstr, "Gas Collector")) {
 			strcpy(outstr, "Sammler");
 		} 
-	} else if(Lcl_fr){	
+	} else if (Lcl_fr && !Disable_built_in_translations) {	
 		if ( strstr(outstr, "communication") )	{
 			strcpy(outstr, "comm");
 		} else if ( !stricmp(outstr, "weapons") ) {
@@ -167,7 +167,7 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") || strstr(outstr, "missile") ) {
 			strcpy(outstr, "tourelle");
 		} 
-	} else if(Lcl_pl){	
+	} else if (Lcl_pl && !Disable_built_in_translations) {	
 		if ( strstr(outstr, "communication") )	{
 			strcpy(outstr, "komunikacja");
 		} else if ( !stricmp(outstr, "weapons") ) {
@@ -524,7 +524,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	}
 }
 
-void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, float zoom)
+void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom)
 {
 	// JAS: g3_start_frame uses clip_width and clip_height to determine the
 	// size to render to.  Normally, you would set this by using gr_set_clip,
@@ -943,7 +943,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
 		}
 
-		renderTargetSetup(&camera_eye, &camera_orient, View_zoom/3);
+		renderTargetSetup(&camera_eye, &camera_orient, View_zoom * (1.0f/3.0f));
 		model_clear_instance(viewed_model_num);
 		
 		model_render_params render_info;
@@ -1269,7 +1269,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	matrix		camera_orient = IDENTITY_MATRIX;
 	vec3d		orient_vec, up_vector;
 	float			factor, dist;
-	int			hx, hy, w, h;
+	int			hx = 0, hy = 0, w, h;
 	SCP_list<CJumpNode>::iterator jnp;
 	
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
@@ -1328,10 +1328,6 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
 			dist = dist * Hud_unit_multiplier;
 		}
-
-		// account for hud shaking
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
 
 		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
 		hud_num_make_mono(outstr, font_num);
@@ -1636,8 +1632,9 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp);
-extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
+extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(const ship_weapon *swp);
+extern bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype);
+
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
 	Assert(swp != NULL);	// Goober5000 //WMC
@@ -2067,7 +2064,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	object		*target_objp;
 	ship			*shipp = NULL;
 	debris		*debrisp = NULL;
-	ship_info	*sip = NULL;
+	__UNUSED ship_info	*sip = NULL;
 	int is_ship = 0;
 	float		displayed_target_distance, displayed_target_speed, current_target_distance, current_target_speed;
 
@@ -2091,7 +2088,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			break;
 
 		case OBJ_DEBRIS:
-			debrisp = &Debris[target_objp->instance]; 
+			debrisp = &Debris[target_objp->instance];
 			sip = &Ship_info[debrisp->ship_info_index];
 			break;
 
@@ -2111,19 +2108,13 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			break;
 	}
 
-	int hx, hy;
-
-	// Account for HUD shaking
-	hx = fl2i(HUD_offset_x);
-	hy = fl2i(HUD_offset_y);
-
 	// print out the target distance and speed
 	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
 
 	hud_num_make_mono(outstr, font_num);
 	gr_get_string_size(&w,&h,outstr);
 
-	renderString(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);	
+	renderString(position[0] + Dist_offsets[0], position[1] + Dist_offsets[1], EG_TBOX_DIST, outstr);	
 
 #if 0
 	current_target_speed = vm_vec_dist(&target_objp->pos, &target_objp->last_pos) / frametime;
@@ -2151,7 +2142,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	sprintf(outstr, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
 	hud_num_make_mono(outstr, font_num);
 
-	renderString(position[0] + Speed_offsets[0]+hx, position[1] + Speed_offsets[1]+hy, EG_TBOX_SPEED, outstr);
+	renderString(position[0] + Speed_offsets[0], position[1] + Speed_offsets[1], EG_TBOX_SPEED, outstr);
 
 	//
 	// output target info for debug purposes only, this will be removed later

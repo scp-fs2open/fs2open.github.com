@@ -15,6 +15,19 @@ IF (WIN32)
             )
 
     add_target_copy_files("${dll_name}")
+ELSEIF(PLATFORM_MAC)
+    # use prebuilt openal-soft framework on Mac since the system version is
+    # deprecated and lacking features
+    get_prebuilt_path(PREBUILT_PATH)
+
+    add_library(openal INTERFACE)
+    unset(OPENAL_LIBRARY CACHE)
+    find_library(OPENAL_LIBRARY OpenAL PATHS "${PREBUILT_PATH}" NO_DEFAULT_PATH)
+
+    target_link_libraries(openal INTERFACE "${OPENAL_LIBRARY}")
+    target_include_directories(openal SYSTEM INTERFACE "${OPENAL_LIBRARY}/Headers")
+
+    add_target_copy_files("${OPENAL_LIBRARY}")
 ELSE(WIN32)
     FIND_PACKAGE(OpenAL REQUIRED)
 

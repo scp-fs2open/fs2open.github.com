@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+#include "FREDDoc.h"
 #include "WaypointPathDlg.h"
 #include "Management.h"
 #include "MainFrm.h"
@@ -72,7 +73,7 @@ BOOL waypoint_path_dlg::Create()
 void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;
-	SCP_list<waypoint_list>::iterator ii;
+	SCP_vector<waypoint_list>::iterator ii;
 	CMenu *m;
 
 	m = pMenu->GetSubMenu(0);
@@ -213,10 +214,9 @@ int waypoint_path_dlg::update_data(int redraw)
 			}
 		}
 
-		SCP_list<waypoint_list>::iterator ii;
-		for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
+		for (const auto &ii: Waypoint_lists)
 		{
-			if (!stricmp(ii->get_name(), m_name) && (&(*ii) != cur_waypoint_list)) {
+			if (!stricmp(ii.get_name(), m_name) && (&ii != cur_waypoint_list)) {
 				if (bypass_errors)
 					return 1;
 
@@ -265,10 +265,10 @@ int waypoint_path_dlg::update_data(int redraw)
 
 
 		strcpy_s(old_name, cur_waypoint_list->get_name());
-		string_copy(cur_waypoint_list->get_name(), m_name, NAME_LENGTH - 1, 1);
-
 		str = (char *) (LPCTSTR) m_name;
+		cur_waypoint_list->set_name(str);
 		if (strcmp(old_name, str)) {
+			set_modified(TRUE);
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(sexp_ref_type::WAYPOINT, old_name, str);
 			update_texture_replacements(old_name, str);

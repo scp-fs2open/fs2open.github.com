@@ -8,7 +8,8 @@ from file_list import ReleaseFile
 from util import retry_multi, GLOBAL_TIMEOUT
 
 LINUX_KEY = "Linux"
-MACOSX_KEY = "Mac"
+MACOSX_X64_KEY = "Mac-x86_64"
+MACOSX_ARM64_KEY = "Mac-arm64"
 WIN32_SSE2_KEY = "Win32-SSE2"
 WIN64_SSE2_KEY = "Win64-SSE2"
 WIN32_AVX_KEY = "Win32-AVX"
@@ -34,7 +35,8 @@ metadata = {
 
 platforms = {
     LINUX_KEY: 'linux',
-    MACOSX_KEY: 'macosx',
+    MACOSX_X64_KEY: 'macosx',
+    MACOSX_ARM64_KEY: 'macosx',
     WIN32_SSE2_KEY: 'windows',
     WIN64_SSE2_KEY: 'windows',
     WIN32_AVX_KEY: 'windows',
@@ -43,7 +45,8 @@ platforms = {
 
 envs = {
     LINUX_KEY: 'linux && x86_64',  # Linux only has 64bit builds
-    MACOSX_KEY: 'macosx',
+    MACOSX_X64_KEY: 'macosx && x86_64',
+    MACOSX_ARM64_KEY: 'macosx && arm64',
     WIN32_SSE2_KEY: 'windows',
     WIN64_SSE2_KEY: 'windows && x86_64',
     WIN32_AVX_KEY: 'windows && avx',
@@ -135,7 +138,7 @@ def render_nebula_release(version, stability, files, config):
                     'label': label,
                     'properties': props,
                 })
-            elif group == MACOSX_KEY and fn.startswith(os.path.basename(fn) + '.app/'):
+            elif group.startswith('Mac') and fn.startswith(os.path.basename(fn) + '.app/'):
                 if 'qtfred' in fn:
                     if '-FASTDBG' in fn:
                         label = 'QtFRED Debug'
@@ -148,7 +151,8 @@ def render_nebula_release(version, stability, files, config):
                         label = None
 
                 props = {
-                    "x64": True,  # All Mac builds are 64-bit
+                    "arm64": "arm64" in fn,
+                    "x64": "x64" in fn,
                     "sse2": True,  # There are no forced options on mac but 64-bit always implies SSE2 so we set that here
                     "avx": False,
                     "avx2": False,

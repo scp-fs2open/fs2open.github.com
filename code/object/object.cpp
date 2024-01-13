@@ -54,7 +54,7 @@
 #include "graphics/light.h"
 #include "graphics/color.h"
 
-
+extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
 /*
  *  Global variables
@@ -504,8 +504,8 @@ void obj_free(int objnum)
  * The object will be a non-rendering, non-physics object.   Pass -1 if no parent.
  * @return the object number 
  */
-int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
+int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient,
+               const vec3d *pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
 {
 	int objnum;
 	object *obj;
@@ -781,6 +781,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		return;
 	}
 
+	ship_weapon* swp = &shipp->weapons;
+
 	// single player pilots, and all players in multiplayer take care of firing their own primaries
 	if(!(Game_mode & GM_MULTIPLAYER) || (objp == Player_obj))
 	{
@@ -788,6 +790,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// flag the ship as having the trigger down
 			if(shipp != NULL){
 				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
+				swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
 			}
 
 			// fire non-streaming primaries here
@@ -802,6 +805,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
                 shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
+				swp->flags.remove(Ship::Weapon_Flags::Primary_trigger_down);
 				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
 		}
@@ -814,7 +818,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	// single player and multiplayer masters do all of the following
 	if ( !MULTIPLAYER_CLIENT 
 		// Cyborg17 - except clients now fire dumbfires for rollback on the server
-		|| !(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing())) {		
+		|| !(Weapon_info[swp->secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing())) {
 		if (ci.fire_secondary_count) {
    			if ( !ship_start_secondary_fire(objp) ) {
 				ship_fire_secondary( objp );
@@ -830,7 +834,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	}
 
 	if ( MULTIPLAYER_CLIENT && objp == Player_obj ) {
-		if (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].trigger_lock) {
+		if (Weapon_info[swp->secondary_bank_weapons[shipp->weapons.current_secondary_bank]].trigger_lock) {
 			if (ci.fire_secondary_count) {
 				ship_start_secondary_fire(objp);
 			} else {
@@ -841,7 +845,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 	// everyone does the following for their own ships.
 	if ( ci.afterburner_start ){
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE)){
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || !ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE)) {
 			afterburners_start( objp );
 		}
 	}
@@ -861,19 +865,24 @@ void obj_move_call_physics(object *objp, float frametime)
 		// only set phys info if ship is not dead
 		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags[Ship::Ship_Flags::Dying])) {
 			ship *shipp = &Ships[objp->instance];
-			float	engine_strength;
 
-			engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
-			if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
-				engine_strength=0.0f;
+			if (!shipp->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
+				bool engines_blown = ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE);
+				if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+					engines_blown = true;
+				}
+
+				if (engines_blown) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
+					vm_vec_zero(&objp->phys_info.desired_vel);
+					vm_vec_zero(&objp->phys_info.desired_rotvel);
+					vm_mat_zero(&objp->phys_info.ai_desired_orient);
+					objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
+					objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
+				}
 			}
-
-			if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
-				vm_vec_zero(&objp->phys_info.desired_vel);
-				vm_vec_zero(&objp->phys_info.desired_rotvel);
-				vm_mat_zero(&objp->phys_info.ai_desired_orient);
-				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
-				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
+			// recover if we *are* maneuvering but the flag was added
+			else if ((objp->phys_info.flags & PF_DEAD_DAMP) && !shipp->flags[Ship::Ship_Flags::Dying]) {
+				ship_reset_disabled_physics(objp, shipp->ship_info_index);
 			}
 
 			if (shipp->weapons.num_secondary_banks > 0) {
@@ -946,7 +955,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				if (/* (objnum_I_am_docked_or_docking_with != -1) || */
 					((aip->mode == AIM_DOCK) && ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_UNDOCK_0))) ||
 					((aip->mode == AIM_WARP_OUT) && (aip->submode >= AIS_WARP_3))) {
-					if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f){
+					if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || !ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE)){
 						objp->phys_info.flags |= PF_USE_VEL;
 					} else {
 						objp->phys_info.flags &= ~PF_USE_VEL;	//	If engine blown, don't PF_USE_VEL, or ships stop immediately

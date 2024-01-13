@@ -10,6 +10,7 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/font.h" //for gr_force_fit_string
+#include "graphics/openxr.h"
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h" // for retrieving user's hud config
@@ -41,6 +42,7 @@ extern bool Ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 float Hud_speed_multiplier = 1.0f;	//The E
+float Hud_global_scale = 1.0f;
 
 // Goober5000
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
@@ -1212,12 +1214,12 @@ void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
 	float scale_w = (float)gr_screen.center_w / (float)base_res[0];
 	float scale_h = (float)gr_screen.center_h / (float)base_res[1];
 
-	base_res[0] = fl2ir(base_res[0] * ((float)gr_screen.max_w / (float)gr_screen.center_w));
-	base_res[1] = fl2ir(base_res[1] * ((float)gr_screen.max_h / (float)gr_screen.center_h));
+	base_res[0] = fl2ir(base_res[0] * ((float)gr_screen.max_w / (float)gr_screen.center_w / Hud_global_scale));
+	base_res[1] = fl2ir(base_res[1] * ((float)gr_screen.max_h / (float)gr_screen.center_h / Hud_global_scale));
 
 	if (set_position) {
-		coords[0] += fl2ir(gr_screen.center_offset_x / scale_w);
-		coords[1] += fl2ir(gr_screen.center_offset_y / scale_h);
+		coords[0] += fl2ir(gr_screen.center_offset_x / scale_w + ((1.0f - Hud_global_scale) * 0.5f * (float)base_res[0]));
+		coords[1] += fl2ir(gr_screen.center_offset_y / scale_h + ((1.0f - Hud_global_scale) * 0.5f * (float)base_res[1]));
 	}
 }
 
@@ -1387,6 +1389,11 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		instance->lockConfigColor(lock_color);
 	}
 
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		instance->initSlew(true);
+	}
+
 	return instance;
 }
 
@@ -1396,11 +1403,11 @@ void gauge_assign_common(const gauge_settings* settings, std::unique_ptr<T>&& hu
 		for (auto ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			std::unique_ptr<T> instance(new T());
 			*instance = *hud_gauge;
-			Ship_info[*ship_index].hud_gauges.push_back(move(instance));
+			Ship_info[*ship_index].hud_gauges.push_back(std::move(instance));
 		}
 		// Previous instance goes out of scope here and is destructed
 	} else {
-		default_hud_gauges.push_back(move(hud_gauge));
+		default_hud_gauges.push_back(std::move(hud_gauge));
 	}
 }
 
@@ -3713,6 +3720,7 @@ void load_gauge_directives(gauge_settings* settings)
 	char fname_middle[MAX_FILENAME_LEN] = "directives2";
 	char fname_bottom[MAX_FILENAME_LEN] = "directives3";
 	int bottom_bg_offset = 0;
+	int key_line_x_offset = 0;
 	
 	settings->origin[0] = 0.0f;
 	settings->origin[1] = 0.5f;
@@ -3761,6 +3769,9 @@ void load_gauge_directives(gauge_settings* settings)
 	if ( optional_string("Max Line Width:") ) {
 		stuff_int(&max_line_width);
 	}
+	if (optional_string("Key Line X Offset:")) {
+		stuff_int(&key_line_x_offset);
+	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initMiddleFrameOffsetY(middle_frame_offset_y);
@@ -3769,6 +3780,7 @@ void load_gauge_directives(gauge_settings* settings)
 	hud_gauge->initTextStartOffsets(text_start_offsets[0], text_start_offsets[1]);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initMaxLineWidth(max_line_width);
+	hud_gauge->initKeyLineXOffset(key_line_x_offset);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -4148,6 +4160,7 @@ void load_gauge_damage(gauge_settings* settings)
 	char fname_top[MAX_FILENAME_LEN] = "damage1";
 	char fname_middle[MAX_FILENAME_LEN] = "damage2";
 	char fname_bottom[MAX_FILENAME_LEN] = "damage3";
+	bool always_display = false;
 	
 	settings->origin[0] = 0.5f;
 	settings->origin[1] = 0.0f;
@@ -4205,6 +4218,9 @@ void load_gauge_damage(gauge_settings* settings)
 	if(optional_string("Bottom Background Offset:")) {
 		stuff_int(&bottom_bg_offset);
 	}
+	if(optional_string("Always Display:")) {
+		stuff_boolean(&always_display);
+	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initHullIntegOffsets(hull_integ_offsets[0], hull_integ_offsets[1]);
@@ -4215,6 +4231,7 @@ void load_gauge_damage(gauge_settings* settings)
 	hud_gauge->initSubsysIntegValueOffsetX(subsys_integ_val_offset_x);
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initDisplayValue(always_display);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

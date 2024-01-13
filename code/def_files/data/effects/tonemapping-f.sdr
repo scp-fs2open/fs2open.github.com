@@ -37,7 +37,6 @@ vec3 Uncharted2ToneMapping(vec3 hdr_color) // John Hable's filmic
 	hdr_color = ((hdr_color * (A * hdr_color + C * B) + D * E) / (hdr_color * (A * hdr_color + B) + D * F)) - E / F;
 	float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
 	hdr_color /= white;
-	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 
 	return hdr_color;
 }
@@ -65,7 +64,6 @@ vec3 aces(vec3 hdr_color)
     hdr_color = aces_input * hdr_color;
     hdr_color = rtt_and_odt_fit(hdr_color);
     hdr_color = aces_output * hdr_color;
-    hdr_color = linear_to_srgb(hdr_color);
 	return hdr_color;
 }
 
@@ -79,7 +77,6 @@ vec3 aces_approx(vec3 hdr_color) // also filmic, higher contrast then Uncharted2
     hdr_color *= 0.6f;
 
     hdr_color = clamp((hdr_color*(a*hdr_color+b))/(hdr_color*(c*hdr_color+d)+e), 0.0f, 1.0f);
-	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 	return hdr_color;
 }
 
@@ -96,7 +93,6 @@ vec3 rhj_lumaToneMapping(vec3 hdr_color) // reinhard_jodie
 	float luma = dot(hdr_color, vec3(0.2126, 0.7152, 0.0722)); //dot products are a bit more expensive
 	float toneMappedLuma = luma / (1.0 + luma);
 	hdr_color *= toneMappedLuma / luma;
-	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 	return hdr_color;
 }
 
@@ -105,14 +101,12 @@ vec3 reinhard_extended(vec3 hdr_color)
 	float max_white = 1.0;
 	vec3 numerator = hdr_color * (1.0f + (hdr_color / vec3(max_white * max_white)));
     hdr_color = numerator / (1.0f + hdr_color);
-	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 	return hdr_color;
 }
 
 vec3 linearToneMapping(vec3 hdr_color)
 {
 	hdr_color = clamp(hdr_color, 0., 1.);
-	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 	return hdr_color;
 }
 
@@ -155,7 +149,7 @@ vec3 PPC_RGB( vec3 color ) {
 				 	funswitch(color.g),
 					funswitch(color.b));
 
-	return linear_to_srgb(color);
+	return color;
 }
 
 
@@ -174,7 +168,7 @@ vec3 PPC( vec3 color ) {
 	else {
 		luma_tone = sh_offsetY;
 	}
-	return linear_to_srgb(color * luma_tone / luma);
+	return color * luma_tone / luma;
 }
 
 
@@ -213,5 +207,9 @@ void main()
 			break;
 
 	}
+#ifdef LINEAR_OUT
 	fragOut0 = vec4(color.rgb, 1.0);
+#else
+	fragOut0 = vec4(linear_to_srgb(color.rgb), 1.0);
+#endif
 }

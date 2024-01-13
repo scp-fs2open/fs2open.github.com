@@ -879,7 +879,12 @@ void delete_player(int player_num,int kicked_reason)
 {			
 	char notify_string[256] = "";
 	int idx;
-	
+
+	Assertion(Net_player != nullptr, "Somehow Net_player is nullptr when trying to delete a player. Please get an SCP coder!");	
+	if (Net_player == nullptr) {
+		return;
+	}
+
 	if(!MULTI_CONNECTED(Net_players[player_num])){
 		return;
 	}
@@ -1852,7 +1857,7 @@ int multi_can_message(net_player *p)
 
 		// verify that it's valid.
 		Assertion(ship_regp != nullptr, "Ship register entry is a nullptr for the player's ship.");
-		if (ship_regp->p_objp->pos_in_wing != 0) 
+		if (ship_regp->p_objp()->pos_in_wing != 0)
 		{
 			return 0;
 		}	
@@ -1904,7 +1909,7 @@ int multi_can_end_mission(net_player *p)
 
 		// double check that the entry is valid.
 		Assertion(ship_regp != nullptr, "Ship register entry is a nullptr for the player's ship.");
-		if (ship_regp->p_objp->pos_in_wing != 0) 
+		if (ship_regp->p_objp()->pos_in_wing != 0)
 		{
 			return 0;
 		}	
@@ -1969,7 +1974,7 @@ int multi_eval_join_request(join_request *jr, net_addr *addr)
 		return JOIN_DENY_JR_STATE;
 	}
 
-	// the standalone has some oddball situations which we must handle seperately
+	// the standalone has some oddball situations which we must handle separately
 	if (Game_mode & GM_STANDALONE_SERVER) {		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){
@@ -3194,10 +3199,6 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 #ifndef NDEBUG
 		multi_make_fake_players(MAX_PLAYERS);
 #endif
-
-	} else if (dc_optional_string("givecd")) {
-		extern int Multi_has_cd;
-		Multi_has_cd = 1;
 
 	} else if (dc_optional_string("oo")) {
 		int new_flags;

@@ -66,7 +66,7 @@ namespace font
 			{
 				if (string[i] >= Lcl_special_chars || string[i] < 0)
 				{
-					// Special character needs to be handled seperately
+					// Special character needs to be handled separately
 					return i;
 				}
 			}
