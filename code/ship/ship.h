@@ -1799,7 +1799,7 @@ extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_c
 extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
-extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
+extern ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, const vec3d *attacker_pos);
 
 //WMC
 char *ship_subsys_get_name(ship_subsys *ss);
@@ -1841,8 +1841,8 @@ int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power 
 bool ship_can_warp_full_check(ship *sp);		// checks both the warp flags and ship_engine_ok_to_warp() and ship_navigation_ok_to_warp() --wookieejedi
 bool ship_can_bay_depart(ship *sp);			// checks to see if a ship has a departure location as a bay and if the mothership is present
 
-int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm);
-int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, vec3d* subsys_pos, int do_facing_check=1, float *dot_out=NULL, vec3d *vec_out=NULL);
+int ship_return_subsys_path_normal(const ship *sp, const ship_subsys *ss, const vec3d *gsubpos, vec3d *norm);
+bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, const vec3d *eye_pos, const vec3d *subsys_pos, bool do_facing_check = true, float *dot_out = nullptr, vec3d *vec_out = nullptr);
 ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos);
 
 // defines and definition for function to get a random ship of a particular team (any ship,
@@ -1921,7 +1921,7 @@ int is_support_allowed(object *objp, bool do_simple_check = false);
 //	Stuffs:
 //		*gpos: absolute position of gun firing point
 //		*gvec: vector fro *gpos to *targetp
-void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, vec3d *targetp);
+void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp);
 
 //	Given an object and a turret on that object, return the global position and forward vector
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
@@ -1978,7 +1978,7 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 void ship_update_artillery_lock();
 
 // checks if a world point is inside the extended bounding box of a ship
-int check_world_pt_in_expanded_ship_bbox(vec3d *world_pt, object *objp, float delta_box);
+int check_world_pt_in_expanded_ship_bbox(const vec3d *world_pt, const object *objp, float delta_box);
 
 // returns true if objp is ship and is tagged
 int ship_is_tagged(object *objp);

@@ -288,7 +288,7 @@ int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsy
 	}
 
 	// determine if subsystem is on far or near side of the ship
-	int in_sight = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
+	bool in_sight = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, false);
 	
 	if (draw)
 	{
@@ -761,7 +761,7 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			}
 
 			// determine if subsystem is on far or near side of the ship
-			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
+			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, false) ? 1 : 0;
 
 			// AL 29-3-98: If subsystem is destroyed, draw gray brackets
 			// Goober5000: this will now execute for fighterbays if the bay has been given a

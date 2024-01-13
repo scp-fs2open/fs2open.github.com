@@ -1340,7 +1340,7 @@ void ds_set_pitch(int channel_id, float pitch)
  *
  * @return 0 if sound started successfully, -1 if sound could not be played
  */
-ds_sound_handle ds3d_play(int sid, int snd_id, vec3d* pos, vec3d* vel, float min, float max, int looping,
+ds_sound_handle ds3d_play(int sid, int snd_id, const vec3d* pos, const vec3d* vel, float min, float max, bool looping,
                           float max_volume, float estimated_vol, const EnhancedSoundData* enhanced_sound_data,
                           int priority, bool is_ambient)
 {

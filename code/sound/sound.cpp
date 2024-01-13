@@ -656,9 +656,9 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, float radius, vec3d* source_vel,
-                         int looping, float vol_scale, int priority, vec3d* /*sound_fvec*/, float range_factor,
-                         int force, bool /*is_ambient*/)
+sound_handle snd_play_3d(game_snd* gs, const vec3d* source_pos, const vec3d* listen_pos, float radius, const vec3d* source_vel,
+                         bool looping, float vol_scale, int priority, const vec3d* /*sound_fvec*/, float range_factor,
+                         bool force, bool /*is_ambient*/)
 {
 	vec3d vector_to_sound;
 	loaded_sound* snd;

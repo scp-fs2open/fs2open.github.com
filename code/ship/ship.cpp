@@ -9947,7 +9947,7 @@ static void lethality_decay(ai_info *aip)
 			if ((aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP)) {
 				//TODO: put this where it belongs, this would involve recompiling *everything* right now
 				//-WMC
-				int num_turrets_attacking(object *turret_parent, int target_objnum);
+				int num_turrets_attacking(const object *turret_parent, int target_objnum);
 				num_turrets = num_turrets_attacking(&Objects[aip->target_objnum], Ships[aip->shipnum].objnum);
 			}
 			nprintf(("lethality", "Player lethality: %.1f, num turrets targeting player: %d\n", aip->lethality, num_turrets));
@@ -16411,7 +16411,7 @@ bool ship_can_bay_depart(ship* sp)
 //	exit:		0	=>	a valid vector was placed in norm
 //				!0	=> an path normal could not be calculated
 //				
-int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm)
+int ship_return_subsys_path_normal(const ship *shipp, const ship_subsys *ss, const vec3d *gsubpos, vec3d *norm)
 {
 	if ( ss->system_info->path_num >= 0 ) {
 		polymodel	*pm = NULL;
@@ -16455,7 +16455,7 @@ int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos,
 //				dot_out	=>		OPTIONAL PARAMETER, output parameter, will return dot between subsys fvec and subsys_to_eye_vec
 //									(only filled in if do_facing_check is true)
 //				vec_out	=>		OPTIONAL PARAMETER, vector from eye_pos to absolute subsys_pos.  (only filled in if do_facing_check is true)
-int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, vec3d* subsys_pos, int do_facing_check, float *dot_out, vec3d *vec_out)
+bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, const vec3d *eye_pos, const vec3d *subsys_pos, bool do_facing_check, float *dot_out, vec3d *vec_out)
 {
 	float		dist, dot;
 	vec3d	terminus, eye_to_pos, subsys_fvec, subsys_to_eye_vec;
@@ -16536,7 +16536,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 
 // Returns the closest subsystem of specified type that is in line of sight.
 // Returns null if all subsystems of that type are destroyed or none is in sight.
-ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos)
+ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, const vec3d *attacker_pos)
 {
 	Assert ( subsys_type >= 0 && subsys_type < SUBSYSTEM_MAX );
 
@@ -18920,7 +18920,7 @@ void ship_update_artillery_lock()
  *
  * May not work if delta box is large and negative (ie, adjusted box crosses over on itself - min > max)
  */
-int check_world_pt_in_expanded_ship_bbox(vec3d *world_pt, object *objp, float delta_box)
+int check_world_pt_in_expanded_ship_bbox(const vec3d *world_pt, const object *objp, float delta_box)
 {
 	Assert(objp->type == OBJ_SHIP);
 

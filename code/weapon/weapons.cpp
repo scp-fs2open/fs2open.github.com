@@ -306,7 +306,7 @@ const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
 // most frequently a continuous spawn weapon is allowed to spawn
 static const float MINIMUM_SPAWN_INTERVAL = 0.1f;
 
-extern int compute_num_homing_objects(object *target_objp);
+extern int compute_num_homing_objects(const object *target_objp);
 
 void weapon_spew_stats(WeaponSpewType type);
 
@@ -619,10 +619,11 @@ int weapon_info_lookup(const char *name)
  * Return the index of Weapon_info used by this pointer.  Equivalent to the old WEAPON_INFO_INDEX macro:
  * #define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
  */
-int weapon_info_get_index(weapon_info *wip)
+int weapon_info_get_index(const weapon_info *wip)
 {
 	Assertion(wip != nullptr, "NULL wip passed to weapon_info_get_index");
-	return static_cast<int>(std::distance(Weapon_info.data(), wip));
+	const weapon_info *data = Weapon_info.data();
+	return static_cast<int>(std::distance(data, wip));
 }
 
 //	Parse the weapon flags.
@@ -6259,7 +6260,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown, ship_subsys * src_turret)
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;
@@ -9863,7 +9864,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	polymodel* pm = model_get(Ship_info[Ships[shooter->instance].ship_info_index].model_num);
 	vec3d eye_pos = pm->view_positions[0].pnt + shooter->pos;
 
-	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
+	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos);
 }
 
 bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot, bool checkWeapons) {
