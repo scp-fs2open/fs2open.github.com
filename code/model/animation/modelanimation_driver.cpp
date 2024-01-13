@@ -52,7 +52,7 @@ namespace animation {
 	}
 
 	static int get_pmi_objnum(const polymodel_instance* pmi) {
-		return pmi->objnum == -2 ? Player->objnum : pmi->objnum;
+		return pmi->objnum == model_objnum_special::OBJNUM_COCKPIT ? Player->objnum : pmi->objnum;
 	}
 
 	template<typename property, property object::* property_ptr, float property::* subproperty_ptr>

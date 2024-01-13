@@ -262,7 +262,7 @@ namespace animation {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			object* objp = pmi->objnum > -1 ? &Objects[pmi->objnum] : nullptr;
+			object* objp = pmi->objnum >= 0 ? &Objects[pmi->objnum] : nullptr;
 
 			if(objp != nullptr)
 				send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);

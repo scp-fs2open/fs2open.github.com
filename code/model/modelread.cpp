@@ -3533,7 +3533,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 int model_create_instance(int objnum, int model_num)
 {
-	Assertion(objnum >= -2 && objnum < MAX_OBJECTS, "objnum must be -1 (none), -2 (player cockpit) or a valid object index!");
+	Assertion(objnum > OBJNUM_SPECIAL_MIN && objnum < MAX_OBJECTS, "objnum must be -1 (none), -2 (player cockpit) or a valid object index!");
 
 	// this will also run a bunch of Assertions
 	auto pm = model_get(model_num);
