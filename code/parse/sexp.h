@@ -1350,6 +1350,8 @@ typedef struct sexp_node {
 #define SNF_SPECIAL_ARG_IN_TREE		(1<<3)
 #define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<4)
 #define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
+#define SNF_CHECKED_NODE_FOR_OPF_POSITIVE	(1<<6)
+#define SNF_NODE_IS_OPF_POSITIVE	(1<<7)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
