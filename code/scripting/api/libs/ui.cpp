@@ -393,6 +393,23 @@ ADE_FUNC(
 	return ade_set_args(L, "b", player_create_new_pilot(callsign, is_multi, copy_from));
 }
 
+ADE_FUNC(unloadPilot,
+	l_UserInterface_PilotSelect,
+	nullptr,
+	"Unloads a player file & associated campaign file. Can not be used outside of pilot select!",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	if (gameseq_get_state() == GS_STATE_INITIAL_PLAYER_SELECT) {
+		Player = nullptr;
+		Campaign.filename[0] = '\0';
+
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(isAutoselect, l_UserInterface_PilotSelect, nullptr,
          "Determines if the pilot selection screen should automatically select the default user.", "boolean",
          "true if autoselect is enabled, false otherwise")
