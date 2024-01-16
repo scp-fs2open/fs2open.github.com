@@ -19672,12 +19672,9 @@ int sexp_time_to_goal(int n)
 {
 	auto ship_entry = eval_ship(n);
 
-	if (!ship_entry || !ship_entry->has_shipp())
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
-		return SEXP_CANT_EVAL;
-	
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
@@ -19685,7 +19682,7 @@ int sexp_time_to_goal(int n)
 	int time = ship_return_seconds_to_goal(shipp);
 	
 	if (time < 0) {
-		return SEXP_CANT_EVAL;
+		return SEXP_NAN;
 	}
 
 	return time;
