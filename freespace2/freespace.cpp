@@ -2008,6 +2008,8 @@ void game_init()
 		main_hall_table_init();
 	}
 
+	// Note: os_poll() cannot be called after this line and before OnGameInit->run(), otherwise UI hooks (like OnMouseMove) will run before
+	// scripting has completely initialized.
 	script_init();			//WMC
 
 	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
@@ -2020,8 +2022,6 @@ void game_init()
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
-	game_title_screen_close();
-
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
@@ -2030,6 +2030,9 @@ void game_init()
 	if (scripting::hooks::OnSplashScreen->isActive()) {
 		scripting::hooks::OnSplashScreen->run();
 	}
+
+	// This calls os_poll() so it must go after OnGameInit->run().
+	game_title_screen_close();
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
