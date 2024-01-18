@@ -2032,6 +2032,11 @@ void game_init()
 	// This calls os_poll() so it must go after OnGameInit->run().
 	game_title_screen_close();
 
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
+	}
+
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
 

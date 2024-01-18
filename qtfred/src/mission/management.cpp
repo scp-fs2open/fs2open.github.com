@@ -299,6 +299,11 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 		scripting::hooks::OnSplashScreen->run();
 	}
 
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
+	}
+
 	return true;
 }
 

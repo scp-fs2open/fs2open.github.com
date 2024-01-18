@@ -439,6 +439,11 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		scripting::hooks::OnSplashScreen->run();
 	}
 
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
+	}
+
 	return true;
 }
 
