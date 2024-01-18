@@ -2008,16 +2008,14 @@ void game_init()
 		main_hall_table_init();
 	}
 
+	Viewer_mode = 0;
+
+	// Now that all data has been loaded, post-process anything from game_settings before we initialize scripting
+	mod_table_post_process();
+
 	// Note: os_poll() cannot be called after this line and before OnGameInit->run(), otherwise UI hooks (like OnMouseMove) will run before
 	// scripting has completely initialized.
 	script_init();			//WMC
-
-	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
-	if (Cmdline_output_sexp_info) {
-		output_sexps("sexps.html");
-	}
-
-	Viewer_mode = 0;
 
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
@@ -2045,8 +2043,6 @@ void game_init()
 			libs::discord::init();
 		}
 	}
-
-	mod_table_post_process();
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -6794,6 +6790,11 @@ int game_main(int argc, char *argv[])
 		cfile_spew_pack_file_crcs();
 		game_shutdown();
 		return 0;
+	}
+
+	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
+	if (Cmdline_output_sexp_info) {
+		output_sexps("sexps.html");
 	}
 
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
