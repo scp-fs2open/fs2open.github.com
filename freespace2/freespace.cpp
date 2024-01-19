@@ -3258,7 +3258,7 @@ camid game_render_frame_setup()
 
 			} else if ( Viewer_mode & VM_CHASE ) {
 				if (Viewer_obj->type != OBJ_SHIP)
-					observer_get_eye(&eye_pos, &eyemat, Viewer_obj);
+					observer_get_eye(&eye_pos, &eye_orient, Viewer_obj);
 				else {
 					vec3d aim_pt;
 
