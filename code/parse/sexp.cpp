@@ -188,6 +188,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "perform-actions-bool-first",		OP_PERFORM_ACTIONS_BOOL_FIRST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "perform-actions-bool-last",		OP_PERFORM_ACTIONS_BOOL_LAST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "has-time-elapsed",				OP_HAS_TIME_ELAPSED,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "has-time-elapsed-msecs",			OP_HAS_TIME_ELAPSED_MSECS,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 
 	//Event/Goals Category
 	{ "is-goal-true-delay",				OP_GOAL_TRUE_DELAY,						2,	2,			SEXP_BOOLEAN_OPERATOR,	},
@@ -7653,20 +7654,6 @@ int sexp_ship_type_destroyed(int n)
 }
 
 // following are time based functions
-int sexp_has_time_elapsed(int n)
-{
-	bool is_nan, is_nan_forever;
-	int time = eval_num(n, is_nan, is_nan_forever);
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	if ( f2i(Missiontime) >= time )
-		return SEXP_KNOWN_TRUE;
-
-	return SEXP_FALSE;
-}
 
 /**
  * Returns the time into the mission
@@ -7685,6 +7672,22 @@ int sexp_mission_time_msecs()
 	auto mission_time = (std::int64_t) Missiontime;
 	// This hack is necessary since fix is a 32-bit integer which would overflow if f2i would be used
 	return (int)((mission_time * 1000) / 65536);
+}
+
+int sexp_has_time_elapsed(int n, bool use_msecs)
+{
+	bool is_nan, is_nan_forever;
+	int time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+
+	int mission_time = use_msecs ? sexp_mission_time_msecs() : sexp_mission_time();
+	if ( mission_time >= time )
+		return SEXP_KNOWN_TRUE;
+
+	return SEXP_FALSE;
 }
 
 /**
@@ -27241,7 +27244,8 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// time based sexpressions
 			case OP_HAS_TIME_ELAPSED:
-				sexp_val = sexp_has_time_elapsed(node);
+			case OP_HAS_TIME_ELAPSED_MSECS:
+				sexp_val = sexp_has_time_elapsed(node, op_num == OP_HAS_TIME_ELAPSED_MSECS);
 				break;
 
 			case OP_MODIFY_VARIABLE:
@@ -30006,6 +30010,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SHIP_TYPE:
 		case OP_IS_SHIP_CLASS:
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
 		case OP_GOAL_FALSE_DELAY:
@@ -30802,6 +30807,7 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_SPEED:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
 		case OP_SPECIAL_CHECK:
@@ -35039,6 +35045,7 @@ int get_category(int op_id)
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_NOT:
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
@@ -36256,6 +36263,7 @@ bool usable_in_campaign(int op_id)
 			return true;
 
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_PERFORM_ACTIONS_BOOL_FIRST:
 		case OP_PERFORM_ACTIONS_BOOL_LAST:
 		case OP_EVERY_TIME:
@@ -36730,9 +36738,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_HAS_TIME_ELAPSED, "Has time elapsed (Boolean operator)\r\n"
 		"\tBecomes true when the specified amount of time has elapsed (Mission time "
-		"becomes greater than the specified time).\r\n"
+		"becomes greater than or equal to the specified time).\r\n"
 		"Returns a boolean value.  Takes 1 numeric argument...\r\n"
 		"\t1:\tThe amount of time in seconds." },
+
+	// Goober5000
+	{ OP_HAS_TIME_ELAPSED_MSECS, "Has time elapsed, in milliseconds (Boolean operator)\r\n"
+		"\tBecomes true when the specified amount of time has elapsed (Mission time "
+		"becomes greater than or equal to the specified time).\r\n"
+		"Returns a boolean value.  Takes 1 numeric argument...\r\n"
+		"\t1:\tThe amount of time in milliseconds." },
 
 	{ OP_NOT, "Not (Boolean operator)\r\n"
 		"\tReturns opposite boolean value of argument (True becomes false, and "
