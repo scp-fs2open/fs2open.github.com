@@ -3305,7 +3305,7 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_custom_data()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL && !The_mission.custom_data.empty()) {
+	if (Mission_save_format != FSO_FORMAT_RETAIL && (!The_mission.custom_data.empty() || !The_mission.custom_strings.empty())) {
 		if (optional_string_fred("#Custom Data", "#End")) {
 			parse_comments(2);
 		} else {
