@@ -2013,14 +2013,14 @@ void game_init()
 	// Now that all data has been loaded, post-process anything from game_settings before we initialize scripting
 	mod_table_post_process();
 
-	// Note: os_poll() cannot be called after this line and before OnGameInit->run(), otherwise UI hooks (like OnMouseMove) will run before
-	// scripting has completely initialized.
+	// Note: Avoid calling any non-script functions after this line and before OnGameInit->run(), lest they run before scripting has completely initialized.
 	script_init();			//WMC
 
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
 	Script_system.RunInitFunctions();
+	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
 	}
@@ -2029,7 +2029,7 @@ void game_init()
 		scripting::hooks::OnSplashScreen->run();
 	}
 
-	// This calls os_poll() so it must go after OnGameInit->run().
+	// This calls os_poll() so it should be placed after script initialization.
 	game_title_screen_close();
 
 	// A non-deprecated hook that runs after the splash screen has faded out.
