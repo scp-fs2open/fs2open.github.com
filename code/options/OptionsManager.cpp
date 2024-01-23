@@ -196,4 +196,20 @@ void OptionsManager::loadInitialValues()
 	}
 }
 
+void OptionsManager::printValues()
+{
+	mprintf(("Printing in-game options values!\n"));
+	for (auto& opt : _options) {
+		// If we're not using in-game options and the option is not a retail option, then skip
+		// This ensures we only log options that are actually impacting the current game instance
+		// This code set aside until PR 5895 is merged
+		//if (!Using_in_game_options && !(opt->getFlags()[options::OptionFlags::RetailBuiltinOption])){
+		//	continue;
+		//}
+		mprintf(("Option.%s: %s\n",
+			opt->getConfigKey().c_str(),
+			opt->getCurrentValueDescription().display.c_str()));
+	}
+}
+
 } // namespace options

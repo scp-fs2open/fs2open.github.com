@@ -72,7 +72,7 @@ bool Use_mouse_to_fly = false;
 static SCP_string mouse_mode_display(bool mode) { return mode ? XSTR("Joy-0", 1699) : XSTR("Mouse", 1774); }
 
 static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse",
-                     std::pair<const char*, int>{"Mouse", 1376},
+                     std::pair<const char*, int>{"Mouse", 1373},
                      std::pair<const char*, int>{"Whether or not to use the mouse for flying", 1765})
                      .category("Input")
                      .display(mouse_mode_display) 

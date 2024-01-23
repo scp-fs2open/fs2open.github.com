@@ -54,6 +54,8 @@ class OptionsManager {
 	void discardChanges();
 
 	void loadInitialValues();
+
+	void printValues();
 };
 
 }

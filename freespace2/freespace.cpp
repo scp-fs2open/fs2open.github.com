@@ -2050,6 +2050,8 @@ void game_init()
 
 	mprintf(("cfile_init() took %d\n", e1 - s1));
 
+	options::OptionsManager::instance()->printValues();
+
 	// if we are done initializing, start showing the cursor
 	io::mouse::CursorManager::get()->showCursor(true);
 
@@ -5218,6 +5220,14 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_SCRIPTING_MISSION:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
+	}
+
+	// This is kind of a hack but it ensures options are logged even if scripting calls for a state change with an override active
+	if (old_state == GS_STATE_OPTIONS_MENU) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+				// print the options settings again to log any player-made changes
+				options::OptionsManager::instance()->printValues();
+			}
 	}
 
 	if (scripting::hooks::OnStateAboutToEndHook->isActive() || scripting::hooks::OnStateEndHook->isActive())
