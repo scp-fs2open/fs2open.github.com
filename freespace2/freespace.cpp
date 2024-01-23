@@ -3257,65 +3257,69 @@ camid game_render_frame_setup()
 				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 
 			} else if ( Viewer_mode & VM_CHASE ) {
-				vec3d aim_pt;
+				if (Viewer_obj->type != OBJ_SHIP)
+					observer_get_eye(&eye_pos, &eye_orient, Viewer_obj);
+				else {
+					vec3d aim_pt;
 
-				vec3d tmp_up;
-				matrix eyemat;
-				ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
+					vec3d tmp_up;
+					matrix eyemat;
+					ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
 
-				eye_pos = Viewer_obj->pos;
+					eye_pos = Viewer_obj->pos;
 
-				//get a point far in front of the ship to point the camera at
-				vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec, Viewer_obj->radius * 100.0f);
-				vm_vec_add2(&aim_pt,&Viewer_obj->pos);
+					// get a point far in front of the ship to point the camera at
+					vm_vec_copy_scale(&aim_pt, &Viewer_obj->orient.vec.fvec, Viewer_obj->radius * 100.0f);
+					vm_vec_add2(&aim_pt, &Viewer_obj->pos);
 
-				vec3d chase_view_offset = Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_offset;
-				if (IS_VEC_NULL(&chase_view_offset)) {
-					if (Viewer_obj == Player_obj)
-						chase_view_offset = vm_vec_new(0.0f, 0.625f * Viewer_obj->radius, -2.125f * Viewer_obj->radius);
-					else
-						chase_view_offset = vm_vec_new(0.0f, 0.75f * Viewer_obj->radius, -2.5f * Viewer_obj->radius);
+					vec3d chase_view_offset = Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_offset;
+					if (IS_VEC_NULL(&chase_view_offset)) {
+						if (Viewer_obj == Player_obj)
+							chase_view_offset = vm_vec_new(0.0f, 0.625f * Viewer_obj->radius, -2.125f * Viewer_obj->radius);
+						else
+							chase_view_offset = vm_vec_new(0.0f, 0.75f * Viewer_obj->radius, -2.5f * Viewer_obj->radius);
+					}
+
+					// position the camera based on the offset and external camera distance
+					vec3d rotated_chase_view_offset;
+					vm_vec_unrotate(&rotated_chase_view_offset, &chase_view_offset, &Viewer_obj->orient);
+					vm_vec_add2(&eye_pos, &rotated_chase_view_offset);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.35f * Viewer_chase_info.distance);
+
+					vec3d old_pos;
+					main_cam->get_info(&old_pos, nullptr);
+					bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
+					if (camera_cut || hyperspace)
+						old_pos = eye_pos;
+
+					// "push" the camera backwards in the direction of its old position based on acceleration to to make it
+					// feel like the camera is trying to keep up with the ship (based on the rigidity value)
+					vec3d velocity_comp = Viewer_obj->phys_info.vel;
+					vm_vec_scale_add2(&velocity_comp, &Viewer_obj->phys_info.acceleration, (-5.0f / (vm_vec_mag(&Viewer_obj->phys_info.rotvel) * 2.0f + 1)) * flFrametime);
+					vm_vec_scale_add2(&old_pos, &velocity_comp, flFrametime);
+					vec3d eye_mov = eye_pos - old_pos;
+					eye_mov *= exp(-Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_rigidity * flFrametime);
+					eye_pos -= eye_mov;
+
+					vm_vec_sub(&eye_vec, &aim_pt, &eye_pos);
+					vm_vec_normalize(&eye_vec);
+
+					// JAS: I added the following code because if you slew up using
+					// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
+					// equal, which causes a zero-length vector in the vm_vector_2_matrix
+					// call because the up and the forward vector are the same.   I fixed
+					// it by adding in a fraction of the right vector all the time to the
+					// up vector.
+					tmp_up = eyemat.vec.uvec;
+					vm_vec_scale_add2(&tmp_up, &eyemat.vec.rvec, 0.00001f);
+
+					vm_vector_2_matrix(&eye_orient, &eye_vec, &tmp_up, nullptr);
+					Viewer_obj = nullptr;
+
+					//	Modify the orientation based on head orientation.
+					compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 				}
-
-				//position the camera based on the offset and external camera distance
-				vec3d rotated_chase_view_offset;
-				vm_vec_unrotate(&rotated_chase_view_offset, &chase_view_offset, &Viewer_obj->orient);
-				vm_vec_add2(&eye_pos, &rotated_chase_view_offset);
-				vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -Viewer_chase_info.distance);
-				vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.35f * Viewer_chase_info.distance);
-
-				vec3d old_pos;
-				main_cam->get_info(&old_pos, nullptr);
-				bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
-				if (camera_cut || hyperspace)
-					old_pos = eye_pos;
-
-				// "push" the camera backwards in the direction of its old position based on acceleration to to make it 
-				// feel like the camera is trying to keep up with the ship (based on the rigidity value)
-				vec3d velocity_comp = Viewer_obj->phys_info.vel;
-				vm_vec_scale_add2(&velocity_comp, &Viewer_obj->phys_info.acceleration, (-5.0f / (vm_vec_mag(&Viewer_obj->phys_info.rotvel) * 2.0f + 1)) * flFrametime);
-				vm_vec_scale_add2(&old_pos, &velocity_comp, flFrametime);
-				vec3d eye_mov = eye_pos - old_pos;
-				eye_mov *= exp(-Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_rigidity * flFrametime);
-				eye_pos -= eye_mov;
-
-				vm_vec_sub(&eye_vec, &aim_pt, &eye_pos);
-				vm_vec_normalize(&eye_vec);
-					
-				// JAS: I added the following code because if you slew up using
-				// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
-				// equal, which causes a zero-length vector in the vm_vector_2_matrix
-				// call because the up and the forward vector are the same.   I fixed
-				// it by adding in a fraction of the right vector all the time to the
-				// up vector.
-				tmp_up = eyemat.vec.uvec;
-				vm_vec_scale_add2( &tmp_up, &eyemat.vec.rvec, 0.00001f );
-
-				vm_vector_2_matrix(&eye_orient, &eye_vec, &tmp_up, nullptr);
-				Viewer_obj = nullptr;
-
-				//	Modify the orientation based on head orientation.
-				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 			} else if ( Viewer_mode & VM_WARP_CHASE ) {
 					Warp_camera.get_info(&eye_pos, nullptr);
 
