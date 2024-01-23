@@ -2869,8 +2869,10 @@ void beam_aim(beam *b)
 				b->subsys->shared_fire_direction_beam_objnum = b->objnum;
 			}
 
-			// after pointing, jitter based on shot_aim
-			beam_jitter_aim(b, b->binfo.shot_aim[b->shot_index]);
+			// after pointing, jitter based on shot_aim (if we have a target object)
+			if (!(b->flags & BF_TARGETING_COORDS)) {
+				beam_jitter_aim(b, b->binfo.shot_aim[b->shot_index]);
+			}
 		}
 		break;
 
