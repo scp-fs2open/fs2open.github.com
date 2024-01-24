@@ -12,6 +12,10 @@ const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	tl::nullopt,
 	CHA_GAMEINIT);
 
+const std::shared_ptr<Hook<>> OnSplashEnd = Hook<>::Factory("On Splash End",
+	"Executed just after the splash screen fades out.",
+	{});
+
 const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro About To Play",
 	"Executed just before the intro movie is played.",
 	{});

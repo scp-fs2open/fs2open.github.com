@@ -2008,27 +2008,33 @@ void game_init()
 		main_hall_table_init();
 	}
 
-	script_init();			//WMC
-
-	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
-	if (Cmdline_output_sexp_info) {
-		output_sexps("sexps.html");
-	}
-
 	Viewer_mode = 0;
+
+	// Now that all data has been loaded, post-process anything from game_settings before we initialize scripting
+	mod_table_post_process();
+
+	// Note: Avoid calling any non-script functions after this line and before OnGameInit->run(), lest they run before scripting has completely initialized.
+	script_init();			//WMC
 
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
-	game_title_screen_close();
-
 	Script_system.RunInitFunctions();
+	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
 	}
 	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
 	if (scripting::hooks::OnSplashScreen->isActive()) {
 		scripting::hooks::OnSplashScreen->run();
+	}
+
+	// This calls os_poll() so it should be placed after script initialization.
+	game_title_screen_close();
+
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
 	}
 
 	// convert old pilot files (if they need it)
@@ -2042,8 +2048,6 @@ void game_init()
 			libs::discord::init();
 		}
 	}
-
-	mod_table_post_process();
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -6805,6 +6809,11 @@ int game_main(int argc, char *argv[])
 		cfile_spew_pack_file_crcs();
 		game_shutdown();
 		return 0;
+	}
+
+	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
+	if (Cmdline_output_sexp_info) {
+		output_sexps("sexps.html");
 	}
 
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
