@@ -162,16 +162,14 @@ static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord"
                                if (!val) {
                                     Discord_presence = false;
                                     libs::discord::shutdown();
-                                    return true;
                                }
                           } else {
                                if (val) {
                                     Discord_presence = true;
                                     libs::discord::init();
-                                    return true;
                                }
                           }
-                          return false;
+                          return true;
                      })
                      .finish();
 
