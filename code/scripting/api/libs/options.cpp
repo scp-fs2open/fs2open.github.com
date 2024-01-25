@@ -68,6 +68,7 @@ ADE_VIRTVAR(MultiLogin, l_Options, "string", "The multiplayer PXO login name", "
 	
 	if (ADE_SETTING_VAR && (login != nullptr)) {
 		strcpy_s(Multi_tracker_login, login);
+		os_config_write_string("PXO", "Login", login);
 	}
 
 	return ade_set_args(L, "s", Multi_tracker_login);
@@ -80,6 +81,7 @@ ADE_VIRTVAR(MultiPassword, l_Options, "string", "The multiplayer PXO login passw
 
 	if (ADE_SETTING_VAR && (pswd != nullptr)) {
 		strcpy_s(Multi_tracker_passwd, pswd);
+		os_config_write_string("PXO", "Password", pswd);
 	}
 
 	return ade_set_args(L, "b", (strlen(Multi_tracker_passwd) != 0));
@@ -92,6 +94,7 @@ ADE_VIRTVAR(MultiSquad, l_Options, "string", "The multiplayer PXO squad name", "
 
 	if (ADE_SETTING_VAR && (squad != nullptr)) {
 		strcpy_s(Multi_tracker_squad_name, squad);
+		os_config_write_string("PXO", "SquadName", squad);
 	}
 
 	return ade_set_args(L, "s", Multi_tracker_squad_name);
