@@ -7812,6 +7812,9 @@ void game_pause()
 	if (!GameState_Stack_Valid())
 		return;
 
+	if (!pause_if_unfocused())
+		return;
+
 	if (!(Game_mode & GM_MULTIPLAYER)){
 		switch ( gameseq_get_state() )
 		{
@@ -7876,6 +7879,9 @@ void game_pause()
 void game_unpause()
 {
 	if (!GameState_Stack_Valid())
+		return;
+
+	if (!pause_if_unfocused())
 		return;
 
 	// automatically recover from everything but an in-mission pause

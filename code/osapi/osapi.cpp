@@ -113,9 +113,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_LOST:
 			{
 				if (fAppActive) {
-					if (!Cmdline_no_unfocus_pause) {
-						game_pause();
-					}
+					game_pause();
 
 					fAppActive = false;
 				}
@@ -126,9 +124,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
 			{
 				if (!fAppActive) {
-					if (!Cmdline_no_unfocus_pause) {
-						game_unpause();
-					}
+					game_unpause();
 
 					fAppActive = true;
 				}
