@@ -743,6 +743,7 @@ public:
 	void set_ignore_gadgets(int state);
 	void add_XSTR(const char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id = -1);
 	void add_XSTR(UI_XSTR *xstr);
+	void clear_focus();
 
 	const char *(*tooltip_handler)(const char *text);
 	int last_keypress;		// filled in each frame
