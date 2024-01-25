@@ -1754,17 +1754,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	return true;
 }
 
-void gr_force_windowed()
-{
-	if ( !Gr_inited ) {
-		return;
-	}
-
-	if ( Os_debugger_running ) {
-		os_sleep(1000);
-	}
-}
-
 int gr_activated = 0;
 void gr_activate(int active)
 {
@@ -1779,7 +1768,7 @@ void gr_activate(int active)
 	}
 
 	if (active) {
-		if (Cmdline_fullscreen_window || Cmdline_window) {
+		if (gr_is_viewport_window()) {
 			os::getMainViewport()->restore();
 		} else {
 			os::getMainViewport()->setState(os::ViewportState::Fullscreen);
@@ -1789,7 +1778,7 @@ void gr_activate(int active)
 	}
 
 	if (active) {
-		if (!Cmdline_fullscreen_window && !Cmdline_window) {
+		if (!gr_is_viewport_window()) {
 			gr_set_gamma(Gr_gamma);
 		}
 	}
@@ -2967,4 +2956,29 @@ void gr_get_post_process_effect_names(SCP_vector<SCP_string>& names)
 	for (const auto& eff : effects) {
 		names.push_back(eff.name);
 	}
+}
+
+bool gr_is_viewport_window()
+{
+	if (Fred_running) {
+		return true;
+	}
+	
+	if (Using_in_game_options) {
+		switch (Gr_configured_window_state)
+		{
+		case os::ViewportState::Windowed:
+		case os::ViewportState::Borderless:
+			return true;
+			break;
+		default:
+			break;
+		}
+	} else {
+		if (Cmdline_window || Cmdline_fullscreen_window) {
+			return true;
+		}
+	}
+
+	return false;
 }

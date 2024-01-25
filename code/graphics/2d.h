@@ -1428,6 +1428,8 @@ void gr_set_gamma(float gamma);
 
 void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 
+bool gr_is_viewport_window();
+
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"
 
