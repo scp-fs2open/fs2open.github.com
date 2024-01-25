@@ -157,6 +157,8 @@ ADE_VIRTVAR(Flags,
 	"<ul>"
 	"<li><b>ForceMultiValueSelection:</b> If true, a selection option with two values should be displayed the "
 	"same as an option with more possible values</li>"
+	"<li><b>RetailBuiltinOption:</b> If true, the option is one of the original retail options</li>"
+	"<li><b>RangeTypeInteger:</b> If true, this range option requires an integer for the range value rather than a float</li>"
 	"</ul>",
 	"{ string => boolean ... }",
 	"The table of flags values.")
@@ -173,6 +175,8 @@ ADE_VIRTVAR(Flags,
 	luacpp::LuaTable t = luacpp::LuaTable::create(L);
 
 	t.addValue("ForceMultiValueSelection", opt->get()->getFlags()[options::OptionFlags::ForceMultiValueSelection]);
+	t.addValue("RetailBuiltinOption", opt->get()->getFlags()[options::OptionFlags::RetailBuiltinOption]);
+	t.addValue("RangeTypeInteger", opt->get()->getFlags()[options::OptionFlags::RangeTypeInteger]);
 
 	return ade_set_args(L, "t", &t);
 }
