@@ -644,6 +644,23 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getNumAssignedSounds,
+	l_Object,
+	nullptr,
+	"Returns the current number of sounds assigned to this object",
+	"number",
+	"the number of sounds")
+{
+	object_h* objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	auto objp = objh->objp;
+
+	return ade_set_args(L, "i", static_cast<int>(objp->objsnd_num.size()));
+}
+
 ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
 	"Removes all sounds of the given type from the object or object's subsystem",
 	nullptr,
