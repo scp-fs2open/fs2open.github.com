@@ -579,7 +579,9 @@ int iff_lookup(const char *iff_name)
  */
 int iff_get_attackee_mask(int attacker_team)
 {
-	Assert(attacker_team >= 0 && attacker_team < (int)Iff_info.size());
+	Assertion(SCP_vector_inbounds(Iff_info, attacker_team), "Attempted to get the attackee mask of an attacker team that is out of bounds");
+	if (!SCP_vector_inbounds(Iff_info, attacker_team))
+		return 0;
 
 	//	All teams attack all other teams.
 	if (Mission_all_attack)

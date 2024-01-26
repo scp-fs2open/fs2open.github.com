@@ -1649,6 +1649,7 @@ ADE_INDEXER(l_UserInterface_Cutscenes,
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
 
+	// coverity[uninit_use_in_call] - name is assigned via ade_get_args
 	int idx = get_cutscene_index_by_name(name);
 
 	if (idx < 0) {
