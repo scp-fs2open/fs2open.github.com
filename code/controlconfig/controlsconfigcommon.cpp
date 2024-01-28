@@ -442,7 +442,23 @@ const char* Joy_button_text_german_u[] = {
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
 	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
 	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
-	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
+	"Knopf 31",	"Knopf 32",	"Knopf 33",	"Knopf 34",	"Knopf 35",	"Knopf 36",
+	"Knopf 37",	"Knopf 38",	"Knopf 39",	"Knopf 40",	"Knopf 41",	"Knopf 42",
+	"Knopf 43",	"Knopf 44",	"Knopf 45",	"Knopf 46",	"Knopf 47",	"Knopf 48",
+	"Knopf 49",	"Knopf 50",	"Knopf 51",	"Knopf 52",	"Knopf 53",	"Knopf 54",
+	"Knopf 55",	"Knopf 56",	"Knopf 57",	"Knopf 58",	"Knopf 59",	"Knopf 60",
+	"Knopf 61",	"Knopf 62",	"Knopf 63",	"Knopf 64",	"Knopf 65",	"Knopf 66",
+	"Knopf 67",	"Knopf 68",	"Knopf 69",	"Knopf 70",	"Knopf 71",	"Knopf 72",
+	"Knopf 73",	"Knopf 74",	"Knopf 75",	"Knopf 76",	"Knopf 77",	"Knopf 78",
+	"Knopf 79",	"Knopf 80",	"Knopf 81",	"Knopf 82",	"Knopf 83",	"Knopf 84",
+	"Knopf 85",	"Knopf 86",	"Knopf 87",	"Knopf 88",	"Knopf 89",	"Knopf 90",
+	"Knopf 91",	"Knopf 92",	"Knopf 93",	"Knopf 94",	"Knopf 95",	"Knopf 96",
+	"Knopf 97",	"Knopf 98",	"Knopf 99",	"Knopf 100",	"Knopf 101",	"Knopf 102",
+	"Knopf 103",	"Knopf 104",	"Knopf 105",	"Knopf 106",	"Knopf 107",	"Knopf 108",
+	"Knopf 109",	"Knopf 110",	"Knopf 111",	"Knopf 112",	"Knopf 113",	"Knopf 114",
+	"Knopf 115",	"Knopf 116",	"Knopf 117",	"Knopf 118",	"Knopf 119",	"Knopf 120",
+	"Knopf 121",	"Knopf 122",	"Knopf 123",	"Knopf 124",	"Knopf 125",	"Knopf 126",
+	"Knopf 127",	"Knopf 128",	"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
 const char* Joy_button_text_french_u[] = {
@@ -451,7 +467,23 @@ const char* Joy_button_text_french_u[] = {
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
 	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		("Chapeau Arri\xc3\xa8""re"),		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+	"Bouton 31",	"Bouton 32",	"Bouton 33",	"Bouton 34",	"Bouton 35",	"Bouton 36",
+	"Bouton 37",	"Bouton 38",	"Bouton 39",	"Bouton 40",	"Bouton 41",	"Bouton 42",
+	"Bouton 43",	"Bouton 44",	"Bouton 45",	"Bouton 46",	"Bouton 47",	"Bouton 48",
+	"Bouton 49",	"Bouton 50",	"Bouton 51",	"Bouton 52",	"Bouton 53",	"Bouton 54",
+	"Bouton 55",	"Bouton 56",	"Bouton 57",	"Bouton 58",	"Bouton 59",	"Bouton 60",
+	"Bouton 61",	"Bouton 62",	"Bouton 63",	"Bouton 64",	"Bouton 65",	"Bouton 66",
+	"Bouton 67",	"Bouton 68",	"Bouton 69",	"Bouton 70",	"Bouton 71",	"Bouton 72",
+	"Bouton 73",	"Bouton 74",	"Bouton 75",	"Bouton 76",	"Bouton 77",	"Bouton 78",
+	"Bouton 79",	"Bouton 80",	"Bouton 81",	"Bouton 82",	"Bouton 83",	"Bouton 84",
+	"Bouton 85",	"Bouton 86",	"Bouton 87",	"Bouton 88",	"Bouton 89",	"Bouton 90",
+	"Bouton 91",	"Bouton 92",	"Bouton 93",	"Bouton 94",	"Bouton 95",	"Bouton 96",
+	"Bouton 97",	"Bouton 98",	"Bouton 99",	"Bouton 100",	"Bouton 101",	"Bouton 102",
+	"Bouton 103",	"Bouton 104",	"Bouton 105",	"Bouton 106",	"Bouton 107",	"Bouton 108",
+	"Bouton 109",	"Bouton 110",	"Bouton 111",	"Bouton 112",	"Bouton 113",	"Bouton 114",
+	"Bouton 115",	"Bouton 116",	"Bouton 117",	"Bouton 118",	"Bouton 119",	"Bouton 120",
+	"Bouton 121",	"Bouton 122",	"Bouton 123",	"Bouton 124",	"Bouton 125",	"Bouton 126",
+	"Bouton 127",	"Bouton 128",	("Chapeau Arri\xc3\xa8""re"),		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
 const char* Joy_button_text_polish_u[] = {
@@ -460,7 +492,23 @@ const char* Joy_button_text_polish_u[] = {
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
 	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
 	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		("Hat Prz\xc3\xb3""d"),	"Hat Lewo",		"Hat Prawo"
+	"Przyc.31",	"Przyc.32",	"Przyc.33",	"Przyc.34",	"Przyc.35",	"Przyc.36",
+	"Przyc.37",	"Przyc.38",	"Przyc.39",	"Przyc.40",	"Przyc.41",	"Przyc.42",
+	"Przyc.43",	"Przyc.44",	"Przyc.45",	"Przyc.46",	"Przyc.47",	"Przyc.48",
+	"Przyc.49",	"Przyc.50",	"Przyc.51",	"Przyc.52",	"Przyc.53",	"Przyc.54",
+	"Przyc.55",	"Przyc.56",	"Przyc.57",	"Przyc.58",	"Przyc.59",	"Przyc.60",
+	"Przyc.61",	"Przyc.62",	"Przyc.63",	"Przyc.64",	"Przyc.65",	"Przyc.66",
+	"Przyc.67",	"Przyc.68",	"Przyc.69",	"Przyc.70",	"Przyc.71",	"Przyc.72",
+	"Przyc.73",	"Przyc.74",	"Przyc.75",	"Przyc.76",	"Przyc.77",	"Przyc.78",
+	"Przyc.79",	"Przyc.80",	"Przyc.81",	"Przyc.82",	"Przyc.83",	"Przyc.84",
+	"Przyc.85",	"Przyc.86",	"Przyc.87",	"Przyc.88",	"Przyc.89",	"Przyc.90",
+	"Przyc.91",	"Przyc.92",	"Przyc.93",	"Przyc.94",	"Przyc.95",	"Przyc.96",
+	"Przyc.97",	"Przyc.98",	"Przyc.99",	"Przyc.100",	"Przyc.101",	"Przyc.102",
+	"Przyc.103",	"Przyc.104",	"Przyc.105",	"Przyc.106",	"Przyc.107",	"Przyc.108",
+	"Przyc.109",	"Przyc.110",	"Przyc.111",	"Przyc.112",	"Przyc.113",	"Przyc.114",
+	"Przyc.115",	"Przyc.116",	"Przyc.117",	"Przyc.118",	"Przyc.119",	"Przyc.120",
+	"Przyc.121",	"Przyc.122",	"Przyc.123",	"Przyc.124",	"Przyc.125",	"Przyc.126",
+	"Przyc.127",	"Przyc.128",	"Hat Ty\xc5\x82",		("Hat Prz\xc3\xb3""d"),	"Hat Lewo",		"Hat Prawo"
 };
 
 const char* Joy_button_text_english_u[] = {
@@ -469,7 +517,23 @@ const char* Joy_button_text_english_u[] = {
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
 	"Button 19",	"Button 20",	"Button 21",	"Button 22",	"Button 23",	"Button 24",
 	"Button 25",	"Button 26",	"Button 27",	"Button 28",	"Button 29",	"Button 30",
-	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
+	"Button 31",	"Button 32",	"Button 33",	"Button 34",	"Button 35",	"Button 36",
+	"Button 37",	"Button 38",	"Button 39",	"Button 40",	"Button 41",	"Button 42",
+	"Button 43",	"Button 44",	"Button 45",	"Button 46",	"Button 47",	"Button 48",
+	"Button 49",	"Button 50",	"Button 51",	"Button 52",	"Button 53",	"Button 54",
+	"Button 55",	"Button 56",	"Button 57",	"Button 58",	"Button 59",	"Button 60",
+	"Button 61",	"Button 62",	"Button 63",	"Button 64",	"Button 65",	"Button 66",
+	"Button 67",	"Button 68",	"Button 69",	"Button 70",	"Button 71",	"Button 72",
+	"Button 73",	"Button 74",	"Button 75",	"Button 76",	"Button 77",	"Button 78",
+	"Button 79",	"Button 80",	"Button 81",	"Button 82",	"Button 83",	"Button 84",
+	"Button 85",	"Button 86",	"Button 87",	"Button 88",	"Button 89",	"Button 90",
+	"Button 91",	"Button 92",	"Button 93",	"Button 94",	"Button 95",	"Button 96",
+	"Button 97",	"Button 98",	"Button 99",	"Button 100",	"Button 101",	"Button 102",
+	"Button 103",	"Button 104",	"Button 105",	"Button 106",	"Button 107",	"Button 108",
+	"Button 109",	"Button 110",	"Button 111",	"Button 112",	"Button 113",	"Button 114",
+	"Button 115",	"Button 116",	"Button 117",	"Button 118",	"Button 119",	"Button 120",
+	"Button 121",	"Button 122",	"Button 123",	"Button 124",	"Button 125",	"Button 126",
+	"Button 127",	"Button 128",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
 const char* Joy_button_text_german[] = {
@@ -478,7 +542,23 @@ const char* Joy_button_text_german[] = {
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
 	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
 	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
-	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
+	"Knopf 31",	"Knopf 32",	"Knopf 33",	"Knopf 34",	"Knopf 35",	"Knopf 36",
+	"Knopf 37",	"Knopf 38",	"Knopf 39",	"Knopf 40",	"Knopf 41",	"Knopf 42",
+	"Knopf 43",	"Knopf 44",	"Knopf 45",	"Knopf 46",	"Knopf 47",	"Knopf 48",
+	"Knopf 49",	"Knopf 50",	"Knopf 51",	"Knopf 52",	"Knopf 53",	"Knopf 54",
+	"Knopf 55",	"Knopf 56",	"Knopf 57",	"Knopf 58",	"Knopf 59",	"Knopf 60",
+	"Knopf 61",	"Knopf 62",	"Knopf 63",	"Knopf 64",	"Knopf 65",	"Knopf 66",
+	"Knopf 67",	"Knopf 68",	"Knopf 69",	"Knopf 70",	"Knopf 71",	"Knopf 72",
+	"Knopf 73",	"Knopf 74",	"Knopf 75",	"Knopf 76",	"Knopf 77",	"Knopf 78",
+	"Knopf 79",	"Knopf 80",	"Knopf 81",	"Knopf 82",	"Knopf 83",	"Knopf 84",
+	"Knopf 85",	"Knopf 86",	"Knopf 87",	"Knopf 88",	"Knopf 89",	"Knopf 90",
+	"Knopf 91",	"Knopf 92",	"Knopf 93",	"Knopf 94",	"Knopf 95",	"Knopf 96",
+	"Knopf 97",	"Knopf 98",	"Knopf 99",	"Knopf 100",	"Knopf 101",	"Knopf 102",
+	"Knopf 103",	"Knopf 104",	"Knopf 105",	"Knopf 106",	"Knopf 107",	"Knopf 108",
+	"Knopf 109",	"Knopf 110",	"Knopf 111",	"Knopf 112",	"Knopf 113",	"Knopf 114",
+	"Knopf 115",	"Knopf 116",	"Knopf 117",	"Knopf 118",	"Knopf 119",	"Knopf 120",
+	"Knopf 121",	"Knopf 122",	"Knopf 123",	"Knopf 124",	"Knopf 125",	"Knopf 126",
+	"Knopf 127",		"Knopf 128",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
 const char* Joy_button_text_french[] = {
@@ -487,7 +567,23 @@ const char* Joy_button_text_french[] = {
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
 	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+	"Bouton 31",	"Bouton 32",	"Bouton 33",	"Bouton 34",	"Bouton 35",	"Bouton 36",
+	"Bouton 37",	"Bouton 38",	"Bouton 39",	"Bouton 40",	"Bouton 41",	"Bouton 42",
+	"Bouton 43",	"Bouton 44",	"Bouton 45",	"Bouton 46",	"Bouton 47",	"Bouton 48",
+	"Bouton 49",	"Bouton 50",	"Bouton 51",	"Bouton 52",	"Bouton 53",	"Bouton 54",
+	"Bouton 55",	"Bouton 56",	"Bouton 57",	"Bouton 58",	"Bouton 59",	"Bouton 60",
+	"Bouton 61",	"Bouton 62",	"Bouton 63",	"Bouton 64",	"Bouton 65",	"Bouton 66",
+	"Bouton 67",	"Bouton 68",	"Bouton 69",	"Bouton 70",	"Bouton 71",	"Bouton 72",
+	"Bouton 73",	"Bouton 74",	"Bouton 75",	"Bouton 76",	"Bouton 77",	"Bouton 78",
+	"Bouton 79",	"Bouton 80",	"Bouton 81",	"Bouton 82",	"Bouton 83",	"Bouton 84",
+	"Bouton 85",	"Bouton 86",	"Bouton 87",	"Bouton 88",	"Bouton 89",	"Bouton 90",
+	"Bouton 91",	"Bouton 92",	"Bouton 93",	"Bouton 94",	"Bouton 95",	"Bouton 96",
+	"Bouton 97",	"Bouton 98",	"Bouton 99",	"Bouton 100",	"Bouton 101",	"Bouton 102",
+	"Bouton 103",	"Bouton 104",	"Bouton 105",	"Bouton 106",	"Bouton 107",	"Bouton 108",
+	"Bouton 109",	"Bouton 110",	"Bouton 111",	"Bouton 112",	"Bouton 113",	"Bouton 114",
+	"Bouton 115",	"Bouton 116",	"Bouton 117",	"Bouton 118",	"Bouton 119",	"Bouton 120",
+	"Bouton 121",	"Bouton 122",	"Bouton 123",	"Bouton 124",	"Bouton 125",	"Bouton 126",
+	"Bouton 127",	"Bouton 128",	"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
 const char* Joy_button_text_polish[] = {
@@ -496,7 +592,23 @@ const char* Joy_button_text_polish[] = {
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
 	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
 	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
+	"Przyc.31",	"Przyc.32",	"Przyc.33",	"Przyc.34",	"Przyc.35",	"Przyc.36",
+	"Przyc.37",	"Przyc.38",	"Przyc.39",	"Przyc.40",	"Przyc.41",	"Przyc.42",
+	"Przyc.43",	"Przyc.44",	"Przyc.45",	"Przyc.46",	"Przyc.47",	"Przyc.48",
+	"Przyc.49",	"Przyc.50",	"Przyc.51",	"Przyc.52",	"Przyc.53",	"Przyc.54",
+	"Przyc.55",	"Przyc.56",	"Przyc.57",	"Przyc.58",	"Przyc.59",	"Przyc.60",
+	"Przyc.61",	"Przyc.62",	"Przyc.63",	"Przyc.64",	"Przyc.65",	"Przyc.66",
+	"Przyc.67",	"Przyc.68",	"Przyc.69",	"Przyc.70",	"Przyc.71",	"Przyc.72",
+	"Przyc.73",	"Przyc.74",	"Przyc.75",	"Przyc.76",	"Przyc.77",	"Przyc.78",
+	"Przyc.79",	"Przyc.80",	"Przyc.81",	"Przyc.82",	"Przyc.83",	"Przyc.84",
+	"Przyc.85",	"Przyc.86",	"Przyc.87",	"Przyc.88",	"Przyc.89",	"Przyc.90",
+	"Przyc.91",	"Przyc.92",	"Przyc.93",	"Przyc.94",	"Przyc.95",	"Przyc.96",
+	"Przyc.97",	"Przyc.98",	"Przyc.99",	"Przyc.100",	"Przyc.101",	"Przyc.102",
+	"Przyc.103",	"Przyc.104",	"Przyc.105",	"Przyc.106",	"Przyc.107",	"Przyc.108",
+	"Przyc.109",	"Przyc.110",	"Przyc.111",	"Przyc.112",	"Przyc.113",	"Przyc.114",
+	"Przyc.115",	"Przyc.116",	"Przyc.117",	"Przyc.118",	"Przyc.119",	"Przyc.120",
+	"Przyc.121",	"Przyc.122",	"Przyc.123",	"Przyc.124",	"Przyc.125",	"Przyc.126",
+	"Przyc.127",	"Przyc.128",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
 };
 
 //English scancodes are still needed eclusively for the scripting API, as we need to give generic and stable scan code names to the API that are neither translated nor localized to keyboard layout.
@@ -548,7 +660,23 @@ const char* Joy_button_text_english[] = {
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
 	"Button 19",	"Button 20",	"Button 21",	"Button 22",	"Button 23",	"Button 24",
 	"Button 25",	"Button 26",	"Button 27",	"Button 28",	"Button 29",	"Button 30",
-	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
+	"Button 31",	"Button 32",	"Button 33",	"Button 34",	"Button 35",	"Button 36",
+	"Button 37",	"Button 38",	"Button 39",	"Button 40",	"Button 41",	"Button 42",
+	"Button 43",	"Button 44",	"Button 45",	"Button 46",	"Button 47",	"Button 48",
+	"Button 49",	"Button 50",	"Button 51",	"Button 52",	"Button 53",	"Button 54",
+	"Button 55",	"Button 56",	"Button 57",	"Button 58",	"Button 59",	"Button 60",
+	"Button 61",	"Button 62",	"Button 63",	"Button 64",	"Button 65",	"Button 66",
+	"Button 67",	"Button 68",	"Button 69",	"Button 70",	"Button 71",	"Button 72",
+	"Button 73",	"Button 74",	"Button 75",	"Button 76",	"Button 77",	"Button 78",
+	"Button 79",	"Button 80",	"Button 81",	"Button 82",	"Button 83",	"Button 84",
+	"Button 85",	"Button 86",	"Button 87",	"Button 88",	"Button 89",	"Button 90",
+	"Button 91",	"Button 92",	"Button 93",	"Button 94",	"Button 95",	"Button 96",
+	"Button 97",	"Button 98",	"Button 99",	"Button 100",	"Button 101",	"Button 102",
+	"Button 103",	"Button 104",	"Button 105",	"Button 106",	"Button 107",	"Button 108",
+	"Button 109",	"Button 110",	"Button 111",	"Button 112",	"Button 113",	"Button 114",
+	"Button 115",	"Button 116",	"Button 117",	"Button 118",	"Button 119",	"Button 120",
+	"Button 121",	"Button 122",	"Button 123",	"Button 124",	"Button 125",	"Button 126",
+	"Button 127",	"Button 128",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
 const char **Joy_button_text = Joy_button_text_english;
