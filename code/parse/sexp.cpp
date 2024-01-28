@@ -36957,7 +36957,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_TIME_SHIP_DESTROYED, "Time ship destroyed (Time operator)\r\n"
 		"\tReturns the time the specified ship was destroyed (evaluation returns NAN until then). "
-		" Having departed doesn't count as destroyed.\r\n\r\n"
+		" Departed doesn't count as destroyed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship we want to check." },
 
@@ -36968,13 +36968,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_TIME_SHIP_DEPARTED, "Time ship departed (Time operator)\r\n"
 		"\tReturns the time the specified ship departed the mission "
-		"(evaluation returns NAN until then).  Being destroyed doesn't count as departed.\r\n\r\n"
+		"(evaluation returns NAN until then).  Destroyed doesn't count as departed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship we want to check." },
 
 	{ OP_TIME_WING_DESTROYED, "Time wing destroyed (Time operator)\r\n"
-		"\tReturns the time the specified wing was destroyed.  All "
-		"ships in the wing have to have been destroyed (evaluation returns NAN until then). "
+		"\tReturns the time the specified wing was destroyed.  "
+		"This will return NAN until all the ships in the wing have been destroyed. "
 		"If any have departed, the wing can never be considered destroyed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of wing we want to check." },
@@ -36985,8 +36985,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of wing we want to check." },
 
 	{ OP_TIME_WING_DEPARTED, "Time wing departed (Time operator)\r\n"
-		"\tReturns the time the specified wing departed the mission.  All "
-		"ships in the wing have to have departed (evaluation returns NAN until then).\r\n\r\n"
+		"\tReturns the time the specified wing departed the mission.  "
+		"This will return NAN until all the ships in the wing have departed.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of wing we want to check." },
 
@@ -37015,7 +37015,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_TIME_TO_GOAL, "Time-to-goal (Time operator)\r\n"
 		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
 		"Returns a number value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check waypoint time (evaluation is deferred until ship is in-mission)." },
+		"\t1:\tName of ship to check waypoint time (evaluation returns NAN until ship is in-mission)." },
 
 	// MjnMixael
 	{ OP_SET_HUD_TIME_PAD, "Set HUD Timer Padding (Action operator)\r\n"
@@ -38509,9 +38509,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_HAS_BEEN_TAGGED_DELAY, "Has ship been tagged (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified ships have been tagged.\r\n\r\n"
-		"Returns a boolean value after <delay> seconds when all ships have been tagged.  Takes 2 or more arguments...\r\n"
+		"Returns a boolean value after <delay> seconds when all ships have been tagged.  "
+		"(Event evaluation is deferred until the ships are in-mission).  Takes 2 or more arguments...\r\n"
 		"\t1:\tDelay in seconds after which sexpression will return true when all ships have been tagged.\r\n"
-		"\tRest:\tNames of ships to check if tagged (evaluation is deferred until ship is in-mission)." },
+		"\tRest:\tNames of ships to check if tagged." },
 
 	{ OP_ARE_SHIP_FLAGS_SET, "Are ship flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular ship.\r\n\r\n"
@@ -38527,7 +38528,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SHIP_EMP_ACTIVE, "Is ship emp active (Boolean operator)\r\n"
 		"\tReturns true if all of the specified ships are currently experiencing EMP effects.\r\n\r\n"
-		"Returns a boolean value if all ships are currently EMP'd.  Takes 1 or more arguments...\r\n"
+		"Returns a boolean value if all ships are currently EMP'd.  "
+		"(Evaluation is deferred until all ships are in-mission). Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of the ships to check." },
 
 	{ OP_CAP_SUBSYS_CARGO_KNOWN_DELAY, "Is capital ship subsystem cargo known (delay) (Boolean operator)\r\n"
@@ -38913,7 +38915,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PERCENT_SHIPS_DEPARTED, "percent-ships-departed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
 		"which have departed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to depart.  As expected, ships yet to arrive are "
+		"are used for calculation for the total possible ships to depart.  Ships yet to arrive are "
 		" included in the percentage that has not departed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of departed ships at which this function will return true.\r\n"
@@ -38922,7 +38924,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PERCENT_SHIPS_DESTROYED, "percent-ships-destroyed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
 		"which have been destroyed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.  As expected, ships yet to arrive are "
+		"are used for calculation for the total possible ships to be destroyed.  Ships yet to arrive are "
 		" included in the percentage that has not been destroyed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of destroyed ships at which this function will return true.\r\n"
@@ -38932,7 +38934,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PERCENT_SHIPS_DISARMED, "percent-ships-disarmed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships "
 		"which have been disarmed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.  As expected, ships yet to arrive are "
+		"are used for calculation for the total possible ships to be destroyed.  Ships yet to arrive are "
 		" included in the percentage that has not been disarmed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of disarmed ships at which this function will return true.\r\n"
@@ -38942,7 +38944,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PERCENT_SHIPS_DISABLED, "percent-ships-disabled\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships "
 		"which have been disabled is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.  As expected, ships yet to arrive are "
+		"are used for calculation for the total possible ships to be destroyed.  Ships yet to arrive are "
 		" included in the percentage that has not been disabled.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tPercentge of disabled ships at which this function will return true.\r\n"
