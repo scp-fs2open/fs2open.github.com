@@ -294,6 +294,12 @@ bool CustomStringsDlg::key_edit_box_has_valid_data(bool update)
 		const CString key = cs.name.c_str();
 		if (update) {
 			const int index = m_data_lister.GetCurSel();
+
+			if (!SCP_vector_inbounds(m_lister_keys, index)) {
+				MessageBox("Must select an item to update!");
+				return false;
+			}
+
 			const auto& this_key = m_lister_keys[index];
 			if (!strcmp(this_key.c_str(), key)) {
 				continue;
