@@ -44,7 +44,7 @@ jobs:
     name: Linux
     needs: create_release   # Don't run this job until create_release is done and successful
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-5ac6f70
+    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     steps:
       - uses: actions/checkout@v1
         # checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
@@ -55,7 +55,7 @@ jobs:
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
-          COMPILER: gcc-5
+          COMPILER: gcc-9
           ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
