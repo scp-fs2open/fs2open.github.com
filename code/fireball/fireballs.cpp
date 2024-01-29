@@ -1039,19 +1039,64 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	return index;
 }
 
+float parabolic_elbow(float t) {
+	if (t >= 0.0f && t < 2.0f / 3.0f) {
+		return powf(t, 0.4f);
+	} else if (t >= 2.0 / 3.0f && t < 4.0f / 3.0f) {
+		return powf(1.0f - powf(t - 4.0f / 3.0f, 2.0f) / (4.0f / 3.0f), 0.4f);
+	} else if (t >= 4.0f / 3.0f) {
+		return 1.0f;
+	}
+
+	return 0.0f;
+}
+
 float fireball_wormhole_intensity(fireball *fb)
 {
 	float t = fb->time_elapsed;
+
+	float rad = parabolic_elbow(t / fb->warp_open_duration);
+		
+	rad *= parabolic_elbow((fb->total_time - t) / fb->warp_close_duration);
+	rad /= parabolic_elbow(fb->total_time / (2.0f * fb->warp_open_duration));
+	rad /= parabolic_elbow(fb->total_time / (2.0f * fb->warp_close_duration));
+
+	return rad;
+
+	/*
 	float rad;
 
-	if ( t < fb->warp_open_duration )	{
-		rad = (float)pow(t / fb->warp_open_duration, 0.4f);
-	} else if ( t < fb->total_time - fb->warp_close_duration )	{
+	float open_elbow_width = powf(fb->warp_open_duration, 2.0f)*4.0f/3.0f;
+	float open_elbow_vertex = fb->warp_open_duration*4.0f/3.0f;
+	float open_elbow_transition = fb->warp_open_duration * 2.0f / 3.0f;
+
+	float close_elbow_width = powf(fb->warp_close_duration, 2.0f) * 4.0f / 3.0f;
+	float close_elbow_vertex = fb->warp_close_duration * 4.0f / 3.0f;
+	float close_elbow_transition = fb->warp_close_duration * 2.0f / 3.0f;
+
+	if ( t < open_elbow_vertex )	{
+		float time_open = t / (fb->warp_open_duration);
+		float warptime;
+		if (t < open_elbow_transition) {
+			warptime = time_open;
+		} else {
+			warptime = 1.0f - powf(t - open_elbow_vertex, 2.0f) / open_elbow_width;
+			// warptime = 0.5f;
+		}
+		rad = (float)pow(warptime, 0.4f);
+	} else if ( t < fb->total_time - close_elbow_vertex)	{
 		rad = 1.0f;
 	} else {
-		rad = (float)pow((fb->total_time - t) / fb->warp_close_duration, 0.4f);
+		float time_close = (fb->total_time - t) / fb->warp_close_duration;
+		float warptime;
+		if (t < fb->total_time - close_elbow_vertex + close_elbow_transition) {
+			warptime = 1.0f - powf((fb->total_time - t) - close_elbow_vertex, 2.0f) / close_elbow_width;
+		} else {
+			warptime = time_close;
+		}
+		rad = (float)pow(warptime, 0.4f);
 	}
-	return rad;
+	return rad;*/
 } 
 
 extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
