@@ -324,7 +324,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		table.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->value));
 		table.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->text));
 
-		return LuaValue::createValue(_action.getLuaState(), table);
+		return table;
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
