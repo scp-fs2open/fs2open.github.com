@@ -4148,6 +4148,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 				break;
 
+			case OPF_MISSION_CUSTOM_STRING:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (get_custom_string_by_name(CTEXT(node)) == nullptr) {
+					return SEXP_CHECK_INVALID_CUSTOM_STRING;
+				}
+
 			default: //This handles OPF_CHILD_LUA_ENUM as well
 				if (Dynamic_enums.size() > 0) {
 					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -34020,6 +34029,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM:
 			return "Invalid ship, wing, or team name";
+
+		case SEXP_CHECK_INVALID_CUSTOM_STRING:
+			return "Invalid custom string name";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
