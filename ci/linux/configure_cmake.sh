@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-if [ "$COMPILER" = "gcc-5" ]; then
-    export CC=gcc-5
+if [ "$COMPILER" = "gcc-9" ]; then
+    export CC=gcc-9
     export CXX=g++-5
 fi
 if [ "$COMPILER" = "gcc-13" ]; then

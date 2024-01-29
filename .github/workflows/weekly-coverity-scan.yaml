@@ -19,7 +19,7 @@ jobs:
   build:
     name: Build FSO With Coverity Wrapper
     runs-on: ${{ matrix.config.os }}
-    container: ghcr.io/scp-fs2open/linux_build:sha-5ac6f70
+    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +47,7 @@ jobs:
       - name: Configure CMake for FSO
         env:
           CONFIGURATION: Release
-          compiler: gcc-5
+          compiler: gcc-9
           ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
 
