@@ -4156,6 +4156,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (get_custom_string_by_name(CTEXT(node)) == nullptr) {
 					return SEXP_CHECK_INVALID_CUSTOM_STRING;
 				}
+				break;
 
 			default: //This handles OPF_CHILD_LUA_ENUM as well
 				if (Dynamic_enums.size() > 0) {
