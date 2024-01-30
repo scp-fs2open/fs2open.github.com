@@ -2179,7 +2179,7 @@ void load_gauge_center_reticle(gauge_settings* settings)
 		stuff_int(&autoaim_frame);
 
 	if (optional_string("Aim Cursor Frame:"))
-		stuff_int(&autoaim_frame);
+		stuff_int(&aim_cursor_frame);
 
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);

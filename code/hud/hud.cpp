@@ -3745,10 +3745,6 @@ int hud_objective_notify_active()
  * @details Since the player's view vector may be different from the ship's forward vector,
  * we calculate the offset of those two in pixels and store the x and y offsets in
  * variables HUD_nose_x and HUD_nose_y (Swifty)
- *
- * @param viewer_obj Object, likely to be player
- * @param wiggedy_wack
- * @param eye_orient 
  */
 void HUD_set_offsets()
 {

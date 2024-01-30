@@ -236,7 +236,6 @@ HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNA
 
 void HudGaugeReticle::initBitmaps(char *fname)
 {
-	Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
 	crosshair.first_frame = bm_load_animation(fname, &crosshair.num_frames);
 	if (crosshair.first_frame < 0) {
 		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
@@ -1163,7 +1162,7 @@ void hud_reticle_set_aim_cursor_offset() {
 	vm_angles_2_matrix(&view_mat, &Player_aim_cursor);
 	view_mat = view_mat * Player_obj->orient;
 
-	vec3d view_pos = Eye_position + view_mat.vec.fvec * 100.0f;
+	vec3d view_pos = Eye_position + view_mat.vec.fvec * 10000.0f;
 	g3_rotate_vertex(&Player_aim_cursor_offset, &view_pos);
 	g3_project_vertex(&Player_aim_cursor_offset);
 }

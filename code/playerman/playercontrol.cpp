@@ -1064,10 +1064,20 @@ void read_player_controls(object *objp, float frametime)
 		if (mag > max_aim_angle) {
 			Player_aim_cursor.p *= max_aim_angle / mag;
 			Player_aim_cursor.h *= max_aim_angle / mag;
+			mag = max_aim_angle;
 		}
 
-		Player->ci.pitch = Player_aim_cursor.p / max_aim_angle;
-		Player->ci.heading = Player_aim_cursor.h / max_aim_angle;
+		float deadzone = 0.02;
+		if (mag > deadzone) {
+			float p = Player_aim_cursor.p * ((mag - deadzone) / mag);
+			float h = Player_aim_cursor.h * ((mag - deadzone) / mag);
+
+			Player->ci.pitch = p / (max_aim_angle - deadzone);
+			Player->ci.heading = h / (max_aim_angle - deadzone);
+		} else {
+			Player->ci.pitch = 0.0f;
+			Player->ci.heading = 0.0f;
+		}
 	}
 
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
