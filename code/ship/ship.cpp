@@ -5077,6 +5077,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	int n_subsystems = 0;
+	int n_excess_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS] = {}; // see model.h for max_model_subsystems
 	for (auto i=0; i<MAX_MODEL_SUBSYSTEMS; i++) {
@@ -5112,7 +5113,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			{
 				if( sip->n_subsystems + n_subsystems >= MAX_MODEL_SUBSYSTEMS )
 				{
-					Warning(LOCATION, "Number of subsystems for %s '%s' (%d) exceeds max of %d; only the first %d will be used", info_type_name, sip->name, sip->n_subsystems, n_subsystems, MAX_MODEL_SUBSYSTEMS);
+					n_excess_subsystems++;
+					skip_to_start_of_string_one_of({"$Subsystem:", type_name, "#End"});
 					break;
 				}
 				sp = &subsystems[n_subsystems++];			// subsystems a local -- when done, we will malloc and copy
@@ -5465,7 +5467,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		default:
 			UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
 		}
-	}	
+	}
+
+	// maybe warn
+	if (n_excess_subsystems > 0) {
+		Warning(LOCATION, "For %s '%s', number of existing subsystems (%d) plus additional subsystems (%d) exceeds max of %d; only the first %d additional subsystems will be used", info_type_name, sip->name, sip->n_subsystems, n_subsystems + n_excess_subsystems, MAX_MODEL_SUBSYSTEMS, n_subsystems);
+	}
 
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	int orig_n_subsystems = sip->n_subsystems;
