@@ -4569,7 +4569,7 @@ int game_check_key()
 bool pause_if_unfocused()
 {
 	if (Using_in_game_options) {
-		return Allow_unfocused_pause;
+		return UnfocusedPauseOption->getValue();
 	} else {
 		return !Cmdline_no_unfocus_pause;
 	}
