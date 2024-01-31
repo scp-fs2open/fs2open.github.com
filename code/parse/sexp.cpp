@@ -15952,18 +15952,18 @@ void sexp_nebula_toggle_poof(int n)
 {
 	auto name = CTEXT(n);
 	bool result = is_sexp_true(CDR(n));
-	int i;
+	size_t i;
 
-	for (i = 0; i < (int)Poof_info.size(); i++)
+	for (i = 0; i < Poof_info.size(); i++)
 	{
 		if (!stricmp(name, Poof_info[i].name))
 			break;
 	}
 
 	//coulnd't find the poof
-	if (i == (int)Poof_info.size()) return;
+	if (i == Poof_info.size()) return;
 
-	neb2_toggle_poof(i, result);
+	neb2_toggle_poof(static_cast<int>(i), result);
 }
 
 void sexp_nebula_fade_poofs(int n)
@@ -15977,18 +15977,18 @@ void sexp_nebula_fade_poofs(int n)
 		return;
 	n = CDR(n);
 	bool result = is_sexp_true(n);
-	int i;
+	size_t i;
 
-	for (i = 0; i < (int)Poof_info.size(); i++) {
+	for (i = 0; i < Poof_info.size(); i++) {
 		if (!stricmp(name, Poof_info[i].name))
 			break;
 	}
 
 	// coulnd't find the poof
-	if (i == (int)Poof_info.size())
+	if (i == Poof_info.size())
 		return;
 
-	neb2_fade_poofs(i, time, result);
+	neb2_fade_poofs(static_cast<int>(i), time, result);
 }
 
 void sexp_nebula_change_pattern(int n)

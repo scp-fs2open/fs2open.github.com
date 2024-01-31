@@ -45,5 +45,47 @@
 // calculate number of bytes from number of bits
 #define calculate_num_bytes(num_bits)	((num_bits >> 3) + 1)
 
+// zero out all bits in the bitstring
+#define clear_all_bits(array, num_bits)	memset(array, 0, calculate_num_bytes(num_bits))
+
+template <class N_TYPE>
+bool any_bits_set(void *array, N_TYPE num_bits)
+{
+	auto bytes = static_cast<ubyte*>(array);
+	N_TYPE num_bytes = calculate_num_bytes(num_bits);
+	for (N_TYPE i = 0; i < num_bytes; ++i)
+		if (bytes[i] != 0)
+			return true;
+	return false;
+}
+
+template <class N_TYPE>
+int get_int(void *array, N_TYPE num_bits)
+{
+	int rval = 0;
+
+	auto bytes = static_cast<ubyte*>(array);
+	N_TYPE num_bytes = calculate_num_bytes(num_bits);
+	for (N_TYPE i = 0; i < num_bytes && i < sizeof(int); ++i)
+	{
+		rval = rval << 3;
+		rval |= bytes[i];
+	}
+
+	return rval;
+}
+
+template <class N_TYPE>
+void set_int(void *array, N_TYPE num_bits, int input)
+{
+	auto bytes = static_cast<ubyte*>(array);
+	N_TYPE num_bytes = calculate_num_bytes(num_bits);
+	for (N_TYPE i = 0; i < num_bytes && i < sizeof(int); ++i)
+	{
+		bytes[i] = input & 255;
+		input = input >> 3;
+	}
+}
+
 
 #endif	// _BIT_ARRAY_H
