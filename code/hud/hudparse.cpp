@@ -4688,7 +4688,7 @@ void load_gauge_lock(gauge_settings* settings)
 		stuff_boolean(&loop_locked_anim);
 	}
 	if(optional_string("Blink Locked Animation:")) {
-		stuff_boolean(&loop_locked_anim);
+		stuff_boolean(&blink_locked_anim);
 	}
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
