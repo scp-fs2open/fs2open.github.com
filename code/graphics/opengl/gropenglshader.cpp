@@ -399,7 +399,7 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 
 	int line_num = 1;
 	for (SCP_string line; std::getline(input, line);) {
-		auto include_start = line.find(INCLUDE_STRING);
+		auto include_start = line.find(CONDITIONAL_INCLUDE_STRING);
 
 		if (include_start != SCP_string::npos) {
 			//This is a conditional include. Figure out whether to include, or whether not to.
@@ -446,16 +446,16 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 
 			//Prepare for including if capability is correct, skip otherwise.
 			if(gr_is_capable(capability->capability) == require_capability)
-				include_start = second_quote + 1;
+				include_start = second_quote + 1 - strlen(INCLUDE_STRING);
 			else
-				include_start = 0;
+				include_start = SCP_string::npos - 1;
 		}
 		else {
 			//Only search for normal includes if it's not a conditional include.
 			include_start = line.find(INCLUDE_STRING);
 		}
 
-		if (include_start != SCP_string::npos && include_start != 0) {
+		if (include_start != SCP_string::npos && include_start != SCP_string::npos - 1) {
 			auto first_quote = line.find('"', include_start + strlen(INCLUDE_STRING));
 			auto second_quote = line.find('"', first_quote + 1);
 
@@ -496,7 +496,7 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 
 			// We are done with the include file so now we can return to the original file
 			output << "#line " << line_num + 1 << " " << current_source_number << "\n";
-		} else if (include_start != 0) {
+		} else if (include_start != SCP_string::npos - 1) {
 			output << line << "\n";
 		}
 
@@ -516,6 +516,89 @@ static SCP_string handle_includes(const char* filename, const SCP_string& origin
 	return output.str();
 }
 
+static SCP_string handle_predefines(const char* filename, const SCP_string& original){
+	SCP_stringstream output;
+	SCP_unordered_map<SCP_string, SCP_string> defines;
+
+	const char* PREDEFINE_STRING = "#predefine";
+	const char* PREREPLACE_STRING = "#prereplace";
+
+	SCP_stringstream input(original);
+	for (SCP_string line; std::getline(input, line);) {
+		auto predefine_start = line.find(PREDEFINE_STRING);
+		auto prereplace_start = line.find(PREREPLACE_STRING);
+
+		if (predefine_start != SCP_string::npos){
+			predefine_start += strlen(PREDEFINE_STRING);
+
+			auto token_start = line.find(' ', predefine_start);
+			auto token_end =  line.find(' ', token_start + 1);
+
+			if (token_start == SCP_string::npos || token_end == SCP_string::npos) {
+				Error(LOCATION,
+					"Shader %s: Malformed predefine line. Could not find define token.",
+					filename);
+			}
+
+			auto token = line.substr(token_start + 1, token_end - token_start - 1);
+			auto replaceWith = line.substr(token_end + 1);
+
+			auto replaceStrToken = replaceWith.find("%s");
+			if (replaceStrToken == SCP_string::npos || replaceWith.find("%s", replaceStrToken + 1) != SCP_string::npos){
+				Error(LOCATION,
+					"Shader %s: Malformed predefine line. Replacing string must have exactly one %%s.",
+					filename);
+			}
+			if (defines.find(token) != defines.end()) {
+				Error(LOCATION,
+					"Shader %s: Malformed predefine line. Token %s is already defined.",
+					filename,
+					token.c_str());
+			}
+
+			defines.emplace(std::move(token), std::move(replaceWith));
+
+			output << "\n"; //At this point, don't mess with the linecount
+		}
+		else if (prereplace_start != SCP_string::npos){
+			prereplace_start += strlen(PREREPLACE_STRING);
+
+			auto token_start = line.find(' ', prereplace_start);
+			auto token_end =  line.find(' ', token_start + 1);
+
+			if (token_start == SCP_string::npos || token_end == SCP_string::npos) {
+				Error(LOCATION,
+					"Shader %s: Malformed prereplace line. Could not find define token.",
+					filename);
+			}
+
+			auto token = line.substr(token_start + 1, token_end - token_start - 1);
+			auto replaceArg = line.substr(token_end + 1);
+
+			auto replaceWithIt = defines.find(token);
+			if (replaceWithIt == defines.end()) {
+				Error(LOCATION,
+					"Shader %s: Malformed prereplace line. Could not find token %s.",
+					filename,
+					token.c_str());
+			}
+
+			size_t size = replaceWithIt->second.length() - 1 + replaceArg.size();
+			std::unique_ptr<char[]> buffer = make_unique<char[]>(size);
+
+			snprintf(buffer.get(), size, replaceWithIt->second.c_str(), replaceArg.c_str());
+			buffer[size - 1] = '\0';
+
+			output << buffer.get() << "\n";
+		}
+		else {
+			output << line << "\n";
+		}
+	}
+
+	return output.str();
+}
+
 static SCP_vector<SCP_string>
 opengl_get_shader_content(shader_type type_id, const char* filename, int flags, bool has_geo_shader, bool spirv_shader)
 {
@@ -526,7 +609,7 @@ opengl_get_shader_content(shader_type type_id, const char* filename, int flags, 
 	} else {
 		parts.push_back(opengl_shader_get_header(type_id, flags, has_geo_shader));
 
-		parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
+		parts.push_back(handle_predefines(filename, handle_includes(filename, opengl_load_shader(filename))));
 	}
 
 	return parts;
