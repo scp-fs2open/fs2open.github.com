@@ -7701,7 +7701,7 @@ int sexp_special_warp_dist( int n)
 	// ships which aren't present get NAN
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto shipp = ship_entry->shipp();
@@ -7966,7 +7966,7 @@ int sexp_get_energy_pct (int node, int op_num)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 	auto shipp = ship_entry->shipp();
 	auto sip = &Ship_info[shipp->ship_info_index]; 
@@ -7999,7 +7999,7 @@ int sexp_shields_left(int node)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	// Goober5000: in case ship has no shields
@@ -8024,7 +8024,7 @@ int sexp_hits_left(int node, bool sim_hull)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto objp = ship_entry->objp();
@@ -8129,7 +8129,7 @@ int sexp_hits_left_subsystem(int n)
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto subsys_name = CTEXT(CDR(n));
@@ -8177,7 +8177,7 @@ int sexp_hits_left_subsystem_generic(int node)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto subsys_type_name = CTEXT(CDR(node));
@@ -8214,7 +8214,7 @@ int sexp_hits_left_subsystem_specific(int node)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto subsys_name = CTEXT(CDR(node));
@@ -19802,7 +19802,7 @@ int sexp_gse_recharge_pct(int node, int op_num)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	else if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	int index;
@@ -19826,11 +19826,10 @@ int sexp_get_power_output(int node)
 {
 	auto ship_entry = eval_ship(node);
 
-	if (ship_entry == nullptr || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	return (int)(std::lround(Ship_info[ship_entry->shipp()->ship_info_index].power_output));
 }
@@ -19847,7 +19846,7 @@ int sexp_get_ets_value(int node)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	else if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	if (!stricmp(ets_type, "engine")) {
@@ -19922,7 +19921,7 @@ int sexp_shield_quad_low(int node)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto sip = &Ship_info[ship_entry->shipp()->ship_info_index];
@@ -20008,7 +20007,7 @@ int sexp_get_ammo(int node, bool for_turret, bool primary, bool do_percent)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 	node = CDR(node);
 
@@ -20322,7 +20321,7 @@ int sexp_get_countermeasures(int node)
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
+	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	return ship_entry->shipp()->cmeasure_count;
