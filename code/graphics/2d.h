@@ -321,7 +321,7 @@ template<> struct hash<vertex_layout> {
 };
 }
 
-typedef enum gr_capability {
+enum class gr_capability {
 	CAPABILITY_ENVIRONMENT_MAP,
 	CAPABILITY_NORMAL_MAP,
 	CAPABILITY_HEIGHT_MAP,
@@ -336,7 +336,15 @@ typedef enum gr_capability {
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 	CAPABILITY_BPTC
-} gr_capability;
+};
+
+struct gr_capability_def {
+	gr_capability capability;
+	const char* parse_name;
+};
+
+extern gr_capability_def gr_capabilities[];
+extern const size_t gr_capabilities_num;
 
 enum class gr_property
 {

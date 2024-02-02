@@ -175,10 +175,6 @@ static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord"
 
 void mod_table_set_version_flags();
 
-SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
-	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
-};
-
 void parse_mod_table(const char *filename)
 {
 	// SCP_vector<SCP_string> lines;
@@ -697,10 +693,10 @@ void parse_mod_table(const char *filename)
 			stuff_string_list(ext_strings);
 
 			for (auto& ext_str : ext_strings) {
-				auto ext = std::find_if(req_render_ext_pairs.begin(), req_render_ext_pairs.end(), 
-								[ext_str](const std::pair<SCP_string, gr_capability> &ext_pair) { return !stricmp(ext_pair.first.c_str(), ext_str.c_str()); });
-				if (ext != req_render_ext_pairs.end()) {
-					Required_render_ext.push_back(ext->second);
+				auto ext = std::find_if(&gr_capabilities[0], &gr_capabilities[gr_capabilities_num],
+								[ext_str](const gr_capability_def &ext_pair) { return !stricmp(ext_pair.parse_name, ext_str.c_str()); });
+				if (ext != &gr_capabilities[gr_capabilities_num]) {
+					Required_render_ext.push_back(ext->capability);
 				}
 			}
 		}

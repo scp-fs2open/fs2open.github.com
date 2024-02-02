@@ -735,7 +735,7 @@ uint model_material::get_shader_flags() const
 		return Shader_flags;
 	}
 
-	if (uses_thick_outlines() && gr_is_capable(CAPABILITY_THICK_OUTLINE)) {
+	if (uses_thick_outlines() && gr_is_capable(gr_capability::CAPABILITY_THICK_OUTLINE)) {
 		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
 	}
 
