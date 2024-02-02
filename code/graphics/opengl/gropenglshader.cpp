@@ -394,12 +394,68 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 	auto current_source_number = include_counter + 1;
 
 	const char* INCLUDE_STRING = "#include";
+	const char* CONDITIONAL_INCLUDE_STRING = "#conditional_include";
 	SCP_stringstream input(original);
 
 	int line_num = 1;
 	for (SCP_string line; std::getline(input, line);) {
 		auto include_start = line.find(INCLUDE_STRING);
+
 		if (include_start != SCP_string::npos) {
+			//This is a conditional include. Figure out whether to include, or whether not to.
+			// Conditional include syntax: #conditional_include (+|-)"capability" "filename"
+			// On +, include if capability is available, on -, include if not available
+			include_start += strlen(CONDITIONAL_INCLUDE_STRING) + 1;
+			bool require_capability;
+
+			switch(line.at(include_start)) {
+			case '+':
+				require_capability = true;
+				break;
+			case '-':
+				require_capability = false;
+				break;
+			default:
+				Error(LOCATION,
+					"Shader %s:%d: Malformed conditional_include line. Expected + or -, got %c.",
+					filename.c_str(),
+					line_num,
+					line.at(include_start));
+				break;
+			}
+
+			auto first_quote = line.find('"', include_start);
+			auto second_quote = line.find('"', first_quote + 1);
+
+			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
+				Error(LOCATION,
+					"Shader %s:%d: Malformed conditional_include line. Could not find both quote characters for capability.",
+					filename.c_str(),
+					line_num);
+			}
+			auto condition = line.substr(first_quote + 1, second_quote - first_quote - 1);
+			auto capability = std::find_if(&gr_capabilities[0], &gr_capabilities[gr_capabilities_num],
+				[condition](const gr_capability_def &ext_pair) { return !stricmp(ext_pair.parse_name, condition.c_str()); });
+			if (capability == &gr_capabilities[gr_capabilities_num]) {
+				Error(LOCATION,
+					"Shader %s:%d: Malformed conditional_include line. Capability %s does not exist.",
+					filename.c_str(),
+					line_num,
+					condition.c_str());
+			}
+
+			//Prepare for including if capability is correct, skip otherwise.
+			if(gr_is_capable(capability->capability) == require_capability)
+				include_start = second_quote + 1;
+			else
+				include_start = 0;
+		}
+		else {
+			//Only search for normal includes if it's not a conditional include.
+			include_start = line.find(INCLUDE_STRING);
+		}
+
+		if (include_start != SCP_string::npos && include_start != 0) {
 			auto first_quote = line.find('"', include_start + strlen(INCLUDE_STRING));
 			auto second_quote = line.find('"', first_quote + 1);
 
@@ -440,7 +496,7 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 
 			// We are done with the include file so now we can return to the original file
 			output << "#line " << line_num + 1 << " " << current_source_number << "\n";
-		} else {
+		} else if (include_start != 0) {
 			output << line << "\n";
 		}
 
