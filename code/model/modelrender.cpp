@@ -521,6 +521,8 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 	}
 
 	draw_data.sdr_flags = draw_data.render_material.get_shader_flags();
+	if(!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER))
+		draw_data.sdr_flags |= draw_data.render_material.get_shader_runtime_flags();
 
 	draw_data.vert_src = vert_src;
 	draw_data.buffer = buffer;

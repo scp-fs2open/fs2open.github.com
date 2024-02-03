@@ -183,16 +183,12 @@ static opengl_shader_type_t GL_shader_types[] = {
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
 static opengl_shader_variant_t GL_shader_variants[] = {
-	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", {}, "Shadow Mapping"},
+//Model shader flags, both those set always as a compile flag as well as those that are usually runtime checks, need to be defined in this file
+#define MODEL_SDR_FLAG_MODE_CPP_ARRAY
+#include "def_files/data/effects/model_shader_flags.h"
+#undef MODEL_SDR_FLAG_MODE_CPP_ARRAY
 
-	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
-
-	{SDR_TYPE_EFFECT_PARTICLE,
-	 true,
-	 SDR_FLAG_PARTICLE_POINT_GEN,
-	 "FLAG_EFFECT_GEOMETRY",
-	 {opengl_vert_attrib::UVEC},
-	 "Geometry shader point-based particles"},
+	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 

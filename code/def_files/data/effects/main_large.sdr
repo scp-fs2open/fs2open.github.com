@@ -1,0 +1,9 @@
+#predefine IF_FLAG if (%s) {
+#predefine ELSE_FLAG } else { %s
+#predefine ENDIF_FLAG } %s
+
+#define FLAG_ACTIVE(flag) (flags & flag) != 0
+#define FLAG_INACTIVE(flag) (flags & flag) == 0
+
+#define MODEL_SDR_FLAG_MODE_GLSL 1
+#include "model_shader_flags.h"

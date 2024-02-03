@@ -219,9 +219,6 @@ enum shader_type {
 
 
 // Shader flags
-#define SDR_FLAG_MODEL_SHADOW_MAP	(1<<13)
-#define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
-
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
 #define SDR_FLAG_BLUR_HORIZONTAL			(1<<0)
