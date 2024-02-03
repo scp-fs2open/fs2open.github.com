@@ -1464,7 +1464,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_BPTC:
 		return GLAD_GL_ARB_texture_compression_bptc != 0;
 	case gr_capability::CAPABILITY_LARGE_SHADER:
-		return false;
+		return !Cmdline_no_large_shaders;
 	}
 
 	return false;

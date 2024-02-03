@@ -57,7 +57,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->anim_timer = 0;
 	data_out->use_clip_plane = 0;
 
-	data_out->flags = material.get_shader_runtime_flags();
+	data_out->flags = material.get_shader_runtime_early_flags() | material.get_shader_runtime_flags();
 
 	if (material.get_animated_effect() >= 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
