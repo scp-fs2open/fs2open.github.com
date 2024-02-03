@@ -37,7 +37,7 @@ void CommandBriefingDialogModel::initializeData()
 		strcpy_s(_wipCommandBrief.stage[i].ani_filename, Cur_cmd_brief->stage[i].ani_filename);
 		_wipCommandBrief.stage[i].text = Cur_cmd_brief->stage[i].text;
 		_wipCommandBrief.stage[i].wave = Cur_cmd_brief->stage[i].wave;
-		strcpy_s(_wipCommandBrief.stage[i].ani_filename, Cur_cmd_brief->stage[i].wave_filename);
+		strcpy_s(_wipCommandBrief.stage[i].wave_filename, Cur_cmd_brief->stage[i].wave_filename);
 	}
 
 	for (i = _wipCommandBrief.num_stages; i < CMD_BRIEF_STAGES_MAX; i++) {
