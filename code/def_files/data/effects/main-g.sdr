@@ -142,16 +142,16 @@ out VertexOutput {
 		#endif
 		for(int vert = 0; vert < gl_in.length(); vert++)
 		{
-			#prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_TRANSFORM)
+			#prereplace IF_FLAG MODEL_SDR_FLAG_TRANSFORM
 				if (vertIn[vert].clipModel > 0.9) {
 					// If the model was clipped in the vertex shader then we do not apply the shadow projection matrix here
 					gl_Position = gl_in[vert].gl_Position;
 				} else {
 					gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
 				}
-			#prereplace ELSE_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_TRANSFORM)
+			#prereplace ELSE_FLAG //MODEL_SDR_FLAG_TRANSFORM
 				gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
-			#prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_TRANSFORM)
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
 			if(gl_Position.z < -1.0)
 			gl_Position.z = -1.0;
@@ -162,25 +162,25 @@ out VertexOutput {
 
 			gl_Layer = instanceID;
 
-			#prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)
+			#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
 				vertOut.envReflect = vertIn[vert].envReflect;
-			#prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 
-			#prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_NORMAL)
+			#prereplace IF_FLAG MODEL_SDR_FLAG_NORMAL
 				vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
-			#prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_NORMAL)
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_NORMAL
 
-			#prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)
+			#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
 				vertOut.fogDist = vertIn[vert].fogDist;
-			#prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
-			#prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)
+			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 				vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
 				vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
 				vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
 				vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
 				vertOut.shadowPos = vertIn[vert].shadowPos;
-			#prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 			if (use_clip_plane) {
 				gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
@@ -220,25 +220,25 @@ out VertexOutput {
 				vertOut.normal = vertIn[vert].normal;
 				vertOut.texCoord = vertIn[vert].texCoord;
 
-				#prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)
+				#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
                 	vertOut.envReflect = vertIn[vert].envReflect;
-                #prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)
+                #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 
-                #prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_NORMAL)
+                #prereplace IF_FLAG MODEL_SDR_FLAG_NORMAL
                 	vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
-                #prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_NORMAL)
+                #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_NORMAL
 
-                #prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)
+                #prereplace IF_FLAG MODEL_SDR_FLAG_FOG
                 	vertOut.fogDist = vertIn[vert].fogDist;
-                #prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)
+                #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
-                #prereplace IF_FLAG FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)
+                #prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
                 	vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
                 	vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
                 	vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
                 	vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
                 	vertOut.shadowPos = vertIn[vert].shadowPos;
-                #prereplace ENDIF_FLAG //FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)
+                #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 				if (use_clip_plane) {
 					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];

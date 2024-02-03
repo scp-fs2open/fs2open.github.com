@@ -1,6 +1,4 @@
-#predefine IF_FLAG #if %s
+#predefine IF_FLAG #ifdef %s
+#predefine IF_NOT_FLAG #ifndef %s
 #predefine ELSE_FLAG #else %s
 #predefine ENDIF_FLAG #endif %s
-
-#define FLAG_ACTIVE(flag) defined flag
-#define FLAG_INACTIVE(flag) !defined(flag)

@@ -731,6 +731,10 @@ uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
 
+    if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {
+        Shader_flags |= get_shader_runtime_early_flags();
+    }
+
 	if (Shadow_casting) {
 		// if we're building the shadow map, we likely only need the flags here and above so bail
 		Shader_flags |= MODEL_SDR_FLAG_SHADOW_MAP;
@@ -742,11 +746,22 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= MODEL_SDR_FLAG_THICK_OUTLINES;
 	}
 
+    if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {
+        Shader_flags |= get_shader_runtime_flags();
+    }
+
 	return Shader_flags;
 }
 
+int model_material::get_shader_runtime_early_flags() const {
+    int flags = 0;
+    if (is_batched())
+        flags |= MODEL_SDR_FLAG_TRANSFORM;
+    return flags;
+}
+
 int model_material::get_shader_runtime_flags() const {
-	int flags = 0;
+    int flags = 0;
 	if (is_lit())
 		flags |= MODEL_SDR_FLAG_LIGHT;
 	if (is_deferred())
@@ -771,8 +786,6 @@ int model_material::get_shader_runtime_flags() const {
 		flags |= MODEL_SDR_FLAG_TEAMCOLOR;
 	if (is_fogged())
 		flags |= MODEL_SDR_FLAG_FOG;
-	if (is_batched())
-		flags |= MODEL_SDR_FLAG_TRANSFORM;
 	if (is_shadow_receiving())
 		flags |= MODEL_SDR_FLAG_SHADOWS;
 	if (get_thrust_scale() > 0.0f)
