@@ -181,7 +181,7 @@ int Rank_medal_index = -1;
 int Init_flags;
 
 medal_stuff::medal_stuff()
-	: num_versions(1), version_starts_at_1(false), available_from_start(false), kills_needed(0)
+	: num_versions(1), version_starts_at_1(false), available_from_start(false), kills_needed(0), mask_index(0)
 {
 	name[0] = '\0';
 	bitmap[0] = '\0';
@@ -222,7 +222,6 @@ static int get_medal_position(const char* medal_name)
 
 void parse_medals_table(const char* filename)
 {
-
 	try
 	{
 		read_file_text(filename, CF_TYPE_TABLES);
@@ -234,7 +233,7 @@ void parse_medals_table(const char* filename)
 		if (optional_string("+Background Bitmap:")) {
 			stuff_string(Medals_background_filename, F_NAME, NAME_LENGTH);
 		}
-		else {
+		else if (!Parsing_modular_table) {
 			strcpy_s(Medals_background_filename, Default_medals_background_filename);
 		}
 
@@ -242,7 +241,7 @@ void parse_medals_table(const char* filename)
 		if (optional_string("+Mask Bitmap:")) {
 			stuff_string(Medals_mask_filename, F_NAME, NAME_LENGTH);
 		}
-		else {
+		else if (!Parsing_modular_table) {
 			strcpy_s(Medals_mask_filename, Default_medals_mask_filename);
 		}
 
@@ -363,8 +362,6 @@ void parse_medals_table(const char* filename)
 
 			if (optional_string("$Num mods:")) {
 				stuff_int(&medal_p->num_versions);
-			} else {
-				medal_p->num_versions = 1;
 			}
 
 			// this is dumb
@@ -382,8 +379,6 @@ void parse_medals_table(const char* filename)
 			// some medals are based on kill counts.  When string +Num Kills: is present, we know that
 			// this medal is a badge and should be treated specially
 			if (optional_string("+Num Kills:")) {
-				char buf[MULTITEXT_LENGTH];
-				int persona;
 				stuff_int(&medal_p->kills_needed);
 
 				if (optional_string("$Wavefile 1:"))
@@ -397,8 +392,9 @@ void parse_medals_table(const char* filename)
 
 				while (check_for_string("$Promotion Text:")) {
 					required_string("$Promotion Text:");
-					stuff_string(buf, F_MULTITEXT, sizeof(buf));
-					persona = -1;
+					SCP_string buf;
+					stuff_string(buf, F_MULTITEXT);
+					int persona = -1;
 					if (optional_string("+Persona:")) {
 						stuff_int(&persona);
 						if (persona < 0) {
@@ -410,7 +406,7 @@ void parse_medals_table(const char* filename)
 							continue;
 						}
 					}
-					medal_p->promotion_text[persona] = SCP_string(buf);
+					medal_p->promotion_text[persona] = std::move(buf);
 				}
 				if (medal_p->promotion_text.find(-1) == medal_p->promotion_text.end()) {
 					error_display(0, "%s medal is missing default debriefing text.\n", medal_p->name);
