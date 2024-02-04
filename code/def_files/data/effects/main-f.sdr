@@ -97,14 +97,24 @@ layout (std140) uniform modelData {
 };
 
 in VertexOutput {
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
 	vec3 envReflect;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
+
 	mat3 tangentMatrix;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 	float fogDist;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
+
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[4];
 	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn;
 
 uniform sampler2DArray sBasemap;

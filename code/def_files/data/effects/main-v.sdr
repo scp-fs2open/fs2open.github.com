@@ -100,9 +100,16 @@ layout (std140) uniform modelData {
 uniform samplerBuffer transform_tex;
 
 out VertexOutput {
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
 	vec3 envReflect;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
+
 	mat3 tangentMatrix;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 	float fogDist;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
+
 #ifdef MODEL_SDR_FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
@@ -115,8 +122,11 @@ out VertexOutput {
 #endif
 	vec3 normal;
 	vec4 texCoord;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[4];
 	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
 
 #define TEXELS_PER_MATRIX 4
