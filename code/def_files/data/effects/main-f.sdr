@@ -117,16 +117,32 @@ in VertexOutput {
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn;
 
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
 uniform sampler2DArray sBasemap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_GLOW
 uniform sampler2DArray sGlowmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_GLOW
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SPEC
 uniform sampler2DArray sSpecmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SPEC
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_NORMAL
 uniform sampler2DArray sNormalmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_NORMAL
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_AMBIENT
 uniform sampler2DArray sAmbientmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_AMBIENT
 uniform sampler2D sFramebuffer;
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
 uniform sampler2DArray sMiscmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 uniform sampler2DArray shadow_map;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
 out vec4 fragOut0;
 

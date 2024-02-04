@@ -97,7 +97,9 @@ layout (std140) uniform modelData {
 	int flags;
 };
 
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 
 out VertexOutput {
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
@@ -130,6 +132,7 @@ out VertexOutput {
 } vertOut;
 
 #define TEXELS_PER_MATRIX 4
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 void getModelTransform(inout mat4 transform, out bool invisible, int id, int matrix_offset)
 {
 	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
@@ -139,6 +142,7 @@ void getModelTransform(inout mat4 transform, out bool invisible, int id, int mat
 	invisible = transform[3].w >= 0.9;
 	transform[3].w = 1.0;
 }
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 
 void main()
 {
