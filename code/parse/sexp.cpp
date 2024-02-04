@@ -37624,13 +37624,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a message to the player.  Can be sent by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
-		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
-		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
-		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+		"\tHigh and Normal priorities are not interrupted by anything and take precedence over built-in messages.\r\n"
+		"\tLow priority may be interrupted by built-in messages.\r\n"
+		"\tIf the sender is destroyed, Normal and Low priority messages will not be sent.  High priority messages will be reassigned to Command and will be sent if one of the following is true:\r\n"
+		"\t1. The message has no persona\r\n"
+		"\t2. The message has a wingman persona, the message's filename starts with 1_ through 6_, and there exists a corresponding filename starting with TC_ that can be used instead\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
-		"\t3:\tName of message (from message editor)." },
+		"\t3:\tName of message (from message list)." },
 
 	// Karajorma	
 	{ OP_ENABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
@@ -37741,13 +37743,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAll:\tName of mission goal to validate." },
 
 	{ OP_SEND_RANDOM_MESSAGE, "Send random message (Action operator)\r\n"
-		"\tSends a random message to the player from those supplied.  Can be send by a "
+		"\tSends a random message to the player from those supplied.  Can be sent by a "
 		"ship, wing, or special source.  To send it from a special source, make the first "
 		"character of the first argument a \"#\".\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\")."
-		"\tRest:\tName of message (from message editor)." },
+		"\tRest:\tName of message (from message list)." },
 
 	{ OP_TRANSFER_CARGO, "Transfer Cargo (Action operator)\r\n"
 		"\tTransfers the cargo from one ship to another ship.\r\n\r\n"
@@ -38321,9 +38323,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_TRAINING_MSG, "Training-msg (Action training operator)\r\n"
 		"\tSends the player a training message.  Uses the same messages as normal messages, "
-		"only they get displayed differently using this operator.  If a secondary message "
-		"is specified, it is sent the last time, while the primary message is sent all other "
-		"times (event should have a repeat count greater than 1).\r\n\r\n"
+		"only they get displayed differently using this operator.\r\n\r\n"
+		"\tSecondary messages are only used when an event has a repeat count greater than 1. If "
+		"a secondary message is specified, it is sent on the last repeat iteration, while the "
+		"primary message is sent all other times.\r\n\r\n"
 		"Takes 1-4 arguments...\r\n"
 		"\t1:\tName of primary message to send.\r\n"
 		"\t2:\tName of secondary message to send (optional).\r\n"
@@ -39441,15 +39444,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a series of delayed messages. All times are accumulated. Takes arguments in multiples of 4.\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
-		"\t3:\tName of message (from message editor).\r\n"
+		"\t3:\tName of message (from message list).\r\n"
 		"\t4:\tDelay from previous message in list (if any) in ms\r\n"
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
 		"successive messages.\r\n\r\n"
-		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
-		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
-		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+		"See send-message for the message priority descriptions.\r\n"
 	},
 
 	{ OP_SEND_MESSAGE_CHAIN, "send-message-chain\r\n"
@@ -39457,15 +39458,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe event that will cancel the message chain.\r\n"
 		"\t2:\tName of who the message is from.\r\n"
 		"\t3:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
-		"\t4:\tName of message (from message editor).\r\n"
+		"\t4:\tName of message (from message list).\r\n"
 		"\t5:\tDelay from previous message in list (if any) in ms\r\n"
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
 		"successive messages.\r\n\r\n"
-		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
-		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
-		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+		"See send-message for the message priority descriptions.\r\n"
 	},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
