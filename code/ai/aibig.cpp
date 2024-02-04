@@ -1034,7 +1034,7 @@ void ai_big_chase()
 	ai_big_pick_attack_point(En_objp, Pl_objp, &enemy_pos, 0.8f);
 
 	weapon_info* wip = ai_get_weapon(&shipp->weapons);
-	bool ballistic_aiming = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
+	bool ballistic_aiming = !IS_VEC_NULL(&The_mission.gravity) && wip && wip->gravity_const != 0.0f;
 	bool valid_ballistic_trajectory = true;
 
 	if (!ballistic_aiming) {
