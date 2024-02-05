@@ -94,7 +94,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 
 int cfile_inited = 0;
 
-static std::vector<std::string> Cfile_stack;
+static SCP_vector<SCP_string> Cfile_stack;
 
 std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 
