@@ -612,7 +612,7 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 	}
 }
 
-void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
+void WE_Default::compute_warpout_stuff(float *ship_move_time, vec3d *warp_pos)
 {
 	Assertion(isValid(), "Warp effect must be valid when compute_warpout_stuff() is called!");
 
@@ -678,11 +678,8 @@ void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 		ship_move_dist = warp_dist - half_length;
 	}
 
-	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = warping_time;
-
-	// Acount for time to get to warp effect, before we actually go through it.
-	*warp_time += ship_move_dist / warping_speed;
+	// Calculate time to get to warp effect, before we actually go through it.
+	*ship_move_time = ship_move_dist / warping_speed;
 
 	if (m_portal_objnum < 0)
 	{
@@ -3481,7 +3478,7 @@ int WE_Default::warpStart()
 
 	// done with initial computation; now set up the warp effect
 
-	float effect_time = 0.0f;
+	float open_time, close_time;
 	if (m_direction == WarpDirection::WARP_IN)
 	{
 		// first determine the world center in relation to its position
@@ -3491,14 +3488,16 @@ int WE_Default::warpStart()
 		// now project the warp effect forward
 		vm_vec_scale_add( &pos, &pos, &objp->orient.vec.fvec, half_length );
 
-		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, warping_time 
-		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
-		effect_time = warping_time + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
+		// for arrivals, opening and closing times are both SHIPFX_WARP_DELAY
+		open_time = close_time = SHIPFX_WARP_DELAY;
 	}
 	else
 	{
-		compute_warpout_stuff(&effect_time, &pos);
-		effect_time += SHIPFX_WARP_DELAY;
+		// for departures, the opening time is the time it takes for the ship to actually approach the warp effect
+		// (even if Volition likely intended or assumed that the opening time is always SHIPFX_WARP_DELAY, this is a consequence of the warp effect sequence)
+		// and the closing time is SHIPFX_WARP_DELAY as normal
+		compute_warpout_stuff(&open_time, &pos);
+		close_time = SHIPFX_WARP_DELAY;
 
 		// turn off warpin physics in case we're jumping out immediately
 		objp->phys_info.flags &= ~PF_SUPERCAP_WARP_IN;
@@ -3508,6 +3507,9 @@ int WE_Default::warpStart()
 			objp->phys_info.flags |= PF_SUPERCAP_WARP_OUT;
 		}
 	}
+
+	// Effect time is the time to start, warping_time for ship to go thru, and the time to go away.
+	float effect_time = open_time + warping_time + close_time;
 
 	radius = shipfx_calculate_effect_radius(objp, m_direction);
 	// cap radius to size of knossos
@@ -3525,7 +3527,7 @@ int WE_Default::warpStart()
 		fireball_type = params->warp_type & WT_FLAG_MASK;
 
 	// create fireball
-	int warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, m_objnum, radius, (m_direction == WarpDirection::WARP_OUT), nullptr, effect_time, m_ship_info_index, nullptr, 0, 0, params->snd_start, params->snd_end);
+	int warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, m_objnum, radius, (m_direction == WarpDirection::WARP_OUT), nullptr, effect_time, m_ship_info_index, nullptr, 0, 0, params->snd_start, params->snd_end, open_time, close_time);
 
 	//WMC - bail
 	// JAS: This must always be created, if not, just warp the ship in/out
@@ -3540,7 +3542,7 @@ int WE_Default::warpStart()
 	stage_time_start = total_time_start = timestamp();
 	if (m_direction == WarpDirection::WARP_IN)
 	{
-		stage_duration[1] = fl2i(SHIPFX_WARP_DELAY*1000.0f);
+		stage_duration[1] = fl2i(open_time*1000.0f);
 		stage_duration[2] = fl2i(warping_time*1000.0f);
 		stage_time_end = timestamp(stage_duration[1]);
 		total_time_end = stage_duration[1] + stage_duration[2];
@@ -3556,12 +3558,11 @@ int WE_Default::warpStart()
 	{
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
-		// Make the warp effect stage 1 last SHIP_WARP_TIME1 seconds.
+		// calculate the time when ship is completely warped out or warped in
 		if ( objp == Player_obj )	{
-			stage_duration[1] = fl2i(fireball_lifeleft(&Objects[warp_objnum])*1000.0f);
 			total_time_end = timestamp(fl2i(effect_time*1000.0f));
 		} else {
-			total_time_end = timestamp(fl2i(effect_time*1000.0f));
+			total_time_end = timestamp(fl2i((open_time+warping_time)*1000.0f));
 		}
 
 		// This is a hack to make the ship go at the right speed to go from it's current position to the warp_effect_pos;

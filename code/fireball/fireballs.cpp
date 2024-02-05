@@ -1052,7 +1052,7 @@ float fireball_wormhole_intensity(fireball *fb)
 		rad = (float)pow((fb->total_time - t) / fb->warp_close_duration, 0.4f);
 	}
 	return rad;
-} 
+}
 
 extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
 

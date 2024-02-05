@@ -235,7 +235,7 @@ private:
 	float warping_time;			// time to go through the effect
 	float warping_speed;		// speed to go through the effect
 
-	void compute_warpout_stuff(float *warp_time, vec3d *warp_pos);
+	void compute_warpout_stuff(float *ship_move_time, vec3d *warp_pos);
 
 	//Total data
 	int total_time_start;
