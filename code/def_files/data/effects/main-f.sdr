@@ -146,7 +146,7 @@ uniform sampler2DArray shadow_map;
 
 out vec4 fragOut0;
 
-#ifndef FLAG_SHADOW_MAP
+#ifndef MODEL_SDR_FLAG_SHADOW_MAP
 out vec4 fragOut1;
 out vec4 fragOut2;
 out vec4 fragOut3;
@@ -491,4 +491,6 @@ void main()
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
+
+	#endif
 }
