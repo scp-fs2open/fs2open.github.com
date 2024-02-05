@@ -118,10 +118,13 @@ uniform sampler2DArray sMiscmap;
 uniform sampler2DArray shadow_map;
 
 out vec4 fragOut0;
+
+#ifndef FLAG_SHADOW_MAP
 out vec4 fragOut1;
 out vec4 fragOut2;
 out vec4 fragOut3;
 out vec4 fragOut4;
+#endif
 
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
 {
@@ -185,10 +188,9 @@ void main()
 	#ifdef FLAG_SHADOW_MAP
 		// need depth and depth squared for variance shadow maps
 		fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-		if (true) {
-			return;
-		}
-	#endif
+
+		return;
+	#else
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec2 texCoord = vertIn.texCoord.xy;
 
@@ -461,4 +463,5 @@ void main()
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
 	}
+	#endif
 }
