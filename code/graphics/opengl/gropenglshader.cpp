@@ -402,7 +402,7 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 			// Conditional include syntax: #conditional_include (+|-)"capability" "filename"
 			// On +, include if capability is available, on -, include if not available
 			include_start += strlen(CONDITIONAL_INCLUDE_STRING) + 1;
-			bool require_capability;
+			bool require_capability = true;
 
 			switch(line.at(include_start)) {
 			case '+':
