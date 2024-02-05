@@ -140,13 +140,22 @@ int fireball_ship_explosion_type(ship_info *sip);
 // returns the index of the fireball bitmap for this asteroid. -1 if there is none.
 int fireball_asteroid_explosion_type(asteroid_info *aip);
 
-// Gamma39er interpolation function
+// Gamma39er interpolation functions
 float parabolic_elbow(float t);
+float cutscene_wormhole(float t);
 
 // returns the intensity of a wormhole
 float fireball_wormhole_intensity( fireball *fb );
 
+// Gamma39er function
+float fireball_wormhole_flare_radius(fireball* fb);
 
+// Gamma39er Time Varying Function
+/*
+float h : This is the speed of time at start 
+float duration : duration of time varying
+*/
+float vary_time_elapsed(float t, float init_slope, float duration);
 
 // Goober5000
 extern bool Knossos_warp_ani_used;

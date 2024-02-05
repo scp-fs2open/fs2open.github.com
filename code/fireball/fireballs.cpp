@@ -525,6 +525,14 @@ void fireball_delete_all()
 	}
 }
 
+float vary_time_elapsed(float t, float init_slope, float duration) {
+	if (t < duration) {
+		return init_slope * t - (init_slope - 1.0f) / (2.0f * duration) * powf(t, 2.0f);
+	}
+
+	return t - duration / 2.0f + init_slope * duration / 2.0f;
+}
+
 void fireball_set_framenum(int num)
 {
 	int				framenum;
@@ -548,7 +556,8 @@ void fireball_set_framenum(int num)
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, 0.0f, true);
+		float new_time = vary_time_elapsed(fb->time_elapsed, 1.4f, fb->warp_open_duration*1.25f);
+		framenum = bm_get_anim_frame(fl->bitmap_id, new_time, 0.0f, true);
 
 		if ( fb->orient )	{
 			// warp out effect plays backwards
@@ -1051,15 +1060,29 @@ float parabolic_elbow(float t) {
 	return 0.0f;
 }
 
+float cutscene_wormhole(float t) {
+	float a = 25.0f * powf(t, 4.0f);
+	return a / (a + 1.0f);
+}
+
 float fireball_wormhole_intensity(fireball *fb)
 {
 	float t = fb->time_elapsed;
 
-	float rad = parabolic_elbow(t / fb->warp_open_duration);
+	/* float rad = parabolic_elbow(t / fb->warp_open_duration);
 		
 	rad *= parabolic_elbow((fb->total_time - t) / fb->warp_close_duration);
 	rad /= parabolic_elbow(fb->total_time / (2.0f * fb->warp_open_duration));
 	rad /= parabolic_elbow(fb->total_time / (2.0f * fb->warp_close_duration));
+
+	return rad;*/
+
+	float rad = cutscene_wormhole(t / fb->warp_open_duration);
+
+	rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
+	rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
+	rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
+
 
 	return rad;
 
@@ -1097,9 +1120,22 @@ float fireball_wormhole_intensity(fireball *fb)
 		rad = (float)pow(warptime, 0.4f);
 	}
 	return rad;*/
-} 
+}
 
-extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
+float fireball_wormhole_flare_radius(fireball* fb) {
+	float t = fb->time_elapsed;
+	float d1 = fb->warp_open_duration;
+	float d2 = fb->warp_close_duration;
+
+	// float speed = 6.0f;
+
+	float rad = 2 * (1.0f - exp(-4.0f * powf(1.7f * t/d1, 3.0f))) - (1.0f - exp(-2.0f * powf(1.7f * t/d1, 3.0f)));
+	rad *= (1.0f - exp(-2.0f * (fb->total_time - t) / d2));
+
+	return rad;
+}
+
+extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
 
 void fireball_render(object* obj, model_draw_list *scene)
 {
@@ -1144,8 +1180,10 @@ void fireball_render(object* obj, model_draw_list *scene)
 			float percent_life = fb->time_elapsed / fb->total_time;
 			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
+			float flare_rad = obj->radius * fireball_wormhole_flare_radius(fb);
+
 			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, flare_rad, obj->radius, fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
 		}
 		break;
 

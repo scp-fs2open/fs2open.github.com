@@ -54,7 +54,7 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 	batching_add_tri(texture, vertlist); // TODO render as emissive
 }
 
-void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id)
+void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id)
 {
 	vec3d center;
 	vec3d vecs[5];
@@ -71,15 +71,26 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 
 	if (warp_glow_bitmap >= 0) {
 
-		float r = radius*warp_model_radius/7.5f;
+		//float r = (1.0f - exp(-time_elapsed * 10.0f)) * (0.75f);
+
+		float r = flare_rad;
+
+		//r += (powf(time_elapsed, ))
+
+		//r *= (1.0f - exp(-(1.0f - time_elapsed) * 100.0f));
+			
+		// r *= max_radius*warp_model_radius/7.5f;
+		r *= warp_model_radius / 7.5f;
 		// Add in noise 
 		int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
 		r *= (0.40f + Noise[noise_frame] * 0.10f);
 
-		float flashSpeed = 80.0f;
+		// float flashSpeed = 80.0f;
 
-		r += (flashSpeed * life_percent) * exp(-(flashSpeed * life_percent) + 1) * max_radius * 2.0f;
+		// r += (flashSpeed * life_percent) * exp(-(flashSpeed * life_percent) + 1) * max_radius * 2.0f;
+
+
 
 		// Bobboau's warp thingie, toggled by cmdline
 		if (Fireball_warp_flash) {
