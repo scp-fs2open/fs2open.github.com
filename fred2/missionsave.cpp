@@ -977,9 +977,7 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save our flags
-		if (Mission_save_format == FSO_FORMAT_RETAIL) {
-			MessageBox(nullptr, "Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
-		} else if (background->flags.any_set()) {
+		if (Mission_save_format != FSO_FORMAT_RETAIL && background->flags.any_set()) {
 			if (optional_string_fred("+Flags:")) {
 				parse_comments();
 			} else {
@@ -2608,6 +2606,18 @@ int CFred_mission_save::save_mission_file(const char *pathname)
 		strcat_s(savepath, "\\");
 	}
 	strcat_s(savepath, "saving.xxx");
+
+	// only display this warning once, and only when the user explicitly saves, as opposed to autosave
+	static bool Displayed_retail_background_warning = false;
+	if (Mission_save_format != FSO_FORMAT_STANDARD && !Displayed_retail_background_warning) {
+		for (const auto &bg : Backgrounds) {
+			if (bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
+				MessageBox(nullptr, "Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
+				Displayed_retail_background_warning = true;
+				break;
+			}
+		}
+	}
 
 	save_mission_internal(savepath);
 

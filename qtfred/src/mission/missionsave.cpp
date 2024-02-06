@@ -992,12 +992,7 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save our flags
-		if (save_format == MissionFormat::RETAIL) {
-			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
-				"Incompatibility with retail mission format",
-				"Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.",
-				{ DialogButton::Ok });
-		} else if (background->flags.any_set()) {
+		if (save_format != MissionFormat::RETAIL && background->flags.any_set()) {
 			if (optional_string_fred("+Flags:")) {
 				parse_comments();
 			} else {
@@ -2507,6 +2502,21 @@ int CFred_mission_save::save_mission_file(const char* pathname_in)
 		strcat_s(savepath, DIR_SEPARATOR_STR);
 	}
 	strcat_s(savepath, "saving.xxx");
+
+	// only display this warning once, and only when the user explicitly saves, as opposed to autosave
+	static bool Displayed_retail_background_warning = false;
+	if (save_format != MissionFormat::STANDARD && !Displayed_retail_background_warning) {
+		for (const auto &bg : Backgrounds) {
+			if (bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
+				_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+					"Incompatibility with retail mission format",
+					"Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.",
+					{ DialogButton::Ok });
+				Displayed_retail_background_warning = true;
+				break;
+			}
+		}
+	}
 
 	save_mission_internal(savepath);
 
