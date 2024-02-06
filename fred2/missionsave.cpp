@@ -911,7 +911,7 @@ int CFred_mission_save::save_bitmaps()
 			} else {
 				fout("\n+Neb2Flags:");
 			}
-			int flags = get_int(Neb2_poof_flags.get(), Poof_info.size());
+			int flags = bit_array_as_int(Neb2_poof_flags.get(), Poof_info.size());
 			fout(" %d", flags);
 		} else {
 			if (optional_string_fred("+Neb2 Poofs List:")) {

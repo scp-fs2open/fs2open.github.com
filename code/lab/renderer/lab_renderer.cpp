@@ -369,7 +369,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				if (optional_string("+Neb2Flags:")) {
 					int temp;
 					stuff_int(&temp);
-					set_int(Neb2_poof_flags.get(), Poof_info.size(), temp);
+					bit_array_set_from_int(Neb2_poof_flags.get(), Poof_info.size(), temp);
 				}
 				// Get poofs by name
 				if (optional_string("+Neb2 Poofs List:")) {
