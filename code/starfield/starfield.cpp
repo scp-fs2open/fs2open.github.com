@@ -3011,14 +3011,20 @@ bool stars_background_empty(const background_t &bg)
 // Goober5000
 void stars_pack_backgrounds()
 {
-	// remove all empty backgrounds
-	Backgrounds.erase(
-		std::remove_if(Backgrounds.begin(), Backgrounds.end(), stars_background_empty),
-		Backgrounds.end());
+	size_t remove_count = 0;
 
+	// remove all empty backgrounds, with a caveat:
 	// in FRED, make sure we always have at least one background
-	if (Fred_running && Backgrounds.empty())
-		stars_add_blank_background(true);
+	// (note: older code removed all blank backgrounds and re-added one if necessary; but that method caused flag changes to be lost)
+	Backgrounds.erase(
+		std::remove_if(Backgrounds.begin(), Backgrounds.end(), [&](const background_t& bg) {
+			if (stars_background_empty(bg)) {
+				if (Fred_running && ++remove_count == Backgrounds.size())
+					return false;	// cancel the last removal if FRED is running and if the last removal would result in all backgrounds being removed (i.e. all were blank)
+				return true;
+			}
+			return false;
+		}), Backgrounds.end());
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, fov_t new_zoom)
