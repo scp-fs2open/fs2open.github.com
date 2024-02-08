@@ -209,46 +209,46 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 
 void LoadoutDialog::onShipListEdited()
 {
+	SCP_vector<bool> newSelectedStatus;
 	SCP_vector<bool> newEnabledStatus;
-	bool newStatus, useNewStatus = false;
+	bool newStatus, checksChanged = false, selectionChanged = false;
 
-	// we need the index anyway, and more efficient to iterate through just the first column.
+
+	// we need the index, so iterate through just the first column.
 	for (int i = 0; i < ui->shipVarList->rowCount(); i++) {
 		bool checkState = (ui->shipVarList->item(i,0)->checkState() == Qt::Checked);
 		newEnabledStatus.push_back(checkState);
-	
-		// compare the old to the new to see if there was a change in check marks.
-		// this would break if the amount of ships or weapons ever became dynamic
-		if (!useNewStatus && !_lastEnabledShips.empty() && (_lastEnabledShips[i] != newEnabledStatus[i])) {
-			newStatus = newEnabledStatus[i];
-			useNewStatus = true;
+		
+		// compare the old to the new to see if there was a change in check marks. This method would break if the amount of
+		// ships or weapons ever became dynamic (dynamic with respect to this dialog) and we would then have to rely on names.
+		if (!_lastEnabledShips.empty() && (_lastEnabledShips[i] != newEnabledStatus[i])) {
+			checksChanged = true;
+			newStatus = checkState;
 		}
-		else if (_lastEnabledShips.empty()) {
-			newStatus = newEnabledStatus[i];
-			useNewStatus = true;
+
+		bool selectState = (ui->shipVarList->item(i,0)->isSelected())
+		newSelectedStatus.push_back(selectState);
+
+		if (!_lastSelectedShips.empty() && (_lastSelectedShips[i] != selectState)){
+			selectionChanged = true;
 		}
+
 	}
 
-	if (useNewStatus) {
+	// If we accidentally clicked on a box while the selection changed, ignore the check change.
+	if (checksChanged && !selectionChanged) {
 		// go through the selected cells and check/uncheck the ones in the first column.
-		for (auto& item : ui->shipVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState((newStatus) ? Qt::Checked : Qt::Unchecked);
-			}
+		for (size_t i = 0; i < newEnabledStatus.size(); ++i) {
+			ui->shipVarList->item(newEnabledStatus[i],0)->setCheckState((newStatus) ? Qt::Checked : Qt::Unchecked);
 		}
 
-		// redo the _lastEnabledShips vector to reflect the change.
-		_lastEnabledShips.clear();
-		for (int i = 0; i < ui->shipVarList->rowCount(); i++) {
-			_lastEnabledShips.push_back(ui->shipVarList->item(i, 0)->checkState() == Qt::Checked);
+	// undo check changes if the selection changed.
+	} else if (checksChanged && selectionChanged) {
+		for ((size_t i = 0; i < oldSelectedCheckStatus.size(); ++i)) {
+			ui->shipVarList->item(i,0)->setCheckState((_lastEnabledShips[i]));
 		}
-	} // if we ended up here, basically something was probably selected or unselected, but there's a chance that it is an incompatible selection.
-	// because if just one is enabled or disabled, then there is no way to automatically reconcile the info.
-	// IOW, I can't automatically check it for you, FREDer
-	else { 
-		_lastEnabledShips = newEnabledStatus;
 
-		bool newSelectedCheckStatus = (ui->shipVarList->currentItem()->checkState() == Qt::Checked);
+	} else { 
 
 		for (auto& item : ui->shipVarList->selectedItems()) {
 			if (item->column() == 0) {
@@ -264,13 +264,18 @@ void LoadoutDialog::onShipListEdited()
 		}
 	}
 
+	// always save the new status.
+	_lastEnabledShips = std::move(newEnabledStatus);
+	_lastSelectedShips = std::move(newSelectedStatus)
+
+
 	sendEditedShips(); 
 }
 
 void LoadoutDialog::onWeaponListEdited()
 {
 	SCP_vector<bool> newEnabledStatus;
-	bool newStatus, useNewStatus = false;
+	bool newStatus, checksChanged = false;
 
 	// we need the index anyway, and more efficient to iterate through just the first column.
 	for (int i = 0; i < ui->weaponVarList->rowCount(); i++) {
@@ -279,17 +284,17 @@ void LoadoutDialog::onWeaponListEdited()
 
 		// compare the old to the new to see if there was a change in check marks.
 		// this would break if the amount of ships or weapons ever became dynamic
-		if (!useNewStatus && !_lastEnabledWeapons.empty() && (_lastEnabledWeapons[i] != newEnabledStatus[i])) {
+		if (!checksChanged && !_lastEnabledWeapons.empty() && (_lastEnabledWeapons[i] != newEnabledStatus[i])) {
 			newStatus = newEnabledStatus[i];
-			useNewStatus = true;
+			checksChanged = true;
 		}
 		else if (_lastEnabledWeapons.empty()) {
 			newStatus = newEnabledStatus[i];
-			useNewStatus = true;
+			checksChanged = true;
 		}
 	}
 
-	if (useNewStatus) {
+	if (checksChanged) {
 		// go through the selected cells and check/uncheck the ones in the first column.
 		for (auto& item : ui->weaponVarList->selectedItems()) {
 			if (item->column() == 0) {
@@ -521,6 +526,10 @@ void LoadoutDialog::updateUI()
 
 	int currentRow = 0;
 
+	for (auto& ship) {
+
+	}
+
 	// build the ship list...
 	for (auto& newShip : newShipList) {
 		// need to split the incoming string into the different parts.
@@ -529,7 +538,8 @@ void LoadoutDialog::updateUI()
 		// Overwrite the old number text.
 		ui->shipVarList->item(currentRow, 2)->setText(newShip.first.substr(divider + 1).c_str());
 
-		// enable the check box, if necessary
+		// enable the check box, if necessary - UPDATE!  I am not sure this is actually a good idea.
+		// This implies that the model is always right, even when something has just been checked.
 		(newShip.second) ? ui->shipVarList->item(currentRow, 0)->setCheckState(Qt::Checked) : ui->shipVarList->item(currentRow, 0)->setCheckState(Qt::Unchecked);
 
 		currentRow++;
@@ -544,7 +554,9 @@ void LoadoutDialog::updateUI()
 		// Overwrite the old number text.
 		ui->weaponVarList->item(currentRow, 2)->setText(newWeapon.first.substr(divider + 1).c_str());
 
-		// enable the check box, if necessary
+
+		// enable the check box, if necessary - UPDATE!  I am not sure this is actually a good idea.
+		// This implies that the model is always right, even when something has just been checked.
 		(newWeapon.second) ? ui->weaponVarList->item(currentRow, 0)->setCheckState(Qt::Checked) : ui->weaponVarList->item(currentRow, 0)->setCheckState(Qt::Unchecked);
 
 		currentRow++;
