@@ -736,7 +736,7 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 }
 
 // -------------------------------------------------------------------------------------------------
-//	create_player() is called when a net player needs to be instantiated.  The ship that is created
+//	multi_create_player() is called when a net player needs to be instantiated.  The ship that is created
 // depends on the parameter ship_class.  Note that if ship_class is invalid, the ship default_player_ship
 // is used.  Returns 1 on success, 0 otherwise
 
