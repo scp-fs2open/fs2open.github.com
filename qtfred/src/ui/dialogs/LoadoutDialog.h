@@ -48,7 +48,9 @@ private:
 	int _mode;
 
 	SCP_vector<bool> _lastEnabledShips;
+	SCP_vector<bool> _lastSelectedShips;
 	SCP_vector<bool> _lastEnabledWeapons;
+	SCP_vector<bool> _lastSelectedWeapons;
 };
 
 }
