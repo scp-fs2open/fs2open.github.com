@@ -992,7 +992,7 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save our flags
-		if (save_format != MissionFormat::RETAIL && background->flags.any_set()) {
+		if (save_format == MissionFormat::STANDARD && background->flags.any_set()) {
 			if (optional_string_fred("+Flags:")) {
 				parse_comments();
 			} else {
@@ -1018,7 +1018,7 @@ int CFred_mission_save::save_bitmaps()
 			required_string_fred("+Angles:");
 			parse_comments();
 			angles ang = sle->ang;
-			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			if (save_format != MissionFormat::STANDARD || !background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
 				stars_uncorrect_background_sun_angles(&ang);
 			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
@@ -1041,7 +1041,7 @@ int CFred_mission_save::save_bitmaps()
 			required_string_fred("+Angles:");
 			parse_comments();
 			angles ang = sle->ang;
-			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			if (save_format != MissionFormat::STANDARD || !background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
 				stars_uncorrect_background_bitmap_angles(&ang);
 			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
