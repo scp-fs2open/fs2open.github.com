@@ -213,7 +213,6 @@ void LoadoutDialog::onShipListEdited()
 	SCP_vector<bool> newEnabledStatus;
 	bool newStatus, checksChanged = false, selectionChanged = false;
 
-
 	// we need the index, so iterate through just the first column.
 	for (int i = 0; i < ui->shipVarList->rowCount(); i++) {
 		bool checkState = (ui->shipVarList->item(i,0)->checkState() == Qt::Checked);
@@ -235,39 +234,23 @@ void LoadoutDialog::onShipListEdited()
 
 	}
 
-	// If we accidentally clicked on a box while the selection changed, ignore the check change.
+	// If we are changing the status of multiple items, apply to all.
 	if (checksChanged && !selectionChanged) {
 		// go through the selected cells and check/uncheck the ones in the first column.
 		for (size_t i = 0; i < newEnabledStatus.size(); ++i) {
-			ui->shipVarList->item(newEnabledStatus[i],0)->setCheckState((newStatus) ? Qt::Checked : Qt::Unchecked);
+			ui->shipVarList->item(i,0)->setCheckState(newEnabledStatus[i]);
 		}
 
-	// undo check changes if the selection changed.
+	// undo check changes if the selection changed to cut down on accidental clicks.
 	} else if (checksChanged && selectionChanged) {
 		for ((size_t i = 0; i < oldSelectedCheckStatus.size(); ++i)) {
 			ui->shipVarList->item(i,0)->setCheckState((_lastEnabledShips[i]));
-		}
-
-	} else { 
-
-		for (auto& item : ui->shipVarList->selectedItems()) {
-			if (item->column() == 0) {
-				bool oldSelectedCheckStatus = (item->checkState() == Qt::Checked);
-
-				// so the newly selected item does not match the rest, and is incompatible. So clear our old selection.
-				if (newSelectedCheckStatus != oldSelectedCheckStatus) {
-					ui->shipVarList->clearSelection();
-					ui->shipVarList->selectRow(ui->shipVarList->currentItem()->row());
-					break;
-				}
-			}
 		}
 	}
 
 	// always save the new status.
 	_lastEnabledShips = std::move(newEnabledStatus);
 	_lastSelectedShips = std::move(newSelectedStatus)
-
 
 	sendEditedShips(); 
 }
