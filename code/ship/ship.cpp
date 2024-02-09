@@ -2941,7 +2941,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (sip->cockpit_pof_file[0] != '\0')
+			if (VALID_FNAME(sip->cockpit_pof_file))
 				if (!model_exists(temp))
 					valid = false;
 
@@ -3021,7 +3021,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (sip->pof_file[0] != '\0')
+			if (VALID_FNAME(sip->pof_file))
 				if (!model_exists(temp))
 					valid = false;
 
@@ -3041,7 +3041,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		// if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (sip->pof_file_tech[0] != '\0')
+			if (VALID_FNAME(sip->pof_file_tech))
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -3102,7 +3102,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (sip->pof_file_hud[0] != '\0')
+			if (VALID_FNAME(sip->pof_file_hud))
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -3380,7 +3380,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			bool valid = true;
 
 			if (replace)
-				if (sip->generic_debris_pof_file[0] != '\0')
+				if (VALID_FNAME(sip->generic_debris_pof_file))
 					if (!cf_exists_full(temp, CF_TYPE_MODELS))
 						valid = false;
 
@@ -4346,7 +4346,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		stuff_vec3d(&sip->closeup_pos);
 	}
-	else if (first_time && strlen(sip->pof_file))
+	else if (first_time && VALID_FNAME(sip->pof_file))
 	{
 		//Calculate from the model file. This is inefficient, but whatever
 		int model_idx = model_load(sip->pof_file, 0, NULL);
@@ -10797,15 +10797,20 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	shipp->clear();
 	shipp->orders_allowed_against = ship_set_default_orders_against();
 
+	if (!VALID_FNAME(sip->pof_file))
+	{
+		Error(LOCATION, "Cannot create ship %s; pof file is not valid", sip->name);
+		return -1;
+	}
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 
-	if(strlen(sip->cockpit_pof_file))
+	if(VALID_FNAME(sip->cockpit_pof_file))
 	{
 		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
 	}
 
 	// maybe load an optional hud target model
-	if(strlen(sip->pof_file_hud)){
+	if(VALID_FNAME(sip->pof_file_hud)){
 		// check to see if a "real" ship uses this model. if so, load it up for him so that subsystems are setup properly
 		for(auto it = Ship_info.begin(); it != Ship_info.end(); ++it){
 			if(!stricmp(it->pof_file, sip->pof_file_hud)){
@@ -10817,7 +10822,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		sip->model_num_hud = model_load(sip->pof_file_hud, 0, NULL);
 	}
 
-	if (strlen(sip->generic_debris_pof_file)) {
+	if (VALID_FNAME(sip->generic_debris_pof_file)) {
 		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file, 0, nullptr);
 		if (sip->generic_debris_model_num >= 0) {
 			polymodel* pm = model_get(sip->generic_debris_model_num);
@@ -11048,7 +11053,7 @@ static void ship_model_change(int n, int ship_type)
 	}
 
 	if ( sip->cockpit_model_num == -1 ) {
-		if ( strlen(sip->cockpit_pof_file) ) {
+		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
 			sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
 		}
 	}
