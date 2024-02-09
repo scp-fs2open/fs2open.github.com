@@ -127,7 +127,7 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
 	depthLocal++;
 
-	read_model_file(pm, filename.c_str(), ferror, deferredTasks, depth);
+	read_model_file(pm, virtual_pof.basePOF.c_str(), ferror, deferredTasks, depth);
 
 	for (const auto& operation : virtual_pof.operationList)
 		operation->process(pm, deferredTasks, depth, virtual_pof);
