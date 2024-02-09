@@ -392,15 +392,17 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		SCP_vector<int> to_copy_submodels;
 		bool has_name_collision = false;
 		if (copyChildren) {
-			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
+			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, &renameMap, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
 				to_copy_submodels.emplace_back(submodel);
-				if(model_find_submodel_index(pm, appendingPM->submodel[submodel].name) != -1)
+				auto replace_with_name_it = renameMap.find(appendingPM->submodel[submodel].name);
+				if(model_find_submodel_index(pm, replace_with_name_it == renameMap.end() ? appendingPM->submodel[submodel].name : replace_with_name_it->second.c_str()) != -1)
 					has_name_collision = true;
 				});
 		}
 		else {
 			to_copy_submodels.emplace_back(src_subobj_no);
-			if (model_find_submodel_index(pm, appendingPM->submodel[src_subobj_no].name) != -1)
+			auto replace_with_name_it = renameMap.find(appendingPM->submodel[src_subobj_no].name);
+			if(model_find_submodel_index(pm, replace_with_name_it == renameMap.end() ? appendingPM->submodel[src_subobj_no].name : replace_with_name_it->second.c_str()) != -1)
 				has_name_collision = true;
 		}
 
