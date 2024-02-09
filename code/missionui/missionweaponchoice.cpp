@@ -1332,7 +1332,7 @@ void wl_load_icons(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
-	if (!Use_3d_weapon_icons || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
+	if (!Use_3d_weapon_icons || (wip->render_type == WRT_LASER && !VALID_FNAME(wip->tech_model)))
 	{
 		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames, nullptr, nullptr, nullptr, false, CF_TYPE_INTERFACE);
 
@@ -1343,9 +1343,9 @@ void wl_load_icons(int weapon_class)
 
 	multi_send_anti_timeout_ping();
 
-	if ( icon->model_index == -1 && ( ( strlen(wip->tech_model) && !strlen(wip->anim_filename) ) || (first_frame == -1) ) )
+	if ( icon->model_index == -1 && ( ( VALID_FNAME(wip->tech_model) && !VALID_FNAME(wip->anim_filename) ) || (first_frame == -1) ) )
 	{
-		if(strlen(wip->tech_model))
+		if(VALID_FNAME(wip->tech_model))
 		{
 			icon->model_index = model_load(wip->tech_model, 0, NULL, 0);
 		}
@@ -2742,7 +2742,7 @@ void weapon_select_do(float frametime)
 		weapon_info *wip = &Weapon_info[Selected_wl_class];
 
 		//Get the model
-		if (strlen(wip->tech_model)) {
+		if (VALID_FNAME(wip->tech_model)) {
 			modelIdx = model_load(wip->tech_model, 0, NULL, 0);
 		}
 		if (wip->render_type != WRT_LASER && modelIdx == -1) {

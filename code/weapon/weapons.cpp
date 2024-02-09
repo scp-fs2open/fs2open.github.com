@@ -1914,10 +1914,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	// this was added in commit 9fea22d551 and is specifically for allowing countermeasures to be parsed using the weapons code;
+	// but it should be handled the same as $Model file:
 	if(optional_string("$Model:"))
 	{
-		wip->render_type = WRT_POF;
 		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
+
+		if (VALID_FNAME(wip->pofbitmap_name))
+			wip->render_type = WRT_POF;
+		else
+			wip->render_type = WRT_NONE;
+
+		diag_printf("Model pof file -- %s\n", wip->pofbitmap_name );
 	}
 
 	// handle rearm rate - modified by Goober5000
@@ -6342,10 +6350,15 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	// make sure we are loaded and useable
 	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
+		if (!VALID_FNAME(wip->pofbitmap_name)) {
+			Error(LOCATION, "Cannot create weapon %s; pof file is not valid", wip->name);
+			return -1;
+		}
+
 		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
 
 		if (wip->model_num < 0) {
-			Int3();
+			Error(LOCATION, "Cannot create weapon %s; model file %s could not be loaded", wip->name, wip->pofbitmap_name);
 			return -1;
 		}
 	}
@@ -7784,7 +7797,7 @@ void weapons_page_in()
 
 		wip->external_model_num = -1;
 
-		if ( strlen(wip->external_model_name) )
+		if (VALID_FNAME(wip->external_model_name))
 			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
 
 		if (wip->external_model_num == -1)
@@ -7877,7 +7890,7 @@ void weapons_page_in_cheats()
 		
 		wip->external_model_num = -1;
 		
-		if ( strlen(wip->external_model_name) )
+		if (VALID_FNAME(wip->external_model_name))
 			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
 
 		if (wip->external_model_num == -1)
@@ -7975,7 +7988,7 @@ bool weapon_page_in(int weapon_type)
 
 		wip->external_model_num = -1;
 
-		if (strlen(wip->external_model_name))
+		if (VALID_FNAME(wip->external_model_name))
 			wip->external_model_num = model_load(wip->external_model_name, 0, NULL);
 
 		if (wip->external_model_num == -1)

@@ -3259,7 +3259,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 //returns the number of the pof tech model if specified, otherwise number of pof model
 int model_load(ship_info* sip, bool prefer_tech_model)
 {
-	if (prefer_tech_model && sip->pof_file_tech[0] != '\0') {
+	if (prefer_tech_model && VALID_FNAME(sip->pof_file_tech)) {
 		// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
 		// techroom model, which is decidedly wrong for the mission itself.
 		return model_load(sip->pof_file_tech, 0, nullptr);
@@ -3295,6 +3295,11 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	// No empty slot
 	if ( num == -1 )	{
 		Error( LOCATION, "Too many models" );
+		return -1;
+	}
+
+	// Valid file
+	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
 
