@@ -238,13 +238,13 @@ void LoadoutDialog::onShipListEdited()
 	if (checksChanged && !selectionChanged) {
 		// go through the selected cells and check/uncheck the ones in the first column.
 		for (size_t i = 0; i < newEnabledStatus.size(); ++i) {
-			ui->shipVarList->item(i,0)->setCheckState((newEnabledStatus[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+			ui->shipVarList->item(static_cast<int>(i),0)->setCheckState((newEnabledStatus[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 		}
 
 	// undo check changes if the selection changed to cut down on accidental clicks.
 	} else if (checksChanged && selectionChanged) {
 		for (size_t i = 0; i < _lastEnabledShips.size(); ++i) {
-			ui->shipVarList->item(i,0)->setCheckState((_lastEnabledShips[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+			ui->shipVarList->item(static_cast<int>(i),0)->setCheckState((_lastEnabledShips[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 		}
 	}
 
@@ -509,9 +509,6 @@ void LoadoutDialog::updateUI()
 
 	int currentRow = 0;
 
-	for (auto& ship) {
-
-	}
 
 	// build the ship list...
 	for (auto& newShip : newShipList) {
@@ -666,6 +663,7 @@ void LoadoutDialog::resetLists() {
 		QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 2).c_str());
 
 		checkItem->setFlags(checkItem->flags() & ~Qt::ItemIsEditable);
+		nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
 		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
 
 		// enable the check box, if necessary
