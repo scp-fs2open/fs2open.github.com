@@ -225,7 +225,7 @@ void LoadoutDialog::onShipListEdited()
 			newStatus = checkState;
 		}
 
-		bool selectState = (ui->shipVarList->item(i,0)->isSelected())
+		bool selectState = (ui->shipVarList->item(i, 0)->isSelected());
 		newSelectedStatus.push_back(selectState);
 
 		if (!_lastSelectedShips.empty() && (_lastSelectedShips[i] != selectState)){
@@ -238,19 +238,19 @@ void LoadoutDialog::onShipListEdited()
 	if (checksChanged && !selectionChanged) {
 		// go through the selected cells and check/uncheck the ones in the first column.
 		for (size_t i = 0; i < newEnabledStatus.size(); ++i) {
-			ui->shipVarList->item(i,0)->setCheckState(newEnabledStatus[i]);
+			ui->shipVarList->item(i,0)->setCheckState((newEnabledStatus[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 		}
 
 	// undo check changes if the selection changed to cut down on accidental clicks.
 	} else if (checksChanged && selectionChanged) {
-		for ((size_t i = 0; i < oldSelectedCheckStatus.size(); ++i)) {
-			ui->shipVarList->item(i,0)->setCheckState((_lastEnabledShips[i]));
+		for (size_t i = 0; i < _lastEnabledShips.size(); ++i) {
+			ui->shipVarList->item(i,0)->setCheckState((_lastEnabledShips[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 		}
 	}
 
 	// always save the new status.
 	_lastEnabledShips = std::move(newEnabledStatus);
-	_lastSelectedShips = std::move(newSelectedStatus)
+	_lastSelectedShips = std::move(newSelectedStatus);
 
 	sendEditedShips(); 
 }
@@ -665,7 +665,7 @@ void LoadoutDialog::resetLists() {
 		QTableWidgetItem* nameItem = new QTableWidgetItem(newShip.first.substr(0, divider).c_str());
 		QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 2).c_str());
 
-		nameItem->setFlags(nameItem->flags() &  ~Qt::ItemIsEditable);
+		checkItem->setFlags(checkItem->flags() & ~Qt::ItemIsEditable);
 		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
 
 		// enable the check box, if necessary
