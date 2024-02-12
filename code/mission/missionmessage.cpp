@@ -110,7 +110,7 @@ int Num_messages_playing;						// number of is a message currently playing?
 pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
-int Message_expire;							// timestamp to extend the duration of message brackets when not using voice files
+static TIMESTAMP Message_expire;			// timestamp to extend the duration of message brackets when not using voice files
 
 // variables to control message queuing.  All new messages to the player are queued.  The array
 // will be ordered by priority, then time submitted.
@@ -1708,7 +1708,7 @@ void message_queue_process()
 	// translate tokens in message to the real things
 	buf = message_translate_tokens(q->special_message ? q->special_message.get() : m->message);
 
-	Message_expire = timestamp(static_cast<int>(42 * buf.size()));
+	Message_expire = _timestamp(static_cast<int>(42 * buf.size()));
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {

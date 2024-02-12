@@ -63,12 +63,12 @@ UI_TIMESTAMP	Obj_snd_last_update;							// timer used to run object sound update
 int		Obj_snd_level_inited=0;
 
 // ship flyby data
-#define	FLYBY_MIN_DISTANCE				90
-#define	FLYBY_MIN_RELATIVE_SPEED		100
-#define	FLYBY_MIN_NEXT_TIME				1000	// in ms
-#define	FLYBY_MIN_REPEAT_TIME			4000	// in ms
-int		Flyby_next_sound;
-int		Flyby_next_repeat;
+constexpr int FLYBY_MIN_DISTANCE       = 90;
+constexpr int FLYBY_MIN_RELATIVE_SPEED = 100;
+constexpr int FLYBY_MIN_NEXT_TIME      = 1 * MILLISECONDS_PER_SECOND;	// in ms
+constexpr int FLYBY_MIN_REPEAT_TIME    = 4 * MILLISECONDS_PER_SECOND;	// in ms
+static TIMESTAMP Flyby_next_sound;
+static TIMESTAMP Flyby_next_repeat;
 object	*Flyby_last_objp;
 
 // return the world pos of the sound source on a ship.  
@@ -209,8 +209,8 @@ void obj_snd_level_init()
 	}
 
 	Num_obj_sounds_playing = 0;
-	Flyby_next_sound = 1;
-	Flyby_next_repeat = 1;
+	Flyby_next_sound = TIMESTAMP::immediate();
+	Flyby_next_repeat = TIMESTAMP::immediate();
 	Flyby_last_objp = NULL;
 	Obj_snd_last_update = ui_timestamp();
 
@@ -388,7 +388,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 
 				if ( closest_objp == Flyby_last_objp ) {
 					if ( timestamp_elapsed(Flyby_next_repeat) ) {
-						Flyby_next_repeat = timestamp(FLYBY_MIN_REPEAT_TIME);
+						Flyby_next_repeat = _timestamp(FLYBY_MIN_REPEAT_TIME);
 					}
 					else 
 						return;
@@ -428,7 +428,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 
 				joy_ff_fly_by(100 - (int) (100.0f * closest_dist / FLYBY_MIN_DISTANCE));
 
-				Flyby_next_sound = timestamp(FLYBY_MIN_NEXT_TIME);
+				Flyby_next_sound = _timestamp(FLYBY_MIN_NEXT_TIME);
 				Flyby_last_objp = closest_objp;
 			}
 		}
