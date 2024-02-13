@@ -17,9 +17,10 @@
 class object;
 
 // Goober5000 - new IFF color system
-#define IFF_COLOR_SELECTION			0
-#define IFF_COLOR_MESSAGE			1
-#define IFF_COLOR_TAGGED			2
+// Now variables so that modular tables can actually affect them. -MageKing17
+extern int IFF_COLOR_SELECTION;
+extern int IFF_COLOR_MESSAGE;
+extern int IFF_COLOR_TAGGED;
 
 enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
 
