@@ -10,7 +10,7 @@
 
 
 extern SCP_vector<int> Shield_sys_teams;
-extern int Shield_sys_types[MAX_SHIP_CLASSES];
+extern SCP_vector<int> Shield_sys_types;
 
 /////////////////////////////////////////////////////////////////////////////
 // shield_sys_dlg dialog
