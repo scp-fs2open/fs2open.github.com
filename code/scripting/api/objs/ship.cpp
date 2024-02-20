@@ -1439,6 +1439,20 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 	return ade_set_args(L, "i", 0);
 }
 
+ADE_FUNC(isArrivingWarp, l_Ship, nullptr, "Checks if the ship is arriving via warp.  This includes both stage 1 (when the portal is opening) and stage 2 (when the ship is moving through the portal).", "boolean", "True if the ship is warping in, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->is_arriving(ship::warpstage::BOTH, false));
+}
+
 ADE_FUNC(isDepartingWarp, l_Ship, nullptr, "Checks if the ship is departing via warp", "boolean", "True if the Depart_warp flag is set, false otherwise")
 {
 	object_h *shiph;
@@ -2208,7 +2222,9 @@ ADE_FUNC(canBayDepart, l_Ship, nullptr, "Checks whether ship has a bay departure
 }
 
 // Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
-ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "True if the ship is warping in, false or nil otherwise")
+ADE_FUNC_DEPRECATED(isWarpingIn, l_Ship, NULL, "Checks if ship is in stage 1 of warping in", "boolean", "True if the ship is in stage 1 of warping in; false if not; nil for an invalid handle",
+	gameversion::version(24, 2, 0, 0),
+	"This function's name may imply that it tests for the entire warping sequence.  To avoid confusion, it has been deprecated in favor of isWarpingStage1.")
 {
 	object_h *objh;
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
@@ -2219,6 +2235,41 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 
 	ship *shipp = &Ships[objh->objp->instance];
 	if(shipp->is_arriving(ship::warpstage::STAGE1, false)){
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+// This has functionality identical to isWarpingIn
+ADE_FUNC(isWarpingStage1, l_Ship, NULL, "Checks if ship is in stage 1 of warping in, which is the stage when the warp portal is opening but before the ship has gone through.  During this stage, the ship's radar blip is blue, while the ship itself is invisible, does not collide, and has velocity 0.", "boolean", "True if the ship is in stage 1 of warping in; false if not; nil for an invalid handle")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if(shipp->is_arriving(ship::warpstage::STAGE1, false)){
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isWarpingStage2, l_Ship, NULL, "Checks if ship is in stage 2 of warping in, which is the stage when it is traversing the warp portal.  Stage 2 ends as soon as the ship is completely through the portal and does not include portal closing or ship deceleration.", "boolean", "True if the ship is in stage 2 of warping in; false if not; nil for an invalid handle")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if(shipp->is_arriving(ship::warpstage::STAGE2, false)){
 		return ADE_RETURN_TRUE;
 	}
 
