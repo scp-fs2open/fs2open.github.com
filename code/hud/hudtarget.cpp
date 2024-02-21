@@ -1591,9 +1591,14 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 	if (shipp->flags[Ship::Ship_Flags::Scannable])
 		return 1;
 
-	// ignore ships that don't carry cargo
-	if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable]))
+	if (!Use_new_scanning_behavior) {
+		// ignore ships that don't carry cargo
+		if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable]))
+			return 0;
+	} else {
+		// In new behavior if we are here then the ship does not have the scannable flag so it's not scannable!
 		return 0;
+	}
 
 	return 1;
 }
