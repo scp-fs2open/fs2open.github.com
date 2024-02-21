@@ -30,7 +30,7 @@ class object;
 #define TBOX_FLASH_SUBSYS			4
 
 extern sound_handle Target_static_looping;
-extern int Target_display_cargo;
+extern bool Target_display_cargo;
 extern char Cargo_string[256];
 
 extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];

@@ -151,6 +151,7 @@ bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
+bool Use_new_scanning_behavior;
 bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
@@ -448,6 +449,11 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&HUD_shadows);
 			}
 
+		if (optional_string("$Unify scanning behavior:")) {
+			stuff_boolean(&Use_new_scanning_behavior);
+		}
+
+		optional_string("#SEXP SETTINGS");
 			if (optional_string("$Don't show callsigns in the escort list:")) {
 				stuff_boolean(&Dont_show_callsigns_in_escort_list);
 			}
@@ -1609,6 +1615,7 @@ void mod_table_reset()
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;
 	Contrails_use_absolute_speed = false;
+	Use_new_scanning_behavior = false;
 	Lua_API_returns_nil_instead_of_invalid_object = false;
 	Dont_show_callsigns_in_escort_list = false;
 	Fix_scripted_velocity = false;
