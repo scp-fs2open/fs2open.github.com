@@ -2636,14 +2636,14 @@ void hud_target_in_reticle_old()
 
 			// if the player is attempting to target the same ship under their reticule again
 			// then lets select the nearest subsystem for them.
-			if (Automatically_select_subsystem_underreticle_when_targeting_ship &&
+			if (Automatically_select_subsystem_under_reticle_when_targeting_ship &&
 				Ship_info[shipp->ship_info_index].is_big_or_huge() &&
 				oldTargetNum == Player_ai->target_objnum) {
 				hud_target_subsystem_in_reticle();
 			}
 			else {
-				hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
-				hud_restore_subsystem_target(&Ships[target_obj->instance]);
+				hud_maybe_set_sorted_turret_subsys(shipp);
+				hud_restore_subsystem_target(shipp);
 			}
 		}
 	}
