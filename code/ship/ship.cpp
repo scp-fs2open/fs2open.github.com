@@ -7491,6 +7491,7 @@ void ship_subsys::clear()
 	disruption_timestamp = timestamp(0);
 
 	subsys_cargo_name = 0;
+	subsys_cargo_title[0] = '\0';
 	time_subsys_cargo_revealed = 0;
 
 	triggered_rotation_index = -1;

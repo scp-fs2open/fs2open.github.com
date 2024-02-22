@@ -2091,6 +2091,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	shipp->cargo1 = p_objp->cargo1;
+	strcpy_s(shipp->cargo_title, p_objp->cargo_title);
 
 	shipp->arrival_location = p_objp->arrival_location;
 	shipp->arrival_distance = p_objp->arrival_distance;
@@ -2422,6 +2423,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 
 		ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+		strcpy_s(ptr->subsys_cargo_title, sssp->subsys_cargo_title);
 
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
@@ -3149,6 +3151,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
 
+	if (optional_string("$Cargo Title:"))
+	{
+		stuff_string(p_objp->cargo_title, F_NAME, NAME_LENGTH);
+	}
+
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
 
 	find_and_stuff("$Arrival Location:", &temp, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
@@ -3762,6 +3769,11 @@ void parse_common_object_data(p_object *p_objp)
 				}
 			}
 			Subsys_status[i].subsys_cargo_name = index;
+		}
+
+		Subsys_status[i].subsys_cargo_title[0] = '\0';
+		if (optional_string("+Cargo Title:")) {
+			stuff_string(Subsys_status[i].subsys_cargo_title, F_NAME, NAME_LENGTH);
 		}
 
 		if (optional_string("+AI Class:"))

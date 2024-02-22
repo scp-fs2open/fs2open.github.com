@@ -1641,12 +1641,6 @@ bool player_inspect_cargo(float frametime, char *outstr)
 			return false;
 		}
 	} else {
-		// check if target is ship class that can be inspected
-		// MWA -- 1/27/98 -- added fighters/bombers to this list.  For multiplayer, we
-		// want to show callsign of player
-		// G5K -- 10/20/08 -- moved the callsign code into hud_stuff_ship_callsign, where
-		// it makes more sense
-
 		// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 		// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
 		if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
@@ -1672,11 +1666,15 @@ bool player_inspect_cargo(float frametime, char *outstr)
 				: Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
 			//Why was this assert here? I'm not sure it makes much sense because any ship can be scanned and have cargo revealed...
             //Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
-			
-			if ( cargo_name[0] == '#' ) {
-				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+
+			if (cargo_sp->cargo_title[0] != '\0') {
+				sprintf(outstr, "%s: %s", cargo_sp->cargo_title, cargo_name);
 			} else {
-				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+				if (cargo_name[0] == '#') {
+					sprintf(outstr, XSTR("passengers: %s", 83), cargo_name + 1);
+				} else {
+					sprintf(outstr, XSTR("cargo: %s", 84), cargo_name);
+				}
 			}
 		} else {
 			strcpy(outstr, XSTR( "Scanned", 85) );
@@ -1701,13 +1699,18 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
 		float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
-			if (reveal_cargo)
-				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
-			else
-				strcpy(outstr,XSTR( "not scanned", 87));
-			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
-			Player->cargo_inspect_time = 0;
-			return true;
+			if (reveal_cargo) {
+				if (cargo_sp->cargo_title[0] != '\0') {
+					sprintf(outstr, XSTR("%s: <unknown>", 1817), cargo_sp->cargo_title);
+				} else {
+					strcpy(outstr, XSTR("cargo: <unknown>", 86));
+				}
+			} else {
+				strcpy(outstr, XSTR("not scanned", 87));
+				hud_targetbox_end_flash(TBOX_FLASH_CARGO);
+				Player->cargo_inspect_time = 0;
+				return true;
+			}
 		}
 
 		// player is facing the cargo, and within range, so proceed with inspection
@@ -1715,10 +1718,15 @@ bool player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
-		if (reveal_cargo)
-			strcpy(outstr,XSTR( "cargo: inspecting", 88));
-		else
-			strcpy(outstr,XSTR( "scanning", 89));
+		if (reveal_cargo) {
+			if (cargo_sp->cargo_title[0] != '\0') {
+				sprintf(outstr, XSTR("%s: inspecting", 1818), cargo_sp->cargo_title);
+			} else {
+				strcpy(outstr, XSTR("cargo: inspecting", 88));
+			}
+		} else {
+			strcpy(outstr, XSTR("scanning", 89));
+		}
 
 		float scan_time = i2fl(cargo_sip->scan_time);
 		scan_time *= player_sip->scanning_time_multiplier;
@@ -1729,10 +1737,15 @@ bool player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if (reveal_cargo)
-			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
-		else
-			strcpy(outstr,XSTR( "not scanned", 87));
+		if (reveal_cargo){
+			if (cargo_sp->cargo_title[0] != '\0') {
+				sprintf(outstr, XSTR("%s: <unknown>", 1817), cargo_sp->cargo_title);
+			} else {
+				strcpy(outstr, XSTR("cargo: <unknown>", 86));
+			}
+		} else {
+			strcpy(outstr, XSTR("not scanned", 87));
+		}
 	}
 
 	return true;
@@ -1785,11 +1798,14 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			auto cargo_name = (subsys->subsys_cargo_name & CARGO_INDEX_MASK) == 0
 				? XSTR("Nothing", 1674)
 				: Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
-
-			if ( cargo_name[0] == '#' ) {
-				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			if (subsys->subsys_cargo_title[0] != '\0') {
+				sprintf(outstr, "%s: %s", subsys->subsys_cargo_title, cargo_name);
 			} else {
-				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+				if (cargo_name[0] == '#') {
+					sprintf(outstr, XSTR("passengers: %s", 83), cargo_name + 1);
+				} else {
+					sprintf(outstr, XSTR("cargo: %s", 84), cargo_name);
+				}
 			}
 		} else {
 			strcpy(outstr, XSTR( "Scanned", 85) );
@@ -1831,7 +1847,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
 			if (reveal_cargo)
-				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
+				if (subsys->subsys_cargo_title[0] != '\0') {
+					sprintf(outstr, XSTR("%s: <unknown>", 1817), subsys->subsys_cargo_title);
+				} else {
+					strcpy(outstr, XSTR("cargo: <unknown>", 86));
+				}
 			else
 				strcpy(outstr,XSTR( "not scanned", 87));
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
@@ -1845,7 +1865,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		}
 
 		if (reveal_cargo)
-			strcpy(outstr,XSTR( "cargo: inspecting", 88));
+			if (subsys->subsys_cargo_title[0] != '\0') {
+				sprintf(outstr, XSTR("%s: inspecting", 1818), subsys->subsys_cargo_title);
+			} else {
+				strcpy(outstr, XSTR("cargo: inspecting", 88));
+			}
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
@@ -1863,7 +1887,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		}
 	} else {
 		if (reveal_cargo)
-			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
+			if (subsys->subsys_cargo_title[0] != '\0') {
+				sprintf(outstr, XSTR("%s: <unknown>", 1817), subsys->subsys_cargo_title);
+			} else {
+				strcpy(outstr, XSTR("cargo: <unknown>", 86));
+			}
 		else
 			strcpy(outstr,XSTR( "not scanned", 87));
 	}
