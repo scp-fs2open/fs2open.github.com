@@ -1575,7 +1575,11 @@ bool player_inspect_cargo(float frametime, char *outstr)
             //Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if (cargo_sp->cargo_title[0] != '\0') {
-				sprintf(outstr, "%s: %s", cargo_sp->cargo_title, cargo_name);
+				if (cargo_sp->cargo_title[0] == '#') {
+					strcpy(outstr, cargo_name);
+				} else {
+					sprintf(outstr, "%s: %s", cargo_sp->cargo_title, cargo_name);
+				}
 			} else {
 				if (cargo_name[0] == '#') {
 					sprintf(outstr, XSTR("passengers: %s", 83), cargo_name + 1);
@@ -1608,7 +1612,11 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
 			if (reveal_cargo) {
 				if (cargo_sp->cargo_title[0] != '\0') {
-					sprintf(outstr, XSTR("%s: <unknown>", 1817), cargo_sp->cargo_title);
+					if (cargo_sp->cargo_title[0] == '#') {
+							strcpy(outstr, XSTR("<unknown>", 1819));
+					} else {
+							sprintf(outstr, XSTR("%s: <unknown>", 1817), cargo_sp->cargo_title);
+					}
 				} else {
 					strcpy(outstr, XSTR("cargo: <unknown>", 86));
 				}
@@ -1627,7 +1635,11 @@ bool player_inspect_cargo(float frametime, char *outstr)
 
 		if (reveal_cargo) {
 			if (cargo_sp->cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: inspecting", 1818), cargo_sp->cargo_title);
+				if (cargo_sp->cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("inspecting", 1820));
+				} else {
+					sprintf(outstr, XSTR("%s: inspecting", 1818), cargo_sp->cargo_title);
+				}
 			} else {
 				strcpy(outstr, XSTR("cargo: inspecting", 88));
 			}
@@ -1646,7 +1658,11 @@ bool player_inspect_cargo(float frametime, char *outstr)
 	} else {
 		if (reveal_cargo){
 			if (cargo_sp->cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: <unknown>", 1817), cargo_sp->cargo_title);
+				if (cargo_sp->cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("<unknown>", 1819));
+				} else {
+					sprintf(outstr, XSTR("%s: <unknown>", 1817), cargo_sp->cargo_title);
+				}
 			} else {
 				strcpy(outstr, XSTR("cargo: <unknown>", 86));
 			}
@@ -1706,7 +1722,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 				? XSTR("Nothing", 1674)
 				: Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 			if (subsys->subsys_cargo_title[0] != '\0') {
-				sprintf(outstr, "%s: %s", subsys->subsys_cargo_title, cargo_name);
+				if (subsys->subsys_cargo_title[0] == '#') {
+					strcpy(outstr, cargo_name);
+				} else {
+					sprintf(outstr, "%s: %s", subsys->subsys_cargo_title, cargo_name);
+				}
 			} else {
 				if (cargo_name[0] == '#') {
 					sprintf(outstr, XSTR("passengers: %s", 83), cargo_name + 1);
@@ -1755,7 +1775,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
 			if (reveal_cargo)
 				if (subsys->subsys_cargo_title[0] != '\0') {
-					sprintf(outstr, XSTR("%s: <unknown>", 1817), subsys->subsys_cargo_title);
+					if (subsys->subsys_cargo_title[0] == '#') {
+							strcpy(outstr, XSTR("<unknown>", 1819));
+					} else {
+							sprintf(outstr, XSTR("%s: <unknown>", 1817), subsys->subsys_cargo_title);
+					}
 				} else {
 					strcpy(outstr, XSTR("cargo: <unknown>", 86));
 				}
@@ -1773,7 +1797,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		if (reveal_cargo)
 			if (subsys->subsys_cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: inspecting", 1818), subsys->subsys_cargo_title);
+				if (subsys->subsys_cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("inspecting", 1820));
+				} else {
+					sprintf(outstr, XSTR("%s: inspecting", 1818), subsys->subsys_cargo_title);
+				}
 			} else {
 				strcpy(outstr, XSTR("cargo: inspecting", 88));
 			}
@@ -1795,7 +1823,11 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	} else {
 		if (reveal_cargo)
 			if (subsys->subsys_cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: <unknown>", 1817), subsys->subsys_cargo_title);
+				if (subsys->subsys_cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("<unknown>", 1819));
+				} else {
+					sprintf(outstr, XSTR("%s: <unknown>", 1817), subsys->subsys_cargo_title);
+				}
 			} else {
 				strcpy(outstr, XSTR("cargo: <unknown>", 86));
 			}
