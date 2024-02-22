@@ -419,7 +419,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Dont_automatically_select_turret_when_targeting_ship);
 		}
 
-		if (optional_string("$Auto select subsystem under reticle when targeting ship:")) {
+		if (optional_string("$Auto select subsystem under reticle when targeting same ship:")) {
 			stuff_boolean(&Automatically_select_subsystem_under_reticle_when_targeting_same_ship);
 		}
 
