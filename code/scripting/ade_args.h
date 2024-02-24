@@ -366,13 +366,20 @@ int ade_set_args(lua_State* L, const char* fmt, Args&&... args)
 }
 
 /**
- * @brief Return a value in error
+ * @brief Return a value in error.  Normally this behaves just like ade_set_args, but it can be configured to return nil instead.
  *
  * Should be used if the value is not valid
  *
  * @ingroup ade_api
  */
-#define ade_set_error ade_set_args
+template <typename... Args>
+int ade_set_error(lua_State* L, const char* fmt, Args&&... args)
+{
+	if (Lua_API_returns_nil_instead_of_invalid_object)
+		return 0;	// ADE_RETURN_NIL
+	else
+		return ade_set_args(L, fmt, std::forward<Args>(args)...);
+}
 }
 
 #endif //FS2_OPEN_ADE_ARGS_H
