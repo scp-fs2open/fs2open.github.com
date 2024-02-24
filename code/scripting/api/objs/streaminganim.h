@@ -12,7 +12,7 @@ class streaminganim_h {
  public:
 	generic_anim ga;
 
-	bool IsValid();
+	bool isValid() const;
 	explicit streaminganim_h (const char* filename);
 	~streaminganim_h();
 

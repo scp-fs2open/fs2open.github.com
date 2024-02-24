@@ -10,7 +10,7 @@ cci_h::cci_h() { idx = IoActionId::CCFG_MAX; }
 
 cci_h::cci_h(int n_id) { if (n_id < 0 || n_id > static_cast<int>(IoActionId::CCFG_MAX)) idx = IoActionId::CCFG_MAX; else idx = static_cast<IoActionId>(n_id); }
 
-bool cci_h::IsValid() { return idx != IoActionId::CCFG_MAX; }
+bool cci_h::isValid() const { return idx != IoActionId::CCFG_MAX; }
 
 IoActionId cci_h::Get() { return idx; }
 
@@ -22,7 +22,7 @@ ADE_FUNC(__tostring, l_ControlBinding, nullptr, "Key binding name", "string", "K
 	if(!ade_get_args(L, "o", l_ControlBinding.GetPtr(&cci)))
 		return ade_set_error(L, "s", "");
 
-	if(!cci->IsValid())
+	if(!cci->isValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", ValToAction(cci->Get()));
@@ -34,7 +34,7 @@ ADE_VIRTVAR(Name, l_ControlBinding, nullptr, "Key binding name", "string", "Key 
 	if (!ade_get_args(L, "o", l_ControlBinding.GetPtr(&cci)))
 		return ade_set_error(L, "s", "");
 
-	if (!cci->IsValid())
+	if (!cci->isValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", ValToAction(cci->Get()));
@@ -47,7 +47,7 @@ ADE_FUNC(getInputName, l_ControlBinding, "[boolean primaryBinding = true]", "The
 	if (!ade_get_args(L, "o|b", l_ControlBinding.GetPtr(&cci), &primary))
 		return ADE_RETURN_NIL;
 
-	if (!cci->IsValid()) 
+	if (!cci->isValid()) 
 		return ade_set_error(L, "s", "");
 
 	CCI &cci_ref = Control_config[cci->Get()];
@@ -62,7 +62,7 @@ ADE_FUNC(lock, l_ControlBinding, "boolean lock", "Locks this control binding whe
 	if (!ade_get_args(L, "ob", l_ControlBinding.GetPtr(&cci), &lock))
 		return ADE_RETURN_NIL;
 
-	if (!cci->IsValid()) {
+	if (!cci->isValid()) {
 		LuaError(L, "Cannot lock hooks for an invalid binding.\n");
 
 		return ADE_RETURN_NIL;
@@ -79,7 +79,7 @@ ADE_FUNC(isLocked, l_ControlBinding, nullptr, "If this control is locked", "bool
 	if (!ade_get_args(L, "o", l_ControlBinding.GetPtr(&cci)))
 		return ADE_RETURN_NIL;
 
-	if (!cci->IsValid()) {
+	if (!cci->isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -97,7 +97,7 @@ ADE_FUNC(registerHook, l_ControlBinding, "function() => void | boolean hook, [bo
 		return ADE_RETURN_NIL;
 	}
 
-	if (!cci->IsValid()) {
+	if (!cci->isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -120,7 +120,7 @@ ADE_FUNC(enableScripting, l_ControlBinding, "boolean enable", "Enables scripted 
 	if (!ade_get_args(L, "ob", l_ControlBinding.GetPtr(&cci), &enable))
 		return ADE_RETURN_NIL;
 
-	if (!cci->IsValid()) {
+	if (!cci->isValid()) {
 		LuaError(L, "Cannot enable or disable scripting hooks for an invalid binding.\n");
 		
 		return ADE_RETURN_NIL;

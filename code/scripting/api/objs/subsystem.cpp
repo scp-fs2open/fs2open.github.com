@@ -26,12 +26,12 @@ ship_subsys_h::ship_subsys_h() : object_h() {
 ship_subsys_h::ship_subsys_h(object* objp_in, ship_subsys* sub) : object_h(objp_in) {
 	ss = sub;
 }
-bool ship_subsys_h::isSubsystemValid() const { return object_h::IsValid() && objp->type == OBJ_SHIP && ss != nullptr; }
+bool ship_subsys_h::isSubsystemValid() const { return object_h::isValid() && objp->type == OBJ_SHIP && ss != nullptr; }
 
 void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	ship_subsys_h subsys;
 	value.getValue(l_Subsystem.Get(&subsys));
-	const ushort& netsig = subsys.IsValid() ? subsys.objp->net_signature : 0;
+	const ushort& netsig = subsys.isValid() ? subsys.objp->net_signature : 0;
 	const int& subsys_index = subsys.isSubsystemValid() ? ship_get_subsys_index(subsys.ss) : -1;
 	ADD_USHORT(netsig);
 	ADD_INT(subsys_index);
@@ -458,7 +458,7 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 	ship_subsys *ss = sso->ss;
 
 	if(ADE_SETTING_VAR)	{
-		if (objh && objh->IsValid()) {
+		if (objh && objh->isValid()) {
 			ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
 			ss->turret_enemy_sig = objh->sig;
 			ss->targeted_subsys = nullptr;
@@ -717,7 +717,7 @@ ADE_FUNC(getModelFlag,
 		return ADE_RETURN_NIL;
 	int skip_args = 1;	// not 2 because there will be one more below
 
-	if (!sso->IsValid())
+	if (!sso->isValid())
 		return ADE_RETURN_NIL;
 
 	do {
@@ -794,7 +794,7 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&newh)))
 		return ADE_RETURN_NIL;
 
-	if (!sso->isSubsystemValid() || !newh || !newh->IsValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
+	if (!sso->isSubsystemValid() || !newh || !newh->isValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
 		return ADE_RETURN_NIL;
 
 	vec3d	tpos,tvec;

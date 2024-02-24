@@ -266,7 +266,7 @@ ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current re
 
 	if (ADE_SETTING_VAR)
 	{
-		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		if (!resize_arg.isValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
 		{
 			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
 			return ADE_RETURN_NIL;
@@ -1057,7 +1057,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	// void hud_show_brackets(object *targetp, vertex *projected_v)
 	// in hudtarget.cpp
 
-	if( !objh->IsValid()) {
+	if( !objh->isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1214,7 +1214,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 	}
 
-	if( !objh->IsValid()) {
+	if( !objh->isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1318,7 +1318,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		if (!ade_get_args(L, "o", l_Enum.Get(&resize_arg)))
 			return ade_set_error(L, "i", 0);
 
-		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		if (!resize_arg.isValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
 		{
 			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
 			return ade_set_error(L, "i", 0);
@@ -1937,7 +1937,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	if (!ade_get_args(L, "o", l_Enum.GetPtr(&type)))
 		return ade_set_error(L, "b", false);
 
-	if (type == NULL || !type->IsValid())
+	if (type == NULL || !type->isValid())
 		return ade_set_error(L, "b", false);
 
 	int bit = 0;
@@ -2135,7 +2135,7 @@ ADE_FUNC(createPersistentParticle,
 	if (rev)
 		pi.reverse = false;
 
-	if (objh != nullptr && objh->IsValid()) {
+	if (objh != nullptr && objh->isValid()) {
 		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig    = objh->objp->signature;
 	}
@@ -2208,7 +2208,7 @@ ADE_FUNC(createParticle,
 	if (rev)
 		pi.reverse = false;
 
-	if (objh != nullptr && objh->IsValid()) {
+	if (objh != nullptr && objh->isValid()) {
 		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig    = objh->objp->signature;
 	}

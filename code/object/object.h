@@ -181,7 +181,7 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
+	bool isValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
 	object_h(object *in) {objp = in; sig = (in == nullptr) ? -1 : in->signature; }
 	object_h() { objp = nullptr; sig = -1; }
 

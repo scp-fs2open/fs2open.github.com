@@ -119,7 +119,7 @@ ADE_VIRTVAR(Self, l_Camera, "object", "New mount object", "object", "Camera obje
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && oh && oh->IsValid()) {
+	if(ADE_SETTING_VAR && oh && oh->isValid()) {
 		cid.getCamera()->set_object_host(oh->objp);
 	}
 
@@ -174,7 +174,7 @@ ADE_VIRTVAR(Target, l_Camera, "object", "New target object", "object", "Camera t
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && oh && oh->IsValid()) {
+	if(ADE_SETTING_VAR && oh && oh->isValid()) {
 		cid.getCamera()->set_object_target(oh->objp);
 	}
 

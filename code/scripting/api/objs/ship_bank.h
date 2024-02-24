@@ -20,7 +20,7 @@ struct ship_banktype_h : public object_h
 	ship_banktype_h();
 	ship_banktype_h(object *objp_in, ship_weapon *wpn, int in_type);
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_WeaponBankType, ship_banktype_h);
 
@@ -31,7 +31,7 @@ struct ship_bank_h : public ship_banktype_h
 	ship_bank_h();
 	ship_bank_h(object *objp_in, ship_weapon *wpn, int in_type, int in_bank);
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_WeaponBank, ship_bank_h);
 

@@ -220,8 +220,8 @@ struct Decal {
 		vm_vec_make(&scale, 1.f, 1.f, 1.f);
 	}
 
-	bool isValid() {
-		if (!object.IsValid()) {
+	bool isValid() const {
+		if (!object.isValid()) {
 			return false;
 		}
 		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {

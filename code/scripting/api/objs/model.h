@@ -18,11 +18,11 @@ class model_h
 	explicit model_h(polymodel *n_model);
 	model_h();
 
-	polymodel *Get();
+	polymodel *Get() const;
 
-	int GetID();
+	int GetID() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_Model, model_h);
 
@@ -37,13 +37,13 @@ public:
 	explicit submodel_h(polymodel *n_model, int n_submodelnum);
 	submodel_h();
 
-	polymodel *GetModel();
-	int GetModelID();
+	polymodel *GetModel() const;
+	int GetModelID() const;
 
-	bsp_info *GetSubmodel();
-	int GetSubmodelIndex();
+	bsp_info *GetSubmodel() const;
+	int GetSubmodelIndex() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_Submodel, submodel_h);
 
@@ -89,9 +89,9 @@ struct thrusterbank_h
 
 	thrusterbank_h(thruster_bank* ba);
 
-	thruster_bank *Get();
+	thruster_bank *Get() const;
 
-	bool isValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_Thrusterbank, thrusterbank_h);
 
@@ -104,9 +104,9 @@ struct glowpoint_h
 
 	glowpoint_h(glow_point* np);
 
-	glow_point* Get();
+	glow_point* Get() const;
 
-	bool isValid();
+	bool isValid() const;
 
 };
 DECLARE_ADE_OBJ(l_Glowpoint, glowpoint_h);
@@ -129,9 +129,9 @@ class dockingbay_h : public model_h
 	dockingbay_h(polymodel *pm, int dock_idx);
 	dockingbay_h();
 
-	bool IsValid();
+	bool isValid() const;
 
-	dock_bay* getDockingBay();
+	dock_bay* getDockingBay() const;
 };
 DECLARE_ADE_OBJ(l_Dockingbay, dockingbay_h);
 

@@ -31,7 +31,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	//Lua-->FS2
 	sdx--;
 
-	if(ADE_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
+	if(ADE_SETTING_VAR && ndx != NULL && ndx->isValid()) {
 		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
 	}
 
