@@ -305,6 +305,17 @@ template<typename T>
 void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
 {
 	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
+
+	if (Lua_API_returns_nil_instead_of_invalid_object) {
+		// If the underlying type has an isValid, it'll be evaluated; otherwise it'll be always true.
+		bool isValid = ade_is_valid<T>::get(od.value);
+
+		if (!isValid) {
+			lua_pushnil(L);
+			return;
+		}
+	}
+
 	// Use the common helper method
 	luacpp::convert::pushValue(L, std::forward<ade_odata_setter<T>>(od));
 }
@@ -373,7 +384,7 @@ int ade_set_args(lua_State* L, const char* fmt, Args&&... args)
  * @ingroup ade_api
  */
 template <typename... Args>
-int ade_set_error(lua_State* L, const char* fmt, Args&&... args)
+inline int ade_set_error(lua_State* L, const char* fmt, Args&&... args)
 {
 	if (Lua_API_returns_nil_instead_of_invalid_object)
 		return 0;	// ADE_RETURN_NIL
