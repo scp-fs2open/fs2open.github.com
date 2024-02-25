@@ -37,6 +37,10 @@ private:
 	void onPlayerDelayDoubleSpinBoxUpdated();
 	void onCurrentTeamSpinboxUpdated();
 	void onCopyLoadoutToOtherTeamsButtonPressed();
+	void addShipButtonClicked();
+	void addWeaponButtonClicked();
+	void removeShipButtonClicked();
+	void removeWeaponButtonClicked();
 
 	void updateUI();
 
@@ -46,11 +50,7 @@ private:
 	void resetLists();
 
 	int _mode;
-
-	SCP_vector<bool> _lastEnabledShips;
-	SCP_vector<bool> _lastSelectedShips;
-	SCP_vector<bool> _lastEnabledWeapons;
-	SCP_vector<bool> _lastSelectedWeapons;
+	int _lastSelectionChanged
 };
 
 }

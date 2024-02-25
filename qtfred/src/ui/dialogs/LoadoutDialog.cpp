@@ -10,8 +10,6 @@ constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
 
 // header text
-constexpr char* SHIPHEADER = "Ship";
-constexpr char* WEAPONHEADER = "Weapon";
 constexpr char* KEYHEADER = "In wings / Extra / Total";
 
 
@@ -51,10 +49,10 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onCurrentTeamSpinboxUpdated);
 
-	connect(ui->extraShipSpinbox,
+	connect(ui->extraItemSpinbox,
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this,
-		&LoadoutDialog::onExtraShipSpinboxUpdated);
+		&LoadoutDialog::onextraItemSpinboxUpdated);
 
 	connect(ui->playerDelayDoubleSpinbox,
 		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
@@ -76,102 +74,66 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onSwitchViewButtonPressed);
 
-	connect(ui->shipVarList,
+	connect(ui->listShipsNotUsed,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
-		&LoadoutDialog::onShipListEdited);
+		&LoadoutDialog::onPotentialShipListClicked);
 
-	connect(ui->weaponVarList,
+	connect(ui->listWeaponsNotUsed,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
-		&LoadoutDialog::onWeaponListEdited);
+		&LoadoutDialog::onPotentialWeaponListClicked);
 
-
-	updateUI();
-
-/*
-
-	void onSwitchViewButtonPressed();
-	void onExtraShipComboboxUpdated();
-	void onExtraWeaponComboboxUpdated();
-	void onPlayerDelayDoubleSpinBoxUpdated();
-	void onCurrentTeamSpinboxUpdated();
-	void onExtraShipSpinboxUpdated();
-	void onExtraWeaponSpinboxUpdated();
-	void onCopyLoadoutToOtherTeamsButtonPressed();
-	void onShipListEdited();
-	void onWeaponListEdited();
-
-
-	*/
-
-	connect(ui->extraShipSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+	connect(ui->usedShipsList,
+		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
-		&LoadoutDialog::onExtraShipSpinboxUpdated);
+		&LoadoutDialog::onUsedShipListClicked);
 
-	connect(ui->extraWepSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+	connect(ui->usedShipsList,
+		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
-		&LoadoutDialog::onExtraWeaponSpinboxUpdated);
-	
-	connect(ui->playerDelayDoubleSpinbox,
-		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-		this,
-		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
+		&LoadoutDialog::onUsedWeaponListClicked);
 
 	connect(ui->extraShipsViaVarCombo,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this,
 		&LoadoutDialog::onExtraShipComboboxUpdated);
 
-	connect(ui->extraWeaponsViaVarCombo,
-		QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this,
-		&LoadoutDialog::onExtraWeaponComboboxUpdated);
-
-	connect(ui->copyLoadoutToOtherTeamsButton,
+	connect(ui->addShipButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
+		&LoadoutDialog::addShipButtonClicked);
 
-	connect(ui->switchViewButton,
+	connect(ui->addWeaponButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onSwitchViewButtonPressed);
+		&LoadoutDialog::addWeaponButtonClicked);
 
-	connect(ui->shipVarList,
-		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
+	connect(ui->removeShipButton,
+		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onShipListEdited);
+		&LoadoutDialog::removeShipButtonClicked);
 
-	connect(ui->weaponVarList,
-		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
+	connect(ui->removeWeaponButton,
+		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onWeaponListEdited);
+		&LoadoutDialog::removeWeaponButtonClicked);
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
 	
+	// UPDATE - Now that things are split, we don't need this anymore.  Keep it around for reference until TODO remove me when done
 	// rows will vary but columns need to be 3
-	ui->shipVarList->setColumnCount(3);
-	ui->weaponVarList->setColumnCount(3);
+	//	ui->shipVarList->setColumnCount(1);
+	//	ui->weaponVarList->setColumnCount(1);
 	
 	// set sizes
-	ui->shipVarList->setColumnWidth(0,10);
-	ui->weaponVarList->setColumnWidth(0,10);
-	ui->shipVarList->setColumnWidth(1,200);
-	ui->weaponVarList->setColumnWidth(1,200);
-	ui->shipVarList->setColumnWidth(2,200);
-	ui->weaponVarList->setColumnWidth(2,200);
+	//	ui->shipVarList->setColumnWidth(0,10);
+	//	ui->weaponVarList->setColumnWidth(0,10);
 
 	// set headers
-	ui->shipVarList->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
-	ui->weaponVarList->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
-	ui->shipVarList->setHorizontalHeaderItem(1, new QTableWidgetItem(SHIPHEADER));
-	ui->weaponVarList->setHorizontalHeaderItem(1, new QTableWidgetItem(WEAPONHEADER));
-	ui->shipVarList->setHorizontalHeaderItem(2, new QTableWidgetItem(KEYHEADER));
-	ui->weaponVarList->setHorizontalHeaderItem(2, new QTableWidgetItem(KEYHEADER));
+	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
+	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 
 	// quickly enable or diable the team spin box (must not get to multiple teams if in SP!)
 	if (The_mission.game_type & MISSION_TYPE_MULTI){
@@ -188,21 +150,23 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	updateUI();
 }
 
-// a product of competing CI requirements
+// a result of competing CI requirements
 LoadoutDialog::~LoadoutDialog(){} // NOLINT
 
 void LoadoutDialog::onSwitchViewButtonPressed()
 {
 	// Change important lables.
 	if (_mode == TABLE_MODE) {
-		ui->tableVarLabel->setText("Enable Via Variable View");
-		ui->startingShipsLabel->setText("Ship-Enabling Variables");
-		ui->startingWeaponsLabel->setText("Weapon-Enabling Variables");
+		ui->tableVarLabel->setText("Loadout Editor: Variable View");
+		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creato
+		ui->startingShipsLabel->setText("Potential Variables - Ships");
+		ui->startingWeaponsLabel->setText("Potential Variables - Weapons");
 		_mode = VARIABLE_MODE;
 	}
 	else {
-		ui->tableVarLabel->setText("Table Entry View");
-		ui->startingShipsLabel->setText("Starting Ships");
+		ui->tableVarLabel->setText("Loadout Editor: Loadout View");
+		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creato
+		ui->startingShipsLabel->setText("Ships Not in Loadout");
 		ui->startingWeaponsLabel->setText("Starting Weapons");
 		_mode = TABLE_MODE;
 	}
@@ -213,54 +177,51 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 	updateUI();
 }
 
-void LoadoutDialog::onShipListEdited()
+void LoadoutDialog::addShipButtonClicked()
 {
-	SCP_vector<bool> newSelectedStatus;
-	SCP_vector<bool> newEnabledStatus;
-	bool newStatus, checksChanged = false, selectionChanged = false;
+	SCP_vector<SCP_string> list;
 
-	// we need the index, so iterate through just the first column.
-	for (int i = 0; i < ui->shipVarList->rowCount(); i++) {
-		bool checkState = (ui->shipVarList->item(i,0)->checkState() == Qt::Checked);
-		newEnabledStatus.push_back(checkState);
-		
-		// compare the old to the new to see if there was a change in check marks. This method would break if the amount of
-		// ships or weapons ever became dynamic (dynamic with respect to this dialog) and we would then have to rely on names.
-		if (!_lastEnabledShips.empty() && (_lastEnabledShips[i] != newEnabledStatus[i])) {
-			checksChanged = true;
-			newStatus = checkState;
-		}
-
-		bool selectState = (ui->shipVarList->item(i, 0)->isSelected());
-		newSelectedStatus.push_back(selectState);
-
-		if (!_lastSelectedShips.empty() && (_lastSelectedShips[i] != selectState)){
-			selectionChanged = true;
-		}
-
+	for (const auto& item : ui->listShipsNotUsed->selectedItems()){
+		list.push_back(item->text().toStdString());
 	}
 
-	// If we are changing the status of multiple items, apply to all.
-	if (checksChanged && !selectionChanged) {
-		// go through the selected cells and check/uncheck the ones in the first column.
-		for (size_t i = 0; i < newEnabledStatus.size(); ++i) {
-			ui->shipVarList->item(static_cast<int>(i),0)->setCheckState((newEnabledStatus[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-		}
-
-	// undo check changes if the selection changed to cut down on accidental clicks.
-	} else if (checksChanged && selectionChanged) {
-		for (size_t i = 0; i < _lastEnabledShips.size(); ++i) {
-			ui->shipVarList->item(static_cast<int>(i),0)->setCheckState((_lastEnabledShips[i]) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-		}
-	}
-
-	// always save the new status.
-	_lastEnabledShips = std::move(newEnabledStatus);
-	_lastSelectedShips = std::move(newSelectedStatus);
-
-	sendEditedShips(); 
+	_model->setShipEnabled(list, true);
 }
 
+void LoadoutDialog::addWeaponButtonClicked()
+{
+	SCP_vector<SCP_string> list;
+	
+	for (const auto& item: ui->listWeaponsNotUsed->selectedItems()){
+		list.push_back(item->text().toStdString());
+	}
+
+	_model->setWeaponEnabled(list, true);
+}
+
+void LoadoutDialog::removeShipButtonClicked()
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& item : ui->usedShipsList->selectedItems()){
+		list.push_back(item->text().toStdString());
+	}
+
+	_model->setShipEnabled(item, false);
+}
+
+void LoadoutDialog::removeWeaponButtonClicked()
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& item : ui->usedWeaponsList->selectedItems()){
+		list.push_back(item->text().toStdString());
+	}
+
+	_model->setWeaponEnabled(item, false);
+}
+
+/*
 void LoadoutDialog::onWeaponListEdited()
 {
 	SCP_vector<bool> newEnabledStatus;
@@ -322,81 +283,25 @@ void LoadoutDialog::onWeaponListEdited()
 
 	sendEditedWeapons();
 }
+*/
 
-void LoadoutDialog::onExtraShipSpinboxUpdated()
+void LoadoutDialog::onExtraItemSpinbox()
 {
-	// if there are no extra allocated here, we need to uncheck the selected items.
-	if (ui->extraShipSpinbox->value() <= 0) {
-		ui->extraShipSpinbox->setValue(0);
-		if (ui->extraShipsViaVarCombo->currentText().isEmpty()) {
-			for (auto& item : ui->shipVarList->selectedItems()) {
-				if (item->column() == 0) {
-					item->setCheckState(Qt::Unchecked);
-				}
-			}
-		}
-	}
-	else {
-		// if we are using the spinbox, the variable needs to be disabled. And everything needs to be enabled
-		ui->extraShipsViaVarCombo->setCurrentText("");
-		for (auto& item : ui->shipVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState(Qt::Checked);
-			}
-		}
-	}
+	SCP_vector<SCP_string> list;
 
-	sendEditedShips();
-}
-
-void LoadoutDialog::onExtraWeaponSpinboxUpdated()
-{
-	// if there are no extra allocated here, we need to uncheck the selected items.
-	if (ui->extraWepSpinbox->value() <= 0) {
-		ui->extraWepSpinbox->setValue(0);
-		if (ui->extraWeaponsViaVarCombo->currentText().isEmpty()) {
-			for (auto& item : ui->weaponVarList->selectedItems()) {
-				if (item->column() == 0) {
-					item->setCheckState(Qt::Unchecked);
-				}
-			}
+	if (_lastSelectionChanged == 2){
+		for (const auto& item : ui->usedShipsList->selectedItems()){
+			list.push_back(item->text());
 		}
+
+		_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
+	} else if (_lastSelectionChanged == 3){
+		for (const auto& item : ui->usedWeaponsList->selectedItems()){
+			list.push_back(item->text());
+		}
+
+		_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
 	}
-	else {
-		// if we are using the spinbox, the variable needs to be disabled. And checks needs to be enabled
-		ui->extraWeaponsViaVarCombo->setCurrentText("");
-		for (auto& item : ui->weaponVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState(Qt::Checked);
-			}
-		}
-	}
-
-	sendEditedWeapons();
-}
-
-void LoadoutDialog::onExtraShipComboboxUpdated()
-{
-	// if the variable is replacing the amount, get rid of the amount in the spinbox.
-	if (!ui->extraWeaponsViaVarCombo->currentText().isEmpty() && ui->extraWepSpinbox->value() > 0) {
-		ui->extraWepSpinbox->setValue(0);
-	} // if there are no ships allocated, uncheck the ship
-	else if (ui->extraWeaponsViaVarCombo->currentText().isEmpty() && ui->extraWepSpinbox->value() == 0) {
-		for (auto& item : ui->weaponVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState(Qt::Unchecked);
-			}
-		}
-	} // if we just picked a variable, check mark the ship
-	else if (!ui->extraWeaponsViaVarCombo->currentText().isEmpty()) {
-		for (auto& item : ui->weaponVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState(Qt::Checked);
-			}
-		}
-	}
-
-	sendEditedShips();
 }
 
 void LoadoutDialog::onExtraWeaponComboboxUpdated()
@@ -461,6 +366,7 @@ void LoadoutDialog::sendEditedShips()
 	if (_mode == TABLE_MODE) {
 		// why did I do it this way?  I don't know. Sorry. I wrote the model first.
 		for (auto& nameOut : namesOut){
+
 			_model->setShipInfo(nameOut, enabled, ui->extraShipSpinbox->value(), ui->extraShipsViaVarCombo->currentText().toStdString());
 		}
 	}
