@@ -30,12 +30,12 @@ void LoadoutDialogModel::initializeData()
 	TeamLoadout defaultEntry;
 	// make sure we have the correct number of teams.
 	for (int i = 0; i < Num_teams; i++) {
-		_teams.emplace_back(defaultEntry);
+		_teams.push_back(defaultEntry);
 	}
 
 	// this is basically raw data, so we have to make sure to calculate the indices correctly.
 	SCP_vector<int> usage = _editor->getStartingWingLoadoutUseCounts();
-
+	
 	Assert(usage.size() == MAX_SHIP_CLASSES * MAX_TVT_TEAMS * 2);
 
 	int currentTeam = 0;
@@ -60,13 +60,12 @@ void LoadoutDialogModel::initializeData()
 					team.ships.back().enabled = true;
 				}
 
-				// while it's easier to figure out the number used in wings count, add it to the total
+				// since we're here, add the countInWings to the total
 				_teams[currentTeam].startingShipCount += team.ships.back().countInWings;
 				
-
 				currentTeam++;
-
 			}
+			
 			currentTeam = 0;
 		}
 

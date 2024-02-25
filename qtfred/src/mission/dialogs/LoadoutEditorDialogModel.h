@@ -66,6 +66,12 @@ public:
 	int getExtraAllocatedShipEnabler(SCP_vector<SCP_string> namesIn);
 	int getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> namesIn);
 
+	//TODO! These needs definitions.
+	void setShipEnabled(const SCP_vector<SCP_string>& list, bool enabled);
+	void setWeaponEnabled(const SCP_vector<SCP_string>& list, bool enabled);
+	void setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count);
+	void setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count);
+	
 	void setShipInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setWeaponInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setShipEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount);
