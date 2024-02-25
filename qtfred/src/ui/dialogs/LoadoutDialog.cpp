@@ -18,6 +18,22 @@ constexpr char* KEYHEADER = "In wings / Extra / Total";
 namespace fso {
 namespace fred {
 namespace dialogs {
+	//ui includes: tableVarLabel, switches between "Loadout Editor: Loadout View" and "Loadout Editor: Variable View"
+	//switchViewButton for switching modes
+	//startingShipsLabel "Ships Not in Loadout"
+	//listShipsNotUsed -- The list of ships that is not present in the loadout.
+	//listWeaponsNotUsed -- The list of weapons that is not present in the loadout
+	//usedShipsList
+	//usedWeaponsList
+	//addShipButton
+	//addWeaponButton
+	//removeShipButton
+	//removeWeaponButton
+	//copyLoadoutToOtherTeamsButton
+	//currentTeamSpinbox
+	//playerDelayDoubleSpinbox
+	//extraItemSpinbox
+	//extraItemsViaVariableCombo
 
 LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport) 
 	: QDialog(parent), ui(new Ui::LoadoutDialog()), _model(new LoadoutDialogModel(this, viewport)),
@@ -40,20 +56,10 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onExtraShipSpinboxUpdated);
 
-	connect(ui->extraWepSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&LoadoutDialog::onExtraWeaponSpinboxUpdated);
-	
 	connect(ui->playerDelayDoubleSpinbox,
 		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
 		this,
 		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
-
-	connect(ui->extraShipsViaVarCombo,
-		QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this,
-		&LoadoutDialog::onExtraShipComboboxUpdated);
 
 	connect(ui->extraWeaponsViaVarCombo,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
