@@ -41,6 +41,10 @@ private:
 	void addWeaponButtonClicked();
 	void removeShipButtonClicked();
 	void removeWeaponButtonClicked();
+	void onPotentialShipListClicked(){ _lastSelectionChanged = POTENTIAL_SHIPS;}
+	void onPotentialWeaponListClicked(){ _lastSelectionChanged = POTENTIAL_WEAPONS;}
+	void onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;}
+	void onPotentialShipListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
 
 	void updateUI();
 
