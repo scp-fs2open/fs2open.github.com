@@ -9,6 +9,12 @@
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
 
+constexpr int NONE = -1;
+constexpr int POTENTIAL_SHIPS = 0;
+constexpr int POTENTIAL_WEAPONS = 1;
+constexpr int USED_SHIPS = 2;
+constexpr int USED_WEAPONS = 3;
+
 // header text
 constexpr char* KEYHEADER = "In wings / Extra / Total";
 
@@ -121,6 +127,7 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
+	_lastSelectionChanged = NONE;
 	
 	// UPDATE - Now that things are split, we don't need this anymore.  Keep it around for reference until TODO remove me when done
 	// rows will vary but columns need to be 3
@@ -220,6 +227,12 @@ void LoadoutDialog::removeWeaponButtonClicked()
 
 	_model->setWeaponEnabled(item, false);
 }
+
+void LoadoutDialog::onPotentialShipListClicked(){ _lastSelectionChanged = POTENTIAL_SHIPS;}
+void LoadoutDialog::onPotentialWeaponListClicked(){ _lastSelectionChanged = POTENTIAL_WEAPONS;}
+void LoadoutDialog::onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;}
+void LoadoutDialog::onPotentialShipListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
+
 
 /*
 void LoadoutDialog::onWeaponListEdited()
@@ -543,8 +556,10 @@ void LoadoutDialog::updateUI()
 
 void LoadoutDialog::resetLists() {
 	// clear the lists
-	ui->shipVarList->clearContents();
-	ui->weaponVarList->clearContents();
+	ui->usedShipsList->clearContents();
+	ui->usedWeaponsList->clearContents();
+	ui->listShipsNotUsed->clearContents();
+	ui->listWeaponsNotUsed->clearContents();
 
 	SCP_vector<std::pair<SCP_string, bool>> newShipList;
 	SCP_vector<std::pair<SCP_string, bool>> newWeaponList;
@@ -559,8 +574,8 @@ void LoadoutDialog::resetLists() {
 		newWeaponList = _model->getWeaponEnablerVariables();
 	}
 
-	ui->shipVarList->setRowCount(static_cast<int>(newShipList.size()));
-	ui->weaponVarList->setRowCount(static_cast<int>(newWeaponList.size()));
+	ui->usedShipsList->setRowCount(static_cast<int>(newShipList.size()));
+	ui->usedWeaponsList->setRowCount(static_cast<int>(newWeaponList.size()));
 
 	int currentRow = 0;
 
@@ -570,6 +585,7 @@ void LoadoutDialog::resetLists() {
 		size_t divider = newShip.first.find_last_of(" ");
 
 		// add text to the items
+		// FIXME! This is a gigantic memory leak.  Not sure what I was thinking.  Look for some other way to init.
 		QTableWidgetItem* checkItem = new QTableWidgetItem();
 		QTableWidgetItem* nameItem = new QTableWidgetItem(newShip.first.substr(0, divider).c_str());
 		QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 2).c_str());
