@@ -28,8 +28,6 @@ private:
 	EditorViewport* _viewport;
 
 	void onSwitchViewButtonPressed();
-	void onShipListEdited();
-	void onWeaponListEdited();
 	void onExtraItemSpinbox();
 	void onExtraShipComboboxUpdated();
 	void onExtraWeaponComboboxUpdated();

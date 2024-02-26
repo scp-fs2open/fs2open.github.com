@@ -160,7 +160,7 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	}
 
 	// need to completely rebuild the lists here.
-	resetLists();
+//	resetLists();
 	updateUI();
 }
 
@@ -187,7 +187,7 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 
 	// model does not keep track of whether the UI is editing the table values or the vars
 	// so, just reset the lists and then update the UI
-	resetLists();
+//	resetLists();
 	updateUI();
 }
 
@@ -267,22 +267,16 @@ void LoadoutDialog::onExtraItemSpinbox()
 	}
 }
 
-void LoadoutDialog::onExtraWeaponComboboxUpdated()
+void LoadoutDialog::onExtraItemsViaVariableCombo()
 {
 	// TODO!  Figure out if this actually makes sense
 	// if the variable is replacing the amount, get rid of the amount in the spinbox.
-	if (!ui->extraShipsViaVarCombo->currentText().isEmpty() && ui->extraShipSpinbox->value() > 0) {
+	if (!ui->extraItemsViaVariableCombo->currentText().isEmpty() && ui->extraItemSpinbox->value() > 0) {
 		ui->extraShipSpinbox->setValue(0);
-	} // if we just picked a variable, check mark the ship
-	else if (!ui->extraShipsViaVarCombo->currentText().isEmpty()) {
-		for (auto& item : ui->shipVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState(Qt::Checked);
-			}
-		}
-	}
+	} 
 
-	sendEditedWeapons();
+	// TODO, make a function that updates the model with the new combobox choice
+
 }
 
 void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
@@ -297,7 +291,6 @@ void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
 void LoadoutDialog::onCurrentTeamSpinboxUpdated()
 {
 	_model->switchTeam(ui->currentTeamSpinbox->value());
-	resetLists();
 	updateUI();
 }
 
@@ -489,6 +482,7 @@ void LoadoutDialog::updateUI()
 
 }
 
+// This has been deprecated for now.  Possibly only going to use UpdateUI, since it will add and remove items from the lists as needed.
 void LoadoutDialog::resetLists() {
 	// clear the lists
 	ui->usedShipsList->clearContents();
@@ -521,19 +515,21 @@ void LoadoutDialog::resetLists() {
 
 		// add text to the items
 		QTableWidgetItem nameItem(newShip.first.substr(0, divider).c_str());
-		QTableWidgetItem countItem(newShip.first.substr(divider + 2).c_str());
+		QTableWidgetItem countItem(newShip.first.substr(divider + 1).c_str());
 
+		// TODO, figure out how to make the entire list editable or not editable.
 		nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
 		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
 
 		// enable the check box, if necessary
 		if (newShip.second) {
-
-		} 
-
-		// overwrite the entry in the table.
-		ui->shipVarList->setItem(currentRow, 1, nameItem);
-		ui->shipVarList->setItem(currentRow, 2, countItem);
+			// overwrite the entry in the table.
+			// TODO, check this syntax
+			ui->usedShipList->insertItem(ui->usedShipList.size() -1 , 0, nameItem);
+			ui->usedShipList->setItem(ui->usedShipList.size() - 1, 1, countItem);
+		} else {
+			ui->
+		}
 
 		currentRow++;
 	}
