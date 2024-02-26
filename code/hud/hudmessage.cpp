@@ -1264,7 +1264,7 @@ void HudGaugeTalkingHead::pageIn()
 	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
 }
 
-bool HudGaugeTalkingHead::canRender()
+bool HudGaugeTalkingHead::canRender() const
 {
 	if (sexp_override) {
 		return false;
