@@ -261,9 +261,9 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 	{
 		if(newh && newh->isSubsystemValid())
 		{
-			if(wp->target_sig != newh->sig)
+			if(wp->target_sig != newh->objh.sig)
 			{
-				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1, newh->ss);
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objh.objp), 1, newh->ss);
 			}
 			else
 			{

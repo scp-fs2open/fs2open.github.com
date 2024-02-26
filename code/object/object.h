@@ -177,7 +177,8 @@ namespace luacpp {
 extern int Num_objects;
 extern object Objects[];
 
-struct object_h {
+struct object_h final	// prevent subclassing because classes which might use this should have their own isValid member function
+{
 	object *objp;
 	int sig;
 

@@ -9,16 +9,12 @@
 namespace scripting {
 namespace api {
 
-ship_banktype_h::ship_banktype_h() : object_h () {
-	sw = NULL;
-	type = SWH_NONE;
-}
-ship_banktype_h::ship_banktype_h(object* objp_in, ship_weapon* wpn, int in_type) : object_h(objp_in) {
-	sw = wpn;
-	type = in_type;
-}
-bool ship_banktype_h::isValid() const {
-	return object_h::isValid() && sw != NULL && (type == SWH_PRIMARY || type == SWH_SECONDARY || type == SWH_TERTIARY);
+ship_banktype_h::ship_banktype_h() : objh(), sw(nullptr), type(SWH_NONE) {}
+ship_banktype_h::ship_banktype_h(object* objp_in, ship_weapon* wpn, int in_type) : objh(objp_in), sw(wpn), type(in_type) {}
+
+bool ship_banktype_h::isValid() const
+{
+	return objh.isValid() && sw != nullptr && (type == SWH_PRIMARY || type == SWH_SECONDARY || type == SWH_TERTIARY);
 }
 
 //**********HANDLE: Weaponbanktype
@@ -81,7 +77,7 @@ ADE_INDEXER(l_WeaponBankType, "number Index", "Array of weapon banks", "weaponba
 			return ade_set_error(L, "o", l_WeaponBank.Set(ship_bank_h()));	//Invalid type
 	}
 
-	return ade_set_args(L, "o", l_WeaponBank.Set(ship_bank_h(sb->objp, sb->sw, sb->type, idx)));
+	return ade_set_args(L, "o", l_WeaponBank.Set(ship_bank_h(sb->objh.objp, sb->sw, sb->type, idx)));
 }
 
 ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or unlinked fire mode (Primary-only)", "boolean", "Link status, or false if handle is invalid")
@@ -100,10 +96,10 @@ ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or u
 	{
 		case SWH_PRIMARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
-				Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked, newlink);
+				Ships[bh->objh.objp->instance].flags.set(Ship::Ship_Flags::Primary_linked, newlink);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Primary_linked]));
+			return ade_set_args(L, "b", (Ships[bh->objh.objp->instance].flags[Ship::Ship_Flags::Primary_linked]));
 
 		case SWH_SECONDARY:
 		case SWH_TERTIARY:
@@ -129,10 +125,10 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
 	{
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
-				Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, newfire);
+				Ships[bh->objh.objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, newfire);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]));
+			return ade_set_args(L, "b", (Ships[bh->objh.objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]));
 
 		case SWH_PRIMARY:
 		case SWH_TERTIARY:
@@ -297,9 +293,9 @@ ADE_VIRTVAR(AmmoMax, l_WeaponBank, "number", "Maximum ammo for the current bank<
 
 			int weapon_class = bh->sw->primary_bank_weapons[bh->bank];
 
-			Assert(bh->objp->type == OBJ_SHIP);
+			Assert(bh->objh.objp->type == OBJ_SHIP);
 
-			return ade_set_args(L, "i", get_max_ammo_count_for_primary_bank(Ships[bh->objp->instance].ship_info_index, bh->bank, weapon_class));
+			return ade_set_args(L, "i", get_max_ammo_count_for_primary_bank(Ships[bh->objh.objp->instance].ship_info_index, bh->bank, weapon_class));
 		}
 		case SWH_SECONDARY:
 		{
@@ -309,9 +305,9 @@ ADE_VIRTVAR(AmmoMax, l_WeaponBank, "number", "Maximum ammo for the current bank<
 
 			int weapon_class = bh->sw->secondary_bank_weapons[bh->bank];
 
-			Assert(bh->objp->type == OBJ_SHIP);
+			Assert(bh->objh.objp->type == OBJ_SHIP);
 
-			return ade_set_args(L, "i", get_max_ammo_count_for_bank(Ships[bh->objp->instance].ship_info_index, bh->bank, weapon_class));
+			return ade_set_args(L, "i", get_max_ammo_count_for_bank(Ships[bh->objh.objp->instance].ship_info_index, bh->bank, weapon_class));
 		}
 		case SWH_TERTIARY:
 			if(ADE_SETTING_VAR && ammomax > -1) {

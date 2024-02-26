@@ -606,7 +606,7 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	if (!ade_get_args(L, "oo|ooo", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), l_Enum.Get(&enum_flags), l_Subsystem.GetPtr(&tgsh)))
 		return ade_set_error(L, "i", -1);
 
-	if (!objh->isValid() || !seh->isValid() || (tgsh && (!tgsh->isValid() || !tgsh->isSubsystemValid())))
+	if (!objh->isValid() || !seh->isValid() || (tgsh && !tgsh->isSubsystemValid()))
 		return ade_set_error(L, "i", -1);
 
 	auto objp = objh->objp;
@@ -656,7 +656,7 @@ ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
 	if (!ade_get_args(L, "oo|o", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Subsystem.GetPtr(&tgsh)))
 		return ADE_RETURN_NIL;
 
-	if (!objh->isValid() || !seh->isValid() || (tgsh && (!tgsh->isValid() || !tgsh->isSubsystemValid())))
+	if (!objh->isValid() || !seh->isValid() || (tgsh && !tgsh->isSubsystemValid()))
 		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;

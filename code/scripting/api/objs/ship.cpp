@@ -719,7 +719,7 @@ ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon ban
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
 	if(ADE_SETTING_VAR && swh && swh->isValid()) {
-		ship_weapon *src = &Ships[swh->objp->instance].weapons;
+		ship_weapon *src = &Ships[swh->objh.objp->instance].weapons;
 
 		dst->current_primary_bank = src->current_primary_bank;
 		dst->num_primary_banks = src->num_primary_banks;
@@ -750,7 +750,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Ship, "weaponbanktype", "Array of secondary weapon
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
 	if(ADE_SETTING_VAR && swh && swh->isValid()) {
-		ship_weapon *src = &Ships[swh->objp->instance].weapons;
+		ship_weapon *src = &Ships[swh->objh.objp->instance].weapons;
 
 		dst->current_secondary_bank = src->current_secondary_bank;
 		dst->num_secondary_banks = src->num_secondary_banks;
@@ -782,7 +782,7 @@ ADE_VIRTVAR(TertiaryBanks, l_Ship, "weaponbanktype", "Array of tertiary weapon b
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
 	if(ADE_SETTING_VAR && swh && swh->isValid()) {
-		ship_weapon *src = &Ships[swh->objp->instance].weapons;
+		ship_weapon *src = &Ships[swh->objh.objp->instance].weapons;
 
 		dst->current_tertiary_bank = src->current_tertiary_bank;
 		dst->num_tertiary_banks = src->num_tertiary_banks;
@@ -857,14 +857,14 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 		if(newh && newh->isSubsystemValid())
 		{
 			if (aip == Player_ai) {
-				if (aip->target_signature != newh->sig)
-					hud_shield_hit_reset(newh->objp);
+				if (aip->target_signature != newh->objh.sig)
+					hud_shield_hit_reset(newh->objh.objp);
 
 				Ships[Objects[newh->ss->parent_objnum].instance].last_targeted_subobject[Player_num] = newh->ss;
 			}
 
-			aip->target_objnum = OBJ_INDEX(newh->objp);
-			aip->target_signature = newh->sig;
+			aip->target_objnum = OBJ_INDEX(newh->objh.objp);
+			aip->target_signature = newh->objh.sig;
 			aip->target_time = 0.0f;
 			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
 		}
@@ -1591,7 +1591,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			{
 				ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
-				ai_submode = ship_find_subsys( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
+				ai_submode = ship_find_subsys( &Ships[tgsh->objh.objp->instance], tgsh->ss->system_info->subobj_name );
 			}
 			else if(tgh_valid && tgh->objp->type == OBJ_WEAPON)
 			{
