@@ -527,9 +527,9 @@ void LoadoutDialog::resetLists() {
 			// TODO, check this syntax
 			ui->usedShipList->insertItem(ui->usedShipList.size() -1 , 0, nameItem);
 			ui->usedShipList->setItem(ui->usedShipList.size() - 1, 1, countItem);
-		} else {
-			ui->
-		}
+		} //else {
+			//ui->
+		//}
 
 		currentRow++;
 	}
