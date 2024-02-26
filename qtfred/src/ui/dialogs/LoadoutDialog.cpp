@@ -16,7 +16,7 @@ constexpr int USED_SHIPS = 2;
 constexpr int USED_WEAPONS = 3;
 
 // header text
-constexpr char* KEYHEADER = "In wings / Extra / Total";
+constexpr char* KEYHEADER = "In Wings/Extra";
 
 
 namespace fso {
@@ -113,7 +113,6 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onExtraItemsViaVariableCombo);
 
-
 	// Team controls
 	connect(ui->currentTeamSpinbox,
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -125,15 +124,11 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
 
-
 	// Miscellaneous controls
 	connect(ui->playerDelayDoubleSpinbox,
 		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
 		this,
 		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
-
-
-
 
 
 	// things that must be set for everything to work...
@@ -153,7 +148,7 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 
-	// quickly enable or diable the team spin box (must not get to multiple teams if in SP!)
+	// quickly enable or disable the team spin box (must not get to multiple teams if in SP!)
 	if (The_mission.game_type & MISSION_TYPE_MULTI){
 		ui->currentTeamSpinbox->setEnabled(true);
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(true);
@@ -204,6 +199,7 @@ void LoadoutDialog::addShipButtonClicked()
 	}
 
 	_model->setShipEnabled(list, true);
+	updateUI();
 }
 
 void LoadoutDialog::addWeaponButtonClicked()
@@ -215,6 +211,7 @@ void LoadoutDialog::addWeaponButtonClicked()
 	}
 
 	_model->setWeaponEnabled(list, true);
+	updateUI();
 }
 
 void LoadoutDialog::removeShipButtonClicked()
@@ -226,6 +223,7 @@ void LoadoutDialog::removeShipButtonClicked()
 	}
 
 	_model->setShipEnabled(item, false);
+	updateUI();
 }
 
 void LoadoutDialog::removeWeaponButtonClicked()
@@ -237,6 +235,7 @@ void LoadoutDialog::removeWeaponButtonClicked()
 	}
 
 	_model->setWeaponEnabled(item, false);
+	updateUI();
 }
 
 void LoadoutDialog::onPotentialShipListClicked(){ _lastSelectionChanged = POTENTIAL_SHIPS;}
@@ -430,10 +429,16 @@ void LoadoutDialog::sendEditedWeapons()
 
 void LoadoutDialog::updateUI()
 {
+	// clear the list widgets. A little drastic, but the easiest to code.
+	ui->listShipsNotUsed.clearContents();
+	ui->listWeaponsNotUsed.clearContents();
+	ui->usedShipsList.clearContents();
+	ui->usedWeaponsList.clearContents();
+
+	// repopulate with the correct lists from the model.
 	SCP_vector<std::pair<SCP_string, bool>> newShipList;
 	SCP_vector<std::pair<SCP_string, bool>> newWeaponList;
 
-	// repopulate with the correct lists from the model.
 	if (_mode == TABLE_MODE) {
 		newShipList = _model->getShipList();
 		newWeaponList = _model->getWeaponList();
@@ -443,45 +448,36 @@ void LoadoutDialog::updateUI()
 		newWeaponList = _model->getWeaponEnablerVariables();
 	}
 
-	int currentRow = 0;
-
 
 	// build the ship list...
-	for (auto& newShip : newShipList) {
+	for (auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newShip.first.find_last_of(" ");
 
-		// Overwrite the old number text.
-		ui->shipVarList->item(currentRow, 2)->setText(newShip.first.substr(divider + 1).c_str());
-
-		// enable the check box, if necessary - UPDATE!  I am not sure this is actually a good idea.
-		// This implies that the model is always right, even when something has just been checked.
-		(newShip.second) ? ui->shipVarList->item(currentRow, 0)->setCheckState(Qt::Checked) : ui->shipVarList->item(currentRow, 0)->setCheckState(Qt::Unchecked);
-
-		currentRow++;
+		if (newShip.second) {
+			ui->usedShipsList->addItem(newShip.substr(0, divider).c_str());
+			// TODO! Fix the incoming string so that it matches the new header.
+			ui->usedShipsList->item(usedShipsList.size() - 1, 1)->setText(newShip.first.substr(divider + 1).c_str());
+		} else {
+			ui->listShipsNotUsed->addItem(newShip.substr(0, divider).c_str());			
+		}
 	}
 
 	currentRow = 0;
 
 	for (auto& newWeapon : newWeaponList) {
-		// need to split the incoming string into the different parts.
-		size_t divider = newWeapon.first.find_last_of(" ");
+		//listShipsNotUsed -- The list of ships that is not present in the loadout.
+		//listWeaponsNotUsed -- The list of weapons that is not present in the loadout
+		//usedShipsList
+		//usedWeaponsList
 
-		// Overwrite the old number text.
-		ui->weaponVarList->item(currentRow, 2)->setText(newWeapon.first.substr(divider + 1).c_str());
-
-
-		// enable the check box, if necessary - UPDATE!  I am not sure this is actually a good idea.
-		// This implies that the model is always right, even when something has just been checked.
-		(newWeapon.second) ? ui->weaponVarList->item(currentRow, 0)->setCheckState(Qt::Checked) : ui->weaponVarList->item(currentRow, 0)->setCheckState(Qt::Unchecked);
-
-		currentRow++;
-	}
-
-	SCP_vector<SCP_string> namesOut;
-	// get all selected ship items to send to the model
-	for (auto& item : ui->shipVarList->selectedItems()) {
-		namesOut.push_back(ui->shipVarList->itemAt(item->row(), 1)->text().toStdString());
+		if (newWeapon.second) {
+			ui->usedWeaponsList->addItem(newWeapon.substr(0, divider).c_str());
+			// TODO! Fix the incoming string so that it matches the new header.
+			ui->usedWeaponsList->item(usedWeaponsList.size() - 1, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+		} else {
+			ui->listWeaponsNotUsed->addItem(newWeapon.substr(0, divider).c_str());			
+		}
 	}
 
 	int temp;
@@ -596,7 +592,6 @@ void LoadoutDialog::resetLists() {
 		size_t divider = newShip.first.find_last_of(" ");
 
 		// add text to the items
-		// FIXME! This is a gigantic memory leak.  Not sure what I was thinking.  Look for some other way to init.
 		QTableWidgetItem nameItem(newShip.first.substr(0, divider).c_str());
 		QTableWidgetItem countItem(newShip.first.substr(divider + 2).c_str());
 
@@ -622,9 +617,8 @@ void LoadoutDialog::resetLists() {
 		size_t divider = newWeapon.first.find_last_of(" ");
 
 		// add text to the items
-		QTableWidgetItem* checkItem = new QTableWidgetItem();
-		QTableWidgetItem* nameItem = new QTableWidgetItem(newWeapon.first.substr(0, divider).c_str());
-		QTableWidgetItem* countItem = new QTableWidgetItem(newWeapon.first.substr(divider + 2).c_str());
+		QTableWidgetItem nameItem(newWeapon.first.substr(0, divider).c_str());
+		QTableWidgetItem countItem(newWeapon.first.substr(divider + 2).c_str());
 
 		nameItem->setFlags(nameItem->flags() &  ~Qt::ItemIsEditable);
 		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
@@ -633,7 +627,6 @@ void LoadoutDialog::resetLists() {
 		(newWeapon.second) ? checkItem->setCheckState(Qt::Checked) : checkItem->setCheckState(Qt::Unchecked);
 
 		// overwrite the entry in the table.
-		ui->weaponVarList->setItem(currentRow, 0, checkItem);
 		ui->weaponVarList->setItem(currentRow, 1, nameItem);
 		ui->weaponVarList->setItem(currentRow, 2, countItem);
 
