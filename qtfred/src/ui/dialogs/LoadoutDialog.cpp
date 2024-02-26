@@ -244,103 +244,35 @@ void LoadoutDialog::onPotentialWeaponListClicked(){ _lastSelectionChanged = POTE
 void LoadoutDialog::onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;}
 void LoadoutDialog::onUsedWeaponListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
 
-
-/* This was the previous way of doing things, which involved having check marks enable things.  Foolish Cyborg ....
-void LoadoutDialog::onWeaponListEdited()
-{
-	SCP_vector<bool> newEnabledStatus;
-	bool newStatus, checksChanged = false;
-
-	// we need the index anyway, and more efficient to iterate through just the first column.
-	for (int i = 0; i < ui->weaponVarList->rowCount(); i++) {
-		bool checkState = (ui->weaponVarList->item(i,0)->checkState() == Qt::Checked);
-		newEnabledStatus.push_back(checkState);
-
-		// compare the old to the new to see if there was a change in check marks.
-		// this would break if the amount of ships or weapons ever became dynamic
-		if (!checksChanged && !_lastEnabledWeapons.empty() && (_lastEnabledWeapons[i] != newEnabledStatus[i])) {
-			newStatus = newEnabledStatus[i];
-			checksChanged = true;
-		}
-		else if (_lastEnabledWeapons.empty()) {
-			newStatus = newEnabledStatus[i];
-			checksChanged = true;
-		}
-	}
-
-	if (checksChanged) {
-		// go through the selected cells and check/uncheck the ones in the first column.
-		for (auto& item : ui->weaponVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState((newStatus) ? Qt::Checked : Qt::Unchecked);
-			}
-		}
-
-		// redo the _lastEnabledWeapons vector to reflect the change.
-		_lastEnabledWeapons.clear();
-		for (int i = 0; i < ui->weaponVarList->rowCount(); i++) {
-			_lastEnabledWeapons.push_back(ui->weaponVarList->item(i, 0)->checkState() == Qt::Checked);
-		}
-	} // if we ended up here, basically something was probably selected or unselected, but there's a chance that it is an incompatible selection.
-	// because if just one is enabled or disabled, then there is no way to automatically reconcile the info.
-	// IOW, I can't automatically check it for you, FREDer
-	else { 
-		_lastEnabledWeapons = newEnabledStatus;
-
-		bool newSelectedCheckStatus = (ui->weaponVarList->currentItem()->checkState() == Qt::Checked);
-
-		for (auto& item : ui->weaponVarList->selectedItems()) {
-			if (item->column() == 0) {
-				bool oldSelectedCheckStatus = (item->checkState() == Qt::Checked);
-
-				// so the newly selected item does not match the rest, and is incompatible. So clear our old selection.
-				if (newSelectedCheckStatus != oldSelectedCheckStatus) {
-					ui->weaponVarList->clearSelection();
-					// and reselect our new one!
-					ui->weaponVarList->selectRow(ui->weaponVarList->currentItem()->row());
-					// nothing actually changed, so return!
-					break;
-				}
-			}
-		}
-	}
-
-	sendEditedWeapons();
-}
-*/
-
 void LoadoutDialog::onExtraItemSpinbox()
 {
 	SCP_vector<SCP_string> list;
 
-	if (_lastSelectionChanged == 2){
+	if (_lastSelectionChanged == USED_SHIPS){
 		for (const auto& item : ui->usedShipsList->selectedItems()){
 			list.push_back(item->text());
 		}
 
 		_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
-	} else if (_lastSelectionChanged == 3){
+	} else if (_lastSelectionChanged == USED_WEAPONS){
 		for (const auto& item : ui->usedWeaponsList->selectedItems()){
 			list.push_back(item->text());
 		}
 
+		if (ui->extraItemSpinBox < 0){
+			ui->extraItemsSpinBox.setValue(0.0f);
+		}
+		
 		_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
 	}
 }
 
 void LoadoutDialog::onExtraWeaponComboboxUpdated()
 {
-
+	// TODO!  Figure out if this actually makes sense
 	// if the variable is replacing the amount, get rid of the amount in the spinbox.
 	if (!ui->extraShipsViaVarCombo->currentText().isEmpty() && ui->extraShipSpinbox->value() > 0) {
 		ui->extraShipSpinbox->setValue(0);
-	} // if there are no ships allocated, uncheck the ship
-	else if (ui->extraShipsViaVarCombo->currentText().isEmpty() && ui->extraShipSpinbox->value() == 0) {
-		for (auto& item : ui->shipVarList->selectedItems()) {
-			if (item->column() == 0) {
-				item->setCheckState(Qt::Unchecked);
-			}
-		}
 	} // if we just picked a variable, check mark the ship
 	else if (!ui->extraShipsViaVarCombo->currentText().isEmpty()) {
 		for (auto& item : ui->shipVarList->selectedItems()) {
@@ -365,67 +297,14 @@ void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
 void LoadoutDialog::onCurrentTeamSpinboxUpdated()
 {
 	_model->switchTeam(ui->currentTeamSpinbox->value());
+	resetLists();
+	updateUI();
 }
 
 void LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
 {
+	// TODO! Add confirmation button
 	_model->copyToOtherTeam();
-}
-
-void LoadoutDialog::sendEditedShips()
-{
-	SCP_vector<SCP_string> namesOut;
-	bool enabled = false;
-
-	for (auto& item : ui->shipVarList->selectedItems()) {
-		if (item->column() == 0) {
-			enabled = (item->checkState() == Qt::Checked);
-		}
-		else if (item->column() == 1) {
-			namesOut.push_back(item->text().toStdString());
-		}
-			
-	}
-
-	if (_mode == TABLE_MODE) {
-		// why did I do it this way?  I don't know. Sorry. I wrote the model first.
-		for (auto& nameOut : namesOut){
-
-			_model->setShipInfo(nameOut, enabled, ui->extraShipSpinbox->value(), ui->extraShipsViaVarCombo->currentText().toStdString());
-		}
-	}
-	else {
-		_model->setShipEnablerVariables(namesOut, enabled, ui->extraShipSpinbox->value(), ui->extraShipsViaVarCombo->currentText().toStdString());
-	}
-
-	updateUI(); // Better to call it here, than over and over with a modelChanged
-}
-
-void LoadoutDialog::sendEditedWeapons()
-{
-	SCP_vector<SCP_string> namesOut;
-	bool enabled = false;
-
-	for (auto& item : ui->weaponVarList->selectedItems()) {
-		if (item->column() == 0) {
-			enabled = (item->checkState() == Qt::Checked);
-		} else if (item->column() == 1){
-			namesOut.push_back(ui->weaponVarList->itemAt(item->row(), 0)->text().toStdString());
-		}
-
-	}
-
-	if (_mode == TABLE_MODE) {
-		// why did I do it this way?  Bad assumption, sorry. I wrote the model first.
-		for (auto& nameOut : namesOut){
-			_model->setWeaponInfo(nameOut, enabled, ui->extraWepSpinbox->value(), ui->extraWeaponsViaVarCombo->currentText().toStdString());
-		}
-	}
-	else {
-		_model->setWeaponEnablerVariables(namesOut, enabled, ui->extraWepSpinbox->value(), ui->extraWeaponsViaVarCombo->currentText().toStdString());
-	}
-
-	updateUI(); // Better to call it here, than over and over with a modelChanged
 }
 
 void LoadoutDialog::updateUI()
