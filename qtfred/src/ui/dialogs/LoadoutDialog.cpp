@@ -108,7 +108,6 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onextraItemSpinboxUpdated);
 
-	// TODO Need to make function for this.
 	connect(ui->extraItemsViaVariableCombo,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this,
@@ -172,14 +171,14 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 	// Change important lables.
 	if (_mode == TABLE_MODE) {
 		ui->tableVarLabel->setText("Loadout Editor: Variable View");
-		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creato
+		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
 		ui->startingShipsLabel->setText("Potential Variables - Ships");
 		ui->startingWeaponsLabel->setText("Potential Variables - Weapons");
 		_mode = VARIABLE_MODE;
 	}
 	else {
 		ui->tableVarLabel->setText("Loadout Editor: Loadout View");
-		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creato
+		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
 		ui->startingShipsLabel->setText("Ships Not in Loadout");
 		ui->startingWeaponsLabel->setText("Starting Weapons");
 		_mode = TABLE_MODE;
@@ -238,11 +237,6 @@ void LoadoutDialog::removeWeaponButtonClicked()
 	_model->setWeaponEnabled(item, false);
 	updateUI();
 }
-
-void LoadoutDialog::onPotentialShipListClicked(){ _lastSelectionChanged = POTENTIAL_SHIPS;}
-void LoadoutDialog::onPotentialWeaponListClicked(){ _lastSelectionChanged = POTENTIAL_WEAPONS;}
-void LoadoutDialog::onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;}
-void LoadoutDialog::onUsedWeaponListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
 
 void LoadoutDialog::onExtraItemSpinbox()
 {
@@ -455,6 +449,7 @@ void LoadoutDialog::updateUI()
 			namesOut.emplace_back(item.c_str());
 			requestSpinComboUpdate = true;
 		}
+	} else if (mode == VARIABLE_MODE) {11111111111111111111111111111																																																																																																																																																					
 	} else {
 		ui->extraItemSpinbox->setEnabled(false);
 		ui->extraItemsViaVariableCombo->setEnabled(false);
@@ -556,6 +551,11 @@ void LoadoutDialog::resetLists() {
 
 		currentRow++;
 	}
+}
+
+
+void LoadoutDialog::getCurrentSelection{
+
 }
 
 }
