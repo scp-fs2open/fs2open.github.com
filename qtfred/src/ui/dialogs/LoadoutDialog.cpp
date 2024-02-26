@@ -22,7 +22,8 @@ constexpr char* KEYHEADER = "In Wings/Extra";
 namespace fso {
 namespace fred {
 namespace dialogs {
-	//ui includes: tableVarLabel, switches between "Loadout Editor: Loadout View" and "Loadout Editor: Variable View"
+	//ui includes:
+	// tableVarLabel, switches between "Loadout Editor: Loadout View" and "Loadout Editor: Variable View"
 	//switchViewButton for switching modes
 	//startingShipsLabel "Ships Not in Loadout"
 	//listShipsNotUsed -- The list of ships that is not present in the loadout.
@@ -429,17 +430,12 @@ void LoadoutDialog::sendEditedWeapons()
 
 void LoadoutDialog::updateUI()
 {
-	// clear the list widgets. A little drastic, but the easiest to code.
-	ui->listShipsNotUsed.clearContents();
-	ui->listWeaponsNotUsed.clearContents();
-	ui->usedShipsList.clearContents();
-	ui->usedWeaponsList.clearContents();
-
 	// repopulate with the correct lists from the model.
 	SCP_vector<std::pair<SCP_string, bool>> newShipList;
 	SCP_vector<std::pair<SCP_string, bool>> newWeaponList;
 
 	if (_mode == TABLE_MODE) {
+
 		newShipList = _model->getShipList();
 		newWeaponList = _model->getWeaponList();
 	}
@@ -449,115 +445,168 @@ void LoadoutDialog::updateUI()
 	}
 
 
-	// build the ship list...
+	// build the ship lists...
 	for (auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newShip.first.find_last_of(" ");
-
+		const char* shipName = ui->usedShipsList->addItem(newShip.substr(0, divider).c_str());
 		if (newShip.second) {
-			ui->usedShipsList->addItem(newShip.substr(0, divider).c_str());
+			bool found = false;
+			
+			for (uint x = 0; x < ui->usedShipsList.size(); ++x){
+				if (!stricmp(ui->usedShipsList->item(x, 0), newShip.first.c_str(), shipName)){
+					found = true;
+					// only need to update the quantities here.
+					ui->usedShipsList->item(x, 1)->setText(newShip.first.substr(divider + 1).c_str());
+					break;
+				}
+			}
+
+			if (!found){
+				ui->usedShipsList->addItem(newShip.substr(0, divider).c_str());
+				ui->usedShipsList->item(ui->usedShipsList.size() - 1, 1)->setText(newShip.first.substr(divider + 1).c_str());
+
+				//remove from the used list
+				for (uint x = 0; x < ui->listShipsNotUsed.size(); ++x){
+					if (!stricmp(ui->listShipsNotUsed->item(x,0), newShip.substr(0, divider).c_str())){
+						delete ui->listShipsNotUsed->takeItem(x);
+						break;
+					}
+				}
+			}
 			// TODO! Fix the incoming string so that it matches the new header.
-			ui->usedShipsList->item(usedShipsList.size() - 1, 1)->setText(newShip.first.substr(divider + 1).c_str());
 		} else {
-			ui->listShipsNotUsed->addItem(newShip.substr(0, divider).c_str());			
+			bool found = false;
+
+			for (uint x = 0; x < ui->listShipsNotUsed.size(); ++x){
+				if (!stricmp(ui->listShipsNotUsed->item(x, 0), newShip.first.c_str(), shipName)){
+					found = true;
+					// only need to update the quantities here.
+					ui->listShipsNotUsed->item(x, 1)->setText(newShip.first.substr(divider + 1).c_str());
+					break;
+				}
+			}
+
+			if (!found){
+				ui->listShipsNotUsed->addItem(newShip.substr(0, divider).c_str());
+				ui->listShipsNotUsed->item(listShipsNotUsed.size() - 1, 1)->setText(newShip.first.substr(divider + 1).c_str());
+
+				//remove from the used list
+				for (uint x = 0; x < ui->usedShipsList.size(); ++x){
+					if (!stricmp(ui->usedShipsList->item(x,0), newShip.substr(0, divider).c_str())){
+						delete ui->usedShipsList->takeItem(x);
+						break;
+					}
+				}
+			}
 		}
 	}
 
-	currentRow = 0;
-
-	for (auto& newWeapon : newWeaponList) {
-		//listShipsNotUsed -- The list of ships that is not present in the loadout.
-		//listWeaponsNotUsed -- The list of weapons that is not present in the loadout
-		//usedShipsList
-		//usedWeaponsList
-
+	for (auto& newWeapon : newWeaponList) {		
+		// need to split the incoming string into the different parts.
+		size_t divider = newWeapon.first.find_last_of(" ");
+		const char* shipName = ui->usedWeaponsList->addItem(newWeapon.substr(0, divider).c_str());
 		if (newWeapon.second) {
-			ui->usedWeaponsList->addItem(newWeapon.substr(0, divider).c_str());
+			bool found = false;
+			
+			// Add or update in the used list
+			for (uint x = 0; x < ui->usedWeaponsList.size(); ++x){
+				if (!stricmp(ui->usedWeaponsList->item(x, 0), newWeapon.first.c_str(), shipName)){
+					found = true;
+					// only need to update the quantities here.
+					ui->usedWeaponsList->item(x, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+					break;
+				}
+			}
+
+			if (!found){
+				ui->usedWeaponsList->addItem(newWeapon.substr(0, divider).c_str());
+				ui->usedWeaponsList->item(ui->usedWeaponsList.size() - 1, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+
+				//remove from the unused list
+				for (uint x = 0; x < ui->listWeaponsNotUsed.size(); ++x){
+					if (!stricmp(ui->listWeaponsNotUsed->item(x,0), newWeapon.substr(0, divider).c_str())){
+						delete ui->listWeaponsNotUsed->takeItem(x);
+						break;
+					}
+				}
+			}
 			// TODO! Fix the incoming string so that it matches the new header.
-			ui->usedWeaponsList->item(usedWeaponsList.size() - 1, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+			
 		} else {
-			ui->listWeaponsNotUsed->addItem(newWeapon.substr(0, divider).c_str());			
+			bool found = false;
+
+			for (uint x = 0; x < ui->listWeaponsNotUsed.size(); ++x){
+				if (!stricmp(ui->listWeaponsNotUsed->item(x, 0), newWeapon.first.c_str(), shipName)){
+					found = true;
+					// only need to update the quantities here.
+					ui->listWeaponsNotUsed->item(x, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+					break;
+				}
+			}
+
+			if (!found){
+				ui->listWeaponsNotUsed->addItem(newWeapon.substr(0, divider).c_str());
+				ui->listWeaponsNotUsed->item(listWeaponsNotUsed.size() - 1, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+
+				//remove from the used list
+				for (uint x = 0; x < ui->usedWeaponsList.size(); ++x){
+					if (!stricmp(ui->usedWeaponsList->item(x,0), newWeapon.substr(0, divider).c_str())){
+						delete ui->usedWeaponsList->takeItem(x);
+						break;
+					}
+				}
+			}
 		}
 	}
 
 	int temp;
 	bool spinboxUpdate = _model->spinBoxUpdateRequired();
 
-	// request info for combo and extra ship box.
-	if (_mode == TABLE_MODE && (spinboxUpdate || !ui->extraShipSpinbox->isEnabled())) {
-		ui->extraShipsViaVarCombo->setCurrentText(_model->getCountVarShips(namesOut).c_str()); // TODO in the future, loop through current choices.
+	SCP_vector<SCP_string> namesOut;
+	bool requestSpinComboUpdate = false;
 
-		temp = _model->getExtraAllocatedShips(namesOut);
+	// Do some basic enabling and disabling
+	if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS){
+		ui->extraItemSpinbox->setEnabled(true);
+		ui->extraItemsViaVariableCombo->setEnabled(true);
+		
+		for (const auto& item : ui->usedShipList->selectedItems()){
+			namesOut.emplace_back(item.c_str());
+			requestSpinComboUpdate = true;
+		}
+	} else if (mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS){
+		ui->extraItemSpinbox->setEnabled(true);
+		ui->extraItemsViaVariableCombo->setEnabled(true);
 
-		if (temp > -1){
-			ui->extraShipSpinbox->setValue(temp);
+		for (const auto& item : ui->usedWeaponList->selectedItems()){
+			namesOut.emplace_back(item.c_str());
+			requestSpinComboUpdate = true;
 		}
-		else {
-			ui->extraShipSpinbox->clear();
-		}
+	} else {
+		ui->extraItemSpinbox->setEnabled(false);
+		ui->extraItemsViaVariableCombo->setEnabled(false);
 	}
-	else if (spinboxUpdate || !ui->extraShipSpinbox->isEnabled()){
-		ui->extraShipsViaVarCombo->setCurrentText(_model->getCountVarShipEnabler(namesOut).c_str());
 
-		temp = _model->getExtraAllocatedShipEnabler(namesOut);
+	if (requestSpinComboUpdate){
+		ui->extraItemsViaVariableCombo->setCurrentText(_model->getCountVarShips(namesOut).c_str());
+		
+		int temp;
+
+		if (_lastSelectionChanged == USED_SHIPS){
+			temp = _model->getExtraAllocatedShipEnabler(namesOut);		
+		} else {
+			temp = _model->getExtraAllocatedWeapons(namesOut);
+		}
 
 		if (temp > -1) {
-			ui->extraShipSpinbox->setValue(temp);
+			ui->extraItemSpinbox->setValue(temp);
 		}
 		else {
-			ui->extraShipSpinbox->clear();
-		}
-
-	}
-
-	namesOut.clear();
-
-	for (auto& item : ui->weaponVarList->selectedItems()) {
-		namesOut.push_back(ui->weaponVarList->itemAt(item->row(), 0)->text().toStdString());
-	}
-
-	if (_mode == TABLE_MODE && (spinboxUpdate || !ui->extraWepSpinbox->isEnabled())) {
-		ui->extraWeaponsViaVarCombo->setCurrentText(_model->getCountVarWeapons(namesOut).c_str()); // TODO in the future, loop through current choices.
-		ui->extraWepSpinbox->setValue(_model->getExtraAllocatedWeapons(namesOut));
-
-		temp = _model->getExtraAllocatedWeapons(namesOut);
-
-		if (temp > -1) {
-			ui->extraWepSpinbox->setValue(temp);
-		} 
-		else {
-			ui->extraWepSpinbox->clear();
-		}
-	}
-	else if (spinboxUpdate || !ui->extraWepSpinbox->isEnabled()) {
-		ui->extraWeaponsViaVarCombo->setCurrentText(_model->getCountVarWeaponEnabler(namesOut).c_str());
-		ui->extraWepSpinbox->setValue(_model->getExtraAllocatedWeaponEnabler(namesOut));
-
-		if (temp > -1) {
-			ui->extraWepSpinbox->setValue(temp);
-		} 
-		else {
-			ui->extraWepSpinbox->clear();
+			ui->extraItemSpinbox->clear();
 		}
 	}
 
-	if (ui->shipVarList->selectedItems().isEmpty()) {
-		ui->extraShipsViaVarCombo->setEnabled(false);
-		ui->extraShipSpinbox->setEnabled(false);
-	}
-	else {
-		ui->extraShipsViaVarCombo->setEnabled(true);
-		ui->extraShipSpinbox->setEnabled(true);
-	}
-
-	if (ui->weaponVarList->selectedItems().isEmpty()) {
-		ui->extraWeaponsViaVarCombo->setEnabled(false);
-		ui->extraWepSpinbox->setEnabled(false);
-	}
-	else {
-		ui->extraWeaponsViaVarCombo->setEnabled(true);
-		ui->extraWepSpinbox->setEnabled(true);
-	}
 
 }
 
