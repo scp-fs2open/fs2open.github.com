@@ -29,8 +29,7 @@ private:
 
 	void onSwitchViewButtonPressed();
 	void onExtraItemSpinbox();
-	void onExtraShipComboboxUpdated();
-	void onExtraWeaponComboboxUpdated();
+	void onExtraItemsViaVariableCombo();
 	void onPlayerDelayDoubleSpinBoxUpdated();
 	void onCurrentTeamSpinboxUpdated();
 	void onCopyLoadoutToOtherTeamsButtonPressed();
@@ -44,9 +43,6 @@ private:
 	void onPotentialShipListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
 
 	void updateUI();
-
-	void sendEditedShips();
-	void sendEditedWeapons();
 
 	void resetLists();
 
