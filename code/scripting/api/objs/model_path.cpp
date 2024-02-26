@@ -82,7 +82,7 @@ model_path_h::model_path_h(const ship_subsys_h& _subsys, const model_path& _path
 		verts.push_back(_path.verts[i]);
 	}
 }
-bool model_path_h::isValid() const { return subsys.isSubsystemValid(); }
+bool model_path_h::isValid() const { return subsys.isValid(); }
 
 ADE_OBJ(l_ModelPath, model_path_h, "modelpath", "Path of a model");
 

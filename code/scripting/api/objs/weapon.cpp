@@ -148,7 +148,7 @@ ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if(wp->turret_subsys != newh->ss)
 			{
@@ -259,7 +259,7 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if(wp->target_sig != newh->objh.sig)
 			{

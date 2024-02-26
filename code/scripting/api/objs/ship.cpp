@@ -854,7 +854,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if (aip == Player_ai) {
 				if (aip->target_signature != newh->objh.sig)
@@ -1579,7 +1579,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 		priority = 2.0f;
 
 	bool tgh_valid = tgh && tgh->isValid();
-	bool tgsh_valid = tgsh && tgsh->isSubsystemValid();
+	bool tgsh_valid = tgsh && tgsh->isValid();
 	int ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
 	const char *ai_shipname = NULL;

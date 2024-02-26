@@ -132,7 +132,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is target
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if(bp->target_sig != newh->objh.sig)
 			{
@@ -205,7 +205,7 @@ ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired 
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if(bp->sig != newh->objh.sig)
 			{

@@ -16,7 +16,7 @@ struct ship_subsys_h
 	ship_subsys_h();
 	ship_subsys_h(object *objp_in, ship_subsys *sub);
 
-	bool isSubsystemValid() const;
+	bool isValid() const;
 
 	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
 	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
