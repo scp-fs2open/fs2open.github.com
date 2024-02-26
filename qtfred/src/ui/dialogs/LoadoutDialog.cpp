@@ -46,40 +46,13 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	this->setFocus();
     ui->setupUi(this);
 
+	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &LoadoutDialog::updateUI);
 	connect(this, &QDialog::accepted, _model.get(), &LoadoutDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &LoadoutDialogModel::reject);
 
-	connect(ui->currentTeamSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&LoadoutDialog::onCurrentTeamSpinboxUpdated);
-
-	connect(ui->extraItemSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&LoadoutDialog::onextraItemSpinboxUpdated);
-
-	connect(ui->playerDelayDoubleSpinbox,
-		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-		this,
-		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
-
-	connect(ui->extraWeaponsViaVarCombo,
-		QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this,
-		&LoadoutDialog::onExtraWeaponComboboxUpdated);
-
-	connect(ui->copyLoadoutToOtherTeamsButton,
-		&QPushButton::clicked,
-		this,
-		&LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
-
-	connect(ui->switchViewButton,
-		&QPushButton::clicked,
-		this,
-		&LoadoutDialog::onSwitchViewButtonPressed);
-
+	// Ship and Weapon lists, selection changed.
+	// TODO: Is there a way to know if we have been selected via the tab button?
 	connect(ui->listShipsNotUsed,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
@@ -100,11 +73,14 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onUsedWeaponListClicked);
 
-	connect(ui->extraShipsViaVarCombo,
-		QOverload<int>::of(&QComboBox::currentIndexChanged),
+	// And switching views between variable and lists
+	connect(ui->switchViewButton,
+		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onExtraShipComboboxUpdated);
+		&LoadoutDialog::onSwitchViewButtonPressed);
 
+	
+	// Switch ships and weapons on the list
 	connect(ui->addShipButton,
 		&QPushButton::clicked,
 		this,
@@ -124,6 +100,41 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		&QPushButton::clicked,
 		this,
 		&LoadoutDialog::removeWeaponButtonClicked);
+
+	// Change item counts
+	connect(ui->extraItemSpinbox,
+		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+		this,
+		&LoadoutDialog::onextraItemSpinboxUpdated);
+
+	// TODO Need to make function for this.
+	connect(ui->extraItemsViaVariableCombo,
+		QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this,
+		&LoadoutDialog::onExtraItemsViaVariableCombo);
+
+
+	// Team controls
+	connect(ui->currentTeamSpinbox,
+		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+		this,
+		&LoadoutDialog::onCurrentTeamSpinboxUpdated);
+
+	connect(ui->copyLoadoutToOtherTeamsButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
+
+
+	// Miscellaneous controls
+	connect(ui->playerDelayDoubleSpinbox,
+		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+		this,
+		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
+
+
+
+
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
@@ -231,10 +242,10 @@ void LoadoutDialog::removeWeaponButtonClicked()
 void LoadoutDialog::onPotentialShipListClicked(){ _lastSelectionChanged = POTENTIAL_SHIPS;}
 void LoadoutDialog::onPotentialWeaponListClicked(){ _lastSelectionChanged = POTENTIAL_WEAPONS;}
 void LoadoutDialog::onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;}
-void LoadoutDialog::onPotentialShipListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
+void LoadoutDialog::onUsedWeaponListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
 
 
-/*
+/* This was the previous way of doing things, which involved having check marks enable things.  Foolish Cyborg ....
 void LoadoutDialog::onWeaponListEdited()
 {
 	SCP_vector<bool> newEnabledStatus;
@@ -586,19 +597,18 @@ void LoadoutDialog::resetLists() {
 
 		// add text to the items
 		// FIXME! This is a gigantic memory leak.  Not sure what I was thinking.  Look for some other way to init.
-		QTableWidgetItem* checkItem = new QTableWidgetItem();
-		QTableWidgetItem* nameItem = new QTableWidgetItem(newShip.first.substr(0, divider).c_str());
-		QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 2).c_str());
+		QTableWidgetItem nameItem(newShip.first.substr(0, divider).c_str());
+		QTableWidgetItem countItem(newShip.first.substr(divider + 2).c_str());
 
-		checkItem->setFlags(checkItem->flags() & ~Qt::ItemIsEditable);
 		nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
 		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
 
 		// enable the check box, if necessary
-		(newShip.second) ? checkItem->setCheckState(Qt::Checked) : checkItem->setCheckState(Qt::Unchecked);
+		if (newShip.second) {
+
+		} 
 
 		// overwrite the entry in the table.
-		ui->shipVarList->setItem(currentRow, 0, checkItem);
 		ui->shipVarList->setItem(currentRow, 1, nameItem);
 		ui->shipVarList->setItem(currentRow, 2, countItem);
 
