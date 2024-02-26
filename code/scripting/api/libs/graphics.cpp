@@ -2,7 +2,6 @@
 //
 
 #include "graphics.h"
-#include "globalincs/vmallocator.h"
 
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/color.h"
@@ -1389,26 +1388,29 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 			std::swap(y, y2);
 		}
 
-		SCP_vector<SCP_string> lines = str_wrap_to_width(s,x2-x,false);
-		num_lines = (int) lines.size();
+		auto lines = str_wrap_to_width(s, x2 - x, false);
+
+		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
 		if (y2 < 0)
 			y2 = y + line_ht;
+		size_t max_num_lines = (y2 - y) / line_ht;
+		if (max_num_lines < lines.size())
+			lines.resize(max_num_lines);
 
-		//Make sure we don't go over size
-		num_lines = MIN(num_lines, (y2 - y) / line_ht);
+		num_lines = static_cast<int>(lines.size());
 
 		int curr_y = y;
-		for(int i = 0; i < num_lines; i++)
+		for(const auto &line: lines)
 		{
 			//Draw the string
-			gr_string(x,curr_y,lines[i].c_str(),resize_mode);
+			gr_string(x, curr_y, s + line.first, resize_mode, line.second);
 
 			//Increment line height
 			curr_y += line_ht;
 		}
 
-		if (num_lines <= 0)
+		if (lines.empty())
 		{
 			// If no line was drawn then we need to add one so the next line is
 			// aligned right
@@ -1417,6 +1419,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 		NextDrawStringPos[1] = curr_y;
 	}
+
 	return ade_set_error(L, "i", num_lines);
 }
 
