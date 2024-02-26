@@ -467,9 +467,9 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 		err = 1;
 
 	if (err)
-		return internal_error(error_buf.c_str());
+		return internal_error("%s", error_buf.c_str());
 
-	if (error(error_buf.c_str()))
+	if (error("%s", error_buf.c_str()))
 		return 1;
 
 	return 0;
