@@ -590,6 +590,16 @@ ADE_FUNC(isEngineVersionAtLeast,
 	return ade_set_args(L, "b", gameversion::check_at_least(version));
 }
 
+ADE_FUNC(usesInvalidInsteadOfNil,
+	l_Base,
+	nullptr,
+	"Checks if the '$Lua API returns nil instead of invalid object:' option is set in game_settings.tbl.",
+	"boolean",
+	"true if the option is set, false otherwise")
+{
+	return Lua_API_returns_nil_instead_of_invalid_object ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(getCurrentLanguage,
 		 l_Base,
 		 nullptr,
