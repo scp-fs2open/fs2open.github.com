@@ -30,8 +30,7 @@ private:
 	void onSwitchViewButtonPressed();
 	void onShipListEdited();
 	void onWeaponListEdited();
-	void onExtraShipSpinboxUpdated();
-	void onExtraWeaponSpinboxUpdated();
+	void onExtraItemSpinbox();
 	void onExtraShipComboboxUpdated();
 	void onExtraWeaponComboboxUpdated();
 	void onPlayerDelayDoubleSpinBoxUpdated();
