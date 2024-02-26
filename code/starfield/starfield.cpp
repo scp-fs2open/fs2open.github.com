@@ -2443,6 +2443,43 @@ int stars_find_sun(const char *name)
 	return -1;
 }
 
+void stars_get_data(bool is_sun, int idx, starfield_list_entry& sle)
+{
+	const auto& collection = is_sun ? Suns : Starfield_bitmap_instances;
+
+	if (!SCP_vector_inbounds(collection, idx))
+		return;
+
+	const auto& item = collection[idx];
+
+	sle.filename[0] = '\0';
+	sle.ang = item.ang;
+	sle.div_x = item.div_x;
+	sle.div_y = item.div_y;
+	sle.scale_x = item.scale_x;
+	sle.scale_y = item.scale_y;
+}
+
+void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle)
+{
+	auto& collection = is_sun ? Suns : Starfield_bitmap_instances;
+
+	if (!SCP_vector_inbounds(collection, idx))
+		return;
+
+	auto& item = collection[idx];
+
+	item.ang = sle.ang;
+	item.div_x = sle.div_x;
+	item.div_y = sle.div_y;
+	item.scale_x = sle.scale_x;
+	item.scale_y = sle.scale_y;
+
+	// this is necessary when modifying bitmaps, but not when modifying suns
+	if (!is_sun)
+		starfield_create_bitmap_buffer(idx);
+}
+
 // add an instance for a sun (something actually used in a mission)
 // NOTE that we assume a duplicate is ok here
 int stars_add_sun_entry(starfield_list_entry *sun_ptr)
