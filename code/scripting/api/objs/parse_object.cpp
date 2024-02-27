@@ -2,6 +2,7 @@
 #include "parse_object.h"
 
 #include "shipclass.h"
+#include "team.h"
 #include "vecmath.h"
 #include "weaponclass.h"
 #include "wing.h"
@@ -296,6 +297,26 @@ ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed
 	}
 
 	return ade_set_args(L, "o", l_Shipclass.Set(poh->getObject()->ship_class));
+}
+
+ADE_VIRTVAR(Team, l_ParseObject, "team", "The team of the parsed ship.", "team", "The team")
+{
+	parse_object_h* poh = nullptr;
+	int newTeam        = -1;
+	if (!ade_get_args(L, "o|o", l_ParseObject.GetPtr(&poh), l_Team.Get(&newTeam)))
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (poh == nullptr)
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (!poh->isValid())
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (ADE_SETTING_VAR && newTeam >= 0) {
+		poh->getObject()->team = newTeam;
+	}
+
+	return ade_set_args(L, "o", l_Team.Set(poh->getObject()->team));
 }
 
 ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
