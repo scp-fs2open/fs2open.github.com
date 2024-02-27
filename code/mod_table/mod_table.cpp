@@ -149,6 +149,7 @@ bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
+bool Use_new_scanning_behavior;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -433,6 +434,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$HUD drop shadows enabled by default:")) {
 			stuff_boolean(&HUD_shadows);
+		}
+
+		if (optional_string("$Unify scanning behavior:")) {
+			stuff_boolean(&Use_new_scanning_behavior);
 		}
 
 		optional_string("#SEXP SETTINGS");
@@ -1551,6 +1556,7 @@ void mod_table_reset()
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;
 	Contrails_use_absolute_speed = false;
+	Use_new_scanning_behavior = false;
 }
 
 void mod_table_set_version_flags()
