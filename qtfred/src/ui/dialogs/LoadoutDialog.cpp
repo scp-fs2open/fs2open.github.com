@@ -9,12 +9,6 @@
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
 
-constexpr int NONE = -1;
-constexpr int POTENTIAL_SHIPS = 0;
-constexpr int POTENTIAL_WEAPONS = 1;
-constexpr int USED_SHIPS = 2;
-constexpr int USED_WEAPONS = 3;
-
 // header text
 constexpr char* KEYHEADER = "In Wings/Extra";
 
