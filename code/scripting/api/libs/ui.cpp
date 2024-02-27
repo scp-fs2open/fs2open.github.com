@@ -2538,21 +2538,20 @@ ADE_FUNC(getChat,
 
 	LuaTable chats = LuaTable::create(L);
 
-	for (size_t i = 0; i < Multi_pxo_chat.size(); i++) {
-		SCP_list<chat_line>::iterator line = Multi_pxo_chat.begin();
-		std::advance(line, i);
+	int i = 0;
+	for (auto& line : Multi_pxo_chat) {
 		
 		char callsign[CALLSIGN_LEN];
 		char text[MAX_CHAT_LINE_LEN];
 
-		char* spacePos = std::strchr(line->text, ' ');
+		char* spacePos = std::strchr(line.text, ' ');
 
 		if (spacePos != nullptr) {
 			// Calculate the length of the callsign
-			int len = spacePos - line->text;
+			int len = spacePos - line.text;
 
 			// Copy the callsign
-			std::strncpy(callsign, line->text, len);
+			std::strncpy(callsign, line.text, len);
 			callsign[len] = '\0';
 
 			// Copy the text
@@ -2560,7 +2559,7 @@ ADE_FUNC(getChat,
 		}
 
 		int mode;
-		switch (line->mode) {
+		switch (line.mode) {
 		case CHAT_MODE_PRIVATE:
 			mode = 1;
 			break;
@@ -2584,7 +2583,7 @@ ADE_FUNC(getChat,
 		item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), text));
 		item.addValue("Mode", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), mode));
 
-		chats.addValue(i + 1, item);
+		chats.addValue(i++, item);
 	}
 
 	return ade_set_args(L, "t", chats);
@@ -2622,6 +2621,10 @@ ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a pl
 	if (!ade_get_args(L, "s", &plr_name))
 		return ADE_RETURN_NIL;
 
+	if (!Multi_pxo_connected) {
+		return;
+	}
+
 	SCP_string cmd;
 	sprintf(cmd, "/WHOIS %s", plr_name);
 
@@ -2629,9 +2632,7 @@ ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a pl
 
 	// We have to process the pxo api in order for the response to come back
 	while (stricmp(User_req_channel, "") == 0) {
-		if (Multi_pxo_connected) {
-			multi_pxo_api_process();
-		}
+		multi_pxo_api_process();
 	}
 
 	SCP_string response;
