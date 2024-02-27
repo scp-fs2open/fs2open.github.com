@@ -179,7 +179,7 @@ ADE_VIRTVAR(isVisible,
 	}
 
 	if (ADE_SETTING_VAR) {
-		current.getStage()->flags.set(Cutscene::Cutscene_Flags::Viewable, visible);
+		current.getScene()->flags.set(Cutscene::Cutscene_Flags::Viewable, visible);
 		Pilot.save_savefile();
 	}
 	if (current.getScene()->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] &&
