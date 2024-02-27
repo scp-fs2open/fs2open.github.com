@@ -26314,12 +26314,29 @@ int sexp_is_in_box(int n)
 
 int sexp_is_in_mission(int node)
 {
+	// For this sexp, we do not short-circuit known-true or known-false.
 	for (int n = node; n != -1; n = CDR(n))
 	{
-		// For this sexp, we do not short-circuit known-true or known-false.
 		auto ship_entry = eval_ship(n);
-		if (!ship_entry || !ship_entry->has_shipp())
-			return SEXP_FALSE;
+		if (ship_entry)
+		{
+			if (ship_entry->has_shipp())
+				continue;
+
+			return SEXP_FALSE;	// we know the ship isn't present
+		}
+
+		auto wingp = eval_wing(n);
+		if (wingp)
+		{
+			if (wingp->current_count > 0)
+				continue;
+
+			return SEXP_FALSE;	// we know no ships in the wing are present
+		}
+
+		// this is neither a ship nor a wing
+		return SEXP_FALSE;
 	}
 
 	return SEXP_TRUE;
@@ -37220,11 +37237,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t8: Ship to use as reference frame (optional)." },
 
 	{ OP_IS_IN_MISSION, "Is-In-Mission (Status operator)\r\n"
-		"\tChecks whether a given ship is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
-		"ship is active.  This means that internally the sexp only returns SEXP_TRUE or SEXP_FALSE and does not use any of the special shortcut values.  This is useful "
-		"for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
-		"Takes 1 or more string arguments, which are checked against the ship list.  (If more than 1 argument is specified, the sexp will only evaluate to true if all ships "
-		"are in the mission simultaneously.)" },
+		"\tChecks whether a given ship or wing is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
+		"ship is active or the wing has at least one ship present.  This means that internally the sexp only returns SEXP_TRUE or SEXP_FALSE and does not use any of "
+		"the special shortcut values.  This is useful for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
+		"Takes 1 or more string arguments, which are checked against the ship list and wing list.  (If more than 1 argument is specified, the sexp will only evaluate to true "
+		"if all arguments are in the mission simultaneously.)" },
 
 	{ OP_HAS_ARMOR_TYPE, "has-armor-type (Status operator)\r\n"
 		"\tChecks if a given ship has a specific armor type.\r\n\r\n"
@@ -40129,7 +40146,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//phreak
 	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
-		"\tReturns the number of ships in battle or the number of ships in battle out of a list of teams, wings, and ships.  Takes 1 or more arguments...\r\n"
+		"\tReturns the number of ships in battle or the number of ships in battle out of a list of teams, wings, and ships.  Takes 0 or more arguments...\r\n"
 		"\t(all):\tTeams, Wings, and Ships to query (optional)"
 	},
 
