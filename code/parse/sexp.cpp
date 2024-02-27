@@ -402,6 +402,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-subsystems",					OP_FOR_SUBSYSTEMS,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-container-data",				OP_FOR_CONTAINER_DATA,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
 	{ "for-map-container-keys",			OP_FOR_MAP_CONTAINER_KEYS,				1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
@@ -2865,15 +2866,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 			
 			case OPF_SUBSYSTEM_TYPE:
-				for (i = 0; i < SUBSYSTEM_MAX; i++)
-				{
-					if (!stricmp(CTEXT(node), Subsystem_types[i]))
-						break;
-				}
-
-				if (i == SUBSYSTEM_MAX)
+				i = string_lookup(CTEXT(node), Subsystem_types, SUBSYSTEM_MAX);
+				if (i < 0)
 					return SEXP_CHECK_INVALID_SUBSYS_TYPE;
-
 				break;
 
 			case OPF_POINT:
@@ -8183,12 +8178,7 @@ int sexp_hits_left_subsystem_generic(int node)
 	auto subsys_type_name = CTEXT(CDR(node));
 
 	// find subsystem type
-	int subsys_type = -1;
-	for (int i = 0; i < SUBSYSTEM_MAX; i++)
-	{
-		if (!stricmp(subsys_type_name, Subsystem_types[i]))
-			subsys_type = i;
-	}
+	int subsys_type = string_lookup(subsys_type_name, Subsystem_types, SUBSYSTEM_MAX);
 
 	// error checking
 	if (subsys_type < 0) {
@@ -11620,6 +11610,67 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 		return SEXP_FALSE;
 }
 
+// Goober5000
+int eval_for_subsystems(int arg_handler_node, int condition_node, bool just_count = false)
+{
+	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
+
+	n = CDR(arg_handler_node);
+
+	// get the ship
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_FALSE;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
+	n = CDR(n);
+
+	bool subsystem_type_specified = (n >= 0);
+	SCP_unordered_set<int> subsystem_types;
+
+	// get all the types we need to search for
+	for (; n >= 0; n = CDR(n))
+	{
+		auto type_index = string_lookup(CTEXT(n), Subsystem_types, SUBSYSTEM_MAX);
+		if (type_index >= 0)
+			subsystem_types.insert(type_index);
+	}
+
+	// go through all subsystems and add the relevant ones
+	for (auto ss : list_range(&ship_entry->shipp()->subsys_list))
+	{
+		if (!subsystem_type_specified || subsystem_types.find(ss->system_info->type) != subsystem_types.end())
+		{
+			if (just_count)
+				num_valid_arguments++;
+			else
+				argument_vector.emplace_back(ss->system_info->subobj_name, -1);
+		}
+	}
+
+	if (just_count)
+		return num_valid_arguments;
+
+	// test the whole argument vector
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, STRDUP_STATUS::DUP_NOT_NEEDED, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	SCP_UNUSED(num_valid_arguments);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
+	// ok to short-circuit here because a ship's subsystem collection is known and fixed
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else
+		return SEXP_FALSE;
+}
+
 // jg18
 int eval_for_container(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
@@ -11833,6 +11884,9 @@ int sexp_num_valid_arguments( int n )
 		case OP_FOR_SHIP_SPECIES:
 			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
 
+		case OP_FOR_SUBSYSTEMS:
+			return eval_for_subsystems(arg_handler, Locked_sexp_true, true);
+
 		case OP_FOR_CONTAINER_DATA:
 		case OP_FOR_MAP_CONTAINER_KEYS:
 			return eval_for_container(arg_handler, Locked_sexp_true, op_const, true);
@@ -12030,6 +12084,7 @@ bool is_implicit_argument_provider_op(const int op_const)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_SUBSYSTEMS:
 		case OP_FOR_CONTAINER_DATA:
 		case OP_FOR_MAP_CONTAINER_KEYS:
 			return true;
@@ -27535,6 +27590,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_for_players( cur_node, referenced_node );
 				break;
 
+			// Goober5000
+			case OP_FOR_SUBSYSTEMS:
+				sexp_val = eval_for_subsystems( cur_node, referenced_node );
+				break;
+
 			// jg18
 			case OP_FOR_CONTAINER_DATA:
 			case OP_FOR_MAP_CONTAINER_KEYS:
@@ -30622,6 +30682,7 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_SUBSYSTEMS:
 		case OP_FOR_CONTAINER_DATA:
 		case OP_FOR_MAP_CONTAINER_KEYS:
 		case OP_FIRST_OF:
@@ -31477,6 +31538,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FOR_SHIP_SPECIES:
 			return OPF_SPECIES;
+
+		case OP_FOR_SUBSYSTEMS:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM_TYPE;
 
 		case OP_FOR_CONTAINER_DATA:
 			return OPF_CONTAINER_NAME;
@@ -35226,6 +35293,7 @@ int get_category(int op_id)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_SUBSYSTEMS:
 		case OP_FIRST_OF:
 		case OP_SWITCH:
 		case OP_FUNCTIONAL_SWITCH:
@@ -37388,6 +37456,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
+
+	// Goober5000
+	{ OP_FOR_SUBSYSTEMS, "For-Subsystems (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list the subsystems on a specific ship, and each subsystem will be provided as an argument to the action operators.  "
+		"If no subsystem type is specified, all subsystems are listed; otherwise the list will be restricted to subsystems that match any of the specified type(s).  "
+		"Note that the subsystems are all treated as valid arguments, and it is impossible to invalidate a subsystem argument.  If you want to invalidate a subsystem, use Any-of and list the subsystems explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tShip from which to list subsystems\r\n"
+		"\tRest:\tSubsystem types\r\n" },
 
 	// jg18
 	{ OP_FOR_CONTAINER_DATA, "For-Container-Data (Conditional operator)\r\n"

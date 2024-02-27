@@ -269,7 +269,7 @@ int string_lookup(const char* str1, T strlist, size_t max, const char* descripti
 	}
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description);
+		error_display(0, "Unable to find [%s] in %s list.\n", str1, description ? description : "unnamed");
 
 	return -1;
 }

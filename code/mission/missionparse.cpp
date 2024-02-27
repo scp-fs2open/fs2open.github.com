@@ -3714,7 +3714,7 @@ void parse_common_object_data(p_object *p_objp)
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
-			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", 0);
+			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", false);
 			if (index == -1) {
 				if (Num_cargo < MAX_CARGO) {
 					index = Num_cargo;
