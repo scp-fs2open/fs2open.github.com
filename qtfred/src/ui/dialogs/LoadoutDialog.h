@@ -1,6 +1,7 @@
 #ifndef TEAMLOADOUTDIALOG_H
 #define TEAMLOADOUTDIALOG_H
 
+#include <QDialog>
 #include <QtWidgets/QDialog>
 #include <mission/dialogs/LoadoutEditorDialogModel.h>
 #include <ui/FredView.h>
