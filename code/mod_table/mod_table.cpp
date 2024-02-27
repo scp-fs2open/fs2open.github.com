@@ -153,7 +153,7 @@ bool Contrails_use_absolute_speed;
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
                      std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .default_val(Discord_presence)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
@@ -1474,7 +1474,7 @@ void mod_table_reset()
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
-	Using_in_game_options = false;
+	Using_in_game_options = true;
 	Dinky_shockwave_default_multiplier = 1.0f;
 	Shockwaves_always_damage_bombs = false;
 	Shockwaves_damage_all_obj_types_once = false;
