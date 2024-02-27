@@ -14,6 +14,12 @@ namespace Ui {
 class LoadoutDialog;
 }
 
+constexpr int NONE = -1;
+constexpr int POTENTIAL_SHIPS = 0;
+constexpr int POTENTIAL_WEAPONS = 1;
+constexpr int USED_SHIPS = 2;
+constexpr int USED_WEAPONS = 3;
+
 class LoadoutDialog : public QDialog
 {
     Q_OBJECT
@@ -40,14 +46,14 @@ private:
 	void onPotentialShipListClicked(){ _lastSelectionChanged = POTENTIAL_SHIPS;}
 	void onPotentialWeaponListClicked(){ _lastSelectionChanged = POTENTIAL_WEAPONS;}
 	void onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;}
-	void onPotentialShipListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
+	void onUsedWeaponListClicked(){ _lastSelectionChanged = USED_WEAPONS;}
 
 	void updateUI();
 
 	void resetLists();
 
 	int _mode;
-	int _lastSelectionChanged
+	int _lastSelectionChanged;
 };
 
 }
