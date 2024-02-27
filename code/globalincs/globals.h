@@ -72,6 +72,7 @@
 #define MAX_POLYGON_MODELS  300
 
 // object.h
+//If this value exceeds 2^16-1, this will break collision pair caching as is. Proceed with caution.
 #define MAX_OBJECTS			5000	//Increased from 3500 to 5000 in 2022	
 
 // from weapon.h (and beam.h)
