@@ -28,7 +28,7 @@ bool ship_subsys_h::isValid() const { return objh.isValid() && objh.objp->type =
 void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	ship_subsys_h subsys;
 	value.getValue(l_Subsystem.Get(&subsys));
-	const ushort& netsig = subsys.isValid() ? subsys.objh.objp->net_signature : 0;
+	const ushort& netsig = subsys.objh.isValid() ? subsys.objh.objp->net_signature : 0;
 	const int& subsys_index = subsys.isValid() ? ship_get_subsys_index(subsys.ss) : -1;
 	ADD_USHORT(netsig);
 	ADD_INT(subsys_index);
