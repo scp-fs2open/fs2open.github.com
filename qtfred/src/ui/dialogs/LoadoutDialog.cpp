@@ -9,10 +9,6 @@
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
 
-// header text
-constexpr char* KEYHEADER = "In Wings/Extra";
-
-
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -443,7 +439,8 @@ void LoadoutDialog::updateUI()
 			namesOut.emplace_back(item.c_str());
 			requestSpinComboUpdate = true;
 		}
-	} else if (mode == VARIABLE_MODE) {11111111111111111111111111111																																																																																																																																																					
+	} //else if (mode == VARIABLE_MODE) { TODO FINISH ME!
+
 	} else {
 		ui->extraItemSpinbox->setEnabled(false);
 		ui->extraItemsViaVariableCombo->setEnabled(false);

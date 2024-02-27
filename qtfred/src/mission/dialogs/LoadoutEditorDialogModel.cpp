@@ -622,7 +622,8 @@ bool LoadoutDialogModel::apply() {
 			index++;
 		}
 
-		Team_data[currentTeam].num_weapon_choices;
+//		TODO! What happened here?
+//		Team_data[currentTeam].num_weapon_choices;
 	}
 	
 	Entry_delay_time = fl2f(_playerEntryDelay);
