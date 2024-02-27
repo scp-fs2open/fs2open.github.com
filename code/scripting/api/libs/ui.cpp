@@ -2622,7 +2622,7 @@ ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a pl
 		return ADE_RETURN_NIL;
 
 	if (!Multi_pxo_connected) {
-		return;
+		return ade_set_args(L, "ss", "", "");
 	}
 
 	SCP_string cmd;
