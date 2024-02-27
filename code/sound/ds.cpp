@@ -178,9 +178,9 @@ static size_t Ds_active_env_idx = 0;
 bool Ingame_efx = false;
 
 static auto EnableEFXOption = options::OptionBuilder<bool>("Audio.EnableEFX",
-                     std::pair<const char*, int>{"Use Audio EFX", -1},
-                     std::pair<const char*, int>{"Toggle whether OpenAL Audio EFX are used or not", -1})
-                     .category("Audio") //1826
+                     std::pair<const char*, int>{"Use Audio EFX", 1832},
+                     std::pair<const char*, int>{"Toggle whether OpenAL Audio EFX are used or not", 1833})
+                     .category(std::make_pair("Audio", 1826))
                      .level(options::ExpertLevel::Advanced)
                      .default_val(false)
                      .bind_to_once(&Ingame_efx)

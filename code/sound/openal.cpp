@@ -116,9 +116,9 @@ static bool playbackdevice_change(int /*device*/, bool initial)
 	return false;
 }
 static auto PlaybackDeviceOption = options::OptionBuilder<int>("Audio.PlaybackDevice",
-                     std::pair<const char*, int>{"Playback Device", -1}, //DO XSTRs!
-                     std::pair<const char*, int>{"The device used for audio playback", -1})
-                     .category("Audio") //1826
+                     std::pair<const char*, int>{"Playback Device", 1834},
+                     std::pair<const char*, int>{"The device used for audio playback", 1835})
+                     .category(std::make_pair("Audio", 1826))
                      .level(options::ExpertLevel::Beginner)
                      .deserializer(playbackdevice_deserializer)
                      .serializer(playbackdevice_serializer)
@@ -191,9 +191,9 @@ static bool capturedevice_change(int /*device*/, bool initial)
 	return false;
 }
 static auto CaptureDeviceOption = options::OptionBuilder<int>("Audio.CaptureDevice",
-                     std::pair<const char*, int>{"Capture Device", -1}, //DO XSTRs!
-                     std::pair<const char*, int>{"The device used for audio capture", -1})
-                     .category("Audio") //1826
+                     std::pair<const char*, int>{"Capture Device", 1836},
+                     std::pair<const char*, int>{"The device used for audio capture", 1837})
+                     .category(std::make_pair("Audio", 1826))
                      .level(options::ExpertLevel::Beginner)
                      .deserializer(capturedevice_deserializer)
                      .serializer(capturedevice_serializer)
