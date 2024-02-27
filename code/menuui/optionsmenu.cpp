@@ -293,7 +293,7 @@ int Options_scp_string_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-std::pair<SCP_string, int> Options_scp_string_text = {"Press F3 to access additional options", 1816};
+std::pair<SCP_string, int> Options_scp_string_text = {"Press F3 to access additional options", 1831};
 
 
 // ---------------------------------------------------------------------------------------------------------
