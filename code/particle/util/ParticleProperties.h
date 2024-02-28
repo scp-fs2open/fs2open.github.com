@@ -5,6 +5,9 @@
 
 namespace particle {
 namespace util {
+
+enum class RotationType { DEFAULT, RANDOM, SCREEN_ALIGNED };
+
 /**
  * @brief The creation properties of a particle
  *
@@ -31,6 +34,7 @@ private:
 	::util::UniformFloatRange m_length;
 	int m_size_lifetime_curve;
 	int m_vel_lifetime_curve;
+	RotationType m_rotation_type;
 
 	ParticleProperties();
 
