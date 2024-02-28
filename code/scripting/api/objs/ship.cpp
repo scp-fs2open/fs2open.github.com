@@ -1445,7 +1445,7 @@ ADE_FUNC(isArrivingWarp, l_Ship, nullptr, "Checks if the ship is arriving via wa
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
 		return ade_set_error(L, "b", false);
 
-	if (!shiph->IsValid())
+	if (!shiph->isValid())
 		return ade_set_error(L, "b", false);
 
 	ship *shipp = &Ships[shiph->objp->instance];
@@ -2248,7 +2248,7 @@ ADE_FUNC(isWarpingStage1, l_Ship, NULL, "Checks if ship is in stage 1 of warping
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2265,7 +2265,7 @@ ADE_FUNC(isWarpingStage2, l_Ship, NULL, "Checks if ship is in stage 2 of warping
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
