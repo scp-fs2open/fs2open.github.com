@@ -2447,7 +2447,7 @@ ADE_FUNC(getParsedShip, l_Ship, nullptr, "Returns the parsed ship that was used 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
 
 	auto shipp = &Ships[objh->objp->instance];
