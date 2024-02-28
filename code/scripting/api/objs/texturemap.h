@@ -36,7 +36,7 @@ class texture_map_h
 
 	int GetSize();
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_TextureMap, texture_map_h);

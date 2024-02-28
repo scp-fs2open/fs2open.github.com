@@ -13,7 +13,7 @@ mc_info_h::mc_info_h(const mc_info& val) : info(val), valid(true) {}
 mc_info_h::mc_info_h() = default;
 
 mc_info* mc_info_h::Get() { return &info; }
-bool mc_info_h::IsValid() { return valid; }
+bool mc_info_h::isValid() const { return valid; }
 
 //**********HANDLE: Collision info
 ADE_OBJ(l_ColInfo, mc_info_h, "collision_info", "Information about a collision");
@@ -26,7 +26,7 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 	if(!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Model.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
 	mc_info *collide = info->Get();
@@ -35,7 +35,7 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 
 	if (ADE_SETTING_VAR && mh)
 	{
-		if (mh->IsValid())
+		if (mh->isValid())
 		{
 			collide->model_num = mh->GetID();
 		}
@@ -52,7 +52,7 @@ ADE_FUNC(getCollisionSubmodel, l_ColInfo, nullptr, "The submodel where the colli
 	if (!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Submodel.GetPtr(&sh)))
 		return ADE_RETURN_NIL;
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ADE_RETURN_NIL;
 
 	mc_info *collide = info->Get();
@@ -70,7 +70,7 @@ ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest col
 	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	mc_info *collide = info->Get();
@@ -93,7 +93,7 @@ ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point o
 	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
 		return ADE_RETURN_NIL;
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ADE_RETURN_NIL;
 
 	mc_info *collide = info->Get();
@@ -119,7 +119,7 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
 		return ADE_RETURN_NIL;
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ADE_RETURN_NIL;
 
 	mc_info *collide = info->Get();
@@ -154,7 +154,7 @@ ADE_FUNC(isValid, l_ColInfo, NULL, "Detects if this handle is valid", "boolean",
 	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
 		return ADE_RETURN_FALSE;
 
-	if (info->IsValid())
+	if (info->isValid())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;

@@ -6,7 +6,7 @@ namespace api {
 sim_mission_h::sim_mission_h() : missionIdx(-1), isCMission(false) {}
 sim_mission_h::sim_mission_h(int index, bool cmission) : missionIdx(index), isCMission(cmission) {}
 
-bool sim_mission_h::IsValid() const
+bool sim_mission_h::isValid() const
 {
 	return missionIdx >= 0;
 }
@@ -22,7 +22,7 @@ sim_mission* sim_mission_h::getStage() const
 cutscene_info_h::cutscene_info_h() : cutscene(-1) {}
 cutscene_info_h::cutscene_info_h(int scene) : cutscene(scene) {}
 
-bool cutscene_info_h::IsValid() const
+bool cutscene_info_h::isValid() const
 {
 	return SCP_vector_inbounds(Cutscenes, cutscene);
 }
@@ -228,7 +228,7 @@ ADE_FUNC(isValid, l_TechRoomCutscene, NULL, "Detects whether cutscene is valid",
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "b", current.IsValid());
+	return ade_set_args(L, "b", current.isValid());
 }
 
 } // namespace api

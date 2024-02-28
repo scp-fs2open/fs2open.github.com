@@ -17,9 +17,9 @@ struct sound_entry_h
 
 	explicit sound_entry_h(gamesnd_id n_idx);
 
-	game_snd *Get();
+	game_snd *Get() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 //**********HANDLE: SoundEntry
@@ -33,11 +33,11 @@ struct sound_h : public sound_entry_h
 
 	sound_h(gamesnd_id n_gs_idx, sound_handle n_sig);
 
-	sound_handle getSignature();
+	sound_handle getSignature() const;
 
-	bool IsSoundValid();
+	bool isSoundValid() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 //**********HANDLE: Sound

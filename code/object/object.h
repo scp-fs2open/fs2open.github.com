@@ -177,11 +177,12 @@ namespace luacpp {
 extern int Num_objects;
 extern object Objects[];
 
-struct object_h {
+struct object_h final	// prevent subclassing because classes which might use this should have their own isValid member function
+{
 	object *objp;
 	int sig;
 
-	bool IsValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
+	bool isValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
 	object_h(object *in) {objp = in; sig = (in == nullptr) ? -1 : in->signature; }
 	object_h() { objp = nullptr; sig = -1; }
 

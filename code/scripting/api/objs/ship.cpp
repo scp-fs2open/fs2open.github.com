@@ -49,7 +49,7 @@ ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "N
 	if(!ade_get_args(L, "o", l_ShipTextures.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	polymodel *pm = model_get(Ship_info[Ships[objh->objp->instance].ship_info_index].model_num);
@@ -68,7 +68,7 @@ ADE_INDEXER(l_ShipTextures, "number/string IndexOrTextureFilename", "Array of sh
 	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.GetPtr(&tdx)))
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if (!oh->IsValid() || s==NULL)
+	if (!oh->isValid() || s==NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	ship *shipp = &Ships[oh->objp->instance];
@@ -139,7 +139,7 @@ ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "bool
 	if(!ade_get_args(L, "o", l_ShipTextures.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", oh->IsValid());
+	return ade_set_args(L, "b", oh->isValid());
 }
 
 //**********HANDLE: Ship
@@ -153,7 +153,7 @@ ADE_INDEXER(l_Ship, "string/number NameOrIndex", "Array of ship subsystems", "su
 	if(!ade_get_args(L, "o|so", l_Ship.GetPtr(&objh), &s, l_Subsystem.GetPtr(&sub)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -181,7 +181,7 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
@@ -197,7 +197,7 @@ ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name", "Sets or clears on
 		return ADE_RETURN_NIL;
 	int skip_args = 2;	// not 3 because there will be one more below
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto shipp = &Ships[objh->objp->instance];
@@ -235,7 +235,7 @@ ADE_FUNC(getFlag, l_Ship, "string flag_name", "Checks whether one or more flags 
 		return ADE_RETURN_NIL;
 	int skip_args = 1;	// not 2 because there will be one more below
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto shipp = &Ships[objh->objp->instance];
@@ -297,7 +297,7 @@ static int ship_getset_helper(lua_State* L, int ship::* field, bool canSet = fal
 	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &value))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship* shipp = &Ships[objh->objp->instance];
@@ -325,7 +325,7 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -354,7 +354,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -381,7 +381,7 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the s
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -402,7 +402,7 @@ ADE_VIRTVAR(DisplayName, l_Ship, "string", "Ship display name", "string", "The d
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -423,7 +423,7 @@ ADE_FUNC(isPlayer, l_Ship, nullptr, "Checks whether the ship is a player ship", 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "b", false);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "b", false);
 
 	// singleplayer
@@ -453,7 +453,7 @@ ADE_VIRTVAR(AfterburnerFuelLeft, l_Ship, "number", "Afterburner fuel left", "num
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -471,7 +471,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Ship, "number", "Afterburner fuel capacity", "
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
@@ -489,7 +489,7 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -517,7 +517,7 @@ ADE_VIRTVAR(CountermeasuresLeft, l_Ship, "number", "Number of countermeasures le
 	if(!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &newcm))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -535,7 +535,7 @@ ADE_VIRTVAR(CockpitDisplays, l_Ship, "displays", "An array of the cockpit displa
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_CockpitDisplays.GetPtr(&cdh)))
 		return ade_set_error(L, "o", l_CockpitDisplays.Set(cockpit_displays_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_CockpitDisplays.Set(cockpit_displays_h()));
 
 	if(ADE_SETTING_VAR)
@@ -553,7 +553,7 @@ ADE_VIRTVAR(CountermeasureClass, l_Ship, "weaponclass", "Weapon class mounted on
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Weaponclass.Get(&newcm)))
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -575,7 +575,7 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship m
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &newhits))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -593,7 +593,7 @@ ADE_VIRTVAR(ShieldRegenRate, l_Ship, "number", "Maximum percentage/100 of shield
 	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_shield_regen))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -611,7 +611,7 @@ ADE_VIRTVAR(WeaponRegenRate, l_Ship, "number", "Maximum percentage/100 of weapon
 	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_weapon_regen))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -629,7 +629,7 @@ ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves"
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -647,7 +647,7 @@ ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number"
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
@@ -665,7 +665,7 @@ ADE_VIRTVAR(AutoaimFOV, l_Ship, "number", "FOV of ship's autoaim, if any", "numb
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fov))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -687,7 +687,7 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &trig))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -713,13 +713,13 @@ ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon ban
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_WeaponBankType.GetPtr(&swh)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
-	if(ADE_SETTING_VAR && swh && swh->IsValid()) {
-		ship_weapon *src = &Ships[swh->objp->instance].weapons;
+	if(ADE_SETTING_VAR && swh && swh->isValid()) {
+		ship_weapon *src = &Ships[swh->objh.objp->instance].weapons;
 
 		dst->current_primary_bank = src->current_primary_bank;
 		dst->num_primary_banks = src->num_primary_banks;
@@ -744,13 +744,13 @@ ADE_VIRTVAR(SecondaryBanks, l_Ship, "weaponbanktype", "Array of secondary weapon
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_WeaponBankType.GetPtr(&swh)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
-	if(ADE_SETTING_VAR && swh && swh->IsValid()) {
-		ship_weapon *src = &Ships[swh->objp->instance].weapons;
+	if(ADE_SETTING_VAR && swh && swh->isValid()) {
+		ship_weapon *src = &Ships[swh->objh.objp->instance].weapons;
 
 		dst->current_secondary_bank = src->current_secondary_bank;
 		dst->num_secondary_banks = src->num_secondary_banks;
@@ -776,13 +776,13 @@ ADE_VIRTVAR(TertiaryBanks, l_Ship, "weaponbanktype", "Array of tertiary weapon b
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_WeaponBankType.GetPtr(&swh)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
-	if(ADE_SETTING_VAR && swh && swh->IsValid()) {
-		ship_weapon *src = &Ships[swh->objp->instance].weapons;
+	if(ADE_SETTING_VAR && swh && swh->isValid()) {
+		ship_weapon *src = &Ships[swh->objh.objp->instance].weapons;
 
 		dst->current_tertiary_bank = src->current_tertiary_bank;
 		dst->num_tertiary_banks = src->num_tertiary_banks;
@@ -805,7 +805,7 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	ai_info *aip = NULL;
@@ -816,7 +816,7 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 
 	if(ADE_SETTING_VAR && !(newh && aip->target_signature == newh->sig)) {
 		// we have a different target, or are clearng the target
-		if(newh && newh->IsValid())	{
+		if(newh && newh->isValid())	{
 			aip->target_objnum = OBJ_INDEX(newh->objp);
 			aip->target_signature = newh->sig;
 			aip->target_time = 0.0f;
@@ -843,7 +843,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	ai_info *aip = NULL;
@@ -854,17 +854,17 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if (aip == Player_ai) {
-				if (aip->target_signature != newh->sig)
-					hud_shield_hit_reset(newh->objp);
+				if (aip->target_signature != newh->objh.sig)
+					hud_shield_hit_reset(newh->objh.objp);
 
 				Ships[Objects[newh->ss->parent_objnum].instance].last_targeted_subobject[Player_num] = newh->ss;
 			}
 
-			aip->target_objnum = OBJ_INDEX(newh->objp);
-			aip->target_signature = newh->sig;
+			aip->target_objnum = OBJ_INDEX(newh->objh.objp);
+			aip->target_signature = newh->objh.sig;
 			aip->target_time = 0.0f;
 			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
 		}
@@ -888,7 +888,7 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_Team.Get(&nt)))
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	ship *shipp = &Ships[oh->objp->instance];
@@ -907,7 +907,7 @@ ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The inde
 	if(!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &p_index))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -925,10 +925,10 @@ ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptexture
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&dh), l_Ship.GetPtr(&sh)))
 		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
 
-	if(!dh->IsValid())
+	if(!dh->isValid())
 		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
 
-	if(ADE_SETTING_VAR && sh && sh->IsValid()) {
+	if(ADE_SETTING_VAR && sh && sh->isValid()) {
 		ship *src = &Ships[sh->objp->instance];
 		ship *dest = &Ships[dh->objp->instance];
 
@@ -952,7 +952,7 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &set))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -976,7 +976,7 @@ ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boo
 	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &set))
 		return ADE_RETURN_FALSE;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_FALSE;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -1008,7 +1008,7 @@ ADE_VIRTVAR(Stealthed, l_Ship, "boolean", "Stealth status of this ship", "boolea
 	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &stealthed))
 		return ADE_RETURN_FALSE;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_FALSE;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -1032,7 +1032,7 @@ ADE_VIRTVAR(HiddenFromSensors, l_Ship, "boolean", "Hidden from sensors status of
 	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &hidden))
 		return ADE_RETURN_FALSE;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_FALSE;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -1056,7 +1056,7 @@ ADE_VIRTVAR(Gliding, l_Ship, "boolean", "Specifies whether this ship is currentl
 	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &gliding))
 		return ADE_RETURN_FALSE;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_FALSE;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -1083,7 +1083,7 @@ ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(SET not implemented, see EtsSetI
 	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &ets_idx))
 		return ade_set_error(L, "i", 0);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR)
@@ -1100,7 +1100,7 @@ ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(SET not implemented, see EtsSetI
 	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &ets_idx))
 		return ade_set_error(L, "i", 0);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR)
@@ -1117,7 +1117,7 @@ ADE_VIRTVAR(EtsWeaponIndex, l_Ship, "number", "(SET not implemented, see EtsSetI
 	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &ets_idx))
 		return ade_set_error(L, "i", 0);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR)
@@ -1133,7 +1133,7 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_ShipOrders.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_ShipOrders.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_ShipOrders.Set(object_h()));;
 
 	if(ADE_SETTING_VAR)
@@ -1151,7 +1151,7 @@ ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", 
 	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &speed_cap))
 		return ade_set_error(L, "i", 0);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	ship* shipp = &Ships[objh->objp->instance];
@@ -1175,7 +1175,7 @@ static int ship_getset_location_helper(lua_State* L, int ship::* field, const ch
 	if (!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship* shipp = &Ships[objh->objp->instance];
@@ -1211,7 +1211,7 @@ static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
 	if (!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship* shipp = &Ships[objh->objp->instance];
@@ -1278,7 +1278,7 @@ ADE_FUNC(sendMessage,
 	if (!ade_get_args(L, "oo|fob", l_Ship.GetPtr(&ship_h), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp)))
 		return ADE_RETURN_FALSE;
 
-	if (ship_h == nullptr || !ship_h->IsValid())
+	if (ship_h == nullptr || !ship_h->isValid())
 		return ADE_RETURN_FALSE;
 
 	return sendMessage_sub(L, &Ships[ship_h->objp->instance], MESSAGE_SOURCE_SHIP, messageIdx, delay, ehp);
@@ -1355,10 +1355,10 @@ ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"
 	if(!ade_get_args(L, "o|oo", l_Ship.GetPtr(&victim), l_Object.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;
 
-	if(!victim->IsValid())
+	if(!victim->isValid())
 		return ADE_RETURN_NIL;
 
-	if(killer && !killer->IsValid())
+	if(killer && !killer->isValid())
 		return ADE_RETURN_NIL;
 
 	// use the current hull percentage for damage-after-death purposes
@@ -1399,7 +1399,7 @@ ADE_FUNC(addShipEffect, l_Ship, "string name, number durationMillis", "Activates
 	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), &effect, &duration))
 		return ade_set_error(L, "b", false);
 
-	if (!shiph->IsValid())
+	if (!shiph->isValid())
 		return ade_set_error(L, "b", false);
 
 	effect_num = get_effect_from_name(effect);
@@ -1421,7 +1421,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
 		return ade_set_error(L, "i", 0);
 
-	if(!shiph->IsValid())
+	if(!shiph->isValid())
 		return ade_set_error(L, "i", 0);
 
 	ship *shipp = &Ships[shiph->objp->instance];
@@ -1459,7 +1459,7 @@ ADE_FUNC(isDepartingWarp, l_Ship, nullptr, "Checks if the ship is departing via 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
 		return ade_set_error(L, "b", false);
 
-	if (!shiph->IsValid())
+	if (!shiph->isValid())
 		return ade_set_error(L, "b", false);
 
 	ship *shipp = &Ships[shiph->objp->instance];
@@ -1473,7 +1473,7 @@ ADE_FUNC(isDepartingDockbay, l_Ship, nullptr, "Checks if the ship is departing v
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
 		return ade_set_error(L, "b", false);
 
-	if (!shiph->IsValid())
+	if (!shiph->isValid())
 		return ade_set_error(L, "b", false);
 
 	ship *shipp = &Ships[shiph->objp->instance];
@@ -1487,7 +1487,7 @@ ADE_FUNC(isDying, l_Ship, nullptr, "Checks if the ship is dying (doing its death
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
 		return ade_set_error(L, "b", false);
 
-	if (!shiph->IsValid())
+	if (!shiph->isValid())
 		return ade_set_error(L, "b", false);
 
 	ship *shipp = &Ships[shiph->objp->instance];
@@ -1501,7 +1501,7 @@ ADE_FUNC(fireCountermeasure, l_Ship, NULL, "Launches a countermeasure from the s
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "b", false);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", ship_launch_countermeasure(objh->objp) != 0);
@@ -1513,7 +1513,7 @@ ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Num
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	int i = 0;
@@ -1528,7 +1528,7 @@ ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", 
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_fire_secondary(objh->objp, 0));
@@ -1544,7 +1544,7 @@ ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype",
 	if(!ade_get_args(L, "o|si", l_Ship.GetPtr(&objh), &s, &subtype))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	auto type = animation::anim_match_type(s);
@@ -1562,7 +1562,7 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	object_h *objh = NULL;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "b", false);
 
 	//The actual clearing of the goals
@@ -1582,7 +1582,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	if(!ade_get_args(L, "oo|oofo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid() || !eh->IsValid())
+	if(!objh->isValid() || !eh->isValid())
 		return ade_set_error(L, "b", false);
 
 	//wtf...
@@ -1592,8 +1592,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	if(priority > 2.0f)
 		priority = 2.0f;
 
-	bool tgh_valid = tgh && tgh->IsValid();
-	bool tgsh_valid = tgsh && tgsh->isSubsystemValid();
+	bool tgh_valid = tgh && tgh->isValid();
+	bool tgsh_valid = tgsh && tgsh->isValid();
 	int ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
 	const char *ai_shipname = NULL;
@@ -1605,7 +1605,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			{
 				ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
-				ai_submode = ship_find_subsys( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
+				ai_submode = ship_find_subsys( &Ships[tgsh->objh.objp->instance], tgsh->ss->system_info->subobj_name );
 			}
 			else if(tgh_valid && tgh->objp->type == OBJ_WEAPON)
 			{
@@ -1965,7 +1965,7 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 	if(!ade_get_args(L, "o|sibb", l_Ship.GetPtr(&objh), &s, &subtype, &b, &instant))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto type = animation::anim_match_type(s);
@@ -1995,7 +1995,7 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 	if (!ade_get_args(L, "oss|bbbb", l_Ship.GetPtr(&objh), &type, &trigger, &forwards, &forced, &instant, &pause))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto animtype = animation::anim_match_type(type);
@@ -2019,7 +2019,7 @@ ADE_FUNC(getSubmodelAnimation, l_Ship, "string type, string triggeredBy",
 	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto animtype = animation::anim_match_type(type);
@@ -2044,7 +2044,7 @@ ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy"
 	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto animtype = animation::anim_match_type(type);
@@ -2071,7 +2071,7 @@ ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number sp
 	if (!ade_get_args(L, "oss|f", l_Ship.GetPtr(&objh), &type, &trigger, &speed))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto animtype = animation::anim_match_type(type);
@@ -2093,7 +2093,7 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	auto animtype = animation::anim_match_type(type);
@@ -2129,7 +2129,7 @@ ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
 	if (!ade_get_args(L, "ost", l_Ship.GetPtr(&objh), &name, &values))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	SCP_vector<linb::any> valuesMoveable;
@@ -2165,7 +2165,7 @@ ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, 
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	shipfx_warpin_start(objh->objp);
@@ -2179,7 +2179,7 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	shipfx_warpout_start(objh->objp);
@@ -2193,7 +2193,7 @@ ADE_FUNC(canWarp, l_Ship, nullptr, "Checks whether ship has a working subspace d
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2210,7 +2210,7 @@ ADE_FUNC(canBayDepart, l_Ship, nullptr, "Checks whether ship has a bay departure
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2230,7 +2230,7 @@ ADE_FUNC_DEPRECATED(isWarpingIn, l_Ship, NULL, "Checks if ship is in stage 1 of 
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2285,7 +2285,7 @@ ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting o
 		return ADE_RETURN_NIL;
 	}
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
@@ -2301,7 +2301,7 @@ ADE_FUNC(getTimeUntilExplosion, l_Ship, nullptr, "Returns the time in seconds un
 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "f", -1.0f);
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2321,7 +2321,7 @@ ADE_FUNC(setTimeUntilExplosion, l_Ship, "number Time", "Sets the time in seconds
 
 	if (!ade_get_args(L, "of", l_Ship.GetPtr(&objh), &delta_s))
 		return ade_set_error(L, "b", false);
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "b", false);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2346,7 +2346,7 @@ ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the curren
 		return ade_set_error(L, "s", "");
 	}
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2373,7 +2373,7 @@ ADE_FUNC(getAltClassName, l_Ship, NULL, "Gets the alternate class name of the sh
 		return ade_set_error(L, "s", "");
 	}
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -2400,7 +2400,7 @@ ADE_FUNC(getMaximumSpeed, l_Ship, "[number energy = 0.333]", "Gets the maximum s
 		return ade_set_error(L, "f", -1.0f);
 	}
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	if (energy < 0.0f || energy > 1.0f)
@@ -2426,7 +2426,7 @@ ADE_FUNC(EtsSetIndexes, l_Ship, "number EngineIndex, number ShieldIndex, number 
 	if (!ade_get_args(L, "oiii", l_Ship.GetPtr(&objh), &ets_idx[ENGINES], &ets_idx[SHIELDS], &ets_idx[WEAPONS]))
 		return ADE_RETURN_FALSE;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_FALSE;
 
 	sanity_check_ets_inputs(ets_idx);
@@ -2448,7 +2448,7 @@ ADE_FUNC(getWing, l_Ship, NULL, "Returns the ship's wing", "wing", "Wing handle,
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
 	shipp = &Ships[objh->objp->instance];
@@ -2463,7 +2463,7 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
 	shipp = &Ships[objh->objp->instance];
@@ -2477,7 +2477,7 @@ ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "b", false);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "b", false);
 
 	ship_actually_depart(objh->objp->instance, SHIP_VANISHED);
@@ -2495,7 +2495,7 @@ ADE_FUNC(setGlowPointBankActive, l_Ship, "boolean active, [number bank]", "Activ
 		return ADE_RETURN_NIL;
 	int skip_args = 1;	// not 2 because there will be one more before we read the first number
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto shipp = &Ships[objh->objp->instance];
@@ -2531,7 +2531,7 @@ ADE_FUNC(numDocked, l_Ship, nullptr, "Returns the number of ships this ship is d
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
 		return ADE_RETURN_NIL;
 
-	if (docker_objh == nullptr || !docker_objh->IsValid())
+	if (docker_objh == nullptr || !docker_objh->isValid())
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "i", dock_count_direct_docked_objects(docker_objh->objp));
@@ -2546,7 +2546,7 @@ ADE_FUNC(isDocked, l_Ship, "[ship... dockee_ships]", "Returns whether this ship 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
 		return ADE_RETURN_NIL;
 
-	if (docker_objh == nullptr || !docker_objh->IsValid())
+	if (docker_objh == nullptr || !docker_objh->isValid())
 		return ADE_RETURN_NIL;
 
 	while (true)
@@ -2558,7 +2558,7 @@ ADE_FUNC(isDocked, l_Ship, "[ship... dockee_ships]", "Returns whether this ship 
 		found_arg = true;
 
 		// make sure ship exists
-		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+		if (dockee_objh == nullptr || !dockee_objh->isValid())
 			continue;
 
 		// see if we are docked to it
@@ -2582,7 +2582,7 @@ ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, st
 	if (!ade_get_args(L, "oo", l_Ship.GetPtr(&docker_objh), l_Ship.GetPtr(&dockee_objh)))
 		return ADE_RETURN_NIL;
 
-	if (docker_objh == nullptr || dockee_objh == nullptr || !docker_objh->IsValid() || !dockee_objh->IsValid())
+	if (docker_objh == nullptr || dockee_objh == nullptr || !docker_objh->isValid() || !dockee_objh->isValid())
 		return ADE_RETURN_NIL;
 
 	// cannot dock an object to itself
@@ -2669,7 +2669,7 @@ static int jettison_helper(lua_State *L, object_h *docker_objh, float jettison_s
 		found_arg = true;
 
 		// make sure ship exists
-		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+		if (dockee_objh == nullptr || !dockee_objh->isValid())
 			continue;
 
 		// make sure we are docked to it
@@ -2702,7 +2702,7 @@ ADE_FUNC(setUndocked, l_Ship, "[ship... dockee_ships /* All docked ships by defa
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
 		return ADE_RETURN_NIL;
 
-	if (docker_objh == nullptr || !docker_objh->IsValid())
+	if (docker_objh == nullptr || !docker_objh->isValid())
 		return ADE_RETURN_NIL;
 
 	return jettison_helper(L, docker_objh, 0.0f, 1);
@@ -2716,7 +2716,7 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 	if (!ade_get_args(L, "of", l_Ship.GetPtr(&docker_objh), &jettison_speed))
 		return ADE_RETURN_NIL;
 
-	if (docker_objh == nullptr || !docker_objh->IsValid())
+	if (docker_objh == nullptr || !docker_objh->isValid())
 		return ADE_RETURN_NIL;
 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);

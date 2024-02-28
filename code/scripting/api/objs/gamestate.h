@@ -15,7 +15,7 @@ class gamestate_h {
 	gamestate_h();
 	gamestate_h(int n_state);
 
-	bool IsValid();
+	bool isValid() const;
 
 	int Get();
 

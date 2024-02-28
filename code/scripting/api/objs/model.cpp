@@ -13,15 +13,15 @@ namespace api {
 
 ADE_OBJ(l_Model, model_h, "model", "3D Model (POF) handle");
 
-polymodel *model_h::Get()
+polymodel *model_h::Get() const
 {
 	return model;
 }
-int model_h::GetID()
+int model_h::GetID() const
 {
 	return model ? model->id : -1;
 }
-bool model_h::IsValid()
+bool model_h::isValid() const
 {
 	return (model != nullptr);
 }
@@ -56,11 +56,11 @@ submodel_h::submodel_h(int n_modelnum, int n_submodelnum)
 {
 	model = model_get(n_modelnum);
 }
-polymodel *submodel_h::GetModel() { return IsValid() ? model : nullptr; }
-int submodel_h::GetModelID() { return IsValid() ? model->id : -1; }
-bsp_info* submodel_h::GetSubmodel() { return IsValid() ? &model->submodel[submodel_num] : nullptr; }
-int submodel_h::GetSubmodelIndex() { return IsValid() ? submodel_num : -1; }
-bool submodel_h::IsValid()
+polymodel *submodel_h::GetModel() const { return isValid() ? model : nullptr; }
+int submodel_h::GetModelID() const { return isValid() ? model->id : -1; }
+bsp_info* submodel_h::GetSubmodel() const { return isValid() ? &model->submodel[submodel_num] : nullptr; }
+int submodel_h::GetSubmodelIndex() const { return isValid() ? submodel_num : -1; }
+bool submodel_h::isValid() const
 {
 	return model != nullptr && submodel_num >= 0 && submodel_num < model->n_models;
 }
@@ -93,7 +93,7 @@ ADE_VIRTVAR(Textures, l_Model, nullptr, "Model textures", "textures", "Model tex
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_ModelTextures.Set(modeltextures_h()));
 
-	if(ADE_SETTING_VAR && oth && oth->IsValid()) {
+	if(ADE_SETTING_VAR && oth && oth->isValid()) {
 		//WMC TODO: Copy code
 		LuaError(L, "Attempt to use Incomplete Feature: Modeltextures copy");
 	}
@@ -112,7 +112,7 @@ ADE_VIRTVAR(Thrusters, l_Model, nullptr, "Model thrusters", "thrusters", "Model 
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_Thrusters.Set(thrusters_h()));
 
-	if(ADE_SETTING_VAR && oth && oth->IsValid()) {
+	if(ADE_SETTING_VAR && oth && oth->isValid()) {
 		LuaError(L, "Attempt to use Incomplete Feature: Thrusters copy");
 	}
 
@@ -130,7 +130,7 @@ ADE_VIRTVAR(Eyepoints, l_Model, nullptr, "Model eyepoints", "eyepoints", "Array 
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_Eyepoints.Set(eyepoints_h()));
 
-	if(ADE_SETTING_VAR && eph && eph->IsValid()) {
+	if(ADE_SETTING_VAR && eph && eph->isValid()) {
 		LuaError(L, "Attempt to use Incomplete Feature: Eyepoints copy");
 	}
 
@@ -148,7 +148,7 @@ ADE_VIRTVAR(Dockingbays, l_Model, nullptr, "Model docking bays", "dockingbays", 
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_Dockingbays.Set(dockingbays_h()));
 
-	if(ADE_SETTING_VAR && dbh && dbh->IsValid()) {
+	if(ADE_SETTING_VAR && dbh && dbh->isValid()) {
 		LuaError(L, "Attempt to use Incomplete Feature: Docking bays copy");
 	}
 
@@ -301,7 +301,7 @@ ADE_FUNC(isValid, l_Model, nullptr, "True if valid, false or nil if not", "boole
 	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", mdl->IsValid());
+	return ade_set_args(L, "b", mdl->isValid());
 }
 
 ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "The name or an empty string if invalid")
@@ -311,7 +311,7 @@ ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "Th
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "s", "");
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "s", "");
 
 	if (ADE_SETTING_VAR)
@@ -327,7 +327,7 @@ ADE_VIRTVAR(Index, l_Submodel, nullptr, "Gets the submodel's index", "number", "
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "i", -1);
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "i", -1);
 
 	if (ADE_SETTING_VAR)
@@ -343,7 +343,7 @@ ADE_VIRTVAR(Offset, l_Submodel, nullptr, "Gets the submodel's offset from its pa
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (ADE_SETTING_VAR)
@@ -359,7 +359,7 @@ ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number",
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	if (ADE_SETTING_VAR)
@@ -376,7 +376,7 @@ ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in th
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "i", 0);
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	auto sm = smh->GetSubmodel();
@@ -393,7 +393,7 @@ ADE_FUNC(GetVertex, l_Submodel, nullptr, "Gets the specified vertex, or a random
 	if (!ade_get_args(L, "o|i", l_Submodel.GetPtr(&smh), &idx))
 		return ADE_RETURN_NIL;
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto sm = smh->GetSubmodel(); 
@@ -420,7 +420,7 @@ ADE_FUNC(getFirstChild, l_Submodel, nullptr, "Gets the first child submodel of t
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 	auto sm = smh->GetSubmodel();
@@ -437,7 +437,7 @@ ADE_FUNC(getNextSibling, l_Submodel, nullptr, "Gets the next sibling submodel of
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 	auto sm = smh->GetSubmodel();
@@ -454,7 +454,7 @@ ADE_FUNC(getParent, l_Submodel, nullptr, "Gets the parent submodel of this submo
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
-	if (!smh->IsValid())
+	if (!smh->isValid())
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 	auto sm = smh->GetSubmodel();
@@ -470,7 +470,7 @@ ADE_FUNC(isValid, l_Submodel, nullptr, "True if valid, false or nil if not", "bo
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", smh->IsValid());
+	return ade_set_args(L, "b", smh->isValid());
 }
 
 
@@ -486,7 +486,7 @@ ADE_FUNC(__len, l_ModelSubmodels, nullptr, "Number of submodels on model", "numb
 	if (!ade_get_args(L, "o", l_ModelSubmodels.GetPtr(&msh)))
 		return ade_set_error(L, "i", 0);
 
-	if (!msh->IsValid())
+	if (!msh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	polymodel *pm = msh->Get();
@@ -519,7 +519,7 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 		index = model_find_submodel_index(msh->GetID(), name);
 	}
 
-	if (!msh->IsValid())
+	if (!msh->isValid())
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 	polymodel *pm = msh->Get();
@@ -536,7 +536,7 @@ ADE_FUNC(isValid, l_ModelSubmodels, nullptr, "Detects whether handle is valid", 
 	if (!ade_get_args(L, "o", l_ModelSubmodels.GetPtr(&msh)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", msh->IsValid());
+	return ade_set_args(L, "b", msh->isValid());
 }
 
 
@@ -552,7 +552,7 @@ ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", 
 	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
 		return ade_set_error(L, "i", 0);
 
-	if(!mth->IsValid())
+	if(!mth->isValid())
 		return ade_set_error(L, "i", 0);
 
 	polymodel *pm = mth->Get();
@@ -574,7 +574,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 
 	polymodel *pm = mth->Get();
 
-	if (!mth->IsValid() || s == NULL || pm == NULL)
+	if (!mth->isValid() || s == NULL || pm == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	texture_info *tinfo = NULL;
@@ -620,7 +620,7 @@ ADE_FUNC(isValid, l_ModelTextures, NULL, "Detects whether handle is valid", "boo
 	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", mth->IsValid());
+	return ade_set_args(L, "b", mth->isValid());
 }
 
 
@@ -638,7 +638,7 @@ ADE_FUNC(__len, l_Eyepoints, NULL, "Gets the number of eyepoints on this model",
 		return ade_set_error(L, "i", 0);
 	}
 
-	if (!eph->IsValid())
+	if (!eph->isValid())
 	{
 		return ade_set_error(L, "i", 0);
 	}
@@ -664,7 +664,7 @@ ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets an eyepoint handle", "eyepoint", "eye
 		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
 	}
 
-	if (!eph->IsValid())
+	if (!eph->isValid())
 	{
 		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
 	}
@@ -683,7 +683,7 @@ ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets an eyepoint handle", "eyepoint", "eye
 		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
 	}
 
-	if (ADE_SETTING_VAR && eh && eh->IsValid())
+	if (ADE_SETTING_VAR && eh && eh->isValid())
 	{
 		LuaError(L, "Attempted to use incomplete feature: Eyepoint copy");
 	}
@@ -697,7 +697,7 @@ ADE_FUNC(isValid, l_Eyepoints, NULL, "Detects whether handle is valid or not", "
 	if(!ade_get_args(L, "o", l_Eyepoints.GetPtr(&eph)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", eph->IsValid());
+	return ade_set_args(L, "b", eph->isValid());
 }
 
 //**********HANDLE: thrusters
@@ -712,7 +712,7 @@ ADE_FUNC(__len, l_Thrusters, NULL, "Number of thruster banks on the model", "num
 	if(!ade_get_args(L, "o", l_Thrusters.GetPtr(&trh)))
 		return ade_set_error(L, "i", -1);
 
-	if(!trh->IsValid())
+	if(!trh->isValid())
 		return ade_set_error(L, "i", -1);
 
 	polymodel *pm = trh->Get();
@@ -734,7 +734,7 @@ ADE_INDEXER(l_Thrusters, "number Index", "Array of all thrusterbanks on this thr
 
 	polymodel *pm = trh->Get();
 
-	if (!trh->IsValid() || s == NULL || pm == NULL)
+	if (!trh->isValid() || s == NULL || pm == NULL)
 		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
 
 	//Determine index
@@ -762,7 +762,7 @@ ADE_FUNC(isValid, l_Thrusters, NULL, "Detects whether handle is valid", "boolean
 	if(!ade_get_args(L, "o", l_Thrusters.GetPtr(&trh)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", trh->IsValid());
+	return ade_set_args(L, "b", trh->isValid());
 }
 
 //**********HANDLE: thrusterbank
@@ -774,13 +774,13 @@ thrusterbank_h::thrusterbank_h() {
 thrusterbank_h::thrusterbank_h(thruster_bank* ba) {
 	bank = ba;
 }
-thruster_bank* thrusterbank_h::Get() {
+thruster_bank* thrusterbank_h::Get() const {
 	if (!isValid())
 		return NULL;
 
 	return bank;
 }
-bool thrusterbank_h::isValid() {
+bool thrusterbank_h::isValid() const {
 	return bank != NULL;
 }
 
@@ -851,13 +851,13 @@ glowpoint_h::glowpoint_h() {
 glowpoint_h::glowpoint_h(glow_point* np) {
 	point = np;
 }
-glow_point* glowpoint_h::Get() {
+glow_point* glowpoint_h::Get() const {
 	if (!isValid())
 		return NULL;
 
 	return point;
 }
-bool glowpoint_h::isValid() {
+bool glowpoint_h::isValid() const {
 	return point != NULL;
 }
 
@@ -930,7 +930,7 @@ ADE_INDEXER(l_Dockingbays, "dockingbay", "Gets a dockingbay handle from this mod
 		if (!ade_get_args(L, "oi|o", l_Dockingbays.GetPtr(&dbhp), &index, l_Dockingbay.GetPtr(&newVal)))
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 
-		if (!dbhp->IsValid())
+		if (!dbhp->isValid())
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 
 		index--; // Lua --> C/C++
@@ -944,7 +944,7 @@ ADE_INDEXER(l_Dockingbays, "dockingbay", "Gets a dockingbay handle from this mod
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 		}
 
-		if (!dbhp->IsValid() && name != NULL)
+		if (!dbhp->isValid() && name != NULL)
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 
 		index = model_find_dock_name_index(dbhp->GetID(), name);
@@ -967,7 +967,7 @@ ADE_FUNC(__len, l_Dockingbays, NULL, "Retrieves the number of dockingbays on thi
 	if (!ade_get_args(L, "o", l_Dockingbays.GetPtr(&dbhp)))
 		return ade_set_error(L, "i", 0);
 
-	if (!dbhp->IsValid())
+	if (!dbhp->isValid())
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", dbhp->Get()->n_docks);
@@ -978,8 +978,8 @@ ADE_OBJ(l_Dockingbay, dockingbay_h, "dockingbay", "Handle to a model docking bay
 
 dockingbay_h::dockingbay_h(polymodel* pm, int dock_idx) : model_h(pm), dock_id(dock_idx) {}
 dockingbay_h::dockingbay_h() : model_h(), dock_id(-1){}
-bool dockingbay_h::IsValid() {
-	if (!model_h::IsValid())
+bool dockingbay_h::isValid() const {
+	if (!model_h::isValid())
 	{
 		return false;
 	}
@@ -988,8 +988,8 @@ bool dockingbay_h::IsValid() {
 		return dock_id >= 0 && dock_id < this->Get()->n_docks;
 	}
 }
-dock_bay* dockingbay_h::getDockingBay() {
-	if (!this->IsValid())
+dock_bay* dockingbay_h::getDockingBay() const {
+	if (!this->isValid())
 	{
 		return NULL;
 	}
@@ -1006,7 +1006,7 @@ ADE_FUNC(__len, l_Dockingbay, NULL, "Gets the number of docking points in this b
 		return ade_set_error(L, "i", 0);
 	}
 
-	if (dbh == NULL || !dbh->IsValid())
+	if (dbh == NULL || !dbh->isValid())
 	{
 		return ade_set_error(L, "i", 0);
 	}
@@ -1022,7 +1022,7 @@ ADE_FUNC(getName, l_Dockingbay, NULL, "Gets the name of this docking bay", "stri
 		return ade_set_error(L, "s", "");
 	}
 
-	if (dbh == NULL || !dbh->IsValid())
+	if (dbh == NULL || !dbh->isValid())
 	{
 		return ade_set_error(L, "s", "");
 	}
@@ -1044,7 +1044,7 @@ ADE_FUNC(getPoint, l_Dockingbay, "number index", "Gets the location of a docking
 
 	index--; // Lua --> C/C++
 
-	if (dbh == NULL || !dbh->IsValid())
+	if (dbh == NULL || !dbh->isValid())
 	{
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	}
@@ -1072,7 +1072,7 @@ ADE_FUNC(getNormal, l_Dockingbay, "number index", "Gets the normal of a docking 
 
 	index--; // Lua --> C/C++
 
-	if (dbh == NULL || !dbh->IsValid())
+	if (dbh == NULL || !dbh->isValid())
 	{
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	}
@@ -1103,7 +1103,7 @@ ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
 		return ADE_RETURN_NIL;
 	}
 
-	if (!dockee_bay_h->IsValid() || !docker_bay_h->IsValid())
+	if (!dockee_bay_h->isValid() || !docker_bay_h->isValid())
 	{
 		return ADE_RETURN_NIL;
 	}
@@ -1151,7 +1151,7 @@ ADE_FUNC(isValid, l_Dockingbay, NULL, "Detects whether is valid or not", "number
 		return ADE_RETURN_FALSE;
 	}
 
-	return ade_set_args(L, "b", dbh->IsValid());
+	return ade_set_args(L, "b", dbh->isValid());
 }
 
 }
