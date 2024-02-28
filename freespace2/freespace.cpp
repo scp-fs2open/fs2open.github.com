@@ -661,12 +661,16 @@ DCF(sn_glare, "Sets the sun glare scale (Default is 1.7)")
 }
 
 float Supernova_last_glare = 0.0f;
-bool stars_sun_has_glare(int index);
+
 void game_sunspot_process(float frametime)
 {
 	TRACE_SCOPE(tracing::SunspotProcess);
 	int n_lights, idx;
 	float Sun_spot_goal = 0.0f;
+
+	int sun_idx = 0;
+	int light_idx = light_find_for_sun(sun_idx);
+	Assertion(light_idx >= 0, "Could not find sun for light index %d!", sun_idx);
 
 	// supernova
 	auto sn_stage = supernova_stage();
@@ -685,7 +689,7 @@ void game_sunspot_process(float frametime)
 			pct = supernova_sunspot_pct();
 
 			vec3d light_dir;				
-			light_get_global_dir(&light_dir, 0);
+			light_get_global_dir(&light_dir, light_idx);
 			float dot;
 			dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
 			
@@ -698,9 +702,9 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
-			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
+			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, light_idx ) )	{
 				// draw the glow for this sun
-				stars_draw_sun_glow(0);	
+				stars_draw_sun_glow(sun_idx);
 			}
 
 			Supernova_last_glare = Sun_spot_goal;
@@ -747,8 +751,8 @@ void game_sunspot_process(float frametime)
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
-					//only do sunglare stuff if this sun has one
-					if (stars_sun_has_glare(idx))	{
+					//only do sunglare stuff if this light source has one
+					if (light_has_glare(idx))	{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
