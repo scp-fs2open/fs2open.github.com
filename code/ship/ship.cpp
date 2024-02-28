@@ -4081,7 +4081,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			ship_type_index = ship_type_name_lookup(cur_flag);
 
 			// set ship class type
-			if ((ship_type_index >= 0) && (sip->class_type < 0))
+			if (ship_type_index >= 0)
 				sip->class_type = ship_type_index;
 
 			// check various ship flags
