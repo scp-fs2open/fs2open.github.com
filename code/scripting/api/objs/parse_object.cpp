@@ -1,6 +1,7 @@
 
 #include "parse_object.h"
 
+#include "ship.h"
 #include "shipclass.h"
 #include "team.h"
 #include "vecmath.h"
@@ -522,6 +523,22 @@ ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship 
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start]);
+}
+
+ADE_FUNC(getShip, l_ParseObject, nullptr, "Returns the ship that was created from this parsed ship, if it is present in the mission.  Note that parse objects are reused when a wing has multiple waves, so this will always return a ship from the most recently created wave.", "ship", "The created ship, an invalid handle if no ship exists, or nil if the current handle is invalid")
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ADE_RETURN_NIL;
+
+	if (!poh || !poh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto objp = poh->getObject()->created_object;
+	if (!objp)
+		return ade_set_args(L, "o", l_Ship.Set(-1));
+
+	return ade_set_object_with_breed(L, OBJ_INDEX(objp));
 }
 
 ADE_FUNC(getWing, l_ParseObject, nullptr, "Returns the wing that this parsed ship belongs to, if any", "wing", "The parsed ship's wing, an invalid wing handle if no wing exists, or nil if the handle is invalid")
