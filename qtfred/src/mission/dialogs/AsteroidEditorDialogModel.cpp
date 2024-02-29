@@ -34,7 +34,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 		debris_inverse_idx_lookup.emplace(ship_debris_idx_lookup[i], i);
 	}
 	// note that normal asteroids use the same index field! Need to add dummy entries for them as well
-	for (auto i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; ++i) {
+	for (auto i = 0; i < MAX_RETAIL_DEBRIS_TYPES; ++i) {
 		debris_inverse_idx_lookup.emplace(i, 0);
 	}
 	initializeData();
@@ -96,13 +96,13 @@ bool AsteroidEditorDialogModel::getEnhancedEnabled()
 
 void AsteroidEditorDialogModel::setAsteroidEnabled(_roid_types type, bool enabled)
 {
-	Assertion(type >=0 && type < MAX_ACTIVE_DEBRIS_TYPES, "Invalid Asteroid checkbox type: %i\n", type);
+	Assertion(type >=0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
 	modify(_field_debris_type[type], enabled == true ? 1 : -1);
 }
 
 bool AsteroidEditorDialogModel::getAsteroidEnabled(_roid_types type)
 {
-	Assertion(type >=0 && type < MAX_ACTIVE_DEBRIS_TYPES, "Invalid Asteroid checkbox type: %i\n", type);
+	Assertion(type >=0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
 	return (_field_debris_type[type] == 1);
 }
 
@@ -180,13 +180,13 @@ field_type_t AsteroidEditorDialogModel::getFieldType()
 
 void AsteroidEditorDialogModel::setFieldDebrisType(int idx, int debris_type)
 {
-	Assertion(idx >= 0 && idx < MAX_ACTIVE_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
+	Assertion(idx >= 0 && idx < MAX_RETAIL_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
 	modify(_field_debris_type[idx], ship_debris_idx_lookup.at(debris_type));
 }
 
 int AsteroidEditorDialogModel::getFieldDebrisType(int idx)
 {
-	Assertion(idx >= 0 && idx < MAX_ACTIVE_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
+	Assertion(idx >= 0 && idx < MAX_RETAIL_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
 	return debris_inverse_idx_lookup.at(_field_debris_type[idx]);
 }
 
@@ -321,12 +321,18 @@ bool AsteroidEditorDialogModel::validate_data()
 			}
 		}
 
+		// Compress the debris field vector
+		if (_a_field.field_debris_type.size() > 0) {
+			_a_field.field_debris_type.erase(std::remove_if(_a_field.field_debris_type.begin(),
+												 _a_field.field_debris_type.end(),
+												 [](int value) { return value < 0; }),
+				_a_field.field_debris_type.end());
+		}
+
 		// for a ship debris (i.e. passive) field, need at least one debris type is selected
 		if (_a_field.field_type == FT_PASSIVE) {
 			if (_a_field.debris_genre == DG_DEBRIS) {
-				if ( (_a_field.field_debris_type[0] == -1) && \
-						(_a_field.field_debris_type[1] == -1) && \
-						(_a_field.field_debris_type[2] == -1) ) {
+				if (_a_field.field_debris_type.size() == 0) {
 					showErrorDialogNoCancel("You must choose one or more types of ship debris\n");
 					return false;
 				}
@@ -386,8 +392,12 @@ void AsteroidEditorDialogModel::update_init()
 
 		// ship debris
 		if ( (_field_type == FT_PASSIVE) && (_debris_genre == DG_DEBRIS) ) {
-			for (auto idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; ++idx) {
-				modify(_a_field.field_debris_type[idx], _field_debris_type[idx]);
+			for (size_t idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; ++idx) {
+				if (SCP_vector_inbounds(_a_field.field_debris_type, idx)) {
+					modify(_a_field.field_debris_type[idx], _field_debris_type[idx]);
+				} else {
+					_a_field.field_debris_type.push_back(_field_debris_type[idx]);
+				}
 			}
 		}
 
@@ -432,9 +442,8 @@ void AsteroidEditorDialogModel::update_init()
 	_inner_max_z = QString::number(_a_field.inner_max_bound.xyz.z, 'f', 1);
 
 	// ship debris or asteroids
-	for (auto i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; ++i) {
-		_field_debris_type[i] = _a_field.field_debris_type[i];
-	}
+	_field_debris_type.clear();
+	_field_debris_type = _a_field.field_debris_type;
 
 	_last_field = _cur_field;
 }
