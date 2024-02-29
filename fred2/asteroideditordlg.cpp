@@ -18,6 +18,7 @@
 #include "FREDDoc.h"
 #include "debris/debris.h"	//	Asteroid stuff.
 #include "species_defs/species_defs.h"
+#include "checkboxlistdlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -25,9 +26,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 #define ID_FIELD_MENU 9000
-
-// helps in looping over combo boxes
-int Dlg_id[MAX_RETAIL_DEBRIS_TYPES] = {IDC_SHIP_DEBRIS1, IDC_SHIP_DEBRIS2, IDC_SHIP_DEBRIS3};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -97,7 +95,7 @@ BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_ENABLE_INNER_BOX, OnEnableInnerBox)
 	ON_BN_CLICKED(IDC_PASSIVE_FIELD, OnPassiveField)
-	ON_BN_CLICKED(IDC_FIELD_DEBRIS, OnFieldShip)
+	ON_BN_CLICKED(IDC_FIELD_DEBRIS, OnFieldDebris)
 	ON_BN_CLICKED(IDC_ACTIVE_FIELD, OnActiveField)
 	ON_BN_CLICKED(IDC_FIELD_ASTEROID, OnFieldAsteroid)
 	ON_BN_CLICKED(IDC_ADD_FIELD, OnAddField)
@@ -106,8 +104,9 @@ BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	ON_BN_CLICKED(IDC_ADD_FIELD_TARGET, OnAddFieldTarget)
 	ON_BN_CLICKED(IDC_REMOVE_FIELD_TARGET, OnRemoveFieldTarget)
 	ON_BN_CLICKED(IDC_RANGE_OVERRIDE, OnEnableRangeOverride)
+	ON_BN_CLICKED(IDC_SELECT_DEBRIS, OnBnClickedSelectDebris)
 	//}}AFX_MSG_MAP
-END_MESSAGE_MAP()
+	END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // asteroid_editor message handlers
@@ -320,6 +319,15 @@ void asteroid_editor::OnOK()
 	if (!validate_data()) {
 		return;
 	}
+	// If it's an asteroid field, then clear the debris types
+	// Otherwise clear the asteroid types
+	if (a_field->debris_genre == DG_ASTEROID) {
+		a_field->field_debris_type.clear();
+	} else {
+		for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
+			a_field->field_asteroid_type[j] = false;
+		}
+	}
 	for (i=0; i<1 /*MAX_ASTEROID_FIELDS*/; i++)
 		Asteroid_field = a_field[i];
 
@@ -345,7 +353,7 @@ BOOL asteroid_editor::OnInitDialog()
 
 void asteroid_editor::update_init()
 {
-	int num_asteroids, idx;
+	int num_asteroids;
 	CString str;
 
 	UpdateData(TRUE);
@@ -379,24 +387,6 @@ void asteroid_editor::update_init()
 		// type of field
 		MODIFY(a_field[last_field].field_type, m_field_type);
 		MODIFY(a_field[last_field].debris_genre, m_debris_genre);
-		if ( (m_field_type == FT_PASSIVE) && (m_debris_genre == DG_DEBRIS) ) {
-			// we should have ship debris
-			for (idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; idx++) {
-				// loop over combo boxes, store the item data of the cur selection, -1 in no cur selection
-				int cur_sel = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCurSel();
-				int cur_choice;
-				if (cur_sel != CB_ERR) {
-					cur_choice = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(cur_sel);
-				} else {
-					cur_choice = -1;
-				}
-				if (SCP_vector_inbounds(a_field[cur_field].field_debris_type, idx)) {
-					MODIFY(a_field[cur_field].field_debris_type[idx], cur_choice);
-				} else {
-					a_field[cur_field].field_debris_type.push_back(cur_choice);
-				}
-			}
-		}
 
 		if ( m_debris_genre == DG_ASTEROID ) {
 			bool cur_choice;
@@ -469,52 +459,9 @@ void asteroid_editor::update_init()
 
 	m_field_targets = a_field[cur_field].target_names;
 
-	// set up combo boxes
-	uint i;
-	int k, box_index;
-
-	// add "None" to each box
-	for (k = 0; k < MAX_RETAIL_DEBRIS_TYPES; k++)
-	{
-		box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString("None");
-		((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, static_cast<DWORD_PTR>(-1));
-	}
-
 	// now add each kind of debris to each box
 	CString name;
 	char *debris_size[NUM_ASTEROID_SIZES] = { "Small", "Medium", "Large" };
-
-	// each species
-	if (Asteroid_info.size() > NUM_ASTEROID_SIZES) {
-		for (i = NUM_ASTEROID_SIZES; i < Asteroid_info.size(); i++)
-		{
-			// each box
-			for (k = 0; k < MAX_RETAIL_DEBRIS_TYPES; k++)
-			{
-				box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString(Asteroid_info[i].name);
-				((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, i);
-			}
-		}
-	}
-
-	// set active debris type for each combo box
-	int box_count, cur_box_data;
-	for (idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; idx++) {
-		// Only set selection if not "None"
-		if (idx < static_cast<int>(a_field[cur_field].field_debris_type.size())) {
-			if (a_field[cur_field].field_debris_type[idx] != -1) {
-				box_count = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCount();
-				for (box_index = 0; box_index < box_count; box_index++) {
-					cur_box_data = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(box_index);
-					if (cur_box_data == a_field[cur_field].field_debris_type[idx]) {
-						// set cur sel
-						((CComboBox*)GetDlgItem(Dlg_id[idx]))->SetCurSel(box_index);
-						break;
-					}
-				}
-			}
-		}
-	}
 
 	// set up asteroid subtype checkboxes
 	((CButton*)GetDlgItem(IDC_SUBTYPE1))->SetCheck(a_field[cur_field].field_asteroid_type[0]);
@@ -546,9 +493,7 @@ void asteroid_editor::OnEnableAsteroids()
 
 	GetDlgItem(IDC_FIELD_DEBRIS)->EnableWindow(m_enable_asteroids);
 	GetDlgItem(IDC_FIELD_ASTEROID)->EnableWindow(m_enable_asteroids);
-	GetDlgItem(IDC_SHIP_DEBRIS1)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_DEBRIS));
-	GetDlgItem(IDC_SHIP_DEBRIS2)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_DEBRIS));
-	GetDlgItem(IDC_SHIP_DEBRIS3)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_DEBRIS));
+	GetDlgItem(IDC_SELECT_DEBRIS)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_DEBRIS));
 	GetDlgItem(IDC_SUBTYPE1)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_ASTEROID));
 	GetDlgItem(IDC_SUBTYPE2)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_ASTEROID));
 	GetDlgItem(IDC_SUBTYPE3)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_ASTEROID));
@@ -643,7 +588,7 @@ void asteroid_editor::OnEnableField()
 
 	// maybe enable species
 	if ( m_enable_asteroids && (m_field_type == FT_PASSIVE) && (m_debris_genre == DG_DEBRIS) ) {
-		OnFieldShip();
+		OnFieldDebris();
 	}
 }
 
@@ -656,9 +601,7 @@ void asteroid_editor::OnActiveField()
 
 	// gray out ship and species
 	GetDlgItem(IDC_FIELD_DEBRIS)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SHIP_DEBRIS1)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SHIP_DEBRIS2)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SHIP_DEBRIS3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SELECT_DEBRIS)->EnableWindow(FALSE);
 	GetDlgItem(IDC_SUBTYPE1)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SUBTYPE2)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SUBTYPE3)->EnableWindow(TRUE);
@@ -683,10 +626,8 @@ void asteroid_editor::OnPassiveField()
 	// acivate ship
 	GetDlgItem(IDC_FIELD_DEBRIS)->EnableWindow(TRUE);
 
-	// maybe activate species
-	GetDlgItem(IDC_SHIP_DEBRIS1)->EnableWindow(m_debris_genre == DG_DEBRIS);
-	GetDlgItem(IDC_SHIP_DEBRIS2)->EnableWindow(m_debris_genre == DG_DEBRIS);
-	GetDlgItem(IDC_SHIP_DEBRIS3)->EnableWindow(m_debris_genre == DG_DEBRIS);
+	// maybe activate debris
+	GetDlgItem(IDC_SELECT_DEBRIS)->EnableWindow(m_debris_genre == DG_DEBRIS);
 
 	// maybe activate asteroid subtype
 	GetDlgItem(IDC_SUBTYPE1)->EnableWindow(m_debris_genre == DG_ASTEROID);
@@ -706,33 +647,33 @@ void asteroid_editor::OnPassiveField()
 	GetDlgItem(IDC_ENABLE_INNER_BOX)->EnableWindow(FALSE);
 }
 
-void asteroid_editor::OnFieldShip()
+void asteroid_editor::OnFieldDebris()
 {
 	// set debris type 
 	m_debris_genre = DG_DEBRIS;
 
-	GetDlgItem(IDC_SHIP_DEBRIS1)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SHIP_DEBRIS2)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SHIP_DEBRIS3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SELECT_DEBRIS)->EnableWindow(TRUE);
 
 	GetDlgItem(IDC_SUBTYPE1)->EnableWindow(FALSE);
 	GetDlgItem(IDC_SUBTYPE2)->EnableWindow(FALSE);
 	GetDlgItem(IDC_SUBTYPE3)->EnableWindow(FALSE);
 
-	// force check of ship
+	// force check of debris
 	((CButton*)GetDlgItem(IDC_FIELD_ASTEROID))->SetCheck(0);
 	((CButton*)GetDlgItem(IDC_FIELD_DEBRIS))->SetCheck(1);
+
+	// force check of passive field
+	((CButton*)GetDlgItem(IDC_ACTIVE_FIELD))->SetCheck(0);
+	((CButton*)GetDlgItem(IDC_PASSIVE_FIELD))->SetCheck(1);
 
 }
 
 void asteroid_editor::OnFieldAsteroid()
 {
-	// set debris type 
+	// set asteroid type 
 	m_debris_genre = DG_ASTEROID;
 
-	GetDlgItem(IDC_SHIP_DEBRIS1)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SHIP_DEBRIS2)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SHIP_DEBRIS3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SELECT_DEBRIS)->EnableWindow(FALSE);
 
 
 	GetDlgItem(IDC_SUBTYPE1)->EnableWindow(TRUE);
@@ -742,6 +683,16 @@ void asteroid_editor::OnFieldAsteroid()
 	// force check of asteroid
 	((CButton*)GetDlgItem(IDC_FIELD_ASTEROID))->SetCheck(1);
 	((CButton*)GetDlgItem(IDC_FIELD_DEBRIS))->SetCheck(0);
+
+	// force check of existing field type
+	if (m_field_type == FT_ACTIVE) {
+		((CButton*)GetDlgItem(IDC_ACTIVE_FIELD))->SetCheck(1);
+		((CButton*)GetDlgItem(IDC_PASSIVE_FIELD))->SetCheck(0);
+	} else {
+		((CButton*)GetDlgItem(IDC_ACTIVE_FIELD))->SetCheck(0);
+		((CButton*)GetDlgItem(IDC_PASSIVE_FIELD))->SetCheck(1);
+	}
+	
 }
 
 void asteroid_editor::OnAddField()
@@ -805,4 +756,36 @@ void asteroid_editor::OnRemoveFieldTarget()
 	((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST))->DeleteString(m_field_target_index);
 
 	OnFieldTargetChange();
+}
+
+void asteroid_editor::OnBnClickedSelectDebris()
+{
+	// create a list of debris types
+	SCP_vector<std::pair<CString, bool>> debris;
+	for (size_t i = 0; i < Asteroid_info.size(); i++) {
+		if (Asteroid_info[i].type == -1) {
+			bool active = false;
+			for (size_t j = 0; j < a_field[cur_field].field_debris_type.size(); j++) {
+				if (i == a_field[cur_field].field_debris_type[j]) {
+					active = true;
+					break;
+				}
+			}
+			debris.emplace_back(Asteroid_info[i].name, active);
+		}
+	}
+	
+	// display the checklist
+	CheckBoxListDlg dlg;
+	dlg.SetCaption("Select Debris");
+	dlg.SetOptions(debris);
+	dlg.DoModal();
+
+	// activate selected debris
+	a_field[cur_field].field_debris_type.clear();
+	for (int i = 0; i < static_cast<int>(debris.size()); i++) {
+		if (dlg.IsChecked(i)) {
+			a_field[cur_field].field_debris_type.push_back(get_asteroid_index(debris[i].first.GetString()));
+		}
+	}
 }
