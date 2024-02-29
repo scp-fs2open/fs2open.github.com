@@ -97,13 +97,13 @@ bool AsteroidEditorDialogModel::getEnhancedEnabled()
 void AsteroidEditorDialogModel::setAsteroidEnabled(_roid_types type, bool enabled)
 {
 	Assertion(type >=0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
-	modify(_field_debris_type[type], enabled == true ? 1 : -1);
+	modify(_field_asteroid_type[type], enabled);
 }
 
 bool AsteroidEditorDialogModel::getAsteroidEnabled(_roid_types type)
 {
 	Assertion(type >=0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
-	return (_field_debris_type[type] == 1);
+	return (_field_asteroid_type[type]);
 }
 
 void AsteroidEditorDialogModel::setNumAsteroids(int num_asteroids)
