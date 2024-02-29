@@ -36,6 +36,7 @@
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
+#include "math/bitarray.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
 #include "mission/missionbriefcommon.h"
@@ -5664,7 +5665,7 @@ void parse_bitmaps(mission *pm)
 
 	// all poofs on by default
 	for (size_t i = 0; i < Poof_info.size(); i++)
-		Neb2_poof_flags += (1 << i);
+		set_bit(Neb2_poof_flags.get(), i);
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
@@ -5682,7 +5683,9 @@ void parse_bitmaps(mission *pm)
 	if (nebula) {
 		// Obsolete and only for backwards compatibility
 		if (optional_string("+Neb2Flags:")) {
-			stuff_int(&Neb2_poof_flags);
+			int temp;
+			stuff_int(&temp);
+			bit_array_set_from_int(Neb2_poof_flags.get(), Poof_info.size(), temp);
 		}
 
 		// Get poofs by name
