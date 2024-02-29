@@ -36,7 +36,7 @@ class OptionsManager {
 
 	void removeOption(const OptionBase* option);
 
-	const OptionBase* OptionsManager::getOptionByKey(SCP_string name);
+	const OptionBase* getOptionByKey(SCP_string name);
 
 	const SCP_vector<std::unique_ptr<const options::OptionBase>>& getOptions();
 
