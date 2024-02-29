@@ -27,7 +27,7 @@ static char THIS_FILE[] = __FILE__;
 #define ID_FIELD_MENU 9000
 
 // helps in looping over combo boxes
-int Dlg_id[MAX_ACTIVE_DEBRIS_TYPES] = {IDC_SHIP_DEBRIS1, IDC_SHIP_DEBRIS2, IDC_SHIP_DEBRIS3};
+int Dlg_id[MAX_RETAIL_DEBRIS_TYPES] = {IDC_SHIP_DEBRIS1, IDC_SHIP_DEBRIS2, IDC_SHIP_DEBRIS3};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -279,10 +279,20 @@ int asteroid_editor::validate_data()
 			}
 		}
 
+		// Compress the debris field vector
+		if (a_field[cur_field].field_debris_type.size() > 0) {
+			a_field[cur_field].field_debris_type.erase(
+				std::remove_if(a_field[cur_field].field_debris_type.begin(),
+					a_field[cur_field].field_debris_type.end(),
+					[](int value) { return value < 0; }
+					),
+				a_field[cur_field].field_debris_type.end());
+		}
+
 		// check if passive, ship debris field, at least one debris type selected
 		if (a_field[0].field_type == FT_PASSIVE) {
 			if (a_field[0].debris_genre == DG_DEBRIS) {
-				if ( (a_field[0].field_debris_type[0] == -1) && (a_field[0].field_debris_type[1] == -1) && (a_field[0].field_debris_type[2] == -1) ) {
+				if (a_field[cur_field].field_debris_type.size() == 0) {
 					MessageBox("You must choose one or more types of ship debris");
 					return 0;
 				}
@@ -371,7 +381,7 @@ void asteroid_editor::update_init()
 		MODIFY(a_field[last_field].debris_genre, m_debris_genre);
 		if ( (m_field_type == FT_PASSIVE) && (m_debris_genre == DG_DEBRIS) ) {
 			// we should have ship debris
-			for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
+			for (idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; idx++) {
 				// loop over combo boxes, store the item data of the cur selection, -1 in no cur selection
 				int cur_sel = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCurSel();
 				int cur_choice;
@@ -380,7 +390,11 @@ void asteroid_editor::update_init()
 				} else {
 					cur_choice = -1;
 				}
-				MODIFY(a_field[cur_field].field_debris_type[idx], cur_choice);
+				if (SCP_vector_inbounds(a_field[cur_field].field_debris_type, idx)) {
+					MODIFY(a_field[cur_field].field_debris_type[idx], cur_choice);
+				} else {
+					a_field[cur_field].field_debris_type.push_back(cur_choice);
+				}
 			}
 		}
 
@@ -460,7 +474,7 @@ void asteroid_editor::update_init()
 	int k, box_index;
 
 	// add "None" to each box
-	for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
+	for (k = 0; k < MAX_RETAIL_DEBRIS_TYPES; k++)
 	{
 		box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString("None");
 		((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, static_cast<DWORD_PTR>(-1));
@@ -475,7 +489,7 @@ void asteroid_editor::update_init()
 		for (i = NUM_ASTEROID_SIZES; i < Asteroid_info.size(); i++)
 		{
 			// each box
-			for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
+			for (k = 0; k < MAX_RETAIL_DEBRIS_TYPES; k++)
 			{
 				box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString(Asteroid_info[i].name);
 				((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, i);
@@ -485,16 +499,18 @@ void asteroid_editor::update_init()
 
 	// set active debris type for each combo box
 	int box_count, cur_box_data;
-	for (idx=0;idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
+	for (idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; idx++) {
 		// Only set selection if not "None"
-		if (a_field[cur_field].field_debris_type[idx] != -1) {
-			box_count = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCount();
-			for (box_index=0; box_index<box_count; box_index++) {
-				cur_box_data = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(box_index);
-				if (cur_box_data == a_field[cur_field].field_debris_type[idx]) {
-					// set cur sel
-					((CComboBox*)GetDlgItem(Dlg_id[idx]))->SetCurSel(box_index);
-					break;
+		if (idx < static_cast<int>(a_field[cur_field].field_debris_type.size())) {
+			if (a_field[cur_field].field_debris_type[idx] != -1) {
+				box_count = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCount();
+				for (box_index = 0; box_index < box_count; box_index++) {
+					cur_box_data = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(box_index);
+					if (cur_box_data == a_field[cur_field].field_debris_type[idx]) {
+						// set cur sel
+						((CComboBox*)GetDlgItem(Dlg_id[idx]))->SetCurSel(box_index);
+						break;
+					}
 				}
 			}
 		}

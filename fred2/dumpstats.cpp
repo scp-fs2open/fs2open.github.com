@@ -243,7 +243,7 @@ void DumpStats::get_background_stats(CString &buffer)
 				buffer += temp;
 
 				temp.Format("\t\tTypes: ");
-				for (size_t j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+				for (size_t j = 0; j < Asteroid_field.field_debris_type.size(); j++) {
 					temp += CString(Asteroid_info[Asteroid_field.field_debris_type[j]].name) + ", ";
 				}
 

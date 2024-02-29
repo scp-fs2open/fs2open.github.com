@@ -777,16 +777,18 @@ int CFred_mission_save::save_asteroid_fields()
 
 		// field_debris_type (only if debris genre)
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
-			for (int idx = 0; idx < MAX_ACTIVE_DEBRIS_TYPES; idx++) {
+			for (size_t idx = 0; idx < Asteroid_field.field_debris_type.size(); idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
 
 					if (save_format != MissionFormat::RETAIL) {
-						if (optional_string_fred("+Field Debris Type:")) {
-							parse_comments();
-						} else {
-							fout("\n+Field Debris Type:");
+						if (idx < MAX_RETAIL_DEBRIS_TYPES) { // Retail can only have 3!
+							if (optional_string_fred("+Field Debris Type:")) {
+								parse_comments();
+							} else {
+								fout("\n+Field Debris Type:");
+							}
+							fout(" %d", Asteroid_field.field_debris_type[idx]);
 						}
-						fout(" %d", Asteroid_field.field_debris_type[idx]);
 					} else {
 						if (optional_string_fred("+Field Debris Type Name:")) {
 							parse_comments();

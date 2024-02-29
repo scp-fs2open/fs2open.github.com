@@ -32,7 +32,7 @@ class model_draw_list;
 #define	ASTEROID_TYPE_LARGE		2
 
 // these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
-#define	MAX_ACTIVE_DEBRIS_TYPES		NUM_ASTEROID_SIZES
+#define	MAX_RETAIL_DEBRIS_TYPES		NUM_ASTEROID_SIZES
 
 // Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
 #define MAX_ASTEROID_DETAIL_LEVELS	5
@@ -143,7 +143,7 @@ typedef	struct asteroid_field {
 	int		num_initial_asteroids;		// Number of asteroids at creation.
 	field_type_t		field_type;		// active throws and wraps, passive does not
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
-	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
+	SCP_vector<int>	field_debris_type;	// one of the debris type defines above
 	bool            field_asteroid_type[NUM_ASTEROID_SIZES];
 	int				num_used_field_debris_types;	// how many of the above are used
 	bool            enhanced_visibility_checks;     // if true then range checks are overridden for spawning and wrapping asteroids in the field
@@ -167,7 +167,7 @@ void	asteroid_level_init();
 void	asteroid_level_close();
 void	asteroid_create_all();
 void	asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets);
-void	asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max, bool enhanced);
+void	asteroid_create_debris_field(int num_asteroids, int asteroid_speed, SCP_vector<int> debris_types, vec3d o_min, vec3d o_max, bool enhanced);
 void	asteroid_render(object* obj, model_draw_list* scene);
 void	asteroid_delete( object *asteroid_objp );
 void	asteroid_process_pre( object *asteroid_objp );

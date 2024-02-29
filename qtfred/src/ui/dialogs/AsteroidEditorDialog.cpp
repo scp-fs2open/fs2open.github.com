@@ -50,7 +50,7 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 
 	// setup values in ship debris combo boxes
 	// MFC let you set comboxbox item indexes, Qt doesn't so we'll need a lookup
-	static_assert(MAX_ACTIVE_DEBRIS_TYPES == 3,
+	static_assert(MAX_RETAIL_DEBRIS_TYPES == 3,
 			"qtFRED only provides three combo boxes for debris type input");
 	debrisComboBoxes = ui->fieldProperties->findChildren<QComboBox *>(QString(), Qt::FindDirectChildrenOnly);
 	std::sort(debrisComboBoxes.begin(), debrisComboBoxes.end(), sort_qcombobox_by_name);
@@ -65,7 +65,7 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 		}
 	}
 
-	for (auto i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; ++i) {
+	for (auto i = 0; i < MAX_RETAIL_DEBRIS_TYPES; ++i) {
 		debrisComboBoxes.at(i)->addItems(debris_names);
 		// update debris combobox data on index changes
 		connect(debrisComboBoxes.at(i), QOverload<int>::of(&QComboBox::currentIndexChanged), this, \

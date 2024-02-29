@@ -553,10 +553,11 @@ void asteroid_create_all()
 	// each different type (size) of debris piece has a diffenent weight, smaller weighted more heavily than larger.
 	// choose next type from table ship_debris_odds_table by Random::next()%max_weighted_range,
 	// the threshold *below* which the debris type is selected.
-	struct {
+	struct ShipDebrisOdds {
 		float random_threshold;
 		int debris_type;
-	} ship_debris_odds_table[MAX_ACTIVE_DEBRIS_TYPES];
+	};
+	std::vector<ShipDebrisOdds> shipDebrisOddsTable(Asteroid_field.field_debris_type.size());
 
 	float max_weighted_range = 0.0f;
 
@@ -604,17 +605,13 @@ void asteroid_create_all()
 
 	// get number of debris types
 	if (Asteroid_field.debris_genre == DG_DEBRIS) {
-		for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
-			if (Asteroid_field.field_debris_type[idx] != -1) {
-				num_debris_types++;
-			}
-		}
+		num_debris_types = static_cast<int>(Asteroid_field.field_debris_type.size());
 
 		// Calculate the odds table
 		for (idx=0; idx<num_debris_types; idx++) {
 			float debris_weight = Asteroid_info[Asteroid_field.field_debris_type[idx]].spawn_weight;
-			ship_debris_odds_table[idx].random_threshold = max_weighted_range + debris_weight;
-			ship_debris_odds_table[idx].debris_type = Asteroid_field.field_debris_type[idx];
+			shipDebrisOddsTable[idx].random_threshold = max_weighted_range + debris_weight;
+			shipDebrisOddsTable[idx].debris_type = Asteroid_field.field_debris_type[idx];
 			max_weighted_range += debris_weight;
 		}
 	}
@@ -669,10 +666,10 @@ void asteroid_create_all()
 
 			float rand_choice = frand() * max_weighted_range;
 
-			for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
+			for (idx = 0; idx < static_cast<int>(Asteroid_field.field_debris_type.size()); idx++) {
 				// for ship debris, choose type according to odds table
-				if (rand_choice < ship_debris_odds_table[idx].random_threshold) {
-					asteroid_create(&Asteroid_field, ship_debris_odds_table[idx].debris_type, 0);
+				if (rand_choice < shipDebrisOddsTable[idx].random_threshold) {
+					asteroid_create(&Asteroid_field, shipDebrisOddsTable[idx].debris_type, 0);
 					break;
 				}
 			}
@@ -732,9 +729,7 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 	Asteroid_field.speed = (float)asteroid_speed;
 	Asteroid_field.debris_genre = DG_ASTEROID;
 
-	for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-			Asteroid_field.field_debris_type[j] = -1;
-	}
+	Asteroid_field.field_debris_type.clear();
 
 	for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 			Asteroid_field.field_asteroid_type[j] = false;
@@ -781,7 +776,7 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 }
 
 // will replace any existing asteroid or debris field with a debris field
-void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max, bool enhanced)
+void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, SCP_vector<int> debris_types, vec3d o_min, vec3d o_max, bool enhanced)
 {
 	remove_all_asteroids();
 
@@ -796,35 +791,15 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int deb
 	Asteroid_field.speed = (float)asteroid_speed;
 	Asteroid_field.debris_genre = DG_DEBRIS;
 
-	for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-		Asteroid_field.field_debris_type[j] = -1;
-	}
+	Asteroid_field.field_debris_type.clear();
 
 	for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 		Asteroid_field.field_asteroid_type[j] = false;
 	}
 
-	int count = 0;
-	for (int i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; i++) {
-		if (debris1 >= 0) {
-			Asteroid_field.field_debris_type[i] = debris1;
-			debris1 = -1;
-			count++;
-			continue;
-		}
-		if (debris2 >= 0) {
-			Asteroid_field.field_debris_type[i] = debris2;
-			debris2 = -1;
-			count++;
-			continue;
-		}
-		if (debris3 >= 0) {
-			Asteroid_field.field_debris_type[i] = debris3;
-			debris3 = -1;
-			count++;
-			continue;
-		}
-	}
+	Asteroid_field.field_debris_type = debris_types;
+
+	int count = static_cast<int>(Asteroid_field.field_debris_type.size());
 
 	Asteroid_field.num_used_field_debris_types = count;
 
@@ -858,9 +833,7 @@ void asteroid_level_init()
 	Asteroid_field.has_inner_bound = false;
 	Asteroid_field.field_type = FT_ACTIVE;
 	Asteroid_field.debris_genre = DG_ASTEROID;
-	for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-		Asteroid_field.field_debris_type[j] = -1;
-	}
+	Asteroid_field.field_debris_type.clear();
 
 	for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 		Asteroid_field.field_asteroid_type[j] = false;
@@ -2712,14 +2685,19 @@ void asteroid_page_in()
 
 		nprintf(( "Paging", "Paging in asteroids\n" ));
 
+		size_t num_debris_types = NUM_ASTEROID_SIZES;
+		if (Asteroid_field.debris_genre == DG_DEBRIS) {
+			num_debris_types = Asteroid_field.field_debris_type.size();
+		}
+
 
 		// max of MAX_ACTIVE_DEBRIS_TYPES possible debris field models
-		for (i=0; i<MAX_ACTIVE_DEBRIS_TYPES; i++) {
+		for (i=0; i<num_debris_types; i++) {
 			asteroid_info	*asip;
 
 			if (Asteroid_field.debris_genre == DG_ASTEROID) {
 				// asteroid
-				Assertion(i < NUM_ASTEROID_SIZES, "Got invalid call to load a debris type instead of asteroid type!");
+				Assertion(i < NUM_ASTEROID_SIZES, "Got invalid call to load non-existent asteroid size!");
 				asip = &Asteroid_info[i];
 			} else {
 				// debris - always full until empty

@@ -5845,9 +5845,7 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.debris_genre = (debris_genre_t)type;
 		}
 
-		for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-			Asteroid_field.field_debris_type[j] = -1;
-		}
+		Asteroid_field.field_debris_type.clear();
 
 		for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 			Asteroid_field.field_asteroid_type[j] = false;
@@ -5857,7 +5855,7 @@ void parse_asteroid_fields(mission *pm)
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
 
 			// Obsolete and only for backwards compatibility
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < MAX_RETAIL_DEBRIS_TYPES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					stuff_int(&Asteroid_field.field_debris_type[j]);
 					count++;
@@ -5865,20 +5863,18 @@ void parse_asteroid_fields(mission *pm)
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-				if (optional_string("+Field Debris Type Name:")) {
-					SCP_string ast_name;
-					stuff_string(ast_name, F_NAME);
-					int subtype;
-					subtype = get_asteroid_index(ast_name.c_str());
-					if (subtype >= 0) {
-						Asteroid_field.field_debris_type[j] = subtype;
-						count++;
-					} else {
-						WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
-					}
+			while (optional_string("+Field Debris Type Name:")) {
+				SCP_string ast_name;
+				stuff_string(ast_name, F_NAME);
+				int subtype;
+				subtype = get_asteroid_index(ast_name.c_str());
+				if (subtype >= 0) {
+					Asteroid_field.field_debris_type.push_back(subtype);
+					count++;
+				} else {
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
 				}
-			}
+				}
 
 		// Asteroid types
 		} else {
