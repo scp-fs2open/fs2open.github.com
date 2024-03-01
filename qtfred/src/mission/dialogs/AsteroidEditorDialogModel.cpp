@@ -181,13 +181,21 @@ field_type_t AsteroidEditorDialogModel::getFieldType()
 void AsteroidEditorDialogModel::setFieldDebrisType(int idx, int debris_type)
 {
 	Assertion(idx >= 0 && idx < MAX_RETAIL_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
-	modify(_field_debris_type[idx], ship_debris_idx_lookup.at(debris_type));
+	if (idx <= static_cast<int>(_field_debris_type.size())) {
+			_field_debris_type.push_back(ship_debris_idx_lookup.at(debris_type));
+	} else {
+			modify(_field_debris_type[idx], ship_debris_idx_lookup.at(debris_type));
+	}
 }
 
 int AsteroidEditorDialogModel::getFieldDebrisType(int idx)
 {
 	Assertion(idx >= 0 && idx < MAX_RETAIL_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
-	return debris_inverse_idx_lookup.at(_field_debris_type[idx]);
+	if (_field_debris_type.size() == 0) {
+			return 0;
+	} else {
+			return debris_inverse_idx_lookup.at(_field_debris_type[idx]);
+	}
 }
 
 void AsteroidEditorDialogModel::setAvgSpeed(int speed)
@@ -390,7 +398,7 @@ void AsteroidEditorDialogModel::update_init()
 		modify(_a_field.field_type, _field_type);
 		modify(_a_field.debris_genre, _debris_genre);
 
-		// ship debris
+		// debris
 		if ( (_field_type == FT_PASSIVE) && (_debris_genre == DG_DEBRIS) ) {
 			for (size_t idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; ++idx) {
 				if (SCP_vector_inbounds(_a_field.field_debris_type, idx)) {
