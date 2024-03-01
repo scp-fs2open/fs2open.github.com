@@ -3189,7 +3189,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
 	if (model_type == TECH_SHIP) {
-		model_instance = model_create_instance(-1, model_num);
+		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 

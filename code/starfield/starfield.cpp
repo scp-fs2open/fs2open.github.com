@@ -2387,7 +2387,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
+		Nmodel_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Nmodel_num);
 		The_mission.skybox_model_animations.initializeMoveables(model_get_instance(Nmodel_instance_num));
 	}
 
