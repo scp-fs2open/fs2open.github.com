@@ -282,9 +282,9 @@ SCP_string pick_random_asteroid_type()
 }
 
 int get_asteroid_subtype_index_by_name(const SCP_string &name, int asteroid_idx) {
-	asteroid_info* asteroid = &Asteroid_info[asteroid_idx];
-	for (int i = 0; i < static_cast<int>(asteroid->subtypes.size()); i++) {
-		if (asteroid->subtypes[i].type_name == name) {
+	asteroid_info* this_asteroid = &Asteroid_info[asteroid_idx];
+	for (int i = 0; i < static_cast<int>(this_asteroid->subtypes.size()); i++) {
+		if (this_asteroid->subtypes[i].type_name == name) {
 			return i;
 		}
 	}
@@ -2207,7 +2207,7 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$POF file1:")) {
-		asteroid_subtype thisType;
+		asteroid_subtype_info thisType;
 
 		thisType.type_name = "Brown";
 		
@@ -2220,7 +2220,7 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$POF file2:")) {
-		asteroid_subtype thisType;
+		asteroid_subtype_info thisType;
 
 		thisType.type_name = "Blue";
 		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
@@ -2232,7 +2232,7 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$POF file3:")) {
-		asteroid_subtype thisType;
+		asteroid_subtype_info thisType;
 
 		thisType.type_name = "Orange";
 		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
@@ -2246,7 +2246,7 @@ static void asteroid_parse_section()
 	// For asteroid types we can have unlimited subtypes
 	if (asteroid_p->type != ASTEROID_TYPE_DEBRIS) {
 		while (optional_string("$Subtype:")) {
-			asteroid_subtype thisType;
+			asteroid_subtype_info thisType;
 
 			stuff_string(thisType.type_name, F_NAME);
 
@@ -2474,9 +2474,9 @@ SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
 {
 	SCP_vector<SCP_string> list;
 
-	for (auto asteroid : Asteroid_info) {
-		if (asteroid.type != ASTEROID_TYPE_DEBRIS) {
-			for (auto subtype : asteroid.subtypes) {
+	for (auto this_asteroid : Asteroid_info) {
+		if (this_asteroid.type != ASTEROID_TYPE_DEBRIS) {
+			for (auto subtype : this_asteroid.subtypes) {
 				bool exists = false;
 				for (auto entry : list) {
 					if (subtype.type_name == entry) {
@@ -2784,7 +2784,7 @@ void asteroid_page_in()
 
 		// for asteroids this will loop over all three possible sizes
 		// for debris this will loop over all selected types
-		for (int i = 0; i < num_debris_types; i++) {
+		for (size_t i = 0; i < num_debris_types; i++) {
 			asteroid_info	*asip;
 
 			if (Asteroid_field.debris_genre == DG_ASTEROID) {
