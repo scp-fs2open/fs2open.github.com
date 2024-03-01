@@ -1171,7 +1171,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
-		model_clear_instance(Asteroid_info[asteroidp->asteroid_type].model_num[pof]);
+		model_clear_instance(Asteroid_info[asteroidp->asteroid_type].subtypes[pof].model_number);
 		
 		model_render_params render_info;
 
@@ -1231,7 +1231,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
 
-		model_render_immediate( &render_info, Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos );
+		model_render_immediate( &render_info, Asteroid_info[asteroidp->asteroid_type].subtypes[pof].model_number, &target_objp->orient, &obj_pos );
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);

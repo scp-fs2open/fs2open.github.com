@@ -300,8 +300,8 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	int				rand_base;
 
 	// bogus
-	if(asfieldp == NULL) {
-		return NULL;
+	if(asfieldp == nullptr) {
+		return nullptr;
 	}
 
 	for (n=0; n<MAX_ASTEROIDS; n++) {
@@ -312,15 +312,11 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	if (n >= MAX_ASTEROIDS) {
 		nprintf(("Warning","Could not create asteroid, no more slots left\n"));
-		return NULL;
+		return nullptr;
 	}
 
-	if((asteroid_type < 0) || (asteroid_type >= (int)Asteroid_info.size())) {
-		return NULL;
-	}
-
-	if((asteroid_subtype < 0) || (asteroid_subtype >= NUM_ASTEROID_POFS)) {
-		return NULL;
+	if (!SCP_vector_inbounds(Asteroid_info, asteroid_type)) {
+		return nullptr;
 	}
 
 	// HACK: multiplayer asteroid subtype always 0 to keep subtype in sync
@@ -330,9 +326,13 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	asip = &Asteroid_info[asteroid_type];
 
-	// bogus
-	if(asip->modelp[asteroid_subtype] == NULL) {
-		return NULL;
+	if (!SCP_vector_inbounds(asip->subtypes, asteroid_subtype)) {
+		return nullptr;
+	}
+
+	// if the model is not loaded then abort
+	if(asip->subtypes[asteroid_subtype].model_pointer == nullptr) {
+		return nullptr;
 	}	
 
 	asp = &Asteroids[n];
@@ -347,7 +347,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	asp->collide_objsig = -1;
 	asp->target_objnum = -1;
 
-	radius = model_get_radius(asip->model_num[asteroid_subtype]);
+	radius = model_get_radius(asip->subtypes[asteroid_subtype].model_number);
 
 	vm_vec_sub(&delta_bound, &asfieldp->max_bound, &asfieldp->min_bound);
 
@@ -400,8 +400,8 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	asp->objnum = objnum;
 	asp->model_instance_num = -1;
 
-	if (model_get(asip->model_num[asteroid_subtype])->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
-		asp->model_instance_num = model_create_instance(objnum, asip->model_num[asteroid_subtype]);
+	if (model_get(asip->subtypes[asteroid_subtype].model_number)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+		asp->model_instance_num = model_create_instance(objnum, asip->subtypes[asteroid_subtype].model_number);
 	}
 
 	// Add to Asteroid_used_list
@@ -456,8 +456,8 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	objp->phys_info.max_vel.xyz.y = 0.0f;
 	objp->phys_info.max_vel.xyz.z = vm_vec_mag(&objp->phys_info.desired_vel);
 	
-	objp->phys_info.mass = asip->modelp[asteroid_subtype]->rad * 700.0f;
-	objp->phys_info.I_body_inv.vec.rvec.xyz.x = 1.0f / (objp->phys_info.mass*asip->modelp[asteroid_subtype]->rad);
+	objp->phys_info.mass = asip->subtypes[asteroid_subtype].model_pointer->rad * 700.0f;
+	objp->phys_info.I_body_inv.vec.rvec.xyz.x = 1.0f / (objp->phys_info.mass*asip->subtypes[asteroid_subtype].model_pointer->rad);
 	objp->phys_info.I_body_inv.vec.uvec.xyz.y = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
 	objp->phys_info.I_body_inv.vec.fvec.xyz.z = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
 	objp->hull_strength = asip->initial_asteroid_strength * (0.8f + (float)Game_skill_level/NUM_SKILL_LEVELS)/2.0f;
@@ -523,27 +523,35 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	int i;
 	asteroid_info	*asip;
 
-	Assertion(asteroid_info_index < (int)Asteroid_info.size(), "Command to load asteroid at index %i, but only %i asteroids exist", asteroid_info_index, (int)Asteroid_info.size());
-	Assertion(asteroid_subtype < NUM_ASTEROID_POFS, "Command to load asteroid pof %i, but only %i pofs are allowed", asteroid_subtype, NUM_ASTEROID_POFS);
+	Assertion(asteroid_info_index < static_cast<int>(Asteroid_info.size()),
+		"Command to load asteroid at index %i, but only %i asteroids exist",
+		asteroid_info_index,
+		static_cast<int>(Asteroid_info.size()));
 
-	if ( (asteroid_info_index >= (int)Asteroid_info.size()) || (asteroid_subtype >= NUM_ASTEROID_POFS) ) {
+	// invalid asteroid index
+	if (!SCP_vector_inbounds(Asteroid_info, asteroid_info_index)) {
 		return;
 	}
 
 	asip = &Asteroid_info[asteroid_info_index];
 
-	if ( !VALID_FNAME(asip->pof_files[asteroid_subtype]) )
+	// This asteroid does not have this subtype so just return
+	if (!SCP_vector_inbounds(asip->subtypes, asteroid_subtype)) {
+		return;
+	}
+
+	if ( !VALID_FNAME(asip->subtypes[asteroid_subtype].pof_filename) )
 		return;
 
 	//Check if the model is already loaded
-	if (asip->model_num[asteroid_subtype] >= 0)
+	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 		return;
 
-	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
+	asip->subtypes[asteroid_subtype].model_number = model_load( asip->subtypes[asteroid_subtype].pof_filename, 0, nullptr );
 
-	if (asip->model_num[asteroid_subtype] >= 0)
+	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 	{
-		polymodel *pm = asip->modelp[asteroid_subtype] = model_get(asip->model_num[asteroid_subtype]);
+		polymodel *pm = asip->subtypes[asteroid_subtype].model_pointer = model_get(asip->subtypes[asteroid_subtype].model_number);
 		
 		if ( asip->num_detail_levels != pm->n_detail_levels )
 		{
@@ -1241,7 +1249,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		// asteroid weapon collision
 		Assert( other_obj->type == OBJ_WEAPON );
 		mc.model_instance_num = Asteroids[num].model_instance_num;
-		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];	// Fill in the model to check
+		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].subtypes[asteroid_subtype].model_number;	// Fill in the model to check
 		mc.orient = &pasteroid->orient;					// The object's orient
 		mc.pos = &pasteroid->pos;							// The object's position
 		mc.p0 = &other_obj->last_pos;				// Point 1 of ray to check
@@ -1422,7 +1430,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	} else {
 		// Asteroid is heavier obj
 		mc.model_instance_num = Asteroids[num].model_instance_num;
-		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
+		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].subtypes[asteroid_subtype].model_number;		// Fill in the model to check
 		mc.orient = &pasteroid->orient;				// The object's orient
 		mc.radius = model_get_core_radius(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
 
@@ -1503,7 +1511,7 @@ void asteroid_render(object * obj, model_draw_list *scene)
 
 		Assert( asp->flags & AF_USED );
 
-		model_clear_instance( Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype]);
+		model_clear_instance( Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number);
 
 		model_render_params render_info;
 
@@ -1512,7 +1520,7 @@ void asteroid_render(object * obj, model_draw_list *scene)
 		if (asp->model_instance_num >= 0)
 			render_info.set_replacement_textures(model_get_instance(asp->model_instance_num)->texture_replace);
 
-		model_render_queue(&render_info, scene, Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos);	//	Replace MR_NORMAL with 0x07 for big yellow blobs
+		model_render_queue(&render_info, scene, Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number, &obj->orient, &obj->pos);	//	Replace MR_NORMAL with 0x07 for big yellow blobs
 	}
 }
 
@@ -1746,9 +1754,10 @@ void asteroid_level_close()
 
 	//when a level is closed, all models are cleared, so let's make sure that
 	//is tracked for asteroids as well -Mjn
-	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		for (int j = 0; j < NUM_ASTEROID_POFS; j++) {
-			Asteroid_info[i].model_num[j] = -1;
+	for (size_t i = 0; i < Asteroid_info.size(); i++) {
+		for (size_t j = 0; j < Asteroid_info[i].subtypes.size(); j++) {
+			Asteroid_info[i].subtypes[j].model_number = -1;
+			Asteroid_info[i].subtypes[j].model_pointer = nullptr;
 		}
 	}
 
@@ -2207,15 +2216,75 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$POF file1:")) {
-		stuff_string(asteroid_p->pof_files[0], F_NAME, MAX_FILENAME_LEN);
+		asteroid_subtype thisType;
+
+		if (asteroid_p->type == ASTEROID_TYPE_DEBRIS) {
+			thisType.type_name = "Debris";
+		} else {
+			thisType.type_name = "Brown";
+		}
+		
+		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
+
+		thisType.model_number = -1;
+		thisType.model_pointer = nullptr;
+
+		asteroid_p->subtypes.push_back(thisType);
 	}
 
 	if (optional_string("$POF file2:")) {
-		stuff_string(asteroid_p->pof_files[1], F_NAME, MAX_FILENAME_LEN);
+		asteroid_subtype thisType;
+
+		thisType.type_name = "Blue";
+		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
+
+		thisType.model_number = -1;
+		thisType.model_pointer = nullptr;
+
+		asteroid_p->subtypes.push_back(thisType);
 	}
 
 	if (optional_string("$POF file3:")) {
-		stuff_string(asteroid_p->pof_files[2], F_NAME, MAX_FILENAME_LEN);
+		asteroid_subtype thisType;
+
+		thisType.type_name = "Orange";
+		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
+
+		thisType.model_number = -1;
+		thisType.model_pointer = nullptr;
+
+		asteroid_p->subtypes.push_back(thisType);
+	}
+
+	// For asteroid types we can have unlimited subtypes
+	if (asteroid_p->type != ASTEROID_TYPE_DEBRIS) {
+		while (optional_string("$Subtype:")) {
+			asteroid_subtype thisType;
+
+			stuff_string(thisType.type_name, F_NAME);
+
+			required_string("+POF file:");
+			stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
+
+			thisType.model_number = -1;
+			thisType.model_pointer = nullptr;
+
+			bool exists = false;
+			for (auto type : asteroid_p->subtypes) {
+				if (type.type_name == thisType.type_name) {
+					exists = true;
+				}
+			}
+
+			if (exists) {
+				error_display(0,
+					"Asteroid subtype %s already exists for asteroid %s",
+					thisType.type_name.c_str(),
+					asteroid_p->name);
+			} else {
+				asteroid_p->subtypes.push_back(thisType);
+			}
+		}
 	}
 
 	if (optional_string("$Detail distance:")) {
@@ -2404,13 +2473,38 @@ static void asteroid_parse_tbl(const char* filename)
 // Gets the index of an asteroid by name from Asteroid_info
 int get_asteroid_index(const char* asteroid_name)
 {
-	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+	for (int i = 0; i < static_cast<int>(Asteroid_info.size()); i++) {
 		if (!stricmp(asteroid_name, Asteroid_info[i].name)) {
 			return i;
 		}
 	}
 
 	return -1;
+}
+
+// For FRED. Gets a list of unique asteroid subtype names
+SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
+{
+	SCP_vector<SCP_string> list;
+
+	for (auto asteroid : Asteroid_info) {
+		if (asteroid.type != ASTEROID_TYPE_DEBRIS) {
+			for (auto subtype : asteroid.subtypes) {
+				bool exists = false;
+				for (auto entry : list) {
+					if (subtype.type_name == entry) {
+						exists = true;
+					}
+				}
+
+				if (!exists) {
+					list.push_back(subtype.type_name);
+				}
+			}
+		}
+	}
+
+	return list;
 }
 
 static void verify_asteroid_splits() 
@@ -2485,7 +2579,7 @@ static void verify_asteroid_list()
 
 	//Check that we have the appropriate POF files-Mjn
 	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		if (Asteroid_info[i].pof_files[0][0] == '\0')
+		/*if (Asteroid_info[i].pof_files[0][0] == '\0')
 			Error(LOCATION, "Missing [POF File 1] for %s", Asteroid_info[i].name);
 
 		if (Asteroid_info[i].type != ASTEROID_TYPE_DEBRIS) {
@@ -2493,6 +2587,9 @@ static void verify_asteroid_list()
 				Error(LOCATION, "Missing [POF File 2] for %s", Asteroid_info[i].name);
 			if (Asteroid_info[i].pof_files[2][0] == '\0')
 				Error(LOCATION, "Missing [POF File 3] for %s", Asteroid_info[i].name);
+		}*/
+		if (Asteroid_info[i].subtypes.size() == 0) {
+			Error(LOCATION, "Asteroid %s needs at least one subtype!", Asteroid_info[i].name);
 		}
 	}
 }
@@ -2529,7 +2626,7 @@ void asteroid_init()
 	}
 
 	if (Asteroid_icon_closeup_model[0] == '\0')
-		strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);	// magic file from retail
+		strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].subtypes[0].pof_filename); // magic file from retail
 	
 }
 
@@ -2682,7 +2779,6 @@ void asteroid_page_in()
 		return;
 
 	if (Asteroid_field.num_initial_asteroids > 0 ) {
-		int i, j, k;
 
 		nprintf(( "Paging", "Paging in asteroids\n" ));
 
@@ -2692,8 +2788,9 @@ void asteroid_page_in()
 		}
 
 
-		// max of MAX_ACTIVE_DEBRIS_TYPES possible debris field models
-		for (i=0; i<num_debris_types; i++) {
+		// for asteroids this will loop over all three possible sizes
+		// for debris this will loop over all selected types
+		for (int i = 0; i < num_debris_types; i++) {
 			asteroid_info	*asip;
 
 			if (Asteroid_field.debris_genre == DG_ASTEROID) {
@@ -2710,7 +2807,7 @@ void asteroid_page_in()
 			}
 
 
-			for (k=0; k<NUM_ASTEROID_POFS; k++) {
+			for (size_t k = 0; k < asip->subtypes.size(); k++) {
 
 				// DEBRIS FIELDS - always use subtype 0
 				if (Asteroid_field.debris_genre == DG_DEBRIS) {
@@ -2724,14 +2821,15 @@ void asteroid_page_in()
 					}
 				}
 
-				if (asip->model_num[k] < 0)
+				// model is already paged in
+				if (asip->subtypes[k].model_number < 0)
 					continue;
 
-				asip->modelp[k] = model_get(asip->model_num[k]);
+				asip->subtypes[k].model_pointer = model_get(asip->subtypes[k].model_number);
 
 				// Page in textures
-				for (j=0; j<asip->modelp[k]->n_textures; j++ )	{
-					asip->modelp[k]->maps[j].PageIn();			
+				for (int j = 0; j < asip->subtypes[k].model_pointer->n_textures; j++ )	{
+					asip->subtypes[k].model_pointer->maps[j].PageIn();			
 				}
 
 			}

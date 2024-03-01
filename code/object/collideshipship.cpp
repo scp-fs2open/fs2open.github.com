@@ -582,7 +582,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			model_instance_num = Ships[heavy->instance].model_instance_num;
 			pmi = model_get_instance(model_instance_num);
 		} else if (heavy->type == OBJ_ASTEROID) {
-			pm = Asteroid_info[Asteroids[heavy->instance].asteroid_type].modelp[Asteroids[heavy->instance].asteroid_subtype];
+			pm = Asteroid_info[Asteroids[heavy->instance].asteroid_type].subtypes[Asteroids[heavy->instance].asteroid_subtype].model_pointer;
 			model_instance_num = Asteroids[heavy->instance].model_instance_num;
 			pmi = model_get_instance(model_instance_num);
 		} else if (heavy->type == OBJ_DEBRIS) {

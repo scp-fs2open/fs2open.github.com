@@ -54,13 +54,20 @@ typedef struct asteroid_split_info {
 	int		max;				//maximum asteroids to spawn
 } asteroid_split_info;
 
+// Data structure for storing asteroid subtype info. POFs, model pointer, model num, etc.
+typedef struct asteroid_subtype {
+	char        pof_filename[MAX_FILENAME_LEN];
+	polymodel*  model_pointer;
+	int         model_number;
+	SCP_string  type_name;
+} asteroid_subtype;
+
 class asteroid_info
 {
 public:
 	char		name[NAME_LENGTH];								// name for the asteroid
 	int			type;											// type of asteroid, 0 = small, 1 = medium, 2 = large, -1 = debris
-	char		pof_files[NUM_ASTEROID_POFS][MAX_FILENAME_LEN];	// POF files to load/associate with ship
-	int			num_detail_levels;								// number of detail levels for this ship
+	int			num_detail_levels;								// number of detail levels for this asteroid
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];	// distance to change detail levels at
 	float		max_speed;										// cap on speed for asteroid
 	float		rotational_vel_multiplier;						// rotational velocity multiplier for asteroid --wookieejedi
@@ -72,13 +79,12 @@ public:
 	float		blast;											// maximum blast impulse from area effect explosion
 	float		initial_asteroid_strength;						// starting strength of asteroid
 	SCP_vector< asteroid_split_info > split_info;
-	polymodel	*modelp[NUM_ASTEROID_POFS];
-	int			model_num[NUM_ASTEROID_POFS];
 	SCP_vector<int> explosion_bitmap_anims;
 	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
-	SCP_string	display_name;									// only used for hud targeting display and for 'ship' asteroids
-	float		spawn_weight;									// ship asteroids only, relative proportion to spawn compared to other types in its asteroid field
+	SCP_string	display_name;									// only used for hud targeting display and for debris
+	float		spawn_weight;									// debris only, relative proportion to spawn compared to other types in its asteroid field
 	float		gravity_const;									// multiplier for mission gravity
+	SCP_vector<asteroid_subtype> subtypes;
 
 	asteroid_info( )
 		: type(ASTEROID_TYPE_DEBRIS), num_detail_levels(0), max_speed(0), 
@@ -90,13 +96,6 @@ public:
 		name[ 0 ] = 0;
 		display_name = "";
 		memset( detail_distance, 0, sizeof( detail_distance ) );
-
-		for (int i = 0; i < NUM_ASTEROID_POFS; i++)
-		{
-			modelp[i] = NULL;
-			model_num[i] = -1;
-			pof_files[i][0] = '\0';
-		}
 	}
 };
 
@@ -181,6 +180,7 @@ void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
 void asteroid_add_target(object* objp);
 int get_asteroid_index(const char* asteroid_name);
+SCP_vector<SCP_string> get_list_valid_asteroid_subtypes();
 
 // need to extern for keycontrol debug commands
 object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility = false);

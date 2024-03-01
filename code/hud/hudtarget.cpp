@@ -2518,7 +2518,7 @@ void hud_target_in_reticle_new()
 			{
 				int pof = 0;
 				pof = Asteroids[A->instance].asteroid_subtype;
-				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].model_num[pof];
+				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].subtypes[pof].model_number;
 			}
 			break;
 		case OBJ_JUMP_NODE:
