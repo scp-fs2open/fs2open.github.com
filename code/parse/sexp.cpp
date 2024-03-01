@@ -18840,6 +18840,7 @@ void sexp_weapon_create(int n)
 	is_locked = (target_objnum >= 0) ? 1 : 0;	// assume full lock; this lets lasers track if people want them to
 
 	// create the weapon
+	// coverity[uninit_use_in_call] - weapon_pos is always populated by eval_vec3d
 	weapon_objnum = weapon_create(&weapon_pos, &weapon_orient, weapon_class, parent_objnum, -1, is_locked);
 
 	// maybe make the weapon track its target
@@ -30731,21 +30732,27 @@ int query_operator_return_type(int op)
  */
 int query_operator_argument_type(int op, int argnum)
 {
+	if (op < 0)
+		return OPF_NONE;
+
 	int index = op;
 
 	if (op < FIRST_OP)
 	{
-		Assert(index >= 0 && index < (int)Operators.size());
+		Assertion(SCP_vector_inbounds(Operators, index), "Operator index is out of bounds!");
 		op = Operators[index].value;
-
-	} else {
+	}
+	else
+	{
 		Warning(LOCATION, "Possible unnecessary search for operator index.  Trace out and see if this is necessary.\n");
 
-		for (index=0; index<(int)Operators.size(); index++)
+		int count = static_cast<int>(Operators.size());
+		for (index=0; index<count; index++)
 			if (Operators[index].value == op)
 				break;
 
-		Assert(index < (int)Operators.size());
+		if (index >= count)
+			return OPF_NONE;
 	}
 
 	if (argnum >= Operators[index].max)

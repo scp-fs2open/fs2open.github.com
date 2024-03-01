@@ -2536,9 +2536,10 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		return;
 	}
 
-	if ( lep == nullptr ){
-		return;
-	}
+	//This can't happen. See above code
+	//if ( lep == nullptr ){
+	//	return;
+	//}
 
 	//This can't happen. See above code
 	//Assert(ss->turret_enemy_objnum != -1);
