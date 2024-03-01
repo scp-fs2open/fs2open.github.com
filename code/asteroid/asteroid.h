@@ -31,8 +31,8 @@ class model_draw_list;
 #define	ASTEROID_TYPE_MEDIUM	1
 #define	ASTEROID_TYPE_LARGE		2
 
-// these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
-#define	MAX_RETAIL_DEBRIS_TYPES		NUM_ASTEROID_SIZES
+// Only used for parsing & saving retail compatible mission files
+#define	MAX_RETAIL_DEBRIS_TYPES		3
 
 // Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
 #define MAX_ASTEROID_DETAIL_LEVELS	5
