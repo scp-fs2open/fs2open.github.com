@@ -34,7 +34,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 		debris_inverse_idx_lookup.emplace(ship_debris_idx_lookup[i], i);
 	}
 	// note that normal asteroids use the same index field! Need to add dummy entries for them as well
-	for (auto i = 0; i < MAX_RETAIL_DEBRIS_TYPES; ++i) {
+	for (auto i = 0; i < NUM_ASTEROID_SIZES; ++i) {
 		debris_inverse_idx_lookup.emplace(i, 0);
 	}
 	initializeData();
@@ -180,8 +180,7 @@ field_type_t AsteroidEditorDialogModel::getFieldType()
 
 void AsteroidEditorDialogModel::setFieldDebrisType(int idx, int debris_type)
 {
-	Assertion(idx >= 0 && idx < MAX_RETAIL_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
-	if (idx <= static_cast<int>(_field_debris_type.size())) {
+	if (!SCP_vector_inbounds(_field_debris_type, idx)) {
 			_field_debris_type.push_back(ship_debris_idx_lookup.at(debris_type));
 	} else {
 			modify(_field_debris_type[idx], ship_debris_idx_lookup.at(debris_type));
@@ -190,8 +189,7 @@ void AsteroidEditorDialogModel::setFieldDebrisType(int idx, int debris_type)
 
 int AsteroidEditorDialogModel::getFieldDebrisType(int idx)
 {
-	Assertion(idx >= 0 && idx < MAX_RETAIL_DEBRIS_TYPES, "Invalid debris index provided: %i\n", idx);
-	if (_field_debris_type.size() == 0) {
+	if (!SCP_vector_inbounds(_field_debris_type, idx)) {
 			return 0;
 	} else {
 			return debris_inverse_idx_lookup.at(_field_debris_type[idx]);
@@ -400,7 +398,7 @@ void AsteroidEditorDialogModel::update_init()
 
 		// debris
 		if ( (_field_type == FT_PASSIVE) && (_debris_genre == DG_DEBRIS) ) {
-			for (size_t idx = 0; idx < MAX_RETAIL_DEBRIS_TYPES; ++idx) {
+			for (size_t idx = 0; idx < _field_debris_type.size(); ++idx) {
 				if (SCP_vector_inbounds(_a_field.field_debris_type, idx)) {
 					modify(_a_field.field_debris_type[idx], _field_debris_type[idx]);
 				} else {
