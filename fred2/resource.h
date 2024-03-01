@@ -1259,6 +1259,7 @@
 #define IDC_SPIN_NOISE_RESOLUTION       1703
 #define IDC_REQUIRED_WEAPONS            1704
 #define IDC_SELECT_DEBRIS               1705
+#define IDC_SELECT_ASTEROID             1706
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774

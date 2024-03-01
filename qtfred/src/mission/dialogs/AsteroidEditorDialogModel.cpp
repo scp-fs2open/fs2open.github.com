@@ -97,13 +97,51 @@ bool AsteroidEditorDialogModel::getEnhancedEnabled()
 void AsteroidEditorDialogModel::setAsteroidEnabled(_roid_types type, bool enabled)
 {
 	Assertion(type >=0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
-	modify(_field_asteroid_type[type], enabled);
+
+	SCP_string name = "Brown";
+	if (type == _AST_BLUE) {
+		name = "Blue";
+	} else if (type == _AST_ORANGE) {
+		name = "Orange";
+	}
+
+	bool in_list = false;
+	for (auto asteroid : _field_asteroid_type) {
+		if (name == asteroid) {
+			in_list = true;
+		}
+	}
+
+	// If enabling and it's not enabled then add it
+	if (enabled && !in_list) {
+		_field_asteroid_type.push_back(name);
+	}
+
+	// If disabling and it's in the lsit then remove it
+	if (!enabled && in_list) {
+		_field_asteroid_type.erase(std::remove(_field_asteroid_type.begin(), _field_asteroid_type.end(), name), _field_asteroid_type.end());
+	}
 }
 
 bool AsteroidEditorDialogModel::getAsteroidEnabled(_roid_types type)
 {
 	Assertion(type >=0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
-	return (_field_asteroid_type[type]);
+
+	SCP_string name = "Brown";
+	if (type == _AST_BLUE) {
+		name = "Blue";
+	} else if (type == _AST_ORANGE) {
+		name = "Orange";
+	}
+
+	bool enabled = false;
+	for (auto asteroid : _field_asteroid_type) {
+		if (name == asteroid) {
+			enabled = true;
+		}
+	}
+
+	return (enabled);
 }
 
 void AsteroidEditorDialogModel::setNumAsteroids(int num_asteroids)
@@ -347,9 +385,7 @@ bool AsteroidEditorDialogModel::validate_data()
 
 		// check at least one asteroid subtype is selected
 		if (_a_field.debris_genre == DG_ASTEROID) {
-			if ( (!_a_field.field_asteroid_type[_AST_BROWN]) && \
-					(!_a_field.field_asteroid_type[_AST_BLUE]) && \
-					(!_a_field.field_asteroid_type[_AST_ORANGE]) ) {
+			if (_a_field.field_asteroid_type.size() == 0) {
 				showErrorDialogNoCancel("You must choose one or more asteroid subtypes\n");
 				return false;
 			}
@@ -409,9 +445,13 @@ void AsteroidEditorDialogModel::update_init()
 
 		// asteroids
 		if ( _debris_genre == DG_ASTEROID ) {
-			modify(_a_field.field_asteroid_type[_AST_BROWN], getAsteroidEnabled(_AST_BROWN));
-			modify(_a_field.field_asteroid_type[_AST_BLUE], getAsteroidEnabled(_AST_BLUE));
-			modify(_a_field.field_asteroid_type[_AST_ORANGE], getAsteroidEnabled(_AST_ORANGE));
+			for (size_t idx = 0; idx < _field_asteroid_type.size(); ++idx) {
+				if (SCP_vector_inbounds(_a_field.field_asteroid_type, idx)) {
+					modify(_a_field.field_asteroid_type[idx], _field_asteroid_type[idx]);
+				} else {
+					_a_field.field_asteroid_type.push_back(_field_asteroid_type[idx]);
+				}
+			}
 		}
 
 		modify(_a_field.has_inner_bound, _enable_inner_bounds);

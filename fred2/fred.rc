@@ -1669,9 +1669,6 @@ BEGIN
     CONTROL         "Passive Field",IDC_PASSIVE_FIELD,"Button",BS_AUTORADIOBUTTON,33,54,57,10
     CONTROL         "Asteroid",IDC_FIELD_ASTEROID,"Button",BS_AUTORADIOBUTTON,55,81,41,10
     CONTROL         "Debris",IDC_FIELD_DEBRIS,"Button",BS_AUTORADIOBUTTON,55,92,40,10
-    CONTROL         "Brown",IDC_SUBTYPE1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,39,109,36,10
-    CONTROL         "Blue",IDC_SUBTYPE2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,39,124,30,10
-    CONTROL         "Orange",IDC_SUBTYPE3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,39,139,39,10
     EDITTEXT        IDC_MIN_X,230,57,40,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_MAX_X,230,73,40,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_MIN_Y,230,89,40,14,ES_AUTOHSCROLL
@@ -1719,7 +1716,8 @@ BEGIN
     PUSHBUTTON      "Remove",IDC_REMOVE_FIELD_TARGET,430,136,40,14
     CONTROL         "Use enhanced spawn checking",IDC_RANGE_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,163,130,10
     LTEXT           "(By default player range is checked in addition to the player view cone for spawning asteroids. In small fields you may want to override this behavior.)",IDC_STATIC,192,176,155,26
-    PUSHBUTTON      "Select Debris Types",IDC_SELECT_DEBRIS,91,114,75,28
+    PUSHBUTTON      "Select Debris Types",IDC_SELECT_DEBRIS,98,114,75,28
+    PUSHBUTTON      "Select Asteroid Types",IDC_SELECT_ASTEROID,18,114,75,28
 END
 
 IDD_CAMPAIGN DIALOGEX 0, 0, 270, 441

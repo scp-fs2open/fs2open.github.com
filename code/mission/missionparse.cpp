@@ -5847,9 +5847,7 @@ void parse_asteroid_fields(mission *pm)
 
 		Asteroid_field.field_debris_type.clear();
 
-		for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
-			Asteroid_field.field_asteroid_type[j] = false;
-		}
+		Asteroid_field.field_asteroid_type.clear();
 
 		// Debris types
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
@@ -5879,29 +5877,50 @@ void parse_asteroid_fields(mission *pm)
 		// Asteroid types
 		} else {
 
+			// Retail asteroid subtypes
+			SCP_string colors[NUM_ASTEROID_SIZES] = {"Brown", "Blue", "Orange"};
+
 			// Obsolete and only for backwards compatibility
 			for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					int subtype;
 					stuff_int(&subtype);
-					Asteroid_field.field_asteroid_type[subtype] = true;
+					Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
 					count++;
 				}
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
-				if (optional_string("+Field Debris Type Name:")) {
-					SCP_string ast_name;
-					stuff_string(ast_name, F_NAME);
-					int subtype = get_asteroid_index(ast_name.c_str());
-					// If the returned index is valid but not one of the first three then it's a debris type instead of asteroid
-					if ((subtype >= 0) && (subtype < NUM_ASTEROID_SIZES)) {
-						Asteroid_field.field_asteroid_type[subtype] = true;
-						count++;
-					} else {
-						WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
+			while (optional_string("+Field Debris Type Name:")) {
+				SCP_string ast_name;
+				stuff_string(ast_name, F_NAME);
+
+				// Old saving for asteroids was bugged and saved the asteroid size rather than the subtype color
+				// so we'll compensate for that here
+				for (size_t k = 0; k < NUM_ASTEROID_SIZES; k++) {
+					// if we get the name for small/medium/large asteroid then convert it to retail colors
+					if (stricmp(ast_name.c_str(), Asteroid_info[k].name) == 0) {
+						ast_name = colors[k];
+						break;
 					}
+				}
+
+				auto list = get_list_valid_asteroid_subtypes();
+
+				//validate the asteroid subtype name
+				bool valid = false;
+				for (auto entry : list) {
+					if (ast_name == entry) {
+						valid = true;
+						break;
+					}
+				}
+
+				if (valid){
+					Asteroid_field.field_asteroid_type.push_back(ast_name);
+					count++;
+				} else {
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
 			}
 		}

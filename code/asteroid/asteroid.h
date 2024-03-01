@@ -24,7 +24,6 @@ class model_draw_list;
 #define	MAX_ASTEROIDS			2000	//Increased from 512 to 2000 in 2022
 
 #define	NUM_ASTEROID_SIZES		3
-#define	NUM_ASTEROID_POFS		3				// Number of POFs per debris size
 
 #define	ASTEROID_TYPE_DEBRIS    -1
 #define	ASTEROID_TYPE_SMALL		0
@@ -143,7 +142,7 @@ typedef	struct asteroid_field {
 	field_type_t		field_type;		// active throws and wraps, passive does not
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	SCP_vector<int>	field_debris_type;	// one of the debris type defines above
-	bool            field_asteroid_type[NUM_ASTEROID_SIZES];
+	SCP_vector<SCP_string> field_asteroid_type; // one of the asteroid subtypes
 	int				num_used_field_debris_types;	// how many of the above are used
 	bool            enhanced_visibility_checks;     // if true then range checks are overridden for spawning and wrapping asteroids in the field
 

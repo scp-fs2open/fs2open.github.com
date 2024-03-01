@@ -90,6 +90,7 @@ protected:
 	afx_msg void OnRemoveFieldTarget();
 	afx_msg void OnEnableRangeOverride();
 	afx_msg void OnBnClickedSelectDebris();
+	afx_msg void OnBnClickedSelectAsteroid();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

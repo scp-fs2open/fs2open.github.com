@@ -91,8 +91,8 @@ private:
 	QString _inner_max_y;
 	QString _inner_max_z;
 
-	SCP_vector<int>            _field_debris_type;  // ship debris
-	bool                      _field_asteroid_type[NUM_ASTEROID_SIZES]; // asteroid colors
+	SCP_vector<int>            _field_debris_type;  // debris
+	SCP_vector<SCP_string>     _field_asteroid_type; // asteroid types
 	field_type_t   _field_type;                                  // active or passive
 	debris_genre_t _debris_genre;                                // ship or asteroid
 	asteroid_field _a_field;      // :v: had unfinished plans for multiple fields?

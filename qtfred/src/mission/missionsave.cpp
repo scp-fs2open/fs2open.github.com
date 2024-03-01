@@ -780,7 +780,7 @@ int CFred_mission_save::save_asteroid_fields()
 			for (size_t idx = 0; idx < Asteroid_field.field_debris_type.size(); idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
 
-					if (save_format != MissionFormat::RETAIL) {
+					if (save_format == MissionFormat::RETAIL) {
 						if (idx < MAX_RETAIL_DEBRIS_TYPES) { // Retail can only have 3!
 							if (optional_string_fred("+Field Debris Type:")) {
 								parse_comments();
@@ -800,25 +800,24 @@ int CFred_mission_save::save_asteroid_fields()
 				}
 			}
 		} else {
-			// asteroid subtypes stored in field_debris_type as -1 or 1
-			for (int idx = 0; idx < NUM_ASTEROID_SIZES; idx++) {
-				if (Asteroid_field.field_asteroid_type[idx] != false) {
+			for (size_t idx = 0; idx < Asteroid_field.field_asteroid_type.size(); idx++) {
 
-					if (save_format != MissionFormat::RETAIL) {
+				if (save_format == MissionFormat::RETAIL) {
+					if (idx < MAX_RETAIL_DEBRIS_TYPES) { // Retail can only have 3!
 						if (optional_string_fred("+Field Debris Type:")) {
 							parse_comments();
 						} else {
 							fout("\n+Field Debris Type:");
 						}
 						fout(" %d", idx);
-					} else {
-						if (optional_string_fred("+Field Debris Type Name:")) {
-							parse_comments();
-						} else {
-							fout("\n+Field Debris Type Name:");
-						}
-						fout(" %s", Asteroid_info[idx].name);
 					}
+				} else {
+					if (optional_string_fred("+Field Debris Type Name:")) {
+						parse_comments();
+					} else {
+						fout("\n+Field Debris Type Name:");
+					}
+					fout(" %s", Asteroid_field.field_asteroid_type[idx].c_str());
 				}
 			}
 		}
