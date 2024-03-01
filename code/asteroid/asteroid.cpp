@@ -263,6 +263,27 @@ static void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
 }
 
 /**
+* Randomly select an asteroid subtype
+*/
+int pick_random_asteroid_type()
+{
+	// get a valid subtype
+	int counter = Random::next(Asteroid_field.num_used_field_debris_types);
+	int subtype = -1;
+	for (int j = 0; j < NUM_ASTEROID_POFS; j++) {
+		if (Asteroid_field.field_asteroid_type[j]) {
+			if (counter == 0) {
+				subtype = j;
+				break;
+			} else
+				counter--;
+		}
+	}
+
+	return subtype;
+}
+
+/**
  * Create a single asteroid 
  */
 object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility)
@@ -647,17 +668,7 @@ void asteroid_create_all()
 			// For asteroid, load only large asteroids
 
 			// get a valid subtype
-			int counter = Random::next(Asteroid_field.num_used_field_debris_types);
-			int subtype = -1;
-			for (int j = 0; j < NUM_ASTEROID_POFS; j++) {
-				if (Asteroid_field.field_asteroid_type[j]) {
-					if (counter == 0) {
-						subtype = j;
-						break;
-					} else
-						counter--;
-				}
-			}
+			int subtype = pick_random_asteroid_type();
 
 			if (subtype >= 0)
 				asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
@@ -1052,18 +1063,8 @@ static void maybe_throw_asteroid()
 
 		target.throw_stamp = _timestamp(1000 + 1200 * target.incoming_asteroids / (Game_skill_level+1));
 
-		int counter = Random::next(Asteroid_field.num_used_field_debris_types);
-		int subtype = -1;
-		for (int i = 0; i < NUM_ASTEROID_POFS; i++) {
-			if (Asteroid_field.field_asteroid_type[i]) {
-				if (counter == 0) {
-					subtype = i;
-					break;
-				}
-				else
-					counter--;
-			}
-		}
+		// get a valid subtype
+		int subtype = pick_random_asteroid_type();
 
 		// this really shouldn't happen but just in case...
 		if (subtype < 0)
