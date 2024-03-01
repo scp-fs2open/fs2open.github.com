@@ -54,12 +54,12 @@ typedef struct asteroid_split_info {
 } asteroid_split_info;
 
 // Data structure for storing asteroid subtype info. POFs, model pointer, model num, etc.
-typedef struct asteroid_subtype {
+typedef struct asteroid_subtype_info {
 	char        pof_filename[MAX_FILENAME_LEN];
 	polymodel*  model_pointer;
 	int         model_number;
 	SCP_string  type_name;
-} asteroid_subtype;
+} asteroid_subtype_info;
 
 class asteroid_info
 {
@@ -83,7 +83,7 @@ public:
 	SCP_string	display_name;									// only used for hud targeting display and for debris
 	float		spawn_weight;									// debris only, relative proportion to spawn compared to other types in its asteroid field
 	float		gravity_const;									// multiplier for mission gravity
-	SCP_vector<asteroid_subtype> subtypes;
+	SCP_vector<asteroid_subtype_info> subtypes;
 
 	asteroid_info( )
 		: type(ASTEROID_TYPE_DEBRIS), num_detail_levels(0), max_speed(0), 
