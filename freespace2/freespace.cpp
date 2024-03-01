@@ -146,6 +146,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/Ingame_Options.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
@@ -260,13 +261,14 @@ static SCP_string skill_level_display(int value)
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(DEFAULT_SKILL_LEVEL)
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 bool Screenshake_enabled = true;
@@ -274,7 +276,7 @@ bool Screenshake_enabled = true;
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(Screenshake_enabled)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
@@ -288,7 +290,7 @@ static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes",
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .default_val(Allow_unfocused_pause)
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 
@@ -5155,6 +5157,10 @@ void game_process_event( int current_state, int event )
 			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
 			break;
 
+		case GS_EVENT_INGAME_OPTIONS:
+			gameseq_push_state(GS_STATE_INGAME_OPTIONS);
+			break;
+
 		default:
 			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
@@ -5222,6 +5228,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_GAMEPLAY_HELP:
 		case GS_STATE_LAB:
 		case GS_STATE_SCRIPTING_MISSION:
+		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
@@ -5667,6 +5674,10 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}
 			scripting_state_close();
+			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_close();
 			break;
 	}
 
@@ -6237,6 +6248,9 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_SCRIPTING_MISSION:
 			scripting_state_init();
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_init();
 	} // end switch
 
 	//WMC - now do user scripting stuff
@@ -6583,6 +6597,10 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_SCRIPTING_MISSION);
 			scripting_state_do_frame(flFrametime, false);
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			game_set_frametime(GS_STATE_INGAME_OPTIONS);
+			ingame_options_do_frame();
 
    } // end switch(gs_current_state)
 

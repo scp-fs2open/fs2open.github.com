@@ -107,7 +107,7 @@ static bool DeferredLightingEnabled = true;
 static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
                   std::pair<const char*, int>{"Deferred Lighting", 1782},
                   std::pair<const char*, int>{"Enables or disables deferred lighting", 1783})
-                  .category("Graphics")
+                  .category(std::make_pair("Graphics", 1825))
                   .default_val(true)
                   .level(options::ExpertLevel::Advanced)
                   .bind_to_once(&DeferredLightingEnabled)

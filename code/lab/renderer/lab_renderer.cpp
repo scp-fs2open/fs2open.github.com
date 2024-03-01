@@ -1,14 +1,15 @@
-#include "lab/renderer/lab_renderer.h"
+#include "freespace.h"
 #include "globalincs/vmallocator.h"
-#include "lab/labv2_internal.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
+#include "lab/labv2_internal.h"
+#include "lab/renderer/lab_renderer.h"
 #include "lighting/lighting_profiles.h"
+#include "math/bitarray.h"
+#include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
-#include "nebula/neb.h"
-#include "freespace.h"
 
 #include "missionui/missionscreencommon.h"
 #include "tracing/tracing.h"
@@ -347,7 +348,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				(ambient_light_level >> 16) & 0xff);
 
 			strcpy_s(Neb2_texture_name, "");
-			Neb2_poof_flags = 0;
+			clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
 			bool nebula = false;
 			if (optional_string("+Neb2:")) {
 				nebula = true;
@@ -364,8 +365,11 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			}
 
 			if (nebula){
+				// Obsolete and only for backwards compatibility
 				if (optional_string("+Neb2Flags:")) {
-					stuff_int(&Neb2_poof_flags);
+					int temp;
+					stuff_int(&temp);
+					bit_array_set_from_int(Neb2_poof_flags.get(), Poof_info.size(), temp);
 				}
 				// Get poofs by name
 				if (optional_string("+Neb2 Poofs List:")) {

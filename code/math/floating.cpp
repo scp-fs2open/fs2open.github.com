@@ -22,13 +22,13 @@
  */
 float fl_roundoff(float x, int multiple)
 {
-	float half = (float) multiple / 2.0f;
+	float half = multiple / 2.0f;
 
 	if (x < 0)
 		half = -half;
 
 	x += half;
-	return (float) (((int) x / multiple) * multiple);
+	return i2fl((fl2i(x) / multiple) * multiple);
 }
 
 /**

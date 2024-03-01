@@ -25,7 +25,7 @@ polymodel_instance *modelinstance_h::Get()
 {
 	return _pmi;
 }
-bool modelinstance_h::IsValid()
+bool modelinstance_h::isValid() const
 {
 	return (_pmi != nullptr);
 }
@@ -49,25 +49,25 @@ submodelinstance_h::submodelinstance_h()
 {}
 polymodel_instance *submodelinstance_h::GetModelInstance()
 {
-	return IsValid() ? _pmi : nullptr;
+	return isValid() ? _pmi : nullptr;
 }
 submodel_instance *submodelinstance_h::Get()
 {
-	return IsValid() ? &_pmi->submodel[_submodel_num] : nullptr;
+	return isValid() ? &_pmi->submodel[_submodel_num] : nullptr;
 }
 polymodel *submodelinstance_h::GetModel()
 {
-	return IsValid() ? _pm : nullptr;
+	return isValid() ? _pm : nullptr;
 }
 bsp_info *submodelinstance_h::GetSubmodel()
 {
-	return IsValid() ? &_pm->submodel[_submodel_num] : nullptr;
+	return isValid() ? &_pm->submodel[_submodel_num] : nullptr;
 }
 int submodelinstance_h::GetSubmodelIndex()
 {
-	return IsValid() ? _submodel_num : -1;
+	return isValid() ? _submodel_num : -1;
 }
-bool submodelinstance_h::IsValid()
+bool submodelinstance_h::isValid() const
 {
 	return _pmi != nullptr && _pm != nullptr && _submodel_num >= 0 && _submodel_num < _pm->n_models;
 }
@@ -116,7 +116,7 @@ ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not"
 	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", mih->IsValid());
+	return ade_set_args(L, "b", mih->isValid());
 }
 
 ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance of this submodel", "model_instance", "A model instancve")
@@ -125,7 +125,7 @@ ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
 
 	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(smih->GetModelInstance())));
@@ -137,7 +137,7 @@ ADE_FUNC(getSubmodel, l_SubmodelInstance, nullptr, "Gets the submodel of this in
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smih->GetModel(), smih->GetSubmodelIndex())));
@@ -150,7 +150,7 @@ ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the su
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	auto smi = smih->Get();
@@ -184,7 +184,7 @@ ADE_VIRTVAR(TranslationOffset,
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (ADE_SETTING_VAR && vec != nullptr)
@@ -207,7 +207,7 @@ ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coo
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&pnt)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	auto pmi = smih->GetModelInstance();
@@ -226,7 +226,7 @@ ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direc
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&dir)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	auto pmi = smih->GetModelInstance();
@@ -246,7 +246,7 @@ bool findObjectPointAndOrientationSub(lua_State *L, bool use_object, vec3d *outp
 	if (!ade_get_args(L, "ooo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&local_pnt), l_Matrix.GetPtr(&local_orient)))
 		return false;
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return false;
 
 	auto pmi = smih->GetModelInstance();
@@ -293,7 +293,7 @@ ADE_FUNC(findLocalPointAndOrientation, l_SubmodelInstance, "vector, orientation,
 	if (!ade_get_args(L, "ooo|b", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&global_pnt), l_Matrix.GetPtr(&global_orient), &fromWorld))
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
 
 	auto pmi = smih->GetModelInstance();
@@ -311,7 +311,7 @@ ADE_FUNC(isValid, l_SubmodelInstance, nullptr, "True if valid, false or nil if n
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", smih->IsValid());
+	return ade_set_args(L, "b", smih->isValid());
 }
 
 
@@ -326,7 +326,7 @@ ADE_FUNC(__len, l_ModelSubmodelInstances, nullptr, "Number of submodel instances
 	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
 		return ade_set_error(L, "i", 0);
 
-	if (!msih->IsValid())
+	if (!msih->isValid())
 		return ade_set_error(L, "i", 0);
 
 	auto pmi = msih->Get();
@@ -349,7 +349,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		if (!ade_get_args(L, "oi", l_ModelSubmodelInstances.GetPtr(&msih), &index))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
-		if (!msih->IsValid())
+		if (!msih->isValid())
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 		index--; // Lua --> C/C++
@@ -361,7 +361,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		if (!ade_get_args(L, "os", l_ModelSubmodelInstances.GetPtr(&msih), &name))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
-		if (!msih->IsValid() || name == nullptr)
+		if (!msih->isValid() || name == nullptr)
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 		index = model_find_submodel_index(msih->Get()->model_num, name);
@@ -373,7 +373,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		if (!ade_get_args(L, "oo", l_ModelSubmodelInstances.GetPtr(&msih), l_Submodel.GetPtr(&smh)))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
-		if (!msih->IsValid() || !smh->IsValid())
+		if (!msih->isValid() || !smh->isValid())
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 		index = smh->GetSubmodelIndex();
@@ -394,7 +394,7 @@ ADE_FUNC(isValid, l_ModelSubmodelInstances, nullptr, "Detects whether handle is 
 	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", msih->IsValid());
+	return ade_set_args(L, "b", msih->isValid());
 }
 
 }

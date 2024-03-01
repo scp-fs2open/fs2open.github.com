@@ -18,9 +18,9 @@ public:
 
 	font_h();
 
-	font::FSFont* Get();
+	font::FSFont* Get() const;
 
-	bool isValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Font, font_h);

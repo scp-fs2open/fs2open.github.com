@@ -12,7 +12,7 @@ class executor_h {
 	executor_h();
 	executor_h(std::shared_ptr<executor::Executor> executor);
 
-	bool isValid();
+	bool isValid() const;
 
 	const std::shared_ptr<executor::Executor>& getExecutor() const;
 

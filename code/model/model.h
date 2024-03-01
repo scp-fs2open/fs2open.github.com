@@ -73,6 +73,8 @@ extern int model_render_flags_size;
 
 enum class modelread_status { FAIL, SUCCESS_REAL, SUCCESS_VIRTUAL };
 
+enum model_objnum_special : int { OBJNUM_NONE = -1, OBJNUM_COCKPIT = -2, OBJNUM_SPECIAL_MIN = -3};
+
 // Goober5000
 extern const char *Subsystem_types[SUBSYSTEM_MAX];
 

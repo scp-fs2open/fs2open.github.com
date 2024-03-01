@@ -16,7 +16,7 @@ ADE_FUNC(__len, l_Shields, NULL, "Number of shield segments", "number", "Number 
 	if(!ade_get_args(L, "o", l_Shields.GetPtr(&objh)))
 		return ade_set_error(L, "i", -1);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "i", -1);
 
 	return ade_set_args(L, "i", objh->objp->n_quadrants);
@@ -36,7 +36,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 		if(!ade_get_args(L, "os|f", l_Shields.GetPtr(&objh), &qd, &nval))
 			return ade_set_error(L, "f", 0.0f);
 
-		if(!objh->IsValid())
+		if(!objh->isValid())
 			return ade_set_error(L, "f", 0.0f);
 
 		objp = objh->objp;
@@ -54,7 +54,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 		if(!ade_get_args(L, "oo|f", l_Shields.GetPtr(&objh), l_Enum.GetPtr(&qd), &nval))
 			return 0;
 
-		if(!objh->IsValid())
+		if(!objh->isValid())
 			return ade_set_error(L, "f", 0.0f);
 
 		objp = objh->objp;
@@ -107,7 +107,7 @@ ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for
 	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && nval >= 0.0f) {
@@ -124,7 +124,7 @@ ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all
 	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
 		return 0;
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && nval >= 0.0f) {
@@ -140,7 +140,7 @@ ADE_FUNC(isValid, l_Shields, NULL, "Detects whether handle is valid", "boolean",
 	if(!ade_get_args(L, "o", l_Shields.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", oh->IsValid());
+	return ade_set_args(L, "b", oh->isValid());
 }
 
 }

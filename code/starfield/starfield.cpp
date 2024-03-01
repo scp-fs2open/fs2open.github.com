@@ -164,7 +164,7 @@ bool Motion_debris_enabled = true;
 auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
                      std::pair<const char*, int>{"Motion Debris", 1713},
                      std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .bind_to_once(&Motion_debris_enabled)
                      .default_val(true)
                      .level(options::ExpertLevel::Advanced)
@@ -2387,7 +2387,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
+		Nmodel_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Nmodel_num);
 		The_mission.skybox_model_animations.initializeMoveables(model_get_instance(Nmodel_instance_num));
 	}
 

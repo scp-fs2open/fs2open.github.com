@@ -255,7 +255,7 @@ ADE_FUNC(flashTargetBox, l_HUD, "enumeration section, [number duration_in_millis
 		return ADE_RETURN_NIL;
 
 	int section_index = 0;
-	if (section.IsValid())
+	if (section.isValid())
 	{
 		switch (section.index)
 		{
@@ -293,7 +293,7 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))
 		return ADE_RETURN_NIL;
 
-	if (targetee_h == nullptr || !targetee_h->IsValid())
+	if (targetee_h == nullptr || !targetee_h->isValid())
 		return ADE_RETURN_NIL;
 
 	if (targeter_pos == nullptr)

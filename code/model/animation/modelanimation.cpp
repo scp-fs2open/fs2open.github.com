@@ -262,7 +262,7 @@ namespace animation {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			object* objp = pmi->objnum > -1 ? &Objects[pmi->objnum] : nullptr;
+			object* objp = pmi->objnum >= 0 ? &Objects[pmi->objnum] : nullptr;
 
 			if(objp != nullptr)
 				send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
@@ -1446,9 +1446,8 @@ namespace animation {
 		ModelAnimationParseHelper::parseAnimsetInfo(set, 's', sip->name);
 	}
 
-	void ModelAnimationParseHelper::parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip) {
+	void ModelAnimationParseHelper::parseAnimsetInfoDrivers(ModelAnimationSet& set, char uniquePrefix, const SCP_string& parentName, std::function<std::function<float(polymodel_instance *)>()> driverSourceParser) {
 		set.m_animationSet.clear();
-		set.changeShipName(sip->name);
 
 		while(optional_string("+Driver Set:")) {
 			decltype(ModelAnimation::m_driver) driver;
@@ -1457,7 +1456,7 @@ namespace animation {
 
 			if (optional_string("+Time Remap:")) {
 				required_string("+Source:");
-				std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
+				std::function<float(polymodel_instance *)> remap_driver_source = driverSourceParser();
 				if (!remap_driver_source) {
 					error_display(0, "Unknown driver specifier encountered! Driver will be disabled!");
 					continue;
@@ -1550,7 +1549,7 @@ namespace animation {
 				auto animIt = s_animationsById.find(request);
 				if (animIt != s_animationsById.end()) {
 					const ParsedModelAnimation& foundAnim = animIt->second;
-					auto anim = set.emplace(foundAnim.anim, request, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, 's', sip->name));
+					auto anim = set.emplace(foundAnim.anim, request, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, uniquePrefix, parentName));
 
 					if (driver)
 						anim->m_driver = driver;
@@ -1562,6 +1561,13 @@ namespace animation {
 				}
 			}
 		}
+	}
+
+	void ModelAnimationParseHelper::parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip) {
+		set.m_animationSet.clear();
+		set.changeShipName(sip->name);
+
+		parseAnimsetInfoDrivers(set, 's', sip->name, parse_ship_property_driver_source);
 	}
 
 	void ModelAnimationParseHelper::parseMoveablesetInfo(ModelAnimationSet& set) {

@@ -116,11 +116,12 @@ static bool gamma_change_listener(float new_val, bool initial)
 static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma",
                      std::pair<const char*, int>{"Brightness", 1375},
                      std::pair<const char*, int>{"The brightness value used for the game window", 1738})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(1.0f)
                      .enumerator(gamma_value_enumerator)
                      .display(gamma_display)
                      .change_listener(gamma_change_listener)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 
@@ -134,7 +135,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      std::pair<const char*, int>{"Lighting", 1367},
                      std::pair<const char*, int>{"Level of detail of the lighting", 1715})
                      .importance(1)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .change_listener([](int val, bool initial) {
@@ -144,6 +145,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                           }
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;
@@ -169,7 +171,7 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Beginner)
                      .values({{os::ViewportState::Fullscreen, {"Fullscreen", 1679}},
                               {os::ViewportState::Borderless, {"Borderless", 1675}},
@@ -260,7 +262,7 @@ static bool videodisplay_change(int display, bool initial)
 static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
                      std::pair<const char*, int>{"Primary display", 1741},
                      std::pair<const char*, int>{"The display used for rendering", 1742})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Beginner)
                      .deserializer(videodisplay_deserializer)
                      .serializer(videodisplay_serializer)
@@ -370,7 +372,7 @@ static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.Resolution",
                      std::pair<const char*, int>{"Resolution", 1748},
                      std::pair<const char*, int>{"The rendering resolution", 1749})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Beginner)
                      .deserializer(resolution_deserializer)
                      .serializer(resolution_serializer)
@@ -386,7 +388,7 @@ bool Gr_enable_soft_particles = false;
 static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles",
                      std::pair<const char*, int>{"Soft Particles", 1761},
                      std::pair<const char*, int>{"Enable or disable soft particle rendering", 1762})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .default_val(true)
                      .bind_to_once(&Gr_enable_soft_particles)
@@ -398,7 +400,7 @@ flagset<FramebufferEffects> Gr_framebuffer_effects;
 static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<FramebufferEffects>>("Graphics.FramebufferEffects",
                      std::pair<const char*, int>{"Framebuffer effects", 1732},
                      std::pair<const char*, int>{"Controls which framebuffer effects will be applied to the scene", 1733})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .values({{{}, {"None", 211}},
                               {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
@@ -415,7 +417,7 @@ AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
 static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode",
                      std::pair<const char*, int>{"Anti Aliasing", 1752},
                      std::pair<const char*, int>{"Controls the anti aliasing mode of the engine.", 1753})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .values({{AntiAliasMode::None, {"None", 211}},
                               {AntiAliasMode::FXAA_Low, {"FXAA Low", 1681}},
@@ -434,7 +436,7 @@ extern int Cmdline_msaa_enabled;
 static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples",
                      std::pair<const char*, int>{"Multisample Anti Aliasing", 1758},
                      std::pair<const char*, int>{"Controls whether multisample anti asliasing is enabled, and with how many samples", 1759})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .values({{0, {"Off", 1693}},
                               {4, {"4 Samples", 1694}},
@@ -458,7 +460,7 @@ bool Gr_post_processing_enabled = true;
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
                      std::pair<const char*, int>{"Post processing", 1726},
                      std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .default_val(false)
                      .bind_to_once(&Gr_post_processing_enabled)
@@ -470,7 +472,7 @@ bool Gr_enable_vsync = true;
 static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync",
                      std::pair<const char*, int>{"Vertical Sync", 1766},
                      std::pair<const char*, int>{"Controls how the engine does vertical synchronization", 1767})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .default_val(true)
                      .bind_to_once(&Gr_enable_vsync)

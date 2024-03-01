@@ -15,10 +15,7 @@
 #include <csetjmp>
 
 #include <cctype>
-#include <string>
-#include "globalincs/safe_strings.h"
 #include "globalincs/version.h"
-#include "globalincs/vmallocator.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
 #include "mission/missionparse.h"
@@ -32,8 +29,6 @@
 #include "utils/encoding.h"
 #include "utils/unicode.h"
 
-#include <stdint.h>
-#include <string.h>
 #include <utf8.h>
 
 using namespace parse;
@@ -3351,7 +3346,7 @@ int string_lookup(const char *str1, const char* const *strlist, size_t max, cons
 void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description)
 {
 	char	token[128];
-	int checking_ship_classes = (stricmp(id, "$class:") == 0);
+	bool checking_ship_classes = (stricmp(id, "$class:") == 0);
 
 	// Goober5000 - don't say errors when we're checking classes because 1) we have more checking to do; and 2) we will say a redundant error later
 	required_string(id);
@@ -3364,7 +3359,7 @@ void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[]
 		int idx = ship_info_lookup(token);
 
 		if (idx >= 0)
-			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, 0);
+			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, false);
 		else
 			*addr = -1;
 	}
@@ -3377,7 +3372,7 @@ void find_and_stuff_optional(const char *id, int *addr, int f_type, const char *
 	if(optional_string(id))
 	{
 		stuff_string(token, f_type, sizeof(token));
-		*addr = string_lookup(token, strlist, max, description, 1);
+		*addr = string_lookup(token, strlist, max, description, true);
 	}
 }
 
@@ -3389,7 +3384,7 @@ int match_and_stuff(int f_type, const char * const *strlist, int max, const char
 	char	token[128];
 
 	stuff_string(token, f_type, sizeof(token));
-	return string_lookup(token, strlist, max, description, 0);
+	return string_lookup(token, strlist, max, description, false);
 }
 
 void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[], int *total,
@@ -3401,7 +3396,7 @@ void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[
 	required_string(id);
 	stuff_string(token, f_type, sizeof(token));
 	if (*total)
-		*addr = string_lookup(token, strlist, *total, description, 0);
+		*addr = string_lookup(token, strlist, *total, description, false);
 
 	if (*addr == -1)  // not in list, so lets try and add it.
 	{
@@ -3471,7 +3466,6 @@ void display_parse_diagnostics()
 char *split_str_once(char *src, int max_pixel_w)
 {
 	char *brk = nullptr;
-	int i, w, len;
 	bool last_was_white = false;
 
 	Assert(src);
@@ -3479,12 +3473,14 @@ char *split_str_once(char *src, int max_pixel_w)
 	if (max_pixel_w <= 0)
 		return src;  // if there's no width, skip everything else
 
+	int w;
 	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return nullptr;  // string doesn't require a cut
 	}
 
-	len = (int)strlen(src);
+	size_t i;
+	size_t len = strlen(src);
 	for (i=0; i<len; i++) {
 		gr_get_string_size(&w, nullptr, src, i + 1);
 
@@ -3817,53 +3813,57 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 }
 
 // A narrower but much faster alternative to split_str(), takes a string and a max pixel length, returns a vector with
-// one string per line. Does not currently support a max line count or ignoring of characters.
-SCP_vector<SCP_string>
-str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool strip_leading_whitespace)
+// one pair (offset and length) per line. Does not currently support a max line count or ignoring of characters.
+SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source_string, int max_pixel_width, bool strip_leading_whitespace, size_t source_start, size_t source_length)
 {
-	// To avoid any unexpected side effects, we're copying the orignal string.
-	SCP_string new_string = SCP_string(source_string);
+	auto lines = SCP_vector<std::pair<size_t, size_t>>();
 
-	SCP_vector<SCP_string> lines = SCP_vector<SCP_string>();
+	if (source_length == std::string::npos)
+		source_length = source_string.length() - source_start;
 
-	while (strip_leading_whitespace && !new_string.empty() && is_white_space(new_string[0])) {
-		new_string.erase(0, 1);
-	}
-	if (new_string.empty())
-		return lines;
+	Assertion(source_start + source_length <= source_string.length(), "In str_wrap_to_width(), source length must not exceed the actual length of the string!");
+
+	size_t pos_start = source_start;
+	size_t pos_end = source_start + source_length;
+
+	// Advance past leading whitespace.
+	while (strip_leading_whitespace && (pos_start < pos_end) && is_white_space(source_string[pos_start]))
+		pos_start++;
 
 	// Handle existing line breaks in the string recursively, then append the results.
-	auto newline_at = new_string.find_first_of(UNICODE_CHAR('\n'));
-	while (!new_string.empty() && newline_at < std::string::npos) {
-		if (newline_at == 0) {
+	while (pos_start < pos_end) {
+		auto newline_at = source_string.find_first_of(UNICODE_CHAR('\n'), pos_start);
+		if (newline_at == std::string::npos || newline_at >= source_length)
+			break;
+
+		if (newline_at == pos_start) {
 			// No content to split so just pushing a new string on.
-			lines.emplace_back();
+			lines.emplace_back(pos_start, 0);
 		} else {
-			SCP_vector<SCP_string> sublines =
-				str_wrap_to_width(new_string.substr(0, newline_at), max_pixel_length, strip_leading_whitespace);
-			for (auto line : sublines) {
-				lines.emplace_back(line);
-			}
+			auto sublines = str_wrap_to_width(source_string, max_pixel_width, strip_leading_whitespace, pos_start, (newline_at - pos_start));
+			lines.reserve(lines.size() + sublines.size());
+			std::move(sublines.begin(), sublines.end(), std::back_inserter(lines));
 		}
-		new_string.erase(0, newline_at + 1);
-		newline_at = new_string.find_first_of(UNICODE_CHAR('\n'));
+
+		pos_start = newline_at + 1;
 	}
-	// With newlines handled, now moving into actually wrapping the content.
-	while (!new_string.empty()) {
+
+	// With newlines handled, now move into actually wrapping the content.
+	while (pos_start < pos_end) {
 		auto split_at = std::string::npos;
 		// no newlines found, check length.
-		size_t stringlen = new_string.length();
-		int linelen = 0;
-		gr_get_string_size(&linelen, nullptr, new_string.c_str());
+		size_t stringlen = pos_end - pos_start;
+		int line_width = 0;
+		gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, stringlen);
 		if (stringlen <= 1) {
 			// in this case checking is pointless, single-character strings can't wrap.
 			// copy into the return vector and then bail.
-			lines.emplace_back(new_string.c_str());
+			lines.emplace_back(pos_start, stringlen);
 			break;
-		} else if (linelen < max_pixel_length) {
+		} else if (line_width < max_pixel_width) {
 			// The remaining string is shorter than our limit so we're done.
 			// copy into the return vector and then bail.
-			lines.emplace_back(new_string.c_str());
+			lines.emplace_back(pos_start, stringlen);
 			break;
 		} else {
 			size_t search_min = 0;
@@ -3871,12 +3871,12 @@ str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool st
 			size_t center = 0;
 			while ((search_max - search_min) > 0) {
 				center = search_min + ((search_max - search_min) / 2);
-				gr_get_string_size(&linelen, nullptr, new_string.substr(0, center).c_str());
-				if (linelen == max_pixel_length) {
+				gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, center);
+				if (line_width == max_pixel_width) {
 					search_max = center;
 					search_min = center;
 					split_at = center;
-				} else if (linelen > max_pixel_length) {
+				} else if (line_width > max_pixel_width) {
 					search_max = MIN(center, search_max - 1);
 					split_at = search_max;
 				} else {
@@ -3885,37 +3885,133 @@ str_wrap_to_width(const SCP_string& source_string, int max_pixel_length, bool st
 				}
 			}
 		}
-		if (split_at >= stringlen) { // don't split out of bounds
-			split_at = stringlen - 1;
-		}
-		if (split_at <= 0) {
-			// we need to always remove something from the current line or we're stuck
-			split_at = 1;
-		} else if (!is_white_space(new_string.at(split_at))) {
+
+		// don't split out of bounds, but it's ok to split exactly on the string boundary
+		if (split_at > stringlen) {
+			split_at = stringlen;
+		} else if (split_at < stringlen) {
 			// split_at is now the last point where we can split, but could be mid-word
 			// work backwards to find whitespace.
-			for (int n = ((int)split_at) - 1; n >= 0; n--) {
-				if (is_white_space(new_string.at(n))) {
-					split_at = (size_t)n;
-					n = -1;
+			while ((split_at > 0) && !is_white_space(source_string[pos_start + split_at]))
+				split_at--;
+
+			// we need to always remove something from the current line or we're stuck
+			if (split_at == 0)
+				split_at = 1;
+		}
+
+		lines.emplace_back(pos_start, split_at);
+		pos_start += split_at;
+
+		// Trim the leading whitespace off the next line.
+		while ((pos_start < pos_end) && is_white_space(source_string[pos_start]))
+			pos_start++;
+	}
+
+	return lines;
+}
+
+SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_string, int max_pixel_width, bool strip_leading_whitespace, size_t source_length)
+{
+	auto lines = SCP_vector<std::pair<size_t, size_t>>();
+
+	if (source_length == std::string::npos)
+		source_length = strlen(source_string);
+
+	Assertion(source_length <= strlen(source_string), "In str_wrap_to_width(), source length must not exceed the actual length of the string!");
+
+	const char* ch_start = source_string;
+	const char* ch_end = ch_start + source_length;
+
+	// Advance past leading whitespace.
+	while (strip_leading_whitespace && (ch_start < ch_end) && is_white_space(*ch_start))
+		ch_start++;
+
+	// Handle existing line breaks in the string recursively, then append the results.
+	while (ch_start < ch_end) {
+		auto newline_at = strchr(ch_start, UNICODE_CHAR('\n'));
+		if (newline_at == nullptr || newline_at >= ch_end)
+			break;
+
+		if (newline_at == ch_start) {
+			// No content to split so just pushing a new string on.
+			lines.emplace_back(ch_start - source_string, 0);
+		} else {
+			auto sublines = str_wrap_to_width(ch_start, max_pixel_width, strip_leading_whitespace, (newline_at - ch_start));
+
+			// need to adjust the positions to make them relative to the source string
+			if (ch_start != source_string)
+				for (auto& subline : sublines)
+					subline.first += (ch_start - source_string);
+
+			lines.reserve(lines.size() + sublines.size());
+			std::move(sublines.begin(), sublines.end(), std::back_inserter(lines));
+		}
+
+		ch_start = newline_at + 1;
+	}
+
+	// With newlines handled, now move into actually wrapping the content.
+	while (ch_start < ch_end) {
+		auto split_at = std::string::npos;
+		// no newlines found, check length.
+		size_t stringlen = ch_end - ch_start;
+		int line_width = 0;
+		gr_get_string_size(&line_width, nullptr, ch_start, stringlen);
+		if (stringlen <= 1) {
+			// in this case checking is pointless, single-character strings can't wrap.
+			// copy into the return vector and then bail.
+			lines.emplace_back(ch_start - source_string, stringlen);
+			break;
+		} else if (line_width < max_pixel_width) {
+			// The remaining string is shorter than our limit so we're done.
+			// copy into the return vector and then bail.
+			lines.emplace_back(ch_start - source_string, stringlen);
+			break;
+		} else {
+			size_t search_min = 0;
+			size_t search_max = stringlen;
+			size_t center = 0;
+			while ((search_max - search_min) > 0) {
+				center = search_min + ((search_max - search_min) / 2);
+				gr_get_string_size(&line_width, nullptr, ch_start, center);
+				if (line_width == max_pixel_width) {
+					search_max = center;
+					search_min = center;
+					split_at = center;
+				} else if (line_width > max_pixel_width) {
+					search_max = MIN(center, search_max - 1);
+					split_at = search_max;
+				} else {
+					search_min = MAX(center, search_min + 1);
+					split_at = search_min;
 				}
 			}
 		}
 
-		lines.emplace_back(new_string.substr(0, split_at));
-		new_string.erase(0, split_at);
-		// To trim the front whitespace off the next line
-		while (!new_string.empty() && is_white_space(new_string[0])) {
-			new_string.erase(0, 1);
-		}
-	}
-	return lines;
-}
+		// don't split out of bounds, but it's ok to split exactly on the string boundary
+		if (split_at > stringlen) {
+			split_at = stringlen;
+		} else if (split_at < stringlen) {
+			// split_at is now the last point where we can split, but could be mid-word
+			// work backwards to find whitespace.
+			while ((split_at > 0) && !is_white_space(*(ch_start + split_at)))
+				split_at--;
 
-SCP_vector<SCP_string> str_wrap_to_width(const char* source_string, int max_pixel_length, bool strip_leading_whitespace)
-{
-	// SCP_string temp = SCP_string(source_string);
-	return str_wrap_to_width(SCP_string(source_string), max_pixel_length, strip_leading_whitespace);
+			// we need to always remove something from the current line or we're stuck
+			if (split_at == 0)
+				split_at = 1;
+		}
+
+		lines.emplace_back(ch_start - source_string, split_at);
+		ch_start += split_at;
+
+		// Trim the leading whitespace off the next line.
+		while ((ch_start < ch_end) && is_white_space(*ch_start))
+			ch_start++;
+	}
+
+	return lines;
 }
 
 // Goober5000

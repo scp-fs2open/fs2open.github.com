@@ -36,6 +36,7 @@
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
+#include "math/bitarray.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
 #include "mission/missionbriefcommon.h"
@@ -3714,7 +3715,7 @@ void parse_common_object_data(p_object *p_objp)
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
-			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", 0);
+			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", false);
 			if (index == -1) {
 				if (Num_cargo < MAX_CARGO) {
 					index = Num_cargo;
@@ -5664,7 +5665,7 @@ void parse_bitmaps(mission *pm)
 
 	// all poofs on by default
 	for (size_t i = 0; i < Poof_info.size(); i++)
-		Neb2_poof_flags += (1 << i);
+		set_bit(Neb2_poof_flags.get(), i);
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
@@ -5682,7 +5683,9 @@ void parse_bitmaps(mission *pm)
 	if (nebula) {
 		// Obsolete and only for backwards compatibility
 		if (optional_string("+Neb2Flags:")) {
-			stuff_int(&Neb2_poof_flags);
+			int temp;
+			stuff_int(&temp);
+			bit_array_set_from_int(Neb2_poof_flags.get(), Poof_info.size(), temp);
 		}
 
 		// Get poofs by name

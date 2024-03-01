@@ -669,7 +669,7 @@ int gr_get_dynamic_font_lines(int number_default_lines) {
 	return fl2i((number_default_lines * 10) / (gr_get_font_height() + 1));
 }
 
-void gr_get_string_size(int *w1, int *h1, const char *text, int len)
+void gr_get_string_size(int *w1, int *h1, const char *text, size_t len)
 {
 	if (!FontManager::isReady())
 	{
@@ -685,7 +685,7 @@ void gr_get_string_size(int *w1, int *h1, const char *text, int len)
 	float w = 0.0f;
 	float h = 0.0f;
 
-	FontManager::getCurrentFont()->getStringSize(text, static_cast<size_t>(len), -1, &w, &h);
+	FontManager::getCurrentFont()->getStringSize(text, len, -1, &w, &h);
 
 	if (w1)
 	{

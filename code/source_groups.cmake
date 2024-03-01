@@ -1031,10 +1031,23 @@ add_file_folder("Observer"
 )
 
 add_file_folder("Options"
+	options/Ingame_Options.cpp
+	options/Ingame_Options.h
+	options/Ingame_Options_internal.h
 	options/Option.cpp
 	options/Option.h
 	options/OptionsManager.cpp
 	options/OptionsManager.h
+)
+
+add_file_folder("Options\\\\Dialogs"
+	options/dialogs/ingame_options_ui.h
+	options/dialogs/ingame_options_ui.cpp
+)
+
+add_file_folder("Options\\\\Manager"
+	options/manager/ingame_options_manager.h
+	options/manager/ingame_options_manager.cpp
 )
 
 # OsApi files

@@ -18,7 +18,7 @@ class mc_info_h
 
 	mc_info *Get();
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_ColInfo, mc_info_h);

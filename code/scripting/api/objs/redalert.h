@@ -10,7 +10,7 @@ struct redalert_stage_h {
 	int ra_brief, ra_stage;
 	redalert_stage_h();
 	explicit redalert_stage_h(int brief, int stage);
-	bool IsValid() const;
+	bool isValid() const;
 	brief_stage* getStage() const;
 };
 

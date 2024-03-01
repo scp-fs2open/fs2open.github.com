@@ -10,7 +10,7 @@ lua_ai_sexp_h::lua_ai_sexp_h(sexp::LuaAISEXP* handle) : sexp_handle(handle) {
 }
 lua_ai_sexp_h::lua_ai_sexp_h() : sexp_handle(nullptr) {
 }
-bool lua_ai_sexp_h::isValid() {
+bool lua_ai_sexp_h::isValid() const {
 	return sexp_handle != nullptr;
 }
 

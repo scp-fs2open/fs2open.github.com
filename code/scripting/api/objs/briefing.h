@@ -11,7 +11,7 @@ struct brief_stage_h {
 	int br_brief, br_stage;
 	brief_stage_h();
 	explicit brief_stage_h(int brief, int stage);
-	bool IsValid() const;
+	bool isValid() const;
 	brief_stage* getStage() const;
 };
 

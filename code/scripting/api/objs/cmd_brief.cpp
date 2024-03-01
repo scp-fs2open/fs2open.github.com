@@ -8,7 +8,7 @@ cmd_brief_stage_h::cmd_brief_stage_h() : cmd_brief(-1), cmd_stage(-1) { }
 
 cmd_brief_stage_h::cmd_brief_stage_h(int brief, int stage) : cmd_brief(brief), cmd_stage(stage) { }
 
-bool cmd_brief_stage_h::IsValid() const {
+bool cmd_brief_stage_h::isValid() const {
 	return cmd_brief >= 0 && cmd_stage >= 0;
 }
 

@@ -305,7 +305,7 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
 			int sw;
-			gr_get_string_size(&sw, nullptr, msg, (int)(ptr + 2 - msg));
+			gr_get_string_size(&sw, nullptr, msg, (ptr + 2 - msg));
 			offset = sw;
 		}
 
@@ -641,7 +641,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 
 	// determine the length of the sender's name for underlining
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, (int)(ptr - buf));
+		gr_get_string_size(&w, nullptr, buf, (ptr - buf));
 	}
 
 	// create the new node for the vector
@@ -843,7 +843,7 @@ void hud_initialize_scrollback_lines()
 
 			int width = 0;
 			int height = 0;
-			gr_get_string_size(&width, &height, node_msg.text.c_str(), (int)node_msg.text.length());
+			gr_get_string_size(&width, &height, node_msg.text.c_str(), node_msg.text.length());
 
 			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 			if (width > max_width) {
@@ -1264,7 +1264,7 @@ void HudGaugeTalkingHead::pageIn()
 	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
 }
 
-bool HudGaugeTalkingHead::canRender()
+bool HudGaugeTalkingHead::canRender() const
 {
 	if (sexp_override) {
 		return false;

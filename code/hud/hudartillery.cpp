@@ -328,7 +328,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 
 	count = Ssm_info[ssm_index].count;
 	if (Ssm_info[ssm_index].max_count != -1 && (Ssm_info[ssm_index].max_count - count) > 0) {
-		count += Random::next(count, Ssm_info[ssm_index].max_count);
+		count = Random::next(count, Ssm_info[ssm_index].max_count);
 	}
 
 	// override in multiplayer

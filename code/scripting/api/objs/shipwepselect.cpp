@@ -8,7 +8,7 @@ namespace api {
 
 ss_wing_info_h::ss_wing_info_h() : ss_wing(-1) {}
 ss_wing_info_h::ss_wing_info_h(int l_wing) : ss_wing(l_wing) {}
-bool ss_wing_info_h::IsValid() const
+bool ss_wing_info_h::isValid() const
 {
 	return ss_wing >= 0;
 }
@@ -19,7 +19,7 @@ ss_wing_info* ss_wing_info_h::getWing() const
 
 ss_slot_info_h::ss_slot_info_h() {}
 ss_slot_info_h::ss_slot_info_h(ss_slot_info* l_slots, int l_idx) : ss_slots(l_slots), ss_idx(l_idx) {}
-bool ss_slot_info_h::IsValid() const
+bool ss_slot_info_h::isValid() const
 {
 	return ss_slots != nullptr;
 }
@@ -30,7 +30,7 @@ ss_slot_info* ss_slot_info_h::getSlot() const
 
 wss_unit_wep_h::wss_unit_wep_h() : ss_unit(-1) {}
 wss_unit_wep_h::wss_unit_wep_h(int l_unit) : ss_unit(l_unit) {}
-bool wss_unit_wep_h::IsValid() const
+bool wss_unit_wep_h::isValid() const
 {
 	return ss_unit >= 0;
 	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
@@ -42,7 +42,7 @@ wss_unit* wss_unit_wep_h::getBank() const
 
 wss_unit_count_h::wss_unit_count_h() : ss_unit(-1) {}
 wss_unit_count_h::wss_unit_count_h(int l_unit) : ss_unit(l_unit) {}
-bool wss_unit_count_h::IsValid() const
+bool wss_unit_count_h::isValid() const
 {
 	return ss_unit >= 0;
 	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));

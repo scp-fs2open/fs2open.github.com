@@ -18,13 +18,13 @@ ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist",
 	if(!ade_get_args(L, "o", l_Waypoint.GetPtr(&oh)))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
-	if(oh->IsValid() && oh->objp->type == OBJ_WAYPOINT) {
+	if(oh->isValid() && oh->objp->type == OBJ_WAYPOINT) {
 		wp_list = find_waypoint_list_with_instance(oh->objp->instance);
 		if(wp_list != NULL)
 			wpl = waypointlist_h(wp_list);
 	}
 
-	if (wpl.IsValid()) {
+	if (wpl.isValid()) {
 		return ade_set_args(L, "o", l_WaypointList.Set(wpl));
 	}
 
@@ -48,7 +48,7 @@ waypointlist_h::waypointlist_h(const char* wlname)
 		wlp = find_matching_waypoint_list(wlname);
 	}
 }
-bool waypointlist_h::IsValid() {
+bool waypointlist_h::isValid() const {
 	return (wlp != NULL && !strcmp(wlp->get_name(), name));
 }
 
@@ -63,7 +63,7 @@ ADE_INDEXER(l_WaypointList, "number Index", "Array of waypoints that are part of
 	if( !ade_get_args(L, "oi", l_WaypointList.GetPtr( &wlh ), &idx))
 		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
 
-	if(!wlh->IsValid())
+	if(!wlh->isValid())
 		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
 
 	//Lua-->FS2
@@ -115,7 +115,7 @@ ADE_FUNC(isValid, l_WaypointList, NULL, "Return if this waypointlist handle is v
 	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
 		return ADE_RETURN_FALSE;
 	}
-	return ade_set_args(L, "b", wlh != NULL && wlh->IsValid());
+	return ade_set_args(L, "b", wlh != NULL && wlh->isValid());
 }
 
 }

@@ -47,7 +47,7 @@ ProgramInstance::ProgramInstance(const actions::Program* program) : _program(pro
 
 ProgramState ProgramInstance::step()
 {
-	if (!_locals.host.IsValid()) {
+	if (!_locals.host.isValid()) {
 		return ProgramState::Done;
 	}
 

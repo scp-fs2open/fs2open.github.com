@@ -389,7 +389,7 @@ ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){
 	if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::USERDATA) {
 		scripting::api::enum_h enumData;
 		retVals[0].getValue(scripting::api::l_Enum.Get(&enumData));
-		if (!enumData.IsValid()) {
+		if (!enumData.isValid()) {
 			Error(LOCATION, "LuaAI SEXP achievability hook returned an invalid avilability enum.");
 			return ai_achievability::ACHIEVABLE;
 		}

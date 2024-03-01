@@ -119,7 +119,7 @@ class pilotfile {
 		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr, int* flags = nullptr);
 
 		// whether current campaign savefile has valid data to work with
-		bool is_invalid()
+		bool is_invalid() const
 		{
 			return m_data_invalid;
 		}

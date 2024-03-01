@@ -1085,7 +1085,7 @@ int CShipEditorDlg::update_data(int redraw)
 		m_ship_name.TrimRight(); 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (cur_object_index != OBJ_INDEX(ptr))) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (single_ship != ptr->instance)) {
 				str = Ships[ptr->instance].ship_name;
 				if (!stricmp(m_ship_name, str)) {
 					if (bypass_errors)

@@ -20,7 +20,7 @@ void CompositeEffect::parseValues(bool) {
 
 			if (effect->getType() == EffectType::Composite) {
 				error_display(0,
-							  "A composite effect cannot contain more composite effects! The effect as not been added.");
+							  "A composite effect cannot contain more composite effects! The effect has not been added.");
 			}
 			else {
 				addEffect(effect);

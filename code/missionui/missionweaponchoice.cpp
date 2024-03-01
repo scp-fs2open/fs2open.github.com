@@ -2352,12 +2352,12 @@ void wl_render_weapon_desc(float frametime)
 	if (!Weapon_desc_wipe_done) {
 		// draw mid-wipe version
 		// decide which char is last (and bright)
-		int bright_char_index = (int)(Weapon_desc_wipe_time_elapsed * WEAPON_DESC_MAX_LENGTH / WEAPON_DESC_WIPE_TIME);
-		int i, w, h, curr_len;
+		size_t bright_char_index = (size_t)(Weapon_desc_wipe_time_elapsed * WEAPON_DESC_MAX_LENGTH / WEAPON_DESC_WIPE_TIME);
+		int i, w, h;
 		
 		// draw weapon title (above weapon anim)
 		for (i=0; i<2; i++) {
-			curr_len = (int)strlen(Weapon_desc_lines[i]);
+			size_t curr_len = strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2385,7 +2385,7 @@ void wl_render_weapon_desc(float frametime)
 
 		// draw weapon desc (below weapon anim)
 		for (i=2; i<WEAPON_DESC_MAX_LINES; i++) {
-			curr_len = (int)strlen(Weapon_desc_lines[i]);
+			size_t curr_len = strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2439,9 +2439,10 @@ void wl_render_weapon_desc(float frametime)
  */
 void wl_weapon_desc_start_wipe()
 {
-	int currchar_src = 0, currline_dest = 2, currchar_dest = 0, i;
+	size_t currchar_src = 0;
+	int currline_dest = 2, currchar_dest = 0, i;
 	int w, h;
-	int title_len = (int)strlen(Weapon_info[Selected_wl_class].title);
+	size_t title_len = strlen(Weapon_info[Selected_wl_class].title);
 
 	// init wipe vars
 	Weapon_desc_wipe_time_elapsed = 0.0f;
@@ -2452,7 +2453,7 @@ void wl_weapon_desc_start_wipe()
 	gr_get_string_size(&w, &h, Weapon_info[Selected_wl_class].title, title_len);
 	if (w > Weapon_title_max_width[gr_screen.res]) {
 		// split
-		currchar_src = (int)(((float)title_len / (float)w) * Weapon_title_max_width[gr_screen.res]);			// char to start space search at
+		currchar_src = (size_t)(((float)title_len / (float)w) * Weapon_title_max_width[gr_screen.res]);			// char to start space search at
 		while (Weapon_desc_lines[0][currchar_src] != ' ') {
 			currchar_src--;
 			if (currchar_src <= 0) {
@@ -2960,7 +2961,7 @@ void wl_render_icon_count(int num, int x, int y)
 	Assert(number_to_draw >= 0);
 
 	sprintf(buf, "%d", number_to_draw);
-	gr_get_string_size(&num_w, &num_h, buf, (int)strlen(buf));
+	gr_get_string_size(&num_w, &num_h, buf, strlen(buf));
 
 	// render
 	gr_set_color_fast(&Color_white);

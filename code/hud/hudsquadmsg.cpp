@@ -2635,7 +2635,7 @@ bool HudGaugeSquadMessage::maybeFlashPageScroll(bool flash_fast)
 	return draw_bright;
 }
 
-bool HudGaugeSquadMessage::canRender()
+bool HudGaugeSquadMessage::canRender() const
 {
 	if(hud_disabled_except_messages() && !message_gauge) {
 		return false;

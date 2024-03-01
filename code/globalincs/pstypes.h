@@ -442,7 +442,7 @@ public:
 	class camera *getCamera();
 	size_t getIndex();
 	int getSignature();
-	bool isValid();
+	bool isValid() const;
 };
 
 #include "globalincs/vmallocator.h"

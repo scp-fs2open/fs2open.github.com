@@ -205,7 +205,7 @@ SCP_string enum_h::getName() const
 
 	return SCP_string();
 }
-bool enum_h::IsValid() const { return index < ENUM_NEXT_INDEX || index == ENUM_COMBINATION; }
+bool enum_h::isValid() const { return index < ENUM_NEXT_INDEX || index == ENUM_COMBINATION; }
 
 enum_h operator&(const enum_h& l, const enum_h& other) {
 	Assertion(l.value && other.value, "Tried to and-combine non-combinable enums %s and %s!", l.getName().c_str(), other.getName().c_str());
@@ -308,7 +308,7 @@ ADE_FUNC(__tostring,
 		return ade_set_args(L, "s", "<INVALID>");
 	}
 
-	if (!e->IsValid()) {
+	if (!e->isValid()) {
 		return ade_set_args(L, "s", "<INVALID>");
 	}
 
@@ -352,7 +352,7 @@ ADE_FUNC(__add,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
-	if (e1 == nullptr || e2 == nullptr || !e1->IsValid() || !e2->IsValid() || !e1->value ||!e2->value) {
+	if (e1 == nullptr || e2 == nullptr || !e1->isValid() || !e2->isValid() || !e1->value ||!e2->value) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
@@ -372,7 +372,7 @@ ADE_FUNC(__mul,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
-	if (e1 == nullptr || e2 == nullptr || !e1->IsValid() || !e2->IsValid() || !e1->value || !e2->value) {
+	if (e1 == nullptr || e2 == nullptr || !e1->isValid() || !e2->isValid() || !e1->value || !e2->value) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 

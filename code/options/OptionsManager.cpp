@@ -202,10 +202,11 @@ void OptionsManager::printValues()
 	for (auto& opt : _options) {
 		// If we're not using in-game options and the option is not a retail option, then skip
 		// This ensures we only log options that are actually impacting the current game instance
-		// This code set aside until PR 5895 is merged
-		//if (!Using_in_game_options && !(opt->getFlags()[options::OptionFlags::RetailBuiltinOption])){
-		//	continue;
-		//}
+		if (!Using_in_game_options && !(opt->getFlags()[options::OptionFlags::RetailBuiltinOption])){
+			continue;
+		}
+
+		// Log the option
 		mprintf(("Option.%s: %s\n",
 			opt->getConfigKey().c_str(),
 			opt->getCurrentValueDescription().display.c_str()));

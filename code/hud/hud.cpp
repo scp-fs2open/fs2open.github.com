@@ -363,7 +363,7 @@ void HudGauge::initPosition(int x, int y)
 	position[1] = y;
 }
 
-void HudGauge::getPosition(int *x, int *y)
+void HudGauge::getPosition(int *x, int *y) const
 {
 	*x = position[0];
 	*y = position[1];
@@ -390,7 +390,7 @@ void HudGauge::initFont(int input_font_num)
 	}
 }
 
-int HudGauge::getFont()
+int HudGauge::getFont() const
 {
 	return font_num;
 }
@@ -404,7 +404,7 @@ void HudGauge::initOriginAndOffset(float originX, float originY, int offsetX, in
 	tabled_offset[1] = offsetY;
 }
 
-void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY)
+void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const
 {
 	*originX = tabled_origin[0];
 	*originY = tabled_origin[1];
@@ -420,19 +420,24 @@ void HudGauge::initCoords(bool use_coords, int coordsX, int coordsY)
 	tabled_coords[1] = coordsY;
 }
 
-void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY)
+void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY) const
 {
 	*use_coords = tabled_use_coords;
 	*coordsX = tabled_coords[0];
 	*coordsY = tabled_coords[1];
 }
 
-const char* HudGauge::getCustomGaugeName()
+void HudGauge::initHiRes(const char* fname)
+{
+	hi_res = (strncmp(fname, "2_", 2) == 0);
+}
+
+const char* HudGauge::getCustomGaugeName() const
 {
 	return custom_name;
 }
 
-const char* HudGauge::getCustomGaugeText()
+const char* HudGauge::getCustomGaugeText() const
 {
 	return custom_text.c_str();
 }
@@ -539,33 +544,37 @@ void HudGauge::setGaugeColor(int bright_index)
 	gr_set_color_fast(&gauge_color);	
 }
 
-bool HudGauge::isCustom()
+bool HudGauge::isCustom() const
 {
 	return custom_gauge;
 }
 
-int HudGauge::getBaseWidth()
+bool HudGauge::isHiRes() const
+{
+	return hi_res;
+}
+
+int HudGauge::getBaseWidth() const
 {
 	return base_w;
 }
 
-int HudGauge::getBaseHeight()
+int HudGauge::getBaseHeight() const
 {
 	return base_h;
 }
 
-float HudGauge::getAspectQuotient()
+float HudGauge::getAspectQuotient() const
 {
 	return aspect_quotient;
 }
 
-int HudGauge::getConfigType()
+int HudGauge::getConfigType() const
 {
-	//return gauge_type;
 	return gauge_config;
 }
 
-int HudGauge::getObjectType()
+int HudGauge::getObjectType() const
 {
 	return gauge_object;
 }
@@ -588,7 +597,7 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
- const color& HudGauge::getColor()
+ const color& HudGauge::getColor() const
 {
 	return gauge_color;
 }
@@ -613,12 +622,12 @@ void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
 	render_for_cockpit_toggle = cockpit_view_choice;
 }
 
-bool HudGauge::isOffbyDefault()
+bool HudGauge::isOffbyDefault() const
 {
 	return off_by_default;
 }
 
-bool HudGauge::isActive()
+bool HudGauge::isActive() const
 {
 	return active && !sexp_override;
 }
@@ -643,7 +652,7 @@ void HudGauge::startPopUp(int time)
 	popup_timer = timestamp(time);
 }
 
-int HudGauge::popUpActive()
+int HudGauge::popUpActive() const
 {
 	//Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
 	if ( !pop_up ) {
@@ -673,7 +682,7 @@ void HudGauge::startFlashSexp()
 	flash_status = false;
 }
 
-bool HudGauge::flashExpiredSexp()
+bool HudGauge::flashExpiredSexp() const
 {
 	if(timestamp_elapsed(flash_duration)) {
 		return true;
@@ -1147,7 +1156,7 @@ void HudGauge::initialize()
 	sexp_lock_color = false;
 }
 
-bool HudGauge::canRender()
+bool HudGauge::canRender() const
 {
 	if (sexp_override) {
 		return false;
@@ -3985,7 +3994,7 @@ HudGauge(HUD_OBJECT_MULTI_MSG, HUD_MESSAGE_LINES, false, true, 0, 255, 255, 255)
 {
 }
 
-bool HudGaugeMultiMsg::canRender() 
+bool HudGaugeMultiMsg::canRender() const
 {
 	return true;
 }

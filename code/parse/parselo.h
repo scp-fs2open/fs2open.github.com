@@ -269,7 +269,7 @@ int string_lookup(const char* str1, T strlist, size_t max, const char* descripti
 	}
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description);
+		error_display(0, "Unable to find [%s] in %s list.\n", str1, description ? description : "unnamed");
 
 	return -1;
 }
@@ -334,11 +334,10 @@ int split_str(const char* src,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 
-SCP_vector<SCP_string> str_wrap_to_width(const SCP_string& source_string, int max_pixel_length,
-			  bool strip_leading_whitespace = true);
+SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source_string, int max_pixel_width, bool strip_leading_whitespace = true, size_t source_start = 0, size_t source_length = std::string::npos);
 
-SCP_vector<SCP_string> str_wrap_to_width(const char* source_string, int max_pixel_length,
-			  bool strip_leading_whitespace = true);
+SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_string, int max_pixel_width, bool strip_leading_whitespace = true, size_t source_length = std::string::npos);
+
 // fred
 extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);

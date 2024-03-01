@@ -65,7 +65,7 @@ ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient = default /* as set o
 	if(!argument.isValid())
 		argument = luacpp::LuaValue::createNil(L);
 
-	if (!recipient.IsValid() || (recipient.index != LE_RPC_SERVER && recipient.index != LE_RPC_CLIENTS && recipient.index != LE_RPC_BOTH))
+	if (!recipient.isValid() || (recipient.index != LE_RPC_SERVER && recipient.index != LE_RPC_CLIENTS && recipient.index != LE_RPC_BOTH))
 		recipient = rpc->recipient;
 
 	lua_net_reciever recipient_lua;

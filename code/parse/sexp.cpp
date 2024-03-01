@@ -188,6 +188,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "perform-actions-bool-first",		OP_PERFORM_ACTIONS_BOOL_FIRST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "perform-actions-bool-last",		OP_PERFORM_ACTIONS_BOOL_LAST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "has-time-elapsed",				OP_HAS_TIME_ELAPSED,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "has-time-elapsed-msecs",			OP_HAS_TIME_ELAPSED_MSECS,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 
 	//Event/Goals Category
 	{ "is-goal-true-delay",				OP_GOAL_TRUE_DELAY,						2,	2,			SEXP_BOOLEAN_OPERATOR,	},
@@ -402,6 +403,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-subsystems",					OP_FOR_SUBSYSTEMS,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-container-data",				OP_FOR_CONTAINER_DATA,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
 	{ "for-map-container-keys",			OP_FOR_MAP_CONTAINER_KEYS,				1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
@@ -2865,15 +2867,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 			
 			case OPF_SUBSYSTEM_TYPE:
-				for (i = 0; i < SUBSYSTEM_MAX; i++)
-				{
-					if (!stricmp(CTEXT(node), Subsystem_types[i]))
-						break;
-				}
-
-				if (i == SUBSYSTEM_MAX)
+				i = string_lookup(CTEXT(node), Subsystem_types, SUBSYSTEM_MAX);
+				if (i < 0)
 					return SEXP_CHECK_INVALID_SUBSYS_TYPE;
-
 				break;
 
 			case OPF_POINT:
@@ -7653,20 +7649,6 @@ int sexp_ship_type_destroyed(int n)
 }
 
 // following are time based functions
-int sexp_has_time_elapsed(int n)
-{
-	bool is_nan, is_nan_forever;
-	int time = eval_num(n, is_nan, is_nan_forever);
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	if ( f2i(Missiontime) >= time )
-		return SEXP_KNOWN_TRUE;
-
-	return SEXP_FALSE;
-}
 
 /**
  * Returns the time into the mission
@@ -7685,6 +7667,22 @@ int sexp_mission_time_msecs()
 	auto mission_time = (std::int64_t) Missiontime;
 	// This hack is necessary since fix is a 32-bit integer which would overflow if f2i would be used
 	return (int)((mission_time * 1000) / 65536);
+}
+
+int sexp_has_time_elapsed(int n, bool use_msecs)
+{
+	bool is_nan, is_nan_forever;
+	int time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+
+	int mission_time = use_msecs ? sexp_mission_time_msecs() : sexp_mission_time();
+	if ( mission_time >= time )
+		return SEXP_KNOWN_TRUE;
+
+	return SEXP_FALSE;
 }
 
 /**
@@ -8183,12 +8181,7 @@ int sexp_hits_left_subsystem_generic(int node)
 	auto subsys_type_name = CTEXT(CDR(node));
 
 	// find subsystem type
-	int subsys_type = -1;
-	for (int i = 0; i < SUBSYSTEM_MAX; i++)
-	{
-		if (!stricmp(subsys_type_name, Subsystem_types[i]))
-			subsys_type = i;
-	}
+	int subsys_type = string_lookup(subsys_type_name, Subsystem_types, SUBSYSTEM_MAX);
 
 	// error checking
 	if (subsys_type < 0) {
@@ -11620,6 +11613,67 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 		return SEXP_FALSE;
 }
 
+// Goober5000
+int eval_for_subsystems(int arg_handler_node, int condition_node, bool just_count = false)
+{
+	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
+	Assert(arg_handler_node > -1 && condition_node > -1);
+
+	// Don't use invalid indexes - Coverity 1523820
+	if(arg_handler_node < 0 || condition_node < 0)
+		return SEXP_FALSE;
+
+	n = CDR(arg_handler_node);
+
+	// get the ship
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_FALSE;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
+	n = CDR(n);
+
+	bool subsystem_type_specified = (n >= 0);
+	SCP_unordered_set<int> subsystem_types;
+
+	// get all the types we need to search for
+	for (; n >= 0; n = CDR(n))
+	{
+		auto type_index = string_lookup(CTEXT(n), Subsystem_types, SUBSYSTEM_MAX);
+		if (type_index >= 0)
+			subsystem_types.insert(type_index);
+	}
+
+	// go through all subsystems and add the relevant ones
+	for (auto ss : list_range(&ship_entry->shipp()->subsys_list))
+	{
+		if (!subsystem_type_specified || subsystem_types.find(ss->system_info->type) != subsystem_types.end())
+		{
+			if (just_count)
+				num_valid_arguments++;
+			else
+				argument_vector.emplace_back(ss->system_info->subobj_name, -1);
+		}
+	}
+
+	if (just_count)
+		return num_valid_arguments;
+
+	// test the whole argument vector
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, STRDUP_STATUS::DUP_NOT_NEEDED, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	SCP_UNUSED(num_valid_arguments);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
+	// ok to short-circuit here because a ship's subsystem collection is known and fixed
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else
+		return SEXP_FALSE;
+}
+
 // jg18
 int eval_for_container(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
@@ -11833,6 +11887,9 @@ int sexp_num_valid_arguments( int n )
 		case OP_FOR_SHIP_SPECIES:
 			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
 
+		case OP_FOR_SUBSYSTEMS:
+			return eval_for_subsystems(arg_handler, Locked_sexp_true, true);
+
 		case OP_FOR_CONTAINER_DATA:
 		case OP_FOR_MAP_CONTAINER_KEYS:
 			return eval_for_container(arg_handler, Locked_sexp_true, op_const, true);
@@ -12030,6 +12087,7 @@ bool is_implicit_argument_provider_op(const int op_const)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_SUBSYSTEMS:
 		case OP_FOR_CONTAINER_DATA:
 		case OP_FOR_MAP_CONTAINER_KEYS:
 			return true;
@@ -15950,18 +16008,18 @@ void sexp_nebula_toggle_poof(int n)
 {
 	auto name = CTEXT(n);
 	bool result = is_sexp_true(CDR(n));
-	int i;
+	size_t i;
 
-	for (i = 0; i < (int)Poof_info.size(); i++)
+	for (i = 0; i < Poof_info.size(); i++)
 	{
 		if (!stricmp(name, Poof_info[i].name))
 			break;
 	}
 
 	//coulnd't find the poof
-	if (i == (int)Poof_info.size()) return;
+	if (i == Poof_info.size()) return;
 
-	neb2_toggle_poof(i, result);
+	neb2_toggle_poof(static_cast<int>(i), result);
 }
 
 void sexp_nebula_fade_poofs(int n)
@@ -15975,18 +16033,18 @@ void sexp_nebula_fade_poofs(int n)
 		return;
 	n = CDR(n);
 	bool result = is_sexp_true(n);
-	int i;
+	size_t i;
 
-	for (i = 0; i < (int)Poof_info.size(); i++) {
+	for (i = 0; i < Poof_info.size(); i++) {
 		if (!stricmp(name, Poof_info[i].name))
 			break;
 	}
 
 	// coulnd't find the poof
-	if (i == (int)Poof_info.size())
+	if (i == Poof_info.size())
 		return;
 
-	neb2_fade_poofs(i, time, result);
+	neb2_fade_poofs(static_cast<int>(i), time, result);
 }
 
 void sexp_nebula_change_pattern(int n)
@@ -19670,12 +19728,9 @@ int sexp_time_to_goal(int n)
 {
 	auto ship_entry = eval_ship(n);
 
-	if (!ship_entry || !ship_entry->has_shipp())
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
-		return SEXP_CANT_EVAL;
-	
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
@@ -19683,7 +19738,7 @@ int sexp_time_to_goal(int n)
 	int time = ship_return_seconds_to_goal(shipp);
 	
 	if (time < 0) {
-		return SEXP_CANT_EVAL;
+		return SEXP_NAN;
 	}
 
 	return time;
@@ -26262,12 +26317,29 @@ int sexp_is_in_box(int n)
 
 int sexp_is_in_mission(int node)
 {
+	// For this sexp, we do not short-circuit known-true or known-false.
 	for (int n = node; n != -1; n = CDR(n))
 	{
-		// For this sexp, we do not short-circuit known-true or known-false.
 		auto ship_entry = eval_ship(n);
-		if (!ship_entry || !ship_entry->has_shipp())
-			return SEXP_FALSE;
+		if (ship_entry)
+		{
+			if (ship_entry->has_shipp())
+				continue;
+
+			return SEXP_FALSE;	// we know the ship isn't present
+		}
+
+		auto wingp = eval_wing(n);
+		if (wingp)
+		{
+			if (wingp->current_count > 0)
+				continue;
+
+			return SEXP_FALSE;	// we know no ships in the wing are present
+		}
+
+		// this is neither a ship nor a wing
+		return SEXP_FALSE;
 	}
 
 	return SEXP_TRUE;
@@ -27238,7 +27310,8 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// time based sexpressions
 			case OP_HAS_TIME_ELAPSED:
-				sexp_val = sexp_has_time_elapsed(node);
+			case OP_HAS_TIME_ELAPSED_MSECS:
+				sexp_val = sexp_has_time_elapsed(node, op_num == OP_HAS_TIME_ELAPSED_MSECS);
 				break;
 
 			case OP_MODIFY_VARIABLE:
@@ -27536,6 +27609,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_FOR_PLAYERS:
 				sexp_val = eval_for_players( cur_node, referenced_node );
+				break;
+
+			// Goober5000
+			case OP_FOR_SUBSYSTEMS:
+				sexp_val = eval_for_subsystems( cur_node, referenced_node );
 				break;
 
 			// jg18
@@ -30003,6 +30081,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SHIP_TYPE:
 		case OP_IS_SHIP_CLASS:
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
 		case OP_GOAL_FALSE_DELAY:
@@ -30625,6 +30704,7 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_SUBSYSTEMS:
 		case OP_FOR_CONTAINER_DATA:
 		case OP_FOR_MAP_CONTAINER_KEYS:
 		case OP_FIRST_OF:
@@ -30799,6 +30879,7 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_SPEED:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
 		case OP_SPECIAL_CHECK:
@@ -31480,6 +31561,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FOR_SHIP_SPECIES:
 			return OPF_SPECIES;
+
+		case OP_FOR_SUBSYSTEMS:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM_TYPE;
 
 		case OP_FOR_CONTAINER_DATA:
 			return OPF_CONTAINER_NAME;
@@ -35036,6 +35123,7 @@ int get_category(int op_id)
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_NOT:
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
@@ -35229,6 +35317,7 @@ int get_category(int op_id)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_SUBSYSTEMS:
 		case OP_FIRST_OF:
 		case OP_SWITCH:
 		case OP_FUNCTIONAL_SWITCH:
@@ -36253,6 +36342,7 @@ bool usable_in_campaign(int op_id)
 			return true;
 
 		case OP_HAS_TIME_ELAPSED:
+		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_PERFORM_ACTIONS_BOOL_FIRST:
 		case OP_PERFORM_ACTIONS_BOOL_LAST:
 		case OP_EVERY_TIME:
@@ -36727,9 +36817,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_HAS_TIME_ELAPSED, "Has time elapsed (Boolean operator)\r\n"
 		"\tBecomes true when the specified amount of time has elapsed (Mission time "
-		"becomes greater than the specified time).\r\n"
+		"becomes greater than or equal to the specified time).\r\n"
 		"Returns a boolean value.  Takes 1 numeric argument...\r\n"
 		"\t1:\tThe amount of time in seconds." },
+
+	// Goober5000
+	{ OP_HAS_TIME_ELAPSED_MSECS, "Has time elapsed, in milliseconds (Boolean operator)\r\n"
+		"\tBecomes true when the specified amount of time has elapsed (Mission time "
+		"becomes greater than or equal to the specified time).\r\n"
+		"Returns a boolean value.  Takes 1 numeric argument...\r\n"
+		"\t1:\tThe amount of time in milliseconds." },
 
 	{ OP_NOT, "Not (Boolean operator)\r\n"
 		"\tReturns opposite boolean value of argument (True becomes false, and "
@@ -37155,11 +37252,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t8: Ship to use as reference frame (optional)." },
 
 	{ OP_IS_IN_MISSION, "Is-In-Mission (Status operator)\r\n"
-		"\tChecks whether a given ship is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
-		"ship is active.  This means that internally the sexp only returns SEXP_TRUE or SEXP_FALSE and does not use any of the special shortcut values.  This is useful "
-		"for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
-		"Takes 1 or more string arguments, which are checked against the ship list.  (If more than 1 argument is specified, the sexp will only evaluate to true if all ships "
-		"are in the mission simultaneously.)" },
+		"\tChecks whether a given ship or wing is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
+		"ship is active or the wing has at least one ship present.  This means that internally the sexp only returns SEXP_TRUE or SEXP_FALSE and does not use any of "
+		"the special shortcut values.  This is useful for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
+		"Takes 1 or more string arguments, which are checked against the ship list and wing list.  (If more than 1 argument is specified, the sexp will only evaluate to true "
+		"if all arguments are in the mission simultaneously.)" },
 
 	{ OP_HAS_ARMOR_TYPE, "has-armor-type (Status operator)\r\n"
 		"\tChecks if a given ship has a specific armor type.\r\n\r\n"
@@ -37391,6 +37488,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
+
+	// Goober5000
+	{ OP_FOR_SUBSYSTEMS, "For-Subsystems (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list the subsystems on a specific ship, and each subsystem will be provided as an argument to the action operators.  "
+		"If no subsystem type is specified, all subsystems are listed; otherwise the list will be restricted to subsystems that match any of the specified type(s).  "
+		"Note that the subsystems are all treated as valid arguments, and it is impossible to invalidate a subsystem argument.  If you want to invalidate a subsystem, use Any-of and list the subsystems explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tShip from which to list subsystems\r\n"
+		"\tRest:\tSubsystem types\r\n" },
 
 	// jg18
 	{ OP_FOR_CONTAINER_DATA, "For-Container-Data (Conditional operator)\r\n"
@@ -40055,7 +40161,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//phreak
 	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
-		"\tReturns the number of ships in battle or the number of ships in battle out of a list of teams, wings, and ships.  Takes 1 or more arguments...\r\n"
+		"\tReturns the number of ships in battle or the number of ships in battle out of a list of teams, wings, and ships.  Takes 0 or more arguments...\r\n"
 		"\t(all):\tTeams, Wings, and Ships to query (optional)"
 	},
 

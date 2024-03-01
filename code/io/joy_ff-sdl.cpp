@@ -49,7 +49,7 @@ static haptic_effect_t pExplode;
 static auto ForceFeedbackOption = options::OptionBuilder<bool>("Input.ForceFeedback",
                      std::pair<const char*, int>{"Force Feedback", 1728},
                      std::pair<const char*, int>{"Enable or disable force feedback", 1729})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .level(options::ExpertLevel::Beginner)
                      .default_val(false)
                      .finish();
@@ -57,7 +57,7 @@ static auto ForceFeedbackOption = options::OptionBuilder<bool>("Input.ForceFeedb
 static auto HitEffectOption = options::OptionBuilder<bool>("Input.HitEffect",
                      std::pair<const char*, int>{"Directional Hit", 1730},
                      std::pair<const char*, int>{"Enable or disable the directional hit effect", 1731})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .level(options::ExpertLevel::Beginner)
                      .default_val(false)
                      .finish();
@@ -65,7 +65,7 @@ static auto HitEffectOption = options::OptionBuilder<bool>("Input.HitEffect",
 static auto ForceFeedbackStrength = options::OptionBuilder<float>("Input.FFStrength",
                      std::pair<const char*, int>{"Force Feedback Strength", 1756},
                      std::pair<const char*, int>{"The realtive strength of Force Feedback effects", 1757})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .level(options::ExpertLevel::Beginner)
                      .range(0, 100)
                      .default_val(100)

@@ -86,7 +86,7 @@ ADE_FUNC(create, l_DecalDefinitionclass, "number width, number height, number mi
 	if (idx < 0 || idx >= static_cast<int>(decals::DecalDefinitions.size()))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid() || !smh->IsValid())
+	if (!objh->isValid() || !smh->isValid())
 		return ADE_RETURN_NIL;
 
 	decals::creation_info info;

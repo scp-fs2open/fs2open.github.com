@@ -187,7 +187,7 @@ void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *
 	}
 }
 
-bool HudGaugeDirectives::canRender()
+bool HudGaugeDirectives::canRender() const
 {
 	if (sexp_override) {
 		return false;
@@ -1050,7 +1050,7 @@ HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, false, true, VM_EXTE
 {
 }
 
-bool HudGaugeTrainingMessages::canRender()
+bool HudGaugeTrainingMessages::canRender() const
 {
 	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;

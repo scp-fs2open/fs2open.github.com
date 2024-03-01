@@ -284,6 +284,17 @@ int Options_skills_text_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
+int Options_scp_string_coords[GR_NUM_RESOLUTIONS][2] = {
+	{
+		265, 18		// GR_640
+	},
+	{
+		465, 25		// GR_1024
+	}
+};
+
+std::pair<SCP_string, int> Options_scp_string_text = {"Press F3 to access additional options", 1831};
+
 
 // ---------------------------------------------------------------------------------------------------------
 // DETAIL LEVEL OPTIONS definitions  BEGIN
@@ -1178,6 +1189,13 @@ void options_menu_do_frame(float  /*frametime*/)
 
 		case KEY_ENTER:			
 			break;
+
+		case KEY_F3: // SCP ingame options
+			if (Using_in_game_options) {
+				gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+				gameseq_post_event(GS_EVENT_INGAME_OPTIONS);
+			}
+			break;
 	}	
 
 	for (i=0; i<NUM_BUTTONS; i++) {
@@ -1274,6 +1292,15 @@ void options_menu_do_frame(float  /*frametime*/)
 	// maybe blit a waveform
 	if(Tab == MULTIPLAYER_TAB){
 		options_multi_vox_process_waveform();
+	}
+
+	// maybe blit the SCP Options string
+	if (Using_in_game_options) {
+		gr_set_color_fast(&Color_bright_blue);
+		gr_string(Options_scp_string_coords[gr_screen.res][OPTIONS_X_COORD],
+			Options_scp_string_coords[gr_screen.res][OPTIONS_Y_COORD],
+			XSTR(Options_scp_string_text.first.c_str(), Options_scp_string_text.second),
+			GR_RESIZE_MENU);
 	}
 	
 	gr_flip();

@@ -20,7 +20,7 @@ struct sexpvar_h
 
 	sexpvar_h(){idx=-1;variable_name[0]='\0';}
 	sexpvar_h(int n_idx){idx = n_idx; strcpy_s(variable_name, Sexp_variables[n_idx].variable_name);}
-	bool IsValid(){
+	bool isValid() const {
 		return (idx > -1
 			&& idx < MAX_SEXP_VARIABLES
 			&& (Sexp_variables[idx].type & SEXP_VARIABLE_SET)

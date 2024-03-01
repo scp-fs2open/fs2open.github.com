@@ -13,10 +13,10 @@ particle_h::particle_h() {
 particle_h::particle_h(const particle::WeakParticlePtr& part_p) {
 	this->part = part_p;
 }
-particle::WeakParticlePtr particle_h::Get() {
+particle::WeakParticlePtr particle_h::Get() const {
 	return this->part;
 }
-bool particle_h::isValid() {
+bool particle_h::isValid() const {
 	return !part.expired();
 }
 
@@ -188,7 +188,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 
 	if (ADE_SETTING_VAR)
 	{
-		if (newObj != nullptr && newObj->IsValid())
+		if (newObj != nullptr && newObj->isValid())
 			ph->Get().lock()->attached_objnum = newObj->objp->signature;
 	}
 

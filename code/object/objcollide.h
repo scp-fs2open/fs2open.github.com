@@ -43,6 +43,8 @@ struct collision_info_struct {
 #define MIN_LANDING_SOUND_VEL			2.0f
 #define LANDING_POS_OFFSET				0.05f
 
+constexpr uint32_t collision_cache_bitshift = 16;
+
 //===============================================================================
 // GENERAL COLLISION DETECTION HELPER FUNCTIONS 
 // These are in CollideGeneral.cpp and are used by one or more of the collision-

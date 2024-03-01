@@ -492,7 +492,7 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	if(!ade_get_args(L, "o", l_GameEvent.GetPtr(&gh)))
 		return ade_set_error(L, "b", false);
 
-	if(!gh->IsValid())
+	if(!gh->isValid())
 		return ade_set_error(L, "b", false);
 
 	gameseq_post_event(gh->Get());

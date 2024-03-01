@@ -8,7 +8,7 @@ fiction_viewer_stage_h::fiction_viewer_stage_h() : f_stage(-1) {}
 
 fiction_viewer_stage_h::fiction_viewer_stage_h(int stage) : f_stage(stage) {}
 
-bool fiction_viewer_stage_h::IsValid() const
+bool fiction_viewer_stage_h::isValid() const
 {
 	return f_stage >= 0;
 }

@@ -32,12 +32,12 @@ namespace scripting {
 				return ade_set_error(L, "o", l_RPC.Set(nullptr));
 			}
 
-			if (!recipient.IsValid() || (recipient.index != LE_RPC_SERVER && recipient.index != LE_RPC_CLIENTS && recipient.index != LE_RPC_BOTH)) {
+			if (!recipient.isValid() || (recipient.index != LE_RPC_SERVER && recipient.index != LE_RPC_CLIENTS && recipient.index != LE_RPC_BOTH)) {
 				LuaError(L, "Tried to create an RPC with an invalid recipient enumeration!");
 				return ade_set_error(L, "o", l_RPC.Set(nullptr));
 			}
 
-			if (!mode.IsValid() || (mode.index != LE_RPC_RELIABLE && mode.index != LE_RPC_ORDERED && mode.index != LE_RPC_UNRELIABLE)) {
+			if (!mode.isValid() || (mode.index != LE_RPC_RELIABLE && mode.index != LE_RPC_ORDERED && mode.index != LE_RPC_UNRELIABLE)) {
 				LuaError(L, "Tried to create an RPC with an invalid mode enumeration!");
 				return ade_set_error(L, "o", l_RPC.Set(nullptr));
 			}

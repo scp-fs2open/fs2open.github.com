@@ -639,7 +639,7 @@ void credits_init()
 
 	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		gr_get_string_size(NULL, &temp_h, iter->c_str(), (int)iter->length());
+		gr_get_string_size(NULL, &temp_h, iter->c_str(), iter->length());
 
 		h = h + temp_h;
 	}
@@ -855,12 +855,12 @@ void credits_do_frame(float  /*frametime*/)
 				length = std::numeric_limits<size_t>::max();
 			}
 
-			gr_get_string_size(&width, &height, iter->c_str() + currentPos, static_cast<int>(length));
+			gr_get_string_size(&width, &height, iter->c_str() + currentPos, length);
 			// Check if the text part is actually visible
 			if (Credit_position + y_offset + height > 0.0f)
 			{
 				float x = static_cast<float>((gr_screen.clip_width_unscaled - width) / 2);
-				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, static_cast<int>(length));
+				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, length);
 			}
 
 			y_offset += height;

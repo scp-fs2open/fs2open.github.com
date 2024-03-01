@@ -17,7 +17,7 @@ public:
 
 	explicit gameevent_h(int n_event);
 
-	bool IsValid();
+	bool isValid() const;
 
 	int Get();
 

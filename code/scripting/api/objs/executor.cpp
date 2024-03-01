@@ -8,7 +8,7 @@ namespace api {
 
 executor_h::executor_h() = default;
 executor_h::executor_h(std::shared_ptr<executor::Executor> executor) : m_executor(std::move(executor)) {}
-bool executor_h::isValid() { return m_executor != nullptr; }
+bool executor_h::isValid() const { return m_executor != nullptr; }
 const std::shared_ptr<executor::Executor>& executor_h::getExecutor() const { return m_executor; }
 
 //**********HANDLE: executor

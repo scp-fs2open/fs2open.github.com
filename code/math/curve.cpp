@@ -4,7 +4,7 @@
 
 SCP_vector<Curve> Curves;
 
-int curve_get_by_name(SCP_string& in_name) {
+int curve_get_by_name(const SCP_string& in_name) {
 	for (int i = 0; i < (int)Curves.size(); i++) {
 		if (lcase_equal(Curves[i].name, in_name))
 			return i;

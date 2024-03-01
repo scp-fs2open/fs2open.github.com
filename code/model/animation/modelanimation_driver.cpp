@@ -2,12 +2,24 @@
 
 #include "hud/hudets.h"
 #include "model/animation/modelanimation.h"
+#include "playerman/player.h"
 #include "ship/ship.h"
 
 namespace animation {
+	template<float control_info::* ci_property>
+	static float get_player_ci_property(polymodel_instance* /*pmi*/){
+		return Player->ci.*ci_property;
+	}
+
 	std::function<float(polymodel_instance*)> parse_generic_property_driver_source() {
-		switch(optional_string_one_of(1,
-				"Random"
+		switch(optional_string_one_of(7,
+				"Random",
+				"ControlAccelForward",
+				"ControlAccelLateral",
+				"ControlAccelVertical",
+				"ControlRotationPitch",
+				"ControlRotationBank",
+				"ControlRotationHeading"
 				)){
 			case 0: {
 				float min, max;
@@ -22,22 +34,40 @@ namespace animation {
 					return static_cast<float>(std::mt19937(seed ^ pmi->objnum)()) / static_cast<float>(std::mt19937::max()) * (max - min) + min;
 				};
 			}
+			case 1:
+				return get_player_ci_property<&control_info::forward>;
+			case 2:
+				return get_player_ci_property<&control_info::sideways>;
+			case 3:
+				return get_player_ci_property<&control_info::vertical>;
+			case 4:
+				return get_player_ci_property<&control_info::pitch>;
+			case 5:
+				return get_player_ci_property<&control_info::bank>;
+			case 6:
+				return get_player_ci_property<&control_info::heading>;
 			default:
 				return {};
 		}
 	}
 
+	static int get_pmi_objnum(const polymodel_instance* pmi) {
+		return pmi->objnum == model_objnum_special::OBJNUM_COCKPIT ? Player->objnum : pmi->objnum;
+	}
+
 	template<typename property, property object::* property_ptr, float property::* subproperty_ptr>
 	static float get_object_subproperty_float(polymodel_instance* pmi){
-		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
-		return Objects[pmi->objnum].*property_ptr.*subproperty_ptr;
+		int objnum = get_pmi_objnum(pmi);
+		Assertion(objnum >= 0, "Invalid object used in animation property driver!");
+		return Objects[objnum].*property_ptr.*subproperty_ptr;
 	}
 
 	template<matrix object::* property_ptr, float angles::* angle>
 	static float get_object_matrix_angle(polymodel_instance* pmi){
-		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
+		int objnum = get_pmi_objnum(pmi);
+		Assertion(objnum >= 0, "Invalid object used in animation property driver!");
 		angles a;
-		vm_extract_angles_matrix(&a, &(Objects[pmi->objnum].*property_ptr));
+		vm_extract_angles_matrix(&a, &(Objects[objnum].*property_ptr));
 		return a.*angle;
 	}
 
@@ -70,16 +100,18 @@ namespace animation {
 
 	template<typename property, property ship::* property_ptr, float property::* subproperty_ptr>
 	static float get_ship_subproperty_float(polymodel_instance* pmi){
-		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
-		Assertion(Objects[pmi->objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
-		return Ships[Objects[pmi->objnum].instance].*property_ptr.*subproperty_ptr;
+		int objnum = get_pmi_objnum(pmi);
+		Assertion(objnum >= 0, "Invalid object used in animation property driver!");
+		Assertion(Objects[objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
+		return Ships[Objects[objnum].instance].*property_ptr.*subproperty_ptr;
 	}
 
 	template<int ship::* ets_property>
 	static float get_ship_ets_property(polymodel_instance* pmi){
-		Assertion(pmi->objnum >= 0, "Invalid object used in animation property driver!");
-		Assertion(Objects[pmi->objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
-		return Energy_levels[Ships[Objects[pmi->objnum].instance].*ets_property];
+		int objnum = get_pmi_objnum(pmi);
+		Assertion(objnum >= 0, "Invalid object used in animation property driver!");
+		Assertion(Objects[objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
+		return Energy_levels[Ships[Objects[objnum].instance].*ets_property];
 	}
 
 	std::function<float(polymodel_instance*)> parse_ship_property_driver_source() {

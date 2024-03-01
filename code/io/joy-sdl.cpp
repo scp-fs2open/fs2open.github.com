@@ -241,7 +241,7 @@ SCP_vector<Joystick*> joystick_enumerator()
 auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
                      std::pair<const char*, int>{"Joystick 0", 1705},
                      std::pair<const char*, int>{"The current joystick 0", 1706})
-                     .category("Input")                    // Category this option shows up in the scripting heirachy
+                     .category(std::make_pair("Input", 1827))                    // Category this option shows up in the scripting heirachy
                      .deserializer(joystick_deserialize)   // callback for json to C++
                      .serializer(joystick_serializer)      // callback for C++ to json
                      .display(joystick_display)            // callback for constructing the display label
@@ -255,7 +255,7 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
 auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
                      std::pair<const char*, int>{"Joystick 1", 1707},
                      std::pair<const char*, int>{"The current joystick 1", 1708})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .deserializer(joystick_deserialize)
                      .serializer(joystick_serializer)
                      .display(joystick_display)
@@ -269,7 +269,7 @@ auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
 auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
                      std::pair<const char*, int>{"Joystick 2", 1709},
                      std::pair<const char*, int>{"The current joystick 2", 1710})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .deserializer(joystick_deserialize)
                      .serializer(joystick_serializer)
                      .display(joystick_display)
@@ -283,7 +283,7 @@ auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
 auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
                      std::pair<const char*, int>{"Joystick 3", 1711},
                      std::pair<const char*, int>{"The current joystick 3", 1712})
-                     .category("Input")
+                     .category(std::make_pair("Input", 1827))
                      .deserializer(joystick_deserialize)
                      .serializer(joystick_serializer)
                      .display(joystick_display)
