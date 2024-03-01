@@ -720,7 +720,7 @@ void asteroid_editor::OnBnClickedSelectDebris()
 		if (Asteroid_info[i].type == -1) {
 			bool active = false;
 			for (size_t j = 0; j < a_field[cur_field].field_debris_type.size(); j++) {
-				if (i == a_field[cur_field].field_debris_type[j]) {
+				if (static_cast<int>(i) == a_field[cur_field].field_debris_type[j]) {
 					active = true;
 					break;
 				}
