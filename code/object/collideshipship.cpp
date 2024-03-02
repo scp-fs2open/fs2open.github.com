@@ -1185,8 +1185,6 @@ int collide_ship_ship( obj_pair * pair )
 		ship_ship_hit_info.heavy = HeavyOne;		// heavy object, generally slower moving
 		ship_ship_hit_info.light = LightOne;		// light object, generally faster moving
 
-		vec3d world_hit_pos;
-
 		hit = ship_ship_check_collision(&ship_ship_hit_info);
 
 		pair->next_check_time = timestamp(0);
@@ -1194,6 +1192,10 @@ int collide_ship_ship( obj_pair * pair )
 		if ( hit )
 		{
 			bool a_override = false, b_override = false;
+
+			// get world hitpos - do it here in case the override hooks need it
+			vec3d world_hit_pos;
+			vm_vec_add(&world_hit_pos, &ship_ship_hit_info.heavy->pos, &ship_ship_hit_info.hit_pos);
 
 			if (scripting::hooks::OnShipCollision->isActive()) {
 				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
@@ -1244,9 +1246,6 @@ int collide_ship_ship( obj_pair * pair )
 					vm_vec_copy_normalize(&ship_ship_hit_info.collision_normal, &ship_ship_hit_info.r_light);
 					vm_vec_negate(&ship_ship_hit_info.collision_normal);
 				}
-
-				// get world hitpos
-				vm_vec_add(&world_hit_pos, &heavy_obj->pos, &ship_ship_hit_info.r_heavy);
 
 				// do physics
 				calculate_ship_ship_collision_physics(&ship_ship_hit_info);

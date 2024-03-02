@@ -368,7 +368,6 @@ ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number",
 	return ade_set_args(L, "f", smh->GetSubmodel()->rad);
 }
 
-
 ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in the submodel's mesh", "submodel", "The number of vertices, or 0 if the submodel was invalid")
 {
 	submodel_h* smh = nullptr;
@@ -471,6 +470,38 @@ ADE_FUNC(isValid, l_Submodel, nullptr, "True if valid, false or nil if not", "bo
 		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", smh->isValid());
+}
+
+ADE_VIRTVAR(NoCollide, l_Submodel, nullptr, "Whether the submodel and its children ignore collisions", "boolean", "The flag, or error-false if invalid")
+{
+	submodel_h* smh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
+		return ade_set_error(L, "b", false);
+
+	if (!smh->isValid())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting NoCollide is not supported");
+
+	return ade_set_args(L, "b", smh->GetSubmodel()->flags[Model::Submodel_flags::No_collisions]);
+}
+
+ADE_VIRTVAR(NoCollideThisOnly, l_Submodel, nullptr, "Whether the submodel itself ignores collisions", "boolean", "The flag, or error-false if invalid")
+{
+	submodel_h* smh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
+		return ade_set_error(L, "b", false);
+
+	if (!smh->isValid())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting NoCollideThisOnly is not supported");
+
+	return ade_set_args(L, "b", smh->GetSubmodel()->flags[Model::Submodel_flags::Nocollide_this_only]);
 }
 
 
