@@ -1323,7 +1323,7 @@ void hud_config_button_do(int n)
 			break;
 		}
 
-		if ((++HC_current_file) >= (int)HC_preset_filenames.size()) {
+		if ((++HC_current_file) >= static_cast<int> (HC_preset_filenames.size())) {
 			HC_current_file = 0;
 		}
 
