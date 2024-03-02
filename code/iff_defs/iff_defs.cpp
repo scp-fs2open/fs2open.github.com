@@ -24,6 +24,10 @@ int radar_iff_color[5][2][4];
 int iff_bright_delta;
 int *iff_color_brightness = &iff_bright_delta;
 
+int IFF_COLOR_SELECTION = 0;
+int IFF_COLOR_MESSAGE   = 1;
+int IFF_COLOR_TAGGED    = 2;
+
 // global only to file
 SCP_vector <std::pair<color, color>> Iff_colors;		// AL 1-2-97: Create two IFF colors, regular and bright
 
@@ -249,28 +253,28 @@ void parse_iff_table(const char* filename)
 		if ((optional_string("$Selection Color:")) || (optional_string("$Selection Colour:")))
 		{
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff_init_color(rgb[0], rgb[1], rgb[2]);
+			IFF_COLOR_SELECTION = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
-		else
-			iff_init_color(0xff, 0xff, 0xff);
+		else if (!Parsing_modular_table)
+			IFF_COLOR_SELECTION = iff_init_color(0xff, 0xff, 0xff);
 
 		// Marks the ship currently saying something
 		if ((optional_string("$Message Color:")) || (optional_string("$Message Colour:")))
 		{
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff_init_color(rgb[0], rgb[1], rgb[2]);
+			IFF_COLOR_MESSAGE = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
-		else
-			iff_init_color(0x7f, 0x7f, 0x7f);
+		else if (!Parsing_modular_table)
+			IFF_COLOR_MESSAGE = iff_init_color(0x7f, 0x7f, 0x7f);
 
 		// Marks the tagged ships
 		if ((optional_string("$Tagged Color:")) || (optional_string("$Tagged Colour:")))
 		{
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff_init_color(rgb[0], rgb[1], rgb[2]);
+			IFF_COLOR_TAGGED = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
-		else
-			iff_init_color(0xff, 0xff, 0x00);
+		else if (!Parsing_modular_table)
+			IFF_COLOR_TAGGED = iff_init_color(0xff, 0xff, 0x00);
 
 		// init radar blips colour table
 		int a_bright, a_dim;
