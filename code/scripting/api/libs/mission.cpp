@@ -1935,6 +1935,52 @@ ADE_FUNC(getMissionModifiedDate, l_Mission, NULL, "Get the modified date of the 
 	return ade_set_args(L, "s", The_mission.modified);
 }
 
+//****SUBLIBRARY: Mission/BackgroundSuns
+ADE_LIB_DERIV(l_Mission_BackgroundSuns, "BackgroundSuns", nullptr, "Suns in the current background", l_Mission);
+
+ADE_INDEXER(l_Mission_BackgroundSuns, "number Index", "Gets background sun at specified index in current background", "background_element", "Specified background element, or invalid handle if invalid index")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	if (idx < 1 || idx > stars_get_num_suns())
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	//Lua->FS2
+	idx--;
+
+	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Sun, idx)));
+}
+
+ADE_FUNC(__len, l_Mission_BackgroundSuns, nullptr, "Number of suns in the current background", "number", "Number of suns")
+{
+	return ade_set_args(L, "i", stars_get_num_suns());
+}
+
+//****SUBLIBRARY: Mission/BackgroundBitmaps
+ADE_LIB_DERIV(l_Mission_BackgroundBitmaps, "BackgroundBitmaps", nullptr, "Bitmaps in the current background", l_Mission);
+
+ADE_INDEXER(l_Mission_BackgroundBitmaps, "number Index", "Gets background bitmap at specified index in current background", "background_element", "Specified background element, or invalid handle if invalid index")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	if (idx < 1 || idx > stars_get_num_bitmaps())
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	//Lua->FS2
+	idx--;
+
+	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
+}
+
+ADE_FUNC(__len, l_Mission_BackgroundBitmaps, nullptr, "Number of bitmaps in the current background", "number", "Number of bitmaps")
+{
+	return ade_set_args(L, "i", stars_get_num_bitmaps());
+}
+
 static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
