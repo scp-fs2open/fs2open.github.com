@@ -126,7 +126,6 @@ int multi_message_should_broadcast(int type);
 // the active game list manager functions
 active_game *multi_new_active_game( void );
 active_game *multi_update_active_games(active_game *ag);
-void multi_free_active_games();
 
 server_item *multi_new_server_item( void );
 void multi_free_server_list();
