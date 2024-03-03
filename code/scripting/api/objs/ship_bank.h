@@ -25,8 +25,9 @@ struct ship_banktype_h
 };
 DECLARE_ADE_OBJ(l_WeaponBankType, ship_banktype_h);
 
-struct ship_bank_h : public ship_banktype_h
+struct ship_bank_h
 {
+	ship_banktype_h typeh;
 	int bank;
 
 	ship_bank_h();

@@ -47,38 +47,14 @@ public:
 };
 DECLARE_ADE_OBJ(l_Submodel, submodel_h);
 
-class modelsubmodels_h : public model_h
-{
- public:
-	 modelsubmodels_h(polymodel *pm);
-	 modelsubmodels_h();
-};
-DECLARE_ADE_OBJ(l_ModelSubmodels, modelsubmodels_h);
+DECLARE_ADE_OBJ(l_ModelSubmodels, model_h);
 
-class modeltextures_h : public model_h
-{
- public:
-	modeltextures_h(polymodel *pm);
-	modeltextures_h();
-};
-DECLARE_ADE_OBJ(l_ModelTextures, modeltextures_h);
+DECLARE_ADE_OBJ(l_ModelTextures, model_h);
 
-class eyepoints_h : public model_h
-{
- public:
-	eyepoints_h(polymodel *pm);
-	eyepoints_h();
-};
-DECLARE_ADE_OBJ(l_Eyepoints, eyepoints_h);
+DECLARE_ADE_OBJ(l_ModelEyepoints, model_h);
 
 // Thrusters:
-class thrusters_h : public model_h
-{
- public:
-	thrusters_h(polymodel *pm);
-	thrusters_h();
-};
-DECLARE_ADE_OBJ(l_Thrusters, thrusters_h);
+DECLARE_ADE_OBJ(l_ModelThrusters, model_h);
 
 // Thrusterbank:
 struct thrusterbank_h
@@ -111,18 +87,13 @@ struct glowpoint_h
 };
 DECLARE_ADE_OBJ(l_Glowpoint, glowpoint_h);
 
-// Glowbanks:
-class dockingbays_h : public model_h
-{
- public:
-	dockingbays_h(polymodel *pm);
-	dockingbays_h();
-};
-DECLARE_ADE_OBJ(l_Dockingbays, dockingbays_h);
+// Docking bays:
+DECLARE_ADE_OBJ(l_ModelDockingbays, model_h);
 
-class dockingbay_h : public model_h
+class dockingbay_h
 {
  private:
+	model_h modelh;
 	int dock_id;
 
  public:
@@ -131,6 +102,7 @@ class dockingbay_h : public model_h
 
 	bool isValid() const;
 
+	model_h* getModelH() const;
 	dock_bay* getDockingBay() const;
 };
 DECLARE_ADE_OBJ(l_Dockingbay, dockingbay_h);
