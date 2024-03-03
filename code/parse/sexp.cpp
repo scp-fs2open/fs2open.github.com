@@ -16194,7 +16194,7 @@ void sexp_set_asteroid_field(int n)
 			if (!ship_entry)
 				continue;
 
-			targets[i] = ship_entry->name;
+			targets.push_back(ship_entry->name);
 			i++;
 		}
 	}
