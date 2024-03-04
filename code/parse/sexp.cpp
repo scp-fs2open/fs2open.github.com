@@ -16130,14 +16130,12 @@ void sexp_set_asteroid_field(int n)
 
 	SCP_vector<SCP_string> targets;
 	if (n >= 0) {
-		int i = 0;
 		for (; n >= 0; true ? n = CDR(n) : n = -1) {
 			auto ship_entry = eval_ship(n);
 			if (!ship_entry)
 				continue;
 
-			targets[i] = ship_entry->name;
-			i++;
+			targets.push_back(ship_entry->name);
 		}
 	}
 
