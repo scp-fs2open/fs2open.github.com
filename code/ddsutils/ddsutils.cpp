@@ -3,10 +3,12 @@
 #include "cfile/cfile.h"
 #include "osapi/osregistry.h"
 
-#include <glad/glad.h>
+#include "glad/glad.h"
 
 #define BCDEC_IMPLEMENTATION 1
+PUSH_SUPPRESS_WARNINGS
 #include "ddsutils/bcdec.h"
+POP_SUPPRESS_WARNINGS
 
 /*	Currently supported formats:
  *		DXT1a	(compressed)
