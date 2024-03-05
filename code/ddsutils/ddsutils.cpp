@@ -3,7 +3,12 @@
 #include "cfile/cfile.h"
 #include "osapi/osregistry.h"
 
-#include "glad/glad.h"
+#ifdef WITH_OPENGL
+#include <glad/glad.h>
+#else
+static constexpr int GLAD_GL_EXT_texture_compression_s3tc = 0;
+static constexpr int GLAD_GL_ARB_texture_compression_bptc = 0;
+#endif
 
 #define BCDEC_IMPLEMENTATION 1
 PUSH_SUPPRESS_WARNINGS
