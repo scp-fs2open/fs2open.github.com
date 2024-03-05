@@ -35,6 +35,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright 1999 Volition, Inc. &amp; Copyright 2005-2024 The Source Code Project.</string>
+	<string>Copyright 1999 Volition, Inc. &amp; Copyright 2002-2024 The Source Code Project.</string>
 </dict>
 </plist>
