@@ -85,7 +85,7 @@ int Weapon_flyby_sound_enabled = 1;
 DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
-static int Weapon_flyby_sound_timer;	
+static TIMESTAMP Weapon_flyby_sound_timer;
 
 weapon Weapons[MAX_WEAPONS];
 SCP_vector<weapon_info> Weapon_info;
@@ -274,8 +274,8 @@ int Player_weapon_precedence_line;	// And this is the line the precedence list w
 // Used to avoid playing too many impact sounds in too short a time interval.
 // This will elimate the odd "stereo" effect that occurs when two weapons impact at 
 // nearly the same time, like from a double laser (also saves sound channels!)
-#define	IMPACT_SOUND_DELTA	50		// in milliseconds
-int		Weapon_impact_timer;			// timer, initialized at start of each mission
+constexpr int IMPACT_SOUND_DELTA = 50;	// in milliseconds
+static TIMESTAMP Weapon_impact_timer;	// timer, initialized at start of each mission
 
 // energy suck defines
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
@@ -2092,7 +2092,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
-			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
+			ti->spew_duration = fl2i(MILLISECONDS_PER_SECOND*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
 		if (optional_string("+Spread:"))
@@ -4674,8 +4674,8 @@ void weapon_level_init()
 	// clear out used_weapons between missions
 	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
 
-	Weapon_flyby_sound_timer = timestamp(0);
-	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
+	Weapon_flyby_sound_timer = TIMESTAMP::immediate();
+	Weapon_impact_timer = TIMESTAMP::immediate();	// inited each level, used to reduce impact sounds
 }
 
 MONITOR( NumWeaponsRend )
@@ -5715,7 +5715,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 						snd_play_3d( gamesnd_get_game_sound(GameSounds::WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
 					}
 				}
-				Weapon_flyby_sound_timer = timestamp(200);
+				Weapon_flyby_sound_timer = _timestamp(200);
                 wp->weapon_flags.set(Weapon::Weapon_Flags::Played_flyby_sound);
 			}
 		}
@@ -7016,7 +7016,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		case OBJ_ASTEROID:
 			if ( timestamp_elapsed(Weapon_impact_timer) ) {
 				weapon_play_impact_sound(wip, hitpos, is_armed);	
-				Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
+				Weapon_impact_timer = _timestamp(IMPACT_SOUND_DELTA);
 			}
 			return;
 			break;
@@ -7078,7 +7078,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 			} // end switch
 		}
 
-		Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
+		Weapon_impact_timer = _timestamp(IMPACT_SOUND_DELTA);
 	}
 }
 
@@ -9247,7 +9247,7 @@ void weapon_info::reset()
 	this->tr_info.max_life = 1.0f;
 	this->tr_info.spread = 0.0f;
 	this->tr_info.a_decay_exponent = 1.0f;
-	this->tr_info.stamp = 0;
+	this->tr_info.spew_duration = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
 	this->tr_info.texture_stretch = 1.0f;

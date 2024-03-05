@@ -4729,7 +4729,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&ci->spread);
 		
 		required_string("+Spew Time:");
-		stuff_int(&ci->stamp);		
+		stuff_int(&ci->spew_duration);
 
 		required_string("+Bitmap:");
 		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
@@ -10745,7 +10745,7 @@ static void ship_init_afterburners(ship *shipp)
 			ci->a_decay_exponent = sip->afterburner_trail_alpha_decay_exponent;
 
 			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
-			ci->stamp = 60;	//spew time???	
+			ci->spew_duration = 60;	//spew time???
 			ci->spread = sip->afterburner_trail_spread; // table loaded spread speed
 
 			ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // initial fade out
@@ -11720,7 +11720,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 				ci->spread = sip->afterburner_trail_spread; // table loaded spread speed
 	
-				ci->stamp = 60;	//spew time???	
+				ci->spew_duration = 60;	//spew time???
 
 				ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // table loaded n sections to be faded out
 
