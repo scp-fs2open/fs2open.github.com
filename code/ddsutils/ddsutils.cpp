@@ -192,7 +192,7 @@ static size_t compute_dds_size(const DDS_HEADER &dds_header)
 	uint d_width, d_height, d_depth;
 	size_t d_size = 0;
 
-	for (auto i = 0; i < dds_header.dwMipMapCount; i++) {
+	for (uint i = 0; i < dds_header.dwMipMapCount; i++) {
 		d_width = std::max(1U, dds_header.dwWidth >> i);
 		d_height = std::max(1U, dds_header.dwHeight >> i);
 		d_depth = std::max(1U, dds_header.dwDepth >> i);
@@ -456,9 +456,9 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 				d_height = std::max(1U, dds_header.dwHeight >> (m - mipmap_offset));
 				d_depth = std::max(1U, dds_header.dwDepth >> (m - mipmap_offset));
 
-				for (auto d = 0; d < d_depth; ++d) {
-					for (auto i = 0; i < d_height; i += 4) {
-						for (auto j = 0; j < d_width; j += 4) {
+				for (uint d = 0; d < d_depth; ++d) {
+					for (uint i = 0; i < d_height; i += 4) {
+						for (uint j = 0; j < d_width; j += 4) {
 							dst = data + data_offset + ((i * d_width + j) * 4);
 
 							if (dds_header.ddspf.dwFourCC == FOURCC_DX10) {
