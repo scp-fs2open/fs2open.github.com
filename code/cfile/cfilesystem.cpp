@@ -826,7 +826,8 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 		}
 
 		// this log message occurs in the middle of an existing line, hence the extra new lines
-		mprintf(("\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+		// critical files and files in same root are always logged, files in different root are behind a filter
+		nprintf(((critical || !root->path.compare(r->path)) ? "General" : "CFileSystem", "\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
 				critical ? "critical " : "",
 				newfile.c_str(), curfile.c_str()));
 
