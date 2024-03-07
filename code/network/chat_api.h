@@ -64,7 +64,7 @@ char *GetChatUserList();
 int SetNewChatChannel(char *channel);
 char *GetChannelList(void);
 char *GetTrackerIdByUser(char *nickname);
-char *GetChannelByUser(char *nickname);
+char *GetChannelByUser(const char *nickname);
 
 char *ChatGetString(void);
 const char *GetWordNum(int num, const char *l_String);

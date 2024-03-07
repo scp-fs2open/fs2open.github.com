@@ -2548,7 +2548,7 @@ ADE_FUNC(getChat,
 
 		if (spacePos != nullptr) {
 			// Calculate the length of the callsign
-			int len = spacePos - line.text;
+			int len = static_cast<int>(spacePos - line.text);
 
 			// Copy the callsign
 			std::strncpy(callsign, line.text, len);
@@ -2615,59 +2615,30 @@ ADE_FUNC(getPlayers, l_UserInterface_MultiPXO, nullptr, "Gets the entire player 
 	return ade_set_args(L, "t", chats);
 }
 
-ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if channel is private or player is not found.", "string string", "The response string and the player's channel")
+ADE_FUNC(getPlayerChannel,
+	l_UserInterface_MultiPXO,
+	nullptr,
+	"Searches for a player and returns the channel name they are on. Channel is an empty string while searching and "
+	"'-1' if there is a search error. This may require multiple frames. It is recommended this method be run in a "
+	"loop until an expected response is returned.",
+	"string",
+	"The player's channel")
 {
 	const char* plr_name;
 	if (!ade_get_args(L, "s", &plr_name))
 		return ADE_RETURN_NIL;
 
 	if (!Multi_pxo_connected) {
-		return ade_set_args(L, "ss", "", "");
+		return ade_set_args(L, "s", "", "");
 	}
 
-	SCP_string cmd;
-	sprintf(cmd, "/WHOIS %s", plr_name);
+	char* chan = GetChannelByUser(plr_name);
 
-	multi_pxo_chat_send(cmd.c_str());
-
-	// We have to process the pxo api in order for the response to come back
-	while (stricmp(User_req_channel, "") == 0) {
-		multi_pxo_api_process();
-	}
-
-	SCP_string response;
-	SCP_string channel;
-
-	if ((ptr_s)User_req_channel == -1) {
-		response = XSTR("User not found", 964);
-		channel = "";
+	if (chan == nullptr) {
+		return ade_set_args(L, "s", "");
 	} else {
-		if (User_req_channel[0] == '*') {
-			response = XSTR("Player is logged in but is not on a channel", 965);
-			channel = "";
-		} else {
-			SCP_string p_text;
-
-			// if they are on a public channel, display which one
-			if (User_req_channel[0] == '#') {
-				sprintf(p_text, XSTR("Found %s on :", 966), plr_name);
-
-				response = p_text + User_req_channel;
-				channel = User_req_channel;
-			}
-			// if they are on a private channel
-			else if (User_req_channel[0] == '+') {
-				sprintf(p_text, XSTR("Found %s on a private channel", 967), plr_name);
-				response = p_text;
-				channel = "";
-			}
-		}
+		return ade_set_args(L, "s", chan);
 	}
-
-	// Reset the global
-	strcpy_s(User_req_channel, "");
-
-	return ade_set_args(L, "ss", response.c_str(), channel.c_str());
 }
 
 ADE_FUNC(getPlayerStats, l_UserInterface_MultiPXO, "string", "Gets a handle of the player stats by player name or invalid handle if the name is invalid", "scoring_stats", "Player stats handle")
