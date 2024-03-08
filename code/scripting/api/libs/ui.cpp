@@ -2615,30 +2615,51 @@ ADE_FUNC(getPlayers, l_UserInterface_MultiPXO, nullptr, "Gets the entire player 
 	return ade_set_args(L, "t", chats);
 }
 
-ADE_FUNC(getPlayerChannel,
-	l_UserInterface_MultiPXO,
-	nullptr,
-	"Searches for a player and returns the channel name they are on. Channel is an empty string while searching and "
-	"'-1' if there is a search error. This may require multiple frames. It is recommended this method be run in a "
-	"loop until an expected response is returned.",
-	"string",
-	"The player's channel")
+ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if channel is private or player is not found.", "string string", "The response string and the player's channel")
 {
 	const char* plr_name;
 	if (!ade_get_args(L, "s", &plr_name))
 		return ADE_RETURN_NIL;
 
 	if (!Multi_pxo_connected) {
-		return ade_set_args(L, "s", "", "");
+		return ade_set_args(L, "ss", "", "");
 	}
 
-	char* chan = GetChannelByUser(plr_name);
+	char* channel = nullptr;
 
-	if (chan == nullptr) {
-		return ade_set_args(L, "s", "");
+	GetChannelByUser(plr_name);
+
+	while (channel == nullptr) {
+		os_sleep(10);
+		multi_pxo_api_process();
+		channel = GetChannelByUser(nullptr);
+	}
+
+	SCP_string response;
+	SCP_string channel_name;
+	if (channel == (char *)-1) {
+		response = XSTR("User not found", 964);
+		channel_name = "";
 	} else {
-		return ade_set_args(L, "s", chan);
+		if (*channel == '*') {
+			response = XSTR("Player is logged in but is not on a channel", 965);
+			channel_name = "";
+		} else {
+			// if they are on a public channel, display which one
+			if (*channel == '#') {
+				sprintf(response, XSTR("Found %s on :", 966), plr_name);
+				response += channel;
+				channel_name = channel;
+
+			// if they are on a private channel
+			} else if (*channel == '+') {
+				sprintf(response, XSTR("Found %s on a private channel", 967), plr_name);
+				channel_name = "";
+			}
+		}
 	}
+
+	return ade_set_args(L, "ss", response.c_str(), channel_name.c_str());
 }
 
 ADE_FUNC(getPlayerStats, l_UserInterface_MultiPXO, "string", "Gets a handle of the player stats by player name or invalid handle if the name is invalid", "scoring_stats", "Player stats handle")
