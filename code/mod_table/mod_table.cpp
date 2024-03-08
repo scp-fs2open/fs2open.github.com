@@ -150,6 +150,7 @@ bool Randomize_particle_rotation;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
+bool Lua_API_returns_nil_instead_of_invalid_object;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -295,6 +296,11 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Disable FSO Internal Loadout Restoration System:")) {
 			stuff_boolean(&Disable_internal_loadout_restoration_system);
+		}
+
+		if (optional_string("$Lua API returns nil instead of invalid object:")) {
+			stuff_boolean(&Lua_API_returns_nil_instead_of_invalid_object);
+			mprintf(("Game Settings Table: Lua API returns nil instead of invalid object: %s\n", Lua_API_returns_nil_instead_of_invalid_object ? "yes" : "no"));
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -1557,6 +1563,7 @@ void mod_table_reset()
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;
 	Contrails_use_absolute_speed = false;
+	Lua_API_returns_nil_instead_of_invalid_object = false;
 }
 
 void mod_table_set_version_flags()
