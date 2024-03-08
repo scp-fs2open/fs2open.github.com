@@ -2615,7 +2615,13 @@ ADE_FUNC(getPlayers, l_UserInterface_MultiPXO, nullptr, "Gets the entire player 
 	return ade_set_args(L, "t", chats);
 }
 
-ADE_FUNC(getPlayerChannel, l_UserInterface_MultiPXO, nullptr, "Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if channel is private or player is not found.", "string string", "The response string and the player's channel")
+ADE_FUNC(getPlayerChannel,
+	l_UserInterface_MultiPXO,
+	"string",
+	"Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if "
+	"channel is private or player is not found.",
+	"string string",
+	"The response string and the player's channel")
 {
 	const char* plr_name;
 	if (!ade_get_args(L, "s", &plr_name))
