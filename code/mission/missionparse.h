@@ -554,6 +554,8 @@ void clear_texture_replacements();
 // Goober5000
 subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name);
 
+// MjnMixael
+mission_custom_string* get_custom_string_by_name(SCP_string name);
 
 #endif
 

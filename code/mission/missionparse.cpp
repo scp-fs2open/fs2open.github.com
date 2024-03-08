@@ -487,6 +487,16 @@ const std::shared_ptr<scripting::Hook<scripting::hooks::ShipDepartConditions>> O
  const std::shared_ptr<scripting::Hook<>> OnLoadoutAboutToParseHook = scripting::Hook<>::Factory("On Loadout About To Parse",
 	"Called during mission load just before parsing the team loadout.",{});
 
+mission_custom_string* get_custom_string_by_name(SCP_string name) {
+	for (size_t i = 0; i < The_mission.custom_strings.size(); i++) {
+		if (The_mission.custom_strings[i].name == name) {
+			return &The_mission.custom_strings[i];
+		}
+	}
+
+	return nullptr;
+}
+
 // Goober5000
 void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
 {

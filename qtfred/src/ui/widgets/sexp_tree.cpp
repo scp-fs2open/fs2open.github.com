@@ -1678,6 +1678,10 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_LUA_GENERAL_ORDER:
 		return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
 
+	case OPF_MISSION_CUSTOM_STRING:
+		return The_mission.custom_strings.empty() ? 0 : 1;
+		break;
+
 	default:
 		if (!Dynamic_enums.empty()) {
 			if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -3468,6 +3472,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_lua_enum(parent_node, arg_index);
 		break;
 
+	case OPF_MISSION_CUSTOM_STRING:
+		list = get_listing_opf_mission_custom_strings();
+		break;
+
 	default:
 		// We're at the end of the list so check for any dynamic enums
 		list = check_for_dynamic_sexp_enum(opf);
@@ -5224,6 +5232,17 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_ind
 		mprintf(("Could not find Lua Enum %s! Using <none> instead!", enum_name.c_str()));
 		head.add_data("<none>");
 	}
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_mission_custom_strings()
+{
+	sexp_list_item head;
+
+	for (const auto& val : The_mission.custom_strings) {
+		head.add_data(val.name.c_str());
+	}
+
 	return head.next;
 }
 
