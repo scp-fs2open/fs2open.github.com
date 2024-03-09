@@ -2310,6 +2310,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
+		int num_damage_arcs = 0;
 		for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
 			if ( !shipp->arc_timestamp[i].isValid() )	{
 				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
@@ -2341,8 +2342,11 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				}
 					
 				n++;
-				if ( n == n_arcs )
+				num_damage_arcs++;
+				if ( n == n_arcs || num_damage_arcs >= MAX_SHIP_DAMAGE_ARCS)
 					break;	// Don't need to create anymore
+			} else if (shipp->arc_type[i] == MARC_TYPE_DAMAGED || shipp->arc_type[i] == MARC_TYPE_EMP) {
+				num_damage_arcs ++;
 			}
 	
 			// rotate v2 out of local coordinates into world.

@@ -485,6 +485,7 @@ extern const size_t Num_wing_flag_names;
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
 #define MAX_DAMAGE_SLOTS	32
+#define MAX_SHIP_DAMAGE_ARCS	5   // How many damage or emp "arcs" can be active at once
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
