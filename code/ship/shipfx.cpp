@@ -2118,13 +2118,13 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	object *obj = &Objects[shipp->objnum];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 	int model_num = sip->model_num;
+	polymodel* pm = model_get(model_num);
 
 	// first do any passive ship arcs, separate from damage or emp arcs
 	for (int passive_arc_info_idx = 0; passive_arc_info_idx < (int)sip->ship_passive_arcs.size(); passive_arc_info_idx++) {
 		if (!shipp->flags[Ship::Ship_Flags::No_passive_lightning] && timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
 
 			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
-			polymodel* pm = model_get(model_num);
 
 			// find the specified submodels involved, if necessary
 			if (arc_info->submodels.first < 0 || arc_info->submodels.second < 0) {
@@ -2153,7 +2153,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
-				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
+				for (int j = 0; j < MAX_ARC_EFFECTS; j++) {
 					if (!shipp->arc_timestamp[j].isValid()) {
 						shipp->arc_timestamp[j] = _timestamp((int)(arc_info->duration * MILLISECONDS_PER_SECOND));
 
@@ -2175,6 +2175,20 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 						shipp->arc_secondary_color[j] = arc_info->secondary_color;
 
 						shipp->arc_type[j] = MARC_TYPE_SHIP;
+
+						if (arc_info->width > 0.0) {
+							shipp->arc_width[j] = arc_info->width;
+						} else {
+							// same as MARC_TYPE_DAMAGED
+							shipp->arc_width[j] = Arc_width_default_damage;
+							if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+								shipp->arc_width[j] *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+								if (shipp->arc_width[j] < Arc_width_minimum_damage) {
+									shipp->arc_width[j] = Arc_width_minimum_damage;
+								}
+							}
+						}
 
 						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
 						break;
@@ -2296,7 +2310,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
+		for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
 			if ( !shipp->arc_timestamp[i].isValid() )	{
 				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
 
@@ -2358,7 +2372,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// maybe move arc points around
-	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
+	for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
 		//Only move arc points around for Damaged or EMP type arcs
 		if (((shipp->arc_type[i] == MARC_TYPE_DAMAGED) || (shipp->arc_type[i] == MARC_TYPE_EMP)) && shipp->arc_timestamp[i].isValid()) {
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							

@@ -485,7 +485,6 @@ extern const size_t Num_wing_flag_names;
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
 #define MAX_DAMAGE_SLOTS	32
-#define MAX_SHIP_ARCS		5		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
@@ -721,12 +720,13 @@ public:
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
 
 	// Stuff for showing electrical arcs on damaged ships
-	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
-	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
-	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
-	color		arc_primary_color_1[MAX_SHIP_ARCS];
-	color		arc_primary_color_2[MAX_SHIP_ARCS];
-	color		arc_secondary_color[MAX_SHIP_ARCS];
+	vec3d	arc_pts[MAX_ARC_EFFECTS][2];			// The endpoints of each arc
+	TIMESTAMP	arc_timestamp[MAX_ARC_EFFECTS];		// When this times out, the spark goes away.  Invalid is not used
+	ubyte		arc_type[MAX_ARC_EFFECTS];			// see MARC_TYPE_* defines in model.h
+	color		arc_primary_color_1[MAX_ARC_EFFECTS];
+	color		arc_primary_color_2[MAX_ARC_EFFECTS];
+	color		arc_secondary_color[MAX_ARC_EFFECTS];
+	float		arc_width[MAX_ARC_EFFECTS];
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
@@ -968,6 +968,7 @@ typedef struct ship_passive_arc_info {
 	std::pair<vec3d, vec3d> pos;
 	float duration;
 	float frequency;
+	float width;
 	color primary_color_1;
 	color primary_color_2;
 	color secondary_color;

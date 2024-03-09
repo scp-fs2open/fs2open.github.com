@@ -1298,7 +1298,7 @@ void obj_move_all_post(object *objp, float frametime)
 					ship		*shipp;
 					shipp = &Ships[objp->instance];
 
-					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+					for (i=0; i<MAX_ARC_EFFECTS; i++ )	{
 						if ( shipp->arc_timestamp[i].isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;

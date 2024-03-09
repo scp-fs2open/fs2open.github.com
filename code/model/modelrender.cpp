@@ -862,6 +862,7 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			
 			break;
 
+		case MARC_TYPE_SCRIPTED:
 		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
 				primary = smi->arc_primary_color_1[i];
@@ -870,16 +871,8 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			}
 
 			secondary = smi->arc_secondary_color[i];
-      
-      			// try and scale the size a bit so that it looks equally well on smaller vessels
-			width = Arc_width_default_damage;
-			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
-				width *= (pm->rad * Arc_width_radius_multiplier_damage);
 
-				if (width < Arc_width_minimum_damage) {
-					width = Arc_width_minimum_damage;
-				}
-			}
+			width = smi->arc_width[i];
 
 			break;
 

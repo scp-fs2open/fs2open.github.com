@@ -369,7 +369,7 @@ ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number",
 }
 
 
-ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in the submodel's mesh", "submodel", "The number of vertices, or 0 if the submodel was invalid")
+ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in the submodel's mesh", "number", "The number of vertices, or 0 if the submodel was invalid")
 {
 	submodel_h* smh = nullptr;
 
@@ -385,7 +385,7 @@ ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in th
 	return ade_set_args(L, "i", tree->n_verts);
 }
 
-ADE_FUNC(GetVertex, l_Submodel, nullptr, "Gets the specified vertex, or a random one if no index specified", "submodel", "A vertex position, or nil if the submodel was invalid")
+ADE_FUNC(GetVertex, l_Submodel, "[number index]", "Gets the specified vertex, or a random one if no index specified", "vector", "The vertex position in the submodel's frame of reference, or nil if the submodel was invalid")
 {
 	submodel_h* smh = nullptr;
 	int idx = -1;
