@@ -5946,7 +5946,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				// Replace Container Data submenu
 				// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
 				// also disallowed for special argument options (not supported for now)
-				if (op_type != OPF_VARIABLE_NAME && !is_argument_provider_op(Operators[op].value)) {
+				// op < 0 means we're on a container modifier, and nested Replace Container Data is allowed
+				if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];
