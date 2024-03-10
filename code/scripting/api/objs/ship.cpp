@@ -2740,10 +2740,10 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
-ADE_FUNC(AddElectricArc, l_Ship, "vector EngineIndex, number ShieldIndex, number WeaponIndex",
-	"Sets ships ETS systems to specified values",
+ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width",
+	"Creates an electric arc on the ship between two points in the ship's reference frame, for the specified duration in seconds, and the specified width in meters.",
 	"boolean",
-	"True if successful, false if target ships ETS was missing, or only has one system")
+	"True if successful, false otherwise")
 {
 	object_h* objh = nullptr;
 	vec3d* v1;
@@ -2776,11 +2776,11 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector EngineIndex, number ShieldIndex, number
 
 			shipp->arc_width[i] = width;
 
-			break;
+			return ADE_RETURN_TRUE;
 		}
 	}
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_FALSE;
 }
 
 
