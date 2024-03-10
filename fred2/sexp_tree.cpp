@@ -916,7 +916,8 @@ void sexp_tree::right_clicked(int mode)
 							// Replace Container Data submenu
 							// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
 							// also disallowed for special argument options (not supported for now)
-							if (op_type != OPF_VARIABLE_NAME && !is_argument_provider_op(Operators[op].value)) {
+							// op < 0 means we're on a container modifier, and nested Replace Container Data is allowed
+							if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
 								int container_data_index = 0;
 								for (const auto &container : get_all_sexp_containers()) {
 									UINT flags = MF_STRING | MF_GRAYED;
