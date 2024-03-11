@@ -5216,7 +5216,8 @@ int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 	Assert(n >= 0);
 
 	int op_n = CAR(n);
-	if (op_n >= 0)				// if argument is a sexp
+	// CAR() of a container data node is the container modifier
+	if (op_n >= 0 && Sexp_nodes[n].subtype != SEXP_ATOM_CONTAINER_DATA) // if argument is a sexp
 	{
 		int val = eval_sexp(op_n);
 
