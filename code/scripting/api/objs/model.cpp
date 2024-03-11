@@ -412,6 +412,19 @@ ADE_FUNC(GetVertex, l_Submodel, nullptr, "Gets the specified vertex, or a random
 	return ade_set_args(L, "o", l_Vector.Set(vert));
 }
 
+ADE_FUNC(getModel, l_Submodel, nullptr, "Gets the model that this submodel belongs to", "model", "A model, or an invalid model if the handle is not valid")
+{
+	submodel_h *smh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	if (!smh->isValid())
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(smh->GetModelID())));
+}
+
 ADE_FUNC(getFirstChild, l_Submodel, nullptr, "Gets the first child submodel of this submodel", "submodel", "A submodel, or nil if there is no child, or an invalid submodel if the handle is not valid")
 {
 	submodel_h *smh = nullptr;

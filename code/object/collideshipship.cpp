@@ -25,6 +25,7 @@
 #include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "scripting/global_hooks.h"
+#include "scripting/api/objs/model.h"
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "ship/ship.h"
@@ -462,7 +463,7 @@ static bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info
 
 	for (int i = 0; i < heavy_sip->n_subsystems; i++) {
 		if (heavy_sip->subsystems[i].flags[Model::Subsystem_Flags::Allow_landing] &&
-			heavy_sip->subsystems[i].subobj_num == ship_ship_hit_info->submodel_num) 
+			heavy_sip->subsystems[i].subobj_num == ship_ship_hit_info->heavy_submodel_num)
 		{
 			return true;
 		}
@@ -593,11 +594,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		}
 		
 		//Previously, a side effect of moving submodel collision excluded turrets from imparting momentum to colliders
-		if ( pmi != nullptr && pm->submodel[ship_ship_hit_info->submodel_num].rotation_type != MOVEMENT_TYPE_TURRET) {
+		if ( pmi != nullptr && pm->submodel[ship_ship_hit_info->heavy_submodel_num].rotation_type != MOVEMENT_TYPE_TURRET) {
 			//Find the global movement of the position that hit the ship
 			vec3d last_frame_col_pos, col_pos;
-			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos, true);
-			model_instance_local_to_global_point(&col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos);
+			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->heavy_submodel_num, &heavy->orient, &heavy->pos, true);
+			model_instance_local_to_global_point(&col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->heavy_submodel_num, &heavy->orient, &heavy->pos);
 
 			//Calculate the movement speed from that
 			vm_vec_sub(&local_vel_from_submodel, &col_pos, &last_frame_col_pos);
@@ -1197,21 +1198,27 @@ int collide_ship_ship( obj_pair * pair )
 			vec3d world_hit_pos;
 			vm_vec_add(&world_hit_pos, &ship_ship_hit_info.heavy->pos, &ship_ship_hit_info.hit_pos);
 
+			// get submodel handle if scripting needs it
+			bool has_submodel = (ship_ship_hit_info.heavy_submodel_num >= 0);
+			scripting::api::submodel_h smh(ship_ship_hit_info.heavy_model_num, ship_ship_hit_info.heavy_submodel_num);
+
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
+				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
 						scripting::hook_param("Object", 'o', B),
 						scripting::hook_param("Ship", 'o', A),
 						scripting::hook_param("ShipB", 'o', B),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+						scripting::hook_param("Hitpos", 'o', world_hit_pos),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
 
 				// Yes, this should be reversed.
-				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
+				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
 						scripting::hook_param("Object", 'o', A),
 						scripting::hook_param("Ship", 'o', B),
 						scripting::hook_param("ShipB", 'o', A),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+						scripting::hook_param("Hitpos", 'o', world_hit_pos),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
 			}
 
 			if(!a_override && !b_override)
@@ -1435,7 +1442,7 @@ int collide_ship_ship( obj_pair * pair )
 
 					float damage_heavy = (100.0f * damage / HeavyOne->phys_info.mass);
 					ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, damage_heavy, light_shipp->collision_damage_type_idx, 
-						quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+						quadrant_num, CREATE_SPARKS, ship_ship_hit_info.heavy_submodel_num, &ship_ship_hit_info.collision_normal);
 
 					hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
@@ -1456,22 +1463,24 @@ int collide_ship_ship( obj_pair * pair )
 
 			if(!(b_override && !a_override))
 			{
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
 														   scripting::hook_param("Object", 'o', B),
 														   scripting::hook_param("Ship", 'o', A),
 														   scripting::hook_param("ShipB", 'o', B),
-														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos),
+														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				// Yes, this should be reversed.
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
 														   scripting::hook_param("Object", 'o', A),
 														   scripting::hook_param("Ship", 'o', B),
 														   scripting::hook_param("ShipB", 'o', A),
-														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos),
+														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
 			}
 
 			return 0;

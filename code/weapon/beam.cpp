@@ -40,6 +40,7 @@
 #include "parse/parselo.h"
 #include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/model.h"
 #include "scripting/api/objs/vecmath.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
@@ -3236,6 +3237,10 @@ int beam_collide_ship(obj_pair *pair)
 		{
 			bool ship_override = false, weapon_override = false;
 
+			// get submodel handle if scripting needs it
+			bool has_submodel = (mc_array[i]->hit_submodel >= 0);
+			scripting::api::submodel_h smh(mc_array[i]->model_num, mc_array[i]->hit_submodel);
+
 			if (scripting::hooks::OnBeamCollision->isActive()) {
 				ship_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
@@ -3251,7 +3256,8 @@ int beam_collide_ship(obj_pair *pair)
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Beam", 'o', weapon_objp),
-						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 			}
 
 			if (!ship_override && !weapon_override)
@@ -3276,7 +3282,8 @@ int beam_collide_ship(obj_pair *pair)
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Beam", 'o', weapon_objp),
-						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 			}
 		}
 	}
