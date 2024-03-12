@@ -551,7 +551,8 @@ void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, bool submodel_
 	hit->edge_hit = mc->edge_hit;
 	hit->hit_pos = mc->hit_point_world;
 	hit->hit_time = mc->hit_dist;
-	hit->submodel_num = mc->hit_submodel;
+	hit->heavy_model_num = mc->model_num;
+	hit->heavy_submodel_num = mc->hit_submodel;
 
 	hit->submodel_move_hit = submodel_move_hit;
 }

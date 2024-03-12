@@ -3,6 +3,7 @@
 
 #include "enums.h"
 #include "mc_info.h"
+#include "model.h"
 #include "modelinstance.h"
 #include "object.h"
 #include "physics_info.h"
@@ -468,26 +469,25 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 }
 
 ADE_FUNC(
-    checkRayCollision, l_Object, "vector StartPoint, vector EndPoint, [boolean Local=false]",
-    "Checks the collisions between the polygons of the current object and a ray. Start and end vectors are in world "
-    "coordinates",
+    checkRayCollision, l_Object, "vector StartPoint, vector EndPoint, [boolean Local=false, submodel submodel=nil, boolean checkSubmodelChildren=false]",
+    "Checks the collisions between the polygons of the current object and a ray.  Start and end vectors are in world coordinates.  If a submodel is "
+		"specified, collision is restricted to that submodel if checkSubmodelChildren is false, or to that submodel and its children if it is true.",
     "vector, collision_info",
-    "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
+    "Returns collision point in world coordinates (local coordinates if Local is true) and the specific collision info; returns nil if no collisions")
 {
-	object_h *objh = NULL;
-	object *obj = NULL;
-	int model_num = -1, model_instance_num = -1, temp = 0;
+	object_h *objh = nullptr;
+	submodel_h *smh = nullptr;
+	int model_num = -1, model_instance_num = -1, submodel_num = -1, temp = 0;
 	vec3d *v3a, *v3b;
-	bool local = false;
-	if(!ade_get_args(L, "ooo|b", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local))
+	bool local = false, checkSubmodelChildren = false;
+	if(!ade_get_args(L, "ooo|bob", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local, l_Submodel.GetPtr(&smh), &checkSubmodelChildren))
 		return ADE_RETURN_NIL;
 
 	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	obj = objh->objp;
+	auto obj = objh->objp;
 	int flags = 0;
-	int submodel = -1;
 
 	switch(obj->type) {
 		case OBJ_SHIP:
@@ -501,7 +501,7 @@ ADE_FUNC(
 		case OBJ_DEBRIS:
 			model_num = Debris[obj->instance].model_num;
 			flags = (MC_CHECK_MODEL | MC_CHECK_RAY | MC_SUBMODEL);
-			submodel = Debris[obj->instance].submodel_num;
+			submodel_num = Debris[obj->instance].submodel_num;
 			break;
 		case OBJ_ASTEROID:
 			temp = Asteroids[obj->instance].asteroid_subtype;
@@ -515,6 +515,19 @@ ADE_FUNC(
 	if (model_num < 0)
 		return ADE_RETURN_NIL;
 
+	// we might want to check a specific submodel
+	if (smh != nullptr) {
+		if (!smh->isValid() || smh->GetModelID() != model_num)
+			return ADE_RETURN_NIL;
+		submodel_num = smh->GetSubmodelIndex();
+
+		if (checkSubmodelChildren) {
+			flags &= ~MC_SUBMODEL;			// in case this was debris
+			flags |= MC_SUBMODEL_INSTANCE;
+		} else
+			flags |= MC_SUBMODEL;
+	}
+
 	if (obj->type == OBJ_SHIP) {
 		model_instance_num = Ships[obj->instance].model_instance_num;
 	} else if (obj->type == OBJ_WEAPON) {
@@ -526,7 +539,7 @@ ADE_FUNC(
 	mc_info hull_check;
 	hull_check.model_num = model_num;
 	hull_check.model_instance_num = model_instance_num;
-	hull_check.submodel_num = submodel;
+	hull_check.submodel_num = submodel_num;
 	hull_check.orient = &obj->orient;
 	hull_check.pos = &obj->pos;
 	hull_check.p0 = v3a;
