@@ -369,7 +369,6 @@ ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number",
 }
 
 ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in the submodel's mesh", "number", "The number of vertices, or 0 if the submodel was invalid")
-ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in the submodel's mesh", "submodel", "The number of vertices, or 0 if the submodel was invalid")
 {
 	submodel_h* smh = nullptr;
 
