@@ -108,17 +108,16 @@ const std::shared_ptr<Hook<ShipSourceConditions>> OnDebrisCreated = Hook<ShipSou
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnShipCollision = OverridableHook<CollisionConditions>::Factory("On Ship Collision",
 	"Invoked when a ship collides with another object. Note: When two ships collide this will be called twice, once "
-	"with each ship object as the \"Ship\" parameter.",
-	{{"Self", "object", "The \"other\" object that collided with the ship."},
-		{"Object",
-			"ship",
-			"The ship object with which the \"other\" object collided with. Provided for consistency with other "
-			"collision hooks."},
-		{"Ship", "ship", "Same as \"Object\""},
+	"with each ship as the \"Self\" parameter.",
+	{{"Self", "object", "The object the ship collided with."},
+		{"Object", "ship",
+			"The ship that collided with \"Self\". Provided for consistency with other collision hooks."},
+		{"Ship", "ship", "For ship-on-ship collisions, the same as \"Self\". For ship-on-object collisions, the same as \"Object\"."},
 		{"Hitpos", "vector", "The world position where the collision was detected"},
+		{"ShipSubmodel", "submodel", "The submodel of \"Ship\" involved in the collision, if \"Ship\" was the heavier object"},
 		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
 		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
-		{"ShipB", "ship", "For ship on ship collisions, the \"other\" ship."},
+		{"ShipB", "ship", "For ship-on-ship collisions, the same as \"Object\" (only set for ship-on-ship collisions)"},
 		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
 		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"}});
 
