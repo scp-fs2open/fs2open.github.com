@@ -2155,7 +2155,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				// spawn the arc in the first unused slot
 				for (int j = 0; j < MAX_ARC_EFFECTS; j++) {
 					if (!shipp->arc_timestamp[j].isValid()) {
-						shipp->arc_timestamp[j] = _timestamp((int)(arc_info->duration * MILLISECONDS_PER_SECOND));
+						shipp->arc_timestamp[j] = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
 
 						vec3d v1, v2, offset;
 						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
@@ -2176,10 +2176,11 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 						shipp->arc_type[j] = MARC_TYPE_SHIP;
 
-						if (arc_info->width > 0.0) {
+						if (arc_info->width > 0.0f) {
 							shipp->arc_width[j] = arc_info->width;
 						} else {
-							// same as MARC_TYPE_DAMAGED
+							// same width as other arc types in model_render_add_lightning
+							// try and scale the size a bit so that it looks equally well on smaller vessels
 							shipp->arc_width[j] = Arc_width_default_damage;
 							if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
 								shipp->arc_width[j] *= (pm->rad * Arc_width_radius_multiplier_damage);

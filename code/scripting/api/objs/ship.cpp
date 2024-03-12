@@ -2762,7 +2762,7 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 	// spawn the arc in the first unused slot
 	for (int i = 0; i < MAX_ARC_EFFECTS; i++) {
 		if (!shipp->arc_timestamp[i].isValid()) {
-			shipp->arc_timestamp[i] = _timestamp((int)(duration * MILLISECONDS_PER_SECOND));
+			shipp->arc_timestamp[i] = _timestamp(fl2i(duration * MILLISECONDS_PER_SECOND));
 
 			shipp->arc_pts[i][0] = *v1;
 			shipp->arc_pts[i][1] = *v2;

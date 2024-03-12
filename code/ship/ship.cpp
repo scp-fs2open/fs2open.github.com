@@ -5042,7 +5042,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (optional_string("+Width:")) {
 			stuff_float(&new_info.width);
 		} else {
-			new_info.width = 0.0;
+			new_info.width = 0.0f;
 		}
 
 		if (optional_string("+Primary color 1:")) {
