@@ -226,12 +226,35 @@ int ship_registry_get_index(const char *name)
 	return -1;
 }
 
+int ship_registry_get_index(const SCP_string &name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return ship_it->second;
+
+	return -1;
+}
+
 bool ship_registry_exists(const char *name)
 {
 	return Ship_registry_map.find(name) != Ship_registry_map.end();
 }
 
+bool ship_registry_exists(const SCP_string &name)
+{
+	return Ship_registry_map.find(name) != Ship_registry_map.end();
+}
+
 const ship_registry_entry *ship_registry_get(const char *name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return &Ship_registry[ship_it->second];
+
+	return nullptr;
+}
+
+const ship_registry_entry *ship_registry_get(const SCP_string &name)
 {
 	auto ship_it = Ship_registry_map.find(name);
 	if (ship_it != Ship_registry_map.end())
@@ -11194,12 +11217,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		return;
 
 	int objnum = sp->objnum;
+	auto ship_entry = ship_registry_get(sp->ship_name);
 
 	swp = &sp->weapons;
 	sip = &(Ship_info[ship_type]);
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[objnum];
-	p_objp = mission_parse_get_parse_object(sp->ship_name);
+	p_objp = ship_entry ? ship_entry->p_objp_or_null() : nullptr;
 	ph_inf = objp->phys_info;
 
 	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
@@ -16411,8 +16435,8 @@ bool ship_can_bay_depart(ship* sp)
 	if ( departure_location == DEPART_AT_DOCK_BAY )
 	{
 		Assertion( departure_anchor >= 0, "Ship %s must have a valid departure anchor", sp->ship_name );
-		int anchor_shipnum = ship_name_lookup(Parse_names[departure_anchor]);
-		if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, departure_path_mask)) {
+		auto anchor_ship_entry = ship_registry_get(Parse_names[departure_anchor]);
+		if (anchor_ship_entry && anchor_ship_entry->has_shipp() && ship_useful_for_departure(anchor_ship_entry->shipnum, departure_path_mask)) {
 			// can bay depart at this time
 			return true;
 		}
@@ -18495,20 +18519,20 @@ int is_support_allowed(object *objp, bool do_simple_check)
 			Assert(The_mission.support_ships.arrival_anchor != -1);
 
 			// ensure it's in-mission
-			int temp = ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]);
-			if (temp < 0)
+			auto anchor_ship_entry = ship_registry_get(Parse_names[The_mission.support_ships.arrival_anchor]);
+			if (!anchor_ship_entry || !anchor_ship_entry->has_shipp())
 			{
 				return 0;
 			}
 
 			// make sure it's not leaving or blowing up
-			if (Ships[temp].is_dying_or_departing())
+			if (anchor_ship_entry->shipp()->is_dying_or_departing())
 			{
 				return 0;
 			}
 
 			// also make sure that parent ship's fighterbay hasn't been destroyed
-			if (ship_fighterbays_all_destroyed(&Ships[temp]))
+			if (ship_fighterbays_all_destroyed(anchor_ship_entry->shipp()))
 			{
 				return 0;
 			}
@@ -19190,7 +19214,9 @@ bool ship_has_dock_bay(int shipnum)
 // Goober5000
 bool ship_useful_for_departure(int shipnum, int  /*path_mask*/)
 {
-	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+	Assert(shipnum < MAX_SHIPS);
+	if (shipnum < 0 || shipnum >= MAX_SHIPS)
+		return false;
 
 	// not valid if dying or departing
 	if (Ships[shipnum].is_dying_or_departing())
@@ -19228,7 +19254,7 @@ int ship_get_ship_for_departure(int team)
 		int shipnum = Objects[so->objnum].instance;
 		Assert(shipnum >= 0);
 
-		if ( (Ships[shipnum].team == team) && ship_useful_for_departure(shipnum) )
+		if ( ship_useful_for_departure(shipnum) && (Ships[shipnum].team == team) )
 			return shipnum;
 	}
 

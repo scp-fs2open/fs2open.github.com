@@ -457,11 +457,10 @@ ADE_INDEXER(l_Mission_ParsedShips, "number/string IndexOrName", "Gets parsed shi
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
 
-	auto pobjp = mission_parse_get_parse_object(name);
-
-	if (pobjp)
+	auto ship_entry = ship_registry_get(name);
+	if (ship_entry)
 	{
-		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(pobjp)));
+		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(ship_entry->p_objp_or_null())));
 	}
 	else
 	{

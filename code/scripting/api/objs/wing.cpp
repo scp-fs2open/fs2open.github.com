@@ -312,7 +312,7 @@ static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
 		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
 	}
 
-	return ade_set_args(L, "s", (Wings[wingnum].*field >= 0) ? Parse_names[Wings[wingnum].*field] : "<no anchor>");
+	return ade_set_args(L, "s", (Wings[wingnum].*field >= 0) ? Parse_names[Wings[wingnum].*field].c_str() : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_Wing, "string", "The wing's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
