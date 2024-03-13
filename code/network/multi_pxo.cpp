@@ -53,8 +53,6 @@
 // PXO DEFINES/VARS
 //
 
-#define MAX_PXO_TEXT_LEN					255
-
 // button definitions
 #define MULTI_PXO_NUM_BUTTONS				15
 #define MULTI_PXO_PLIST_UP					0
@@ -203,20 +201,11 @@ int multi_pxo_connect_do();
 // attempt to connect to Parallax Online, return success or fail
 int multi_pxo_connect();
 
-// run the networking functions for the PXO API
-void multi_pxo_api_process();
-
 // process a "nick" change event
 void multi_pxo_process_nick_change(char *data);
 
-// run normally (no popups)
-void multi_pxo_do_normal();
-
 // blit everything on the "normal" screen
 void multi_pxo_blit_all();
-
-// process common stuff
-void multi_pxo_process_common();
 
 // get selected player information
 void multi_pxo_get_data(char *name);
@@ -339,7 +328,7 @@ pxo_channel *multi_pxo_add_channel(char *name);
 pxo_channel *multi_pxo_find_channel(char *name);
 
 // process the channel list (select, etc)
-void multi_pxo_process_channels();
+void multi_pxo_process_channels(bool api_access);
 
 // display the channel list
 void multi_pxo_blit_channels();
@@ -421,7 +410,7 @@ void multi_pxo_del_player(const char *name);
 int multi_pxo_find_player(const char *name);
 
 // process the player list (select, etc)
-void multi_pxo_process_players();
+void multi_pxo_process_players(bool api_access);
 
 // display the player list
 void multi_pxo_blit_players();
@@ -482,14 +471,6 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 #define MULTI_PXO_HAS_LEFT				"has left"
 
 #define MULTI_PXO_CHAT_LINE_LEN 512
-
-// chat flags
-#define CHAT_MODE_NORMAL				0			// normal chat from someone
-#define CHAT_MODE_SERVER				1			// is from the server, display appropriately
-#define CHAT_MODE_CARRY					2			// is a carryover from a previous line
-#define CHAT_MODE_PRIVATE				3			// is a private message
-#define CHAT_MODE_CHANNEL_SWITCH		4			// "switching channels" message - draw in red
-#define CHAT_MODE_MOTD					5			// message of the day from the chat server
 
 // the chat list
 SCP_list<chat_line> Multi_pxo_chat;
@@ -912,8 +893,6 @@ UI_XSTR Multi_pxo_help_text[GR_NUM_RESOLUTIONS][MULTI_PXO_HELP_NUM_TEXT] = {
 
 // help text
 #define MULTI_PXO_HELP_FILE			"pxohelp.txt"
-#define MULTI_PXO_MAX_LINES_PP		57
-#define MULTI_PXO_MAX_PAGES			5
 
 int Multi_pxo_help_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -934,12 +913,6 @@ int Multi_pxo_lines_pp[GR_NUM_RESOLUTIONS] = {
 	57			// GR_1024
 };
 
-// help text pages
-typedef struct help_page {
-	char *text[MULTI_PXO_MAX_LINES_PP];
-	int num_lines;
-} help_page;
-
 help_page Multi_pxo_help_pages[MULTI_PXO_MAX_PAGES];
 
 int Multi_pxo_help_num_pages = 0;
@@ -949,9 +922,6 @@ UI_WINDOW Multi_pxo_help_window;
 
 // current page we're on
 int Multi_pxo_help_cur = 0;
-
-// load the help file up
-void multi_pxo_help_load();
 
 // blit the current page
 void multi_pxo_help_blit_page();
@@ -994,14 +964,6 @@ int Pxo_ban_coords[GR_NUM_RESOLUTIONS][4] = {
 // interface button for detecting clicks
 UI_BUTTON Multi_pxo_ban_button;
 
-// banners
-typedef struct pxo_banner {	
-	SCP_string	ban_file;			// base filename of the banner
-	SCP_string	ban_file_url;		// full url of the file to get (convenient)
-	SCP_string	ban_url;			// url to go to when clicked
-	int	ban_bitmap;												// banner bitmap	
-} pxo_banner;
-
 // active pxo banner
 pxo_banner Multi_pxo_banner;
 
@@ -1012,7 +974,7 @@ int Multi_pxo_ban_mode = PXO_BAN_MODE_LIST_STARTUP;
 void multi_pxo_ban_init();
 
 // process http download details
-void multi_pxo_ban_process();
+void multi_pxo_ban_process(bool api_access);
 
 // close
 void multi_pxo_ban_close();
@@ -1032,84 +994,91 @@ void multi_pxo_ban_clicked();
 //
 
 // initialize the PXO screen
-void multi_pxo_init(int use_last_channel)
+void multi_pxo_init(int use_last_channel, bool api_access)
 {
-	int idx;	
+	if (!api_access) {
+		// load the background bitmap
+		Multi_pxo_bitmap = bm_load(Multi_pxo_bitmap_fname[gr_screen.res]);
+		if (Multi_pxo_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
 
-	// load the background bitmap
-	Multi_pxo_bitmap = bm_load(Multi_pxo_bitmap_fname[gr_screen.res]);
-	if(Multi_pxo_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load up the private channel bitmap
+		Multi_pxo_com_bitmap = bm_load(Multi_pxo_com_fname[gr_screen.res]);
+		Assert(Multi_pxo_com_bitmap != -1);
+
+		// create the interface window
+		Multi_pxo_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_pxo_window.set_mask_bmap(Multi_pxo_mask_fname[gr_screen.res]);
+
+		// create the interface buttons
+		for (int idx = 0; idx < MULTI_PXO_NUM_BUTTONS; idx++) {
+			// create the object
+			Multi_pxo_buttons[gr_screen.res][idx].button.create(&Multi_pxo_window,
+				"",
+				Multi_pxo_buttons[gr_screen.res][idx].x,
+				Multi_pxo_buttons[gr_screen.res][idx].y,
+				1,
+				1,
+				0,
+				1);
+
+			// set the sound to play when highlighted
+			Multi_pxo_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+
+			// set the ani for the button
+			Multi_pxo_buttons[gr_screen.res][idx].button.set_bmaps(Multi_pxo_buttons[gr_screen.res][idx].filename);
+
+			// set the hotspot
+			Multi_pxo_buttons[gr_screen.res][idx].button.link_hotspot(Multi_pxo_buttons[gr_screen.res][idx].hotspot);
+		}
+
+		// add all xstrs
+		for (int idx = 0; idx < MULTI_PXO_NUM_TEXT; idx++) {
+			Multi_pxo_window.add_XSTR(&Multi_pxo_text[gr_screen.res][idx]);
+		}
+
+		// make all scrolling buttons repeatable
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_TEXT_UP].button.repeatable(1);
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_TEXT_DOWN].button.repeatable(1);
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_CHAN_UP].button.repeatable(1);
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_CHAN_DOWN].button.repeatable(1);
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_PLIST_UP].button.repeatable(1);
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_PLIST_DOWN].button.repeatable(1);
+
+		// set the mouseover cursor if it loaded ok
+		if (Web_cursor != NULL) {
+			Multi_pxo_buttons[gr_screen.res][MULTI_PXO_RANKINGS].button.set_custom_cursor(Web_cursor);
+		}
+
+		// create the channel list select button and hide it
+		Multi_pxo_channel_button.create(&Multi_pxo_window, "", Multi_pxo_chan_coords[gr_screen.res][0], Multi_pxo_chan_coords[gr_screen.res][1], Multi_pxo_chan_coords[gr_screen.res][2], Multi_pxo_chan_coords[gr_screen.res][3], 0, 1);
+		Multi_pxo_channel_button.hide();
+
+		// create the player list select button and hide it
+		Multi_pxo_player_button.create(&Multi_pxo_window, "", Multi_pxo_player_coords[gr_screen.res][0], Multi_pxo_player_coords[gr_screen.res][1], Multi_pxo_player_coords[gr_screen.res][2], Multi_pxo_player_coords[gr_screen.res][3], 0, 1);
+		Multi_pxo_player_button.hide();
+
+		// create the chat input box
+		Multi_pxo_chat_input.create(&Multi_pxo_window, Multi_pxo_input_coords[gr_screen.res][0], Multi_pxo_input_coords[gr_screen.res][1], Multi_pxo_input_coords[gr_screen.res][2], MAX_CHAT_LINE_LEN + 1, "", UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_EAT_USED);
+		Multi_pxo_chat_input.set_focus();
+
+		// create the banner button and hide it
+		Multi_pxo_ban_button.create(&Multi_pxo_window, "", Pxo_ban_coords[gr_screen.res][0], Pxo_ban_coords[gr_screen.res][1], Pxo_ban_coords[gr_screen.res][2], Pxo_ban_coords[gr_screen.res][3], 0, 1);
+		Multi_pxo_ban_button.hide();
+
+		// create the chat slider
+		Multi_pxo_chat_slider.create(&Multi_pxo_window, Multi_pxo_chat_slider_coords[gr_screen.res][0], Multi_pxo_chat_slider_coords[gr_screen.res][1], Multi_pxo_chat_slider_coords[gr_screen.res][2], Multi_pxo_chat_slider_coords[gr_screen.res][3], 0, Multi_pxo_chat_slider_name[gr_screen.res], multi_pxo_scroll_chat_up, multi_pxo_scroll_chat_down, NULL);
 	}
 
-	// load up the private channel bitmap
-	Multi_pxo_com_bitmap = bm_load(Multi_pxo_com_fname[gr_screen.res]);
-	Assert(Multi_pxo_com_bitmap != -1);
-
-	// create the interface window
-	Multi_pxo_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-	Multi_pxo_window.set_mask_bmap(Multi_pxo_mask_fname[gr_screen.res]);
-
-	// create the interface buttons
-	for(idx=0;idx<MULTI_PXO_NUM_BUTTONS;idx++){
-		// create the object
-		Multi_pxo_buttons[gr_screen.res][idx].button.create(&Multi_pxo_window, "", Multi_pxo_buttons[gr_screen.res][idx].x, Multi_pxo_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
-
-		// set the sound to play when highlighted
-		Multi_pxo_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
-
-		// set the ani for the button
-		Multi_pxo_buttons[gr_screen.res][idx].button.set_bmaps(Multi_pxo_buttons[gr_screen.res][idx].filename);
-
-		// set the hotspot
-		Multi_pxo_buttons[gr_screen.res][idx].button.link_hotspot(Multi_pxo_buttons[gr_screen.res][idx].hotspot);
-	}		
-
-	// add all xstrs
-	for(idx=0; idx<MULTI_PXO_NUM_TEXT; idx++){
-		Multi_pxo_window.add_XSTR(&Multi_pxo_text[gr_screen.res][idx]);
-	}
-
-	if(use_last_channel && strlen(Multi_pxo_channel_last)){
+	if (use_last_channel && strlen(Multi_pxo_channel_last)) {
 		Multi_pxo_use_last_channel = 1;
 	} else {
 		memset(Multi_pxo_channel_last, 0, MAX_CHANNEL_NAME_LEN + 1);
 		Multi_pxo_use_last_channel = 0;
 	}
-
-	// make all scrolling buttons repeatable
-	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_TEXT_UP].button.repeatable(1);
-	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_TEXT_DOWN].button.repeatable(1);
-	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_CHAN_UP].button.repeatable(1);
-	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_CHAN_DOWN].button.repeatable(1);
-	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_PLIST_UP].button.repeatable(1);
-	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_PLIST_DOWN].button.repeatable(1);
-
-	// set the mouseover cursor if it loaded ok
-	if (Web_cursor != NULL) {
-		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_RANKINGS].button.set_custom_cursor(Web_cursor);
-	}
-
-	// create the channel list select button and hide it
-	Multi_pxo_channel_button.create(&Multi_pxo_window, "", Multi_pxo_chan_coords[gr_screen.res][0], Multi_pxo_chan_coords[gr_screen.res][1], Multi_pxo_chan_coords[gr_screen.res][2], Multi_pxo_chan_coords[gr_screen.res][3], 0, 1);
-	Multi_pxo_channel_button.hide();
-
-	// create the player list select button and hide it
-	Multi_pxo_player_button.create(&Multi_pxo_window, "", Multi_pxo_player_coords[gr_screen.res][0], Multi_pxo_player_coords[gr_screen.res][1], Multi_pxo_player_coords[gr_screen.res][2], Multi_pxo_player_coords[gr_screen.res][3], 0, 1);
-	Multi_pxo_player_button.hide();
-
-	// create the chat input box
-	Multi_pxo_chat_input.create(&Multi_pxo_window, Multi_pxo_input_coords[gr_screen.res][0], Multi_pxo_input_coords[gr_screen.res][1], Multi_pxo_input_coords[gr_screen.res][2], MAX_CHAT_LINE_LEN + 1, "", UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_EAT_USED);
-	Multi_pxo_chat_input.set_focus();
-
-	// create the banner button and hide it
-	Multi_pxo_ban_button.create(&Multi_pxo_window, "", Pxo_ban_coords[gr_screen.res][0], Pxo_ban_coords[gr_screen.res][1], Pxo_ban_coords[gr_screen.res][2], Pxo_ban_coords[gr_screen.res][3], 0, 1);
-	Multi_pxo_ban_button.hide();
-
-	// create the chat slider
-	Multi_pxo_chat_slider.create(&Multi_pxo_window, Multi_pxo_chat_slider_coords[gr_screen.res][0], Multi_pxo_chat_slider_coords[gr_screen.res][1], Multi_pxo_chat_slider_coords[gr_screen.res][2], Multi_pxo_chat_slider_coords[gr_screen.res][3], 0, Multi_pxo_chat_slider_name[gr_screen.res], multi_pxo_scroll_chat_up, multi_pxo_scroll_chat_down, NULL);
-
+	
 	// set our connection status so that we do the right stuff next frame
 	Multi_pxo_must_validate = 1;
 	Multi_pxo_must_connect = 0;
@@ -1144,22 +1113,24 @@ void multi_pxo_init(int use_last_channel)
 	// initialize http
 	multi_pxo_ban_init();
 
-	// load the animation up
-	if (gr_screen.res == GR_1024) {
-		char anim_filename[32] = "2_";
-		strcat_s(anim_filename, MULTI_PXO_ANIM_FNAME);
-		generic_anim_init(&Multi_pxo_anim, anim_filename);
-		Multi_pxo_anim.ani.bg_type = bm_get_type(Multi_pxo_bitmap);
+	if (!api_access) {
+		// load the animation up
+		if (gr_screen.res == GR_1024) {
+			char anim_filename[32] = "2_";
+			strcat_s(anim_filename, MULTI_PXO_ANIM_FNAME);
+			generic_anim_init(&Multi_pxo_anim, anim_filename);
+			Multi_pxo_anim.ani.bg_type = bm_get_type(Multi_pxo_bitmap);
 
-		// if hi-res is not there, fallback to low
-		if (generic_anim_stream(&Multi_pxo_anim) == -1) {
+			// if hi-res is not there, fallback to low
+			if (generic_anim_stream(&Multi_pxo_anim) == -1) {
+				generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
+				generic_anim_stream(&Multi_pxo_anim);
+			}
+		} else {
 			generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
+			Multi_pxo_anim.ani.bg_type = bm_get_type(Multi_pxo_bitmap);
 			generic_anim_stream(&Multi_pxo_anim);
 		}
-	} else {
-		generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
-		Multi_pxo_anim.ani.bg_type = bm_get_type(Multi_pxo_bitmap);
-		generic_anim_stream(&Multi_pxo_anim);
 	}
 
 	// clear the status text
@@ -1184,7 +1155,9 @@ void multi_pxo_init(int use_last_channel)
 	memset(Multi_fs_tracker_channel, 0, MAX_PATH);
 	memset(Multi_fs_tracker_filter, 0, MAX_PATH);
 
-	main_hall_start_music();
+	if (!api_access) {
+		main_hall_start_music();
+	}
 }
 
 // do frame for the PXO screen
@@ -1271,11 +1244,13 @@ void multi_pxo_do()
 }
 //XSTR:ON
 // close the PXO screen
-void multi_pxo_close()
+void multi_pxo_close(bool api_access)
 {
-	// unload any bitmaps
-	bm_release(Multi_pxo_bitmap);
-	bm_release(Multi_pxo_com_bitmap);
+	if (!api_access) {
+		// unload any bitmaps
+		bm_release(Multi_pxo_bitmap);
+		bm_release(Multi_pxo_com_bitmap);
+	}
 
 	// record the last channel we were on, if any
 	memset(Multi_fs_tracker_channel, 0, MAX_PATH);
@@ -1293,16 +1268,18 @@ void multi_pxo_close()
 	DisconnectFromChatServer();
 	Multi_pxo_connected = 0;
 
-	// unload the animation	
-	if(Multi_pxo_anim.num_frames > 0){
-		generic_anim_unload(&Multi_pxo_anim);
-	}
+	if (!api_access) {
+		// unload the animation
+		if (Multi_pxo_anim.num_frames > 0) {
+			generic_anim_unload(&Multi_pxo_anim);
+		}
 
-	// unload the palette for this screen
-	multi_pxo_unload_palette();
-	
-	// destroy the UI_WINDOW
-	Multi_pxo_window.destroy();
+		// unload the palette for this screen
+		multi_pxo_unload_palette();
+
+		// destroy the UI_WINDOW
+		Multi_pxo_window.destroy();
+	}
 
 	// clear the channel list
 	multi_pxo_clear_channels();
@@ -1315,37 +1292,39 @@ void multi_pxo_close()
 }
 
 // run normally (no popups)
-void multi_pxo_do_normal()
+void multi_pxo_do_normal(bool api_access)
 {
 	int validate_code;
-	int k = Multi_pxo_window.process();
-	
-	// process any keypresses
-	switch (k)
-	{
+
+	if (!api_access) {
+		int k = Multi_pxo_window.process();
+
+		// process any keypresses
+		switch (k) {
 		case KEY_ESC:
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
-			break;	
-	}		
+			break;
+		}
 
-	// check for button presses
-	multi_pxo_check_buttons();	
+		// check for button presses
+		multi_pxo_check_buttons();
 
-	// if we're not in a chatroom, disable and hide the chat input box
-	if ( !ON_CHANNEL() ) {
-		Multi_pxo_chat_input.hide();
-		Multi_pxo_chat_input.disable();
-	} else {
-		Multi_pxo_chat_input.enable();
-		Multi_pxo_chat_input.unhide();
-	}	
+		// if we're not in a chatroom, disable and hide the chat input box
+		if (!ON_CHANNEL()) {
+			Multi_pxo_chat_input.hide();
+			Multi_pxo_chat_input.disable();
+		} else {
+			Multi_pxo_chat_input.enable();
+			Multi_pxo_chat_input.unhide();
+		}
 
-	// blit everything
-	multi_pxo_blit_all();		
+		// blit everything
+		multi_pxo_blit_all();
 
-	// flip the page
-	gr_flip();
+		// flip the page
+		gr_flip();
+	}
 
 	// if we need to get tracker info for ourselves, do so
 	if (Multi_pxo_must_validate) {
@@ -1479,7 +1458,7 @@ void multi_pxo_blit_all()
 }
 
 // process common stuff
-void multi_pxo_process_common()
+void multi_pxo_process_common(bool api_access)
 {
 	// skip if we haven't logged into the tracker yet
 	if (Multi_pxo_must_validate) {
@@ -1487,16 +1466,21 @@ void multi_pxo_process_common()
 	}
 
 	// process the channel list (select, etc)
-	multi_pxo_process_channels();
+	multi_pxo_process_channels(api_access);
 
 	// process the player list (select, etc)
-	multi_pxo_process_players();
+	multi_pxo_process_players(api_access);
 
-	// process chat controls
-	multi_pxo_chat_process();
-	
+	// chat_process specifically handles checking the typed string in the
+	// ui input box and sending it. When running through the UI, that input
+	// box does not exist. So we do not need this one processor.
+	if (!api_access) {
+		// process chat controls
+		multi_pxo_chat_process();
+	}
+
 	// process http download details
-	multi_pxo_ban_process();
+	multi_pxo_ban_process(api_access);
 }
 
 // get selected player information
@@ -1762,21 +1746,7 @@ void multi_pxo_button_pressed(int n)
 		break;
 
 	case MULTI_PXO_JOIN:
-		// if there are no channels to join, let the user know
-		if(Multi_pxo_channels.size() == 0){
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			multi_pxo_notify_add(XSTR("No channels!",944));
-			break;
-		}
-
-		// if we're not already trying to join, allow this
-		if(!SWITCHING_CHANNELS() && (Multi_pxo_channel_select >= 0)){
-			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			multi_pxo_join_channel(&Multi_pxo_channels[Multi_pxo_channel_select]);
-		} else {
-			multi_pxo_notify_add(XSTR("Already trying to join a channel!",945));
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		}
+		multi_pxo_maybe_join_channel(&Multi_pxo_channels[Multi_pxo_channel_select]);
 		break;
 
 	case MULTI_PXO_GAMES:
@@ -1815,11 +1785,7 @@ void multi_pxo_button_pressed(int n)
 		// if we have a guy selected, try and get his info
 		if((Multi_pxo_player_select >= 0) && (Multi_pxo_player_select < static_cast<int>(Multi_pxo_players.size()))){
 			// if we successfully got info for this guy
-			if (multi_pxo_pinfo_get(Multi_pxo_players[Multi_pxo_player_select].c_str())) {				
-				// convert stats to player
-				multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
-				SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
-
+			if (multi_pxo_maybe_get_player(Multi_pxo_players[Multi_pxo_player_select].c_str())) {				
 				// show the stats
 				multi_pxo_pinfo_show();				
 			}
@@ -2396,7 +2362,7 @@ pxo_channel *multi_pxo_find_channel(char *name)
 /**
  * Process the channel list (select, etc)
  */
-void multi_pxo_process_channels()
+void multi_pxo_process_channels(bool api_access)
 {
 	int item_index,my;
 	int idx;
@@ -2424,7 +2390,7 @@ void multi_pxo_process_channels()
 		}
 
 		// see if we have a mouse click on the channel region
-		if(Multi_pxo_channel_button.pressed()){
+		if(!api_access && Multi_pxo_channel_button.pressed()){
 			Multi_pxo_channel_button.get_mouse_pos(nullptr,&my);
 
 			// index from the top
@@ -2671,6 +2637,25 @@ void multi_pxo_join_channel(pxo_channel *chan)
 	}	
 }
 
+void multi_pxo_maybe_join_channel(pxo_channel* chan)
+{
+	// if there are no channels to join, let the user know
+	if (Multi_pxo_channels.size() == 0) {
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		multi_pxo_notify_add(XSTR("No channels!", 944));
+		return;
+	}
+
+	// if we're not already trying to join, allow this
+	if (!SWITCHING_CHANNELS() && (Multi_pxo_channel_select >= 0)) {
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+		multi_pxo_join_channel(chan);
+	} else {
+		multi_pxo_notify_add(XSTR("Already trying to join a channel!", 945));
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+	}
+}
+
 /**
  * Handle any processing details if we're currently trying to join a channel
  */
@@ -2797,7 +2782,7 @@ int multi_pxo_find_player(const char *name)
 /**
  * Process the player list (select, etc)
  */
-void multi_pxo_process_players()
+void multi_pxo_process_players(bool api_access)
 {
 	int item_index,my;
 	
@@ -2808,7 +2793,7 @@ void multi_pxo_process_players()
 	}
 
 	// see if we have a mouse click on the channel region
-	if(Multi_pxo_player_button.pressed()){
+	if(!api_access && Multi_pxo_player_button.pressed()){
 		Multi_pxo_player_button.get_mouse_pos(nullptr,&my);
 
 		// index from the top
@@ -3195,12 +3180,25 @@ void multi_pxo_scroll_chat_down()
 }
 
 /**
+* Send a chat message
+*/
+void multi_pxo_chat_send(const char* msg)
+{
+	// if we're connected to a channel, send the chat to the server
+	if (ON_CHANNEL()) {
+		const char* result = SendChatString(msg, 1);
+		if (result != NULL) {
+			multi_pxo_chat_process_incoming(result);
+		}
+	}
+}
+
+/**
  * Process chat controls
  */
 void multi_pxo_chat_process()
 {
 	const char *remainder;
-	const char *result;
 	char msg[512];
 	int msg_pixel_width;
 
@@ -3223,13 +3221,10 @@ void multi_pxo_chat_process()
 		}	
 		
 		// if we're connected to a channel, send the chat to the server
-		if(ON_CHANNEL()){
-			result = SendChatString(msg,1);
-			if(result != NULL){
-				multi_pxo_chat_process_incoming(result);
-			}
-
-			// display any remainder of text on the next line
+		multi_pxo_chat_send(msg);
+		
+		// display any remainder of text on the next line
+		if (ON_CHANNEL()) {
 			Multi_pxo_chat_input.set_text(remainder);
 		} else {
 			Multi_pxo_chat_input.set_text("");
@@ -3249,14 +3244,11 @@ void multi_pxo_chat_process()
 		
 		// send the chat to the server  		
 		// if we're connected to a channel, send the chat to the server
-		if(ON_CHANNEL()){		
-			result = SendChatString(msg,1);
-			if(result != NULL){
-				multi_pxo_chat_process_incoming(result);
-			}
+		multi_pxo_chat_send(msg);
 
-			// display any remainder of text on the next line
-			Multi_pxo_chat_input.set_text(remainder);		
+		// display any remainder of text on the next line
+		if (ON_CHANNEL()) {
+			Multi_pxo_chat_input.set_text(remainder);
 		} else {
 			Multi_pxo_chat_input.set_text("");
 		}
@@ -4200,6 +4192,17 @@ int multi_pxo_pinfo_get(const char *name)
 	return 0;
 }
 
+bool multi_pxo_maybe_get_player(const char* name)
+{
+	if (multi_pxo_pinfo_get(name)) {
+		// convert stats to player
+		multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
+		SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
+		return true;
+	}
+	return false;
+}
+
 /**
  * Fire up the stats view popup
  */
@@ -4642,7 +4645,6 @@ void multi_pxo_help_do()
  */
 void multi_pxo_help_close()
 {
-	int idx, idx2;
 
 	// unload any bitmaps
 	bm_release(Multi_pxo_help_bitmap);
@@ -4650,11 +4652,19 @@ void multi_pxo_help_close()
 	// destroy the UI_WINDOW
 	Multi_pxo_help_window.destroy();
 
+	multi_pxo_help_free();
+}
+
+/**
+ * Load the help file up
+ */
+void multi_pxo_help_free()
+{
 	// free all pages
-	for(idx=0; idx<Multi_pxo_help_num_pages; idx++){
-		for(idx2=0; idx2<Multi_pxo_help_pages[idx].num_lines; idx2++){
+	for (int idx = 0; idx < Multi_pxo_help_num_pages; idx++) {
+		for (int idx2 = 0; idx2 < Multi_pxo_help_pages[idx].num_lines; idx2++) {
 			// maybe free
-			if(Multi_pxo_help_pages[idx].text[idx2] != NULL){
+			if (Multi_pxo_help_pages[idx].text[idx2] != NULL) {
 				vm_free(Multi_pxo_help_pages[idx].text[idx2]);
 				Multi_pxo_help_pages[idx].text[idx2] = NULL;
 			}
@@ -4830,7 +4840,7 @@ void multi_pxo_ban_init()
 /**
  * Process http download details
  */
-void multi_pxo_ban_process()
+void multi_pxo_ban_process(bool api_access)
 {
 	SCP_string url_string;
 	SCP_string local_file;
@@ -4971,7 +4981,7 @@ void multi_pxo_ban_process()
 	// idle (done with EVERYTHING)
 	case PXO_BAN_MODE_IDLE:
 		// if the banner button was clicked
-		if ( Multi_pxo_ban_button.pressed() ) {
+		if ( !api_access && Multi_pxo_ban_button.pressed() ) {
 			multi_pxo_ban_clicked();
 		}
 

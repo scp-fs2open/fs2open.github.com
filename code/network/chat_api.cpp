@@ -1305,7 +1305,7 @@ char *GetTrackerIdByUser(char *nickname)
 	return NULL;
 }
 
-char *GetChannelByUser(char *nickname)
+char *GetChannelByUser(const char *nickname)
 {
 	char szWhoisCmd[100];
 	
@@ -1332,5 +1332,5 @@ char *GetChannelByUser(char *nickname)
 		SendChatString(szWhoisCmd,1);
 		GettingUserChannel = 1;
 	}
-	return NULL;
+	return nullptr;
 }

@@ -1413,6 +1413,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
 	scripting/api/objs/movie_player.h
+	scripting/api/objs/multi_objects.cpp
+	scripting/api/objs/multi_objects.h
 	scripting/api/objs/object.cpp
 	scripting/api/objs/object.h
 	scripting/api/objs/option.cpp
