@@ -233,11 +233,12 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-nav-visited",					OP_NAV_IS_VISITED,						1,	1,			SEXP_BOOLEAN_OPERATOR,	}, // Kazan
 	{ "ship-type-destroyed",			OP_SHIP_TYPE_DESTROYED,					2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "percent-ships-destroyed",		OP_PERCENT_SHIPS_DESTROYED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
-	{ "percent-ships-disabled",			OP_PERCENT_SHIPS_DISABLED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
-	{ "percent-ships-disarmed",			OP_PERCENT_SHIPS_DISARMED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
+	{ "percent-ships-disabled",			OP_PERCENT_SHIPS_DISABLED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "percent-ships-disarmed",			OP_PERCENT_SHIPS_DISARMED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "percent-ships-arrived",			OP_PERCENT_SHIPS_ARRIVED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
-	{ "depart-node-delay",				OP_DEPART_NODE_DELAY,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	
+	{ "percent-ships-scanned",			OP_PERCENT_SHIPS_SCANNED,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "depart-node-delay",				OP_DEPART_NODE_DELAY,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "destroyed-or-departed-delay",	OP_DESTROYED_DEPARTED_DELAY,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	
 
 	//Status Category
@@ -9851,12 +9852,12 @@ int sexp_get_damage_caused(int node)
 }
 
 /**
- * Returns true if the percentage of ships (and ships in wings) departed is at least the percentage given.  
+ * Returns true if the percentage of ships (and ships in wings) that have met the given objective is at least the percentage given.
  * 
- * what determine if we should check destroyed or departed status
- * Goober5000 - added disarm and disable
+ * "what" determines if we should check destroyed or departed status
+ * Goober5000 - added disarm, disable, and scan
  */
-int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
+int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what)
 {
 	int percent;
 	int total, count;
@@ -9887,7 +9888,7 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 			else if ( what == OP_PERCENT_SHIPS_ARRIVED )
 				count += wingp->total_arrived_count;
 			else
-				Error(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable", what, wingp->name);
+				Warning(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan", what, wingp->name);
 		} else {
 			auto ship_entry = eval_ship(n);
 
@@ -9915,8 +9916,11 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 			} else if ( what == OP_PERCENT_SHIPS_ARRIVED ) {
 				if ( mission_log_get_time(LOG_SHIP_ARRIVED, name, nullptr, nullptr) )
 					count++;
+			} else if ( what == OP_PERCENT_SHIPS_SCANNED ) {
+				if ( mission_log_get_time(LOG_CARGO_REVEALED, name, nullptr, nullptr) )
+					count++;
 			} else
-				Error(LOCATION, "Invalid status check '%d' for ship '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
+				Warning(LOCATION, "Invalid status check '%d' for ship '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan", what, name);
 
 		}
 	}
@@ -27530,7 +27534,8 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_PERCENT_SHIPS_DESTROYED:
 			case OP_PERCENT_SHIPS_DISARMED:
 			case OP_PERCENT_SHIPS_DISABLED:
-				sexp_val = sexp_percent_ships_arrive_depart_destroy_disarm_disable(node, op_num);
+			case OP_PERCENT_SHIPS_SCANNED:
+				sexp_val = sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(node, op_num);
 				break;
 
 			case OP_DEPART_NODE_DELAY:
@@ -30135,6 +30140,7 @@ int query_operator_return_type(int op)
 		case OP_PERCENT_SHIPS_DISARMED:
 		case OP_PERCENT_SHIPS_DISABLED:
 		case OP_PERCENT_SHIPS_ARRIVED:
+		case OP_PERCENT_SHIPS_SCANNED:
 		case OP_DEPART_NODE_DELAY:
 		case OP_DESTROYED_DEPARTED_DELAY:
 		case OP_SPECIAL_CHECK:
@@ -32280,6 +32286,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_PERCENT_SHIPS_DISARMED:
 		case OP_PERCENT_SHIPS_DISABLED:
+		case OP_PERCENT_SHIPS_SCANNED:
 			if ( argnum == 0 ){
 				return OPF_POSITIVE;
 			} else {
@@ -35188,6 +35195,7 @@ int get_category(int op_id)
 		case OP_PERCENT_SHIPS_DISARMED:
 		case OP_PERCENT_SHIPS_DISABLED:
 		case OP_PERCENT_SHIPS_ARRIVED:
+		case OP_PERCENT_SHIPS_SCANNED:
 		case OP_NAV_IS_VISITED:
 		case OP_WAS_DESTROYED_BY_DELAY:
 			return OP_CATEGORY_OBJECTIVE;
@@ -39033,49 +39041,59 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_PERCENT_SHIPS_ARRIVED, "percent-ships-arrived\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
-		"which have arrived is greater or equal to the given percentage.  For wings, all ships of all waves "
+		"which have arrived is greater than or equal to the given percentage.  For wings, all ships of all waves "
 		"are used for calculation for the total possible ships to arrive.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tPercentge of arriving ships at which this function will return true.\r\n"
+		"\t1:\tPercentage of arrived ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships/wings whose arrival status should be determined." },
 
 	{ OP_PERCENT_SHIPS_DEPARTED, "percent-ships-departed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
-		"which have departed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to depart.  Ships yet to arrive are "
-		" included in the percentage that has not departed.\r\n\r\n"
+		"which have departed is greater than or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to depart.  Listed ships and wings yet to arrive are "
+		"included in the total from which the percentage is calculated.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tPercentge of departed ships at which this function will return true.\r\n"
+		"\t1:\tPercentage of departed ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships/wings whose departure status should be determined." },
 
 	{ OP_PERCENT_SHIPS_DESTROYED, "percent-ships-destroyed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
-		"which have been destroyed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.  Ships yet to arrive are "
-		" included in the percentage that has not been destroyed.\r\n\r\n"
+		"which have been destroyed is greater than or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to be destroyed.  Listed ships and wings yet to arrive are "
+		"included in the total from which the percentage is calculated.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tPercentge of destroyed ships at which this function will return true.\r\n"
+		"\t1:\tPercentage of destroyed ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships/wings whose destroyed status should be determined." },
 
 	// Goober5000
 	{ OP_PERCENT_SHIPS_DISARMED, "percent-ships-disarmed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships "
-		"which have been disarmed is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.  Ships yet to arrive are "
-		" included in the percentage that has not been disarmed.\r\n\r\n"
+		"which have been disarmed is greater than or equal to the given percentage.  Wings cannot be checked with this function; "
+		"any ships that are part of wings must be listed explicitly.  Listed ships yet to arrive are "
+		"included in the total from which the percentage is calculated.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tPercentge of disarmed ships at which this function will return true.\r\n"
+		"\t1:\tPercentage of disarmed ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships whose disarmed status should be determined." },
 
 	// Goober5000
 	{ OP_PERCENT_SHIPS_DISABLED, "percent-ships-disabled\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships "
-		"which have been disabled is greater or equal to the given percentage.  For wings, all ships of all waves "
-		"are used for calculation for the total possible ships to be destroyed.  Ships yet to arrive are "
-		" included in the percentage that has not been disabled.\r\n\r\n"
+		"which have been disabled is greater than or equal to the given percentage.  Wings cannot be checked with this function; "
+		"any ships that are part of wings must be listed explicitly.  Listed ships yet to arrive are "
+		"included in the total from which the percentage is calculated.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tPercentge of disabled ships at which this function will return true.\r\n"
+		"\t1:\tPercentage of disabled ships at which this function will return true.\r\n"
 		"\t2+:\tList of ships whose disabled status should be determined." },
+
+	// Goober5000
+	{ OP_PERCENT_SHIPS_SCANNED, "percent-ships-scanned\r\n"
+		"\tBoolean function which returns true if the percentage of ships in the listed ships "
+		"which have been scanned (or cargo revealed) is greater than or equal to the given percentage.  Wings cannot be checked with this function; "
+		"any ships that are part of wings must be listed explicitly.  Listed ships yet to arrive are "
+		"included in the total from which the percentage is calculated.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPercentage of scanned ships at which this function will return true.\r\n"
+		"\t2+:\tList of ships whose scanned status should be determined." },
 
 	{ OP_RED_ALERT, "red-alert\r\n"
 		"\tCauses Red Alert status in a mission.  This function ends the current mission, and moves to "
