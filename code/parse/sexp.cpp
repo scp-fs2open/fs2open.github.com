@@ -9860,7 +9860,7 @@ int sexp_get_damage_caused(int node)
 int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what)
 {
 	int percent;
-	int total, count;
+	int total, count, impossible_count;
 	bool is_nan, is_nan_forever;
 
 	percent = eval_num(n, is_nan, is_nan_forever);
@@ -9871,6 +9871,7 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what
 
 	total = 0;
 	count = 0;
+	impossible_count = 0;
 	// iterate through the rest of the ships/wings in the list and tally the departures and the
 	// total
 	for ( n = CDR(n); n != -1; n = CDR(n) ) {
@@ -9881,13 +9882,15 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what
 			// this wing, and the departures by the number of departures stored for this wing
 			total += (wingp->wave_count * wingp->num_waves);
 
-			if ( what == OP_PERCENT_SHIPS_DEPARTED )
+			if ( what == OP_PERCENT_SHIPS_DEPARTED ) {
 				count += wingp->total_departed;
-			else if ( what == OP_PERCENT_SHIPS_DESTROYED )
+				impossible_count += (wingp->total_destroyed + wingp->total_vanished);
+			} else if ( what == OP_PERCENT_SHIPS_DESTROYED ) {
 				count += wingp->total_destroyed;
-			else if ( what == OP_PERCENT_SHIPS_ARRIVED )
+				impossible_count += (wingp->total_departed + wingp->total_vanished);
+			} else if ( what == OP_PERCENT_SHIPS_ARRIVED ) {
 				count += wingp->total_arrived_count;
-			else
+			} else
 				Warning(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan", what, wingp->name);
 		} else {
 			auto ship_entry = eval_ship(n);
@@ -9900,6 +9903,7 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what
 				continue;
 			}
 			auto name = ship_entry->name;
+			int old_count = count;
 
 			if ( what == OP_PERCENT_SHIPS_DEPARTED ) {
 				if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, nullptr, nullptr) )
@@ -9922,12 +9926,17 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what
 			} else
 				Warning(LOCATION, "Invalid status check '%d' for ship '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan", what, name);
 
+			if (old_count == count && ship_entry->status == ShipStatus::EXITED)
+				impossible_count++;
 		}
 	}
 
 	// now, look at the percentage
 	if ( ((count * 100) / total) >= percent )
 		return SEXP_KNOWN_TRUE;
+	// now see if the percentage can't be satisfied
+	else if ( ((impossible_count * 100) / total) > (100 - percent) )
+		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
 }
