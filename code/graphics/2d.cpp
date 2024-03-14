@@ -460,7 +460,7 @@ static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
                      .category("Graphics")
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(false)
+                     .default_val(true)
                      .bind_to_once(&Gr_post_processing_enabled)
                      .importance(69)
                      .finish();
