@@ -111,6 +111,17 @@ void OptionsManager::removeOption(const OptionBase* option)
 	                   [option](const std::unique_ptr<const OptionBase>& ptr) { return ptr.get() == option; }));
 }
 
+// Returns an option with the specified name
+const OptionBase* OptionsManager::getOptionByKey(SCP_string key)
+{
+	for (size_t i = 0; i < _options.size(); i++) {
+		if (_options[i].get()->getConfigKey() == key) {
+			return _options[i].get();
+		}
+	}
+	return nullptr;
+}
+
 //Returns a table of all built-in options available
 const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::getOptions()
 {
