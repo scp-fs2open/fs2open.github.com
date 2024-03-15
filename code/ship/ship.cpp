@@ -5061,6 +5061,13 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&new_info.duration);
 		required_string("+Frequency:");
 		stuff_float(&new_info.frequency);
+
+		if (optional_string("+Width:")) {
+			stuff_float(&new_info.width);
+		} else {
+			new_info.width = 0.0f;
+		}
+
 		if (optional_string("+Primary color 1:")) {
 			int rgb[3];
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
@@ -6792,10 +6799,11 @@ void ship::clear()
 	for (int i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
 		sub_expl_sound_handle[i] = sound_handle::invalid();
 
-	memset(&arc_pts, 0, MAX_SHIP_ARCS * 2 * sizeof(vec3d));
-	for (int i = 0; i < MAX_SHIP_ARCS; i++)
+	memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+	for (int i = 0; i < MAX_ARC_EFFECTS; i++)
 		arc_timestamp[i] = TIMESTAMP::invalid();
-	memset(&arc_type, 0, MAX_SHIP_ARCS * sizeof(ubyte));
+	memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+	memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
 	arc_next_time = timestamp(-1);
 
 	emp_intensity = -1.0f;
@@ -20846,7 +20854,7 @@ void ship_render(object* obj, model_draw_list* scene)
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
-		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
+		for ( int i = 0; i < MAX_ARC_EFFECTS; i++ )	{
 			if ( shipp->arc_timestamp[i].isValid() ) {
 				model_instance_add_arc(pm,
 					pmi,
@@ -20856,7 +20864,8 @@ void ship_render(object* obj, model_draw_list* scene)
 					shipp->arc_type[i],
 					&shipp->arc_primary_color_1[i],
 					&shipp->arc_primary_color_2[i],
-					&shipp->arc_secondary_color[i]);
+					&shipp->arc_secondary_color[i],
+					shipp->arc_width[i]);
 			}
 		}
 	}

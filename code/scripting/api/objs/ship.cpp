@@ -2740,6 +2740,49 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
+ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width",
+	"Creates an electric arc on the ship between two points in the ship's reference frame, for the specified duration in seconds, and the specified width in meters.",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	object_h* objh = nullptr;
+	vec3d* v1;
+	vec3d* v2;
+	float duration = 0.0f;
+	float width = 0.0f;
+
+	if (!ade_get_args(L, "oooff", l_Ship.GetPtr(&objh), l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &duration, &width))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->isValid())
+		return ADE_RETURN_FALSE;
+
+	auto shipp = &Ships[objh->objp->instance];
+
+	// spawn the arc in the first unused slot
+	for (int i = 0; i < MAX_ARC_EFFECTS; i++) {
+		if (!shipp->arc_timestamp[i].isValid()) {
+			shipp->arc_timestamp[i] = _timestamp(fl2i(duration * MILLISECONDS_PER_SECOND));
+
+			shipp->arc_pts[i][0] = *v1;
+			shipp->arc_pts[i][1] = *v2;
+
+			//Set the arc colors
+			shipp->arc_primary_color_1[i] = Arc_color_damage_p1;
+			shipp->arc_primary_color_2[i] = Arc_color_damage_p2;
+			shipp->arc_secondary_color[i] = Arc_color_damage_s1;
+
+			shipp->arc_type[i] = MARC_TYPE_SCRIPTED;
+
+			shipp->arc_width[i] = width;
+
+			return ADE_RETURN_TRUE;
+		}
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 
 }
 }
