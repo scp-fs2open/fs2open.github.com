@@ -39835,13 +39835,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_SET_SUPPORT_SHIP, "set-support-ship\r\n"
-		"\tSets information for all support ships in a mission.  Takes 6 or 7 arguments...\r\n"
+		"\tSets information for all support ships in a mission.  This includes not only arrival/departure information, but also whether and how many times ships can rearm, and the characteristics of the support ship.  Takes 6 or 7 arguments...\r\n"
 		"\t1: Arrival location\r\n"
 		"\t2: Arrival anchor\r\n"
 		"\t3: Departure location\r\n"
 		"\t4: Departure anchor\r\n"
-		"\t5: Ship class\r\n"
-		"\t6: Maximum number of support ships consecutively in this mission (use a negative number for infinity)\r\n"
+		"\t5: Support ship class\r\n"
+		"\t6: Maximum number of support ships consecutively in this mission (use 0 to disallow support; use a negative number for infinity)\r\n"
 		"\t7: Maximum number of support ships concurrently in this mission (optional, default 1)\r\n"
 		"\r\n"
 		"Note: The support ship will emerge from or depart into hyperspace if the location is set as hyperspace *or* the anchor is set as <no anchor>."
