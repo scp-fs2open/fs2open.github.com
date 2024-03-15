@@ -816,10 +816,18 @@ void chatbox_render_chat_lines()
 	int ly = Chatbox_begin_y;
 	int line_height = gr_get_font_height() + 1;
 
-	for (int i = Brief_start_display_index; i < static_cast<int>(Brief_chat.size()); i++) {	
+	if (Brief_chat.empty()) {
+		return;
+	}
+
+	Assertion(Brief_start_display_index >= 0 && Brief_start_display_index < static_cast<int>(Brief_chat.size()),
+		"Chat display index is invalid, please report!");
+
+	auto chat = Brief_chat.begin();
+	std::advance(chat, Brief_start_display_index);
+
+	while (chat != Brief_chat.end() && count < Chatbox_max_lines) {	
 		if (count < Chatbox_max_lines) {
-			SCP_list<brief_chat>::iterator chat = Brief_chat.begin();
-			std::advance(chat, i);
 			
 			char msg[CHATBOX_STRING_LEN];
 
@@ -877,6 +885,7 @@ void chatbox_render_chat_lines()
 
 			// increment the count and line position
 			count++;
+			++chat;
 			ly += line_height;
 		}
 	}		
