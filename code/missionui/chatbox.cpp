@@ -827,67 +827,64 @@ void chatbox_render_chat_lines()
 	std::advance(chat, Brief_start_display_index);
 
 	while (chat != Brief_chat.end() && count < Chatbox_max_lines) {	
-		if (count < Chatbox_max_lines) {
-			
-			char msg[CHATBOX_STRING_LEN];
+		char msg[CHATBOX_STRING_LEN];
 
-			// add the player callsign
-			sprintf(msg, "%s %s", chat->callsign, chat->text);
-			Assertion(strlen(msg) < (CHATBOX_STRING_LEN - 2), "Chat string is too long, please report!");
+		// add the player callsign
+		sprintf(msg, "%s %s", chat->callsign, chat->text);
+		Assertion(strlen(msg) < (CHATBOX_STRING_LEN - 2), "Chat string is too long, please report!");
 
-			// print the line out
-			gr_set_color_fast(Color_netplayer[chat->player_id]);
+		// print the line out
+		gr_set_color_fast(Color_netplayer[chat->player_id]);
 
-			// draw the first line (no indent)
-			int indent = 0;
-			if (chat->indent) {
-				indent = CHAT_LINE_INDENT;
-			}
-			gr_string(Chatbox_begin_x + indent, ly, msg, GR_RESIZE_MENU);
-
-			// if we're in a team vs. team game, blit the player color icon
-			if (Netgame.type_flags & NG_TYPE_TEAM) {
-				switch (Net_players[chat->player_id].p_info.team) {
-				case 0:
-					// if he's a team captain
-					if (Net_players[chat->player_id].flags & NETINFO_FLAG_TEAM_CAPTAIN) {
-						if (Multi_common_icons[MICON_TEAM0_SELECT] != -1) {
-							gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-							gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
-						}
-					}
-					// just you're average peon
-					else {
-						if (Multi_common_icons[MICON_TEAM0] != -1) {
-							gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-							gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
-						}
-					}
-					break;
-				case 1:
-					// if he's a team captain
-					if (Net_players[chat->player_id].flags & NETINFO_FLAG_TEAM_CAPTAIN) {
-						if (Multi_common_icons[MICON_TEAM1_SELECT] != -1) {
-							gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-							gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
-						}
-					}
-					// just your average peon
-					else {
-						if (Multi_common_icons[MICON_TEAM1] != -1) {
-							gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-							gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
-						}
-					}
-					break;
-				}
-			}
-
-			// increment the count and line position
-			count++;
-			++chat;
-			ly += line_height;
+		// draw the first line (no indent)
+		int indent = 0;
+		if (chat->indent) {
+			indent = CHAT_LINE_INDENT;
 		}
+		gr_string(Chatbox_begin_x + indent, ly, msg, GR_RESIZE_MENU);
+
+		// if we're in a team vs. team game, blit the player color icon
+		if (Netgame.type_flags & NG_TYPE_TEAM) {
+			switch (Net_players[chat->player_id].p_info.team) {
+			case 0:
+				// if he's a team captain
+				if (Net_players[chat->player_id].flags & NETINFO_FLAG_TEAM_CAPTAIN) {
+					if (Multi_common_icons[MICON_TEAM0_SELECT] != -1) {
+						gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
+					}
+				}
+				// just you're average peon
+				else {
+					if (Multi_common_icons[MICON_TEAM0] != -1) {
+						gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
+					}
+				}
+				break;
+			case 1:
+				// if he's a team captain
+				if (Net_players[chat->player_id].flags & NETINFO_FLAG_TEAM_CAPTAIN) {
+					if (Multi_common_icons[MICON_TEAM1_SELECT] != -1) {
+						gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
+					}
+				}
+				// just your average peon
+				else {
+					if (Multi_common_icons[MICON_TEAM1] != -1) {
+						gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
+					}
+				}
+				break;
+			}
+		}
+
+		// increment the count and line position
+		count++;
+		++chat;
+		ly += line_height;
 	}		
 }
 
