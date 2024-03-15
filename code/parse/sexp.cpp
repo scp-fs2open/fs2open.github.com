@@ -36797,13 +36797,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_STRING_GREATER_THAN, "String Greater Than (Boolean operator)\r\n"
-		"\tTrue if the first argument is greater than the second argument.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 string arguments." },
+		"\tTrue if the first argument is greater than all of the other arguments.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more string arguments." },
 
 	// Goober5000
 	{ OP_STRING_LESS_THAN, "String Less Than (Boolean operator)\r\n"
-		"\tTrue if the first argument is less than the second argument.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 string arguments." },
+		"\tTrue if the first argument is less than all of the other arguments.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more string arguments." },
 
 	// Goober5000 - added wing capability
 	{ OP_IS_IFF, "Is IFF (Boolean operator)\r\n"
