@@ -159,6 +159,7 @@ namespace AI {
 		Dynamic_goals_afterburn_hard,
 		Player_orders_afterburn_hard,
 		Hudsquadmsg_tactical_disarm_disable,
+		Align_to_target_when_guarding_still,
 
 		NUM_VALUES
 	};
