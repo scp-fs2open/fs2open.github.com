@@ -1141,6 +1141,8 @@ add_file_folder("PcxUtils"
 add_file_folder("Physics"
 	physics/physics.cpp
 	physics/physics.h
+	physics/physics_state.cpp
+	physics/physics_state.h
 )
 
 # PilotFile files
