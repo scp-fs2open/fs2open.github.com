@@ -1218,9 +1218,6 @@ void pilotfile::csg_read_settings()
 	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 
-	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these options set
-	options::OptionsManager::instance()->persistChanges();
-
 	if (csg_ver < 3) {
 		// detail
 		int dummy  __UNUSED = cfread_int(cfp);
@@ -1765,6 +1762,9 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
+
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these campaign options set
+	options::OptionsManager::instance()->persistChanges();
 
 	// if the campaign (for whatever reason) doesn't have a squad image, use the multi one
 	if (p->s_squad_filename[0] == '\0') {

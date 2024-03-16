@@ -416,6 +416,9 @@ void pilotfile::plr_read_multiplayer()
 	p->m_local_options.flags = handler->readInt("local_flags");
 	p->m_local_options.obj_update_level = handler->readInt("obj_update_level");
 
+	//Make sure the local games multi option is reflected by the OptionsManager
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) != 0);
+
 	// netgame protocol
 	Multi_options_g.protocol = handler->readInt("protocol");
 
@@ -879,9 +882,6 @@ void pilotfile::plr_read_settings()
 	Detail.planets_suns      = handler->readInt("planets_suns");
 	Detail.weapon_extras     = handler->readInt("weapon_extras");
 
-	//Probably don't need to persist these to disk but it'll make sure on next boot we start with these options set
-	options::OptionsManager::instance()->persistChanges();
-
 	if (!clamped_range_warnings.empty()) {
 		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
 		clamped_range_warnings.clear();
@@ -1149,6 +1149,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 		}
 	}
 	handler->endSectionRead();
+
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these player options set
+	options::OptionsManager::instance()->persistChanges();
 
 	// restore the callsign into the Player structure
 	strcpy_s(p->callsign, callsign);
