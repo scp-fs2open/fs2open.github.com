@@ -224,4 +224,57 @@ void OptionsManager::printValues()
 	}
 }
 
+void OptionsManager::set_ingame_binary_option(SCP_string key, bool value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const options::OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		auto val = thisOpt->getCurrentValueDescription();
+		SCP_string newVal = value ? "true" : "false"; // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({val.display, newVal.c_str()});
+	}
+}
+
+void OptionsManager::set_ingame_multi_option(SCP_string key, int value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const options::OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		auto values = thisOpt->getValidValues();
+		thisOpt->setValueDescription(values[value]);
+	}
+}
+
+void OptionsManager::set_ingame_range_option(SCP_string key, int value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const options::OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+	}
+}
+
+void OptionsManager::set_ingame_range_option(SCP_string key, float value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const options::OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+	}
+}
+
 } // namespace options

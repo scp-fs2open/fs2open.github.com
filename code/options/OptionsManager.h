@@ -58,6 +58,11 @@ class OptionsManager {
 	void loadInitialValues();
 
 	void printValues();
+
+	void set_ingame_binary_option(SCP_string key, bool value);
+	void set_ingame_multi_option(SCP_string key, int value);
+	void set_ingame_range_option(SCP_string key, int value);
+	void set_ingame_range_option(SCP_string key, float value);
 };
 
 }
