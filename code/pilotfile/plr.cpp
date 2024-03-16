@@ -879,6 +879,9 @@ void pilotfile::plr_read_settings()
 	Detail.planets_suns      = handler->readInt("planets_suns");
 	Detail.weapon_extras     = handler->readInt("weapon_extras");
 
+	//Probably don't need to persist these to disk but it'll make sure on next boot we start with these options set
+	options::OptionsManager::instance()->persistChanges();
+
 	if (!clamped_range_warnings.empty()) {
 		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
 		clamped_range_warnings.clear();
