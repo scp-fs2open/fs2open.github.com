@@ -1218,6 +1218,9 @@ void pilotfile::csg_read_settings()
 	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these options set
+	options::OptionsManager::instance()->persistChanges();
+
 	if (csg_ver < 3) {
 		// detail
 		int dummy  __UNUSED = cfread_int(cfp);
