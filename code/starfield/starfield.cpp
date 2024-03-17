@@ -2757,7 +2757,7 @@ void stars_set_nebula(bool activate, float range)
     if (activate)
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
-		HUD_contrast = 1;
+		HUD_high_contrast = true;
 
 		Neb2_render_mode = NEB2_RENDER_HTL;
 		Neb2_awacs = range;
@@ -2775,7 +2775,7 @@ void stars_set_nebula(bool activate, float range)
 	else
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
-		HUD_contrast = 0;
+		HUD_high_contrast = false;
 
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
