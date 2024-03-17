@@ -1488,10 +1488,39 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 		return ade_set_error(L, "i", 0);
 
 	int w;
-
-	gr_get_string_size(&w, NULL, s);
+	gr_get_string_size(&w, nullptr, s);
 
 	return ade_set_args(L, "i", w);
+}
+
+ADE_FUNC(getStringHeight, l_Graphics, "string String", "Gets string height", "number", "String height, or 0 on failure")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "i", 0);
+
+	const char* s;
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "i", 0);
+
+	int h;
+	gr_get_string_size(nullptr, &h, s);
+
+	return ade_set_args(L, "i", h);
+}
+
+ADE_FUNC(getStringSize, l_Graphics, "string String", "Gets string width and height", "number, number", "String width and height, or 0, 0 on failure")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "ii", 0, 0);
+
+	const char* s;
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "ii", 0, 0);
+
+	int w, h;
+	gr_get_string_size(&w, &h, s);
+
+	return ade_set_args(L, "ii", w, h);
 }
 
 ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache, boolean grayscale]",
