@@ -10891,14 +10891,14 @@ void ai_guard()
 						//	Goal point is in front.
 						//	If close to goal point, don't change direction, just change speed.
 						if (dist_to_goal_point > Pl_objp->radius + 10.0f) {
-							turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+							turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f);
 						}
 						
 						set_accel_for_target_speed(Pl_objp, guard_objp->phys_info.speed + (dist_to_goal_point-40.0f)/20.0f);
 					}
 				} else {
 					if (dot_to_goal_point > 0.8f) {
-						turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+						turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f);
 						set_accel_for_target_speed(Pl_objp, guard_objp->phys_info.speed + dist_to_goal_point*0.1f);
 					} else {
 						set_accel_for_target_speed(Pl_objp, guard_objp->phys_info.speed - dist_to_goal_point*0.1f - 1.0f);
@@ -10907,10 +10907,14 @@ void ai_guard()
 			// consider guard object STILL
 			} else if (guard_objp->radius < 50.0f) {
 				if (dist_to_goal_point > 15.0f) {
-					turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f);
 					set_accel_for_target_speed(Pl_objp, (dist_to_goal_point-10.0f)/2.0f);
 				} else if (Pl_objp->phys_info.speed < 1.0f) {
-					turn_away_from_point(Pl_objp, &guard_objp->pos, 0.0f);
+					if (aip->ai_profile_flags[AI::Profile_Flags::Align_to_target_when_guarding_still]) {
+						turn_towards_point(Pl_objp, &guard_objp->pos, nullptr, 0.0f, &guard_objp->orient);
+					} else {
+						turn_away_from_point(Pl_objp, &guard_objp->pos, 0.0f);
+					}
 				}
 				//	It's a big ship
 			} else if (dist_to_guardobj > MAX_GUARD_DIST + Pl_objp->radius + guard_objp->radius) {
