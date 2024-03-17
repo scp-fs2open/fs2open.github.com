@@ -406,7 +406,7 @@ static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<F
                               {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
                               {{FramebufferEffects::Thrusters}, {"Thrusters", 1689}},
                               {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1690}}})
-                     .default_val({FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters})
+                     .default_val({})
                      .bind_to_once(&Gr_framebuffer_effects)
                      .importance(77)
                      .finish();
