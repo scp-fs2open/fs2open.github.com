@@ -40,15 +40,14 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 {
 	auto override_iter = _config_overrides.find(key);
 	if (override_iter != _config_overrides.end()) {
-		// We return a reference to an existing object so we need to increment the reference count
-		json_incref(override_iter->second.get());
-		return std::unique_ptr<json_t>(override_iter->second.get());
+		json_t temp = *override_iter->second.get();
+		return std::unique_ptr<json_t>(&temp);
 	}
 
 	auto changed_iter = _changed_values.find(key);
 	if (changed_iter != _changed_values.end()) {
-		json_incref(changed_iter->second.get());
-		return std::unique_ptr<json_t>(changed_iter->second.get());
+		json_t temp = *changed_iter->second.get();
+		return std::unique_ptr<json_t>(&temp);
 	}
 
 	auto parts = parse_key(key);
