@@ -151,5 +151,17 @@ ADE_FUNC(writeIPAddressTable, l_Options, "table", "Saves the table to the multip
 	return ade_set_args(L, "b", multi_join_write_ip_address_file(list));
 }
 
+ADE_FUNC(verifyIPAddress, l_Options, "string", "Verifies if a string is a valid IP address", "boolean", "True if valid, false otherwise")
+{
+	
+	const char* ip;
+
+	if (!ade_get_args(L, "s", &ip)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", psnet_is_valid_ip_string(ip));
+}
+
 } // namespace api
 } // namespace scripting
