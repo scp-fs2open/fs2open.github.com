@@ -309,6 +309,8 @@ static int F1_text_done = 0;
 int Main_hall_help_stamp = -1;
 void main_hall_process_help_stuff();
 
+bool Main_hall_use_defaults = true;
+
 
 // ----------------------------------------------------------------------------
 // VOICE RECORDING STUFF
@@ -2156,18 +2158,20 @@ void region_info_init(main_hall_defines &m)
 		m.regions.clear();
 	}
 	
-	main_hall_region defaults[] = {
-		main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
-		main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
-		main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
-		main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
-		main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
-		main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
-		main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
-	};
+	if (Main_hall_use_defaults) {
+		main_hall_region defaults[] = {
+			main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
+			main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
+			main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
+			main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
+			main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
+			main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
+			main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
+		};
 	
-	for (int idx = 0; idx < 7; idx++) {
-		m.regions.push_back(defaults[idx]);
+		for (int idx = 0; idx < 7; idx++) {
+			m.regions.push_back(defaults[idx]);
+		}
 	}
 	
 	// XSTR( "Multiplayer - Start or join a multiplayer game", 359)
@@ -2213,6 +2217,10 @@ void parse_main_hall_table(const char* filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 
 		reset_parse();
+
+		if (optional_string("$Base mainhalls on retail defaults:")) {
+			stuff_boolean(&Main_hall_use_defaults);
+		}
 
 		if (optional_string("$Num Resolutions:")) {
 			stuff_int(&num_resolutions);
