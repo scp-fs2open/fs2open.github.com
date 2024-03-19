@@ -240,6 +240,10 @@ void LoadoutDialog::onextraItemSpinboxUpdated()
 		for (const auto& item : ui->usedShipsList->selectedItems()){
 			list.emplace_back(item->text().toStdString());
 		}
+		
+		if (ui->extraItemSpinbox->value() < 0) {
+			ui->extraItemSpinbox->setValue(0.0f);
+		}
 
 		_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
 	} else if (_lastSelectionChanged == USED_WEAPONS){
@@ -253,6 +257,8 @@ void LoadoutDialog::onextraItemSpinboxUpdated()
 		
 		_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
 	}
+
+	updateUI();
 }
 
 void LoadoutDialog::onExtraItemsViaVariableCombo()
@@ -433,19 +439,22 @@ void LoadoutDialog::updateUI()
 		ui->extraItemSpinbox->setEnabled(true);
 		ui->extraItemsViaVariableCombo->setEnabled(true);
 
-		for (const auto& item : ui->usedShipsList->selectedItems()) {
-			namesOut.emplace_back(item->text().toStdString().c_str());
+		for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
+			if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->isItemSelected(ui->usedShipsList->item(x, 0))) {
+				namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
+			}
 			requestSpinComboUpdate = true;
 		}
 	} else if (_mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS){
 		ui->extraItemSpinbox->setEnabled(true);
 		ui->extraItemsViaVariableCombo->setEnabled(true);
 
-		for (const auto& item : ui->usedWeaponsList->selectedItems()){
-			namesOut.emplace_back(item->text().toStdString().c_str());
+		for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+			if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->isItemSelected(ui->usedWeaponsList->item(x,0))){
+				namesOut.emplace_back(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str());			
+			}
 			requestSpinComboUpdate = true;
 		}
-	//} else if (mode == VARIABLE_MODE) { TODO FINISH ME!
 
 	} else {
 		ui->extraItemSpinbox->setEnabled(false);
@@ -460,7 +469,7 @@ void LoadoutDialog::updateUI()
 		if (_lastSelectionChanged == USED_SHIPS){
 			temp = _model->getExtraAllocatedShipEnabler(namesOut);		
 		} else {
-			temp = _model->getExtraAllocatedWeapons(namesOut);
+			temp = _model->getExtraAllocatedWeaponEnabler(namesOut);
 		}
 
 		if (temp > -1) {
@@ -469,10 +478,37 @@ void LoadoutDialog::updateUI()
 		else {
 			ui->extraItemSpinbox->clear();
 		}
+
+		ui->currentTeamSpinbox->setValue(_model->getCurrentTeam());
+	}
+}
+
+SCP_vector<SCP_string> LoadoutDialog::getSelectedShips() 
+{
+	SCP_vector<SCP_string> namesOut;
+
+	for (int x; x < ui->usedShipsList->rowCount(); ++x) {
+		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x,0)->isSelected()) {
+			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
+		}
 	}
 
-
+	return namesOut;
 }
+
+SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
+{
+	SCP_vector<SCP_string> namesOut;
+
+	for (int x; x < ui->usedWeaponsList->rowCount(); ++x) {
+		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x, 0)->isSelected()) {
+			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
+		}
+	}
+
+	return namesOut;
+}
+
 
 // This has been deprecated for now.  Possibly only going to use UpdateUI, since it will add and remove items from the lists as needed.
 /*

@@ -49,15 +49,21 @@ private:
 		_lastSelectionChanged = POTENTIAL_SHIPS;
 		updateUI();
 	}
-	void onPotentialWeaponListClicked(){ _lastSelectionChanged = POTENTIAL_WEAPONS;
+	void onPotentialWeaponListClicked(){ 
+		_lastSelectionChanged = POTENTIAL_WEAPONS;
 		updateUI();
 	}
-	void onUsedShipListClicked(){ _lastSelectionChanged = USED_SHIPS;
+	void onUsedShipListClicked(){ 
+		_lastSelectionChanged = USED_SHIPS;
 		updateUI();
 	}
-	void onUsedWeaponListClicked(){ _lastSelectionChanged = USED_WEAPONS;
+	void onUsedWeaponListClicked(){ 
+		_lastSelectionChanged = USED_WEAPONS;
 		updateUI();
 	}
+
+	SCP_vector<SCP_string> LoadoutDialog::getSelectedShips(); 
+	SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons(); 
 
 	void updateUI();
 
