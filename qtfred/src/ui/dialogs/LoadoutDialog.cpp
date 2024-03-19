@@ -59,7 +59,7 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onUsedShipListClicked);
 
-	connect(ui->usedShipsList,
+	connect(ui->usedWeaponsList,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
 		&LoadoutDialog::onUsedWeaponListClicked);
@@ -99,11 +99,6 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		&LoadoutDialog::onExtraItemSpinboxUpdated);
 
 	connect(ui->extraItemsViaVariableCombo,
-		QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this,
-		&LoadoutDialog::onExtraItemsViaVariableCombo);
-
-	connect(ui->enablerComboBox,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this,
 		&LoadoutDialog::onExtraItemsViaVariableCombo);
@@ -272,11 +267,6 @@ void LoadoutDialog::onExtraItemsViaVariableCombo()
 
 	// TODO, make a function that updates the model with the new combobox choice
 
-}
-
-void LoadoutDialog::onEnableViaVariableCombo()
-{
-	//TODO! Finish this too....
 }
 
 void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
@@ -467,8 +457,12 @@ void LoadoutDialog::updateUI()
 		
 		int temp;
 
-		if (_lastSelectionChanged == USED_SHIPS){
-			temp = _model->getExtraAllocatedShipEnabler(namesOut);		
+		if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS){
+			temp = _model->getExtraAllocatedShips(namesOut);		
+		} else if (_mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS){
+			temp = _model->getExtraAllocatedWeapons(namesOut);
+		} else if (_lastSelectionChanged == USED_SHIPS) {
+			temp = _model->getExtraAllocatedShipEnabler(namesOut);
 		} else {
 			temp = _model->getExtraAllocatedWeaponEnabler(namesOut);
 		}

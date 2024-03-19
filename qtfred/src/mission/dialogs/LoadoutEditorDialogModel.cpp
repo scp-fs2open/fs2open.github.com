@@ -237,6 +237,7 @@ int LoadoutDialogModel::getCurrentTeam()
 
 SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getShipList()
 {
+	// We rebuild the lists here because there may have been an update.
 	return _shipList;
 }
 
@@ -252,6 +253,7 @@ SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getShipEnablerVariab
 
 SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getWeaponEnablerVariables()
 {
+	buildCurrentLists();
 	return _weaponVarList;
 }
 
@@ -298,9 +300,11 @@ void LoadoutDialogModel::setShipInfo(SCP_string textIn, bool enabled, int extraA
 		}
 		index++;
 	}
-	
-	Assert(found);
 
+	// rebuild the lists that the UI depends on.
+	buildCurrentLists();
+	Assert(found);
+	modelChanged();
 }
 
 void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount)
@@ -341,6 +345,7 @@ void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extr
 	}
 
 	Assert(found);
+	buildCurrentLists();
 
 	modelChanged();
 }
@@ -472,7 +477,7 @@ void LoadoutDialogModel::setShipEnablerVariables(SCP_vector<SCP_string> variable
 	}
 
 	_spinBoxUpdateRequired = true;
-
+	buildCurrentLists();
 	modelChanged();
 }
 
@@ -545,7 +550,7 @@ void LoadoutDialogModel::setWeaponEnablerVariables(SCP_vector<SCP_string> variab
 	}
 
 	_spinBoxUpdateRequired = true;
-
+	buildCurrentLists();
 	modelChanged();
 }
 
@@ -886,6 +891,8 @@ void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool
 			}
 		}
 	}
+
+	buildCurrentLists();
 }
 
 
@@ -899,6 +906,8 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 			}
 		}
 	}
+
+	buildCurrentLists();
 }
 
 void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count) 
@@ -911,6 +920,8 @@ void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>
 			}
 		}
 	}
+
+	buildCurrentLists();
 }
 
 void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count)
@@ -923,6 +934,8 @@ void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_strin
 			}
 		}
 	}
+
+	buildCurrentLists();
 }
 
 }
