@@ -35,7 +35,7 @@ private:
 	EditorViewport* _viewport;
 
 	void onSwitchViewButtonPressed();
-	void onExtraItemSpinbox();
+	void onextraItemSpinboxUpdated();
 	void onExtraItemsViaVariableCombo();
 	void onPlayerDelayDoubleSpinBoxUpdated();
 	void onCurrentTeamSpinboxUpdated();

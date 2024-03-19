@@ -298,7 +298,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QListWidget" name="usedWeaponsList"/>
+        <widget class="QTableWidget" name="usedWeaponsList"/>
        </item>
       </layout>
      </item>
@@ -395,7 +395,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QListView" name="listShipsNotUsed"/>
+        <widget class="QListWidget" name="listShipsNotUsed"/>
        </item>
        <item alignment="Qt::AlignHCenter">
         <widget class="QLabel" name="label">
@@ -405,7 +405,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QListView" name="listWeaponsNotUsed"/>
+        <widget class="QListWidget" name="listWeaponsNotUsed"/>
        </item>
       </layout>
      </item>
