@@ -368,8 +368,6 @@ SCP_string LoadoutDialogModel::createItemString(bool ship, int itemIndex)
 	else {
 		stringOut += Sexp_variables[ip->varCountIndex].variable_name;
 	}
-	stringOut += "/";
-	stringOut += std::to_string(ip->countInWings + ip->extraAllocated);
 
 	return stringOut;
 }
@@ -911,7 +909,7 @@ void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>
 	for (const auto& item : list) {
 		for (auto& ship : _teams[_currentTeam].ships) {
 			if (item == ship.name) {
-				ship.countInWings = count;
+				ship.extraAllocated = count;
 				break;
 			}
 		}
@@ -923,7 +921,7 @@ void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_strin
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].weapons) {
 			if (item == weapon.name) {
-				weapon.countInWings = count;
+				weapon.extraAllocated = count;
 				break;
 			}
 		}

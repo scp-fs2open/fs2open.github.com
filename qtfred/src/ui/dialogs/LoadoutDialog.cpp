@@ -243,7 +243,7 @@ void LoadoutDialog::onextraItemSpinboxUpdated()
 			list.emplace_back(item->text().toStdString());
 		}
 
-		if (ui->extraItemSpinbox < 0){
+		if (ui->extraItemSpinbox->value() < 0){
 			ui->extraItemSpinbox->setValue(0.0f);
 		}
 		
@@ -302,7 +302,7 @@ void LoadoutDialog::updateUI()
 
 
 	// build the ship lists...
-	for (auto& newShip : newShipList) {		
+	for (const auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newShip.first.find_last_of(" ");
 		
