@@ -265,7 +265,7 @@
           </size>
          </property>
          <property name="editTriggers">
-          <set>QAbstractItemView::AllEditTriggers</set>
+          <set>QAbstractItemView::NoEditTriggers</set>
          </property>
          <property name="tabKeyNavigation">
           <bool>false</bool>
@@ -289,7 +289,7 @@
           <enum>Qt::NoPen</enum>
          </property>
          <attribute name="horizontalHeaderDefaultSectionSize">
-          <number>200</number>
+          <number>140</number>
          </attribute>
          <attribute name="verticalHeaderVisible">
           <bool>false</bool>
@@ -317,8 +317,11 @@
          <property name="selectionBehavior">
           <enum>QAbstractItemView::SelectRows</enum>
          </property>
+         <property name="showGrid">
+          <bool>false</bool>
+         </property>
          <attribute name="horizontalHeaderDefaultSectionSize">
-          <number>200</number>
+          <number>140</number>
          </attribute>
          <attribute name="verticalHeaderVisible">
           <bool>false</bool>
@@ -420,7 +423,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QListWidget" name="listShipsNotUsed"/>
+        <widget class="QListWidget" name="listShipsNotUsed">
+         <property name="selectionMode">
+          <enum>QAbstractItemView::MultiSelection</enum>
+         </property>
+        </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
         <widget class="QLabel" name="label">
@@ -430,7 +437,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QListWidget" name="listWeaponsNotUsed"/>
+        <widget class="QListWidget" name="listWeaponsNotUsed">
+         <property name="selectionMode">
+          <enum>QAbstractItemView::MultiSelection</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>

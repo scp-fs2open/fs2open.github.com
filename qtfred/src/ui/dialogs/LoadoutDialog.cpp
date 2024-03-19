@@ -45,12 +45,12 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	// Ship and Weapon lists, selection changed.
 	// TODO: Is there a way to know if we have been selected via the tab button?
 	connect(ui->listShipsNotUsed, 
-		&QListWidget::itemSelectionChanged,
+		&QListWidget::itemClicked,
 		this,
 		&LoadoutDialog::onPotentialShipListClicked);
 
 	connect(ui->listWeaponsNotUsed,
-		&QListWidget::itemSelectionChanged,
+		&QListWidget::itemClicked,
 		this,
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
@@ -137,8 +137,10 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	// set headers
 	ui->usedShipsList->setColumnCount(2);
 	ui->usedWeaponsList->setColumnCount(2);
-	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
-	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
+	ui->usedShipsList->setHorizontalHeaderItem(0, new QTableWidgetItem("Ship Name"));
+	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("Present In Wings/Extra"));
+	ui->usedWeaponsList->setHorizontalHeaderItem(0, new QTableWidgetItem("Weapon Name"));
+	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("Present In Wings/Extra"));
 
 	// quickly enable or disable the team spin box (must not get to multiple teams if in SP!)
 	if (The_mission.game_type & MISSION_TYPE_MULTI){
@@ -381,10 +383,11 @@ void LoadoutDialog::updateUI()
 			}
 
 			if (!found){
+				ui->usedWeaponsList->insertRow(ui->usedWeaponsList->rowCount());
+
 				QTableWidgetItem* nameItem = new QTableWidgetItem(weaponName.c_str());
 				QTableWidgetItem* countItem = new QTableWidgetItem(newWeapon.first.substr(divider + 1).c_str());
 
-				ui->usedWeaponsList->insertRow(ui->usedWeaponsList->rowCount());
 				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 0, nameItem);
 				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 1, countItem);
 
