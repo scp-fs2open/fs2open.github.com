@@ -306,15 +306,13 @@ void LoadoutDialog::updateUI()
 	for (const auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newShip.first.rfind(" ");
-		
-
-		const char* shipName = newShip.first.substr(0, divider).c_str();
+		SCP_string shipName = newShip.first.substr(0, divider);
 
 		if (newShip.second) {
 			bool found = false;
 			
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x){
-				if (!stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName)) {
+				if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
 					found = true;
 					// only need to update the quantities here.
 					ui->usedShipsList->item(x, 1)->setText(newShip.first.substr(divider + 1).c_str());
@@ -323,17 +321,17 @@ void LoadoutDialog::updateUI()
 			}
 
 			if (!found){
-				ui->usedShipsList->insertRow(ui->usedShipsList->rowCount() + 1);
+				ui->usedShipsList->insertRow(ui->usedShipsList->rowCount());
 
-				QTableWidgetItem* nameItem = new QTableWidgetItem(shipName);
+				QTableWidgetItem* nameItem = new QTableWidgetItem(shipName.c_str());
 				QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 1).c_str());
 	
 				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 0, nameItem);
 				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 1, countItem);
 
-				//remove from the used list
+				//remove from the unused list
 				for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
-					if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName)) {
+					if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
 						delete ui->listShipsNotUsed->takeItem(x);
 						break;
 					}
@@ -344,19 +342,18 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
-				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName)) {
+				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
 					found = true;
-					ui->listShipsNotUsed->item(x)->setText(newShip.first.c_str());
 					break;
 				}
 			}
 
 			if (!found){
-				ui->listShipsNotUsed->addItem(newShip.first.c_str());
+				ui->listShipsNotUsed->addItem(shipName.c_str());
 
 				//remove from the used list
 				for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-					if (!stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName)) {
+					if (!stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
 						delete ui->usedShipsList->takeItem(x, 0);
 						delete ui->usedShipsList->takeItem(x, 1);
 						break;
@@ -369,13 +366,13 @@ void LoadoutDialog::updateUI()
 	for (auto& newWeapon : newWeaponList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newWeapon.first.rfind(" ");
-		const char* weaponName = newWeapon.first.substr(0, divider).c_str();
+		SCP_string weaponName = newWeapon.first.substr(0, divider);
 		if (newWeapon.second) {
 			bool found = false;
 			
 			// Add or update in the used list
 			for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-				if (!stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName)) {
+				if (ui->usedWeaponsList->item(x,0) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
 					found = true;
 					// only need to update the quantities here.
 					ui->usedWeaponsList->item(x, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
@@ -384,7 +381,7 @@ void LoadoutDialog::updateUI()
 			}
 
 			if (!found){
-				QTableWidgetItem* nameItem = new QTableWidgetItem(weaponName);
+				QTableWidgetItem* nameItem = new QTableWidgetItem(weaponName.c_str());
 				QTableWidgetItem* countItem = new QTableWidgetItem(newWeapon.first.substr(divider + 1).c_str());
 
 				ui->usedWeaponsList->insertRow(ui->usedWeaponsList->rowCount());
@@ -393,7 +390,7 @@ void LoadoutDialog::updateUI()
 
 				//remove from the unused list
 				for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
-					if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName)) {
+					if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
 						delete ui->listWeaponsNotUsed->takeItem(x);
 						break;
 					}
@@ -404,18 +401,18 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
-				if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName)) {
+				if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
 					found = true;
 					break;
 				}
 			}
 
 			if (!found){
-				ui->listWeaponsNotUsed->addItem(newWeapon.first.c_str());
+				ui->listWeaponsNotUsed->addItem(weaponName.c_str());
 
 				//remove from the used list
 				for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x){
-					if (!stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName)) {
+					if (!stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
 						delete ui->usedWeaponsList->takeItem(x, 0);
 						delete ui->usedWeaponsList->takeItem(x, 1);
 						break;
