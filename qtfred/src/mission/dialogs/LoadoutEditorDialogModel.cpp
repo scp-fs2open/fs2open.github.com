@@ -39,7 +39,6 @@ void LoadoutDialogModel::initializeData()
 	Assert(usage.size() == MAX_SHIP_CLASSES * MAX_TVT_TEAMS * 2);
 
 	int currentTeam = 0;
-	int shipIndex = 0;
 	int index = 0;
 
 	for (auto& ship : Ship_info){
@@ -554,7 +553,6 @@ bool LoadoutDialogModel::apply() {
 
 	int currentTeam = 0;
 	int index = 0;
-	int loadoutTotal = 0; // TODO Figure out if we need to set this.
 
 	for (auto& modelTeam : _teams) {
 		for (auto& ship : modelTeam.ships) {
@@ -819,7 +817,6 @@ int LoadoutDialogModel::getExtraAllocatedShips(SCP_vector<SCP_string> namesIn)
 int LoadoutDialogModel::getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn) 
 {
 	int out = -1;
-	bool done = false;
 
 	_spinBoxUpdateRequired = false;
 
