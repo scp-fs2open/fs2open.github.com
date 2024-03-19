@@ -279,7 +279,7 @@ int asteroid_editor::validate_data()
 			}
 		}
 
-		// check if passive, ship debris field, at least one speceis selected
+		// check if passive, ship debris field, at least one debris type selected
 		if (a_field[0].field_type == FT_PASSIVE) {
 			if (a_field[0].debris_genre == DG_DEBRIS) {
 				if ( (a_field[0].field_debris_type[0] == -1) && (a_field[0].field_debris_type[1] == -1) && (a_field[0].field_debris_type[2] == -1) ) {
@@ -291,7 +291,7 @@ int asteroid_editor::validate_data()
 
 		// check at least one asteroid subtype is selected
 		if (a_field[0].debris_genre == DG_ASTEROID) {
-			if ( (a_field[0].field_debris_type[0] == -1) && (a_field[0].field_debris_type[1] == -1) && (a_field[0].field_debris_type[2] == -1) ) {
+			if ( (!a_field[0].field_asteroid_type[0]) && (!a_field[0].field_asteroid_type[1]) && (!a_field[0].field_asteroid_type[2]) ) {
 				MessageBox("You must choose one or more asteroid subtypes");
 				return 0;
 			}
@@ -335,7 +335,7 @@ BOOL asteroid_editor::OnInitDialog()
 
 void asteroid_editor::update_init()
 {
-	int num_asteroids, idx, cur_choice;
+	int num_asteroids, idx;
 	CString str;
 
 	UpdateData(TRUE);
@@ -374,6 +374,7 @@ void asteroid_editor::update_init()
 			for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 				// loop over combo boxes, store the item data of the cur selection, -1 in no cur selection
 				int cur_sel = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCurSel();
+				int cur_choice;
 				if (cur_sel != CB_ERR) {
 					cur_choice = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(cur_sel);
 				} else {
@@ -384,28 +385,29 @@ void asteroid_editor::update_init()
 		}
 
 		if ( m_debris_genre == DG_ASTEROID ) {
+			bool cur_choice;
 			if ( ((CButton *)GetDlgItem(IDC_SUBTYPE1))->GetCheck() == 1) {
-				cur_choice = 1;
+				cur_choice = true;
 			} else {
-				cur_choice = -1;
+				cur_choice = false;
 			}
-			MODIFY(a_field[cur_field].field_debris_type[0], cur_choice);
+			MODIFY(a_field[cur_field].field_asteroid_type[0], cur_choice);
 
 
 			if ( ((CButton *)GetDlgItem(IDC_SUBTYPE2))->GetCheck() == 1) {
-				cur_choice = 1;
+				cur_choice = true;
 			} else {
-				cur_choice = -1;
+				cur_choice = false;
 			}
-			MODIFY(a_field[cur_field].field_debris_type[1], cur_choice);
+			MODIFY(a_field[cur_field].field_asteroid_type[1], cur_choice);
 
 
 			if ( ((CButton *)GetDlgItem(IDC_SUBTYPE3))->GetCheck() == 1) {
-				cur_choice = 1;
+				cur_choice = true;
 			} else {
-				cur_choice = -1;
+				cur_choice = false;
 			}
-			MODIFY(a_field[cur_field].field_debris_type[2], cur_choice);
+			MODIFY(a_field[cur_field].field_asteroid_type[2], cur_choice);
 		}
 
 		MODIFY(a_field[last_field].has_inner_bound, (bool)m_enable_inner_bounds);
@@ -499,9 +501,9 @@ void asteroid_editor::update_init()
 	}
 
 	// set up asteroid subtype checkboxes
-	((CButton*)GetDlgItem(IDC_SUBTYPE1))->SetCheck(a_field[cur_field].field_debris_type[0] == 1);
-	((CButton*)GetDlgItem(IDC_SUBTYPE2))->SetCheck(a_field[cur_field].field_debris_type[1] == 1);
-	((CButton*)GetDlgItem(IDC_SUBTYPE3))->SetCheck(a_field[cur_field].field_debris_type[2] == 1);
+	((CButton*)GetDlgItem(IDC_SUBTYPE1))->SetCheck(a_field[cur_field].field_asteroid_type[0]);
+	((CButton*)GetDlgItem(IDC_SUBTYPE2))->SetCheck(a_field[cur_field].field_asteroid_type[1]);
+	((CButton*)GetDlgItem(IDC_SUBTYPE3))->SetCheck(a_field[cur_field].field_asteroid_type[2]);
 
 	UpdateData(FALSE);
 	OnEnableAsteroids();

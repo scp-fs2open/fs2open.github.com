@@ -799,8 +799,8 @@ int CFred_mission_save::save_asteroid_fields()
 			}
 		} else {
 			// asteroid subtypes stored in field_debris_type as -1 or 1
-			for (int idx = 0; idx < MAX_ACTIVE_DEBRIS_TYPES; idx++) {
-				if (Asteroid_field.field_debris_type[idx] != -1) {
+			for (int idx = 0; idx < NUM_ASTEROID_SIZES; idx++) {
+				if (Asteroid_field.field_asteroid_type[idx] != false) {
 
 					if (save_format != MissionFormat::RETAIL) {
 						if (optional_string_fred("+Field Debris Type:")) {
