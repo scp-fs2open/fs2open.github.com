@@ -346,14 +346,13 @@ void LoadoutDialog::updateUI()
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
 				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName)) {
 					found = true;
-					// only need to update the quantities here.
-					ui->listShipsNotUsed->item(x)->setText(newShip.first.substr(divider + 1).c_str());
+					ui->listShipsNotUsed->item(x)->setText(newShip.first.c_str());
 					break;
 				}
 			}
 
 			if (!found){
-				ui->listShipsNotUsed->addItem(shipName);
+				ui->listShipsNotUsed->addItem(newShip.first.c_str());
 
 				//remove from the used list
 				for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
@@ -412,7 +411,7 @@ void LoadoutDialog::updateUI()
 			}
 
 			if (!found){
-				ui->listWeaponsNotUsed->addItem(weaponName);
+				ui->listWeaponsNotUsed->addItem(newWeapon.first.c_str());
 
 				//remove from the used list
 				for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x){
@@ -425,9 +424,6 @@ void LoadoutDialog::updateUI()
 			}
 		}
 	}
-
-	int temp;
-	bool spinboxUpdate = _model->spinBoxUpdateRequired();
 
 	SCP_vector<SCP_string> namesOut;
 	bool requestSpinComboUpdate = false;
@@ -456,7 +452,7 @@ void LoadoutDialog::updateUI()
 		ui->extraItemsViaVariableCombo->setEnabled(false);
 	}
 
-	if (requestSpinComboUpdate){
+	if (requestSpinComboUpdate || _model->spinBoxUpdateRequired()) {
 		ui->extraItemsViaVariableCombo->setCurrentText(_model->getCountVarShips(namesOut).c_str());
 		
 		int temp;
