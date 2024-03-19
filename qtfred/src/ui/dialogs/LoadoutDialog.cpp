@@ -96,9 +96,14 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->extraItemSpinbox,
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this,
-		&LoadoutDialog::onextraItemSpinboxUpdated);
+		&LoadoutDialog::onExtraItemSpinboxUpdated);
 
 	connect(ui->extraItemsViaVariableCombo,
+		QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this,
+		&LoadoutDialog::onExtraItemsViaVariableCombo);
+
+	connect(ui->enablerComboBox,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this,
 		&LoadoutDialog::onExtraItemsViaVariableCombo);
@@ -232,24 +237,20 @@ void LoadoutDialog::removeWeaponButtonClicked()
 	updateUI();
 }
 
-void LoadoutDialog::onextraItemSpinboxUpdated()
+void LoadoutDialog::onExtraItemSpinboxUpdated()
 {
 	SCP_vector<SCP_string> list;
 
 	if (_lastSelectionChanged == USED_SHIPS){
-		for (const auto& item : ui->usedShipsList->selectedItems()){
-			list.emplace_back(item->text().toStdString());
-		}
-		
+		list = getSelectedShips();
+
 		if (ui->extraItemSpinbox->value() < 0) {
 			ui->extraItemSpinbox->setValue(0.0f);
 		}
 
 		_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
 	} else if (_lastSelectionChanged == USED_WEAPONS){
-		for (const auto& item : ui->usedWeaponsList->selectedItems()){
-			list.emplace_back(item->text().toStdString());
-		}
+		list = getSelectedWeapons();
 
 		if (ui->extraItemSpinbox->value() < 0){
 			ui->extraItemSpinbox->setValue(0.0f);
@@ -271,6 +272,11 @@ void LoadoutDialog::onExtraItemsViaVariableCombo()
 
 	// TODO, make a function that updates the model with the new combobox choice
 
+}
+
+void LoadoutDialog::onEnableViaVariableCombo()
+{
+	//TODO! Finish this too....
 }
 
 void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
@@ -364,6 +370,7 @@ void LoadoutDialog::updateUI()
 					if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
 						delete ui->usedShipsList->takeItem(x, 0);
 						delete ui->usedShipsList->takeItem(x, 1);
+						ui->usedShipsList->removeRow(x);
 						break;
 					}
 				}
@@ -424,6 +431,7 @@ void LoadoutDialog::updateUI()
 					if (ui->usedWeaponsList->item(x,0) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
 						delete ui->usedWeaponsList->takeItem(x, 0);
 						delete ui->usedWeaponsList->takeItem(x, 1);
+						ui->usedWeaponsList->removeRow(x);
 						break;
 					}
 				}
@@ -439,22 +447,15 @@ void LoadoutDialog::updateUI()
 		ui->extraItemSpinbox->setEnabled(true);
 		ui->extraItemsViaVariableCombo->setEnabled(true);
 
-		for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-			if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->isItemSelected(ui->usedShipsList->item(x, 0))) {
-				namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
-			}
-			requestSpinComboUpdate = true;
-		}
-	} else if (_mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS){
+		namesOut = getSelectedShips();
+		requestSpinComboUpdate = true;
+		
+	} else if (_lastSelectionChanged == USED_WEAPONS){
 		ui->extraItemSpinbox->setEnabled(true);
 		ui->extraItemsViaVariableCombo->setEnabled(true);
 
-		for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-			if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->isItemSelected(ui->usedWeaponsList->item(x,0))){
-				namesOut.emplace_back(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str());			
-			}
-			requestSpinComboUpdate = true;
-		}
+		namesOut = getSelectedWeapons();
+		requestSpinComboUpdate = true;
 
 	} else {
 		ui->extraItemSpinbox->setEnabled(false);
@@ -487,7 +488,7 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedShips()
 {
 	SCP_vector<SCP_string> namesOut;
 
-	for (int x; x < ui->usedShipsList->rowCount(); ++x) {
+	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
 		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x,0)->isSelected()) {
 			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
 		}
@@ -500,9 +501,9 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
 {
 	SCP_vector<SCP_string> namesOut;
 
-	for (int x; x < ui->usedWeaponsList->rowCount(); ++x) {
-		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x, 0)->isSelected()) {
-			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
+	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+		if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x, 0)->isSelected()) {
+			namesOut.emplace_back(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str());
 		}
 	}
 
