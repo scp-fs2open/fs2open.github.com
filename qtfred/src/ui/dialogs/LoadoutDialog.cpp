@@ -353,7 +353,7 @@ void LoadoutDialog::updateUI()
 
 				//remove from the used list
 				for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-					if (!stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
+					if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
 						delete ui->usedShipsList->takeItem(x, 0);
 						delete ui->usedShipsList->takeItem(x, 1);
 						break;
@@ -401,7 +401,7 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
-				if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
+				if (ui->listWeaponsNotUsed->item(x) && !stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
 					found = true;
 					break;
 				}
@@ -412,7 +412,7 @@ void LoadoutDialog::updateUI()
 
 				//remove from the used list
 				for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x){
-					if (!stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
+					if (ui->usedWeaponsList->item(x,0) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
 						delete ui->usedWeaponsList->takeItem(x, 0);
 						delete ui->usedWeaponsList->takeItem(x, 1);
 						break;
