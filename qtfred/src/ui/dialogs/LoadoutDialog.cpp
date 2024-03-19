@@ -135,6 +135,8 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	//	ui->weaponVarList->setColumnWidth(0,10);
 
 	// set headers
+	ui->usedShipsList->setColumnCount(2);
+	ui->usedWeaponsList->setColumnCount(2);
 	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 
@@ -300,11 +302,10 @@ void LoadoutDialog::updateUI()
 		newWeaponList = _model->getWeaponEnablerVariables();
 	}
 
-
 	// build the ship lists...
 	for (const auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
-		size_t divider = newShip.first.find_last_of(" ");
+		size_t divider = newShip.first.rfind(" ");
 		
 
 		const char* shipName = newShip.first.substr(0, divider).c_str();
@@ -322,9 +323,13 @@ void LoadoutDialog::updateUI()
 			}
 
 			if (!found){
-				ui->usedShipsList->insertRow(ui->usedShipsList->rowCount());
-				ui->usedShipsList->item(ui->usedShipsList->rowCount() - 1, 0)->setText(shipName);
-				ui->usedShipsList->item(ui->usedShipsList->rowCount() - 1, 1)->setText(newShip.first.substr(divider + 1).c_str());
+				ui->usedShipsList->insertRow(ui->usedShipsList->rowCount() + 1);
+
+				QTableWidgetItem* nameItem = new QTableWidgetItem(shipName);
+				QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 1).c_str());
+	
+				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 0, nameItem);
+				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 1, countItem);
 
 				//remove from the used list
 				for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
@@ -334,7 +339,7 @@ void LoadoutDialog::updateUI()
 					}
 				}
 			}
-			// TODO! Fix the incoming string so that it matches the new header.
+
 		} else {
 			bool found = false;
 
@@ -364,7 +369,7 @@ void LoadoutDialog::updateUI()
 
 	for (auto& newWeapon : newWeaponList) {		
 		// need to split the incoming string into the different parts.
-		size_t divider = newWeapon.first.find_last_of(" ");
+		size_t divider = newWeapon.first.rfind(" ");
 		const char* weaponName = newWeapon.first.substr(0, divider).c_str();
 		if (newWeapon.second) {
 			bool found = false;
@@ -380,9 +385,12 @@ void LoadoutDialog::updateUI()
 			}
 
 			if (!found){
+				QTableWidgetItem* nameItem = new QTableWidgetItem(weaponName);
+				QTableWidgetItem* countItem = new QTableWidgetItem(newWeapon.first.substr(divider + 1).c_str());
+
 				ui->usedWeaponsList->insertRow(ui->usedWeaponsList->rowCount());
-				ui->usedWeaponsList->item(ui->usedWeaponsList->rowCount() - 1, 0)->setText(weaponName);
-				ui->usedWeaponsList->item(ui->usedWeaponsList->rowCount() - 1, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 0, nameItem);
+				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 1, countItem);
 
 				//remove from the unused list
 				for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
@@ -392,7 +400,6 @@ void LoadoutDialog::updateUI()
 					}
 				}
 			}
-			// TODO! Fix the incoming string so that it matches the new header.
 			
 		} else {
 			bool found = false;
