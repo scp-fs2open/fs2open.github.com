@@ -44,13 +44,13 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	// Ship and Weapon lists, selection changed.
 	// TODO: Is there a way to know if we have been selected via the tab button?
-	connect(ui->listShipsNotUsed,
-		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
+	connect(ui->listShipsNotUsed, 
+		&QListWidget::itemSelectionChanged,
 		this,
 		&LoadoutDialog::onPotentialShipListClicked);
 
 	connect(ui->listWeaponsNotUsed,
-		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
+		&QListWidget::itemSelectionChanged,
 		this,
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
@@ -212,7 +212,7 @@ void LoadoutDialog::removeShipButtonClicked()
 		list.push_back(item->text().toStdString());
 	}
 
-	_model->setShipEnabled(item, false);
+	_model->setShipEnabled(list, false);
 	updateUI();
 }
 
@@ -224,27 +224,27 @@ void LoadoutDialog::removeWeaponButtonClicked()
 		list.push_back(item->text().toStdString());
 	}
 
-	_model->setWeaponEnabled(item, false);
+	_model->setWeaponEnabled(list, false);
 	updateUI();
 }
 
-void LoadoutDialog::onExtraItemSpinbox()
+void LoadoutDialog::onextraItemSpinboxUpdated()
 {
 	SCP_vector<SCP_string> list;
 
 	if (_lastSelectionChanged == USED_SHIPS){
 		for (const auto& item : ui->usedShipsList->selectedItems()){
-			list.push_back(item->text());
+			list.emplace_back(item->text().toStdString());
 		}
 
 		_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
 	} else if (_lastSelectionChanged == USED_WEAPONS){
 		for (const auto& item : ui->usedWeaponsList->selectedItems()){
-			list.push_back(item->text());
+			list.emplace_back(item->text().toStdString());
 		}
 
-		if (ui->extraItemSpinBox < 0){
-			ui->extraItemsSpinBox.setValue(0.0f);
+		if (ui->extraItemSpinbox < 0){
+			ui->extraItemSpinbox->setValue(0.0f);
 		}
 		
 		_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
@@ -256,7 +256,7 @@ void LoadoutDialog::onExtraItemsViaVariableCombo()
 	// TODO!  Figure out if this actually makes sense
 	// if the variable is replacing the amount, get rid of the amount in the spinbox.
 	if (!ui->extraItemsViaVariableCombo->currentText().isEmpty() && ui->extraItemSpinbox->value() > 0) {
-		ui->extraShipSpinbox->setValue(0);
+		ui->extraItemSpinbox->setValue(0);
 	} 
 
 	// TODO, make a function that updates the model with the new combobox choice
@@ -305,7 +305,10 @@ void LoadoutDialog::updateUI()
 	for (auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newShip.first.find_last_of(" ");
-		const char* shipName = ui->usedShipsList->addItem(newShip.substr(0, divider).c_str());
+		
+
+		const char* shipName = newShip.first.substr(0, divider).c_str();
+
 		if (newShip.second) {
 			bool found = false;
 			
@@ -423,11 +426,11 @@ void LoadoutDialog::updateUI()
 	bool requestSpinComboUpdate = false;
 
 	// Do some basic enabling and disabling
-	if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS){
+	if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS) {
 		ui->extraItemSpinbox->setEnabled(true);
 		ui->extraItemsViaVariableCombo->setEnabled(true);
-		
-		for (const auto& item : ui->usedShipList->selectedItems()){
+
+		for (const auto& item : ui->usedShipList->selectedItems()) {
 			namesOut.emplace_back(item.c_str());
 			requestSpinComboUpdate = true;
 		}
@@ -439,7 +442,7 @@ void LoadoutDialog::updateUI()
 			namesOut.emplace_back(item.c_str());
 			requestSpinComboUpdate = true;
 		}
-	} //else if (mode == VARIABLE_MODE) { TODO FINISH ME!
+	//} else if (mode == VARIABLE_MODE) { TODO FINISH ME!
 
 	} else {
 		ui->extraItemSpinbox->setEnabled(false);
@@ -469,6 +472,7 @@ void LoadoutDialog::updateUI()
 }
 
 // This has been deprecated for now.  Possibly only going to use UpdateUI, since it will add and remove items from the lists as needed.
+/*
 void LoadoutDialog::resetLists() {
 	// clear the lists
 	ui->usedShipsList->clearContents();
@@ -543,9 +547,9 @@ void LoadoutDialog::resetLists() {
 		currentRow++;
 	}
 }
+*/
 
-
-void LoadoutDialog::getCurrentSelection{
+void LoadoutDialog::getCurrentSelection() {
 
 }
 
