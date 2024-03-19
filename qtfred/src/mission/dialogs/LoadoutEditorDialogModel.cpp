@@ -880,6 +880,56 @@ int LoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> na
 
 bool LoadoutDialogModel::spinBoxUpdateRequired() { return _spinBoxUpdateRequired; };
 
+
+void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
+{
+	for (const auto& item : list) {
+		for (auto& ship : _teams[_currentTeam].ships) {
+			if (item == ship.name) {
+				ship.enabled = enabled;
+				break;
+			}
+		}
+	}
+}
+
+
+void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
+{
+	for (const auto& item : list) {
+		for (auto& weapon : _teams[_currentTeam].weapons) {
+			if (item == weapon.name) {
+				weapon.enabled = enabled;
+				break;
+			}
+		}
+	}
+}
+
+void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count) 
+{
+	for (const auto& item : list) {
+		for (auto& ship : _teams[_currentTeam].ships) {
+			if (item == ship.name) {
+				ship.countInWings = count;
+				break;
+			}
+		}
+	}
+}
+
+void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count)
+{
+	for (const auto& item : list) {
+		for (auto& weapon : _teams[_currentTeam].weapons) {
+			if (item == weapon.name) {
+				weapon.countInWings = count;
+				break;
+			}
+		}
+	}
+}
+
 }
 }
 }
