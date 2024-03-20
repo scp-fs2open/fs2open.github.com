@@ -2541,7 +2541,7 @@ ADE_FUNC(getPXOLinks,
 	urls.addValue(i++, Multi_options_g.pxo_verify_url);
 	urls.addValue(i++, Multi_options_g.pxo_banner_url);
 
-return ade_set_args(L, "t", urls);
+	return ade_set_args(L, "t", urls);
 }
 
 ADE_FUNC(getChat,
