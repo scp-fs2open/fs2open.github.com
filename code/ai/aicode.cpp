@@ -3515,6 +3515,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags, int 
 	aip->wp_index = start_index;
 	aip->wp_flags = wp_flags;
 	aip->mode = AIM_WAYPOINTS;
+	aip->submode_parm0 = start_index;	// keep track of the start index because we need it for Fix_ai_path_order_bug
 
 	Assert(aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC);
 }
@@ -12614,7 +12615,12 @@ int ai_formation()
 	if (aip->mode == AIM_WAYPOINTS) {
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_path_order_bug]){
 			// skip if wing leader has no waypoint order or a different waypoint list
-			if ((laip->mode != AIM_WAYPOINTS) || !(aip->wp_list == laip->wp_list)){
+			// ...or if it's a different start index or direction
+			if (    (laip->mode != AIM_WAYPOINTS)
+				||  (laip->wp_list != aip->wp_list)
+				||  (laip->submode_parm0 != aip->submode_parm0)
+				|| ((laip->wp_flags & WPF_BACKTRACK) != (aip->wp_flags & WPF_BACKTRACK))
+				) {
 				return 1;
 			}
 		}
