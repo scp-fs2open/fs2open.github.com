@@ -4722,6 +4722,20 @@ int get_sexp()
 				do_preload_for_arguments(preload_turret_change_weapon, n, arg_handler);
 				break;
 
+			case OP_WEAPON_CREATE:
+				// weapon class is argument #2
+				n = CDDR(start);
+				// just as with change-ship-class/ship-create, we can use the turret-change-weapon preloader for weapon-create
+				do_preload_for_arguments(preload_turret_change_weapon, n, arg_handler);
+				break;
+
+			case OP_BEAM_FLOATING_FIRE:
+				// beam weapon class is argument #1
+				n = CDR(start);
+				// see above for weapon-create
+				do_preload_for_arguments(preload_turret_change_weapon, n, arg_handler);
+				break;
+
 			case OP_CHANGE_BACKGROUND:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background, n, arg_handler);
