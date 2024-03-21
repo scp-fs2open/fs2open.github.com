@@ -1209,7 +1209,8 @@ int collide_ship_ship( obj_pair * pair )
 						scripting::hook_param("Ship", 'o', A),
 						scripting::hook_param("ShipB", 'o', B),
 						scripting::hook_param("Hitpos", 'o', world_hit_pos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A)),
+						scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
 
 				// Yes, this should be reversed.
 				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
@@ -1218,7 +1219,8 @@ int collide_ship_ship( obj_pair * pair )
 						scripting::hook_param("Ship", 'o', B),
 						scripting::hook_param("ShipB", 'o', A),
 						scripting::hook_param("Hitpos", 'o', world_hit_pos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B)),
+						scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
 			}
 
 			if(!a_override && !b_override)
@@ -1469,7 +1471,8 @@ int collide_ship_ship( obj_pair * pair )
 														   scripting::hook_param("Ship", 'o', A),
 														   scripting::hook_param("ShipB", 'o', B),
 														   scripting::hook_param("Hitpos", 'o', world_hit_pos),
-														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
+														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A)),
+														   scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
@@ -1480,7 +1483,8 @@ int collide_ship_ship( obj_pair * pair )
 														   scripting::hook_param("Ship", 'o', B),
 														   scripting::hook_param("ShipB", 'o', A),
 														   scripting::hook_param("Hitpos", 'o', world_hit_pos),
-														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
+														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B)),
+														   scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
 			}
 
 			return 0;
