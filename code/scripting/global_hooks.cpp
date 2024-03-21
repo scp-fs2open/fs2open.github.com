@@ -118,6 +118,7 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnShipCollision = Ov
 		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
 		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
 		{"ShipB", "ship", "For ship-on-ship collisions, the same as \"Object\" (only set for ship-on-ship collisions)"},
+		{"ShipBSubmodel", "submodel", "For ship-on-ship collisions, the submodel of \"ShipB\" involved in the collision, if \"ShipB\" was the heavier object"},
 		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
 		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"}});
 
