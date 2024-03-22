@@ -120,7 +120,7 @@ extern float shipfx_calculate_arrival_warp_distance(object *objp);
 // =================================================
 
 // Given world point see if it is in a shadow.
-bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int sun_n);
+bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int light_n);
 
 
 // =================================================

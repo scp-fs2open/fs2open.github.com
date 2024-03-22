@@ -785,7 +785,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 /**
  * Given world point see if it is in a shadow.
  */
-bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
+bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 {
 	object *objp;
 	ship_obj *so;
@@ -802,7 +802,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	rp0 = *eye_pos;	
 	
 	// get the light dir
-	if(!light_get_global_dir(&light_dir, sun_n)){
+	if(!light_get_global_dir(&light_dir, light_n)){
 		return false;
 	}
 

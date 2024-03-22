@@ -1960,13 +1960,13 @@ void common_setup_room_lights()
 	light_reset();
 	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
 	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);
-	light_add_directional(&tempv,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc);
 	tempv.xyz={-0.4f,0.4f,1.1f};
 	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);
-	light_add_directional(&tempv,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc);
 	tempv.xyz={0.4f,0.1f,0.4f};
 	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
-	light_add_directional(&tempv,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc);
 	gr_set_ambient_light(53, 53, 53);
 	light_rotate_all();
 }

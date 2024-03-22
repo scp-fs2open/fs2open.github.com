@@ -1301,7 +1301,7 @@ void stars_draw_sun(int show_sun)
 
 		// add the light source corresponding to the sun, except when rendering to an envmap
 		if ( !Rendering_to_env )
-			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b);
+			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b);
 
 		// if supernova
 		if ( supernova_active() && (idx == 0) )
@@ -2696,12 +2696,6 @@ starfield_bitmap *stars_get_bitmap_entry(int index, bool is_a_sun)
 	}
 
 	return NULL;
-}
-
-bool stars_sun_has_glare(int index)
-{
-	starfield_bitmap *sb = stars_get_bitmap_entry(index, true);
-	return (sb && sb->glare);
 }
 
 // set an instace to not render
