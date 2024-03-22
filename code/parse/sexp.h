@@ -907,6 +907,7 @@ enum : int {
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	OP_GOOD_PRIMARY_TIME,	// plieblang
+	OP_SET_SKYBOX_ALPHA,	// Goober5000
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals

@@ -757,6 +757,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-skybox-alpha",				OP_SET_SKYBOX_ALPHA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
@@ -21071,6 +21072,19 @@ void sexp_set_skybox_orientation(int n)
 	stars_set_background_orientation(&m);
 }
 
+// Goober5000
+void sexp_set_skybox_alpha(int n)
+{
+	int alphax1000;
+	bool is_nan, is_nan_forever;
+
+	alphax1000 = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	stars_set_background_alpha(alphax1000 / 1000.0f);
+}
+
 // taylor - load and set a skybox model
 void sexp_set_skybox_model(int n)
 {
@@ -28954,6 +28968,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_SKYBOX_ALPHA:
+				sexp_set_skybox_alpha(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_TURRET_TAGGED_SPECIFIC:
 			case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 				sexp_turret_tagged_or_clear_specific(node, op_num == OP_TURRET_TAGGED_SPECIFIC);
@@ -30469,6 +30488,7 @@ int query_operator_return_type(int op)
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SKYBOX_ORIENT:
+		case OP_SET_SKYBOX_ALPHA:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SET_ARRIVAL_INFO:
 		case OP_SET_DEPARTURE_INFO:
@@ -32912,6 +32932,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
+			return OPF_NUMBER;
+
+		case OP_SET_SKYBOX_ALPHA:
 			return OPF_NUMBER;
 
 		// Goober5000 - this is complicated :)
@@ -35641,6 +35664,7 @@ int get_category(int op_id)
 		case OP_SET_ARRIVAL_INFO:
 		case OP_SET_DEPARTURE_INFO:
 		case OP_SET_SKYBOX_ORIENT:
+		case OP_SET_SKYBOX_ALPHA:
 		case OP_DESTROY_INSTANTLY:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_DEBUG:
@@ -36138,6 +36162,7 @@ int get_subcategory(int op_id)
 
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SKYBOX_ORIENT:
+		case OP_SET_SKYBOX_ALPHA:
 		case OP_MISSION_SET_NEBULA:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_CHANGE_BACKGROUND:
@@ -40696,6 +40721,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tPitch\r\n"
 		"\t2:\tBank\r\n"
 		"\t3:\tHeading\r\n"
+	},
+
+	// Goober5000
+	{ OP_SET_SKYBOX_ALPHA, "set-skybox-alpha\r\n"
+		"\tSets the current skybox transparency.  Takes 1 argument...\r\n"
+		"\t1:\tAlpha value x1000 (so 1.0 is represented as 1000)\r\n"
 	},
 
 	// Goober5000

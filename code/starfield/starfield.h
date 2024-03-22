@@ -59,6 +59,7 @@ extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
 extern int Nmodel_flags;
 extern int Nmodel_bitmap;
+extern float Nmodel_alpha;
 
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
@@ -150,8 +151,9 @@ void stars_draw_sun_glow(int sun_n);
 void stars_camera_cut();
 
 // call this to set a specific model as the background model
-void stars_set_background_model(const char *model_name, const char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
+void stars_set_background_model(const char *model_name, const char *texture_name, int flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
 void stars_set_background_orientation(const matrix *orient = nullptr);
+void stars_set_background_alpha(float alpha = 1.0f);
 
 // lookup a starfield bitmap, return index or -1 on fail
 int stars_find_bitmap(const char *name);
