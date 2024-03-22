@@ -335,7 +335,7 @@ void techroom_select_new_entry()
 		if (Techroom_model_instance >= 0) {
 			model_delete_instance(Techroom_model_instance);
 		}
-		Techroom_model_instance = model_create_instance(-1, Techroom_modelnum);
+		Techroom_model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, Techroom_modelnum);
 
 		model_set_up_techroom_instance(sip, Techroom_model_instance);
 
@@ -396,7 +396,7 @@ void techroom_select_new_entry()
 					if (Techroom_model_instance >= 0) {
 						model_delete_instance(Techroom_model_instance);
 					}
-					Techroom_model_instance = model_create_instance(-1, Techroom_modelnum);
+					Techroom_model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, Techroom_modelnum);
 
 					// If this ends up being needed for weapon models, a weapon version
 					// of this method will need to be created. Should only be necessary

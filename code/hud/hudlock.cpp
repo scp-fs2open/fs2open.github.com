@@ -506,7 +506,7 @@ int hud_lock_on_subsys_ok()
 	vm_vec_add2(&subobj_pos, &target_objp->pos);
 
 	if ( Player->subsys_in_view < 0 ) {
-		in_sight = ship_subsystem_in_sight(target_objp, subsys, &View_position, &subobj_pos);
+		in_sight = ship_subsystem_in_sight(target_objp, subsys, &View_position, &subobj_pos) ? 1 : 0;
 	} else {
 		in_sight = Player->subsys_in_view;
 	}
@@ -640,7 +640,7 @@ void hud_do_lock_indicator(float frametime)
 			vec3d subobj_pos;
 			vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &tobjp->orient);
 			vm_vec_add2(&subobj_pos, &tobjp->pos);
-			int target_subsys_in_sight = ship_subsystem_in_sight(tobjp, Player->locking_subsys, &Player_obj->pos, &subobj_pos);
+			bool target_subsys_in_sight = ship_subsystem_in_sight(tobjp, Player->locking_subsys, &Player_obj->pos, &subobj_pos);
 
 			if (!target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
 				Player->locking_subsys =
@@ -1059,7 +1059,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 					vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &lock_slot->obj->orient);
 					vm_vec_add2(&subobj_pos, &lock_slot->obj->pos);
 
-					int target_subsys_in_sight = ship_subsystem_in_sight(lock_slot->obj, Player_ai->targeted_subsys, &Player_obj->pos, &subobj_pos);
+					bool target_subsys_in_sight = ship_subsystem_in_sight(lock_slot->obj, Player_ai->targeted_subsys, &Player_obj->pos, &subobj_pos);
 
 					if ( !target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE ) {
 						lock_slot->subsys = ship_get_closest_subsys_in_sight(&Ships[lock_slot->obj->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
@@ -1110,7 +1110,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 				vm_vec_unrotate(&subobj_pos, &Player_ai->targeted_subsys->system_info->pnt, &lock_slot->obj->orient);
 				vm_vec_add2(&subobj_pos, &lock_slot->obj->pos);
 
-				int target_subsys_in_sight = ship_subsystem_in_sight(lock_slot->obj, Player_ai->targeted_subsys, &Player_obj->pos, &subobj_pos);
+				bool target_subsys_in_sight = ship_subsystem_in_sight(lock_slot->obj, Player_ai->targeted_subsys, &Player_obj->pos, &subobj_pos);
 
 				if ( !target_subsys_in_sight || Player_ai->targeted_subsys->system_info->type != SUBSYSTEM_ENGINE ) {
 					lock_slot->subsys = ship_get_closest_subsys_in_sight(&Ships[lock_slot->obj->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);

@@ -119,7 +119,7 @@ ADE_VIRTVAR(Self, l_Camera, "object", "New mount object", "object", "Camera obje
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && oh && oh->IsValid()) {
+	if(ADE_SETTING_VAR && oh && oh->isValid()) {
 		cid.getCamera()->set_object_host(oh->objp);
 	}
 
@@ -136,8 +136,8 @@ ADE_VIRTVAR(SelfSubsystem, l_Camera, "subsystem", "New mount object subsystem", 
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(ADE_SETTING_VAR && sso && sso->isSubsystemValid()) {
-		cid.getCamera()->set_object_host(sso->objp, sso->ss->system_info->subobj_num);
+	if(ADE_SETTING_VAR && sso && sso->isValid()) {
+		cid.getCamera()->set_object_host(sso->objh.objp, sso->ss->system_info->subobj_num);
 	}
 
 	object *objp = cid.getCamera()->get_object_host();
@@ -174,7 +174,7 @@ ADE_VIRTVAR(Target, l_Camera, "object", "New target object", "object", "Camera t
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && oh && oh->IsValid()) {
+	if(ADE_SETTING_VAR && oh && oh->isValid()) {
 		cid.getCamera()->set_object_target(oh->objp);
 	}
 
@@ -191,8 +191,8 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(ADE_SETTING_VAR && sso && sso->isSubsystemValid()) {
-		cid.getCamera()->set_object_target(sso->objp, sso->ss->system_info->subobj_num);
+	if(ADE_SETTING_VAR && sso && sso->isValid()) {
+		cid.getCamera()->set_object_target(sso->objh.objp, sso->ss->system_info->subobj_num);
 	}
 
 	object *objp = cid.getCamera()->get_object_target();

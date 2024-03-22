@@ -137,7 +137,7 @@ public:
 	void pageIn() override;
 	void render(float frametime) override;
 	void initialize() override;
-	bool canRender() override;
+	bool canRender() const override;
 };
 
 class HudGaugeFixedMessages: public HudGauge

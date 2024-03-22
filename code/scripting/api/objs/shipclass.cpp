@@ -1267,10 +1267,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 ADE_FUNC(renderSelectModel,
 	l_Shipclass,
-	"boolean restart, number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
+	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3]",
 	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
 	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2), "
-	"defaults to the mod setting or the model's setting.",
+	"defaults to the mod setting or the model's setting. Zoom is a multiplier to the model's closeup_zoom value.",
 	"boolean",
 	"true if rendered, false if error")
 {
@@ -1281,7 +1281,8 @@ ADE_FUNC(renderSelectModel,
 	int x2 = 629;
 	int y2 = 355;
 	int effect = -1;
-	if (!ade_get_args(L, "obii|iii", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect))
+	float zoom = 1.3f;
+	if (!ade_get_args(L, "obii|iiif", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect, &zoom))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= ship_info_size())
@@ -1331,7 +1332,7 @@ ADE_FUNC(renderSelectModel,
 		y2,
 		&ShipRot,
 		&sip->closeup_pos,
-		sip->closeup_zoom * 1.3f,
+		sip->closeup_zoom * zoom,
 		rev_rate,
 		MR_AUTOCENTER | MR_NO_FOGGING,
 		GR_RESIZE_NONE,
@@ -1342,7 +1343,7 @@ ADE_FUNC(renderSelectModel,
 
 ADE_FUNC(renderOverheadModel,
 	l_Shipclass,
-	"number x, number y, [number width = 467, number height = 362, number selectedSlot = -1, number selectedWeapon = -1, number hoverSlot = -1, "
+	"number x, number y, [number width = 467, number height = 362, number|table /* selectedSlot = -1 or empty table */, number selectedWeapon = -1, number hoverSlot = -1, "
 	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
 	"number bank7_x = 552, number bank7_y = 333, number style = 0]",
@@ -1363,6 +1364,7 @@ ADE_FUNC(renderOverheadModel,
 	int x2 = 467;
 	int y2 = 362;
 	int selectedSlot = -1;
+	auto weapon_table = luacpp::LuaTable::create(L);
 	int selectedWeapon = -1;
 	int hoverSlot = -1;
 
@@ -1383,43 +1385,106 @@ ADE_FUNC(renderOverheadModel,
 	int bank7_y = 333;
 	int style = 0;
 
-	if (!ade_get_args(L,
-			"oii|iiiiiiiiiiiiiiiiiiii",
-			l_Shipclass.Get(&idx),
-			&x1,
-			&y1,
-			&x2,
-			&y2,
-			&selectedSlot,
-			&selectedWeapon,
-			&hoverSlot,
-			&bank1_x,
-			&bank1_y,
-			&bank2_x,
-			&bank2_y,
-			&bank3_x,
-			&bank3_y,
-			&bank4_x,
-			&bank4_y,
-			&bank5_x,
-			&bank5_y,
-			&bank6_x,
-			&bank6_y,
-			&bank7_x,
-			&bank7_y,
-			&style))
-		return ADE_RETURN_NIL;
+	int weapon_list[MAX_SHIP_WEAPONS] = {-1, -1, -1, -1, -1, -1, -1};
+
+	if (lua_isnumber(L, 6)) {
+
+		if (!ade_get_args(L,
+				"oii|iiiiiiiiiiiiiiiiiiii",
+				l_Shipclass.Get(&idx),
+				&x1,
+				&y1,
+				&x2,
+				&y2,
+				&selectedSlot,
+				&selectedWeapon,
+				&hoverSlot,
+				&bank1_x,
+				&bank1_y,
+				&bank2_x,
+				&bank2_y,
+				&bank3_x,
+				&bank3_y,
+				&bank4_x,
+				&bank4_y,
+				&bank5_x,
+				&bank5_y,
+				&bank6_x,
+				&bank6_y,
+				&bank7_x,
+				&bank7_y,
+				&style))
+			return ADE_RETURN_NIL;
+
+		// Convert this from the Lua index
+		selectedSlot--;
+
+		if (selectedSlot < 0)
+			return ADE_RETURN_FALSE;
+
+		for (int i = 0; i < (MAX_SHIP_WEAPONS); i++) {
+			weapon_list[i] = Wss_slots[selectedSlot].wep[i];
+		}
+	} else {
+		if (!ade_get_args(L,
+				"oii|iitiiiiiiiiiiiiiiiii",
+				l_Shipclass.Get(&idx),
+				&x1,
+				&y1,
+				&x2,
+				&y2,
+				&weapon_table,
+				&selectedWeapon,
+				&hoverSlot,
+				&bank1_x,
+				&bank1_y,
+				&bank2_x,
+				&bank2_y,
+				&bank3_x,
+				&bank3_y,
+				&bank4_x,
+				&bank4_y,
+				&bank5_x,
+				&bank5_y,
+				&bank6_x,
+				&bank6_y,
+				&bank7_x,
+				&bank7_y,
+				&style))
+			return ADE_RETURN_NIL;
+
+		int count = 0;
+		if (weapon_table.isValid()) {
+			for (const auto& item : weapon_table) {
+				if (item.second.is(luacpp::ValueType::NUMBER)) {
+					// This'll lua-error internally if it's not fed only numbers. Additionally, catch the lua exception
+					// and then carry on
+					try {
+						int wep = item.second.getValue<int>();
+						wep--; // convert from the lua index
+						weapon_list[count++] = wep;
+					} catch (const luacpp::LuaException& /*e*/) {
+						// We were likely fed a userdata that was not a number.
+						// Since we can't actually tell whether that's the case before we try to get the value, and the
+						// attempt to get the value is printing a LuaError itself, just eat the exception here and
+						// return
+						return ADE_RETURN_FALSE;
+					}
+				} else {
+					// This happens on a non-userdata value, i.e. a string
+					LuaError(L, "Weapon index table contained non-number values! Aborting...");
+					return ADE_RETURN_FALSE;
+				}
+			}
+		}
+	}
 
 	if (idx < 0 || idx >= ship_info_size())
 		return ade_set_args(L, "b", false);
 
 	//Convert these from Lua indecies
-	selectedSlot--;
 	selectedWeapon--;
 	hoverSlot--;
-
-	if (selectedSlot < 0)
-		return ade_set_args(L, "b", false);
 
 	if ((style < 0) || (style > 1))
 		LuaError(L, "Overhead style can only be 0 or 1!");
@@ -1440,7 +1505,7 @@ ADE_FUNC(renderOverheadModel,
 		idx,
 		&ShipRot,
 		flFrametime,
-		selectedSlot,
+		weapon_list,
 		selectedWeapon,
 		hoverSlot,
 		x1,

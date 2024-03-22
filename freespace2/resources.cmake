@@ -53,15 +53,12 @@ elseif(PLATFORM_MAC)
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist.in")
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_ICON_FILE "FS2_Open")
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
-    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
-    
-    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/InfoPlist.strings.in" "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "FreeSpace Open")
     
     # Copy everything from the Resources directory
     add_custom_command(TARGET Freespace2 POST_BUILD
         COMMAND cp -a "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources" "$<TARGET_FILE_DIR:Freespace2>/../Resources"
-        COMMAND mkdir -p "$<TARGET_FILE_DIR:Freespace2>/../Resources/English.lproj/"
-        COMMAND cp -a "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings" "$<TARGET_FILE_DIR:Freespace2>/../Resources/English.lproj/"
         COMMENT "Copying resources into bundle..."
     )
 else()

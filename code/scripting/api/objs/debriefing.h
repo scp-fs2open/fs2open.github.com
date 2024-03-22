@@ -11,7 +11,7 @@ struct debrief_stage_h {
 	debrief_stage* stage;
 	debrief_stage_h();
 	explicit debrief_stage_h(debrief_stage* db_stage);
-	bool IsValid() const;
+	bool isValid() const;
 	debrief_stage* getStage() const;
 };
 

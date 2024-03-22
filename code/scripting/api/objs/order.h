@@ -21,7 +21,7 @@ struct order_h
 
 	order_h(object *objp, int n_odx);
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Order, order_h);

@@ -9,7 +9,7 @@ brief_stage_h::brief_stage_h() : br_brief(-1), br_stage(-1) {}
 
 brief_stage_h::brief_stage_h(int brief, int stage) : br_brief(brief), br_stage(stage) {}
 
-bool brief_stage_h::IsValid() const
+bool brief_stage_h::isValid() const
 {
 	return br_brief >= 0 && br_stage >= 0;
 }

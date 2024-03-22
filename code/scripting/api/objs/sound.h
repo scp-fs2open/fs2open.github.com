@@ -17,27 +17,27 @@ struct sound_entry_h
 
 	explicit sound_entry_h(gamesnd_id n_idx);
 
-	game_snd *Get();
+	game_snd *Get() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 //**********HANDLE: SoundEntry
 DECLARE_ADE_OBJ(l_SoundEntry, sound_entry_h);
 
-struct sound_h : public sound_entry_h
+struct sound_h
 {
+	sound_entry_h entryh;
 	sound_handle sig;
 
 	sound_h();
 
 	sound_h(gamesnd_id n_gs_idx, sound_handle n_sig);
 
-	sound_handle getSignature();
+	sound_handle getSignature() const;
 
-	bool IsSoundValid();
-
-	bool IsValid();
+	bool isValid() const;			// This is the function that is checked by ade_set_args
+	bool isValidWithEntry() const;
 };
 
 //**********HANDLE: Sound

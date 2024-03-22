@@ -44,7 +44,7 @@ auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shado
                               {ShadowQuality::Ultra, {"Ultra", 1721}}})
                      .change_listener([](ShadowQuality val, bool initial) {if (initial) {Shadow_quality = val;}return initial;})
                      .level(options::ExpertLevel::Advanced)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(ShadowQuality::Disabled)
                      .importance(80)
                      .finish();

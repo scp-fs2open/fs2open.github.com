@@ -150,7 +150,7 @@ char Player_select_very_first_pilot_callsign[CALLSIGN_LEN + 2];
 
 extern int Main_hall_bitmap;						// bitmap handle to the main hall bitmap
 
-int Player_select_mode;								// single or multiplayer - never set directly. use player_select_init_player_stuff()
+int Player_select_mode = PLAYER_SELECT_UNINITED;								// single or multiplayer - never set directly. use player_select_init_player_stuff()
 int Player_select_num_pilots;						// # of pilots on the list
 int Player_select_list_start;						// index of first list item to start displaying in the box
 int Player_select_pilot;							// index into the Pilot array of which is selected as the active pilot
@@ -952,52 +952,57 @@ int player_select_get_last_pilot()
 
 void player_select_init_player_stuff(int mode)
 {
-	Player_select_list_start = 0;
+	// If we did not change mode, then we need to initialize the data.
+	bool initializing = Player_select_mode == PLAYER_SELECT_UNINITED;
 
 	// set the select mode to single player for default
 	Player_select_mode = mode;
 
-	auto pilots = player_select_enumerate_pilots();
-	// Copy the enumerated pilots into the appropriate local variables
-	Player_select_num_pilots = static_cast<int>(pilots.size());
-	for (auto i = 0; i < MAX_PILOTS; ++i) {
-		if (i < static_cast<int>(pilots.size())) {
-			strcpy_s(Pilots_arr[i], pilots[i].c_str());
-		}
-		Pilots[i] = Pilots_arr[i];
-	}
+	if (initializing){
+		Player_select_list_start = 0;
 
-	// if we have a "last_player", and they're in the list, bash them to the top of the list
-	if (Player_select_last_pilot[0] != '\0') {
-		int i,j;
-		for (i = 0; i < Player_select_num_pilots; ++i) {
-			if (!stricmp(Player_select_last_pilot,Pilots[i])) {
-				break;
+		auto pilots = player_select_enumerate_pilots();
+		// Copy the enumerated pilots into the appropriate local variables
+		Player_select_num_pilots = static_cast<int>(pilots.size());
+		for (auto i = 0; i < MAX_PILOTS; ++i) {
+			if (i < static_cast<int>(pilots.size())) {
+				strcpy_s(Pilots_arr[i], pilots[i].c_str());
+			}
+			Pilots[i] = Pilots_arr[i];
+		}
+
+		// if we have a "last_player", and they're in the list, bash them to the top of the list
+		if (Player_select_last_pilot[0] != '\0') {
+			int i,j;
+			for (i = 0; i < Player_select_num_pilots; ++i) {
+				if (!stricmp(Player_select_last_pilot,Pilots[i])) {
+					break;
+				}
+			}
+			if (i != Player_select_num_pilots) {
+				for (j = i; j > 0; --j) {
+					strncpy(Pilots[j], Pilots[j-1], strlen(Pilots[j-1])+1);
+				}
+				strncpy(Pilots[0], Player_select_last_pilot, strlen(Player_select_last_pilot)+1);
 			}
 		}
-		if (i != Player_select_num_pilots) {
-			for (j = i; j > 0; --j) {
-				strncpy(Pilots[j], Pilots[j-1], strlen(Pilots[j-1])+1);
-			}
-			strncpy(Pilots[0], Player_select_last_pilot, strlen(Player_select_last_pilot)+1);
+
+		Player = NULL;
+
+		// if this value is -1, it means we should set it to the num pilots count
+		if (Player_select_initial_count == -1) {
+			Player_select_initial_count = Player_select_num_pilots;
 		}
-	}
 
-	Player = NULL;
-
-	// if this value is -1, it means we should set it to the num pilots count
-	if (Player_select_initial_count == -1) {
-		Player_select_initial_count = Player_select_num_pilots;
-	}
-
-	// select the first pilot if any exist, otherwise set to -1
-	if (Player_select_num_pilots == 0) {
-		Player_select_pilot = -1;
-		player_select_set_middle_text(XSTR( "Type Callsign and Press Enter", 381));
-		player_select_set_controls(1);		// gray out the controls
-		player_select_create_new_pilot();
-	} else {
-		Player_select_pilot = 0;
+		// select the first pilot if any exist, otherwise set to -1
+		if (Player_select_num_pilots == 0) {
+			Player_select_pilot = -1;
+			player_select_set_middle_text(XSTR( "Type Callsign and Press Enter", 381));
+			player_select_set_controls(1);		// gray out the controls
+			player_select_create_new_pilot();
+		} else {
+			Player_select_pilot = 0;
+		}
 	}
 }
 

@@ -374,6 +374,7 @@ public:
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 	bool	scripting_target_override;
 	int		last_fired_weapon_info_index;		// which weapon class was last fired
+	int		shared_fire_direction_beam_objnum;		// reference beam for shared fire direction
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
@@ -484,7 +485,7 @@ extern const size_t Num_wing_flag_names;
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
 #define MAX_DAMAGE_SLOTS	32
-#define MAX_SHIP_ARCS		5		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
+#define MAX_SHIP_DAMAGE_ARCS	5   // How many damage or emp "arcs" can be active at once
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
@@ -720,12 +721,13 @@ public:
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
 
 	// Stuff for showing electrical arcs on damaged ships
-	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
-	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
-	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
-	color		arc_primary_color_1[MAX_SHIP_ARCS];
-	color		arc_primary_color_2[MAX_SHIP_ARCS];
-	color		arc_secondary_color[MAX_SHIP_ARCS];
+	vec3d	arc_pts[MAX_ARC_EFFECTS][2];			// The endpoints of each arc
+	TIMESTAMP	arc_timestamp[MAX_ARC_EFFECTS];		// When this times out, the spark goes away.  Invalid is not used
+	ubyte		arc_type[MAX_ARC_EFFECTS];			// see MARC_TYPE_* defines in model.h
+	color		arc_primary_color_1[MAX_ARC_EFFECTS];
+	color		arc_primary_color_2[MAX_ARC_EFFECTS];
+	color		arc_secondary_color[MAX_ARC_EFFECTS];
+	float		arc_width[MAX_ARC_EFFECTS];
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
@@ -955,8 +957,11 @@ extern SCP_vector<ship_registry_entry> Ship_registry;
 extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern int ship_registry_get_index(const char *name);
+extern int ship_registry_get_index(const SCP_string &name);
 extern bool ship_registry_exists(const char *name);
+extern bool ship_registry_exists(const SCP_string &name);
 extern const ship_registry_entry *ship_registry_get(const char *name);
+extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -967,6 +972,7 @@ typedef struct ship_passive_arc_info {
 	std::pair<vec3d, vec3d> pos;
 	float duration;
 	float frequency;
+	float width;
 	color primary_color_1;
 	color primary_color_2;
 	color secondary_color;
@@ -1798,7 +1804,7 @@ extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_c
 extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
-extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
+extern ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, const vec3d *attacker_pos);
 
 //WMC
 char *ship_subsys_get_name(ship_subsys *ss);
@@ -1840,8 +1846,8 @@ int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power 
 bool ship_can_warp_full_check(ship *sp);		// checks both the warp flags and ship_engine_ok_to_warp() and ship_navigation_ok_to_warp() --wookieejedi
 bool ship_can_bay_depart(ship *sp);			// checks to see if a ship has a departure location as a bay and if the mothership is present
 
-int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm);
-int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, vec3d* subsys_pos, int do_facing_check=1, float *dot_out=NULL, vec3d *vec_out=NULL);
+int ship_return_subsys_path_normal(const ship *sp, const ship_subsys *ss, const vec3d *gsubpos, vec3d *norm);
+bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, const vec3d *eye_pos, const vec3d *subsys_pos, bool do_facing_check = true, float *dot_out = nullptr, vec3d *vec_out = nullptr);
 ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos);
 
 // defines and definition for function to get a random ship of a particular team (any ship,
@@ -1920,7 +1926,7 @@ int is_support_allowed(object *objp, bool do_simple_check = false);
 //	Stuffs:
 //		*gpos: absolute position of gun firing point
 //		*gvec: vector fro *gpos to *targetp
-void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp);
+void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp);
 
 //	Given an object and a turret on that object, return the global position and forward vector
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
@@ -1977,7 +1983,7 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 void ship_update_artillery_lock();
 
 // checks if a world point is inside the extended bounding box of a ship
-int check_world_pt_in_expanded_ship_bbox(vec3d *world_pt, object *objp, float delta_box);
+int check_world_pt_in_expanded_ship_bbox(const vec3d *world_pt, const object *objp, float delta_box);
 
 // returns true if objp is ship and is tagged
 int ship_is_tagged(object *objp);

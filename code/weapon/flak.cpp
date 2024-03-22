@@ -34,7 +34,7 @@ void flak_level_close()
 /**
  * Given a just fired flak shell, pick a detonating distance for it
  */
-void flak_pick_range(object *objp, vec3d * /*firing_pos*/, vec3d *predicted_target_pos, float weapon_subsys_strength)
+void flak_pick_range(object *objp, const vec3d * /*firing_pos*/, const vec3d *predicted_target_pos, float weapon_subsys_strength)
 {
 	float final_range;
 	float det_range;
@@ -83,7 +83,7 @@ void flak_pick_range(object *objp, vec3d * /*firing_pos*/, vec3d *predicted_targ
  * Add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
  * assumes dir is normalized
  */
-void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength, weapon_info* wip)
+void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength, const weapon_info *wip)
 {			
 	vec3d rand_twist_pre, rand_twist_post;		
 	matrix temp;

@@ -15,7 +15,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-5ac6f70
+    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -24,7 +24,7 @@ jobs:
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
-          COMPILER: gcc-5
+          COMPILER: gcc-9
           ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
@@ -269,6 +269,18 @@ jobs:
           ARCH: ${{ matrix.arch }}
           XDG_RUNTIME_DIR: /root
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
+      - name: Sign builds
+        working-directory: ./build/bin
+        run: |
+          # make sure OpenAL framework is signed
+          find . -name OpenAL -type f | while read xx; do codesign --force -s - $xx; done
+          find . -name OpenAL.framework -type d | while read xx; do codesign --force -s - $xx; done
+          # make sure dylibs are signed
+          find . -name \*.dylib -type f | while read xx; do codesign --force -s - $xx; done
+          # sign binaries
+          find . -perm +111 -type f | grep MacOS | while read xx; do codesign --force -s - $xx; done
+          # sign apps
+          find . -name \*.app -maxdepth 1 | while read xx; do codesign --force -s - $xx; done
       - name: Package build result
         working-directory: ./build/bin
         # Use GNU tar here (part of runner image) to avoid weird corruption bug with bsdtar

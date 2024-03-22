@@ -16,7 +16,7 @@ ADE_VIRTVAR(Name, l_SEXPVariable, "string", "SEXP Variable name.", "string", "SE
 	if (!ade_get_args(L, "o|s", l_SEXPVariable.GetPtr(&svh), &s))
 		return ade_set_error(L, "s", "");
 
-	if (!svh->IsValid())
+	if (!svh->isValid())
 		return ade_set_error(L, "s", "");
 
 	sexp_variable *sv = &Sexp_variables[svh->idx];
@@ -35,7 +35,7 @@ ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persisten
 	if(!ade_get_args(L, "o|o", l_SEXPVariable.GetPtr(&svh), l_Enum.GetPtr(&type)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if(!svh->IsValid())
+	if(!svh->isValid())
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	sexp_variable *sv = &Sexp_variables[svh->idx];
@@ -77,7 +77,7 @@ ADE_VIRTVAR(Type, l_SEXPVariable, "enumeration", "SEXP Variable type, uses SEXPV
 	if(!ade_get_args(L, "o|o", l_SEXPVariable.GetPtr(&svh), l_Enum.GetPtr(&type)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if(!svh->IsValid())
+	if(!svh->isValid())
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	sexp_variable *sv = &Sexp_variables[svh->idx];
@@ -126,7 +126,7 @@ ADE_VIRTVAR(Value, l_SEXPVariable, "number/string", "SEXP variable value", "stri
 			return ADE_RETURN_NIL;
 	}
 
-	if(!svh->IsValid())
+	if(!svh->isValid())
 		return ADE_RETURN_NIL;
 
 	sexp_variable *sv = &Sexp_variables[svh->idx];
@@ -150,7 +150,7 @@ ADE_FUNC(__tostring, l_SEXPVariable, NULL, "Returns SEXP name", "string", "SEXP 
 	if(!ade_get_args(L, "o", l_SEXPVariable.GetPtr(&svh)))
 		return ade_set_error(L, "s", "");
 
-	if(!svh->IsValid())
+	if(!svh->isValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Sexp_variables[svh->idx].variable_name);
@@ -162,7 +162,7 @@ ADE_FUNC(isValid, l_SEXPVariable, NULL, "Detects whether handle is valid", "bool
 	if(!ade_get_args(L, "o", l_SEXPVariable.GetPtr(&svh)))
 		return ADE_RETURN_NIL;
 
-	if(!svh->IsValid())
+	if(!svh->isValid())
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -174,7 +174,7 @@ ADE_FUNC(delete, l_SEXPVariable, NULL, "Deletes a SEXP Variable", "boolean", "Tr
 	if(!ade_get_args(L, "o", l_SEXPVariable.GetPtr(&svh)))
 		return ade_set_error(L, "b", false);
 
-	if(!svh->IsValid())
+	if(!svh->isValid())
 		return ade_set_error(L, "b", false);
 
 	sexp_variable_delete(svh->idx);

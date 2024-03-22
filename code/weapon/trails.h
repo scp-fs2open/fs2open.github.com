@@ -26,8 +26,8 @@ typedef struct trail_info {
 	float a_start;			// starting alpha
 	float a_end;			// ending alpha
 	float a_decay_exponent; // applied to val to determine final alpha
-	float max_life;		// max_life for a section
-	int stamp;				// spew timestamp
+	float max_life;			// max_life for a section, in seconds
+	int spew_duration;		// in milliseconds
 	generic_bitmap texture;	// texture to use for trail
 	float texture_stretch;  // stretches ... the texture
 	int n_fade_out_sections;// number of initial sections used for fading out start 'edge' of the effect
@@ -42,7 +42,7 @@ typedef struct trail {
 	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out for normal trails
 										// uv offset for single segment trails
 	bool	object_died;					// set to zero as long as object	
-	int		trail_stamp;					// trail timestamp	
+	TIMESTAMP	trail_stamp;				// for when this trail expires
 	bool	single_segment;				// special case where the entire trail is a single, scrolling rectangle
 
 	// trail info

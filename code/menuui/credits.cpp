@@ -57,20 +57,21 @@ const char *fs2_open_credit_text =
 	"Derek \"Kazan\" Meek\n"
 	"Nick \"phreak\" Iannetta\n"
 	"David \"EatThePath\" Gibson\n"
+	"Mike \"MjnMixael\" Nelson\n"
 	"argv[-1], Backslash, Baezon\n"
 	"CommanderDJ, Cyborg, DTP\n"
 	"Echelon9, EdrickV, Eternal1\n"
 	"Flaming_Sword, Fry_Day, FUBAR\n"
 	"Hery, Iss Mneur, jg18\n"
 	"Kiloku, Lafiel, m!m\n"
-	"MageKing17, MjnMixael, mrduckman\n"
-	"naomimyselfandi, niffiwan, penguin\n"
-	"Phantom Hoover, portej05, qazwsxal\n"
-	"RandomTiger, Righteous1, Sesquipedalian\n"
-	"Shade, Sticks, Sushi\n"
-	"Swifty, UnknownPlayer, Valathil\n"
-	"Wanderer, WMCoolmon, wookieejedi\n"
-	"Yarn, z64555, zookeeper\n"
+	"MageKing17, mrduckman, naomimyselfandi\n"
+	"niffiwan, penguin, Phantom Hoover\n"
+	"portej05, qazwsxal, RandomTiger\n"
+	"Righteous1, Sesquipedalian, Shade\n"
+	"Sticks, Sushi, Swifty\n"
+	"UnknownPlayer, Valathil, Wanderer\n"
+	"WMCoolmon, wookieejedi, Yarn\n"
+	"z64555, zookeeper\n"
 	"\n"
 	"\n"
 	"Web Support:\n"
@@ -638,7 +639,7 @@ void credits_init()
 
 	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		gr_get_string_size(NULL, &temp_h, iter->c_str(), (int)iter->length());
+		gr_get_string_size(NULL, &temp_h, iter->c_str(), iter->length());
 
 		h = h + temp_h;
 	}
@@ -854,12 +855,12 @@ void credits_do_frame(float  /*frametime*/)
 				length = std::numeric_limits<size_t>::max();
 			}
 
-			gr_get_string_size(&width, &height, iter->c_str() + currentPos, static_cast<int>(length));
+			gr_get_string_size(&width, &height, iter->c_str() + currentPos, length);
 			// Check if the text part is actually visible
 			if (Credit_position + y_offset + height > 0.0f)
 			{
 				float x = static_cast<float>((gr_screen.clip_width_unscaled - width) / 2);
-				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, static_cast<int>(length));
+				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, length);
 			}
 
 			y_offset += height;

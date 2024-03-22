@@ -56,6 +56,7 @@ extern bool Enable_external_default_scripts;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Dont_automatically_select_turret_when_targeting_ship;
+extern bool Automatically_select_subsystem_under_reticle_when_targeting_same_ship;
 extern bool Always_reset_selected_wep_on_loadout_open;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
@@ -158,6 +159,7 @@ extern bool Randomize_particle_rotation;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
 extern bool Contrails_use_absolute_speed;
+extern bool Lua_API_returns_nil_instead_of_invalid_object;
 
 void mod_table_init();
 void mod_table_post_process();

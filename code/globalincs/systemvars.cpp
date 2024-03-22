@@ -248,45 +248,48 @@ const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.De
                      std::pair<const char*, int>{"Model Detail", 1739},
                      std::pair<const char*, int>{"Detail level of models", 1740})
                      .importance(8)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .change_listener([](int val, bool) {
                           Detail.detail_distance = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
                      std::pair<const char*, int>{"3D Hardware Textures", 1362},
                      std::pair<const char*, int>{"Level of detail of textures", 1720})
                      .importance(6)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .change_listener([](int val, bool) {
                           Detail.hardware_textures = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
                      std::pair<const char*, int>{"Particles", 1363},
                      std::pair<const char*, int>{"Level of detail for particles", 1717})
                      .importance(5)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .change_listener([](int val, bool) {
                           Detail.num_particles = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
                      std::pair<const char*, int>{"Impact Effects", 1364}, 
                      std::pair<const char*, int>{"Level of detail of impact effects", 1743})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .importance(4)
@@ -294,32 +297,35 @@ const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.Sm
                           Detail.num_small_debris = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
                      std::pair<const char*, int>{"Shield Hit Effects", 1718},
                      std::pair<const char*, int>{"Level of detail of shield impacts", 1719})
                      .importance(3)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .change_listener([](int val, bool) {
                           Detail.shield_effects = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
                      std::pair<const char*, int>{"Stars", 1366}, 
                      std::pair<const char*, int>{"Number of stars in the mission", 1698})
                      .importance(2)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
                      .default_val(MAX_DETAIL_LEVEL)
                      .change_listener([](int val, bool) {
                           Detail.num_stars = val;
                           return true;
                      })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 // Call this with:

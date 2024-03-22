@@ -127,7 +127,7 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
 	depthLocal++;
 
-	read_model_file(pm, filename.c_str(), ferror, deferredTasks, depth);
+	read_model_file(pm, virtual_pof.basePOF.c_str(), ferror, deferredTasks, depth);
 
 	for (const auto& operation : virtual_pof.operationList)
 		operation->process(pm, deferredTasks, depth, virtual_pof);
@@ -262,18 +262,14 @@ int reallocate_and_copy_array_vmalloc(T*& array, int& size, size_t to_add) {
 	return size_before;
 }
 
-#define REPLACE_IF_EQ(data) if ((data) == source) (data) = dest;
-#define REPLACE_IF_STRIEQ(data) if (stricmp(data, source.c_str()) == 0) strncpy_s(data, dest.c_str(), dest.size()); 
-#define REPLACE_IF_SCPSTRIEQ(data) if (stricmp(data.c_str(), source.c_str()) == 0) data = dest; 
+#define REPLACE_IF_EQ(data) { auto iter = replace.find(data); if (iter != replace.end()) (data) = iter->second; }
+#define REPLACE_IF_STRIEQ(data) { auto iter = replace.find(data); if (iter != replace.end()) strncpy_s(data, iter->second.c_str(), iter->second.size()); }
 
 //Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere
 #define CHANGE_HELPER_MAP_KEY(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& pass, map_t replace){ \
 	const auto it = replace.find(pass.first); \
-	intype input = { (it == replace.end() ? pass.first : it->second), pass.second }; \
-	for (const auto& replacement : replace) { \
-		const argtype& source = replacement.first; \
-		const argtype& dest = replacement.second;
-#define CHANGE_HELPER_MAP_KEY_END } return input; }
+	intype input = { (it == replace.end() ? pass.first : it->second), pass.second };
+#define CHANGE_HELPER_MAP_KEY_END  return input; }
 
 //Generates two functions for replacing data in a type. One that takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere, and one which takes an lvalue reference for modifying in-place
 #define CHANGE_HELPER(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace); \
@@ -281,11 +277,8 @@ template<typename map_t> inline static typename std::enable_if<std::is_same<type
 	name<map_t>(input, replace); \
 	return std::move(input); \
 } \
-template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace) {\
-	for (const auto& replacement : replace) { \
-		const argtype& source = replacement.first; \
-		const argtype& dest = replacement.second;
-#define CHANGE_HELPER_END }}
+template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace) {
+#define CHANGE_HELPER_END }
 
 //Change submodel numbers in a submodel
 CHANGE_HELPER(change_submodel_numbers, bsp_info, int) 
@@ -324,19 +317,15 @@ CHANGE_HELPER_END
 
 //Change submodel name in a subsystem definition
 CHANGE_HELPER_MAP_KEY(change_submodel_name, model_read_deferred_tasks::model_subsystem_pair, SCP_string)
-	SCP_UNUSED(source);
-	SCP_UNUSED(dest);
 CHANGE_HELPER_MAP_KEY_END
 
 //Change subsystem name in an engine subsys definition
 CHANGE_HELPER(change_submodel_name, model_read_deferred_tasks::engine_subsystem_pair, SCP_string)
-	REPLACE_IF_SCPSTRIEQ(input.second.subsystem_name)
+	REPLACE_IF_EQ(input.second.subsystem_name)
 CHANGE_HELPER_END
 
 //Change engine numbers in an engine subsys definition
 CHANGE_HELPER_MAP_KEY(change_engine_numbers, model_read_deferred_tasks::engine_subsystem_pair, int)
-	SCP_UNUSED(source);
-	SCP_UNUSED(dest);
 CHANGE_HELPER_MAP_KEY_END
 
 
@@ -392,15 +381,17 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		SCP_vector<int> to_copy_submodels;
 		bool has_name_collision = false;
 		if (copyChildren) {
-			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
+			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, &renameMap, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
 				to_copy_submodels.emplace_back(submodel);
-				if(model_find_submodel_index(pm, appendingPM->submodel[submodel].name) != -1)
+				auto replace_with_name_it = renameMap.find(appendingPM->submodel[submodel].name);
+				if(model_find_submodel_index(pm, replace_with_name_it == renameMap.end() ? appendingPM->submodel[submodel].name : replace_with_name_it->second.c_str()) != -1)
 					has_name_collision = true;
 				});
 		}
 		else {
 			to_copy_submodels.emplace_back(src_subobj_no);
-			if (model_find_submodel_index(pm, appendingPM->submodel[src_subobj_no].name) != -1)
+			auto replace_with_name_it = renameMap.find(appendingPM->submodel[src_subobj_no].name);
+			if(model_find_submodel_index(pm, replace_with_name_it == renameMap.end() ? appendingPM->submodel[src_subobj_no].name : replace_with_name_it->second.c_str()) != -1)
 				has_name_collision = true;
 		}
 
@@ -650,7 +641,7 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 
 	if (subsystemName) {
 		if (renameSubsystem) {
-			const SCP_unordered_map<SCP_string, SCP_string> thrusterSubsysRenameMap{ {*subsystemName, *renameSubsystem} };
+			const VirtualPOFNameReplacementMap thrusterSubsysRenameMap{ {*subsystemName, *renameSubsystem} };
 			deferredTasks.engine_subsystems.emplace(change_submodel_name(
 					change_engine_numbers(model_read_deferred_tasks::engine_subsystem_pair(*it), thrusterReplacementMap),
 				thrusterSubsysRenameMap));

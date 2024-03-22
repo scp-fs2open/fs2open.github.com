@@ -319,7 +319,7 @@ enum class InterfaceSounds {
 		MIN_INTERFACE_SOUNDS        =70 //!< MIN_INTERFACE_SOUNDS
 };
 
-// These two id types are defined as sublcasses so that type safe implicit conversions are possible from the predefined
+// These two id types are defined as subclasses so that type safe implicit conversions are possible from the predefined
 // sound enum values
 
 struct gamesnd_id_tag{};

@@ -81,6 +81,29 @@ ADE_FUNC(displayMessage, l_Parsing, "string message, boolean error = false",
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(skipToString, l_Parsing, "string token", "Search for specified string, skipping everything up to that point.", "boolean",
+         "true if the operation was successful, false otherwise")
+{
+	if (Parse_text == nullptr) {
+		LuaError(L, "Parsing system is currently not active!");
+		return ADE_RETURN_FALSE;
+	}
+
+	const char* str;
+	if (!ade_get_args(L, "s", &str)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	try {
+		skip_to_string(str);
+	} catch (const parse::ParseException& e) {
+		mprintf(("PARSE: Error while parsing: %s\n", e.what()));
+		return ADE_RETURN_FALSE;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(requiredString, l_Parsing, "string token", "Require that a string appears at the current position.", "boolean",
          "true if the operation was successful, false otherwise")
 {

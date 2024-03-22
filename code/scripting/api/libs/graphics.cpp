@@ -2,7 +2,6 @@
 //
 
 #include "graphics.h"
-#include "globalincs/vmallocator.h"
 
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/color.h"
@@ -267,7 +266,7 @@ ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current re
 
 	if (ADE_SETTING_VAR)
 	{
-		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		if (!resize_arg.isValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
 		{
 			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
 			return ADE_RETURN_NIL;
@@ -1058,7 +1057,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	// void hud_show_brackets(object *targetp, vertex *projected_v)
 	// in hudtarget.cpp
 
-	if( !objh->IsValid()) {
+	if( !objh->isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1163,7 +1162,7 @@ ADE_FUNC(
 		return ADE_RETURN_NIL;
 	}
 
-	if (!sshp->isSubsystemValid())
+	if (!sshp->isValid())
 	{
 		return ADE_RETURN_NIL;
 	}
@@ -1215,7 +1214,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 	}
 
-	if( !objh->IsValid()) {
+	if( !objh->isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1319,7 +1318,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		if (!ade_get_args(L, "o", l_Enum.Get(&resize_arg)))
 			return ade_set_error(L, "i", 0);
 
-		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		if (!resize_arg.isValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
 		{
 			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
 			return ade_set_error(L, "i", 0);
@@ -1389,26 +1388,29 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 			std::swap(y, y2);
 		}
 
-		SCP_vector<SCP_string> lines = str_wrap_to_width(s,x2-x,false);
-		num_lines = (int) lines.size();
+		auto lines = str_wrap_to_width(s, x2 - x, false);
+
+		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
 		if (y2 < 0)
 			y2 = y + line_ht;
+		size_t max_num_lines = (y2 - y) / line_ht;
+		if (max_num_lines < lines.size())
+			lines.resize(max_num_lines);
 
-		//Make sure we don't go over size
-		num_lines = MIN(num_lines, (y2 - y) / line_ht);
+		num_lines = static_cast<int>(lines.size());
 
 		int curr_y = y;
-		for(int i = 0; i < num_lines; i++)
+		for(const auto &line: lines)
 		{
 			//Draw the string
-			gr_string(x,curr_y,lines[i].c_str(),resize_mode);
+			gr_string(x, curr_y, s + line.first, resize_mode, line.second);
 
 			//Increment line height
 			curr_y += line_ht;
 		}
 
-		if (num_lines <= 0)
+		if (lines.empty())
 		{
 			// If no line was drawn then we need to add one so the next line is
 			// aligned right
@@ -1417,6 +1419,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 		NextDrawStringPos[1] = curr_y;
 	}
+
 	return ade_set_error(L, "i", num_lines);
 }
 
@@ -1485,10 +1488,39 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 		return ade_set_error(L, "i", 0);
 
 	int w;
-
-	gr_get_string_size(&w, NULL, s);
+	gr_get_string_size(&w, nullptr, s);
 
 	return ade_set_args(L, "i", w);
+}
+
+ADE_FUNC(getStringHeight, l_Graphics, "string String", "Gets string height", "number", "String height, or 0 on failure")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "i", 0);
+
+	const char* s;
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "i", 0);
+
+	int h;
+	gr_get_string_size(nullptr, &h, s);
+
+	return ade_set_args(L, "i", h);
+}
+
+ADE_FUNC(getStringSize, l_Graphics, "string String", "Gets string width and height", "number, number", "String width and height, or 0, 0 on failure")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "ii", 0, 0);
+
+	const char* s;
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "ii", 0, 0);
+
+	int w, h;
+	gr_get_string_size(&w, &h, s);
+
+	return ade_set_args(L, "ii", w, h);
 }
 
 ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache, boolean grayscale]",
@@ -1934,7 +1966,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	if (!ade_get_args(L, "o", l_Enum.GetPtr(&type)))
 		return ade_set_error(L, "b", false);
 
-	if (type == NULL || !type->IsValid())
+	if (type == NULL || !type->isValid())
 		return ade_set_error(L, "b", false);
 
 	int bit = 0;
@@ -2132,7 +2164,7 @@ ADE_FUNC(createPersistentParticle,
 	if (rev)
 		pi.reverse = false;
 
-	if (objh != nullptr && objh->IsValid()) {
+	if (objh != nullptr && objh->isValid()) {
 		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig    = objh->objp->signature;
 	}
@@ -2205,7 +2237,7 @@ ADE_FUNC(createParticle,
 	if (rev)
 		pi.reverse = false;
 
-	if (objh != nullptr && objh->IsValid()) {
+	if (objh != nullptr && objh->isValid()) {
 		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig    = objh->objp->signature;
 	}

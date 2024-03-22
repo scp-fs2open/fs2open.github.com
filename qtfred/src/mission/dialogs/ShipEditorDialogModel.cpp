@@ -429,7 +429,7 @@ namespace fso {
 					drop_white_space(_m_ship_name);
 					ptr = GET_FIRST(&obj_used_list);
 					while (ptr != END_OF_LIST(&obj_used_list)) {
-						if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (_editor->currentObject != OBJ_INDEX(ptr))) {
+						if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (single_ship != ptr->instance)) {
 							str = Ships[ptr->instance].ship_name;
 							if (!stricmp(_m_ship_name.c_str(), str)) {
 								auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,

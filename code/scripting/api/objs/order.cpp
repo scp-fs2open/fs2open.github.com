@@ -22,7 +22,7 @@ order_h::order_h() {
 }
 order_h::order_h(object* objp, int n_odx) {
 	objh = object_h(objp);
-	if(objh.IsValid() && objh.objp->type == OBJ_SHIP && n_odx > -1 && n_odx < MAX_AI_GOALS)
+	if(objh.isValid() && objh.objp->type == OBJ_SHIP && n_odx > -1 && n_odx < MAX_AI_GOALS)
 	{
 		odx = n_odx;
 		sig = Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
@@ -35,11 +35,11 @@ order_h::order_h(object* objp, int n_odx) {
 		aigp = NULL;
 	}
 }
-bool order_h::IsValid() {
+bool order_h::isValid() const {
 	if (objh.objp == NULL || aigp == NULL)
 		return false;
 
-	return objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
+	return objh.isValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
 }
 
 //**********HANDLE: order
@@ -53,7 +53,7 @@ ADE_VIRTVAR(Priority, l_Order, "number", "Priority of the given order", "number"
 	if(!ade_get_args(L, "o|i", l_Order.GetPtr(&ohp), &priority))
 		return ade_set_error(L, "i", 0);
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR) {
@@ -69,7 +69,7 @@ ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priorit
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ADE_RETURN_NIL;
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ADE_RETURN_FALSE;
 
 	ai_info *aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
@@ -86,7 +86,7 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	switch(ohp->aigp->ai_mode){
@@ -185,13 +185,13 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
 
 	if(ADE_SETTING_VAR){
-		if(newh && newh->IsValid()){
+		if(newh && newh->isValid()){
 			switch(ohp->aigp->ai_mode){
 				case AI_GOAL_DESTROY_SUBSYSTEM:
 				case AI_GOAL_CHASE:
@@ -344,14 +344,14 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
+		if(newh && newh->isValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 		{
 			objp = &Objects[newh->ss->parent_objnum];
 			if(!stricmp(Ships[objp->instance].ship_name, ohp->aigp->target_name)) {
@@ -385,7 +385,7 @@ ADE_FUNC(isValid, l_Order, NULL, "Detects whether handle is valid", "boolean", "
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", ohp->IsValid());
+	return ade_set_args(L, "b", ohp->isValid());
 }
 
 //**********HANDLE: shiporders
@@ -397,7 +397,7 @@ ADE_FUNC(__len, l_ShipOrders, NULL, "Number of ship orders", "number", "Number o
 	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid() || objh->objp->type != OBJ_SHIP || Ships[objh->objp->instance].ai_index < 0)
+	if(!objh->isValid() || objh->objp->type != OBJ_SHIP || Ships[objh->objp->instance].ai_index < 0)
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ai_goal_num(&Ai_info[Ships[objh->objp->instance].ai_index].goals[0]));
@@ -413,7 +413,7 @@ ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Orde
 
 	i--; //Lua->FS2
 
-	if (!objh->IsValid() || i < 0 || i >= MAX_AI_GOALS)
+	if (!objh->isValid() || i < 0 || i >= MAX_AI_GOALS)
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
 	ai_info *aip = &Ai_info[Ships[objh->objp->instance].ai_index];
@@ -430,7 +430,7 @@ ADE_FUNC(isValid, l_ShipOrders, NULL, "Detects whether handle is valid", "boolea
 	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", oh->IsValid());
+	return ade_set_args(L, "b", oh->isValid());
 }
 
 

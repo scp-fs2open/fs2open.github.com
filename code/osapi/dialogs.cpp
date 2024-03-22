@@ -100,7 +100,7 @@ namespace os
 		//buttons not clickable. So as a hotfix, the dialog has no blocking parent in that case and
 		//is instead rendered as it's own window
 		SDL_Window* getDialogParent() {
-			return !(Cmdline_fullscreen_window || Cmdline_window) ? NULL : os::getSDLMainWindow();
+			return !(gr_is_viewport_window()) ? NULL : os::getSDLMainWindow();
 		}
 
 		void AssertMessage(const char * text, const char * filename, int linenum, const char * format, ...)
