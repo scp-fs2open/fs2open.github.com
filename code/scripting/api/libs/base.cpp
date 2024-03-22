@@ -661,8 +661,7 @@ ADE_FUNC(getModTitle, l_Base, nullptr,
          "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
          "string", "The mod title")
 {
-	auto str = Mod_title;
-	return ade_set_args(L, "s", str.c_str());
+	return ade_set_args(L, "s", Mod_title.c_str());
 }
 
 ADE_FUNC(getModVersion, l_Base, nullptr,

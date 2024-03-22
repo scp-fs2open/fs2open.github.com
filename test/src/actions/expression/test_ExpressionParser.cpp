@@ -153,7 +153,7 @@ class ExpressionParserFailureTest : public testing::TestWithParam<SCP_string> {
 
 TEST_P(ExpressionParserFailureTest, test_parsing)
 {
-	const auto expressionText = GetParam();
+	const auto& expressionText = GetParam();
 
 	ExpressionParser parser(expressionText);
 

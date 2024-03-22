@@ -544,7 +544,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
 			obj->type = ElementType::Function;
 		}
 
-		auto typeNames = ade_manager::getInstance()->getTypeNames();
+		const auto& typeNames = ade_manager::getInstance()->getTypeNames();
 
 		if (ReturnType != nullptr) {
 			type_parser type_parser(typeNames);
@@ -596,7 +596,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
 		std::unique_ptr<DocumentationElementProperty> obj(new DocumentationElementProperty());
 		obj->type = ElementType::Property;
 
-		auto typeNames = ade_manager::getInstance()->getTypeNames();
+		const auto& typeNames = ade_manager::getInstance()->getTypeNames();
 
 		//***Type Name(ShortName)
 		if (ReturnType != nullptr) {
@@ -684,7 +684,7 @@ SCP_string ade_table_entry::GetFullPath() const
 
 	size_t currentIdx = ParentIdx;
 	while (currentIdx != UINT_MAX) {
-		const auto entry = ade_manager::getInstance()->getEntry(currentIdx);
+		const auto& entry = ade_manager::getInstance()->getEntry(currentIdx);
 
 		SCP_string entryName(entry.GetName());
 

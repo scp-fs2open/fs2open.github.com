@@ -85,7 +85,7 @@ void gr_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 
 	gr_model_matrix_stack.push(offset, rotation);
 
-	auto model_matrix = gr_model_matrix_stack.get_transform();
+	const auto& model_matrix = gr_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	modelview_matrix_depth++;
@@ -109,7 +109,7 @@ void gr_end_instance_matrix()
 
 	gr_model_matrix_stack.pop();
 
-	auto model_matrix = gr_model_matrix_stack.get_transform();
+	const auto& model_matrix = gr_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	modelview_matrix_depth--;
@@ -280,7 +280,7 @@ void gr_end_2d_matrix()
 
 	gr_view_matrix = gr_last_view_matrix;
 
-	auto model_matrix = gr_model_matrix_stack.get_transform();
+	const auto& model_matrix = gr_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	htl_2d_matrix_set = false;
@@ -302,7 +302,7 @@ void gr_push_scale_matrix(const vec3d *scale_factor)
 
 	gr_model_matrix_stack.push(NULL, NULL, scale_factor);
 
-	auto model_matrix = gr_model_matrix_stack.get_transform();
+	const auto& model_matrix = gr_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	matrix_uniform_up_to_date = false;
@@ -315,7 +315,7 @@ void gr_pop_scale_matrix()
 
 	gr_model_matrix_stack.pop();
 
-	auto model_matrix = gr_model_matrix_stack.get_transform();
+	const auto& model_matrix = gr_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	modelview_matrix_depth--;

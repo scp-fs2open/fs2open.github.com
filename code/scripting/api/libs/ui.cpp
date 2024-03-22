@@ -1817,8 +1817,7 @@ ADE_FUNC(initHotkeysList,
 	// We want to allow the API to handle expanding wings on its own,
 	// so lets expand every wing in the list and not try to handle it after that.
 	for (int i = 0; i < MAX_LINES; i++) {
-		auto item = Hotkey_lines[i];
-		if (item.type == HotkeyLineType::WING) {
+		if (Hotkey_lines[i].type == HotkeyLineType::WING) {
 			expand_wing(i, true);
 		}
 	}
@@ -1899,8 +1898,7 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 
 	// this is dumb, but whatever
 	for (int i = 0; i < MAX_LINES; i++) {
-		auto item = Hotkey_lines[i];
-		if (item.type == HotkeyLineType::NONE) {
+		if (Hotkey_lines[i].type == HotkeyLineType::NONE) {
 			s = i;
 			break;
 		}
