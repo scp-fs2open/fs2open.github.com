@@ -1742,7 +1742,6 @@ void stars_draw_stars()
 
 	int i;
 	star *sp;
-	float dist = 0.0f;
 	float ratio;
 	vDist vDst;
 	vertex p1, p2;
@@ -1793,7 +1792,7 @@ void stars_draw_stars()
 		}
 
 		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) ) {
-			dist = vm_vec_dist_quick( &sp->last_star_pos, &p2.world );
+			float dist = vm_vec_dist_quick( &sp->last_star_pos, &p2.world );
 
 			if ( dist > Star_max_length ) {
  				ratio = Star_max_length / dist;

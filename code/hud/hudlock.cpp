@@ -719,7 +719,7 @@ void hud_do_lock_indicator(float frametime)
 	}
 }
 
-void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_subsys)
+void hud_lock_acquire_current_target(object *target_objp, ship_subsys **target_subsys)
 {
 	ship			*target_shipp=nullptr;
 	int			lock_in_range=0;
@@ -735,7 +735,7 @@ void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_su
 	weapon_info* wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	// Reset target subsys in case it isn't needed
-	if (target_subsys != nullptr) target_subsys = nullptr;
+	if (*target_subsys != nullptr) *target_subsys = nullptr;
 
 	// if a large ship, lock to pos closest to center and within range
 	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].is_big_or_huge()) ) {
@@ -764,7 +764,7 @@ void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_su
 				lock_dot=vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_lock);
 				if ( lock_dot > best_lock_dot ) {
 					best_lock_dot=lock_dot;
-					target_subsys = ss;
+					*target_subsys = ss;
 				}
 			}
 			ss = GET_NEXT( ss );
@@ -1073,7 +1073,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 					}
 				}
 			} else {
-				hud_lock_acquire_current_target(lock_slot->obj, lock_slot->subsys);
+				hud_lock_acquire_current_target(lock_slot->obj, &lock_slot->subsys);
 			}
 		}
 	} else {
@@ -1124,7 +1124,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 				}
 			}
 		} else {
-			hud_lock_acquire_current_target(lock_slot->obj, lock_slot->subsys);
+			hud_lock_acquire_current_target(lock_slot->obj, &lock_slot->subsys);
 		}
 	}
 }

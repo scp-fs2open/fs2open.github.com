@@ -2159,7 +2159,8 @@ void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, usho
 
 		// Skip a frame
 		if ((i < nframes - 1) && can_drop_frames) {
-			frame_data = anim_get_next_raw_buffer(the_anim_instance, 0, flags & BMP_AABITMAP ? 1 : 0, bm->bpp);
+			// we can just ignore the return since we're skipping the frame.
+			anim_get_next_raw_buffer(the_anim_instance, 0, flags & BMP_AABITMAP ? 1 : 0, bm->bpp);
 		}
 	}
 
