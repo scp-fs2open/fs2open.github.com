@@ -37,11 +37,11 @@ void awacs_process();
 // < 0.0f		: untargetable
 // 0.0 - 1.0f	: marginally targetable
 // 1.0f			: fully targetable as normal
-float awacs_get_level(object *target, ship *viewer, int use_awacs=1);
+float awacs_get_level(const object *target, const ship *viewer, bool use_awacs = true);
 
 // Determine if ship is visible by team
 // return 1 if ship is fully visible
 // return 0 if ship is only partly visible
-int ship_is_visible_by_team(object *target, ship *viewer);
+int ship_is_visible_by_team(const object *target, const ship *viewer);
 
 #endif

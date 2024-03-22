@@ -31,7 +31,8 @@ struct collision_info_struct {
 	float		impulse;					// damage scales according to impulse
 	vec3d	light_rel_vel;			// velocity of light relative to heavy before collison
 	bool	collide_rotate;		// if collision is being detected purely from rotation (or submodel movement)
-	int		submodel_num;			// submodel of heavy object that is hit
+	int		heavy_model_num;			// model of heavy object that is hit
+	int		heavy_submodel_num;			// submodel of heavy object that is hit
 	bool	edge_hit;				// if edge is hit, need to change collision normal
 	bool	submodel_move_hit;		// if collision is against a moving submodel
 	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
@@ -42,6 +43,8 @@ struct collision_info_struct {
 #define COLLISION_ROTATION_FACTOR		0.2f	//Default value if not set in ships.tbl
 #define MIN_LANDING_SOUND_VEL			2.0f
 #define LANDING_POS_OFFSET				0.05f
+
+constexpr uint32_t collision_cache_bitshift = 16;
 
 //===============================================================================
 // GENERAL COLLISION DETECTION HELPER FUNCTIONS 

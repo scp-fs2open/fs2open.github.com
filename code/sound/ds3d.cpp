@@ -32,7 +32,7 @@
 //					-1		=>		failure
 //
 //
-int ds3d_update_buffer(int channel_id, float min, float max, vec3d *pos, vec3d *vel)
+int ds3d_update_buffer(int channel_id, float min, float max, const vec3d *pos, const vec3d *vel)
 {
 	if (Cmdline_no_3d_sound) {
 		nprintf(("Sound", "Aborting ds3d_update_buffer due to Cmdline_no_3d_sound...\n"));
@@ -85,7 +85,7 @@ int ds3d_update_buffer(int channel_id, float min, float max, vec3d *pos, vec3d *
 //	returns:		0		=>		success
 //					-1		=>		failure
 //
-int ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
+int ds3d_update_listener(const vec3d *pos, const vec3d *vel, const matrix *orient)
 {
 	if (!ds_initialized) {
 		return -1;

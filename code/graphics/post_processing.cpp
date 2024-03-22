@@ -43,7 +43,7 @@ bool Post_processing_enable_lightshafts = true;
 static auto LightshaftsOption __UNUSED = options::OptionBuilder<bool>("Graphics.Lightshafts",
                      std::pair<const char*, int>{"Lightshafts", 1724},
                      std::pair<const char*, int>{"Enables or disables lightshafts (requires post-processing)", 1725})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(true)
                      .level(options::ExpertLevel::Advanced)
                      .bind_to(&Post_processing_enable_lightshafts)
@@ -55,12 +55,13 @@ int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloo
 static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
                      std::pair<const char*, int>{"Bloom intensity", 1701},
                      std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .range(0, 200)
                      .level(options::ExpertLevel::Advanced)
                      .default_val(25)
                      .bind_to(&Post_processing_bloom_intensity)
                      .importance(55)
+                     .flags({options::OptionFlags::RangeTypeInteger})
                      .finish();
 } // namespace
 

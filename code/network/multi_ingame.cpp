@@ -1028,13 +1028,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			GET_INT(Wings[wing_data].current_wave);			
 		}
 
-		// lookup ship in the original ships array
-		p_objp = mission_parse_get_parse_object(ship_name);
-		if(p_objp == NULL){
-			// if this ship is part of wing not on its current wave, look for its "original" by subtracting out wave #
-			p_objp = mission_parse_get_arrival_ship(ship_name);
-		}
-		if(p_objp == NULL){
+		// lookup ship in the registry
+		auto entry = ship_registry_get(ship_name);
+		p_objp = entry ? entry->p_objp_or_null() : nullptr;
+		if (p_objp == nullptr) {
 			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;

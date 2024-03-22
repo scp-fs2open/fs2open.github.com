@@ -177,6 +177,7 @@ namespace particle
 		part->looping = false;
 		part->length = info->length;
 		part->angle = frand_range(0.0f, PI2);
+		part->use_angle = info->use_angle;
 		part->size_lifetime_curve = info->size_lifetime_curve;
 		part->vel_lifetime_curve = info->vel_lifetime_curve;
 
@@ -503,7 +504,7 @@ namespace particle
 			}
 			else {
 				// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
-				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, Randomize_particle_rotation ? part->angle : Physics_viewer_bank, radius, alpha);
+				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
 			}
 
 

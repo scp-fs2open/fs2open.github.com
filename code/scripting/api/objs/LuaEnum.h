@@ -12,6 +12,7 @@ struct lua_enum_h {
 	lua_enum_h();
 	explicit lua_enum_h(int idx);
 	dynamic_sexp_enum_list* getEnum() const;
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_LuaEnum, lua_enum_h);

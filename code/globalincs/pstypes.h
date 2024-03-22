@@ -442,7 +442,7 @@ public:
 	class camera *getCamera();
 	size_t getIndex();
 	int getSignature();
-	bool isValid();
+	bool isValid() const;
 };
 
 #include "globalincs/vmallocator.h"
@@ -453,7 +453,7 @@ public:
 //  - is not "none"
 //  - is not "<none>"
 inline bool VALID_FNAME(const char* x) {
-	return strlen((x)) && stricmp((x), "none") != 0 && stricmp((x), "<none>") != 0;
+	return (x[0] != '\0') && stricmp(x, "none") != 0 && stricmp(x, "<none>") != 0;
 }
 /**
  * @brief Checks if the specified string may be a valid file name

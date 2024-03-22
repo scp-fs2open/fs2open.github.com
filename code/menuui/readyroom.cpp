@@ -917,7 +917,11 @@ int sim_room_button_pressed(int n)
 
 		case CAMPAIGN_TAB:
 			if ( !strlen(Campaign.filename) ) {
-				popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", 1612));
+				if (Campaign_load_failure == CAMPAIGN_ERROR_MISSING) {
+					popup(PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("The currently active campaign cannot be found.  Unable to switch to campaign mode.", 1612));
+				} else {
+					popup(PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("The currently active campaign cannot be loaded.  Unable to switch to campaign mode.", 1816));
+				}
 				break;
 			}
 
@@ -1050,7 +1054,9 @@ void sim_room_init()
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
 
-		mission_campaign_load_failure_popup();
+		// don't display the popup in the sim room - first because there is already logic to prevent listing campaign missions,
+		// second because there's not much the player can do about it in the sim room, and third because displaying the popup
+		// clears the error code
 	}
 
 	Num_campaign_missions = 0;

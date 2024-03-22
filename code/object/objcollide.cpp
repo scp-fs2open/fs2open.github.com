@@ -27,6 +27,8 @@ int Num_pairs_checked = 0;
 
 SCP_vector<int> Collision_sort_list;
 
+static_assert(1 << collision_cache_bitshift > MAX_OBJECTS, "Collision pair caching currently relies on the highest possible objnum being less than 2^collision_cache_bitshift.");
+
 class collider_pair
 {
 public:
@@ -549,7 +551,8 @@ void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, bool submodel_
 	hit->edge_hit = mc->edge_hit;
 	hit->hit_pos = mc->hit_point_world;
 	hit->hit_time = mc->hit_dist;
-	hit->submodel_num = mc->hit_submodel;
+	hit->heavy_model_num = mc->model_num;
+	hit->heavy_submodel_num = mc->hit_submodel;
 
 	hit->submodel_move_hit = submodel_move_hit;
 }
@@ -867,7 +870,7 @@ void obj_collide_pair(object *A, object *B)
     }
 
     bool valid = false;
-    uint key = (OBJ_INDEX(A) << 12) + OBJ_INDEX(B);
+    uint key = (OBJ_INDEX(A) << collision_cache_bitshift) + OBJ_INDEX(B);
 
     collider_pair* collision_info = &Collision_cached_pairs[key];
 

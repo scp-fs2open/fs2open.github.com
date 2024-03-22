@@ -470,7 +470,7 @@ int hud_target_invalid_awacs(object *objp)
 	}
 
 	// check for invalid status
-	if((Player_ship != NULL) && (awacs_get_level(objp, Player_ship) < 1.0f)){
+	if((Player_ship != nullptr) && (awacs_get_level(objp, Player_ship) < 1.0f)){
 		return 1;
 	}
 
@@ -872,7 +872,7 @@ void hud_target_hotkey_select( int k )
 
 	// a simple walk of the list to get the count
 	for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ){
-		if (awacs_get_level(hitem->objp, Player_ship, 1) > 1) {
+		if (awacs_get_level(hitem->objp, Player_ship, true) > 1.0f) {
 			visible_count++;
 		}
 	}
@@ -894,7 +894,7 @@ void hud_target_hotkey_select( int k )
 	first_target = NULL;
 	for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
 
-		if (awacs_get_level(hitem->objp, Player_ship, 1) > 1) {
+		if (awacs_get_level(hitem->objp, Player_ship, true) > 1.0f) {
 			// get the first valid target
 			if (first_target == NULL) {
 				first_target = hitem;
@@ -939,7 +939,7 @@ void hud_target_hotkey_select( int k )
 
 		// next is before current target, so search from start of list
 			for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
-				if (awacs_get_level(hitem->objp, Player_ship, 1) > 1) {
+				if (awacs_get_level(hitem->objp, Player_ship, true) > 1.0f) {
 					target = hitem;
 					break;
 				}
@@ -1830,7 +1830,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					distance = vm_vec_normalized_dir(&vec_to_subsys, &gsubpos, &View_position);
 
 					// check if facing and in view
-					int facing = ship_subsystem_in_sight(objp, A, &View_position, &gsubpos, 0);
+					bool facing = ship_subsystem_in_sight(objp, A, &View_position, &gsubpos, false);
 
 					if (!auto_advance && get_closest_turret && !only_player_target) {
 						// if within 3 degrees and not previous subsys, use subsys in front
@@ -2334,7 +2334,7 @@ void hud_update_closest_turret()
 				}
 
 				// check if facing and in view
-				int facing = ship_subsystem_in_sight(objp, ss, &View_position, &gsubpos, 0);
+				bool facing = ship_subsystem_in_sight(objp, ss, &View_position, &gsubpos, false);
 
 				if (facing) {
 					new_distance *= 0.5f;
@@ -2627,12 +2627,24 @@ void hud_target_in_reticle_old()
 
 	target_obj = hud_reticle_pick_target();
 	if ( target_obj != NULL ) {
+		int oldTargetNum = Player_ai->target_objnum; 
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
 		hud_shield_hit_reset(target_obj);
 
 		if ( target_obj->type == OBJ_SHIP ) {
-			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
-			hud_restore_subsystem_target(&Ships[target_obj->instance]);
+			ship* shipp = &Ships[target_obj->instance];
+
+			// if the player is attempting to target the same ship under their reticule again
+			// then lets select the nearest subsystem for them.
+			if (Automatically_select_subsystem_under_reticle_when_targeting_same_ship &&
+				Ship_info[shipp->ship_info_index].is_big_or_huge() &&
+				oldTargetNum == Player_ai->target_objnum) {
+				hud_target_subsystem_in_reticle();
+			}
+			else {
+				hud_maybe_set_sorted_turret_subsys(shipp);
+				hud_restore_subsystem_target(shipp);
+			}
 		}
 	}
 	else {
@@ -3426,7 +3438,7 @@ void hud_show_selection_set()
 		// Goober5000 - don't draw indicators for non-visible ships, per Mantis #1972
 		// (the only way we could get here is if the hotkey set contained a mix of visible
 		// and invisible ships)
-		if (awacs_get_level(targetp, Player_ship, 1) < 1) {
+		if (awacs_get_level(targetp, Player_ship, true) < 1.0f) {
 			continue;
 		}
 
@@ -3590,7 +3602,7 @@ void hud_show_hostile_triangle()
 		}
 
 		// check if ship is stealthy
-		if (awacs_get_level(&Objects[sp->objnum], Player_ship, 1) < 1) {
+		if (awacs_get_level(&Objects[sp->objnum], Player_ship, true) < 1.0f) {
 			continue;
 		}
 

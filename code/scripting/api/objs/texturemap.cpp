@@ -27,13 +27,13 @@ texture_map_h::texture_map_h(polymodel* n_model, texture_map* n_tmap) {
 	tmap = n_tmap;
 }
 texture_map* texture_map_h::Get() {
-	if(!this->IsValid())
+	if(!this->isValid())
 		return NULL;
 
 	return tmap;
 }
 int texture_map_h::GetSize() {
-	if(!this->IsValid())
+	if(!this->isValid())
 		return 0;
 
 	switch(type)
@@ -46,7 +46,7 @@ int texture_map_h::GetSize() {
 			return 0;
 	}
 }
-bool texture_map_h::IsValid() {
+bool texture_map_h::isValid() const {
 	if(tmap == NULL)
 		return false;
 
@@ -55,9 +55,9 @@ bool texture_map_h::IsValid() {
 		case THT_INDEPENDENT:
 			return true;
 		case THT_OBJECT:
-			return obj.IsValid();
+			return obj.isValid();
 		case THT_MODEL:
-			return mdl.IsValid();
+			return mdl.isValid();
 		default:
 			Error(LOCATION, "Bad type in texture_map_h; debug this.");
 			return false;

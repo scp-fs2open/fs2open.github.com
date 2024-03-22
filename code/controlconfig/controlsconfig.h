@@ -947,7 +947,7 @@ int check_control(int id, int key = -1);
 void control_get_axes_readings(int *axis_v, float frame_time);
 
 /**
- * @brief Markes the given control (by IoActionId) as used
+ * @brief Marks the given control (by IoActionId) as used
  *
  * @details Updates the ::used timestamp, triggers a script hook, and marks ::continous_ongoing as true
  */

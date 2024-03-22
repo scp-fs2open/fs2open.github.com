@@ -81,6 +81,8 @@ void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();
 bool stars_background_empty(const background_t &bg);
 
+void stars_get_data(bool is_sun, int idx, starfield_list_entry& sle);
+void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle);
 
 // add a new sun or bitmap instance
 int stars_add_sun_entry(starfield_list_entry *sun_ptr);

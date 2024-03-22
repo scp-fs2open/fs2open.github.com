@@ -118,7 +118,7 @@ ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry hand
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == NULL || !seh->isValid())
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
 	auto handle = snd_play(seh->Get());
@@ -139,7 +139,7 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == NULL || !seh->isValid())
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
 	auto handle = snd_play_looping(seh->Get());
@@ -165,7 +165,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry, [vector source, vector listener]",
 	if (!ade_get_args(L, "o|oo", l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&source), l_Vector.GetPtr(&listener)))
 		return ade_set_error(L, "o", l_Sound3D.Set(sound_h()));
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == NULL || !seh->isValid())
 		return ade_set_error(L, "o", l_Sound3D.Set(sound_h()));
 
 	auto handle = snd_play_3d(seh->Get(), source, listener);

@@ -60,7 +60,7 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = 
  * @param resize_mode The mode for translating the screen positions
  * @param length The number of bytes in the string to render. -1 will render the whole string.
  */
-void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1);
+void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, size_t length = std::string::npos);
 /**
  * @brief Renders the specified string to the screen using the current font and color
  * @param x The x-coordinate
@@ -69,7 +69,7 @@ void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE
  * @param resize_mode The mode for translating the screen positions
  * @param length The number of bytes in the string to render. -1 will render the whole string.
  */
-inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
+inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, size_t length = std::string::npos)
 {
 	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
 }

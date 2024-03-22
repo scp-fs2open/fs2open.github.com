@@ -103,9 +103,8 @@ int physics_rot = 20;
 int box_marking = 0;
 int last_mouse_x, last_mouse_y, mouse_dx, mouse_dy;
 int Cur_bitmap = -1;
-int Id_select_type_jump_node;
-int Id_select_type_start = 0;
-int Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_jump_node = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
 int Move_ships_when_undocking = 1;			// true by default
 int Highlight_selectable_subsys = 0;
@@ -1481,26 +1480,33 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 	} else {
 		if (menu.LoadMenu(IDR_MENU_EDIT_POPUP)) {
-			int i;
+			size_t i;
 			CMenu* pPopup = menu.GetSubMenu(0);
 			CMenu shipPopup, player_submenu;
 			CMenu *species_submenu = new CMenu[Species_info.size()];
 			ASSERT(pPopup != NULL);
 
 			// create a popup menu based on the ship models read in ship.cpp.
+			// note: the offsets from SHIP_TYPES must correspond to the indexes in the ship type dropdown
+
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
-			for (i=0; i<(int)Species_info.size(); i++) {
+
+			for (i=0; i<Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 					(UINT) species_submenu[i].m_hMenu, Species_info[i].species_name);
 			}
 
-			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+			i = 0;
+			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+				if (it->flags[Ship::Info_Flags::No_fred])
+					continue;	// because the dropdown skips "no_fred", we need to skip it here too
 				species_submenu[it->species].AppendMenu(MF_STRING |
 					MF_ENABLED, SHIP_TYPES + i, it->name);
+				i++;
+			}
 
 			pPopup->AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 				(UINT) shipPopup.m_hMenu, "New Object Type");
@@ -1574,17 +1580,22 @@ CFREDView *CFREDView::GetView()
 // the ships.  Shouldn't conflict with any other ID_* thingys.
 BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo) 
 {
-	int id = (int) nID;
-
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
+		if ((nID >= SHIP_TYPES) && (nID < SHIP_TYPES + ship_type_combo_box_size + 2)) {	// the 2 are waypoint and jump node
+			int idx = static_cast<int>(nID - SHIP_TYPES);
 			if (nCode == CN_COMMAND) {
-				cur_ship_type_combo_index = id - SHIP_TYPES;
+				cur_ship_type_combo_index = idx;
 				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
+
+				// now that we've updated the combo box, try to actually create something
+				// see also CFREDView::OnLButtonDown
+				int waypoint_instance = cur_waypoint ? Objects[cur_waypoint->get_objnum()].instance : -1;
+				Selection_lock = 0;
+				on_object = create_object_on_grid(waypoint_instance);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index == idx);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 

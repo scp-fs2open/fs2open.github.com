@@ -60,7 +60,7 @@ char *Campaign_names[MAX_CAMPAIGNS] = { NULL };
 char *Campaign_file_names[MAX_CAMPAIGNS] = { NULL };
 char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
 int	Num_campaigns;
-int Campaign_file_missing;
+bool Campaign_file_missing = false;
 int Campaign_load_failure = 0;
 int Campaign_names_inited = 0;
 SCP_vector<SCP_string> Ignored_campaigns;
@@ -428,7 +428,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
 	if (campaign_is_ignored(filename)) {
-		Campaign_file_missing = 1;
+		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_IGNORED;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
@@ -634,19 +634,25 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		if ((Game_mode & GM_MULTIPLAYER) && Campaign.num_missions > UINT8_MAX)
 			throw parse::ParseException("Number of campaign missions is too high and breaks multi!");
 	}
-	catch (const parse::ParseException& e)
+	catch (const parse::FileOpenException& foe)
 	{
-		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, e.what()));
+		mprintf(("Error opening '%s'\r\nError message = %s.\r\n", filename, foe.what()));
 
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
 
-		if (!Fred_running && !(Game_mode & GM_MULTIPLAYER)) {
-			Campaign_file_missing = 1;
-			Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
-			return CAMPAIGN_ERROR_MISSING;
-		}
+		Campaign_file_missing = true;
+		Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
+		return CAMPAIGN_ERROR_MISSING;
+	}
+	catch (const parse::ParseException& pe)
+	{
+		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, pe.what()));
 
+		Campaign.filename[0] = 0;
+		Campaign.num_missions = 0;
+
+		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
 		return CAMPAIGN_ERROR_CORRUPT;
 	}
@@ -681,7 +687,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 	}
 
 	// all is good here, move along
-	Campaign_file_missing = 0;
+	Campaign_file_missing = false;
 
 	return 0;
 }
@@ -721,7 +727,7 @@ void mission_campaign_init()
 {
 	mission_campaign_clear();
 
-	Campaign_file_missing = 0;
+	Campaign_file_missing = false;
 
 	player_loadout_init();
 }
@@ -1539,26 +1545,31 @@ bool campaign_is_ignored(const char *filename)
 	return false;
 }
 
+static bool campaign_reportable_error(int val)
+{
+	return val != 0 && val != CAMPAIGN_ERROR_MISSING && val != CAMPAIGN_ERROR_IGNORED;
+}
+
 // returns 0: loaded, !0: error
-int mission_load_up_campaign( player *pl )
+int mission_load_up_campaign(bool fall_back_from_current)
 {
 	int rc = -1, idx;
-
-	if ( pl == NULL )
-		pl = Player;
+	auto pl = Player;
 
 	// find best campaign to use:
 	//   1) last used
 	//   2) builtin
 	//   3) anything else
+	// Note that in each step we only fall back when the error is benign, e.g. ignored or missing;
+	// if there's some other real error with the campaign file, we report it.
+	// Also note that if we *have* a current campaign, we shouldn't fall back *at all*, lest we repeatedly
+	// reset what the current campaign is, *unless* we are starting a brand new session or loading a new pilot.
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
-		if (!campaign_is_ignored(pl->current_campaign)) {
-			return mission_campaign_load(pl->current_campaign, nullptr, pl);
-		}
-		else {
-			Campaign_file_missing = 1;
+		rc = mission_campaign_load(pl->current_campaign, nullptr, pl);
+		if (rc == 0 || !fall_back_from_current || campaign_reportable_error(rc)) {
+			return rc;
 		}
 	}
 
@@ -1566,7 +1577,7 @@ int mission_load_up_campaign( player *pl )
 	rc = mission_campaign_load(Default_campaign_file_name, nullptr, pl);
 
 	// everything else...
-	if (rc < 0) {
+	if (rc < 0 && !campaign_reportable_error(rc)) {
 		// no descriptions, no sorting
 		mission_campaign_build_list(false, false);
 

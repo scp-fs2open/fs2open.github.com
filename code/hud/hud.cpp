@@ -81,7 +81,7 @@ int HUD_color_blue = 0;
 int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
-int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+bool HUD_high_contrast = false;										// high or low contrast (for nebula, etc)
 bool HUD_shadows = false;
 
 // Goober5000
@@ -363,7 +363,7 @@ void HudGauge::initPosition(int x, int y)
 	position[1] = y;
 }
 
-void HudGauge::getPosition(int *x, int *y)
+void HudGauge::getPosition(int *x, int *y) const
 {
 	*x = position[0];
 	*y = position[1];
@@ -390,7 +390,7 @@ void HudGauge::initFont(int input_font_num)
 	}
 }
 
-int HudGauge::getFont()
+int HudGauge::getFont() const
 {
 	return font_num;
 }
@@ -404,7 +404,7 @@ void HudGauge::initOriginAndOffset(float originX, float originY, int offsetX, in
 	tabled_offset[1] = offsetY;
 }
 
-void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY)
+void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const
 {
 	*originX = tabled_origin[0];
 	*originY = tabled_origin[1];
@@ -420,19 +420,24 @@ void HudGauge::initCoords(bool use_coords, int coordsX, int coordsY)
 	tabled_coords[1] = coordsY;
 }
 
-void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY)
+void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY) const
 {
 	*use_coords = tabled_use_coords;
 	*coordsX = tabled_coords[0];
 	*coordsY = tabled_coords[1];
 }
 
-const char* HudGauge::getCustomGaugeName()
+void HudGauge::initHiRes(const char* fname)
+{
+	hi_res = (strncmp(fname, "2_", 2) == 0);
+}
+
+const char* HudGauge::getCustomGaugeName() const
 {
 	return custom_name;
 }
 
-const char* HudGauge::getCustomGaugeText()
+const char* HudGauge::getCustomGaugeText() const
 {
 	return custom_text.c_str();
 }
@@ -483,17 +488,17 @@ void HudGauge::setGaugeColor(int bright_index)
 	if(bright_index != HUD_C_NONE){
 		switch(bright_index){
 		case HUD_C_DIM:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 
@@ -523,15 +528,15 @@ void HudGauge::setGaugeColor(int bright_index)
 	} else {
 		switch(maybeFlashSexp()) {
 		case 0:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 		case 1:			
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 		default:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 		}
 	}
@@ -539,33 +544,37 @@ void HudGauge::setGaugeColor(int bright_index)
 	gr_set_color_fast(&gauge_color);	
 }
 
-bool HudGauge::isCustom()
+bool HudGauge::isCustom() const
 {
 	return custom_gauge;
 }
 
-int HudGauge::getBaseWidth()
+bool HudGauge::isHiRes() const
+{
+	return hi_res;
+}
+
+int HudGauge::getBaseWidth() const
 {
 	return base_w;
 }
 
-int HudGauge::getBaseHeight()
+int HudGauge::getBaseHeight() const
 {
 	return base_h;
 }
 
-float HudGauge::getAspectQuotient()
+float HudGauge::getAspectQuotient() const
 {
 	return aspect_quotient;
 }
 
-int HudGauge::getConfigType()
+int HudGauge::getConfigType() const
 {
-	//return gauge_type;
 	return gauge_config;
 }
 
-int HudGauge::getObjectType()
+int HudGauge::getObjectType() const
 {
 	return gauge_object;
 }
@@ -588,7 +597,7 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
- const color& HudGauge::getColor()
+ const color& HudGauge::getColor() const
 {
 	return gauge_color;
 }
@@ -613,12 +622,12 @@ void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
 	render_for_cockpit_toggle = cockpit_view_choice;
 }
 
-bool HudGauge::isOffbyDefault()
+bool HudGauge::isOffbyDefault() const
 {
 	return off_by_default;
 }
 
-bool HudGauge::isActive()
+bool HudGauge::isActive() const
 {
 	return active && !sexp_override;
 }
@@ -643,7 +652,7 @@ void HudGauge::startPopUp(int time)
 	popup_timer = timestamp(time);
 }
 
-int HudGauge::popUpActive()
+int HudGauge::popUpActive() const
 {
 	//Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
 	if ( !pop_up ) {
@@ -673,7 +682,7 @@ void HudGauge::startFlashSexp()
 	flash_status = false;
 }
 
-bool HudGauge::flashExpiredSexp()
+bool HudGauge::flashExpiredSexp() const
 {
 	if(timestamp_elapsed(flash_duration)) {
 		return true;
@@ -1147,7 +1156,7 @@ void HudGauge::initialize()
 	sexp_lock_color = false;
 }
 
-bool HudGauge::canRender()
+bool HudGauge::canRender() const
 {
 	if (sexp_override) {
 		return false;
@@ -1293,12 +1302,12 @@ void HUD_init()
 	last_percent_throttle = 0.0f;
 
 	// default to high contrast in the nebula
-	HUD_contrast = 0;
+	HUD_high_contrast = false;
 	HUD_draw     = 1;
 	HUD_disable_except_messages = 0;
 
 	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-		HUD_contrast = 1;
+		HUD_high_contrast = true;
 	}
 
 	// reset to infinite
@@ -1697,7 +1706,7 @@ void hud_render_preprocess(float frametime)
 
 	if ( hud_disabled() ) {
 		// if the hud is disabled, we still need to make sure that the indicators are properly handled
-		hud_do_lock_indicators(flFrametime);
+		hud_do_lock_indicators(frametime);
 		return;
 	}
 
@@ -1823,15 +1832,15 @@ void hud_maybe_display_supernova()
 /**
  * @brief Undertakes main HUD render. 
  */
-void hud_render_all()
+void hud_render_all(float frametime)
 {
 	int i;
 
-	hud_render_gauges();
+	hud_render_gauges(-1, frametime);
 
 	// start rendering cockpit dependent gauges if possible
 	for ( i = 0; i < (int)Player_displays.size(); ++i ) {
-		hud_render_gauges(i);
+		hud_render_gauges(i, frametime);
 	}
 
 	hud_clear_msg_buffer();
@@ -1840,7 +1849,7 @@ void hud_render_all()
 	font::set_font(font::FONT1);
 }
 
-void hud_render_gauges(int cockpit_display_num)
+void hud_render_gauges(int cockpit_display_num, float frametime)
 {
 	size_t j, num_gauges;
 	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
@@ -1865,9 +1874,6 @@ void hud_render_gauges(int cockpit_display_num)
 			return;
 		}
 	}
-
-	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
-	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
 
 	// Check if this ship has its own HUD gauges. 
 	if ( sip->hud_enabled ) {
@@ -3313,17 +3319,17 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 	if(bright_index != HUD_C_NONE){
 		switch(bright_index){
 		case HUD_C_DIM:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
@@ -3353,15 +3359,15 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 	} else {
 		switch(flash_status) {
 		case 0:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		case 1:			
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		default:			
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;	
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		}
@@ -3864,12 +3870,12 @@ void hud_save_restore_camera_data(int save)
 
 void hud_toggle_contrast()
 {
-	HUD_contrast = !HUD_contrast;
+	HUD_high_contrast = !HUD_high_contrast;
 }
 
-void hud_set_contrast(int high)
+void hud_set_contrast(bool high)
 {
-	HUD_contrast = high;
+	HUD_high_contrast = high;
 }
 
 void hud_toggle_shadows()
@@ -3988,7 +3994,7 @@ HudGauge(HUD_OBJECT_MULTI_MSG, HUD_MESSAGE_LINES, false, true, 0, 255, 255, 255)
 {
 }
 
-bool HudGaugeMultiMsg::canRender() 
+bool HudGaugeMultiMsg::canRender() const
 {
 	return true;
 }

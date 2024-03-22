@@ -1906,7 +1906,7 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 
 		// is it subsystem in view
 		if ( Player->subsys_in_view == -1 ) {
-			rval = ship_subsystem_in_sight(target_objp, subsys, &View_position, &subobj_pos, 0);
+			rval = ship_subsystem_in_sight(target_objp, subsys, &View_position, &subobj_pos, false) ? 1 : 0;
 		} else {
 			rval =  Player->subsys_in_view;
 		}

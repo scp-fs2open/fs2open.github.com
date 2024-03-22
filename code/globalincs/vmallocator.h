@@ -21,17 +21,17 @@ template <typename T>
 using SCP_vector = std::vector<T, std::allocator<T>>;
 
 template <typename T>
-bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
+bool SCP_vector_contains(const SCP_vector<T>& vector, const T& item) {
 	return std::find(vector.begin(), vector.end(), item) != vector.end();
 }
 
 template <typename T>
-inline bool SCP_vector_inbounds(SCP_vector<T>& vector, int idx) {
+inline bool SCP_vector_inbounds(const SCP_vector<T>& vector, int idx) {
 	return ((idx >= 0) && (idx < static_cast<int>(vector.size())));
 }
 
 template <typename T>
-inline bool SCP_vector_inbounds(SCP_vector<T>& vector, size_t idx) {
+inline bool SCP_vector_inbounds(const SCP_vector<T>& vector, size_t idx) {
 	return idx < vector.size();
 }
 

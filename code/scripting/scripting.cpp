@@ -32,6 +32,7 @@ using namespace scripting;
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 bool Output_scripting_json = false;
+bool Scripting_game_init_run = false;
 
 flag_def_list Script_conditions[] = 
 {

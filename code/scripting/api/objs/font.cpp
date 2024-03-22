@@ -11,14 +11,14 @@ font_h::font_h(font::FSFont* fontIn): font(fontIn) {
 font_h::font_h(): font(NULL) {
 }
 
-font::FSFont* font_h::Get() {
+font::FSFont* font_h::Get() const {
 	if (!isValid())
 		return NULL;
 
 	return font;
 }
 
-bool font_h::isValid() {
+bool font_h::isValid() const {
 	return font != NULL;
 }
 

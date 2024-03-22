@@ -10,7 +10,7 @@ struct cmission_h {
 	int l_stage;
 	cmission_h();
 	explicit cmission_h(int stage);
-	bool IsValid() const;
+	bool isValid() const;
 	cmission* getStage() const;
 };
 

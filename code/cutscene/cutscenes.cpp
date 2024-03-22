@@ -25,6 +25,8 @@
 
 extern int Cmdline_nomovies;
 
+bool Movie_active = false;
+
 
 const char* Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 		"ViewFootage",
@@ -58,6 +60,18 @@ static cutscene_info *get_cutscene_pointer(char *cutscene_filename)
 
 	// Didn't find anything.
 	return NULL;
+}
+
+int get_cutscene_index_by_name(const char* name)
+{
+	for (int i = 0; i < static_cast<int>(Cutscenes.size()); i++) {
+		if (!stricmp(name, Cutscenes[i].name)) {
+			return i;
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
 }
 
 static void cutscene_info_init(cutscene_info *csni)

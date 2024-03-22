@@ -1070,6 +1070,9 @@ void barracks_button_pressed(int n)
 			} else {
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 
+				// we now have a new pilot, so try to load its current campaign, falling back if necessary
+				mission_load_up_campaign(true);
+
 				if (Campaign_file_missing) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", 1600));
 					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
@@ -1080,6 +1083,9 @@ void barracks_button_pressed(int n)
 		case B_ACCEPT_BUTTON:
 			if (Num_pilots && !barracks_pilot_accepted()) {
 				gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
+
+				// we now have a new pilot, so try to load its current campaign, falling back if necessary
+				mission_load_up_campaign(true);
 
 				if (Campaign_file_missing) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", 1600));

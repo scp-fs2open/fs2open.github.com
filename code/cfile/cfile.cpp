@@ -91,12 +91,10 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 };
 // clang-format on
 
-#define CFILE_STACK_MAX	8
 
 int cfile_inited = 0;
-static int Cfile_stack_pos = 0;
 
-static char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
+static SCP_vector<SCP_string> Cfile_stack;
 
 std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 
@@ -330,17 +328,16 @@ int cfile_push_chdir(int type)
 
 	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN - 1);
 
-	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
-
-	if (Cfile_stack_pos >= CFILE_STACK_MAX) {
-		return -1;
-	}
-
-	strcpy_s(Cfile_stack[Cfile_stack_pos++], OriginalDirectory);
-
 	cf_create_default_path_string(dir, type, NULL);
 
-	return _cfile_chdir(dir.c_str(), OriginalDirectory);
+	int rc = _cfile_chdir(dir.c_str(), OriginalDirectory);
+
+	// if success then push the original directory on to the stack
+	if (rc == 0) {
+		Cfile_stack.push_back(OriginalDirectory);
+	}
+
+	return rc;
 }
 
 /**
@@ -363,13 +360,16 @@ int cfile_chdir(const char *dir)
 
 int cfile_pop_dir()
 {
-	Assert(Cfile_stack_pos);
-
-	if ( !Cfile_stack_pos )
+	if (Cfile_stack.empty())
 		return -1;
 
-	Cfile_stack_pos--;
-	return cfile_chdir(Cfile_stack[Cfile_stack_pos]);
+	int rc = cfile_chdir(Cfile_stack.back().c_str());
+
+	Assertion(rc == 0, "Failed to chdir() to previous directory (%s)!", Cfile_stack.back().c_str());
+
+	Cfile_stack.pop_back();
+
+	return rc;
 }
 
 // flush (delete all files in) the passed directory (by type), return the # of files deleted

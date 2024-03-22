@@ -241,7 +241,7 @@ void mflash_level_close()
 }
 
 // create a muzzle flash on the guy
-void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type, object *local)
+void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_info *pip, int mflash_type, const object *local)
 {	
 	// mflash *mflashp;
 	mflash_info *mi;
@@ -316,7 +316,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 }
 
 // lookup type by name
-int mflash_lookup(char *name)
+int mflash_lookup(const char *name)
 {	
 	uint idx;
 
