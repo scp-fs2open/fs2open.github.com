@@ -1403,27 +1403,21 @@ void multi_join_game_set_status_text(active_game* game, SCP_string& status_text)
 {
 	switch (game->flags & AG_FLAG_STATE_MASK) {
 	case AG_FLAG_FORMING:
-		gr_set_color_fast(&Color_bright_green);
 		status_text = XSTR("Forming", 764);
 		break;
 	case AG_FLAG_BRIEFING:
-		gr_set_color_fast(&Color_bright_red);
 		status_text = XSTR("Briefing", 765);
 		break;
 	case AG_FLAG_DEBRIEF:
-		gr_set_color_fast(&Color_bright_red);
 		status_text = XSTR("Debrief", 766);
 		break;
 	case AG_FLAG_PAUSE:
-		gr_set_color_fast(&Color_bright_red);
 		status_text = XSTR("Paused", 767);
 		break;
 	case AG_FLAG_IN_MISSION:
-		gr_set_color_fast(&Color_bright_red);
 		status_text = XSTR("Playing", 768);
 		break;
 	default:
-		gr_set_color_fast(&Color_bright);
 		status_text = XSTR("Unknown", 769);
 		break;
 	}
@@ -1467,6 +1461,22 @@ void multi_join_blit_game_status(active_game *game, int y)
 	}
 
 	multi_join_game_set_status_text(game, status_text);
+	
+	//Set the color
+	switch (game->flags & AG_FLAG_STATE_MASK) {
+	case AG_FLAG_FORMING:
+		gr_set_color_fast(&Color_bright_green);
+		break;
+	case AG_FLAG_BRIEFING:
+	case AG_FLAG_DEBRIEF:
+	case AG_FLAG_PAUSE:
+	case AG_FLAG_IN_MISSION:
+		gr_set_color_fast(&Color_bright_red);
+		break;
+	default:
+		gr_set_color_fast(&Color_bright);
+		break;
+	}
 	
 	gr_get_string_size(&str_w,NULL,status_text.c_str());
 	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text.c_str(),GR_RESIZE_MENU);
