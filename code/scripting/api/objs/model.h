@@ -18,11 +18,11 @@ class model_h
 	explicit model_h(polymodel *n_model);
 	model_h();
 
-	polymodel *Get();
+	polymodel *Get() const;
 
-	int GetID();
+	int GetID() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_Model, model_h);
 
@@ -37,48 +37,24 @@ public:
 	explicit submodel_h(polymodel *n_model, int n_submodelnum);
 	submodel_h();
 
-	polymodel *GetModel();
-	int GetModelID();
+	polymodel *GetModel() const;
+	int GetModelID() const;
 
-	bsp_info *GetSubmodel();
-	int GetSubmodelIndex();
+	bsp_info *GetSubmodel() const;
+	int GetSubmodelIndex() const;
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_Submodel, submodel_h);
 
-class modelsubmodels_h : public model_h
-{
- public:
-	 modelsubmodels_h(polymodel *pm);
-	 modelsubmodels_h();
-};
-DECLARE_ADE_OBJ(l_ModelSubmodels, modelsubmodels_h);
+DECLARE_ADE_OBJ(l_ModelSubmodels, model_h);
 
-class modeltextures_h : public model_h
-{
- public:
-	modeltextures_h(polymodel *pm);
-	modeltextures_h();
-};
-DECLARE_ADE_OBJ(l_ModelTextures, modeltextures_h);
+DECLARE_ADE_OBJ(l_ModelTextures, model_h);
 
-class eyepoints_h : public model_h
-{
- public:
-	eyepoints_h(polymodel *pm);
-	eyepoints_h();
-};
-DECLARE_ADE_OBJ(l_Eyepoints, eyepoints_h);
+DECLARE_ADE_OBJ(l_ModelEyepoints, model_h);
 
 // Thrusters:
-class thrusters_h : public model_h
-{
- public:
-	thrusters_h(polymodel *pm);
-	thrusters_h();
-};
-DECLARE_ADE_OBJ(l_Thrusters, thrusters_h);
+DECLARE_ADE_OBJ(l_ModelThrusters, model_h);
 
 // Thrusterbank:
 struct thrusterbank_h
@@ -89,9 +65,9 @@ struct thrusterbank_h
 
 	thrusterbank_h(thruster_bank* ba);
 
-	thruster_bank *Get();
+	thruster_bank *Get() const;
 
-	bool isValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_Thrusterbank, thrusterbank_h);
 
@@ -104,34 +80,30 @@ struct glowpoint_h
 
 	glowpoint_h(glow_point* np);
 
-	glow_point* Get();
+	glow_point* Get() const;
 
-	bool isValid();
+	bool isValid() const;
 
 };
 DECLARE_ADE_OBJ(l_Glowpoint, glowpoint_h);
 
-// Glowbanks:
-class dockingbays_h : public model_h
-{
- public:
-	dockingbays_h(polymodel *pm);
-	dockingbays_h();
-};
-DECLARE_ADE_OBJ(l_Dockingbays, dockingbays_h);
+// Docking bays:
+DECLARE_ADE_OBJ(l_ModelDockingbays, model_h);
 
-class dockingbay_h : public model_h
+class dockingbay_h
 {
  private:
+	model_h modelh;
 	int dock_id;
 
  public:
 	dockingbay_h(polymodel *pm, int dock_idx);
 	dockingbay_h();
 
-	bool IsValid();
+	bool isValid() const;
 
-	dock_bay* getDockingBay();
+	model_h* getModelH() const;
+	dock_bay* getDockingBay() const;
 };
 DECLARE_ADE_OBJ(l_Dockingbay, dockingbay_h);
 

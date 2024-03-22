@@ -11,7 +11,7 @@ struct cmd_brief_stage_h {
 
 	cmd_brief_stage_h();
 	explicit cmd_brief_stage_h(int brief, int stage);
-	bool IsValid() const;
+	bool isValid() const;
 	cmd_brief_stage* getStage() const;
 };
 

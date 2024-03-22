@@ -1,4 +1,5 @@
 #include "techroom.h"
+#include "pilotfile/pilotfile.h"
 
 namespace scripting {
 namespace api {
@@ -6,7 +7,7 @@ namespace api {
 sim_mission_h::sim_mission_h() : missionIdx(-1), isCMission(false) {}
 sim_mission_h::sim_mission_h(int index, bool cmission) : missionIdx(index), isCMission(cmission) {}
 
-bool sim_mission_h::IsValid() const
+bool sim_mission_h::isValid() const
 {
 	return missionIdx >= 0;
 }
@@ -22,12 +23,12 @@ sim_mission* sim_mission_h::getStage() const
 cutscene_info_h::cutscene_info_h() : cutscene(-1) {}
 cutscene_info_h::cutscene_info_h(int scene) : cutscene(scene) {}
 
-bool cutscene_info_h::IsValid() const
+bool cutscene_info_h::isValid() const
 {
-	return cutscene >= 0;
+	return SCP_vector_inbounds(Cutscenes, cutscene);
 }
 
-cutscene_info* cutscene_info_h::getStage() const
+cutscene_info* cutscene_info_h::getScene() const
 {
 	return &Cutscenes[cutscene];
 }
@@ -120,7 +121,7 @@ ADE_VIRTVAR(isCampaignMission, l_TechRoomMission, nullptr, "If the mission is ca
 }
 
 //**********HANDLE: tech cutscenes
-ADE_OBJ(l_TechRoomCutscene, cutscene_info_h, "custscene_info", "Tech Room cutscene handle");
+ADE_OBJ(l_TechRoomCutscene, cutscene_info_h, "cutscene_info", "Tech Room cutscene handle");
 
 ADE_VIRTVAR(Name, l_TechRoomCutscene, nullptr, "The name of the cutscene", "string", "The cutscene name")
 {
@@ -133,7 +134,7 @@ ADE_VIRTVAR(Name, l_TechRoomCutscene, nullptr, "The name of the cutscene", "stri
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getStage()->name);
+	return ade_set_args(L, "s", current.getScene()->name);
 }
 
 ADE_VIRTVAR(Filename, l_TechRoomCutscene, nullptr, "The filename of the cutscene", "string", "The cutscene filename")
@@ -147,7 +148,7 @@ ADE_VIRTVAR(Filename, l_TechRoomCutscene, nullptr, "The filename of the cutscene
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getStage()->filename);
+	return ade_set_args(L, "s", current.getScene()->filename);
 }
 
 ADE_VIRTVAR(Description, l_TechRoomCutscene, nullptr, "The cutscene description", "string", "The cutscene description")
@@ -161,26 +162,28 @@ ADE_VIRTVAR(Description, l_TechRoomCutscene, nullptr, "The cutscene description"
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getStage()->description);
+	return ade_set_args(L, "s", current.getScene()->description);
 }
 
 ADE_VIRTVAR(isVisible,
 	l_TechRoomCutscene,
-	nullptr,
+	"boolean",
 	"If the cutscene should be visible by default",
 	"boolean",
 	"true if visible, false if not visible")
 {
 	cutscene_info_h current;
-	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
+	bool visible;
+	if (!ade_get_args(L, "o|b", l_TechRoomCutscene.Get(&current), &visible)) {
 		return ADE_RETURN_NIL;
 	}
 
 	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
+		current.getScene()->flags.set(Cutscene::Cutscene_Flags::Viewable, visible);
+		Pilot.save_savefile();
 	}
-	if (current.getStage()->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] &&
-		!current.getStage()->flags[Cutscene::Cutscene_Flags::Never_viewable]) 
+	if (current.getScene()->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] &&
+		!current.getScene()->flags[Cutscene::Cutscene_Flags::Never_viewable]) 
 	{
 		return ade_set_args(L, "b", true);
 	} else {
@@ -202,7 +205,7 @@ ADE_VIRTVAR(CustomData, l_TechRoomCutscene, nullptr, "Gets the custom data table
 
 	auto table = luacpp::LuaTable::create(L);
 
-	for (const auto& pair : current.getStage()->custom_data)
+	for (const auto& pair : current.getScene()->custom_data)
 	{
 		table.addValue(pair.first, pair.second);
 	}
@@ -217,8 +220,18 @@ ADE_FUNC(hasCustomData, l_TechRoomCutscene, nullptr, "Detects whether the cutsce
 		return ADE_RETURN_NIL;
 	}
 
-	bool result = !current.getStage()->custom_data.empty();
+	bool result = !current.getScene()->custom_data.empty();
 	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(isValid, l_TechRoomCutscene, NULL, "Detects whether cutscene is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	cutscene_info_h current;
+	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "b", current.isValid());
 }
 
 } // namespace api

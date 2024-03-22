@@ -202,7 +202,7 @@ public:
 
 	SCP_string getName() const;
 
-	bool IsValid() const;
+	bool isValid() const;
 
 	friend enum_h operator&(const enum_h& l, const enum_h& other);
 	friend enum_h operator|(const enum_h& l, const enum_h& other);

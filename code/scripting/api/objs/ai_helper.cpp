@@ -31,7 +31,7 @@ inline int aici_getset_helper(lua_State* L, float control_info::* value) {
 	if (!ade_get_args(L, "o|f", l_AI_Helper.Get(&ship), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!ship.IsValid())
+	if (!ship.isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if (ADE_SETTING_VAR) {

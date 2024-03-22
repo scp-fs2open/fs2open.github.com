@@ -1267,10 +1267,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 ADE_FUNC(renderSelectModel,
 	l_Shipclass,
-	"boolean restart, number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
+	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3]",
 	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
 	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2), "
-	"defaults to the mod setting or the model's setting.",
+	"defaults to the mod setting or the model's setting. Zoom is a multiplier to the model's closeup_zoom value.",
 	"boolean",
 	"true if rendered, false if error")
 {
@@ -1281,7 +1281,8 @@ ADE_FUNC(renderSelectModel,
 	int x2 = 629;
 	int y2 = 355;
 	int effect = -1;
-	if (!ade_get_args(L, "obii|iii", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect))
+	float zoom = 1.3f;
+	if (!ade_get_args(L, "obii|iiif", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect, &zoom))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= ship_info_size())
@@ -1331,7 +1332,7 @@ ADE_FUNC(renderSelectModel,
 		y2,
 		&ShipRot,
 		&sip->closeup_pos,
-		sip->closeup_zoom * 1.3f,
+		sip->closeup_zoom * zoom,
 		rev_rate,
 		MR_AUTOCENTER | MR_NO_FOGGING,
 		GR_RESIZE_NONE,

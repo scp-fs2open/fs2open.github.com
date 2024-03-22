@@ -28,16 +28,16 @@ void CommandBriefingDialogModel::initializeData()
 		strcpy_s(_wipCommandBrief.background[1], "<default>");
 	}
 
-	if (_wipCommandBrief.num_stages <= 0) {
-		_currentStage = 0;
-	} else {
-		_currentStage = 1;
-	}
+	_currentStage = 0;
 
 	int i;
 
 	for (i = 0; i < _wipCommandBrief.num_stages; i++) {
 		_wipCommandBrief.stage[i] = Cur_cmd_brief->stage[i];
+		strcpy_s(_wipCommandBrief.stage[i].ani_filename, Cur_cmd_brief->stage[i].ani_filename);
+		_wipCommandBrief.stage[i].text = Cur_cmd_brief->stage[i].text;
+		_wipCommandBrief.stage[i].wave = Cur_cmd_brief->stage[i].wave;
+		strcpy_s(_wipCommandBrief.stage[i].wave_filename, Cur_cmd_brief->stage[i].wave_filename);
 	}
 
 	for (i = _wipCommandBrief.num_stages; i < CMD_BRIEF_STAGES_MAX; i++) {
@@ -47,7 +47,7 @@ void CommandBriefingDialogModel::initializeData()
 		strcpy_s(_wipCommandBrief.stage[i].wave_filename, "none");
 	}
 
-	_briefingTextUpdateRequired = false;
+	_briefingTextUpdateRequired = true;
 	_stageNumberUpdateRequired = true; // always need to start off setting the correct stage.
 	_soundTestUpdateRequired = true;
 	_currentlyPlayingSound = -1;
@@ -67,18 +67,10 @@ bool CommandBriefingDialogModel::apply()
 
 	int i = 0;
 
-	for (i = 0; i < _wipCommandBrief.num_stages; i++) {
+	for (i = 0; i < CMD_BRIEF_STAGES_MAX; i++) {
 		Cur_cmd_brief->stage[i] =_wipCommandBrief.stage[i];
-	}
-
-	for (i = _wipCommandBrief.num_stages; i < CMD_BRIEF_STAGES_MAX; i++) {
-		Cur_cmd_brief->stage[i].ani_filename[0] = 0;
-		Cur_cmd_brief->stage[i].text.clear();
 		audiostream_close_file(_wipCommandBrief.stage[i].wave, false);
-		Cur_cmd_brief->stage[i].wave = -1;
 	}
-
-	_wipCommandBrief.num_stages = 0;
 
 	return true;
 }
@@ -338,7 +330,8 @@ void CommandBriefingDialogModel::setHighResolutionFilename(const SCP_string& hig
 
 void CommandBriefingDialogModel::requestInitialUpdate() 
 { 
-	_briefingTextUpdateRequired = true;  
+	initializeData();
+	modelChanged();
 }
 
 

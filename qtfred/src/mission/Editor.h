@@ -49,7 +49,7 @@ class Editor : public QObject {
 	/* Schedules updates for all renderes */
 	void updateAllViewports();
 
-	int create_player(int num, vec3d* pos, matrix* orient, int type = -1, int init = 1);
+	int create_player(vec3d* pos, matrix* orient, int type = -1);
 
 	int create_ship(matrix* orient, vec3d* pos, int ship_type);
 
@@ -195,8 +195,6 @@ class Editor : public QObject {
 	EditorViewport* _lastActiveViewport = nullptr;
 
 	int numMarked = 0;
-
-	int Default_player_model = -1;
 
 	std::vector<int> Shield_sys_teams;
 	std::vector<int> Shield_sys_types;

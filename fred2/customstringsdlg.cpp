@@ -214,7 +214,7 @@ void CustomStringsDlg::OnStringRemove()
 
 void CustomStringsDlg::OnStringUpdate()
 {
-	if (!edit_boxes_have_valid_data()) {
+	if (!edit_boxes_have_valid_data(true)) {
 		return;
 	}
 
@@ -256,7 +256,7 @@ void CustomStringsDlg::OnStringUpdate()
 	update_text_edit_boxes("", "", "");
 }
 
-bool CustomStringsDlg::edit_boxes_have_valid_data()
+bool CustomStringsDlg::edit_boxes_have_valid_data(bool update)
 {
 	if (!data_edit_box_has_valid_data()) {
 		return false;
@@ -266,14 +266,14 @@ bool CustomStringsDlg::edit_boxes_have_valid_data()
 		return false;
 	}
 
-	if (!key_edit_box_has_valid_data()) {
+	if (!key_edit_box_has_valid_data(update)) {
 		return false;
 	}
 
 	return true;
 }
 
-bool CustomStringsDlg::key_edit_box_has_valid_data()
+bool CustomStringsDlg::key_edit_box_has_valid_data(bool update)
 {
 
 	CEdit* key_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_KEY);
@@ -290,19 +290,24 @@ bool CustomStringsDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
-	// Only check for duplicate keys if there are other keys to check!
-	if (m_lister_keys.size() > 0) {
-		const int index = m_data_lister.GetCurSel();
-		const auto& this_key = m_lister_keys[index];
+	for (const auto& cs : m_custom_strings) {
+		const CString key = cs.name.c_str();
+		if (update) {
+			const int index = m_data_lister.GetCurSel();
 
-		if (strcmp(this_key.c_str(), key_str)) {
-			for (const auto& cs : m_custom_strings) {
-				const CString key = cs.name.c_str();
-				if (key == key_str) {
-					MessageBox("Names must be unique!");
-					return false;
-				}
+			if (!SCP_vector_inbounds(m_lister_keys, index)) {
+				MessageBox("Must select an item to update!");
+				return false;
 			}
+
+			const auto& this_key = m_lister_keys[index];
+			if (!strcmp(this_key.c_str(), key)) {
+				continue;
+			}
+		}
+		if (key == key_str) {
+			MessageBox("Names must be unique!");
+			return false;
 		}
 	}
 

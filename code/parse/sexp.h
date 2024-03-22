@@ -142,6 +142,7 @@ enum sexp_opf_t : int {
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
 	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
 	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
+	OPF_MISSION_CUSTOM_STRING,      // MjnMixael - The custom strings as defined in FRED
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -311,6 +312,7 @@ enum : int {
 	OP_XOR,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_FIRST,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_LAST,	// Goober5000
+	OP_HAS_TIME_ELAPSED_MSECS,	// Goober5000
 
 	// OP_CATEGORY_GOAL_EVENT
 	
@@ -513,6 +515,7 @@ enum : int {
 	OP_FOR_CONTAINER_DATA,	// jg18
 	OP_FOR_MAP_CONTAINER_KEYS,	// jg18
 	OP_ON_MISSION_SKIP,	// Goober5000
+	OP_FOR_SUBSYSTEMS,	// Goober5000
 
 	// OP_CATEGORY_CHANGE
 	// sexpressions with side-effects
@@ -1243,6 +1246,13 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_BOLT_TYPE,
 	SEXP_CHECK_INVALID_TRAITOR_OVERRIDE,
 	SEXP_CHECK_INVALID_LUA_GENERAL_ORDER,
+	SEXP_CHECK_INVALID_SHIP_POINT,
+	SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT,
+	SEXP_CHECK_INVALID_SHIP_WING_POINT,
+	SEXP_CHECK_INVALID_ORDER_RECIPIENT,
+	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
+	SEXP_CHECK_MUST_BE_INTEGER,
+	SEXP_CHECK_INVALID_CUSTOM_STRING,
 };
 
 
@@ -1344,6 +1354,8 @@ typedef struct sexp_node {
 #define SNF_SPECIAL_ARG_IN_TREE		(1<<3)
 #define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<4)
 #define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
+#define SNF_CHECKED_NODE_FOR_OPF_POSITIVE	(1<<6)
+#define SNF_NODE_IS_OPF_POSITIVE	(1<<7)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {

@@ -10,7 +10,7 @@ struct fiction_viewer_stage_h {
 	int f_stage;
 	fiction_viewer_stage_h();
 	explicit fiction_viewer_stage_h(int stage);
-	bool IsValid() const;
+	bool isValid() const;
 	fiction_viewer_stage* getStage() const;
 };
 

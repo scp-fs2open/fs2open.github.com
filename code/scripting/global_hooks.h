@@ -6,6 +6,7 @@ namespace scripting {
 namespace hooks {
 
 extern const std::shared_ptr<Hook<>>									OnGameInit;
+extern const std::shared_ptr<Hook<>>									OnSplashEnd;
 extern const std::shared_ptr<Hook<>>									OnIntroAboutToPlay;
 //The On State Start hook previously used to pass OldState to the conditions, but no semantically sensible condition read the value, so we pretend it has no local condition
 extern const std::shared_ptr<OverridableHook<>>							OnStateStart;

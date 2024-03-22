@@ -1198,15 +1198,13 @@ int model_collide(mc_info *mc_info_obj)
 
 	}
 
-	if ( Mc->flags & MC_SUBMODEL )	{
-		// Check only one subobject
-		mc_check_subobj( Mc->submodel_num );
-		// Check submodel and any children
-	} else if (Mc->flags & MC_SUBMODEL_INSTANCE) {
+	// Check only one subobject; or check submodel and any children
+	if ( (Mc->flags & MC_SUBMODEL) || (Mc->flags & MC_SUBMODEL_INSTANCE) ) {
+		// note: within this function, MC_SUBMODEL will return after one check; but MC_SUBMODEL_INSTANCE will not
 		mc_check_subobj(Mc->submodel_num);
-	} else {
-		// Check all the the highest detail model polygons and subobjects for intersections
-
+	}
+	// Check all the the highest detail model polygons and subobjects for intersections
+	else {
 		// Don't check it or its children if it is destroyed
 		if ( Mc_pmi ) {
 			if ( !Mc_pmi->submodel[Mc_pm->detail[0]].blown_off ) {

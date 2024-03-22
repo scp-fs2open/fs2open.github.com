@@ -9,7 +9,7 @@
 namespace scripting {
 namespace api {
 
-bool streaminganim_h::IsValid() {
+bool streaminganim_h::isValid() const {
 	return (ga.num_frames > 0);
 }
 streaminganim_h::streaminganim_h(const char* real_filename) {
@@ -60,7 +60,7 @@ ADE_VIRTVAR(Loop, l_streaminganim, "boolean", "Make the streaming animation loop
 	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &loop))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
@@ -81,7 +81,7 @@ ADE_VIRTVAR(Pause, l_streaminganim, "boolean", "Pause the streaming animation.",
 	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &pause))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
@@ -102,7 +102,7 @@ ADE_VIRTVAR(Reverse, l_streaminganim, "boolean", "Make the streaming animation p
 	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &reverse))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
@@ -123,7 +123,7 @@ ADE_VIRTVAR(Grayscale, l_streaminganim, "boolean", "Whether the streaming animat
 	if (!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &grayscale))
 		return ADE_RETURN_NIL;
 
-	if (!sah->IsValid())
+	if (!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
@@ -140,7 +140,7 @@ ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation"
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "s", sah->ga.filename);
@@ -154,7 +154,7 @@ ADE_FUNC(getFrameCount, l_streaminganim, nullptr, "Get the number of frames in t
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "i", sah->ga.num_frames);
@@ -168,7 +168,7 @@ ADE_FUNC(getFrameIndex, l_streaminganim, nullptr, "Get the current frame index o
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	int cframe = sah->ga.current_frame;
@@ -187,7 +187,7 @@ ADE_FUNC(getHeight, l_streaminganim, nullptr, "Get the height of the animation i
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "i", sah->ga.height);
@@ -201,7 +201,7 @@ ADE_FUNC(getWidth, l_streaminganim, nullptr, "Get the width of the animation in 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "i", sah->ga.width);
@@ -213,7 +213,7 @@ ADE_FUNC(isValid, l_streaminganim, nullptr, "Detects whether handle is valid", "
 	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", sah->IsValid());
+	return ade_set_args(L, "b", sah->isValid());
 }
 
 ADE_FUNC(preload, l_streaminganim, NULL, "Load all apng animations into memory, enabling apng frame cache if not already enabled", "boolean", "true if preload was successful, nil if a syntax/type error occurs")
@@ -245,7 +245,7 @@ ADE_FUNC(process, l_streaminganim, "[number x1, number y1, number x2, number y2,
 					 &ge.draw))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	if (sah->ga.use_hud_color)
@@ -301,7 +301,7 @@ ADE_FUNC(timeLeft, l_streaminganim, nullptr, "Get the amount of time left in the
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	if(!sah->IsValid())
+	if(!sah->isValid())
 		return ADE_RETURN_NIL;
 
 	float timeLeft = 0.0f;

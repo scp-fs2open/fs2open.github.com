@@ -129,7 +129,7 @@ ADE_FUNC(mouseButtonDownCount,
 	if (!ade_get_args(L, "o|b", l_Enum.Get(&buttonCheck), &reset_count))
 		return ade_set_error(L, "i", -1);
 
-	if (!buttonCheck.IsValid())
+	if (!buttonCheck.isValid())
 		return ade_set_error(L, "i", -1);
 
 	switch (buttonCheck.index)

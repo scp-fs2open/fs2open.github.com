@@ -203,7 +203,7 @@ bool SourceOrigin::isValid() const {
 			return false;
 		case SourceOriginType::OBJECT:
 		case SourceOriginType::BEAM: {
-			if (!m_origin.m_object.IsValid()) {
+			if (!m_origin.m_object.isValid()) {
 				return false;
 			}
 

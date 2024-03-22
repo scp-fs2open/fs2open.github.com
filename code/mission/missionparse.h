@@ -453,6 +453,8 @@ typedef struct team_data {
 #define MAX_SHIP_LIST	16
 
 extern team_data Team_data[MAX_TVT_TEAMS];
+extern int Num_teams;
+
 extern subsys_status *Subsys_status;
 extern int Subsys_index;
 
@@ -461,9 +463,7 @@ extern matrix Parse_viewer_orient;
 
 extern fix Mission_end_time;
 
-extern char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
-extern size_t Num_parse_names;
-extern int Num_teams;
+extern SCP_vector<SCP_string> Parse_names;
 
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
@@ -483,8 +483,7 @@ bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
-p_object *mission_parse_get_parse_object(ushort net_signature);
-p_object *mission_parse_get_parse_object(const char *name);
+p_object *mission_parse_find_parse_object(const char *name);
 int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
@@ -554,6 +553,8 @@ void clear_texture_replacements();
 // Goober5000
 subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name);
 
+// MjnMixael
+mission_custom_string* get_custom_string_by_name(SCP_string name);
 
 #endif
 

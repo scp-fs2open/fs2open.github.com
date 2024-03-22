@@ -55,8 +55,7 @@ extern float Neb2_fog_visibility_shockwave;
 extern float Neb2_fog_visibility_fireball_const;
 extern float Neb2_fog_visibility_fireball_scaled_factor;
 
-extern int Neb2_poof_flags;
-const size_t MAX_NEB2_POOFS = 32;
+extern std::unique_ptr<ubyte> Neb2_poof_flags;
 
 // pof texture filenames
 extern SCP_vector<SCP_string> Neb2_bitmap_filenames;

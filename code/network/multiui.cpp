@@ -722,14 +722,8 @@ int Mj_list_area_coords[GR_NUM_RESOLUTIONS][4] = {
 
 // various interface indices
 int Multi_join_list_start;							// where to start displaying from
-active_game *Multi_join_list_start_item;		// a pointer to the corresponding active_game
 int Multi_join_list_selected;						// which item we have selected
 active_game *Multi_join_selected_item;			// a pointer to the corresponding active_game
-
-// use this macro to modify the list start
-#define MJ_LIST_START_INC()			do { Multi_join_list_start++; } while(false);
-#define MJ_LIST_START_DEC()			do { Multi_join_list_start--; } while(false);
-#define MJ_LIST_START_SET(vl)			do { Multi_join_list_start = vl; } while(false);
 
 // if we should be sending a join request at the end of the frame
 int Multi_join_should_send = -1;
@@ -768,14 +762,14 @@ void multi_join_list_page_up();
 void multi_join_list_page_down();
 active_game *multi_join_get_game(int n);
 void multi_join_cull_timeouts();
-void multi_join_handle_item_cull(active_game *item, int item_index);
+void multi_join_handle_item_cull(int item_index);
 void multi_join_send_join_request(int as_observer);
 void multi_join_create_game();
 int multi_join_maybe_warn();
 int multi_join_warn_pxo();
 void multi_join_blit_protocol();
 
-DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
+DCF(mj_make, "Makes multijoin games (Multiplayer)")
 {
 	active_game ag, *newitem;
 	int idx;
@@ -806,11 +800,30 @@ DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 		}
 	}
 }
+DCF(mj_remove, "Removes a multijoin game (multiplayer")
+{
+	int idx;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: mj_remove <list_index>\n");
+		return;
+	}
+
+	dc_stuff_int(&idx);
+
+	// handle any gui details related to deleting this item
+	multi_join_handle_item_cull(idx);
+
+	// delete the item
+	SCP_list<active_game>::iterator game = Active_games.begin();
+	std::advance(game, idx);
+	Active_games.erase(game);
+}
 
 void multi_join_notify_new_game()
 {	
 	// reset the # of items	
-	Multi_join_slider.set_numberItems(Active_game_count > Mj_max_game_items[gr_screen.res] ? Active_game_count - Mj_max_game_items[gr_screen.res] : 0);
+	Multi_join_slider.set_numberItems(static_cast<int>(Active_games.size()) > Mj_max_game_items[gr_screen.res] ? static_cast<int>(Active_games.size()) - Mj_max_game_items[gr_screen.res] : 0);
 	Multi_join_slider.force_currentItem(Multi_join_list_start);
 }
 
@@ -818,8 +831,8 @@ int multi_join_autojoin_do()
 {
 	// if we have an active game on the list, then return a positive value so that we
 	// can join the game
-	if ( Active_game_head && (Active_game_count > 0) ) {
-		Multi_join_selected_item = Active_game_head;
+	if (!Active_games.empty()) {
+		Multi_join_selected_item = &Active_games.front();
 		return 1;
 	}
 
@@ -956,16 +969,11 @@ void multi_join_clear_game_list()
 {
 	// misc data	
 	Multi_join_list_selected = -1;	
-	Multi_join_selected_item = NULL;	
-	MJ_LIST_START_SET(-1);
-	Multi_join_list_start_item = NULL;	
-
-	// free up the active game list
-	multi_free_active_games();
+	Multi_join_selected_item = nullptr;
+	Multi_join_list_start = -1;
 
 	// initialize the active game list
-	Active_game_head = NULL;
-	Active_game_count = 0;
+	Active_games.clear();
 }
 
 void multi_join_game_do_frame()
@@ -1128,7 +1136,7 @@ void multi_join_game_close()
 	Multi_received_mission_description.clear();
 
 	// free up the active game list
-	multi_free_active_games();
+	Active_games.clear();
 
 	// cancel mdns queries
 	multi_mdns_query_close();
@@ -1164,7 +1172,7 @@ void multi_join_button_pressed(int n)
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case MJ_ACCEPT :
-		if(Active_game_count <= 0){
+		if(Active_games.empty()){
 			multi_common_add_notify(XSTR("No games found!",757));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else if(Multi_join_list_selected == -1){
@@ -1184,7 +1192,7 @@ void multi_join_button_pressed(int n)
 			
 
 			// send the join request here
-			Assert(Multi_join_selected_item != NULL);
+			Assertion(Multi_join_selected_item != nullptr, "Tried to join a null multi game. Please report!");
 
 			// send a join request packet
 			Multi_join_should_send = 0;			
@@ -1242,7 +1250,7 @@ void multi_join_button_pressed(int n)
 
 	// join a game as an observer
 	case MJ_JOIN_OBSERVER:
-		if(Active_game_count <= 0){
+		if(Active_games.empty()){
 			multi_common_add_notify(XSTR("No games found!",757));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else if(Multi_join_list_selected == -1){
@@ -1253,7 +1261,7 @@ void multi_join_button_pressed(int n)
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {			
 			// send the join request here
-			Assert(Multi_join_selected_item != NULL);
+			Assertion(Multi_join_selected_item != nullptr, "Tried to join a null multi game. Please report!");
 
 			Multi_join_should_send = 1;		
 
@@ -1270,34 +1278,38 @@ void multi_join_button_pressed(int n)
 
 // display all relevant info for active games
 void multi_join_display_games()
-{
-	active_game *moveup = Multi_join_list_start_item;	
-	char str[200];		
-	int w,h;
-	int con_type;
-	int y_start = Mj_list_y[gr_screen.res];
-	int line_height = gr_get_font_height() + 1;
-	int count = 0;
-	
-	if(moveup != NULL){
-		do {			
+{		
+	if(!Active_games.empty()){
+
+		int count = 0;
+		int y_start = Mj_list_y[gr_screen.res];
+		int line_height = gr_get_font_height() + 1;
+
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+			// stop displaying if we are going to overrun the container
+			if (count >= Mj_max_game_items[gr_screen.res]) {
+				break;
+			}
 			// blit the game status (including text and type icon)
-			multi_join_blit_game_status(moveup,y_start);			
+			multi_join_blit_game_status(&(*game),y_start);			
 			
 			// get the connection type
-			con_type = (moveup->flags & AG_FLAG_CONNECTION_SPEED_MASK) >> AG_FLAG_CONNECTION_BIT;
+			int con_type = (game->flags & AG_FLAG_CONNECTION_SPEED_MASK) >> AG_FLAG_CONNECTION_BIT;
 			if((con_type > 4) || (con_type < 0)){
 				con_type = 0;
 			}
 
 			// display the connection speed
+			char str[200];
 			str[0] = '\0';
 			strcpy_s(str, Multi_join_speed_labels[con_type]);
 			gr_set_color_fast(Multi_join_speed_colors[con_type]);
 			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, str, GR_RESIZE_MENU);
 
+			bool selected = (count == Multi_join_list_selected ? true : false);
+
 			// we'll want to have different colors for highlighted items, etc.
-			if(moveup == Multi_join_selected_item){
+			if(selected){
 				gr_set_color_fast(&Color_text_selected);
 			} else {
 				gr_set_color_fast(&Color_text_normal);
@@ -1305,19 +1317,19 @@ void multi_join_display_games()
 
 			// display the game name, adding appropriate status chars
 			str[0] = '\0';
-			if(moveup->flags & AG_FLAG_STANDALONE){
+			if (game->flags & AG_FLAG_STANDALONE) {
 				strcat_s(str,MJ_CHAR_STANDALONE);
 			}
-			if(moveup->flags & AG_FLAG_CAMPAIGN){
+			if (game->flags & AG_FLAG_CAMPAIGN) {
 				strcat_s(str,MJ_CHAR_CAMPAIGN);
 			}
 
 			// tack on the actual server name			
 			strcat_s(str," ");
-			strcat_s(str,moveup->name);
-			if(moveup->mission_name[0] != '\0'){
+			strcat_s(str, game->name);
+			if (game->mission_name[0] != '\0') {
 				strcat_s(str, " / ");
-				strcat_s(str,moveup->mission_name);
+				strcat_s(str, game->mission_name);
 			} 
 
 			// make sure the string fits in the display area and draw it
@@ -1325,23 +1337,23 @@ void multi_join_display_games()
 			gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD],y_start,str,GR_RESIZE_MENU);
 
 			// display the ping time
-			if(moveup->ping.ping_avg > 0){
-				if(moveup->ping.ping_avg > MULTI_PING_MIN_ONE_SECOND){
+			if (game->ping.ping_avg > 0) {
+				if (game->ping.ping_avg > MULTI_PING_MIN_ONE_SECOND) {
 					gr_set_color_fast(&Color_bright_red);
 					strcpy_s(str,XSTR("> 1 sec",761));
 				} else {
 					// set the appropriate ping time color indicator
-					if (moveup->ping.ping_avg > MULTI_PING_MIN_RED){
+					if (game->ping.ping_avg > MULTI_PING_MIN_RED) {
 						gr_set_color_fast(&Color_bright_red);
-					} else if (moveup->ping.ping_avg > MULTI_PING_MIN_ORANGE){
+					} else if (game->ping.ping_avg > MULTI_PING_MIN_ORANGE) {
 						gr_set_color_fast(&Color_orange);
-					} else if(moveup->ping.ping_avg > MULTI_PING_MIN_YELLOW){
+					} else if (game->ping.ping_avg > MULTI_PING_MIN_YELLOW) {
 						gr_set_color_fast(&Color_bright_yellow);
 					} else {
 						gr_set_color_fast(&Color_bright_green);
 					}
 
-					sprintf(str,"%d",moveup->ping.ping_avg);
+					sprintf(str, "%d", game->ping.ping_avg);
 					strcat_s(str,XSTR(" ms",762));  // [[ Milliseconds ]]
 				}
 
@@ -1349,24 +1361,25 @@ void multi_join_display_games()
 			}
 
 			// display the number of players (be sure to center it)
-			if(moveup == Multi_join_selected_item){
+			if (selected) {
 				gr_set_color_fast(&Color_text_selected);
 			} else {
 				gr_set_color_fast(&Color_text_normal);
 			}
-			sprintf(str,"%d",moveup->num_players);			
+			sprintf(str, "%d", game->num_players);
+
+			int w, h;
 			gr_get_string_size(&w,&h,str);
 			gr_string(Mj_players_coords[gr_screen.res][MJ_X_COORD] + (Mj_players_coords[gr_screen.res][MJ_W_COORD] - w)/2,y_start,str,GR_RESIZE_MENU);			
 
 			count++;
 			y_start += line_height;
-			moveup = moveup->next;
-		} while((moveup != Active_game_head) && (count < Mj_max_game_items[gr_screen.res]));
+		}
 	}
 	// if there are no items on the list, display this info
 	else {
 		gr_set_color_fast(&Color_bright);
-		gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD] - 30,y_start,XSTR("<No game servers found>",763),GR_RESIZE_MENU);
+		gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD] - 30,Mj_list_y[gr_screen.res],XSTR("<No game servers found>",763),GR_RESIZE_MENU);
 	}
 }
 
@@ -1589,39 +1602,25 @@ void multi_join_do_netstuff()
 // evaluate a returned pong.
 void multi_join_eval_pong(net_addr *addr, fix pong_time)
 {	
-	active_game *moveup = Active_game_head;
-
-	if(moveup != NULL){
-		do {				
-			if(psnet_same(&moveup->server_addr,addr)){
-				multi_ping_eval_pong(&moveup->ping, pong_time);
+	if(!Active_games.empty()){
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+			if(psnet_same(&game->server_addr,addr)){
+				multi_ping_eval_pong(&game->ping, pong_time);
 				
 				break;
-			} else {
-				moveup = moveup->next;
 			}
-		} while(moveup != Active_game_head);
+		}
 	}	
 }
 
 // ping all the server on the list
 void multi_join_ping_all()
 {
-	active_game *moveup = Active_game_head;	
-	
-	if(moveup != NULL){
-		do {
-			/* 
-			moveup->ping_start = timer_get_fixed_seconds();
-			moveup->ping_end = -1;
-			send_ping(&moveup->server_addr);
-			*/
-
-			send_server_query(&moveup->server_addr);
-			multi_ping_send(&moveup->server_addr,&moveup->ping);
-			
-			moveup = moveup->next;
-		} while(moveup != Active_game_head);
+	if(!Active_games.empty()){
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+			send_server_query(&game->server_addr);
+			multi_ping_send(&game->server_addr, &game->ping);
+		}
 	}
 }
 
@@ -1630,33 +1629,32 @@ void multi_join_process_select()
 	int line_height = gr_get_font_height() + 1;
 
 	// if we don't have anything selected and there are items on the list - select the first one
-	if((Multi_join_list_selected == -1) && (Active_game_count > 0)){
+	if((Multi_join_list_selected == -1) && !Active_games.empty()){
 		Multi_join_list_selected = 0;
 		Multi_join_selected_item = multi_join_get_game(0);				
-		MJ_LIST_START_SET(0);
-		Multi_join_list_start_item = Multi_join_selected_item;
+		Multi_join_list_start = 0;
 
 		// send a mission description request to this guy		
 		send_netgame_descript_packet(&Multi_join_selected_item->server_addr,0);
 		multi_common_set_text("");
 
 		// I sure hope this doesn't happen
-		Assert(Multi_join_selected_item != NULL);		
+		Assertion(Multi_join_selected_item != nullptr, "Tried to join a null multi game. Please report!");
 		return;
 	} 
 	// otherwise see if he's clicked on an item
-	else if(Multi_join_select_button.pressed() && (Active_game_count > 0)){		 
+	else if(Multi_join_select_button.pressed() && !Active_games.empty()){		 
 		int y,item;		
 		Multi_join_select_button.get_mouse_pos(NULL,&y);
 		item = y / line_height;
-		if(item + Multi_join_list_start < Active_game_count){		
+		if (item + Multi_join_list_start < static_cast<int>(Active_games.size())) {		
 			gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 
 			Multi_join_list_selected = item + Multi_join_list_start;
 			Multi_join_selected_item = multi_join_get_game(Multi_join_list_selected);
 			
 			// I sure hope this doesn't happen
-			Assert(Multi_join_selected_item != NULL);
+			Assertion(Multi_join_selected_item != nullptr, "Tried to join a null multi game. Please report!");
 
 			// send a mission description request to this guy
 			send_netgame_descript_packet(&Multi_join_selected_item->server_addr,0);
@@ -1699,37 +1697,21 @@ void multi_join_maybe_update_selected(active_game *game)
 // return game n (0 based index)
 active_game *multi_join_get_game(int n)
 {
-	active_game *moveup = Active_game_head;
-
-	if(moveup != NULL){
-		if(n == 0){
-			return moveup;
-		} else {
-			int count = 1;
-			moveup = moveup->next;
-			while((moveup != Active_game_head) && (count != n)){
-				moveup = moveup->next;
-				count++;
-			}
-			if(moveup == Active_game_head){
-				nprintf(("Network","Warning, couldn't find game item %d!\n",n));
-				return NULL;
-			} else {
-				return moveup;
-			}
-		}
-	} 
-	return NULL;
+	if(!Active_games.empty()){
+		SCP_list<active_game>::iterator game = Active_games.begin();
+		std::advance(game, n);
+		return &(*game);
+	}
+	nprintf(("Network", "Warning, couldn't find game item %d!\n", n));
+	return nullptr;
 }
 
 // scroll through the game list
 void multi_join_list_scroll_up()
 {
 	// if we're not at the beginning of the list, scroll up	
-	if(Multi_join_list_start_item != Active_game_head){
-		Multi_join_list_start_item = Multi_join_list_start_item->prev;
-		
-		MJ_LIST_START_DEC();		
+	if(Multi_join_list_start != 0){
+		Multi_join_list_start--;		
 
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
@@ -1740,10 +1722,8 @@ void multi_join_list_scroll_up()
 // scroll through the game list
 void multi_join_list_scroll_down()
 {
-	if((Active_game_count - Multi_join_list_start) > Mj_max_game_items[gr_screen.res]){
-		Multi_join_list_start_item = Multi_join_list_start_item->next;
-
-		MJ_LIST_START_INC();		
+	if((static_cast<int>(Active_games.size()) - Multi_join_list_start) > Mj_max_game_items[gr_screen.res]){
+		Multi_join_list_start++;		
 
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
@@ -1755,18 +1735,14 @@ void multi_join_list_page_up()
 {
 	// in this case, just set us to the beginning of the list
 	if((Multi_join_list_start - Mj_max_game_items[gr_screen.res]) < 0){
-		Multi_join_list_start_item = Active_game_head;		
-
-		MJ_LIST_START_SET(0);
+		Multi_join_list_start = 0;	
 
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
 		// otherwise page the whole thing up
 		int idx;
 		for(idx=0; idx<Mj_max_game_items[gr_screen.res]; idx++){
-			Multi_join_list_start_item = Multi_join_list_start_item->prev;
-
-			MJ_LIST_START_DEC();			
+			Multi_join_list_start--;		
 		}
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
@@ -1777,9 +1753,8 @@ void multi_join_list_page_down()
 	int count = 0;
 
 	// page the whole thing down		
-	while((count < Mj_max_game_items[gr_screen.res]) && ((Active_game_count - Multi_join_list_start) > Mj_max_game_items[gr_screen.res])){
-		Multi_join_list_start_item = Multi_join_list_start_item->next;
-		MJ_LIST_START_INC();			
+	while((count < Mj_max_game_items[gr_screen.res]) && ((static_cast<int>(Active_games.size()) - Multi_join_list_start) > Mj_max_game_items[gr_screen.res])){
+		Multi_join_list_start++;
 
 		// next 
 		count++;
@@ -1789,78 +1764,42 @@ void multi_join_list_page_down()
 
 void multi_join_cull_timeouts()
 {
-	active_game *backup;
-	int count;
-	active_game *moveup = Active_game_head;
-
 	// traverse through the entire list if any items exist	
-	count = 0;
-	if(moveup != NULL){
-		do {
-			if(moveup->heard_from_timer.isValid() && (ui_timestamp_elapsed(moveup->heard_from_timer))){
-				Active_game_count--;
+	if(!Active_games.empty()){
+		int i = 0;
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+			if (game->heard_from_timer.isValid() && (ui_timestamp_elapsed(game->heard_from_timer))) {
 
-				// if this is the head of the list
-				if(moveup == Active_game_head){					
-					// if this is the _only_ item on the list
-					if(moveup->next == Active_game_head){
-						// handle any gui details related to deleting this item
-						multi_join_handle_item_cull(Active_game_head, count);
-						
-						vm_free(Active_game_head);
-						Active_game_head = NULL;						
-						return;
-					} 
-					// if there are other items on the list
-					else {
-						// handle any gui details related to deleting this item
-						multi_join_handle_item_cull(moveup, count);
-						
-						Active_game_head = moveup->next;
-						Active_game_head->prev = moveup->prev;
-						Active_game_head->prev->next = Active_game_head;
-						vm_free(moveup);
-						moveup = Active_game_head;											
-					}
-				}
-				// if its somewhere else on the list
-				else {
-					// handle any gui details related to deleting this item
-					multi_join_handle_item_cull(moveup, count);
-					
-					// if its the last item on the list					
-					moveup->next->prev = moveup->prev;
-					moveup->prev->next = moveup->next;					
-					
-					// if it was the last element on the list, return
-					if(moveup->next == Active_game_head){
-						vm_free(moveup);
-						return;
-					} else {
-						backup = moveup->next;
-						vm_free(moveup);
-						moveup = backup;						
-					}
-				}
-			} else {
-				moveup = moveup->next;				
-				count++;
+				// handle any gui details related to deleting this item
+				multi_join_handle_item_cull(i);
+				
+				// delete the item
+				Active_games.erase(game);
 			}
-		} while(moveup != Active_game_head);
+			i++;
+		}
 	}
 }
 
 // deep magic begins here. 
-void multi_join_handle_item_cull(active_game *item, int item_index)
+void multi_join_handle_item_cull(int item_index)
 {	
+	Assertion((item_index >= 0) && (item_index < static_cast<int>(Active_games.size())),
+		"Tried to cull a multiplayer game that doesn't exist! Please report!");
+	
+	//Get the item
+	SCP_list<active_game>::iterator game = Active_games.begin();
+	std::advance(game, item_index);
+	
 	// if this is the only item on the list, unset everything
-	if(item->next == item){
+	if(Active_games.size() == 1){
 		Multi_join_list_selected = -1;
-		Multi_join_selected_item = NULL;
+		Multi_join_selected_item = nullptr;
 		
 		Multi_join_slider.set_numberItems(0);
-		MJ_LIST_START_SET(-1);
-		Multi_join_list_start_item = NULL;
+		Multi_join_list_start = -1;
+
+		Active_games.clear();
 
 		// return
 		return;
@@ -1869,64 +1808,44 @@ void multi_join_handle_item_cull(active_game *item, int item_index)
 	// see if we should be adjusting our currently selected item
 	if(item_index <= Multi_join_list_selected){
 		// the selected item is the head of the list
-		if(Multi_join_selected_item == Active_game_head){
+		if (Multi_join_list_selected == 0) {
 			// move the pointer up since this item is about to be destroyed
-			Multi_join_selected_item = Multi_join_selected_item->next;
+			Multi_join_list_selected++;
 		} else {			
-			// if this is the item being deleted, select the previous one
-			if(item == Multi_join_selected_item){
-				// previous item
-				Multi_join_selected_item = Multi_join_selected_item->prev;
-
-				// decrement the selected index by 1
-				Multi_join_list_selected--;		
-			}
-			// now we know its a previous item, so our pointer stays the same but our index goes down by one, since there will be
-			// 1 less item on the list
-			else {
-				// decrement the selected index by 1
-				Multi_join_list_selected--;		
-			}
+			Multi_join_list_selected--;
 		}
 	}
+
+	Multi_join_selected_item = multi_join_get_game(Multi_join_list_selected);
 	
 	// see if we should be adjusting out current start position
 	if(item_index <= Multi_join_list_start){
 		// the start position is the head of the list
-		if(Multi_join_list_start_item == Active_game_head){
+		if(Multi_join_list_start == 0){
 			// move the pointer up since this item is about to be destroyed
-			Multi_join_list_start_item = Multi_join_list_start_item->next;
+			Multi_join_list_start++;
 		} else {
 			// if this is the item being deleted, select the previous one
-			if(item == Multi_join_list_start_item){
-				Multi_join_list_start_item = Multi_join_list_start_item->prev;			
-				
-				// decrement the starting index by 1
-				MJ_LIST_START_DEC();								
-			} else {
-				// but decrement the starting index by 1
-				MJ_LIST_START_DEC();								
-			}
+			Multi_join_list_start--;
 		}
 	}
 
 	// maybe go back up a bit so that we always have a full page of items	
-	if(Active_game_count > Mj_max_game_items[gr_screen.res]){
-		while((Active_game_count - Multi_join_list_start) < Mj_max_game_items[gr_screen.res]){
-			Multi_join_list_start_item = Multi_join_list_start_item->prev;
-			MJ_LIST_START_DEC();
+	if(static_cast<int>(Active_games.size()) > Mj_max_game_items[gr_screen.res]){
+		while ((static_cast<int>(Active_games.size()) - Multi_join_list_start) < Mj_max_game_items[gr_screen.res]) {
+			Multi_join_list_start--;
 		}
 	}	
 
 	// set slider location
-	Multi_join_slider.set_numberItems(Active_game_count > Mj_max_game_items[gr_screen.res] ? Active_game_count - Mj_max_game_items[gr_screen.res] : 0);
+	Multi_join_slider.set_numberItems(static_cast<int>(Active_games.size()) > Mj_max_game_items[gr_screen.res] ? static_cast<int>(Active_games.size()) - Mj_max_game_items[gr_screen.res] : 0);
 	Multi_join_slider.force_currentItem(Multi_join_list_start);	
 }
 
 void multi_join_send_join_request(int as_observer)
 {	
 	// don't do anything if we have no items selected
-	if(Multi_join_selected_item == NULL){
+	if(Multi_join_selected_item == nullptr){
 		return;
 	}
 

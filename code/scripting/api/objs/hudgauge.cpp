@@ -140,6 +140,16 @@ ADE_FUNC(getCoords, l_HudGauge, nullptr, "Returns the coordinates of the specifi
 	return ade_set_args(L, "bii", useCoords, x, y);
 }
 
+ADE_FUNC(isHiRes, l_HudGauge, nullptr, "Returns whether this is a hi-res HUD gauge, determined by whether the +Filename property is prefaced with \"2_\".  Not all gauges have such a filename.",
+	"boolean", "Whether the HUD gauge is known to be hi-res")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", gauge->isHiRes());
+}
+
 ADE_VIRTVAR(RenderFunction,
             l_HudGauge,
             "function (HudGaugeDrawFunctions gauge_handle) => void",

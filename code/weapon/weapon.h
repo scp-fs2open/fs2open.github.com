@@ -612,10 +612,10 @@ struct weapon_info
 public:
 	weapon_info();
 
-    inline bool is_homing()        { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
-    inline bool is_locked_homing() { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
-    inline bool hurts_big_ships()  { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
-    inline bool is_interceptable() { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
+    inline bool is_homing()        const { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
+    inline bool is_locked_homing() const { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
+    inline bool hurts_big_ships()  const { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
+    inline bool is_interceptable() const { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;
@@ -683,7 +683,7 @@ extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, prec
 
 
 int weapon_info_lookup(const char *name);
-int weapon_info_get_index(weapon_info *wip);
+int weapon_info_get_index(const weapon_info *wip);
 
 inline int weapon_info_size()
 {
@@ -717,7 +717,7 @@ int weapon_create_group_id();
 
 // Passing a group_id of -1 means it isn't in a group.  See weapon_create_group_id for more 
 // help on weapon groups.
-int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0, float fof_cooldown = 0.0f, ship_subsys * src_turret = NULL);
+int weapon_create( const vec3d *pos, const matrix *orient, int weapon_type, int parent_obj, int group_id=-1, bool is_locked = false, bool is_spawned = false, float fof_cooldown = 0.0f, ship_subsys *src_turret = nullptr);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 // gets the substitution pattern pointer for a given weapon

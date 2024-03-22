@@ -23,7 +23,7 @@ class cci_h {
 	/*
 	* @returns true if this object holds a valid IoActionId, false otherwise
 	*/
-	bool IsValid();
+	bool isValid() const;
 
 	IoActionId Get();
 };

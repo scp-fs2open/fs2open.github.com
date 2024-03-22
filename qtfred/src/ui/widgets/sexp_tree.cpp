@@ -1678,6 +1678,10 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_LUA_GENERAL_ORDER:
 		return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
 
+	case OPF_MISSION_CUSTOM_STRING:
+		return The_mission.custom_strings.empty() ? 0 : 1;
+		break;
+
 	default:
 		if (!Dynamic_enums.empty()) {
 			if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -3468,6 +3472,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_lua_enum(parent_node, arg_index);
 		break;
 
+	case OPF_MISSION_CUSTOM_STRING:
+		list = get_listing_opf_mission_custom_strings();
+		break;
+
 	default:
 		// We're at the end of the list so check for any dynamic enums
 		list = check_for_dynamic_sexp_enum(opf);
@@ -5227,6 +5235,17 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_enum(int parent_node, int arg_ind
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_mission_custom_strings()
+{
+	sexp_list_item head;
+
+	for (const auto& val : The_mission.custom_strings) {
+		head.add_data(val.name.c_str());
+	}
+
+	return head.next;
+}
+
 sexp_list_item* sexp_tree::get_listing_opf_game_snds() {
 	sexp_list_item head;
 
@@ -5946,7 +5965,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				// Replace Container Data submenu
 				// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
 				// also disallowed for special argument options (not supported for now)
-				if (op_type != OPF_VARIABLE_NAME && !is_argument_provider_op(Operators[op].value)) {
+				// op < 0 means we're on a container modifier, and nested Replace Container Data is allowed
+				if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];

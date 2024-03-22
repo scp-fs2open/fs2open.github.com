@@ -1049,6 +1049,7 @@ bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
  */
 static void maybe_throw_asteroid()
 {
+	Assertion(Asteroid_field.num_used_field_debris_types > 0, "maybe_throw_asteroid() called while num_used_field_debris_types was 0; this should never happen, get a coder!");
 
 	for (asteroid_target& target : Asteroid_targets) {
 		if (!timestamp_elapsed(target.throw_stamp))
@@ -2581,6 +2582,11 @@ void asteroid_frame()
 
 	// Only throw if active field
 	if (Asteroid_field.field_type == FT_PASSIVE) {
+		return;
+	}
+
+	// If no asteroid types are defined for the field, abort.
+	if (Asteroid_field.num_used_field_debris_types <= 0) {
 		return;
 	}
 

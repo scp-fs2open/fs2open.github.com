@@ -99,11 +99,8 @@ CMainFrame::CMainFrame() {}
 
 CMainFrame::~CMainFrame() {}
 
-void CMainFrame::init_tools() {
-	//int highest_terran_index;
-	//char ship_name[256];
-	//int ship_index;
-
+void CMainFrame::init_tools()
+{
 	// some bizarre Volition check:
 	static int count = 0;
 	count++;
@@ -126,16 +123,13 @@ void CMainFrame::init_tools() {
         }
     }
 
-	Id_select_type_waypoint = (int)(ship_type_combo_box_size);
-	Id_select_type_jump_node = (int)(ship_type_combo_box_size + 1);
-	Id_select_type_start = (int)(ship_type_combo_box_size + 2);
+	Id_select_type_waypoint = ship_type_combo_box_size;
+	Id_select_type_jump_node = ship_type_combo_box_size + 1;
 
 	m_new_ship_type_combo_box.AddString("Waypoint");
-	m_new_ship_type_combo_box.SetItemData(Id_select_type_waypoint, Ship_info.size());
+	m_new_ship_type_combo_box.SetItemData(static_cast<int>(Id_select_type_waypoint), Ship_info.size());
 	m_new_ship_type_combo_box.AddString("Jump Node");
-	m_new_ship_type_combo_box.SetItemData(Id_select_type_jump_node, Ship_info.size() + 1);
-	//	m_new_ship_type_combo_box.AddString("Player Start");
-	//	m_new_ship_type_combo_box.SetItemData(Id_select_type_start, Ship_info.size() + 2);
+	m_new_ship_type_combo_box.SetItemData(static_cast<int>(Id_select_type_jump_node), Ship_info.size() + 1);
 
 	/*
 	// now we want to sort special ships (mission disk) ----------------------
@@ -439,11 +433,9 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
 		if (sip != nullptr)
 			strText = _T(sip->name);
-		else if ((int)lpDrawItemStruct->itemID == Id_select_type_jump_node)
+		else if (lpDrawItemStruct->itemID == Id_select_type_jump_node)
 			strText = _T("Jump Node");
-		else if ((int)lpDrawItemStruct->itemID == Id_select_type_start)
-			strText = _T("Player Start");
-		else if ((int)lpDrawItemStruct->itemID == Id_select_type_waypoint)
+		else if (lpDrawItemStruct->itemID == Id_select_type_waypoint)
 			strText = _T("Waypoint");
 		else
 			strText = _T("Invalid index!");
