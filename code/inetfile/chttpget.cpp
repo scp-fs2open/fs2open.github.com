@@ -218,7 +218,7 @@ void ChttpGet::WorkerThread()
 		LOCALFILE = nullptr;
 		return;
 	}
-	sprintf(szCommand,"GET %s%s HTTP/1.1\nAccept: */*\nAccept-Encoding: deflate\nHost: %s\n\n\n",m_ProxyEnabled?"":"/",m_ProxyEnabled?m_URL:m_szDir,m_szHost);
+	snprintf(szCommand, 1000, "GET %s%s HTTP/1.1\nAccept: */*\nAccept-Encoding: deflate\nHost: %s\n\n\n",m_ProxyEnabled?"":"/",m_ProxyEnabled?m_URL:m_szDir,m_szHost);
 	send(m_DataSock,szCommand,static_cast<int>(strlen(szCommand)),0);
 	p = GetHTTPLine();
 	if (!p) return;

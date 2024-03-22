@@ -283,7 +283,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		} else {
 			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
-				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
+				snprintf(buf + strlen(buf), 256, NOX(" [%d]"), Mission_events[z].count);
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
@@ -672,7 +672,7 @@ void training_mission_shutdown()
 char *translate_message_token(char *str)
 {
 	if (!stricmp(str, NOX("wp"))) {
-		sprintf(str, "%d", Training_context_goal_waypoint + 1);
+		snprintf(str, 40, "%d", Training_context_goal_waypoint + 1);
 		return str;
 	}
 

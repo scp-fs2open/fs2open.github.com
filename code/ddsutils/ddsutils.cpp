@@ -387,9 +387,9 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 
 	if (filename == NULL) {
 		if (cubemap) {
-			sprintf(real_filename, "cubemap%.3d.dds", count++);
+			snprintf(real_filename, MAX_FILENAME_LEN, "cubemap%.3d.dds", count++);
 		} else {
-			sprintf(real_filename, "image%.3d.dds", count++);
+			snprintf(real_filename, MAX_FILENAME_LEN, "image%.3d.dds", count++);
 		}
 		os_config_write_uint(NULL, "ImageExportNum", count);
 	} else {

@@ -51,7 +51,16 @@ jobs:
         name: Checkout
         with:
           submodules: true  # `true` to checkout submodules, `recursive` to recursively checkout submodules
-          ref: '${{ github.ref }}'
+      - name: checkout_new_branch
+        run: "|
+          git checkout ${{ github.ref }}
+          git reflog" 
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -100,7 +109,10 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'  # value 0 to fetch all history and tags for all branches
-          ref: '${{ github.ref }}'
+      - name: checkout_new_branch
+        run: "|
+          git checkout ${{ github.ref }}
+          git reflog" 
       - name: Download Release builds
         # Grab the release builds
         uses: actions/download-artifact@v3
@@ -147,7 +159,10 @@ jobs:
         name: Checkout
         with:
           submodules: true
-          ref: '${{ github.ref }}'
+      - name: Checkout Correct Branch
+        run: "|
+          git checkout ${{ github.ref }}
+          git reflog"   
       # - name: Cache Qt
         # # Cache Qt
         # id: cache-qt-win
@@ -242,7 +257,10 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'
-          ref: '${{ github.ref }}'
+      - name: checkout_new_branch
+        run: "|
+          git checkout ${{ github.ref }}
+          git reflog"   
       - name: Download Release builds
         uses: actions/download-artifact@v3
         with:
@@ -314,7 +332,10 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-          ref: '${{ github.ref }}'
+      - name: checkout_new_branch
+        run: "|
+          git checkout ${{ github.ref }}
+          git reflog" 
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:

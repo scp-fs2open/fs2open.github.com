@@ -340,7 +340,7 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 		}
 	}
 
-	sprintf(text_integrity, "%d", numeric_integrity);
+	snprintf(text_integrity, 64, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
 		hud_num_make_mono(text_integrity);
 	}	
@@ -1061,7 +1061,7 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 	final_pos[0] += position[0];
 	final_pos[1] += position[1];
 
-	sprintf(text_integrity, "%d", numeric_integrity);
+	snprintf(text_integrity, 64, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
 		hud_num_make_mono(text_integrity, font_num);
 	}	

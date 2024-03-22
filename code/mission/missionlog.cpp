@@ -751,7 +751,7 @@ void message_log_init_scrollback(int pw, bool split_string)
 					message_log_add_segs(XSTR("  Kill: ", 405), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 					message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
 					if (entry->index >= 0) {
-						sprintf(text, NOX(" (%d%%)"), entry->index);
+						snprintf(text, 256, NOX(" (%d%%)"), entry->index);
 						message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 					}
 				}
@@ -771,7 +771,7 @@ void message_log_init_scrollback(int pw, bool split_string)
 
 			case LOG_WING_ARRIVED:
 				if (entry->index > 1){
-					sprintf(text, XSTR( "Arrived (wave %d)", 407), entry->index);
+					snprintf(text, 256, XSTR( "Arrived (wave %d)", 407), entry->index);
 				} else {
 					strcpy_s(text, XSTR( "Arrived", 406));
 				}
@@ -855,7 +855,7 @@ void message_log_init_scrollback(int pw, bool split_string)
 			case LOG_GOAL_SATISFIED:
 			case LOG_GOAL_FAILED: {
 				int type = Mission_goals[entry->index].type & GOAL_TYPE_MASK;
-				sprintf( text, XSTR( "%s objective ", 419), Goal_type_text(type) );
+				snprintf( text, 256, XSTR( "%s objective ", 419), Goal_type_text(type) );
 				if ( entry->type == LOG_GOAL_SATISFIED )
 					strcat_s(text, XSTR( "satisfied.", 420));
 				else

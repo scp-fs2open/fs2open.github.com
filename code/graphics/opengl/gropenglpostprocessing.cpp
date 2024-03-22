@@ -852,7 +852,7 @@ void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, i
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS) {
 		char temp[64];
 		const auto ls_params = graphics::Post_processing_manager->getLightshaftParams();
-		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
+		snprintf(temp, 64, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
 		sflags << temp;
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_FXAA) {
 		set_fxaa_defines(sflags);

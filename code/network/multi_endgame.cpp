@@ -426,7 +426,7 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 	} else {
 		// if there is a winsock error code, stick it on the end of the text
 		if(wsa_error != -1){		
-			sprintf(err_msg,NOX("WSAERROR : %d\n\n"),wsa_error);
+			snprintf(err_msg, 255, NOX("WSAERROR : %d\n\n"),wsa_error);
 			flags |= PF_TITLE_RED;
 		} else {
 			strcpy_s(err_msg,"");
