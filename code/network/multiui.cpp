@@ -102,11 +102,6 @@ const int MULTI_PING_MIN_ORANGE = 150;
 const int MULTI_PING_MIN_RED = 250;
 const int MULTI_PING_MIN_ONE_SECOND = 1000;
 
-#define MULTI_COMMON_TEXT_META_CHAR				'$'
-#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH		200
-#define MULTI_COMMON_TEXT_MAX_LINES				20
-#define MULTI_COMMON_MAX_TEXT						(MULTI_COMMON_TEXT_MAX_LINES * MULTI_COMMON_TEXT_MAX_LINE_LENGTH)
-
 char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
 char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_LENGTH];
 
@@ -845,7 +840,7 @@ int multi_join_autojoin_do()
 	return -1;
 }
 
-void multi_join_game_init()
+void multi_join_game_init(bool API_Access)
 {
 	int idx;
 
@@ -869,15 +864,17 @@ void multi_join_game_init()
 	// destroy any chatbox contents which previously existed (from another game)
 	chatbox_clear();
 
-	// create the interface window
-	Multi_join_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_join_window.set_mask_bmap(Multi_join_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		// create the interface window
+		Multi_join_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_join_window.set_mask_bmap(Multi_join_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_join_bitmap = bm_load(Multi_join_bitmap_fname[gr_screen.res]);
-	if(Multi_join_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_join_bitmap = bm_load(Multi_join_bitmap_fname[gr_screen.res]);
+		if (Multi_join_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
 	}
 
 	// intialize the endgame system
@@ -893,9 +890,11 @@ void multi_join_game_init()
 	multi_common_load_palette();
 	multi_common_set_palette();
 
-	// load the help overlay
-	Multi_join_overlay_id = help_overlay_get_index(MULTI_JOIN_OVERLAY);
-	help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
+	if (!API_Access) {
+		// load the help overlay
+		Multi_join_overlay_id = help_overlay_get_index(MULTI_JOIN_OVERLAY);
+		help_overlay_set_state(Multi_join_overlay_id, gr_screen.res, 0);
+	}
 
 	// do TCP and VMT specific initialization
 	if ( (Multi_options_g.protocol == NET_TCP) && !MULTI_IS_TRACKER_GAME ) {		
@@ -917,24 +916,26 @@ void multi_join_game_init()
 	// clear our all game lists to save hassles
 	multi_join_clear_game_list();
 
-	// create the interface buttons
-	for(idx=0; idx<MULTI_JOIN_NUM_BUTTONS; idx++){
-		// create the object
-		Multi_join_buttons[gr_screen.res][idx].button.create(&Multi_join_window,"", Multi_join_buttons[gr_screen.res][idx].x, Multi_join_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+	if (!API_Access){
+		// create the interface buttons
+		for(idx=0; idx<MULTI_JOIN_NUM_BUTTONS; idx++){
+			// create the object
+			Multi_join_buttons[gr_screen.res][idx].button.create(&Multi_join_window,"", Multi_join_buttons[gr_screen.res][idx].x, Multi_join_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
-		// set the sound to play when highlighted
-		Multi_join_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			Multi_join_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		Multi_join_buttons[gr_screen.res][idx].button.set_bmaps(Multi_join_buttons[gr_screen.res][idx].filename);
+			// set the ani for the button
+			Multi_join_buttons[gr_screen.res][idx].button.set_bmaps(Multi_join_buttons[gr_screen.res][idx].filename);
 
-		// set the hotspot
-		Multi_join_buttons[gr_screen.res][idx].button.link_hotspot(Multi_join_buttons[gr_screen.res][idx].hotspot);
-	}		
+			// set the hotspot
+			Multi_join_buttons[gr_screen.res][idx].button.link_hotspot(Multi_join_buttons[gr_screen.res][idx].hotspot);
+		}
 
-	// create all xstrs
-	for(idx=0; idx<MULTI_JOIN_NUM_TEXT; idx++){
-		Multi_join_window.add_XSTR(&Multi_join_text[gr_screen.res][idx]);
+		// create all xstrs
+		for(idx=0; idx<MULTI_JOIN_NUM_TEXT; idx++){
+			Multi_join_window.add_XSTR(&Multi_join_text[gr_screen.res][idx]);
+		}
 	}
 
 	Multi_join_should_send = -1;
@@ -942,13 +943,14 @@ void multi_join_game_init()
 	// close any previously open chatbox
 	chatbox_close();
 
-	// create the list item select button
-	Multi_join_select_button.create(&Multi_join_window, "", Mj_list_area_coords[gr_screen.res][MJ_X_COORD], Mj_list_area_coords[gr_screen.res][MJ_Y_COORD], Mj_list_area_coords[gr_screen.res][MJ_W_COORD], Mj_list_area_coords[gr_screen.res][MJ_H_COORD], 0, 1);
-	Multi_join_select_button.hide();
+	if (!API_Access){
+		// create the list item select button
+		Multi_join_select_button.create(&Multi_join_window, "", Mj_list_area_coords[gr_screen.res][MJ_X_COORD], Mj_list_area_coords[gr_screen.res][MJ_Y_COORD], Mj_list_area_coords[gr_screen.res][MJ_W_COORD], Mj_list_area_coords[gr_screen.res][MJ_H_COORD], 0, 1);
+		Multi_join_select_button.hide();
 
-	// slider
-	Multi_join_slider.create(&Multi_join_window, Mj_slider_coords[gr_screen.res][MJ_X_COORD], Mj_slider_coords[gr_screen.res][MJ_Y_COORD], Mj_slider_coords[gr_screen.res][MJ_W_COORD], Mj_slider_coords[gr_screen.res][MJ_H_COORD], 0, Mj_slider_name[gr_screen.res], &multi_join_list_scroll_up, &multi_join_list_scroll_down, NULL);
-
+		// slider
+		Multi_join_slider.create(&Multi_join_window, Mj_slider_coords[gr_screen.res][MJ_X_COORD], Mj_slider_coords[gr_screen.res][MJ_Y_COORD], Mj_slider_coords[gr_screen.res][MJ_W_COORD], Mj_slider_coords[gr_screen.res][MJ_H_COORD], 0, Mj_slider_name[gr_screen.res], &multi_join_list_scroll_up, &multi_join_list_scroll_down, NULL);
+	}
 	// make sure that we turn music/sounds back on (will be disabled after playing a mission)
 	main_hall_start_music();
 
@@ -976,7 +978,7 @@ void multi_join_clear_game_list()
 	Active_games.clear();
 }
 
-void multi_join_game_do_frame()
+void multi_join_game_do_frame(bool API_Access)
 {
 	// Because we can get to here through the options screen, we may have PXO games enabled when we're not connected.
 	// So we should go back and connect if that's true.
@@ -1020,99 +1022,105 @@ void multi_join_game_do_frame()
 	// reset the should send var
 	Multi_join_should_send = -1;
 
-	int k = Multi_join_window.process();
+	// only do keypresses if we're not in API mode
+	if (!API_Access) {
+		int k = Multi_join_window.process();
 
-	// process any keypresses
-	switch(k){
-	case KEY_ESC :
-		if(help_overlay_active(Multi_join_overlay_id)){
-			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
-		} else {		
-			if (MULTI_IS_TRACKER_GAME) {
-				gameseq_post_event(GS_EVENT_PXO);
+		// process any keypresses
+		switch (k) {
+		case KEY_ESC:
+			if (help_overlay_active(Multi_join_overlay_id)) {
+				help_overlay_set_state(Multi_join_overlay_id, gr_screen.res, 0);
 			} else {
-				gameseq_post_event(GS_EVENT_MAIN_MENU);
+				if (MULTI_IS_TRACKER_GAME) {
+					gameseq_post_event(GS_EVENT_PXO);
+				} else {
+					gameseq_post_event(GS_EVENT_MAIN_MENU);
+				}
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			}
-			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			break;
+
+		// page up the game list
+		case KEY_PAGEUP:
+			multi_join_list_page_up();
+			Multi_join_slider.force_currentItem(Multi_join_list_start);
+			break;
+
+		case KEY_T:
+			multi_pinfo_popup(Net_player);
+			break;
+
+		// page down the game list
+		case KEY_PAGEDOWN:
+			multi_join_list_page_down();
+			Multi_join_slider.force_currentItem(Multi_join_list_start);
+			break;
+
+		// send out a ping-all
+		case KEY_P:
+			multi_join_ping_all();
+			Multi_join_ping_stamp = ui_timestamp(MULTI_JOIN_PING_TIME);
+			break;
+
+		// shortcut to start a game
+		case KEY_S:
+			multi_join_create_game();
+			break;
+
+		// scroll the game list up
+		case KEY_UP:
+			multi_join_list_scroll_up();
+			Multi_join_slider.force_currentItem(Multi_join_list_start);
+			break;
+
+		// scroll the game list down
+		case KEY_DOWN:
+			multi_join_list_scroll_down();
+			Multi_join_slider.force_currentItem(Multi_join_list_start);
+			break;
 		}
-		break;
 
-	// page up the game list
-	case KEY_PAGEUP:
-		multi_join_list_page_up();	
-		Multi_join_slider.force_currentItem(Multi_join_list_start);
-		break;
-
-	case KEY_T:
-		multi_pinfo_popup(Net_player);
-		break;
-
-	// page down the game list
-	case KEY_PAGEDOWN:
-		multi_join_list_page_down();
-		Multi_join_slider.force_currentItem(Multi_join_list_start);
-		break;
-
-	// send out a ping-all
-	case KEY_P :		
-		multi_join_ping_all();		
-		Multi_join_ping_stamp = ui_timestamp(MULTI_JOIN_PING_TIME);
-		break;	
-
-	// shortcut to start a game	
-	case KEY_S :		
-		multi_join_create_game();		
-		break;
-
-	// scroll the game list up
-	case KEY_UP:
-		multi_join_list_scroll_up();
-		Multi_join_slider.force_currentItem(Multi_join_list_start);
-		break;
-
-	// scroll the game list down
-	case KEY_DOWN:
-		multi_join_list_scroll_down();
-		Multi_join_slider.force_currentItem(Multi_join_list_start);
-		break;
-	}	
-
-	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_join_overlay_id, gr_screen.res, 0);
+		if (mouse_down(MOUSE_LEFT_BUTTON)) {
+			help_overlay_set_state(Multi_join_overlay_id, gr_screen.res, 0);
+		}
 	}
 
 	// do any network related stuff
 	multi_join_do_netstuff(); 
 
-	// process any button clicks
-	multi_join_check_buttons();
+	// Don't do any drawing in API mode either
+	if (!API_Access) {
+		// process any button clicks
+		multi_join_check_buttons();
 
-	// process any list selection stuff
-	multi_join_process_select();
+		// process any list selection stuff
+		multi_join_process_select();
 
-	// draw the background, etc
-	gr_reset_clip();
-	GR_MAYBE_CLEAR_RES(Multi_join_bitmap);
-	if(Multi_join_bitmap != -1){		
-		gr_set_bitmap(Multi_join_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
+		// draw the background, etc
+		gr_reset_clip();
+		GR_MAYBE_CLEAR_RES(Multi_join_bitmap);
+		if (Multi_join_bitmap != -1) {
+			gr_set_bitmap(Multi_join_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
+		}
+		Multi_join_window.draw();
+
+		// display the active games
+		multi_join_display_games();
+
+		// display any text in the info area
+		multi_common_render_text();
+
+		// display any pending notification messages
+		multi_common_notify_do();
+
+		// draw the help overlay
+		help_overlay_maybe_blit(Multi_join_overlay_id, gr_screen.res);
+
+		// flip the buffer
+		gr_flip();
 	}
-	Multi_join_window.draw();
-
-	// display the active games
-	multi_join_display_games();
-
-	// display any text in the info area
-	multi_common_render_text();
-
-	// display any pending notification messages
-	multi_common_notify_do();
-
-	// draw the help overlay
-	help_overlay_maybe_blit(Multi_join_overlay_id, gr_screen.res);
-	
-	// flip the buffer
-	gr_flip();
 
 	// if we are supposed to be sending a join request
 	if(Multi_join_should_send != -1){		
@@ -1121,10 +1129,11 @@ void multi_join_game_do_frame()
 	Multi_join_should_send = -1;
 
 	// increment the frame count
+	// This is inited and never read as far as I can tell? Remove it? - Mjn
 	Multi_join_frame_count++;
 }
 
-void multi_join_game_close()
+void multi_join_game_close(bool API_Access)
 {
 	// unload any bitmaps
 	if(!bm_unload(Multi_join_bitmap)){
@@ -1141,8 +1150,10 @@ void multi_join_game_close()
 	// cancel mdns queries
 	multi_mdns_query_close();
 
-	// destroy the UI_WINDOW
-	Multi_join_window.destroy();
+	if (!API_Access) {
+		// destroy the UI_WINDOW
+		Multi_join_window.destroy();
+	}
 }
 
 void multi_join_check_buttons()
@@ -1293,18 +1304,11 @@ void multi_join_display_games()
 			// blit the game status (including text and type icon)
 			multi_join_blit_game_status(&(*game),y_start);			
 			
-			// get the connection type
-			int con_type = (game->flags & AG_FLAG_CONNECTION_SPEED_MASK) >> AG_FLAG_CONNECTION_BIT;
-			if((con_type > 4) || (con_type < 0)){
-				con_type = 0;
-			}
-
-			// display the connection speed
-			char str[200];
-			str[0] = '\0';
-			strcpy_s(str, Multi_join_speed_labels[con_type]);
+			SCP_string speed_text;
+			int con_type;
+			multi_join_game_set_speed_text(&(*game), con_type, speed_text);
 			gr_set_color_fast(Multi_join_speed_colors[con_type]);
-			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, str, GR_RESIZE_MENU);
+			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, speed_text.c_str(), GR_RESIZE_MENU);
 
 			bool selected = (count == Multi_join_list_selected ? true : false);
 
@@ -1316,6 +1320,7 @@ void multi_join_display_games()
 			}
 
 			// display the game name, adding appropriate status chars
+			char str[200];
 			str[0] = '\0';
 			if (game->flags & AG_FLAG_STANDALONE) {
 				strcat_s(str,MJ_CHAR_STANDALONE);
@@ -1383,10 +1388,51 @@ void multi_join_display_games()
 	}
 }
 
+void multi_join_game_set_speed_text(active_game* game, int& con_type, SCP_string& speed_text)
+{
+	// get the connection type
+	con_type = (game->flags & AG_FLAG_CONNECTION_SPEED_MASK) >> AG_FLAG_CONNECTION_BIT;
+	if ((con_type > 4) || (con_type < 0)) {
+		con_type = 0;
+	}
+
+	speed_text = Multi_join_speed_labels[con_type];
+}
+
+void multi_join_game_set_status_text(active_game* game, SCP_string& status_text)
+{
+	switch (game->flags & AG_FLAG_STATE_MASK) {
+	case AG_FLAG_FORMING:
+		gr_set_color_fast(&Color_bright_green);
+		status_text = XSTR("Forming", 764);
+		break;
+	case AG_FLAG_BRIEFING:
+		gr_set_color_fast(&Color_bright_red);
+		status_text = XSTR("Briefing", 765);
+		break;
+	case AG_FLAG_DEBRIEF:
+		gr_set_color_fast(&Color_bright_red);
+		status_text = XSTR("Debrief", 766);
+		break;
+	case AG_FLAG_PAUSE:
+		gr_set_color_fast(&Color_bright_red);
+		status_text = XSTR("Paused", 767);
+		break;
+	case AG_FLAG_IN_MISSION:
+		gr_set_color_fast(&Color_bright_red);
+		status_text = XSTR("Playing", 768);
+		break;
+	default:
+		gr_set_color_fast(&Color_bright);
+		status_text = XSTR("Unknown", 769);
+		break;
+	}
+}
+
 void multi_join_blit_game_status(active_game *game, int y)
 {
 	int draw,str_w;
-	char status_text[25];
+	SCP_string status_text;
 
 	// blit the proper icon
 	draw = 0;	
@@ -1420,37 +1466,10 @@ void multi_join_blit_game_status(active_game *game, int y)
 		gr_bitmap(Mj_game_icon_coords[gr_screen.res][MJ_X_COORD],y-1,GR_RESIZE_MENU);
 	}
 
-	// blit the proper status text
-	memset(status_text,0,25);
-
-	switch( game->flags & AG_FLAG_STATE_MASK ){
-	case AG_FLAG_FORMING:
-		gr_set_color_fast(&Color_bright_green);
-		strcpy_s(status_text,XSTR("Forming",764));
-		break;
-	case AG_FLAG_BRIEFING:
-		gr_set_color_fast(&Color_bright_red);
-		strcpy_s(status_text,XSTR("Briefing",765));
-		break;
-	case AG_FLAG_DEBRIEF:
-		gr_set_color_fast(&Color_bright_red);
-		strcpy_s(status_text,XSTR("Debrief",766));
-		break;
-	case AG_FLAG_PAUSE:
-		gr_set_color_fast(&Color_bright_red);
-		strcpy_s(status_text,XSTR("Paused",767));
-		break;
-	case AG_FLAG_IN_MISSION:
-		gr_set_color_fast(&Color_bright_red);
-		strcpy_s(status_text,XSTR("Playing",768));
-		break;
-	default:
-		gr_set_color_fast(&Color_bright);
-		strcpy_s(status_text,XSTR("Unknown",769));
-		break;
-	}		
-	gr_get_string_size(&str_w,NULL,status_text);
-	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text,GR_RESIZE_MENU);
+	multi_join_game_set_status_text(game, status_text);
+	
+	gr_get_string_size(&str_w,NULL,status_text.c_str());
+	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text.c_str(),GR_RESIZE_MENU);
 }
 
 void multi_join_read_ip_address_file(SCP_list<SCP_string>& list)

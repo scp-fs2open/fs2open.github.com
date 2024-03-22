@@ -34,8 +34,10 @@
 #include "mod_table/mod_table.h"
 #include "network/chat_api.h"
 #include "network/multi.h"
+#include "network/multiui.h"
 #include "network/multiteamselect.h"
 #include "network/multi_pxo.h"
+#include "network/multimsgs.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
@@ -2805,6 +2807,137 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	multi_pxo_help_free();
 
 	return ade_set_args(L, "t", pages);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiJoinGame
+ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
+	"MultiJoinGame",
+	nullptr,
+	"API for accessing data related to the Multi Join Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiJoin, l_UserInterface_MultiJoinGame, nullptr, "Makes sure everything is done correctly to begin a multi join session.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiJoin, l_UserInterface_MultiJoinGame, nullptr, "Makes sure everything is done correctly to end a multi join session.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiJoinGame, nullptr, "Runs the network required commands to update the lists once and handle join requests", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(refresh, l_UserInterface_MultiJoinGame, nullptr, "Force refreshing the games list", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	broadcast_game_query();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createGame, l_UserInterface_MultiJoinGame, nullptr, "Starts creating a new game and moves to the new UI", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_create_game();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendJoinRequest,
+	l_UserInterface_MultiJoinGame,
+	"[boolean AsObserver]",
+	"Sends a join game request",
+	"boolean",
+	"True if successful, false otherwise")
+{
+
+	bool observer = false;
+	ade_get_args(L, "*|b", &observer);
+
+	if (Active_games.empty()) {
+		multi_common_add_notify(XSTR("No games found!", 757));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_selected_item == nullptr) {
+		multi_common_add_notify(XSTR("No game selected!", 758));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
+		multi_common_add_notify(XSTR("Still waiting on previous join request!", 759));
+	} else {
+		// otherwise, if he's already played PXO games, warn him
+
+		if (Player->flags & PLAYER_FLAGS_HAS_PLAYED_PXO) {
+			if (!multi_join_warn_pxo()) {
+				return ADE_RETURN_FALSE;
+			}
+		}
+
+		// send a join request packet
+		multi_join_send_join_request(observer);
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiJoinGame, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_notify_text);
+}
+
+ADE_VIRTVAR(InfoText, l_UserInterface_MultiJoinGame, nullptr, "The current info text", "string", "the info text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_all_text);
+}
+
+ADE_LIB_DERIV(l_Active_Games, "ActiveGames", nullptr, nullptr, l_UserInterface_MultiJoinGame);
+ADE_INDEXER(l_Active_Games,
+	"number Index",
+	"Array of active games",
+	"active_game",
+	"active game handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= static_cast<int>(Active_games.size()))
+		return ade_set_args(L, "o", l_Active_Game.Set(active_game_h()));
+
+	return ade_set_args(L, "o", l_Active_Game.Set(active_game_h(idx)));
+}
+
+ADE_FUNC(__len, l_Active_Games, nullptr, "The number of active games available", "number", "The number of active games.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Active_games.size()));
 }
 
 } // namespace api
