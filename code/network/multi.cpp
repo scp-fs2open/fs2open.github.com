@@ -130,9 +130,9 @@ server_item* Game_server_head;								// list of permanent game servers to be qu
 
 // timestamp data
 int Netgame_send_time = -1;							// timestamp used to send netgame info to players before misison starts
-int State_send_time = -1;								// timestamp used to send state information to the host before a mission starts
+time_t State_send_time = -1;								// timestamp used to send state information to the host before a mission starts
 int Gameinfo_send_time = -1;							// timestamp used by master to send game information to clients
-int Next_ping_time = -1;								// when we should next ping all
+time_t Next_ping_time = -1;								// when we should next ping all
 int Multi_server_check_count = 0;					// var to keep track of reentrancy when checking server status
 int Next_bytes_time = -1;								// bytes sent
 
@@ -1198,7 +1198,7 @@ void multi_do_frame()
 		
 		// ping everyone
 		multi_ping_send_all();
-		Next_ping_time = (int) time(NULL);		
+		Next_ping_time = time(NULL);		
 	}	
 	
 	// if I am the master, and we are not yet actually playing the mission, send off netgame
@@ -1218,7 +1218,7 @@ void multi_do_frame()
 					send_netplayer_update_packet();
 				}				
 				
-				State_send_time = (int) time(NULL);
+				State_send_time = time(NULL);
 			}
 		}
 	}
@@ -1403,7 +1403,7 @@ void multi_pause_do_frame()
 	if((Next_ping_time < 0) || ((time(NULL) - Next_ping_time) > PING_SEND_TIME) ){
 		multi_ping_send_all();
 		
-		Next_ping_time = (int) time(NULL);
+		Next_ping_time = time(NULL);
 	}
 
 	// periodically send a client update packet to all clients
