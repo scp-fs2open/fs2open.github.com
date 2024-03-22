@@ -779,7 +779,7 @@ void endDrawing(graphics::paths::PathRenderer* path) {
 }
 }
 
-void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length) {
+void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_length) {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
@@ -797,10 +797,10 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length
 	}
 
 	size_t length;
-	if (in_length < 0) {
+	if (in_length == std::string::npos) {
 		length = strlen(s);
 	} else {
-		length = (size_t) in_length;
+		length = in_length;
 	}
 
 	FSFont* currentFont = FontManager::getCurrentFont();

@@ -124,10 +124,10 @@ bool gr_opengl_openxr_create_session() {
 	};
 
 	XrSessionCreateInfo sessionCreateInfo {
-		sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO,
-		sessionCreateInfo.next = &graphicsBinding,
-		sessionCreateInfo.createFlags = 0,
-		sessionCreateInfo.systemId = xr_system
+		XR_TYPE_SESSION_CREATE_INFO,
+		&graphicsBinding,
+		0,
+		xr_system
 	};
 
 	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
@@ -249,9 +249,9 @@ bool gr_opengl_openxr_flip() {
 		xrAcquireSwapchainImage(swapchain, &acquireImageInfo, &activeIndex);
 
 		XrSwapchainImageWaitInfo waitImageInfo{
-			waitImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO,
+			XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO,
 			nullptr,
-			waitImageInfo.timeout = std::numeric_limits<int64_t>::max()
+			std::numeric_limits<int64_t>::max()
 		};
 		xrWaitSwapchainImage(swapchain, &waitImageInfo);
 

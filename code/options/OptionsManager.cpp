@@ -111,6 +111,17 @@ void OptionsManager::removeOption(const OptionBase* option)
 	                   [option](const std::unique_ptr<const OptionBase>& ptr) { return ptr.get() == option; }));
 }
 
+// Returns an option with the specified name
+const OptionBase* OptionsManager::getOptionByKey(SCP_string key)
+{
+	for (size_t i = 0; i < _options.size(); i++) {
+		if (_options[i].get()->getConfigKey() == key) {
+			return _options[i].get();
+		}
+	}
+	return nullptr;
+}
+
 //Returns a table of all built-in options available
 const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::getOptions()
 {
@@ -193,6 +204,23 @@ void OptionsManager::loadInitialValues()
 {
 	for (auto& opt : _options) {
 		opt->loadInitial();
+	}
+}
+
+void OptionsManager::printValues()
+{
+	mprintf(("Printing in-game options values!\n"));
+	for (auto& opt : _options) {
+		// If we're not using in-game options and the option is not a retail option, then skip
+		// This ensures we only log options that are actually impacting the current game instance
+		if (!Using_in_game_options && !(opt->getFlags()[options::OptionFlags::RetailBuiltinOption])){
+			continue;
+		}
+
+		// Log the option
+		mprintf(("Option.%s: %s\n",
+			opt->getConfigKey().c_str(),
+			opt->getCurrentValueDescription().display.c_str()));
 	}
 }
 

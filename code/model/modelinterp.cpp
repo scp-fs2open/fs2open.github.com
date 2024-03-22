@@ -3294,7 +3294,7 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 			Num_verts[it->first] -= poly.Num_verts;
 			Num_verts[it->second] += poly.Num_verts;
 			--Num_polies[it->first];
-			++Num_polies[it->first];
+			++Num_polies[it->second];
 		}
 	}
 }

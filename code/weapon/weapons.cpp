@@ -31,6 +31,7 @@
 #include "math/staticrand.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/animation/modelanimation_driver.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -84,7 +85,7 @@ int Weapon_flyby_sound_enabled = 1;
 DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
-static int Weapon_flyby_sound_timer;	
+static TIMESTAMP Weapon_flyby_sound_timer;
 
 weapon Weapons[MAX_WEAPONS];
 SCP_vector<weapon_info> Weapon_info;
@@ -273,8 +274,8 @@ int Player_weapon_precedence_line;	// And this is the line the precedence list w
 // Used to avoid playing too many impact sounds in too short a time interval.
 // This will elimate the odd "stereo" effect that occurs when two weapons impact at 
 // nearly the same time, like from a double laser (also saves sound channels!)
-#define	IMPACT_SOUND_DELTA	50		// in milliseconds
-int		Weapon_impact_timer;			// timer, initialized at start of each mission
+constexpr int IMPACT_SOUND_DELTA = 50;	// in milliseconds
+static TIMESTAMP Weapon_impact_timer;	// timer, initialized at start of each mission
 
 // energy suck defines
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
@@ -306,7 +307,7 @@ const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
 // most frequently a continuous spawn weapon is allowed to spawn
 static const float MINIMUM_SPAWN_INTERVAL = 0.1f;
 
-extern int compute_num_homing_objects(object *target_objp);
+extern int compute_num_homing_objects(const object *target_objp);
 
 void weapon_spew_stats(WeaponSpewType type);
 
@@ -619,10 +620,11 @@ int weapon_info_lookup(const char *name)
  * Return the index of Weapon_info used by this pointer.  Equivalent to the old WEAPON_INFO_INDEX macro:
  * #define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
  */
-int weapon_info_get_index(weapon_info *wip)
+int weapon_info_get_index(const weapon_info *wip)
 {
 	Assertion(wip != nullptr, "NULL wip passed to weapon_info_get_index");
-	return static_cast<int>(std::distance(Weapon_info.data(), wip));
+	const weapon_info *data = Weapon_info.data();
+	return static_cast<int>(std::distance(data, wip));
 }
 
 //	Parse the weapon flags.
@@ -1913,10 +1915,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	// this was added in commit 9fea22d551 and is specifically for allowing countermeasures to be parsed using the weapons code;
+	// but it should be handled the same as $Model file:
 	if(optional_string("$Model:"))
 	{
-		wip->render_type = WRT_POF;
 		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
+
+		if (VALID_FNAME(wip->pofbitmap_name))
+			wip->render_type = WRT_POF;
+		else
+			wip->render_type = WRT_NONE;
+
+		diag_printf("Model pof file -- %s\n", wip->pofbitmap_name );
 	}
 
 	// handle rearm rate - modified by Goober5000
@@ -2082,7 +2092,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
-			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
+			ti->spew_duration = fl2i(MILLISECONDS_PER_SECOND*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
 		if (optional_string("+Spread:"))
@@ -3609,6 +3619,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations, 'w', wip->name);
 	}
 
+	if (optional_string("$Driven Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(wip->animations, 'w', wip->name, animation::parse_object_property_driver_source);
+	}
+	
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -4660,8 +4674,8 @@ void weapon_level_init()
 	// clear out used_weapons between missions
 	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
 
-	Weapon_flyby_sound_timer = timestamp(0);
-	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
+	Weapon_flyby_sound_timer = TIMESTAMP::immediate();
+	Weapon_impact_timer = TIMESTAMP::immediate();	// inited each level, used to reduce impact sounds
 }
 
 MONITOR( NumWeaponsRend )
@@ -5701,7 +5715,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 						snd_play_3d( gamesnd_get_game_sound(GameSounds::WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
 					}
 				}
-				Weapon_flyby_sound_timer = timestamp(200);
+				Weapon_flyby_sound_timer = _timestamp(200);
                 wp->weapon_flags.set(Weapon::Weapon_Flags::Played_flyby_sound);
 			}
 		}
@@ -6259,7 +6273,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown, ship_subsys * src_turret)
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;
@@ -6341,10 +6355,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// make sure we are loaded and useable
 	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
+		if (!VALID_FNAME(wip->pofbitmap_name)) {
+			Error(LOCATION, "Cannot create weapon %s; pof file is not valid", wip->name);
+			return -1;
+		}
+
 		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
 
 		if (wip->model_num < 0) {
-			Int3();
+			Error(LOCATION, "Cannot create weapon %s; model file %s could not be loaded", wip->name, wip->pofbitmap_name);
 			return -1;
 		}
 	}
@@ -6997,7 +7016,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		case OBJ_ASTEROID:
 			if ( timestamp_elapsed(Weapon_impact_timer) ) {
 				weapon_play_impact_sound(wip, hitpos, is_armed);	
-				Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
+				Weapon_impact_timer = _timestamp(IMPACT_SOUND_DELTA);
 			}
 			return;
 			break;
@@ -7059,7 +7078,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 			} // end switch
 		}
 
-		Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
+		Weapon_impact_timer = _timestamp(IMPACT_SOUND_DELTA);
 	}
 }
 
@@ -7783,7 +7802,7 @@ void weapons_page_in()
 
 		wip->external_model_num = -1;
 
-		if ( strlen(wip->external_model_name) )
+		if (VALID_FNAME(wip->external_model_name))
 			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
 
 		if (wip->external_model_num == -1)
@@ -7876,7 +7895,7 @@ void weapons_page_in_cheats()
 		
 		wip->external_model_num = -1;
 		
-		if ( strlen(wip->external_model_name) )
+		if (VALID_FNAME(wip->external_model_name))
 			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
 
 		if (wip->external_model_num == -1)
@@ -7974,7 +7993,7 @@ bool weapon_page_in(int weapon_type)
 
 		wip->external_model_num = -1;
 
-		if (strlen(wip->external_model_name))
+		if (VALID_FNAME(wip->external_model_name))
 			wip->external_model_num = model_load(wip->external_model_name, 0, NULL);
 
 		if (wip->external_model_num == -1)
@@ -9228,7 +9247,7 @@ void weapon_info::reset()
 	this->tr_info.max_life = 1.0f;
 	this->tr_info.spread = 0.0f;
 	this->tr_info.a_decay_exponent = 1.0f;
-	this->tr_info.stamp = 0;
+	this->tr_info.spew_duration = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
 	this->tr_info.texture_stretch = 1.0f;
@@ -9863,7 +9882,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	polymodel* pm = model_get(Ship_info[Ships[shooter->instance].ship_info_index].model_num);
 	vec3d eye_pos = pm->view_positions[0].pnt + shooter->pos;
 
-	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
+	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos);
 }
 
 bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot, bool checkWeapons) {

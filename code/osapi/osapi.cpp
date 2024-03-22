@@ -113,9 +113,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_LOST:
 			{
 				if (fAppActive) {
-					if (!Cmdline_no_unfocus_pause) {
-						game_pause();
-					}
+					game_pause();
 
 					fAppActive = false;
 				}
@@ -126,9 +124,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
 			{
 				if (!fAppActive) {
-					if (!Cmdline_no_unfocus_pause) {
-						game_unpause();
-					}
+					game_unpause();
 
 					fAppActive = true;
 				}
@@ -731,8 +727,10 @@ static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
-	if (gameseq_get_state() == GS_STATE_LAB && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse)) {
-		imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
+	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
+		if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
+					imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
+		}
 	}
 
 	if (!imgui_processed_this) {

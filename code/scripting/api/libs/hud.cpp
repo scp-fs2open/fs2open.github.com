@@ -45,6 +45,19 @@ ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "I
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(HUDHighContrast, l_HUD, "boolean", "Gets or sets whether the HUD is currently high-contrast", "boolean", "Whether the HUD is high-contrast")
+{
+	bool value = false;
+
+	if(!ade_get_args(L, "*|b", &value))
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR)
+		HUD_high_contrast = value;
+
+	return ade_set_args(L, "b", HUD_high_contrast);
+}
+
 ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the messages gauges of the hud are drawn", "boolean", "true if only the message gauges are drawn, false otherwise")
 {
 	bool to_draw = false;
@@ -255,7 +268,7 @@ ADE_FUNC(flashTargetBox, l_HUD, "enumeration section, [number duration_in_millis
 		return ADE_RETURN_NIL;
 
 	int section_index = 0;
-	if (section.IsValid())
+	if (section.isValid())
 	{
 		switch (section.index)
 		{
@@ -293,7 +306,7 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))
 		return ADE_RETURN_NIL;
 
-	if (targetee_h == nullptr || !targetee_h->IsValid())
+	if (targetee_h == nullptr || !targetee_h->isValid())
 		return ADE_RETURN_NIL;
 
 	if (targeter_pos == nullptr)

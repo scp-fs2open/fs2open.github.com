@@ -7,15 +7,15 @@ PLACEHOLDER
 [b]Deprecations:[/b]
 PLACEHOLDER
 
-Deprecations are a mechanism in FSO where a certain feature or aspect of the engine has changed or is no longer supported. Since this would normally break existing mods we have the mod table feature "[tt]$Target Version:[/tt]" with which a mod can specify what version of FSO it was developed with. The features listed above will be removed or changed when the target version of a mod is at least the version released in this post.
+Deprecations are a mechanism in FSO where a certain feature or aspect of the engine has changed or is no longer supported. Since this would normally break existing mods, we have the mod table feature "[tt]$Target Version:[/tt]" with which a mod can specify what version of FSO it was developed with. Any features listed under Deprecations will be removed or changed when the target version of a mod is at least the version released in this post.
 
-[size=5pt]Previous [url=https://www.hard-light.net/forums/index.php?topic=98682.0]23.0.0 Release Thread[/url][/size]
+[size=5pt]Previous [url=https://www.hard-light.net/forums/index.php?topic=99015.0]23.2.1 Release Thread[/url][/size]
 
 Launchers, if you don't have one already:
-[b]All platforms: [/b] For every day use, we recommend [url=https://www.hard-light.net/forums/index.php?topic=94068.0]Knossos[/url], an integrated solution for downloading and launching mods.
+[b]All platforms: [/b] For every day use, we recommend [url=https://knossosnet.github.io/Knossos-Release-Page/]Knossos.NET[/url], an integrated solution for downloading and launching mods.
 
 [hidden=Alternative Launchers]
-Cross-platform: [url=https://www.hard-light.net/forums/index.php?topic=89162]wxLauncher 0.12.x Test Build[/url] (ongoing project for a unified launcher, you should upgrade to the latest RC/test build if you have not yet)
+Cross-platform: [url=https://www.hard-light.net/forums/index.php?topic=89162]wxLauncher 0.12.x Test Build[/url] (legacy project for a unified launcher)
 [b]Important:[/b] For best compatibility with FSO 3.8 and later you should use at least wxLauncher 0.12.
 
 Windows:  [url=http://scp.fsmods.net/builds/Launcher55g.zip]Launcher 5.5g[/url] ([url=https://scp.indiegames.us/builds/Launcher55g.zip]Mirror[/url]) ([url=https://www.mediafire.com/?wdvzn7hhhzh418m]Mirror[/url]) Not compatible with Windows 8+, use wxLauncher above
@@ -41,7 +41,7 @@ Linux:  [url=https://www.hard-light.net/forums/index.php/topic,53206.0.html]YAL[
 
 [b]What are those SSE, SSE2 and AVX builds I keep seeing everywhere?[/b]
 [url=https://www.hard-light.net/forums/index.php?topic=65628.0]Your answer is in this topic.[/url]
-Don't want to deal with that? Use [url=https://www.hard-light.net/forums/index.php?topic=94068.0]Knossos[/url] and it will download the best build specifically for your PC!
+Don't want to deal with that? Use [url=https://knossosnet.github.io/Knossos-Release-Page/]Knossos.NET[/url] and it will download the best build specifically for your PC!
 [/hidden]
 
 [img]https://scp.indiegames.us/img/linux-icon.png[/img] [color=green][size=12pt]Linux 64-bit[/size][/color]

@@ -37,6 +37,8 @@ typedef struct cutscene_info
 
 extern SCP_vector<cutscene_info> Cutscenes;
 
+extern bool Movie_active;
+
 // initializa table data
 void cutscene_init();
 
@@ -47,5 +49,7 @@ void cutscenes_screen_close();
 void cutscenes_screen_do_frame();
 
 void cutscene_mark_viewable(const char* filename);
+
+int get_cutscene_index_by_name(const char* name);
 
 #endif

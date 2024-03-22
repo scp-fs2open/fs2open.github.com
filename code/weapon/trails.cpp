@@ -32,7 +32,7 @@ void trail_info_init(trail_info* t_info) {
 	t_info->a_end = 0.0f;
 	t_info->a_decay_exponent = 1.0f;
 	t_info->max_life = 0.0f;
-	t_info->stamp = 0;
+	t_info->spew_duration = 0;
 	generic_bitmap_init(&t_info->texture);
 	t_info->texture_stretch = 1.0f;
 	t_info->n_fade_out_sections = 0;
@@ -86,7 +86,7 @@ trail *trail_create(trail_info *info, bool const_vel)
 	trailp->head = 0;	
 	trailp->object_died = false;		
 	trailp->single_segment = const_vel && info->a_decay_exponent == 1.0f && info->spread == 0.0f && info->n_fade_out_sections == 0;
-	trailp->trail_stamp = timestamp(trailp->info.stamp);
+	trailp->trail_stamp = _timestamp(trailp->info.spew_duration);
 
 	//Add it to the front of the list
 	//This is quickest since there are no prev vars
@@ -191,7 +191,7 @@ void trail_render( trail * trailp )
 		verts[2].world = bbot;
 		verts[3].world = btop;
 
-		float uv_scale = (total_len / speed / ((float)ti->stamp / 1000.0f)) / ti->texture_stretch;
+		float uv_scale = (total_len / speed / (i2fl(ti->spew_duration) / MILLISECONDS_PER_SECOND)) / ti->texture_stretch;
 
 		verts[0].texture_position.u = trailp->val[front] * uv_scale;
 		verts[1].texture_position.u = trailp->val[front] * uv_scale;
@@ -476,6 +476,7 @@ void trail_render_all()
 		trail_render(trailp);
 	}
 }
+
 int trail_stamp_elapsed(trail *trailp)
 {
 	return timestamp_elapsed(trailp->trail_stamp);
@@ -483,5 +484,5 @@ int trail_stamp_elapsed(trail *trailp)
 
 void trail_set_stamp(trail *trailp)
 {
-	trailp->trail_stamp = timestamp(trailp->info.stamp);
+	trailp->trail_stamp = _timestamp(trailp->info.spew_duration);
 }

@@ -457,11 +457,10 @@ ADE_INDEXER(l_Mission_ParsedShips, "number/string IndexOrName", "Gets parsed shi
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
 
-	auto pobjp = mission_parse_get_parse_object(name);
-
-	if (pobjp)
+	auto ship_entry = ship_registry_get(name);
+	if (ship_entry)
 	{
-		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(pobjp)));
+		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(ship_entry->p_objp_or_null())));
 	}
 	else
 	{
@@ -544,7 +543,7 @@ ADE_INDEXER(l_Mission_WaypointLists, "number/string IndexOrWaypointListName", "A
 
 	wpl = waypointlist_h(name);
 
-	if (!wpl.IsValid()) {
+	if (!wpl.isValid()) {
 		char* end_ptr;
 		auto idx = (int)strtol(name, &end_ptr, 10);
 		if (end_ptr != name && idx >= 1) {
@@ -553,7 +552,7 @@ ADE_INDEXER(l_Mission_WaypointLists, "number/string IndexOrWaypointListName", "A
 		}
 	}
 
-	if (wpl.IsValid()) {
+	if (wpl.isValid()) {
 		return ade_set_args(L, "o", l_WaypointList.Set(wpl));
 	}
 
@@ -925,7 +924,7 @@ ADE_FUNC(sendMessage,
 		if (!ade_get_args(L, "oo|fob", l_Ship.GetPtr(&ship_h), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
 			return ADE_RETURN_FALSE;
 
-		if (ship_h == nullptr || !ship_h->IsValid())
+		if (ship_h == nullptr || !ship_h->isValid())
 			return ADE_RETURN_FALSE;
 
 		sender = &Ships[ship_h->objp->instance];
@@ -1156,7 +1155,7 @@ ADE_FUNC(createDebris,
 	{
 		ade_get_args(L, "|o", l_Ship.GetPtr(&source_ship));
 
-		if (source_ship == nullptr || !source_ship->IsValid())
+		if (source_ship == nullptr || !source_ship->isValid())
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
 		source_shipp = &Ships[source_ship->objp->instance];
@@ -1177,7 +1176,7 @@ ADE_FUNC(createDebris,
 	{
 		ade_get_args(L, "|o", l_Model.GetPtr(&mh));
 
-		if (mh == nullptr || !mh->IsValid())
+		if (mh == nullptr || !mh->isValid())
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
 		model_num = mh->GetID();
@@ -1186,7 +1185,7 @@ ADE_FUNC(createDebris,
 	{
 		ade_get_args(L, "|o", l_Submodel.GetPtr(&smh));
 
-		if (smh == nullptr || !smh->IsValid())
+		if (smh == nullptr || !smh->isValid())
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
 		model_num = smh->GetModelID();
@@ -1225,7 +1224,7 @@ ADE_FUNC(createDebris,
 
 	if (create_flags != nullptr)
 	{
-		if (!create_flags->IsValid() || !create_flags->value)
+		if (!create_flags->isValid() || !create_flags->value)
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
 		is_hull = (*create_flags->value & LE_DC_IS_HULL);
@@ -1267,7 +1266,7 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 
 	// determine where we need to create it - it looks like we were given a waypoint list but not a waypoint itself
 	int waypoint_instance = -1;
-	if (wlh && wlh->IsValid())
+	if (wlh && wlh->isValid())
 	{
 		int wp_list_index = find_index_of_waypoint_list(wlh->wlp);
 		int wp_index = (int) wlh->wlp->get_waypoints().size() - 1;
@@ -1304,7 +1303,7 @@ ADE_FUNC(createWeapon,
 		real_orient = orient->GetMatrix();
 	}
 
-	int parent_idx = (parent && parent->IsValid()) ? OBJ_INDEX(parent->objp) : -1;
+	int parent_idx = (parent && parent->isValid()) ? OBJ_INDEX(parent->objp) : -1;
 
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
@@ -1412,7 +1411,7 @@ ADE_FUNC(createExplosion,
 
 	int type = big ? FIREBALL_LARGE_EXPLOSION : FIREBALL_MEDIUM_EXPLOSION;
 
-	int parent_idx = (parent && parent->IsValid()) ? OBJ_INDEX(parent->objp) : -1;
+	int parent_idx = (parent && parent->isValid()) ? OBJ_INDEX(parent->objp) : -1;
 
 	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
 
@@ -1935,6 +1934,52 @@ ADE_FUNC(getMissionModifiedDate, l_Mission, NULL, "Get the modified date of the 
 	return ade_set_args(L, "s", The_mission.modified);
 }
 
+//****SUBLIBRARY: Mission/BackgroundSuns
+ADE_LIB_DERIV(l_Mission_BackgroundSuns, "BackgroundSuns", nullptr, "Suns in the current background", l_Mission);
+
+ADE_INDEXER(l_Mission_BackgroundSuns, "number Index", "Gets background sun at specified index in current background", "background_element", "Specified background element, or invalid handle if invalid index")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	if (idx < 1 || idx > stars_get_num_suns())
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	//Lua->FS2
+	idx--;
+
+	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Sun, idx)));
+}
+
+ADE_FUNC(__len, l_Mission_BackgroundSuns, nullptr, "Number of suns in the current background", "number", "Number of suns")
+{
+	return ade_set_args(L, "i", stars_get_num_suns());
+}
+
+//****SUBLIBRARY: Mission/BackgroundBitmaps
+ADE_LIB_DERIV(l_Mission_BackgroundBitmaps, "BackgroundBitmaps", nullptr, "Bitmaps in the current background", l_Mission);
+
+ADE_INDEXER(l_Mission_BackgroundBitmaps, "number Index", "Gets background bitmap at specified index in current background", "background_element", "Specified background element, or invalid handle if invalid index")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	if (idx < 1 || idx > stars_get_num_bitmaps())
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+
+	//Lua->FS2
+	idx--;
+
+	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
+}
+
+ADE_FUNC(__len, l_Mission_BackgroundBitmaps, nullptr, "Number of bitmaps in the current background", "number", "Number of bitmaps")
+{
+	return ade_set_args(L, "i", stars_get_num_bitmaps());
+}
+
 static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
@@ -2162,7 +2207,7 @@ ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl e
 	if (!ade_get_args(L, "o", l_Enum.Get(&score)))
 		return ADE_RETURN_NIL;
 
-	if (!score.IsValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
+	if (!score.isValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
 	{
 		Warning(LOCATION, "Invalid music score index %d", score.index);
 		return ADE_RETURN_NIL;
@@ -2184,7 +2229,7 @@ ADE_FUNC(setMusicScore, l_Mission, "enumeration score, string name", "Sets the m
 	if (!ade_get_args(L, "os", l_Enum.Get(&score), &name))
 		return ADE_RETURN_NIL;
 
-	if (!score.IsValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
+	if (!score.isValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
 	{
 		Warning(LOCATION, "Invalid music score index %d", score.index);
 		return ADE_RETURN_NIL;

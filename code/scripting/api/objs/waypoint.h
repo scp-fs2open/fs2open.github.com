@@ -17,7 +17,7 @@ struct waypointlist_h
 	waypointlist_h();
 	explicit waypointlist_h(waypoint_list *n_wlp);
 	explicit waypointlist_h(const char* wlname);
-	bool IsValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_WaypointList, waypointlist_h);

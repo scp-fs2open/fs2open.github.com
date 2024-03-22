@@ -66,7 +66,7 @@ namespace Model {
         Turret_use_ammo,			// enables ammo consumption for turrets (DahBlount)
         Autorepair_if_disabled,		// Allows the subsystem to repair itself even if disabled (MageKing17)
         No_autorepair_if_disabled,	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
-        Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
+        Share_fire_direction,		// (DahBlount) Whenever the turret fires a beam, make all beams fire in the same direction.
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
 		No_impact_debris,    // Don't spawn the small debris on impact - m!m
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi

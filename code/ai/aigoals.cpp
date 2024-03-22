@@ -751,6 +751,9 @@ void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_
 	if ( target_name != NULL )
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
 
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Player_orders_afterburn_hard])
+		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+
 
 	// special case certain orders from player so that ships continue to do the right thing
 

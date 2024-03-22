@@ -51,7 +51,7 @@ ADE_VIRTVAR(Name, l_Message, "string", "The name of the message as specified in 
 	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Messages[idx].name);
@@ -66,7 +66,7 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 	if (!ade_get_args(L, "o|s", l_Message.Get(&idx), &newText))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
 	if (ADE_SETTING_VAR && newText != NULL)
@@ -89,7 +89,7 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Soundfile.GetPtr(&sndIdx)))
 		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	MissionMessage* msg = &Messages[idx];
@@ -129,7 +129,7 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Persona.Get(&newPersona)))
 		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < (int)Personas.size())
@@ -147,7 +147,7 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 	if (!ade_get_args(L, "o|b", l_Message.Get(&idx), &replace))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
 	if (!replace)

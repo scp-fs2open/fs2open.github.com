@@ -152,6 +152,9 @@ class HookImpl : public HookBase {
 	template <typename... Args>
 	int run(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
+		if (!Scripting_game_init_run)
+			return 0;
+
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
 
@@ -183,6 +186,9 @@ class HookImpl<void> : public HookBase {
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
+		if (!Scripting_game_init_run)
+			return 0;
+
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
 
@@ -239,6 +245,9 @@ class OverridableHookImpl : public Hook<condition_t> {
 	template <typename... Args>
 	bool isOverride(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
+		if (!Scripting_game_init_run)
+			return false;
+
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
 
@@ -270,6 +279,9 @@ protected:
 	template <typename... Args>
 	bool isOverride(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
+		if (!Scripting_game_init_run)
+			return false;
+
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
 

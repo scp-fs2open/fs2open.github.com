@@ -56,7 +56,7 @@ static bool Use_3D_shockwaves = true;
 static auto Shockwave3DMode __UNUSED = options::OptionBuilder<bool>("Graphics.3DShockwaves",
                      std::pair<const char*, int>{"Shockwaves", 1722},
                      std::pair<const char*, int>{"The way shockwaves are displayed", 1723})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .display(shockwave_mode_display)
                      .default_val(true)
                      .bind_to_once(&Use_3D_shockwaves)
@@ -93,10 +93,10 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 
 	// try 2D shockwave first, then fall back to 3D, then fall back to default of either
 	// this should be pretty fool-proof and allow quick change between 2D and 3D effects
-	if ( strlen(sci->name) )
+	if ( VALID_FNAME(sci->name) )
 		info_index = shockwave_load(sci->name, false);
 
-	if ( (info_index < 0) && strlen(sci->pof_name) )
+	if ( (info_index < 0) && VALID_FNAME(sci->pof_name) )
 		info_index = shockwave_load(sci->pof_name, true);
 
 	if (info_index < 0) {
@@ -752,13 +752,13 @@ void shockwave_create_info_load(shockwave_create_info *sci)
 {
 	int i = -1;
 
-	// shockwave_load() will return -1 if the filename is "none" or "<none>"
+	// shockwave_load() will return -1 if the filename is "" or "none" or "<none>"
 	// checking for that case lets us handle a situation where a 2D shockwave
 	// of "none" was specified and a valid 3D shockwave was specified
 
-	if ( strlen(sci->name) )
+	if ( VALID_FNAME(sci->name) )
 		i = shockwave_load(sci->name, false);
 
-	if ( (i < 0) && strlen(sci->pof_name) )
+	if ( (i < 0) && VALID_FNAME(sci->pof_name) )
 		shockwave_load(sci->pof_name, true);
 }

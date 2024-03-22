@@ -119,8 +119,7 @@ int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying
 
 // misc data
-active_game* Active_game_head;									// linked list of active games displayed on Join screen
-int Active_game_count;												// for interface screens as well
+SCP_list<active_game> Active_games;							// list of active games displayed on the Join screen
 CFILE* Multi_chat_stream;											// for streaming multiplayer chat strings to a file
 int Multi_connection_speed;										// connection speed of this machine.
 int Multi_num_players_at_start = 0;								// the # of players present (kept track of only on the server) at the very start of the mission
@@ -249,7 +248,7 @@ void multi_vars_init()
 	Multi_current_file_checksum = 0;
 	Multi_current_file_length = -1;
 
-	Active_game_head = NULL;
+	Active_games.clear();
 	Game_server_head = NULL;
 
 	// only the server should ever care about this

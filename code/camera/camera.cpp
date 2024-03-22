@@ -64,7 +64,7 @@ static SCP_string fov_display(float val)
 auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 std::pair<const char*, int>{"Field Of View", 1703},
 					 std::pair<const char*, int>{"The vertical field of view", 1704})
-					 .category("Graphics")
+					 .category(std::make_pair("Graphics", 1825))
 					 .range(0.436332f, 1.5708f)
 					 .change_listener([](const float& val, bool) {
 					      VIEWER_ZOOM_DEFAULT = val;
@@ -301,7 +301,7 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 
 			// if we have a host, we need the difference between the camera's current orient and the orient we want
 			// if not, we will later set the absolute orientation, rather than the orientation relative to the host
-			if (object_host.IsValid())
+			if (object_host.isValid())
 			{
 				vm_transpose(orient);
 				temp_matrix = temp_matrix * *orient;
@@ -324,7 +324,7 @@ void camera::do_frame(float  /*in_frametime*/)
 
 object *camera::get_object_host()
 {
-	if(object_host.IsValid())
+	if(object_host.isValid())
 		return object_host.objp;
 	else
 		return NULL;
@@ -337,7 +337,7 @@ int camera::get_object_host_submodel()
 
 object *camera::get_object_target()
 {
-	if(object_target.IsValid())
+	if(object_target.isValid())
 		return object_target.objp;
 	else
 		return NULL;
@@ -373,7 +373,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 	bool use_host_orient = false;
 
 	//POSITION
-	if(!(flags & CAM_STATIONARY_POS) || object_host.IsValid())
+	if(!(flags & CAM_STATIONARY_POS) || object_host.isValid())
 	{
 		c_pos = vmd_zero_vector;
 
@@ -382,7 +382,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 		pos_y.get(&pt.xyz.y, NULL);
 		pos_z.get(&pt.xyz.z, NULL);
 
-		if(object_host.IsValid())
+		if(object_host.isValid())
 		{
 			object *objp = object_host.objp;
 			int model_num = object_get_model(objp);
@@ -444,9 +444,9 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 	if(orientation != NULL)
 	{
 		bool target_set = false;
-		if(!(flags & CAM_STATIONARY_ORI) || object_target.IsValid() || object_host.IsValid())
+		if(!(flags & CAM_STATIONARY_ORI) || object_target.isValid() || object_host.isValid())
 		{
-			if(object_target.IsValid())
+			if(object_target.isValid())
 			{
 				object *target_objp = object_target.objp;
 				int model_num = object_get_model(target_objp);
@@ -481,7 +481,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 				vm_vector_2_matrix(&c_ori, &targetvec, NULL, NULL);
 				target_set = true;
 			}
-			else if(object_host.IsValid())
+			else if(object_host.isValid())
 			{
 				if(eyep)
 				{
@@ -754,7 +754,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		//Get text size
 		for(int i = 0; i < num_text_lines; i++)
 		{
-			gr_get_string_size(&w, &h, text_line_ptrs[i], text_line_lens[i]);
+			gr_get_string_size(&w, &h, text_line_ptrs[i], static_cast<size_t>(text_line_lens[i]));
 
 			if(w > tw)
 				tw = w;
@@ -1011,7 +1011,7 @@ int camid::getSignature()
 	return sig;
 }
 
-bool camid::isValid()
+bool camid::isValid() const
 {
 	if(idx >= Cameras.size())
 		return false;
@@ -1203,7 +1203,7 @@ vec3d normal_cache;
 void get_turret_cam_pos(camera *cam, vec3d *pos)
 {
 	object_h obj(cam->get_object_host());
-	if(!obj.IsValid())
+	if(!obj.isValid())
 		return;
 	ship* shipp = &Ships[cam->get_object_host()->instance];
 	ship_subsys* ssp = GET_FIRST(&shipp->subsys_list);
@@ -1211,7 +1211,7 @@ void get_turret_cam_pos(camera *cam, vec3d *pos)
 	{
 		if(ssp->system_info->subobj_num == cam->get_object_host_submodel())
 		{
-			ship_get_global_turret_gun_info(cam->get_object_host(), ssp, pos, &normal_cache, 1, NULL);
+			ship_get_global_turret_gun_info(cam->get_object_host(), ssp, pos, true, &normal_cache, true, nullptr);
 			vec3d offset = vmd_zero_vector;
 			offset.xyz.x = 0.0001f;
 			vm_vec_add2(pos, &offset); // prevent beam turrets from crashing with a nullvec
@@ -1224,7 +1224,7 @@ void get_turret_cam_pos(camera *cam, vec3d *pos)
 void get_turret_cam_orient(camera *cam, matrix *ori)
 {
 	object_h obj(cam->get_object_host());
-	if(!obj.IsValid())
+	if(!obj.isValid())
 		return;
 	vm_vector_2_matrix(ori, &normal_cache, vm_vec_same(&normal_cache, &cam->get_object_host()->orient.vec.uvec)?NULL:&cam->get_object_host()->orient.vec.uvec, NULL);
 }

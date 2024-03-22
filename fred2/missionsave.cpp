@@ -34,6 +34,7 @@
 #include "lighting/lighting_profiles.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
+#include "math/bitarray.h"
 #include "math/vecmat.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
@@ -871,9 +872,6 @@ int CFred_mission_save::save_asteroid_fields()
 
 int CFred_mission_save::save_bitmaps()
 {
-	int i;
-	uint j;
-
 	fred_parse_flag = 0;
 	required_string_fred("#Background bitmaps");
 	parse_comments(2);
@@ -913,7 +911,8 @@ int CFred_mission_save::save_bitmaps()
 			} else {
 				fout("\n+Neb2Flags:");
 			}
-			fout(" %d", Neb2_poof_flags);
+			int flags = bit_array_as_int(Neb2_poof_flags.get(), Poof_info.size());
+			fout(" %d", flags);
 		} else {
 			if (optional_string_fred("+Neb2 Poofs List:")) {
 				parse_comments();
@@ -921,8 +920,8 @@ int CFred_mission_save::save_bitmaps()
 				fout("\n+Neb2 Poofs List:");
 			}
 			fout(" (");
-			for (i = 0; i < (int)Poof_info.size(); ++i) {
-				if (Neb2_poof_flags & (1 << i)) {
+			for (size_t i = 0; i < Poof_info.size(); ++i) {
+				if (get_bit(Neb2_poof_flags.get(), i)) {
 					fout(" \"%s\" ", Poof_info[i].name);
 				}
 			}
@@ -960,8 +959,8 @@ int CFred_mission_save::save_bitmaps()
 	fso_comment_pop();
 
 	// Goober5000 - save all but the lowest priority using the special comment tag
-	for (i = 0; i < (int)Backgrounds.size(); i++) {
-		bool tag = (i < (int)Backgrounds.size() - 1);
+	for (size_t i = 0; i < Backgrounds.size(); i++) {
+		bool tag = (i < Backgrounds.size() - 1);
 		background_t *background = &Backgrounds[i];
 
 		// each background should be preceded by this line so that the suns/bitmaps are partitioned correctly
@@ -977,9 +976,7 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save our flags
-		if (Mission_save_format == FSO_FORMAT_RETAIL) {
-			MessageBox(nullptr, "Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
-		} else if (background->flags.any_set()) {
+		if (Mission_save_format == FSO_FORMAT_STANDARD && background->flags.any_set()) {
 			if (optional_string_fred("+Flags:")) {
 				parse_comments();
 			} else {
@@ -993,9 +990,8 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save suns by filename
-		for (j = 0; j < background->suns.size(); j++) {
+		for (size_t j = 0; j < background->suns.size(); j++) {
 			starfield_list_entry *sle = &background->suns[j];
-
 
 			// filename
 			required_string_fred("$Sun:");
@@ -1006,7 +1002,7 @@ int CFred_mission_save::save_bitmaps()
 			required_string_fred("+Angles:");
 			parse_comments();
 			angles ang = sle->ang;
-			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			if (Mission_save_format != FSO_FORMAT_STANDARD || !background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
 				stars_uncorrect_background_sun_angles(&ang);
 			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
@@ -1017,7 +1013,7 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save background bitmaps by filename
-		for (j = 0; j < background->bitmaps.size(); j++) {
+		for (size_t j = 0; j < background->bitmaps.size(); j++) {
 			starfield_list_entry *sle = &background->bitmaps[j];
 
 			// filename
@@ -1029,7 +1025,7 @@ int CFred_mission_save::save_bitmaps()
 			required_string_fred("+Angles:");
 			parse_comments();
 			angles ang = sle->ang;
-			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			if (Mission_save_format != FSO_FORMAT_STANDARD || !background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
 				stars_uncorrect_background_bitmap_angles(&ang);
 			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
@@ -2609,6 +2605,18 @@ int CFred_mission_save::save_mission_file(const char *pathname)
 	}
 	strcat_s(savepath, "saving.xxx");
 
+	// only display this warning once, and only when the user explicitly saves, as opposed to autosave
+	static bool Displayed_retail_background_warning = false;
+	if (Mission_save_format != FSO_FORMAT_STANDARD && !Displayed_retail_background_warning) {
+		for (const auto &bg : Backgrounds) {
+			if (bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
+				MessageBox(nullptr, "Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
+				Displayed_retail_background_warning = true;
+				break;
+			}
+		}
+	}
+
 	save_mission_internal(savepath);
 
 	if (!err) {
@@ -3305,7 +3313,7 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_custom_data()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL && !The_mission.custom_data.empty()) {
+	if (Mission_save_format != FSO_FORMAT_RETAIL && (!The_mission.custom_data.empty() || !The_mission.custom_strings.empty())) {
 		if (optional_string_fred("#Custom Data", "#End")) {
 			parse_comments(2);
 		} else {

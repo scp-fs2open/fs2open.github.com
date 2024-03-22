@@ -57,6 +57,7 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
 														  { "event",        OPF_EVENT_NAME },
 														  { "child_enum",   OPF_CHILD_LUA_ENUM },
+                                                          { "custom_string",OPF_MISSION_CUSTOM_STRING },
 														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
@@ -314,6 +315,16 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_CHILD_LUA_ENUM: {
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
+	}
+	case OPF_MISSION_CUSTOM_STRING: {
+		auto cs = get_custom_string_by_name(CTEXT(node));
+		auto table = luacpp::LuaTable::create(_action.getLuaState());
+
+		table.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->name));
+		table.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->value));
+		table.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->text));
+
+		return table;
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {

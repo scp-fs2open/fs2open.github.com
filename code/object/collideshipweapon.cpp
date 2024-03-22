@@ -20,6 +20,7 @@
 #include "object/object.h"
 #include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/model.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -476,6 +477,10 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 		bool ship_override = false, weapon_override = false;
 
+		// get submodel handle if scripting needs it
+		bool has_submodel = (mc.hit_submodel >= 0);
+		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
+
 		if (scripting::hooks::OnWeaponCollision->isActive()) {
 			ship_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
@@ -485,12 +490,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
 		if (scripting::hooks::OnShipCollision->isActive()) {
-			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
+			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 					scripting::hook_param("Object", 'o', ship_objp),
 					scripting::hook_param("Ship", 'o', ship_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
 
 		if(!ship_override && !weapon_override) {
@@ -511,12 +517,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
 		if (scripting::hooks::OnShipCollision->isActive() && !ship_override) {
-			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
+			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 					scripting::hook_param("Object", 'o', ship_objp),
 					scripting::hook_param("Ship", 'o', ship_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {

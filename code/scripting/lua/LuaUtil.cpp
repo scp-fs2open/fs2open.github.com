@@ -55,7 +55,9 @@ lua_State* getMainThread(lua_State* L)
 	lua_rawget(L, LUA_REGISTRYINDEX);
 
 	auto state = lua_tothread(L, -1);
-	lua_pop(L, 1);
+
+	// Need to pop both the thread from L and the main thread to return the stack back to neutral
+	lua_pop(L, 2);
 
 	return state;
 }

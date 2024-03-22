@@ -100,7 +100,7 @@ int ds_get_sound_index(int channel_id);
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
 
-ds_sound_handle ds3d_play(int sid, int snd_id, vec3d* pos, vec3d* vel, float min, float max, int looping,
+ds_sound_handle ds3d_play(int sid, int snd_id, const vec3d* pos, const vec3d* vel, float min, float max, bool looping,
                           float max_volume, float estimated_vol, const EnhancedSoundData* enhanced_sound_data,
                           int priority = DS_MUST_PLAY, bool is_ambient = false);
 
