@@ -2522,6 +2522,28 @@ ADE_FUNC(runNetwork, l_UserInterface_MultiPXO, nullptr, "Runs the network comman
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getPXOLinks,
+	l_UserInterface_MultiPXO,
+	nullptr,
+	"Gets all the various PXO links and returns them as a table of strings",
+	"table",
+	"A table of URLs")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable urls = LuaTable::create(L);
+
+	int i = 1;
+	urls.addValue(i++, Multi_options_g.pxo_rank_url);
+	urls.addValue(i++, Multi_options_g.pxo_create_url);
+	urls.addValue(i++, Multi_options_g.pxo_verify_url);
+	urls.addValue(i++, Multi_options_g.pxo_banner_url);
+
+	return ade_set_args(L, "t", urls);
+}
+
 ADE_FUNC(getChat,
 	l_UserInterface_MultiPXO,
 	nullptr,
