@@ -238,14 +238,14 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 	new_op.value = free_op_index;
 	new_op.type = type;
 
+	sexp_help_struct new_help;
+	new_help.id = new_op.value;
+	new_help.help = sexp->getHelpText();
+
 	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
 
 	// Now actually add the operator to the SEXP containers
 	Operators.push_back(new_op);
-
-	sexp_help_struct new_help;
-	new_help.id = new_op.value;
-	new_help.help = sexp->getHelpText();
 	Sexp_help.push_back(new_help);
 
 	return new_op.value;
