@@ -346,6 +346,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "no impact debris",           Model::Subsystem_Flags::No_impact_debris,                   true, false },
 	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
 	{ "turret has distant firepoint", Model::Subsystem_Flags::Turret_distant_firepoint,         true, false },
+	{ "override submodel impact",   Model::Subsystem_Flags::Override_submodel_impact,           true, false },
 };
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
