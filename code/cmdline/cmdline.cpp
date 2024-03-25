@@ -1900,7 +1900,7 @@ bool SetCmdlineParams()
 		if (val > 0.1) {
 			VIEWER_ZOOM_DEFAULT = val;
 		} else {
-			VIEWER_ZOOM_DEFAULT = 0.75f;
+			VIEWER_ZOOM_DEFAULT = DEFAULT_FOV;
 		}
 	}
 
