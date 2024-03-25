@@ -20,6 +20,7 @@
 #include "sound/dscap.h"
 #include "sound/openal.h"
 #include "sound/sound.h" // jg18 - for enhanced sound
+#include "options/Option.h"
 
 
 typedef struct sound_buffer
@@ -173,6 +174,18 @@ ALuint AL_EFX_aux_id = 0;
 static ALuint AL_EFX_effect_id = 0;
 static bool Ds_active_env = false;
 static size_t Ds_active_env_idx = 0;
+
+bool Ingame_efx = false;
+
+static auto EnableEFXOption = options::OptionBuilder<bool>("Audio.EnableEFX",
+                     std::pair<const char*, int>{"Use Audio EFX", 1832},
+                     std::pair<const char*, int>{"Toggle whether OpenAL Audio EFX are used or not", 1833})
+                     .category(std::make_pair("Audio", 1826))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(false)
+                     .bind_to_once(&Ingame_efx)
+                     .importance(69)
+                     .finish();
 
 
 static void *al_load_function(const char *func_name)
@@ -400,6 +413,7 @@ int ds_init()
 	}
 
 	sample_rate = os_config_read_uint("Sound", "SampleRate", sample_rate);
+
 	attrList[1] = sample_rate;
 	SCP_string playback_device;
 	SCP_string capture_device;
@@ -455,7 +469,15 @@ int ds_init()
 
 	if ( alcIsExtensionPresent(ds_sound_device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
 		mprintf(("  Found extension \"ALC_EXT_EFX\".\n"));
-		Ds_use_eax = os_config_read_uint("Sound", "EnableEFX", Fred_running);
+		if (Using_in_game_options) {
+			if (Fred_running) {
+				Ds_use_eax = Fred_running;
+			} else {
+				Ds_use_eax = EnableEFXOption->getValue();
+			}
+		} else {
+			Ds_use_eax = os_config_read_uint("Sound", "EnableEFX", Fred_running);
+		}
 	}
 
 	if (Ds_use_eax == 1) {

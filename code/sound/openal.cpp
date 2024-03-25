@@ -2,6 +2,9 @@
 #include "globalincs/pstypes.h"
 #include "sound/openal.h"
 #include "osapi/osregistry.h"
+#include "options/Option.h"
+#include "parse/parselo.h"
+#include "libs/jansson.h"
 
 #include <string>
 #include <algorithm>
@@ -52,6 +55,155 @@ static SCP_vector<OALdevice> CaptureDevices;
 #define ALC_ALL_DEVICES_SPECIFIER                0x1013
 #endif
 
+// List of audio device names for the in-game option
+SCP_vector<SCP_string> PlaybackDeviceList;
+
+static int playbackdevice_deserializer(const json_t* value)
+{
+	const char* device;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "s", &device) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = openal_find_playback_device_by_name(device);
+
+	if (SCP_vector_inbounds(PlaybackDeviceList, id)) {
+		return id;
+	}
+
+	return -1;
+}
+static json_t* playbackdevice_serializer(int value)
+{
+	if (!SCP_vector_inbounds(PlaybackDeviceList, value)) {
+		return json_pack("s", "");
+	}
+	
+	return json_pack("s", PlaybackDeviceList[value].c_str());
+}
+static SCP_vector<int> playbackdevice_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(PlaybackDeviceList.size()); ++i) {
+		vals.push_back(i);
+	}
+	return vals;
+}
+static SCP_string playbackdevice_display(int id)
+{
+	if (!SCP_vector_inbounds(PlaybackDeviceList, id)) {
+		return "";
+	}
+	
+	SCP_string out;
+	sprintf(out, "(%d) %s", id + 1, PlaybackDeviceList[id].c_str());
+	return out;
+}
+static bool playbackdevice_change(int /*device*/, bool initial)
+{
+	if (initial) {
+		return false; // On game boot always return false
+	}
+
+	// Looking at ds.cpp's ds_init(), it's probably possible to not require a restart for this
+	// but for now let's keep this simple and just restart. If/when this is implemented the device
+	// parameter will be required. Currently playing audio will need to be copied from the old device
+	// to the new as part of the initialization. This will require deeper changes to the audio code
+	// which can be handled later in a follow-up PR.
+
+	return false;
+}
+static auto PlaybackDeviceOption = options::OptionBuilder<int>("Audio.PlaybackDevice",
+                     std::pair<const char*, int>{"Playback Device", 1834},
+                     std::pair<const char*, int>{"The device used for audio playback", 1835})
+                     .category(std::make_pair("Audio", 1826))
+                     .level(options::ExpertLevel::Beginner)
+                     .deserializer(playbackdevice_deserializer)
+                     .serializer(playbackdevice_serializer)
+                     .enumerator(playbackdevice_enumerator)
+                     .display(playbackdevice_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_val(0)
+                     .change_listener(playbackdevice_change)
+                     .importance(99)
+                     .finish();
+
+// List of audio device names for the in-game option
+SCP_vector<SCP_string> CaptureDeviceList;
+
+static int capturedevice_deserializer(const json_t* value)
+{
+	const char* device;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "s", &device) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = openal_find_capture_device_by_name(device);
+
+	if (SCP_vector_inbounds(CaptureDeviceList, id)) {
+		return id;
+	}
+
+	return -1;
+}
+static json_t* capturedevice_serializer(int value)
+{
+	if (!SCP_vector_inbounds(CaptureDeviceList, value)) {
+		return json_pack("s", "");
+	}
+	
+	return json_pack("s", CaptureDeviceList[value].c_str());
+}
+static SCP_vector<int> capturedevice_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(CaptureDeviceList.size()); ++i) {
+		vals.push_back(i);
+	}
+	return vals;
+}
+static SCP_string capturedevice_display(int id)
+{
+	if (!SCP_vector_inbounds(CaptureDeviceList, id)) {
+		return "";
+	}
+	
+	SCP_string out;
+	sprintf(out, "(%d) %s", id + 1, CaptureDeviceList[id].c_str());
+	return out;
+}
+static bool capturedevice_change(int /*device*/, bool initial)
+{
+	if (initial) {
+		return false; // On game boot always return false
+	}
+
+	// Looking at ds.cpp's ds_init(), it's probably possible to not require a restart for this
+	// but for now let's keep this simple and just restart. If/when this is implemented the device
+	// parameter will be required. Currently playing audio will need to be copied from the old device
+	// to the new as part of the initialization. This will require deeper changes to the audio code
+	// which can be handled later in a follow-up PR.
+
+	return false;
+}
+static auto CaptureDeviceOption = options::OptionBuilder<int>("Audio.CaptureDevice",
+                     std::pair<const char*, int>{"Capture Device", 1836},
+                     std::pair<const char*, int>{"The device used for audio capture", 1837})
+                     .category(std::make_pair("Audio", 1826))
+                     .level(options::ExpertLevel::Beginner)
+                     .deserializer(capturedevice_deserializer)
+                     .serializer(capturedevice_serializer)
+                     .enumerator(capturedevice_enumerator)
+                     .display(capturedevice_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_val(0)
+                     .change_listener(capturedevice_change)
+                     .importance(99)
+                     .finish();
 
 //--------------------------------------------------------------------------
 // openal_error_string()
@@ -116,7 +268,20 @@ static bool openal_device_sort_func(const OALdevice &d1, const OALdevice &d2)
 
 static void find_playback_device(OpenALInformation* info)
 {
-	const char *user_device = os_config_read_string( "Sound", "PlaybackDevice", NULL );
+	// First, build a list of device names for the in-game option to use and pull from
+	for (auto& device : info->playback_devices) {
+		OALdevice new_device(device.c_str());
+		PlaybackDeviceList.push_back(new_device.device_name);
+	}
+	
+	const char* user_device = os_config_read_string("Sound", "PlaybackDevice", nullptr);
+
+	if (Using_in_game_options) {
+		if (SCP_vector_inbounds(PlaybackDeviceList, PlaybackDeviceOption->getValue())) {
+			user_device = PlaybackDeviceList[PlaybackDeviceOption->getValue()].c_str();
+		}
+	}
+
 	const char *default_device = info->default_playback_device.c_str();
 
 	// in case they are the same, we only want to test it once
@@ -215,7 +380,20 @@ static void find_playback_device(OpenALInformation* info)
 
 static void find_capture_device(OpenALInformation* info)
 {
-	const char *user_device = os_config_read_string( "Sound", "CaptureDevice", NULL );
+	// First, build a list of device names for the in-game option to use and pull from
+	for (auto& device : info->capture_devices) {
+		OALdevice new_device(device.c_str());
+		CaptureDeviceList.push_back(new_device.device_name);
+	}
+	
+	const char* user_device = os_config_read_string("Sound", "CaptureDevice", nullptr);
+
+	if (Using_in_game_options) {
+		if (SCP_vector_inbounds(CaptureDevices, CaptureDeviceOption->getValue())) {
+			user_device = CaptureDevices[CaptureDeviceOption->getValue()].device_name.c_str();
+		}
+	}
+
 	const char *default_device = info->default_capture_device.c_str();
 
 	// in case they are the same, we only want to test it once
@@ -264,6 +442,30 @@ static void find_capture_device(OpenALInformation* info)
 
 		break;
 	}
+}
+
+// find a playback device's vector index
+int openal_find_playback_device_by_name(const SCP_string& device)
+{
+	for (int i = 0; i < static_cast<int>(PlaybackDeviceList.size()); i++) {
+		if (!stricmp(PlaybackDeviceList[i].c_str(), device.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+// find a capture device's vector index
+int openal_find_capture_device_by_name(const SCP_string& device)
+{
+	for (int i = 0; i < static_cast<int>(CaptureDeviceList.size()); i++) {
+		if (!stricmp(CaptureDeviceList[i].c_str(), device.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 // initializes hardware device from perferred/default/enumerated list
