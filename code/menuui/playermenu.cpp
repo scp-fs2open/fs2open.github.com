@@ -408,7 +408,7 @@ void player_select_do()
 	}
 
 	if (!Ingame_options_save_found && Using_in_game_options) {
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("In-game Options are enabled but a save file could not be found. You may need to update your settings in the Options menu.", 1816));
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("In-game Options are enabled but a save file could not be found. You may need to update your settings in the Options menu.", 1842));
 	}
 		
 	// set the input box at the "virtual" line 0 to be active so the player can enter a callsign
