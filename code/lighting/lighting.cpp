@@ -314,7 +314,7 @@ void light_rotate_all()
  */
 int light_get_global_count()
 {
-	return (int)Static_light.size();
+	return static_cast<int>(Static_light.size());
 }
 
 /**
