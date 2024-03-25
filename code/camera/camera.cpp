@@ -82,9 +82,9 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 bool Use_cockpit_fov = false;
 
 auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
-					 std::pair<const char*, int>{"Cockpit FOV Toggle", -1},
-					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", -1})
-					 .category("Graphics")
+					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
+					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
+					 .category(std::make_pair("Graphics", 1825))
 					 .default_val(false)
 					 .change_listener([](bool val, bool) {
 					      if (!val) {
@@ -98,9 +98,9 @@ auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVT
 					 .finish();
 
 auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
-					 std::pair<const char*, int>{"Cockpit Field Of View", -1}, // Do XSTR before merging
-					 std::pair<const char*, int>{"The vertical field of view for cockpit rendering. Only works if cockpits are active and cockpit FOV toggle is turned on.", -1})
-					 .category("Graphics")
+					 std::pair<const char*, int>{"Cockpit Field Of View", 1840},
+					 std::pair<const char*, int>{"The vertical field of view for cockpit rendering. Only works if cockpits are active and cockpit FOV toggle is turned on.", 1841})
+					 .category(std::make_pair("Graphics", 1825))
 					 .range(0.436332f, 1.5708f)
 					 .change_listener([](const float& val, bool) {
 					      if (Use_cockpit_fov){
