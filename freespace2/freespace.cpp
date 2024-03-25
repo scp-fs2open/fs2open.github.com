@@ -665,16 +665,14 @@ float Supernova_last_glare = 0.0f;
 void game_sunspot_process(float frametime)
 {
 	TRACE_SCOPE(tracing::SunspotProcess);
-	int n_lights, idx;
 	float Sun_spot_goal = 0.0f;
 
-	int sun_idx = 0;
-	int light_idx = light_find_for_sun(sun_idx);
-	Assertion(light_idx >= 0, "Could not find sun for light index %d!", sun_idx);
+	int supernova_sun_idx = 0;
+	int supernova_light_idx = light_find_for_sun(supernova_sun_idx);
 
 	// supernova
 	auto sn_stage = supernova_stage();
-	if (sn_stage != SUPERNOVA_STAGE::NONE) {
+	if (sn_stage != SUPERNOVA_STAGE::NONE && supernova_light_idx >= 0) {
 		// sunspot differently based on supernova stage
 		switch (sn_stage) {
 		// this case is only here to make gcc happy - apparently it doesn't know we already checked for it
@@ -689,7 +687,7 @@ void game_sunspot_process(float frametime)
 			pct = supernova_sunspot_pct();
 
 			vec3d light_dir;				
-			light_get_global_dir(&light_dir, light_idx);
+			light_get_global_dir(&light_dir, supernova_light_idx);
 			float dot;
 			dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
 			
@@ -702,9 +700,9 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
-			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, light_idx ) )	{
+			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, supernova_light_idx ) )	{
 				// draw the glow for this sun
-				stars_draw_sun_glow(sun_idx);
+				stars_draw_sun_glow(supernova_sun_idx);
 			}
 
 			Supernova_last_glare = Sun_spot_goal;
@@ -741,24 +739,27 @@ void game_sunspot_process(float frametime)
 		Sun_spot_goal = 0.0f;
 		if ( Sun_drew )	{
 			// check sunspots for all suns
-			n_lights = light_get_global_count();
+			int n_lights = light_get_global_count();
 
 			// check
-			for(idx=0; idx<n_lights; idx++)	{
-				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
+			for(int light_idx=0; light_idx<n_lights; light_idx++)	{
+				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, light_idx);
 
 				if (!in_shadow) {
 					vec3d light_dir;				
-					light_get_global_dir(&light_dir, idx);
+					light_get_global_dir(&light_dir, light_idx);
 
 					//only do sunglare stuff if this light source has one
-					if (light_has_glare(idx))	{
+					if (light_has_glare(light_idx))	{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
 
 					// draw the glow for this sun
-					stars_draw_sun_glow(idx);				
+					int sun_idx = light_get_sun_index(light_idx);
+					if (sun_idx >= 0) {
+						stars_draw_sun_glow(sun_idx);
+					}
 				}
 			}
 
