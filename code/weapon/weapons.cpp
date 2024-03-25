@@ -5453,25 +5453,24 @@ void weapon_home(object *obj, int num, float frame_time)
             (wp->homing_object->type == OBJ_SHIP) && 
             (wip->subtype != WP_LASER))				
         {
-			if (Fixed_missile_detonation)
+			// by default, we just detonate the missile immediately
+			wp->lifeleft = 0.001f;
+
+			// try to be smart about this... if we are homing on a subsystem, give the missile enough time to reach the other side of it
+			if (Fixed_missile_detonation && wp->homing_subsys)
 			{
-				// try to be smart about this... if we have a submodel, and it's not destroyed, give the missile enough time to reach the other side of it
-				if (wp->homing_subsys && wp->homing_subsys->submodel_instance_1 && !wp->homing_subsys->submodel_instance_1->blown_off)
+				// if we have a submodel, use the submodel radius
+				if (wp->homing_subsys->system_info->subobj_num >= 0)
 				{
 					auto pm = model_get(Ship_info[Ships[wp->homing_object->instance].ship_info_index].model_num);
 					auto sm = &pm->submodel[wp->homing_subsys->system_info->subobj_num];
 					wp->lifeleft = sm->rad / obj->phys_info.speed;
 				}
-				// otherwise detonate the missile immediately
+				// otherwise use the subsystem radius
 				else
 				{
-					wp->lifeleft = 0.001f;
+					wp->lifeleft = wp->homing_subsys->system_info->radius / obj->phys_info.speed;
 				}
-			}
-			else
-			{
-				// retail just detonates the missile immediately
-				wp->lifeleft = 0.001f;
 			}
 
 			// this flag is needed so we don't prolong the missile's life by repeatedly detonating it
