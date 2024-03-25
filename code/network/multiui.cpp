@@ -2267,22 +2267,24 @@ int multi_start_game_rank_from_name( char *rank ) {
 	return -1;
 }
 
-void multi_start_game_init()
+void multi_start_game_init(bool API_Access)
 {
 	int idx;
 
 	// initialize the gamenet
 	multi_sg_init_gamenet();
 	
-	// create the interface window
-	Multi_sg_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_sg_window.set_mask_bmap(Multi_sg_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		// create the interface window
+		Multi_sg_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_sg_window.set_mask_bmap(Multi_sg_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_sg_bitmap = bm_load(Multi_sg_bitmap_fname[gr_screen.res]);
-	if(Multi_sg_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_sg_bitmap = bm_load(Multi_sg_bitmap_fname[gr_screen.res]);
+		if (Multi_sg_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
 	}
 	
 	// initialize the common notification messaging
@@ -2294,55 +2296,61 @@ void multi_start_game_init()
 	// use the common interface palette
 	multi_common_set_palette();
 	
-	// create the interface buttons
-	for(idx=0; idx<MULTI_SG_NUM_BUTTONS; idx++){
-		// create the object
-		Multi_sg_buttons[gr_screen.res][idx].button.create(&Multi_sg_window, "", Multi_sg_buttons[gr_screen.res][idx].x, Multi_sg_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+	if (!API_Access) {
+		// create the interface buttons
+		for(idx=0; idx<MULTI_SG_NUM_BUTTONS; idx++){
+			// create the object
+			Multi_sg_buttons[gr_screen.res][idx].button.create(&Multi_sg_window, "", Multi_sg_buttons[gr_screen.res][idx].x, Multi_sg_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
-		// set the sound to play when highlighted
-		Multi_sg_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			Multi_sg_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		Multi_sg_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sg_buttons[gr_screen.res][idx].filename);
+			// set the ani for the button
+			Multi_sg_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sg_buttons[gr_screen.res][idx].filename);
 
-		// set the hotspot
-		Multi_sg_buttons[gr_screen.res][idx].button.link_hotspot(Multi_sg_buttons[gr_screen.res][idx].hotspot);
-	}	
+			// set the hotspot
+			Multi_sg_buttons[gr_screen.res][idx].button.link_hotspot(Multi_sg_buttons[gr_screen.res][idx].hotspot);
+		}	
 
-	// add all xstrs
-	for(idx=0; idx<MULTI_SG_NUM_TEXT; idx++){
-		Multi_sg_window.add_XSTR(&Multi_sg_text[gr_screen.res][idx]);
+		// add all xstrs
+		for(idx=0; idx<MULTI_SG_NUM_TEXT; idx++){
+			Multi_sg_window.add_XSTR(&Multi_sg_text[gr_screen.res][idx]);
+		}
+
+		// load the help overlay
+		Multi_sg_overlay_id = help_overlay_get_index(MULTI_START_OVERLAY);
+		help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 	}
-
-	// load the help overlay
-	Multi_sg_overlay_id = help_overlay_get_index(MULTI_START_OVERLAY);
-	help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 
 	// intiialize the rank selection items	
 	multi_sg_select_rank_default();	
 	Multi_sg_rank_start = Multi_sg_rank_select;
 
-	// create the rank select button
-	Multi_sg_rank_button.create(&Multi_sg_window,"",Msg_rank_list_coords[gr_screen.res][MSG_X_COORD],Msg_rank_list_coords[gr_screen.res][MSG_Y_COORD],Msg_rank_list_coords[gr_screen.res][MSG_W_COORD],Msg_rank_list_coords[gr_screen.res][MSG_H_COORD],0,1);	
-	Multi_sg_rank_button.hide();		
+	if (!API_Access) {
+		// create the rank select button
+		Multi_sg_rank_button.create(&Multi_sg_window,"",Msg_rank_list_coords[gr_screen.res][MSG_X_COORD],Msg_rank_list_coords[gr_screen.res][MSG_Y_COORD],Msg_rank_list_coords[gr_screen.res][MSG_W_COORD],Msg_rank_list_coords[gr_screen.res][MSG_H_COORD],0,1);	
+		Multi_sg_rank_button.hide();		
 
-	// create the netgame name input box
-	Multi_sg_game_name.create(&Multi_sg_window,Msg_title_coords[gr_screen.res][MSG_X_COORD],Msg_title_coords[gr_screen.res][MSG_Y_COORD],Msg_title_coords[gr_screen.res][MSG_W_COORD],MAX_GAMENAME_LEN,"",UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_INVIS,-1,&Color_normal);
+		// create the netgame name input box
+		Multi_sg_game_name.create(&Multi_sg_window,Msg_title_coords[gr_screen.res][MSG_X_COORD],Msg_title_coords[gr_screen.res][MSG_Y_COORD],Msg_title_coords[gr_screen.res][MSG_W_COORD],MAX_GAMENAME_LEN,"",UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_INVIS,-1,&Color_normal);
 
-	// create the netgame password input box, and disable it by default
-	Multi_sg_game_passwd.create(&Multi_sg_window,Msg_passwd_coords[gr_screen.res][MSG_X_COORD],Msg_passwd_coords[gr_screen.res][MSG_Y_COORD],Msg_passwd_coords[gr_screen.res][MSG_W_COORD],16,"",UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_PASSWD | UI_INPUTBOX_FLAG_INVIS,-1,&Color_normal);
-	Multi_sg_game_passwd.hide();
-	Multi_sg_game_passwd.disable();
+		// create the netgame password input box, and disable it by default
+		Multi_sg_game_passwd.create(&Multi_sg_window,Msg_passwd_coords[gr_screen.res][MSG_X_COORD],Msg_passwd_coords[gr_screen.res][MSG_Y_COORD],Msg_passwd_coords[gr_screen.res][MSG_W_COORD],16,"",UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_PASSWD | UI_INPUTBOX_FLAG_INVIS,-1,&Color_normal);
+		Multi_sg_game_passwd.hide();
+		Multi_sg_game_passwd.disable();
 
-	// set the netgame text to this gadget and make it have focus
-	Multi_sg_game_name.set_text(Multi_sg_netgame->name);
-	Multi_sg_game_name.set_focus();	
+		// set the netgame text to this gadget and make it have focus
+		Multi_sg_game_name.set_text(Multi_sg_netgame->name);
+		Multi_sg_game_name.set_focus();	
+	}
 
 	// if starting a netgame, set the name of the game and any other options that are appropriate
 	if ( Cmdline_start_netgame ) {
 		if ( Cmdline_game_name != NULL ) {
 			strcpy_s( Multi_sg_netgame->name, Cmdline_game_name );
-			Multi_sg_game_name.set_text(Multi_sg_netgame->name);
+			if (!API_Access) {
+				Multi_sg_game_name.set_text(Multi_sg_netgame->name);
+			}
 		}
 
 		// deal with the different game types -- only one should even be active, so we will just go down
@@ -2354,7 +2362,9 @@ void multi_start_game_init()
 		} else if ( Cmdline_game_password != NULL ) {
 			Multi_sg_netgame->mode = NG_MODE_PASSWORD;
 			strcpy_s(Multi_sg_netgame->passwd, Cmdline_game_password);
-			Multi_sg_game_passwd.set_text(Multi_sg_netgame->passwd);
+			if (!API_Access) {
+				Multi_sg_game_passwd.set_text(Multi_sg_netgame->passwd);
+			}
 		}
 
 		// deal with rank above and rank below
@@ -2388,7 +2398,7 @@ void multi_start_game_init()
 	}
 }
 
-void multi_start_game_do()
+void multi_start_game_do(bool API_Access)
 {
 	// return here since we will be moving to the next stage anyway -- I don't want to see the backgrounds of
 	// all the screens for < 1 second for every screen we automatically move to.
@@ -2397,67 +2407,71 @@ void multi_start_game_do()
 		return;
 	}
 
-	int k = Multi_sg_window.process();
+	if (!API_Access) {
+		int k = Multi_sg_window.process();
 
-	// process any keypresses
-	switch(k){
-	case KEY_ESC :		
-		if(help_overlay_active(Multi_sg_overlay_id)){
-			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
-		} else {
-			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			multi_quit_game(PROMPT_NONE);
+		// process any keypresses
+		switch (k) {
+		case KEY_ESC:
+			if (help_overlay_active(Multi_sg_overlay_id)) {
+				help_overlay_set_state(Multi_sg_overlay_id, gr_screen.res, 0);
+			} else {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				multi_quit_game(PROMPT_NONE);
+			}
+			break;
+
+		// same as ACCEPT
+		case KEY_LCTRL + KEY_ENTER:
+		case KEY_RCTRL + KEY_ENTER:
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
+			gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
+			break;
 		}
-		break;
-	
-	// same as ACCEPT
-	case KEY_LCTRL + KEY_ENTER :
-	case KEY_RCTRL + KEY_ENTER :		
-		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
-		gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
-		break;
-	}	
 
-	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_sg_overlay_id, gr_screen.res, 0);
+		if (mouse_down(MOUSE_LEFT_BUTTON)) {
+			help_overlay_set_state(Multi_sg_overlay_id, gr_screen.res, 0);
+		}
+
+		// check to see if the user has selected a different rank
+		multi_sg_rank_process_select();
+
+		// check any button presses
+		multi_sg_check_buttons();
+
+		// check to see if any of the input boxes have changed, and update the appropriate Netgame fields if necessary
+		multi_sg_check_passwd();
+		multi_sg_check_name();
+
+		// draw the background, etc
+		gr_reset_clip();
+		GR_MAYBE_CLEAR_RES(Multi_sg_bitmap);
+		if (Multi_sg_bitmap != -1) {
+			gr_set_bitmap(Multi_sg_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
+		}
+		Multi_sg_window.draw();
+
+		// display rank stuff
+		multi_sg_rank_display_stuff();
 	}
-
-	// check to see if the user has selected a different rank
-	multi_sg_rank_process_select();
-
-	// check any button presses
-	multi_sg_check_buttons();
-
-	// check to see if any of the input boxes have changed, and update the appropriate Netgame fields if necessary
-	multi_sg_check_passwd();
-	multi_sg_check_name();
-
-	// draw the background, etc
-	gr_reset_clip();
-	GR_MAYBE_CLEAR_RES(Multi_sg_bitmap);
-	if(Multi_sg_bitmap != -1){
-		gr_set_bitmap(Multi_sg_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
-	}
-	Multi_sg_window.draw();
-	
-	// display rank stuff
-	multi_sg_rank_display_stuff();
 
 	// display any pending notification messages
 	multi_common_notify_do();
 
-	// draw all radio button
-	multi_sg_draw_radio_buttons();
+	if (!API_Access) {
+		// draw all radio button
+		multi_sg_draw_radio_buttons();
 
-	// draw the help overlay
-	help_overlay_maybe_blit(Multi_sg_overlay_id, gr_screen.res);
-	
-	// flip the buffer
-	gr_flip();
+		// draw the help overlay
+		help_overlay_maybe_blit(Multi_sg_overlay_id, gr_screen.res);
+
+		// flip the buffer
+		gr_flip();
+	}
 }
 
-void multi_start_game_close()
+void multi_start_game_close(bool API_Access)
 {
 	// if i'm the host on a standalone server, send him my start game options (passwd, mode, etc)
 	if((Net_player->flags & NETINFO_FLAG_GAME_HOST) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
@@ -2465,12 +2479,15 @@ void multi_start_game_close()
 	}
 	
 	// unload any bitmaps
-	if(!bm_unload(Multi_sg_bitmap)){
-		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_sg_bitmap_fname[gr_screen.res]));
+	if (!bm_unload(Multi_sg_bitmap)) {
+		nprintf(
+			("General", "WARNING : could not unload background bitmap %s\n", Multi_sg_bitmap_fname[gr_screen.res]));
 	}
-	
-	// destroy the UI_WINDOW
-	Multi_sg_window.destroy();	
+
+	if (!API_Access) {
+		// destroy the UI_WINDOW
+		Multi_sg_window.destroy();
+	}
 }
 
 void multi_sg_check_buttons()

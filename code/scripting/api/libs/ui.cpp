@@ -2807,6 +2807,105 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	return ade_set_args(L, "t", pages);
 }
 
+//**********SUBLIBRARY: UserInterface/MultiStartGame
+ADE_LIB_DERIV(l_UserInterface_MultiStartGame,
+	"MultiStartGame",
+	nullptr,
+	"API for accessing data related to the Multi Start Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiStart, l_UserInterface_MultiStartGame, nullptr, "Initializes the Create Game methods and variables", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiStart, l_UserInterface_MultiStartGame, nullptr, "Finalizes the new game settings and moves to the host game UI", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiStartGame, nullptr, "Runs the network required commands to update the status text", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setName, l_UserInterface_MultiStartGame, "string Password", "Sets the game's name", "boolean", "True if successful, false otherwise")
+{
+	const char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ADE_RETURN_FALSE;
+
+	if (strlen(name) > MAX_GAMENAME_LEN + 1) {
+		return ADE_RETURN_FALSE;
+	}
+
+	strcpy_s(Multi_sg_netgame->name, name);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setGameType,
+	l_UserInterface_MultiStartGame,
+	"enumeration type=MULTI_GAME_TYPE_OPEN [string | number password_or_rank_index]",
+	"Sets the game's type and, optionally, the password or rank index.",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	enum_h* game = nullptr;
+	const char* password = nullptr;
+	int rank_idx = 0;
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&game))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	switch (game->index) {
+	case LE_MULTI_GAME_TYPE_OPEN:
+		Multi_sg_netgame->mode = NG_MODE_OPEN;
+		break;
+	case LE_MULTI_GAME_TYPE_PASSWORD:
+		Multi_sg_netgame->mode = NG_MODE_PASSWORD;
+		if (!ade_get_args(L, "*s", &password)) {
+			return ADE_RETURN_FALSE;
+		}
+		if ((password == nullptr) || (strlen(password) > MAX_PASSWD_LEN + 1)) {
+			return ADE_RETURN_FALSE;
+		}
+		strcpy_s(Multi_sg_netgame->passwd, password);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_ABOVE:
+		Multi_sg_netgame->mode = NG_MODE_RANK_ABOVE;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_BELOW:
+		Multi_sg_netgame->mode = NG_MODE_RANK_BELOW;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	default:
+		return ADE_RETURN_FALSE;
+		break;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
 //**********SUBLIBRARY: UserInterface/MultiJoinGame
 ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
 	"MultiJoinGame",
