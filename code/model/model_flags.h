@@ -71,6 +71,7 @@ namespace Model {
 		No_impact_debris,    // Don't spawn the small debris on impact - m!m
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
 		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
+		Override_submodel_impact,	// if a weapon impacted a submodel, but this subsystem is within range, the subsystem takes priority -- Goober5000
 
         NUM_VALUES
 	};
