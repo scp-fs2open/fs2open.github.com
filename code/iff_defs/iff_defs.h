@@ -50,7 +50,8 @@ typedef struct iff_info {
 	flagset<Mission::Parse_Object_Flags> default_parse_flags;
 
 	// used internally, not parsed
-	TIMESTAMP ai_rearm_timestamp;
+	TIMESTAMP ai_good_rearm_timestamp;
+	TIMESTAMP ai_bad_rearm_timestamp;
 
 } iff_info;
 
