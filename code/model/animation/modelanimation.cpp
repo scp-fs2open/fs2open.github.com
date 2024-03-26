@@ -299,13 +299,15 @@ namespace animation {
 		
 		if (direction == ModelAnimationDirection::RWD) {
 			instanceData.state = ModelAnimationState::RUNNING;
-			instanceData.time -= timeOffset;
+			instanceData.time -= timeOffset; 
+			instanceData.canonicalDirection = ModelAnimationDirection::RWD;
 			if (force)
 				instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
 		}
 		else {
 			instanceData.state = ModelAnimationState::RUNNING;
 			instanceData.time += timeOffset;
+			instanceData.canonicalDirection = ModelAnimationDirection::FWD;
 			if (force)
 				instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
 		}
