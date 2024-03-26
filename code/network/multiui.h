@@ -115,8 +115,8 @@ void multi_start_game_init();
 void multi_start_game_do();
 void multi_start_game_close();
 
-void multi_create_game_init();
-void multi_create_game_do();
+void multi_create_game_init(bool API_Access = false);
+void multi_create_game_do(bool API_Access = false);
 void multi_create_game_close();
 void multi_create_game_add_mission(char *fname,char *name, int flags);
 

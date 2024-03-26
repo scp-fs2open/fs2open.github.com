@@ -3478,7 +3478,7 @@ void multi_create_setup_list_data(int mode)
 	Multi_create_slider.set_numberItems(Multi_create_list_count > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? Multi_create_list_count-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
 }
 
-void multi_create_game_init()
+void multi_create_game_init(bool API_Access)
 {
 	int idx;
 	ui_button_info *b;
@@ -3494,24 +3494,28 @@ void multi_create_game_init()
 	Multi_create_plist_select_flag = 0;
 	Multi_create_plist_select_id = -1;	
 
-	// create the interface window
-	Multi_create_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_create_window.set_mask_bmap(Multi_create_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		// create the interface window
+		Multi_create_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_create_window.set_mask_bmap(Multi_create_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_create_bitmap = bm_load(Multi_create_bitmap_fname[gr_screen.res]);
-	if(Multi_create_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_create_bitmap = bm_load(Multi_create_bitmap_fname[gr_screen.res]);
+		if (Multi_create_bitmap < 0) {
+				// we failed to load the bitmap - this is very bad
+				Int3();
+		}
 	}
 
 	// close any previous existing instances of the chatbox and create a new one
-	chatbox_close();
+	chatbox_close(); //Need to pass API_Access into these also
 	chatbox_create();
 
-	// load the help overlay 
-	Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
-	help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+	if (!API_Access) {
+		// load the help overlay
+		Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
+		help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+	}
 
 	// initialize the common notification messaging
 	multi_common_notify_init();		
@@ -3519,44 +3523,48 @@ void multi_create_game_init()
 	// use the common interface palette
 	multi_common_set_palette();
 
-	// create the interface buttons
-	for(idx=0; idx<MULTI_CREATE_NUM_BUTTONS; idx++){
-		b = &Multi_create_buttons[gr_screen.res][idx];
+	if (!API_Access) {
+		// create the interface buttons
+		for(idx=0; idx<MULTI_CREATE_NUM_BUTTONS; idx++){
+			b = &Multi_create_buttons[gr_screen.res][idx];
 	
-		// create the object		
-		b->button.create(&Multi_create_window, "", b->x, b->y, 1, 1, ((idx == MC_SCROLL_LIST_UP) || (idx == MC_SCROLL_LIST_DOWN)), 1);
+			// create the object		
+			b->button.create(&Multi_create_window, "", b->x, b->y, 1, 1, ((idx == MC_SCROLL_LIST_UP) || (idx == MC_SCROLL_LIST_DOWN)), 1);
 
-		// set the sound to play when highlighted
-		b->button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			b->button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		b->button.set_bmaps(b->filename);
+			// set the ani for the button
+			b->button.set_bmaps(b->filename);
 
-		// set the hotspot
-		b->button.link_hotspot(b->hotspot);		
+			// set the hotspot
+			b->button.link_hotspot(b->hotspot);		
 
-		// some special case stuff for the pxo refresh button
-		if(idx == MC_PXO_REFRESH){			
-			// if not a PXO game, or if I'm not a server disable and hide the button
-			if(!MULTI_IS_TRACKER_GAME || !MULTIPLAYER_MASTER){
-				b->button.hide();
-				b->button.disable();
-			}			
+			// some special case stuff for the pxo refresh button
+			if(idx == MC_PXO_REFRESH){			
+				// if not a PXO game, or if I'm not a server disable and hide the button
+				if(!MULTI_IS_TRACKER_GAME || !MULTIPLAYER_MASTER){
+					b->button.hide();
+					b->button.disable();
+				}			
+			}
+		}	
+
+		// create xstrs
+		for(idx=0; idx<MULTI_CREATE_NUM_TEXT; idx++){
+			Multi_create_window.add_XSTR(&Multi_create_text[gr_screen.res][idx]);
 		}
-	}	
 
-	// create xstrs
-	for(idx=0; idx<MULTI_CREATE_NUM_TEXT; idx++){
-		Multi_create_window.add_XSTR(&Multi_create_text[gr_screen.res][idx]);
+		// if this is a PXO game, enable the squadwar checkbox	
+		Multi_create_sw_checkbox.create(&Multi_create_window, "", Multi_create_sw_checkbox_coords[gr_screen.res][0], Multi_create_sw_checkbox_coords[gr_screen.res][1], 0);
+		Multi_create_sw_checkbox.set_bmaps(Multi_create_sw_checkbox_fname[gr_screen.res], 6, 0);
+		if(!MULTI_IS_TRACKER_GAME){
+			Multi_create_sw_checkbox.hide();
+			Multi_create_sw_checkbox.disable();
+		}
 	}
 
-	// if this is a PXO game, enable the squadwar checkbox	
-	Multi_create_sw_checkbox.create(&Multi_create_window, "", Multi_create_sw_checkbox_coords[gr_screen.res][0], Multi_create_sw_checkbox_coords[gr_screen.res][1], 0);
-	Multi_create_sw_checkbox.set_bmaps(Multi_create_sw_checkbox_fname[gr_screen.res], 6, 0);
-	if(!MULTI_IS_TRACKER_GAME){
-		Multi_create_sw_checkbox.hide();
-		Multi_create_sw_checkbox.disable();
-	}
+	//Need some kind of return for if the game is a PXO game in the API
 
 	// initialize the mission type filtering mode
 	Multi_create_filter = MISSION_TYPE_MULTI;
@@ -3570,18 +3578,20 @@ void multi_create_game_init()
 	Multi_create_list_select = -1;
 	Multi_create_list_count = 0;
 
-	Multi_create_slider.create(&Multi_create_window, Mc_slider_coords[gr_screen.res][MC_X_COORD], Mc_slider_coords[gr_screen.res][MC_Y_COORD], Mc_slider_coords[gr_screen.res][MC_W_COORD],Mc_slider_coords[gr_screen.res][MC_H_COORD], -1, Mc_slider_bitmap[gr_screen.res], &multi_create_list_scroll_up, &multi_create_list_scroll_down, NULL);
+	if (!API_Access) {
+		Multi_create_slider.create(&Multi_create_window, Mc_slider_coords[gr_screen.res][MC_X_COORD], Mc_slider_coords[gr_screen.res][MC_Y_COORD], Mc_slider_coords[gr_screen.res][MC_W_COORD],Mc_slider_coords[gr_screen.res][MC_H_COORD], -1, Mc_slider_bitmap[gr_screen.res], &multi_create_list_scroll_up, &multi_create_list_scroll_down, NULL);
 
-	// create the player list select button
-	Multi_create_player_select_button.create(&Multi_create_window, "", Mc_players_coords[gr_screen.res][MC_X_COORD], Mc_players_coords[gr_screen.res][MC_Y_COORD], Mc_players_coords[gr_screen.res][MC_W_COORD], Mc_players_coords[gr_screen.res][MC_H_COORD], 0, 1);
-	Multi_create_player_select_button.hide();		
+		// create the player list select button
+		Multi_create_player_select_button.create(&Multi_create_window, "", Mc_players_coords[gr_screen.res][MC_X_COORD], Mc_players_coords[gr_screen.res][MC_Y_COORD], Mc_players_coords[gr_screen.res][MC_W_COORD], Mc_players_coords[gr_screen.res][MC_H_COORD], 0, 1);
+		Multi_create_player_select_button.hide();		
 	
-	// create the mission/campaign list select button
-	Multi_create_list_select_button.create(&Multi_create_window, "", Mc_list_coords[gr_screen.res][MC_X_COORD], Mc_list_coords[gr_screen.res][MC_Y_COORD], Mc_list_coords[gr_screen.res][MC_W_COORD], Mc_list_coords[gr_screen.res][MC_H_COORD], 0, 1);
-	Multi_create_list_select_button.hide();	
+		// create the mission/campaign list select button
+		Multi_create_list_select_button.create(&Multi_create_window, "", Mc_list_coords[gr_screen.res][MC_X_COORD], Mc_list_coords[gr_screen.res][MC_Y_COORD], Mc_list_coords[gr_screen.res][MC_W_COORD], Mc_list_coords[gr_screen.res][MC_H_COORD], 0, 1);
+		Multi_create_list_select_button.hide();	
 
-	// set hotkeys for a couple of things.
-	Multi_create_buttons[gr_screen.res][MC_ACCEPT].button.set_hotkey(KEY_CTRLED+KEY_ENTER);	
+		// set hotkeys for a couple of things.
+		Multi_create_buttons[gr_screen.res][MC_ACCEPT].button.set_hotkey(KEY_CTRLED+KEY_ENTER);	
+	}
 
 	// init some master tracker stuff
 	Multi_create_frame_count = 0;
@@ -3596,7 +3606,7 @@ void multi_create_game_init()
 	Multi_create_files_loaded = 0;
 }
 
-void multi_create_game_do()
+void multi_create_game_do(bool API_Access)
 {
 	//DTP CHECK ALMISSION FLAG HERE AND SKIP THE BITMAP LOADING PROGRESS 
 	//SINCE WE ALREADY HAVE A MISSION SELECTED IF THIS MISSION IS A VALID MULTIPLAYER MISSION
@@ -3653,46 +3663,53 @@ void multi_create_game_do()
 		if ( MULTIPLAYER_CLIENT ) {
 			send_mission_list_request( MISSION_LIST_REQUEST );
 		} else {
-			int loading_bitmap;
+			if (!API_Access) {
+				int loading_bitmap;
 
-			loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
+				loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
 
-			// draw the background, etc
-			gr_reset_clip();
-			GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
-			if(Multi_create_bitmap != -1){
-				gr_set_bitmap(Multi_create_bitmap);
-				gr_bitmap(0, 0, GR_RESIZE_MENU);
+				// draw the background, etc
+				gr_reset_clip();
+				GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
+				if(Multi_create_bitmap != -1){
+					gr_set_bitmap(Multi_create_bitmap);
+					gr_bitmap(0, 0, GR_RESIZE_MENU);
+				}
+				chatbox_render();
+				if ( loading_bitmap > -1 ){
+					gr_set_bitmap(loading_bitmap);
+				}
+				gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD], GR_RESIZE_MENU );
+
+				// draw "Loading" on it
+				gr_set_color_fast(&Color_normal);
+				font::set_font(font::FONT2);
+				gr_get_string_size(&str_w, &str_h, loading_str);
+				gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, loading_str, GR_RESIZE_MENU);
+				font::set_font(font::FONT1);
+
+				gr_flip();
 			}
-			chatbox_render();
-			if ( loading_bitmap > -1 ){
-				gr_set_bitmap(loading_bitmap);
-			}
-			gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD], GR_RESIZE_MENU );
-
-			// draw "Loading" on it
-			gr_set_color_fast(&Color_normal);
-			font::set_font(font::FONT2);
-			gr_get_string_size(&str_w, &str_h, loading_str);
-			gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, loading_str, GR_RESIZE_MENU);
-			font::set_font(font::FONT1);
-
-			gr_flip();
-
 			multi_create_list_load_missions();
 			multi_create_list_load_campaigns();
+
+			if (!API_Access){
+				Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? int(Multi_create_mission_list.size())-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
+			}
 
 			// if this is a tracker game, validate missions
 			if (MULTI_IS_TRACKER_GAME) {
 				multi_update_valid_missions();
 			}
 
-			// update the file list
-			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
-			// the above function doesn't sort initially, so we need this to take care of it
-			multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
-			// the sort function probably changed our selection, but here we always need it to zero
-			multi_create_list_select_item(0);
+			if (!API_Access) {
+				// update the file list
+				multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
+				// the above function doesn't sort initially, so we need this to take care of it
+				multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
+				// the sort function probably changed our selection, but here we always need it to zero
+				multi_create_list_select_item(0);
+			}
 		}
 
 		// don't bother setting netgame state if ont the server
@@ -3713,17 +3730,18 @@ void multi_create_game_do()
 		Multi_create_files_loaded = 1;
 	}
 
-	int k = chatbox_process();
-	k = Multi_create_window.process(k,0);
+	if (!API_Access) {
+		int k = chatbox_process();
+		k = Multi_create_window.process(k, 0);
 
-	switch(k){	
+		switch (k) {
 		// same as the cancel button
 		case KEY_ESC: {
-			if ( help_overlay_active(Multi_create_overlay_id) ) {
+			if (help_overlay_active(Multi_create_overlay_id)) {
 				help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
-			} else {		
+			} else {
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-				multi_quit_game(PROMPT_HOST);		
+				multi_quit_game(PROMPT_HOST);
 			}
 
 			break;
@@ -3733,122 +3751,135 @@ void multi_create_game_do()
 			Multi_create_sort_mode = !Multi_create_sort_mode;
 			multi_create_list_sort(Multi_create_list_mode);
 			break;
-	}	
+		}
 
-	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+		if (mouse_down(MOUSE_LEFT_BUTTON)) {
+			help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+		}
+
+		// process any button clicks
+		multi_create_check_buttons();
 	}
-
-	// process any button clicks
-	multi_create_check_buttons();
-
 	// do any network related stuff
 	multi_create_do_netstuff(); 
 
-	// draw the background, etc
-	gr_reset_clip();
-	GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
-	if(Multi_create_bitmap != -1){
-		gr_set_bitmap(Multi_create_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
-	}
-
-	// if we're not in team vs. team mode, don't draw the team buttons
-	if(!(Netgame.type_flags & NG_TYPE_TEAM)){
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.hide();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.hide();
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.disable();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.disable();
-	} else {
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.enable();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.enable();
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.unhide();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.unhide();				
-	}		
-
-	// draw the window itself
-	Multi_create_window.draw();
-
-	gr_set_color_fast(&Color_normal);
-
-	// draw Create Game text
-	gr_string(Mc_create_game_text[gr_screen.res][MC_X_COORD], Mc_create_game_text[gr_screen.res][MC_Y_COORD], XSTR("Create Game", 1268), GR_RESIZE_MENU);
-
-	// draw players text
-	gr_string(Mc_players_text[gr_screen.res][MC_X_COORD], Mc_players_text[gr_screen.res][MC_Y_COORD], XSTR("Players", 1269), GR_RESIZE_MENU);
-
-	// draw players text
-	gr_string(Mc_team_text[gr_screen.res][MC_X_COORD], Mc_team_text[gr_screen.res][MC_Y_COORD], XSTR("Team", 1258), GR_RESIZE_MENU);
-
-	// process and display the player list	
-	// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped 
-	multi_create_plist_process();
-	if(Netgame.type_flags & NG_TYPE_TEAM){
-		multi_create_plist_blit_team();
-	} else {
-		multi_create_plist_blit_normal();
-	}
-
-	// process and display the game/campaign list
-	multi_create_list_do();
-	
-	// draw the correct mission filter button
-	multi_create_draw_filter_buttons();
-
-	// display any text in the info area
-	multi_common_render_text();
-
-	// display any pending notification messages
-	multi_common_notify_do();	
-	
-	// force the correct mission/campaign button to light up
-	if( Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS ){
-		Multi_create_buttons[gr_screen.res][MC_MISSION_FILTER].button.draw_forced(2);
-	} else {
-		Multi_create_buttons[gr_screen.res][MC_CAMPAIGN_FILTER].button.draw_forced(2);
-	}
-
-	// force draw the closed button if it is toggled on
-	if(Netgame.flags & NG_FLAG_TEMP_CLOSED){
-		Multi_create_buttons[gr_screen.res][MC_CLOSE].button.draw_forced(2);
-	}
-
-	// process and show the chatbox thingie	
-	chatbox_render();
-
-	// draw tooltips
-	Multi_create_window.draw_tooltip();
-
-	// display the voice status indicator
-	multi_common_voice_display_status();
-
-	// blit the help overlay if necessary
-	help_overlay_maybe_blit(Multi_create_overlay_id, gr_screen.res);
-
-	// test code
-	if(MULTI_IS_TRACKER_GAME){
-		if(Netgame.type_flags & NG_TYPE_SW){
-			gr_set_color_fast(&Color_bright);
-		} else {
-			gr_set_color_fast(&Color_normal);
+	if (!API_Access) {
+		// draw the background, etc
+		gr_reset_clip();
+		GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
+		if (Multi_create_bitmap != -1) {
+			gr_set_bitmap(Multi_create_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 		}
-		gr_string(Multi_create_sw_checkbox_text[gr_screen.res][0], Multi_create_sw_checkbox_text[gr_screen.res][1], "SquadWar", GR_RESIZE_MENU);
-	}
 
-	// flip the buffer
-	gr_flip();		
-		
-	// if we're supposed to show the pilot info popup, do it now
-	if(Multi_create_should_show_popup){		
-		// get the player index and address of the player item the mouse is currently over
-		if(Multi_create_plist_select_flag){		
-			player_index = find_player_index(Multi_create_plist_select_id);
-			if(player_index != -1){			
-				multi_pinfo_popup(&Net_players[player_index]);
+		// if we're not in team vs. team mode, don't draw the team buttons
+		if (!(Netgame.type_flags & NG_TYPE_TEAM)) {
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.hide();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.hide();
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.disable();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.disable();
+		} else {
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.enable();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.enable();
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.unhide();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.unhide();
+		}
+
+		// draw the window itself
+		Multi_create_window.draw();
+
+		gr_set_color_fast(&Color_normal);
+
+		// draw Create Game text
+		gr_string(Mc_create_game_text[gr_screen.res][MC_X_COORD],
+			Mc_create_game_text[gr_screen.res][MC_Y_COORD],
+			XSTR("Create Game", 1268),
+			GR_RESIZE_MENU);
+
+		// draw players text
+		gr_string(Mc_players_text[gr_screen.res][MC_X_COORD],
+			Mc_players_text[gr_screen.res][MC_Y_COORD],
+			XSTR("Players", 1269),
+			GR_RESIZE_MENU);
+
+		// draw players text
+		gr_string(Mc_team_text[gr_screen.res][MC_X_COORD],
+			Mc_team_text[gr_screen.res][MC_Y_COORD],
+			XSTR("Team", 1258),
+			GR_RESIZE_MENU);
+
+		// process and display the player list
+		// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped
+		multi_create_plist_process();
+		if (Netgame.type_flags & NG_TYPE_TEAM) {
+			multi_create_plist_blit_team();
+		} else {
+			multi_create_plist_blit_normal();
+		}
+
+		// process and display the game/campaign list
+		multi_create_list_do();
+
+		// draw the correct mission filter button
+		multi_create_draw_filter_buttons();
+
+		// display any text in the info area
+		multi_common_render_text();
+
+		// display any pending notification messages
+		multi_common_notify_do();
+
+		// force the correct mission/campaign button to light up
+		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+			Multi_create_buttons[gr_screen.res][MC_MISSION_FILTER].button.draw_forced(2);
+		} else {
+			Multi_create_buttons[gr_screen.res][MC_CAMPAIGN_FILTER].button.draw_forced(2);
+		}
+
+		// force draw the closed button if it is toggled on
+		if (Netgame.flags & NG_FLAG_TEMP_CLOSED) {
+			Multi_create_buttons[gr_screen.res][MC_CLOSE].button.draw_forced(2);
+		}
+
+		// process and show the chatbox thingie
+		chatbox_render();
+
+		// draw tooltips
+		Multi_create_window.draw_tooltip();
+
+		// display the voice status indicator
+		multi_common_voice_display_status();
+
+		// blit the help overlay if necessary
+		help_overlay_maybe_blit(Multi_create_overlay_id, gr_screen.res);
+
+		// test code
+		if (MULTI_IS_TRACKER_GAME) {
+			if (Netgame.type_flags & NG_TYPE_SW) {
+				gr_set_color_fast(&Color_bright);
+			} else {
+				gr_set_color_fast(&Color_normal);
+			}
+			gr_string(Multi_create_sw_checkbox_text[gr_screen.res][0],
+				Multi_create_sw_checkbox_text[gr_screen.res][1],
+				"SquadWar",
+				GR_RESIZE_MENU);
+		}
+
+		// flip the buffer
+		gr_flip();
+
+		// if we're supposed to show the pilot info popup, do it now
+		if (Multi_create_should_show_popup) {
+			// get the player index and address of the player item the mouse is currently over
+			if (Multi_create_plist_select_flag) {
+				player_index = find_player_index(Multi_create_plist_select_id);
+				if (player_index != -1) {
+					multi_pinfo_popup(&Net_players[player_index]);
+				}
 			}
 		}
 	}
-
 	// increment the frame count
 	Multi_create_frame_count++;	
 }
@@ -4449,8 +4480,6 @@ void multi_create_list_load_missions()
 		vm_free(file_list);
 		file_list = NULL;
 	}
-
-	Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? int(Multi_create_mission_list.size())-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
 
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {

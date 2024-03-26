@@ -34,6 +34,7 @@
 #include "mod_table/mod_table.h"
 #include "network/chat_api.h"
 #include "network/multi.h"
+#include "network/multiui.h"
 #include "network/multiteamselect.h"
 #include "network/multi_pxo.h"
 #include "pilotfile/pilotfile.h"
@@ -2804,6 +2805,44 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 
 	return ade_set_args(L, "t", pages);
 }
+
+//**********SUBLIBRARY: UserInterface/MultiHostSetup
+ADE_LIB_DERIV(l_UserInterface_MultiHostSetup,
+	"MultiHostSetup",
+	nullptr,
+	"API for accessing data related to the Multi Join Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the host setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+// Don't need a close for this UI apparently
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
 
 } // namespace api
 } // namespace scripting
