@@ -111,9 +111,11 @@ void multi_join_clear_game_list();
 void multi_join_notify_new_game();
 void multi_join_maybe_update_selected(active_game *game);
 
-void multi_start_game_init();
-void multi_start_game_do();
-void multi_start_game_close();
+extern netgame_info* Multi_sg_netgame;
+
+void multi_start_game_init(bool API_Access = false);
+void multi_start_game_do(bool API_Access = false);
+void multi_start_game_close(bool API_Access = false);
 
 void multi_create_game_init();
 void multi_create_game_do();
