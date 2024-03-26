@@ -437,6 +437,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "clear-ship-goals",				OP_CLEAR_SHIP_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-wing-goals",				OP_CLEAR_WING_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,						2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "bad-rearm-time",					OP_BAD_REARM_TIME,						2,	2,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "good-primary-time",				OP_GOOD_PRIMARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},	// plieblang
 	{ "good-secondary-time",			OP_GOOD_SECONDARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "change-ai-class",				OP_CHANGE_AI_CLASS,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -16423,11 +16424,9 @@ void sexp_set_traitor_override(int node)
 }
 
 /**
- * Toggle the status bit for the AI code which tells the AI if it is a good time to rearm.
- *
- * The status being set means good time.  Status not being set (unset), means bad time. Designers must implement this.
+ * Toggle the status for the AI code which tells the AI if it is a good or bad time to rearm.
  */
-void sexp_good_time_to_rearm(int n)
+void sexp_good_bad_time_to_rearm(int n, bool good)
 {
 	int team, time;
 	bool is_nan, is_nan_forever;
@@ -16438,7 +16437,10 @@ void sexp_good_time_to_rearm(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	ai_set_rearm_status(team, time);
+	if (good)
+		ai_set_good_rearm_time(team, time);
+	else
+		ai_set_bad_rearm_time(team, time);
 }
 
 /**
@@ -28279,9 +28281,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-				// sexpressions for setting flag for good/bad time for someone to reasm
+				// sexpressions for setting flag for good/bad time for someone to rearm
 			case OP_GOOD_REARM_TIME:
-				sexp_good_time_to_rearm(node);
+			case OP_BAD_REARM_TIME:
+				sexp_good_bad_time_to_rearm(node, op_num == OP_GOOD_REARM_TIME);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -30359,6 +30362,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_GOOD_REARM_TIME:
+		case OP_BAD_REARM_TIME:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
@@ -32145,6 +32149,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_SHIP;
 
 		case OP_GOOD_REARM_TIME:
+		case OP_BAD_REARM_TIME:
 			if ( argnum == 0 )
 				return OPF_IFF;
 			else
@@ -35837,6 +35842,7 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
 		case OP_GOOD_REARM_TIME:
+		case OP_BAD_REARM_TIME:
 		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_CHANGE_AI_CLASS:
@@ -38701,10 +38707,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_GOOD_REARM_TIME, "Good rearm time (Action operator)\r\n"
 		"\tInforms the game logic that right now is a good time for a given team to attempt to "
-		"rearm their ships.  The time parameter specified how long the \"good time\" will last.\r\n\r\n"
+		"rearm their ships.  The time parameter specifies how long the \"good time\" will last.\r\n"
+		"Can be used to prematurely end its counterpart, bad-rearm-time.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tTeam Name\r\n"
 		"\t2:\tTime in seconds rearm window should last" },
+
+	{ OP_BAD_REARM_TIME, "Bad rearm time (Action operator)\r\n"
+		"\tInforms the game logic that right now is a bad time for a given team to attempt to "
+		"rearm their ships.  AI ships will not choose to rearm. "
+		"The time parameter specifies how long the \"bad time\" will last.\r\n"
+		"Can be used to prematurely end its counterpart, good-rearm-time.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tTeam Name\r\n"
+		"\t2:\tTime in seconds 'no rearm' window should last" },
 
 	{ OP_ALLOW_SHIP, "Allow ship (Action operator)\r\n"
 		"\tThis operator makes the given ship type available to the player team.  Players will be "

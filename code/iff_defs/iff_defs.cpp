@@ -529,7 +529,8 @@ void parse_iff_table(const char* filename)
             }
 
 			// this is cleared between each level but let's just set it here for thoroughness
-			iffp->ai_rearm_timestamp = TIMESTAMP::invalid();
+			iffp->ai_good_rearm_timestamp = TIMESTAMP::invalid();
+			iffp->ai_bad_rearm_timestamp = TIMESTAMP::invalid();
 		}
 
 		required_string("#End");
