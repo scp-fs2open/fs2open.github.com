@@ -10,6 +10,7 @@
 #include "localization/localize.h"
 #include "menuui/techmenu.h"
 #include "network/multi.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
 #include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
@@ -415,6 +416,9 @@ void pilotfile::plr_read_multiplayer()
 	p->m_local_options.flags = handler->readInt("local_flags");
 	p->m_local_options.obj_update_level = handler->readInt("obj_update_level");
 
+	//Make sure the local games multi option is reflected by the OptionsManager
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) != 0);
+
 	// netgame protocol
 	Multi_options_g.protocol = handler->readInt("protocol");
 
@@ -797,87 +801,87 @@ void pilotfile::plr_read_settings()
 {
 	clamped_range_warnings.clear();
 	// sound/voice/music
-	if (!Using_in_game_options) {
-		float temp_volume = handler->readFloat("master_sound_volume");
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
-		snd_set_effects_volume(temp_volume);
+	float temp_volume = handler->readFloat("master_sound_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+	snd_set_effects_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume);
 
-		temp_volume = handler->readFloat("master_event_music_volume");
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
-		event_music_set_volume(temp_volume);
+	temp_volume = handler->readFloat("master_event_music_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+	event_music_set_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume);
 
-		temp_volume = handler->readFloat("aster_voice_volume");
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
-		snd_set_voice_volume(temp_volume);
+	temp_volume = handler->readFloat("aster_voice_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+	snd_set_voice_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume);
 
-		Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
-		// correct offset
-		handler->readFloat("master_sound_volume");
-		handler->readFloat("master_event_music_volume");
-		handler->readFloat("aster_voice_volume");
-
-		handler->readInt("briefing_voice_enabled");
-	}
+	Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", Briefing_voice_enabled);
 
 	// skill level
 	Game_skill_level = handler->readInt("game_skill_level");
 	clamp_value_with_warn(&Game_skill_level, 0, 4, "Skill Level");
+	options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 
 	// input options
-	if (!Using_in_game_options) {
-		Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
-		Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
-		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
-		Joy_sensitivity    = handler->readInt("joy_sensitivity");
-		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
-		Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
-		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", Use_mouse_to_fly);
 
-		// detail
-		Detail.setting           = handler->readInt("setting");
-		clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
-		Detail.nebula_detail     = handler->readInt("nebula_detail");
-		clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
-		Detail.detail_distance   = handler->readInt("detail_distance");
-		clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
-		Detail.hardware_textures = handler->readInt("hardware_textures");
-		clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
-		Detail.num_small_debris  = handler->readInt("num_small_debris");
-		clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
-		Detail.num_particles     = handler->readInt("num_particles");
-		clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
-		Detail.num_stars         = handler->readInt("num_stars");
-		clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
-		Detail.shield_effects    = handler->readInt("shield_effects");
-		clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
-		Detail.lighting          = handler->readInt("lighting");
-		clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
-		Detail.targetview_model  = handler->readInt("targetview_model");
-		Detail.planets_suns      = handler->readInt("planets_suns");
-		Detail.weapon_extras     = handler->readInt("weapon_extras");
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
-		handler->readInt("use_mouse_to_fly");
-		handler->readInt("mouse_sensitivity");
-		handler->readInt("joy_sensitivity");
-		handler->readInt("joy_dead_zone_size");
+	Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
 
-		// detail
-		handler->readInt("setting");
-		handler->readInt("nebula_detail");
-		handler->readInt("detail_distance");
-		handler->readInt("hardware_textures");
-		handler->readInt("num_small_debris");
-		handler->readInt("num_particles");
-		handler->readInt("num_stars");
-		handler->readInt("shield_effects");
-		handler->readInt("lighting");
-		handler->readInt("targetview_model");
-		handler->readInt("planets_suns");
-		handler->readInt("weapon_extras");
-	}
+	Joy_sensitivity    = handler->readInt("joy_sensitivity");
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
+
+	Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZome", Joy_dead_zone_size);
+
+	// detail
+	//Preset not handled by OptionsManager
+	Detail.setting           = handler->readInt("setting");
+	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
+
+	Detail.nebula_detail     = handler->readInt("nebula_detail");
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
+
+	Detail.detail_distance   = handler->readInt("detail_distance");
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
+
+	Detail.hardware_textures = handler->readInt("hardware_textures");
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
+
+	Detail.num_small_debris  = handler->readInt("num_small_debris");
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
+
+	Detail.num_particles     = handler->readInt("num_particles");
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
+
+	Detail.num_stars         = handler->readInt("num_stars");
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
+
+	Detail.shield_effects    = handler->readInt("shield_effects");
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
+
+	Detail.lighting          = handler->readInt("lighting");
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
+
+	//Rest not handled by OptionsManager
+	Detail.targetview_model  = handler->readInt("targetview_model");
+	Detail.planets_suns      = handler->readInt("planets_suns");
+	Detail.weapon_extras     = handler->readInt("weapon_extras");
+
 	if (!clamped_range_warnings.empty()) {
 		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
 		clamped_range_warnings.clear();
@@ -1145,6 +1149,10 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 		}
 	}
 	handler->endSectionRead();
+
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these player options set
+	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
+	//options::OptionsManager::instance()->persistChanges();
 
 	// restore the callsign into the Player structure
 	strcpy_s(p->callsign, callsign);

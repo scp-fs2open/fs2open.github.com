@@ -12,6 +12,7 @@
 #include "mission/missionload.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
+#include "options/OptionsManager.h"
 #include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
@@ -1175,55 +1176,47 @@ void pilotfile::csg_write_variables()
 void pilotfile::csg_read_settings()
 {
 	clamped_range_warnings.clear();
+
 	// sound/voice/music
-	if (!Using_in_game_options) {
-		float temp_volume = cfread_float(cfp);
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
-		snd_set_effects_volume(temp_volume);
+	float temp_volume = cfread_float(cfp);
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+	snd_set_effects_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume);
 
-		temp_volume = cfread_float(cfp);
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
-		event_music_set_volume(temp_volume);
+	temp_volume = cfread_float(cfp);
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+	event_music_set_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume);
 
-		temp_volume = cfread_float(cfp);
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
-		snd_set_voice_volume(temp_volume);
+	temp_volume = cfread_float(cfp);
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+	snd_set_voice_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume);
 
-		Briefing_voice_enabled = cfread_int(cfp) != 0;
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
-		// correct offset
-		cfread_float(cfp);
-		cfread_float(cfp);
-		cfread_float(cfp);
-
-		cfread_int(cfp);
-	}
+	Briefing_voice_enabled = cfread_int(cfp) != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", Briefing_voice_enabled);
 
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
 	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
+	options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 
 	// input options
-	if (!Using_in_game_options) {
-		Use_mouse_to_fly   = cfread_int(cfp) != 0;
-		Mouse_sensitivity  = cfread_int(cfp);
-		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	Use_mouse_to_fly   = cfread_int(cfp) != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", Use_mouse_to_fly);
 
-		Joy_sensitivity    = cfread_int(cfp);
-		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	Mouse_sensitivity  = cfread_int(cfp);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
 
-		Joy_dead_zone_size = cfread_int(cfp);
-		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	Joy_sensitivity    = cfread_int(cfp);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
 
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
-		cfread_int(cfp);
-		cfread_int(cfp);
-		cfread_int(cfp);
-		cfread_int(cfp);
-	}
+	Joy_dead_zone_size = cfread_int(cfp);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 
 	if (csg_ver < 3) {
 		// detail
@@ -1769,6 +1762,10 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
+
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these campaign options set
+	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
+	//options::OptionsManager::instance()->persistChanges();
 
 	// if the campaign (for whatever reason) doesn't have a squad image, use the multi one
 	if (p->s_squad_filename[0] == '\0') {

@@ -39,9 +39,6 @@ void options_menu_init();
 void options_menu_close();
 void options_menu_do_frame(float frametime);
 
-// For optionsmenumulti.cpp
-void options_set_ingame_binary_option(SCP_string key, bool value);
-
 // kill the options menu
 void options_cancel_exit();
 
