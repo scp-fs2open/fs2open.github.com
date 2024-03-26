@@ -2858,7 +2858,7 @@ ADE_FUNC(setName, l_UserInterface_MultiStartGame, "string Password", "Sets the g
 
 ADE_FUNC(setGameType,
 	l_UserInterface_MultiStartGame,
-	"enumeration type=MULTI_GAME_TYPE_OPEN [string | number password_or_rank_index]",
+	"enumeration type=MULTI_GAME_TYPE_OPEN, [string | number password_or_rank_index]",
 	"Sets the game's type and, optionally, the password or rank index.",
 	"boolean",
 	"True if successful, false otherwise")
