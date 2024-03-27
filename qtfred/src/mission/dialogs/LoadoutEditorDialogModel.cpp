@@ -886,6 +886,11 @@ void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool
 	for (const auto& item : list) {
 		for (auto& ship : _teams[_currentTeam].ships) {
 			if (item == ship.name) {
+				// if this is a first time enabling, set it to the default.				
+				if (!ship.enabled && enabled && ship.extraAllocated == 0) {
+					ship.extraAllocated = 4;
+				} 
+
 				ship.enabled = enabled;
 				break;
 			}
@@ -901,6 +906,11 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].weapons) {
 			if (item == weapon.name) {
+				// if this is a first time enabling, set it to the default.
+				if (!weapon.enabled && enabled && weapon.extraAllocated == 0) {
+					weapon.extraAllocated = 8;
+				} 
+
 				weapon.enabled = enabled;
 				break;
 			}
