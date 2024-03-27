@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>620</width>
-    <height>643</height>
+    <width>861</width>
+    <height>629</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -250,7 +250,7 @@
         <enum>QLayout::SetMinimumSize</enum>
        </property>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QLabel" name="startingWeaponsLabel">
+        <widget class="QLabel" name="startingShipsLabel">
          <property name="text">
           <string>Ships in Loadout</string>
          </property>
@@ -297,7 +297,7 @@
         </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="startingWeaponsLabel">
          <property name="text">
           <string>Weapons in Loadout</string>
          </property>
@@ -416,7 +416,7 @@
         <enum>QLayout::SetMinimumSize</enum>
        </property>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QLabel" name="startingShipsLabel">
+        <widget class="QLabel" name="listShipsNotUsedLabel">
          <property name="text">
           <string>Ships Not in Loadout</string>
          </property>
@@ -430,7 +430,7 @@
         </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="listWeaponsNotUsedLabel">
          <property name="text">
           <string>Weapons  Not In Loadout</string>
          </property>
