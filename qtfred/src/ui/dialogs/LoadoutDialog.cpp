@@ -43,10 +43,17 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	connect(this, &QDialog::rejected, _model.get(), &LoadoutDialogModel::reject);
 
 	// Ship and Weapon lists, selection changed.
-	// TODO: Is there a way to know if we have been selected via the tab button?
 	connect(ui->listShipsNotUsed, 
 		&QListWidget::itemClicked,
 		this,
+		&LoadoutDialog::onPotentialShipListClicked);
+
+	// We need a second trigger for each list when multiple items are selected because itemClicked doesn't trigger on those,
+	// and itemSelectionChanged doesn't really trigger if you select the same item that's already selected (I think)
+	// so keep both
+	connect(ui->listShipsNotUsed, 
+		&QListWidget::itemSelectionChanged, 
+		this, 
 		&LoadoutDialog::onPotentialShipListClicked);
 
 	connect(ui->listWeaponsNotUsed,
@@ -54,14 +61,30 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
+	connect(ui->listWeaponsNotUsed, 
+		&QListWidget::itemClicked, 
+		this, 
+		&LoadoutDialog::onPotentialWeaponListClicked);
+
 	connect(ui->usedShipsList,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
+		this,
+		&LoadoutDialog::onUsedShipListClicked);
+
+	
+	connect(ui->usedShipsList, 
+		&QTableWidget::itemSelectionChanged,
 		this,
 		&LoadoutDialog::onUsedShipListClicked);
 
 	connect(ui->usedWeaponsList,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
+		&LoadoutDialog::onUsedWeaponListClicked);
+
+	connect(ui->usedWeaponsList, 
+		&QTableWidget::itemSelectionChanged, 
+		this, 
 		&LoadoutDialog::onUsedWeaponListClicked);
 
 	// And switching views between variable and lists
@@ -504,89 +527,6 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
 	return namesOut;
 }
 
-
-// This has been deprecated for now.  Possibly only going to use UpdateUI, since it will add and remove items from the lists as needed.
-/*
-void LoadoutDialog::resetLists() {
-	// clear the lists
-	ui->usedShipsList->clearContents();
-	ui->usedWeaponsList->clearContents();
-	ui->listShipsNotUsed->clearContents();
-	ui->listWeaponsNotUsed->clearContents();
-
-	SCP_vector<std::pair<SCP_string, bool>> newShipList;
-	SCP_vector<std::pair<SCP_string, bool>> newWeaponList;
-
-	// repopulate with the correct lists from the model.
-	if (_mode == TABLE_MODE) {
-		newShipList = _model->getShipList();
-		newWeaponList = _model->getWeaponList();
-	}
-	else {
-		newShipList = _model->getShipEnablerVariables();
-		newWeaponList = _model->getWeaponEnablerVariables();
-	}
-
-	ui->usedShipsList->setRowCount(static_cast<int>(newShipList.size()));
-	ui->usedWeaponsList->setRowCount(static_cast<int>(newWeaponList.size()));
-
-	int currentRow = 0;
-
-	// build the ship list...
-	for (auto& newShip : newShipList) {
-		// need to split the incoming string into the different parts.
-		size_t divider = newShip.first.find_last_of(" ");
-
-		// add text to the items
-		QTableWidgetItem nameItem(newShip.first.substr(0, divider).c_str());
-		QTableWidgetItem countItem(newShip.first.substr(divider + 1).c_str());
-
-		// TODO, figure out how to make the entire list editable or not editable.
-		nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
-
-		// enable the check box, if necessary
-		if (newShip.second) {
-			// overwrite the entry in the table.
-			// TODO, check this syntax
-			ui->usedShipList->insertItem(ui->usedShipList.size() -1 , 0, nameItem);
-			ui->usedShipList->setItem(ui->usedShipList.size() - 1, 1, countItem);
-		} //else {
-			//ui->
-		//}
-
-		currentRow++;
-	}
-
-	currentRow = 0;
-
-	for (auto& newWeapon : newWeaponList) {
-		// need to split the incoming string into the different parts.
-		size_t divider = newWeapon.first.find_last_of(" ");
-
-		// add text to the items
-		QTableWidgetItem nameItem(newWeapon.first.substr(0, divider).c_str());
-		QTableWidgetItem countItem(newWeapon.first.substr(divider + 2).c_str());
-
-		nameItem->setFlags(nameItem->flags() &  ~Qt::ItemIsEditable);
-		countItem->setFlags(countItem->flags() &  ~Qt::ItemIsEditable);
-
-		// enable the check box, if necessary
-		(newWeapon.second) ? checkItem->setCheckState(Qt::Checked) : checkItem->setCheckState(Qt::Unchecked);
-
-		// overwrite the entry in the table.
-		ui->weaponVarList->setItem(currentRow, 1, nameItem);
-		ui->weaponVarList->setItem(currentRow, 2, countItem);
-
-		currentRow++;
-	}
-}
-
-
-void LoadoutDialog::getCurrentSelection() {
-
-}
-*/
 
 }
 }
