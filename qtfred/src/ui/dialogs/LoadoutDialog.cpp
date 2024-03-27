@@ -62,7 +62,7 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
 	connect(ui->listWeaponsNotUsed, 
-		&QListWidget::itemClicked, 
+		&QListWidget::itemSelectionChanged, 
 		this, 
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
