@@ -359,7 +359,7 @@ void LoadoutDialog::updateUI()
 				//remove from the unused list
 				for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
 					if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
-						delete ui->listShipsNotUsed->takeItem(x);
+						ui->listShipsNotUsed->item(x)->setText("");
 						break;
 					}
 				}
@@ -381,9 +381,8 @@ void LoadoutDialog::updateUI()
 				//remove from the used list
 				for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
 					if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
-						delete ui->usedShipsList->takeItem(x, 0);
-						delete ui->usedShipsList->takeItem(x, 1);
-						ui->usedShipsList->removeRow(x);
+						ui->usedShipsList->item(x, 0)->setText("");
+						ui->usedShipsList->item(x, 1)->setText("");
 						break;
 					}
 				}
@@ -420,7 +419,7 @@ void LoadoutDialog::updateUI()
 				//remove from the unused list
 				for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
 					if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
-						delete ui->listWeaponsNotUsed->takeItem(x);
+						ui->listWeaponsNotUsed->item(x)->setText("");
 						break;
 					}
 				}
@@ -442,11 +441,71 @@ void LoadoutDialog::updateUI()
 				//remove from the used list
 				for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x){
 					if (ui->usedWeaponsList->item(x,0) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
-						delete ui->usedWeaponsList->takeItem(x, 0);
-						delete ui->usedWeaponsList->takeItem(x, 1);
-						ui->usedWeaponsList->removeRow(x);
+						ui->usedWeaponsList->item(x, 0)->setText("");
+						ui->usedWeaponsList->item(x, 1)->setText("");
 						break;
-					}
+					} 
+				}
+			}
+		}
+	}
+
+
+	// Go through the lists and make sure that we don't have random empty entries
+	for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
+		if (ui->listShipsNotUsed->item(x) && !strlen(ui->listShipsNotUsed->item(x)->text().toStdString().c_str())) {
+			for (int y = x + 1; y < ui->listShipsNotUsed->count(); ++y) {
+				if (ui->listShipsNotUsed->item(y) && strlen(ui->listShipsNotUsed->item(y)->text().toStdString().c_str())) {
+					ui->listShipsNotUsed->item(x)->setText(ui->listShipsNotUsed->item(y)->text());
+					ui->listShipsNotUsed->item(y)->setText("");
+					break;
+				}
+			}
+		}
+	}
+
+
+	for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
+		if (ui->listWeaponsNotUsed->item(x) && !strlen(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str())) {
+			for (int y = x + 1; y < ui->listWeaponsNotUsed->count(); ++y) {
+				if (ui->listWeaponsNotUsed->item(y) && strlen(ui->listWeaponsNotUsed->item(y)->text().toStdString().c_str())) {
+					ui->listWeaponsNotUsed->item(x)->setText(ui->listWeaponsNotUsed->item(y)->text());
+					ui->listWeaponsNotUsed->item(y)->setText("");
+
+					break;
+				}
+			}
+		}
+	}
+
+	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
+		if (ui->usedShipsList->item(x, 0) && !strlen(ui->usedShipsList->item(x, 0)->text().toStdString().c_str()) && ui->usedShipsList->item(x, 1)) {
+			for (int y = x + 1; y < ui->usedShipsList->rowCount(); ++y) {
+				if (ui->usedShipsList->item(y, 0) && strlen(ui->usedShipsList->item(y, 0)->text().toStdString().c_str())
+				&& ui->usedShipsList->item(y, 1) && strlen(ui->usedShipsList->item(y, 1)->text().toStdString().c_str())) {
+
+					ui->usedShipsList->item(x, 0)->setText(ui->usedShipsList->item(y, 0)->text());
+					ui->usedShipsList->item(y, 0)->setText("");
+					ui->usedShipsList->item(x, 1)->setText(ui->usedShipsList->item(y, 1)->text());
+					ui->usedShipsList->item(y, 0)->setText("");
+					break;
+				}
+			}
+		}
+	}
+
+	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+		if (ui->usedWeaponsList->item(x, 0) && !strlen(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str()) &&
+			ui->usedWeaponsList->item(x, 1)) {
+			for (int y = x + 1; y < ui->usedWeaponsList->rowCount(); ++y) {
+				if (ui->usedWeaponsList->item(y, 0) && strlen(ui->usedWeaponsList->item(y, 0)->text().toStdString().c_str()) 
+				&& ui->usedWeaponsList->item(y, 1) && strlen(ui->usedWeaponsList->item(y, 1)->text().toStdString().c_str())) {
+
+					ui->usedWeaponsList->item(x, 0)->setText(ui->usedWeaponsList->item(y, 0)->text());
+					ui->usedWeaponsList->item(x, 1)->setText(ui->usedWeaponsList->item(y, 1)->text());
+					ui->usedWeaponsList->item(y, 0)->setText("");
+					ui->usedWeaponsList->item(y, 1)->setText("");					
+					break;
 				}
 			}
 		}
