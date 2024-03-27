@@ -189,21 +189,57 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 	if (_mode == TABLE_MODE) {
 		ui->tableVarLabel->setText("Loadout Editor: Variable View");
 		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
-		ui->startingShipsLabel->setText("Potential Variables - Ships");
-		ui->startingWeaponsLabel->setText("Potential Variables - Weapons");
+		ui->listShipsNotUsedLabel->setText("Potential Variables To Enable Ships");
+		ui->listWeaponsNotUsedLabel->setText("Potential Variables To Enable Weapons");
+		ui->startingShipsLabel->setText("Variables Used for Enabling Ships");
+		ui->startingWeaponsLabel->setText("Variables Used for Enabling Weapons");
+
 		_mode = VARIABLE_MODE;
 	}
 	else {
 		ui->tableVarLabel->setText("Loadout Editor: Loadout View");
 		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
-		ui->startingShipsLabel->setText("Ships Not in Loadout");
-		ui->startingWeaponsLabel->setText("Starting Weapons");
+		ui->listShipsNotUsedLabel->setText("Ships Not in Loadout");
+		ui->listWeaponsNotUsedLabel->setText("Starting Weapons");
+		ui->startingShipsLabel->setText("Variables Used for Enabling Ships");
+		ui->startingWeaponsLabel->setText("Variables Used for Enabling Weapons");
+
 		_mode = TABLE_MODE;
 	}
 
+	for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
+		if (ui->listShipsNotUsed->item(x)) {
+			ui->listShipsNotUsed->item(x)->setText("");
+		}
+	}
+
+	for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
+		if (ui->listWeaponsNotUsed->item(x)) {
+			ui->listWeaponsNotUsed->item(x)->setText("");
+		}
+	}
+
+	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
+		if (ui->usedShipsList->item(x, 0)) {
+			ui->usedShipsList->item(x, 0)->setText("");
+		}
+		if (ui->usedWeaponsList->item(x, 1)) {
+			ui->usedWeaponsList->item(x, 1)->setText("");
+		}
+	}
+
+	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+		if (ui->usedWeaponsList->item(x, 0)) {
+			ui->usedWeaponsList->item(x, 0)->setText("");
+		}
+		if (ui->usedWeaponsList->item(x, 1)) {
+			ui->usedWeaponsList->item(x, 1)->setText("");
+		}
+	}
+
+
 	// model does not keep track of whether the UI is editing the table values or the vars
-	// so, just reset the lists and then update the UI
-//	resetLists();
+	// so, just update the UI
 	updateUI();
 }
 
@@ -341,27 +377,29 @@ void LoadoutDialog::updateUI()
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x){
 				if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
 					found = true;
-					// only need to update the quantities here.
+					// update the quantities here, and make sure it's visible
 					ui->usedShipsList->item(x, 1)->setText(newShip.first.substr(divider + 1).c_str());
+					ui->usedShipsList->setRowHidden(x, false);
 					break;
 				}
 			}
 
+			// This should only happen at init
 			if (!found){
 				ui->usedShipsList->insertRow(ui->usedShipsList->rowCount());
 
 				QTableWidgetItem* nameItem = new QTableWidgetItem(shipName.c_str());
 				QTableWidgetItem* countItem = new QTableWidgetItem(newShip.first.substr(divider + 1).c_str());
-	
+
 				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 0, nameItem);
 				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 1, countItem);
+			}
 
-				//remove from the unused list
-				for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
-					if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
-						ui->listShipsNotUsed->item(x)->setText("");
-						break;
-					}
+			// remove from the unused list
+			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
+				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
+					ui->listShipsNotUsed->setRowHidden(x, true);
+					break;
 				}
 			}
 
@@ -371,20 +409,21 @@ void LoadoutDialog::updateUI()
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
 				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
 					found = true;
+					ui->listShipsNotUsed->setRowHidden(x, false); 
 					break;
 				}
 			}
 
 			if (!found){
 				ui->listShipsNotUsed->addItem(shipName.c_str());
+			}
 
-				//remove from the used list
-				for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-					if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
-						ui->usedShipsList->item(x, 0)->setText("");
-						ui->usedShipsList->item(x, 1)->setText("");
-						break;
-					}
+				// remove from the used list
+			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
+				if (ui->usedShipsList->item(x, 0) &&
+					!stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
+					ui->usedShipsList->setRowHidden(x, true);
+					break;
 				}
 			}
 		}
@@ -403,6 +442,7 @@ void LoadoutDialog::updateUI()
 					found = true;
 					// only need to update the quantities here.
 					ui->usedWeaponsList->item(x, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
+					ui->usedWeaponsList->setRowHidden(x, false);
 					break;
 				}
 			}
@@ -416,35 +456,38 @@ void LoadoutDialog::updateUI()
 				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 0, nameItem);
 				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 1, countItem);
 
-				//remove from the unused list
-				for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
-					if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
-						ui->listWeaponsNotUsed->item(x)->setText("");
-						break;
-					}
+
+			}
+
+			// remove from the unused list
+			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
+				if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
+					ui->listWeaponsNotUsed->setRowHidden(x, true);
+					break;
 				}
 			}
-			
+
 		} else {
 			bool found = false;
 
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
 				if (ui->listWeaponsNotUsed->item(x) && !stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
 					found = true;
+					ui->listWeaponsNotUsed->setRowHidden(x, false);
 					break;
 				}
 			}
 
 			if (!found){
 				ui->listWeaponsNotUsed->addItem(weaponName.c_str());
-
-				//remove from the used list
-				for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x){
-					if (ui->usedWeaponsList->item(x,0) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
-						ui->usedWeaponsList->item(x, 0)->setText("");
-						ui->usedWeaponsList->item(x, 1)->setText("");
-						break;
-					} 
+			}
+			
+			// remove from the used list
+			for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+				if (ui->usedWeaponsList->item(x, 0) &&
+					!stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
+					ui->usedWeaponsList->setRowHidden(x, true);
+					break;
 				}
 			}
 		}
@@ -486,8 +529,9 @@ void LoadoutDialog::updateUI()
 
 					ui->usedShipsList->item(x, 0)->setText(ui->usedShipsList->item(y, 0)->text());
 					ui->usedShipsList->item(y, 0)->setText("");
+
 					ui->usedShipsList->item(x, 1)->setText(ui->usedShipsList->item(y, 1)->text());
-					ui->usedShipsList->item(y, 0)->setText("");
+					ui->usedShipsList->item(y, 1)->setText("");
 					break;
 				}
 			}
@@ -502,8 +546,9 @@ void LoadoutDialog::updateUI()
 				&& ui->usedWeaponsList->item(y, 1) && strlen(ui->usedWeaponsList->item(y, 1)->text().toStdString().c_str())) {
 
 					ui->usedWeaponsList->item(x, 0)->setText(ui->usedWeaponsList->item(y, 0)->text());
-					ui->usedWeaponsList->item(x, 1)->setText(ui->usedWeaponsList->item(y, 1)->text());
 					ui->usedWeaponsList->item(y, 0)->setText("");
+
+					ui->usedWeaponsList->item(x, 1)->setText(ui->usedWeaponsList->item(y, 1)->text());
 					ui->usedWeaponsList->item(y, 1)->setText("");					
 					break;
 				}
