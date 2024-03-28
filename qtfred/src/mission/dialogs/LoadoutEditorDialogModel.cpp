@@ -891,6 +891,32 @@ void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool
 					ship.extraAllocated = 4;
 				} 
 
+				// If this is present in wings, it cannot be disabled, but we *can* remove the extra.
+				if (ship.enabled && !enabled && ship.countInWings > 0) {
+					ship.extraAllocated = 0;
+				} else {
+					ship.enabled = enabled;
+				}
+
+				break;
+			}
+		}
+	}
+
+	buildCurrentLists();
+}
+
+
+void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
+{
+	for (const auto& item : list) {
+		for (auto& ship : _teams[_currentTeam].varShips) {
+			if (item == ship.name) {
+				// if this is a first time enabling, set it to the default.
+				if (!ship.enabled && enabled && ship.extraAllocated == 0) {
+					ship.extraAllocated = 4;
+				}
+
 				ship.enabled = enabled;
 				break;
 			}
@@ -909,7 +935,32 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 				// if this is a first time enabling, set it to the default.
 				if (!weapon.enabled && enabled && weapon.extraAllocated == 0) {
 					weapon.extraAllocated = 8;
-				} 
+				}
+
+				// If this is present in wings, it cannot be disabled, but we *can* remove the extra.
+				if (weapon.enabled && !enabled && weapon.countInWings > 0) {
+					weapon.extraAllocated = 0;
+				} else {
+					weapon.enabled = enabled;		
+				}
+
+				break;
+			}
+		}
+	}
+
+	buildCurrentLists();
+}
+
+void LoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
+{
+	for (const auto& item : list) {
+		for (auto& weapon : _teams[_currentTeam].varWeapons) {
+			if (item == weapon.name) {
+				// if this is a first time enabling, set it to the default.
+				if (!weapon.enabled && enabled && weapon.extraAllocated == 0) {
+					weapon.extraAllocated = 8;
+				}
 
 				weapon.enabled = enabled;
 				break;
@@ -919,6 +970,7 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 
 	buildCurrentLists();
 }
+
 
 void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count) 
 {
@@ -934,10 +986,38 @@ void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>
 	buildCurrentLists();
 }
 
+void LoadoutDialogModel::setExtraAllocatedForShipVariablesCount(const SCP_vector<SCP_string>& list, const uint count)
+{
+	for (const auto& item : list) {
+		for (auto& ship : _teams[_currentTeam].varShips) {
+			if (item == ship.name) {
+				ship.extraAllocated = count;
+				break;
+			}
+		}
+	}
+
+	buildCurrentLists();
+}
+
 void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count)
 {
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].weapons) {
+			if (item == weapon.name) {
+				weapon.extraAllocated = count;
+				break;
+			}
+		}
+	}
+
+	buildCurrentLists();
+}
+
+void LoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const uint count)
+{
+	for (const auto& item : list) {
+		for (auto& weapon : _teams[_currentTeam].varWeapons) {
 			if (item == weapon.name) {
 				weapon.extraAllocated = count;
 				break;

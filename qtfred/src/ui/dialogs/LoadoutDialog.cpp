@@ -148,15 +148,6 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	_mode = TABLE_MODE;
 	_lastSelectionChanged = NONE;
 	
-	// UPDATE - Now that things are split, we don't need this anymore.  Keep it around for reference until TODO remove me when done
-	// rows will vary but columns need to be 3
-	//	ui->shipVarList->setColumnCount(1);
-	//	ui->weaponVarList->setColumnCount(1);
-	
-	// set sizes
-	//	ui->shipVarList->setColumnWidth(0,10);
-	//	ui->weaponVarList->setColumnWidth(0,10);
-
 	// set headers
 	ui->usedShipsList->setColumnCount(2);
 	ui->usedWeaponsList->setColumnCount(2);
@@ -175,8 +166,6 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(false);
 	}
 
-	// need to completely rebuild the lists here.
-//	resetLists();
 	updateUI();
 }
 
@@ -188,7 +177,7 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 	// Change important lables.
 	if (_mode == TABLE_MODE) {
 		ui->tableVarLabel->setText("Loadout Editor: Variable View");
-		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
+		
 		ui->listShipsNotUsedLabel->setText("Potential Variables To Enable Ships");
 		ui->listWeaponsNotUsedLabel->setText("Potential Variables To Enable Weapons");
 		ui->startingShipsLabel->setText("Variables Used for Enabling Ships");
@@ -200,9 +189,9 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 		ui->tableVarLabel->setText("Loadout Editor: Loadout View");
 		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
 		ui->listShipsNotUsedLabel->setText("Ships Not in Loadout");
-		ui->listWeaponsNotUsedLabel->setText("Starting Weapons");
-		ui->startingShipsLabel->setText("Variables Used for Enabling Ships");
-		ui->startingWeaponsLabel->setText("Variables Used for Enabling Weapons");
+		ui->listWeaponsNotUsedLabel->setText("Weapons Not In Loadout");
+		ui->startingShipsLabel->setText("Ships in Loadout");
+		ui->startingWeaponsLabel->setText("Weapons in Loadout");
 
 		_mode = TABLE_MODE;
 	}
@@ -223,8 +212,8 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 		if (ui->usedShipsList->item(x, 0)) {
 			ui->usedShipsList->item(x, 0)->setText("");
 		}
-		if (ui->usedWeaponsList->item(x, 1)) {
-			ui->usedWeaponsList->item(x, 1)->setText("");
+		if (ui->usedShipsList->item(x, 1)) {
+			ui->usedShipsList->item(x, 1)->setText("");
 		}
 	}
 
@@ -237,6 +226,11 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 		}
 	}
 
+	// Since we're changing modes, clear what we selected previously.
+	ui->listShipsNotUsed->clearSelection();
+	ui->listWeaponsNotUsed->clearSelection();
+	ui->usedShipsList->clearSelection();
+	ui->usedWeaponsList->clearSelection();
 
 	// model does not keep track of whether the UI is editing the table values or the vars
 	// so, just update the UI
@@ -251,7 +245,12 @@ void LoadoutDialog::addShipButtonClicked()
 		list.push_back(item->text().toStdString());
 	}
 
-	_model->setShipEnabled(list, true);
+	if (_mode == TABLE_MODE) {
+		_model->setShipEnabled(list, true);	
+	} else {
+		_model->setShipVariableEnabled(list, true);
+	}
+
 	updateUI();
 }
 
@@ -263,7 +262,12 @@ void LoadoutDialog::addWeaponButtonClicked()
 		list.push_back(item->text().toStdString());
 	}
 
-	_model->setWeaponEnabled(list, true);
+	if (_mode == TABLE_MODE) {
+		_model->setWeaponEnabled(list, true);
+	} else {
+		_model->setWeaponVariableEnabled(list, true);
+	}
+
 	updateUI();
 }
 
@@ -275,7 +279,12 @@ void LoadoutDialog::removeShipButtonClicked()
 		list.push_back(item->text().toStdString());
 	}
 
-	_model->setShipEnabled(list, false);
+	if (_mode == TABLE_MODE) {
+		_model->setShipEnabled(list, false);
+	} else {
+		_model->setShipVariableEnabled(list, false);
+	}
+
 	updateUI();
 }
 
@@ -287,7 +296,12 @@ void LoadoutDialog::removeWeaponButtonClicked()
 		list.push_back(item->text().toStdString());
 	}
 
-	_model->setWeaponEnabled(list, false);
+	if (_mode == TABLE_MODE) {
+		_model->setWeaponEnabled(list, false);	
+	} else {
+		_model->setWeaponVariableEnabled(list, false);
+	}
+
 	updateUI();
 }
 
@@ -295,22 +309,42 @@ void LoadoutDialog::onExtraItemSpinboxUpdated()
 {
 	SCP_vector<SCP_string> list;
 
-	if (_lastSelectionChanged == USED_SHIPS){
-		list = getSelectedShips();
+	if (_mode == TABLE_MODE) {
+		if (_lastSelectionChanged == USED_SHIPS) {
+			list = getSelectedShips();
 
-		if (ui->extraItemSpinbox->value() < 0) {
-			ui->extraItemSpinbox->setValue(0.0f);
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
+		} else if (_lastSelectionChanged == USED_WEAPONS) {
+			list = getSelectedWeapons();
+
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
 		}
+	} else {
+		if (_lastSelectionChanged == USED_SHIPS) {
+			list = getSelectedShips();
 
-		_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
-	} else if (_lastSelectionChanged == USED_WEAPONS){
-		list = getSelectedWeapons();
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
 
-		if (ui->extraItemSpinbox->value() < 0){
-			ui->extraItemSpinbox->setValue(0.0f);
+			_model->setExtraAllocatedForShipVariablesCount(list, ui->extraItemSpinbox->value());
+		} else if (_lastSelectionChanged == USED_WEAPONS) {
+			list = getSelectedWeapons();
+
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedForWeaponVariablesCount(list, ui->extraItemSpinbox->value());
 		}
-		
-		_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
 	}
 
 	updateUI();
