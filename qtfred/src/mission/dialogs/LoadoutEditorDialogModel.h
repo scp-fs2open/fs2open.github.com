@@ -87,7 +87,7 @@ public:
 
 private:
 
-	SCP_string createItemString(bool ship, int itemIndex);
+	SCP_string createItemString(bool ship, bool variable, int itemIndex, SCP_string variableIn = "");
 	void buildCurrentLists();
 	void initializeData();
 
