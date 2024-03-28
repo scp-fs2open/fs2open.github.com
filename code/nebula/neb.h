@@ -72,6 +72,7 @@ typedef struct poof_info {
 	::util::UniformFloatRange rotation;
 	float view_dist;
 	::util::UniformFloatRange alpha;
+	vec3d alignment;
 
 	// These values are dynamic, unlike the above and can change during a mission.
 	// They are used for fading poof types in and out via sexp
@@ -92,6 +93,7 @@ typedef struct poof_info {
 		fade_duration = -1;
 		fade_in = true;
 		fade_multiplier = -1.0f;
+		alignment = vmd_zero_vector;
 	}
 } poof_info;
 
