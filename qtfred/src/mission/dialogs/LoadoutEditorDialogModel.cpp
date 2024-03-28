@@ -293,7 +293,7 @@ void LoadoutDialogModel::setShipInfo(SCP_string textIn, bool enabled, int extraA
 			}
 
 			// now that all the data is correctly set, rebuild the corresponding string.
-			_shipList[index].first = createItemString(true, index);
+			_shipList[index].first = createItemString(true, false, index);
 			_shipList[index].second = enabled;
 
 			break;
@@ -332,10 +332,8 @@ void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extr
 
 			}
 
-			SCP_string newstring = createItemString(false, index);
-
 			// now that all the data is correctly set, rebuild the corresponding string.
-			_weaponList[index].first = createItemString(true, index);
+			_weaponList[index].first = createItemString(false, false, index);
 			_weaponList[index].second = enabled;
 
 			found = true;
@@ -350,22 +348,36 @@ void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extr
 	modelChanged();
 }
 
-SCP_string LoadoutDialogModel::createItemString(bool ship, int itemIndex)
+SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, SCP_string variableIn)
 {
 	LoadoutItem* ip;
 	SCP_string stringOut;
 
-	if (ship) {
-		ip = &_teams[_currentTeam].ships[itemIndex];
-		stringOut = Ship_info[ip->infoIndex].name;
-	} else { 
-		ip = &_teams[_currentTeam].weapons[itemIndex];
-		stringOut = Weapon_info[ip->infoIndex].name;
+	if (variable) {
+		if (ship) {
+			ip = &_teams[_currentTeam].varShips[itemIndex];
+		} else {
+			ip = &_teams[_currentTeam].varWeapons[itemIndex];
+		}
+
+		stringOut = variableIn;
+	} else {
+		if (ship) {
+			ip = &_teams[_currentTeam].ships[itemIndex];
+			stringOut = Ship_info[ip->infoIndex].name;
+		} else {
+			ip = &_teams[_currentTeam].weapons[itemIndex];
+			stringOut = Weapon_info[ip->infoIndex].name;
+		}
 	}
 
 	stringOut += " ";
-	stringOut += std::to_string(ip->countInWings);
-	stringOut += "/";
+
+	if (!variable) {
+		stringOut += std::to_string(ip->countInWings);
+		stringOut += "/";	
+	}
+
 	if (ip->varCountIndex < 0) {
 		stringOut += std::to_string(ip->extraAllocated);
 	}
@@ -576,18 +588,21 @@ bool LoadoutDialogModel::apply() {
 		}
 
 		for (auto& ship : modelTeam.varShips) {
-			Team_data[currentTeam].ship_count[index] = ship.extraAllocated;
+			if (ship.enabled) {
 
-			if (ship.varCountIndex > -1) {
-				strcpy_s(Team_data[currentTeam].ship_count_variables[index], Sexp_variables[ship.varCountIndex].variable_name);
-			}
-			else {
-				memset(Team_data[currentTeam].ship_count_variables[index], 0, TOKEN_LENGTH);
-			}
+				Team_data[currentTeam].ship_count[index] = ship.extraAllocated;
 
-			Team_data[currentTeam].ship_list[index] = ship.infoIndex;
-			strcpy_s(Team_data[currentTeam].ship_list_variables[index], ship.name.c_str());
-			index++;
+				if (ship.varCountIndex > -1) {
+					strcpy_s(Team_data[currentTeam].ship_count_variables[index],
+						Sexp_variables[ship.varCountIndex].variable_name);
+				} else {
+					memset(Team_data[currentTeam].ship_count_variables[index], 0, TOKEN_LENGTH);
+				}
+
+				Team_data[currentTeam].ship_list[index] = ship.infoIndex;
+				strcpy_s(Team_data[currentTeam].ship_list_variables[index], ship.name.c_str());
+				index++;
+			}
 		}
 
 		Team_data[currentTeam].num_ship_choices = index;
@@ -609,22 +624,25 @@ bool LoadoutDialogModel::apply() {
 		}
 
 		for (auto& weapon : modelTeam.varWeapons) {
-			Team_data[currentTeam].weaponry_count[index] = weapon.extraAllocated;
+			if (weapon.enabled) {
 
-			if (weapon.varCountIndex > -1) {
-				strcpy_s(Team_data[currentTeam].weaponry_amount_variable[index], Sexp_variables[weapon.varCountIndex].variable_name);
-			}
-			else {
-				memset(Team_data[currentTeam].weaponry_amount_variable[index], 0, TOKEN_LENGTH);
-			}
+				Team_data[currentTeam].weaponry_count[index] = weapon.extraAllocated;
 
-			Team_data[currentTeam].weaponry_pool[index] = weapon.infoIndex;
-			strcpy_s(Team_data[currentTeam].weaponry_pool_variable[index], weapon.name.c_str());
-			index++;
+				if (weapon.varCountIndex > -1) {
+					strcpy_s(Team_data[currentTeam].weaponry_amount_variable[index],
+						Sexp_variables[weapon.varCountIndex].variable_name);
+				} else {
+					memset(Team_data[currentTeam].weaponry_amount_variable[index], 0, TOKEN_LENGTH);
+				}
+
+				Team_data[currentTeam].weaponry_pool[index] = weapon.infoIndex;
+				strcpy_s(Team_data[currentTeam].weaponry_pool_variable[index], weapon.name.c_str());
+				index++;
+			}
 		}
 
-//		TODO! What happened here?
-//		Team_data[currentTeam].num_weapon_choices;
+
+		Team_data[currentTeam].num_weapon_choices = index;
 	}
 	
 	Entry_delay_time = fl2f(_playerEntryDelay);
@@ -655,39 +673,44 @@ void LoadoutDialogModel::buildCurrentLists()
 
 	int index = 0;
 	for (auto& item : _teams[_currentTeam].ships) {
-		_shipList.emplace_back(createItemString(true, index), item.enabled);
+		_shipList.emplace_back(createItemString(true, false, index), item.enabled);
 		index++;
 	}
 
 	index = 0;
 
 	for (auto& item : _teams[_currentTeam].weapons) {
-		_weaponList.emplace_back(createItemString(false, index), item.enabled);
+		_weaponList.emplace_back(createItemString(false, false, index), item.enabled);
 		index++;
 	}
 	
-	for (auto& sexp : Sexp_variables) {
-		bool found = false;
-		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_STRING)){
+	for (int x = 0; x < MAX_SEXP_VARIABLES; ++x) {
+		bool enabled = false;
+		SCP_string name = Sexp_variables[x].variable_name;
+
+		if ((Sexp_variables[x].type & SEXP_VARIABLE_SET) && (Sexp_variables[x].type & SEXP_VARIABLE_STRING)) {
 			for (auto& item : _teams[_currentTeam].varShips) {
-				if (item.name == sexp.variable_name) {
-					found = true;
+				if (item.name == Sexp_variables[x].variable_name) {
+					enabled = item.enabled;
+					name = createItemString(true, true, x, name);
 					break;
 				}
 			}
 
-			_shipVarList.emplace_back(sexp.variable_name, found);
+			_shipVarList.emplace_back(name, enabled);
 
-			found = false;
+			enabled = false;
+			name = Sexp_variables[x].variable_name;
 
 			for (auto& item : _teams[_currentTeam].varWeapons) {
-				if (item.name == sexp.variable_name) {
-					found = true;
+				if (item.name == Sexp_variables[x].variable_name) {
+					enabled = item.enabled;
+					name = createItemString(true, true, x, name);
 					break;
 				}
 			}
 
-			_weaponVarList.emplace_back(sexp.variable_name, found);
+			_weaponVarList.emplace_back(name, enabled);
 		}
 	}
 }
@@ -910,8 +933,11 @@ void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool
 void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
 {
 	for (const auto& item : list) {
+		bool found = false;
 		for (auto& ship : _teams[_currentTeam].varShips) {
 			if (item == ship.name) {
+				found = true;
+
 				// if this is a first time enabling, set it to the default.
 				if (!ship.enabled && enabled && ship.extraAllocated == 0) {
 					ship.extraAllocated = 4;
@@ -920,6 +946,15 @@ void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& li
 				ship.enabled = enabled;
 				break;
 			}
+		}
+
+		if (!found && enabled) {
+			_teams[_currentTeam].varShips.emplace_back(get_index_sexp_variable_name(item.c_str()),
+				true,
+				0, // there cannot be any because this is var enabled.
+				ShipVarDefault,
+				-1, // no var for count until one can be selected.
+				item);
 		}
 	}
 
@@ -955,16 +990,29 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 void LoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
 {
 	for (const auto& item : list) {
+		bool found = false;
 		for (auto& weapon : _teams[_currentTeam].varWeapons) {
 			if (item == weapon.name) {
+				found = true;
+
 				// if this is a first time enabling, set it to the default.
 				if (!weapon.enabled && enabled && weapon.extraAllocated == 0) {
-					weapon.extraAllocated = 8;
+					weapon.extraAllocated = WeaponVarDefault;
 				}
 
 				weapon.enabled = enabled;
 				break;
 			}
+		}
+
+		if (!found && enabled) {
+			_teams[_currentTeam].varWeapons.emplace_back(
+				get_index_sexp_variable_name(item.c_str()),
+				true,
+				0, // there cannot be any because this is var enabled.
+				WeaponVarDefault,
+				-1, // no var for count until one can be selected.
+				item);
 		}
 	}
 
