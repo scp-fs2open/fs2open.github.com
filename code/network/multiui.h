@@ -65,6 +65,12 @@ typedef struct multi_create_info {
 #define MICON_VALID						10
 #define MICON_CD							11
 
+// text related defines
+#define MULTI_COMMON_TEXT_META_CHAR '$'
+#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH 200
+#define MULTI_COMMON_TEXT_MAX_LINES 20
+#define MULTI_COMMON_MAX_TEXT (MULTI_COMMON_TEXT_MAX_LINES * MULTI_COMMON_TEXT_MAX_LINE_LENGTH)
+
 // common icon stuff
 extern int Multi_common_icons[MULTI_NUM_COMMON_ICONS];
 extern int Multi_common_icon_dims[MULTI_NUM_COMMON_ICONS][2];
@@ -102,14 +108,26 @@ void multi_sg_rank_build_name(const char *in,char *out);
 
 extern int Multi_join_overlay_id;
 
-void multi_join_game_init();
-void multi_join_game_close();
-void multi_join_game_do_frame();
+extern char Multi_common_notify_text[200];
+extern char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
+extern UI_TIMESTAMP Multi_join_sent_stamp;
+extern int Multi_join_should_send;
+extern active_game* Multi_join_selected_item;
+
+void multi_join_game_init(bool API_Access = false);
+void multi_join_game_close(bool API_Access = false);
+void multi_join_game_do_frame(bool API_Access = false);
 void multi_join_eval_pong(net_addr *addr, fix pong_time);
 void multi_join_reset_join_stamp();
 void multi_join_clear_game_list();
 void multi_join_notify_new_game();
-void multi_join_maybe_update_selected(active_game *game);
+void multi_join_send_join_request(int as_observer);
+void multi_join_create_game();
+void multi_join_maybe_update_selected(active_game* game);
+void multi_join_game_set_status_text(active_game* game, SCP_string& status_text);
+void multi_join_game_set_speed_text(active_game* game, int& con_type, SCP_string& speed_text);
+
+int multi_join_warn_pxo();
 
 void multi_start_game_init();
 void multi_start_game_do();
