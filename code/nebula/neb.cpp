@@ -292,7 +292,7 @@ void parse_nebula_table(const char* filename)
 					SCP_string type;
 					stuff_string(type, F_NAME);
 
-					if (!stricmp(type.c_str(), " VERTICAL"))
+					if (!stricmp(type.c_str(), "VERTICAL"))
 						poofp->alignment = vmd_y_vector;
 					else
 						Warning(LOCATION, "Unrecognized alignment type '%s' for nebula poof %s", type.c_str(), poofp->name);
@@ -846,7 +846,7 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 	if (pinfo->alignment != vmd_zero_vector)
 		vm_vec_rand_vec(&new_poof.up_vec);
 	else
-		new_poof.up_vec = vmd_y_vector;
+		new_poof.up_vec = pinfo->alignment;
 
 	Neb2_poofs.push_back(new_poof);
 }
