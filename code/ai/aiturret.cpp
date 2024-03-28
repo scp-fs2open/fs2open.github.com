@@ -133,7 +133,7 @@ bool object_in_turret_fov(const object *objp, const ship_subsys *ss, const vec3d
 				model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 				break;
 			case OBJ_ASTEROID:
-				model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+				model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 				break;
 			default:
 				vm_vec_normalized_dir(&v2e, &objp->pos, tpos);

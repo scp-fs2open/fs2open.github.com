@@ -70,7 +70,7 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 		asteroid		*asp;
 
 		asp = &Asteroids[obj->instance];
-		model_num_a = Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
+		model_num_a = Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
 	}
 
 	if ( other.obj->type == OBJ_SHIP ) {
@@ -94,7 +94,7 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 		asteroid		*asp;
 
 		asp = &Asteroids[other.obj->instance];
-		model_num_b = Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
+		model_num_b = Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
 	}
 
 	if ( model_num_a == model_num_b ) {

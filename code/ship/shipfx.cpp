@@ -979,7 +979,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 		mc.model_instance_num = -1;
-		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
+		mc.model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;	// Fill in the model to check
 		mc.submodel_num = -1;
 		mc.orient = &objp->orient;					// The object's orient
 		mc.pos = &objp->pos;							// The object's position

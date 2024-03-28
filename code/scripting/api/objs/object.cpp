@@ -505,7 +505,7 @@ ADE_FUNC(
 			break;
 		case OBJ_ASTEROID:
 			temp = Asteroids[obj->instance].asteroid_subtype;
-			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].model_num[temp];
+			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].subtypes[temp].model_number;
 			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		default:

@@ -438,7 +438,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			{
 			int pof = 0;
 			pof = Asteroids[targetp->instance].asteroid_subtype;
-			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].subtypes[pof].model_number;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			}
 			break;
