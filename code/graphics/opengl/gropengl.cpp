@@ -1202,9 +1202,6 @@ static bool printNextDebugMessage() {
 #endif
 
 static void init_extensions() {
-	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
-	Use_compressed_textures = GLAD_GL_EXT_texture_compression_s3tc;
-	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
@@ -1412,8 +1409,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  GL_max_renderbuffer_size,
 		  GL_max_renderbuffer_size ));
 
-	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  S3TC texture support: %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  BPTC texture support: %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
