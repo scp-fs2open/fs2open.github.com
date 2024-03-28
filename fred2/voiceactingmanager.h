@@ -96,6 +96,7 @@ protected:
 	afx_msg void OnCopyShipPersonasToMessages();
 	afx_msg void OnSetHeadANIsUsingMessagesTbl();
 	afx_msg void OnClearPersonasFromNonSenders();
+	afx_msg void OnCheckAnyWingmanPersonas();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

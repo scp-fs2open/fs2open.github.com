@@ -2179,12 +2179,12 @@ BEGIN
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 250
+IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 284
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,237
+    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,271
     GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
     LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
     EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,44,12,ES_AUTOHSCROLL
@@ -2208,7 +2208,7 @@ BEGIN
     CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,116,10
     PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,200,120,14
-    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,237
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,271
     GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,101
     EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,83,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
     LTEXT           "Placeholder - this text is set at runtime",IDC_ENTRY_FORMAT_DESC,270,28,120,85
@@ -2219,14 +2219,15 @@ BEGIN
     CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,151,99,9
     CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,161,99,9
     CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,280,171,99,9
-    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,275,208,120,30
+    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,275,242,120,30
     CONTROL         "Group send-message-list messages before others",IDC_GROUP_MESSAGES,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,293,182,100,19
-    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,121,119,118
+    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,121,119,152
     PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,154,151,109,14
     PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,168,109,14
     PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,211,109,23,BS_MULTILINE
     PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,185,109,23,BS_MULTILINE
+    PUSHBUTTON      "Check if messages sent by \x22<any wingman>\x22 have at least one ship with that persona",IDC_CHECK_ANY_WINGMAN_PERSONAS,154,237,109,31,BS_MULTILINE
     LTEXT           "NOTE: Only wingman personas are modified here.",IDC_LBL_NOTE,155,132,107,16
 END
 

@@ -118,6 +118,7 @@ BEGIN_MESSAGE_MAP(VoiceActingManager, CDialog)
 	ON_BN_CLICKED(IDC_SHIP_PERSONAS_TO_MESSAGES, OnCopyShipPersonasToMessages)
 	ON_BN_CLICKED(IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL, OnSetHeadANIsUsingMessagesTbl)
 	ON_BN_CLICKED(IDC_CLEAR_PERSONAS_FROM_NON_SENDERS, OnClearPersonasFromNonSenders)
+	ON_BN_CLICKED(IDC_CHECK_ANY_WINGMAN_PERSONAS, OnCheckAnyWingmanPersonas)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1141,4 +1142,83 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 	}
 
 	MessageBox("Message head ANIs have been assigned from builtin messages.", "Voice Acting Manager");
+}
+
+void VoiceActingManager::OnCheckAnyWingmanPersonas()
+{
+	char sender_buf[NAME_LENGTH];
+	SCP_string output_msg;
+	bool any_any_wingman = false;
+	int issue_count = 0;
+
+	// go through all messages in the mission
+	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
+	{
+		auto message = &Messages[i + Num_builtin_messages];
+
+		// find whoever sent this message
+		get_valid_sender(sender_buf, NAME_LENGTH, message);
+
+		// only check <any wingman>
+		if (stricmp(sender_buf, "<any wingman>") != 0)
+			continue;
+		any_any_wingman = true;
+
+		// check the message itself
+		if (message->persona_index < 0)
+		{
+			issue_count++;
+			output_msg += "\n\"";
+			output_msg += message->name;
+			output_msg += "\" - does not have a persona";
+			continue;
+		}
+		if (!(Personas[message->persona_index].flags & PERSONA_FLAG_WINGMAN))
+		{
+			issue_count++;
+			output_msg += "\n\"";
+			output_msg += message->name;
+			output_msg += "\" - does not have a wingman persona";
+			continue;
+		}
+
+		bool found_potential_sender = false;
+
+		// go through all ships in the mission
+		for (auto objp : list_range(&obj_used_list))
+		{
+			if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP))
+			{
+				if (Ships[objp->instance].persona_index == message->persona_index)
+				{
+					found_potential_sender = true;
+					break;
+				}
+			}
+		}
+
+		if (!found_potential_sender)
+		{
+			issue_count++;
+			output_msg += "\n\"";
+			output_msg += message->name;
+			output_msg += "\" - no ship with persona \"";
+			output_msg += Personas[message->persona_index].name;
+			output_msg += "\" was found";
+		}
+	}
+
+	if (!output_msg.empty())
+	{
+		if (issue_count == 1)
+			output_msg = "The following issue was found for messages sent by <any wingman>:\n" + output_msg;
+		else
+			output_msg = "The following issues were found for messages sent by <any wingman>:\n" + output_msg;
+
+		MessageBox(output_msg.c_str(), "Voice Acting Manager");
+	}
+	else if (!any_any_wingman)
+		MessageBox("All messages have been checked.  There are no messages sent by <any wingman>.", "Voice Acting Manager");
+	else
+		MessageBox("All messages have been checked.  All messages sent by <any wingman> have at least one candidate sender.", "Voice Acting Manager");
 }
