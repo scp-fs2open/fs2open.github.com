@@ -1,0 +1,6 @@
+#predefine IF_FLAG #ifdef %s
+#predefine IF_NOT_FLAG #ifndef %s
+#predefine ELSE_FLAG #else //%s
+#predefine ENDIF_FLAG #endif //%s
+#predefine IF_FLAG_COMPILED #ifdef %s
+#predefine ENDIF_FLAG_COMPILED #endif //%s

@@ -2,7 +2,9 @@
 #extension GL_ARB_gpu_shader5: enable
 
 #include "shadows.sdr"
-#include "model_shader_flags.h"
+
+#conditional_include +"LARGE_SHADER" "main_large.sdr"
+#conditional_include -"LARGE_SHADER" "main_small.sdr"
 
 in vec4 vertPosition;
 in vec4 vertTexCoord;
@@ -95,13 +97,22 @@ layout (std140) uniform modelData {
 	int flags;
 };
 
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 
 out VertexOutput {
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
 	vec3 envReflect;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
+
 	mat3 tangentMatrix;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 	float fogDist;
-#ifdef FLAG_SHADOW_MAP
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
+
+#ifdef MODEL_SDR_FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
  #endif
@@ -113,11 +124,15 @@ out VertexOutput {
 #endif
 	vec3 normal;
 	vec4 texCoord;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[4];
 	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
 
 #define TEXELS_PER_MATRIX 4
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 void getModelTransform(inout mat4 transform, out bool invisible, int id, int matrix_offset)
 {
 	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
@@ -127,6 +142,7 @@ void getModelTransform(inout mat4 transform, out bool invisible, int id, int mat
 	invisible = transform[3].w >= 0.9;
 	transform[3].w = 1.0;
 }
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 
 void main()
 {
@@ -137,20 +153,21 @@ void main()
 	mat4 scale = mat4(1.0);
 	bool clipModel = false;
 	
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_TRANSFORM)) {
+	#prereplace IF_FLAG MODEL_SDR_FLAG_TRANSFORM
 		getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
-	}
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
+
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_THRUSTER)) {
+	#prereplace IF_FLAG MODEL_SDR_FLAG_THRUSTER
 		if(vertex.z < -1.5) {
 			vertex.z *= thruster_scale;
 		}
-	}
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_THRUSTER
 	// Transform the normal into eye space and normalize the result.
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
-	#ifdef FLAG_SHADOW_MAP
+	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
 		gl_Position = position;
 		#if !defined(GL_ARB_gpu_shader5)
 			#ifdef APPLE
@@ -162,37 +179,39 @@ void main()
 	#else
 		gl_Position = projMatrix * position;
 	#endif
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)) {
+	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 		vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
 		vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
 		vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
 		vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
-	}
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 	// Setup stuff for normal maps and envmaps
 	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
 	vec3 b = cross(normal, t) * vertTangent.w;
 	vertOut.tangentMatrix = mat3(t, b, normal);
 
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)) {
+	#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
 		// Environment mapping reflection vector.
 		vec3 envReflect = reflect(normalize(position.xyz), normal);
 		vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
-	}
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)) {
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
+
+	#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
 		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
-	}
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_TRANSFORM)) {
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
+
+	#prereplace IF_FLAG MODEL_SDR_FLAG_TRANSFORM
 		if (clipModel) {
 			// Clip this model by moving all vertices outside the clip volume
 			gl_Position = vec4(vec3(-2.0), 1.0);
 		}
-		#ifdef FLAG_SHADOW_MAP
+		#ifdef MODEL_SDR_FLAG_SHADOW_MAP
 			vertOut.clipModel = clipModel ? 1.0 : 0.0;
 		#endif
-	}
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
 	if(use_clip_plane) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
@@ -200,7 +219,7 @@ void main()
 		gl_ClipDistance[0] = 1.0;
 	}
 
-	#ifndef FLAG_SHADOW_MAP
+	#ifndef MODEL_SDR_FLAG_SHADOW_MAP
 		vertOut.position = position;
 		vertOut.normal = normal;
 		vertOut.texCoord = texCoord;

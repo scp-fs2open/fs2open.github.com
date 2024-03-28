@@ -183,16 +183,12 @@ static opengl_shader_type_t GL_shader_types[] = {
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
 static opengl_shader_variant_t GL_shader_variants[] = {
-	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", {}, "Shadow Mapping"},
+//Model shader flags, both those set always as a compile flag as well as those that are usually runtime checks, need to be defined in this file
+#define MODEL_SDR_FLAG_MODE_CPP_ARRAY
+#include "def_files/data/effects/model_shader_flags.h"
+#undef MODEL_SDR_FLAG_MODE_CPP_ARRAY
 
-	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
-
-	{SDR_TYPE_EFFECT_PARTICLE,
-	 true,
-	 SDR_FLAG_PARTICLE_POINT_GEN,
-	 "FLAG_EFFECT_GEOMETRY",
-	 {opengl_vert_attrib::UVEC},
-	 "Geometry shader point-based particles"},
+	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
@@ -394,12 +390,68 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 	auto current_source_number = include_counter + 1;
 
 	const char* INCLUDE_STRING = "#include";
+	const char* CONDITIONAL_INCLUDE_STRING = "#conditional_include";
 	SCP_stringstream input(original);
 
 	int line_num = 1;
 	for (SCP_string line; std::getline(input, line);) {
-		auto include_start = line.find(INCLUDE_STRING);
+		auto include_start = line.find(CONDITIONAL_INCLUDE_STRING);
+
 		if (include_start != SCP_string::npos) {
+			//This is a conditional include. Figure out whether to include, or whether not to.
+			// Conditional include syntax: #conditional_include (+|-)"capability" "filename"
+			// On +, include if capability is available, on -, include if not available
+			include_start += strlen(CONDITIONAL_INCLUDE_STRING) + 1;
+			bool require_capability = true;
+
+			switch(line.at(include_start)) {
+			case '+':
+				require_capability = true;
+				break;
+			case '-':
+				require_capability = false;
+				break;
+			default:
+				Error(LOCATION,
+					"Shader %s:%d: Malformed conditional_include line. Expected + or -, got %c.",
+					filename.c_str(),
+					line_num,
+					line.at(include_start));
+				break;
+			}
+
+			auto first_quote = line.find('"', include_start);
+			auto second_quote = line.find('"', first_quote + 1);
+
+			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
+				Error(LOCATION,
+					"Shader %s:%d: Malformed conditional_include line. Could not find both quote characters for capability.",
+					filename.c_str(),
+					line_num);
+			}
+			auto condition = line.substr(first_quote + 1, second_quote - first_quote - 1);
+			auto capability = std::find_if(&gr_capabilities[0], &gr_capabilities[gr_capabilities_num],
+				[condition](const gr_capability_def &ext_pair) { return !stricmp(ext_pair.parse_name, condition.c_str()); });
+			if (capability == &gr_capabilities[gr_capabilities_num]) {
+				Error(LOCATION,
+					"Shader %s:%d: Malformed conditional_include line. Capability %s does not exist.",
+					filename.c_str(),
+					line_num,
+					condition.c_str());
+			}
+
+			//Prepare for including if capability is correct, skip otherwise.
+			if(gr_is_capable(capability->capability) == require_capability)
+				include_start = second_quote + 1 - strlen(INCLUDE_STRING);
+			else
+				include_start = SCP_string::npos - 1;
+		}
+		else {
+			//Only search for normal includes if it's not a conditional include.
+			include_start = line.find(INCLUDE_STRING);
+		}
+
+		if (include_start != SCP_string::npos && include_start != SCP_string::npos - 1) {
 			auto first_quote = line.find('"', include_start + strlen(INCLUDE_STRING));
 			auto second_quote = line.find('"', first_quote + 1);
 
@@ -440,7 +492,7 @@ static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 
 			// We are done with the include file so now we can return to the original file
 			output << "#line " << line_num + 1 << " " << current_source_number << "\n";
-		} else {
+		} else if (include_start != SCP_string::npos - 1) {
 			output << line << "\n";
 		}
 
@@ -460,6 +512,89 @@ static SCP_string handle_includes(const char* filename, const SCP_string& origin
 	return output.str();
 }
 
+static SCP_string handle_predefines(const char* filename, const SCP_string& original){
+	SCP_stringstream output;
+	SCP_unordered_map<SCP_string, SCP_string> defines;
+
+	const char* PREDEFINE_STRING = "#predefine";
+	const char* PREREPLACE_STRING = "#prereplace";
+
+	SCP_stringstream input(original);
+	for (SCP_string line; std::getline(input, line);) {
+		auto predefine_start = line.find(PREDEFINE_STRING);
+		auto prereplace_start = line.find(PREREPLACE_STRING);
+
+		if (predefine_start != SCP_string::npos){
+			predefine_start += strlen(PREDEFINE_STRING);
+
+			auto token_start = line.find(' ', predefine_start);
+			auto token_end =  line.find(' ', token_start + 1);
+
+			if (token_start == SCP_string::npos || token_end == SCP_string::npos) {
+				Error(LOCATION,
+					"Shader %s: Malformed predefine line. Could not find define token.",
+					filename);
+			}
+
+			auto token = line.substr(token_start + 1, token_end - token_start - 1);
+			auto replaceWith = line.substr(token_end + 1);
+
+			auto replaceStrToken = replaceWith.find("%s");
+			if (replaceStrToken == SCP_string::npos || replaceWith.find("%s", replaceStrToken + 1) != SCP_string::npos){
+				Error(LOCATION,
+					"Shader %s: Malformed predefine line. Replacing string must have exactly one %%s.",
+					filename);
+			}
+			if (defines.find(token) != defines.end()) {
+				Error(LOCATION,
+					"Shader %s: Malformed predefine line. Token %s is already defined.",
+					filename,
+					token.c_str());
+			}
+
+			defines.emplace(std::move(token), std::move(replaceWith));
+
+			output << "\n"; //At this point, don't mess with the linecount
+		}
+		else if (prereplace_start != SCP_string::npos){
+			prereplace_start += strlen(PREREPLACE_STRING);
+
+			auto token_start = line.find(' ', prereplace_start);
+			auto token_end =  line.find(' ', token_start + 1);
+
+			if (token_start == SCP_string::npos || token_end == SCP_string::npos) {
+				Error(LOCATION,
+					"Shader %s: Malformed prereplace line. Could not find define token.",
+					filename);
+			}
+
+			auto token = line.substr(token_start + 1, token_end - token_start - 1);
+			auto replaceArg = line.substr(token_end + 1);
+
+			auto replaceWithIt = defines.find(token);
+			if (replaceWithIt == defines.end()) {
+				Error(LOCATION,
+					"Shader %s: Malformed prereplace line. Could not find token %s.",
+					filename,
+					token.c_str());
+			}
+
+			size_t size = replaceWithIt->second.length() - 1 + replaceArg.size();
+			std::unique_ptr<char[]> buffer = make_unique<char[]>(size);
+
+			snprintf(buffer.get(), size, replaceWithIt->second.c_str(), replaceArg.c_str());
+			buffer[size - 1] = '\0';
+
+			output << buffer.get() << "\n";
+		}
+		else {
+			output << line << "\n";
+		}
+	}
+
+	return output.str();
+}
+
 static SCP_vector<SCP_string>
 opengl_get_shader_content(shader_type type_id, const char* filename, int flags, bool has_geo_shader, bool spirv_shader)
 {
@@ -470,7 +605,7 @@ opengl_get_shader_content(shader_type type_id, const char* filename, int flags, 
 	} else {
 		parts.push_back(opengl_shader_get_header(type_id, flags, has_geo_shader));
 
-		parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
+		parts.push_back(handle_predefines(filename, handle_includes(filename, opengl_load_shader(filename))));
 	}
 
 	return parts;
@@ -936,7 +1071,7 @@ void opengl_shader_init()
 	opengl_purge_old_shader_cache();
 
 	// compile effect shaders
-	if (gr_opengl_is_capable(CAPABILITY_SOFT_PARTICLES)) {
+	if (gr_opengl_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES)) {
 		// only compile soft particle shaders if they are supported, as to avoid introducing geo shaders if they aren't needed
 		gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, 0);
 		gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, SDR_FLAG_PARTICLE_POINT_GEN);

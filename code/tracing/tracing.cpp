@@ -230,7 +230,7 @@ void init() {
 		do_trace_events = true;
 	}
 
-	do_gpu_queries = gr_is_capable(CAPABILITY_TIMESTAMP_QUERY);
+	do_gpu_queries = gr_is_capable(gr_capability::CAPABILITY_TIMESTAMP_QUERY);
 
 	if (do_gpu_queries) {
 		gpu_start_query = get_gpu_timestamp_query();
