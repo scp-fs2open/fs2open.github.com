@@ -407,7 +407,7 @@ void LoadoutDialog::onExtraItemSpinboxUpdated()
 
 void LoadoutDialog::onExtraItemsViaVariableCombo()
 {
-	if (_lastSelectionChanged == USED_SHIPS || _lastSelectionChanged == USED_WEAPONS) {
+	if (_lastSelectionChanged == POTENTIAL_SHIPS || _lastSelectionChanged == POTENTIAL_WEAPONS) {
 		return;
 	}
 
