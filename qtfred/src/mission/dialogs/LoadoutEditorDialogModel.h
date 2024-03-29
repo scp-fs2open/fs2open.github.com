@@ -61,6 +61,8 @@ public:
 	SCP_string getCountVarShipEnabler(SCP_vector<SCP_string> namesIn);
 	SCP_string getCountVarWeaponEnabler(SCP_vector<SCP_string> namesIn);
 
+	SCP_vector<SCP_string> getNumberVarList();
+
 	int getExtraAllocatedShips(SCP_vector<SCP_string> namesIn);
 	int getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn);
 	int getExtraAllocatedShipEnabler(SCP_vector<SCP_string> namesIn);

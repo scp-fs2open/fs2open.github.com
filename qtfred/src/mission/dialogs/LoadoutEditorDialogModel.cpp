@@ -689,10 +689,10 @@ void LoadoutDialogModel::buildCurrentLists()
 		SCP_string name = Sexp_variables[x].variable_name;
 
 		if ((Sexp_variables[x].type & SEXP_VARIABLE_SET) && (Sexp_variables[x].type & SEXP_VARIABLE_STRING)) {
-			for (auto& item : _teams[_currentTeam].varShips) {
-				if (item.name == Sexp_variables[x].variable_name) {
-					enabled = item.enabled;
-					name = createItemString(true, true, x, name);
+			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varShips.size()); ++y) {
+				if (_teams[_currentTeam].varShips[y].name == Sexp_variables[x].variable_name) {
+					enabled = _teams[_currentTeam].varShips[y].enabled;
+					name = createItemString(true, true, y, name);
 					break;
 				}
 			}
@@ -702,10 +702,10 @@ void LoadoutDialogModel::buildCurrentLists()
 			enabled = false;
 			name = Sexp_variables[x].variable_name;
 
-			for (auto& item : _teams[_currentTeam].varWeapons) {
-				if (item.name == Sexp_variables[x].variable_name) {
-					enabled = item.enabled;
-					name = createItemString(true, true, x, name);
+			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varWeapons.size()); ++y) {
+				if (_teams[_currentTeam].varWeapons[y].name == Sexp_variables[x].variable_name) {
+					enabled = _teams[_currentTeam].varWeapons[y].enabled;
+					name = createItemString(true, true, y, name);
 					break;
 				}
 			}
@@ -829,7 +829,9 @@ int LoadoutDialogModel::getExtraAllocatedShips(SCP_vector<SCP_string> namesIn)
 	for (auto& name : namesIn) {
 		for (auto& currentShip : _teams[_currentTeam].ships) {
 			if (currentShip.name == name) {
-				if (out > -1 && currentShip.extraAllocated != out) {
+				// if this ship has a variable establishing count for it, or it doesn't match a previously establish count
+				// then we cannot represent all entries with the same amount and should return -1
+				if (currentShip.varCountIndex > -1 || (out > -1 && currentShip.extraAllocated != out)) {
 					return -1;
 				}
 				else {
@@ -851,7 +853,7 @@ int LoadoutDialogModel::getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn)
 	for (auto& name : namesIn) {
 		for (auto& currentWep : _teams[_currentTeam].weapons) {
 			if (currentWep.name == name) {
-				if (out > -1 && currentWep.extraAllocated != out) {
+				if (currentWep.varCountIndex > -1 || (out > -1 && currentWep.extraAllocated != out)) {
 					return -1;
 				} else {
 					out = currentWep.extraAllocated;
@@ -899,6 +901,11 @@ int LoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> na
 	}
 
 	return out;
+}
+
+SCP_vector<SCP_string> LoadoutDialogModel::getNumberVarList() 
+{
+	return _numberVarList;
 }
 
 bool LoadoutDialogModel::spinBoxUpdateRequired() { return _spinBoxUpdateRequired; };

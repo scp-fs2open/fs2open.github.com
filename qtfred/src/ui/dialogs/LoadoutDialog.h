@@ -62,12 +62,22 @@ private:
 		updateUI();
 	}
 
+	void onSelectAllUnusedShipsPressed();
+	void onClearAllUnusedShipsPressed();
+	void onSelectAllUnusedWeaponsPressed();
+	void onClearAllUnusedWeaponsPressed();
+	void onSelectAllUsedShipsPressed();
+	void onClearAllUsedShipsPressed();
+	void onSelectAllUsedWeaponsPressed();
+	void onClearAllUsedWeaponsPressed();
+	void openEditVariablePressed();
+	void onSelectionRequiredPressed();
+	void onSelectionNotRequiredPressed();
+
 	SCP_vector<SCP_string> LoadoutDialog::getSelectedShips(); 
 	SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons(); 
 
 	void updateUI();
-
-	void resetLists();
 
 	int _mode;
 	int _lastSelectionChanged;

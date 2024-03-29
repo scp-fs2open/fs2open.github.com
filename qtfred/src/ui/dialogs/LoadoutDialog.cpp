@@ -87,6 +87,47 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this, 
 		&LoadoutDialog::onUsedWeaponListClicked);
 
+	// Selection convenience buttons	
+	connect(ui->selectAllUnusedShipsButton, 
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onSelectAllUnusedShipsPressed);
+
+	connect(ui->clearUnusedShipSelectionButton, 
+		&QPushButton::clicked, 
+		this, 
+		&LoadoutDialog::onClearAllUnusedShipsPressed);
+
+	connect(ui->selectAllUnusedWeaponsButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onSelectAllUnusedWeaponsPressed);
+
+	connect(ui->clearUnusedWeaponSelectionButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onClearAllUnusedWeaponsPressed);
+
+	connect(ui->selectAllUsedShipsButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onSelectAllUsedShipsPressed);
+
+	connect(ui->clearUsedShipSelectionButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onClearAllUsedShipsPressed);
+
+	connect(ui->selectAllUsedWeaponsButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onSelectAllUsedWeaponsPressed);
+
+	connect(ui->clearUsedWeaponSelectionButton,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onClearAllUsedWeaponsPressed);
+
 	// And switching views between variable and lists
 	connect(ui->switchViewButton,
 		&QPushButton::clicked,
@@ -143,6 +184,20 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
 
+	connect(ui->editVariables,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::openEditVariablePressed);
+
+	connect(ui->setSelectionRequired,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onSelectionRequiredPressed);
+
+	connect(ui->setSelectionNotRequired,
+		&QPushButton::clicked,
+		this,
+		&LoadoutDialog::onSelectionNotRequiredPressed);
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
@@ -383,6 +438,72 @@ void LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
 	_model->copyToOtherTeam();
 }
 
+
+void LoadoutDialog::onSelectAllUnusedShipsPressed() 
+{
+	ui->listShipsNotUsed->selectAll();
+	_lastSelectionChanged = POTENTIAL_SHIPS;
+}
+
+void LoadoutDialog::onClearAllUnusedShipsPressed() 
+{
+	ui->listShipsNotUsed->clearSelection();
+	_lastSelectionChanged = POTENTIAL_SHIPS;
+}
+
+void LoadoutDialog::onSelectAllUnusedWeaponsPressed()
+{
+	ui->listWeaponsNotUsed->selectAll();
+	_lastSelectionChanged = POTENTIAL_WEAPONS;
+}
+
+void LoadoutDialog::onClearAllUnusedWeaponsPressed() 
+{
+	ui->listWeaponsNotUsed->clearSelection();
+	_lastSelectionChanged = POTENTIAL_WEAPONS;
+}
+
+void LoadoutDialog::onSelectAllUsedShipsPressed() 
+{
+	ui->usedShipsList->selectAll();
+	_lastSelectionChanged = USED_SHIPS;
+}
+
+void LoadoutDialog::onClearAllUsedShipsPressed() 
+{
+	ui->usedShipsList->clearSelection();
+	_lastSelectionChanged = USED_SHIPS;
+}
+
+void LoadoutDialog::onSelectAllUsedWeaponsPressed() 
+{
+	ui->usedWeaponsList->selectAll();
+	_lastSelectionChanged = USED_WEAPONS;
+}
+
+void LoadoutDialog::onClearAllUsedWeaponsPressed() 
+{
+	ui->usedWeaponsList->clearSelection();
+	_lastSelectionChanged = USED_WEAPONS;
+}
+
+// TODO!  Finish writing a trigger to open that dialog, once the variable editor is created
+void LoadoutDialog::openEditVariablePressed() 
+{
+}
+
+// TODO! Finish selection required UI action, once Model has been updated
+void LoadoutDialog::onSelectionRequiredPressed() 
+{
+
+}
+
+void LoadoutDialog::onSelectionNotRequiredPressed() 
+{
+}
+
+
+
 void LoadoutDialog::updateUI()
 {
 	// repopulate with the correct lists from the model.
@@ -594,7 +715,7 @@ void LoadoutDialog::updateUI()
 	bool requestSpinComboUpdate = false;
 
 	// Do some basic enabling and disabling
-	if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS) {
+	if (_lastSelectionChanged == USED_SHIPS) {
 		ui->extraItemSpinbox->setEnabled(true);
 		ui->extraItemsViaVariableCombo->setEnabled(true);
 
@@ -614,8 +735,6 @@ void LoadoutDialog::updateUI()
 	}
 
 	if (requestSpinComboUpdate || _model->spinBoxUpdateRequired()) {
-		ui->extraItemsViaVariableCombo->setCurrentText(_model->getCountVarShips(namesOut).c_str());
-		
 		int temp;
 
 		if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS){
@@ -636,6 +755,25 @@ void LoadoutDialog::updateUI()
 		}
 
 		ui->currentTeamSpinbox->setValue(_model->getCurrentTeam());
+	}
+
+	// Only enable set required if we are working with ships and weapons that have already been enabled, and not variables.
+	if (_mode == TABLE_MODE && (_lastSelectionChanged == USED_SHIPS || _lastSelectionChanged == USED_WEAPONS)) {
+		ui->setSelectionNotRequired->setEnabled(true);
+		ui->setSelectionRequired->setEnabled(true);
+	} else {
+		ui->setSelectionNotRequired->setEnabled(false);
+		ui->setSelectionRequired->setEnabled(false);
+	}
+
+	SCP_vector<SCP_string> numberVarList = _model->getNumberVarList();
+
+	ui->extraItemsViaVariableCombo->clear();
+
+	// TODO! This is where we decided if we should put <none> or <waiting for selection>
+
+	for (const auto& item : numberVarList) {
+		ui->extraItemsViaVariableCombo->addItem(item.c_str());
 	}
 }
 
