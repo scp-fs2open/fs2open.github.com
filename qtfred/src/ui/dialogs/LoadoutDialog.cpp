@@ -407,14 +407,14 @@ void LoadoutDialog::onExtraItemSpinboxUpdated()
 
 void LoadoutDialog::onExtraItemsViaVariableCombo()
 {
-	// TODO!  Figure out if this actually makes sense
-	// if the variable is replacing the amount, get rid of the amount in the spinbox.
-	if (!ui->extraItemsViaVariableCombo->currentText().isEmpty() && ui->extraItemSpinbox->value() > 0) {
-		ui->extraItemSpinbox->setValue(0);
-	} 
+	if (_lastSelectionChanged == USED_SHIPS || _lastSelectionChanged == USED_WEAPONS) {
+		return;
+	}
 
-	// TODO, make a function that updates the model with the new combobox choice
+	SCP_vector<SCP_string> list = (_lastSelectionChanged == USED_SHIPS) ? getSelectedShips() : getSelectedWeapons();
+	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toStdString();
 
+	_model->setExtraAllocatedViaVariable(list, chosenVariable, _lastSelectionChanged == USED_SHIPS, _mode == TABLE_MODE);
 }
 
 void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
@@ -770,7 +770,9 @@ void LoadoutDialog::updateUI()
 
 	ui->extraItemsViaVariableCombo->clear();
 
-	// TODO! This is where we decided if we should put <none> or <waiting for selection>
+	// TODO! This is where we decided if we should put <none> or <no active selection>
+
+	ui->extraItemsViaVariableCombo->addItem("<none>");
 
 	for (const auto& item : numberVarList) {
 		ui->extraItemsViaVariableCombo->addItem(item.c_str());

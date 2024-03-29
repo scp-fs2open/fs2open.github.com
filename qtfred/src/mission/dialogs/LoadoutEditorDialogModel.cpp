@@ -1083,6 +1083,50 @@ void LoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vect
 	buildCurrentLists();
 }
 
+void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool ship, const bool variableMode)
+{
+	int index = -1;
+
+	if (variable != "<none>" && variable != "") {
+		index = get_index_sexp_variable_name(variable.c_str());
+	}
+
+	for (const auto& item : list) {
+		if (ship && !variableMode) {
+			for (auto& ship : _teams[_currentTeam].ships) {
+				if (ship.name == item) {
+					ship.varCountIndex = index;
+					break;
+				}
+			}
+			
+		} else if (ship && variableMode) {
+			for (auto& shipVar : _teams[_currentTeam].varShips) {
+				if (shipVar.name == item) {
+					shipVar.varCountIndex = index;
+					break;
+				}
+			}
+
+		} else if (!ship && !variableMode) {
+			for (auto& weapon : _teams[_currentTeam].weapons) {
+				if (weapon.name == item) {
+					weapon.varCountIndex = index;
+					break;
+				}
+			}
+
+		} else {
+			for (auto& weaponVar : _teams[_currentTeam].varWeapons) {
+				if (weaponVar.name == item) {
+					weaponVar.varCountIndex = index;
+					break;
+				}
+			}
+		}
+	}
+}
+
 }
 }
 }

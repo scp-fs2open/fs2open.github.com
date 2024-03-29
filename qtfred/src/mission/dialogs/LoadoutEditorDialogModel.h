@@ -77,6 +77,8 @@ public:
 	void setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count);
 	void setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const uint count);
 
+	void setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool ship, const bool variableMode);
+
 	void setShipInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setWeaponInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setShipEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount);
