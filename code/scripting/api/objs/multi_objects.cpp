@@ -1105,14 +1105,14 @@ ADE_FUNC(setMission,
 		}
 		mode = MULTI_CREATE_SHOW_MISSIONS;
 		abs_index = mission.getIndex();
-		current.getNetgame()->campaign_mode == MP_SINGLE_MISSION;
+		current.getNetgame()->campaign_mode = MP_SINGLE_MISSION;
 	} else {
 		if (!ade_get_args(L, "oo", l_NetGame.Get(&current), l_NetCampaign.Get(&campaign))) {
 			return ADE_RETURN_FALSE;
 		}
 		mode = MULTI_CREATE_SHOW_CAMPAIGNS;
 		abs_index = campaign.getIndex();
-		current.getNetgame()->campaign_mode == MP_CAMPAIGN;
+		current.getNetgame()->campaign_mode = MP_CAMPAIGN;
 	}
 
 	multi_create_list_set_item(abs_index, mode);
