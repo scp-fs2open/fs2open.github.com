@@ -333,6 +333,7 @@
 #define IDC_SPIN6                       1066
 #define IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL 1066
 #define IDC_CLEAR_PERSONAS_FROM_NON_SENDERS 1067
+#define IDC_CHECK_ANY_WINGMAN_PERSONAS  1068
 #define ID_SHOW_FIGHTERS                1071
 #define IDC_PRIORITY7                   1071
 #define ID_SHOW_CAPITALSHIPS            1072
