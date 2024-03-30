@@ -5,6 +5,7 @@
 #include <qlist.h>
 #include <qtablewidget.h>
 #include <QListWidget>
+#include <QMessageBox>
 
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
@@ -253,7 +254,6 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 	}
 	else {
 		ui->tableVarLabel->setText("Loadout Editor: Loadout View");
-		// TODO! FIXME! Some of the labels are missing from this function.  Please check QT Creator
 		ui->listShipsNotUsedLabel->setText("Ships Not in Loadout");
 		ui->listWeaponsNotUsedLabel->setText("Weapons Not In Loadout");
 		ui->startingShipsLabel->setText("Ships in Loadout");
@@ -446,8 +446,23 @@ void LoadoutDialog::onCurrentTeamSpinboxUpdated()
 
 void LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
 {
-	// TODO! Add confirmation button
-	_model->copyToOtherTeam();
+	QMessageBox msgBox;
+	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
+	msgBox.setInformativeText("This can't be undone.");
+	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+	msgBox.setDefaultButton(QMessageBox::Cancel);
+	int ret = msgBox.exec();
+
+switch (ret) {
+	case QMessageBox::Yes:
+		_model->copyToOtherTeam();
+		break;
+	case QMessageBox::Cancel:
+		break;
+	default:
+		UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
+		break;
+	}
 }
 
 

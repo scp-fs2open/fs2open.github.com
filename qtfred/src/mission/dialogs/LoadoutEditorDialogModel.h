@@ -35,7 +35,7 @@ struct TeamLoadout {
 		skipValidation = false;
 	}
 
-	int startingShipCount; // TODO: Make sure this gets pop everywhere
+	int startingShipCount;
 	int largestPrimaryBankCount;
 	int largestSecondaryCapacity;
 	SCP_vector<LoadoutItem> ships;
