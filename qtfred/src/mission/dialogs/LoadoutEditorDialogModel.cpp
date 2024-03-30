@@ -46,8 +46,10 @@ void LoadoutDialogModel::initializeData()
 			for (auto& team : _teams) {
 
 				// even though it gets created here, it's not complete because the enabled entries are in Team_data
+				// also not required until we read that data
 				team.ships.emplace_back(
 					index,
+					false,
 					false,
 					usage.at((MAX_SHIP_CLASSES * currentTeam) + index),
 					0,
@@ -80,6 +82,7 @@ void LoadoutDialogModel::initializeData()
 				team.weapons.emplace_back(
 					index,
 					false,
+					false,
 					usage[(MAX_SHIP_CLASSES * MAX_TVT_TEAMS) + (MAX_SHIP_CLASSES * currentTeam) + index],
 					0,
 					-1,
@@ -108,6 +111,7 @@ void LoadoutDialogModel::initializeData()
 				_teams[currentTeam].varShips.emplace_back(
 					get_index_sexp_variable_name(team.ship_list_variables[index]),
 					true,
+					false,
 					0, // 0 until proven otherwise in-game.
 					team.ship_count[index],
 					(strlen(team.ship_count_variables[index])) ? get_index_sexp_variable_name(team.ship_list_variables[index]) : -1,
@@ -154,6 +158,7 @@ void LoadoutDialogModel::initializeData()
 				_teams[currentTeam].varWeapons.emplace_back(
 					get_index_sexp_variable_name(team.weaponry_pool_variable[index]),
 					true,
+					team.weapon_required[index],
 					0, // 0 until proven otherwise in-game.
 					team.weaponry_count[index],
 					(strlen(team.weaponry_amount_variable[index])) ? get_index_sexp_variable_name(team.weaponry_pool_variable[index]) : -1,
@@ -170,6 +175,7 @@ void LoadoutDialogModel::initializeData()
 				for (auto& item : _teams[currentTeam].weapons) {
 					if (team.weaponry_pool[index] == item.infoIndex) {
 						item.enabled = true;
+						item.required = team.weapon_required[index];
 						item.extraAllocated = team.weaponry_count[index];
 
 						if (strlen(team.weaponry_amount_variable[index])) {
@@ -237,13 +243,17 @@ int LoadoutDialogModel::getCurrentTeam()
 
 SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getShipList()
 {
-	// We rebuild the lists here because there may have been an update.
 	return _shipList;
 }
 
 SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getWeaponList()
 {
 	return _weaponList;
+}
+
+SCP_vector<SCP_string> LoadoutDialogModel::getRequiredWeapons() 
+{
+	return _requiredWeaponsList;
 }
 
 SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getShipEnablerVariables()
@@ -466,6 +476,7 @@ void LoadoutDialogModel::setShipEnablerVariables(SCP_vector<SCP_string> variable
 				_teams[_currentTeam].varShips.emplace_back(
 					get_index_sexp_variable_name(nameIn),
 					true,
+					false, // it cannot be required because this is var enabled
 					0, // there cannot be any because this is var enabled.
 					ShipVarDefault, // default o f.
 					-1, // no var for count until one can be selected.
@@ -539,6 +550,7 @@ void LoadoutDialogModel::setWeaponEnablerVariables(SCP_vector<SCP_string> variab
 				_teams[_currentTeam].varShips.emplace_back(
 					get_index_sexp_variable_name(nameIn),
 					true,
+					false, // it cannot be required because it is var enabled
 					0, // there cannot be any because this is var enabled.
 					WeaponVarDefault * _teams[_currentTeam].startingShipCount,
 					-1, // no var for count until one can be selected.
@@ -662,6 +674,7 @@ void LoadoutDialogModel::reject() {
 	_shipVarList.clear();
 	_weaponVarList.clear();
 	_numberVarList.clear();
+	_requiredWeaponsList.clear();
 	_teams.clear();
 
 } // let him go Harry, let him go
@@ -673,6 +686,7 @@ void LoadoutDialogModel::buildCurrentLists()
 	_weaponList.clear();
 	_shipVarList.clear();
 	_weaponVarList.clear();
+	_requiredWeaponsList.clear();
 
 	int index = 0;
 	for (auto& item : _teams[_currentTeam].ships) {
@@ -684,6 +698,9 @@ void LoadoutDialogModel::buildCurrentLists()
 
 	for (auto& item : _teams[_currentTeam].weapons) {
 		_weaponList.emplace_back(createItemString(false, false, index), item.enabled);
+		if (item.required) {
+			_requiredWeaponsList.push_back(item.name);
+		}
 		index++;
 	}
 	
@@ -965,6 +982,7 @@ void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& li
 		if (!found && enabled) {
 			_teams[_currentTeam].varShips.emplace_back(get_index_sexp_variable_name(item.c_str()),
 				true,
+				false, // not required until specified
 				0, // there cannot be any because this is var enabled.
 				ShipVarDefault,
 				-1, // no var for count until one can be selected.
@@ -1023,6 +1041,7 @@ void LoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& 
 			_teams[_currentTeam].varWeapons.emplace_back(
 				get_index_sexp_variable_name(item.c_str()),
 				true,
+				false, // not required until specified
 				0, // there cannot be any because this is var enabled.
 				WeaponVarDefault,
 				-1, // no var for count until one can be selected.
@@ -1135,6 +1154,21 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 
 	buildCurrentLists();
 }
+
+void LoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required)
+{
+	for (const auto& item : list) {
+		for (auto& weapon : _teams[_currentTeam].weapons) {
+			if (item == weapon.name) {
+				weapon.required = required;
+				break;
+			}
+		}
+	}
+
+	buildCurrentLists();
+}
+
 
 }
 }

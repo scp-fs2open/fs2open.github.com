@@ -11,11 +11,12 @@ namespace dialogs {
 struct LoadoutItem {
 	LoadoutItem() = default;
 
-	LoadoutItem(int infoIn, bool enabledIn, int countIn, int extraIn, int varCountIn, SCP_string nameIn) {
-		infoIndex = infoIn; enabled = enabledIn; countInWings = countIn; extraAllocated = extraIn; varCountIndex = varCountIn; name = nameIn;
+	LoadoutItem(int infoIn, bool enabledIn, bool requiredIn, int countIn, int extraIn, int varCountIn, SCP_string nameIn) {
+		infoIndex = infoIn; enabled = enabledIn; required = requiredIn; countInWings = countIn; extraAllocated = extraIn; varCountIndex = varCountIn; name = nameIn;
 	}
 	int infoIndex; // for var items, this points to the sexp index.
 	bool enabled;
+	bool required;
 	int countInWings;
 	int extraAllocated;
 	int varCountIndex;
@@ -55,6 +56,7 @@ public:
 
 	SCP_vector<std::pair<SCP_string,bool>> getShipList();
 	SCP_vector<std::pair<SCP_string,bool>> getWeaponList();
+	SCP_vector<SCP_string> getRequiredWeapons();
 	SCP_vector<std::pair<SCP_string,bool>> getShipEnablerVariables();
 	SCP_vector<std::pair<SCP_string,bool>> getWeaponEnablerVariables();
 
@@ -85,6 +87,7 @@ public:
 	void setWeaponInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setShipEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setWeaponEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount);
+	void setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required);
 
 	void switchTeam(int teamIn);
 	void copyToOtherTeam();
@@ -106,6 +109,7 @@ private:
 	SCP_vector<std::pair<SCP_string,bool>> _shipVarList;
 	SCP_vector<std::pair<SCP_string,bool>> _weaponVarList;
 	SCP_vector<SCP_string> _numberVarList;
+	SCP_vector<SCP_string> _requiredWeaponsList;
 
 	bool _spinBoxUpdateRequired;
 };

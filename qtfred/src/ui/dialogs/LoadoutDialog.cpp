@@ -204,18 +204,19 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	_lastSelectionChanged = NONE;
 	
 	// set headers
-	ui->usedShipsList->setColumnCount(3);
+	ui->usedShipsList->setColumnCount(2);
 	ui->usedWeaponsList->setColumnCount(3);
 	ui->usedShipsList->setHorizontalHeaderItem(0, new QTableWidgetItem("Ship Name"));
 	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
-	ui->usedShipsList->setHorizontalHeaderItem(2, new QTableWidgetItem("Required"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(0, new QTableWidgetItem("Weapon Name"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(2, new QTableWidgetItem("Required"));
 
-	ui->usedShipsList->setColumnWidth(0, 50);
-	ui->usedShipsList->setColumnWidth(1, 40);
-	ui->usedShipsList->setColumnWidth(0, 25);
+	ui->usedShipsList->setColumnWidth(0, 200);
+	ui->usedShipsList->setColumnWidth(0, 150);
+	ui->usedWeaponsList->setColumnWidth(0, 150);
+	ui->usedWeaponsList->setColumnWidth(1, 125);
+	ui->usedWeaponsList->setColumnWidth(2, 75);
 
 	// Populate the variable combobox
 	ui->extraItemsViaVariableCombo->clear();
@@ -511,17 +512,17 @@ void LoadoutDialog::openEditVariablePressed()
 {
 }
 
-// TODO! Finish selection required UI action, once Model has been updated
 void LoadoutDialog::onSelectionRequiredPressed() 
 {
-
+	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
+	_model->setRequiredWeapon(namesOut, true);
 }
 
 void LoadoutDialog::onSelectionNotRequiredPressed() 
 {
+	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
+	_model->setRequiredWeapon(namesOut, false);
 }
-
-
 
 void LoadoutDialog::updateUI()
 {
@@ -626,11 +627,11 @@ void LoadoutDialog::updateUI()
 
 				QTableWidgetItem* nameItem = new QTableWidgetItem(weaponName.c_str());
 				QTableWidgetItem* countItem = new QTableWidgetItem(newWeapon.first.substr(divider + 1).c_str());
+				QTableWidgetItem* requiredItem = new QTableWidgetItem("");
 
 				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 0, nameItem);
 				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 1, countItem);
-
-
+				ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 2, requiredItem);
 			}
 
 			// remove from the unused list
@@ -667,7 +668,7 @@ void LoadoutDialog::updateUI()
 		}
 	}
 
-
+	
 	// Go through the lists and make sure that we don't have random empty entries
 	for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
 		if (ui->listShipsNotUsed->item(x) && !strlen(ui->listShipsNotUsed->item(x)->text().toStdString().c_str())) {
@@ -688,7 +689,6 @@ void LoadoutDialog::updateUI()
 				if (ui->listWeaponsNotUsed->item(y) && strlen(ui->listWeaponsNotUsed->item(y)->text().toStdString().c_str())) {
 					ui->listWeaponsNotUsed->item(x)->setText(ui->listWeaponsNotUsed->item(y)->text());
 					ui->listWeaponsNotUsed->item(y)->setText("");
-
 					break;
 				}
 			}
@@ -729,6 +729,7 @@ void LoadoutDialog::updateUI()
 			}
 		}
 	}
+	
 
 	SCP_vector<SCP_string> namesOut;
 	bool requestSpinComboUpdate = false;
@@ -813,6 +814,25 @@ void LoadoutDialog::updateUI()
 
 	} else {
 		ui->extraItemsViaVariableCombo->setEnabled(false);
+	}
+
+	if (_mode == TABLE_MODE) {
+		const auto requiredWeapons = _model->getRequiredWeapons();
+		for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+			bool found = false;
+
+			for (const auto& weapon : requiredWeapons) {
+				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weapon.c_str())) {
+					found = true;
+					ui->usedWeaponsList->item(x, 2)->setText("Yes");
+					break;
+				}
+			}
+
+			if (!found && ui->usedWeaponsList->item(x, 2)) {
+				ui->usedWeaponsList->item(x, 2)->setText("");
+			}
+		}
 	}
 }
 
