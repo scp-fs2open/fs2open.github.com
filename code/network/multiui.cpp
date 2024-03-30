@@ -3298,11 +3298,9 @@ void multi_create_list_scroll_down();
 void multi_create_list_do();
 void multi_create_list_select_item(int n);
 void multi_create_list_blit_icons(int list_index, int y_start);
-void multi_create_accept_hit();
 void multi_create_draw_filter_buttons();
 void multi_create_set_selected_team(int team);
 short multi_create_get_mouse_id();
-int multi_create_ok_to_commit();
 void multi_create_refresh_pxo();
 void multi_create_sw_clicked();
 
@@ -3927,12 +3925,12 @@ void multi_create_button_pressed(int n)
 		break;
 	case MC_ACCEPT :	
 		// if valid commit conditions have not been met
-		if(!multi_create_ok_to_commit()){
+		if (!multi_create_ok_to_commit(multi_create_select_to_index(Multi_create_list_select))) {
 			break;
 		}
 
 		// commit
-		multi_create_accept_hit();		
+		multi_create_accept_hit(Multi_create_list_mode, multi_create_select_to_index(Multi_create_list_select));		
 		break;
 
 	// help button
@@ -4932,7 +4930,7 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	}	
 }
 
-void multi_create_accept_hit()
+void multi_create_accept_hit(int mode, int select_index)
 {
 	char selected_name[255];
 	int start_campaign = 0;
@@ -4948,14 +4946,14 @@ void multi_create_accept_hit()
 	}	
 	
 	// do single mission stuff
-	switch(Multi_create_list_mode){
+	switch(mode){
 	case MULTI_CREATE_SHOW_MISSIONS:	
-		if(Multi_create_list_select != -1){
+		if (select_index != -1) {
 			// set the netgame mode
 			Netgame.campaign_mode = MP_SINGLE_MISSION;
 
 			// setup various filenames and mission names
-			multi_create_select_to_filename(Multi_create_list_select,selected_name);
+			strcpy(selected_name, Multi_create_mission_list[select_index].filename);
 			strcpy_s( Game_current_mission_filename, selected_name);
 			strcpy_s(Netgame.mission_name,selected_name);
 
@@ -4969,12 +4967,12 @@ void multi_create_accept_hit()
 
 	case MULTI_CREATE_SHOW_CAMPAIGNS:
 		// do campaign related stuff	
-		if(Multi_create_list_select != -1){
+		if (select_index != -1) {
 			// set the netgame mode
 			Netgame.campaign_mode = MP_CAMPAIGN;
 
 			// start a campaign instead of a single mission
-			multi_create_select_to_filename(Multi_create_list_select,selected_name);
+			strcpy(selected_name, Multi_create_campaign_list[select_index].filename);
 			multi_campaign_start(selected_name);			
 			start_campaign = 1;
 
@@ -5204,22 +5202,15 @@ int multi_create_select_to_index(int select_index)
 	return -1;
 }
 
-int multi_create_ok_to_commit()
+int multi_create_ok_to_commit(int select_index)
 {
 	int player_count, observer_count, idx;
 	int notify_of_hacked_tbl = 0;
 	char err_string[255];
-	int abs_index;
 	int found_hack;
 
-	// make sure we have a valid mission selected
-	if(Multi_create_list_select < 0){
-		return 0;
-	}	
-
-	// if this is not a valid mission, let the player know
-	abs_index = multi_create_select_to_index(Multi_create_list_select);		
-	if(abs_index < 0){
+	// if this is not a valid mission, let the player know	
+	if (select_index < 0) {
 		return 0;
 	}
 
@@ -5318,7 +5309,7 @@ int multi_create_ok_to_commit()
 	// if we're playing on the tracker
 	if(MULTI_IS_TRACKER_GAME){
 //#ifdef PXO_CHECK_VALID_MISSIONS		
-		if ( (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) && (Multi_create_mission_list[abs_index].valid_status != MVALID_STATUS_VALID) ) {
+		if ( (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) && (Multi_create_mission_list[select_index].valid_status != MVALID_STATUS_VALID) ) {
 			if(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You have selected a mission which is either invalid or unknown to PXO. Your stats will not be saved if you continue",996)) <= 0){
 				return 0;
 			}

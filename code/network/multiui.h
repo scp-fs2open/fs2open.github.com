@@ -123,6 +123,8 @@ void multi_create_game_do(bool API_Access = false);
 void multi_create_game_close();
 void multi_create_game_add_mission(char *fname,char *name, int flags);
 void multi_create_list_set_item(int abs_index, int mode);
+void multi_create_accept_hit(int mode, int select_index);
+int multi_create_ok_to_commit(int select_index);
 
 #define MULTI_CREATE_SHOW_MISSIONS			0
 #define MULTI_CREATE_SHOW_CAMPAIGNS			1

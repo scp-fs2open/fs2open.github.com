@@ -2831,7 +2831,7 @@ ADE_FUNC(initMultiHostSetup,
 ADE_FUNC(closeMultiHostSetup,
 	l_UserInterface_MultiHostSetup,
 	"boolean Commit_or_Quit",
-	"Closes Multi Host Setup. True to commit, false to quit. Defaults to true.",
+	"Closes Multi Host Setup. True to commit, false to quit.",
 	nullptr,
 	nullptr)
 {
@@ -2840,7 +2840,26 @@ ADE_FUNC(closeMultiHostSetup,
 		return ADE_RETURN_NIL;
 
 	if (choice) {
-		// Do something?
+		int idx = -1;
+		if (Netgame.campaign_mode == MULTI_CREATE_SHOW_MISSIONS)
+			for (size_t i = 0; i < Multi_create_mission_list.size(); i++) {
+				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) != 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		else {
+			for (size_t i = 0; i < Multi_create_campaign_list.size(); i++) {
+				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) != 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+		if (multi_create_ok_to_commit(idx)) {
+			//Some of this seems redundant but that's what the retail UI does!
+			multi_create_accept_hit(Netgame.campaign_mode, idx);
+		}
 	} else {
 		multi_quit_game(PROMPT_HOST);
 	}
