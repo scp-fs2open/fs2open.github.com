@@ -799,12 +799,15 @@ void LoadoutDialog::updateUI()
 			currentVariable = _model->getCountVarWeaponEnabler(namesOut);
 		}
 
-		bool found = false;
-
-		for (int x = 0; x < ui->extraItemsViaVariableCombo->count(); ++x) {
-			if (!stricmp(ui->extraItemsViaVariableCombo->itemText(x).toStdString().c_str(), currentVariable.c_str())) {
-				ui->extraItemsViaVariableCombo->setCurrentIndex(x);
-				break;
+		if (currentVariable == "") {
+			ui->extraItemsViaVariableCombo->setCurrentIndex(0);
+		} else {
+			for (int x = 0; x < ui->extraItemsViaVariableCombo->count(); ++x) {
+				if (!stricmp(ui->extraItemsViaVariableCombo->itemText(x).toStdString().c_str(),
+						currentVariable.c_str())) {
+					ui->extraItemsViaVariableCombo->setCurrentIndex(x);
+					break;
+				}
 			}
 		}
 

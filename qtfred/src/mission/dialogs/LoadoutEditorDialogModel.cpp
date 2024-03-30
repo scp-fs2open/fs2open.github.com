@@ -348,42 +348,43 @@ void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extr
 	modelChanged();
 }
 
-SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, SCP_string variableIn)
+SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, const char* variableIn)
 {
 	// Using a pointer here seems to lead to memory corruption, so I'll just use a temp Loadout Item
 	LoadoutItem item;
-	std::string stringOut;
+	char stringOut[128];
 
 	if (variable) {
 		if (ship) {
 			item = _teams[_currentTeam].varShips[itemIndex];
+			strcpy(stringOut, variableIn);
 		} else {
 			item = _teams[_currentTeam].varWeapons[itemIndex];
+			strcpy(stringOut, variableIn);
 		}
 
-		stringOut = variableIn;
 	} else {
 		if (ship) {
 			item = _teams[_currentTeam].ships[itemIndex];
-			stringOut = Ship_info[item.infoIndex].name;
+			strcpy(stringOut, Ship_info[item.infoIndex].name);
 		} else {
 			item = _teams[_currentTeam].weapons[itemIndex];
-			stringOut = Weapon_info[item.infoIndex].name;
+			strcpy(stringOut, Weapon_info[item.infoIndex].name);
 		}
 	}
 
-	stringOut += " ";
+	strcat(stringOut, " ");
 
 	if (!variable) {
-		stringOut += std::to_string(item.countInWings);
-		stringOut += "/";	
+		strcat(stringOut, std::to_string(item.countInWings).c_str());
+		strcat(stringOut, "/");	
 	}
 
 	if (item.varCountIndex < 0) {
-		stringOut += std::to_string(item.extraAllocated);
+		strcat(stringOut, std::to_string(item.extraAllocated).c_str());
 	}
 	else {
-		stringOut += Sexp_variables[item.varCountIndex].variable_name;
+		strcat(stringOut, Sexp_variables[item.varCountIndex].variable_name);
 	}
 
 	SCP_string stringOut2 = stringOut;
@@ -694,7 +695,7 @@ void LoadoutDialogModel::buildCurrentLists()
 			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varShips.size()); ++y) {
 				if (_teams[_currentTeam].varShips[y].name == Sexp_variables[x].variable_name) {
 					enabled = _teams[_currentTeam].varShips[y].enabled;
-					name = createItemString(true, true, y, name);
+					name = createItemString(true, true, y, name.c_str());
 					break;
 				}
 			}
@@ -707,7 +708,7 @@ void LoadoutDialogModel::buildCurrentLists()
 			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varWeapons.size()); ++y) {
 				if (_teams[_currentTeam].varWeapons[y].name == Sexp_variables[x].variable_name) {
 					enabled = _teams[_currentTeam].varWeapons[y].enabled;
-					name2 = createItemString(true, true, y, name2);
+					name2 = createItemString(false, true, y, name2.c_str());
 					break;
 				}
 			}

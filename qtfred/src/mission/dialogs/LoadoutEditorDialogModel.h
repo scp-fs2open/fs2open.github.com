@@ -93,7 +93,7 @@ public:
 
 private:
 
-	SCP_string createItemString(bool ship, bool variable, int itemIndex, SCP_string variableIn = "");
+	SCP_string createItemString(bool ship, bool variable, int itemIndex, const char* variableIn = "");
 	void buildCurrentLists();
 	void initializeData();
 
