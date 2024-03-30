@@ -59,7 +59,7 @@ UniformBufferManager::UniformBufferManager()
 	bool success = gr_get_property(gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT, &_offset_alignment);
 	Assertion(success, "Uniform buffer usage requires a backend which allows to query the offset alignment!");
 
-	_use_persistent_mapping = gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING);
+	_use_persistent_mapping = gr_is_capable(gr_capability::CAPABILITY_PERSISTENT_BUFFER_MAPPING);
 
 	_segment_fences.fill(nullptr);
 	changeSegmentSize(4096);

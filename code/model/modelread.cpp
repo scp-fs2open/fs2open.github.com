@@ -41,6 +41,9 @@
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 #include <algorithm>
 #include <stack>
 #include <map>
@@ -3250,7 +3253,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// See if we need to compile a new shader for this material
 	if (Shadow_quality != ShadowQuality::Disabled)
-		gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 

@@ -700,7 +700,7 @@ void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad,
 
 	primitive_batch *batch;
 	
-	if ( gr_is_capable(CAPABILITY_SOFT_PARTICLES) ) {
+	if ( gr_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES) ) {
 		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
 	} else {
 		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
@@ -721,7 +721,7 @@ void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, f
 
 	primitive_batch *batch;
 
-	if ( gr_is_capable(CAPABILITY_SOFT_PARTICLES) ) {
+	if ( gr_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES) ) {
 		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
 	} else {
 		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
@@ -740,7 +740,7 @@ void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angl
 		return;
 	}
 
-	if ( !gr_is_capable(CAPABILITY_DISTORTION) ) {
+	if ( !gr_is_capable(gr_capability::CAPABILITY_DISTORTION) ) {
 		return;
 	}
 
@@ -759,7 +759,7 @@ void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float w
 		return;
 	}
 
-	if ( !gr_is_capable(CAPABILITY_DISTORTION) ) {
+	if ( !gr_is_capable(gr_capability::CAPABILITY_DISTORTION) ) {
 		return;
 	}
 
@@ -861,7 +861,7 @@ void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float 
 
 	primitive_batch* batch;
 
-	if (gr_is_capable(CAPABILITY_SOFT_PARTICLES)) {
+	if (gr_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES)) {
 		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
 	} else {
 		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);

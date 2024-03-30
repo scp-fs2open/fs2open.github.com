@@ -251,6 +251,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-f.sdr
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
+	def_files/data/effects/main_large.sdr
+	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
