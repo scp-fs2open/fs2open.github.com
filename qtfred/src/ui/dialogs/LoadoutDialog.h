@@ -74,8 +74,8 @@ private:
 	void onSelectionRequiredPressed();
 	void onSelectionNotRequiredPressed();
 
-	SCP_vector<SCP_string> LoadoutDialog::getSelectedShips(); 
-	SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons(); 
+	SCP_vector<SCP_string> getSelectedShips(); 
+	SCP_vector<SCP_string> getSelectedWeapons(); 
 
 	void updateUI();
 
