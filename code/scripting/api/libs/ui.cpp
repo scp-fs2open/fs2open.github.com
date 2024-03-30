@@ -35,6 +35,7 @@
 #include "network/chat_api.h"
 #include "network/multi.h"
 #include "network/multiui.h"
+#include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
 #include "network/multi_pxo.h"
 #include "network/multimsgs.h"
@@ -2823,11 +2824,17 @@ ADE_FUNC(initMultiStart, l_UserInterface_MultiStartGame, nullptr, "Initializes t
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(closeMultiStart, l_UserInterface_MultiStartGame, nullptr, "Finalizes the new game settings and moves to the host game UI", nullptr, nullptr)
+ADE_FUNC(closeMultiStart, l_UserInterface_MultiStartGame, "boolean Start_or_Quit", "Finalizes the new game settings and moves to the host game UI if true or cancels if false. Defaults to true.", nullptr, nullptr)
 {
-	SCP_UNUSED(L);
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
 
-	multi_start_game_close(true);
+	if (choice) {
+		multi_start_game_close(true);
+	} else {
+		multi_quit_game(PROMPT_NONE);
+	}
 
 	return ADE_RETURN_NIL;
 }
