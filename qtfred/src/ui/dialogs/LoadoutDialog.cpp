@@ -12,30 +12,12 @@ constexpr int VARIABLE_MODE = 1;
 namespace fso {
 namespace fred {
 namespace dialogs {
-	//ui includes:
-	// tableVarLabel, switches between "Loadout Editor: Loadout View" and "Loadout Editor: Variable View"
-	//switchViewButton for switching modes
-	//startingShipsLabel "Ships Not in Loadout"
-	//listShipsNotUsed -- The list of ships that is not present in the loadout.
-	//listWeaponsNotUsed -- The list of weapons that is not present in the loadout
-	//usedShipsList
-	//usedWeaponsList
-	//addShipButton
-	//addWeaponButton
-	//removeShipButton
-	//removeWeaponButton
-	//copyLoadoutToOtherTeamsButton
-	//currentTeamSpinbox
-	//playerDelayDoubleSpinbox
-	//extraItemSpinbox
-	//extraItemsViaVariableCombo
 
-LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport) 
-	: QDialog(parent), ui(new Ui::LoadoutDialog()), _model(new LoadoutDialogModel(this, viewport)),
-		_viewport(viewport)
+LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
+	: QDialog(parent), ui(new Ui::LoadoutDialog()), _model(new LoadoutDialogModel(this, viewport)), _viewport(viewport)
 {
 	this->setFocus();
-    ui->setupUi(this);
+	ui->setupUi(this);
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &LoadoutDialog::updateUI);
@@ -44,26 +26,26 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	// Ship and Weapon lists, selection changed.
 	connect(ui->listShipsNotUsed, 
-		&QListWidget::itemClicked,
-		this,
+		&QListWidget::itemClicked, 
+		this, 
 		&LoadoutDialog::onPotentialShipListClicked);
 
-	// We need a second trigger for each list when multiple items are selected because itemClicked doesn't trigger on those,
-	// and itemSelectionChanged doesn't really trigger if you select the same item that's already selected (I think)
-	// so keep both
+	// We need a second trigger for each list when multiple items are selected because itemClicked doesn't trigger on
+	// those, and itemSelectionChanged doesn't really trigger if you select the same item that's already selected (I
+	// think) so keep both
 	connect(ui->listShipsNotUsed, 
-		&QListWidget::itemSelectionChanged, 
+		&QListWidget::itemSelectionChanged,
 		this, 
 		&LoadoutDialog::onPotentialShipListClicked);
 
 	connect(ui->listWeaponsNotUsed,
 		&QListWidget::itemClicked,
-		this,
+		this, 
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
-	connect(ui->listWeaponsNotUsed, 
-		&QListWidget::itemSelectionChanged, 
-		this, 
+	connect(ui->listWeaponsNotUsed,
+		&QListWidget::itemSelectionChanged,
+		this,
 		&LoadoutDialog::onPotentialWeaponListClicked);
 
 	connect(ui->usedShipsList,
@@ -71,10 +53,9 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onUsedShipListClicked);
 
-	
 	connect(ui->usedShipsList, 
-		&QTableWidget::itemSelectionChanged,
-		this,
+		&QTableWidget::itemSelectionChanged, 
+		this, 
 		&LoadoutDialog::onUsedShipListClicked);
 
 	connect(ui->usedWeaponsList,
@@ -87,15 +68,15 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this, 
 		&LoadoutDialog::onUsedWeaponListClicked);
 
-	// Selection convenience buttons	
+	// Selection convenience buttons
 	connect(ui->selectAllUnusedShipsButton, 
-		&QPushButton::clicked,
-		this,
-		&LoadoutDialog::onSelectAllUnusedShipsPressed);
-
-	connect(ui->clearUnusedShipSelectionButton, 
 		&QPushButton::clicked, 
 		this, 
+		&LoadoutDialog::onSelectAllUnusedShipsPressed);
+
+	connect(ui->clearUnusedShipSelectionButton,
+		&QPushButton::clicked,
+		this,
 		&LoadoutDialog::onClearAllUnusedShipsPressed);
 
 	connect(ui->selectAllUnusedWeaponsButton,
@@ -108,19 +89,19 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onClearAllUnusedWeaponsPressed);
 
-	connect(ui->selectAllUsedShipsButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->selectAllUsedShipsButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::onSelectAllUsedShipsPressed);
 
-	connect(ui->clearUsedShipSelectionButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->clearUsedShipSelectionButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::onClearAllUsedShipsPressed);
 
-	connect(ui->selectAllUsedWeaponsButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->selectAllUsedWeaponsButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::onSelectAllUsedWeaponsPressed);
 
 	connect(ui->clearUsedWeaponSelectionButton,
@@ -129,31 +110,30 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		&LoadoutDialog::onClearAllUsedWeaponsPressed);
 
 	// And switching views between variable and lists
-	connect(ui->switchViewButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->switchViewButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::onSwitchViewButtonPressed);
 
-	
 	// Switch ships and weapons on the list
-	connect(ui->addShipButton,
+	connect(ui->addShipButton, 
 		&QPushButton::clicked,
-		this,
+		this, 
 		&LoadoutDialog::addShipButtonClicked);
 
-	connect(ui->addWeaponButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->addWeaponButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::addWeaponButtonClicked);
 
-	connect(ui->removeShipButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->removeShipButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::removeShipButtonClicked);
 
-	connect(ui->removeWeaponButton,
-		&QPushButton::clicked,
-		this,
+	connect(ui->removeWeaponButton, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::removeWeaponButtonClicked);
 
 	// Change item counts
@@ -184,25 +164,30 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
 
-	connect(ui->editVariables,
-		&QPushButton::clicked,
-		this,
+	connect(ui->editVariables, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::openEditVariablePressed);
 
-	connect(ui->setSelectionRequired,
-		&QPushButton::clicked,
-		this,
+	connect(ui->setSelectionRequired, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::onSelectionRequiredPressed);
 
-	connect(ui->setSelectionNotRequired,
-		&QPushButton::clicked,
-		this,
+	connect(ui->setSelectionNotRequired, 
+		&QPushButton::clicked, 
+		this, 
 		&LoadoutDialog::onSelectionNotRequiredPressed);
+
+	connect(ui->weaponValidationCheckbox,
+		&QCheckBox::clicked,
+		this,
+		&LoadoutDialog::onWeaponValidationCheckboxClicked);
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
 	_lastSelectionChanged = NONE;
-	
+
 	// set headers
 	ui->usedShipsList->setColumnCount(2);
 	ui->usedWeaponsList->setColumnCount(3);
@@ -215,30 +200,37 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	ui->usedShipsList->setColumnWidth(0, 220);
 	ui->usedShipsList->setColumnWidth(0, 175);
 	ui->usedWeaponsList->setColumnWidth(0, 130);
-	ui->usedWeaponsList->setColumnWidth(1, 125);
+	ui->usedWeaponsList->setColumnWidth(1, 122);
 	ui->usedWeaponsList->setColumnWidth(2, 65);
 
 	// Populate the variable combobox
 	ui->extraItemsViaVariableCombo->clear();
 	ui->extraItemsViaVariableCombo->addItem("");
 	ui->extraItemsViaVariableCombo->addItem("<none>");
-		
+
 	SCP_vector<SCP_string> numberVarList = _model->getNumberVarList();
 
 	for (const auto& item : numberVarList) {
 		ui->extraItemsViaVariableCombo->addItem(item.c_str());
 	}
 
-
 	// quickly enable or disable the team spin box (must not get to multiple teams if in SP!)
-	if (The_mission.game_type & MISSION_TYPE_MULTI){
+	if (The_mission.game_type & MISSION_TYPE_MULTI) {
 		ui->currentTeamSpinbox->setEnabled(true);
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(true);
-	}
-	else {
+	} else {
 		ui->currentTeamSpinbox->setEnabled(false);
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(false);
 	}
+
+	auto delay = _model->getPlayerEntryDelay();
+	if (delay >= 0.0f) {
+		ui->playerDelayDoubleSpinbox->setValue(static_cast<double>(delay));
+	} else {
+		ui->playerDelayDoubleSpinbox->setValue(0.0f);
+	}
+
+	ui->weaponValidationCheckbox->setChecked(_model->getSkipValidation());
 
 	updateUI();
 }
@@ -525,6 +517,12 @@ void LoadoutDialog::onSelectionNotRequiredPressed()
 	_model->setRequiredWeapon(namesOut, false);
 	updateUI();
 }
+
+void LoadoutDialog::onWeaponValidationCheckboxClicked() 
+{
+	_model->setSkipValidation(ui->weaponValidationCheckbox->isChecked());
+}
+
 
 void LoadoutDialog::updateUI()
 {

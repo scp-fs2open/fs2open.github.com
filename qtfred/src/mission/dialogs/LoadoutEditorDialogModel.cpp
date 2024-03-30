@@ -267,97 +267,6 @@ SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getWeaponEnablerVari
 	return _weaponVarList;
 }
 
-void LoadoutDialogModel::setShipInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount)
-{
-	bool found = false, previouslyEnabled;
-	int index = 0;
-
-	for (auto& item : _teams[_currentTeam].ships) {
-		if (textIn == Ship_info[item.infoIndex].name) {
-			previouslyEnabled = item.enabled;
-			item.enabled = enabled;
-			item.extraAllocated = extraAllocated;
-			item.varCountIndex = get_index_sexp_variable_name(varForCount);
-			found = true;
-
-			// need to check if this ship will hold more than the last highest capacity
-			if (enabled) {
-				if (Ship_info[item.infoIndex].num_primary_banks > _teams[_currentTeam].largestPrimaryBankCount) {
-					_teams[_currentTeam].largestPrimaryBankCount = Ship_info[item.infoIndex].num_primary_banks;
-				}
-
-				int capacity = 0;
-
-				for (int i = 0; i < Ship_info[item.infoIndex].num_secondary_banks; i++){
-					capacity += Ship_info[item.infoIndex].secondary_bank_ammo_capacity[i];
-				}
-
-				if (capacity > _teams[_currentTeam].largestSecondaryCapacity) {
-					_teams[_currentTeam].largestSecondaryCapacity = capacity;
-				}
-
-				if (!previouslyEnabled && item.varCountIndex == -1) {
-					item.extraAllocated = _teams[_currentTeam].startingShipCount / 2;
-				}
-
-			}
-
-			// now that all the data is correctly set, rebuild the corresponding string.
-			_shipList[index].first = createItemString(true, false, index);
-			_shipList[index].second = enabled;
-
-			break;
-		}
-		index++;
-	}
-
-	// rebuild the lists that the UI depends on.
-	buildCurrentLists();
-	Assert(found);
-	modelChanged();
-}
-
-void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount)
-{
-	bool found = false, previouslyEnabled;
-	int index = 0;
-
-	for (auto& item : _teams[_currentTeam].weapons) {
-		if (textIn == Weapon_info[item.infoIndex].name) {
-			previouslyEnabled = !item.enabled;
-
-			item.enabled = enabled;
-			item.extraAllocated = extraAllocated;
-			item.varCountIndex = get_index_sexp_variable_name(varForCount);
-
-			if(item.varCountIndex == -1 && !previouslyEnabled)
-			{
-				if (Weapon_info[item.infoIndex].subtype == WP_LASER) {
-					item.extraAllocated = (_teams[_currentTeam].startingShipCount * _teams[_currentTeam].largestPrimaryBankCount) / 2;
-				}
-				else {
-					Assert(Weapon_info[item.infoIndex].cargo_size > 0);
-					item.extraAllocated = (_teams[_currentTeam].startingShipCount * _teams[_currentTeam].largestSecondaryCapacity) / (2 * Weapon_info[item.infoIndex].cargo_size);
-				}
-
-			}
-
-			// now that all the data is correctly set, rebuild the corresponding string.
-			_weaponList[index].first = createItemString(false, false, index);
-			_weaponList[index].second = enabled;
-
-			found = true;
-			break;
-		}
-		index++;
-	}
-
-	Assert(found);
-	buildCurrentLists();
-
-	modelChanged();
-}
-
 SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, const char* variableIn)
 {
 	// Using a pointer here seems to lead to memory corruption, so I'll just use a temp Loadout Item
@@ -432,152 +341,6 @@ void LoadoutDialogModel::switchTeam(int teamIn)
 
 	buildCurrentLists();
 
-	modelChanged();
-}
-
-void LoadoutDialogModel::setShipEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount)
-{
-	for (auto& nameIn : variablesIn) { // FIXME, this is trash
-		for (auto& variable : _shipVarList) {
-			if (nameIn == variable.first) {
-				variable.second = enabled;
-				break;
-			}
-		}
-	}
-
-	// if they are enabled, we need to add them to the list.
-	if (enabled) {
-		for (auto& nameIn : variablesIn) {
-			bool found = false;
-			for (auto& item : _teams[_currentTeam].varShips) {
-
-				// check to see if it was already added
-				if (item.name == nameIn) {
-					found = true;					
-					item.varCountIndex = get_index_sexp_variable_name(varForCount);
-					if (extraAllocated == 0 && item.varCountIndex == -1) {
-						item.extraAllocated = (int)((float)_teams[_currentTeam].startingShipCount / 2.0f);
-
-						// at least have 1
-						if (item.extraAllocated < 1) {
-							item.extraAllocated = 1;
-						}
-					}
-					else {
-						item.extraAllocated = extraAllocated;
-					}
-
-					break;
-				}
-			}
-
-			if (!found) {
-				_teams[_currentTeam].varShips.emplace_back(
-					get_index_sexp_variable_name(nameIn),
-					true,
-					false, // it cannot be required because this is var enabled
-					0, // there cannot be any because this is var enabled.
-					ShipVarDefault, // default o f.
-					-1, // no var for count until one can be selected.
-					SCP_string(nameIn));
-			}
-		}
-
-	} // if they are disabled, remove them.
-	else {
-		for (auto& nameIn : variablesIn) {
-			auto item = _teams[_currentTeam].varShips.begin();
-			while (item != _teams[_currentTeam].varShips.end()) {
-				// check to see if it was already added, and get rid of the info.
-				if (item->name == nameIn) {
-					item->enabled = false;
-					item->extraAllocated = 0;
-					item->infoIndex = -1;
-					item->varCountIndex = get_index_sexp_variable_name(nameIn);
-					item->countInWings = 0;
-					break;
-				}
-			}
-		}
-	}
-
-	_spinBoxUpdateRequired = true;
-	buildCurrentLists();
-	modelChanged();
-}
-
-void LoadoutDialogModel::setWeaponEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount)
-{
-	for (auto& nameIn : variablesIn) {
-		for (auto& variable : _weaponVarList) {
-			if (nameIn == variable.first) {
-				variable.second = enabled;
-				break;
-			}
-		}
-	}
-
-	// if they are enabled, we need to add them to the list.
-	if (enabled) {
-		for (auto& nameIn : variablesIn) {
-			bool found = false;
-
-			for (auto& item : _teams[_currentTeam].varWeapons) {
-
-				// check to see if it was already added
-				if (item.name == nameIn) {
-					found = true;
-					item.varCountIndex = get_index_sexp_variable_name(varForCount);
-
-					if (extraAllocated == 0 && item.varCountIndex == -1) {
-						item.extraAllocated = (int)((float)_teams[_currentTeam].startingShipCount / 2.0f);
-
-						// at least have 1
-						if (item.extraAllocated < 1) {
-							item.extraAllocated = 1;
-						}
-					}
-					else {
-						item.extraAllocated = extraAllocated;
-					}
-
-					break;
-				}
-			}
-
-			if (!found) {
-				_teams[_currentTeam].varShips.emplace_back(
-					get_index_sexp_variable_name(nameIn),
-					true,
-					false, // it cannot be required because it is var enabled
-					0, // there cannot be any because this is var enabled.
-					WeaponVarDefault * _teams[_currentTeam].startingShipCount,
-					-1, // no var for count until one can be selected.
-					SCP_string(nameIn));
-			}
-		}
-
-	} // if they are disabled, remove them.
-	else {
-		for (auto& nameIn : variablesIn) {
-			auto item = _teams[_currentTeam].varWeapons.begin();
-			while (item != _teams[_currentTeam].varWeapons.end()) {
-				// check to see if it was already added, and get rid of the info.
-				if (item->name == nameIn) {
-					item->enabled = false;
-					item->extraAllocated = 0;
-					item->infoIndex = -1;
-					item->varCountIndex = get_index_sexp_variable_name(nameIn);
-					item->countInWings = 0;
-					break;
-				}
-			}
-		}
-	}
-
-	_spinBoxUpdateRequired = true;
-	buildCurrentLists();
 	modelChanged();
 }
 
@@ -659,8 +422,9 @@ bool LoadoutDialogModel::apply() {
 
 
 		Team_data[currentTeam].num_weapon_choices = index;
+		Team_data[currentTeam].do_not_validate = modelTeam.skipValidation;
 	}
-	
+
 	Entry_delay_time = fl2f(_playerEntryDelay);
 
 	
@@ -1170,6 +934,16 @@ void LoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, c
 	buildCurrentLists();
 }
 
+bool LoadoutDialogModel::getSkipValidation() {
+	return _teams[_currentTeam].skipValidation;
+}
+
+void LoadoutDialogModel::setSkipValidation(const bool skipIt) {
+	// this is designed to be a global control, so turn this off in TvT, until we hear from someone otherwise.
+	for (auto& team : _teams) {
+		team.skipValidation = skipIt;
+	}
+}
 
 }
 }

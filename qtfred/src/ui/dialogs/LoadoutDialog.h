@@ -73,6 +73,7 @@ private:
 	void openEditVariablePressed();
 	void onSelectionRequiredPressed();
 	void onSelectionNotRequiredPressed();
+	void onWeaponValidationCheckboxClicked();
 
 	SCP_vector<SCP_string> getSelectedShips(); 
 	SCP_vector<SCP_string> getSelectedWeapons(); 

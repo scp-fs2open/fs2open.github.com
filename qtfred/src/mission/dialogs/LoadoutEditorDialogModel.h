@@ -32,6 +32,7 @@ struct TeamLoadout {
 		weapons = {};
 		varShips = {};
 		varWeapons = {};
+		skipValidation = false;
 	}
 
 	int startingShipCount; // TODO: Make sure this gets pop everywhere
@@ -41,6 +42,7 @@ struct TeamLoadout {
 	SCP_vector<LoadoutItem> weapons;
 	SCP_vector<LoadoutItem> varShips; 
 	SCP_vector<LoadoutItem> varWeapons;
+	bool skipValidation;
 };
 
 class LoadoutDialogModel : public AbstractDialogModel {
@@ -71,6 +73,7 @@ public:
 	int getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn);
 	int getExtraAllocatedShipEnabler(SCP_vector<SCP_string> namesIn);
 	int getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> namesIn);
+	bool getSkipValidation();
 
 	void setShipEnabled(const SCP_vector<SCP_string>& list, bool enabled);
 	void setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled);
@@ -82,12 +85,8 @@ public:
 	void setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const uint count);
 
 	void setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool ship, const bool variableMode);
-
-	void setShipInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
-	void setWeaponInfo(SCP_string textIn, bool enabled, int extraAllocated, SCP_string varForCount);
-	void setShipEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount);
-	void setWeaponEnablerVariables(SCP_vector<SCP_string> variablesIn, bool enabled, int extraAllocated, SCP_string varForCount);
 	void setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required);
+	void setSkipValidation(const bool skipIt);
 
 	void switchTeam(int teamIn);
 	void copyToOtherTeam();
