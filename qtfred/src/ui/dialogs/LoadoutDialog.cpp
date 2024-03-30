@@ -212,11 +212,11 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(2, new QTableWidgetItem("Required"));
 
-	ui->usedShipsList->setColumnWidth(0, 200);
-	ui->usedShipsList->setColumnWidth(0, 150);
-	ui->usedWeaponsList->setColumnWidth(0, 150);
-	ui->usedWeaponsList->setColumnWidth(1, 125);
-	ui->usedWeaponsList->setColumnWidth(2, 75);
+	ui->usedShipsList->setColumnWidth(0, 220);
+	ui->usedShipsList->setColumnWidth(0, 180);
+	ui->usedWeaponsList->setColumnWidth(0, 130);
+	ui->usedWeaponsList->setColumnWidth(1, 105);
+	ui->usedWeaponsList->setColumnWidth(2, 55);
 
 	// Populate the variable combobox
 	ui->extraItemsViaVariableCombo->clear();
@@ -516,12 +516,14 @@ void LoadoutDialog::onSelectionRequiredPressed()
 {
 	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
 	_model->setRequiredWeapon(namesOut, true);
+	updateUI();
 }
 
 void LoadoutDialog::onSelectionNotRequiredPressed() 
 {
 	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
 	_model->setRequiredWeapon(namesOut, false);
+	updateUI();
 }
 
 void LoadoutDialog::updateUI()
@@ -775,7 +777,7 @@ void LoadoutDialog::updateUI()
 	}
 
 	// Only enable set required if we are working with ships and weapons that have already been enabled, and not variables.
-	if (_mode == TABLE_MODE && (_lastSelectionChanged == USED_SHIPS || _lastSelectionChanged == USED_WEAPONS)) {
+	if (_mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS) {
 		ui->setSelectionNotRequired->setEnabled(true);
 		ui->setSelectionRequired->setEnabled(true);
 	} else {
@@ -822,7 +824,7 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (const auto& weapon : requiredWeapons) {
-				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weapon.c_str())) {
+				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weapon.c_str())) {
 					found = true;
 					ui->usedWeaponsList->item(x, 2)->setText("Yes");
 					break;

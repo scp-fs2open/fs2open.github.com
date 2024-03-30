@@ -635,6 +635,7 @@ bool LoadoutDialogModel::apply() {
 
 			Team_data[currentTeam].weaponry_pool[index] = weapon.infoIndex;
 			memset(Team_data[currentTeam].weaponry_pool_variable[index], 0, TOKEN_LENGTH);
+			Team_data[currentTeam].weapon_required[index] = weapon.required;
 			index++;
 		}
 
