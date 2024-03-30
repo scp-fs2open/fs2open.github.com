@@ -140,7 +140,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
-	clearMission();
+	clearMission(flags & MPF_FAST_RELOAD);
 
 	std::string filepath = mission_name;
 	auto res = cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS);
@@ -388,7 +388,7 @@ void Editor::unmarkObject(int obj) {
 	}
 }
 
-void Editor::clearMission() {
+void Editor::clearMission(bool fast_reload) {
 	// clean up everything we need to before we reset back to defaults.
 #if 0
     if (Briefing_dialog){
@@ -401,7 +401,10 @@ void Editor::clearMission() {
 	mission_init(&The_mission);
 
 	obj_init();
-	model_free_all();                // Free all existing models
+
+	if (!fast_reload)
+		model_free_all();                // Free all existing models
+
 	ai_init();
 	asteroid_level_init();
 	ship_level_init();

@@ -39,7 +39,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void showContextMenu(const QPoint& globalPos);
 
  public slots:
-	void openLoadMissionDIalog();
+	void openLoadMissionDialog();
 
 	void newMission();
 

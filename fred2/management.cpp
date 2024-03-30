@@ -766,7 +766,7 @@ void reset_mission()
 	stars_post_level_init();
 }
 
-void clear_mission()
+void clear_mission(bool fast_reload)
 {
 	char *str;
 	int i, j, count;
@@ -782,7 +782,10 @@ void clear_mission()
 	mission_init(&The_mission);
 
 	obj_init();
-	model_free_all();				// Free all existing models
+
+	if (!fast_reload)
+		model_free_all();				// Free all existing models
+
 	ai_init();
 	asteroid_level_init();
 	ship_level_init();
