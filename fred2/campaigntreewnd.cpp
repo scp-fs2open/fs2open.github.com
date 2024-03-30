@@ -71,7 +71,7 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	LoadAccelTable("IDR_ACC_CAMPAIGN");
 	Mission_filename_cb_format = RegisterClipboardFormat("Mission Filename");
 	Campaign_modified = 0;
-	clear_mission();
+	clear_mission(true);
 
 	// create a splitter with 1 row, 2 columns
 	if (!m_splitter.CreateStatic(this, 1, 2))

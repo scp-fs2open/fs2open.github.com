@@ -185,7 +185,7 @@ class Editor : public QObject {
 	static int getAigoal_list_size();
 	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
   private:
-	void clearMission();
+	void clearMission(bool fast_reload = false);
 
 	void initialSetup();
 

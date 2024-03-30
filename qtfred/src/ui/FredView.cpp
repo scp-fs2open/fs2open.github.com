@@ -70,7 +70,7 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
-	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDIalog);
+	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDialog);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 
 	connect(fredApp, &FredApplication::onIdle, this, &FredView::updateUI);
@@ -152,7 +152,7 @@ void FredView::loadMissionFile(const QString& pathName) {
 	}
 }
 
-void FredView::openLoadMissionDIalog() {
+void FredView::openLoadMissionDialog() {
 	qDebug() << "Loading from directory:" << QDir::currentPath();
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), QString(), tr("FS2 missions (*.fs2)"));
 
