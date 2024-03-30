@@ -1110,7 +1110,7 @@ void LoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vect
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool ship, const bool variableMode)
+void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool isShip, const bool variableMode)
 {
 	int index = -1;
 
@@ -1119,7 +1119,7 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 	}
 
 	for (const auto& item : list) {
-		if (ship && !variableMode) {
+		if (isShip && !variableMode) {
 			for (auto& ship : _teams[_currentTeam].ships) {
 				if (ship.name == item) {
 					ship.varCountIndex = index;
@@ -1127,7 +1127,7 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 				}
 			}
 			
-		} else if (ship && variableMode) {
+		} else if (isShip && variableMode) {
 			for (auto& shipVar : _teams[_currentTeam].varShips) {
 				if (shipVar.name == item) {
 					shipVar.varCountIndex = index;
@@ -1135,7 +1135,7 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 				}
 			}
 
-		} else if (!ship && !variableMode) {
+		} else if (!isShip && !variableMode) {
 			for (auto& weapon : _teams[_currentTeam].weapons) {
 				if (weapon.name == item) {
 					weapon.varCountIndex = index;

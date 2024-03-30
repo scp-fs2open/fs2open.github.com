@@ -213,10 +213,10 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	ui->usedWeaponsList->setHorizontalHeaderItem(2, new QTableWidgetItem("Required"));
 
 	ui->usedShipsList->setColumnWidth(0, 220);
-	ui->usedShipsList->setColumnWidth(0, 180);
+	ui->usedShipsList->setColumnWidth(0, 175);
 	ui->usedWeaponsList->setColumnWidth(0, 130);
-	ui->usedWeaponsList->setColumnWidth(1, 105);
-	ui->usedWeaponsList->setColumnWidth(2, 55);
+	ui->usedWeaponsList->setColumnWidth(1, 125);
+	ui->usedWeaponsList->setColumnWidth(2, 65);
 
 	// Populate the variable combobox
 	ui->extraItemsViaVariableCombo->clear();
