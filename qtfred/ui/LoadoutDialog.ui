@@ -400,6 +400,11 @@
      </item>
      <item row="2" column="0" colspan="3" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="tableVarLabel">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
        <property name="text">
         <string>Loadout Editor: Loadout View</string>
        </property>
@@ -441,22 +446,16 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
-          <spacer name="horizontalSpacer_21">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+          <widget class="QPushButton" name="switchViewButton">
+           <property name="text">
+            <string>Switch to Enable Via Variable</string>
            </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
+          </widget>
          </item>
          <item>
           <widget class="QPushButton" name="editVariables">
            <property name="text">
-            <string>Add/Modify Variables</string>
+            <string>Modify Mission Variables</string>
            </property>
           </widget>
          </item>
@@ -503,19 +502,6 @@
           </widget>
          </item>
         </layout>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_9">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </item>
@@ -947,41 +933,7 @@
       </layout>
      </item>
      <item row="4" column="0" colspan="3">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <spacer name="switchLeftSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="switchViewButton">
-         <property name="text">
-          <string>Switch to Enable Via Variable</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="switchRightSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
+      <layout class="QHBoxLayout" name="horizontalLayout"/>
      </item>
     </layout>
    </item>
