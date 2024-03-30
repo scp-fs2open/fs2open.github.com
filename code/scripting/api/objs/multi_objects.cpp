@@ -270,6 +270,44 @@ ADE_VIRTVAR(Team, l_NetPlayer, "number Team", "The player's team as an integer",
 	return ade_set_args(L, "i", current.getPlayer()->p_info.team);
 }
 
+ADE_FUNC(isSelf, l_NetPlayer, nullptr, "Whether or not the player is the current game instance's player", "boolean", "The self value")
+{
+	net_player_h current;
+	if (!ade_get_args(L, "o", l_NetPlayer.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (current.getPlayer()->player_id == Net_player->player_id) {
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(Master, l_NetPlayer, nullptr, "Whether or not the player is the game master", "boolean", "The master value")
+{
+	net_player_h current;
+	if (!ade_get_args(L, "o", l_NetPlayer.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	if (current.getPlayer()->flags & NETINFO_FLAG_AM_MASTER) {
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 ADE_VIRTVAR(Host, l_NetPlayer, nullptr, "Whether or not the player is the game host", "boolean", "The host value")
 {
 	net_player_h current;
@@ -824,14 +862,12 @@ ADE_VIRTVAR(HostModifiesShips, l_NetGame, "boolean HostModifies", "Whether or no
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-			if (enabled) {
-				current.getNetgame()->options.flags |= MSO_FLAG_SS_LEADERS;
-			} else {
-				current.getNetgame()->options.flags &= ~MSO_FLAG_SS_LEADERS;
-			}
-			multi_options_update_netgame();
+		if (enabled) {
+			current.getNetgame()->options.flags |= MSO_FLAG_SS_LEADERS;
+		} else {
+			current.getNetgame()->options.flags &= ~MSO_FLAG_SS_LEADERS;
 		}
+		multi_options_update_netgame();
 	}
 
 	if (current.getNetgame()->options.flags & MSO_FLAG_SS_LEADERS) {
@@ -854,21 +890,19 @@ ADE_VIRTVAR(Orders,
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-			if (eh_idx != nullptr) {
-				if (eh_idx->index == LE_MULTI_OPTION_RANK) {
-					current.getNetgame()->options.squad_set = MSO_SQUAD_RANK;
-				} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
-					current.getNetgame()->options.squad_set = MSO_SQUAD_LEADER;
-				} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
-					current.getNetgame()->options.squad_set = MSO_SQUAD_ANY;
-				} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
-					current.getNetgame()->options.squad_set = MSO_SQUAD_HOST;
-				}
+		if (eh_idx != nullptr) {
+			if (eh_idx->index == LE_MULTI_OPTION_RANK) {
+				current.getNetgame()->options.squad_set = MSO_SQUAD_RANK;
+			} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
+				current.getNetgame()->options.squad_set = MSO_SQUAD_LEADER;
+			} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
+				current.getNetgame()->options.squad_set = MSO_SQUAD_ANY;
+			} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
+				current.getNetgame()->options.squad_set = MSO_SQUAD_HOST;
 			}
-			send_netgame_update_packet();
-			multi_options_update_netgame();
 		}
+		send_netgame_update_packet();
+		multi_options_update_netgame();
 	}
 
 	if (current.getNetgame()->options.squad_set == MSO_SQUAD_RANK) {
@@ -898,21 +932,19 @@ ADE_VIRTVAR(EndMission,
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-			if (eh_idx != nullptr) {
-				if (eh_idx->index == LE_MULTI_OPTION_RANK) {
-					current.getNetgame()->options.endgame_set = MSO_END_RANK;
-				} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
-					current.getNetgame()->options.endgame_set = MSO_END_LEADER;
-				} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
-					current.getNetgame()->options.endgame_set = MSO_END_ANY;
-				} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
-					current.getNetgame()->options.endgame_set = MSO_END_HOST;
-				}
+		if (eh_idx != nullptr) {
+			if (eh_idx->index == LE_MULTI_OPTION_RANK) {
+				current.getNetgame()->options.endgame_set = MSO_END_RANK;
+			} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
+				current.getNetgame()->options.endgame_set = MSO_END_LEADER;
+			} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
+				current.getNetgame()->options.endgame_set = MSO_END_ANY;
+			} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
+				current.getNetgame()->options.endgame_set = MSO_END_HOST;
 			}
-			send_netgame_update_packet();
-			multi_options_update_netgame();
 		}
+		send_netgame_update_packet();
+		multi_options_update_netgame();
 	}
 
 	if (current.getNetgame()->options.endgame_set == MSO_END_RANK) {
