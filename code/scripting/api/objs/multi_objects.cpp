@@ -938,7 +938,7 @@ ADE_VIRTVAR(SkillLevel, l_NetGame, nullptr, "The current skill level the game, 0
 
 	if (ADE_SETTING_VAR) {
 		multi_ho_set_skill_level(skill);
-		current.getNetgame()->options.skill_level = multi_ho_get_skill_level();
+		current.getNetgame()->options.skill_level = static_cast<ubyte>(multi_ho_get_skill_level());
 	}
 
 	return ade_set_args(L, "i", multi_ho_get_skill_level());
@@ -1015,7 +1015,7 @@ ADE_VIRTVAR(ObserverLimit, l_NetGame, nullptr, "The current observer limit", "nu
 		} else if (observer >= MULTI_HO_MAX_OBS) {
 			current.getNetgame()->options.max_observers = MULTI_HO_MAX_OBS;
 		} else {
-			current.getNetgame()->options.max_observers = observer;
+			current.getNetgame()->options.max_observers = static_cast<ubyte>(observer);
 		}
 	}
 

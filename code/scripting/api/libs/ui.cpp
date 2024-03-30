@@ -35,6 +35,7 @@
 #include "network/chat_api.h"
 #include "network/multi.h"
 #include "network/multiui.h"
+#include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
 #include "network/multi_pxo.h"
 #include "pilotfile/pilotfile.h"
@@ -2827,7 +2828,25 @@ ADE_FUNC(initMultiHostSetup,
 	return ADE_RETURN_NIL;
 }
 
-// Don't need a close for this UI apparently
+ADE_FUNC(closeMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	"boolean Commit_or_Quit",
+	"Closes Multi Host Setup. True to commit, false to quit. Defaults to true.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		// Do something?
+	} else {
+		multi_quit_game(PROMPT_HOST);
+	}
+
+	return ADE_RETURN_NIL;
+}
 
 ADE_FUNC(runNetwork,
 	l_UserInterface_MultiHostSetup,
