@@ -2843,6 +2843,91 @@ ADE_FUNC(runNetwork,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getNetGame, l_UserInterface_MultiHostSetup, nullptr, "The handle to the netgame", "netgame", "The netgame handle")
+{
+	SCP_UNUSED(L);
+	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
+}
+
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Players,
+	"number Index",
+	"Array of net players",
+	"net_player",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || (idx >= MAX_PLAYERS))
+		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
+
+	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Players,
+	nullptr,
+	"The number of net players",
+	"number",
+	"The number of players.")
+{
+	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
+ADE_LIB_DERIV(l_Net_Missions, "NetMissions", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Missions,
+	"number Index",
+	"Array of net missions",
+	"net_mission",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_mission_list, idx))
+		return ade_set_args(L, "o", l_NetMission.Set(net_mission_h()));
+
+	return ade_set_args(L, "o", l_NetMission.Set(net_mission_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Missions, nullptr, "The number of net missions", "number", "The number of missions.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_mission_list.size()));
+}
+
+ADE_LIB_DERIV(l_Net_Campaigns, "NetCampaigns", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Campaigns,
+	"number Index",
+	"Array of net campaigns",
+	"net_campaign",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_campaign_list, idx))
+		return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h()));
+
+	return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Campaigns, nullptr, "The number of net campaigns", "number", "The number of campaigns.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_campaign_list.size()));
+}
+
 
 } // namespace api
 } // namespace scripting

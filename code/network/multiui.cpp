@@ -4669,25 +4669,190 @@ void multi_create_list_do()
 	}
 }
 
-// takes care of stuff like changing indices around and setting up the netgame structure
-void multi_create_list_select_item(int n)
-{
-	int abs_index,campaign_type,max_players;
-	char title[NAME_LENGTH+1];
-	netgame_info ng_temp;
-	netgame_info *ng;
-	multi_create_info *mcip = NULL;
+// Here we have the absolute index to the mission item we're working with and the mode
+// so we can set the data without bothering to check the UI anymore
+void multi_create_list_set_item(int abs_index, int mode) {
 
-	char *campaign_desc;
+	int campaign_type, max_players;
+	char title[NAME_LENGTH + 1];
+	netgame_info ng_temp;
+	netgame_info* ng;
+	multi_create_info* mcip = NULL;
+
+	char* campaign_desc;
 
 	// if not on the standalone server
-	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		ng = &Netgame;	
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		ng = &Netgame;
 	}
 	// on the standalone
 	else {
 		ng = &ng_temp;
 	}
+
+	// set the mission name
+	if (mode == MULTI_CREATE_SHOW_MISSIONS) {
+		strcpy(ng->mission_name, Multi_create_mission_list[abs_index].filename);
+	} else {
+		strcpy(ng->mission_name, Multi_create_campaign_list[abs_index].filename);
+	}
+
+	// make sure the netgame type is properly set
+	int old_type = Netgame.type_flags;
+
+	if (abs_index != -1) {
+		if (mode == MULTI_CREATE_SHOW_MISSIONS) {
+			mcip = &Multi_create_mission_list[abs_index];
+		} else {
+			mcip = &Multi_create_campaign_list[abs_index];
+		}
+
+		if (mcip->flags & MISSION_TYPE_MULTI_TEAMS) {
+			// if we're in squad war mode, leave it as squad war
+			if (old_type & NG_TYPE_SW) {
+				ng->type_flags = NG_TYPE_SW;
+			} else {
+				ng->type_flags = NG_TYPE_TVT;
+			}
+		} else if (mcip->flags & MISSION_TYPE_MULTI_COOP) {
+			ng->type_flags = NG_TYPE_COOP;
+		} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
+			ng->type_flags = NG_TYPE_DOGFIGHT;
+		}
+	}
+
+	// if we're no longer in a TvT game, just uncheck the squadwar checkbox
+	if (!(ng->type_flags & NG_TYPE_TEAM)) {
+		Multi_create_sw_checkbox.set_state(0);
+	}
+
+	// if we switched from something else to team vs. team mode, do some special processing
+	if ((ng->type_flags & NG_TYPE_TEAM) && (ng->type_flags != old_type) &&
+		(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+		multi_team_reset();
+	}
+
+	switch (mode) {
+	case MULTI_CREATE_SHOW_MISSIONS:
+		// don't forget to update the info box window thingie
+		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			ship_level_init(); // mwa -- 10/15/97.  Call this function to reset number of ships in mission
+			ng->max_players = mission_parse_get_multi_mission_info(ng->mission_name);
+
+			Assert(ng->max_players > 0);
+			strcpy_s(ng->title, The_mission.name);
+
+			// set the information area text
+			Multi_netgame_common_description = The_mission.mission_desc;
+			multi_common_set_text(Multi_netgame_common_description.c_str());
+		}
+		// if we're on the standalone, send a request for the description
+		else {
+			send_netgame_descript_packet(&Netgame.server_addr, 0);
+			multi_common_set_text("");
+		}
+
+		// set the respawns as appropriate
+		if (mcip) {
+			if (Netgame.options.respawn <= mcip->respawn) {
+				ng->respawn = Netgame.options.respawn;
+				nprintf(("Network",
+					"Using netgame options for respawn count (%d %d)\n",
+					Netgame.options.respawn,
+					mcip->respawn));
+			} else {
+				ng->respawn = mcip->respawn;
+				nprintf(("Network",
+					"Using mission settings for respawn count (%d %d)\n",
+					Netgame.options.respawn,
+					mcip->respawn));
+			}
+		}
+		break;
+	case MULTI_CREATE_SHOW_CAMPAIGNS:
+		char* first_mission = nullptr;
+		mission* mp = &The_mission;
+
+		// if not on the standalone server
+		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			memset(title, 0, sizeof(title));
+			// get the campaign info
+			if (!mission_campaign_get_info(ng->campaign_name,
+					title,
+					&campaign_type,
+					&max_players,
+					&campaign_desc,
+					&first_mission)) {
+				memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
+				ng->max_players = 0;
+			}
+			// if we successfully got the info
+			else {
+				memset(ng->title, 0, NAME_LENGTH + 1);
+				strcpy_s(ng->title, title);
+				ng->max_players = max_players;
+			}
+
+			nprintf(("Network", "MC MAX PLAYERS : %d\n", ng->max_players));
+
+			// set the information area text
+			// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
+			Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
+
+			if (campaign_desc) {
+				Multi_netgame_common_description += campaign_desc;
+			} else {
+				Multi_netgame_common_description += "No description available.";
+			}
+
+			Multi_netgame_common_description += DOUBLE_NEW_LINE;
+			Multi_netgame_common_description += PRE_MISSION_DESC;
+
+			int rc = get_mission_info(first_mission, mp, true);
+
+			if (!rc && strlen(mp->mission_desc)) {
+				Multi_netgame_common_description += mp->mission_desc;
+			} else {
+				Multi_netgame_common_description += "No description available.";
+			}
+
+			multi_common_set_text(Multi_netgame_common_description.c_str());
+
+			// free the malloc'ed strings from mission_campaign_get_info()
+			if (campaign_desc != nullptr) {
+				vm_free(campaign_desc);
+			}
+
+			if (first_mission != nullptr) {
+				vm_free(first_mission);
+			}
+
+			// standalones should now be able to request the info.
+		} else {
+			send_netgame_descript_packet(&Netgame.server_addr, 0);
+			multi_common_set_text("");
+		}
+
+		// netgame respawns are always 0 for campaigns (until the first mission is loaded)
+		ng->respawn = 0;
+		break;
+	}
+
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		// update players
+		send_netgame_update_packet();
+
+		// update all machines about stuff like respawns, etc.
+		multi_options_update_netgame();
+	} else {
+		multi_options_update_mission(ng, mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
+	}
+}
+
+// takes care of stuff like changing indices around and setting up the netgame structure
+void multi_create_list_select_item(int n)
+{
+	int abs_index;
 
 	if ( n != Multi_create_list_select ) {
 		// check to see if this is a valid index, and bail if it is not
@@ -4698,153 +4863,19 @@ void multi_create_list_select_item(int n)
 
 		Multi_create_list_select = n;
 
-		// set the mission name
-		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
-			multi_create_select_to_filename(n, ng->mission_name);
-		} else {
-			multi_create_select_to_filename(n, ng->campaign_name);
-		}
-
-		// make sure the netgame type is properly set
-		int old_type = Netgame.type_flags;
-		abs_index = multi_create_select_to_index(n);
-
-		if (abs_index != -1) {
-			if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
-				mcip = &Multi_create_mission_list[abs_index];
-			} else {
-				mcip = &Multi_create_campaign_list[abs_index];
-			}
-
-			if (mcip->flags & MISSION_TYPE_MULTI_TEAMS) {
-				// if we're in squad war mode, leave it as squad war
-				if(old_type & NG_TYPE_SW){
-					ng->type_flags = NG_TYPE_SW;
-				} else {
-					ng->type_flags = NG_TYPE_TVT;
-				}
-			} else if (mcip->flags & MISSION_TYPE_MULTI_COOP) {
-				ng->type_flags = NG_TYPE_COOP;
-			} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
-				ng->type_flags = NG_TYPE_DOGFIGHT;
-			}
-		}
-
-		// if we're no longer in a TvT game, just uncheck the squadwar checkbox
-		if(!(ng->type_flags & NG_TYPE_TEAM)){
-			Multi_create_sw_checkbox.set_state(0);
-		}
-
-		// if we switched from something else to team vs. team mode, do some special processing
-		if((ng->type_flags & NG_TYPE_TEAM) && (ng->type_flags != old_type) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-			multi_team_reset();
-		}
-
-		switch(Multi_create_list_mode){
-		case MULTI_CREATE_SHOW_MISSIONS:		
-			// don't forget to update the info box window thingie
-			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
-				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
-				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
-
-				Assert(ng->max_players > 0);
-				strcpy_s(ng->title,The_mission.name);								
-
-				// set the information area text
-				Multi_netgame_common_description = The_mission.mission_desc;
-				multi_common_set_text(Multi_netgame_common_description.c_str());
-			}
-			// if we're on the standalone, send a request for the description
-			else {
-				send_netgame_descript_packet(&Netgame.server_addr,0);
-				multi_common_set_text("");
-			}
-
-			// set the respawns as appropriate
-			if (mcip) {
-				if(Netgame.options.respawn <= mcip->respawn){
-					ng->respawn = Netgame.options.respawn;
-					nprintf(("Network", "Using netgame options for respawn count (%d %d)\n", Netgame.options.respawn, mcip->respawn));
-				} else {
-					ng->respawn = mcip->respawn;
-					nprintf(("Network", "Using mission settings for respawn count (%d %d)\n", Netgame.options.respawn, mcip->respawn));
-				}
-			}
-			break;
-		case MULTI_CREATE_SHOW_CAMPAIGNS:
-			char* first_mission = nullptr;
-			mission* mp = &The_mission;
-
-			// if not on the standalone server
-			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				memset(title, 0, sizeof(title));
-				// get the campaign info
-				if ( !mission_campaign_get_info(ng->campaign_name, title, &campaign_type, &max_players, &campaign_desc, &first_mission) ) {
-					memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
-					ng->max_players = 0;
-				}
-				// if we successfully got the info
-				else {
-					memset(ng->title,0,NAME_LENGTH+1);
-					strcpy_s(ng->title,title);
-					ng->max_players = max_players;					
-				}
-
-				nprintf(("Network","MC MAX PLAYERS : %d\n",ng->max_players));
-
-				// set the information area text
-				// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
-				Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
-
-				if (campaign_desc) {
-					Multi_netgame_common_description += campaign_desc;
-				} else {
-					Multi_netgame_common_description += "No description available.";
-				}
-
-				Multi_netgame_common_description += DOUBLE_NEW_LINE;
-				Multi_netgame_common_description += PRE_MISSION_DESC;
-
-				int rc = get_mission_info(first_mission, mp, true);
-
-				if ( !rc && strlen(mp->mission_desc) ) {
-					Multi_netgame_common_description += mp->mission_desc;
-				} else {
-					Multi_netgame_common_description += "No description available.";
-				}
-
-				multi_common_set_text(Multi_netgame_common_description.c_str());
-
-				// free the malloc'ed strings from mission_campaign_get_info()
-				if (campaign_desc != nullptr) {
-					vm_free(campaign_desc);
-				}
-
-				if (first_mission != nullptr) {
-					vm_free(first_mission);
-				}
-
-			// standalones should now be able to request the info.
-			} else {
-				send_netgame_descript_packet(&Netgame.server_addr, 0);
-				multi_common_set_text("");
-			}
-
-			// netgame respawns are always 0 for campaigns (until the first mission is loaded)
-			ng->respawn = 0;
-			break;
-		}
-
-		if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-			// update players 
-			send_netgame_update_packet();			
-
-			// update all machines about stuff like respawns, etc.
-			multi_options_update_netgame();
-		} else {
-			multi_options_update_mission(ng, Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
-		}
+		// now that we have the absolute index and the mode, do all the things
+		multi_create_list_set_item(abs_index, Multi_create_list_mode);
 	}
+}
+
+bool multi_is_item_builtin_volition(const char* filename)
+{
+	auto fb = game_find_builtin_mission(filename);
+	// if the mission is from volition, blit the volition icon
+	if ((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)) {
+		return true;
+	}
+	return false;
 }
 
 void multi_create_list_blit_icons(int list_index, int y_start)
@@ -4892,9 +4923,8 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	}
 
 	// now see if it's a builtin mission
-	auto fb = game_find_builtin_mission(mcip->filename);
 	// if the mission is from volition, blit the volition icon
-	if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
+	if (multi_is_item_builtin_volition(mcip->filename)) {
 		if(Multi_common_icons[MICON_VOLITION] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_VOLITION]);
 			gr_bitmap(Mc_icon_volition_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_volition_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
@@ -5729,12 +5759,6 @@ int Ho_max_rsp_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-// maximum values for various input boxes (to notify user of overruns)
-#define MULTI_HO_MAX_TIME_LIMIT				500
-#define MULTI_HO_MAX_TOKEN_WAIT				5
-#define MULTI_HO_MAX_KILL_LIMIT				9999
-#define MULTI_HO_MAX_OBS						4
-
 // LOCAL function definitions
 void multi_ho_check_buttons();
 void multi_ho_button_pressed(int n);
@@ -6028,6 +6052,24 @@ void multi_ho_draw_radio_groups()
 	}
 }
 
+void multi_ho_set_skill_level(int skill) {
+	// set the skill level.  If in team vs. team mode, preserve the old setting before saving
+	// the pilot file.  I'll bet that this doesn't work though because the pilot file gets
+	// written in a bunch of locations....sigh.
+	if (!(Netgame.type_flags & NG_TYPE_TEAM)) {
+		Game_skill_level = skill;
+	} else {
+		Game_skill_level = NUM_SKILL_LEVELS / 2;
+	}
+}
+
+// for the API to avoid including freespace.h
+// Is this really just the game's global?? - Mjn
+int multi_ho_get_skill_level()
+{
+	return Game_skill_level;
+}
+
 void multi_ho_accept_hit()
 {
 	char resp_str[10];
@@ -6097,14 +6139,7 @@ void multi_ho_accept_hit()
 	// get the voice duration options
 	Netgame.options.voice_record_time = (int)(0.5f * (float)(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_DUR].slider.pos + 1) * 1000.0f);
 	
-	// set the skill level.  If in team vs. team mode, preserve the old setting before saving
-	// the pilot file.  I'll bet that this doesn't work though because the pilot file gets
-	// written in a bunch of locations....sigh.
-	if ( !(Netgame.type_flags & NG_TYPE_TEAM) ){		
-		Game_skill_level = Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_SKILL].slider.pos;
-	} else {	
-		Game_skill_level = NUM_SKILL_LEVELS / 2;
-	}
+	multi_ho_set_skill_level(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_SKILL].slider.pos);
 
 	// set the netgame respawn count
 	// maybe warn the user that respawns will not be used for a campaign mission

@@ -90,6 +90,9 @@ extern int Multi_create_overlay_id;
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();
 
+// check if a mission is built-in from volition
+bool multi_is_item_builtin_volition(const char*);
+
 // returns an index into Multi_create_mission_list
 int multi_create_lookup_mission(char *fname);
 
@@ -119,6 +122,7 @@ void multi_create_game_init(bool API_Access = false);
 void multi_create_game_do(bool API_Access = false);
 void multi_create_game_close();
 void multi_create_game_add_mission(char *fname,char *name, int flags);
+void multi_create_list_set_item(int abs_index, int mode);
 
 #define MULTI_CREATE_SHOW_MISSIONS			0
 #define MULTI_CREATE_SHOW_CAMPAIGNS			1
@@ -128,9 +132,18 @@ void multi_create_handle_join(net_player *pl);
 
 void multi_jw_handle_join(net_player *pl);
 
+// maximum values for various input boxes (to notify user of overruns)
+#define MULTI_HO_MAX_TIME_LIMIT 500
+#define MULTI_HO_MAX_TOKEN_WAIT 5
+#define MULTI_HO_MAX_KILL_LIMIT 9999
+#define MULTI_HO_MAX_OBS 4
+
 void multi_host_options_init();
 void multi_host_options_do();
 void multi_host_options_close();
+void multi_ho_set_skill_level(int skill);
+int multi_ho_get_skill_level();
+void multi_ho_apply_options();
 
 void multi_game_client_setup_init();
 void multi_game_client_setup_do_frame();
