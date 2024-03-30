@@ -9,6 +9,8 @@ namespace fred {
 namespace dialogs {
 
 struct LoadoutItem {
+	LoadoutItem() = default;
+
 	LoadoutItem(int infoIn, bool enabledIn, int countIn, int extraIn, int varCountIn, SCP_string nameIn) {
 		infoIndex = infoIn; enabled = enabledIn; countInWings = countIn; extraAllocated = extraIn; varCountIndex = varCountIn; name = nameIn;
 	}

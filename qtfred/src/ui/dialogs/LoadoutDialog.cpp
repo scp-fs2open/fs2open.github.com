@@ -204,12 +204,30 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	_lastSelectionChanged = NONE;
 	
 	// set headers
-	ui->usedShipsList->setColumnCount(2);
-	ui->usedWeaponsList->setColumnCount(2);
+	ui->usedShipsList->setColumnCount(3);
+	ui->usedWeaponsList->setColumnCount(3);
 	ui->usedShipsList->setHorizontalHeaderItem(0, new QTableWidgetItem("Ship Name"));
-	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("Present In Wings/Extra"));
+	ui->usedShipsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
+	ui->usedShipsList->setHorizontalHeaderItem(2, new QTableWidgetItem("Required"));
 	ui->usedWeaponsList->setHorizontalHeaderItem(0, new QTableWidgetItem("Weapon Name"));
-	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("Present In Wings/Extra"));
+	ui->usedWeaponsList->setHorizontalHeaderItem(1, new QTableWidgetItem("In Wings/Extra"));
+	ui->usedWeaponsList->setHorizontalHeaderItem(2, new QTableWidgetItem("Required"));
+
+	ui->usedShipsList->setColumnWidth(0, 50);
+	ui->usedShipsList->setColumnWidth(1, 40);
+	ui->usedShipsList->setColumnWidth(0, 25);
+
+	// Populate the variable combobox
+	ui->extraItemsViaVariableCombo->clear();
+	ui->extraItemsViaVariableCombo->addItem("");
+	ui->extraItemsViaVariableCombo->addItem("<none>");
+		
+	SCP_vector<SCP_string> numberVarList = _model->getNumberVarList();
+
+	for (const auto& item : numberVarList) {
+		ui->extraItemsViaVariableCombo->addItem(item.c_str());
+	}
+
 
 	// quickly enable or disable the team spin box (must not get to multiple teams if in SP!)
 	if (The_mission.game_type & MISSION_TYPE_MULTI){
@@ -407,14 +425,15 @@ void LoadoutDialog::onExtraItemSpinboxUpdated()
 
 void LoadoutDialog::onExtraItemsViaVariableCombo()
 {
-	if (_lastSelectionChanged == POTENTIAL_SHIPS || _lastSelectionChanged == POTENTIAL_WEAPONS) {
+	if (_lastSelectionChanged == POTENTIAL_SHIPS || _lastSelectionChanged == POTENTIAL_WEAPONS || _lastSelectionChanged == NONE) {
 		return;
 	}
 
 	SCP_vector<SCP_string> list = (_lastSelectionChanged == USED_SHIPS) ? getSelectedShips() : getSelectedWeapons();
 	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toStdString();
 
-	_model->setExtraAllocatedViaVariable(list, chosenVariable, _lastSelectionChanged == USED_SHIPS, _mode == TABLE_MODE);
+	_model->setExtraAllocatedViaVariable(list, chosenVariable, _lastSelectionChanged == USED_SHIPS, _mode == VARIABLE_MODE);
+	updateUI();
 }
 
 void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
@@ -717,21 +736,18 @@ void LoadoutDialog::updateUI()
 	// Do some basic enabling and disabling
 	if (_lastSelectionChanged == USED_SHIPS) {
 		ui->extraItemSpinbox->setEnabled(true);
-		ui->extraItemsViaVariableCombo->setEnabled(true);
 
 		namesOut = getSelectedShips();
 		requestSpinComboUpdate = true;
 		
 	} else if (_lastSelectionChanged == USED_WEAPONS){
 		ui->extraItemSpinbox->setEnabled(true);
-		ui->extraItemsViaVariableCombo->setEnabled(true);
 
 		namesOut = getSelectedWeapons();
 		requestSpinComboUpdate = true;
 
 	} else {
 		ui->extraItemSpinbox->setEnabled(false);
-		ui->extraItemsViaVariableCombo->setEnabled(false);
 	}
 
 	if (requestSpinComboUpdate || _model->spinBoxUpdateRequired()) {
@@ -766,16 +782,34 @@ void LoadoutDialog::updateUI()
 		ui->setSelectionRequired->setEnabled(false);
 	}
 
-	SCP_vector<SCP_string> numberVarList = _model->getNumberVarList();
 
-	ui->extraItemsViaVariableCombo->clear();
+	// Finally, populate and select the correct variable for the extra ships combobox
+	if (_lastSelectionChanged == USED_SHIPS || _lastSelectionChanged == USED_WEAPONS) {
+		ui->extraItemsViaVariableCombo->setEnabled(true);
 
-	// TODO! This is where we decided if we should put <none> or <no active selection>
+		SCP_string currentVariable = "";
 
-	ui->extraItemsViaVariableCombo->addItem("<none>");
+		if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS) {
+			currentVariable = _model->getCountVarShips(namesOut);			
+		} else if (_mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS) {
+			currentVariable = _model->getCountVarWeapons(namesOut);
+		} else if (_mode == VARIABLE_MODE && _lastSelectionChanged == USED_SHIPS) {
+			currentVariable = _model->getCountVarShipEnabler(namesOut);
+		} else if (_mode == VARIABLE_MODE && _lastSelectionChanged == USED_WEAPONS) {
+			currentVariable = _model->getCountVarWeaponEnabler(namesOut);
+		}
 
-	for (const auto& item : numberVarList) {
-		ui->extraItemsViaVariableCombo->addItem(item.c_str());
+		bool found = false;
+
+		for (int x = 0; x < ui->extraItemsViaVariableCombo->count(); ++x) {
+			if (!stricmp(ui->extraItemsViaVariableCombo->itemText(x).toStdString().c_str(), currentVariable.c_str())) {
+				ui->extraItemsViaVariableCombo->setCurrentIndex(x);
+				break;
+			}
+		}
+
+	} else {
+		ui->extraItemsViaVariableCombo->setEnabled(false);
 	}
 }
 

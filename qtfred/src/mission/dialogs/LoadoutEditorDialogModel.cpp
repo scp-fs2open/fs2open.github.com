@@ -350,42 +350,44 @@ void LoadoutDialogModel::setWeaponInfo(SCP_string textIn, bool enabled, int extr
 
 SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, SCP_string variableIn)
 {
-	LoadoutItem* ip;
-	SCP_string stringOut;
+	// Using a pointer here seems to lead to memory corruption, so I'll just use a temp Loadout Item
+	LoadoutItem item;
+	std::string stringOut;
 
 	if (variable) {
 		if (ship) {
-			ip = &_teams[_currentTeam].varShips[itemIndex];
+			item = _teams[_currentTeam].varShips[itemIndex];
 		} else {
-			ip = &_teams[_currentTeam].varWeapons[itemIndex];
+			item = _teams[_currentTeam].varWeapons[itemIndex];
 		}
 
 		stringOut = variableIn;
 	} else {
 		if (ship) {
-			ip = &_teams[_currentTeam].ships[itemIndex];
-			stringOut = Ship_info[ip->infoIndex].name;
+			item = _teams[_currentTeam].ships[itemIndex];
+			stringOut = Ship_info[item.infoIndex].name;
 		} else {
-			ip = &_teams[_currentTeam].weapons[itemIndex];
-			stringOut = Weapon_info[ip->infoIndex].name;
+			item = _teams[_currentTeam].weapons[itemIndex];
+			stringOut = Weapon_info[item.infoIndex].name;
 		}
 	}
 
 	stringOut += " ";
 
 	if (!variable) {
-		stringOut += std::to_string(ip->countInWings);
+		stringOut += std::to_string(item.countInWings);
 		stringOut += "/";	
 	}
 
-	if (ip->varCountIndex < 0) {
-		stringOut += std::to_string(ip->extraAllocated);
+	if (item.varCountIndex < 0) {
+		stringOut += std::to_string(item.extraAllocated);
 	}
 	else {
-		stringOut += Sexp_variables[ip->varCountIndex].variable_name;
+		stringOut += Sexp_variables[item.varCountIndex].variable_name;
 	}
 
-	return stringOut;
+	SCP_string stringOut2 = stringOut;
+	return stringOut2;
 }
 
 void LoadoutDialogModel::copyToOtherTeam()
@@ -700,17 +702,17 @@ void LoadoutDialogModel::buildCurrentLists()
 			_shipVarList.emplace_back(name, enabled);
 
 			enabled = false;
-			name = Sexp_variables[x].variable_name;
+			SCP_string name2 = Sexp_variables[x].variable_name;
 
 			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varWeapons.size()); ++y) {
 				if (_teams[_currentTeam].varWeapons[y].name == Sexp_variables[x].variable_name) {
 					enabled = _teams[_currentTeam].varWeapons[y].enabled;
-					name = createItemString(true, true, y, name);
+					name2 = createItemString(true, true, y, name2);
 					break;
 				}
 			}
 
-			_weaponVarList.emplace_back(name, enabled);
+			_weaponVarList.emplace_back(name2, enabled);
 		}
 	}
 }
@@ -724,11 +726,10 @@ SCP_string LoadoutDialogModel::getCountVarShips(SCP_vector<SCP_string> namesIn)
 		for (auto& currentShip : _teams[_currentTeam].ships) {
 			if (currentShip.name == name) {
 				if (tester > -1 && currentShip.varCountIndex != tester) {
-					out = "";
 					return out;
 				}
 				else {
-					out = currentShip.varCountIndex;
+					tester = currentShip.varCountIndex;
 				}
 			}
 		}
@@ -736,6 +737,8 @@ SCP_string LoadoutDialogModel::getCountVarShips(SCP_vector<SCP_string> namesIn)
 
 	if (tester > -1) {
 		out = SCP_string(Sexp_variables[tester].text);
+	} else {
+		out = "<none>";
 	}
 
 	return out;
@@ -750,11 +753,10 @@ SCP_string LoadoutDialogModel::getCountVarWeapons(SCP_vector<SCP_string> namesIn
 		for (auto& currentWep : _teams[_currentTeam].weapons) {
 			if (currentWep.name == name) {
 				if (tester > -1 && currentWep.varCountIndex != tester) {
-					out = "";
 					return out;
 				}
 				else {
-					out = currentWep.varCountIndex;
+					tester = currentWep.varCountIndex;
 				}
 			}
 		}
@@ -762,6 +764,8 @@ SCP_string LoadoutDialogModel::getCountVarWeapons(SCP_vector<SCP_string> namesIn
 
 	if (tester > -1) {
 		out = SCP_string(Sexp_variables[tester].text);
+	} else {
+		out = "<none>";
 	}
 
 	return out;
@@ -776,11 +780,10 @@ SCP_string LoadoutDialogModel::getCountVarShipEnabler(SCP_vector<SCP_string> nam
 		for (auto& currentShip : _teams[_currentTeam].varShips) {
 			if (currentShip.name == name) {
 				if (tester > -1 && currentShip.varCountIndex != tester) {
-					out = "";
 					return out;
 				}
 				else {
-					out = currentShip.varCountIndex;
+					tester = currentShip.varCountIndex;
 				}
 			}
 		}
@@ -788,6 +791,8 @@ SCP_string LoadoutDialogModel::getCountVarShipEnabler(SCP_vector<SCP_string> nam
 
 	if (tester > -1) {
 		out = SCP_string(Sexp_variables[tester].text);
+	} else {
+		out = "<none>";
 	}
 
 	return out;
@@ -802,11 +807,10 @@ SCP_string LoadoutDialogModel::getCountVarWeaponEnabler(SCP_vector<SCP_string> n
 		for (auto& currentWep : _teams[_currentTeam].varWeapons) {
 			if (currentWep.name == name) {
 				if (tester > -1 && currentWep.varCountIndex != tester) {
-					out = "";
 					return out;
 				}
 				else {
-					out = currentWep.varCountIndex;
+					tester = currentWep.varCountIndex;
 				}
 			}
 		}
@@ -814,6 +818,8 @@ SCP_string LoadoutDialogModel::getCountVarWeaponEnabler(SCP_vector<SCP_string> n
 
 	if (tester > -1) {
 		out = SCP_string(Sexp_variables[tester].text);
+	} else {
+		out = "<none>";
 	}
 
 	return out;
@@ -1125,6 +1131,8 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 			}
 		}
 	}
+
+	buildCurrentLists();
 }
 
 }
