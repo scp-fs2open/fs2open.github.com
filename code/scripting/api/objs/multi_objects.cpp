@@ -1,4 +1,5 @@
 #include "multi_objects.h"
+#include "enums.h"
 
 #include "network/multi_pxo.h"
 #include "network/multiui.h"
