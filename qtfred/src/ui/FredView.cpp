@@ -31,6 +31,7 @@
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
 #include <ui/dialogs/LoadoutDialog.h>
+#include <ui/dialogs/VariableDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -751,6 +752,11 @@ void FredView::on_actionLoadout_triggered(bool) {
 	auto editorDialog = new dialogs::LoadoutDialog(this, _viewport);
 	editorDialog->show();
 }
+void FredView::on_actionVariablesAndContainers_triggered(bool) {
+	auto editorDialog = new dialogs::VariableDialog(this, _viewport);
+	editorDialog->show();
+}
+
 DialogButton FredView::showButtonDialog(DialogType type,
 										const SCP_string& title,
 										const SCP_string& message,
