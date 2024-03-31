@@ -1450,6 +1450,7 @@
 #define ID_SHOW_STARTS                  32991
 #define ID_TOGGLE_VIEWPOINT             32992
 #define ID_VIEW_OUTLINE_AT_WARPIN       32993
+#define ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES 32994
 #define ID_CPGN_FILE_NEW                32995
 #define ID_CPGN_FILE_OPEN               32996
 #define ID_CPGN_FILE_SAVE               32997

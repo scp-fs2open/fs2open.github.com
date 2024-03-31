@@ -280,7 +280,7 @@ class Editor : public QObject {
 	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
-	int fred_check_sexp(int sexp, int type, const char* msg, ...);
+	int fred_check_sexp(int sexp, int type, const char* location, ...);
 
 
 	int global_error_check_mixed_player_wing(int w);

@@ -135,6 +135,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
 
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionMove_Ships_When_Undocking->setChecked(_viewport->Move_ships_when_undocking); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionError_Checker_Checks_Potential_Issues->setChecked(_viewport->Error_checker_checks_potential_issues); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -1103,6 +1104,9 @@ void FredView::on_actionCancel_Subsystem_triggered(bool) {
 }
 void FredView::on_actionMove_Ships_When_Undocking_triggered(bool) {
 	_viewport->Move_ships_when_undocking = !_viewport->Move_ships_when_undocking;
+}
+void FredView::on_actionError_Checker_Checks_Potential_Issues_triggered(bool) {
+	_viewport->Error_checker_checks_potential_issues = !_viewport->Error_checker_checks_potential_issues;
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();

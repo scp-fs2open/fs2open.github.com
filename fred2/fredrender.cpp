@@ -102,6 +102,7 @@ int Show_horizon = 0;
 int Show_outlines = 0;
 bool Draw_outlines_on_selected_ships = true;
 bool Draw_outline_at_warpin_position = false;
+bool Error_checker_checks_potential_issues = true;
 int Show_stars = 1;
 int Single_axis_constraint = 0;
 int True_rw, True_rh;

@@ -4175,6 +4175,66 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 	return 0;
 }
 
+int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
+{
+	// empty tree
+	if (node < 0)
+		return 0;
+
+	if (bad_node)
+		*bad_node = node;
+
+	// check operators for anything that might trip up a mission designer
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
+	{
+		auto op_num = get_operator_const(node);
+		int first_arg_node = CDR(node);
+
+		switch (op_num)
+		{
+			// examine all sexps that check for wing destruction
+			case OP_IS_DESTROYED_DELAY:
+			case OP_PERCENT_SHIPS_DESTROYED:
+				first_arg_node = CDR(first_arg_node);
+				FALLTHROUGH;
+			case OP_IS_DESTROYED:
+			case OP_TIME_WING_DESTROYED:
+			{
+				for (int n = first_arg_node; n >= 0; n = CDR(n))
+				{
+					int wingnum = wing_lookup(CTEXT(n));
+					if (wingnum >= 0)
+					{
+						auto wingp = &Wings[wingnum];
+						if (wingp->num_waves > 1 && wingp->arrival_location == ARRIVE_FROM_DOCK_BAY)
+						{
+							issue_msg = "Wing ";
+							issue_msg += wingp->name;
+							issue_msg += " has more than one wave and arrives from a docking bay.  Be careful when checking for this wing's destruction.  If the "
+								"mothership is destroyed before all waves have arrived, the wing will not be considered destroyed.";
+							return SEXP_CHECK_POTENTIAL_ISSUE;
+						}
+					}
+				}
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+
+	// recurse down the tree
+	int z = check_sexp_potential_issues(CAR(node), bad_node, issue_msg);
+	if (z)
+		return z;
+	z = check_sexp_potential_issues(CDR(node), bad_node, issue_msg);
+	if (z)
+		return z;
+
+	return 0;
+}
+
 // Goober5000
 bool get_unformatted_sexp_variable_name(char *unformatted, const char *formatted)
 {
@@ -34143,6 +34203,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_CUSTOM_STRING:
 			return "Invalid custom string name";
+
+		case SEXP_CHECK_POTENTIAL_ISSUE:
+			return "This particular SEXP_CHECK_ code is handled differently from the others.  You shouldn't actually see this message; if you do, report it to a SCP coder.";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
