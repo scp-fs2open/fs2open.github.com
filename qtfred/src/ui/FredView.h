@@ -90,6 +90,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionCampaign_triggered(bool);
 	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionReinforcements_triggered(bool);
+	void on_actionLoadout_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
 

@@ -7222,9 +7222,9 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	int max_points_per_bank = 0;
 	for (int i = 0; i < sip->num_secondary_banks; ++i)
 	{
-		int slots = pm->missile_banks[i].num_slots;
-		if (slots > max_points_per_bank)
-			max_points_per_bank = slots;
+		int num_slots = pm->missile_banks[i].num_slots; // old variable name was conflicting with qt slots macro
+		if (num_slots > max_points_per_bank)
+			max_points_per_bank = num_slots;
 	}
 	shipp->secondary_point_reload_pct.init(sip->num_secondary_banks, max_points_per_bank, 1.0f);
 
