@@ -416,7 +416,10 @@ ADE_FUNC(kickPlayer, l_NetPlayer, nullptr, "Kicks the player from the game", nul
 		return ADE_RETURN_FALSE;
 	}
 
-	multi_kick_player(current.getIndex(), 0);
+	// Must be host or master to kick player
+	if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+		multi_kick_player(current.getIndex(), 0);
+	}
 
 	return ADE_RETURN_NIL;
 }
@@ -854,6 +857,7 @@ ADE_VIRTVAR(Closed, l_NetGame, "boolean Closed", "Whether or not the game is clo
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
+		//Only the master can close games
 		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 			if (closed) {
 				current.getNetgame()->flags |= NG_FLAG_TEMP_CLOSED;
@@ -879,12 +883,15 @@ ADE_VIRTVAR(HostModifiesShips, l_NetGame, "boolean HostModifies", "Whether or no
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (enabled) {
-			current.getNetgame()->options.flags |= MSO_FLAG_SS_LEADERS;
-		} else {
-			current.getNetgame()->options.flags &= ~MSO_FLAG_SS_LEADERS;
+		//Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (enabled) {
+				current.getNetgame()->options.flags |= MSO_FLAG_SS_LEADERS;
+			} else {
+				current.getNetgame()->options.flags &= ~MSO_FLAG_SS_LEADERS;
+			}
+			multi_options_update_netgame();
 		}
-		multi_options_update_netgame();
 	}
 
 	if (current.getNetgame()->options.flags & MSO_FLAG_SS_LEADERS) {
@@ -907,19 +914,22 @@ ADE_VIRTVAR(Orders,
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (eh_idx != nullptr) {
-			if (eh_idx->index == LE_MULTI_OPTION_RANK) {
-				current.getNetgame()->options.squad_set = MSO_SQUAD_RANK;
-			} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
-				current.getNetgame()->options.squad_set = MSO_SQUAD_LEADER;
-			} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
-				current.getNetgame()->options.squad_set = MSO_SQUAD_ANY;
-			} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
-				current.getNetgame()->options.squad_set = MSO_SQUAD_HOST;
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (eh_idx != nullptr) {
+				if (eh_idx->index == LE_MULTI_OPTION_RANK) {
+					current.getNetgame()->options.squad_set = MSO_SQUAD_RANK;
+				} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
+					current.getNetgame()->options.squad_set = MSO_SQUAD_LEADER;
+				} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
+					current.getNetgame()->options.squad_set = MSO_SQUAD_ANY;
+				} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
+					current.getNetgame()->options.squad_set = MSO_SQUAD_HOST;
+				}
 			}
+			send_netgame_update_packet();
+			multi_options_update_netgame();
 		}
-		send_netgame_update_packet();
-		multi_options_update_netgame();
 	}
 
 	if (current.getNetgame()->options.squad_set == MSO_SQUAD_RANK) {
@@ -949,19 +959,22 @@ ADE_VIRTVAR(EndMission,
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (eh_idx != nullptr) {
-			if (eh_idx->index == LE_MULTI_OPTION_RANK) {
-				current.getNetgame()->options.endgame_set = MSO_END_RANK;
-			} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
-				current.getNetgame()->options.endgame_set = MSO_END_LEADER;
-			} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
-				current.getNetgame()->options.endgame_set = MSO_END_ANY;
-			} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
-				current.getNetgame()->options.endgame_set = MSO_END_HOST;
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (eh_idx != nullptr) {
+				if (eh_idx->index == LE_MULTI_OPTION_RANK) {
+					current.getNetgame()->options.endgame_set = MSO_END_RANK;
+				} else if (eh_idx->index == LE_MULTI_OPTION_LEAD) {
+					current.getNetgame()->options.endgame_set = MSO_END_LEADER;
+				} else if (eh_idx->index == LE_MULTI_OPTION_ANY) {
+					current.getNetgame()->options.endgame_set = MSO_END_ANY;
+				} else if (eh_idx->index == LE_MULTI_OPTION_HOST) {
+					current.getNetgame()->options.endgame_set = MSO_END_HOST;
+				}
 			}
+			send_netgame_update_packet();
+			multi_options_update_netgame();
 		}
-		send_netgame_update_packet();
-		multi_options_update_netgame();
 	}
 
 	if (current.getNetgame()->options.endgame_set == MSO_END_RANK) {
@@ -986,8 +999,11 @@ ADE_VIRTVAR(SkillLevel, l_NetGame, nullptr, "The current skill level the game, 0
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		multi_ho_set_skill_level(skill);
-		current.getNetgame()->options.skill_level = static_cast<ubyte>(multi_ho_get_skill_level());
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			multi_ho_set_skill_level(skill);
+			current.getNetgame()->options.skill_level = static_cast<ubyte>(multi_ho_get_skill_level());
+		}
 	}
 
 	return ade_set_args(L, "i", multi_ho_get_skill_level());
@@ -1001,11 +1017,14 @@ ADE_VIRTVAR(RespawnLimit, l_NetGame, nullptr, "The current respawn limit", "numb
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (respawn < 0) {
-			respawn = 0;
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (respawn < 0) {
+				respawn = 0;
+			}
+			current.getNetgame()->options.respawn = respawn;
+			current.getNetgame()->respawn = respawn;
 		}
-		current.getNetgame()->options.respawn = respawn;
-		current.getNetgame()->respawn = respawn;
 	}
 
 	return ade_set_args(L, "i", current.getNetgame()->options.respawn);
@@ -1019,12 +1038,15 @@ ADE_VIRTVAR(TimeLimit, l_NetGame, nullptr, "The current time limit", "number", "
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (time < 0) {
-			current.getNetgame()->options.mission_time_limit = fl2f(-1.0f);
-		} else if (time >= MULTI_HO_MAX_TIME_LIMIT) {
-			current.getNetgame()->options.mission_time_limit = MULTI_HO_MAX_TIME_LIMIT;
-		} else {
-			current.getNetgame()->options.mission_time_limit = fl2f(60.0f * (float)time);
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (time < 0) {
+				current.getNetgame()->options.mission_time_limit = fl2f(-1.0f);
+			} else if (time >= MULTI_HO_MAX_TIME_LIMIT) {
+				current.getNetgame()->options.mission_time_limit = MULTI_HO_MAX_TIME_LIMIT;
+			} else {
+				current.getNetgame()->options.mission_time_limit = fl2f(60.0f * (float)time);
+			}
 		}
 	}
 
@@ -1039,12 +1061,15 @@ ADE_VIRTVAR(KillLimit, l_NetGame, nullptr, "The current kill limit", "number", "
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (kill < 0) {
-			current.getNetgame()->options.kill_limit = 0;
-		} else if (kill >= MULTI_HO_MAX_KILL_LIMIT) {
-			current.getNetgame()->options.kill_limit = MULTI_HO_MAX_KILL_LIMIT;
-		} else {
-			current.getNetgame()->options.kill_limit = kill;
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (kill < 0) {
+				current.getNetgame()->options.kill_limit = 0;
+			} else if (kill >= MULTI_HO_MAX_KILL_LIMIT) {
+				current.getNetgame()->options.kill_limit = MULTI_HO_MAX_KILL_LIMIT;
+			} else {
+				current.getNetgame()->options.kill_limit = kill;
+			}
 		}
 	}
 
@@ -1059,12 +1084,15 @@ ADE_VIRTVAR(ObserverLimit, l_NetGame, nullptr, "The current observer limit", "nu
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (observer < 0) {
-			current.getNetgame()->options.max_observers = 0;
-		} else if (observer >= MULTI_HO_MAX_OBS) {
-			current.getNetgame()->options.max_observers = MULTI_HO_MAX_OBS;
-		} else {
-			current.getNetgame()->options.max_observers = static_cast<ubyte>(observer);
+		// Must be host or master
+		if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+			if (observer < 0) {
+				current.getNetgame()->options.max_observers = 0;
+			} else if (observer >= MULTI_HO_MAX_OBS) {
+				current.getNetgame()->options.max_observers = MULTI_HO_MAX_OBS;
+			} else {
+				current.getNetgame()->options.max_observers = static_cast<ubyte>(observer);
+			}
 		}
 	}
 
@@ -1079,6 +1107,7 @@ ADE_VIRTVAR(Type, l_NetGame, "enumeration Type", "The current game type. Will be
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
+		//Only the master
 		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 			if (eh_idx != nullptr) {
 				if (eh_idx->index == LE_MULTI_TYPE_COOP) {
@@ -1122,17 +1151,21 @@ ADE_FUNC(acceptOptions,
 		return ADE_RETURN_FALSE;
 
 	// set default options
-	current.getNetgame()->options.flags = (MSO_FLAG_INGAME_XFER | MSO_FLAG_ACCEPT_PIX);
+	// Must be host or master
+	if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+		current.getNetgame()->options.flags = (MSO_FLAG_INGAME_XFER | MSO_FLAG_ACCEPT_PIX);
 
-	// store these values locally
-	memcpy(&Player->m_local_options, &Net_player->p_info.options, sizeof(multi_local_options));
-	memcpy(&Player->m_server_options, &Netgame.options, sizeof(multi_server_options));
-	Pilot.save_player(Player);
+		// store these values locally
+		memcpy(&Player->m_local_options, &Net_player->p_info.options, sizeof(multi_local_options));
+		memcpy(&Player->m_server_options, &Netgame.options, sizeof(multi_server_options));
+		Pilot.save_player(Player);
 
-	// apply any changes in settings (notify everyone of voice qos changes, etc)
-	multi_ho_apply_options();
+		// apply any changes in settings (notify everyone of voice qos changes, etc)
+		multi_ho_apply_options();
+		return ADE_RETURN_TRUE;
+	}
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(setMission,
@@ -1148,25 +1181,30 @@ ADE_FUNC(setMission,
 
 	int abs_index = -1;
 	int mode = -1;
-	if (luacpp::convert::ade_odata_is_userdata_type(L, 2, l_NetMission)) {
-		if (!ade_get_args(L, "oo", l_NetGame.Get(&current), l_NetMission.Get(&mission))) {
-			return ADE_RETURN_FALSE;
+	// Must be host or master
+	if ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+		if (luacpp::convert::ade_odata_is_userdata_type(L, 2, l_NetMission)) {
+			if (!ade_get_args(L, "oo", l_NetGame.Get(&current), l_NetMission.Get(&mission))) {
+				return ADE_RETURN_FALSE;
+			}
+			mode = MULTI_CREATE_SHOW_MISSIONS;
+			abs_index = mission.getIndex();
+			current.getNetgame()->campaign_mode = MP_SINGLE_MISSION;
+		} else {
+			if (!ade_get_args(L, "oo", l_NetGame.Get(&current), l_NetCampaign.Get(&campaign))) {
+				return ADE_RETURN_FALSE;
+			}
+			mode = MULTI_CREATE_SHOW_CAMPAIGNS;
+			abs_index = campaign.getIndex();
+			current.getNetgame()->campaign_mode = MP_CAMPAIGN;
 		}
-		mode = MULTI_CREATE_SHOW_MISSIONS;
-		abs_index = mission.getIndex();
-		current.getNetgame()->campaign_mode = MP_SINGLE_MISSION;
-	} else {
-		if (!ade_get_args(L, "oo", l_NetGame.Get(&current), l_NetCampaign.Get(&campaign))) {
-			return ADE_RETURN_FALSE;
-		}
-		mode = MULTI_CREATE_SHOW_CAMPAIGNS;
-		abs_index = campaign.getIndex();
-		current.getNetgame()->campaign_mode = MP_CAMPAIGN;
+
+		multi_create_list_set_item(abs_index, mode);
+
+		return ADE_RETURN_TRUE;
 	}
 
-	multi_create_list_set_item(abs_index, mode);
-
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_FALSE;
 }
 
 } // namespace api
