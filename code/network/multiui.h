@@ -147,8 +147,8 @@ void multi_ho_set_skill_level(int skill);
 int multi_ho_get_skill_level();
 void multi_ho_apply_options();
 
-void multi_game_client_setup_init();
-void multi_game_client_setup_do_frame();
+void multi_game_client_setup_init(bool API_Access = false);
+void multi_game_client_setup_do_frame(bool API_Access = false);
 void multi_game_client_setup_close();
 
 #define MULTI_SYNC_PRE_BRIEFING		0		// moving from the join to the briefing stage

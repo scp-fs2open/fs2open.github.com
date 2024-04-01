@@ -2811,7 +2811,7 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 ADE_LIB_DERIV(l_UserInterface_MultiHostSetup,
 	"MultiHostSetup",
 	nullptr,
-	"API for accessing data related to the Multi Join Game UI.",
+	"API for accessing data related to the Multi Host Setup UI.",
 	l_UserInterface);
 
 ADE_FUNC(initMultiHostSetup,
@@ -2964,6 +2964,55 @@ ADE_INDEXER(l_Net_Campaigns,
 ADE_FUNC(__len, l_Net_Campaigns, nullptr, "The number of net campaigns", "number", "The number of campaigns.")
 {
 	return ade_set_args(L, "i", static_cast<int>(Multi_create_campaign_list.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiClientSetup
+ADE_LIB_DERIV(l_UserInterface_MultiClientSetup,
+	"MultiClientSetup",
+	nullptr,
+	"API for accessing data related to the Multi Client Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the client setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Cancels Multi Client Setup and leaves the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_quit_game(PROMPT_CLIENT);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_do_frame(true);
+
+	return ADE_RETURN_NIL;
 }
 
 

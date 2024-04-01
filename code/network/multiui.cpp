@@ -6612,27 +6612,28 @@ void multi_jw_plist_blit_normal();
 void multi_jw_plist_blit_team();
 short multi_jw_get_mouse_id();
 
-void multi_game_client_setup_init()
+void multi_game_client_setup_init(bool API_Access)
 {
 	int idx;
 
-	// create the interface window
-	Multi_jw_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_jw_window.set_mask_bmap(Multi_jw_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		// create the interface window
+		Multi_jw_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_jw_window.set_mask_bmap(Multi_jw_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_jw_bitmap = bm_load(Multi_jw_bitmap_fname[gr_screen.res]);
-	if(Multi_jw_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_jw_bitmap = bm_load(Multi_jw_bitmap_fname[gr_screen.res]);
+		if (Multi_jw_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
+
+		// initialize the player list data
+		Multi_jw_plist_select_flag = 0;
+		Multi_jw_plist_select_id = -1;
 	}
-
-	// initialize the player list data	
-	Multi_jw_plist_select_flag = 0;
-	Multi_jw_plist_select_id = -1;	
-	
 	// kill any old instances of the chatbox and create a new one
-	chatbox_close();
+	chatbox_close(); //Need to pass API into these also
 	chatbox_create(CHATBOX_FLAG_BIG | CHATBOX_FLAG_DRAW_BOX | CHATBOX_FLAG_BUTTONS);
 
 	// initialize the common notification messaging
@@ -6648,41 +6649,42 @@ void multi_game_client_setup_init()
 	// use the common interface palette
 	multi_common_set_palette();	
 
-	// create the interface buttons
-	for(idx=0; idx<MULTI_JW_NUM_BUTTONS; idx++){
-		// create the object
-		Multi_jw_buttons[gr_screen.res][idx].button.create(&Multi_jw_window, "", Multi_jw_buttons[gr_screen.res][idx].x, Multi_jw_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+	if (!API_Access) {
+		// create the interface buttons
+		for(idx=0; idx<MULTI_JW_NUM_BUTTONS; idx++){
+			// create the object
+			Multi_jw_buttons[gr_screen.res][idx].button.create(&Multi_jw_window, "", Multi_jw_buttons[gr_screen.res][idx].x, Multi_jw_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
-		// set the sound to play when highlighted
-		Multi_jw_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			Multi_jw_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		Multi_jw_buttons[gr_screen.res][idx].button.set_bmaps(Multi_jw_buttons[gr_screen.res][idx].filename);
+			// set the ani for the button
+			Multi_jw_buttons[gr_screen.res][idx].button.set_bmaps(Multi_jw_buttons[gr_screen.res][idx].filename);
 
-		// set the hotspot
-		Multi_jw_buttons[gr_screen.res][idx].button.link_hotspot(Multi_jw_buttons[gr_screen.res][idx].hotspot);
-	}		
+			// set the hotspot
+			Multi_jw_buttons[gr_screen.res][idx].button.link_hotspot(Multi_jw_buttons[gr_screen.res][idx].hotspot);
+		}		
 
-	// if this is a PXO game, enable the squadwar checkbox	
-	Multi_jw_sw_checkbox.create(&Multi_jw_window, "", Multi_jw_sw_checkbox_coords[gr_screen.res][0], Multi_jw_sw_checkbox_coords[gr_screen.res][1], 0);
-	Multi_jw_sw_checkbox.set_bmaps(Multi_jw_sw_checkbox_fname[gr_screen.res], 6, 0);
-	Multi_jw_sw_checkbox.disable();
-	if(!MULTI_IS_TRACKER_GAME){
-		Multi_jw_sw_checkbox.hide();		
-	}
+		// if this is a PXO game, enable the squadwar checkbox	
+		Multi_jw_sw_checkbox.create(&Multi_jw_window, "", Multi_jw_sw_checkbox_coords[gr_screen.res][0], Multi_jw_sw_checkbox_coords[gr_screen.res][1], 0);
+		Multi_jw_sw_checkbox.set_bmaps(Multi_jw_sw_checkbox_fname[gr_screen.res], 6, 0);
+		Multi_jw_sw_checkbox.disable();
+		if(!MULTI_IS_TRACKER_GAME){
+			Multi_jw_sw_checkbox.hide();		
+		}
 
-	// create all xstrs
-	for(idx=0; idx<MULTI_JW_NUM_TEXT; idx++){
-		Multi_jw_window.add_XSTR(&Multi_jw_text[gr_screen.res][idx]);
-	}
+		// create all xstrs
+		for(idx=0; idx<MULTI_JW_NUM_TEXT; idx++){
+			Multi_jw_window.add_XSTR(&Multi_jw_text[gr_screen.res][idx]);
+		}
 	
-	// create the player select list button and hide it
-	Multi_jw_plist_select_button.create(&Multi_jw_window, "", Mjw_players_coords[gr_screen.res][MJW_X_COORD], Mjw_players_coords[gr_screen.res][MJW_Y_COORD], Mjw_players_coords[gr_screen.res][MJW_W_COORD], Mjw_players_coords[gr_screen.res][MJW_H_COORD], 0, 1);
-	Multi_jw_plist_select_button.hide();
+		// create the player select list button and hide it
+		Multi_jw_plist_select_button.create(&Multi_jw_window, "", Mjw_players_coords[gr_screen.res][MJW_X_COORD], Mjw_players_coords[gr_screen.res][MJW_Y_COORD], Mjw_players_coords[gr_screen.res][MJW_W_COORD], Mjw_players_coords[gr_screen.res][MJW_H_COORD], 0, 1);
+		Multi_jw_plist_select_button.hide();
 
-	// set hotkeys
-	Multi_jw_buttons[gr_screen.res][MJW_CANCEL].button.set_hotkey(KEY_ESC);	
-
+		// set hotkeys
+		Multi_jw_buttons[gr_screen.res][MJW_CANCEL].button.set_hotkey(KEY_ESC);	
+	}
 	// remove campaign flags
 	Game_mode &= ~(GM_CAMPAIGN_MODE);
 
@@ -6697,7 +6699,7 @@ void multi_game_client_setup_init()
 	multi_data_send_my_junk();	
 }
 
-void multi_game_client_setup_do_frame()
+void multi_game_client_setup_do_frame(bool API_Access)
 {
 	int player_index;
 	int k = chatbox_process();
@@ -6706,109 +6708,122 @@ void multi_game_client_setup_do_frame()
 
 	Multi_jw_should_show_popup = 0;
 
-	// process any button clicks
-	multi_jw_check_buttons();
+	if (!API_Access) {
+		// process any button clicks
+		multi_jw_check_buttons();
+	}
 
 	// do any network related stuff
 	multi_jw_do_netstuff(); 		
 
-	// draw the background, etc
-	gr_reset_clip();
-	GR_MAYBE_CLEAR_RES(Multi_jw_bitmap);
-	if(Multi_jw_bitmap != -1){		
-		gr_set_bitmap(Multi_jw_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
-	}
-
-	// if we're not in team vs. team mode, don't draw the team buttons
-	if(!(Netgame.type_flags & NG_TYPE_TEAM)){
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.hide();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.hide();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.disable();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.disable();
-	} else {
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.enable();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.enable();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.unhide();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.unhide();		
-	}
-
-	if(MULTI_IS_TRACKER_GAME){
-		// maybe check the squadwar button
-		if(Netgame.type_flags & NG_TYPE_SW){
-			Multi_jw_sw_checkbox.set_state(1);
-			gr_set_color_fast(&Color_bright);
-		} else {
-			Multi_jw_sw_checkbox.set_state(0);
-			gr_set_color_fast(&Color_normal);
+	if (!API_Access) {
+		// draw the background, etc
+		gr_reset_clip();
+		GR_MAYBE_CLEAR_RES(Multi_jw_bitmap);
+		if (Multi_jw_bitmap != -1) {
+			gr_set_bitmap(Multi_jw_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 		}
-				
-		gr_string(Multi_jw_sw_checkbox_text[gr_screen.res][0], Multi_jw_sw_checkbox_text[gr_screen.res][1], "SquadWar", GR_RESIZE_MENU);
-	}	
 
-	// draw the UI window
-	Multi_jw_window.draw();	
+		// if we're not in team vs. team mode, don't draw the team buttons
+		if (!(Netgame.type_flags & NG_TYPE_TEAM)) {
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.hide();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.hide();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.disable();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.disable();
+		} else {
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.enable();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.enable();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.unhide();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.unhide();
+		}
 
-	// process and display the player list	
-	// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped 
-	multi_jw_plist_process();
-	if(Netgame.type_flags & NG_TYPE_TEAM){
-		multi_jw_plist_blit_team();
-	} else {
-		multi_jw_plist_blit_normal();
-	}
-		
-	// display any text in the info area
-	multi_common_render_text();
-
-	// display any pending notification messages
-	multi_common_notify_do();
-
-	// blit the mission filename if possible
-	if(Netgame.campaign_mode){
-		if(Netgame.campaign_name[0] != '\0'){			
-			strcpy_s(mission_text,Netgame.campaign_name);
-			
-			if(Netgame.title[0] != '\0'){
-				strcat_s(mission_text,", ");
-				strcat_s(mission_text,Netgame.title);
+		if (MULTI_IS_TRACKER_GAME) {
+			// maybe check the squadwar button
+			if (Netgame.type_flags & NG_TYPE_SW) {
+				Multi_jw_sw_checkbox.set_state(1);
+				gr_set_color_fast(&Color_bright);
+			} else {
+				Multi_jw_sw_checkbox.set_state(0);
+				gr_set_color_fast(&Color_normal);
 			}
 
-			gr_set_color_fast(&Color_bright_white);
-			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text,GR_RESIZE_MENU);
-		}								
-	} else {
-		if(Netgame.mission_name[0] != '\0'){			
-			strcpy_s(mission_text,Netgame.mission_name);
-
-			if(Netgame.title[0] != '\0'){
-				strcat_s(mission_text,", ");
-				strcat_s(mission_text,Netgame.title);
-			}			
-
-			gr_set_color_fast(&Color_bright_white);
-			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text,GR_RESIZE_MENU);
+			gr_string(Multi_jw_sw_checkbox_text[gr_screen.res][0],
+				Multi_jw_sw_checkbox_text[gr_screen.res][1],
+				"SquadWar",
+				GR_RESIZE_MENU);
 		}
-	}	
 
-	// process and show the chatbox thingie	
-	chatbox_render();
+		// draw the UI window
+		Multi_jw_window.draw();
 
-	// draw tooltips
-	Multi_jw_window.draw_tooltip();
+		// process and display the player list
+		// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped
+		multi_jw_plist_process();
+		if (Netgame.type_flags & NG_TYPE_TEAM) {
+			multi_jw_plist_blit_team();
+		} else {
+			multi_jw_plist_blit_normal();
+		}
 
-	// display the voice status indicator
-	multi_common_voice_display_status();
-	
-	// flip the buffer
-	gr_flip();	
+		// display any text in the info area
+		multi_common_render_text();
 
-	// if we're supposed to be displaying a pilot info popup
-	if(Multi_jw_should_show_popup){
-		player_index = find_player_index(Multi_jw_plist_select_id);
-		if(player_index != -1){			
-			multi_pinfo_popup(&Net_players[player_index]);
-		}		
+		// display any pending notification messages
+		multi_common_notify_do();
+
+		// blit the mission filename if possible
+		if (Netgame.campaign_mode) {
+			if (Netgame.campaign_name[0] != '\0') {
+				strcpy_s(mission_text, Netgame.campaign_name);
+
+				if (Netgame.title[0] != '\0') {
+					strcat_s(mission_text, ", ");
+					strcat_s(mission_text, Netgame.title);
+				}
+
+				gr_set_color_fast(&Color_bright_white);
+				gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],
+					Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],
+					mission_text,
+					GR_RESIZE_MENU);
+			}
+		} else {
+			if (Netgame.mission_name[0] != '\0') {
+				strcpy_s(mission_text, Netgame.mission_name);
+
+				if (Netgame.title[0] != '\0') {
+					strcat_s(mission_text, ", ");
+					strcat_s(mission_text, Netgame.title);
+				}
+
+				gr_set_color_fast(&Color_bright_white);
+				gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],
+					Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],
+					mission_text,
+					GR_RESIZE_MENU);
+			}
+		}
+
+		// process and show the chatbox thingie
+		chatbox_render();
+
+		// draw tooltips
+		Multi_jw_window.draw_tooltip();
+
+		// display the voice status indicator
+		multi_common_voice_display_status();
+
+		// flip the buffer
+		gr_flip();
+
+		// if we're supposed to be displaying a pilot info popup
+		if (Multi_jw_should_show_popup) {
+			player_index = find_player_index(Multi_jw_plist_select_id);
+			if (player_index != -1) {
+				multi_pinfo_popup(&Net_players[player_index]);
+			}
+		}
 	}
 }
 
