@@ -160,6 +160,7 @@ void multi_sync_init();
 void multi_sync_do();
 void multi_sync_close();
 void multi_sync_start_countdown();			// start the countdown to launch when the launch button is pressed
+SCP_string multi_sync_get_state_string(net_player* player);
 
 // note : these functions are called from within missiondebrief.cpp - NOT from freespace.cpp
 void multi_debrief_init();

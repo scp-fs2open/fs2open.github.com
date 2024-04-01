@@ -7594,6 +7594,151 @@ void multi_sync_common_close()
 	Multi_sync_window.destroy();
 }
 
+SCP_string multi_sync_get_state_string(net_player* player)
+{
+	SCP_string txt;
+	switch (player->state) {
+	case NETPLAYER_STATE_MISSION_LOADING:
+		txt = XSTR("Mission Loading", 802);
+		break;
+	case NETPLAYER_STATE_INGAME_SHIP_SELECT: // I don't think its possible to see this state, but...
+		txt = XSTR("Ingame Ship Select", 803);
+		break;
+	case NETPLAYER_STATE_DEBRIEF:
+		txt = XSTR("Debriefing", 804);
+		break;
+	case NETPLAYER_STATE_MISSION_SYNC:
+		txt = XSTR("Mission Sync", 805);
+		break;
+	case NETPLAYER_STATE_JOINING:
+		txt = XSTR("Joining", 806);
+		break;
+	case NETPLAYER_STATE_JOINED:
+		txt = XSTR("Joined", 807);
+		break;
+	case NETPLAYER_STATE_SLOT_ACK:
+		txt = XSTR("Slot Ack", 808);
+		break;
+	case NETPLAYER_STATE_BRIEFING:
+		txt = XSTR("Briefing", 765);
+		break;
+	case NETPLAYER_STATE_SHIP_SELECT:
+		txt = XSTR("Ship Select", 809);
+		break;
+	case NETPLAYER_STATE_WEAPON_SELECT:
+		txt = XSTR("Weapon Select", 810);
+		break;
+	case NETPLAYER_STATE_WAITING:
+		txt = XSTR("Waiting", 811);
+		break;
+	case NETPLAYER_STATE_IN_MISSION:
+		txt = XSTR("In Mission", 812);
+		break;
+	case NETPLAYER_STATE_MISSION_LOADED:
+		txt = XSTR("Mission Loaded", 813);
+		break;
+	case NETPLAYER_STATE_DATA_LOAD:
+		txt = XSTR("Data loading", 814);
+		break;
+	case NETPLAYER_STATE_SETTINGS_ACK:
+		txt = XSTR("Ready To Enter Mission", 815);
+		break;
+	case NETPLAYER_STATE_INGAME_SHIPS:
+		txt = XSTR("Ingame Ships Packet Ack", 816);
+		break;
+	case NETPLAYER_STATE_INGAME_WINGS:
+		txt = XSTR("Ingame Wings Packet Ack", 817);
+		break;
+	case NETPLAYER_STATE_INGAME_RPTS:
+		txt = XSTR("Ingame Respawn Points Ack", 818);
+		break;
+	case NETPLAYER_STATE_SLOTS_ACK:
+		txt = XSTR("Ingame Weapon Slots Ack", 819);
+		break;
+	case NETPLAYER_STATE_POST_DATA_ACK:
+		txt = XSTR("Post Briefing Data Block Ack", 820);
+		break;
+	case NETPLAYER_STATE_FLAG_ACK:
+		txt = XSTR("Flags Ack", 821);
+		break;
+	case NETPLAYER_STATE_MT_STATS:
+		txt = XSTR("Parallax Online Stats Updating", 822);
+		break;
+	case NETPLAYER_STATE_WSS_ACK:
+		txt = XSTR("Weapon Slots Ack", 823);
+		break;
+	case NETPLAYER_STATE_HOST_SETUP:
+		txt = XSTR("Host setup", 824);
+		break;
+	case NETPLAYER_STATE_DEBRIEF_ACCEPT:
+		txt = XSTR("Debrief accept", 825);
+		break;
+	case NETPLAYER_STATE_DEBRIEF_REPLAY:
+		txt = XSTR("Debrief replay", 826);
+		break;
+	case NETPLAYER_STATE_CPOOL_ACK:
+		txt = XSTR("Campaign ship/weapon ack", 827);
+		break;
+	case NETPLAYER_STATE_MISSION_XFER:
+		// server should display the pct completion of all clients
+		if (Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			if (player->s_info.xfer_handle != -1) {
+				int pct_complete = multi_xfer_pct_complete(player->s_info.xfer_handle);
+
+				// if we've got a valid xfer handle
+				if ((pct_complete >= 0.0) && (pct_complete <= 1.0)) {
+					sprintf(txt, XSTR("Mission file xfer %d%%", 828), (int)(pct_complete * 100.0f));
+				}
+				// otherwise
+				else {
+					txt = XSTR("Mission file xfer", 829);
+				}
+			} else {
+				txt = XSTR("Mission file xfer", 829);
+			}
+		}
+		// clients should display only for themselves (which is the only thing they know)
+		else {
+			// if we've got a valid file xfer handle
+			if ((player == Net_player) && (Net_player->s_info.xfer_handle != -1)) {
+				int pct_complete = multi_xfer_pct_complete(Net_player->s_info.xfer_handle);
+
+				// if we've got a valid xfer handle
+				if ((pct_complete >= 0.0) && (pct_complete <= 1.0)) {
+					sprintf(txt, XSTR("Mission file xfer %d%%", 828), (int)(pct_complete * 100.0f));
+				}
+				// otherwise
+				else {
+					txt = txt, XSTR("Mission file xfer", 829);
+				}
+			}
+			// otherwise
+			else {
+				txt = txt, XSTR("Mission file xfer", 829);
+			}
+		}
+		break;
+	case NETPLAYER_STATE_FICTION_VIEWER:
+		txt = XSTR("Fiction Viewer", -1); // XSTR ID?
+		break;
+	case NETPLAYER_STATE_CUTSCENE:
+		txt = XSTR("Cutscene", -1); // XSTR ID?
+		break;
+	case NETPLAYER_STATE_CMD_BRIEFING:
+		txt = XSTR("Command Briefing", -1); // XSTR ID?
+		break;
+	case NETPLAYER_STATE_RED_ALERT:
+		txt = XSTR("Red Alert", -1); // XSTR ID?
+		break;
+	default:
+		nprintf(("Network", "Unhandled player state : %d !\n", player->state));
+		txt = XSTR("Unknown", 433); 
+		break;
+	}
+
+	return txt;
+}
+
 void multi_sync_blit_screen_all()
 {
 	int count,idx;	
@@ -7622,147 +7767,7 @@ void multi_sync_blit_screen_all()
 				state = NETPLAYER_STATE_IN_MISSION;
 			}
 
-			switch(state){				
-			case NETPLAYER_STATE_MISSION_LOADING:
-				multi_sync_display_status(XSTR("Mission Loading",802),count);
-				break;
-			case NETPLAYER_STATE_INGAME_SHIP_SELECT:									// I don't think its possible to see this state, but...
-				multi_sync_display_status(XSTR("Ingame Ship Select",803),count);
-				break;
-			case NETPLAYER_STATE_DEBRIEF:
-				multi_sync_display_status(XSTR("Debriefing",804),count);
-				break;
-			case NETPLAYER_STATE_MISSION_SYNC:
-				multi_sync_display_status(XSTR("Mission Sync",805),count);
-				break;
-			case NETPLAYER_STATE_JOINING:								
-				multi_sync_display_status(XSTR("Joining",806),count);
-				break;
-			case NETPLAYER_STATE_JOINED:				
-				multi_sync_display_status(XSTR("Joined",807),count);
-				break;
-			case NETPLAYER_STATE_SLOT_ACK :				
-				multi_sync_display_status(XSTR("Slot Ack",808),count);
-				break;			
-			case NETPLAYER_STATE_BRIEFING:				
-				multi_sync_display_status(XSTR("Briefing",765),count);
-				break;
-			case NETPLAYER_STATE_SHIP_SELECT:				
-				multi_sync_display_status(XSTR("Ship Select",809),count);
-				break;
-			case NETPLAYER_STATE_WEAPON_SELECT:				
-				multi_sync_display_status(XSTR("Weapon Select",810),count);
-				break;
-			case NETPLAYER_STATE_WAITING:				
-				multi_sync_display_status(XSTR("Waiting",811),count);
-				break;
-			case NETPLAYER_STATE_IN_MISSION:				
-				multi_sync_display_status(XSTR("In Mission",812),count);
-				break;			
-			case NETPLAYER_STATE_MISSION_LOADED:			
-				multi_sync_display_status(XSTR("Mission Loaded",813),count);
-				break;			
-			case NETPLAYER_STATE_DATA_LOAD:
-				multi_sync_display_status(XSTR("Data loading",814),count);
-				break;
-			case NETPLAYER_STATE_SETTINGS_ACK:
-				multi_sync_display_status(XSTR("Ready To Enter Mission",815),count);
-				break;					
-			case NETPLAYER_STATE_INGAME_SHIPS:
-				multi_sync_display_status(XSTR("Ingame Ships Packet Ack",816),count);
-				break;
-			case NETPLAYER_STATE_INGAME_WINGS:
-				multi_sync_display_status(XSTR("Ingame Wings Packet Ack",817),count);
-				break;		
-			case NETPLAYER_STATE_INGAME_RPTS:
-				multi_sync_display_status(XSTR("Ingame Respawn Points Ack",818),count);
-				break;
-			case NETPLAYER_STATE_SLOTS_ACK:
-				multi_sync_display_status(XSTR("Ingame Weapon Slots Ack",819),count);
-				break;			
-			case NETPLAYER_STATE_POST_DATA_ACK:
-				multi_sync_display_status(XSTR("Post Briefing Data Block Ack",820),count);
-				break;
-			case NETPLAYER_STATE_FLAG_ACK :
-				multi_sync_display_status(XSTR("Flags Ack",821),count);
-				break;
-			case NETPLAYER_STATE_MT_STATS :
-				multi_sync_display_status(XSTR("Parallax Online Stats Updating",822),count);
-				break;
-			case NETPLAYER_STATE_WSS_ACK :
-				multi_sync_display_status(XSTR("Weapon Slots Ack",823),count);
-				break;
-			case NETPLAYER_STATE_HOST_SETUP :
-				multi_sync_display_status(XSTR("Host setup",824),count);
-				break;
-			case NETPLAYER_STATE_DEBRIEF_ACCEPT:
-				multi_sync_display_status(XSTR("Debrief accept",825),count);
-				break;
-			case NETPLAYER_STATE_DEBRIEF_REPLAY:
-				multi_sync_display_status(XSTR("Debrief replay",826),count);
-				break;
-			case NETPLAYER_STATE_CPOOL_ACK:
-				multi_sync_display_status(XSTR("Campaign ship/weapon ack",827),count);
-				break;				
-			case NETPLAYER_STATE_MISSION_XFER :				
-				memset(txt,0,255);
-				// server should display the pct completion of all clients				
-				if(Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER){
-					if(Net_players[idx].s_info.xfer_handle != -1){					
-						pct_complete = multi_xfer_pct_complete(Net_players[idx].s_info.xfer_handle);
-
-						// if we've got a valid xfer handle
-						if((pct_complete >= 0.0) && (pct_complete <= 1.0)){						
-							sprintf(txt,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
-						}
-						// otherwise
-						else {
-							strcpy_s(txt,XSTR("Mission file xfer",829));
-						}					
-					} else {
-						strcpy_s(txt,XSTR("Mission file xfer",829));
-					}
-				}
-				// clients should display only for themselves (which is the only thing they know)
-				else {
-					// if we've got a valid file xfer handle
-					if((&Net_players[idx] == Net_player) && (Net_player->s_info.xfer_handle != -1)){
-						pct_complete = multi_xfer_pct_complete(Net_player->s_info.xfer_handle);
-
-						// if we've got a valid xfer handle
-						if((pct_complete >= 0.0) && (pct_complete <= 1.0)){						
-							sprintf(txt,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
-						}
-						// otherwise
-						else {
-							strcpy_s(txt,XSTR("Mission file xfer",829));
-						}
-					}
-					// otherwise
-					else {
-						strcpy_s(txt,XSTR("Mission file xfer",829));
-					}
-				}
-
-				// display the text
-				multi_sync_display_status(txt,count);
-				break;
-			case NETPLAYER_STATE_FICTION_VIEWER:
-				multi_sync_display_status(XSTR("Fiction Viewer", -1), count);
-				break;
-			case NETPLAYER_STATE_CUTSCENE:
-				multi_sync_display_status(XSTR("Cutscene", -1), count);
-				break;
-			case NETPLAYER_STATE_CMD_BRIEFING:
-				multi_sync_display_status(XSTR("Command Briefing", -1), count);
-				break;
-			case NETPLAYER_STATE_RED_ALERT:
-				multi_sync_display_status(XSTR("Red Alert", -1), count);
-				break;
-			default :
-				nprintf(("Network","Unhandled player state : %d !\n",Net_players[idx].state));
-				break;
-			}
+			multi_sync_display_status(multi_sync_get_state_string(&Net_player[idx]).c_str(), count);
 			count++;
 		}
 	}	

@@ -270,6 +270,23 @@ ADE_VIRTVAR(Team, l_NetPlayer, "number Team", "The player's team as an integer",
 	return ade_set_args(L, "i", current.getPlayer()->p_info.team);
 }
 
+ADE_VIRTVAR(State, l_NetPlayer, nullptr, "The player's current state string", "string", "The state")
+{
+	net_player_h current;
+	if (!ade_get_args(L, "o", l_NetPlayer.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", multi_sync_get_state_string(current.getPlayer()).c_str());
+}
+
 ADE_FUNC(isSelf, l_NetPlayer, nullptr, "Whether or not the player is the current game instance's player", "boolean", "The self value")
 {
 	net_player_h current;
