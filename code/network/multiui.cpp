@@ -7597,7 +7597,14 @@ void multi_sync_common_close()
 SCP_string multi_sync_get_state_string(net_player* player)
 {
 	SCP_string txt;
-	switch (player->state) {
+	int state = player->state;
+	// if we're ingame joining, show all other players except myself as "playing"
+	if ((Net_player != NULL) && (player != Net_player) &&
+		((Multi_sync_mode == MULTI_SYNC_INGAME) || (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))) {
+		state = NETPLAYER_STATE_IN_MISSION;
+	}
+
+	switch (state) {
 	case NETPLAYER_STATE_MISSION_LOADING:
 		txt = XSTR("Mission Loading", 802);
 		break;
@@ -7755,14 +7762,6 @@ void multi_sync_blit_screen_all()
 		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx])){
 			// display his name and status
 			multi_sync_display_name(Net_players[idx].m_player->callsign,count,idx);
-	
-			// get the player state
-			int state = Net_players[idx].state;
-
-			// if we're ingame joining, show all other players except myself as "playing"
-			if((Net_player != NULL) && (&Net_players[idx] != Net_player) && ((Multi_sync_mode == MULTI_SYNC_INGAME) || (Net_player->flags & NETINFO_FLAG_INGAME_JOIN)) ){
-				state = NETPLAYER_STATE_IN_MISSION;
-			}
 
 			multi_sync_display_status(multi_sync_get_state_string(&Net_player[idx]).c_str(), count);
 			count++;
