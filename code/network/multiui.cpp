@@ -7721,12 +7721,12 @@ SCP_string multi_sync_get_state_string(net_player* player)
 				}
 				// otherwise
 				else {
-					txt = txt, XSTR("Mission file xfer", 829);
+					txt = XSTR("Mission file xfer", 829);
 				}
 			}
 			// otherwise
 			else {
-				txt = txt, XSTR("Mission file xfer", 829);
+				txt = XSTR("Mission file xfer", 829);
 			}
 		}
 		break;
