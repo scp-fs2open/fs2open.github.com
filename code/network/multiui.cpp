@@ -7741,10 +7741,7 @@ SCP_string multi_sync_get_state_string(net_player* player)
 
 void multi_sync_blit_screen_all()
 {
-	int count,idx;	
-	int state;
-	float pct_complete;
-	char txt[255];
+	int count,idx;
 	
 	// display any text in the info area
 	multi_common_render_text();
@@ -7760,7 +7757,7 @@ void multi_sync_blit_screen_all()
 			multi_sync_display_name(Net_players[idx].m_player->callsign,count,idx);
 	
 			// get the player state
-			state = Net_players[idx].state;
+			int state = Net_players[idx].state;
 
 			// if we're ingame joining, show all other players except myself as "playing"
 			if((Net_player != NULL) && (&Net_players[idx] != Net_player) && ((Multi_sync_mode == MULTI_SYNC_INGAME) || (Net_player->flags & NETINFO_FLAG_INGAME_JOIN)) ){
