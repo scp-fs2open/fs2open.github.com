@@ -156,9 +156,9 @@ void multi_game_client_setup_close();
 #define MULTI_SYNC_INGAME				2		// ingame joiners data sync
 extern int Multi_sync_mode;					// should always set this var before calling GS_EVENT_MULTI_MISSION_SYNC
 extern int Multi_sync_countdown;				// time in seconds until the mission is going to be launched
-void multi_sync_init();
-void multi_sync_do();
-void multi_sync_close();
+void multi_sync_init(bool API_Access = false);
+void multi_sync_do(bool API_Access = false);
+void multi_sync_close(bool API_Access = false);
 void multi_sync_start_countdown();			// start the countdown to launch when the launch button is pressed
 SCP_string multi_sync_get_state_string(net_player* player);
 

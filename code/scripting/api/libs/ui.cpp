@@ -3015,6 +3015,84 @@ ADE_FUNC(runNetwork,
 	return ADE_RETURN_NIL;
 }
 
+//**********SUBLIBRARY: UserInterface/MultiSync
+ADE_LIB_DERIV(l_UserInterface_MultiSync,
+	"MultiSync",
+	nullptr,
+	"API for accessing data related to the Multi Sync UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiSync,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Makes sure everything is done correctly to begin the multi sync ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiSync,
+	l_UserInterface_MultiSync, "boolean QuitGame",
+	"Closes MultiSync. If QuitGame is true then it cancels and leaves the game automatically.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (!choice) {
+		multi_sync_close(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startCountdown, l_UserInterface_MultiSync, nullptr,
+	"Starts the Launch Mission Countdown that, when finished, will move all players into the mission.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	
+	multi_sync_start_countdown();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCountdownTime,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Gets the current countdown time. Will be -1 before the countdown starts otherwise will be the num seconds until missions starts.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "i", Multi_sync_countdown);
+}
+
 
 } // namespace api
 } // namespace scripting

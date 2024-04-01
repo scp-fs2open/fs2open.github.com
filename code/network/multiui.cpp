@@ -7362,23 +7362,23 @@ void multi_sync_create_launch_button();
 void multi_sync_blit_screen_all();
 void multi_sync_handle_plist();
 
-void multi_sync_common_init();
+void multi_sync_common_init(bool API_Access);
 void multi_sync_common_do();
 void multi_sync_common_close();
 
 void multi_sync_pre_init();
-void multi_sync_pre_do();
+void multi_sync_pre_do(bool API_Access);
 void multi_sync_pre_close();
 
-void multi_sync_post_init();
-void multi_sync_post_do();
-void multi_sync_post_close();
+void multi_sync_post_init(bool API_Access);
+void multi_sync_post_do(bool API_Access);
+void multi_sync_post_close(bool API_Access);
 
 int Sync_test = 1;
 
 
 // perform the correct init functions
-void multi_sync_init()
+void multi_sync_init(bool API_Access)
 {	
 	Multi_sync_countdown = -1;
 
@@ -7388,7 +7388,7 @@ void multi_sync_init()
 	multi_reset_timestamps();
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
-		multi_sync_common_init();
+		multi_sync_common_init(API_Access);
 	}
 	
 	switch(Multi_sync_mode){
@@ -7396,7 +7396,7 @@ void multi_sync_init()
 		multi_sync_pre_init();
 		break;
 	case MULTI_SYNC_POST_BRIEFING:
-		multi_sync_post_init();
+		multi_sync_post_init(API_Access);
 		break;
 	case MULTI_SYNC_INGAME:
 		multi_ingame_sync_init();
@@ -7405,10 +7405,10 @@ void multi_sync_init()
 }
 
 // perform the correct do frame functions
-void multi_sync_do()
+void multi_sync_do(bool API_Access)
 {
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
-		multi_sync_common_do();
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
+		multi_sync_common_do(); //Don't need this for the API
 	}
 
 	// if the netgame is ending, don't do any sync processing
@@ -7419,45 +7419,47 @@ void multi_sync_do()
 	// process appropriateliy
 	switch(Multi_sync_mode){
 	case MULTI_SYNC_PRE_BRIEFING:		
-		multi_sync_pre_do();		
+		multi_sync_pre_do(API_Access);		
 		break;
 	case MULTI_SYNC_POST_BRIEFING:
-		multi_sync_post_do();
+		multi_sync_post_do(API_Access);
 		break;
 	case MULTI_SYNC_INGAME:
 		multi_ingame_sync_do();
 
-		gr_reset_clip();		
-		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
-		if(Multi_sync_bitmap != -1){
-			gr_set_bitmap(Multi_sync_bitmap);
-			gr_bitmap(0,0,GR_RESIZE_MENU);
+		if (!API_Access) {
+			gr_reset_clip();
+			GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
+			if (Multi_sync_bitmap != -1) {
+				gr_set_bitmap(Multi_sync_bitmap);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
+			}
+			Multi_sync_window.draw();
+
+			multi_sync_blit_screen_all();
+
+			gr_flip();
 		}
-		Multi_sync_window.draw();
-
-		multi_sync_blit_screen_all();
-
-		gr_flip();
 		break;
 	}	
 }
 
 // perform the correct close functions
-void multi_sync_close()
+void multi_sync_close(bool API_Access)
 {
 	switch(Multi_sync_mode){
 	case MULTI_SYNC_PRE_BRIEFING:
 		multi_sync_pre_close();
 		break;
 	case MULTI_SYNC_POST_BRIEFING:
-		multi_sync_post_close();
+		multi_sync_post_close(API_Access);
 		break;
 	case MULTI_SYNC_INGAME:
 		multi_ingame_sync_close();
 		break;
 	}
 	
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		multi_sync_common_close();
 	}
 }
@@ -7473,30 +7475,31 @@ const char *multi_sync_tooltip_handler(const char *str)
 	return NULL;
 }
 
-void multi_sync_common_init()
+void multi_sync_common_init(bool API_Access)
 {
 	int idx;
 
-	// create the interface window
-	Multi_sync_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-	Multi_sync_window.set_mask_bmap(Multi_sync_bitmap_mask_fname[gr_screen.res]);
-	Multi_sync_window.tooltip_handler = multi_sync_tooltip_handler;
+	if (!API_Access) {
+		// create the interface window
+		Multi_sync_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_sync_window.set_mask_bmap(Multi_sync_bitmap_mask_fname[gr_screen.res]);
+		Multi_sync_window.tooltip_handler = multi_sync_tooltip_handler;
 
-	// load the background bitmap
-	Multi_sync_bitmap = bm_load(Multi_sync_bitmap_fname[gr_screen.res]);
-	if (Multi_sync_bitmap < 0) {
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_sync_bitmap = bm_load(Multi_sync_bitmap_fname[gr_screen.res]);
+		if (Multi_sync_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
+
+		// initialize the player list data
+		Multi_sync_plist_start = 0;
+		Multi_sync_plist_count = 1; // we can pretty safely assume that there's one player in the game - me.
+
+		Multi_launch_button_created = 0;
 	}
-
-	// initialize the player list data
-	Multi_sync_plist_start = 0;
-	Multi_sync_plist_count = 1;			// we can pretty safely assume that there's one player in the game - me.	
-
-	Multi_launch_button_created = 0;	
-
 	// create the chatbox thingie	(shouldn't be necesary to do this, but we'll put it in for good measure)
-	chatbox_create();
+	chatbox_create(); //Need to pass API_Access into this
 
 	// force the chatbox to be small
 	chatbox_force_small();
@@ -7513,53 +7516,55 @@ void multi_sync_common_init()
 	// don't select any player yet.
 	Multi_sync_player_select = -1;
 	
-	// determine how many of the 5 buttons to create
-	if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
-		Multi_sync_button_count = MULTI_SYNC_HOST_COUNT;		
-	} else {
-		Multi_sync_button_count = MULTI_SYNC_CLIENT_COUNT;
-	}
-	// create the interface buttons	
-	for(idx=0; idx<Multi_sync_button_count; idx++){
-		// create the object
-		Multi_sync_buttons[gr_screen.res][idx].button.create(&Multi_sync_window, "", Multi_sync_buttons[gr_screen.res][idx].x, Multi_sync_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
-
-		// set the sound to play when highlighted
-		Multi_sync_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
-
-		// set the ani for the button
-		// this wierdness is necessary because cancel and kick buttons aren't drawn on the background bitmap,
-		//   so we have to load in frame 0, too (the file should exist)
-		if ((idx == MS_CANCEL) || (idx == MS_KICK) || (idx == MS_LAUNCH)) {
-			Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename, 3, 0);
+	if (!API_Access){
+		// determine how many of the 5 buttons to create
+		if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
+			Multi_sync_button_count = MULTI_SYNC_HOST_COUNT;		
 		} else {
-			Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename);
+			Multi_sync_button_count = MULTI_SYNC_CLIENT_COUNT;
+		}
+		// create the interface buttons	
+		for(idx=0; idx<Multi_sync_button_count; idx++){
+			// create the object
+			Multi_sync_buttons[gr_screen.res][idx].button.create(&Multi_sync_window, "", Multi_sync_buttons[gr_screen.res][idx].x, Multi_sync_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+
+			// set the sound to play when highlighted
+			Multi_sync_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+
+			// set the ani for the button
+			// this wierdness is necessary because cancel and kick buttons aren't drawn on the background bitmap,
+			//   so we have to load in frame 0, too (the file should exist)
+			if ((idx == MS_CANCEL) || (idx == MS_KICK) || (idx == MS_LAUNCH)) {
+				Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename, 3, 0);
+			} else {
+				Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename);
+			}
+
+			// set the hotspot
+			Multi_sync_buttons[gr_screen.res][idx].button.link_hotspot(Multi_sync_buttons[gr_screen.res][idx].hotspot);
+		}		
+
+		// add xstrs
+		for(idx=0; idx<MULTI_SYNC_NUM_TEXT; idx++) {
+			// don't create the "launch" button text just yet
+			if(idx == MST_LAUNCH) {
+				continue;
+			}
+			// multiplayer clients should ignore the kick button
+			if(!MULTIPLAYER_MASTER && !MULTIPLAYER_HOST && (idx == MST_KICK)) {
+				continue;
+			}
+
+			Multi_sync_window.add_XSTR(&Multi_sync_text[gr_screen.res][idx]);
 		}
 
-		// set the hotspot
-		Multi_sync_buttons[gr_screen.res][idx].button.link_hotspot(Multi_sync_buttons[gr_screen.res][idx].hotspot);
-	}		
+		// create the player list select button and hide it
+		Multi_sync_plist_button.create(&Multi_sync_window, "", Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD], Ms_status_coords[gr_screen.res][MS_W_COORD], Ms_status_coords[gr_screen.res][MS_H_COORD], 0, 1);
+		Multi_sync_plist_button.hide();
 
-	// add xstrs
-	for(idx=0; idx<MULTI_SYNC_NUM_TEXT; idx++) {
-		// don't create the "launch" button text just yet
-		if(idx == MST_LAUNCH) {
-			continue;
-		}
-		// multiplayer clients should ignore the kick button
-		if(!MULTIPLAYER_MASTER && !MULTIPLAYER_HOST && (idx == MST_KICK)) {
-			continue;
-		}
-
-		Multi_sync_window.add_XSTR(&Multi_sync_text[gr_screen.res][idx]);
+		// set up hotkeys for certain common functions
+		Multi_sync_buttons[gr_screen.res][MS_CANCEL].button.set_hotkey(KEY_ESC);
 	}
-
-	// create the player list select button and hide it
-	Multi_sync_plist_button.create(&Multi_sync_window, "", Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD], Ms_status_coords[gr_screen.res][MS_W_COORD], Ms_status_coords[gr_screen.res][MS_H_COORD], 0, 1);
-	Multi_sync_plist_button.hide();
-
-	// set up hotkeys for certain common functions
-	Multi_sync_buttons[gr_screen.res][MS_CANCEL].button.set_hotkey(KEY_ESC);
 }
 
 void multi_sync_common_do()
@@ -7920,7 +7925,7 @@ void multi_sync_pre_init()
 	Multi_mission_loaded = 0;
 }
 
-void multi_sync_pre_do()
+void multi_sync_pre_do(bool API_Access)
 {		
 	int idx;
 	
@@ -8074,7 +8079,7 @@ void multi_sync_pre_do()
 	}
 
 	// blit stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		gr_reset_clip();
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
@@ -8100,7 +8105,7 @@ void multi_sync_pre_close()
 	}
 }
 
-void multi_sync_post_init()
+void multi_sync_post_init(bool API_Access)
 {   	
 	multi_reset_timestamps();
 
@@ -8125,7 +8130,7 @@ void multi_sync_post_init()
 	}	
 
 	// if I'm not a standalone server, load up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		generic_anim_init(&Multi_sync_countdown_anim, Multi_sync_countdown_fname[gr_screen.res]);
 		Multi_sync_countdown_anim.ani.bg_type = bm_get_type(Multi_sync_bitmap);
 		generic_anim_stream(&Multi_sync_countdown_anim);
@@ -8154,7 +8159,7 @@ void multi_sync_post_init()
 
 extern commit_pressed_status create_wings();
 
-void multi_sync_post_do()
+void multi_sync_post_do(bool API_Access)
 {	
 	int idx;
 	
@@ -8259,7 +8264,7 @@ void multi_sync_post_do()
 	}
 
 	// blit stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		gr_reset_clip();	
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
@@ -8274,13 +8279,14 @@ void multi_sync_post_do()
 	}
 }
 
-void multi_sync_post_close()
+void multi_sync_post_close(bool API_Access)
 {
 	int idx;
 
-	if(Multi_sync_countdown_anim.num_frames > 0)
-		generic_anim_unload(&Multi_sync_countdown_anim);
-	
+	if (!API_Access) {
+		if (Multi_sync_countdown_anim.num_frames > 0)
+			generic_anim_unload(&Multi_sync_countdown_anim);
+	}
 	// all players should reset sequencing
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		if(Net_player->flags & NETINFO_FLAG_CONNECTED){
