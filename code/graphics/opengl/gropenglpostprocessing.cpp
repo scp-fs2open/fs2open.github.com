@@ -431,7 +431,6 @@ extern GLuint Cockpit_depth_texture;
 extern GLuint Scene_position_texture;
 extern GLuint Scene_normal_texture;
 extern GLuint Scene_specular_texture;
-extern bool stars_sun_has_glare(int index);
 extern float Sun_spot;
 void opengl_post_lightshafts()
 {
@@ -452,7 +451,7 @@ void opengl_post_lightshafts()
 			light_get_global_dir(&light_dir, idx);
 			vm_vec_rotate(&local_light_dir, &light_dir, &Eye_matrix);
 
-			if ( !stars_sun_has_glare(idx) ) {
+			if ( !light_has_glare(idx) ) {
 				continue;
 			}
 
@@ -851,8 +850,8 @@ void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, i
 		}
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS) {
 		char temp[64];
-		const auto ls_params = graphics::Post_processing_manager->getLightshaftParams();
-		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
+		const auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
+		snprintf(temp, 64, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
 		sflags << temp;
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_FXAA) {
 		set_fxaa_defines(sflags);

@@ -41,6 +41,9 @@
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 #include <algorithm>
 #include <stack>
 #include <map>
@@ -2886,6 +2889,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	create_family_tree(pm);
 
+	// Now do submodel movement post-processing.  This should come before all other error checking.
+
 	// ---------- submodel movement sanity checks ----------
 
 	for (i = 0; i < pm->n_models; i++) {
@@ -2931,6 +2936,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
+	// And now look through all the submodels and set the model flag if any are intrinsic-moving
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[i].translation_type == MOVEMENT_TYPE_INTRINSIC) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
+			break;
+		}
+	}
+
+	// -------------------- Now do any other error checking that validates data in the POF --------------------
+
 	// some dockpoint checks
 	for (i = 0; i < pm->n_docks; i++) {
 		auto dock = &pm->docking_bays[i];
@@ -2966,11 +2981,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-	// And now look through all the submodels and set the model flag if any are intrinsic-moving
-	for (i = 0; i < pm->n_models; i++) {
-		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[i].translation_type == MOVEMENT_TYPE_INTRINSIC) {
-			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
-			break;
+	// For several revisions, Pof Tools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
+	// but should at least head off potential crashes before they happen
+	for (i = 0; i < pm->n_view_positions; ++i) {
+		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent >= pm->n_models) {
+			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of Pof Tools to fix the model.\n", pm->filename, i));
+			pm->view_positions[i].parent = 0;
+			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
 
@@ -3235,7 +3253,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// See if we need to compile a new shader for this material
 	if (Shadow_quality != ShadowQuality::Disabled)
-		gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
@@ -3244,7 +3262,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 //returns the number of the pof tech model if specified, otherwise number of pof model
 int model_load(ship_info* sip, bool prefer_tech_model)
 {
-	if (prefer_tech_model && sip->pof_file_tech[0] != '\0') {
+	if (prefer_tech_model && VALID_FNAME(sip->pof_file_tech)) {
 		// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
 		// techroom model, which is decidedly wrong for the mission itself.
 		return model_load(sip->pof_file_tech, 0, nullptr);
@@ -3280,6 +3298,11 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	// No empty slot
 	if ( num == -1 )	{
 		Error( LOCATION, "Too many models" );
+		return -1;
+	}
+
+	// Valid file
+	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
 
@@ -3518,7 +3541,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 int model_create_instance(int objnum, int model_num)
 {
-	Assertion(objnum >= -1 && objnum < MAX_OBJECTS, "objnum must be -1 or a valid object index!");
+	Assertion(objnum > OBJNUM_SPECIAL_MIN && objnum < MAX_OBJECTS, "objnum must be -1 (none), -2 (player cockpit) or a valid object index!");
 
 	// this will also run a bunch of Assertions
 	auto pm = model_get(model_num);
@@ -4377,14 +4400,14 @@ void submodel_translate(bsp_info *sm, submodel_instance *smi)
 
 // Tries to move joints so that the turret points to the point dst.  If dst is nullptr, the turret's joints are reset.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-//	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst)
+//	Returns true if rotated gun, false if no gun to rotate (rotation handled by AI)
+bool model_rotate_gun(const object *objp, const polymodel *pm, const polymodel_instance *pmi, ship_subsys *ss, const vec3d *dst)
 {
 	model_subsystem *turret = ss->system_info;
 
 	// This should not happen
 	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {
-		return 0;
+		return false;
 	}
 
 	auto base_sm = &pm->submodel[turret->subobj_num];
@@ -4525,7 +4548,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		ss->points_to_target = sqrt((base_delta*base_delta) + (gun_delta*gun_delta));
 	}
 
-	return 1;
+	return true;
 }
 
 
@@ -5135,7 +5158,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color, float width )
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5155,10 +5178,11 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_pts[smi->num_arcs][0] = *v1;
 		smi->arc_pts[smi->num_arcs][1] = *v2;
 
-		if (arc_type == MARC_TYPE_SHIP) {
+		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
 			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
 			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
 			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+			smi->arc_width[smi->num_arcs] = width;
 		}
 
 		smi->num_arcs++;

@@ -107,7 +107,7 @@ static bool DeferredLightingEnabled = true;
 static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
                   std::pair<const char*, int>{"Deferred Lighting", 1782},
                   std::pair<const char*, int>{"Enables or disables deferred lighting", 1783})
-                  .category("Graphics")
+                  .category(std::make_pair("Graphics", 1825))
                   .default_val(true)
                   .level(options::ExpertLevel::Advanced)
                   .bind_to_once(&DeferredLightingEnabled)
@@ -176,13 +176,13 @@ static void light_rotate(light * l)
 	}
 }
 
-void light_add_directional(const vec3d* dir, const hdr_color* new_color, const float source_radius)
+void light_add_directional(const vec3d* dir, int sun_index, bool no_glare, const hdr_color* new_color, const float source_radius)
 {
 	Assert(new_color!= nullptr);
-	light_add_directional(dir, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
+	light_add_directional(dir, sun_index, no_glare, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
 }
 namespace ltp=lighting_profiles;
-void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius)
+void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, float intensity, float r, float g, float b, const float source_radius)
 {
 	if (Lighting_off) return;
 
@@ -191,6 +191,8 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	light l;
 
 	l.type = Light_Type::Directional;
+	l.flags = no_glare ? (LF_DEFAULT | LF_NO_GLARE) : LF_DEFAULT;
+	l.sun_index = sun_index;
 
 	vm_vec_copy_scale( &l.vec, dir, -1.0f );
 
@@ -233,6 +235,8 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 
 	Num_lights++;
 	l.type = Light_Type::Point;
+	l.flags = LF_DEFAULT;
+	l.sun_index = -1;
 	l.vec = *pos;
 	l.r = r;
 	l.g = g;
@@ -272,6 +276,8 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	Num_lights++;
 
 	l.type = Light_Type::Tube;
+	l.flags = LF_DEFAULT;
+	l.sun_index = -1;
 	l.vec = *p0;
 	l.vec2 = *p1;
 	l.r = r;
@@ -308,7 +314,7 @@ void light_rotate_all()
  */
 int light_get_global_count()
 {
-	return (int)Static_light.size();
+	return static_cast<int>(Static_light.size());
 }
 
 /**
@@ -317,19 +323,46 @@ int light_get_global_count()
  * @param pos   Position
  * @param n     Light source
  *
- * Returns 0 if there is no global light.
+ * Returns false if there is no global light.
  */
-int light_get_global_dir(vec3d *pos, int n)
+bool light_get_global_dir(vec3d *pos, int n)
 {
-	if ( (n < 0) || (n >= (int)Static_light.size()) ) {
-		return 0;
+	if (!SCP_vector_inbounds(Static_light, n)) {
+		return false;
 	}
 
 	if (pos) {
 		*pos = Static_light[n].vec;
 		vm_vec_scale( pos, -1.0f );
 	}
-	return 1;
+	return true;
+}
+
+bool light_has_glare(int n)
+{
+	if (!SCP_vector_inbounds(Static_light, n)) {
+		return false;
+	}
+
+	return (Static_light[n].flags & LF_NO_GLARE) == 0;
+}
+
+int light_get_sun_index(int n)
+{
+	if (!SCP_vector_inbounds(Static_light, n)) {
+		return -1;
+	}
+
+	return Static_light[n].sun_index;
+}
+
+int light_find_for_sun(int sun_index)
+{
+	for (size_t n = 0; n < Static_light.size(); ++n)
+		if (Static_light[n].sun_index == sun_index)
+			return static_cast<int>(n);
+
+	return -1;
 }
 
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, float static_light_level )
@@ -478,11 +511,12 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	Num_lights++;
 
 	l.type = Light_Type::Cone;
+	l.flags = dual_cone ? (LF_DEFAULT | LF_DUAL_CONE) : LF_DEFAULT;
+	l.sun_index = -1;
 	l.vec = *pos;
 	l.vec2= *dir;
 	l.cone_angle = angle;
 	l.cone_inner_angle = inner_angle;
-	l.dual_cone = dual_cone;
 	l.r = r;
 	l.g = g;
 	l.b = b;

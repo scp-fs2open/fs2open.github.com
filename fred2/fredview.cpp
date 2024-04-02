@@ -103,9 +103,8 @@ int physics_rot = 20;
 int box_marking = 0;
 int last_mouse_x, last_mouse_y, mouse_dx, mouse_dy;
 int Cur_bitmap = -1;
-int Id_select_type_jump_node;
-int Id_select_type_start = 0;
-int Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_jump_node = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
 int Move_ships_when_undocking = 1;			// true by default
 int Highlight_selectable_subsys = 0;
@@ -269,6 +268,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
+	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
+	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -1481,26 +1482,33 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 	} else {
 		if (menu.LoadMenu(IDR_MENU_EDIT_POPUP)) {
-			int i;
+			size_t i;
 			CMenu* pPopup = menu.GetSubMenu(0);
 			CMenu shipPopup, player_submenu;
 			CMenu *species_submenu = new CMenu[Species_info.size()];
 			ASSERT(pPopup != NULL);
 
 			// create a popup menu based on the ship models read in ship.cpp.
+			// note: the offsets from SHIP_TYPES must correspond to the indexes in the ship type dropdown
+
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
-			for (i=0; i<(int)Species_info.size(); i++) {
+
+			for (i=0; i<Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 					(UINT) species_submenu[i].m_hMenu, Species_info[i].species_name);
 			}
 
-			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+			i = 0;
+			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+				if (it->flags[Ship::Info_Flags::No_fred])
+					continue;	// because the dropdown skips "no_fred", we need to skip it here too
 				species_submenu[it->species].AppendMenu(MF_STRING |
 					MF_ENABLED, SHIP_TYPES + i, it->name);
+				i++;
+			}
 
 			pPopup->AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 				(UINT) shipPopup.m_hMenu, "New Object Type");
@@ -1574,17 +1582,22 @@ CFREDView *CFREDView::GetView()
 // the ships.  Shouldn't conflict with any other ID_* thingys.
 BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo) 
 {
-	int id = (int) nID;
-
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
+		if ((nID >= SHIP_TYPES) && (nID < SHIP_TYPES + ship_type_combo_box_size + 2)) {	// the 2 are waypoint and jump node
+			int idx = static_cast<int>(nID - SHIP_TYPES);
 			if (nCode == CN_COMMAND) {
-				cur_ship_type_combo_index = id - SHIP_TYPES;
+				cur_ship_type_combo_index = idx;
 				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
+
+				// now that we've updated the combo box, try to actually create something
+				// see also CFREDView::OnLButtonDown
+				int waypoint_instance = cur_waypoint ? Objects[cur_waypoint->get_objnum()].instance : -1;
+				Selection_lock = 0;
+				on_object = create_object_on_grid(waypoint_instance);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index == idx);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -3354,41 +3367,57 @@ int CFREDView::internal_error(const char *msg, ...)
 	return -1;
 }
 
-int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
+int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 {
-	SCP_string buf, sexp_buf, error_buf, bad_node_str;
+	SCP_string location_buf, sexp_buf, error_buf, bad_node_str, issue_msg;
 	int err = 0, z, faulty_node;
 	va_list args;
 
-	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	va_start(args, location);
+	vsprintf(location_buf, location, args);
 	va_end(args);
 
 	if (sexp == -1)
 		return 0;
 
 	z = check_sexp_syntax(sexp, type, 1, &faulty_node);
-	if (!z)
-		return 0;
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
-	truncate_message_lines(sexp_buf, 30);
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
-	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
-		bad_node_str.pop_back();
+		sprintf(error_buf, "Error in %s: %s\n\n%s\n\n(Bad node appears to be: %s)", location_buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+
+		if (z < 0 && z > -100)
+			err = 1;
+
+		if (err)
+			return internal_error("%s", error_buf.c_str());
+
+		if (error("%s", error_buf.c_str()))
+			return 1;
 	}
 
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+	if (Error_checker_checks_potential_issues)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	if (z < 0 && z > -100)
-		err = 1;
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	if (err)
-		return internal_error(error_buf.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
-	if (error(error_buf.c_str()))
-		return 1;
+		if (Fred_main_wnd->MessageBox(error_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+			return 1;
+	}
 
 	return 0;
 }
@@ -3795,6 +3824,18 @@ void CFREDView::OnViewOutlineAtWarpin()
 void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
+}
+
+void CFREDView::OnErrorCheckerChecksPotentialIssues()
+{
+	Error_checker_checks_potential_issues = !Error_checker_checks_potential_issues;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 

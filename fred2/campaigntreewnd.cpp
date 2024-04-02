@@ -71,7 +71,7 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	LoadAccelTable("IDR_ACC_CAMPAIGN");
 	Mission_filename_cb_format = RegisterClipboardFormat("Mission Filename");
 	Campaign_modified = 0;
-	clear_mission();
+	clear_mission(true);
 
 	// create a splitter with 1 row, 2 columns
 	if (!m_splitter.CreateStatic(this, 1, 2))
@@ -467,9 +467,9 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 		err = 1;
 
 	if (err)
-		return internal_error(error_buf.c_str());
+		return internal_error("%s", error_buf.c_str());
 
-	if (error(error_buf.c_str()))
+	if (error("%s", error_buf.c_str()))
 		return 1;
 
 	return 0;

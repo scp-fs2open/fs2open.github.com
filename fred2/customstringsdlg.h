@@ -49,9 +49,9 @@ class CustomStringsDlg : public CDialog {
 	void update_text_edit_boxes(const SCP_string& key, const SCP_string& value, const SCP_string& text);
 	void update_help_text(const SCP_string& desc);
 
-	bool edit_boxes_have_valid_data();
+	bool edit_boxes_have_valid_data(bool update = false);
 	bool data_edit_box_has_valid_data();
-	bool key_edit_box_has_valid_data();
+	bool key_edit_box_has_valid_data(bool update = false);
 	bool text_edit_box_has_valid_data();
 
 	void add_pair_entry();

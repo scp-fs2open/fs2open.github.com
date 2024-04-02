@@ -64,7 +64,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1816 // This is the next available ID
+// #define XSTR_SIZE	1842 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -152,7 +152,7 @@ auto LanguageOption = options::OptionBuilder<int>("Game.Language",
 							       return false; //This makes it so that changing the language requires a game restart
 							   })
 							   .flags({options::OptionFlags::ForceMultiValueSelection})
-							   .category("Game")
+							   .category(std::make_pair("Game", 1824))
 							   .default_val(0)
 							   .finish();
 

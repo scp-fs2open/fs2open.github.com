@@ -492,7 +492,7 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	if(!ade_get_args(L, "o", l_GameEvent.GetPtr(&gh)))
 		return ade_set_error(L, "b", false);
 
-	if(!gh->IsValid())
+	if(!gh->isValid())
 		return ade_set_error(L, "b", false);
 
 	gameseq_post_event(gh->Get());
@@ -501,24 +501,30 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 }
 
 ADE_FUNC(XSTR,
-		 l_Base,
-		 "string text, number id",
-		 "Gets the translated version of text with the given id. "
-			 "The uses the tstrings table for performing the translation. Passing -1 as the id will always return the given text.",
-		 "string",
-		 "The translated text") {
+	l_Base,
+	"string text, number id, boolean tstrings=true",
+	"Gets the translated version of text with the given id. "
+	"This uses the tstrings.tbl for performing the translation by default. Set tstrings to false to use "
+	"strings.tbl instead. Passing -1 as the id will always return the given text.",
+	"string",
+	"The translated text")
+{
 	const char* text = nullptr;
 	int id = -1;
+	bool use_tstrings = true;
 
-	if (!ade_get_args(L, "si", &text, &id)) {
+	if (!ade_get_args(L, "si|b", &text, &id, &use_tstrings)) {
 		return ADE_RETURN_NIL;
 	}
 
-	SCP_string xstr;
-	sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
-
 	SCP_string translated;
-	lcl_ext_localize(xstr, translated);
+	if (use_tstrings) {
+		SCP_string xstr;
+		sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
+		lcl_ext_localize(xstr, translated);
+	} else {
+		translated = XSTR(text, id);
+	}
 
 	return ade_set_args(L, "s", translated.c_str());
 }
@@ -590,6 +596,16 @@ ADE_FUNC(isEngineVersionAtLeast,
 	return ade_set_args(L, "b", gameversion::check_at_least(version));
 }
 
+ADE_FUNC(usesInvalidInsteadOfNil,
+	l_Base,
+	nullptr,
+	"Checks if the '$Lua API returns nil instead of invalid object:' option is set in game_settings.tbl.",
+	"boolean",
+	"true if the option is set, false otherwise")
+{
+	return Lua_API_returns_nil_instead_of_invalid_object ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(getCurrentLanguage,
 		 l_Base,
 		 nullptr,
@@ -645,8 +661,7 @@ ADE_FUNC(getModTitle, l_Base, nullptr,
          "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
          "string", "The mod title")
 {
-	auto str = Mod_title;
-	return ade_set_args(L, "s", str.c_str());
+	return ade_set_args(L, "s", Mod_title.c_str());
 }
 
 ADE_FUNC(getModVersion, l_Base, nullptr,

@@ -142,6 +142,7 @@ enum sexp_opf_t : int {
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
 	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
 	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
+	OPF_MISSION_CUSTOM_STRING,      // MjnMixael - The custom strings as defined in FRED
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -311,6 +312,7 @@ enum : int {
 	OP_XOR,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_FIRST,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_LAST,	// Goober5000
+	OP_HAS_TIME_ELAPSED_MSECS,	// Goober5000
 
 	// OP_CATEGORY_GOAL_EVENT
 	
@@ -513,6 +515,7 @@ enum : int {
 	OP_FOR_CONTAINER_DATA,	// jg18
 	OP_FOR_MAP_CONTAINER_KEYS,	// jg18
 	OP_ON_MISSION_SKIP,	// Goober5000
+	OP_FOR_SUBSYSTEMS,	// Goober5000
 
 	// OP_CATEGORY_CHANGE
 	// sexpressions with side-effects
@@ -1249,6 +1252,8 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_ORDER_RECIPIENT,
 	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
 	SEXP_CHECK_MUST_BE_INTEGER,
+	SEXP_CHECK_INVALID_CUSTOM_STRING,
+	SEXP_CHECK_POTENTIAL_ISSUE,
 };
 
 
@@ -1350,6 +1355,8 @@ typedef struct sexp_node {
 #define SNF_SPECIAL_ARG_IN_TREE		(1<<3)
 #define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<4)
 #define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
+#define SNF_CHECKED_NODE_FOR_OPF_POSITIVE	(1<<6)
+#define SNF_NODE_IS_OPF_POSITIVE	(1<<7)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
@@ -1412,6 +1419,7 @@ extern int get_operator_const(int node);
 extern int find_operator_index(int op_const);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
+extern int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg);
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();

@@ -73,6 +73,8 @@ extern int model_render_flags_size;
 
 enum class modelread_status { FAIL, SUCCESS_REAL, SUCCESS_VIRTUAL };
 
+enum model_objnum_special : int { OBJNUM_NONE = -1, OBJNUM_COCKPIT = -2, OBJNUM_SPECIAL_MIN = -3};
+
 // Goober5000
 extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
@@ -119,6 +121,7 @@ struct submodel_instance
 	color   arc_primary_color_1[MAX_ARC_EFFECTS];
 	color   arc_primary_color_2[MAX_ARC_EFFECTS];
 	color	arc_secondary_color[MAX_ARC_EFFECTS];
+	float	arc_width[MAX_ARC_EFFECTS];								// only used for MARC_TYPE_SHIP and MARC_TYPE_SCRIPTED
 	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 
@@ -133,6 +136,7 @@ struct submodel_instance
 		memset(&arc_primary_color_2, 0, MAX_ARC_EFFECTS * sizeof(color));
 		memset(&arc_secondary_color, 0, MAX_ARC_EFFECTS * sizeof(color));
 		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+		memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
 	}
 };
 
@@ -266,6 +270,7 @@ typedef struct model_special {
 #define MARC_TYPE_DAMAGED					0		// blue lightning arcs for when the ship is damaged
 #define MARC_TYPE_EMP						1		// EMP blast type arcs
 #define MARC_TYPE_SHIP						2		// arcing lightning thats intrinsically part of the ship
+#define MARC_TYPE_SCRIPTED					3		// an arc created via script
 
 #define MAX_LIVE_DEBRIS	7
 
@@ -1091,7 +1096,7 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst);
+extern bool model_rotate_gun(const object *objp, const polymodel *pm, const polymodel_instance *pmi, ship_subsys *ss, const vec3d *dst);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
@@ -1190,7 +1195,7 @@ void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, i
 
 // Adds an electrical arcing effect to a submodel
 void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr);
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr, float width = 0.0f);
 
 // Gets two random points on the surface of a submodel
 extern vec3d submodel_get_random_point(int model_num, int submodel_num, int seed = -1);

@@ -12,16 +12,20 @@
 	<string>${MACOSX_BUNDLE_ICON_FILE}</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleDisplayName</key>
+	<string>FreeSpace Open</string>
 	<key>CFBundleName</key>
-	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+	<string>FreeSpace Open</string>
+	<key>CFBundleIdentifier</key>
+	<string>us.indiegames.scp.FreeSpaceOpen</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${FSO_FULL_VERSION_STRING}</string>
+	<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
 	<key>CFBundleVersion</key>
-	<string>${FSO_FULL_VERSION_STRING}</string>
+	<string>${MACOSX_BUNDLE_LONG_VERSION_STRING}</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.games</string>
 	<key>LSMinimumSystemVersion</key>
@@ -30,5 +34,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright 1999 Volition, Inc. &amp; Copyright 2002-2024 The Source Code Project.</string>
 </dict>
 </plist>

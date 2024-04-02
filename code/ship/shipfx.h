@@ -120,7 +120,7 @@ extern float shipfx_calculate_arrival_warp_distance(object *objp);
 // =================================================
 
 // Given world point see if it is in a shadow.
-bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int sun_n);
+bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int light_n);
 
 
 // =================================================
@@ -235,7 +235,7 @@ private:
 	float warping_time;			// time to go through the effect
 	float warping_speed;		// speed to go through the effect
 
-	void compute_warpout_stuff(float *warp_time, vec3d *warp_pos);
+	void compute_warpout_stuff(float *ship_move_time, vec3d *warp_pos);
 
 	//Total data
 	int total_time_start;

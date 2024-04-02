@@ -172,6 +172,14 @@ const lua_enum_def_list Enumerations[] = {
 	{"SCROLLBACK_SOURCE_SATISFIED", LE_SCROLLBACK_SOURCE_SATISFIED, true},
 	{"SCROLLBACK_SOURCE_COMMAND", LE_SCROLLBACK_SOURCE_COMMAND, true},
 	{"SCROLLBACK_SOURCE_NETPLAYER", LE_SCROLLBACK_SOURCE_NETPLAYER, true},
+	{"SEXP_TRUE", LE_SEXP_TRUE, SEXP_TRUE, true},
+	{"SEXP_FALSE", LE_SEXP_FALSE, SEXP_FALSE, true},
+	{"SEXP_KNOWN_FALSE", LE_SEXP_KNOWN_FALSE, SEXP_KNOWN_FALSE, true},
+	{"SEXP_KNOWN_TRUE", LE_SEXP_KNOWN_TRUE, SEXP_KNOWN_TRUE, true},
+	{"SEXP_UNKNOWN", LE_SEXP_UNKNOWN, SEXP_UNKNOWN, true},
+	{"SEXP_NAN", LE_SEXP_NAN, SEXP_NAN, true},
+	{"SEXP_NAN_FOREVER", LE_SEXP_NAN_FOREVER, SEXP_NAN_FOREVER, true},
+	{"SEXP_CANT_EVAL", LE_SEXP_CANT_EVAL, SEXP_CANT_EVAL, true},
 };
 
 const size_t Num_enumerations = sizeof(Enumerations) / sizeof(lua_enum_def_list);
@@ -205,7 +213,7 @@ SCP_string enum_h::getName() const
 
 	return SCP_string();
 }
-bool enum_h::IsValid() const { return index < ENUM_NEXT_INDEX || index == ENUM_COMBINATION; }
+bool enum_h::isValid() const { return index < ENUM_NEXT_INDEX || index == ENUM_COMBINATION; }
 
 enum_h operator&(const enum_h& l, const enum_h& other) {
 	Assertion(l.value && other.value, "Tried to and-combine non-combinable enums %s and %s!", l.getName().c_str(), other.getName().c_str());
@@ -308,7 +316,7 @@ ADE_FUNC(__tostring,
 		return ade_set_args(L, "s", "<INVALID>");
 	}
 
-	if (!e->IsValid()) {
+	if (!e->isValid()) {
 		return ade_set_args(L, "s", "<INVALID>");
 	}
 
@@ -352,7 +360,7 @@ ADE_FUNC(__add,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
-	if (e1 == nullptr || e2 == nullptr || !e1->IsValid() || !e2->IsValid() || !e1->value ||!e2->value) {
+	if (e1 == nullptr || e2 == nullptr || !e1->isValid() || !e2->isValid() || !e1->value ||!e2->value) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
@@ -372,7 +380,7 @@ ADE_FUNC(__mul,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
-	if (e1 == nullptr || e2 == nullptr || !e1->IsValid() || !e2->IsValid() || !e1->value || !e2->value) {
+	if (e1 == nullptr || e2 == nullptr || !e1->isValid() || !e2->isValid() || !e1->value || !e2->value) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 

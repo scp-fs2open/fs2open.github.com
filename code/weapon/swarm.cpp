@@ -309,7 +309,7 @@ void turret_swarm_delete(int i)
 }
 
 // Set up turret swarm info struct
-void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_info *wip, int weapon_num)
+void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num)
 {
 	turret_swarm_info	*tsi;
 	object *parent_obj, *target_obj;

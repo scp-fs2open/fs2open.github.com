@@ -186,17 +186,17 @@ void parse_decals_table(const char* filename) {
 		return;
 	}
 
-	if (!gr_is_capable(CAPABILITY_DEFERRED_LIGHTING)) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_DEFERRED_LIGHTING)) {
 		// We need deferred lighting
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of deferred lighting.\n"));
 	}
-	if (!gr_is_capable(CAPABILITY_NORMAL_MAP)) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_NORMAL_MAP)) {
 		// We need normal mapping for the full feature range
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of normal mapping.\n"));
 	}
-	if (!gr_is_capable(CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
 		// We need separate blending functions for different color buffers
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of separate color buffer blend functions.\n"));
@@ -220,8 +220,8 @@ struct Decal {
 		vm_vec_make(&scale, 1.f, 1.f, 1.f);
 	}
 
-	bool isValid() {
-		if (!object.IsValid()) {
+	bool isValid() const {
+		if (!object.isValid()) {
 			return false;
 		}
 		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {

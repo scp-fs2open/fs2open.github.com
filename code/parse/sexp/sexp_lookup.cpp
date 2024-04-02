@@ -211,18 +211,15 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 
 	sexp->initialize();
 
-	auto name = sexp->getName();
-	auto help_text = sexp->getHelpText();
-
 	sexp_oper new_op;
-	new_op.text = name;
+	new_op.text = sexp->getName();
 	new_op.min = sexp->getMinimumArguments();
 	new_op.max = sexp->getMaximumArguments();
 
 	int free_op_index = global.next_free_operator_id++;
 
 	if (Operators.size() >= FIRST_OP) {
-		Warning(LOCATION, "There are too many total SEXPs.  The SEXP %s will not be added.", sexp->getName().c_str());
+		Warning(LOCATION, "There are too many total SEXPs.  The SEXP %s will not be added.", new_op.text.c_str());
 		return -1;
 	}
 
@@ -234,21 +231,21 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 		int implied_category = category_of_subcategory(subcategory);
 
 		if (category != implied_category)
-			Warning(LOCATION, "Operator %s has a category that is not a parent of its subcategory!", name.c_str());
+			Warning(LOCATION, "Operator %s has a category that is not a parent of its subcategory!", new_op.text.c_str());
 	}
 
 	// For now, all dynamic SEXPS are only valid in missions
 	new_op.value = free_op_index;
 	new_op.type = type;
 
+	sexp_help_struct new_help;
+	new_help.id = new_op.value;
+	new_help.help = sexp->getHelpText();
+
 	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
 
 	// Now actually add the operator to the SEXP containers
 	Operators.push_back(new_op);
-
-	sexp_help_struct new_help;
-	new_help.id = new_op.value;
-	new_help.help = std::move(help_text);
 	Sexp_help.push_back(new_help);
 
 	return new_op.value;

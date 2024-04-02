@@ -1963,7 +1963,9 @@ void debrief_init(bool API_Access)
 	// be backed out if used chooses to replace them.
 	scoring_level_close();
 
-	debrief_ui_init(); // init UI items
+	if (!API_Access) {
+		debrief_ui_init(); // init UI items
+	}
 	debrief_award_init();
 	show_stats_init();
 	debrief_voice_init();

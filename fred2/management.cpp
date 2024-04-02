@@ -95,7 +95,6 @@ waypoint *cur_waypoint = NULL;
 waypoint_list *cur_waypoint_list = NULL;
 int delete_flag;
 int bypass_update = 0;
-int Default_player_model = 0;
 int Update_ship = 0;
 int Update_wing = 0;
 
@@ -425,18 +424,21 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	g3_start_frame(0);
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	
-	// Get the default player ship
-	Default_player_model = get_default_player_ship_index();
-
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
+	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
 	}
 	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
 	if (scripting::hooks::OnSplashScreen->isActive()) {
 		scripting::hooks::OnSplashScreen->run();
+	}
+
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
 	}
 
 	return true;
@@ -684,29 +686,9 @@ int create_object(vec3d *pos, int waypoint_instance)
 {
 	int obj, n;
 
-	if (cur_ship_type_combo_index == Id_select_type_waypoint)
+	if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_waypoint)) {
 		obj = create_waypoint(pos, waypoint_instance);
-
-	else if (cur_ship_type_combo_index == Id_select_type_start) {
-		if (Player_starts >= MAX_PLAYERS) {
-			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
-				"You have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
-			obj = -2;
-
-		} else if (The_mission.game_type & MISSION_TYPE_SINGLE) {
-			Fred_main_wnd->MessageBox("You can't have more than one player start in\n"
-				"single player missions.\n", NULL, MB_OK | MB_ICONEXCLAMATION);
-			obj = -2;
-
-		} else if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-			Fred_main_wnd->MessageBox("You can't have more than one player start in\n"
-				"a training missions.\n", NULL, MB_OK | MB_ICONEXCLAMATION);
-			obj = -2;
-
-		} else
-			obj = create_player(Player_starts, pos, NULL, Default_player_model);
-
-	} else if (cur_ship_type_combo_index == Id_select_type_jump_node) {
+	} else if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_jump_node)) {
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
@@ -734,12 +716,12 @@ int create_object(vec3d *pos, int waypoint_instance)
 	return obj;
 }
 
-int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
+int create_player(vec3d *pos, matrix *orient, int type)
 {
 	int obj;
 
 	if (type == -1){
-		type = Default_player_model;
+		type = get_default_player_ship_index();
 	}
 	Assert(type >= 0);
 
@@ -779,12 +761,12 @@ void reset_mission()
 {
 	clear_mission();
 
-	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 
 	stars_post_level_init();
 }
 
-void clear_mission()
+void clear_mission(bool fast_reload)
 {
 	char *str;
 	int i, j, count;
@@ -800,7 +782,10 @@ void clear_mission()
 	mission_init(&The_mission);
 
 	obj_init();
-	model_free_all();				// Free all existing models
+
+	if (!fast_reload)
+		model_free_all();				// Free all existing models
+
 	ai_init();
 	asteroid_level_init();
 	ship_level_init();

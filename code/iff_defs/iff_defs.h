@@ -17,9 +17,10 @@
 class object;
 
 // Goober5000 - new IFF color system
-#define IFF_COLOR_SELECTION			0
-#define IFF_COLOR_MESSAGE			1
-#define IFF_COLOR_TAGGED			2
+// Now variables so that modular tables can actually affect them. -MageKing17
+extern int IFF_COLOR_SELECTION;
+extern int IFF_COLOR_MESSAGE;
+extern int IFF_COLOR_TAGGED;
 
 enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
 
@@ -49,7 +50,8 @@ typedef struct iff_info {
 	flagset<Mission::Parse_Object_Flags> default_parse_flags;
 
 	// used internally, not parsed
-	TIMESTAMP ai_rearm_timestamp;
+	TIMESTAMP ai_good_rearm_timestamp;
+	TIMESTAMP ai_bad_rearm_timestamp;
 
 } iff_info;
 

@@ -533,22 +533,23 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 		ship_subsys* subsystem;
 
 		int	min_index = -1;
-
-		if (Damage_impacted_subsystem_first && subsys_hit_first > -1) {
-			min_index = subsys_hit_first;
-
-			subsys_hit_first = -1;
-		}
-		else {
+		{
 			float	min_dist = 9999999.9f;
 
-			for (i = 0; i < count; i++) {
+			// find the closest subsystem
+			for (i=0; i<count; i++) {
 				if (subsys_list[i].dist < min_dist) {
 					min_dist = subsys_list[i].dist;
 					min_index = i;
 				}
 			}
 			Assert(min_index != -1);
+		}
+
+		// if the closest system does *not* override a submodel impact, and we have a submodel impact, use it instead
+		if (Damage_impacted_subsystem_first && subsys_hit_first >= 0 && !subsys_list[min_index].ptr->system_info->flags[Model::Subsystem_Flags::Override_submodel_impact]) {
+			min_index = subsys_hit_first;
+			subsys_hit_first = -1;	// prevent the submodel impact from taking priority on the next loop iteration
 		}
 
 		subsystem = subsys_list[min_index].ptr;
@@ -861,14 +862,10 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		ship_subsys	*subsystem;
 
 		int	min_index = -1;
-
-		if (Damage_impacted_subsystem_first && subsys_hit_first > -1) {
-			min_index = subsys_hit_first;
-
-			subsys_hit_first = -1;
-		} else {
+		{
 			float	min_dist = 9999999.9f;
 
+			// find the closest subsystem
 			for (i=0; i<count; i++) {
 				if (subsys_list[i].dist < min_dist) {
 					min_dist = subsys_list[i].dist;
@@ -876,6 +873,12 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 				}
 			}
 			Assert(min_index != -1);
+		}
+
+		// if the closest system does *not* override a submodel impact, and we have a submodel impact, use it instead
+		if (Damage_impacted_subsystem_first && subsys_hit_first >= 0 && !subsys_list[min_index].ptr->system_info->flags[Model::Subsystem_Flags::Override_submodel_impact]) {
+			min_index = subsys_hit_first;
+			subsys_hit_first = -1;	// prevent the submodel impact from taking priority on the next loop iteration
 		}
 
 		float	damage_to_apply = 0.0f;

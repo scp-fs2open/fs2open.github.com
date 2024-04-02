@@ -70,7 +70,7 @@ public:
 	void initKeyLineXOffset(int offset);
 	void render(float frametime) override;
 	void pageIn() override;
-	bool canRender() override;
+	bool canRender() const override;
 };
 
 class HudGaugeTrainingMessages: public HudGauge
@@ -80,7 +80,7 @@ public:
 	HudGaugeTrainingMessages();
 	void render(float frametime) override;
 	void pageIn() override;
-	bool canRender() override;
+	bool canRender() const override;
 };
 
 #endif /* __MISSIONTRAINING_H__ */

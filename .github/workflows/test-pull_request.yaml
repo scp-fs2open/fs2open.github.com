@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [gcc-5, gcc-13, clang-16]
+        compiler: [gcc-9, gcc-13, clang-16]
         cmake_options: [""]
         include:
           # Also include configurations that check if the code compiles without the graphics backends
@@ -22,7 +22,7 @@ jobs:
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-5ac6f70
+    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     steps:
       - uses: actions/checkout@v1
         name: Checkout

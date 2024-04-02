@@ -321,16 +321,34 @@ object *Autopilot_flight_leader = NULL;
 
 /**
  * Sets the timestamp used to tell is it is a good time for this team to rearm.  
- * Once the timestamp is no longer valid, then rearming is not a "good time"
+ * Ends a 'bad rearm time'
+ * Once the timestamp is no longer valid, then rearming is not a "good time" (may or may not rearm)
  *
  * @param team Team (friendly, hostile, neutral) 
  * @param time Time to rearm
  */
-void ai_set_rearm_status(int team, int time)
+void ai_set_good_rearm_time(int team, int time)
 {
 	Assert( time >= 0 );
 
-	Iff_info[team].ai_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
+	Iff_info[team].ai_good_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
+	Iff_info[team].ai_bad_rearm_timestamp = TIMESTAMP::invalid();
+}
+
+/**
+ * Sets the timestamp used to tell is it is a bad time for this team to rearm.  
+ * Ends a 'good rearm time'
+ * Once the timestamp is no longer valid, then rearming is not a "bad time" (may or may not rearm)
+ *
+ * @param team Team (friendly, hostile, neutral) 
+ * @param time Time to rearm
+ */
+void ai_set_bad_rearm_time(int team, int time)
+{
+	Assert(time >= 0);
+
+	Iff_info[team].ai_bad_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
+	Iff_info[team].ai_good_rearm_timestamp = TIMESTAMP::invalid();
 }
 
 /**
@@ -339,7 +357,7 @@ void ai_set_rearm_status(int team, int time)
  * @return true(1) or false(0) if it is "safe" for the given object to rearm.  
  * @todo This function could be easily expended to further the definition of "safe"
  */
-int ai_good_time_to_rearm(object *objp)
+bool ai_good_time_to_rearm(object *objp)
 {
 	int team;
 
@@ -347,9 +365,24 @@ int ai_good_time_to_rearm(object *objp)
 	team = Ships[objp->instance].team;
 	
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_good_rearm_time_bug])
-		return Iff_info[team].ai_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_rearm_timestamp);
+		return Iff_info[team].ai_good_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_good_rearm_timestamp);
 	else
-		return Iff_info[team].ai_rearm_timestamp.isValid();
+		return Iff_info[team].ai_good_rearm_timestamp.isValid();
+}
+
+/**
+ * "unsafe" is currently defined by the mission designer using the good/bad time to rearm sexpressions.  This status is currently team based.
+ *
+ * @return true(1) or false(0) if it is "unsafe" for the given object to rearm.  
+ */
+bool ai_bad_time_to_rearm(object* objp)
+{
+	int team;
+
+	Assert(objp->type == OBJ_SHIP);
+	team = Ships[objp->instance].team;
+
+	return Iff_info[team].ai_bad_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_bad_rearm_timestamp);
 }
 
 /**
@@ -1003,8 +1036,10 @@ void ai_level_init()
 
 	Ai_goal_signature = 0;
 
-	for (i = 0; i < (int) Iff_info.size(); i++)
-		Iff_info[i].ai_rearm_timestamp = TIMESTAMP::invalid();
+	for (i = 0; i < (int)Iff_info.size(); i++) {
+		Iff_info[i].ai_good_rearm_timestamp = TIMESTAMP::invalid();
+		Iff_info[i].ai_bad_rearm_timestamp = TIMESTAMP::invalid();
+	}
 
 	// clear out the stuff needed for AI firing powerful secondary weapons
 	ai_init_secondary_info();
@@ -1021,7 +1056,7 @@ void ai_level_init()
 /**
  * Check if object is a stealth ship
  */
-bool is_object_stealth_ship(object* objp)
+bool is_object_stealth_ship(const object *objp)
 {
 	if (objp->type == OBJ_SHIP) {
 		if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth]) {
@@ -1109,7 +1144,7 @@ float get_skill_stealth_dot_scaler()
 	return 1.0f;
 }
 
-int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
+int ai_is_stealth_visible(const object *viewer_objp, const object *stealth_objp)
 {
 	ship *shipp;
 	vec3d vec_to_stealth;
@@ -1905,7 +1940,7 @@ int	Player_attacking_enabled = 1;
 /**
  * Determine whether an object is targetable within a nebula
  */
-int object_is_targetable(object *target, ship *viewer)
+bool object_is_targetable(const object *target, const ship *viewer)
 {
 	// if target is ship, check if visible by team
 	if (target->type == OBJ_SHIP)
@@ -2413,7 +2448,7 @@ int find_nearby_threat(int objnum, int enemy_team_mask, float range, int *count)
 /**
  * Number of live turrets with target_objnum 
  */
-int num_turrets_attacking(object *turret_parent, int target_objnum) 
+int num_turrets_attacking(const object *turret_parent, int target_objnum)
 {
 	ship_subsys *ss;
 	ship *shipp;
@@ -3515,6 +3550,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags, int 
 	aip->wp_index = start_index;
 	aip->wp_flags = wp_flags;
 	aip->mode = AIM_WAYPOINTS;
+	aip->submode_parm0 = start_index;	// keep track of the start index because we need it for Fix_ai_path_order_bug
 
 	Assert(aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC);
 }
@@ -3636,7 +3672,7 @@ int Debug_k = 0;
  *
  * Return this value.  Return value of 0.0f means no collision is possible.
  */
-float compute_collision_time(vec3d *targpos, vec3d *targvel, vec3d *attackpos, float weapon_speed)
+float compute_collision_time(const vec3d *targpos, const vec3d *targvel, const vec3d *attackpos, float weapon_speed)
 {
 	vec3d	vec_to_target;
 	float		pos_dot_vel;
@@ -6305,7 +6341,7 @@ int ai_fire_primary_weapon(object *objp)
 //				threshold			=>	max distance from pos to be considered "near"
 //
 // exit:		number of ships within threshold units of pos
-int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
+int num_nearby_fighters(int enemy_team_mask, const vec3d *pos, float threshold)
 {
 	ship_obj	*so;
 	object	*ship_objp;
@@ -6476,7 +6512,7 @@ bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 /**
  * @return number of objects homing on object *target_objp
  */
-int compute_num_homing_objects(object *target_objp)
+int compute_num_homing_objects(const object *target_objp)
 {
 	int		count = 0;
 
@@ -6558,7 +6594,7 @@ float compute_incoming_payload(object *target_objp)
 //			OR: secondary los flag is set but no line of sight is availabe
 //	Note: If player is attacking a ship, that ship is allowed to fire at player.  Otherwise, we get in a situation in which
 //	player is attacking a large ship, but that large ship is not defending itself with missiles.
-bool check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secondary_bank, vec3d *firing_pos_global)
+bool check_ok_to_fire(int objnum, int target_objnum, const weapon_info *wip, int secondary_bank, const vec3d *firing_pos_global)
 {
 	int	num_homers = 0;
 
@@ -6616,7 +6652,7 @@ bool check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secon
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
 //	threshold defines the minimum radius for an object to be considered relevant for LoS
-bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, vec3d *firing_pos_global) {
+bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, const vec3d *firing_pos_global) {
 
 	//Do both checks over an XOR-Check for more detailed messages
 	int sources = (primary_bank != -1 ? 1 : 0) + (secondary_bank != -1 ? 1 : 0) + (firing_pos_global != nullptr ? 1 : 0);
@@ -6940,7 +6976,7 @@ float ai_get_weapon_dist(ship_weapon *swp)
 	return MIN((Weapon_info[weapon_num].max_speed * Weapon_info[weapon_num].lifetime), Weapon_info[weapon_num].weapon_range);
 }
 
-float ai_get_weapon_speed(ship_weapon *swp)
+float ai_get_weapon_speed(const ship_weapon *swp)
 {
 	int	bank_num, weapon_num;
 
@@ -6984,7 +7020,7 @@ weapon_info* ai_get_weapon(ship_weapon *swp)
 //	Also, stuff globals G_predicted_pos, G_collision_time and G_fire_pos.
 //	*pobjp		object firing the weapon
 //	*eobjp		object being fired upon
-void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range)
+void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, const vec3d *gun_pos, const object *pobjp, const vec3d *enemy_pos, const vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range)
 {
 	ship	*shipp = &Ships[pobjp->instance];
 	float	range_time;
@@ -10241,7 +10277,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 		}
 
 		// don't attack if you can't see him
-		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], 1) < 1 ) {
+		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], true) < 1.0f ) {
 			// if he's a stealth and visible, but not targetable, ok to attack.
 			if ( is_object_stealth_ship(hitter_objp) ) {
 				if ( ai_is_stealth_visible(guard_objp, hitter_objp) != STEALTH_IN_FRUSTUM ) {
@@ -10891,14 +10927,14 @@ void ai_guard()
 						//	Goal point is in front.
 						//	If close to goal point, don't change direction, just change speed.
 						if (dist_to_goal_point > Pl_objp->radius + 10.0f) {
-							turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+							turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f);
 						}
 						
 						set_accel_for_target_speed(Pl_objp, guard_objp->phys_info.speed + (dist_to_goal_point-40.0f)/20.0f);
 					}
 				} else {
 					if (dot_to_goal_point > 0.8f) {
-						turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+						turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f);
 						set_accel_for_target_speed(Pl_objp, guard_objp->phys_info.speed + dist_to_goal_point*0.1f);
 					} else {
 						set_accel_for_target_speed(Pl_objp, guard_objp->phys_info.speed - dist_to_goal_point*0.1f - 1.0f);
@@ -10907,10 +10943,14 @@ void ai_guard()
 			// consider guard object STILL
 			} else if (guard_objp->radius < 50.0f) {
 				if (dist_to_goal_point > 15.0f) {
-					turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f);
 					set_accel_for_target_speed(Pl_objp, (dist_to_goal_point-10.0f)/2.0f);
 				} else if (Pl_objp->phys_info.speed < 1.0f) {
-					turn_away_from_point(Pl_objp, &guard_objp->pos, 0.0f);
+					if (aip->ai_profile_flags[AI::Profile_Flags::Align_to_target_when_guarding_still]) {
+						turn_towards_point(Pl_objp, &guard_objp->pos, nullptr, 0.0f, &guard_objp->orient);
+					} else {
+						turn_away_from_point(Pl_objp, &guard_objp->pos, 0.0f);
+					}
 				}
 				//	It's a big ship
 			} else if (dist_to_guardobj > MAX_GUARD_DIST + Pl_objp->radius + guard_objp->radius) {
@@ -12610,7 +12650,12 @@ int ai_formation()
 	if (aip->mode == AIM_WAYPOINTS) {
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_path_order_bug]){
 			// skip if wing leader has no waypoint order or a different waypoint list
-			if ((laip->mode != AIM_WAYPOINTS) || !(aip->wp_list == laip->wp_list)){
+			// ...or if it's a different start index or direction
+			if (    (laip->mode != AIM_WAYPOINTS)
+				||  (laip->wp_list != aip->wp_list)
+				||  (laip->submode_parm0 != aip->submode_parm0)
+				|| ((laip->wp_flags & WPF_BACKTRACK) != (aip->wp_flags & WPF_BACKTRACK))
+				) {
 				return 1;
 			}
 		}
@@ -13898,10 +13943,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
  */
 void ai_bay_depart()
 {
-	ai_info	*aip;
-	int anchor_shipnum;
-
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+	auto aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	// if no path to follow, leave this mode
 	if ( aip->path_start < 0 ) {
@@ -13910,8 +13952,8 @@ void ai_bay_depart()
 	}
 
 	// check if parent ship valid; if not, abort depart
-	anchor_shipnum = ship_name_lookup(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
-	if (anchor_shipnum < 0 || !ship_useful_for_departure(anchor_shipnum, Ships[Pl_objp->instance].departure_path_mask))
+	auto anchor_ship_entry = ship_registry_get(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
+	if (!anchor_ship_entry || !ship_useful_for_departure(anchor_ship_entry->shipnum, Ships[Pl_objp->instance].departure_path_mask))
 	{
 		mprintf(("Aborting bay departure!\n"));
 		aip->mode = AIM_NONE;
@@ -13922,7 +13964,7 @@ void ai_bay_depart()
 
 	ai_manage_bay_doors(Pl_objp, aip, false);
 
-	if ( Ships[anchor_shipnum].bay_doors_status != MA_POS_READY )
+	if ( anchor_ship_entry->shipp()->bay_doors_status != MA_POS_READY )
 		return;
 
 	// follow the path to the final point
@@ -14220,8 +14262,10 @@ int maybe_request_support(object *objp)
 
 	//	Compute danger threshold.
 	//	Balance this with desire and maybe request support.
-	if (ai_good_time_to_rearm( objp )) {
+	if (ai_good_time_to_rearm(objp)) {
 		try_to_rearm = true;
+	} else if (ai_bad_time_to_rearm(objp)) {
+		try_to_rearm = false;
 	} else if (num_allies_rearming(objp) < 2) {
 		if (desire >= 8) {	//	guarantees disabled will cause repair request
 			try_to_rearm = true;
@@ -15810,7 +15854,7 @@ void maybe_set_dynamic_chase(ai_info *aip, int hitter_objnum)
 	}
 
 	// only set as target if can be targeted.
-	if (awacs_get_level(&Objects[hitter_objnum], &Ships[aip->shipnum], 1) < 1) {
+	if (awacs_get_level(&Objects[hitter_objnum], &Ships[aip->shipnum], true) < 1.0f) {
 		return;
 	}
 

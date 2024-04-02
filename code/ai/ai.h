@@ -597,11 +597,12 @@ extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, v
 extern int is_instructor(object *objp);
 extern int find_enemy(int objnum, float range, int max_attackers, int ship_info_index = -1);
 
-float ai_get_weapon_speed(ship_weapon *swp);
-void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range);
+float ai_get_weapon_speed(const ship_weapon *swp);
+void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, const vec3d *gun_pos, const object *pobjp, const vec3d *enemy_pos, const vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range);
 
 // function to change rearm status for ai ships (called from sexpression code)
-extern void ai_set_rearm_status( int team, int new_status );
+extern void ai_set_good_rearm_time( int team, int time );
+extern void ai_set_bad_rearm_time(int team, int time);
 extern void ai_good_secondary_time( int team, int weapon_index, int num_weapons, const char *shipname );
 
 extern void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point, bool update_clients = true);

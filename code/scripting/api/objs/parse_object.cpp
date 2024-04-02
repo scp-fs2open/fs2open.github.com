@@ -1,7 +1,9 @@
 
 #include "parse_object.h"
 
+#include "ship.h"
 #include "shipclass.h"
+#include "team.h"
 #include "vecmath.h"
 #include "weaponclass.h"
 #include "wing.h"
@@ -298,6 +300,26 @@ ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed
 	return ade_set_args(L, "o", l_Shipclass.Set(poh->getObject()->ship_class));
 }
 
+ADE_VIRTVAR(Team, l_ParseObject, "team", "The team of the parsed ship.", "team", "The team")
+{
+	parse_object_h* poh = nullptr;
+	int newTeam        = -1;
+	if (!ade_get_args(L, "o|o", l_ParseObject.GetPtr(&poh), l_Team.Get(&newTeam)))
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (poh == nullptr)
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (!poh->isValid())
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (ADE_SETTING_VAR && newTeam >= 0) {
+		poh->getObject()->team = newTeam;
+	}
+
+	return ade_set_args(L, "o", l_Team.Set(poh->getObject()->team));
+}
+
 ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
             "The initial hull")
 {
@@ -449,7 +471,7 @@ static int parse_object_getset_anchor_helper(lua_State* L, int p_object::* field
 		poh->getObject()->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
 	}
 
-	return ade_set_args(L, "s", (poh->getObject()->*field >= 0) ? Parse_names[poh->getObject()->*field] : "<no anchor>");
+	return ade_set_args(L, "s", (poh->getObject()->*field >= 0) ? Parse_names[poh->getObject()->*field].c_str() : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_ParseObject, "string", "The ship's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
@@ -501,6 +523,22 @@ ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship 
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start]);
+}
+
+ADE_FUNC(getShip, l_ParseObject, nullptr, "Returns the ship that was created from this parsed ship, if it is present in the mission.  Note that parse objects are reused when a wing has multiple waves, so this will always return a ship from the most recently created wave.", "ship", "The created ship, an invalid handle if no ship exists, or nil if the current handle is invalid")
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ADE_RETURN_NIL;
+
+	if (!poh || !poh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto objp = poh->getObject()->created_object;
+	if (!objp)
+		return ade_set_args(L, "o", l_Ship.Set(-1));
+
+	return ade_set_object_with_breed(L, OBJ_INDEX(objp));
 }
 
 ADE_FUNC(getWing, l_ParseObject, nullptr, "Returns the wing that this parsed ship belongs to, if any", "wing", "The parsed ship's wing, an invalid wing handle if no wing exists, or nil if the handle is invalid")

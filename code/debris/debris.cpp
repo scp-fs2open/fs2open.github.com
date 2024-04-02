@@ -501,11 +501,11 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		}
 		else if (vaporize) {
 			db->model_num = Debris_vaporize_model;
-			db->submodel_num = Random::next(Debris_num_submodels);
+			db->submodel_num = (Debris_num_submodels <= 0 ? 0 : Random::next(Debris_num_submodels));
 		}
 		else {
 			db->model_num = Debris_model;
-			db->submodel_num = Random::next(Debris_num_submodels);
+			db->submodel_num = (Debris_num_submodels <= 0 ? 0 : Random::next(Debris_num_submodels));
 		}
 	}
 	else {
@@ -644,7 +644,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		if (spark_timeout >= 0) {
 			db->fire_timeout = _timestamp(spark_timeout);
 		} else if (parent_objnum >= 0) {
-			float t = 1000*Objects[parent_objnum].radius/3 + Random::next(fl2i(1000*3*Objects[parent_objnum].radius));
+			float t = 1000*Objects[parent_objnum].radius/3 + (fl2i(1000*3*Objects[parent_objnum].radius) == 0 ? 0 : Random::next(fl2i(1000*3*Objects[parent_objnum].radius)));
 			db->fire_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		} else {
 			db->fire_timeout = TIMESTAMP::immediate();

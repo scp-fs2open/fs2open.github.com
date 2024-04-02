@@ -333,6 +333,7 @@
 #define IDC_SPIN6                       1066
 #define IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL 1066
 #define IDC_CLEAR_PERSONAS_FROM_NON_SENDERS 1067
+#define IDC_CHECK_ANY_WINGMAN_PERSONAS  1068
 #define ID_SHOW_FIGHTERS                1071
 #define IDC_PRIORITY7                   1071
 #define ID_SHOW_CAPITALSHIPS            1072
@@ -1449,6 +1450,7 @@
 #define ID_SHOW_STARTS                  32991
 #define ID_TOGGLE_VIEWPOINT             32992
 #define ID_VIEW_OUTLINE_AT_WARPIN       32993
+#define ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES 32994
 #define ID_CPGN_FILE_NEW                32995
 #define ID_CPGN_FILE_OPEN               32996
 #define ID_CPGN_FILE_SAVE               32997

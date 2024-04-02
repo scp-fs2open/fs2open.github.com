@@ -146,6 +146,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/Ingame_Options.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
@@ -260,13 +261,14 @@ static SCP_string skill_level_display(int value)
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(DEFAULT_SKILL_LEVEL)
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 bool Screenshake_enabled = true;
@@ -274,7 +276,7 @@ bool Screenshake_enabled = true;
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(Screenshake_enabled)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
@@ -288,7 +290,7 @@ static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes",
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .default_val(Allow_unfocused_pause)
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 
@@ -659,16 +661,18 @@ DCF(sn_glare, "Sets the sun glare scale (Default is 1.7)")
 }
 
 float Supernova_last_glare = 0.0f;
-bool stars_sun_has_glare(int index);
+
 void game_sunspot_process(float frametime)
 {
 	TRACE_SCOPE(tracing::SunspotProcess);
-	int n_lights, idx;
 	float Sun_spot_goal = 0.0f;
+
+	int supernova_sun_idx = 0;
+	int supernova_light_idx = light_find_for_sun(supernova_sun_idx);
 
 	// supernova
 	auto sn_stage = supernova_stage();
-	if (sn_stage != SUPERNOVA_STAGE::NONE) {
+	if (sn_stage != SUPERNOVA_STAGE::NONE && supernova_light_idx >= 0) {
 		// sunspot differently based on supernova stage
 		switch (sn_stage) {
 		// this case is only here to make gcc happy - apparently it doesn't know we already checked for it
@@ -683,7 +687,7 @@ void game_sunspot_process(float frametime)
 			pct = supernova_sunspot_pct();
 
 			vec3d light_dir;				
-			light_get_global_dir(&light_dir, 0);
+			light_get_global_dir(&light_dir, supernova_light_idx);
 			float dot;
 			dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
 			
@@ -696,9 +700,9 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
-			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
+			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, supernova_light_idx ) )	{
 				// draw the glow for this sun
-				stars_draw_sun_glow(0);	
+				stars_draw_sun_glow(supernova_sun_idx);
 			}
 
 			Supernova_last_glare = Sun_spot_goal;
@@ -735,24 +739,27 @@ void game_sunspot_process(float frametime)
 		Sun_spot_goal = 0.0f;
 		if ( Sun_drew )	{
 			// check sunspots for all suns
-			n_lights = light_get_global_count();
+			int n_lights = light_get_global_count();
 
 			// check
-			for(idx=0; idx<n_lights; idx++)	{
-				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
+			for(int light_idx=0; light_idx<n_lights; light_idx++)	{
+				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, light_idx);
 
 				if (!in_shadow) {
 					vec3d light_dir;				
-					light_get_global_dir(&light_dir, idx);
+					light_get_global_dir(&light_dir, light_idx);
 
-					//only do sunglare stuff if this sun has one
-					if (stars_sun_has_glare(idx))	{
+					//only do sunglare stuff if this light source has one
+					if (light_has_glare(light_idx))	{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
 
 					// draw the glow for this sun
-					stars_draw_sun_glow(idx);				
+					int sun_idx = light_get_sun_index(light_idx);
+					if (sun_idx >= 0) {
+						stars_draw_sun_glow(sun_idx);
+					}
 				}
 			}
 
@@ -962,8 +969,7 @@ void game_level_close()
 	}
 }
 
-uint load_gl_init;
-uint load_mission_load;
+time_t load_gl_init;
 uint load_post_level_init;
 extern bool Cmdline_reuse_rng_seed;
 extern uint Cmdline_rng_seed;
@@ -975,7 +981,7 @@ extern uint Cmdline_rng_seed;
 void game_level_init()
 {
 	game_busy( NOX("** starting game_level_init() **") );
-	load_gl_init = (uint) time(nullptr);
+	load_gl_init = time(nullptr);
 
 	// seed the random number generator in multiplayer
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -1076,7 +1082,8 @@ void game_level_init()
 	// campaign wasn't ended
 	Campaign_ending_via_supernova = 0;
 
-	load_gl_init = (uint) (time(nullptr) - load_gl_init);
+	load_gl_init = (time(nullptr) - load_gl_init);
+	mprintf(("Game_level_init took %ld seconds", load_gl_init));
 
 	//WMC - Init multi players for level
 	if (Game_mode & GM_MULTIPLAYER && Player != nullptr) {
@@ -1431,9 +1438,7 @@ bool game_start_mission()
 	}
 
 	game_busy( NOX("** starting mission_load() **") );
-	load_mission_load = (uint) time(nullptr);
 	bool load_success = mission_load(Game_current_mission_filename);
-	load_mission_load = (uint)(time(nullptr) - load_mission_load);
 
 	// free up memory from parsing the mission
 	stop_parse();
@@ -2008,27 +2013,33 @@ void game_init()
 		main_hall_table_init();
 	}
 
-	script_init();			//WMC
-
-	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
-	if (Cmdline_output_sexp_info) {
-		output_sexps("sexps.html");
-	}
-
 	Viewer_mode = 0;
+
+	// Now that all data has been loaded, post-process anything from game_settings before we initialize scripting
+	mod_table_post_process();
+
+	// Note: Avoid calling any non-script functions after this line and before OnGameInit->run(), lest they run before scripting has completely initialized.
+	script_init();			//WMC
 
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
-	game_title_screen_close();
-
 	Script_system.RunInitFunctions();
+	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
 	}
 	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
 	if (scripting::hooks::OnSplashScreen->isActive()) {
 		scripting::hooks::OnSplashScreen->run();
+	}
+
+	// This calls os_poll() so it should be placed after script initialization.
+	game_title_screen_close();
+
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
 	}
 
 	// convert old pilot files (if they need it)
@@ -2043,12 +2054,12 @@ void game_init()
 		}
 	}
 
-	mod_table_post_process();
-
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
 	mprintf(("cfile_init() took %d\n", e1 - s1));
+
+	options::OptionsManager::instance()->printValues();
 
 	// if we are done initializing, start showing the cursor
 	io::mouse::CursorManager::get()->showCursor(true);
@@ -2535,7 +2546,7 @@ void game_set_view_clip(float  /*frametime*/)
 
 extern int Tool_enabled;
 int tst = 0;
-int tst_time = 0;
+time_t tst_time = 0;
 int tst_big = 0;
 vec3d tst_pos;
 int tst_bitmap = -1;
@@ -2590,7 +2601,7 @@ void game_tst_frame()
 	
 	// setup tst
 	if(tst == 2){		
-		tst_time = (int) time(nullptr);
+		tst_time = time(nullptr);
 
 		// load the tst bitmap		
 		switch(Random::next(4)){
@@ -3257,65 +3268,69 @@ camid game_render_frame_setup()
 				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 
 			} else if ( Viewer_mode & VM_CHASE ) {
-				vec3d aim_pt;
+				if (Viewer_obj->type != OBJ_SHIP)
+					observer_get_eye(&eye_pos, &eye_orient, Viewer_obj);
+				else {
+					vec3d aim_pt;
 
-				vec3d tmp_up;
-				matrix eyemat;
-				ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
+					vec3d tmp_up;
+					matrix eyemat;
+					ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
 
-				eye_pos = Viewer_obj->pos;
+					eye_pos = Viewer_obj->pos;
 
-				//get a point far in front of the ship to point the camera at
-				vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec, Viewer_obj->radius * 100.0f);
-				vm_vec_add2(&aim_pt,&Viewer_obj->pos);
+					// get a point far in front of the ship to point the camera at
+					vm_vec_copy_scale(&aim_pt, &Viewer_obj->orient.vec.fvec, Viewer_obj->radius * 100.0f);
+					vm_vec_add2(&aim_pt, &Viewer_obj->pos);
 
-				vec3d chase_view_offset = Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_offset;
-				if (IS_VEC_NULL(&chase_view_offset)) {
-					if (Viewer_obj == Player_obj)
-						chase_view_offset = vm_vec_new(0.0f, 0.625f * Viewer_obj->radius, -2.125f * Viewer_obj->radius);
-					else
-						chase_view_offset = vm_vec_new(0.0f, 0.75f * Viewer_obj->radius, -2.5f * Viewer_obj->radius);
+					vec3d chase_view_offset = Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_offset;
+					if (IS_VEC_NULL(&chase_view_offset)) {
+						if (Viewer_obj == Player_obj)
+							chase_view_offset = vm_vec_new(0.0f, 0.625f * Viewer_obj->radius, -2.125f * Viewer_obj->radius);
+						else
+							chase_view_offset = vm_vec_new(0.0f, 0.75f * Viewer_obj->radius, -2.5f * Viewer_obj->radius);
+					}
+
+					// position the camera based on the offset and external camera distance
+					vec3d rotated_chase_view_offset;
+					vm_vec_unrotate(&rotated_chase_view_offset, &chase_view_offset, &Viewer_obj->orient);
+					vm_vec_add2(&eye_pos, &rotated_chase_view_offset);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.35f * Viewer_chase_info.distance);
+
+					vec3d old_pos;
+					main_cam->get_info(&old_pos, nullptr);
+					bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
+					if (camera_cut || hyperspace)
+						old_pos = eye_pos;
+
+					// "push" the camera backwards in the direction of its old position based on acceleration to to make it
+					// feel like the camera is trying to keep up with the ship (based on the rigidity value)
+					vec3d velocity_comp = Viewer_obj->phys_info.vel;
+					vm_vec_scale_add2(&velocity_comp, &Viewer_obj->phys_info.acceleration, (-5.0f / (vm_vec_mag(&Viewer_obj->phys_info.rotvel) * 2.0f + 1)) * flFrametime);
+					vm_vec_scale_add2(&old_pos, &velocity_comp, flFrametime);
+					vec3d eye_mov = eye_pos - old_pos;
+					eye_mov *= exp(-Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_rigidity * flFrametime);
+					eye_pos -= eye_mov;
+
+					vm_vec_sub(&eye_vec, &aim_pt, &eye_pos);
+					vm_vec_normalize(&eye_vec);
+
+					// JAS: I added the following code because if you slew up using
+					// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
+					// equal, which causes a zero-length vector in the vm_vector_2_matrix
+					// call because the up and the forward vector are the same.   I fixed
+					// it by adding in a fraction of the right vector all the time to the
+					// up vector.
+					tmp_up = eyemat.vec.uvec;
+					vm_vec_scale_add2(&tmp_up, &eyemat.vec.rvec, 0.00001f);
+
+					vm_vector_2_matrix(&eye_orient, &eye_vec, &tmp_up, nullptr);
+					Viewer_obj = nullptr;
+
+					//	Modify the orientation based on head orientation.
+					compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 				}
-
-				//position the camera based on the offset and external camera distance
-				vec3d rotated_chase_view_offset;
-				vm_vec_unrotate(&rotated_chase_view_offset, &chase_view_offset, &Viewer_obj->orient);
-				vm_vec_add2(&eye_pos, &rotated_chase_view_offset);
-				vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -Viewer_chase_info.distance);
-				vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.35f * Viewer_chase_info.distance);
-
-				vec3d old_pos;
-				main_cam->get_info(&old_pos, nullptr);
-				bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
-				if (camera_cut || hyperspace)
-					old_pos = eye_pos;
-
-				// "push" the camera backwards in the direction of its old position based on acceleration to to make it 
-				// feel like the camera is trying to keep up with the ship (based on the rigidity value)
-				vec3d velocity_comp = Viewer_obj->phys_info.vel;
-				vm_vec_scale_add2(&velocity_comp, &Viewer_obj->phys_info.acceleration, (-5.0f / (vm_vec_mag(&Viewer_obj->phys_info.rotvel) * 2.0f + 1)) * flFrametime);
-				vm_vec_scale_add2(&old_pos, &velocity_comp, flFrametime);
-				vec3d eye_mov = eye_pos - old_pos;
-				eye_mov *= exp(-Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_rigidity * flFrametime);
-				eye_pos -= eye_mov;
-
-				vm_vec_sub(&eye_vec, &aim_pt, &eye_pos);
-				vm_vec_normalize(&eye_vec);
-					
-				// JAS: I added the following code because if you slew up using
-				// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
-				// equal, which causes a zero-length vector in the vm_vector_2_matrix
-				// call because the up and the forward vector are the same.   I fixed
-				// it by adding in a fraction of the right vector all the time to the
-				// up vector.
-				tmp_up = eyemat.vec.uvec;
-				vm_vec_scale_add2( &tmp_up, &eyemat.vec.rvec, 0.00001f );
-
-				vm_vector_2_matrix(&eye_orient, &eye_vec, &tmp_up, nullptr);
-				Viewer_obj = nullptr;
-
-				//	Modify the orientation based on head orientation.
-				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 			} else if ( Viewer_mode & VM_WARP_CHASE ) {
 					Warp_camera.get_info(&eye_pos, nullptr);
 
@@ -4559,7 +4574,7 @@ int game_check_key()
 bool pause_if_unfocused()
 {
 	if (Using_in_game_options) {
-		return Allow_unfocused_pause;
+		return UnfocusedPauseOption->getValue();
 	} else {
 		return !Cmdline_no_unfocus_pause;
 	}
@@ -5145,6 +5160,10 @@ void game_process_event( int current_state, int event )
 			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
 			break;
 
+		case GS_EVENT_INGAME_OPTIONS:
+			gameseq_push_state(GS_STATE_INGAME_OPTIONS);
+			break;
+
 		default:
 			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
@@ -5212,8 +5231,17 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_GAMEPLAY_HELP:
 		case GS_STATE_LAB:
 		case GS_STATE_SCRIPTING_MISSION:
+		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
+	}
+
+	// This is kind of a hack but it ensures options are logged even if scripting calls for a state change with an override active
+	if (old_state == GS_STATE_OPTIONS_MENU) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+				// print the options settings again to log any player-made changes
+				options::OptionsManager::instance()->printValues();
+			}
 	}
 
 	if (scripting::hooks::OnStateAboutToEndHook->isActive() || scripting::hooks::OnStateEndHook->isActive())
@@ -5650,6 +5678,10 @@ void game_leave_state( int old_state, int new_state )
 			}
 			scripting_state_close();
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_close();
+			break;
 	}
 
 	//WMC - Now run scripting stuff
@@ -5691,7 +5723,7 @@ void game_enter_state( int old_state, int new_state )
 	}
 
 	switch (new_state) {
-		case GS_STATE_MAIN_MENU:				
+		case GS_STATE_MAIN_MENU: {
 			// in multiplayer mode, be sure that we are not doing networking anymore.
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Assert( Net_player != nullptr );
@@ -5711,13 +5743,19 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			mission_load_up_campaign(Player);
+			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
 
+			// if there was a problem, pass an empty main hall which will set up appropriate defaults
+			if (result != 0) {
+				main_hall_init("");
+			}
 			// if we're coming from the end of a campaign, we want to load the first mainhall of the campaign
-			// otherwise load the mainhall for the mission the player's up to
-			if (Campaign.next_mission == -1) {
+			else if (Campaign.next_mission == -1) {
 				main_hall_init(Campaign.missions[0].main_hall);
-			} else {
+			}
+			// otherwise load the mainhall for the mission the player's up to
+			else {
 				main_hall_init(Campaign.missions[Campaign.next_mission].main_hall);
 			}
 
@@ -5745,6 +5783,7 @@ void game_enter_state( int old_state, int new_state )
 				Cmdline_start_mission = nullptr;
 			}
 			break;
+		}
 
 		case GS_STATE_START_GAME:
 			main_hall_stop_music(true);
@@ -6212,6 +6251,9 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_SCRIPTING_MISSION:
 			scripting_state_init();
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_init();
 	} // end switch
 
 	//WMC - now do user scripting stuff
@@ -6559,6 +6601,10 @@ void game_do_state(int state)
 			scripting_state_do_frame(flFrametime, false);
 			break;
 
+		case GS_STATE_INGAME_OPTIONS:
+			game_set_frametime(GS_STATE_INGAME_OPTIONS);
+			ingame_options_do_frame();
+
    } // end switch(gs_current_state)
 
 	if (LoggingEnabled && Cmdline_debug_window) {
@@ -6784,6 +6830,11 @@ int game_main(int argc, char *argv[])
 		cfile_spew_pack_file_crcs();
 		game_shutdown();
 		return 0;
+	}
+
+	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
+	if (Cmdline_output_sexp_info) {
+		output_sexps("sexps.html");
 	}
 
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
@@ -7782,6 +7833,9 @@ void game_pause()
 	if (!GameState_Stack_Valid())
 		return;
 
+	if (!pause_if_unfocused())
+		return;
+
 	if (!(Game_mode & GM_MULTIPLAYER)){
 		switch ( gameseq_get_state() )
 		{
@@ -7846,6 +7900,9 @@ void game_pause()
 void game_unpause()
 {
 	if (!GameState_Stack_Valid())
+		return;
+
+	if (!pause_if_unfocused())
 		return;
 
 	// automatically recover from everything but an in-mission pause

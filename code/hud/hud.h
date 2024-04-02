@@ -69,7 +69,7 @@ enum class HudAlignment
 };
 
 extern int HUD_draw;
-extern int HUD_contrast;
+extern bool HUD_high_contrast;
 extern bool HUD_shadows;
 
 #define HUD_NUM_COLOR_LEVELS	16
@@ -203,7 +203,7 @@ int hud_disabled_except_messages();
 
 // contrast stuff
 void hud_toggle_contrast();
-void hud_set_contrast(int high);
+void hud_set_contrast(bool high);
 void hud_toggle_shadows();
 
 class HudGauge 
@@ -223,6 +223,7 @@ protected:
 	bool tabled_use_coords;
 	int tabled_coords[2];
 	float aspect_quotient;
+	bool hi_res;
 
 	bool lock_color;
 	bool sexp_lock_color;
@@ -271,28 +272,30 @@ public:
 	void initFont(int input_font_num);
 	void initOriginAndOffset(float originX, float originY, int offsetX, int offsetY);
 	void initCoords(bool use_coords, int coordsX, int coordsY);
+	void initHiRes(const char* fname);
 
 	virtual void initSlew(bool slew);
 	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
 
-	bool isCustom();
-	int getBaseWidth();
-	int getBaseHeight();
-	float getAspectQuotient();
+	bool isCustom() const;
+	bool isHiRes() const;
+	int getBaseWidth() const;
+	int getBaseHeight() const;
+	float getAspectQuotient() const;
 
-	int getConfigType();
-	int getObjectType();
-	void getPosition(int *x, int *y);
-	bool isOffbyDefault();
-	bool isActive();
+	int getConfigType() const;
+	int getObjectType() const;
+	void getPosition(int *x, int *y) const;
+	bool isOffbyDefault() const;
+	bool isActive() const;
 
-	int getFont();
-	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY);
-	void getCoords(bool* use_coords, int* coordsX, int* coordsY);
+	int getFont() const;
+	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const;
+	void getCoords(bool* use_coords, int* coordsX, int* coordsY) const;
 	
 	void updateColor(int r, int g, int b, int a = 255);
-	const color& getColor();
+	const color& getColor() const;
 	void lockConfigColor(bool lock);
 	void sexpLockConfigColor(bool lock);
 	void updateActive(bool show);
@@ -305,21 +308,21 @@ public:
 	// For flashing gauges in training missions
 	void startFlashSexp();
 	int maybeFlashSexp();
-	bool flashExpiredSexp();
+	bool flashExpiredSexp() const;
 	void resetTimers();
 
 	// For updating custom gauges
-	const char* getCustomGaugeName();
+	const char* getCustomGaugeName() const;
 	void updateCustomGaugeText(const char* txt);
 	void updateCustomGaugeText(const SCP_string& txt);
-	const char* getCustomGaugeText();
+	const char* getCustomGaugeText() const;
 
 	void startPopUp(int time=4000);
-	int popUpActive();
+	int popUpActive() const;
 
 	virtual void preprocess();
 	virtual void render(float frametime);
-	virtual bool canRender();
+	virtual bool canRender() const;
 	virtual void pageIn();
 	virtual void initialize();
 	virtual void onFrame(float frametime);
@@ -549,7 +552,7 @@ class HudGaugeMultiMsg: public HudGauge
 protected:
 public:
 	HudGaugeMultiMsg();
-	bool canRender() override;
+	bool canRender() const override;
 	void render(float frametime) override;
 };
 

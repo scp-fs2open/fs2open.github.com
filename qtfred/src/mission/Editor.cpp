@@ -140,7 +140,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
-	clearMission();
+	clearMission(flags & MPF_FAST_RELOAD);
 
 	std::string filepath = mission_name;
 	auto res = cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS);
@@ -264,7 +264,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	}
 
 	for (i = 0; i < Num_teams; i++) {
-		generate_team_weaponry_usage_list(i, used_pool);
+		generate_team_weaponry_usage_list(i, _weapon_usage[i]);
 		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
 			if ((!strlen(Team_data[i].weaponry_pool_variable[j]))
@@ -276,12 +276,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				}
 
 				// zero the used pool entry
-				used_pool[Team_data[i].weaponry_pool[j]] = 0;
+				_weapon_usage[i][Team_data[i].weaponry_pool[j]] = 0;
 			}
 		}
 		// double check the used pool is empty
 		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
+			if (_weapon_usage[i][j] != 0) {
 				Warning(LOCATION,
 						"%s is used in wings of team %d but was not in the loadout. Fixing now",
 						Weapon_info[j].name,
@@ -388,7 +388,7 @@ void Editor::unmarkObject(int obj) {
 	}
 }
 
-void Editor::clearMission() {
+void Editor::clearMission(bool fast_reload) {
 	// clean up everything we need to before we reset back to defaults.
 #if 0
     if (Briefing_dialog){
@@ -401,7 +401,10 @@ void Editor::clearMission() {
 	mission_init(&The_mission);
 
 	obj_init();
-	model_free_all();                // Free all existing models
+
+	if (!fast_reload)
+		model_free_all();                // Free all existing models
+
 	ai_init();
 	asteroid_level_init();
 	ship_level_init();
@@ -488,11 +491,8 @@ void Editor::clearMission() {
 }
 
 void Editor::initialSetup() {
-	// Get the default player ship
-	Default_player_model = get_default_player_ship_index();
-
-	Id_select_type_waypoint = (int) (Ship_info.size());
-	Id_select_type_jump_node = (int) (Ship_info.size() + 1);
+	Id_select_type_waypoint = static_cast<int>(Ship_info.size());
+	Id_select_type_jump_node = static_cast<int>(Ship_info.size() + 1);
 }
 
 void Editor::setupCurrentObjectIndices(int selectedObj) {
@@ -588,11 +588,11 @@ void Editor::updateAllViewports() {
 	}
 }
 
-int Editor::create_player(int  /*num*/, vec3d* pos, matrix* orient, int type, int  /*init*/) {
+int Editor::create_player(vec3d* pos, matrix* orient, int type) {
 	int obj;
 
 	if (type == -1) {
-		type = Default_player_model;
+		type = get_default_player_ship_index();
 	}
 	Assert(type >= 0);
 
@@ -712,7 +712,7 @@ void Editor::fix_ship_name(int ship) {
 
 void Editor::createNewMission() {
 	clearMission();
-	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
 }
 void Editor::hideMarkedObjects() {
@@ -1636,6 +1636,36 @@ void Editor::generate_team_weaponry_usage_list(int team, int* arr) {
 		}
 	}
 }
+void Editor::generate_ship_usage_list(int* arr, int wing) {
+	int i; 
+
+	if (wing < 0) {
+		return;
+	}
+
+	i = Wings[wing].wave_count;
+	while (i--) {
+		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
+	}
+}
+void Editor::updateStartingWingLoadoutUseCounts() {
+	memset(_ship_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
+		for (int i = 0; i<MAX_TVT_TEAMS; i++) {
+			for (int j = 0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
+				generate_ship_usage_list(_ship_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
+			}			
+			generate_team_weaponry_usage_list(i, _weapon_usage[i]);
+		}
+	}
+	else {
+		for (int i = 0; i < MAX_STARTING_WINGS; i++) {
+			generate_ship_usage_list(_ship_usage[0], Starting_wings[i]);
+		}
+		generate_team_weaponry_usage_list(0, _weapon_usage[0]);
+	}	
+}
 void Editor::delete_marked() {
 	object* ptr, * next;
 
@@ -2505,45 +2535,56 @@ int Editor::internal_error(const char* msg, ...) {
 
 	return -1;
 }
-int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
-	SCP_string buf, sexp_buf, error_buf, bad_node_str;
+int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
+	SCP_string location_buf, sexp_buf, error_buf, bad_node_str, issue_msg;
 	int err = 0, z, faulty_node;
 	va_list args;
 
-	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	va_start(args, location);
+	vsprintf(location_buf, location, args);
 	va_end(args);
 
 	if (sexp == -1)
 		return 0;
 
 	z = check_sexp_syntax(sexp, type, 1, &faulty_node);
-	if (!z)
-		return 0;
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
-	truncate_message_lines(sexp_buf, 30);
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
-	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
-		bad_node_str.pop_back();
+		sprintf(error_buf, "Error in %s: %s\n\n%s\n\n(Bad node appears to be: %s)", location_buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+
+		if (z < 0 && z > -100)
+			err = 1;
+
+		if (err)
+			return internal_error("%s", error_buf.c_str());
+
+		if (error("%s", error_buf.c_str()))
+			return 1;
 	}
 
-	sprintf(error_buf,
-			"Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)",
-			buf.c_str(),
-			sexp_error_message(z),
-			sexp_buf.c_str(),
-			bad_node_str.c_str());
+	if (_lastActiveViewport->Error_checker_checks_potential_issues)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	if (z < 0 && z > -100)
-		err = 1;
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	if (err)
-		return internal_error("%s", error_buf.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
-	if (error("%s", error_buf.c_str()))
-		return 1;
+		if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", error_buf.c_str(), { DialogButton::Ok, DialogButton::Cancel }) != DialogButton::Ok)
+			return 1;
+	}
 
 	return 0;
 }
@@ -3168,6 +3209,27 @@ void Editor::lcl_fred_replace_stuff(QString& text)
 	text.replace("/", "$slash");
 	text.replace("\\", "$backslash");
 }
+
+SCP_vector<int> Editor::getStartingWingLoadoutUseCounts() {
+	// update before sending so that we have the most up to date info.
+	updateStartingWingLoadoutUseCounts();
+
+	SCP_vector<int> out;
+
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (auto& entry : _ship_usage[i]) {
+			out.push_back(entry);
+		}
+	}
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (auto& entry : _weapon_usage[i]) {
+			out.push_back(entry);
+		}
+	}
+
+	return out;
+}
+
 
 
 } // namespace fred

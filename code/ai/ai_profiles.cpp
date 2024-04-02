@@ -625,7 +625,13 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
 
+				set_flag(profile, "$player orders afterburn hard:", AI::Profile_Flags::Player_orders_afterburn_hard);
+
 				set_flag(profile, "$hud squad messages use tactical disarm/disable:", AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
+
+				set_flag(profile, "$align to target when guarding stationary ship:", AI::Profile_Flags::Align_to_target_when_guarding_still);
+
+				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -633,7 +639,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					char tmp[60];
 					memset(tmp, 0, 60);
 					strncpy(tmp, Mp, 59);
-					mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", tmp));
+					mprintf(("WARNING: Unrecognized parameter in %s: %s\n", filename, tmp));
 
 					Mp++;
 				}

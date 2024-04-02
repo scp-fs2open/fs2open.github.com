@@ -160,7 +160,7 @@ namespace ltp = lighting_profiles;
 using namespace ltp;
 bool graphics_options_changed()
 {
-	auto stored_settings = getLabManager()->graphicsSettings;
+	const auto& stored_settings = getLabManager()->graphicsSettings;
 
 	if (stored_settings.ambient_factor != ltp::lab_get_ambient())
 		return true;

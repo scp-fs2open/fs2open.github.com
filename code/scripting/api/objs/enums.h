@@ -171,6 +171,14 @@ enum lua_enum : int32_t {
 	LE_SCROLLBACK_SOURCE_SATISFIED,
 	LE_SCROLLBACK_SOURCE_COMMAND,
 	LE_SCROLLBACK_SOURCE_NETPLAYER,
+	LE_SEXP_TRUE,
+	LE_SEXP_FALSE,
+	LE_SEXP_KNOWN_FALSE,
+	LE_SEXP_KNOWN_TRUE,
+	LE_SEXP_UNKNOWN,
+	LE_SEXP_NAN,
+	LE_SEXP_NAN_FOREVER,
+	LE_SEXP_CANT_EVAL,
 	ENUM_NEXT_INDEX,
 	ENUM_COMBINATION,
 	ENUM_INVALID
@@ -202,7 +210,7 @@ public:
 
 	SCP_string getName() const;
 
-	bool IsValid() const;
+	bool isValid() const;
 
 	friend enum_h operator&(const enum_h& l, const enum_h& other);
 	friend enum_h operator|(const enum_h& l, const enum_h& other);

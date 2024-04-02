@@ -119,8 +119,7 @@ int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying
 
 // misc data
-active_game* Active_game_head;									// linked list of active games displayed on Join screen
-int Active_game_count;												// for interface screens as well
+SCP_list<active_game> Active_games;							// list of active games displayed on the Join screen
 CFILE* Multi_chat_stream;											// for streaming multiplayer chat strings to a file
 int Multi_connection_speed;										// connection speed of this machine.
 int Multi_num_players_at_start = 0;								// the # of players present (kept track of only on the server) at the very start of the mission
@@ -131,9 +130,9 @@ server_item* Game_server_head;								// list of permanent game servers to be qu
 
 // timestamp data
 int Netgame_send_time = -1;							// timestamp used to send netgame info to players before misison starts
-int State_send_time = -1;								// timestamp used to send state information to the host before a mission starts
+time_t State_send_time = -1;								// timestamp used to send state information to the host before a mission starts
 int Gameinfo_send_time = -1;							// timestamp used by master to send game information to clients
-int Next_ping_time = -1;								// when we should next ping all
+time_t Next_ping_time = -1;								// when we should next ping all
 int Multi_server_check_count = 0;					// var to keep track of reentrancy when checking server status
 int Next_bytes_time = -1;								// bytes sent
 
@@ -249,7 +248,7 @@ void multi_vars_init()
 	Multi_current_file_checksum = 0;
 	Multi_current_file_length = -1;
 
-	Active_game_head = NULL;
+	Active_games.clear();
 	Game_server_head = NULL;
 
 	// only the server should ever care about this
@@ -1199,7 +1198,7 @@ void multi_do_frame()
 		
 		// ping everyone
 		multi_ping_send_all();
-		Next_ping_time = (int) time(NULL);		
+		Next_ping_time = time(NULL);		
 	}	
 	
 	// if I am the master, and we are not yet actually playing the mission, send off netgame
@@ -1219,7 +1218,7 @@ void multi_do_frame()
 					send_netplayer_update_packet();
 				}				
 				
-				State_send_time = (int) time(NULL);
+				State_send_time = time(NULL);
 			}
 		}
 	}
@@ -1404,7 +1403,7 @@ void multi_pause_do_frame()
 	if((Next_ping_time < 0) || ((time(NULL) - Next_ping_time) > PING_SEND_TIME) ){
 		multi_ping_send_all();
 		
-		Next_ping_time = (int) time(NULL);
+		Next_ping_time = time(NULL);
 	}
 
 	// periodically send a client update packet to all clients

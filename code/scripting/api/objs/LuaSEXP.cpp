@@ -10,7 +10,7 @@ lua_sexp_h::lua_sexp_h(sexp::LuaSEXP* handle) : sexp_handle(handle) {
 }
 lua_sexp_h::lua_sexp_h() : sexp_handle(nullptr) {
 }
-bool lua_sexp_h::isValid() {
+bool lua_sexp_h::isValid() const {
 	return sexp_handle != nullptr;
 }
 

@@ -251,6 +251,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-f.sdr
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
+	def_files/data/effects/main_large.sdr
+	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
@@ -789,8 +791,6 @@ add_file_folder("MenuUI"
 	menuui/fishtank.h
 	menuui/mainhallmenu.cpp
 	menuui/mainhallmenu.h
-	menuui/mainhalltemp.cpp
-	menuui/mainhalltemp.h
 	menuui/optionsmenu.cpp
 	menuui/optionsmenu.h
 	menuui/optionsmenumulti.cpp
@@ -1033,10 +1033,23 @@ add_file_folder("Observer"
 )
 
 add_file_folder("Options"
+	options/Ingame_Options.cpp
+	options/Ingame_Options.h
+	options/Ingame_Options_internal.h
 	options/Option.cpp
 	options/Option.h
 	options/OptionsManager.cpp
 	options/OptionsManager.h
+)
+
+add_file_folder("Options\\\\Dialogs"
+	options/dialogs/ingame_options_ui.h
+	options/dialogs/ingame_options_ui.cpp
+)
+
+add_file_folder("Options\\\\Manager"
+	options/manager/ingame_options_manager.h
+	options/manager/ingame_options_manager.cpp
 )
 
 # OsApi files
@@ -1402,6 +1415,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
 	scripting/api/objs/movie_player.h
+	scripting/api/objs/multi_objects.cpp
+	scripting/api/objs/multi_objects.h
 	scripting/api/objs/object.cpp
 	scripting/api/objs/object.h
 	scripting/api/objs/option.cpp

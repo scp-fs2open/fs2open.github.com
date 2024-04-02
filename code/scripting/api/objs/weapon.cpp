@@ -24,7 +24,7 @@ ADE_VIRTVAR(Class, l_Weapon, "weaponclass", "Weapon's class", "weaponclass", "We
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Weaponclass.Get(&nc)))
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -46,7 +46,7 @@ ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroye
 	if(!numargs)
 		return ade_set_error(L, "b", false);
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "b", false);
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -65,7 +65,7 @@ ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "numb
 	if(!ade_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &nll))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -84,7 +84,7 @@ ADE_VIRTVAR(FlakDetonationRange, l_Weapon, "number", "Range at which flak will d
 	if(!ade_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &rng))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -103,7 +103,7 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	weapon *wp = NULL;
@@ -114,7 +114,7 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid())
+		if(newh && newh->isValid())
 		{
 			if(wp->target_sig != newh->sig || !weapon_has_homing_object(wp))
 			{
@@ -137,7 +137,7 @@ ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	weapon *wp = NULL;
@@ -148,7 +148,7 @@ ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
 			if(wp->turret_subsys != newh->ss)
 			{
@@ -174,7 +174,7 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	weapon *wp = NULL;
@@ -185,7 +185,7 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 
 	if(ADE_SETTING_VAR)
 	{
-		if (newh && newh->IsValid())
+		if (newh && newh->isValid())
 		{
 			if (wp->target_sig != newh->sig)
 			{
@@ -212,7 +212,7 @@ ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home 
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	weapon *wp = NULL;
@@ -248,7 +248,7 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!objh->IsValid())
+	if(!objh->isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	weapon *wp = NULL;
@@ -259,11 +259,11 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->isSubsystemValid())
+		if(newh && newh->isValid())
 		{
-			if(wp->target_sig != newh->sig)
+			if(wp->target_sig != newh->objh.sig)
 			{
-				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1, newh->ss);
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objh.objp), 1, newh->ss);
 			}
 			else
 			{
@@ -292,7 +292,7 @@ ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team", "team", "Weapon team, or in
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Team.Get(&nt)))
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -314,7 +314,7 @@ ADE_VIRTVAR(OverrideHoming, l_Weapon, "boolean",
 	if (!ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &new_val))
 		return ade_set_error(L, "b", false);
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ade_set_error(L, "b", false);
 
 	weapon* wp = &Weapons[oh->objp->instance];
@@ -333,7 +333,7 @@ ADE_FUNC(isArmed, l_Weapon, "[boolean HitTarget]", "Checks if the weapon is arme
 	if(!ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &hit_target))
 		return ADE_RETURN_FALSE;
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ADE_RETURN_FALSE;
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -351,7 +351,7 @@ ADE_FUNC(getCollisionInformation, l_Weapon, nullptr, "Returns the collision info
 	if(!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ADE_RETURN_NIL;
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -380,7 +380,7 @@ ADE_FUNC(triggerSubmodelAnimation, l_Weapon, "string type, string triggeredBy, [
 	if (!ade_get_args(L, "oss|bbbb", l_Weapon.GetPtr(&objh), &type, &trigger, &forwards, &forced, &instant, &pause))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
 	weapon* wp = &Weapons[objh->objp->instance];
@@ -403,7 +403,7 @@ ADE_FUNC(getSubmodelAnimationTime, l_Weapon, "string type, string triggeredBy", 
 	if (!ade_get_args(L, "oss", l_Weapon.GetPtr(&objh), &type, &trigger))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	auto animtype = animation::anim_match_type(type);
@@ -428,7 +428,7 @@ ADE_FUNC(vanish, l_Weapon, nullptr, "Vanishes this weapon from the mission.", "b
 	if (!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))
 		return ade_set_error(L, "b", false);
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ade_set_error(L, "b", false);
 
 	oh->objp->flags.set(Object::Object_Flags::Should_be_dead);

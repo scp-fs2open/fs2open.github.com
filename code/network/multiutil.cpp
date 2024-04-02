@@ -736,7 +736,7 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 }
 
 // -------------------------------------------------------------------------------------------------
-//	create_player() is called when a net player needs to be instantiated.  The ship that is created
+//	multi_create_player() is called when a net player needs to be instantiated.  The ship that is created
 // depends on the parameter ship_class.  Note that if ship_class is invalid, the ship default_player_ship
 // is used.  Returns 1 on success, 0 otherwise
 
@@ -1600,54 +1600,39 @@ int multi_message_should_broadcast(int type)
 // active game list handling functions
 active_game *multi_new_active_game( void )
 {
-	active_game *new_game;
+	active_game new_game;
 
-	new_game = new active_game;
-
-	if ( new_game == nullptr ) {
-		nprintf(("Network", "Cannot allocate space for new active game structure\n"));
-		return nullptr;
-	}	
-
-	if ( Active_game_head != nullptr ) {
-		new_game->next = Active_game_head->next;
-		new_game->next->prev = new_game;
-		Active_game_head->next = new_game;
-		new_game->prev = Active_game_head;
-	} else {
-		Active_game_head = new_game;
-		Active_game_head->next = Active_game_head->prev = Active_game_head;
+	try {
+			Active_games.push_back(new_game);
+	} catch (const std::bad_alloc&) {
+			// Handle memory allocation failure
+			nprintf(("Network", "Cannot allocate space for new active game structure\n"));
+			return nullptr;
 	}
 
-	Active_game_count++;
-
-	// notify the join game screen of this new item
+	// Notify the join game screen of this new item
 	multi_join_notify_new_game();
-		
-	return new_game;
+
+	return &Active_games.back();
 }
 
 active_game *multi_update_active_games(active_game *ag)
 {
-	active_game *gp = nullptr;
-	active_game *stop = nullptr;		
+	active_game *gp = nullptr;		
 
 	// see if we have a game from this address already -- if not, create one.  In either case, get a pointer
 	// to an active_game structure
-	if ( Active_game_head != nullptr ) {	// no games on list at all
-		int on_list;
+	if ( !Active_games.empty() ) {	// no games on list at all
 
-		gp = Active_game_head;
-		stop = Active_game_head;
+		bool on_list = false;
 
-		on_list = 0;
-		do {
-			if ( psnet_same(&gp->server_addr, &ag->server_addr) /*&& (gp->game.security == game->security)*/ ) {
-				on_list = 1;
+		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+			if (psnet_same(&game->server_addr, &ag->server_addr)) {
+				on_list = true;
+				gp = &(*game);
 				break;
 			}
-			gp = gp->next;
-		} while (gp != stop);
+		}
 
 		// insert in the list
 		if (!on_list){
@@ -1715,25 +1700,6 @@ active_game *multi_update_active_games(active_game *ag)
 	}
 
 	return gp;
-}
-
-void multi_free_active_games()
-{
-	active_game *moveup,*backup;	
-
-	moveup = Active_game_head;
-	backup = nullptr;
-	if(moveup != nullptr){
-		do {			
-			backup = moveup;
-			moveup = moveup->next;
-			
-			delete backup;
-			backup = nullptr;
-		} while(moveup != Active_game_head);
-		Active_game_head = nullptr;
-	}	
-	Active_game_count = 0;
 }
 
 server_item *multi_new_server_item( void )
@@ -2441,7 +2407,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(nullptr);
+		Net_players[net_player_num].s_info.reliable_connect_time = time(nullptr);
 
 		// send the accept packet here
 		send_accept_packet(net_player_num, (Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN) ? ACCEPT_OBSERVER | ACCEPT_INGAME : ACCEPT_OBSERVER);
@@ -2491,7 +2457,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}		
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(nullptr);
+		Net_players[net_player_num].s_info.reliable_connect_time = time(nullptr);
 
 		// if he's joining as a host (on the standalone)
 		if(Net_players[net_player_num].flags & NETINFO_FLAG_GAME_HOST){

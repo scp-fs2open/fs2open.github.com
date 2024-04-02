@@ -10,6 +10,7 @@
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
@@ -32,7 +33,8 @@ using namespace luacpp;
 
 namespace sexp {
 
-static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
+static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
+														  { "boolean",      OPF_BOOL },
 														  { "number",       OPF_NUMBER },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
@@ -57,6 +59,7 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
 														  { "event",        OPF_EVENT_NAME },
 														  { "child_enum",   OPF_CHILD_LUA_ENUM },
+                                                          { "custom_string",OPF_MISSION_CUSTOM_STRING },
 														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
@@ -315,6 +318,16 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
 	}
+	case OPF_MISSION_CUSTOM_STRING: {
+		auto cs = get_custom_string_by_name(CTEXT(node));
+		auto table = luacpp::LuaTable::create(_action.getLuaState());
+
+		table.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->name));
+		table.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->value));
+		table.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->text));
+
+		return table;
+	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
 			auto text = CTEXT(node);
@@ -326,6 +339,34 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		}
 	}
 }
+bool LuaSEXP::maybeExtractSexpSpecialRetVal(const luacpp::LuaValue& value, int& sexp_retval) {
+	// see if this return value is actually a SEXP_ enum
+	if (value.getValueType() == ValueType::USERDATA) {
+		try {
+			using namespace scripting::api;
+			enum_h enumeration;
+			value.getValue(l_Enum.Get(&enumeration));	// this might throw a LuaException
+			switch (enumeration.index) {
+				case LE_SEXP_TRUE:
+				case LE_SEXP_FALSE:
+				case LE_SEXP_KNOWN_FALSE:
+				case LE_SEXP_KNOWN_TRUE:
+				case LE_SEXP_UNKNOWN:
+				case LE_SEXP_NAN:
+				case LE_SEXP_NAN_FOREVER:
+				case LE_SEXP_CANT_EVAL:
+					sexp_retval = *enumeration.value;
+					return true;
+				default:
+					break;
+			}
+		} catch (const LuaException& le) {
+			// just ignore the exception because we follow a different code path if the conversion failed
+			SCP_UNUSED(le);
+		}
+	}
+	return false;
+}
 int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 	switch (_return_type) {
 	case OPR_NUMBER:
@@ -336,6 +377,10 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 					retVals.size());
 			return 0;
 		} else if (retVals[0].getValueType() != ValueType::NUMBER) {
+			int sexp_retval;
+			if (maybeExtractSexpSpecialRetVal(retVals[0], sexp_retval)) {
+				return sexp_retval;
+			}
 			Warning(LOCATION, "Wrong return type detected for Lua SEXP '%s', expected a number.", _name.c_str());
 			return 0;
 		} else {
@@ -349,6 +394,10 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 					retVals.size());
 			return SEXP_FALSE;
 		} else if (retVals[0].getValueType() != ValueType::BOOLEAN) {
+			int sexp_retval;
+			if (maybeExtractSexpSpecialRetVal(retVals[0], sexp_retval)) {
+				return sexp_retval;
+			}
 			Warning(LOCATION, "Wrong return type detected for Lua SEXP '%s', expected a boolean.", _name.c_str());
 			return SEXP_FALSE;
 		} else {

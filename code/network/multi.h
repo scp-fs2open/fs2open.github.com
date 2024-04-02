@@ -414,7 +414,7 @@ typedef struct net_player_server_info {
 	UI_TIMESTAMP	kick_timestamp;									// timestamp with which we'll disconnect a player if he hasn't reponded to a kick packet
 	int				kick_reason;										// reason he was kicked
 	UI_TIMESTAMP    voice_token_timestamp;							// timestamp set when a player loses a token (so we can prevent him from getting it again too quickly)
-	int				reliable_connect_time;							// after sending an accept packet, wait for this long for the guy to connect on the reliable socket
+	time_t				reliable_connect_time;							// after sending an accept packet, wait for this long for the guy to connect on the reliable socket
 
 	// weapon select/linking information (maintained on the server and passed on respawn to all clients)
 	char				cur_primary_bank;									// currently selected primary bank
@@ -465,7 +465,7 @@ typedef struct net_player_server_info {
 		num_last_buttons = 0;
 		xfer_handle = -1;
 		kick_reason = 0;
-		reliable_connect_time = 0;
+		reliable_connect_time = -1;
 
 		cur_primary_bank = 0;
 		cur_secondary_bank = 0;
@@ -643,7 +643,6 @@ typedef struct netgame_info {
 #define AG_FLAG_STATE_MASK						(AG_FLAG_FORMING|AG_FLAG_BRIEFING|AG_FLAG_DEBRIEF|AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)
 
 typedef struct active_game {
-	active_game		*next, *prev;				// next and previous elements in the list	
 	UI_TIMESTAMP	heard_from_timer;			// when we last heard from the game
 	
 	char		name[MAX_GAMENAME_LEN+1];
@@ -656,8 +655,6 @@ typedef struct active_game {
 	ping_struct ping;								// ping time to the server
 
 	void init() {
-		next = nullptr;
-		prev = nullptr;
 		num_players = 0;
 		flags = 0;
 		version = 0;
@@ -890,8 +887,7 @@ extern int Multi_button_info_id;										// identifier of the stored button inf
 #define HEADER_LENGTH	1											// 1 byte (packet type)
 
 // misc data
-extern active_game* Active_game_head;								// linked list of active games displayed on Join screen
-extern int Active_game_count;											// for interface screens as well
+extern SCP_list<active_game> Active_games;						// list of active games displayed on the Join screen
 extern CFILE* Multi_chat_stream;										// for streaming multiplayer chat strings to a file
 extern int Multi_num_players_at_start;								// the # of players present (kept track of only on the server) at the very start of the mission
 extern short Multi_id_num;												// for assigning player id #'s
