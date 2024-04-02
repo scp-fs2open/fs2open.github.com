@@ -129,9 +129,11 @@ void multi_join_game_set_speed_text(active_game* game, int& con_type, SCP_string
 
 int multi_join_warn_pxo();
 
-void multi_start_game_init();
-void multi_start_game_do();
-void multi_start_game_close();
+extern netgame_info* Multi_sg_netgame;
+
+void multi_start_game_init(bool API_Access = false);
+void multi_start_game_do(bool API_Access = false);
+void multi_start_game_close(bool API_Access = false);
 
 void multi_create_game_init();
 void multi_create_game_do();
