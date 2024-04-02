@@ -2808,6 +2808,293 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	return ade_set_args(L, "t", pages);
 }
 
+//**********SUBLIBRARY: UserInterface/MultiHostSetup
+ADE_LIB_DERIV(l_UserInterface_MultiHostSetup,
+	"MultiHostSetup",
+	nullptr,
+	"API for accessing data related to the Multi Host Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the host setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	"boolean Commit_or_Quit",
+	"Closes Multi Host Setup. True to commit, false to quit.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		int idx = -1;
+		if (Netgame.campaign_mode == MULTI_CREATE_SHOW_MISSIONS)
+			for (size_t i = 0; i < Multi_create_mission_list.size(); i++) {
+				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) != 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		else {
+			for (size_t i = 0; i < Multi_create_campaign_list.size(); i++) {
+				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) != 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+		if (multi_create_ok_to_commit(idx)) {
+			//Some of this seems redundant but that's what the retail UI does!
+			multi_create_accept_hit(Netgame.campaign_mode, idx);
+		}
+	} else {
+		multi_quit_game(PROMPT_HOST);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getNetGame, l_UserInterface_MultiHostSetup, nullptr, "The handle to the netgame", "netgame", "The netgame handle")
+{
+	SCP_UNUSED(L);
+	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
+}
+
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Players,
+	"number Index",
+	"Array of net players",
+	"net_player",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || (idx >= MAX_PLAYERS))
+		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
+
+	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Players,
+	nullptr,
+	"The number of net players",
+	"number",
+	"The number of players.")
+{
+	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
+ADE_LIB_DERIV(l_Net_Missions, "NetMissions", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Missions,
+	"number Index",
+	"Array of net missions",
+	"net_mission",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_mission_list, idx))
+		return ade_set_args(L, "o", l_NetMission.Set(net_mission_h()));
+
+	return ade_set_args(L, "o", l_NetMission.Set(net_mission_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Missions, nullptr, "The number of net missions", "number", "The number of missions.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_mission_list.size()));
+}
+
+ADE_LIB_DERIV(l_Net_Campaigns, "NetCampaigns", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Campaigns,
+	"number Index",
+	"Array of net campaigns",
+	"net_campaign",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_campaign_list, idx))
+		return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h()));
+
+	return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Campaigns, nullptr, "The number of net campaigns", "number", "The number of campaigns.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_campaign_list.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiClientSetup
+ADE_LIB_DERIV(l_UserInterface_MultiClientSetup,
+	"MultiClientSetup",
+	nullptr,
+	"API for accessing data related to the Multi Client Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the client setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Cancels Multi Client Setup and leaves the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_quit_game(PROMPT_CLIENT);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiSync
+ADE_LIB_DERIV(l_UserInterface_MultiSync,
+	"MultiSync",
+	nullptr,
+	"API for accessing data related to the Multi Sync UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiSync,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Makes sure everything is done correctly to begin the multi sync ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiSync,
+	l_UserInterface_MultiSync, "boolean QuitGame",
+	"Closes MultiSync. If QuitGame is true then it cancels and leaves the game automatically.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (!choice) {
+		multi_sync_close(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startCountdown, l_UserInterface_MultiSync, nullptr,
+	"Starts the Launch Mission Countdown that, when finished, will move all players into the mission.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	
+	multi_sync_start_countdown();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCountdownTime,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Gets the current countdown time. Will be -1 before the countdown starts otherwise will be the num seconds until missions starts.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "i", Multi_sync_countdown);
+}
+
+
 //**********SUBLIBRARY: UserInterface/MultiStartGame
 ADE_LIB_DERIV(l_UserInterface_MultiStartGame,
 	"MultiStartGame",

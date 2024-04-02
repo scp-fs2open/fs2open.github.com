@@ -3344,11 +3344,9 @@ void multi_create_list_scroll_down();
 void multi_create_list_do();
 void multi_create_list_select_item(int n);
 void multi_create_list_blit_icons(int list_index, int y_start);
-void multi_create_accept_hit();
 void multi_create_draw_filter_buttons();
 void multi_create_set_selected_team(int team);
 short multi_create_get_mouse_id();
-int multi_create_ok_to_commit();
 void multi_create_refresh_pxo();
 void multi_create_sw_clicked();
 
@@ -3524,7 +3522,7 @@ void multi_create_setup_list_data(int mode)
 	Multi_create_slider.set_numberItems(Multi_create_list_count > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? Multi_create_list_count-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
 }
 
-void multi_create_game_init()
+void multi_create_game_init(bool API_Access)
 {
 	int idx;
 	ui_button_info *b;
@@ -3540,24 +3538,28 @@ void multi_create_game_init()
 	Multi_create_plist_select_flag = 0;
 	Multi_create_plist_select_id = -1;	
 
-	// create the interface window
-	Multi_create_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_create_window.set_mask_bmap(Multi_create_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		// create the interface window
+		Multi_create_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_create_window.set_mask_bmap(Multi_create_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_create_bitmap = bm_load(Multi_create_bitmap_fname[gr_screen.res]);
-	if(Multi_create_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_create_bitmap = bm_load(Multi_create_bitmap_fname[gr_screen.res]);
+		if (Multi_create_bitmap < 0) {
+				// we failed to load the bitmap - this is very bad
+				Int3();
+		}
 	}
 
 	// close any previous existing instances of the chatbox and create a new one
-	chatbox_close();
+	chatbox_close(); //Need to pass API_Access into these also
 	chatbox_create();
 
-	// load the help overlay 
-	Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
-	help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+	if (!API_Access) {
+		// load the help overlay
+		Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
+		help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+	}
 
 	// initialize the common notification messaging
 	multi_common_notify_init();		
@@ -3565,44 +3567,48 @@ void multi_create_game_init()
 	// use the common interface palette
 	multi_common_set_palette();
 
-	// create the interface buttons
-	for(idx=0; idx<MULTI_CREATE_NUM_BUTTONS; idx++){
-		b = &Multi_create_buttons[gr_screen.res][idx];
+	if (!API_Access) {
+		// create the interface buttons
+		for(idx=0; idx<MULTI_CREATE_NUM_BUTTONS; idx++){
+			b = &Multi_create_buttons[gr_screen.res][idx];
 	
-		// create the object		
-		b->button.create(&Multi_create_window, "", b->x, b->y, 1, 1, ((idx == MC_SCROLL_LIST_UP) || (idx == MC_SCROLL_LIST_DOWN)), 1);
+			// create the object		
+			b->button.create(&Multi_create_window, "", b->x, b->y, 1, 1, ((idx == MC_SCROLL_LIST_UP) || (idx == MC_SCROLL_LIST_DOWN)), 1);
 
-		// set the sound to play when highlighted
-		b->button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			b->button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		b->button.set_bmaps(b->filename);
+			// set the ani for the button
+			b->button.set_bmaps(b->filename);
 
-		// set the hotspot
-		b->button.link_hotspot(b->hotspot);		
+			// set the hotspot
+			b->button.link_hotspot(b->hotspot);		
 
-		// some special case stuff for the pxo refresh button
-		if(idx == MC_PXO_REFRESH){			
-			// if not a PXO game, or if I'm not a server disable and hide the button
-			if(!MULTI_IS_TRACKER_GAME || !MULTIPLAYER_MASTER){
-				b->button.hide();
-				b->button.disable();
-			}			
+			// some special case stuff for the pxo refresh button
+			if(idx == MC_PXO_REFRESH){			
+				// if not a PXO game, or if I'm not a server disable and hide the button
+				if(!MULTI_IS_TRACKER_GAME || !MULTIPLAYER_MASTER){
+					b->button.hide();
+					b->button.disable();
+				}			
+			}
+		}	
+
+		// create xstrs
+		for(idx=0; idx<MULTI_CREATE_NUM_TEXT; idx++){
+			Multi_create_window.add_XSTR(&Multi_create_text[gr_screen.res][idx]);
 		}
-	}	
 
-	// create xstrs
-	for(idx=0; idx<MULTI_CREATE_NUM_TEXT; idx++){
-		Multi_create_window.add_XSTR(&Multi_create_text[gr_screen.res][idx]);
+		// if this is a PXO game, enable the squadwar checkbox	
+		Multi_create_sw_checkbox.create(&Multi_create_window, "", Multi_create_sw_checkbox_coords[gr_screen.res][0], Multi_create_sw_checkbox_coords[gr_screen.res][1], 0);
+		Multi_create_sw_checkbox.set_bmaps(Multi_create_sw_checkbox_fname[gr_screen.res], 6, 0);
+		if(!MULTI_IS_TRACKER_GAME){
+			Multi_create_sw_checkbox.hide();
+			Multi_create_sw_checkbox.disable();
+		}
 	}
 
-	// if this is a PXO game, enable the squadwar checkbox	
-	Multi_create_sw_checkbox.create(&Multi_create_window, "", Multi_create_sw_checkbox_coords[gr_screen.res][0], Multi_create_sw_checkbox_coords[gr_screen.res][1], 0);
-	Multi_create_sw_checkbox.set_bmaps(Multi_create_sw_checkbox_fname[gr_screen.res], 6, 0);
-	if(!MULTI_IS_TRACKER_GAME){
-		Multi_create_sw_checkbox.hide();
-		Multi_create_sw_checkbox.disable();
-	}
+	//Need some kind of return for if the game is a PXO game in the API
 
 	// initialize the mission type filtering mode
 	Multi_create_filter = MISSION_TYPE_MULTI;
@@ -3616,18 +3622,20 @@ void multi_create_game_init()
 	Multi_create_list_select = -1;
 	Multi_create_list_count = 0;
 
-	Multi_create_slider.create(&Multi_create_window, Mc_slider_coords[gr_screen.res][MC_X_COORD], Mc_slider_coords[gr_screen.res][MC_Y_COORD], Mc_slider_coords[gr_screen.res][MC_W_COORD],Mc_slider_coords[gr_screen.res][MC_H_COORD], -1, Mc_slider_bitmap[gr_screen.res], &multi_create_list_scroll_up, &multi_create_list_scroll_down, NULL);
+	if (!API_Access) {
+		Multi_create_slider.create(&Multi_create_window, Mc_slider_coords[gr_screen.res][MC_X_COORD], Mc_slider_coords[gr_screen.res][MC_Y_COORD], Mc_slider_coords[gr_screen.res][MC_W_COORD],Mc_slider_coords[gr_screen.res][MC_H_COORD], -1, Mc_slider_bitmap[gr_screen.res], &multi_create_list_scroll_up, &multi_create_list_scroll_down, NULL);
 
-	// create the player list select button
-	Multi_create_player_select_button.create(&Multi_create_window, "", Mc_players_coords[gr_screen.res][MC_X_COORD], Mc_players_coords[gr_screen.res][MC_Y_COORD], Mc_players_coords[gr_screen.res][MC_W_COORD], Mc_players_coords[gr_screen.res][MC_H_COORD], 0, 1);
-	Multi_create_player_select_button.hide();		
+		// create the player list select button
+		Multi_create_player_select_button.create(&Multi_create_window, "", Mc_players_coords[gr_screen.res][MC_X_COORD], Mc_players_coords[gr_screen.res][MC_Y_COORD], Mc_players_coords[gr_screen.res][MC_W_COORD], Mc_players_coords[gr_screen.res][MC_H_COORD], 0, 1);
+		Multi_create_player_select_button.hide();		
 	
-	// create the mission/campaign list select button
-	Multi_create_list_select_button.create(&Multi_create_window, "", Mc_list_coords[gr_screen.res][MC_X_COORD], Mc_list_coords[gr_screen.res][MC_Y_COORD], Mc_list_coords[gr_screen.res][MC_W_COORD], Mc_list_coords[gr_screen.res][MC_H_COORD], 0, 1);
-	Multi_create_list_select_button.hide();	
+		// create the mission/campaign list select button
+		Multi_create_list_select_button.create(&Multi_create_window, "", Mc_list_coords[gr_screen.res][MC_X_COORD], Mc_list_coords[gr_screen.res][MC_Y_COORD], Mc_list_coords[gr_screen.res][MC_W_COORD], Mc_list_coords[gr_screen.res][MC_H_COORD], 0, 1);
+		Multi_create_list_select_button.hide();	
 
-	// set hotkeys for a couple of things.
-	Multi_create_buttons[gr_screen.res][MC_ACCEPT].button.set_hotkey(KEY_CTRLED+KEY_ENTER);	
+		// set hotkeys for a couple of things.
+		Multi_create_buttons[gr_screen.res][MC_ACCEPT].button.set_hotkey(KEY_CTRLED+KEY_ENTER);	
+	}
 
 	// init some master tracker stuff
 	Multi_create_frame_count = 0;
@@ -3642,7 +3650,7 @@ void multi_create_game_init()
 	Multi_create_files_loaded = 0;
 }
 
-void multi_create_game_do()
+void multi_create_game_do(bool API_Access)
 {
 	//DTP CHECK ALMISSION FLAG HERE AND SKIP THE BITMAP LOADING PROGRESS 
 	//SINCE WE ALREADY HAVE A MISSION SELECTED IF THIS MISSION IS A VALID MULTIPLAYER MISSION
@@ -3699,46 +3707,53 @@ void multi_create_game_do()
 		if ( MULTIPLAYER_CLIENT ) {
 			send_mission_list_request( MISSION_LIST_REQUEST );
 		} else {
-			int loading_bitmap;
+			if (!API_Access) {
+				int loading_bitmap;
 
-			loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
+				loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
 
-			// draw the background, etc
-			gr_reset_clip();
-			GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
-			if(Multi_create_bitmap != -1){
-				gr_set_bitmap(Multi_create_bitmap);
-				gr_bitmap(0, 0, GR_RESIZE_MENU);
+				// draw the background, etc
+				gr_reset_clip();
+				GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
+				if(Multi_create_bitmap != -1){
+					gr_set_bitmap(Multi_create_bitmap);
+					gr_bitmap(0, 0, GR_RESIZE_MENU);
+				}
+				chatbox_render();
+				if ( loading_bitmap > -1 ){
+					gr_set_bitmap(loading_bitmap);
+				}
+				gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD], GR_RESIZE_MENU );
+
+				// draw "Loading" on it
+				gr_set_color_fast(&Color_normal);
+				font::set_font(font::FONT2);
+				gr_get_string_size(&str_w, &str_h, loading_str);
+				gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, loading_str, GR_RESIZE_MENU);
+				font::set_font(font::FONT1);
+
+				gr_flip();
 			}
-			chatbox_render();
-			if ( loading_bitmap > -1 ){
-				gr_set_bitmap(loading_bitmap);
-			}
-			gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD], GR_RESIZE_MENU );
-
-			// draw "Loading" on it
-			gr_set_color_fast(&Color_normal);
-			font::set_font(font::FONT2);
-			gr_get_string_size(&str_w, &str_h, loading_str);
-			gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, loading_str, GR_RESIZE_MENU);
-			font::set_font(font::FONT1);
-
-			gr_flip();
-
 			multi_create_list_load_missions();
 			multi_create_list_load_campaigns();
+
+			if (!API_Access){
+				Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? int(Multi_create_mission_list.size())-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
+			}
 
 			// if this is a tracker game, validate missions
 			if (MULTI_IS_TRACKER_GAME) {
 				multi_update_valid_missions();
 			}
 
-			// update the file list
-			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
-			// the above function doesn't sort initially, so we need this to take care of it
-			multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
-			// the sort function probably changed our selection, but here we always need it to zero
-			multi_create_list_select_item(0);
+			if (!API_Access) {
+				// update the file list
+				multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
+				// the above function doesn't sort initially, so we need this to take care of it
+				multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
+				// the sort function probably changed our selection, but here we always need it to zero
+				multi_create_list_select_item(0);
+			}
 		}
 
 		// don't bother setting netgame state if ont the server
@@ -3759,17 +3774,18 @@ void multi_create_game_do()
 		Multi_create_files_loaded = 1;
 	}
 
-	int k = chatbox_process();
-	k = Multi_create_window.process(k,0);
+	if (!API_Access) {
+		int k = chatbox_process();
+		k = Multi_create_window.process(k, 0);
 
-	switch(k){	
+		switch (k) {
 		// same as the cancel button
 		case KEY_ESC: {
-			if ( help_overlay_active(Multi_create_overlay_id) ) {
+			if (help_overlay_active(Multi_create_overlay_id)) {
 				help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
-			} else {		
+			} else {
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-				multi_quit_game(PROMPT_HOST);		
+				multi_quit_game(PROMPT_HOST);
 			}
 
 			break;
@@ -3779,122 +3795,135 @@ void multi_create_game_do()
 			Multi_create_sort_mode = !Multi_create_sort_mode;
 			multi_create_list_sort(Multi_create_list_mode);
 			break;
-	}	
+		}
 
-	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+		if (mouse_down(MOUSE_LEFT_BUTTON)) {
+			help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
+		}
+
+		// process any button clicks
+		multi_create_check_buttons();
 	}
-
-	// process any button clicks
-	multi_create_check_buttons();
-
 	// do any network related stuff
 	multi_create_do_netstuff(); 
 
-	// draw the background, etc
-	gr_reset_clip();
-	GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
-	if(Multi_create_bitmap != -1){
-		gr_set_bitmap(Multi_create_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
-	}
-
-	// if we're not in team vs. team mode, don't draw the team buttons
-	if(!(Netgame.type_flags & NG_TYPE_TEAM)){
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.hide();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.hide();
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.disable();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.disable();
-	} else {
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.enable();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.enable();
-		Multi_create_buttons[gr_screen.res][MC_TEAM0].button.unhide();
-		Multi_create_buttons[gr_screen.res][MC_TEAM1].button.unhide();				
-	}		
-
-	// draw the window itself
-	Multi_create_window.draw();
-
-	gr_set_color_fast(&Color_normal);
-
-	// draw Create Game text
-	gr_string(Mc_create_game_text[gr_screen.res][MC_X_COORD], Mc_create_game_text[gr_screen.res][MC_Y_COORD], XSTR("Create Game", 1268), GR_RESIZE_MENU);
-
-	// draw players text
-	gr_string(Mc_players_text[gr_screen.res][MC_X_COORD], Mc_players_text[gr_screen.res][MC_Y_COORD], XSTR("Players", 1269), GR_RESIZE_MENU);
-
-	// draw players text
-	gr_string(Mc_team_text[gr_screen.res][MC_X_COORD], Mc_team_text[gr_screen.res][MC_Y_COORD], XSTR("Team", 1258), GR_RESIZE_MENU);
-
-	// process and display the player list	
-	// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped 
-	multi_create_plist_process();
-	if(Netgame.type_flags & NG_TYPE_TEAM){
-		multi_create_plist_blit_team();
-	} else {
-		multi_create_plist_blit_normal();
-	}
-
-	// process and display the game/campaign list
-	multi_create_list_do();
-	
-	// draw the correct mission filter button
-	multi_create_draw_filter_buttons();
-
-	// display any text in the info area
-	multi_common_render_text();
-
-	// display any pending notification messages
-	multi_common_notify_do();	
-	
-	// force the correct mission/campaign button to light up
-	if( Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS ){
-		Multi_create_buttons[gr_screen.res][MC_MISSION_FILTER].button.draw_forced(2);
-	} else {
-		Multi_create_buttons[gr_screen.res][MC_CAMPAIGN_FILTER].button.draw_forced(2);
-	}
-
-	// force draw the closed button if it is toggled on
-	if(Netgame.flags & NG_FLAG_TEMP_CLOSED){
-		Multi_create_buttons[gr_screen.res][MC_CLOSE].button.draw_forced(2);
-	}
-
-	// process and show the chatbox thingie	
-	chatbox_render();
-
-	// draw tooltips
-	Multi_create_window.draw_tooltip();
-
-	// display the voice status indicator
-	multi_common_voice_display_status();
-
-	// blit the help overlay if necessary
-	help_overlay_maybe_blit(Multi_create_overlay_id, gr_screen.res);
-
-	// test code
-	if(MULTI_IS_TRACKER_GAME){
-		if(Netgame.type_flags & NG_TYPE_SW){
-			gr_set_color_fast(&Color_bright);
-		} else {
-			gr_set_color_fast(&Color_normal);
+	if (!API_Access) {
+		// draw the background, etc
+		gr_reset_clip();
+		GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
+		if (Multi_create_bitmap != -1) {
+			gr_set_bitmap(Multi_create_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 		}
-		gr_string(Multi_create_sw_checkbox_text[gr_screen.res][0], Multi_create_sw_checkbox_text[gr_screen.res][1], "SquadWar", GR_RESIZE_MENU);
-	}
 
-	// flip the buffer
-	gr_flip();		
-		
-	// if we're supposed to show the pilot info popup, do it now
-	if(Multi_create_should_show_popup){		
-		// get the player index and address of the player item the mouse is currently over
-		if(Multi_create_plist_select_flag){		
-			player_index = find_player_index(Multi_create_plist_select_id);
-			if(player_index != -1){			
-				multi_pinfo_popup(&Net_players[player_index]);
+		// if we're not in team vs. team mode, don't draw the team buttons
+		if (!(Netgame.type_flags & NG_TYPE_TEAM)) {
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.hide();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.hide();
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.disable();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.disable();
+		} else {
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.enable();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.enable();
+			Multi_create_buttons[gr_screen.res][MC_TEAM0].button.unhide();
+			Multi_create_buttons[gr_screen.res][MC_TEAM1].button.unhide();
+		}
+
+		// draw the window itself
+		Multi_create_window.draw();
+
+		gr_set_color_fast(&Color_normal);
+
+		// draw Create Game text
+		gr_string(Mc_create_game_text[gr_screen.res][MC_X_COORD],
+			Mc_create_game_text[gr_screen.res][MC_Y_COORD],
+			XSTR("Create Game", 1268),
+			GR_RESIZE_MENU);
+
+		// draw players text
+		gr_string(Mc_players_text[gr_screen.res][MC_X_COORD],
+			Mc_players_text[gr_screen.res][MC_Y_COORD],
+			XSTR("Players", 1269),
+			GR_RESIZE_MENU);
+
+		// draw players text
+		gr_string(Mc_team_text[gr_screen.res][MC_X_COORD],
+			Mc_team_text[gr_screen.res][MC_Y_COORD],
+			XSTR("Team", 1258),
+			GR_RESIZE_MENU);
+
+		// process and display the player list
+		// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped
+		multi_create_plist_process();
+		if (Netgame.type_flags & NG_TYPE_TEAM) {
+			multi_create_plist_blit_team();
+		} else {
+			multi_create_plist_blit_normal();
+		}
+
+		// process and display the game/campaign list
+		multi_create_list_do();
+
+		// draw the correct mission filter button
+		multi_create_draw_filter_buttons();
+
+		// display any text in the info area
+		multi_common_render_text();
+
+		// display any pending notification messages
+		multi_common_notify_do();
+
+		// force the correct mission/campaign button to light up
+		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+			Multi_create_buttons[gr_screen.res][MC_MISSION_FILTER].button.draw_forced(2);
+		} else {
+			Multi_create_buttons[gr_screen.res][MC_CAMPAIGN_FILTER].button.draw_forced(2);
+		}
+
+		// force draw the closed button if it is toggled on
+		if (Netgame.flags & NG_FLAG_TEMP_CLOSED) {
+			Multi_create_buttons[gr_screen.res][MC_CLOSE].button.draw_forced(2);
+		}
+
+		// process and show the chatbox thingie
+		chatbox_render();
+
+		// draw tooltips
+		Multi_create_window.draw_tooltip();
+
+		// display the voice status indicator
+		multi_common_voice_display_status();
+
+		// blit the help overlay if necessary
+		help_overlay_maybe_blit(Multi_create_overlay_id, gr_screen.res);
+
+		// test code
+		if (MULTI_IS_TRACKER_GAME) {
+			if (Netgame.type_flags & NG_TYPE_SW) {
+				gr_set_color_fast(&Color_bright);
+			} else {
+				gr_set_color_fast(&Color_normal);
+			}
+			gr_string(Multi_create_sw_checkbox_text[gr_screen.res][0],
+				Multi_create_sw_checkbox_text[gr_screen.res][1],
+				"SquadWar",
+				GR_RESIZE_MENU);
+		}
+
+		// flip the buffer
+		gr_flip();
+
+		// if we're supposed to show the pilot info popup, do it now
+		if (Multi_create_should_show_popup) {
+			// get the player index and address of the player item the mouse is currently over
+			if (Multi_create_plist_select_flag) {
+				player_index = find_player_index(Multi_create_plist_select_id);
+				if (player_index != -1) {
+					multi_pinfo_popup(&Net_players[player_index]);
+				}
 			}
 		}
 	}
-
 	// increment the frame count
 	Multi_create_frame_count++;	
 }
@@ -3942,12 +3971,12 @@ void multi_create_button_pressed(int n)
 		break;
 	case MC_ACCEPT :	
 		// if valid commit conditions have not been met
-		if(!multi_create_ok_to_commit()){
+		if (!multi_create_ok_to_commit(multi_create_select_to_index(Multi_create_list_select))) {
 			break;
 		}
 
 		// commit
-		multi_create_accept_hit();		
+		multi_create_accept_hit(Multi_create_list_mode, multi_create_select_to_index(Multi_create_list_select));		
 		break;
 
 	// help button
@@ -4496,8 +4525,6 @@ void multi_create_list_load_missions()
 		file_list = NULL;
 	}
 
-	Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? int(Multi_create_mission_list.size())-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
-
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_destroy_gen_dialog();		
@@ -4686,25 +4713,190 @@ void multi_create_list_do()
 	}
 }
 
-// takes care of stuff like changing indices around and setting up the netgame structure
-void multi_create_list_select_item(int n)
-{
-	int abs_index,campaign_type,max_players;
-	char title[NAME_LENGTH+1];
-	netgame_info ng_temp;
-	netgame_info *ng;
-	multi_create_info *mcip = NULL;
+// Here we have the absolute index to the mission item we're working with and the mode
+// so we can set the data without bothering to check the UI anymore
+void multi_create_list_set_item(int abs_index, int mode) {
 
-	char *campaign_desc;
+	int campaign_type, max_players;
+	char title[NAME_LENGTH + 1];
+	netgame_info ng_temp;
+	netgame_info* ng;
+	multi_create_info* mcip = NULL;
+
+	char* campaign_desc;
 
 	// if not on the standalone server
-	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		ng = &Netgame;	
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		ng = &Netgame;
 	}
 	// on the standalone
 	else {
 		ng = &ng_temp;
 	}
+
+	// set the mission name
+	if (mode == MULTI_CREATE_SHOW_MISSIONS) {
+		strcpy(ng->mission_name, Multi_create_mission_list[abs_index].filename);
+	} else {
+		strcpy(ng->mission_name, Multi_create_campaign_list[abs_index].filename);
+	}
+
+	// make sure the netgame type is properly set
+	int old_type = Netgame.type_flags;
+
+	if (abs_index != -1) {
+		if (mode == MULTI_CREATE_SHOW_MISSIONS) {
+			mcip = &Multi_create_mission_list[abs_index];
+		} else {
+			mcip = &Multi_create_campaign_list[abs_index];
+		}
+
+		if (mcip->flags & MISSION_TYPE_MULTI_TEAMS) {
+			// if we're in squad war mode, leave it as squad war
+			if (old_type & NG_TYPE_SW) {
+				ng->type_flags = NG_TYPE_SW;
+			} else {
+				ng->type_flags = NG_TYPE_TVT;
+			}
+		} else if (mcip->flags & MISSION_TYPE_MULTI_COOP) {
+			ng->type_flags = NG_TYPE_COOP;
+		} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
+			ng->type_flags = NG_TYPE_DOGFIGHT;
+		}
+	}
+
+	// if we're no longer in a TvT game, just uncheck the squadwar checkbox
+	if (!(ng->type_flags & NG_TYPE_TEAM)) {
+		Multi_create_sw_checkbox.set_state(0);
+	}
+
+	// if we switched from something else to team vs. team mode, do some special processing
+	if ((ng->type_flags & NG_TYPE_TEAM) && (ng->type_flags != old_type) &&
+		(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+		multi_team_reset();
+	}
+
+	switch (mode) {
+	case MULTI_CREATE_SHOW_MISSIONS:
+		// don't forget to update the info box window thingie
+		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			ship_level_init(); // mwa -- 10/15/97.  Call this function to reset number of ships in mission
+			ng->max_players = mission_parse_get_multi_mission_info(ng->mission_name);
+
+			Assert(ng->max_players > 0);
+			strcpy_s(ng->title, The_mission.name);
+
+			// set the information area text
+			Multi_netgame_common_description = The_mission.mission_desc;
+			multi_common_set_text(Multi_netgame_common_description.c_str());
+		}
+		// if we're on the standalone, send a request for the description
+		else {
+			send_netgame_descript_packet(&Netgame.server_addr, 0);
+			multi_common_set_text("");
+		}
+
+		// set the respawns as appropriate
+		if (mcip) {
+			if (Netgame.options.respawn <= mcip->respawn) {
+				ng->respawn = Netgame.options.respawn;
+				nprintf(("Network",
+					"Using netgame options for respawn count (%d %d)\n",
+					Netgame.options.respawn,
+					mcip->respawn));
+			} else {
+				ng->respawn = mcip->respawn;
+				nprintf(("Network",
+					"Using mission settings for respawn count (%d %d)\n",
+					Netgame.options.respawn,
+					mcip->respawn));
+			}
+		}
+		break;
+	case MULTI_CREATE_SHOW_CAMPAIGNS:
+		char* first_mission = nullptr;
+		mission* mp = &The_mission;
+
+		// if not on the standalone server
+		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			memset(title, 0, sizeof(title));
+			// get the campaign info
+			if (!mission_campaign_get_info(ng->campaign_name,
+					title,
+					&campaign_type,
+					&max_players,
+					&campaign_desc,
+					&first_mission)) {
+				memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
+				ng->max_players = 0;
+			}
+			// if we successfully got the info
+			else {
+				memset(ng->title, 0, NAME_LENGTH + 1);
+				strcpy_s(ng->title, title);
+				ng->max_players = max_players;
+			}
+
+			nprintf(("Network", "MC MAX PLAYERS : %d\n", ng->max_players));
+
+			// set the information area text
+			// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
+			Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
+
+			if (campaign_desc) {
+				Multi_netgame_common_description += campaign_desc;
+			} else {
+				Multi_netgame_common_description += "No description available.";
+			}
+
+			Multi_netgame_common_description += DOUBLE_NEW_LINE;
+			Multi_netgame_common_description += PRE_MISSION_DESC;
+
+			int rc = get_mission_info(first_mission, mp, true);
+
+			if (!rc && strlen(mp->mission_desc)) {
+				Multi_netgame_common_description += mp->mission_desc;
+			} else {
+				Multi_netgame_common_description += "No description available.";
+			}
+
+			multi_common_set_text(Multi_netgame_common_description.c_str());
+
+			// free the malloc'ed strings from mission_campaign_get_info()
+			if (campaign_desc != nullptr) {
+				vm_free(campaign_desc);
+			}
+
+			if (first_mission != nullptr) {
+				vm_free(first_mission);
+			}
+
+			// standalones should now be able to request the info.
+		} else {
+			send_netgame_descript_packet(&Netgame.server_addr, 0);
+			multi_common_set_text("");
+		}
+
+		// netgame respawns are always 0 for campaigns (until the first mission is loaded)
+		ng->respawn = 0;
+		break;
+	}
+
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		// update players
+		send_netgame_update_packet();
+
+		// update all machines about stuff like respawns, etc.
+		multi_options_update_netgame();
+	} else {
+		multi_options_update_mission(ng, mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
+	}
+}
+
+// takes care of stuff like changing indices around and setting up the netgame structure
+void multi_create_list_select_item(int n)
+{
+	int abs_index;
 
 	if ( n != Multi_create_list_select ) {
 		// check to see if this is a valid index, and bail if it is not
@@ -4715,153 +4907,19 @@ void multi_create_list_select_item(int n)
 
 		Multi_create_list_select = n;
 
-		// set the mission name
-		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
-			multi_create_select_to_filename(n, ng->mission_name);
-		} else {
-			multi_create_select_to_filename(n, ng->campaign_name);
-		}
-
-		// make sure the netgame type is properly set
-		int old_type = Netgame.type_flags;
-		abs_index = multi_create_select_to_index(n);
-
-		if (abs_index != -1) {
-			if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
-				mcip = &Multi_create_mission_list[abs_index];
-			} else {
-				mcip = &Multi_create_campaign_list[abs_index];
-			}
-
-			if (mcip->flags & MISSION_TYPE_MULTI_TEAMS) {
-				// if we're in squad war mode, leave it as squad war
-				if(old_type & NG_TYPE_SW){
-					ng->type_flags = NG_TYPE_SW;
-				} else {
-					ng->type_flags = NG_TYPE_TVT;
-				}
-			} else if (mcip->flags & MISSION_TYPE_MULTI_COOP) {
-				ng->type_flags = NG_TYPE_COOP;
-			} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
-				ng->type_flags = NG_TYPE_DOGFIGHT;
-			}
-		}
-
-		// if we're no longer in a TvT game, just uncheck the squadwar checkbox
-		if(!(ng->type_flags & NG_TYPE_TEAM)){
-			Multi_create_sw_checkbox.set_state(0);
-		}
-
-		// if we switched from something else to team vs. team mode, do some special processing
-		if((ng->type_flags & NG_TYPE_TEAM) && (ng->type_flags != old_type) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-			multi_team_reset();
-		}
-
-		switch(Multi_create_list_mode){
-		case MULTI_CREATE_SHOW_MISSIONS:		
-			// don't forget to update the info box window thingie
-			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
-				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
-				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
-
-				Assert(ng->max_players > 0);
-				strcpy_s(ng->title,The_mission.name);								
-
-				// set the information area text
-				Multi_netgame_common_description = The_mission.mission_desc;
-				multi_common_set_text(Multi_netgame_common_description.c_str());
-			}
-			// if we're on the standalone, send a request for the description
-			else {
-				send_netgame_descript_packet(&Netgame.server_addr,0);
-				multi_common_set_text("");
-			}
-
-			// set the respawns as appropriate
-			if (mcip) {
-				if(Netgame.options.respawn <= mcip->respawn){
-					ng->respawn = Netgame.options.respawn;
-					nprintf(("Network", "Using netgame options for respawn count (%d %d)\n", Netgame.options.respawn, mcip->respawn));
-				} else {
-					ng->respawn = mcip->respawn;
-					nprintf(("Network", "Using mission settings for respawn count (%d %d)\n", Netgame.options.respawn, mcip->respawn));
-				}
-			}
-			break;
-		case MULTI_CREATE_SHOW_CAMPAIGNS:
-			char* first_mission = nullptr;
-			mission* mp = &The_mission;
-
-			// if not on the standalone server
-			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				memset(title, 0, sizeof(title));
-				// get the campaign info
-				if ( !mission_campaign_get_info(ng->campaign_name, title, &campaign_type, &max_players, &campaign_desc, &first_mission) ) {
-					memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
-					ng->max_players = 0;
-				}
-				// if we successfully got the info
-				else {
-					memset(ng->title,0,NAME_LENGTH+1);
-					strcpy_s(ng->title,title);
-					ng->max_players = max_players;					
-				}
-
-				nprintf(("Network","MC MAX PLAYERS : %d\n",ng->max_players));
-
-				// set the information area text
-				// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
-				Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
-
-				if (campaign_desc) {
-					Multi_netgame_common_description += campaign_desc;
-				} else {
-					Multi_netgame_common_description += "No description available.";
-				}
-
-				Multi_netgame_common_description += DOUBLE_NEW_LINE;
-				Multi_netgame_common_description += PRE_MISSION_DESC;
-
-				int rc = get_mission_info(first_mission, mp, true);
-
-				if ( !rc && strlen(mp->mission_desc) ) {
-					Multi_netgame_common_description += mp->mission_desc;
-				} else {
-					Multi_netgame_common_description += "No description available.";
-				}
-
-				multi_common_set_text(Multi_netgame_common_description.c_str());
-
-				// free the malloc'ed strings from mission_campaign_get_info()
-				if (campaign_desc != nullptr) {
-					vm_free(campaign_desc);
-				}
-
-				if (first_mission != nullptr) {
-					vm_free(first_mission);
-				}
-
-			// standalones should now be able to request the info.
-			} else {
-				send_netgame_descript_packet(&Netgame.server_addr, 0);
-				multi_common_set_text("");
-			}
-
-			// netgame respawns are always 0 for campaigns (until the first mission is loaded)
-			ng->respawn = 0;
-			break;
-		}
-
-		if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-			// update players 
-			send_netgame_update_packet();			
-
-			// update all machines about stuff like respawns, etc.
-			multi_options_update_netgame();
-		} else {
-			multi_options_update_mission(ng, Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
-		}
+		// now that we have the absolute index and the mode, do all the things
+		multi_create_list_set_item(abs_index, Multi_create_list_mode);
 	}
+}
+
+bool multi_is_item_builtin_volition(const char* filename)
+{
+	auto fb = game_find_builtin_mission(filename);
+	// if the mission is from volition, blit the volition icon
+	if ((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)) {
+		return true;
+	}
+	return false;
 }
 
 void multi_create_list_blit_icons(int list_index, int y_start)
@@ -4909,9 +4967,8 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	}
 
 	// now see if it's a builtin mission
-	auto fb = game_find_builtin_mission(mcip->filename);
 	// if the mission is from volition, blit the volition icon
-	if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
+	if (multi_is_item_builtin_volition(mcip->filename)) {
 		if(Multi_common_icons[MICON_VOLITION] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_VOLITION]);
 			gr_bitmap(Mc_icon_volition_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_volition_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
@@ -4919,7 +4976,7 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	}	
 }
 
-void multi_create_accept_hit()
+void multi_create_accept_hit(int mode, int select_index)
 {
 	char selected_name[255];
 	int start_campaign = 0;
@@ -4935,14 +4992,14 @@ void multi_create_accept_hit()
 	}	
 	
 	// do single mission stuff
-	switch(Multi_create_list_mode){
+	switch(mode){
 	case MULTI_CREATE_SHOW_MISSIONS:	
-		if(Multi_create_list_select != -1){
+		if (select_index != -1) {
 			// set the netgame mode
 			Netgame.campaign_mode = MP_SINGLE_MISSION;
 
 			// setup various filenames and mission names
-			multi_create_select_to_filename(Multi_create_list_select,selected_name);
+			strcpy(selected_name, Multi_create_mission_list[select_index].filename);
 			strcpy_s( Game_current_mission_filename, selected_name);
 			strcpy_s(Netgame.mission_name,selected_name);
 
@@ -4956,12 +5013,12 @@ void multi_create_accept_hit()
 
 	case MULTI_CREATE_SHOW_CAMPAIGNS:
 		// do campaign related stuff	
-		if(Multi_create_list_select != -1){
+		if (select_index != -1) {
 			// set the netgame mode
 			Netgame.campaign_mode = MP_CAMPAIGN;
 
 			// start a campaign instead of a single mission
-			multi_create_select_to_filename(Multi_create_list_select,selected_name);
+			strcpy(selected_name, Multi_create_campaign_list[select_index].filename);
 			multi_campaign_start(selected_name);			
 			start_campaign = 1;
 
@@ -5191,22 +5248,15 @@ int multi_create_select_to_index(int select_index)
 	return -1;
 }
 
-int multi_create_ok_to_commit()
+int multi_create_ok_to_commit(int select_index)
 {
 	int player_count, observer_count, idx;
 	int notify_of_hacked_tbl = 0;
 	char err_string[255];
-	int abs_index;
 	int found_hack;
 
-	// make sure we have a valid mission selected
-	if(Multi_create_list_select < 0){
-		return 0;
-	}	
-
-	// if this is not a valid mission, let the player know
-	abs_index = multi_create_select_to_index(Multi_create_list_select);		
-	if(abs_index < 0){
+	// if this is not a valid mission, let the player know	
+	if (select_index < 0) {
 		return 0;
 	}
 
@@ -5305,7 +5355,7 @@ int multi_create_ok_to_commit()
 	// if we're playing on the tracker
 	if(MULTI_IS_TRACKER_GAME){
 //#ifdef PXO_CHECK_VALID_MISSIONS		
-		if ( (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) && (Multi_create_mission_list[abs_index].valid_status != MVALID_STATUS_VALID) ) {
+		if ( (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) && (Multi_create_mission_list[select_index].valid_status != MVALID_STATUS_VALID) ) {
 			if(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You have selected a mission which is either invalid or unknown to PXO. Your stats will not be saved if you continue",996)) <= 0){
 				return 0;
 			}
@@ -5746,12 +5796,6 @@ int Ho_max_rsp_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-// maximum values for various input boxes (to notify user of overruns)
-#define MULTI_HO_MAX_TIME_LIMIT				500
-#define MULTI_HO_MAX_TOKEN_WAIT				5
-#define MULTI_HO_MAX_KILL_LIMIT				9999
-#define MULTI_HO_MAX_OBS						4
-
 // LOCAL function definitions
 void multi_ho_check_buttons();
 void multi_ho_button_pressed(int n);
@@ -6045,6 +6089,24 @@ void multi_ho_draw_radio_groups()
 	}
 }
 
+void multi_ho_set_skill_level(int skill) {
+	// set the skill level.  If in team vs. team mode, preserve the old setting before saving
+	// the pilot file.  I'll bet that this doesn't work though because the pilot file gets
+	// written in a bunch of locations....sigh.
+	if (!(Netgame.type_flags & NG_TYPE_TEAM)) {
+		Game_skill_level = skill;
+	} else {
+		Game_skill_level = NUM_SKILL_LEVELS / 2;
+	}
+}
+
+// for the API to avoid including freespace.h
+// Is this really just the game's global?? - Mjn
+int multi_ho_get_skill_level()
+{
+	return Game_skill_level;
+}
+
 void multi_ho_accept_hit()
 {
 	char resp_str[10];
@@ -6114,14 +6176,7 @@ void multi_ho_accept_hit()
 	// get the voice duration options
 	Netgame.options.voice_record_time = (int)(0.5f * (float)(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_DUR].slider.pos + 1) * 1000.0f);
 	
-	// set the skill level.  If in team vs. team mode, preserve the old setting before saving
-	// the pilot file.  I'll bet that this doesn't work though because the pilot file gets
-	// written in a bunch of locations....sigh.
-	if ( !(Netgame.type_flags & NG_TYPE_TEAM) ){		
-		Game_skill_level = Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_SKILL].slider.pos;
-	} else {	
-		Game_skill_level = NUM_SKILL_LEVELS / 2;
-	}
+	multi_ho_set_skill_level(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_SKILL].slider.pos);
 
 	// set the netgame respawn count
 	// maybe warn the user that respawns will not be used for a campaign mission
@@ -6603,27 +6658,28 @@ void multi_jw_plist_blit_normal();
 void multi_jw_plist_blit_team();
 short multi_jw_get_mouse_id();
 
-void multi_game_client_setup_init()
+void multi_game_client_setup_init(bool API_Access)
 {
 	int idx;
 
-	// create the interface window
-	Multi_jw_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_jw_window.set_mask_bmap(Multi_jw_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		// create the interface window
+		Multi_jw_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_jw_window.set_mask_bmap(Multi_jw_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_jw_bitmap = bm_load(Multi_jw_bitmap_fname[gr_screen.res]);
-	if(Multi_jw_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_jw_bitmap = bm_load(Multi_jw_bitmap_fname[gr_screen.res]);
+		if (Multi_jw_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
+
+		// initialize the player list data
+		Multi_jw_plist_select_flag = 0;
+		Multi_jw_plist_select_id = -1;
 	}
-
-	// initialize the player list data	
-	Multi_jw_plist_select_flag = 0;
-	Multi_jw_plist_select_id = -1;	
-	
 	// kill any old instances of the chatbox and create a new one
-	chatbox_close();
+	chatbox_close(); //Need to pass API into these also
 	chatbox_create(CHATBOX_FLAG_BIG | CHATBOX_FLAG_DRAW_BOX | CHATBOX_FLAG_BUTTONS);
 
 	// initialize the common notification messaging
@@ -6639,41 +6695,42 @@ void multi_game_client_setup_init()
 	// use the common interface palette
 	multi_common_set_palette();	
 
-	// create the interface buttons
-	for(idx=0; idx<MULTI_JW_NUM_BUTTONS; idx++){
-		// create the object
-		Multi_jw_buttons[gr_screen.res][idx].button.create(&Multi_jw_window, "", Multi_jw_buttons[gr_screen.res][idx].x, Multi_jw_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+	if (!API_Access) {
+		// create the interface buttons
+		for(idx=0; idx<MULTI_JW_NUM_BUTTONS; idx++){
+			// create the object
+			Multi_jw_buttons[gr_screen.res][idx].button.create(&Multi_jw_window, "", Multi_jw_buttons[gr_screen.res][idx].x, Multi_jw_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
-		// set the sound to play when highlighted
-		Multi_jw_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			Multi_jw_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		Multi_jw_buttons[gr_screen.res][idx].button.set_bmaps(Multi_jw_buttons[gr_screen.res][idx].filename);
+			// set the ani for the button
+			Multi_jw_buttons[gr_screen.res][idx].button.set_bmaps(Multi_jw_buttons[gr_screen.res][idx].filename);
 
-		// set the hotspot
-		Multi_jw_buttons[gr_screen.res][idx].button.link_hotspot(Multi_jw_buttons[gr_screen.res][idx].hotspot);
-	}		
+			// set the hotspot
+			Multi_jw_buttons[gr_screen.res][idx].button.link_hotspot(Multi_jw_buttons[gr_screen.res][idx].hotspot);
+		}		
 
-	// if this is a PXO game, enable the squadwar checkbox	
-	Multi_jw_sw_checkbox.create(&Multi_jw_window, "", Multi_jw_sw_checkbox_coords[gr_screen.res][0], Multi_jw_sw_checkbox_coords[gr_screen.res][1], 0);
-	Multi_jw_sw_checkbox.set_bmaps(Multi_jw_sw_checkbox_fname[gr_screen.res], 6, 0);
-	Multi_jw_sw_checkbox.disable();
-	if(!MULTI_IS_TRACKER_GAME){
-		Multi_jw_sw_checkbox.hide();		
-	}
+		// if this is a PXO game, enable the squadwar checkbox	
+		Multi_jw_sw_checkbox.create(&Multi_jw_window, "", Multi_jw_sw_checkbox_coords[gr_screen.res][0], Multi_jw_sw_checkbox_coords[gr_screen.res][1], 0);
+		Multi_jw_sw_checkbox.set_bmaps(Multi_jw_sw_checkbox_fname[gr_screen.res], 6, 0);
+		Multi_jw_sw_checkbox.disable();
+		if(!MULTI_IS_TRACKER_GAME){
+			Multi_jw_sw_checkbox.hide();		
+		}
 
-	// create all xstrs
-	for(idx=0; idx<MULTI_JW_NUM_TEXT; idx++){
-		Multi_jw_window.add_XSTR(&Multi_jw_text[gr_screen.res][idx]);
-	}
+		// create all xstrs
+		for(idx=0; idx<MULTI_JW_NUM_TEXT; idx++){
+			Multi_jw_window.add_XSTR(&Multi_jw_text[gr_screen.res][idx]);
+		}
 	
-	// create the player select list button and hide it
-	Multi_jw_plist_select_button.create(&Multi_jw_window, "", Mjw_players_coords[gr_screen.res][MJW_X_COORD], Mjw_players_coords[gr_screen.res][MJW_Y_COORD], Mjw_players_coords[gr_screen.res][MJW_W_COORD], Mjw_players_coords[gr_screen.res][MJW_H_COORD], 0, 1);
-	Multi_jw_plist_select_button.hide();
+		// create the player select list button and hide it
+		Multi_jw_plist_select_button.create(&Multi_jw_window, "", Mjw_players_coords[gr_screen.res][MJW_X_COORD], Mjw_players_coords[gr_screen.res][MJW_Y_COORD], Mjw_players_coords[gr_screen.res][MJW_W_COORD], Mjw_players_coords[gr_screen.res][MJW_H_COORD], 0, 1);
+		Multi_jw_plist_select_button.hide();
 
-	// set hotkeys
-	Multi_jw_buttons[gr_screen.res][MJW_CANCEL].button.set_hotkey(KEY_ESC);	
-
+		// set hotkeys
+		Multi_jw_buttons[gr_screen.res][MJW_CANCEL].button.set_hotkey(KEY_ESC);	
+	}
 	// remove campaign flags
 	Game_mode &= ~(GM_CAMPAIGN_MODE);
 
@@ -6688,7 +6745,7 @@ void multi_game_client_setup_init()
 	multi_data_send_my_junk();	
 }
 
-void multi_game_client_setup_do_frame()
+void multi_game_client_setup_do_frame(bool API_Access)
 {
 	int player_index;
 	int k = chatbox_process();
@@ -6697,109 +6754,122 @@ void multi_game_client_setup_do_frame()
 
 	Multi_jw_should_show_popup = 0;
 
-	// process any button clicks
-	multi_jw_check_buttons();
+	if (!API_Access) {
+		// process any button clicks
+		multi_jw_check_buttons();
+	}
 
 	// do any network related stuff
 	multi_jw_do_netstuff(); 		
 
-	// draw the background, etc
-	gr_reset_clip();
-	GR_MAYBE_CLEAR_RES(Multi_jw_bitmap);
-	if(Multi_jw_bitmap != -1){		
-		gr_set_bitmap(Multi_jw_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
-	}
-
-	// if we're not in team vs. team mode, don't draw the team buttons
-	if(!(Netgame.type_flags & NG_TYPE_TEAM)){
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.hide();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.hide();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.disable();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.disable();
-	} else {
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.enable();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.enable();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.unhide();
-		Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.unhide();		
-	}
-
-	if(MULTI_IS_TRACKER_GAME){
-		// maybe check the squadwar button
-		if(Netgame.type_flags & NG_TYPE_SW){
-			Multi_jw_sw_checkbox.set_state(1);
-			gr_set_color_fast(&Color_bright);
-		} else {
-			Multi_jw_sw_checkbox.set_state(0);
-			gr_set_color_fast(&Color_normal);
+	if (!API_Access) {
+		// draw the background, etc
+		gr_reset_clip();
+		GR_MAYBE_CLEAR_RES(Multi_jw_bitmap);
+		if (Multi_jw_bitmap != -1) {
+			gr_set_bitmap(Multi_jw_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 		}
-				
-		gr_string(Multi_jw_sw_checkbox_text[gr_screen.res][0], Multi_jw_sw_checkbox_text[gr_screen.res][1], "SquadWar", GR_RESIZE_MENU);
-	}	
 
-	// draw the UI window
-	Multi_jw_window.draw();	
+		// if we're not in team vs. team mode, don't draw the team buttons
+		if (!(Netgame.type_flags & NG_TYPE_TEAM)) {
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.hide();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.hide();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.disable();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.disable();
+		} else {
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.enable();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.enable();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM0].button.unhide();
+			Multi_jw_buttons[gr_screen.res][MJW_TEAM1].button.unhide();
+		}
 
-	// process and display the player list	
-	// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped 
-	multi_jw_plist_process();
-	if(Netgame.type_flags & NG_TYPE_TEAM){
-		multi_jw_plist_blit_team();
-	} else {
-		multi_jw_plist_blit_normal();
-	}
-		
-	// display any text in the info area
-	multi_common_render_text();
-
-	// display any pending notification messages
-	multi_common_notify_do();
-
-	// blit the mission filename if possible
-	if(Netgame.campaign_mode){
-		if(Netgame.campaign_name[0] != '\0'){			
-			strcpy_s(mission_text,Netgame.campaign_name);
-			
-			if(Netgame.title[0] != '\0'){
-				strcat_s(mission_text,", ");
-				strcat_s(mission_text,Netgame.title);
+		if (MULTI_IS_TRACKER_GAME) {
+			// maybe check the squadwar button
+			if (Netgame.type_flags & NG_TYPE_SW) {
+				Multi_jw_sw_checkbox.set_state(1);
+				gr_set_color_fast(&Color_bright);
+			} else {
+				Multi_jw_sw_checkbox.set_state(0);
+				gr_set_color_fast(&Color_normal);
 			}
 
-			gr_set_color_fast(&Color_bright_white);
-			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text,GR_RESIZE_MENU);
-		}								
-	} else {
-		if(Netgame.mission_name[0] != '\0'){			
-			strcpy_s(mission_text,Netgame.mission_name);
-
-			if(Netgame.title[0] != '\0'){
-				strcat_s(mission_text,", ");
-				strcat_s(mission_text,Netgame.title);
-			}			
-
-			gr_set_color_fast(&Color_bright_white);
-			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text,GR_RESIZE_MENU);
+			gr_string(Multi_jw_sw_checkbox_text[gr_screen.res][0],
+				Multi_jw_sw_checkbox_text[gr_screen.res][1],
+				"SquadWar",
+				GR_RESIZE_MENU);
 		}
-	}	
 
-	// process and show the chatbox thingie	
-	chatbox_render();
+		// draw the UI window
+		Multi_jw_window.draw();
 
-	// draw tooltips
-	Multi_jw_window.draw_tooltip();
+		// process and display the player list
+		// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped
+		multi_jw_plist_process();
+		if (Netgame.type_flags & NG_TYPE_TEAM) {
+			multi_jw_plist_blit_team();
+		} else {
+			multi_jw_plist_blit_normal();
+		}
 
-	// display the voice status indicator
-	multi_common_voice_display_status();
-	
-	// flip the buffer
-	gr_flip();	
+		// display any text in the info area
+		multi_common_render_text();
 
-	// if we're supposed to be displaying a pilot info popup
-	if(Multi_jw_should_show_popup){
-		player_index = find_player_index(Multi_jw_plist_select_id);
-		if(player_index != -1){			
-			multi_pinfo_popup(&Net_players[player_index]);
-		}		
+		// display any pending notification messages
+		multi_common_notify_do();
+
+		// blit the mission filename if possible
+		if (Netgame.campaign_mode) {
+			if (Netgame.campaign_name[0] != '\0') {
+				strcpy_s(mission_text, Netgame.campaign_name);
+
+				if (Netgame.title[0] != '\0') {
+					strcat_s(mission_text, ", ");
+					strcat_s(mission_text, Netgame.title);
+				}
+
+				gr_set_color_fast(&Color_bright_white);
+				gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],
+					Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],
+					mission_text,
+					GR_RESIZE_MENU);
+			}
+		} else {
+			if (Netgame.mission_name[0] != '\0') {
+				strcpy_s(mission_text, Netgame.mission_name);
+
+				if (Netgame.title[0] != '\0') {
+					strcat_s(mission_text, ", ");
+					strcat_s(mission_text, Netgame.title);
+				}
+
+				gr_set_color_fast(&Color_bright_white);
+				gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],
+					Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],
+					mission_text,
+					GR_RESIZE_MENU);
+			}
+		}
+
+		// process and show the chatbox thingie
+		chatbox_render();
+
+		// draw tooltips
+		Multi_jw_window.draw_tooltip();
+
+		// display the voice status indicator
+		multi_common_voice_display_status();
+
+		// flip the buffer
+		gr_flip();
+
+		// if we're supposed to be displaying a pilot info popup
+		if (Multi_jw_should_show_popup) {
+			player_index = find_player_index(Multi_jw_plist_select_id);
+			if (player_index != -1) {
+				multi_pinfo_popup(&Net_players[player_index]);
+			}
+		}
 	}
 }
 
@@ -7338,23 +7408,23 @@ void multi_sync_create_launch_button();
 void multi_sync_blit_screen_all();
 void multi_sync_handle_plist();
 
-void multi_sync_common_init();
+void multi_sync_common_init(bool API_Access);
 void multi_sync_common_do();
 void multi_sync_common_close();
 
 void multi_sync_pre_init();
-void multi_sync_pre_do();
+void multi_sync_pre_do(bool API_Access);
 void multi_sync_pre_close();
 
-void multi_sync_post_init();
-void multi_sync_post_do();
-void multi_sync_post_close();
+void multi_sync_post_init(bool API_Access);
+void multi_sync_post_do(bool API_Access);
+void multi_sync_post_close(bool API_Access);
 
 int Sync_test = 1;
 
 
 // perform the correct init functions
-void multi_sync_init()
+void multi_sync_init(bool API_Access)
 {	
 	Multi_sync_countdown = -1;
 
@@ -7364,7 +7434,7 @@ void multi_sync_init()
 	multi_reset_timestamps();
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
-		multi_sync_common_init();
+		multi_sync_common_init(API_Access);
 	}
 	
 	switch(Multi_sync_mode){
@@ -7372,7 +7442,7 @@ void multi_sync_init()
 		multi_sync_pre_init();
 		break;
 	case MULTI_SYNC_POST_BRIEFING:
-		multi_sync_post_init();
+		multi_sync_post_init(API_Access);
 		break;
 	case MULTI_SYNC_INGAME:
 		multi_ingame_sync_init();
@@ -7381,10 +7451,10 @@ void multi_sync_init()
 }
 
 // perform the correct do frame functions
-void multi_sync_do()
+void multi_sync_do(bool API_Access)
 {
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
-		multi_sync_common_do();
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
+		multi_sync_common_do(); //Don't need this for the API
 	}
 
 	// if the netgame is ending, don't do any sync processing
@@ -7395,45 +7465,47 @@ void multi_sync_do()
 	// process appropriateliy
 	switch(Multi_sync_mode){
 	case MULTI_SYNC_PRE_BRIEFING:		
-		multi_sync_pre_do();		
+		multi_sync_pre_do(API_Access);		
 		break;
 	case MULTI_SYNC_POST_BRIEFING:
-		multi_sync_post_do();
+		multi_sync_post_do(API_Access);
 		break;
 	case MULTI_SYNC_INGAME:
 		multi_ingame_sync_do();
 
-		gr_reset_clip();		
-		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
-		if(Multi_sync_bitmap != -1){
-			gr_set_bitmap(Multi_sync_bitmap);
-			gr_bitmap(0,0,GR_RESIZE_MENU);
+		if (!API_Access) {
+			gr_reset_clip();
+			GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
+			if (Multi_sync_bitmap != -1) {
+				gr_set_bitmap(Multi_sync_bitmap);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
+			}
+			Multi_sync_window.draw();
+
+			multi_sync_blit_screen_all();
+
+			gr_flip();
 		}
-		Multi_sync_window.draw();
-
-		multi_sync_blit_screen_all();
-
-		gr_flip();
 		break;
 	}	
 }
 
 // perform the correct close functions
-void multi_sync_close()
+void multi_sync_close(bool API_Access)
 {
 	switch(Multi_sync_mode){
 	case MULTI_SYNC_PRE_BRIEFING:
 		multi_sync_pre_close();
 		break;
 	case MULTI_SYNC_POST_BRIEFING:
-		multi_sync_post_close();
+		multi_sync_post_close(API_Access);
 		break;
 	case MULTI_SYNC_INGAME:
 		multi_ingame_sync_close();
 		break;
 	}
 	
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		multi_sync_common_close();
 	}
 }
@@ -7449,30 +7521,31 @@ const char *multi_sync_tooltip_handler(const char *str)
 	return NULL;
 }
 
-void multi_sync_common_init()
+void multi_sync_common_init(bool API_Access)
 {
 	int idx;
 
-	// create the interface window
-	Multi_sync_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-	Multi_sync_window.set_mask_bmap(Multi_sync_bitmap_mask_fname[gr_screen.res]);
-	Multi_sync_window.tooltip_handler = multi_sync_tooltip_handler;
+	if (!API_Access) {
+		// create the interface window
+		Multi_sync_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_sync_window.set_mask_bmap(Multi_sync_bitmap_mask_fname[gr_screen.res]);
+		Multi_sync_window.tooltip_handler = multi_sync_tooltip_handler;
 
-	// load the background bitmap
-	Multi_sync_bitmap = bm_load(Multi_sync_bitmap_fname[gr_screen.res]);
-	if (Multi_sync_bitmap < 0) {
-		// we failed to load the bitmap - this is very bad
-		Int3();
+		// load the background bitmap
+		Multi_sync_bitmap = bm_load(Multi_sync_bitmap_fname[gr_screen.res]);
+		if (Multi_sync_bitmap < 0) {
+			// we failed to load the bitmap - this is very bad
+			Int3();
+		}
+
+		// initialize the player list data
+		Multi_sync_plist_start = 0;
+		Multi_sync_plist_count = 1; // we can pretty safely assume that there's one player in the game - me.
+
+		Multi_launch_button_created = 0;
 	}
-
-	// initialize the player list data
-	Multi_sync_plist_start = 0;
-	Multi_sync_plist_count = 1;			// we can pretty safely assume that there's one player in the game - me.	
-
-	Multi_launch_button_created = 0;	
-
 	// create the chatbox thingie	(shouldn't be necesary to do this, but we'll put it in for good measure)
-	chatbox_create();
+	chatbox_create(); //Need to pass API_Access into this
 
 	// force the chatbox to be small
 	chatbox_force_small();
@@ -7489,53 +7562,55 @@ void multi_sync_common_init()
 	// don't select any player yet.
 	Multi_sync_player_select = -1;
 	
-	// determine how many of the 5 buttons to create
-	if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
-		Multi_sync_button_count = MULTI_SYNC_HOST_COUNT;		
-	} else {
-		Multi_sync_button_count = MULTI_SYNC_CLIENT_COUNT;
-	}
-	// create the interface buttons	
-	for(idx=0; idx<Multi_sync_button_count; idx++){
-		// create the object
-		Multi_sync_buttons[gr_screen.res][idx].button.create(&Multi_sync_window, "", Multi_sync_buttons[gr_screen.res][idx].x, Multi_sync_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
-
-		// set the sound to play when highlighted
-		Multi_sync_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
-
-		// set the ani for the button
-		// this wierdness is necessary because cancel and kick buttons aren't drawn on the background bitmap,
-		//   so we have to load in frame 0, too (the file should exist)
-		if ((idx == MS_CANCEL) || (idx == MS_KICK) || (idx == MS_LAUNCH)) {
-			Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename, 3, 0);
+	if (!API_Access){
+		// determine how many of the 5 buttons to create
+		if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
+			Multi_sync_button_count = MULTI_SYNC_HOST_COUNT;		
 		} else {
-			Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename);
+			Multi_sync_button_count = MULTI_SYNC_CLIENT_COUNT;
+		}
+		// create the interface buttons	
+		for(idx=0; idx<Multi_sync_button_count; idx++){
+			// create the object
+			Multi_sync_buttons[gr_screen.res][idx].button.create(&Multi_sync_window, "", Multi_sync_buttons[gr_screen.res][idx].x, Multi_sync_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+
+			// set the sound to play when highlighted
+			Multi_sync_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+
+			// set the ani for the button
+			// this wierdness is necessary because cancel and kick buttons aren't drawn on the background bitmap,
+			//   so we have to load in frame 0, too (the file should exist)
+			if ((idx == MS_CANCEL) || (idx == MS_KICK) || (idx == MS_LAUNCH)) {
+				Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename, 3, 0);
+			} else {
+				Multi_sync_buttons[gr_screen.res][idx].button.set_bmaps(Multi_sync_buttons[gr_screen.res][idx].filename);
+			}
+
+			// set the hotspot
+			Multi_sync_buttons[gr_screen.res][idx].button.link_hotspot(Multi_sync_buttons[gr_screen.res][idx].hotspot);
+		}		
+
+		// add xstrs
+		for(idx=0; idx<MULTI_SYNC_NUM_TEXT; idx++) {
+			// don't create the "launch" button text just yet
+			if(idx == MST_LAUNCH) {
+				continue;
+			}
+			// multiplayer clients should ignore the kick button
+			if(!MULTIPLAYER_MASTER && !MULTIPLAYER_HOST && (idx == MST_KICK)) {
+				continue;
+			}
+
+			Multi_sync_window.add_XSTR(&Multi_sync_text[gr_screen.res][idx]);
 		}
 
-		// set the hotspot
-		Multi_sync_buttons[gr_screen.res][idx].button.link_hotspot(Multi_sync_buttons[gr_screen.res][idx].hotspot);
-	}		
+		// create the player list select button and hide it
+		Multi_sync_plist_button.create(&Multi_sync_window, "", Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD], Ms_status_coords[gr_screen.res][MS_W_COORD], Ms_status_coords[gr_screen.res][MS_H_COORD], 0, 1);
+		Multi_sync_plist_button.hide();
 
-	// add xstrs
-	for(idx=0; idx<MULTI_SYNC_NUM_TEXT; idx++) {
-		// don't create the "launch" button text just yet
-		if(idx == MST_LAUNCH) {
-			continue;
-		}
-		// multiplayer clients should ignore the kick button
-		if(!MULTIPLAYER_MASTER && !MULTIPLAYER_HOST && (idx == MST_KICK)) {
-			continue;
-		}
-
-		Multi_sync_window.add_XSTR(&Multi_sync_text[gr_screen.res][idx]);
+		// set up hotkeys for certain common functions
+		Multi_sync_buttons[gr_screen.res][MS_CANCEL].button.set_hotkey(KEY_ESC);
 	}
-
-	// create the player list select button and hide it
-	Multi_sync_plist_button.create(&Multi_sync_window, "", Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD], Ms_status_coords[gr_screen.res][MS_W_COORD], Ms_status_coords[gr_screen.res][MS_H_COORD], 0, 1);
-	Multi_sync_plist_button.hide();
-
-	// set up hotkeys for certain common functions
-	Multi_sync_buttons[gr_screen.res][MS_CANCEL].button.set_hotkey(KEY_ESC);
 }
 
 void multi_sync_common_do()
@@ -7570,12 +7645,161 @@ void multi_sync_common_close()
 	Multi_sync_window.destroy();
 }
 
+SCP_string multi_sync_get_state_string(net_player* player)
+{
+	SCP_string txt;
+	int state = player->state;
+	// if we're ingame joining, show all other players except myself as "playing"
+	if ((Net_player != NULL) && (player != Net_player) &&
+		((Multi_sync_mode == MULTI_SYNC_INGAME) || (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))) {
+		state = NETPLAYER_STATE_IN_MISSION;
+	}
+
+	switch (state) {
+	case NETPLAYER_STATE_MISSION_LOADING:
+		txt = XSTR("Mission Loading", 802);
+		break;
+	case NETPLAYER_STATE_INGAME_SHIP_SELECT: // I don't think its possible to see this state, but...
+		txt = XSTR("Ingame Ship Select", 803);
+		break;
+	case NETPLAYER_STATE_DEBRIEF:
+		txt = XSTR("Debriefing", 804);
+		break;
+	case NETPLAYER_STATE_MISSION_SYNC:
+		txt = XSTR("Mission Sync", 805);
+		break;
+	case NETPLAYER_STATE_JOINING:
+		txt = XSTR("Joining", 806);
+		break;
+	case NETPLAYER_STATE_JOINED:
+		txt = XSTR("Joined", 807);
+		break;
+	case NETPLAYER_STATE_SLOT_ACK:
+		txt = XSTR("Slot Ack", 808);
+		break;
+	case NETPLAYER_STATE_BRIEFING:
+		txt = XSTR("Briefing", 765);
+		break;
+	case NETPLAYER_STATE_SHIP_SELECT:
+		txt = XSTR("Ship Select", 809);
+		break;
+	case NETPLAYER_STATE_WEAPON_SELECT:
+		txt = XSTR("Weapon Select", 810);
+		break;
+	case NETPLAYER_STATE_WAITING:
+		txt = XSTR("Waiting", 811);
+		break;
+	case NETPLAYER_STATE_IN_MISSION:
+		txt = XSTR("In Mission", 812);
+		break;
+	case NETPLAYER_STATE_MISSION_LOADED:
+		txt = XSTR("Mission Loaded", 813);
+		break;
+	case NETPLAYER_STATE_DATA_LOAD:
+		txt = XSTR("Data loading", 814);
+		break;
+	case NETPLAYER_STATE_SETTINGS_ACK:
+		txt = XSTR("Ready To Enter Mission", 815);
+		break;
+	case NETPLAYER_STATE_INGAME_SHIPS:
+		txt = XSTR("Ingame Ships Packet Ack", 816);
+		break;
+	case NETPLAYER_STATE_INGAME_WINGS:
+		txt = XSTR("Ingame Wings Packet Ack", 817);
+		break;
+	case NETPLAYER_STATE_INGAME_RPTS:
+		txt = XSTR("Ingame Respawn Points Ack", 818);
+		break;
+	case NETPLAYER_STATE_SLOTS_ACK:
+		txt = XSTR("Ingame Weapon Slots Ack", 819);
+		break;
+	case NETPLAYER_STATE_POST_DATA_ACK:
+		txt = XSTR("Post Briefing Data Block Ack", 820);
+		break;
+	case NETPLAYER_STATE_FLAG_ACK:
+		txt = XSTR("Flags Ack", 821);
+		break;
+	case NETPLAYER_STATE_MT_STATS:
+		txt = XSTR("Parallax Online Stats Updating", 822);
+		break;
+	case NETPLAYER_STATE_WSS_ACK:
+		txt = XSTR("Weapon Slots Ack", 823);
+		break;
+	case NETPLAYER_STATE_HOST_SETUP:
+		txt = XSTR("Host setup", 824);
+		break;
+	case NETPLAYER_STATE_DEBRIEF_ACCEPT:
+		txt = XSTR("Debrief accept", 825);
+		break;
+	case NETPLAYER_STATE_DEBRIEF_REPLAY:
+		txt = XSTR("Debrief replay", 826);
+		break;
+	case NETPLAYER_STATE_CPOOL_ACK:
+		txt = XSTR("Campaign ship/weapon ack", 827);
+		break;
+	case NETPLAYER_STATE_MISSION_XFER:
+		// server should display the pct completion of all clients
+		if (Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			if (player->s_info.xfer_handle != -1) {
+				int pct_complete = multi_xfer_pct_complete(player->s_info.xfer_handle);
+
+				// if we've got a valid xfer handle
+				if ((pct_complete >= 0.0) && (pct_complete <= 1.0)) {
+					sprintf(txt, XSTR("Mission file xfer %d%%", 828), (int)(pct_complete * 100.0f));
+				}
+				// otherwise
+				else {
+					txt = XSTR("Mission file xfer", 829);
+				}
+			} else {
+				txt = XSTR("Mission file xfer", 829);
+			}
+		}
+		// clients should display only for themselves (which is the only thing they know)
+		else {
+			// if we've got a valid file xfer handle
+			if ((player == Net_player) && (Net_player->s_info.xfer_handle != -1)) {
+				int pct_complete = multi_xfer_pct_complete(Net_player->s_info.xfer_handle);
+
+				// if we've got a valid xfer handle
+				if ((pct_complete >= 0.0) && (pct_complete <= 1.0)) {
+					sprintf(txt, XSTR("Mission file xfer %d%%", 828), (int)(pct_complete * 100.0f));
+				}
+				// otherwise
+				else {
+					txt = XSTR("Mission file xfer", 829);
+				}
+			}
+			// otherwise
+			else {
+				txt = XSTR("Mission file xfer", 829);
+			}
+		}
+		break;
+	case NETPLAYER_STATE_FICTION_VIEWER:
+		txt = XSTR("Fiction Viewer", -1); // XSTR ID?
+		break;
+	case NETPLAYER_STATE_CUTSCENE:
+		txt = XSTR("Cutscene", -1); // XSTR ID?
+		break;
+	case NETPLAYER_STATE_CMD_BRIEFING:
+		txt = XSTR("Command Briefing", -1); // XSTR ID?
+		break;
+	case NETPLAYER_STATE_RED_ALERT:
+		txt = XSTR("Red Alert", -1); // XSTR ID?
+		break;
+	default:
+		nprintf(("Network", "Unhandled player state : %d !\n", player->state));
+		txt = XSTR("Unknown", 433); 
+		break;
+	}
+
+	return txt;
+}
+
 void multi_sync_blit_screen_all()
 {
-	int count,idx;	
-	int state;
-	float pct_complete;
-	char txt[255];
+	int count,idx;
 	
 	// display any text in the info area
 	multi_common_render_text();
@@ -7589,156 +7813,8 @@ void multi_sync_blit_screen_all()
 		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx])){
 			// display his name and status
 			multi_sync_display_name(Net_players[idx].m_player->callsign,count,idx);
-	
-			// get the player state
-			state = Net_players[idx].state;
 
-			// if we're ingame joining, show all other players except myself as "playing"
-			if((Net_player != NULL) && (&Net_players[idx] != Net_player) && ((Multi_sync_mode == MULTI_SYNC_INGAME) || (Net_player->flags & NETINFO_FLAG_INGAME_JOIN)) ){
-				state = NETPLAYER_STATE_IN_MISSION;
-			}
-
-			switch(state){				
-			case NETPLAYER_STATE_MISSION_LOADING:
-				multi_sync_display_status(XSTR("Mission Loading",802),count);
-				break;
-			case NETPLAYER_STATE_INGAME_SHIP_SELECT:									// I don't think its possible to see this state, but...
-				multi_sync_display_status(XSTR("Ingame Ship Select",803),count);
-				break;
-			case NETPLAYER_STATE_DEBRIEF:
-				multi_sync_display_status(XSTR("Debriefing",804),count);
-				break;
-			case NETPLAYER_STATE_MISSION_SYNC:
-				multi_sync_display_status(XSTR("Mission Sync",805),count);
-				break;
-			case NETPLAYER_STATE_JOINING:								
-				multi_sync_display_status(XSTR("Joining",806),count);
-				break;
-			case NETPLAYER_STATE_JOINED:				
-				multi_sync_display_status(XSTR("Joined",807),count);
-				break;
-			case NETPLAYER_STATE_SLOT_ACK :				
-				multi_sync_display_status(XSTR("Slot Ack",808),count);
-				break;			
-			case NETPLAYER_STATE_BRIEFING:				
-				multi_sync_display_status(XSTR("Briefing",765),count);
-				break;
-			case NETPLAYER_STATE_SHIP_SELECT:				
-				multi_sync_display_status(XSTR("Ship Select",809),count);
-				break;
-			case NETPLAYER_STATE_WEAPON_SELECT:				
-				multi_sync_display_status(XSTR("Weapon Select",810),count);
-				break;
-			case NETPLAYER_STATE_WAITING:				
-				multi_sync_display_status(XSTR("Waiting",811),count);
-				break;
-			case NETPLAYER_STATE_IN_MISSION:				
-				multi_sync_display_status(XSTR("In Mission",812),count);
-				break;			
-			case NETPLAYER_STATE_MISSION_LOADED:			
-				multi_sync_display_status(XSTR("Mission Loaded",813),count);
-				break;			
-			case NETPLAYER_STATE_DATA_LOAD:
-				multi_sync_display_status(XSTR("Data loading",814),count);
-				break;
-			case NETPLAYER_STATE_SETTINGS_ACK:
-				multi_sync_display_status(XSTR("Ready To Enter Mission",815),count);
-				break;					
-			case NETPLAYER_STATE_INGAME_SHIPS:
-				multi_sync_display_status(XSTR("Ingame Ships Packet Ack",816),count);
-				break;
-			case NETPLAYER_STATE_INGAME_WINGS:
-				multi_sync_display_status(XSTR("Ingame Wings Packet Ack",817),count);
-				break;		
-			case NETPLAYER_STATE_INGAME_RPTS:
-				multi_sync_display_status(XSTR("Ingame Respawn Points Ack",818),count);
-				break;
-			case NETPLAYER_STATE_SLOTS_ACK:
-				multi_sync_display_status(XSTR("Ingame Weapon Slots Ack",819),count);
-				break;			
-			case NETPLAYER_STATE_POST_DATA_ACK:
-				multi_sync_display_status(XSTR("Post Briefing Data Block Ack",820),count);
-				break;
-			case NETPLAYER_STATE_FLAG_ACK :
-				multi_sync_display_status(XSTR("Flags Ack",821),count);
-				break;
-			case NETPLAYER_STATE_MT_STATS :
-				multi_sync_display_status(XSTR("Parallax Online Stats Updating",822),count);
-				break;
-			case NETPLAYER_STATE_WSS_ACK :
-				multi_sync_display_status(XSTR("Weapon Slots Ack",823),count);
-				break;
-			case NETPLAYER_STATE_HOST_SETUP :
-				multi_sync_display_status(XSTR("Host setup",824),count);
-				break;
-			case NETPLAYER_STATE_DEBRIEF_ACCEPT:
-				multi_sync_display_status(XSTR("Debrief accept",825),count);
-				break;
-			case NETPLAYER_STATE_DEBRIEF_REPLAY:
-				multi_sync_display_status(XSTR("Debrief replay",826),count);
-				break;
-			case NETPLAYER_STATE_CPOOL_ACK:
-				multi_sync_display_status(XSTR("Campaign ship/weapon ack",827),count);
-				break;				
-			case NETPLAYER_STATE_MISSION_XFER :				
-				memset(txt,0,255);
-				// server should display the pct completion of all clients				
-				if(Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER){
-					if(Net_players[idx].s_info.xfer_handle != -1){					
-						pct_complete = multi_xfer_pct_complete(Net_players[idx].s_info.xfer_handle);
-
-						// if we've got a valid xfer handle
-						if((pct_complete >= 0.0) && (pct_complete <= 1.0)){						
-							sprintf(txt,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
-						}
-						// otherwise
-						else {
-							strcpy_s(txt,XSTR("Mission file xfer",829));
-						}					
-					} else {
-						strcpy_s(txt,XSTR("Mission file xfer",829));
-					}
-				}
-				// clients should display only for themselves (which is the only thing they know)
-				else {
-					// if we've got a valid file xfer handle
-					if((&Net_players[idx] == Net_player) && (Net_player->s_info.xfer_handle != -1)){
-						pct_complete = multi_xfer_pct_complete(Net_player->s_info.xfer_handle);
-
-						// if we've got a valid xfer handle
-						if((pct_complete >= 0.0) && (pct_complete <= 1.0)){						
-							sprintf(txt,XSTR("Mission file xfer %d%%",828),(int)(pct_complete * 100.0f));
-						}
-						// otherwise
-						else {
-							strcpy_s(txt,XSTR("Mission file xfer",829));
-						}
-					}
-					// otherwise
-					else {
-						strcpy_s(txt,XSTR("Mission file xfer",829));
-					}
-				}
-
-				// display the text
-				multi_sync_display_status(txt,count);
-				break;
-			case NETPLAYER_STATE_FICTION_VIEWER:
-				multi_sync_display_status(XSTR("Fiction Viewer", -1), count);
-				break;
-			case NETPLAYER_STATE_CUTSCENE:
-				multi_sync_display_status(XSTR("Cutscene", -1), count);
-				break;
-			case NETPLAYER_STATE_CMD_BRIEFING:
-				multi_sync_display_status(XSTR("Command Briefing", -1), count);
-				break;
-			case NETPLAYER_STATE_RED_ALERT:
-				multi_sync_display_status(XSTR("Red Alert", -1), count);
-				break;
-			default :
-				nprintf(("Network","Unhandled player state : %d !\n",Net_players[idx].state));
-				break;
-			}
+			multi_sync_display_status(multi_sync_get_state_string(&Net_player[idx]).c_str(), count);
 			count++;
 		}
 	}	
@@ -7891,7 +7967,7 @@ void multi_sync_pre_init()
 	Multi_mission_loaded = 0;
 }
 
-void multi_sync_pre_do()
+void multi_sync_pre_do(bool API_Access)
 {		
 	int idx;
 	
@@ -8045,7 +8121,7 @@ void multi_sync_pre_do()
 	}
 
 	// blit stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		gr_reset_clip();
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
@@ -8071,7 +8147,7 @@ void multi_sync_pre_close()
 	}
 }
 
-void multi_sync_post_init()
+void multi_sync_post_init(bool API_Access)
 {   	
 	multi_reset_timestamps();
 
@@ -8096,7 +8172,7 @@ void multi_sync_post_init()
 	}	
 
 	// if I'm not a standalone server, load up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		generic_anim_init(&Multi_sync_countdown_anim, Multi_sync_countdown_fname[gr_screen.res]);
 		Multi_sync_countdown_anim.ani.bg_type = bm_get_type(Multi_sync_bitmap);
 		generic_anim_stream(&Multi_sync_countdown_anim);
@@ -8125,7 +8201,7 @@ void multi_sync_post_init()
 
 extern commit_pressed_status create_wings();
 
-void multi_sync_post_do()
+void multi_sync_post_do(bool API_Access)
 {	
 	int idx;
 	
@@ -8230,7 +8306,7 @@ void multi_sync_post_do()
 	}
 
 	// blit stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !API_Access){
 		gr_reset_clip();	
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
@@ -8245,13 +8321,14 @@ void multi_sync_post_do()
 	}
 }
 
-void multi_sync_post_close()
+void multi_sync_post_close(bool API_Access)
 {
 	int idx;
 
-	if(Multi_sync_countdown_anim.num_frames > 0)
-		generic_anim_unload(&Multi_sync_countdown_anim);
-	
+	if (!API_Access) {
+		if (Multi_sync_countdown_anim.num_frames > 0)
+			generic_anim_unload(&Multi_sync_countdown_anim);
+	}
 	// all players should reset sequencing
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		if(Net_player->flags & NETINFO_FLAG_CONNECTED){

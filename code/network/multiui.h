@@ -96,6 +96,9 @@ extern int Multi_create_overlay_id;
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();
 
+// check if a mission is built-in from volition
+bool multi_is_item_builtin_volition(const char*);
+
 // returns an index into Multi_create_mission_list
 int multi_create_lookup_mission(char *fname);
 
@@ -135,10 +138,13 @@ void multi_start_game_init(bool API_Access = false);
 void multi_start_game_do(bool API_Access = false);
 void multi_start_game_close(bool API_Access = false);
 
-void multi_create_game_init();
-void multi_create_game_do();
+void multi_create_game_init(bool API_Access = false);
+void multi_create_game_do(bool API_Access = false);
 void multi_create_game_close();
 void multi_create_game_add_mission(char *fname,char *name, int flags);
+void multi_create_list_set_item(int abs_index, int mode);
+void multi_create_accept_hit(int mode, int select_index);
+int multi_create_ok_to_commit(int select_index);
 
 #define MULTI_CREATE_SHOW_MISSIONS			0
 #define MULTI_CREATE_SHOW_CAMPAIGNS			1
@@ -148,12 +154,21 @@ void multi_create_handle_join(net_player *pl);
 
 void multi_jw_handle_join(net_player *pl);
 
+// maximum values for various input boxes (to notify user of overruns)
+#define MULTI_HO_MAX_TIME_LIMIT 500
+#define MULTI_HO_MAX_TOKEN_WAIT 5
+#define MULTI_HO_MAX_KILL_LIMIT 9999
+#define MULTI_HO_MAX_OBS 4
+
 void multi_host_options_init();
 void multi_host_options_do();
 void multi_host_options_close();
+void multi_ho_set_skill_level(int skill);
+int multi_ho_get_skill_level();
+void multi_ho_apply_options();
 
-void multi_game_client_setup_init();
-void multi_game_client_setup_do_frame();
+void multi_game_client_setup_init(bool API_Access = false);
+void multi_game_client_setup_do_frame(bool API_Access = false);
 void multi_game_client_setup_close();
 
 #define MULTI_SYNC_PRE_BRIEFING		0		// moving from the join to the briefing stage
@@ -161,10 +176,11 @@ void multi_game_client_setup_close();
 #define MULTI_SYNC_INGAME				2		// ingame joiners data sync
 extern int Multi_sync_mode;					// should always set this var before calling GS_EVENT_MULTI_MISSION_SYNC
 extern int Multi_sync_countdown;				// time in seconds until the mission is going to be launched
-void multi_sync_init();
-void multi_sync_do();
-void multi_sync_close();
+void multi_sync_init(bool API_Access = false);
+void multi_sync_do(bool API_Access = false);
+void multi_sync_close(bool API_Access = false);
 void multi_sync_start_countdown();			// start the countdown to launch when the launch button is pressed
+SCP_string multi_sync_get_state_string(net_player* player);
 
 // note : these functions are called from within missiondebrief.cpp - NOT from freespace.cpp
 void multi_debrief_init();
