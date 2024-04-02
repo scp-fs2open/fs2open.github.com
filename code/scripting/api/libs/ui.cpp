@@ -2808,14 +2808,14 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	return ade_set_args(L, "t", pages);
 }
 
-//**********SUBLIBRARY: UserInterface/Multi
-ADE_LIB_DERIV(l_UserInterface_Multi,
-	"Multi",
+//**********SUBLIBRARY: UserInterface/MultiGeneral
+ADE_LIB_DERIV(l_UserInterface_MultiGeneral,
+	"MultiGeneral",
 	nullptr,
-	"API for accessing general data related to all the non-PXO Lobby UIs.",
+	"API for accessing general data related to all Multi UIs with the exception of the PXO Lobby.",
 	l_UserInterface);
 
-ADE_VIRTVAR(StatusText, l_UserInterface_Multi, nullptr, "The current status text", "string", "the status text")
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiGeneral, nullptr, "The current status text", "string", "the status text")
 {
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
@@ -2824,7 +2824,7 @@ ADE_VIRTVAR(StatusText, l_UserInterface_Multi, nullptr, "The current status text
 	return ade_set_args(L, "s", Multi_common_notify_text);
 }
 
-ADE_VIRTVAR(InfoText, l_UserInterface_Multi, nullptr, "The current info text", "string", "the info text")
+ADE_VIRTVAR(InfoText, l_UserInterface_MultiGeneral, nullptr, "The current info text", "string", "the info text")
 {
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
@@ -2834,7 +2834,7 @@ ADE_VIRTVAR(InfoText, l_UserInterface_Multi, nullptr, "The current info text", "
 }
 
 ADE_FUNC(getNetGame,
-	l_UserInterface_Multi,
+	l_UserInterface_MultiGeneral,
 	nullptr,
 	"The handle to the netgame. Note that the netgame will be invalid if a multiplayer game has not been joined or created.",
 	"netgame",
@@ -2844,7 +2844,7 @@ ADE_FUNC(getNetGame,
 	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
 }
 
-ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_Multi);
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiGeneral);
 ADE_INDEXER(l_Net_Players,
 	"number Index",
 	"Array of net players",
