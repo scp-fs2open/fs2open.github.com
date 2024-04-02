@@ -2848,7 +2848,7 @@ ADE_FUNC(runNetwork, l_UserInterface_MultiStartGame, nullptr, "Runs the network 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(setName, l_UserInterface_MultiStartGame, "string Password", "Sets the game's name", "boolean", "True if successful, false otherwise")
+ADE_FUNC(setName, l_UserInterface_MultiStartGame, "string Name", "Sets the game's name", "boolean", "True if successful, false otherwise")
 {
 	const char* name;
 	if (!ade_get_args(L, "s", &name))
