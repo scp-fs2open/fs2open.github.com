@@ -1253,6 +1253,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
 	SEXP_CHECK_MUST_BE_INTEGER,
 	SEXP_CHECK_INVALID_CUSTOM_STRING,
+	SEXP_CHECK_POTENTIAL_ISSUE,
 };
 
 
@@ -1418,6 +1419,7 @@ extern int get_operator_const(int node);
 extern int find_operator_index(int op_const);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
+extern int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg);
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();

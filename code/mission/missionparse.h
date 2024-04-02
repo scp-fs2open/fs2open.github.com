@@ -60,6 +60,7 @@ extern bool check_for_23_3_data();
 // mission parse flags used for parse_mission() to tell what kind of information to get from the mission file
 #define MPF_ONLY_MISSION_INFO	(1 << 0)
 #define MPF_IMPORT_FSM			(1 << 1)
+#define MPF_FAST_RELOAD			(1 << 2)	// skip clearing some stuff so we can load the mission faster (usually since it's the same mission)
 
 // bitfield definitions for missions game types
 #define OLD_MAX_GAME_TYPES				4					// needed for compatibility

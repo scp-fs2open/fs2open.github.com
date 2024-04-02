@@ -5,6 +5,9 @@
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool blending)
 {
 	if ( blending ) {
@@ -728,18 +731,69 @@ uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
 
+    if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {
+        Shader_flags |= get_shader_runtime_early_flags();
+    }
+
 	if (Shadow_casting) {
 		// if we're building the shadow map, we likely only need the flags here and above so bail
-		Shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
+		Shader_flags |= MODEL_SDR_FLAG_SHADOW_MAP;
 
 		return Shader_flags;
 	}
 
-	if (uses_thick_outlines() && gr_is_capable(CAPABILITY_THICK_OUTLINE)) {
-		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
+	if (uses_thick_outlines() && gr_is_capable(gr_capability::CAPABILITY_THICK_OUTLINE)) {
+		Shader_flags |= MODEL_SDR_FLAG_THICK_OUTLINES;
 	}
 
+    if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {
+        Shader_flags |= get_shader_runtime_flags();
+    }
+
 	return Shader_flags;
+}
+
+int model_material::get_shader_runtime_early_flags() const {
+    int flags = 0;
+    if (is_batched())
+        flags |= MODEL_SDR_FLAG_TRANSFORM;
+    return flags;
+}
+
+int model_material::get_shader_runtime_flags() const {
+    int flags = 0;
+	if (is_lit())
+		flags |= MODEL_SDR_FLAG_LIGHT;
+	if (is_deferred())
+		flags |= MODEL_SDR_FLAG_DEFERRED;
+	if (is_hdr())
+		flags |= MODEL_SDR_FLAG_HDR;
+	if (get_texture_map(TM_BASE_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_DIFFUSE;
+	if (get_texture_map(TM_GLOW_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_GLOW;
+	if (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_SPEC;
+	if (ENVMAP > 0)
+		flags |= MODEL_SDR_FLAG_ENV;
+	if (get_texture_map(TM_NORMAL_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_NORMAL;
+	if (get_texture_map(TM_AMBIENT_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_AMBIENT;
+	if (get_texture_map(TM_MISC_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_MISC;
+	if (get_texture_map(TM_MISC_TYPE) > 0 && is_team_color_set())
+		flags |= MODEL_SDR_FLAG_TEAMCOLOR;
+	if (is_fogged())
+		flags |= MODEL_SDR_FLAG_FOG;
+	if (is_shadow_receiving())
+		flags |= MODEL_SDR_FLAG_SHADOWS;
+	if (get_thrust_scale() > 0.0f)
+		flags |= MODEL_SDR_FLAG_THRUSTER;
+	if (is_alpha_mult_active())
+		flags |= MODEL_SDR_FLAG_ALPHA_MULT;
+
+	return flags;
 }
 
 particle_material::particle_material(): 

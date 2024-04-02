@@ -61,6 +61,30 @@
 #include "SDL_cpuinfo.h"
 #endif
 
+#define GR_CAPABILITY_ENTRY(capability) gr_capability_def{ gr_capability::CAPABILITY_##capability, #capability }
+
+gr_capability_def gr_capabilities[] = {
+	GR_CAPABILITY_ENTRY(ENVIRONMENT_MAP),
+	GR_CAPABILITY_ENTRY(NORMAL_MAP),
+	GR_CAPABILITY_ENTRY(HEIGHT_MAP),
+	GR_CAPABILITY_ENTRY(SOFT_PARTICLES),
+	GR_CAPABILITY_ENTRY(DISTORTION),
+	GR_CAPABILITY_ENTRY(POST_PROCESSING),
+	GR_CAPABILITY_ENTRY(DEFERRED_LIGHTING),
+	GR_CAPABILITY_ENTRY(SHADOWS),
+	GR_CAPABILITY_ENTRY(THICK_OUTLINE),
+	GR_CAPABILITY_ENTRY(BATCHED_SUBMODELS),
+	GR_CAPABILITY_ENTRY(TIMESTAMP_QUERY),
+	GR_CAPABILITY_ENTRY(SEPARATE_BLEND_FUNCTIONS),
+	GR_CAPABILITY_ENTRY(PERSISTENT_BUFFER_MAPPING),
+	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
+	GR_CAPABILITY_ENTRY(LARGE_SHADER)
+};
+
+const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
+
+#undef GR_CAPABILITY_ENTRY
+
 const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
@@ -1452,14 +1476,15 @@ static void init_window_icon() {
 	bm_release(icon_handle);
 }
 
-SCP_string gr_capability_to_string(gr_capability capability) 
+SCP_string gr_capability_to_human_readable_string(gr_capability capability)
 {
-	switch (capability) {
-	case CAPABILITY_BPTC:
-		return "BPTC Texture Compression";
-	default:
+	auto capability_it = std::find_if(&gr_capabilities[0], &gr_capabilities[gr_capabilities_num],
+		[capability](const gr_capability_def &entry) { return entry.capability == capability; });
+
+	if (capability_it != &gr_capabilities[gr_capabilities_num])
+		return capability_it->parse_name;
+	else
 		return "Invalid Capability";
-	}
 }
 
 bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
@@ -1692,12 +1717,13 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	mprintf(("Checking graphics capabilities:\n"));
 	mprintf(("  Persistent buffer mapping: %s\n",
-	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
+	         gr_is_capable(gr_capability::CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
 
 	mprintf(("Checking mod required rendering features...\n"));
 	for (gr_capability ext : Required_render_ext) {
 		if (!gr_is_capable(ext)) {
-			Error(LOCATION, "Feature %s required by mod not supported by system.\n", gr_capability_to_string(ext).c_str());
+			Error(LOCATION, "Feature %s required by mod not supported by system.\n",
+				gr_capability_to_human_readable_string(ext).c_str());
 		}
 	}
 	mprintf(("  All required features are supported.\n"));
@@ -1745,7 +1771,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	Gr_inited = 1;
 
-	if (!gr_is_capable(CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
 		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
 		Shadow_quality = ShadowQuality::Disabled;
 	}

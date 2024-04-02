@@ -288,6 +288,16 @@ void parse_nebula_table(const char* filename)
 					poofp->density = 1 / (poofp->density * poofp->density * poofp->density);
 				}
 
+				if (optional_string("$Alignment:")) {
+					SCP_string type;
+					stuff_string(type, F_NAME);
+
+					if (!stricmp(type.c_str(), "VERTICAL"))
+						poofp->alignment = vmd_y_vector;
+					else
+						Warning(LOCATION, "Unrecognized alignment type '%s' for nebula poof %s", type.c_str(), poofp->name);
+				}
+
 				if (optional_string("$Rotation:"))
 					poofp->rotation = ::util::parseUniformRange<float>(-1000.0f, 1000.0f);
 
@@ -833,7 +843,10 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 	new_poof.rot_speed = fl_radians(pinfo->rotation.next());
 	new_poof.alpha = pinfo->alpha.next();
 	new_poof.anim_time = frand_range(0.0f, pinfo->bitmap.total_time);
-	vm_vec_rand_vec(&new_poof.up_vec);
+	if (pinfo->alignment != vmd_zero_vector)
+		vm_vec_rand_vec(&new_poof.up_vec);
+	else
+		new_poof.up_vec = pinfo->alignment;
 
 	Neb2_poofs.push_back(new_poof);
 }
@@ -974,10 +987,16 @@ void neb2_render_poofs()
 		vec3d view_pos;
 		{
 			float scalar = -1 / powf((vm_vec_dist(&eye_pos, &pf.pt) / (10 * pf.radius)), 3.f);
+			if (pinfo->alignment != vmd_zero_vector)
+				scalar = 0.0f;
 
 			vm_vec_scale_add(&view_pos, &eye_pos, &eye_orient.vec.fvec, scalar);
 
 			view_pos -= pf.pt;
+
+			if (pinfo->alignment != vmd_zero_vector)
+				vm_project_point_onto_plane(&view_pos, &view_pos, &pinfo->alignment, &vmd_zero_vector);
+
 			vm_vec_normalize(&view_pos);
 
 			vm_vector_2_matrix(&orient, &view_pos, &pf.up_vec, nullptr);

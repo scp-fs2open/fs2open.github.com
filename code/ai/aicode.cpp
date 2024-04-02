@@ -321,16 +321,34 @@ object *Autopilot_flight_leader = NULL;
 
 /**
  * Sets the timestamp used to tell is it is a good time for this team to rearm.  
- * Once the timestamp is no longer valid, then rearming is not a "good time"
+ * Ends a 'bad rearm time'
+ * Once the timestamp is no longer valid, then rearming is not a "good time" (may or may not rearm)
  *
  * @param team Team (friendly, hostile, neutral) 
  * @param time Time to rearm
  */
-void ai_set_rearm_status(int team, int time)
+void ai_set_good_rearm_time(int team, int time)
 {
 	Assert( time >= 0 );
 
-	Iff_info[team].ai_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
+	Iff_info[team].ai_good_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
+	Iff_info[team].ai_bad_rearm_timestamp = TIMESTAMP::invalid();
+}
+
+/**
+ * Sets the timestamp used to tell is it is a bad time for this team to rearm.  
+ * Ends a 'good rearm time'
+ * Once the timestamp is no longer valid, then rearming is not a "bad time" (may or may not rearm)
+ *
+ * @param team Team (friendly, hostile, neutral) 
+ * @param time Time to rearm
+ */
+void ai_set_bad_rearm_time(int team, int time)
+{
+	Assert(time >= 0);
+
+	Iff_info[team].ai_bad_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
+	Iff_info[team].ai_good_rearm_timestamp = TIMESTAMP::invalid();
 }
 
 /**
@@ -339,7 +357,7 @@ void ai_set_rearm_status(int team, int time)
  * @return true(1) or false(0) if it is "safe" for the given object to rearm.  
  * @todo This function could be easily expended to further the definition of "safe"
  */
-int ai_good_time_to_rearm(object *objp)
+bool ai_good_time_to_rearm(object *objp)
 {
 	int team;
 
@@ -347,9 +365,24 @@ int ai_good_time_to_rearm(object *objp)
 	team = Ships[objp->instance].team;
 	
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_good_rearm_time_bug])
-		return Iff_info[team].ai_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_rearm_timestamp);
+		return Iff_info[team].ai_good_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_good_rearm_timestamp);
 	else
-		return Iff_info[team].ai_rearm_timestamp.isValid();
+		return Iff_info[team].ai_good_rearm_timestamp.isValid();
+}
+
+/**
+ * "unsafe" is currently defined by the mission designer using the good/bad time to rearm sexpressions.  This status is currently team based.
+ *
+ * @return true(1) or false(0) if it is "unsafe" for the given object to rearm.  
+ */
+bool ai_bad_time_to_rearm(object* objp)
+{
+	int team;
+
+	Assert(objp->type == OBJ_SHIP);
+	team = Ships[objp->instance].team;
+
+	return Iff_info[team].ai_bad_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_bad_rearm_timestamp);
 }
 
 /**
@@ -1003,8 +1036,10 @@ void ai_level_init()
 
 	Ai_goal_signature = 0;
 
-	for (i = 0; i < (int) Iff_info.size(); i++)
-		Iff_info[i].ai_rearm_timestamp = TIMESTAMP::invalid();
+	for (i = 0; i < (int)Iff_info.size(); i++) {
+		Iff_info[i].ai_good_rearm_timestamp = TIMESTAMP::invalid();
+		Iff_info[i].ai_bad_rearm_timestamp = TIMESTAMP::invalid();
+	}
 
 	// clear out the stuff needed for AI firing powerful secondary weapons
 	ai_init_secondary_info();
@@ -14227,8 +14262,10 @@ int maybe_request_support(object *objp)
 
 	//	Compute danger threshold.
 	//	Balance this with desire and maybe request support.
-	if (ai_good_time_to_rearm( objp )) {
+	if (ai_good_time_to_rearm(objp)) {
 		try_to_rearm = true;
+	} else if (ai_bad_time_to_rearm(objp)) {
+		try_to_rearm = false;
 	} else if (num_allies_rearming(objp) < 2) {
 		if (desire >= 8) {	//	guarantees disabled will cause repair request
 			try_to_rearm = true;

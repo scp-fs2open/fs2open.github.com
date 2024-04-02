@@ -39,6 +39,9 @@
 #include "render/3d.h"
 #include "weapon/trails.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 extern int GLOWMAP;
 extern int SPECMAP;
 extern int SPECGLOSSMAP;
@@ -843,18 +846,33 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		// it is uncritical at this time as texture reads are gated behind feature flags in the shader.
 		// This will be fixed in future cleanups, where we plan to introduce engine-generated default textures to substitute
 		// if the material doesn't provide anything.
-		Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
-		Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
-		Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
-		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
-		Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
-		Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
-		Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
-		Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
-		Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
-		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
+		const bool setAllUniforms = gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER);
+		const int flags = material_info->get_shader_runtime_early_flags() | material_info->get_shader_runtime_flags();
+
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_DIFFUSE))
+			Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_GLOW))
+			Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SPEC))
+			Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_ENV)) {
+			Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
+			Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
+		}
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_NORMAL))
+			Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_AMBIENT))
+			Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_MISC))
+			Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SHADOWS))
+			Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
-		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_TRANSFORM))
+			Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+
+		//No shader ever defines this, so don't push it.
+		//Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
 
 		if (material_info->get_texture_map(TM_BASE_TYPE) > 0) {
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE),

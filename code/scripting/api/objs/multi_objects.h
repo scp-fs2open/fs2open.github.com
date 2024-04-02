@@ -3,6 +3,7 @@
 #include "network/multi.h"
 #include "network/multiui.h"
 #include "network/multi_pxo.h"
+#include "network/multiui.h"
 #include "scripting/ade_api.h"
 
 namespace scripting {
@@ -49,11 +50,20 @@ struct net_game_h {
 	netgame_info* getNetgame() const;
 };
 
+struct active_game_h {
+	int game;
+	active_game_h();
+	explicit active_game_h(int l_game);
+	active_game* getGame() const;
+	bool isValid() const;
+};
+
 DECLARE_ADE_OBJ(l_Channel, channel_h);
 DECLARE_ADE_OBJ(l_NetPlayer, net_player_h);
 DECLARE_ADE_OBJ(l_NetMission, net_mission_h);
 DECLARE_ADE_OBJ(l_NetCampaign, net_campaign_h);
 DECLARE_ADE_OBJ(l_NetGame, net_game_h);
+DECLARE_ADE_OBJ(l_Active_Game, active_game_h);
 
 } // namespace api
 } // namespace scripting

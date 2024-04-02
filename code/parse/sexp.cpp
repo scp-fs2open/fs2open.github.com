@@ -437,6 +437,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "clear-ship-goals",				OP_CLEAR_SHIP_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-wing-goals",				OP_CLEAR_WING_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,						2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "bad-rearm-time",					OP_BAD_REARM_TIME,						2,	2,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "good-primary-time",				OP_GOOD_PRIMARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},	// plieblang
 	{ "good-secondary-time",			OP_GOOD_SECONDARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "change-ai-class",				OP_CHANGE_AI_CLASS,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -4171,6 +4172,66 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 		node = Sexp_nodes[node].rest;
 		argnum++;
 	}
+
+	return 0;
+}
+
+int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
+{
+	// empty tree
+	if (node < 0)
+		return 0;
+
+	if (bad_node)
+		*bad_node = node;
+
+	// check operators for anything that might trip up a mission designer
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
+	{
+		auto op_num = get_operator_const(node);
+		int first_arg_node = CDR(node);
+
+		switch (op_num)
+		{
+			// examine all sexps that check for wing destruction
+			case OP_IS_DESTROYED_DELAY:
+			case OP_PERCENT_SHIPS_DESTROYED:
+				first_arg_node = CDR(first_arg_node);
+				FALLTHROUGH;
+			case OP_IS_DESTROYED:
+			case OP_TIME_WING_DESTROYED:
+			{
+				for (int n = first_arg_node; n >= 0; n = CDR(n))
+				{
+					int wingnum = wing_lookup(CTEXT(n));
+					if (wingnum >= 0)
+					{
+						auto wingp = &Wings[wingnum];
+						if (wingp->num_waves > 1 && wingp->arrival_location == ARRIVE_FROM_DOCK_BAY)
+						{
+							issue_msg = "Wing ";
+							issue_msg += wingp->name;
+							issue_msg += " has more than one wave and arrives from a docking bay.  Be careful when checking for this wing's destruction.  If the "
+								"mothership is destroyed before all waves have arrived, the wing will not be considered destroyed.";
+							return SEXP_CHECK_POTENTIAL_ISSUE;
+						}
+					}
+				}
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+
+	// recurse down the tree
+	int z = check_sexp_potential_issues(CAR(node), bad_node, issue_msg);
+	if (z)
+		return z;
+	z = check_sexp_potential_issues(CDR(node), bad_node, issue_msg);
+	if (z)
+		return z;
 
 	return 0;
 }
@@ -16423,11 +16484,9 @@ void sexp_set_traitor_override(int node)
 }
 
 /**
- * Toggle the status bit for the AI code which tells the AI if it is a good time to rearm.
- *
- * The status being set means good time.  Status not being set (unset), means bad time. Designers must implement this.
+ * Toggle the status for the AI code which tells the AI if it is a good or bad time to rearm.
  */
-void sexp_good_time_to_rearm(int n)
+void sexp_good_bad_time_to_rearm(int n, bool good)
 {
 	int team, time;
 	bool is_nan, is_nan_forever;
@@ -16438,7 +16497,10 @@ void sexp_good_time_to_rearm(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	ai_set_rearm_status(team, time);
+	if (good)
+		ai_set_good_rearm_time(team, time);
+	else
+		ai_set_bad_rearm_time(team, time);
 }
 
 /**
@@ -28279,9 +28341,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-				// sexpressions for setting flag for good/bad time for someone to reasm
+				// sexpressions for setting flag for good/bad time for someone to rearm
 			case OP_GOOD_REARM_TIME:
-				sexp_good_time_to_rearm(node);
+			case OP_BAD_REARM_TIME:
+				sexp_good_bad_time_to_rearm(node, op_num == OP_GOOD_REARM_TIME);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -30359,6 +30422,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_GOOD_REARM_TIME:
+		case OP_BAD_REARM_TIME:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
@@ -32145,6 +32209,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_SHIP;
 
 		case OP_GOOD_REARM_TIME:
+		case OP_BAD_REARM_TIME:
 			if ( argnum == 0 )
 				return OPF_IFF;
 			else
@@ -34144,6 +34209,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_CUSTOM_STRING:
 			return "Invalid custom string name";
 
+		case SEXP_CHECK_POTENTIAL_ISSUE:
+			return "This particular SEXP_CHECK_ code is handled differently from the others.  You shouldn't actually see this message; if you do, report it to a SCP coder.";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -35837,6 +35905,7 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
 		case OP_GOOD_REARM_TIME:
+		case OP_BAD_REARM_TIME:
 		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_CHANGE_AI_CLASS:
@@ -38701,10 +38770,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_GOOD_REARM_TIME, "Good rearm time (Action operator)\r\n"
 		"\tInforms the game logic that right now is a good time for a given team to attempt to "
-		"rearm their ships.  The time parameter specified how long the \"good time\" will last.\r\n\r\n"
+		"rearm their ships.  The time parameter specifies how long the \"good time\" will last.\r\n"
+		"Can be used to prematurely end its counterpart, bad-rearm-time.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tTeam Name\r\n"
 		"\t2:\tTime in seconds rearm window should last" },
+
+	{ OP_BAD_REARM_TIME, "Bad rearm time (Action operator)\r\n"
+		"\tInforms the game logic that right now is a bad time for a given team to attempt to "
+		"rearm their ships.  AI ships will not choose to rearm. "
+		"The time parameter specifies how long the \"bad time\" will last.\r\n"
+		"Can be used to prematurely end its counterpart, good-rearm-time.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tTeam Name\r\n"
+		"\t2:\tTime in seconds 'no rearm' window should last" },
 
 	{ OP_ALLOW_SHIP, "Allow ship (Action operator)\r\n"
 		"\tThis operator makes the given ship type available to the player team.  Players will be "
