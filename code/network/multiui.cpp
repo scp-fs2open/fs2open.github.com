@@ -7741,11 +7741,11 @@ SCP_string multi_sync_get_state_string(net_player* player)
 		// server should display the pct completion of all clients
 		if (Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 			if (player->s_info.xfer_handle != -1) {
-				int pct_complete = multi_xfer_pct_complete(player->s_info.xfer_handle);
+				float pct_complete = multi_xfer_pct_complete(player->s_info.xfer_handle);
 
 				// if we've got a valid xfer handle
 				if ((pct_complete >= 0.0) && (pct_complete <= 1.0)) {
-					sprintf(txt, XSTR("Mission file xfer %d%%", 828), (int)(pct_complete * 100.0f));
+					sprintf(txt, XSTR("Mission file xfer %d%%", 828), static_cast<int>(pct_complete * 100.0f));
 				}
 				// otherwise
 				else {
@@ -7759,11 +7759,11 @@ SCP_string multi_sync_get_state_string(net_player* player)
 		else {
 			// if we've got a valid file xfer handle
 			if ((player == Net_player) && (Net_player->s_info.xfer_handle != -1)) {
-				int pct_complete = multi_xfer_pct_complete(Net_player->s_info.xfer_handle);
+				float pct_complete = multi_xfer_pct_complete(Net_player->s_info.xfer_handle);
 
 				// if we've got a valid xfer handle
 				if ((pct_complete >= 0.0) && (pct_complete <= 1.0)) {
-					sprintf(txt, XSTR("Mission file xfer %d%%", 828), (int)(pct_complete * 100.0f));
+					sprintf(txt, XSTR("Mission file xfer %d%%", 828), static_cast<int>(pct_complete * 100.0f));
 				}
 				// otherwise
 				else {
