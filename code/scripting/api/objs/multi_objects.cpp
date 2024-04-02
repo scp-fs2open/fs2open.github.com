@@ -54,11 +54,14 @@ int net_player_h::getIndex() const
 
 bool net_player_h::isValid() const
 {
+	if (player < 0 || player >= MAX_PLAYERS) {
+		return false;
+	}
 	//disconnected players and servers are not valid for the UI!
 	if (!MULTI_CONNECTED(Net_players[player]) || MULTI_STANDALONE(Net_players[player])) {
 		return false;
 	}
-	return player >= 0 && player < MAX_PLAYERS;
+	return true;
 }
 
 net_mission_h::net_mission_h() : mission(-1) {}
@@ -860,8 +863,16 @@ ADE_VIRTVAR(Closed, l_NetGame, "boolean Closed", "Whether or not the game is clo
 			} else {
 				current.getNetgame()->flags &= ~NG_FLAG_TEMP_CLOSED;
 			}
+		} else if (Net_player->flags & NETINFO_FLAG_GAME_HOST) {
+			if (closed) {
+				current.getNetgame()->options.flags |= MLO_FLAG_TEMP_CLOSED;
+			} else {
+				current.getNetgame()->options.flags &= ~MLO_FLAG_TEMP_CLOSED;
+			}
 			multi_options_update_netgame();
 		}
+		// It can take the server time to process the change, so return the input choice for now.
+		return (ade_set_args(L, "b", closed));
 	}
 
 	if (current.getNetgame()->flags & NG_FLAG_TEMP_CLOSED) {
@@ -1011,7 +1022,7 @@ ADE_VIRTVAR(RespawnLimit, l_NetGame, nullptr, "The current respawn limit", "numb
 	return ade_set_args(L, "i", current.getNetgame()->options.respawn);
 }
 
-ADE_VIRTVAR(TimeLimit, l_NetGame, nullptr, "The current time limit", "number", "the time limit")
+ADE_VIRTVAR(TimeLimit, l_NetGame, nullptr, "The current time limit in minutes. -1 means no limit.", "number", "the time limit")
 {
 	net_game_h current;
 	int time = 0;
