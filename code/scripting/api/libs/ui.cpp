@@ -29,6 +29,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionhotkey.h"
+#include "missionui/chatbox.h"
 #include "missionui/redalert.h"
 #include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
@@ -2561,7 +2562,7 @@ ADE_FUNC(getChat,
 
 	LuaTable chats = LuaTable::create(L);
 
-	int i = 0;
+	int i = 1;
 	for (auto& line : Multi_pxo_chat) {
 		
 		char callsign[CALLSIGN_LEN];
@@ -2867,6 +2868,92 @@ ADE_INDEXER(l_Net_Players,
 ADE_FUNC(__len, l_Net_Players, nullptr, "The number of net players", "number", "The number of players.")
 {
 	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
+ADE_FUNC(getChat,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"Gets the entire chat as a table of tables each with the following values: "
+	"Callsign - the name of the message sender, "
+	"Message - the message text, "
+	"Color - the color the text should be according to the player id",
+	"table",
+	"A table of chat strings")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	int i = 1;
+	SCP_string text = "";
+	SCP_string callsign = "";
+	color* clr = nullptr;
+
+	auto createChatEntry = [L, &i, &chats](const SCP_string& this_text, const SCP_string& this_callsign, const color* this_clr) {
+			auto item = luacpp::LuaTable::create(L);
+			item.addValue("Callsign", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_callsign.c_str()));
+			item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_text.c_str()));
+			item.addValue("Color", l_Color.Set(*this_clr));
+			chats.addValue(i++, item);
+	};
+
+
+	bool send = false;
+	for (auto& chat : Brief_chat) {
+
+		// In API mode we don't need to worry about line splits
+		// so reconnect all indented lines into a single chat line and
+		// let the API's UI deal with the rest.
+		// But first send the previous chat line, if any, to the lua table
+		// now that we know we're done concatenating indented lines.
+		if (!chat.indent) {
+			if (send){
+				createChatEntry(text, callsign, clr);
+
+				//Sent, so now clear and start over
+				text.clear();
+				callsign.clear();
+				clr = nullptr;
+			}
+
+			text = chat.text;
+			callsign = chat.callsign;
+			clr = Color_netplayer[chat.player_id];
+
+			send = true;
+		} else {
+			text += chat.text;
+		}
+	}
+
+	// We might have one more line to add
+	if (send) {
+		createChatEntry(text, callsign, clr);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(sendChat,
+	l_UserInterface_MultiGeneral,
+	"string",
+	"Sends a string to the current game's IRC chat. Limited to 125 characters. Anything after that is dropped.",
+	nullptr,
+	nullptr)
+{
+	const char* msg;
+	if (!ade_get_args(L, "s", &msg))
+		return ADE_RETURN_NIL;
+
+	char temp[CHATBOX_MAX_LEN];
+	strncpy(temp, msg, CHATBOX_MAX_LEN);
+	temp[CHATBOX_MAX_LEN - 1] = '\0';
+
+	chatbox_send_msg(temp);
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/MultiJoinGame
