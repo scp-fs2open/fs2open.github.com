@@ -2808,6 +2808,67 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	return ade_set_args(L, "t", pages);
 }
 
+//**********SUBLIBRARY: UserInterface/Multi
+ADE_LIB_DERIV(l_UserInterface_Multi,
+	"Multi",
+	nullptr,
+	"API for accessing general data related to all the non-PXO Lobby UIs.",
+	l_UserInterface);
+
+ADE_VIRTVAR(StatusText, l_UserInterface_Multi, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_notify_text);
+}
+
+ADE_VIRTVAR(InfoText, l_UserInterface_Multi, nullptr, "The current info text", "string", "the info text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_all_text);
+}
+
+ADE_FUNC(getNetGame,
+	l_UserInterface_Multi,
+	nullptr,
+	"The handle to the netgame. Note that the netgame will be invalid if a multiplayer game has not been joined or created.",
+	"netgame",
+	"The netgame handle")
+{
+	SCP_UNUSED(L);
+	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
+}
+
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_Multi);
+ADE_INDEXER(l_Net_Players,
+	"number Index",
+	"Array of net players",
+	"net_player",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || (idx >= MAX_PLAYERS))
+		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
+
+	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Players, nullptr, "The number of net players", "number", "The number of players.")
+{
+	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
 //**********SUBLIBRARY: UserInterface/MultiJoinGame
 ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
 	"MultiJoinGame",
@@ -2914,24 +2975,6 @@ ADE_FUNC(sendJoinRequest,
 	}
 
 	return ADE_RETURN_FALSE;
-}
-
-ADE_VIRTVAR(StatusText, l_UserInterface_MultiJoinGame, nullptr, "The current status text", "string", "the status text")
-{
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
-	return ade_set_args(L, "s", Multi_common_notify_text);
-}
-
-ADE_VIRTVAR(InfoText, l_UserInterface_MultiJoinGame, nullptr, "The current info text", "string", "the info text")
-{
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
-	return ade_set_args(L, "s", Multi_common_all_text);
 }
 
 ADE_LIB_DERIV(l_Active_Games, "ActiveGames", nullptr, nullptr, l_UserInterface_MultiJoinGame);
@@ -3161,41 +3204,6 @@ ADE_FUNC(runNetwork,
 	multi_create_game_do(true);
 
 	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(getNetGame, l_UserInterface_MultiHostSetup, nullptr, "The handle to the netgame", "netgame", "The netgame handle")
-{
-	SCP_UNUSED(L);
-	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
-}
-
-ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiHostSetup);
-ADE_INDEXER(l_Net_Players,
-	"number Index",
-	"Array of net players",
-	"net_player",
-	"net player handle, or invalid handle if index is invalid")
-{
-	int idx;
-	if (!ade_get_args(L, "*i", &idx))
-		return ade_set_error(L, "s", "");
-
-	// convert from lua index
-	idx--;
-
-	if ((idx < 0) || (idx >= MAX_PLAYERS))
-		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
-
-	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
-}
-
-ADE_FUNC(__len, l_Net_Players,
-	nullptr,
-	"The number of net players",
-	"number",
-	"The number of players.")
-{
-	return ade_set_args(L, "i", MAX_PLAYERS);
 }
 
 ADE_LIB_DERIV(l_Net_Missions, "NetMissions", nullptr, nullptr, l_UserInterface_MultiHostSetup);

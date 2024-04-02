@@ -48,6 +48,7 @@ struct net_campaign_h {
 struct net_game_h {
 	net_game_h();
 	netgame_info* getNetgame() const;
+	bool isValid() const;
 };
 
 struct active_game_h {
