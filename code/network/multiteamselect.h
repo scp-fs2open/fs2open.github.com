@@ -30,6 +30,10 @@ extern int Multi_ts_inited;
 extern int Multi_ts_deleted_objnums[MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
 extern int Multi_ts_num_deleted;
 
+// packet codes
+#define TS_CODE_LOCK_TEAM 0     // the specified team's slots are locked
+#define TS_CODE_PLAYER_UPDATE 1 // a player slot update for the specified team
+
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT FUNCTIONS
 //
@@ -90,6 +94,12 @@ int multi_ts_is_locked();
 
 // show a popup saying "only host and team captains can modify, etc, etc"
 void multi_ts_maybe_host_only_popup();
+
+// return if a player is currently in a loadout slot
+bool multi_ts_is_player_in_slot(int slot_idx);
+
+// return if a player is allowed in a loadout slot
+bool multi_ts_is_player_allowed_in_slot(int slot_idx);
 
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT PACKET HANDLERS
