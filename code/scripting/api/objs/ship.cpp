@@ -2742,8 +2742,8 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 
 ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width",
 	"Creates an electric arc on the ship between two points in the ship's reference frame, for the specified duration in seconds, and the specified width in meters.",
-	"boolean",
-	"True if successful, false otherwise")
+	"number",
+	"The arc index if successful, 0 otherwise")
 {
 	object_h* objh = nullptr;
 	vec3d* v1;
@@ -2752,10 +2752,10 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 	float width = 0.0f;
 
 	if (!ade_get_args(L, "oooff", l_Ship.GetPtr(&objh), l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &duration, &width))
-		return ADE_RETURN_FALSE;
+		return ade_set_error(L, "i", 0);
 
 	if (!objh->isValid())
-		return ADE_RETURN_FALSE;
+		return ade_set_error(L, "i", 0);
 
 	auto shipp = &Ships[objh->objp->instance];
 
@@ -2776,13 +2776,70 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 
 			shipp->arc_width[i] = width;
 
-			return ADE_RETURN_TRUE;
+			return ade_set_args(L, "i", i + 1);	// FS2 -> Lua
 		}
 	}
 
-	return ADE_RETURN_FALSE;
+	return ade_set_args(L, "i", 0);
 }
 
+ADE_FUNC(DeleteElectricArc, l_Ship, "number index",
+	"Removes the specified electric arc from the ship.",
+	nullptr,
+	nullptr)
+{
+	object_h* objh = nullptr;
+	int index;
+
+	if (!ade_get_args(L, "oi", l_Ship.GetPtr(&objh), &index))
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+
+	index--;	// Lua -> FS2
+	if (index >= 0 && index < MAX_ARC_EFFECTS)
+	{
+		shipp->arc_timestamp[index] = TIMESTAMP::invalid();
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector secondPoint, [number width]",
+	"Sets the endpoints (in the ship's reference frame) and width of the specified electric arc on the ship, .",
+	nullptr,
+	nullptr)
+{
+	object_h* objh = nullptr;
+	int index;
+	vec3d* v1;
+	vec3d* v2;
+	float width = 0.0f;
+
+	int args = ade_get_args(L, "oioo|f", l_Ship.GetPtr(&objh), &index, l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &width);
+	if (args < 4)
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+
+	index--;	// Lua -> FS2
+	if (index >= 0 && index < MAX_ARC_EFFECTS)
+	{
+		shipp->arc_pts[index][0] = *v1;
+		shipp->arc_pts[index][1] = *v2;
+
+		if (args == 5)
+			shipp->arc_width[index] = width;
+	}
+
+	return ADE_RETURN_NIL;
+}
 
 }
 }
