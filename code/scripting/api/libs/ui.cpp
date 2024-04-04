@@ -2956,6 +2956,70 @@ ADE_FUNC(sendChat,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(quitGame,
+	l_UserInterface_MultiGeneral,
+	nullptr, "Quits the game for the current player and returns them to the PXO lobby", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_quit_game(PROMPT_ALL);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setPlayerState, l_UserInterface_MultiGeneral, nullptr, "Sets the current player's network state based on the current game state.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	int state = gameseq_get_state();
+
+	// We really only need to handle this for game states that the lua API
+	// completely replaces; Where the state_init() code doesn't actually run
+	// but it won't hurt to include others.
+	// This may not be an exhaustive list. Feel free to add more.
+	switch (state) {
+	case GS_STATE_BRIEFING:
+		Net_player->state = NETPLAYER_STATE_BRIEFING;
+		break;
+	case GS_STATE_CMD_BRIEF:
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+		break;
+	case GS_STATE_SHIP_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_WEAPON_SELECT:
+		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
+		break;
+	case GS_STATE_RED_ALERT:
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
+		break;
+	case GS_STATE_DEBRIEF:
+		Net_player->state = NETPLAYER_STATE_DEBRIEF;
+		break;
+	case GS_STATE_FICTION_VIEWER:
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+		break;
+	case GS_STATE_MULTI_HOST_SETUP:
+		Net_player->state = NETPLAYER_STATE_HOST_SETUP;
+		break;
+	case GS_STATE_MULTI_MISSION_SYNC:
+		Net_player->state = NETPLAYER_STATE_MISSION_SYNC;
+		break;
+	case GS_STATE_TEAM_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_MULTI_CLIENT_SETUP:
+		Net_player->state = NETPLAYER_STATE_JOINED;
+		break;
+	default:
+		break;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/MultiJoinGame
 ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
 	"MultiJoinGame",
