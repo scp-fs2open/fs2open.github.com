@@ -3426,5 +3426,74 @@ ADE_FUNC(runNetwork,
 	return ADE_RETURN_NIL;
 }
 
+//**********SUBLIBRARY: UserInterface/MultiDogfightDebrief
+ADE_LIB_DERIV(l_UserInterface_MultiDogfightDebrief,
+	"MultiDogfightDebrief",
+	nullptr,
+	"API for accessing data related to the Dogfight Debrief UI.",
+	l_UserInterface);
+
+ADE_FUNC(getDogfightScores,
+	l_UserInterface_MultiDogfightDebrief,
+	"net_player",
+	"The handle to the dogfight scores",
+	"dogfight_scores",
+	"The dogfight scores handle")
+{
+	net_player_h player;
+	if (!ade_get_args(L, "o", l_NetPlayer.Get(&player)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_Dogfight_Scores.Set(dogfight_scores_h(player.getIndex())));
+}
+
+ADE_FUNC(initDebrief,
+	l_UserInterface_MultiDogfightDebrief,
+	nullptr,
+	"Makes sure everything is done correctly to init the dogfight scores.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_df_debrief_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeDebrief,
+	l_UserInterface_MultiDogfightDebrief,
+	"[boolean Accept]",
+	"Makes sure everything is done correctly to accept or close the debrief. True to accept, False to quit",
+	nullptr,
+	nullptr)
+{
+	bool accept = false;
+	ade_get_args(L, "*b", &accept);
+
+	if (accept) {
+		multi_debrief_accept_hit();
+	} else {
+		multi_debrief_esc_hit();
+	}
+	multi_df_debrief_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiDogfightDebrief,
+	nullptr,
+	"Runs the network required commands.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_df_debrief_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
 } // namespace api
 } // namespace scripting

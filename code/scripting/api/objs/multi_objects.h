@@ -1,5 +1,6 @@
 #pragma once
 
+#include "network/multi_dogfight.h"
 #include "network/multi.h"
 #include "network/multiui.h"
 #include "network/multi_pxo.h"
@@ -58,12 +59,21 @@ struct active_game_h {
 	bool isValid() const;
 };
 
+struct dogfight_scores_h {
+	int scores;
+	dogfight_scores_h();
+	explicit dogfight_scores_h(int l_scores);
+	multi_df_score* getScores() const;
+	bool isValid() const;
+};
+
 DECLARE_ADE_OBJ(l_Channel, channel_h);
 DECLARE_ADE_OBJ(l_NetPlayer, net_player_h);
 DECLARE_ADE_OBJ(l_NetMission, net_mission_h);
 DECLARE_ADE_OBJ(l_NetCampaign, net_campaign_h);
 DECLARE_ADE_OBJ(l_NetGame, net_game_h);
 DECLARE_ADE_OBJ(l_Active_Game, active_game_h);
+DECLARE_ADE_OBJ(l_Dogfight_Scores, dogfight_scores_h);
 
 } // namespace api
 } // namespace scripting
