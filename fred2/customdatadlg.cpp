@@ -218,14 +218,14 @@ bool CustomDataDlg::edit_boxes_have_valid_data(bool dup_key_ok)
 	if (!data_edit_box_has_valid_data()) {
 		return false;
 	}
-	if (!key_edit_box_has_valid_data()) {
+	if (!key_edit_box_has_valid_data(dup_key_ok)) {
 		return false;
 	}
 
 	return true;
 }
 
-bool CustomDataDlg::key_edit_box_has_valid_data()
+bool CustomDataDlg::key_edit_box_has_valid_data(bool dup_key_ok)
 {
 
 	CEdit* key_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_KEY);
@@ -246,7 +246,13 @@ bool CustomDataDlg::key_edit_box_has_valid_data()
 	if (m_lister_keys.size() > 0) {
 
 		const int index = m_data_lister.GetCurSel();
-		const auto& this_key = m_lister_keys[index];
+		SCP_string this_key = "";
+
+		// If we're here then we're updating a pair and the key can be "duplicated"
+		// because it's not actually being changed
+		if (dup_key_ok && SCP_vector_inbounds(m_lister_keys, index)) {
+			this_key = m_lister_keys[index];
+		}
 
 		if (strcmp(this_key.c_str(), key_str)) {
 			for (const auto& pair : m_custom_data) {
