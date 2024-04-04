@@ -12,6 +12,7 @@ extern const std::shared_ptr<Hook<>>									OnIntroAboutToPlay;
 extern const std::shared_ptr<OverridableHook<>>							OnStateStart;
 
 extern const std::shared_ptr<Hook<>>									OnLoadScreen;
+extern const std::shared_ptr<Hook<>>									OnLoadComplete;
 extern const std::shared_ptr<Hook<>>									OnCampaignMissionAccept;
 extern const std::shared_ptr<Hook<>>									OnBriefStage;
 extern const std::shared_ptr<Hook<>>									OnMissionStart; 
