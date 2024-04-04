@@ -780,14 +780,57 @@ ADE_FUNC(skipTraining,
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission. Returns an integer to represent "
-	"built-in errors or 0 if successful. 1 = general error, 2 = a player ship has no weapons, 3 = the required weapon was not found "
-	"loaded on a ship, 4 = 2 or more required weapons were not found loaded on a ship, 5 = a gap in a ship's weapon banks was discovered "
-	"and all empty banks must be at the bottom of the list, 6 = a player has no ship selected",
-	"number error",
+	"Commits to the current mission with current loadout data, and starts the mission. Returns one of the COMMIT_ enums to indicate any errors.",
+	"enumeration",
 	"the error value")
 {
-	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
+	commit_pressed_status rc;
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		rc = multi_ts_commit_pressed();
+	} else {
+		rc = commit_pressed();
+	}
+
+	lua_enum eh_idx = ENUM_INVALID;
+	switch (rc) {
+	case commit_pressed_status::GENERAL_FAIL:
+		eh_idx = LE_COMMIT_FAIL;
+		break;
+	case commit_pressed_status::PLAYER_NO_WEAPONS:
+		eh_idx = LE_COMMIT_PLAYER_NO_WEAPONS;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON_MULTIPLE;
+		break;
+	case commit_pressed_status::BANK_GAP_ERROR:
+		eh_idx = LE_COMMIT_BANK_GAP_ERROR;
+		break;
+	case commit_pressed_status::PLAYER_NO_SLOT:
+		eh_idx = LE_COMMIT_PLAYER_NO_SLOT;
+		break;
+	case commit_pressed_status::MULTI_PLAYERS_NO_SHIPS:
+		eh_idx = LE_COMMIT_MULTI_PLAYERS_NO_SHIPS;
+		break;
+	case commit_pressed_status::MULTI_NOT_ALL_ASSIGNED:
+		eh_idx = LE_COMMIT_MULTI_NOT_ALL_ASSIGNED;
+		break;
+	case commit_pressed_status::MULTI_NO_PRIMARY:
+		eh_idx = LE_COMMIT_MULTI_NO_PRIMARY;
+		break;
+	case commit_pressed_status::MULTI_NO_SECONDARY:
+		eh_idx = LE_COMMIT_MULTI_NO_SECONDARY;
+		break;
+	case commit_pressed_status::SUCCESS:
+	default:
+		eh_idx = LE_COMMIT_SUCCESS;
+		break;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_FUNC(renderBriefingModel,
