@@ -389,15 +389,16 @@ ADE_VIRTVAR(FOFCooldown, l_WeaponBank, "number", "The FOF cooldown value. A valu
 {
 	ship_bank_h *bh = NULL;
 	float newValue = -1.f;
-	if(!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &newValue))
+	if(!ade_get_args(L, "o|f", l_WeaponBank.GetPtr(&bh), &newValue))
 		return ade_set_error(L, "f", -1.f);
 
 	if(!bh->isValid())
 		return ade_set_error(L, "f", -1.f);
 
 	if (ADE_SETTING_VAR) {
-		LuaError(L, "This function does not support setting values yet!");
-		return ade_set_error(L, "f", -1.f);
+		CLAMP(newValue, 0.0f, 1.0f);
+		bh->typeh.sw->primary_bank_fof_cooldown[bh->bank] = newValue;
+		return ade_set_args(L, "f", bh->typeh.sw->primary_bank_fof_cooldown[bh->bank]);
 	}
 
 	switch(bh->typeh.type)

@@ -712,6 +712,36 @@ ADE_VIRTVAR(BurstDelay, l_Weaponclass, "number", "The time in seconds between sh
 	return ade_set_args(L, "f", Weapon_info[idx].burst_delay);
 }
 
+ADE_VIRTVAR(FieldOfFire, l_Weaponclass, "number", "The angular spread for shots of this weapon.", "number", "Fof in degrees, or 0 if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting FieldOfFire is not supported");
+
+	return ade_set_args(L, "f", Weapon_info[idx].field_of_fire);
+}
+
+ADE_VIRTVAR(MaxFieldOfFire, l_Weaponclass, "number", "The maximum field of fire this weapon can have if it increases while firing.", "number", "Max Fof in degrees, or 0 if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting MaxFieldOfFire is not supported");
+
+	return ade_set_args(L, "f", Weapon_info[idx].max_fof_spread);
+}
+
 ADE_VIRTVAR(BeamLife, l_Weaponclass, "number", "The time in seconds that a beam lasts while firing.", "number", "Beam life, or 0 if handle is invalid or the weapon is not a beam")
 {
 	int idx;
