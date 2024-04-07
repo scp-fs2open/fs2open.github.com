@@ -407,7 +407,6 @@ void chatbox_send_msg(char* msg)
 {
 	// check if this message is supposed to have a recipient
 	int target = chatbox_get_msg_target_type(msg);
-	size_t target_length = chatbox_get_msg_target_length(msg);
 
 	// tack on the null terminator in the boundary case
 	size_t x = strlen(msg);
@@ -422,6 +421,7 @@ void chatbox_send_msg(char* msg)
 	} else {
 		// copy the name of the player the message is being sent to
 		char temp[CHATBOX_MAX_LEN];
+		size_t target_length = chatbox_get_msg_target_length(msg);
 		strncpy(temp, msg + 1, target_length - 2);
 		temp[target_length - 2] = '\0';
 		send_game_chat_packet(Net_player, msg, target, nullptr, temp);
@@ -459,11 +459,11 @@ void chatbox_autosplit_line()
 
 		// check if this message is supposed to have a recipient
 		int target = chatbox_get_msg_target_type(msg);
-		size_t target_length = chatbox_get_msg_target_length(msg);
 
 		if (target != MULTI_MSG_ALL) {
 			// we need to add the target the message is going to before we add the rest of the string
 			char temp[CHATBOX_MAX_LEN];
+			size_t target_length = chatbox_get_msg_target_length(msg);
 			strncpy(temp, msg, target_length);
  			temp[target_length] = ' '; 
  			temp[target_length+1] = '\0'; 
