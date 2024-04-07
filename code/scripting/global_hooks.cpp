@@ -31,6 +31,9 @@ const std::shared_ptr<Hook<>> OnLoadScreen = Hook<>::Factory("On Load Screen",
 	"Executed regularly during loading of a mission.",
 	{ {"Progress", "number", "A number from 0 to 1 indicating how far along the loading process the game is."}});
 
+const std::shared_ptr<Hook<>> OnLoadComplete =
+	Hook<>::Factory("On Load Complete", "Executed once a mission load has completed.", {});
+
 const std::shared_ptr<Hook<>> OnCampaignMissionAccept = Hook<>::Factory("On Campaign Mission Accept",
 	"Invoked after a campaign mission once the player accepts the result and moves on to the next mission instead of replaying it.",
 	{});
