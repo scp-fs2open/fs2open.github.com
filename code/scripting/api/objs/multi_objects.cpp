@@ -1,6 +1,7 @@
 #include "multi_objects.h"
 #include "enums.h"
 
+#include "network/multi_dogfight.h"
 #include "network/multi_pxo.h"
 #include "network/multiui.h"
 #include "network/multi.h"
@@ -144,6 +145,23 @@ active_game* active_game_h::getGame() const
 bool active_game_h::isValid() const
 {
 	return game >= 0 && game < static_cast<int>(Active_games.size());
+}
+
+dogfight_scores_h::dogfight_scores_h() : scores(-1) {}
+dogfight_scores_h::dogfight_scores_h(int l_scores) : scores(l_scores) {}
+
+multi_df_score* dogfight_scores_h::getScores() const
+{
+	if (!isValid())
+		return nullptr;
+
+
+	return &Multi_df_score[scores];
+}
+
+bool dogfight_scores_h::isValid() const
+{
+	return scores >= 0 && scores < Multi_df_score_count;
 }
 
 //**********HANDLE: channel section
@@ -1439,6 +1457,52 @@ ADE_FUNC(setSelected, l_Active_Game, nullptr, "Sets the specified game as the se
 	Multi_join_selected_item = current.getGame();
 
 	return ADE_RETURN_NIL;
+}
+
+//**********HANDLE: channel section
+ADE_OBJ(l_Dogfight_Scores, dogfight_scores_h, "dogfight_scores", "Dogfight scores handle");
+
+ADE_FUNC(isValid,
+	l_Dogfight_Scores,
+	nullptr,
+	"Detects whether handle is valid",
+	"boolean",
+	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	dogfight_scores_h current;
+	if (!ade_get_args(L, "o", l_Dogfight_Scores.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
+
+ADE_VIRTVAR(Callsign,
+	l_Dogfight_Scores,
+	nullptr,
+	"Gets the callsign for the player who's scores these are",
+	"string",
+	"the callsign or nil if invalid")
+{
+	dogfight_scores_h current;
+	if (!ade_get_args(L, "o", l_Dogfight_Scores.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "s", current.getScores()->callsign);
+}
+
+ADE_FUNC(getKillsOnPlayer,
+	l_Dogfight_Scores,
+	"net_player",
+	"Detects whether handle is valid",
+	"boolean",
+	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	dogfight_scores_h current;
+	net_player_h player;
+	if (!ade_get_args(L, "oo", l_Dogfight_Scores.Get(&current), l_NetPlayer.Get(&player)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", current.getScores()->stats.m_dogfight_kills[player.getIndex()]);
 }
 
 } // namespace api

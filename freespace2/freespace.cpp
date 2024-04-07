@@ -1276,6 +1276,13 @@ void game_loading_callback_close()
 	Game_loading_background = -1;
 
 	font::set_font(font::FONT1);
+
+	// Mission loading during multi doesn't always set a new state event
+	// so this hook will let Lua scripts know we've finished no matter what
+	// game type is currently being played.
+	if (scripting::hooks::OnLoadComplete->isActive()) {
+		scripting::hooks::OnLoadComplete->run();
+	}
 }
 
 /**
