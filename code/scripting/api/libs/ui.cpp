@@ -37,6 +37,7 @@
 #include "network/multiui.h"
 #include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
+#include "network/multi_pause.h"
 #include "network/multi_pxo.h"
 #include "network/multimsgs.h"
 #include "pilotfile/pilotfile.h"
@@ -3329,6 +3330,100 @@ ADE_INDEXER(l_Active_Games,
 ADE_FUNC(__len, l_Active_Games, nullptr, "The number of active games available", "number", "The number of active games.")
 {
 	return ade_set_args(L, "i", static_cast<int>(Active_games.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPauseScreen
+ADE_LIB_DERIV(l_UserInterface_MultiPauseScreen,
+	"MultiPauseScreen",
+	nullptr,
+	"API for accessing data related to the Pause Screen UI.",
+	l_UserInterface);
+
+ADE_VIRTVAR(isPaused,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Returns true if the game is paused, false otherwise",
+	"boolean",
+	"true if paused, false if unpaused")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", Multi_paused);
+}
+
+ADE_VIRTVAR(Pauser,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"The callsign of who paused the game. Empty string if invalid",
+	"string",
+	"the callsign")
+{
+	SCP_UNUSED(L);
+	
+	if ((Multi_pause_pauser != NULL) && (Multi_pause_pauser->m_player != NULL)) {
+		return ade_set_args(L, "s", Multi_pause_pauser->m_player->callsign);
+	}
+
+	return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(requestUnpause,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Sends a request to unpause the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_request(0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(initPause,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Makes sure everything is done correctly to pause the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePause,
+	l_UserInterface_MultiPauseScreen,
+	"[boolean EndMission]",
+	"Makes sure everything is done correctly to unpause the game. If end mission is true then it tries to end the mission.",
+	nullptr,
+	nullptr)
+{
+	bool end_mission = false;
+	ade_get_args(L, "*b", &end_mission);
+
+	multi_pause_close(end_mission, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Runs the network required commands.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_do(true);
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api
