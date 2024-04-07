@@ -23,9 +23,12 @@ void VariableDialogModel::reject()
 void VariableDialogModel::apply() 
 {
     // TODO VALIDATE!  
-    // TODO!  Look for referenced varaibles and containers. 
-    // We actually can't fully trust what the model says....
-    memset(Sexp_variables, 0, MAX_SEXP_VARIABLES * size_of(sexp_variable));
+    // TODO!  Look for referenced variables and containers. 
+    // Need a way to clean up references.  I'm thinking making some pop ups to confirm replacements created in the editor.
+    // This means we need a way to count and replace references. 
+
+    // So, previously, I was just obliterating and overwriting, but I need to rethink this info.
+    /*memset(Sexp_variables, 0, MAX_SEXP_VARIABLES * size_of(sexp_variable));
 
     for (int i = 0; i < static_cast<int>(_variableItems.size()); ++i){
         Sexp_variables[i].type = _variableItems[i].flags;
@@ -37,6 +40,7 @@ void VariableDialogModel::apply()
             strcpy_s(Sexp_variables[i].text, std::to_string(_variableItems[i].numberValue).c_str())
         }
     }
+    */
 
     // TODO! containers
 
@@ -46,7 +50,7 @@ void VariableDialogModel::apply()
 // true on string, false on number
 bool VariableDialogModel::getVariableType(SCP_string name)
 {
-    return (auto variable = lookupVariable(name)) ? (variable->string) : false;   
+    return (auto variable = lookupVariable(name)) ? (variable->string) : true;   
 }
 
 bool VariableDialogModel::getVariableNetworkStatus(SCP_string name)
@@ -59,14 +63,26 @@ bool VariableDialogModel::getVariableNetworkStatus(SCP_string name)
 // 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
 int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(SCP_string name)
 {
-    return (auto variable = lookupVariable(name)) ? (variable->flags) : 0;
+    auto variable = lookupVariable(name);
+
+    if (!variable) {
+        return 0;
+    }
+
+    int returnValue = 0;
+
+    if (variable->flags & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
+        returnValue = 2;
+    else if (variable->flags & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS)
+        returnValue = 1;
+
+    return returnValue;
 }
 
 
 bool VariableDialogModel::getVariableEternalFlag(SCP_string name)
 {
-    // TODO! figure out correct value for retrieving eternal.
-    return (auto variable = lookupVariable(name)) ? (variable->flags) : false;
+    return (auto variable = lookupVariable(name)) ? (variable->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE > 0) : false;
 }
 
 
@@ -82,8 +98,6 @@ int VariableDialogModel::getVariableNumberValue(SCP_string name)
 
 
 
-// TODO!  Need a way to clean up references.
-
 // true on string, false on number
 bool VariableDialogModel::setVariableType(SCP_string name, bool string)
 {
@@ -94,10 +108,8 @@ bool VariableDialogModel::setVariableType(SCP_string name, bool string)
         return string;
     }
 
-    //TODO!  We need a way to detect the number of references, because then we could see if we need to warn
-    // about references.
 
-    // changing the type here!
+    // Here we change the variable type!
     // this variable is currently a string
     if (variable->string) {
         // no risk change, because no string was specified.
@@ -131,7 +143,7 @@ bool VariableDialogModel::setVariableType(SCP_string name, bool string)
     } else {
         // safe change because there was no number value specified
         if (variable->numberValue == 0){
-            varaible->string = string;
+            variable->string = string;
             return variable->string;
         } else {
             SCP_string question;
@@ -163,12 +175,11 @@ bool VariableDialogModel::setVariableNetworkStatus(SCP_string name, bool network
         return false;
     }
 
-    // TODO! Look up setting 
-    // if (network){
-    // variable->flags |= LOLFLAG;
-    // } else {
-    // variable->flags 
-    // }
+    if (!(variable->flags & SEXP_VARIABLE_NETWORK) && network){
+        variable->flags |= SEXP_VARIABLE_NETWORK;
+    } else {
+        variable->flags &= ~SEXP_VARIABLE_NETWORK; 
+    }
     return network;
 }
 
@@ -177,13 +188,19 @@ int VariableDialogModel::setVariableOnMissionCloseOrCompleteFlag(SCP_string name
     auto variable = lookupVariable(name);
 
     // nothing to change, or invalid entry
-    if (!variable){
+    if (!variable || flags < 0 || flags > 2){
         return 0;
     }
 
-    // TODO! Look up setting 
+    if (flags == 0) {
+        variable->flags &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS | SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+    } else if (flags == 1) {
+        variable->flags &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+        variable->flags |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
+    } else {
+        variable->flags |= (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS | SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+    }
     
-
     return flags;
 }
 
@@ -196,8 +213,11 @@ bool VariableDialogModel::setVariableEternalFlag(SCP_string name, bool eternal)
         return false;
     }
 
-    // TODO! Look up setting 
-
+    if (eternal) {
+        variable->flags |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+    } else {
+        variable->flags &= ~SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+    }
 
     return eternal;
 }
@@ -229,15 +249,15 @@ int VariableDialogModel::setVariableNumberValue(SCP_string name, int value)
 SCP_string VariableDialogModel::addNewVariable()
 {
     variableInfo* variable = nullptr;
-    int count = 0;
+    int count = 1;
     SCP_string name;
 
     do {
         name = "";
-        sprintf(&name, "<Unammed_%i>", count);
+        sprintf(&name, "<unnamed_%i>", count);
         variable = lookupVariable();
         ++count;
-    } while (variable != nullptr && count < 50);
+    } while (variable != nullptr && count < 51);
 
 
     if (variable){
@@ -276,19 +296,36 @@ SCP_string VariableDialogModel::copyVariable(SCP_string name)
         return "";
     }
 
-    int count = 0;
-    variableInfo* variableCopy = nullptr;
+    int count = 1;
+    variableInfo* variableSearch;
 
-    while (variableCopy == nullptr && count < 50){
+    do {
         SCP_string newName;
-        sprintf(&newName, "%s%i", name, count);
-        variableCopy = lookupVariable(newName);
-        if (!variableCopy){
+        sprintf(&newName, "%s_copy%i", name, count);
+        variableSearch = lookupVariable(newName);
+
+        // open slot found!
+        if (!variableSearch){
+            // create the new entry in the model
             _variableItems.emplace_back();
-            _variableItems.back().name = newName;
+
+            // and set everything as a copy from the original, except original name and deleted.
+            auto& newVariable = _variableItems.back();
+            newVariable.name = newName;
+            newVariable.flags = variable.flags;
+            newVariable.string = variable.string;
+
+            if (newVariable.string) {
+                newVariable.stringValue = variable.stringValue;
+            } else {
+                newVariable.numberValue = variable.numberValue;
+            }
+
             return newName;
         }
-    }
+    } while (variableSearch != nullptr && count < 51);
+
+    return "";
 }
 
 // returns whether it succeeded
@@ -298,6 +335,12 @@ bool VariableDialogModel::removeVariable(SCP_string name)
 
     // nothing to change, or invalid entry
     if (!variable){
+        return false;
+    }
+
+    SCP_string question = "Are you sure you want to delete this variable? Any references to it will have to be replaced."
+    SCP_string info = "";
+    if (!confirmAction(question, info)){
         return false;
     }
 
@@ -311,29 +354,40 @@ bool VariableDialogModel::removeVariable(SCP_string name)
 // true on string, false on number
 bool VariableDialogModel::getContainerValueType(SCP_string name)
 {
-    
+    return (auto container = lookupContainer(name)) ? container->string : true;
 }
 
 // true on list, false on map
 bool VariableDialogModel::getContainerListOrMap(SCP_string name)
 {
-    
+    return (auto contaner = lookupContainer(name)) ? container->list : true;
 }
 
 bool VariableDialogModel::getContainerNetworkStatus(SCP_string name)
 {
-    
+    return (auto container = lookupContainer(name)) ? (container->flags & SEXP_VARIABLE_NETWORK > 0) : false;    
 }
 
 // 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
 int VariableDialogModel::getContainerOnMissionCloseOrCompleteFlag(SCP_string name)
 {
-    
+    auto container = lookupContainer(name);
+
+    if (!container) {
+        return 0;
+    }
+
+    if (container->flags & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
+        return 2;
+    else if (container->flags & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS)
+        return 1;
+    else 
+        return 0;
 }
 
 bool VariableDialogModel::getContainerEternalFlag(SCP_string name)
 {
-    
+    return (auto container = lookupContainer(name)) ? (container->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE > 0) : false;    
 }
 
 
@@ -349,17 +403,59 @@ bool VariableDialogModel::setContainerListOrMap(SCP_string name, bool list)
 
 bool VariableDialogModel::setContainerNetworkStatus(SCP_string name, bool network)
 {
-    
+    auto container = lookupContainer(name);
+
+    // nothing to change, or invalid entry
+    if (!container){
+        return false;
+    }
+
+    if (network) {
+        container->flags |= SEXP_VARIABLE_NETWORK;
+    } else {
+        container->flags &= ~SEXP_VARIABLE_NETWORK;
+    }
+
+    return network;
 }
 
 int VariableDialogModel::setContainerOnMissionCloseOrCompleteFlag(SCP_string name, int flags)
 {
+    auto container = lookupContainer(name);
+
+    // nothing to change, or invalid entry
+    if (!container || flags < 0 || flags > 2){
+        return 0;
+    }
+
+    if (flags == 0) {
+        container->flags &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS | SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+    } else if (flags == 1) {
+        container->flags &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+        container->flags |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
+    } else {
+        container->flags |= (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS | SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+    }
     
+    return flags;
 }
 
 bool VariableDialogModel::setContainerEternalFlag(SCP_string name, bool eternal)
 {
-    
+    auto container = lookupContainer(name);
+
+    // nothing to change, or invalid entry
+    if (!container){
+        return false;
+    }
+
+    if (eternal) {
+        container->flags |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+    } else {
+        container->flags &= ~SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+    }
+
+    return eternal;
 }
 
 SCP_string VariableDialogModel::addContainer()

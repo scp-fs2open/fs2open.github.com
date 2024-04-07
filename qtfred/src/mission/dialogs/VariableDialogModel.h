@@ -23,7 +23,7 @@ struct containerInfo {
 	SCP_string name = "<unnamed>";
 	SCP_string original_name = "";
 	bool deleted = false;
-	bool map = false;
+	bool list = false;
 	bool string = true;
 	int flags = 0;
 
@@ -86,6 +86,22 @@ public:
 	SCP_string addContainer();
 	SCP_string changeContainerName(SCP_string oldName, SCP_string newName);
 	bool removeContainer(SCP_string name);
+
+	SCP_string addListItem(SCP_string containerName);
+	SCP_string addMapItem(SCP_string ContainerName);
+
+	SCP_string copyStringListItem(SCP_string containerName, int index);
+	bool removeStringListItem(SCP_string containerName, int index);
+	int copyIntegerListItem(SCP_string containerName, int index);
+	int removeIntegerListItem(SCP_string containerName, int index);
+
+	SCP_string copyMapItem(SCP_string containerName, SCP_string key);
+	bool removeMapItem(SCP_string containerName, SCP_string key);
+
+	SCP_string replaceMapItemKey(SCP_string containerName, SCP_string oldKey, SCP_string newKey);
+	SCP_string changeMapItemStringValue(SCP_string containerName, SCP_string key, SCP_string newValue);
+	SCP_string changeMapItemNumberValue(SCP_string containerName, SCP_string key, int newValue);
+	
 
 	bool apply() override;
 	void reject() override;
