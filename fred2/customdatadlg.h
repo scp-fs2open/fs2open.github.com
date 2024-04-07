@@ -46,7 +46,7 @@ class CustomDataDlg : public CDialog {
 
 	bool edit_boxes_have_valid_data(bool dup_key_ok);
 	bool data_edit_box_has_valid_data();
-	bool key_edit_box_has_valid_data();
+	bool key_edit_box_has_valid_data(bool dup_key_ok);
 
 	void add_pair_entry(int insert_index);
 
