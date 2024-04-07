@@ -8,8 +8,10 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-struct variable_info {
+struct variableInfo {
 	SCP_string name = "<unnamed>";
+	SCP_string original_name = "";
+	bool deleted = false;
 	bool string = true;
 	int flags = 0;
 	int numberValue = 0;
@@ -17,8 +19,10 @@ struct variable_info {
 };
 
 
-struct container_info {
+struct containerInfo {
 	SCP_string name = "<unnamed>";
+	SCP_string original_name = "";
+	bool deleted = false;
 	bool map = false;
 	bool string = true;
 	int flags = 0;
@@ -60,7 +64,7 @@ public:
 	SCP_string changeVariableName(SCP_string oldName, SCP_string newName);
 	SCP_string copyVariable(SCP_string name);
 	// returns whether it succeeded
-	bool removeVariable(SCP_string);
+	bool removeVariable(SCP_string name);
 
 	// Container Section
 
@@ -87,10 +91,10 @@ public:
 	void reject() override;
 
 private:
-	SCP_vector<variable_info> _variableItems;
-	SCP_vector<container_info> _containerItems;
+	SCP_vector<variableInfo> _variableItems;
+	SCP_vector<containerInfo> _containerItems;
 
-	const variable_info* lookupVariable(SCP_string name){
+	const variableInfo* lookupVariable(SCP_string name){
 		for (int x = 0; x < static_cast<int>(_varaibleItems.size()); ++x){
 			if (_varaibleItems[x].name == name){
 				return &_varaibleItems[x];
@@ -100,7 +104,7 @@ private:
 		return nullptr;
 	}
 
-	const container_info* lookupContainer(SCP_string name){
+	const containerInfo* lookupContainer(SCP_string name){
 		for (int x = 0; x < static_cast<int>(_containerItems.size()); ++x){
 			if (_containerItems[x].name == name){
 				return &_containerItems[x];

@@ -6,6 +6,7 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
+
 VariableDialogModel::VariableDialogModel(QObject* parent, EditorViewport* viewport) 
 		: AbstractDialogModel(parent, viewport)
 {
@@ -21,6 +22,9 @@ void VariableDialogModel::reject()
 
 void VariableDialogModel::apply() 
 {
+    // TODO VALIDATE!  
+    // TODO!  Look for referenced varaibles and containers. 
+    // We actually can't fully trust what the model says....
     memset(Sexp_variables, 0, MAX_SEXP_VARIABLES * size_of(sexp_variable));
 
     for (int i = 0; i < static_cast<int>(_variableItems.size()); ++i){
@@ -47,8 +51,7 @@ bool VariableDialogModel::getVariableType(SCP_string name)
 
 bool VariableDialogModel::getVariableNetworkStatus(SCP_string name)
 {
-    // TODO! figure out the flag combination for network variable.
-    return (auto variable = lookupVariable(name)) ? (variable->string) : false;
+    return (auto variable = lookupVariable(name)) ? (variable->flags & SEXP_VARIABLE_NETWORK > 0) : false;
 }
 
 
@@ -86,8 +89,8 @@ bool VariableDialogModel::setVariableType(SCP_string name, bool string)
 {
     auto variable = lookupVariable(name);
 
-    // nothing to change
-    if (variable->string == string){
+    // nothing to change, or invalid entry
+    if (!variable || variable->string == string){
         return string;
     }
 
@@ -153,50 +156,153 @@ bool VariableDialogModel::setVariableType(SCP_string name, bool string)
 
 bool VariableDialogModel::setVariableNetworkStatus(SCP_string name, bool network)
 {
-    
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable){
+        return false;
+    }
+
+    // TODO! Look up setting 
+    // if (network){
+    // variable->flags |= LOLFLAG;
+    // } else {
+    // variable->flags 
+    // }
+    return network;
 }
 
 int VariableDialogModel::setVariableOnMissionCloseOrCompleteFlag(SCP_string name, int flags)
 {
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable){
+        return 0;
+    }
+
+    // TODO! Look up setting 
     
+
+    return flags;
 }
 
 bool VariableDialogModel::setVariableEternalFlag(SCP_string name, bool eternal)
 {
-    
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable){
+        return false;
+    }
+
+    // TODO! Look up setting 
+
+
+    return eternal;
 }
 
 SCP_string VariableDialogModel::setVariableStringValue(SCP_string name, SCP_string value)
 {
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable || !variable->string){
+        return "";
+    }
     
+    variable->stringValue = value;
 }
 
 int VariableDialogModel::setVariableNumberValue(SCP_string name, int value)
 {
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable || variable->string){
+        return 0;
+    }
     
+    variable->numberValue = value;
 }
 
 SCP_string VariableDialogModel::addNewVariable()
 {
-    
+    variableInfo* variable = nullptr;
+    int count = 0;
+    SCP_string name;
+
+    do {
+        name = "";
+        sprintf(&name, "<Unammed_%i>", count);
+        variable = lookupVariable();
+        ++count;
+    } while (variable != nullptr && count < 50);
+
+
+    if (variable){
+        return "";
+    }
+
+    _variableItems.emplace_back();
+    _variableItems.back().name = name;
+    return name;
 }
 
 SCP_string VariableDialogModel::changeVariableName(SCP_string oldName, SCP_string newName)
 {
-    
+    if (newName == "") {
+        return "";
+    }
+ 
+    auto variable = lookupVariable(oldName);
+
+    // nothing to change, or invalid entry
+    if (!variable){
+        return "";
+    }
+
+    // We cannot have two variables with the same name, but we need to check this somewhere else (like on accept attempt).
+    variable->name = newName;
+    return newName;
 }
 
 SCP_string VariableDialogModel::copyVariable(SCP_string name)
 {
-    
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable){
+        return "";
+    }
+
+    int count = 0;
+    variableInfo* variableCopy = nullptr;
+
+    while (variableCopy == nullptr && count < 50){
+        SCP_string newName;
+        sprintf(&newName, "%s%i", name, count);
+        variableCopy = lookupVariable(newName);
+        if (!variableCopy){
+            _variableItems.emplace_back();
+            _variableItems.back().name = newName;
+            return newName;
+        }
+    }
 }
 
-
-
 // returns whether it succeeded
-bool VariableDialogModel::removeVariable(SCP_string)
+bool VariableDialogModel::removeVariable(SCP_string name)
 {
-    
+    auto variable = lookupVariable(name);
+
+    // nothing to change, or invalid entry
+    if (!variable){
+        return false;
+    }
+
+    variable->deleted = true;
+    return true;
 }
 
 
@@ -270,7 +376,6 @@ bool VariableDialogModel::removeContainer(SCP_string name)
 {
     
 }
-
 
 
 } // dialogs
