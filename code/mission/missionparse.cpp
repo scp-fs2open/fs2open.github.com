@@ -2577,13 +2577,33 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		if (entry->status == ShipStatus::INVALID) {
 			Warning(LOCATION, "Potential bug: ship registry status for %s is INVALID", shipp->ship_name);
 		}
-		if (entry->pobj_num < 0) {
-			Warning(LOCATION, "Potential bug: ship registry parse object for %s is not assigned", shipp->ship_name);
-		} else if (entry->pobj_num != POBJ_INDEX(p_objp)) {
-			Warning(LOCATION, "Potential bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
-		}
 
-		entry->pobj_num = POBJ_INDEX(p_objp);
+		// arriving support ships have unique housekeeping and are not in Parse_objects
+		if (p_objp == Arriving_support_ship) {
+			if (entry->pobj_num < -1 || entry->pobj_num >= 0) {
+				Warning(LOCATION, "Potential bug: an arriving support ship %s has a bogus pobj_num index %d", shipp->ship_name, entry->pobj_num);
+				entry->pobj_num = -1;
+			}
+		}
+		else {
+			int pobj_num = POBJ_INDEX(p_objp);
+			if (!SCP_vector_inbounds(Parse_objects, pobj_num)) {
+				Warning(LOCATION, "Potential bug: ship registry parse object for %s is not listed in Parse_objects", shipp->ship_name);
+				entry->pobj_num = -1;
+			}
+			else if (entry->pobj_num == -1) {
+				Warning(LOCATION, "Potential bug: ship registry parse object for %s is not assigned", shipp->ship_name);
+				entry->pobj_num = pobj_num;
+			}
+			else if (!SCP_vector_inbounds(Parse_objects, entry->pobj_num)) {
+				Warning(LOCATION, "Potential bug: ship registry parse object for %s is out of bounds", shipp->ship_name);
+				entry->pobj_num = pobj_num;
+			}
+			else if (entry->pobj_num != pobj_num) {
+				Warning(LOCATION, "Potential bug: ship registry parse object index for %s (%d) is different from its expected value (%d)", shipp->ship_name, entry->pobj_num, pobj_num);
+				entry->pobj_num = pobj_num;
+			}
+		}
 	}
 
 	return objnum;
@@ -8508,7 +8528,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	{
 		ship_registry_entry entry(pobj->name);
 		entry.status = ShipStatus::NOT_YET_PRESENT;
-		entry.pobj_num = POBJ_INDEX(pobj);
+		entry.pobj_num = -1;	// since it's not in Parse_objects
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[pobj->name] = static_cast<int>(Ship_registry.size() - 1);
