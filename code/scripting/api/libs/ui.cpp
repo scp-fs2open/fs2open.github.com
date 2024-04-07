@@ -29,6 +29,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionhotkey.h"
+#include "missionui/chatbox.h"
 #include "missionui/redalert.h"
 #include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
@@ -2562,7 +2563,7 @@ ADE_FUNC(getChat,
 
 	LuaTable chats = LuaTable::create(L);
 
-	int i = 0;
+	int i = 1;
 	for (auto& line : Multi_pxo_chat) {
 		
 		char callsign[CALLSIGN_LEN];
@@ -2809,6 +2810,480 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	return ade_set_args(L, "t", pages);
 }
 
+//**********SUBLIBRARY: UserInterface/MultiGeneral
+ADE_LIB_DERIV(l_UserInterface_MultiGeneral,
+	"MultiGeneral",
+	nullptr,
+	"API for accessing general data related to all Multi UIs with the exception of the PXO Lobby.",
+	l_UserInterface);
+
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiGeneral, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_notify_text);
+}
+
+ADE_VIRTVAR(InfoText, l_UserInterface_MultiGeneral, nullptr, "The current info text", "string", "the info text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_all_text);
+}
+
+ADE_FUNC(getNetGame,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"The handle to the netgame. Note that the netgame will be invalid if a multiplayer game has not been joined or created.",
+	"netgame",
+	"The netgame handle")
+{
+	SCP_UNUSED(L);
+	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
+}
+
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiGeneral);
+ADE_INDEXER(l_Net_Players,
+	"number Index",
+	"Array of net players",
+	"net_player",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || (idx >= MAX_PLAYERS))
+		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
+
+	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Players, nullptr, "The number of net players", "number", "The number of players.")
+{
+	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
+ADE_FUNC(getChat,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"Gets the entire chat as a table of tables each with the following values: "
+	"Callsign - the name of the message sender, "
+	"Message - the message text, "
+	"Color - the color the text should be according to the player id",
+	"table",
+	"A table of chat strings")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	int i = 1;
+	SCP_string text = "";
+	SCP_string callsign = "";
+	color* clr = nullptr;
+
+	auto createChatEntry = [L, &i, &chats](const SCP_string& this_text, const SCP_string& this_callsign, const color* this_clr) {
+			auto item = luacpp::LuaTable::create(L);
+			item.addValue("Callsign", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_callsign.c_str()));
+			item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_text.c_str()));
+			item.addValue("Color", l_Color.Set(*this_clr));
+			chats.addValue(i++, item);
+	};
+
+
+	bool send = false;
+	for (auto& chat : Brief_chat) {
+
+		// In API mode we don't need to worry about line splits
+		// so reconnect all indented lines into a single chat line and
+		// let the API's UI deal with the rest.
+		// But first send the previous chat line, if any, to the lua table
+		// now that we know we're done concatenating indented lines.
+		if (!chat.indent) {
+			if (send){
+				createChatEntry(text, callsign, clr);
+
+				//Sent, so now clear and start over
+				text.clear();
+				callsign.clear();
+				clr = nullptr;
+			}
+
+			text = chat.text;
+			callsign = chat.callsign;
+			clr = Color_netplayer[chat.player_id];
+
+			send = true;
+		} else {
+			text += chat.text;
+		}
+	}
+
+	// We might have one more line to add
+	if (send) {
+		createChatEntry(text, callsign, clr);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(sendChat,
+	l_UserInterface_MultiGeneral,
+	"string",
+	"Sends a string to the current game's IRC chat. Limited to 125 characters. Anything after that is dropped.",
+	nullptr,
+	nullptr)
+{
+	const char* msg;
+	if (!ade_get_args(L, "s", &msg))
+		return ADE_RETURN_NIL;
+
+	char temp[CHATBOX_MAX_LEN];
+	strncpy(temp, msg, CHATBOX_MAX_LEN);
+	temp[CHATBOX_MAX_LEN - 1] = '\0';
+
+	chatbox_send_msg(temp);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(quitGame,
+	l_UserInterface_MultiGeneral,
+	nullptr, "Quits the game for the current player and returns them to the PXO lobby", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_quit_game(PROMPT_ALL);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setPlayerState, l_UserInterface_MultiGeneral, nullptr, "Sets the current player's network state based on the current game state.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	int state = gameseq_get_state();
+
+	// We really only need to handle this for game states that the lua API
+	// completely replaces; Where the state_init() code doesn't actually run
+	// but it won't hurt to include others.
+	// This may not be an exhaustive list. Feel free to add more.
+	switch (state) {
+	case GS_STATE_BRIEFING:
+		Net_player->state = NETPLAYER_STATE_BRIEFING;
+		break;
+	case GS_STATE_CMD_BRIEF:
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+		break;
+	case GS_STATE_SHIP_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_WEAPON_SELECT:
+		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
+		break;
+	case GS_STATE_RED_ALERT:
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
+		break;
+	case GS_STATE_DEBRIEF:
+		Net_player->state = NETPLAYER_STATE_DEBRIEF;
+		break;
+	case GS_STATE_FICTION_VIEWER:
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+		break;
+	case GS_STATE_MULTI_HOST_SETUP:
+		Net_player->state = NETPLAYER_STATE_HOST_SETUP;
+		break;
+	case GS_STATE_MULTI_MISSION_SYNC:
+		Net_player->state = NETPLAYER_STATE_MISSION_SYNC;
+		break;
+	case GS_STATE_TEAM_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_MULTI_CLIENT_SETUP:
+		Net_player->state = NETPLAYER_STATE_JOINED;
+		break;
+	default:
+		break;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiJoinGame
+ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
+	"MultiJoinGame",
+	nullptr,
+	"API for accessing data related to the Multi Join Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiJoin,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Makes sure everything is done correctly to begin a multi join session.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiJoin,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Makes sure everything is done correctly to end a multi join session.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Runs the network required commands to update the lists once and handle join requests",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(refresh, l_UserInterface_MultiJoinGame, nullptr, "Force refreshing the games list", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	broadcast_game_query();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createGame,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Starts creating a new game and moves to the new UI",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_create_game();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendJoinRequest,
+	l_UserInterface_MultiJoinGame,
+	"[boolean AsObserver]",
+	"Sends a join game request",
+	"boolean",
+	"True if successful, false otherwise")
+{
+
+	bool observer = false;
+	ade_get_args(L, "*|b", &observer);
+
+	if (Active_games.empty()) {
+		multi_common_add_notify(XSTR("No games found!", 757));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_selected_item == nullptr) {
+		multi_common_add_notify(XSTR("No game selected!", 758));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
+		multi_common_add_notify(XSTR("Still waiting on previous join request!", 759));
+	} else {
+		// otherwise, if he's already played PXO games, warn him
+
+		if (Player->flags & PLAYER_FLAGS_HAS_PLAYED_PXO) {
+			if (!multi_join_warn_pxo()) {
+				return ADE_RETURN_FALSE;
+			}
+		}
+
+		// send a join request packet
+		multi_join_send_join_request(observer);
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_LIB_DERIV(l_Active_Games, "ActiveGames", nullptr, nullptr, l_UserInterface_MultiJoinGame);
+ADE_INDEXER(l_Active_Games,
+	"number Index",
+	"Array of active games",
+	"active_game",
+	"active game handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= static_cast<int>(Active_games.size()))
+		return ade_set_args(L, "o", l_Active_Game.Set(active_game_h()));
+
+	return ade_set_args(L, "o", l_Active_Game.Set(active_game_h(idx)));
+}
+
+ADE_FUNC(__len,
+	l_Active_Games,
+	nullptr,
+	"The number of active games available",
+	"number",
+	"The number of active games.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Active_games.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiStartGame
+ADE_LIB_DERIV(l_UserInterface_MultiStartGame,
+	"MultiStartGame",
+	nullptr,
+	"API for accessing data related to the Multi Start Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiStart,
+	l_UserInterface_MultiStartGame,
+	nullptr,
+	"Initializes the Create Game methods and variables",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiStart,
+	l_UserInterface_MultiStartGame,
+	"boolean Start_or_Quit",
+	"Finalizes the new game settings and moves to the host game UI if true or cancels if false. Defaults to true.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		multi_start_game_close(true);
+	} else {
+		multi_quit_game(PROMPT_NONE);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiStartGame,
+	nullptr,
+	"Runs the network required commands to update the status text",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setName,
+	l_UserInterface_MultiStartGame,
+	"string Name",
+	"Sets the game's name",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	const char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ADE_RETURN_FALSE;
+
+	if (strlen(name) > MAX_GAMENAME_LEN + 1) {
+		return ADE_RETURN_FALSE;
+	}
+
+	strcpy_s(Multi_sg_netgame->name, name);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setGameType,
+	l_UserInterface_MultiStartGame,
+	"enumeration type=MULTI_GAME_TYPE_OPEN, [string | number password_or_rank_index]",
+	"Sets the game's type and, optionally, the password or rank index.",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	enum_h* game = nullptr;
+	const char* password = nullptr;
+	int rank_idx = 0;
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&game))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	switch (game->index) {
+	case LE_MULTI_GAME_TYPE_OPEN:
+		Multi_sg_netgame->mode = NG_MODE_OPEN;
+		break;
+	case LE_MULTI_GAME_TYPE_PASSWORD:
+		Multi_sg_netgame->mode = NG_MODE_PASSWORD;
+		if (!ade_get_args(L, "*s", &password)) {
+			return ADE_RETURN_FALSE;
+		}
+		if ((password == nullptr) || (strlen(password) > MAX_PASSWD_LEN + 1)) {
+			return ADE_RETURN_FALSE;
+		}
+		strcpy_s(Multi_sg_netgame->passwd, password);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_ABOVE:
+		Multi_sg_netgame->mode = NG_MODE_RANK_ABOVE;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_BELOW:
+		Multi_sg_netgame->mode = NG_MODE_RANK_BELOW;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	default:
+		return ADE_RETURN_FALSE;
+		break;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
 //**********SUBLIBRARY: UserInterface/MultiHostSetup
 ADE_LIB_DERIV(l_UserInterface_MultiHostSetup,
 	"MultiHostSetup",
@@ -2881,41 +3356,6 @@ ADE_FUNC(runNetwork,
 	multi_create_game_do(true);
 
 	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(getNetGame, l_UserInterface_MultiHostSetup, nullptr, "The handle to the netgame", "netgame", "The netgame handle")
-{
-	SCP_UNUSED(L);
-	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
-}
-
-ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiHostSetup);
-ADE_INDEXER(l_Net_Players,
-	"number Index",
-	"Array of net players",
-	"net_player",
-	"net player handle, or invalid handle if index is invalid")
-{
-	int idx;
-	if (!ade_get_args(L, "*i", &idx))
-		return ade_set_error(L, "s", "");
-
-	// convert from lua index
-	idx--;
-
-	if ((idx < 0) || (idx >= MAX_PLAYERS))
-		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
-
-	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
-}
-
-ADE_FUNC(__len, l_Net_Players,
-	nullptr,
-	"The number of net players",
-	"number",
-	"The number of players.")
-{
-	return ade_set_args(L, "i", MAX_PLAYERS);
 }
 
 ADE_LIB_DERIV(l_Net_Missions, "NetMissions", nullptr, nullptr, l_UserInterface_MultiHostSetup);
@@ -3060,7 +3500,7 @@ ADE_FUNC(closeMultiSync,
 ADE_FUNC(runNetwork,
 	l_UserInterface_MultiSync,
 	nullptr,
-	"Runs the network required commands to update the lists and run the chat",
+	"Runs the network required commands to run the chat",
 	nullptr,
 	nullptr)
 {
@@ -3093,243 +3533,6 @@ ADE_FUNC(getCountdownTime,
 	SCP_UNUSED(L);
 
 	return ade_set_args(L, "i", Multi_sync_countdown);
-}
-
-
-//**********SUBLIBRARY: UserInterface/MultiStartGame
-ADE_LIB_DERIV(l_UserInterface_MultiStartGame,
-	"MultiStartGame",
-	nullptr,
-	"API for accessing data related to the Multi Start Game UI.",
-	l_UserInterface);
-
-ADE_FUNC(initMultiStart, l_UserInterface_MultiStartGame, nullptr, "Initializes the Create Game methods and variables", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	multi_start_game_init(true);
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(closeMultiStart, l_UserInterface_MultiStartGame, "boolean Start_or_Quit", "Finalizes the new game settings and moves to the host game UI if true or cancels if false. Defaults to true.", nullptr, nullptr)
-{
-	bool choice = true;
-	if (!ade_get_args(L, "b", &choice))
-		return ADE_RETURN_NIL;
-
-	if (choice) {
-		multi_start_game_close(true);
-	} else {
-		multi_quit_game(PROMPT_NONE);
-	}
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(runNetwork, l_UserInterface_MultiStartGame, nullptr, "Runs the network required commands to update the status text", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	multi_start_game_do(true);
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(setName, l_UserInterface_MultiStartGame, "string Name", "Sets the game's name", "boolean", "True if successful, false otherwise")
-{
-	const char* name;
-	if (!ade_get_args(L, "s", &name))
-		return ADE_RETURN_FALSE;
-
-	if (strlen(name) > MAX_GAMENAME_LEN + 1) {
-		return ADE_RETURN_FALSE;
-	}
-
-	strcpy_s(Multi_sg_netgame->name, name);
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(setGameType,
-	l_UserInterface_MultiStartGame,
-	"enumeration type=MULTI_GAME_TYPE_OPEN, [string | number password_or_rank_index]",
-	"Sets the game's type and, optionally, the password or rank index.",
-	"boolean",
-	"True if successful, false otherwise")
-{
-	enum_h* game = nullptr;
-	const char* password = nullptr;
-	int rank_idx = 0;
-	if (!ade_get_args(L, "o", l_Enum.GetPtr(&game))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	switch (game->index) {
-	case LE_MULTI_GAME_TYPE_OPEN:
-		Multi_sg_netgame->mode = NG_MODE_OPEN;
-		break;
-	case LE_MULTI_GAME_TYPE_PASSWORD:
-		Multi_sg_netgame->mode = NG_MODE_PASSWORD;
-		if (!ade_get_args(L, "*s", &password)) {
-			return ADE_RETURN_FALSE;
-		}
-		if ((password == nullptr) || (strlen(password) > MAX_PASSWD_LEN + 1)) {
-			return ADE_RETURN_FALSE;
-		}
-		strcpy_s(Multi_sg_netgame->passwd, password);
-		break;
-	case LE_MULTI_GAME_TYPE_RANK_ABOVE:
-		Multi_sg_netgame->mode = NG_MODE_RANK_ABOVE;
-		if (!ade_get_args(L, "*i", &rank_idx)) {
-			return ADE_RETURN_FALSE;
-		}
-		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
-		break;
-	case LE_MULTI_GAME_TYPE_RANK_BELOW:
-		Multi_sg_netgame->mode = NG_MODE_RANK_BELOW;
-		if (!ade_get_args(L, "*i", &rank_idx)) {
-			return ADE_RETURN_FALSE;
-		}
-		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
-		break;
-	default:
-		return ADE_RETURN_FALSE;
-		break;
-	}
-
-	return ADE_RETURN_TRUE;
-}
-
-//**********SUBLIBRARY: UserInterface/MultiJoinGame
-ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
-	"MultiJoinGame",
-	nullptr,
-	"API for accessing data related to the Multi Join Game UI.",
-	l_UserInterface);
-
-ADE_FUNC(initMultiJoin, l_UserInterface_MultiJoinGame, nullptr, "Makes sure everything is done correctly to begin a multi join session.", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	multi_join_game_init(true);
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(closeMultiJoin, l_UserInterface_MultiJoinGame, nullptr, "Makes sure everything is done correctly to end a multi join session.", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	multi_join_game_close(true);
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(runNetwork, l_UserInterface_MultiJoinGame, nullptr, "Runs the network required commands to update the lists once and handle join requests", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	multi_join_game_do_frame(true);
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(refresh, l_UserInterface_MultiJoinGame, nullptr, "Force refreshing the games list", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	broadcast_game_query();
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(createGame, l_UserInterface_MultiJoinGame, nullptr, "Starts creating a new game and moves to the new UI", nullptr, nullptr)
-{
-	SCP_UNUSED(L);
-
-	multi_join_create_game();
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(sendJoinRequest,
-	l_UserInterface_MultiJoinGame,
-	"[boolean AsObserver]",
-	"Sends a join game request",
-	"boolean",
-	"True if successful, false otherwise")
-{
-
-	bool observer = false;
-	ade_get_args(L, "*|b", &observer);
-
-	if (Active_games.empty()) {
-		multi_common_add_notify(XSTR("No games found!", 757));
-		return ADE_RETURN_FALSE;
-	} else if (Multi_join_selected_item == nullptr) {
-		multi_common_add_notify(XSTR("No game selected!", 758));
-		return ADE_RETURN_FALSE;
-	} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
-		multi_common_add_notify(XSTR("Still waiting on previous join request!", 759));
-	} else {
-		// otherwise, if he's already played PXO games, warn him
-
-		if (Player->flags & PLAYER_FLAGS_HAS_PLAYED_PXO) {
-			if (!multi_join_warn_pxo()) {
-				return ADE_RETURN_FALSE;
-			}
-		}
-
-		// send a join request packet
-		multi_join_send_join_request(observer);
-		return ADE_RETURN_TRUE;
-	}
-
-	return ADE_RETURN_FALSE;
-}
-
-ADE_VIRTVAR(StatusText, l_UserInterface_MultiJoinGame, nullptr, "The current status text", "string", "the status text")
-{
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
-	return ade_set_args(L, "s", Multi_common_notify_text);
-}
-
-ADE_VIRTVAR(InfoText, l_UserInterface_MultiJoinGame, nullptr, "The current info text", "string", "the info text")
-{
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
-	return ade_set_args(L, "s", Multi_common_all_text);
-}
-
-ADE_LIB_DERIV(l_Active_Games, "ActiveGames", nullptr, nullptr, l_UserInterface_MultiJoinGame);
-ADE_INDEXER(l_Active_Games,
-	"number Index",
-	"Array of active games",
-	"active_game",
-	"active game handle, or invalid handle if index is invalid")
-{
-	int idx;
-	if (!ade_get_args(L, "*i", &idx))
-		return ade_set_error(L, "s", "");
-
-	// convert from lua index
-	idx--;
-
-	if ((idx < 0) || idx >= static_cast<int>(Active_games.size()))
-		return ade_set_args(L, "o", l_Active_Game.Set(active_game_h()));
-
-	return ade_set_args(L, "o", l_Active_Game.Set(active_game_h(idx)));
-}
-
-ADE_FUNC(__len, l_Active_Games, nullptr, "The number of active games available", "number", "The number of active games.")
-{
-	return ade_set_args(L, "i", static_cast<int>(Active_games.size()));
 }
 
 //**********SUBLIBRARY: UserInterface/MultiPauseScreen

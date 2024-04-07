@@ -55,6 +55,11 @@ int net_player_h::getIndex() const
 
 bool net_player_h::isValid() const
 {
+	//If we're not in multiplayer mode then there will be no players!
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		return false;
+	}
+	
 	if (player < 0 || player >= MAX_PLAYERS) {
 		return false;
 	}
@@ -112,6 +117,15 @@ net_game_h::net_game_h() {}
 netgame_info* net_game_h::getNetgame() const
 {
 	return &Netgame;
+}
+
+bool net_game_h::isValid() const
+{
+	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.name[0] != '\0')) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 active_game_h::active_game_h() : game(-1) {}
@@ -815,6 +829,20 @@ ADE_VIRTVAR(Builtin,
 
 //**********HANDLE: netgame section
 ADE_OBJ(l_NetGame, net_game_h, "netgame", "Netgame handle");
+
+ADE_FUNC(isValid,
+	l_NetGame,
+	nullptr,
+	"Detects whether handle is valid",
+	"boolean",
+	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	net_game_h current;
+	if (!ade_get_args(L, "o", l_NetGame.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
 
 ADE_VIRTVAR(Name,
 	l_NetGame,
