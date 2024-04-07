@@ -403,7 +403,7 @@ size_t chatbox_get_msg_target_length(char *msg)
 }
 
 // send a msg to the game chat
-void chatbox_send_msg(char msg[150])
+void chatbox_send_msg(char* msg)
 {
 	// check if this message is supposed to have a recipient
 	int target = chatbox_get_msg_target_type(msg);
@@ -421,7 +421,7 @@ void chatbox_send_msg(char msg[150])
 		send_game_chat_packet(Net_player, msg, target);
 	} else {
 		// copy the name of the player the message is being sent to
-		char temp[150];
+		char temp[CHATBOX_MAX_LEN];
 		strncpy(temp, msg + 1, target_length - 2);
 		temp[target_length - 2] = '\0';
 		send_game_chat_packet(Net_player, msg, target, nullptr, temp);
@@ -433,11 +433,11 @@ void chatbox_send_msg(char msg[150])
 // automatically split up any input text, send it, and leave the remainder 
 void chatbox_autosplit_line()
 {
-	char msg[150];
+	char msg[CHATBOX_MAX_LEN];
 	
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
-	memset(msg,0,150);
+	memset(msg, 0, CHATBOX_MAX_LEN);
 	Chat_inputbox.get_text(msg);
 	const char* remainder = ""; 
 
@@ -463,7 +463,7 @@ void chatbox_autosplit_line()
 
 		if (target != MULTI_MSG_ALL) {
 			// we need to add the target the message is going to before we add the rest of the string
-			char temp[150];
+			char temp[CHATBOX_MAX_LEN];
 			strncpy(temp, msg, target_length);
  			temp[target_length] = ' '; 
  			temp[target_length+1] = '\0'; 

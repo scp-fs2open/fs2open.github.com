@@ -3499,7 +3499,7 @@ ADE_FUNC(closeMultiSync,
 ADE_FUNC(runNetwork,
 	l_UserInterface_MultiSync,
 	nullptr,
-	"Runs the network required commands to update the lists and run the chat",
+	"Runs the network required commands to run the chat",
 	nullptr,
 	nullptr)
 {

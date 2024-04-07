@@ -60,7 +60,7 @@ int chatbox_scroll_down();
 void chatbox_clear();
 
 // send a message to the chatbox
-void chatbox_send_msg(char msg[150]);
+void chatbox_send_msg(char* msg);
 
 // add a line of text (from the player identified by pid) to the chatbox
 void chatbox_add_line(const char *msg, int pid, int add_id = 1);

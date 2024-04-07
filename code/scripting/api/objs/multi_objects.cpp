@@ -120,7 +120,7 @@ netgame_info* net_game_h::getNetgame() const
 
 bool net_game_h::isValid() const
 {
-	if (!(Game_mode & GM_MULTIPLAYER) && (Netgame.name[0] != '\0')) {
+	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.name[0] != '\0')) {
 		return true;
 	} else {
 		return false;
