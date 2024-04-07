@@ -129,53 +129,33 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		&VariableDialog::onSetContainerAsEternalCheckboxClicked);
 }
 
-	void VariableDialog::onVariablesTableUpdated() {}
-	void VariableDialog::onContainersTableUpdated() {}
-	void VariableDialog::onContainerContentsTableUpdated() {}
-	void VariableDialog::onAddVariableButtonPressed() {}
-	void VariableDialog::onDeleteVariableButtonPressed() {}
-	void VariableDialog::onSetVariableAsStringRadioSelected() {}
-	void VariableDialog::onSetVariableAsNumberRadioSelected() {}
-	void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() {}
-	void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() {}
-	void VariableDialog::onSaveVariableAsEternalCheckboxClicked() {}
+void VariableDialog::onVariablesTableUpdated() {} // could be new name or new value
+void VariableDialog::onContainersTableUpdated() {} // could be new name
+void VariableDialog::onContainerContentsTableUpdated() {} // could be new key or new value
+void VariableDialog::onAddVariableButtonPressed() 
+{
+	
 
-	void VariableDialog::onAddContainerButtonPressed() {}
-	void VariableDialog::onDeleteContainerButtonPressed() {}
-	void VariableDialog::onSetContainerAsMapRadioSelected() {}
-	void VariableDialog::onSetContainerAsListRadioSelected() {}
-	void VariableDialog::onSetContainerAsStringRadioSelected() {}
-	void VariableDialog::onSetContainerAsNumberRadio() {}
-	void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
-	void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() {}
-	void VariableDialog::onNetworkContainerCheckboxClicked() {}
-	void VariableDialog::onSetContainerAsEternalCheckboxClicked() {}
-	void VariableDialog::onAddContainerItemButtonPressed() {}
-	void VariableDialog::onDeleteContainerItemButtonPressed() {}
+}
+void VariableDialog::onDeleteVariableButtonPressed() {}
+void VariableDialog::onSetVariableAsStringRadioSelected() {}
+void VariableDialog::onSetVariableAsNumberRadioSelected() {}
+void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() {}
+void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() {}
+void VariableDialog::onSaveVariableAsEternalCheckboxClicked() {}
 
-/*
-containersTable
-containerContentsTable
-addVariableButton
-deleteVariableButton
-setVariableAsStringRadio
-setVariableAsNumberRadio
-networkVariableCheckbox
-saveVariableOnMissionCompletedRaio
-saveVariableOnMissionCloseRadio
-setVariableAsEternalcheckbox
-
-addContainerButton
-deleteContainerButton
-setContainerAsMapRadio
-setContainerAsListRadio
-setContainerAsStringRadio
-setContainerAsNumberRadio
-saveContainerOnMissionCloseRadio
-saveContainerOnMissionCompletedRadio
-networkContainerCheckbox
-setContainerAsEternalCheckbox
-	*/
+void VariableDialog::onAddContainerButtonPressed() {}
+void VariableDialog::onDeleteContainerButtonPressed() {}
+void VariableDialog::onSetContainerAsMapRadioSelected() {}
+void VariableDialog::onSetContainerAsListRadioSelected() {}
+void VariableDialog::onSetContainerAsStringRadioSelected() {}
+void VariableDialog::onSetContainerAsNumberRadio() {}
+void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
+void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() {}
+void VariableDialog::onNetworkContainerCheckboxClicked() {}
+void VariableDialog::onSetContainerAsEternalCheckboxClicked() {}
+void VariableDialog::onAddContainerItemButtonPressed() {}
+void VariableDialog::onDeleteContainerItemButtonPressed() {}
 
 
 

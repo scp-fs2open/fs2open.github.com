@@ -32,6 +32,7 @@ class VariableDialog : public QDialog {
 	void onContainerContentsTableUpdated();
 	void onAddVariableButtonPressed();
 	void onDeleteVariableButtonPressed();
+	void onCopyVariableButtonPressed();
 	void onSetVariableAsStringRadioSelected();
 	void onSetVariableAsNumberRadioSelected();
 	void onSaveVariableOnMissionCompleteRadioSelected();
@@ -40,6 +41,7 @@ class VariableDialog : public QDialog {
 
 	void onAddContainerButtonPressed();
 	void onDeleteContainerButtonPressed();
+	void onCopyContainerButtonPressed();
 	void onSetContainerAsMapRadioSelected();
 	void onSetContainerAsListRadioSelected();
 	void onSetContainerAsStringRadioSelected();
