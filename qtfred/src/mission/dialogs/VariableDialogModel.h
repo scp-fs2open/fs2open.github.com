@@ -88,13 +88,11 @@ public:
 	bool removeContainer(SCP_string name);
 
 	SCP_string addListItem(SCP_string containerName);
+
+	SCP_string copyListItem(SCP_string containerName, int index);
+	bool removeListItem(SCP_string containerName, int index);
+
 	SCP_string addMapItem(SCP_string ContainerName);
-
-	SCP_string copyStringListItem(SCP_string containerName, int index);
-	bool removeStringListItem(SCP_string containerName, int index);
-	int copyIntegerListItem(SCP_string containerName, int index);
-	int removeIntegerListItem(SCP_string containerName, int index);
-
 	SCP_string copyMapItem(SCP_string containerName, SCP_string key);
 	bool removeMapItem(SCP_string containerName, SCP_string key);
 

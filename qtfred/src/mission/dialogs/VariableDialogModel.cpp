@@ -255,7 +255,7 @@ SCP_string VariableDialogModel::addNewVariable()
     do {
         name = "";
         sprintf(&name, "<unnamed_%i>", count);
-        variable = lookupVariable();
+        variable = lookupVariable(name);
         ++count;
     } while (variable != nullptr && count < 51);
 
@@ -470,7 +470,7 @@ bool VariableDialogModel::setContainerValueType(SCP_string name, bool type)
     return container->string;
 }
 
-// this is the most complicated function.  
+// This is the most complicated function, because we need to query the user on what they want to do if the had already entered data. 
 bool VariableDialogModel::setContainerListOrMap(SCP_string name, bool list)
 {
     
@@ -535,52 +535,115 @@ bool VariableDialogModel::setContainerEternalFlag(SCP_string name, bool eternal)
 
 SCP_string VariableDialogModel::addContainer()
 {
-    
+    containerInfo* container = nullptr;
+    int count = 1;
+    SCP_string name;
+
+    do {
+        name = "";
+        sprintf(&name, "<unnamed_%i>", count);
+        container = lookupContainer(name);
+        ++count;
+    } while (container != nullptr && count < 51);
+
+    if (container){
+        return "";
+    }
+
+    _containerItems.emplace_back();
+    _containerItems.back().name = name;
+    return name;
 }
 
 SCP_string VariableDialogModel::changeContainerName(SCP_string oldName, SCP_string newName)
 {
-    
+    if (newName == "") {
+        return "";
+    }
+ 
+    auto container = lookupContainer(oldName);
+
+    // nothing to change, or invalid entry
+    if (!container){
+        return "";
+    }
+
+    // We cannot have two containers with the same name, but we need to check this somewhere else (like on accept attempt).
+    container->name = newName;
+    return newName;
 }
 
 bool VariableDialogModel::removeContainer(SCP_string name)
 {
-    
+    auto container = lookupContainer(oldName);
+
+    if (!container){
+        return false;
+    }
+
+    container->deleted = true;
 }
 
 SCP_string VariableDialogModel::addListItem(SCP_string containerName)
 {
+    auto container = lookupContainer(containerName);
+
+    if (!container){
+        return "";
+    }
+
+    if (container->string) {
+        container->stringValues.emplace_back("New_Item");
+        return container->stringValues.back();
+    } else {
+        container->numberValues.push_back(0);
+        return "0";
+    }
+}
+
+std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(SCP_string ContainerName)
+{
+    
+}
+
+SCP_string VariableDialogModel::copyListItem(SCP_string containerName, int index)
+{
+    auto container = lookupContainer(containerName);
+
+    if (!container || index < 0 || (cotainer->string && index >= static_cast<int>(contaner->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
+        return "";
+    }
+
+    if (container->string) {
+        container->stringValues.push_back(container->stringValues[index]);
+        return container->stringValues.back();
+    } else {
+        container->numberValues.push_back(container->numberValues[index]);
+        return "0";
+    }
 
 }
 
-SCP_string VariableDialogModel::addMapItem(SCP_string ContainerName)
+bool VariableDialogModel::removeListItem(SCP_string containerName, int index)
 {
+    auto container = lookupContainer(containerName);
 
-}
+    if (!container || index < 0 || (cotainer->string && index >= static_cast<int>(contaner->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
+        return false;
+    }
 
-SCP_string VariableDialogModel::copyStringListItem(SCP_string containerName, int index)
-{
-
-}
-
-bool VariableDialogModel::removeStringListItem(SCP_string containerName, int index)
-{
-
-}
-
-int VariableDialogModel::copyIntegerListItem(SCP_string containerName, int index)
-{
-
-}
-
-int VariableDialogModel::removeIntegerListItem(SCP_string containerName, int index)
-{
+    // Most efficient, given the situation (single deletions)
+    if (container->string) {
+        container->stringValues.erase(container->stringValues.begin() + index);
+    } else {
+        container->numberValues.erase(container->numberValues.begin() + index);
+    }
 
 }
 
 SCP_string VariableDialogModel::copyMapItem(SCP_string containerName, SCP_string key)
 {
-
+    for (const auto& )
 }
 
 bool VariableDialogModel::removeMapItem(SCP_string containerName, SCP_string key)
