@@ -393,9 +393,84 @@ bool VariableDialogModel::getContainerEternalFlag(SCP_string name)
 
 bool VariableDialogModel::setContainerValueType(SCP_string name, bool type)
 {
-    
+    auto container = lookupContainer(name);
+
+    if (!container){
+        return true;
+    }
+
+    if (container->string == type){
+        return container->string;
+    }
+
+    if ((container->string && container->stringValues.empty()) || (!container->string && container->numberValues.empty())){
+        container->string = type;
+        return container->type;
+    }
+
+    // if the other list is not empty, then just convert.  No need to confirm.  
+    // The values will be there if they decide to switch back.
+    if (container->string && !container->numberValues.empty()){
+
+        container->string = type;
+        return container->string;
+
+    } else if (!container->string && !container->stringValues.empty()){
+        
+        container->string = type;
+        return container->string;
+    }
+
+    // so when the other list *is* empty, then we can attempt to copy values.
+    if (container->string && container->numberValues.empty()){
+        
+        SCP_string question = "Do you want to attempt conversion of these string values to number values?";
+        SCP_string info = "Your string values will still be there if you convert this container back to string type.";
+
+        if (confirmAction(question, info)) {
+
+            bool transferable = true;
+            SCP_vector<int> numbers;
+
+            for (const auto& item : container->stringValues){
+                try {
+                    numbers.push_back(stoi(item));
+                }
+                catch {
+                    transferable = false;
+                    break;
+                }
+            }
+
+            if (transferable){
+                container->numberValues = std::move(numbers);
+            }
+        }
+
+        // now that we've handled value conversion, convert the container
+        container->string = type;
+        return container->string;
+    } else if (!container->string && container->stringValues.empty()){
+
+        SCP_string question = "Do you want to convert these number values to string values?";
+        SCP_string info = "Your number values will still be there if you convert this container back to number type.";
+
+        if (confirmAction(question, info)) {
+            for (const auto& item : container->numberValues){
+                container->stringValues.emplace_back(item);
+            }
+        }
+
+        // now that we've handled value conversion, convert the container
+        container->string = type;
+        return container->string;
+    }
+
+    // we shouldn't get here, but if we do return the current value because that's what the model thinks, anyway.
+    return container->string;
 }
 
+// this is the most complicated function.  
 bool VariableDialogModel::setContainerListOrMap(SCP_string name, bool list)
 {
     
@@ -473,6 +548,60 @@ bool VariableDialogModel::removeContainer(SCP_string name)
     
 }
 
+SCP_string VariableDialogModel::addListItem(SCP_string containerName)
+{
+
+}
+
+SCP_string VariableDialogModel::addMapItem(SCP_string ContainerName)
+{
+
+}
+
+SCP_string VariableDialogModel::copyStringListItem(SCP_string containerName, int index)
+{
+
+}
+
+bool VariableDialogModel::removeStringListItem(SCP_string containerName, int index)
+{
+
+}
+
+int VariableDialogModel::copyIntegerListItem(SCP_string containerName, int index)
+{
+
+}
+
+int VariableDialogModel::removeIntegerListItem(SCP_string containerName, int index)
+{
+
+}
+
+SCP_string VariableDialogModel::copyMapItem(SCP_string containerName, SCP_string key)
+{
+
+}
+
+bool VariableDialogModel::removeMapItem(SCP_string containerName, SCP_string key)
+{
+
+}
+
+SCP_string VariableDialogModel::replaceMapItemKey(SCP_string containerName, SCP_string oldKey, SCP_string newKey)
+{
+
+}
+
+SCP_string VariableDialogModel::changeMapItemStringValue(SCP_string containerName, SCP_string key, SCP_string newValue)
+{
+
+}
+
+SCP_string VariableDialogModel::changeMapItemNumberValue(SCP_string containerName, SCP_string key, int newValue)
+{
+
+}
 
 } // dialogs
 } // fred
