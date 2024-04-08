@@ -9232,7 +9232,7 @@ void multi_passwd_do(char *passwd)
 		// if the input box text has changed
 		if(Multi_pwd_passwd.changed()){
 			strcpy(passwd,"");
-			Multi_pwd_passwd.get_text(passwd);
+			Multi_pwd_passwd.get_text(passwd, MAX_PASSWD_LEN+1);
 		}
 
 		// process any button pressed
