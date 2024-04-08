@@ -59,6 +59,7 @@
 #define DDSD_HEIGHT				0x00000002
 #define DDSD_CAPS				0x00000001
 #define DDSD_MIPMAPCOUNT		0x00020000
+#define DDSD_DEPTH				0x00800000
 
 #define DDSCAPS_COMPLEX			0x00000008
 #define DDSCAPS_PRIMARYSURFACE	0x00000200
@@ -278,7 +279,7 @@ typedef struct {
 //reads a dds header
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0, ubyte *palette = NULL);
+int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0);
 
 //reads bitmap
 //size of the data it stored in size
@@ -289,8 +290,5 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 
 //returns a string from a DDS error code
 const char *dds_error_string(int code);
-
-extern int Texture_compression_available;
-extern int Use_compressed_textures;
 
 #endif //__DDS_H

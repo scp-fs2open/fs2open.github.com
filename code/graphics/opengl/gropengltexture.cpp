@@ -1225,7 +1225,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 {
 	Assert( in_data != NULL );
 
-	if ( !Texture_compression_available ) {
+	if ( !GLAD_GL_EXT_texture_compression_s3tc ) {
 		return 0;
 	}
 
