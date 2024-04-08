@@ -395,9 +395,26 @@ class UI_INPUTBOX : public UI_GADGET
 		/**
 		 * @brief Retrieves the string currently in the inputbox
 		 * @param[out] out Destination char[] to copy the string to
+		 * @param[max_out_len] max_out_len Maximum length of out string
 		*/
-		void get_text(char* out);
-		
+		void get_text(char* out, size_t max_out_len);
+
+		/**
+		 * @brief Retrieves the string currently in the inputbox
+		 * @param[out] out Destination char[] to copy the string to
+		*/
+		template<size_t size>
+		inline void get_text(char (&out)[size])
+		{
+			get_text(out, size);
+		}
+
+		/**
+		 * @brief Retrieves the string currently in the inputbox
+		 * @param[out] out Destination SCP_String to copy the string to
+		*/
+		void get_text(SCP_string &out);
+
 		/**
 		 * @brief Sets the string in the inputbox
 		 * @param[in] in Source char[] to copy the string from
