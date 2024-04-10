@@ -131,6 +131,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	locked = 0;
 	valid_chars = NULL;
 	invalid_chars = NULL;
+	valid = true;
 }
 
 void UI_INPUTBOX::set_valid_chars(const char *vchars)
@@ -182,6 +183,8 @@ void UI_INPUTBOX::destroy()
 		vm_free(passwd_text);
 		passwd_text = NULL;
 	}
+
+	valid = false;
 
 	UI_GADGET::destroy();
 }
@@ -495,6 +498,11 @@ int UI_INPUTBOX::changed()
 int UI_INPUTBOX::pressed()
 {	
 	return pressed_down;
+}
+
+bool UI_INPUTBOX::is_valid()
+{
+	return valid;
 }
 
 void UI_INPUTBOX::get_text(char *out, size_t max_out_len)

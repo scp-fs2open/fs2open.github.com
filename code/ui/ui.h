@@ -293,6 +293,7 @@ class UI_INPUTBOX : public UI_GADGET
 		color *text_color;
 		char *valid_chars;
 		char *invalid_chars;
+		bool valid; // is invalid until created and then is valid until destroyed
 
 		// cursor drawing
 		int cursor_first_frame;
@@ -391,6 +392,11 @@ class UI_INPUTBOX : public UI_GADGET
 		 * @brief Returns 1 if the Enter key was pressed
 		*/
 		int pressed();
+
+		/**
+		 * @brief Returns true if valid
+		 */
+		bool is_valid();
 
 		/**
 		 * @brief Retrieves the string currently in the inputbox

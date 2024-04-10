@@ -3202,6 +3202,11 @@ void multi_pxo_chat_process()
 	char msg[512];
 	int msg_pixel_width;
 
+	// Bail if the input box is not ready to go
+	if (!Multi_pxo_chat_input.is_valid()) {
+		return;
+	}
+
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
 	memset(msg, 0, 512);
