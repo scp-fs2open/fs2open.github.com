@@ -94,11 +94,6 @@ char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
 extern void allocate_parse_text(size_t size);
 
-extern int Nmodel_num;
-extern int Nmodel_instance_num;
-extern matrix Nmodel_orient;
-extern int Nmodel_bitmap;
-
 namespace fso {
 namespace fred {
 	

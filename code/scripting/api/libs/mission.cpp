@@ -2159,6 +2159,24 @@ ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
 	}
 }
 
+ADE_VIRTVAR(SkyboxOrientation, l_Mission, "orientation", "Sets or returns the current skybox orientation", "orientation", "the orientation")
+{
+	matrix_h* orient_h = nullptr;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*|o", l_Matrix.GetPtr(&orient_h)))
+		stars_set_background_orientation(orient_h->GetMatrix());
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&Nmodel_orient)));
+}
+
+ADE_VIRTVAR(SkyboxAlpha, l_Mission, "number", "Sets or returns the current skybox alpha", "number", "the alpha")
+{
+	float alpha = 1.0f;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*|f", &alpha))
+		stars_set_background_alpha(alpha);
+
+	return ade_set_args(L, "f", Nmodel_alpha);
+}
+
 ADE_FUNC(isRedAlertMission,
 	l_Mission,
 	nullptr,

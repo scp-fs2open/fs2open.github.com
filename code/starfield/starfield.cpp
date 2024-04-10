@@ -155,6 +155,7 @@ int Nmodel_instance_num = -1;					// model instance num
 matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
 int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
+float Nmodel_alpha = 1.0f;					// model transparency
 
 bool Dynamic_environment = false;
 
@@ -2306,14 +2307,15 @@ void stars_draw_background()
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	render_info.set_alpha(1.0f);
+	if (Nmodel_alpha < 1.0f)
+		render_info.set_alpha_mult(Nmodel_alpha);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
 // call this to set a specific model as the background model
-void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
+void stars_set_background_model(const char* model_name, const char* texture_name, int flags, float alpha)
 {
 	int new_model = -1;
 	int new_bitmap = -1;
@@ -2329,9 +2331,10 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 			new_bitmap = bm_load(texture_name);
 		}
 	}
+	CLAMP(alpha, 0.0f, 1.0f);
 
 	// see if we are actually changing anything
-	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags) {
+	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags && Nmodel_alpha == alpha) {
 		return;
 	}
 
@@ -2353,6 +2356,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	Nmodel_flags = flags;
 	Nmodel_num = new_model;
 	Nmodel_bitmap = new_bitmap;
+	Nmodel_alpha = alpha;
 
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
@@ -2373,6 +2377,12 @@ void stars_set_background_orientation(const matrix *orient)
 	} else {
 		Nmodel_orient = *orient;
 	}
+}
+
+void stars_set_background_alpha(float alpha)
+{
+	CLAMP(alpha, 0.0f, 1.0f);
+	Nmodel_alpha = alpha;
 }
 
 // lookup a starfield bitmap, return index or -1 on fail
