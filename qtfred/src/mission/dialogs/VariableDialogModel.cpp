@@ -641,29 +641,165 @@ bool VariableDialogModel::removeListItem(SCP_string containerName, int index)
 
 }
 
-SCP_string VariableDialogModel::copyMapItem(SCP_string containerName, SCP_string key)
+SCP_string VariableDialogModel::copyMapItem(SCP_string containerName, SCP_string keyIn)
 {
-    for (const auto& )
+    auto container = lookupContainer(containerName);
+
+    if (!container) {
+        return "";
+    }
+
+    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
+        if (container->keys[x] == keyIn){
+            if (container->string){
+                if (x < static_cast<int>(container->stringValues.size())){
+                    SCP_string copyValue = container->stringValues[x];
+                    SCP_string newKey;
+                    int size = static_cast<int>(container->keys.size());
+                    sprintf(&newKey, "key%i", size);
+                    
+                    bool found = false;
+
+                    do {
+                        found = false;
+                        for (y = 0; y < static_cast<int>(container->keys.size()); ++y){
+                            if (container->keys[y] == newKey) {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        // attempt did not work, try next number
+                        if (found) {
+                            ++size;
+                            newKey = "";
+                            sprintf(&newKey, "key%i", size);
+                        }
+
+                    } while (found && size < static_cast<int>(container->keys.size()) + 100)
+                    
+                    // we could not generate a new key .... somehow.
+                    if (found){
+                        return "";
+                    }
+
+                    container->keys.push_back(newKey);
+                    container->keys.push_back(copyValue);
+
+                    return std::make_pair(newKey, copyValue);
+
+                } else {
+                    return "";
+                }
+            } else {
+                // TODO!  Make the number value version.
+            }
+
+
+
+        }
+    }
 }
 
+// it's really because of this feature that we need data to only be in one or the other vector for maps.
+// If we attempted to maintain data automatically and there was a deletion, deleting the data in
+// both of the map's data vectors might be undesired, and not deleting takes the map immediately
+// out of sync.  Also, just displaying both data sets would be misleading.
+// We just need to tell the user that the data cannot be maintained. 
 bool VariableDialogModel::removeMapItem(SCP_string containerName, SCP_string key)
 {
+    auto container = lookupContainer(containerName);
 
+    if (!container){
+        return false;
+    }
+
+    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
+        if (container->keys[x] == key) {
+            if ((container->string && x < static_cast<int>(container->stringValues.size())) {
+                container->stringValues.erase(container->stringValues.begin() + x);
+            } else if (!container->string && x < static_cast<int>(container->numberValues.size()))){
+                container->numberValues.erase(container->numberValues.begin() + x);
+            } else {
+                return false;
+            }
+
+            // if we get here, we've succeeded and it's time to bug out
+            container->keys.erase(container->keys.begin() + x);
+            // "I'm outta here!"
+            return true;
+        }
+    }
+
+    // NO SPRINGS!!! HEHEHEHEHE
+    return false;
 }
 
 SCP_string VariableDialogModel::replaceMapItemKey(SCP_string containerName, SCP_string oldKey, SCP_string newKey)
 {
+    auto container = lookupContainer(containerName);
 
+    if (!container){
+        return "";
+    }
+
+    for (auto& key : container->keys){
+        if (key == oldKey) {
+            key = newKey;
+            return newKey;
+        }
+    }
+
+    // Failure
+    return oldKey;
 }
 
 SCP_string VariableDialogModel::changeMapItemStringValue(SCP_string containerName, SCP_string key, SCP_string newValue)
 {
+    auto container = lookupContainer(containerName);
 
+    if (!container || !container->string){
+        return "";
+    }
+
+    for (int x = 0; x < static_cast<int>(container->keys); ++x){
+        if (container->keys[x] == oldKey) {
+            if (x < static_cast<int>(container->stringValues.size())){
+                container->stringValues[x] = newValue;
+                return newValue;
+            } else {
+                return "";
+            }
+        }
+    }
+
+    // Failure
+    return "";
 }
 
 SCP_string VariableDialogModel::changeMapItemNumberValue(SCP_string containerName, SCP_string key, int newValue)
 {
+    auto container = lookupContainer(containerName);
 
+    if (!container || !container->string){
+        return "";
+    }
+
+    for (int x = 0; x < static_cast<int>(container->keys); ++x){
+        if (container->keys[x] == oldKey) {
+            if (x < static_cast<int>(container->numberValues.size())){
+                container->numberValues[x] = newValue;
+                SCP_string returnValue;
+                sprintf(&returnValue, "%i", newValue)
+                return returnValue;
+            } else {
+                return "";
+            }
+        }
+    }
+
+    // Failure
+    return "";
 }
 
 } // dialogs

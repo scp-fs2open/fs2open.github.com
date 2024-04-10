@@ -93,7 +93,7 @@ public:
 	bool removeListItem(SCP_string containerName, int index);
 
 	SCP_string addMapItem(SCP_string ContainerName);
-	SCP_string copyMapItem(SCP_string containerName, SCP_string key);
+	std::pair<SCP_string, SCP_string> copyMapItem(SCP_string containerName, SCP_string key);
 	bool removeMapItem(SCP_string containerName, SCP_string key);
 
 	SCP_string replaceMapItemKey(SCP_string containerName, SCP_string oldKey, SCP_string newKey);
