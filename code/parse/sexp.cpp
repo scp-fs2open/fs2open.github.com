@@ -3176,12 +3176,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					z = get_operator_const(z);
 					if (ship_num >= 0) {
 						if (!query_sexp_ai_goal_valid(z, ship_num)){
+							if (bad_node)
+								*bad_node = ship_node;
 							return SEXP_CHECK_ORDER_NOT_ALLOWED;
 						}
 
 					} else {
 						for (i=0; i<Wings[wing_num].wave_count; i++){
 							if (!query_sexp_ai_goal_valid(z, Wings[wing_num].ship_index[i])){
+								if (bad_node)
+									*bad_node = ship_node;
 								return SEXP_CHECK_ORDER_NOT_ALLOWED;
 							}
 						}
@@ -3190,6 +3194,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					if ((z == OP_AI_DOCK) && (Sexp_nodes[node].rest >= 0)) {
 						ship2 = ship_name_lookup(CTEXT(Sexp_nodes[node].rest), 1);	// Goober5000 - include players
 						if ((ship_num < 0) || !ship_docking_valid(ship_num, ship2)){
+							if (bad_node)
+								*bad_node = ship_node;
 							return SEXP_CHECK_DOCKING_NOT_ALLOWED;
 						}
 					}
