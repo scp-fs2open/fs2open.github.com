@@ -2307,7 +2307,8 @@ void stars_draw_background()
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	render_info.set_alpha(Nmodel_alpha);
+	if (Nmodel_alpha < 1.0f)
+		render_info.set_alpha_mult(Nmodel_alpha);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
