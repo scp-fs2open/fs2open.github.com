@@ -764,6 +764,11 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	int n_lines = split_str(msg, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
 	Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");	
 
+	// will happen if msg is all whitespace, in which case we should ignore it
+	if (n_lines == 0) {
+		return;
+	}
+
 	// copy in the chars
 	strcpy_s(chat.text, p_str[0]);
 
