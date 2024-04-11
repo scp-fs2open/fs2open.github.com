@@ -2224,6 +2224,9 @@ void parse_main_hall_table(const char* filename)
 
 		if (optional_string("$Num Resolutions:")) {
 			stuff_int(&num_resolutions);
+			if (num_resolutions < 1) {
+				Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
+			}
 		}
 
 		if (optional_string("$Door animation delay on hover:")) {
@@ -2234,10 +2237,6 @@ void parse_main_hall_table(const char* filename)
 				linger_temp = 0;
 			}
 			Main_hallregion_linger_delay = linger_temp;
-		}
-
-		if (num_resolutions < 1) {
-			Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
 		}
 
 		// find out what hall we read next
