@@ -10,7 +10,7 @@ namespace dialogs {
 
 struct variableInfo {
 	SCP_string name = "<unnamed>";
-	SCP_string original_name = "";
+	SCP_string originalName = "";
 	bool deleted = false;
 	bool string = true;
 	int flags = 0;
@@ -21,9 +21,9 @@ struct variableInfo {
 
 struct containerInfo {
 	SCP_string name = "<unnamed>";
-	SCP_string original_name = "";
+	SCP_string originalName = "";
 	bool deleted = false;
-	bool list = false;
+	bool list = true;
 	bool string = true;
 	int flags = 0;
 
@@ -100,6 +100,12 @@ public:
 	SCP_string changeMapItemStringValue(SCP_string containerName, SCP_string key, SCP_string newValue);
 	SCP_string changeMapItemNumberValue(SCP_string containerName, SCP_string key, int newValue);
 	
+	const SCP_vector<SCP_string>& getMapKeys(SCP_string containerName);
+	const SCP_vector<SCP_string>& getStringValues(SCP_string containerName);
+	const SCP_vector<int>& getNumberValues(SCP_string containerName);
+
+	const SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string> VariableDialogModel::getVariableValues();
+	const SCP_vector<std::pair<SCP_string, SCP_string>> VarigableDialogModel::getContainerNames();
 
 	bool apply() override;
 	void reject() override;
