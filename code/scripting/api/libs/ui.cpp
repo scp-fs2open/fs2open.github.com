@@ -1585,13 +1585,13 @@ ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number
 
 ADE_FUNC(sendShipRequestPacket,
 	l_UserInterface_ShipWepSelect,
-	"number FromType, number ToType, number FromSlot, number ToSlot, number ShipClassIndex",
-	"Sends a request to the host to change a ship slot.",
+	"number FromType, number ToType, number FromSlotIndex, number ToSlotIndex, number ShipClassIndex",
+	"Sends a request to the host to change a ship slot. From/To types are 0 for Ship Slot, 1 for Player Slot, 2 for Pool",
 	nullptr,
 	nullptr)
 {
 	int fromType; //2 for pool, 1 for player, 0 for slot
-	int toType;
+	int toType;  // 2 for pool, 1 for player, 0 for slot
 	int fromSlot;
 	int toSlot;
 	int shipClassIdx;
@@ -1606,12 +1606,12 @@ ADE_FUNC(sendShipRequestPacket,
 
 ADE_FUNC(sendWeaponRequestPacket,
 	l_UserInterface_ShipWepSelect,
-	"number FromBank, number ToBank, number fromPoolIdx, number toPoolIdx, number shipSlot",
+	"number FromBank, number ToBank, number fromPoolWepIdx, number toPoolWepIdx, number shipSlot",
 	"Sends a request to the host to change a ship slot.",
 	nullptr,
 	nullptr)
 {
-	int fromBank; // 2 for pool, 1 for player, 0 for slot
+	int fromBank;
 	int toBank;
 	int fromList;
 	int toList;
