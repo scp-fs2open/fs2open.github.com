@@ -189,7 +189,7 @@ int join_ship_choices_h::getIndex() const
 
 bool join_ship_choices_h::isValid() const
 {
-	return choice >= 0 && choice < Ingame_ship_choices.size();
+	return SCP_vector_inbounds(Ingame_ship_choices, choice);
 }
 
 //**********HANDLE: channel section
