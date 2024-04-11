@@ -8,8 +8,13 @@
 #include "network/multi_kick.h"
 #include "network/multi_team.h"
 #include "network/multimsgs.h"
+#include "network/multi_ingame.h"
 #include "mission/missionparse.h"
 #include "pilotfile/pilotfile.h"
+#include "ship/ship.h"
+#include "object/objectshield.h"
+#include "weapon/weapon.h"
+#include "scripting/lua/LuaTable.h"
 
 #include "scripting/api/objs/player.h"
 
@@ -162,6 +167,29 @@ multi_df_score* dogfight_scores_h::getScores() const
 bool dogfight_scores_h::isValid() const
 {
 	return scores >= 0 && scores < Multi_df_score_count;
+}
+
+join_ship_choices_h::join_ship_choices_h() : choice(-1) {}
+join_ship_choices_h::join_ship_choices_h(int l_choice) : choice(l_choice) {}
+
+object* join_ship_choices_h::getObject() const
+{
+	if (!isValid())
+		return nullptr;
+	//This is kind of a roundabout way of doing this but it ensures we get
+	//read-only access to just the information we need for this UI rather
+	//than exposing the entire object itself
+	return &Objects[Ingame_ship_choices[choice]];
+}
+
+int join_ship_choices_h::getIndex() const
+{
+	return choice;
+}
+
+bool join_ship_choices_h::isValid() const
+{
+	return choice >= 0 && choice < Ingame_ship_choices.size();
 }
 
 //**********HANDLE: channel section
@@ -1487,6 +1515,10 @@ ADE_VIRTVAR(Callsign,
 	if (!ade_get_args(L, "o", l_Dogfight_Scores.Get(&current)))
 		return ADE_RETURN_NIL;
 
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
 	return ade_set_args(L, "s", current.getScores()->callsign);
 }
 
@@ -1503,6 +1535,165 @@ ADE_FUNC(getKillsOnPlayer,
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "i", current.getScores()->stats.m_dogfight_kills[player.getIndex()]);
+}
+
+//**********HANDLE: join choice section
+ADE_OBJ(l_Join_Ship_Choice, join_ship_choices_h, "net_join_choice", "Join Choice handle");
+
+ADE_FUNC(isValid,
+	l_Join_Ship_Choice,
+	nullptr,
+	"Detects whether handle is valid",
+	"boolean",
+	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
+
+ADE_VIRTVAR(Name, l_Join_Ship_Choice,
+	nullptr,
+	"Gets the name of the ship",
+	"string",
+	"the name or nil if invalid")
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+	
+	return ade_set_args(L, "s", Ships[current.getObject()->instance].ship_name);
+}
+
+ADE_VIRTVAR(ShipIndex,
+	l_Join_Ship_Choice,
+	nullptr,
+	"Gets the index of the ship class",
+	"string",
+	"the index or nil if invalid")
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Ships[current.getObject()->instance].ship_info_index);
+}
+
+ADE_FUNC(getPrimaryWeaponsList,
+	l_Join_Ship_Choice,
+	nullptr,
+	"Gets the table of primary weapon indexes on the ship",
+	"table",
+	"the table of indexes or nil if invalid")
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	luacpp::LuaTable weapons = luacpp::LuaTable::create(L);
+
+	auto wp = &Ships[current.getObject()->instance].weapons;
+
+	for (int idx = 0; idx < wp->num_primary_banks; idx++) {
+		weapons.addValue(idx, wp->primary_bank_weapons[idx]);
+	}
+
+	return ade_set_args(L, "t", weapons);
+}
+
+ADE_FUNC(getSecondaryWeaponsList,
+	l_Join_Ship_Choice,
+	nullptr,
+	"Gets the table of secondary weapon indexes on the ship",
+	"table",
+	"the table of indexes or nil if invalid")
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	luacpp::LuaTable weapons = luacpp::LuaTable::create(L);
+
+	auto wp = &Ships[current.getObject()->instance].weapons;
+
+	for (int idx = 0; idx < wp->num_secondary_banks; idx++) {
+		weapons.addValue(idx, wp->secondary_bank_weapons[idx]);
+	}
+
+	return ade_set_args(L, "t", weapons);
+}
+
+ADE_FUNC(getStatus,
+	l_Join_Ship_Choice,
+	nullptr,
+	"Gets the status of the ship's hull and shields",
+	"number table",
+	"The hull health and then a table of shield quadrant healths")
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	float hull = get_hull_pct(current.getObject());
+	float max_shield = shield_get_max_quad(current.getObject());
+
+	luacpp::LuaTable shields = luacpp::LuaTable::create(L);
+	for (int i = 0; i < current.getObject()->n_quadrants; i++) {
+		float temp_float = (current.getObject()->shield_quadrant[i] / max_shield);
+		shields.addValue(i + 1, temp_float);
+	}
+
+	return ade_set_args(L, "ft", hull, shields);
+}
+
+ADE_FUNC(setChoice,
+	l_Join_Ship_Choice,
+	nullptr,
+	"Sets the current ship as chosen when Accept is clicked",
+	nullptr,
+	nullptr)
+{
+	join_ship_choices_h current;
+	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	multi_ingame_set_selected(current.getIndex());
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api
