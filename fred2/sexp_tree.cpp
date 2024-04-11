@@ -1014,6 +1014,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_ADD_BACKGROUND_BITMAP:
 							case OP_ADD_SUN_BITMAP:
 							case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+							case OP_KEY_RESET:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -1069,6 +1070,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_ADD_BACKGROUND_BITMAP:
 							case OP_ADD_SUN_BITMAP:
 							case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+							case OP_KEY_RESET:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
