@@ -15,54 +15,51 @@ ADE_OBJ(l_Model, model_h, "model", "3D Model (POF) handle");
 
 polymodel *model_h::Get() const
 {
-	return model;
+	return isValid() ? model_get(model_num) : nullptr;
 }
 int model_h::GetID() const
 {
-	return model ? model->id : -1;
+	return isValid() ? model_num : -1;
 }
 bool model_h::isValid() const
 {
-	return (model != nullptr);
+	return (model_num >= 0) && (model_get(model_num) != nullptr);
 }
 model_h::model_h(int n_modelnum)
-{
-	if (n_modelnum >= 0)
-		model = model_get(n_modelnum);
-	else
-		model = nullptr;
-}
+	: model_num(n_modelnum)
+{}
 model_h::model_h(polymodel *n_model)
-	: model(n_model)
-{
-}
+	: model_h(n_model->id)
+{}
 model_h::model_h()
-	: model(nullptr)
-{
-}
+	: model_h(-1)
+{}
 
 
 ADE_OBJ(l_Submodel, submodel_h, "submodel", "Handle to a submodel");
 
-submodel_h::submodel_h()
-	: model(nullptr), submodel_num(-1)
+submodel_h::submodel_h(int n_modelnum, int n_submodelnum)
+	: model_num(n_modelnum), submodel_num(n_submodelnum)
 {}
 submodel_h::submodel_h(polymodel *n_model, int n_submodelnum)
-	: model(n_model), submodel_num(n_submodelnum)
-{
-}
-submodel_h::submodel_h(int n_modelnum, int n_submodelnum)
-	: submodel_num(n_submodelnum)
-{
-	model = model_get(n_modelnum);
-}
-polymodel *submodel_h::GetModel() const { return isValid() ? model : nullptr; }
-int submodel_h::GetModelID() const { return isValid() ? model->id : -1; }
-bsp_info* submodel_h::GetSubmodel() const { return isValid() ? &model->submodel[submodel_num] : nullptr; }
+	: submodel_h(n_model->id, n_submodelnum)
+{}
+submodel_h::submodel_h()
+	: submodel_h(-1, -1)
+{}
+polymodel *submodel_h::GetModel() const { return isValid() ? model_get(model_num) : nullptr; }
+int submodel_h::GetModelID() const { return isValid() ? model_num : -1; }
+bsp_info* submodel_h::GetSubmodel() const { return isValid() ? &model_get(model_num)->submodel[submodel_num] : nullptr; }
 int submodel_h::GetSubmodelIndex() const { return isValid() ? submodel_num : -1; }
 bool submodel_h::isValid() const
 {
-	return model != nullptr && submodel_num >= 0 && submodel_num < model->n_models;
+	if (model_num >= 0 && submodel_num >= 0)
+	{
+		auto model = model_get(model_num);
+		if (model != nullptr)
+			return submodel_num < model->n_models;
+	}
+	return false;
 }
 
 
