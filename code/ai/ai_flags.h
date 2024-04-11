@@ -160,6 +160,7 @@ namespace AI {
 		Player_orders_afterburn_hard,
 		Hudsquadmsg_tactical_disarm_disable,
 		Align_to_target_when_guarding_still,
+		Debris_respects_big_damage,
 
 		NUM_VALUES
 	};

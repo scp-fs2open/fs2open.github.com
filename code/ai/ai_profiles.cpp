@@ -475,6 +475,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fighterbay departures use carrier orientation:", AI::Profile_Flags::Fighterbay_departures_use_carrier_orient);
 
+				set_flag(profile, "$debris damage respects 'big damage' flag:", AI::Profile_Flags::Debris_respects_big_damage);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -824,5 +826,8 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(23, 4, 0)) {
 		flags.set(AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
+	}
+	if (mod_supports_version(24, 2, 0)) {
+		flags.set(AI::Profile_Flags::Debris_respects_big_damage);
 	}
 }
