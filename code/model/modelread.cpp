@@ -3842,7 +3842,7 @@ polymodel * model_get(int model_num)
 	Assertion( Polygon_models[num], "No model with id %d found. Please backtrace and investigate.\n", num );
 	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
 
-	if (num < 0 || num > MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
+	if (num < 0 || num >= MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
 		return NULL;
 
 	return Polygon_models[num];
