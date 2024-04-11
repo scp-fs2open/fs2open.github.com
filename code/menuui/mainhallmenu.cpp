@@ -113,7 +113,7 @@ int Main_hall_right_click;
 int Main_hall_last_clicked_region;
 
 // use this to determine how long the cursor has to linger on a region before it starts playing
-#define MAIN_HALL_REGION_LINGER		175		// in ms
+int Main_hallregion_linger_delay = 175; // in ms
 int Main_hall_region_linger_stamp = -1;
 
 // handle any right clicks which may have occured
@@ -1442,7 +1442,7 @@ void main_hall_handle_mouse_location(int cur_region)
 			// set the linger time
 			if (Main_hall_region_linger_stamp == -1) {
 				Main_hall_mouse_region = cur_region;
-				Main_hall_region_linger_stamp = timestamp(MAIN_HALL_REGION_LINGER);
+				Main_hall_region_linger_stamp = timestamp(Main_hallregion_linger_delay);
 			}
 		}
 	} else { // if it was over a region but isn't anymore, release that region
@@ -2224,10 +2224,19 @@ void parse_main_hall_table(const char* filename)
 
 		if (optional_string("$Num Resolutions:")) {
 			stuff_int(&num_resolutions);
+			if (num_resolutions < 1) {
+				Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
+			}
 		}
 
-		if (num_resolutions < 1) {
-			Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
+		if (optional_string("$Door animation delay on hover:")) {
+			int linger_temp;
+			stuff_int(&linger_temp);
+			if (linger_temp < 0) {
+				mprintf(("The value '%i' for '$Door animation delay on hover:' must be greater than 0, setting to 0!", linger_temp));
+				linger_temp = 0;
+			}
+			Main_hallregion_linger_delay = linger_temp;
 		}
 
 		// find out what hall we read next
