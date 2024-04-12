@@ -166,6 +166,7 @@
     <addaction name="actionWaypoint_Paths"/>
     <addaction name="actionMission_Objectives"/>
     <addaction name="actionEvents"/>
+    <addaction name="actionVariables"/>
     <addaction name="actionLoadout"/>
     <addaction name="actionBackground"/>
     <addaction name="actionReinforcements"/>
@@ -1472,6 +1473,17 @@
    </property>
    <property name="shortcut">
     <string>Shift+G</string>
+   </property>
+  </action>
+  <action name="actionVariables">
+   <property name="text">
+    <string>&amp;Variables</string>
+   </property>
+   <property name="toolTip">
+    <string>Open Variables and Containers Editor</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+V</string>
    </property>
   </action>
  </widget>

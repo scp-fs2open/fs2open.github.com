@@ -752,7 +752,7 @@ void FredView::on_actionLoadout_triggered(bool) {
 	auto editorDialog = new dialogs::LoadoutDialog(this, _viewport);
 	editorDialog->show();
 }
-void FredView::on_actionVariablesAndContainers_triggered(bool) {
+void FredView::on_actionVariables_triggered(bool) {
 	auto editorDialog = new dialogs::VariableDialog(this, _viewport);
 	editorDialog->show();
 }
