@@ -28,15 +28,30 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onVariablesTableUpdated);
 
-	connect(ui->variablesTable,
+	connect(ui->variablesTable, 
+		&QTableWidget::itemSelectionChanged, 
+		this, 
+		&VariableDialog::onVariablesSelectionChanged);
+
+	connect(ui->containersTable,
 		QOverload<int, int>::of(&QTableWidget::cellChanged),
 		this,
 		&VariableDialog::onContainersTableUpdated);
 
-	connect(ui->variablesTable,
+	connect(ui->containersTable, 
+		&QTableWidget::itemSelectionChanged, 
+		this, 
+		&VariableDialog::onContainersSelectionChanged);
+
+	connect(ui->containerContentsTable,
 		QOverload<int, int>::of(&QTableWidget::cellChanged),
 		this,
 		&VariableDialog::onContainerContentsTableUpdated);
+
+	connect(ui->containerContentsTable, 
+		&QTableWidget::itemSelectionChanged, 
+		this, 
+		&VariableDialog::onContainerContentsSelectionChanged);
 
 	connect(ui->addVariableButton,
 		&QPushButton::clicked,
@@ -123,7 +138,6 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onSaveContainerOnMissionCompletedRadioSelected);
 
-
 	connect(ui->addContainerItemButton,
 		&QPushButton::clicked,
 		this,
@@ -139,19 +153,42 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this, 
 		&VariableDialog::onSetContainerAsEternalCheckboxClicked);
 
-	updateUI();
-
 	resize(QDialog::sizeHint());
+
+	ui->variablesTable->setColumnCount(3);
+	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
+	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
+	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
+	ui->variablesTable->setColumnWidth(0, 200);
+	ui->variablesTable->setColumnWidth(1, 200);
+	ui->variablesTable->setColumnWidth(2, 200);
+
+	ui->containersTable->setColumnCount(3);
+	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
+	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
+	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
+	ui->containersTable->setColumnWidth(0, 200);
+	ui->containersTable->setColumnWidth(1, 200);
+	ui->containersTable->setColumnWidth(2, 200);
+	
+	ui->containerContentsTable->setColumnCount(2);
+
+	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
+	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
+	ui->containerContentsTable->setColumnWidth(0, 200);
+	ui->containerContentsTable->setColumnWidth(1, 200);
+
+	applyModel();
 }
 
 void VariableDialog::onVariablesTableUpdated() {} // could be new name or new value
+void VariableDialog::onVariablesSelectionChanged() {}
 void VariableDialog::onContainersTableUpdated() {} // could be new name
+void VariableDialog::onContainersSelectionChanged() {}
 void VariableDialog::onContainerContentsTableUpdated() {} // could be new key or new value
-void VariableDialog::onAddVariableButtonPressed() 
-{
-	
+void VariableDialog::onContainerContentsSelectionChanged() {}
 
-}
+void VariableDialog::onAddVariableButtonPressed() {}
 void VariableDialog::onCopyVariableButtonPressed(){}
 void VariableDialog::onDeleteVariableButtonPressed() {}
 void VariableDialog::onSetVariableAsStringRadioSelected() {}
@@ -175,10 +212,75 @@ void VariableDialog::onAddContainerItemButtonPressed() {}
 void VariableDialog::onDeleteContainerItemButtonPressed() {}
 
 
-
 VariableDialog::~VariableDialog(){}; // NOLINT
 
-void VariableDialog::updateUI(){};
+void VariableDialog::applyModel()
+{
+	auto variables = _model->getVariableValues();
+
+	for (int x = 0; x < static_cast<int>(variables.size()); ++x){
+		if (ui->variablesTable->item(x, 0)){
+			ui->variablesTable->item(x, 0)->setText(variables[x]<0>.c_str());
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<0>.c_str());
+			ui->variablesTable->setItem(x, 0, item);
+		}
+
+		if (ui->variablesTable->item(x, 1)){
+			ui->variablesTable->item(x, 1)->setText(variables[x]<1>.c_str());
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<1>.c_str());
+			ui->variablesTable->setItem(x, 1, nameItem);
+		}
+
+		if (ui->variablesTable->item(x, 2)){
+			ui->variablesTable->item(x, 2)->setText(variables[x]<2>.c_str());
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<2>.c_str());
+			ui->variablesTable->setItem(x, 2, item);
+		}
+
+	}
+
+	if (_currentVariable.empty()){
+		if( ui->VariablesTable->item(0,0) && strlen(ui->VariablesTable->item(0,0)->text())){
+			_currentVariable = ui->VariablesTable->item(0,0)->text();
+		}
+			// TODO! Make new ui function with the following stuff.
+			// get type with getVariableType
+			// get network status with getVariableNetworkStatus
+			// get getVariablesOnMissionCloseOrCompleteFlag
+			// getVariableEternalFlag
+			// string or number value with getVariableStringValue or getVariableNumberValue
+	}
+
+	auto containers = _model->getContainerNames();
+
+	// TODO! Change getContainerNames to a tuple with notes/maybe data key types?
+	for (x = 0; x < static_cast<int>(containers.size()); ++x){
+		if (ui->containersTable->item(x, 0)){
+			ui->containersTable->item(x, 0)->setText(containers[x]<0>.c_str());
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<0>.c_str());
+			ui->containersTable->setItem(x, 0, item);
+		}
+
+		if (ui->containersTable->item(x, 1)){
+			ui->containersTable->item(x, 1)->setText(containers[x]<1>.c_str());
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<1>.c_str());
+			ui->containersTable->setItem(x, 1, nameItem);
+		}
+
+		if (ui->containersTable->item(x, 2)){
+			ui->containersTable->item(x, 2)->setText(containers[x]<2>.c_str());
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<2>.c_str());
+			ui->containersTable->setItem(x, 2, item);
+		}
+	}
+
+};
 
 
 } // namespace dialogs

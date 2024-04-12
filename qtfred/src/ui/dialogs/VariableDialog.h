@@ -25,11 +25,15 @@ class VariableDialog : public QDialog {
 	std::unique_ptr<VariableDialogModel> _model;
 	EditorViewport* _viewport;
 
-	void updateUI();
+	// basically UpdateUI, but called when there is an inconsistency between model and UI
+	void applyModel();
 
 	void onVariablesTableUpdated();
+	void onVariablesSelectionChanged();
 	void onContainersTableUpdated();
+	void onContainersSelectionChanged();
 	void onContainerContentsTableUpdated();
+	void onContainerContentsSelectionChanged();
 	void onAddVariableButtonPressed();
 	void onDeleteVariableButtonPressed();
 	void onCopyVariableButtonPressed();
@@ -52,6 +56,10 @@ class VariableDialog : public QDialog {
 	void onSetContainerAsEternalCheckboxClicked();
 	void onAddContainerItemButtonPressed();
 	void onDeleteContainerItemButtonPressed();
+
+	SCP_string _currentVariable = "";
+	SCP_string _currentContainer = "";
+	SCP_string _currentContainerItem = "";
 };
 
 
