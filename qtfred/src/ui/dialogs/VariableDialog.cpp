@@ -13,9 +13,10 @@ namespace fred {
 namespace dialogs {
 
 VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::VariableDialog()), _model(new VariableDialogModel(this, viewport)), _viewport(viewport)
+	: QDialog(parent), ui(new Ui::VariableEditorDialog()), _model(new VariableDialogModel(this, viewport)), _viewport(viewport)
 {
 	this->setFocus();
+	ui->setupUi(this);
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &VariableDialog::updateUI);
@@ -127,6 +128,10 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		&QCheckBox::clicked, 
 		this, 
 		&VariableDialog::onSetContainerAsEternalCheckboxClicked);
+
+	updateUI();
+
+	resize(QDialog::sizeHint());
 }
 
 void VariableDialog::onVariablesTableUpdated() {} // could be new name or new value

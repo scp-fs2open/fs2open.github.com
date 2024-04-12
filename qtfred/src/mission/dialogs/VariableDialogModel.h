@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 
 #include "AbstractDialogModel.h"
+#include <QMessageBox>
 
 namespace fso {
 namespace fred {
@@ -92,7 +93,7 @@ public:
 	SCP_string copyListItem(SCP_string containerName, int index);
 	bool removeListItem(SCP_string containerName, int index);
 
-	SCP_string addMapItem(SCP_string ContainerName);
+	std::pair<SCP_string, SCP_string> addMapItem(SCP_string ContainerName);
 	std::pair<SCP_string, SCP_string> copyMapItem(SCP_string containerName, SCP_string key);
 	bool removeMapItem(SCP_string containerName, SCP_string key);
 
@@ -104,27 +105,28 @@ public:
 	const SCP_vector<SCP_string>& getStringValues(SCP_string containerName);
 	const SCP_vector<int>& getNumberValues(SCP_string containerName);
 
-	const SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string> VariableDialogModel::getVariableValues();
-	const SCP_vector<std::pair<SCP_string, SCP_string>> VarigableDialogModel::getContainerNames();
+	const SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string>> getVariableValues();
+	const SCP_vector<std::pair<SCP_string, SCP_string>> getContainerNames();
 
 	bool apply() override;
 	void reject() override;
 
+	void initializeData();
 private:
 	SCP_vector<variableInfo> _variableItems;
 	SCP_vector<containerInfo> _containerItems;
 
-	const variableInfo* lookupVariable(SCP_string name){
-		for (int x = 0; x < static_cast<int>(_varaibleItems.size()); ++x){
-			if (_varaibleItems[x].name == name){
-				return &_varaibleItems[x];
+	variableInfo* lookupVariable(SCP_string name){
+		for (int x = 0; x < static_cast<int>(_variableItems.size()); ++x){
+			if (_variableItems[x].name == name){
+				return &_variableItems[x];
 			}
 		}
 
 		return nullptr;
 	}
 
-	const containerInfo* lookupContainer(SCP_string name){
+	containerInfo* lookupContainer(SCP_string name){
 		for (int x = 0; x < static_cast<int>(_containerItems.size()); ++x){
 			if (_containerItems[x].name == name){
 				return &_containerItems[x];
@@ -139,7 +141,7 @@ private:
 	{
 	QMessageBox msgBox;
 	msgBox.setText(question.c_str());
-	msgBox.setInformativeText(informativeText.C_str());
+	msgBox.setInformativeText(informativeText.c_str());
 	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
 	msgBox.setDefaultButton(QMessageBox::Cancel);
 	int ret = msgBox.exec();

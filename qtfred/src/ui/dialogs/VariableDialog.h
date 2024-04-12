@@ -10,7 +10,7 @@ namespace fred {
 namespace dialogs {
 
 namespace Ui {
-class VariableDialog;
+class VariableEditorDialog;
 }
 
 class VariableDialog : public QDialog {
@@ -21,7 +21,7 @@ class VariableDialog : public QDialog {
 	~VariableDialog() override;
 
   private:
-	std::unique_ptr<Ui::VariableDialog> ui;
+	std::unique_ptr<Ui::VariableEditorDialog> ui;
 	std::unique_ptr<VariableDialogModel> _model;
 	EditorViewport* _viewport;
 
