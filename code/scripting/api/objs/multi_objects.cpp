@@ -1679,21 +1679,20 @@ ADE_FUNC(getStatus,
 ADE_FUNC(setChoice,
 	l_Join_Ship_Choice,
 	nullptr,
-	"Sets the current ship as chosen when Accept is clicked",
-	nullptr,
-	nullptr)
+	"Sets the current ship as chosen when Accept is clicked", "boolean",
+	"returns true if successful, Nil if there's handle error.")
 {
 	join_ship_choices_h current;
 	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
 		return ADE_RETURN_NIL;
 
 	if (!current.isValid()) {
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 	}
 
 	multi_ingame_set_selected(current.getIndex());
 
-	return ADE_RETURN_NIL;
+	return ADE_RETURN_TRUE;
 }
 
 } // namespace api
