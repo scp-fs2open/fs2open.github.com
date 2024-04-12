@@ -1,6 +1,7 @@
 #include "VariableDialogModel.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
+#include <unordered_set>
 
 namespace fso {
 namespace fred {
@@ -19,30 +20,155 @@ void VariableDialogModel::reject()
     _containerItems.clear();
 }
 
+bool VariableDialogModel::checkValidModel()
+{
+    std::unordered_set<SCP_string> namesTaken;
+    std::unordered_set<SCP_string> duplicates;
+
+    for (const auto& variable : _variableItems){
+        if (!namesTaken.insert(variable.name).second) {
+            duplicates.insert(variable.name);
+        } 
+    }
+
+    SCP_string messageOut1;
+    SCP_string messageOut2;
+
+    if (!duplicates.empty()){
+        for (const auto& item : duplicates){
+            if (messageOut2.empty()){
+                messageOut2 = "\"" + item + "\"";
+            } else {
+                messageOut2 += ", "\"" + item + "\"";
+            }
+        }
+        
+        sprintf(messageOut1, "There are %zu duplicate variables:\n", duplicates.size());
+        messageOut1 += messageOut2 + "\n\n";
+    }
+
+    duplicates.clear();
+    unordered_set<SCP_string> namesTakenContainer;
+    SCP_vector<SCP_string> duplicateKeys;
+
+    for (const auto& container : _containerItems){
+        if (!namesTakenContainer.insert(container.name).second) {
+            duplicates.insert(container.name);
+        }
+
+        if (!container.list){
+            unordered_set<SCP_string> keysTakenContainer;
+
+            for (const auto& key : container.keys){
+                if (!keysTakenContainer.insert(key)) {
+                    SCP_string temp = key + "in map" + container.name + ", ";
+                    duplicateKeys.push_back(temp);
+                }
+            }
+        }
+    }
+
+    messageOut2.clear();
+    
+    if (!duplicates.empty()){
+        for (const auto& item : duplicates){
+            if (messageOut2.empty()){
+                messageOut2 = "\"" + item + "\"";
+            } else {
+                messageOut2 += ", "\"" + item + "\"";
+            }
+        }
+        
+        SCP_string temp;
+
+        sprintf(temp, "There are %zu duplicate containers:\n\n", duplicates.size());
+        messageOut1 += messageOut2 + "\n";
+    }
+
+    messageOut2.clear();
+
+    if (!duplicateKeys.empty()){
+        for (const auto& key : duplicateKeys){
+            messageOut2 += key;
+        }
+
+        SCP_string temp;
+
+        sprintf(temp, "There are %zu duplicate map keys:\n\n", duplicateKeys.size());
+        messageOut1 += messageOut2 + "\n";
+    }
+
+    if (messageOut1.empty()){
+        return true;
+    } else {
+        messageOut1 = "Please correct these variable, container and key names. The editor cannot apply your changes until they are fixed:\n\n" + messageOut1;
+
+	    QMessageBox msgBox;
+        msgBox.setText(messageOut1.c_str());
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
+
+}
 
 bool VariableDialogModel::apply() 
 {
-    // TODO VALIDATE!  
+    // TODO Change the connect statement to validate before coming here to apply.  
+
+    // what did we delete from the original list?  We need to check these references and clean them.
+    std::unordered_set<SCP_string> deletedVariables;
+    SCP_vector<std::pair<int, SCP_string>> nameChangedVariables;
+    bool found;
+
+    // first we have to edit known variables.
+    for (const auto& variable : _variableItems){
+        found = false;
+
+        // set of instructions for updating variables
+        if (!variable.originalName.empty()) {
+            for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
+                if (!stricmp(Sexp_variables[i].variable_name, variable.originalName)){
+                    if (variable.deleted) {
+                        memset(Sexp_variables[i].variable_name, 0, NAME_LENGTH);
+                        memset(Sexp_variables[i].text, 0, NAME_LENGTH);
+                        Sexp_variables[i].type = 0;
+
+                        deletedVariables.insert(variable.originalName);
+                    } else {
+                        if (variable.name != variable.originalName) {
+                            nameChangedVariables.emplace_back(i, variable.originalName);   
+                        }
+
+                        strcpy_s(Sexp_variables[i].variable_name, variable.name.c_str());
+                        Sexp_variables[i].flags = variable.flags;
+
+                        if (variable.flags & SEXP_VARIABLE_STRING){
+                            strcpy_s(Sexp_variables[i].text, variable.stringValue);
+                            Sexp_variables[i].flags |= SEXP_VARIABLE_STRING;
+                        } else {
+                            strcpy_s(Sexp_variables[i].text, std::to_string(variable.numberValue).c_str())
+                            Sexp_variables[i].flags |= SEXP_VARIABLE_NUMBER;
+                        }
+                    }
+
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            // TODO! Lookup how the old editor does this.  (look for an empty slot maybe?)
+        }
+    }
+    
+
+    // TODO! containers
+    std::unordered_set<SCP_string> deletedContainers;
+
     // TODO!  Look for referenced variables and containers. 
     // Need a way to clean up references.  I'm thinking making some pop ups to confirm replacements created in the editor.
     // This means we need a way to count and replace references. 
-
-    // So, previously, I was just obliterating and overwriting, but I need to rethink this info.
-    /*memset(Sexp_variables, 0, MAX_SEXP_VARIABLES * size_of(sexp_variable));
-
-    for (int i = 0; i < static_cast<int>(_variableItems.size()); ++i){
-        Sexp_variables[i].type = _variableItems[i].flags;
-        strcpy_s(Sexp_variables[i].variable_name, _variableItems[i].name.c_str());
-        
-        if (_variableItems[i].flags & SEXP_VARIABLE_STRING){
-            strcpy_s(Sexp_variables[i].text, _variableItems[i].stringValue);
-        } else {
-            strcpy_s(Sexp_variables[i].text, std::to_string(_variableItems[i].numberValue).c_str())
-        }
-    }
-    */
-
-    // TODO! containers
 
 	return false;
 }
@@ -90,10 +216,30 @@ void VariableDialogModel::initializeData()
         newContainer.originalName = newContainer.name;
         newContainer.deleted = false;
         
-		// TODO FIXME!
-		newContainer.string = false;
-        newContainer.list = container.is_list();
+        if (container.type & ContainerType::STRING_DATA) {
+            newContainer.string = true;
+        } else if (container.type & ContainerType::NUMBER_DATA) {
+    		newContainer.string = false;
+        }
 
+        // using the SEXP variable version of these values here makes things easier
+        if (container.type & ContainerType::SAVE_TO_PLAYER_FILE) { 
+            newContainer.flags |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+        }
+
+        if (container.type & ContainerType::SAVE_ON_MISSION_CLOSE) {
+            newContainer.flags |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
+        }
+
+        if (container.type & ContainerType::SAVE_ON_MISSION_PROGRESS) {
+            newContainer.flags |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
+        }
+
+        if (container.type & ContainerType::NETWORK) {
+            newContainer.flags =| SEXP_VARIABLE_NETWORK;
+        }
+        
+        newContainer.list = container.is_list();
     }
 }
 

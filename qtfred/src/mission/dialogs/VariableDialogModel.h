@@ -22,11 +22,13 @@ struct variableInfo {
 
 struct containerInfo {
 	SCP_string name = "<unnamed>";
-	SCP_string originalName = "";
 	bool deleted = false;
 	bool list = true;
 	bool string = true;
 	int flags = 0;
+
+	// this will allow us to look up the original values used in the mission previously.
+	SCP_string originalName = "";
 
 	SCP_vector<SCP_string> keys;
 	SCP_vector<int> numberValues;
