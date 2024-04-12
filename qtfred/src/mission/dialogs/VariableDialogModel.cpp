@@ -83,9 +83,16 @@ void initializeData()
     const auto& containers = get_all_sexp_containers();
 
     for (const auto& container : containers) {
-        if 
+        _containerItems.emplace_back();
+        auto& newContainer = _containerItems.back();
+        
+        newContainer.name = container.container_name;
+        newContainer.originalName = newContainer.name;
+        newContainer.deleted = false;
+        
+        newContainer.string = container.C
+        newContainer.list = container.is_list;
 
-        _containerItems
     }
 }
 
