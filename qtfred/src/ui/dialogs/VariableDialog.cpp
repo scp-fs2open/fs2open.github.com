@@ -43,6 +43,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onAddVariableButtonPressed);
 
+	connect(ui->copyVariableButton,
+		&QPushButton::clicked,
+		this,
+		&VariableDialog::onCopyVariableButtonPressed);
+
 	connect(ui->deleteVariableButton,
 		&QPushButton::clicked,
 		this, 
@@ -77,6 +82,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		&QPushButton::clicked,
 		this,
 		&VariableDialog::onAddContainerButtonPressed);
+
+	connect(ui->copyContainerButton,
+		&QPushButton::clicked,
+		this,
+		&VariableDialog::onCopyContainerButtonPressed);
 
 	connect(ui->deleteContainerButton,
 		&QPushButton::clicked,
@@ -142,6 +152,7 @@ void VariableDialog::onAddVariableButtonPressed()
 	
 
 }
+void VariableDialog::onCopyVariableButtonPressed(){}
 void VariableDialog::onDeleteVariableButtonPressed() {}
 void VariableDialog::onSetVariableAsStringRadioSelected() {}
 void VariableDialog::onSetVariableAsNumberRadioSelected() {}
@@ -150,6 +161,7 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() {}
 void VariableDialog::onSaveVariableAsEternalCheckboxClicked() {}
 
 void VariableDialog::onAddContainerButtonPressed() {}
+void VariableDialog::onCopyContainerButtonPressed() {}
 void VariableDialog::onDeleteContainerButtonPressed() {}
 void VariableDialog::onSetContainerAsMapRadioSelected() {}
 void VariableDialog::onSetContainerAsListRadioSelected() {}
