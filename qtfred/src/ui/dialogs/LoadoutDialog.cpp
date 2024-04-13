@@ -517,6 +517,7 @@ void LoadoutDialog::onClearAllUsedWeaponsPressed()
 // TODO!  Finish writing a trigger to open that dialog, once the variable editor is created
 void LoadoutDialog::openEditVariablePressed() 
 {
+	viewport->on_actionVariables_triggered();
 }
 
 void LoadoutDialog::onSelectionRequiredPressed() 
