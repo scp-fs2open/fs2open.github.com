@@ -178,6 +178,18 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containerContentsTable->setColumnWidth(0, 200);
 	ui->containerContentsTable->setColumnWidth(1, 200);
 
+	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
+	ui->setVariableAsStringRadio->setAutoExclusive(false);
+	ui->setVariableAsNumberRadio->setAutoExclusive(false);
+	ui->saveContainerOnMissionCompletedRadio->setAutoExclusive(false);
+	ui->saveVariableOnMissionCloseRadio->setAutoExclusive(false);
+	ui->setContainerAsMapRadio->setAutoExclusive(false);
+	ui->setContainerAsListRadio->setAutoExclusive(false);
+	ui->setContainerAsStringRadio->setAutoExclusive(false);
+	ui->setContainerAsNumberRadio->setAutoExclusive(false);
+	ui->saveContainerOnMissionCloseRadio->setAutoExclusive(false);
+	ui->saveContainerOnMissionCompletedRadio->setAutoExclusive(false);
+
 	applyModel();
 }
 
@@ -262,7 +274,14 @@ void VariableDialog::onVariablesTableUpdated()
 }
 
 
-void VariableDialog::onVariablesSelectionChanged() {}
+void VariableDialog::onVariablesSelectionChanged() 
+{
+	if (_applyingModel){
+		return;
+	}
+}
+
+
 void VariableDialog::onContainersTableUpdated() 
 {
 	if (_applyingModel){
@@ -270,7 +289,14 @@ void VariableDialog::onContainersTableUpdated()
 	}
 
 } // could be new name
-void VariableDialog::onContainersSelectionChanged() {}
+
+void VariableDialog::onContainersSelectionChanged() 
+{
+		if (_applyingModel){
+		return;
+	}
+}
+
 void VariableDialog::onContainerContentsTableUpdated() 
 {
 	if (_applyingModel){
@@ -279,13 +305,76 @@ void VariableDialog::onContainerContentsTableUpdated()
 
 
 } // could be new key or new value
-void VariableDialog::onContainerContentsSelectionChanged() {}
 
-void VariableDialog::onAddVariableButtonPressed() {}
-void VariableDialog::onCopyVariableButtonPressed(){}
-void VariableDialog::onDeleteVariableButtonPressed() {}
-void VariableDialog::onSetVariableAsStringRadioSelected() {}
-void VariableDialog::onSetVariableAsNumberRadioSelected() {}
+void VariableDialog::onContainerContentsSelectionChanged() {
+	if (_applyingModel){
+		return;
+	}
+
+}
+
+void VariableDialog::onAddVariableButtonPressed() 
+{
+	auto ret = _model->addNewVriable();
+	_currentVariable = ret;
+	applyModel();
+}
+
+void VariableDialog::onCopyVariableButtonPressed()
+{
+	if (_currentVarible.empty()){
+		return;
+	}
+
+	auto ret = _model->copyVariable(_currentVariable);
+	_currentVariable = ret;
+	applyModel();
+}
+
+void VariableDialog::onDeleteVariableButtonPressed() 
+{
+	if (_currentVarible.empty()){
+		return;
+	}
+
+	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
+	_model->removeVariable(_currentVariable);
+	applyModel();
+}
+
+void VariableDialog::onSetVariableAsStringRadioSelected() 
+{
+	if (_currentVarible.empty() || ui->setVariableAsStringRadio->isChecked()){
+		return;
+	}
+
+	// this doesn't return succeed or fail directly, 
+	// but if it doesn't return true then it failed since this is the string radio
+	if(!_model->setVariableType(_currentVariable, true)){
+		applyModel();
+	} else {
+		ui->setVariableAsStringRadio->setChecked(true);
+		ui->setVariableAsNumberRadio->setChecked(false);
+	}
+}
+
+void VariableDialog::onSetVariableAsNumberRadioSelected() 
+{
+	if (_currentVarible.empty() || ui->setVariableAsNumberRadio->isChecked()){
+		return;
+	}
+
+	// this doesn't return succeed or fail directly, 
+	// but if it doesn't return false then it failed since this is the number radio
+	if(!_model->setVariableType(_currentVariable, false)){
+		applyModel();
+	} else {
+		ui->setVariableAsStringRadio->setChecked(false);
+		ui->setVariableAsNumberRadio->setChecked(true);
+	}
+}
+
+
 void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() {}
 void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() {}
 void VariableDialog::onSaveVariableAsEternalCheckboxClicked() {}
