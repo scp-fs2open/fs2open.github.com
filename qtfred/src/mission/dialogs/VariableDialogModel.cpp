@@ -20,7 +20,7 @@ void VariableDialogModel::reject()
     _containerItems.clear();
 }
 
-bool VariableDialogModel::checkValidModel()
+void VariableDialogModel::checkValidModel()
 {
     std::unordered_set<SCP_string> namesTaken;
     std::unordered_set<SCP_string> duplicates;
@@ -99,7 +99,7 @@ bool VariableDialogModel::checkValidModel()
     }
 
     if (messageOut1.empty()){
-        return true;
+        apply();
     } else {
         messageOut1 = "Please correct these variable, container and key names. The editor cannot apply your changes until they are fixed:\n\n" + messageOut1;
 
@@ -109,11 +109,12 @@ bool VariableDialogModel::checkValidModel()
         msgBox.exec();
     }
 
+
+
 }
 
 bool VariableDialogModel::apply() 
 {
-    // TODO Change the connect statement to validate before coming here to apply.  
 
     // what did we delete from the original list?  We need to check these references and clean them.
     std::unordered_set<SCP_string> deletedVariables;
@@ -158,7 +159,7 @@ bool VariableDialogModel::apply()
         }
 
         if (!found) {
-            // TODO! Lookup how the old editor does this.  (look for an empty slot maybe?)
+            // TODO! Lookup how FRED adds new variables.  (look for an empty slot maybe?)
         }
     }
     
@@ -168,7 +169,6 @@ bool VariableDialogModel::apply()
 
     // TODO!  Look for referenced variables and containers. 
     // Need a way to clean up references.  I'm thinking making some pop ups to confirm replacements created in the editor.
-    // This means we need a way to count and replace references. 
 
 	return false;
 }
@@ -198,7 +198,6 @@ void VariableDialogModel::initializeData()
                 }                
                 catch (...) {
                     item.numberValue = 0;
-                    // TODO! Warning popup
                 }
 
                 item.stringValue = "";
