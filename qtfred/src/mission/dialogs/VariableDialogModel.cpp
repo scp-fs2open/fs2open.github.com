@@ -306,8 +306,10 @@ bool VariableDialogModel::setVariableType(SCP_string name, bool string)
     auto variable = lookupVariable(name);
 
     // nothing to change, or invalid entry
+    // Best way to say that it failed is to say 
+    // that it is not switching to what the ui asked for. 
     if (!variable || variable->string == string){
-        return string;
+        return !string;
     }
 
 
