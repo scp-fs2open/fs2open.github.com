@@ -88,6 +88,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this, 
 		&VariableDialog::onSaveVariableOnMissionCloseRadioSelected);
 
+	connect(ui->networkVariableCheckbox,
+		&QCheckBox::clicked,
+		this,
+		&VariableDialog::onNetworkVariableCheckboxClicked);
+
 	connect(ui->setVariableAsEternalcheckbox,
 		&QCheckBox::clicked,
 		this,
@@ -322,7 +327,7 @@ void VariableDialog::onAddVariableButtonPressed()
 
 void VariableDialog::onCopyVariableButtonPressed()
 {
-	if (_currentVarible.empty()){
+	if (_currentVariable.empty()){
 		return;
 	}
 
@@ -333,7 +338,7 @@ void VariableDialog::onCopyVariableButtonPressed()
 
 void VariableDialog::onDeleteVariableButtonPressed() 
 {
-	if (_currentVarible.empty()){
+	if (_currentVariable.empty()){
 		return;
 	}
 
@@ -344,7 +349,7 @@ void VariableDialog::onDeleteVariableButtonPressed()
 
 void VariableDialog::onSetVariableAsStringRadioSelected() 
 {
-	if (_currentVarible.empty() || ui->setVariableAsStringRadio->isChecked()){
+	if (_currentVariable.empty() || ui->setVariableAsStringRadio->isChecked()){
 		return;
 	}
 
@@ -360,7 +365,7 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
 {
-	if (_currentVarible.empty() || ui->setVariableAsNumberRadio->isChecked()){
+	if (_currentVariable.empty() || ui->setVariableAsNumberRadio->isChecked()){
 		return;
 	}
 
@@ -375,9 +380,69 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 }
 
 
-void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() {}
-void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() {}
-void VariableDialog::onSaveVariableAsEternalCheckboxClicked() {}
+void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() 
+{
+	if (_currentVariable.empty() || ui->saveContainerOnMissionCompletedRadio->isChecked()){
+		return;
+	}
+
+	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(_currentVariable, 1);
+
+	if (ret != 1){
+		applyModel();
+	} else {
+		// TODO!  Need "no persistence" options and functions!
+		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+		ui->saveVariableOnMissionCloseRadio->setChecked(false);
+		//ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+	}
+}
+
+void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() 
+{
+	if (_currentVariable.empty() || ui->saveContainerOnMissionCompletedRadio->isChecked()){
+		return;
+	}
+
+	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(_currentVariable, 2);
+
+	if (ret != 2){
+		applyModel();
+	} else {
+		// TODO!  Need "no persistence" options.
+		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCloseRadio->setChecked(true);
+		//ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+	}
+}
+
+void VariableDialog::onSaveVariableAsEternalCheckboxClicked() 
+{
+	if (_currentVariable.empty()){
+		return;
+	}
+
+	// If the model returns the old status, then the change failed and we're out of sync.	
+	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(_currentVariable, !ui->setVariableAsEternalcheckbox->isChecked())){
+		applyModel();
+	} else {
+		_ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
+	}
+}
+
+void VariableDialog::onNetworkVariableCheckboxClicked()
+{
+	if (_currentVariable.empty()){
+		return;
+	}
+
+	// If the model returns the old status, then the change failed and we're out of sync.	
+	if (ui->setVariableNetworkStatus->isChecked() == _model->setVariableNetworkStatus(_currentVariable, !ui->setVariableNetworkStatus->isChecked())){
+		applyModel();
+	} else {
+		_ui->setVariableNetworkStatus->setChecked(!ui->setVariableNetworkStatus->isChecked());
+	}
+}
 
 void VariableDialog::onAddContainerButtonPressed() {}
 void VariableDialog::onCopyContainerButtonPressed() {}
@@ -527,6 +592,56 @@ void VariableDialog::applyModel()
 
 	_applyingModel = false;
 };
+
+void VariableDialog::updateVariableOptions()
+{
+	if (_currentVariable.empty()){
+		ui->copyVariableButton.setEnabled(false);
+		ui->deleteVariableButton.setEnabled(false);
+		ui->setVariableAsStringRadio.setEnabled(false);
+		ui->setVariableAsNumberRadio.setEnabled(false);
+		ui->saveContainerOnMissionCompletedRadio.setEnabled(false);
+		ui->saveVariableOnMissionCloseRadio.setEnabled(false);
+		ui->setVariableAsEternalcheckbox.setEnabled(false);
+
+		return;
+	}
+
+	ui->copyVariableButton.setEnabled(true);
+	ui->deleteVariableButton.setEnabled(true);
+	ui->setVariableAsStringRadio.setEnabled(true);
+	ui->setVariableAsNumberRadio.setEnabled(true);
+	ui->saveContainerOnMissionCompletedRadio.setEnabled(true);
+	ui->saveVariableOnMissionCloseRadio.setEnabled(true);
+	ui->setVariableAsEternalcheckbox.setEnabled(true);
+
+	// start populating values
+	bool string = _model->getVariableType(_currentVariable);
+	ui->setVariableAsStringRadio.setChecked(string);
+	ui->setVariableAsNumberRadio.setChecked(!string);
+	ui->setVariableAsEternalcheckbox.setChecked();
+
+	int ret = _model->getVariableOnMissionCloseOrCompleteFlag(_currentVariable);
+
+	if (ret == 0){
+		// TODO ADD NO PERSISTENCE
+	} else if (ret == 1) {
+		ui->saveContainerOnMissionCompletedRadio.setChecked(true);
+		ui->saveVariableOnMissionCloseRadio.setChecked(false);		
+	} else {
+		ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+		ui->saveVariableOnMissionCloseRadio.setChecked(true);
+	}
+
+	ui->networkVariableCheckbox.setChecked(_model->getVariableNetworkStatus(_currentVariable));
+	ui->setVariableAsEternalcheckbox.setChecked(_model->getVariableEternalFlag(_currentVariable));
+
+}
+
+void VariableDialog::updateContainerOptions()
+{
+
+}
 
 SCP_string VariableDialog::trimNumberString(SCP_string source) 
 {

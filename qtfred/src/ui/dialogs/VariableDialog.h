@@ -42,6 +42,7 @@ class VariableDialog : public QDialog {
 	void onSaveVariableOnMissionCompleteRadioSelected();
 	void onSaveVariableOnMissionCloseRadioSelected();
 	void onSaveVariableAsEternalCheckboxClicked();
+	void onNetworkVariableCheckboxClicked();
 
 	void onAddContainerButtonPressed();
 	void onDeleteContainerButtonPressed();
