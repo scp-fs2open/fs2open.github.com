@@ -24,7 +24,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::reject);
 	
 	connect(ui->variablesTable, 
-		QOverload<int, int>::of(&QTableWidget::cellChanged),
+		&QTableWidget::itemChanged,
 		this,
 		&VariableDialog::onVariablesTableUpdated);
 
@@ -34,7 +34,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		&VariableDialog::onVariablesSelectionChanged);
 
 	connect(ui->containersTable,
-		QOverload<int, int>::of(&QTableWidget::cellChanged),
+		&QTableWidget::itemChanged,
 		this,
 		&VariableDialog::onContainersTableUpdated);
 
@@ -44,7 +44,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		&VariableDialog::onContainersSelectionChanged);
 
 	connect(ui->containerContentsTable,
-		QOverload<int, int>::of(&QTableWidget::cellChanged),
+		&QTableWidget::itemChanged,
 		this,
 		&VariableDialog::onContainerContentsTableUpdated);
 
@@ -181,7 +181,88 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	applyModel();
 }
 
-void VariableDialog::onVariablesTableUpdated() {} // could be new name or new value
+// TODO! have applyModel set a variable that has us return early on these table updated functions.
+// TODO! make sure that when a variable is added that the whole model is reloaded.  
+void VariableDialog::onVariablesTableUpdated() 
+{
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		if (item->column() == 0){
+
+			// so if the user just removed the name, mark it as deleted *before changing the name*
+			if (_currentVariable != "" && !strlen(item->text.c_str())){
+				if (!_model->removeVariable(item->row())) {
+					// marking a variable as deleted failed, resync UI
+					applyModel();
+					return;
+				}
+			}
+
+			auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
+
+			// we put something in the cell, but the model couldn't process it.
+			if (strlen(item->text()) && ret == ""){
+				// update of variable name failed, resync UI
+				applyModel();
+
+			// we had a successful rename.  So update the variable we reference.
+			} else if (ret != "") {
+				item->setText(ret.c_str());
+				_currentVariable = ret;
+			}
+
+			// empty return and cell was handled earlier.
+		
+		// data was altered
+		} else if (item->column() == 0) {
+			if (_model->getVariableType(int->row())){
+				SCP_string ret = _model->setVariableStringValue(int->row(), item->text().toStdString());
+				if (ret == ""){
+					applyModel();
+				}
+			} else {
+				SCP_string temp;
+				SCP_string source = item->text().toStdString();
+
+				std::copy_if(s1.begin(), s1.end(), std::back_inserter(temp),
+         			[](char c){ 
+						switch (c) {
+							case '0':
+							case '1':
+							case '2':
+							case '3':
+							case '4':
+							case '5':
+							case '6':
+							case '7':
+							case '8':
+							case '9':
+							case '-':
+								return true;
+								break;
+							default:
+								return false;
+								break;
+						}
+					}
+    			);
+
+				if (temp != )
+
+				int ret = _model->setVariableNumberValue(int->row(), )
+			}
+
+
+		// if the user somehow edited the info that comes from the model and should not be editable, reload everything.
+		} else {
+			applyModel();
+		}
+	}
+}
+
+
 void VariableDialog::onVariablesSelectionChanged() {}
 void VariableDialog::onContainersTableUpdated() {} // could be new name
 void VariableDialog::onContainersSelectionChanged() {}
@@ -217,13 +298,19 @@ VariableDialog::~VariableDialog(){}; // NOLINT
 void VariableDialog::applyModel()
 {
 	auto variables = _model->getVariableValues();
+	int x, selectedRow = -1;
 
-	for (int x = 0; x < static_cast<int>(variables.size()); ++x){
+	for (x = 0; x < static_cast<int>(variables.size()); ++x){
 		if (ui->variablesTable->item(x, 0)){
 			ui->variablesTable->item(x, 0)->setText(variables[x]<0>.c_str());
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<0>.c_str());
 			ui->variablesTable->setItem(x, 0, item);
+		}
+
+		// check if this is the current variable.
+		if (!_currentVariable.empty() && variables[x]<0> == _currentVariable){
+			selectedRow = x
 		}
 
 		if (ui->variablesTable->item(x, 1)){
@@ -239,22 +326,44 @@ void VariableDialog::applyModel()
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<2>.c_str());
 			ui->variablesTable->setItem(x, 2, item);
 		}
-
 	}
 
-	if (_currentVariable.empty()){
-		if( ui->VariablesTable->item(0,0) && strlen(ui->VariablesTable->item(0,0)->text())){
-			_currentVariable = ui->VariablesTable->item(0,0)->text();
+	// TODO, try setting row count?
+	// This empties rows that might have previously had variables
+	if (x < ui->variablesTable->rowCount()) {
+		++x;
+		for (; x < ui->variablesTable->rowCount(); ++x){
+			if (ui->variablesTable->item(x, 0)){
+				ui->variablesTable->item(x, 0)->setText("");
+			}
+
+			if (ui->variablesTable->item(x, 1)){
+				ui->variablesTable->item(x, 1)->setText("");
+			}
+
+			if (ui->variablesTable->item(x, 2)){
+				ui->variablesTable->item(x, 2)->setText("");
+			}
 		}
-			// TODO! Make new ui function with the following stuff.
-			// get type with getVariableType
-			// get network status with getVariableNetworkStatus
-			// get getVariablesOnMissionCloseOrCompleteFlag
-			// getVariableEternalFlag
-			// string or number value with getVariableStringValue or getVariableNumberValue
 	}
+
+	if (_currentVariable.empty() || selectedRow < 0){
+		if (ui->variablesTable->item(0,0) && strlen(ui->variablesTable->item(0,0)->text())){
+			_currentVariable = ui->variablesTable->item(0,0)->text();
+		}
+	}
+
+	// TODO! Make new ui function with the following stuff.
+	// get type with getVariableType
+	// get network status with getVariableNetworkStatus
+	// get getVariablesOnMissionCloseOrCompleteFlag
+	// getVariableEternalFlag
+	// string or number value with getVariableStringValue or getVariableNumberValue
+	updateVariableOptions();
+
 
 	auto containers = _model->getContainerNames();
+	selectedRow = -1;
 
 	// TODO! Change getContainerNames to a tuple with notes/maybe data key types?
 	for (x = 0; x < static_cast<int>(containers.size()); ++x){
@@ -264,6 +373,12 @@ void VariableDialog::applyModel()
 			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<0>.c_str());
 			ui->containersTable->setItem(x, 0, item);
 		}
+
+		// check if this is the current variable.
+		if (!_currentVariable.empty() && containers[x]<0> == _currentVariable){
+			selectedRow = x;
+		}
+
 
 		if (ui->containersTable->item(x, 1)){
 			ui->containersTable->item(x, 1)->setText(containers[x]<1>.c_str());
@@ -279,6 +394,33 @@ void VariableDialog::applyModel()
 			ui->containersTable->setItem(x, 2, item);
 		}
 	}
+
+	// This empties rows that might have previously had containers
+	if (x < ui->containersTable->rowCount()) {
+		++x;
+		for (; x < ui->containersTable->rowCount(); ++x){
+			if (ui->containersTable->item(x, 0)){
+				ui->containersTable->item(x, 0)->setText("");
+			}
+
+			if (ui->containersTable->item(x, 1)){
+				ui->containersTable->item(x, 1)->setText("");
+			}
+
+			if (ui->containersTable->item(x, 2)){
+				ui->containersTable->item(x, 2)->setText("");
+			}
+		}
+	}
+
+	if (_currentContainer.empty() || selectedRow < 0){
+		if (ui->containersTable->item(0,0) && strlen(ui->containersTable->item(0,0)->text())){
+			_currentContainer = ui->containersTable->item(0,0)->text();
+		}
+	}
+
+	// this will update the list/map items.
+	updateContainerOptions();
 
 };
 
