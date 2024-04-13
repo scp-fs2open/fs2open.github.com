@@ -43,10 +43,11 @@ void parse_curve_table(const char* filename) {
 }
 
 void fill_default_curves() {
-	for (int i = 2; i < 6; i++) {
+	for (int i = 1; i < 6; i++) {
 		for (int rev = 0; rev < 2; rev++) {
 			SCP_string name("EaseIn");
 			switch (i) {
+			case 1: name += "Circ"; break;
 			case 2: name += "Quad"; break;
 			case 3: name += "Cubic"; break;
 			case 4: name += "Quart"; break;
@@ -56,11 +57,15 @@ void fill_default_curves() {
 				name += "Rev";
 
 			Curves.emplace_back(name);
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
+			if (i == 1)
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Circular, 0.0f, 1.0f });
+			else
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
 			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 1.0f, rev ? 0.0f : 1.0f}, CurveInterpFunction::Constant, 0.0f, 0.0f });
 
 			name = "EaseOut";
 			switch (i) {
+			case 1: name += "Circ"; break;
 			case 2: name += "Quad"; break;
 			case 3: name += "Cubic"; break;
 			case 4: name += "Quart"; break;
@@ -70,11 +75,15 @@ void fill_default_curves() {
 				name += "Rev";
 
 			Curves.emplace_back(name);
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
+			if (i == 1)
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Circular, 0.0f, -1.0f });
+			else
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
 			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 1.0f, rev ? 0.0f : 1.0f}, CurveInterpFunction::Constant, 0.0f, 0.0f });
 
 			name = "EaseInOut";
 			switch (i) {
+			case 1: name += "Circ"; break;
 			case 2: name += "Quad"; break;
 			case 3: name += "Cubic"; break;
 			case 4: name += "Quart"; break;
@@ -84,8 +93,14 @@ void fill_default_curves() {
 				name += "Rev";
 
 			Curves.emplace_back(name);
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.5f, 0.5f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
+
+			if (i == 1) {
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Circular, 0.0f, 1.0f });
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.5f, 0.5f}, CurveInterpFunction::Circular, 0.0f, -1.0f });
+			} else {
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.5f, 0.5f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
+			}
 			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 1.0f, rev ? 0.0f : 1.0f}, CurveInterpFunction::Constant, 0.0f, 0.0f });
 		}
 	}
