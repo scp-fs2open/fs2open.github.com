@@ -20,7 +20,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &VariableDialog::updateUI);
-	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::apply);
+	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::checkValidModel);
 	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::reject);
 	
 	connect(ui->variablesTable, 
@@ -181,10 +181,13 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	applyModel();
 }
 
-// TODO! have applyModel set a variable that has us return early on these table updated functions.
 // TODO! make sure that when a variable is added that the whole model is reloaded.  
 void VariableDialog::onVariablesTableUpdated() 
 {
+	if (_applyingModel){
+		return;
+	}
+
 	auto items = ui->variablesTable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
@@ -215,47 +218,43 @@ void VariableDialog::onVariablesTableUpdated()
 
 			// empty return and cell was handled earlier.
 		
-		// data was altered
-		} else if (item->column() == 0) {
+		// data cell was altered
+		} else if (item->column() == 1) {
+
+			// Variable is a string
 			if (_model->getVariableType(int->row())){
-				SCP_string ret = _model->setVariableStringValue(int->row(), item->text().toStdString());
+				SCP_string temp = item->text()->toStdString().c_str();
+				temp = temp.substr(0, NAME_LENGTH - 1);
+
+				SCP_string ret = _model->setVariableStringValue(int->row(), temp);
 				if (ret == ""){
 					applyModel();
+					return;
 				}
+				
+				item->setText(ret.c_str());
 			} else {
 				SCP_string temp;
 				SCP_string source = item->text().toStdString();
 
-				std::copy_if(s1.begin(), s1.end(), std::back_inserter(temp),
-         			[](char c){ 
-						switch (c) {
-							case '0':
-							case '1':
-							case '2':
-							case '3':
-							case '4':
-							case '5':
-							case '6':
-							case '7':
-							case '8':
-							case '9':
-							case '-':
-								return true;
-								break;
-							default:
-								return false;
-								break;
-						}
-					}
-    			);
+				SCP_string temp = trimNumberString();
 
-				if (temp != )
+				if (temp != source){
+					item->setText(temp.c_str());
+				}
 
-				int ret = _model->setVariableNumberValue(int->row(), )
+				try {
+					int ret = _model->setVariableNumberValue(item->row(), std::stoi(temp));
+					temp = "";
+					sprintf(temp, "%i", ret);
+					item->setText(temp);
+				}
+				catch (...) {
+					applyModel();
+				}
 			}
 
-
-		// if the user somehow edited the info that comes from the model and should not be editable, reload everything.
+		// if the user somehow edited the info that should only come from the model and should not be editable, reload everything.
 		} else {
 			applyModel();
 		}
@@ -264,9 +263,22 @@ void VariableDialog::onVariablesTableUpdated()
 
 
 void VariableDialog::onVariablesSelectionChanged() {}
-void VariableDialog::onContainersTableUpdated() {} // could be new name
+void VariableDialog::onContainersTableUpdated() 
+{
+	if (_applyingModel){
+		return;
+	}
+
+} // could be new name
 void VariableDialog::onContainersSelectionChanged() {}
-void VariableDialog::onContainerContentsTableUpdated() {} // could be new key or new value
+void VariableDialog::onContainerContentsTableUpdated() 
+{
+	if (_applyingModel){
+		return;
+	}
+
+
+} // could be new key or new value
 void VariableDialog::onContainerContentsSelectionChanged() {}
 
 void VariableDialog::onAddVariableButtonPressed() {}
@@ -297,6 +309,8 @@ VariableDialog::~VariableDialog(){}; // NOLINT
 
 void VariableDialog::applyModel()
 {
+	_applyingModel = true;
+
 	auto variables = _model->getVariableValues();
 	int x, selectedRow = -1;
 
@@ -422,7 +436,43 @@ void VariableDialog::applyModel()
 	// this will update the list/map items.
 	updateContainerOptions();
 
+	_applyingModel = false;
 };
+
+SCP_string VariableDialog::trimNumberString(SCP_string source) 
+{
+	SCP_string ret;
+
+	// account for a lead negative sign.
+	if (source[0] == "-") {
+		ret = "-";
+	}
+
+	// filter out non-numeric digits
+	std::copy_if(s1.begin(), s1.end(), std::back_inserter(ret),
+		[](char c){ 
+			switch (c) {
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					return true;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
+	);
+
+	return ret;
+}
 
 
 } // namespace dialogs

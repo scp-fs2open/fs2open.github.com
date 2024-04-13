@@ -57,6 +57,9 @@ class VariableDialog : public QDialog {
 	void onAddContainerItemButtonPressed();
 	void onDeleteContainerItemButtonPressed();
 
+	SCP_string trimNumberString(SCP_string source);
+
+	bool _applyingModel = false;
 	SCP_string _currentVariable = "";
 	SCP_string _currentContainer = "";
 	SCP_string _currentContainerItem = "";
