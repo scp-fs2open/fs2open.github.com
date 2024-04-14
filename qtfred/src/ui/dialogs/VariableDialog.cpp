@@ -17,6 +17,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
+	resize(QDialog::sizeHint()); // The best I can tell without some research, when a dialog doesn't use an underling grid or layout, it needs to be resized this way before anything will show up 
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &VariableDialog::updateUI);
@@ -131,7 +132,17 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->setContainerAsNumberRadio,
 		&QRadioButton::toggled,
 		this, 
-		&VariableDialog::onSetContainerAsNumberRadio);
+		&VariableDialog::onSetContainerAsNumberRadioSelected);
+
+	connect(ui->setContainerKeyAsStringRadio,
+		&QRadioButton::toggled,
+		this,
+		&VariableDialog::onSetContainerKeyAsStringRadioSelected);
+
+	connect(ui->setContainerKeyAsNumberRadio,
+		&QRadioButton::toggled,
+		this, 
+		&VariableDialog::onSetContainerKeyAsNumberRadioSelected);
 
 	connect(ui->saveContainerOnMissionCloseRadio,
 		&QRadioButton::toggled,
@@ -143,22 +154,31 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onSaveContainerOnMissionCompletedRadioSelected);
 
+	connect(ui->setContainerAsEternalCheckbox, 
+		&QCheckBox::clicked, 
+		this, 
+		&VariableDialog::onSetContainerAsEternalCheckboxClicked);
+
+	connect(ui->networkContainerCheckbox, 
+		&QCheckBox::clicked, 
+		this, 
+		&VariableDialog::onNetworkContainerCheckboxClicked);
+
 	connect(ui->addContainerItemButton,
 		&QPushButton::clicked,
 		this,
 		&VariableDialog::onAddContainerItemButtonPressed);
+
+	connect(ui->copyContainerItemButton,
+		&QPushButton::clicked,
+		this,
+		&VariableDialog::onCopyContainerItemButtonPressed);
 
 	connect(ui->deleteContainerItemButton,
 		&QPushButton::clicked,
 		this,
 		&VariableDialog::onDeleteContainerItemButtonPressed);
 
-	connect(ui->setContainerAsEternalCheckbox, 
-		&QCheckBox::clicked, 
-		this, 
-		&VariableDialog::onSetContainerAsEternalCheckboxClicked);
-
-	resize(QDialog::sizeHint());
 
 	ui->variablesTable->setColumnCount(3);
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
@@ -178,8 +198,9 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	
 	ui->containerContentsTable->setColumnCount(2);
 
-	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
-	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
+	// Default to list
+	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
+	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 	ui->containerContentsTable->setColumnWidth(0, 200);
 	ui->containerContentsTable->setColumnWidth(1, 200);
 
@@ -284,6 +305,23 @@ void VariableDialog::onVariablesSelectionChanged()
 	if (_applyingModel){
 		return;
 	}
+
+	auto items = ui->variablesTable->selectedItems();
+
+	SCP_string newVariableName = "";
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		if (item->column() == 0){
+			newVariableName = item->text().toStdString();
+			break;
+		}
+	}
+
+	if (newVariableName != _currentVariable){
+		_currentVariable = newVariableName;
+		applyModel();
+	}
 }
 
 
@@ -297,8 +335,22 @@ void VariableDialog::onContainersTableUpdated()
 
 void VariableDialog::onContainersSelectionChanged() 
 {
-		if (_applyingModel){
+	if (_applyingModel){
 		return;
+	}
+
+	auto items = ui->containersTable->selectedItems();
+
+	SCP_string newVariableName = "";
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		newVariableName = item->text().toStdString();
+	}
+
+	if (newVariableName != _currentVariable){
+		_currentVariable = newVariableName;
+		applyModel();
 	}
 }
 
@@ -450,12 +502,15 @@ void VariableDialog::onDeleteContainerButtonPressed() {}
 void VariableDialog::onSetContainerAsMapRadioSelected() {}
 void VariableDialog::onSetContainerAsListRadioSelected() {}
 void VariableDialog::onSetContainerAsStringRadioSelected() {}
-void VariableDialog::onSetContainerAsNumberRadio() {}
+void VariableDialog::onSetContainerAsNumberRadioSelected() {}
+void VariableDialog::onSetContainerKeyAsStringRadioSelected() {}
+void VariableDialog::onSetContainerKeyAsNumberRadioSelected() {}
 void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
 void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() {}
 void VariableDialog::onNetworkContainerCheckboxClicked() {}
 void VariableDialog::onSetContainerAsEternalCheckboxClicked() {}
 void VariableDialog::onAddContainerItemButtonPressed() {}
+void VariableDialog::onCopyContainerItemButtonPressed() {}
 void VariableDialog::onDeleteContainerItemButtonPressed() {}
 
 
@@ -600,7 +655,7 @@ void VariableDialog::updateVariableOptions()
 		ui->deleteVariableButton.setEnabled(false);
 		ui->setVariableAsStringRadio.setEnabled(false);
 		ui->setVariableAsNumberRadio.setEnabled(false);
-		ui->saveContainerOnMissionCompletedRadio.setEnabled(false);
+		ui->saveVariableOnMissionCompletedRadio.setEnabled(false);
 		ui->saveVariableOnMissionCloseRadio.setEnabled(false);
 		ui->setVariableAsEternalcheckbox.setEnabled(false);
 
@@ -611,7 +666,7 @@ void VariableDialog::updateVariableOptions()
 	ui->deleteVariableButton.setEnabled(true);
 	ui->setVariableAsStringRadio.setEnabled(true);
 	ui->setVariableAsNumberRadio.setEnabled(true);
-	ui->saveContainerOnMissionCompletedRadio.setEnabled(true);
+	ui->saveVariableOnMissionCompletedRadio.setEnabled(true);
 	ui->saveVariableOnMissionCloseRadio.setEnabled(true);
 	ui->setVariableAsEternalcheckbox.setEnabled(true);
 
@@ -626,10 +681,10 @@ void VariableDialog::updateVariableOptions()
 	if (ret == 0){
 		// TODO ADD NO PERSISTENCE
 	} else if (ret == 1) {
-		ui->saveContainerOnMissionCompletedRadio.setChecked(true);
+		ui->saveVariableOnMissionCompletedRadio.setChecked(true);
 		ui->saveVariableOnMissionCloseRadio.setChecked(false);		
 	} else {
-		ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+		ui->saveVariableOnMissionCompletedRadio.setChecked(false);
 		ui->saveVariableOnMissionCloseRadio.setChecked(true);
 	}
 
@@ -639,6 +694,81 @@ void VariableDialog::updateVariableOptions()
 }
 
 void VariableDialog::updateContainerOptions()
+{
+	if (_currentContainer.empty()){
+		ui->copyContainerButton.setEnabled(false);
+		ui->deleteContainerButton.setEnabled(false);
+		ui->setContainerAsStringRadio.setEnabled(false);
+		ui->setContainerAsNumberRadio.setEnabled(false);
+		ui->saveContainerOnMissionCompletedRadio.setEnabled(false);
+		ui->saveContainerOnMissionCloseRadio.setEnabled(false);
+		ui->setContainerAsEternalcheckbox.setEnabled(false);
+		ui->setContainerAsMapRadio.setEnabled(false);
+		ui->setContainerAsListRadio.setEnabled(false);
+
+		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
+		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+
+
+	} else {
+		ui->copyContainerButton.setEnabled(false);
+		ui->deleteContainerButton.setEnabled(false);
+		ui->setContainerAsStringRadio.setEnabled(false);
+		ui->setContainerAsNumberRadio.setEnabled(false);
+		ui->saveContainerOnMissionCompletedRadio.setEnabled(false);
+		ui->saveContainerOnMissionCloseRadio.setEnabled(false);
+		ui->setContainerAsEternalcheckbox.setEnabled(false);
+		ui->setContainerAsMapRadio.setEnabled(false);
+		ui->setContainerAsListRadio.setEnabled(false);
+
+		if (_model->getContainerType(_currentContainer)){
+			ui->setContainerAsStringRadio.setChecked(true);
+			ui->setContainerAsNumberRadio.setChecked(false);
+		} else {
+			ui->setContainerAsStringRadio.setChecked(false);
+			ui->setContainerAsNumberRadio.setChecked(true);
+		}
+		
+		if (_model->getConainerListOrMap(_currentContainer)){
+			ui->setContainerAsListRadio.setChecked(true);
+			ui->setContainerAsMapRadio.setChecked(false);
+			
+			// Don't forget to change headings
+			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
+			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+			updateContainerDataOptions(true);
+
+		} else {
+			ui->setContainerAsListRadio.setChecked(false);
+			ui->setContainerAsMapRadio.setChecked(true);
+
+			// Don't forget to change headings
+			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
+			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
+			updateContainerDataOptions(false);
+		}
+
+		ui->setContainerAsEternalcheckbox.setChecked(_model->getContainerNetworkStatus(_currentContainer));
+		ui->networkContainerCheckbox.setChecked(_model->getContainerNetworkStatus(_currentContainer));
+
+		// TODO! Add key data type controls
+
+		int ret = getContainerOnMissionCloseOrCompleteFlag(_currentContainer);		
+
+		if (ret == 0){
+		// TODO ADD NO PERSISTENCE
+		} else if (ret == 1) {
+			ui->saveContainerOnMissionCompletedRadio.setChecked(true);
+			ui->saveContainerOnMissionCloseRadio.setChecked(false);		
+		} else {
+			ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+			ui->saveContainerOnMissionCloseRadio.setChecked(true);
+		}
+
+	}
+}
+
+void VariableDialog::updateContainerDataOptions(bool list)
 {
 
 }

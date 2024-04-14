@@ -27,6 +27,10 @@ class VariableDialog : public QDialog {
 
 	// basically UpdateUI, but called when there is an inconsistency between model and UI
 	void applyModel();
+	// Helper functions for this
+	void updateVariableOptions();
+	void updateContainerOptions();
+	void updateContainerDataOptions(bool list);
 
 	void onVariablesTableUpdated();
 	void onVariablesSelectionChanged();
@@ -50,12 +54,15 @@ class VariableDialog : public QDialog {
 	void onSetContainerAsMapRadioSelected();
 	void onSetContainerAsListRadioSelected();
 	void onSetContainerAsStringRadioSelected();
-	void onSetContainerAsNumberRadio();
+	void onSetContainerAsNumberRadioSelected();
+	void onSetContainerKeyAsStringRadioSelected();
+	void onSetContainerKeyAsNumberRadioSelected()
 	void onSaveContainerOnMissionClosedRadioSelected();
 	void onSaveContainerOnMissionCompletedRadioSelected();
 	void onNetworkContainerCheckboxClicked();
 	void onSetContainerAsEternalCheckboxClicked();
 	void onAddContainerItemButtonPressed();
+	void onCopyContainerItemButtonPressed();
 	void onDeleteContainerItemButtonPressed();
 
 	SCP_string trimNumberString(SCP_string source);
