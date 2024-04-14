@@ -228,7 +228,7 @@ void VariableDialog::onVariablesTableUpdated()
 
 	auto items = ui->variablesTable->selectedItems();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	// yes, selected items returns a list, but we really should only have one row of items because multiselect will be off.
 	for(const auto& item : items) {
 		if (item->column() == 0){
 
@@ -238,7 +238,11 @@ void VariableDialog::onVariablesTableUpdated()
 					// marking a variable as deleted failed, resync UI
 					applyModel();
 					return;
+				} else {
+					updateVariableOptions();
 				}
+			} else {
+				
 			}
 
 			auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
@@ -576,14 +580,7 @@ void VariableDialog::applyModel()
 		}
 	}
 
-	// TODO! Make new ui function with the following stuff.
-	// get type with getVariableType
-	// get network status with getVariableNetworkStatus
-	// get getVariablesOnMissionCloseOrCompleteFlag
-	// getVariableEternalFlag
-	// string or number value with getVariableStringValue or getVariableNumberValue
 	updateVariableOptions();
-
 
 	auto containers = _model->getContainerNames();
 	selectedRow = -1;
@@ -732,7 +729,11 @@ void VariableDialog::updateContainerOptions()
 		if (_model->getConainerListOrMap(_currentContainer)){
 			ui->setContainerAsListRadio.setChecked(true);
 			ui->setContainerAsMapRadio.setChecked(false);
-			
+
+			// Disable Key Controls			
+			ui->setContainerKeyAsStringRadio.setEnabled(false);
+			ui->setContainerKeyAsNumberRadio.setEnabled(false);
+
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
@@ -742,6 +743,10 @@ void VariableDialog::updateContainerOptions()
 			ui->setContainerAsListRadio.setChecked(false);
 			ui->setContainerAsMapRadio.setChecked(true);
 
+			// Enabled Key Controls
+			ui->setContainerKeyAsStringRadio.setEnabled(true);
+			ui->setContainerKeyAsNumberRadio.setEnabled(true);
+
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
 			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
@@ -750,8 +755,6 @@ void VariableDialog::updateContainerOptions()
 
 		ui->setContainerAsEternalcheckbox.setChecked(_model->getContainerNetworkStatus(_currentContainer));
 		ui->networkContainerCheckbox.setChecked(_model->getContainerNetworkStatus(_currentContainer));
-
-		// TODO! Add key data type controls
 
 		int ret = getContainerOnMissionCloseOrCompleteFlag(_currentContainer);		
 
