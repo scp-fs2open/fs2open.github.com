@@ -242,7 +242,7 @@ const char *Icon_names[MIN_BRIEF_ICONS] = {
 
 // definitions for arrival locations for ships/wings
 const char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
-	"Hyperspace", "Near Ship", "In front of ship", "Docking Bay",
+	"Hyperspace", "Near Ship", "In front of ship", "In back of ship", "Docking Bay",
 };
 
 const char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
@@ -3160,7 +3160,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&p_objp->arrival_distance);
 
 		// Goober5000
-		if ((p_objp->arrival_distance <= 0) && ((p_objp->arrival_location == ARRIVE_NEAR_SHIP) || (p_objp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP)))
+		if ((p_objp->arrival_distance <= 0) && ((p_objp->arrival_location == ARRIVE_NEAR_SHIP) || (p_objp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP) || (p_objp->arrival_location == ARRIVE_IN_BACK_OF_SHIP)))
 		{
 			Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
 			p_objp->arrival_distance = 1;
@@ -4591,7 +4591,7 @@ void parse_wing(mission *pm)
 		stuff_int( &wingp->arrival_distance );
 
 		// Goober5000
-		if ((wingp->arrival_distance <= 0) && ((wingp->arrival_location == ARRIVE_NEAR_SHIP) || (wingp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP)))
+		if ((wingp->arrival_distance <= 0) && ((wingp->arrival_location == ARRIVE_NEAR_SHIP) || (wingp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP) || (wingp->arrival_location == ARRIVE_IN_BACK_OF_SHIP)))
 		{
 			Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
 			wingp->arrival_distance = 1;
@@ -7427,7 +7427,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 				vm_vec_rand_vec_quick(&rand_vec);
 			else
 				static_randvec( Objects[objnum].net_signature, &rand_vec );
-		} else if ( location == ARRIVE_IN_FRONT_OF_SHIP ) {
+		} else if ( location == ARRIVE_IN_FRONT_OF_SHIP || location == ARRIVE_IN_BACK_OF_SHIP ) {
 			vec3d t1, t2, t3;
 			int r1, r2;
 			float x;
@@ -7453,6 +7453,10 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			vm_vec_add(&rand_vec, &t1, &t2);
 			vm_vec_add2(&rand_vec, &t3);
 			vm_vec_normalize(&rand_vec);
+
+			// for "in back of ship", just flip the vector around
+			if (location == ARRIVE_IN_BACK_OF_SHIP)
+				vm_vec_negate(&rand_vec);
 		} else {
 			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
 		}
@@ -8909,6 +8913,25 @@ bool check_for_23_3_data()
 		if (Team_data[t].do_not_validate) {
 			return true;
 		}
+	}
+
+	return false;
+}
+
+bool check_for_24_1_data()
+{
+	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
+	{
+		if (Wings[wingnum].arrival_location == ARRIVE_IN_BACK_OF_SHIP)
+			return true;
+	}
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+
+		if (shipp->arrival_location == ARRIVE_IN_BACK_OF_SHIP)
+			return true;
 	}
 
 	return false;
