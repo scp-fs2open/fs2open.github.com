@@ -40,14 +40,14 @@ public:
 	VariableDialogModel(QObject* parent, EditorViewport* viewport);
 
 	// true on string, false on number
-	bool getVariableType(SCP_string name);
-	bool getVariableNetworkStatus(SCP_string name);
+	bool getVariableType(int index);
+	bool getVariableNetworkStatus(int index);
 	// 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
-	int getVariableOnMissionCloseOrCompleteFlag(SCP_string name);
-	bool getVariableEternalFlag(SCP_string name);
+	int getVariableOnMissionCloseOrCompleteFlag(int index);
+	bool getVariableEternalFlag(int index);
 
-	SCP_string getVariableStringValue(SCP_string name);
-	int getVariableNumberValue(SCP_string name);
+	SCP_string getVariableStringValue(int index);
+	int getVariableNumberValue(int index);
 
 	// !! Note an innovation: when getting a request to set a value, 
 	// this model will return the value that sticks and then will overwrite
@@ -55,60 +55,61 @@ public:
 	// repopulate the whole editor on each change.
 
 	// true on string, false on number
-	bool setVariableType(SCP_string name, bool string);
-	bool setVariableNetworkStatus(SCP_string name, bool network);
-	int setVariableOnMissionCloseOrCompleteFlag(SCP_string name, int flags);
-	bool setVariableEternalFlag(SCP_string name, bool eternal);
+	bool setVariableType(int index, bool string);
+	bool setVariableNetworkStatus(int index, bool network);
+	int setVariableOnMissionCloseOrCompleteFlag(int index, int flags);
+	bool setVariableEternalFlag(int index, bool eternal);
 
-	SCP_string setVariableStringValue(SCP_string name, SCP_string value);
-	int setVariableNumberValue(SCP_string name, int value);
+	SCP_string setVariableStringValue(int index, SCP_string value);
+	int setVariableNumberValue(int index, int value);
 
 	SCP_string addNewVariable();
-	SCP_string changeVariableName(SCP_string oldName, SCP_string newName);
-	SCP_string copyVariable(SCP_string name);
+	SCP_string changeVariableName(int index, SCP_string newName);
+	SCP_string copyVariable(int index);
 	// returns whether it succeeded
-	bool removeVariable(SCP_string name);
+	bool removeVariable(int index);
 
 	// Container Section
 
 	// true on string, false on number
-	bool getContainerValueType(SCP_string name);
+	bool getContainerValueType(int index);
 	// true on list, false on map
-	bool getContainerListOrMap(SCP_string name);
-	bool getContainerNetworkStatus(SCP_string name);
+	bool getContainerListOrMap(int index);
+	bool getContainerNetworkStatus(int index);
 	// 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
-	int getContainerOnMissionCloseOrCompleteFlag(SCP_string name);
-	bool getContainerEternalFlag(SCP_string name);
+	int getContainerOnMissionCloseOrCompleteFlag(int index);
+	bool getContainerEternalFlag(int index);
 
-	bool setContainerValueType(SCP_string name, bool type);
-	bool setContainerListOrMap(SCP_string name, bool list);
-	bool setContainerNetworkStatus(SCP_string name, bool network);
-	int setContainerOnMissionCloseOrCompleteFlag(SCP_string name, int flags);
-	bool setContainerEternalFlag(SCP_string name, bool eternal);
+	bool setContainerValueType(int index, bool type);
+	bool setContainerListOrMap(int index, bool list);
+	bool setContainerNetworkStatus(int index, bool network);
+	int setContainerOnMissionCloseOrCompleteFlag(int index, int flags);
+	bool setContainerEternalFlag(int index, bool eternal);
 
 	SCP_string addContainer();
-	SCP_string changeContainerName(SCP_string oldName, SCP_string newName);
-	bool removeContainer(SCP_string name);
+	SCP_string changeContainerName(int index, SCP_string newName);
+	bool removeContainer(int index);
 
-	SCP_string addListItem(SCP_string containerName);
+	SCP_string addListItem(int index);
 
-	SCP_string copyListItem(SCP_string containerName, int index);
-	bool removeListItem(SCP_string containerName, int index);
+	SCP_string copyListItem(int containerIndex, int index);
+	bool removeListItem(int containerindex, int index);
 
-	std::pair<SCP_string, SCP_string> addMapItem(SCP_string ContainerName);
-	std::pair<SCP_string, SCP_string> copyMapItem(SCP_string containerName, SCP_string key);
-	bool removeMapItem(SCP_string containerName, SCP_string key);
+	std::pair<SCP_string, SCP_string> addMapItem(int index);
+	std::pair<SCP_string, SCP_string> copyMapItem(int index, SCP_string key);
+	bool removeMapItem(int index, SCP_string key);
 
-	SCP_string replaceMapItemKey(SCP_string containerName, SCP_string oldKey, SCP_string newKey);
-	SCP_string changeMapItemStringValue(SCP_string containerName, SCP_string key, SCP_string newValue);
-	SCP_string changeMapItemNumberValue(SCP_string containerName, SCP_string key, int newValue);
+	SCP_string replaceMapItemKey(int index, SCP_string oldKey, SCP_string newKey);
+	SCP_string changeMapItemStringValue(int index, SCP_string key, SCP_string newValue);
+	SCP_string changeMapItemNumberValue(int index, SCP_string key, int newValue);
 	
-	const SCP_vector<SCP_string>& getMapKeys(SCP_string containerName);
-	const SCP_vector<SCP_string>& getStringValues(SCP_string containerName);
-	const SCP_vector<int>& getNumberValues(SCP_string containerName);
+	const SCP_vector<SCP_string>& getMapKeys(int index);
+	const SCP_vector<SCP_string>& getStringValues(int index);
+	const SCP_vector<int>& getNumberValues(int index);
 
-	const SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string>> getVariableValues();
-	const SCP_vector<std::pair<SCP_string, SCP_string>> getContainerNames();
+	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
+	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();
+	void VariableDialogModel::checkValidModel();
 
 	bool apply() override;
 	void reject() override;
@@ -127,8 +128,8 @@ private:
 	}
 
 	variableInfo* lookupVariableByName(SCP_string name){
-		for (int x = 0; x < static_cast<int>(_variableItems.size())){
-			if (_variableItems.name == name){
+		for (int x = 0; x < static_cast<int>(_variableItems.size()); ++x) {
+			if (_variableItems[x].name == name) {
 				return &_variableItems[x];
 			}
 		}
@@ -145,8 +146,8 @@ private:
 	}
 
 	containerInfo* lookupContainerByName(SCP_string name){
-		for (int x = 0; x < static_cast<int>(_containerItems.size())){
-			if (_containerItems.name == name){
+		for (int x = 0; x < static_cast<int>(_containerItems.size()); ++x) {
+			if (_containerItems[x].name == name) {
 				return &_containerItems[x];
 			}
 		}

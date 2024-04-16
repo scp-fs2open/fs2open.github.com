@@ -39,7 +39,7 @@ void VariableDialogModel::checkValidModel()
             if (messageOut2.empty()){
                 messageOut2 = "\"" + item + "\"";
             } else {
-                messageOut2 += ", "\"" + item + "\"";
+                messageOut2 += ", ""\"" + item + "\"";
             }
         }
         
@@ -48,7 +48,7 @@ void VariableDialogModel::checkValidModel()
     }
 
     duplicates.clear();
-    unordered_set<SCP_string> namesTakenContainer;
+    std::unordered_set<SCP_string> namesTakenContainer;
     SCP_vector<SCP_string> duplicateKeys;
 
     for (const auto& container : _containerItems){
@@ -57,10 +57,10 @@ void VariableDialogModel::checkValidModel()
         }
 
         if (!container.list){
-            unordered_set<SCP_string> keysTakenContainer;
+			std::unordered_set<SCP_string> keysTakenContainer;
 
             for (const auto& key : container.keys){
-                if (!keysTakenContainer.insert(key)) {
+                if (!keysTakenContainer.insert(key).second) {
                     SCP_string temp = key + "in map" + container.name + ", ";
                     duplicateKeys.push_back(temp);
                 }
@@ -75,7 +75,7 @@ void VariableDialogModel::checkValidModel()
             if (messageOut2.empty()){
                 messageOut2 = "\"" + item + "\"";
             } else {
-                messageOut2 += ", "\"" + item + "\"";
+                messageOut2 += ", ""\"" + item + "\"";
             }
         }
         
@@ -128,7 +128,7 @@ bool VariableDialogModel::apply()
         // set of instructions for updating variables
         if (!variable.originalName.empty()) {
             for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-                if (!stricmp(Sexp_variables[i].variable_name, variable.originalName)){
+                if (!stricmp(Sexp_variables[i].variable_name, variable.originalName.c_str())){
                     if (variable.deleted) {
                         memset(Sexp_variables[i].variable_name, 0, NAME_LENGTH);
                         memset(Sexp_variables[i].text, 0, NAME_LENGTH);
@@ -141,14 +141,14 @@ bool VariableDialogModel::apply()
                         }
 
                         strcpy_s(Sexp_variables[i].variable_name, variable.name.c_str());
-                        Sexp_variables[i].flags = variable.flags;
+                        Sexp_variables[i].type = variable.flags;
 
                         if (variable.flags & SEXP_VARIABLE_STRING){
-                            strcpy_s(Sexp_variables[i].text, variable.stringValue);
-                            Sexp_variables[i].flags |= SEXP_VARIABLE_STRING;
+                            strcpy_s(Sexp_variables[i].text, variable.stringValue.c_str());
+                            Sexp_variables[i].type |= SEXP_VARIABLE_STRING;
                         } else {
-                            strcpy_s(Sexp_variables[i].text, std::to_string(variable.numberValue).c_str())
-                            Sexp_variables[i].flags |= SEXP_VARIABLE_NUMBER;
+							strcpy_s(Sexp_variables[i].text, std::to_string(variable.numberValue).c_str());
+                            Sexp_variables[i].type |= SEXP_VARIABLE_NUMBER;
                         }
                     }
 
@@ -215,27 +215,27 @@ void VariableDialogModel::initializeData()
         newContainer.originalName = newContainer.name;
         newContainer.deleted = false;
         
-        if (container.type & ContainerType::STRING_DATA) {
+        if (any(container.type & ContainerType::STRING_DATA)) {
             newContainer.string = true;
-        } else if (container.type & ContainerType::NUMBER_DATA) {
+        } else if (any(container.type & ContainerType::NUMBER_DATA)) {
     		newContainer.string = false;
         }
 
         // using the SEXP variable version of these values here makes things easier
-        if (container.type & ContainerType::SAVE_TO_PLAYER_FILE) { 
+        if (any(container.type & ContainerType::SAVE_TO_PLAYER_FILE)) { 
             newContainer.flags |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
         }
 
-        if (container.type & ContainerType::SAVE_ON_MISSION_CLOSE) {
+        if (any(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
             newContainer.flags |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
         }
 
-        if (container.type & ContainerType::SAVE_ON_MISSION_PROGRESS) {
+        if (any(container.type & ContainerType::SAVE_ON_MISSION_PROGRESS)) {
             newContainer.flags |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
         }
 
-        if (container.type & ContainerType::NETWORK) {
-            newContainer.flags =| SEXP_VARIABLE_NETWORK;
+        if (any(container.type & ContainerType::NETWORK)) {
+            newContainer.flags |= SEXP_VARIABLE_NETWORK;
         }
         
         newContainer.list = container.is_list();
@@ -505,7 +505,7 @@ SCP_string VariableDialogModel::copyVariable(int index)
 
     do {
         SCP_string newName;
-        sprintf(newName, "%s_copy%i", name, count);
+        sprintf(newName, "%s_copy%i", variable->name.c_str(), count);
         variableSearch = lookupVariableByName(newName);
 
         // open slot found!
@@ -750,7 +750,7 @@ SCP_string VariableDialogModel::addContainer()
     do {
         name = "";
         sprintf(name, "<unnamed_%i>", count);
-        container = lookupContainer(name);
+        container = lookupContainerByName(name);
         ++count;
     } while (container != nullptr && count < 51);
 
@@ -814,9 +814,9 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
     
 }
 
-SCP_string VariableDialogModel::copyListItem(int index, int index)
+SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
 {
-    auto container = lookupContainer(index);
+    auto container = lookupContainer(containerIndex);
 
     if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
         return "";
@@ -1055,13 +1055,13 @@ const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getMapKeys() found that container %s does not exist.", containerName.c_str());
+		sprintf("getMapKeys() found that container %s does not exist.", container->name.c_str());
         throw std::invalid_argument(temp.c_str());
     }
 
     if (container->list) {
 		SCP_string temp;
-		sprintf("getMapKeys() found that container %s is not a map.", containerName.c_str());
+		sprintf("getMapKeys() found that container %s is not a map.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 

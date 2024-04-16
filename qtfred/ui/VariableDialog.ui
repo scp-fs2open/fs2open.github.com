@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>649</height>
+    <width>601</width>
+    <height>701</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -84,21 +84,30 @@
           <x>10</x>
           <y>30</y>
           <width>231</width>
-          <height>131</height>
+          <height>151</height>
          </rect>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::SingleSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
         </property>
        </widget>
        <widget class="QGroupBox" name="groupBox_3">
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>170</y>
+          <y>190</y>
           <width>341</width>
           <height>191</height>
          </rect>
         </property>
         <property name="title">
-         <string>Contents</string>
+         <string>Container Contents</string>
         </property>
         <widget class="QTableWidget" name="containerContentsTable">
          <property name="geometry">
@@ -108,6 +117,15 @@
            <width>221</width>
            <height>151</height>
           </rect>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
          </property>
         </widget>
         <widget class="QWidget" name="verticalLayoutWidget_3">
@@ -193,7 +211,7 @@
           <x>360</x>
           <y>20</y>
           <width>211</width>
-          <height>141</height>
+          <height>161</height>
          </rect>
         </property>
         <property name="title">
@@ -205,10 +223,17 @@
            <x>10</x>
            <y>20</y>
            <width>201</width>
-           <height>121</height>
+           <height>136</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_9">
+          <item>
+           <widget class="QRadioButton" name="doNotSaveContainerRadio">
+            <property name="text">
+             <string>No Persistence</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
             <property name="text">
@@ -244,7 +269,7 @@
         <property name="geometry">
          <rect>
           <x>360</x>
-          <y>170</y>
+          <y>190</y>
           <width>211</width>
           <height>191</height>
          </rect>
@@ -357,13 +382,13 @@
         <property name="geometry">
          <rect>
           <x>260</x>
-          <y>100</y>
-          <width>311</width>
-          <height>121</height>
+          <y>90</y>
+          <width>131</width>
+          <height>131</height>
          </rect>
         </property>
         <property name="title">
-         <string>Options</string>
+         <string>Type</string>
         </property>
         <widget class="QWidget" name="horizontalLayoutWidget_2">
          <property name="geometry">
@@ -400,31 +425,6 @@
             </item>
            </layout>
           </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_7">
-            <item>
-             <widget class="QRadioButton" name="saveVariableOnMissionCloseRadio">
-              <property name="text">
-               <string>Save on Mission Close</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="saveVariableOnMissionCompletedRaio">
-              <property name="text">
-               <string>Save on Mission Completed</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="setVariableAsEternalcheckbox">
-              <property name="text">
-               <string>Eternal</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
          </layout>
         </widget>
        </widget>
@@ -437,14 +437,23 @@
           <height>191</height>
          </rect>
         </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::SingleSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
        </widget>
        <widget class="QWidget" name="horizontalLayoutWidget">
         <property name="geometry">
          <rect>
           <x>270</x>
-          <y>38</y>
-          <width>301</width>
-          <height>51</height>
+          <y>50</y>
+          <width>291</width>
+          <height>31</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -470,6 +479,59 @@
           </widget>
          </item>
         </layout>
+       </widget>
+       <widget class="QGroupBox" name="groupBox_7">
+        <property name="geometry">
+         <rect>
+          <x>400</x>
+          <y>90</y>
+          <width>171</width>
+          <height>131</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Persistence</string>
+        </property>
+        <widget class="QWidget" name="">
+         <property name="geometry">
+          <rect>
+           <x>13</x>
+           <y>18</y>
+           <width>174</width>
+           <height>108</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <item>
+           <widget class="QRadioButton" name="radioButton">
+            <property name="text">
+             <string>No Persistence</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="saveVariableOnMissionCloseRadio">
+            <property name="text">
+             <string>Save on Mission Close</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="saveVariableOnMissionCompletedRadio">
+            <property name="text">
+             <string>Save on Mission Completed</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="setVariableAsEternalcheckbox">
+            <property name="text">
+             <string>Eternal</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </widget>
      </item>

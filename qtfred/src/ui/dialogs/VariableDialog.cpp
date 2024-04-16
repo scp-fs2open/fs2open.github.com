@@ -1,6 +1,7 @@
 #include "VariableDialog.h"
 #include "ui_VariableDialog.h"
 
+#include <tuple>
 #include <qlist.h>
 #include <qtablewidget.h>
 
@@ -20,7 +21,6 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	resize(QDialog::sizeHint()); // The best I can tell without some research, when a dialog doesn't use an underling grid or layout, it needs to be resized this way before anything will show up 
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &VariableDialog::updateUI);
 	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::checkValidModel);
 	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::reject);
 	
@@ -233,7 +233,7 @@ void VariableDialog::onVariablesTableUpdated()
 		if (item->column() == 0){
 
 			// so if the user just removed the name, mark it as deleted *before changing the name*
-			if (_currentVariable != "" && !strlen(item->text.c_str())){
+			if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
 				if (!_model->removeVariable(item->row())) {
 					// marking a variable as deleted failed, resync UI
 					applyModel();
@@ -246,7 +246,7 @@ void VariableDialog::onVariablesTableUpdated()
 				auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
 
 				// we put something in the cell, but the model couldn't process it.
-				if (strlen(item->text()) && ret == ""){
+				if (strlen(item->text().toStdString().c_str()) && ret == ""){
 					// update of variable name failed, resync UI
 					applyModel();
 
@@ -262,11 +262,11 @@ void VariableDialog::onVariablesTableUpdated()
 		} else if (item->column() == 1) {
 
 			// Variable is a string
-			if (_model->getVariableType(int->row())){
-				SCP_string temp = item->text()->toStdString().c_str();
+			if (_model->getVariableType(item->row())){
+				SCP_string temp = item->text().toStdString().c_str();
 				temp = temp.substr(0, NAME_LENGTH - 1);
 
-				SCP_string ret = _model->setVariableStringValue(int->row(), temp);
+				SCP_string ret = _model->setVariableStringValue(item->row(), temp);
 				if (ret == ""){
 					applyModel();
 					return;
@@ -274,10 +274,8 @@ void VariableDialog::onVariablesTableUpdated()
 				
 				item->setText(ret.c_str());
 			} else {
-				SCP_string temp;
 				SCP_string source = item->text().toStdString();
-
-				SCP_string temp = trimNumberString();
+				SCP_string temp = trimNumberString(source);
 
 				if (temp != source){
 					item->setText(temp.c_str());
@@ -287,7 +285,7 @@ void VariableDialog::onVariablesTableUpdated()
 					int ret = _model->setVariableNumberValue(item->row(), std::stoi(temp));
 					temp = "";
 					sprintf(temp, "%i", ret);
-					item->setText(temp);
+					item->setText(temp.c_str());
 				}
 				catch (...) {
 					applyModel();
@@ -374,7 +372,7 @@ void VariableDialog::onContainerContentsSelectionChanged() {
 		return;
 	}
 
-	auto items = ui->containersContentsTable->selectedItems();
+	auto items = ui->containerContentsTable->selectedItems();
 
 	SCP_string newContainerItemName = "";
 
@@ -394,7 +392,7 @@ void VariableDialog::onContainerContentsSelectionChanged() {
 
 void VariableDialog::onAddVariableButtonPressed() 
 {
-	auto ret = _model->addNewVriable();
+	auto ret = _model->addNewVariable();
 	_currentVariable = ret;
 	applyModel();
 }
@@ -405,9 +403,15 @@ void VariableDialog::onCopyVariableButtonPressed()
 		return;
 	}
 
-	auto ret = _model->copyVariable(_currentVariable);
-	_currentVariable = ret;
-	applyModel();
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		auto ret = _model->copyVariable(item->row());
+		_currentVariable = ret;
+		applyModel();
+		break;
+	}
 }
 
 void VariableDialog::onDeleteVariableButtonPressed() 
@@ -416,9 +420,15 @@ void VariableDialog::onDeleteVariableButtonPressed()
 		return;
 	}
 
-	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	_model->removeVariable(_currentVariable);
-	applyModel();
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
+		auto ret = _model->removeVariable(item->row());
+		applyModel();
+		break;
+	}
 }
 
 void VariableDialog::onSetVariableAsStringRadioSelected() 
@@ -427,14 +437,23 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 		return;
 	}
 
-	// this doesn't return succeed or fail directly, 
-	// but if it doesn't return true then it failed since this is the string radio
-	if(!_model->setVariableType(_currentVariable, true)){
-		applyModel();
-	} else {
-		ui->setVariableAsStringRadio->setChecked(true);
-		ui->setVariableAsNumberRadio->setChecked(false);
+
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		// this doesn't return succeed or fail directly, 
+		// but if it doesn't return true then it failed since this is the string radio
+		if(!_model->setVariableType(item->row(), true)){
+			applyModel();
+		} else {
+			ui->setVariableAsStringRadio->setChecked(true);
+			ui->setVariableAsNumberRadio->setChecked(false);
+		}
+
+		break;
 	}
+
 }
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
@@ -443,13 +462,20 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 		return;
 	}
 
-	// this doesn't return succeed or fail directly, 
-	// but if it doesn't return false then it failed since this is the number radio
-	if(!_model->setVariableType(_currentVariable, false)){
-		applyModel();
-	} else {
-		ui->setVariableAsStringRadio->setChecked(false);
-		ui->setVariableAsNumberRadio->setChecked(true);
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+
+		// this doesn't return succeed or fail directly, 
+		// but if it doesn't return false then it failed since this is the number radio
+		if (!_model->setVariableType(item->row(), false)) {
+			applyModel();
+		}
+		else {
+			ui->setVariableAsStringRadio->setChecked(false);
+			ui->setVariableAsNumberRadio->setChecked(true);
+		}
 	}
 }
 
@@ -460,15 +486,20 @@ void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected()
 		return;
 	}
 
-	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(_currentVariable, 1);
+	auto items = ui->variablesTable->selectedItems();
 
-	if (ret != 1){
-		applyModel();
-	} else {
-		// TODO!  Need "no persistence" options and functions!
-		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
-		ui->saveVariableOnMissionCloseRadio->setChecked(false);
-		//ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(item->row(), 1);
+
+		if (ret != 1){
+			applyModel();
+		} else {
+			// TODO!  Need "no persistence" options and functions!
+			ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+			ui->saveVariableOnMissionCloseRadio->setChecked(false);
+			//ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+		}
 	}
 }
 
@@ -478,15 +509,22 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected()
 		return;
 	}
 
-	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(_currentVariable, 2);
 
-	if (ret != 2){
-		applyModel();
-	} else {
-		// TODO!  Need "no persistence" options.
-		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
-		ui->saveVariableOnMissionCloseRadio->setChecked(true);
-		//ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+
+		auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(item->row(), 2);
+
+		if (ret != 2){
+			applyModel();
+		} else {
+			// TODO!  Need "no persistence" options.
+			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+			ui->saveVariableOnMissionCloseRadio->setChecked(true);
+			//ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+		}
 	}
 }
 
@@ -496,11 +534,17 @@ void VariableDialog::onSaveVariableAsEternalCheckboxClicked()
 		return;
 	}
 
-	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(_currentVariable, !ui->setVariableAsEternalcheckbox->isChecked())){
-		applyModel();
-	} else {
-		_ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
+
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		// If the model returns the old status, then the change failed and we're out of sync.	
+		if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(item->row(), !ui->setVariableAsEternalcheckbox->isChecked())) {
+			applyModel();
+		} else {
+			ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
+		}
 	}
 }
 
@@ -510,11 +554,17 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 		return;
 	}
 
-	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->setVariableNetworkStatus->isChecked() == _model->setVariableNetworkStatus(_currentVariable, !ui->setVariableNetworkStatus->isChecked())){
-		applyModel();
-	} else {
-		_ui->setVariableNetworkStatus->setChecked(!ui->setVariableNetworkStatus->isChecked());
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+
+		// If the model returns the old status, then the change failed and we're out of sync.	
+		if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(item->row(), !ui->networkVariableCheckbox->isChecked())) {
+			applyModel();
+		} else {
+			ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
+		}
 	}
 }
 
@@ -547,28 +597,28 @@ void VariableDialog::applyModel()
 
 	for (x = 0; x < static_cast<int>(variables.size()); ++x){
 		if (ui->variablesTable->item(x, 0)){
-			ui->variablesTable->item(x, 0)->setText(variables[x]<0>.c_str());
+			ui->variablesTable->item(x, 0)->setText(variables[x][0].c_str());
 		} else {
-			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<0>.c_str());
+			QTableWidgetItem* item = new QTableWidgetItem(variables[x][0].c_str());
 			ui->variablesTable->setItem(x, 0, item);
 		}
 
 		// check if this is the current variable.
-		if (!_currentVariable.empty() && variables[x]<0> == _currentVariable){
-			selectedRow = x
+		if (!_currentVariable.empty() && variables[x][0].c_str() == _currentVariable){
+			selectedRow = x;
 		}
 
 		if (ui->variablesTable->item(x, 1)){
-			ui->variablesTable->item(x, 1)->setText(variables[x]<1>.c_str());
+			ui->variablesTable->item(x, 1)->setText(variables[x][1].c_str());
 		} else {
-			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<1>.c_str());
-			ui->variablesTable->setItem(x, 1, nameItem);
+			QTableWidgetItem* item = new QTableWidgetItem(variables[x][1].c_str());
+			ui->variablesTable->setItem(x, 1, item);
 		}
 
 		if (ui->variablesTable->item(x, 2)){
-			ui->variablesTable->item(x, 2)->setText(variables[x]<2>.c_str());
+			ui->variablesTable->item(x, 2)->setText(variables[x][2].c_str());
 		} else {
-			QTableWidgetItem* item = new QTableWidgetItem(variables[x]<2>.c_str());
+			QTableWidgetItem* item = new QTableWidgetItem(variables[x][2].c_str());
 			ui->variablesTable->setItem(x, 2, item);
 		}
 	}
@@ -593,8 +643,8 @@ void VariableDialog::applyModel()
 	}
 
 	if (_currentVariable.empty() || selectedRow < 0){
-		if (ui->variablesTable->item(0,0) && strlen(ui->variablesTable->item(0,0)->text())){
-			_currentVariable = ui->variablesTable->item(0,0)->text();
+		if (ui->variablesTable->item(0,0) && strlen(ui->variablesTable->item(0,0)->text().toStdString().c_str())){
+			_currentVariable = ui->variablesTable->item(0,0)->text().toStdString();
 		}
 	}
 
@@ -606,29 +656,29 @@ void VariableDialog::applyModel()
 	// TODO! Change getContainerNames to a tuple with notes/maybe data key types?
 	for (x = 0; x < static_cast<int>(containers.size()); ++x){
 		if (ui->containersTable->item(x, 0)){
-			ui->containersTable->item(x, 0)->setText(containers[x]<0>.c_str());
+			ui->containersTable->item(x, 0)->setText(containers[x][0].c_str());
 		} else {
-			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<0>.c_str());
+			QTableWidgetItem* item = new QTableWidgetItem(containers[x][0].c_str());
 			ui->containersTable->setItem(x, 0, item);
 		}
 
 		// check if this is the current variable.
-		if (!_currentVariable.empty() && containers[x]<0> == _currentVariable){
+		if (!_currentVariable.empty() && containers[x][0] == _currentVariable){
 			selectedRow = x;
 		}
 
 
 		if (ui->containersTable->item(x, 1)){
-			ui->containersTable->item(x, 1)->setText(containers[x]<1>.c_str());
+			ui->containersTable->item(x, 1)->setText(containers[x][1].c_str());
 		} else {
-			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<1>.c_str());
-			ui->containersTable->setItem(x, 1, nameItem);
+			QTableWidgetItem* item = new QTableWidgetItem(containers[x][1].c_str());
+			ui->containersTable->setItem(x, 1, item);
 		}
 
 		if (ui->containersTable->item(x, 2)){
-			ui->containersTable->item(x, 2)->setText(containers[x]<2>.c_str());
+			ui->containersTable->item(x, 2)->setText(containers[x][2].c_str());
 		} else {
-			QTableWidgetItem* item = new QTableWidgetItem(containers[x]<2>.c_str());
+			QTableWidgetItem* item = new QTableWidgetItem(containers[x][2].c_str());
 			ui->containersTable->setItem(x, 2, item);
 		}
 	}
@@ -652,8 +702,8 @@ void VariableDialog::applyModel()
 	}
 
 	if (_currentContainer.empty() || selectedRow < 0){
-		if (ui->containersTable->item(0,0) && strlen(ui->containersTable->item(0,0)->text())){
-			_currentContainer = ui->containersTable->item(0,0)->text();
+		if (ui->containersTable->item(0,0) && strlen(ui->containersTable->item(0,0)->text().toStdString().c_str())){
+			_currentContainer = ui->containersTable->item(0,0)->text().toStdString();
 		}
 	}
 
@@ -666,91 +716,108 @@ void VariableDialog::applyModel()
 void VariableDialog::updateVariableOptions()
 {
 	if (_currentVariable.empty()){
-		ui->copyVariableButton.setEnabled(false);
-		ui->deleteVariableButton.setEnabled(false);
-		ui->setVariableAsStringRadio.setEnabled(false);
-		ui->setVariableAsNumberRadio.setEnabled(false);
-		ui->saveVariableOnMissionCompletedRadio.setEnabled(false);
-		ui->saveVariableOnMissionCloseRadio.setEnabled(false);
-		ui->setVariableAsEternalcheckbox.setEnabled(false);
+		ui->copyVariableButton->setEnabled(false);
+		ui->deleteVariableButton->setEnabled(false);
+		ui->setVariableAsStringRadio->setEnabled(false);
+		ui->setVariableAsNumberRadio->setEnabled(false);
+		ui->saveVariableOnMissionCompletedRadio->setEnabled(false);
+		ui->saveVariableOnMissionCloseRadio->setEnabled(false);
+		ui->setVariableAsEternalcheckbox->setEnabled(false);
 
 		return;
 	}
 
-	ui->copyVariableButton.setEnabled(true);
-	ui->deleteVariableButton.setEnabled(true);
-	ui->setVariableAsStringRadio.setEnabled(true);
-	ui->setVariableAsNumberRadio.setEnabled(true);
-	ui->saveVariableOnMissionCompletedRadio.setEnabled(true);
-	ui->saveVariableOnMissionCloseRadio.setEnabled(true);
-	ui->setVariableAsEternalcheckbox.setEnabled(true);
+	ui->copyVariableButton->setEnabled(true);
+	ui->deleteVariableButton->setEnabled(true);
+	ui->setVariableAsStringRadio->setEnabled(true);
+	ui->setVariableAsNumberRadio->setEnabled(true);
+	ui->saveVariableOnMissionCompletedRadio->setEnabled(true);
+	ui->saveVariableOnMissionCloseRadio->setEnabled(true);
+	ui->setVariableAsEternalcheckbox->setEnabled(true);
+
+	auto items = ui->variablesTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
 
 	// start populating values
-	bool string = _model->getVariableType(_currentVariable);
-	ui->setVariableAsStringRadio.setChecked(string);
-	ui->setVariableAsNumberRadio.setChecked(!string);
-	ui->setVariableAsEternalcheckbox.setChecked();
+	bool string = _model->getVariableType(row);
+	ui->setVariableAsStringRadio->setChecked(string);
+	ui->setVariableAsNumberRadio->setChecked(!string);
+	ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));
 
-	int ret = _model->getVariableOnMissionCloseOrCompleteFlag(_currentVariable);
+	int ret = _model->getVariableOnMissionCloseOrCompleteFlag(row);
 
 	if (ret == 0){
 		// TODO ADD NO PERSISTENCE
 	} else if (ret == 1) {
-		ui->saveVariableOnMissionCompletedRadio.setChecked(true);
-		ui->saveVariableOnMissionCloseRadio.setChecked(false);		
+		ui->saveVariableOnMissionCompletedRadio->setChecked(true);
+		ui->saveVariableOnMissionCloseRadio->setChecked(false);		
 	} else {
-		ui->saveVariableOnMissionCompletedRadio.setChecked(false);
-		ui->saveVariableOnMissionCloseRadio.setChecked(true);
+		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCloseRadio->setChecked(true);
 	}
 
-	ui->networkVariableCheckbox.setChecked(_model->getVariableNetworkStatus(_currentVariable));
-	ui->setVariableAsEternalcheckbox.setChecked(_model->getVariableEternalFlag(_currentVariable));
+	ui->networkVariableCheckbox->setChecked(_model->getVariableNetworkStatus(row));
+	ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));
 
 }
 
 void VariableDialog::updateContainerOptions()
 {
 	if (_currentContainer.empty()){
-		ui->copyContainerButton.setEnabled(false);
-		ui->deleteContainerButton.setEnabled(false);
-		ui->setContainerAsStringRadio.setEnabled(false);
-		ui->setContainerAsNumberRadio.setEnabled(false);
-		ui->saveContainerOnMissionCompletedRadio.setEnabled(false);
-		ui->saveContainerOnMissionCloseRadio.setEnabled(false);
-		ui->setContainerAsEternalcheckbox.setEnabled(false);
-		ui->setContainerAsMapRadio.setEnabled(false);
-		ui->setContainerAsListRadio.setEnabled(false);
+		ui->copyContainerButton->setEnabled(false);
+		ui->deleteContainerButton->setEnabled(false);
+		ui->setContainerAsStringRadio->setEnabled(false);
+		ui->setContainerAsNumberRadio->setEnabled(false);
+		ui->saveContainerOnMissionCompletedRadio->setEnabled(false);
+		ui->saveContainerOnMissionCloseRadio->setEnabled(false);
+		ui->setContainerAsEternalCheckbox->setEnabled(false);
+		ui->setContainerAsMapRadio->setEnabled(false);
+		ui->setContainerAsListRadio->setEnabled(false);
 
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 
 
 	} else {
-		ui->copyContainerButton.setEnabled(false);
-		ui->deleteContainerButton.setEnabled(false);
-		ui->setContainerAsStringRadio.setEnabled(false);
-		ui->setContainerAsNumberRadio.setEnabled(false);
-		ui->saveContainerOnMissionCompletedRadio.setEnabled(false);
-		ui->saveContainerOnMissionCloseRadio.setEnabled(false);
-		ui->setContainerAsEternalcheckbox.setEnabled(false);
-		ui->setContainerAsMapRadio.setEnabled(false);
-		ui->setContainerAsListRadio.setEnabled(false);
+		auto items = ui->containersTable->selectedItems();
+		int row = -1;
 
-		if (_model->getContainerType(_currentContainer)){
-			ui->setContainerAsStringRadio.setChecked(true);
-			ui->setContainerAsNumberRadio.setChecked(false);
+		// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+		for (const auto& item : items) {
+			row = item->row();
+		}
+
+
+		ui->copyContainerButton->setEnabled(false);
+		ui->deleteContainerButton->setEnabled(false);
+		ui->setContainerAsStringRadio->setEnabled(false);
+		ui->setContainerAsNumberRadio->setEnabled(false);
+		ui->saveContainerOnMissionCompletedRadio->setEnabled(false);
+		ui->saveContainerOnMissionCloseRadio->setEnabled(false);
+		ui->setContainerAsEternalCheckbox->setEnabled(false);
+		ui->setContainerAsMapRadio->setEnabled(false);
+		ui->setContainerAsListRadio->setEnabled(false);
+
+		if (_model->getContainerValueType(row)){
+			ui->setContainerAsStringRadio->setChecked(true);
+			ui->setContainerAsNumberRadio->setChecked(false);
 		} else {
-			ui->setContainerAsStringRadio.setChecked(false);
-			ui->setContainerAsNumberRadio.setChecked(true);
+			ui->setContainerAsStringRadio->setChecked(false);
+			ui->setContainerAsNumberRadio->setChecked(true);
 		}
 		
-		if (_model->getConainerListOrMap(_currentContainer)){
-			ui->setContainerAsListRadio.setChecked(true);
-			ui->setContainerAsMapRadio.setChecked(false);
+		if (_model->getContainerListOrMap(row)){
+			ui->setContainerAsListRadio->setChecked(true);
+			ui->setContainerAsMapRadio->setChecked(false);
 
 			// Disable Key Controls			
-			ui->setContainerKeyAsStringRadio.setEnabled(false);
-			ui->setContainerKeyAsNumberRadio.setEnabled(false);
+			ui->setContainerKeyAsStringRadio->setEnabled(false);
+			ui->setContainerKeyAsNumberRadio->setEnabled(false);
 
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
@@ -758,12 +825,12 @@ void VariableDialog::updateContainerOptions()
 			updateContainerDataOptions(true);
 
 		} else {
-			ui->setContainerAsListRadio.setChecked(false);
-			ui->setContainerAsMapRadio.setChecked(true);
+			ui->setContainerAsListRadio->setChecked(false);
+			ui->setContainerAsMapRadio->setChecked(true);
 
 			// Enabled Key Controls
-			ui->setContainerKeyAsStringRadio.setEnabled(true);
-			ui->setContainerKeyAsNumberRadio.setEnabled(true);
+			ui->setContainerKeyAsStringRadio->setEnabled(true);
+			ui->setContainerKeyAsNumberRadio->setEnabled(true);
 
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
@@ -771,19 +838,19 @@ void VariableDialog::updateContainerOptions()
 			updateContainerDataOptions(false);
 		}
 
-		ui->setContainerAsEternalcheckbox.setChecked(_model->getContainerNetworkStatus(_currentContainer));
-		ui->networkContainerCheckbox.setChecked(_model->getContainerNetworkStatus(_currentContainer));
+		ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerNetworkStatus(row));
+		ui->networkContainerCheckbox->setChecked(_model->getContainerNetworkStatus(row));
 
-		int ret = getContainerOnMissionCloseOrCompleteFlag(_currentContainer);		
+		int ret = _model->getContainerOnMissionCloseOrCompleteFlag(row);		
 
 		if (ret == 0){
 		// TODO ADD NO PERSISTENCE
 		} else if (ret == 1) {
-			ui->saveContainerOnMissionCompletedRadio.setChecked(true);
-			ui->saveContainerOnMissionCloseRadio.setChecked(false);		
+			ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+			ui->saveContainerOnMissionCloseRadio->setChecked(false);		
 		} else {
-			ui->saveContainerOnMissionCompletedRadio.setChecked(false);
-			ui->saveContainerOnMissionCloseRadio.setChecked(true);
+			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+			ui->saveContainerOnMissionCloseRadio->setChecked(true);
 		}
 
 	}
@@ -799,13 +866,15 @@ SCP_string VariableDialog::trimNumberString(SCP_string source)
 	SCP_string ret;
 
 	// account for a lead negative sign.
-	if (source[0] == "-") {
+	if (source[0] == '-') {
 		ret = "-";
 	}
 
 	// filter out non-numeric digits
-	std::copy_if(s1.begin(), s1.end(), std::back_inserter(ret),
-		[](char c){ 
+	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
+		[](char c) -> bool { 
+			bool result = false;
+
 			switch (c) {
 				case '0':
 				case '1':
@@ -817,12 +886,13 @@ SCP_string VariableDialog::trimNumberString(SCP_string source)
 				case '7':
 				case '8':
 				case '9':
-					return true;
+					result = true;
 					break;
 				default:
-					return false;
 					break;
 			}
+
+			return result;
 		}
 	);
 
