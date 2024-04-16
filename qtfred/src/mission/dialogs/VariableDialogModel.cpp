@@ -245,24 +245,24 @@ void VariableDialogModel::initializeData()
 
 
 // true on string, false on number
-bool VariableDialogModel::getVariableType(SCP_string name)
+bool VariableDialogModel::getVariableType(int index)
 {
-	auto variable = lookupVariable(name);
+	auto variable = lookupVariable(index);
     return (variable) ? (variable->string) : true;   
 }
 
-bool VariableDialogModel::getVariableNetworkStatus(SCP_string name)
+bool VariableDialogModel::getVariableNetworkStatus(int index)
 {
-	auto variable = lookupVariable(name);
+	auto variable = lookupVariable(index);
 	return (variable) ? ((variable->flags & SEXP_VARIABLE_NETWORK) > 0) : false;
 }
 
 
 
 // 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
-int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(SCP_string name)
+int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(int index)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     if (!variable) {
         return 0;
@@ -279,31 +279,31 @@ int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(SCP_string name
 }
 
 
-bool VariableDialogModel::getVariableEternalFlag(SCP_string name)
+bool VariableDialogModel::getVariableEternalFlag(int index)
 {
-	auto variable = lookupVariable(name);
+	auto variable = lookupVariable(index);
     return (variable) ? ((variable->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) > 0) : false;
 }
 
 
-SCP_string VariableDialogModel::getVariableStringValue(SCP_string name)
+SCP_string VariableDialogModel::getVariableStringValue(int index)
 {
-	auto variable = lookupVariable(name);
+	auto variable = lookupVariable(index);
     return (variable && variable->string) ? (variable->stringValue) : "";
 }
 
-int VariableDialogModel::getVariableNumberValue(SCP_string name)
+int VariableDialogModel::getVariableNumberValue(int index)
 {
-	auto variable = lookupVariable(name);
+	auto variable = lookupVariable(index);
     return (variable && !variable->string) ? (variable->numberValue) : 0;
 }
 
 
 
 // true on string, false on number
-bool VariableDialogModel::setVariableType(SCP_string name, bool string)
+bool VariableDialogModel::setVariableType(int index, bool string)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     // Best way to say that it failed is to say 
@@ -370,9 +370,9 @@ bool VariableDialogModel::setVariableType(SCP_string name, bool string)
     }
 }
 
-bool VariableDialogModel::setVariableNetworkStatus(SCP_string name, bool network)
+bool VariableDialogModel::setVariableNetworkStatus(int index, bool network)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
@@ -387,9 +387,9 @@ bool VariableDialogModel::setVariableNetworkStatus(SCP_string name, bool network
     return network;
 }
 
-int VariableDialogModel::setVariableOnMissionCloseOrCompleteFlag(SCP_string name, int flags)
+int VariableDialogModel::setVariableOnMissionCloseOrCompleteFlag(int index, int flags)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable || flags < 0 || flags > 2){
@@ -408,9 +408,9 @@ int VariableDialogModel::setVariableOnMissionCloseOrCompleteFlag(SCP_string name
     return flags;
 }
 
-bool VariableDialogModel::setVariableEternalFlag(SCP_string name, bool eternal)
+bool VariableDialogModel::setVariableEternalFlag(int index, bool eternal)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
@@ -426,9 +426,9 @@ bool VariableDialogModel::setVariableEternalFlag(SCP_string name, bool eternal)
     return eternal;
 }
 
-SCP_string VariableDialogModel::setVariableStringValue(SCP_string name, SCP_string value)
+SCP_string VariableDialogModel::setVariableStringValue(int index, SCP_string value)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable || !variable->string){
@@ -438,9 +438,9 @@ SCP_string VariableDialogModel::setVariableStringValue(SCP_string name, SCP_stri
     variable->stringValue = value;
 }
 
-int VariableDialogModel::setVariableNumberValue(SCP_string name, int value)
+int VariableDialogModel::setVariableNumberValue(int index, int value)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable || variable->string){
@@ -459,7 +459,7 @@ SCP_string VariableDialogModel::addNewVariable()
     do {
         name = "";
         sprintf(name, "<unnamed_%i>", count);
-        variable = lookupVariable(name);
+        variable = lookupVariableByName(name);
         ++count;
     } while (variable != nullptr && count < 51);
 
@@ -473,13 +473,13 @@ SCP_string VariableDialogModel::addNewVariable()
     return name;
 }
 
-SCP_string VariableDialogModel::changeVariableName(SCP_string oldName, SCP_string newName)
+SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName)
 {
     if (newName == "") {
         return "";
     }
  
-    auto variable = lookupVariable(oldName);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
@@ -491,9 +491,9 @@ SCP_string VariableDialogModel::changeVariableName(SCP_string oldName, SCP_strin
     return newName;
 }
 
-SCP_string VariableDialogModel::copyVariable(SCP_string name)
+SCP_string VariableDialogModel::copyVariable(int index)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
@@ -506,7 +506,7 @@ SCP_string VariableDialogModel::copyVariable(SCP_string name)
     do {
         SCP_string newName;
         sprintf(newName, "%s_copy%i", name, count);
-        variableSearch = lookupVariable(newName);
+        variableSearch = lookupVariableByName(newName);
 
         // open slot found!
         if (!variableSearch){
@@ -533,9 +533,9 @@ SCP_string VariableDialogModel::copyVariable(SCP_string name)
 }
 
 // returns whether it succeeded
-bool VariableDialogModel::removeVariable(SCP_string name)
+bool VariableDialogModel::removeVariable(int index)
 {
-    auto variable = lookupVariable(name);
+    auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
@@ -556,29 +556,29 @@ bool VariableDialogModel::removeVariable(SCP_string name)
 // Container Section
 
 // true on string, false on number
-bool VariableDialogModel::getContainerValueType(SCP_string name)
+bool VariableDialogModel::getContainerValueType(int index)
 {
-	auto container = lookupContainer(name);
+	auto container = lookupContainer(index);
     return (container) ? container->string : true;
 }
 
 // true on list, false on map
-bool VariableDialogModel::getContainerListOrMap(SCP_string name)
+bool VariableDialogModel::getContainerListOrMap(int index)
 {
-	auto container = lookupContainer(name);
+	auto container = lookupContainer(index);
     return (container) ? container->list : true;
 }
 
-bool VariableDialogModel::getContainerNetworkStatus(SCP_string name)
+bool VariableDialogModel::getContainerNetworkStatus(int index)
 {
-	auto container = lookupContainer(name);
+	auto container = lookupContainer(index);
     return (container) ? ((container->flags & SEXP_VARIABLE_NETWORK) > 0) : false;    
 }
 
 // 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
-int VariableDialogModel::getContainerOnMissionCloseOrCompleteFlag(SCP_string name)
+int VariableDialogModel::getContainerOnMissionCloseOrCompleteFlag(int index)
 {
-    auto container = lookupContainer(name);
+    auto container = lookupContainer(index);
 
     if (!container) {
         return 0;
@@ -592,16 +592,16 @@ int VariableDialogModel::getContainerOnMissionCloseOrCompleteFlag(SCP_string nam
         return 0;
 }
 
-bool VariableDialogModel::getContainerEternalFlag(SCP_string name)
+bool VariableDialogModel::getContainerEternalFlag(int index)
 {
-	auto container = lookupContainer(name);
+	auto container = lookupContainer(index);
     return (container) ? ((container->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) > 0) : false;    
 }
 
 
-bool VariableDialogModel::setContainerValueType(SCP_string name, bool type)
+bool VariableDialogModel::setContainerValueType(int index, bool type)
 {
-    auto container = lookupContainer(name);
+    auto container = lookupContainer(index);
 
     if (!container){
         return true;
@@ -679,14 +679,14 @@ bool VariableDialogModel::setContainerValueType(SCP_string name, bool type)
 }
 
 // This is the most complicated function, because we need to query the user on what they want to do if the had already entered data. 
-bool VariableDialogModel::setContainerListOrMap(SCP_string name, bool list)
+bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 {
 	return false;
 }
 
-bool VariableDialogModel::setContainerNetworkStatus(SCP_string name, bool network)
+bool VariableDialogModel::setContainerNetworkStatus(int index, bool network)
 {
-    auto container = lookupContainer(name);
+    auto container = lookupContainer(index);
 
     // nothing to change, or invalid entry
     if (!container){
@@ -702,9 +702,9 @@ bool VariableDialogModel::setContainerNetworkStatus(SCP_string name, bool networ
     return network;
 }
 
-int VariableDialogModel::setContainerOnMissionCloseOrCompleteFlag(SCP_string name, int flags)
+int VariableDialogModel::setContainerOnMissionCloseOrCompleteFlag(int index, int flags)
 {
-    auto container = lookupContainer(name);
+    auto container = lookupContainer(index);
 
     // nothing to change, or invalid entry
     if (!container || flags < 0 || flags > 2){
@@ -723,9 +723,9 @@ int VariableDialogModel::setContainerOnMissionCloseOrCompleteFlag(SCP_string nam
     return flags;
 }
 
-bool VariableDialogModel::setContainerEternalFlag(SCP_string name, bool eternal)
+bool VariableDialogModel::setContainerEternalFlag(int index, bool eternal)
 {
-    auto container = lookupContainer(name);
+    auto container = lookupContainer(index);
 
     // nothing to change, or invalid entry
     if (!container){
@@ -763,13 +763,13 @@ SCP_string VariableDialogModel::addContainer()
     return name;
 }
 
-SCP_string VariableDialogModel::changeContainerName(SCP_string oldName, SCP_string newName)
+SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
 {
     if (newName == "") {
         return "";
     }
  
-    auto container = lookupContainer(oldName);
+    auto container = lookupContainer(index);
 
     // nothing to change, or invalid entry
     if (!container){
@@ -781,9 +781,9 @@ SCP_string VariableDialogModel::changeContainerName(SCP_string oldName, SCP_stri
     return newName;
 }
 
-bool VariableDialogModel::removeContainer(SCP_string name)
+bool VariableDialogModel::removeContainer(int index)
 {
-    auto container = lookupContainer(name);
+    auto container = lookupContainer(index);
 
     if (!container){
         return false;
@@ -792,9 +792,9 @@ bool VariableDialogModel::removeContainer(SCP_string name)
     container->deleted = true;
 }
 
-SCP_string VariableDialogModel::addListItem(SCP_string containerName)
+SCP_string VariableDialogModel::addListItem(int index)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container){
         return "";
@@ -809,14 +809,14 @@ SCP_string VariableDialogModel::addListItem(SCP_string containerName)
     }
 }
 
-std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(SCP_string ContainerName)
+std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 {
     
 }
 
-SCP_string VariableDialogModel::copyListItem(SCP_string containerName, int index)
+SCP_string VariableDialogModel::copyListItem(int index, int index)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
         return "";
@@ -832,9 +832,9 @@ SCP_string VariableDialogModel::copyListItem(SCP_string containerName, int index
 
 }
 
-bool VariableDialogModel::removeListItem(SCP_string containerName, int index)
+bool VariableDialogModel::removeListItem(int containerIndex, int index)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(containerIndex);
 
     if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
         return false;
@@ -849,9 +849,9 @@ bool VariableDialogModel::removeListItem(SCP_string containerName, int index)
 
 }
 
-std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(SCP_string containerName, SCP_string keyIn)
+std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SCP_string keyIn)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container) {
         return std::make_pair("", "");
@@ -952,9 +952,9 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(SCP_string co
 // both of the map's data vectors might be undesired, and not deleting takes the map immediately
 // out of sync.  Also, just displaying both data sets would be misleading.
 // We just need to tell the user that the data cannot be maintained. 
-bool VariableDialogModel::removeMapItem(SCP_string containerName, SCP_string key)
+bool VariableDialogModel::removeMapItem(int index, SCP_string key)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container){
         return false;
@@ -981,9 +981,9 @@ bool VariableDialogModel::removeMapItem(SCP_string containerName, SCP_string key
     return false;
 }
 
-SCP_string VariableDialogModel::replaceMapItemKey(SCP_string containerName, SCP_string oldKey, SCP_string newKey)
+SCP_string VariableDialogModel::replaceMapItemKey(int index, SCP_string oldKey, SCP_string newKey)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container){
         return "";
@@ -1000,9 +1000,9 @@ SCP_string VariableDialogModel::replaceMapItemKey(SCP_string containerName, SCP_
     return oldKey;
 }
 
-SCP_string VariableDialogModel::changeMapItemStringValue(SCP_string containerName, SCP_string key, SCP_string newValue)
+SCP_string VariableDialogModel::changeMapItemStringValue(int index, SCP_string key, SCP_string newValue)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container || !container->string){
         return "";
@@ -1023,9 +1023,9 @@ SCP_string VariableDialogModel::changeMapItemStringValue(SCP_string containerNam
     return "";
 }
 
-SCP_string VariableDialogModel::changeMapItemNumberValue(SCP_string containerName, SCP_string key, int newValue)
+SCP_string VariableDialogModel::changeMapItemNumberValue(int index, SCP_string key, int newValue)
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container || !container->string){
         return "";
@@ -1049,9 +1049,9 @@ SCP_string VariableDialogModel::changeMapItemNumberValue(SCP_string containerNam
 }
 
 // These functions should only be called when the container is guaranteed to exist!
-const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(SCP_string containerName) 
+const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(int index) 
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container) {
 		SCP_string temp;
@@ -1069,19 +1069,19 @@ const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(SCP_string contain
 }
 
 // Only call when the container is guaranteed to exist!
-const SCP_vector<SCP_string>& VariableDialogModel::getStringValues(SCP_string containerName) 
+const SCP_vector<SCP_string>& VariableDialogModel::getStringValues(int index) 
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getStringValues() found that container %s does not exist.", containerName.c_str());
+		sprintf("getStringValues() found that container %s does not exist.", container->name.c_str());
         throw std::invalid_argument(temp);
     }
 
     if (!container->string) {
 		SCP_string temp;
-		sprintf("getStringValues() found that container %s does not store strings.", containerName.c_str());
+		sprintf("getStringValues() found that container %s does not store strings.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
@@ -1089,19 +1089,19 @@ const SCP_vector<SCP_string>& VariableDialogModel::getStringValues(SCP_string co
 }
 
 // Only call when the container is guaranteed to exist!
-const SCP_vector<int>& VariableDialogModel::getNumberValues(SCP_string containerName) 
+const SCP_vector<int>& VariableDialogModel::getNumberValues(int index) 
 {
-    auto container = lookupContainer(containerName);
+    auto container = lookupContainer(index);
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getNumberValues() found that container %s does not exist.", containerName.c_str());
+		sprintf("getNumberValues() found that container %s does not exist.", container->name.c_str());
 		throw std::invalid_argument(temp);  
     }
 
     if (container->string) {
 		SCP_string temp;
-		sprintf("getNumberValues() found that container %s does not store numbers.", containerName.c_str());
+		sprintf("getNumberValues() found that container %s does not store numbers.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 

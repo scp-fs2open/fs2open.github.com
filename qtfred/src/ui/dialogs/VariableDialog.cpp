@@ -243,21 +243,19 @@ void VariableDialog::onVariablesTableUpdated()
 				}
 			} else {
 				
+				auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
+
+				// we put something in the cell, but the model couldn't process it.
+				if (strlen(item->text()) && ret == ""){
+					// update of variable name failed, resync UI
+					applyModel();
+
+				// we had a successful rename.  So update the variable we reference.
+				} else if (ret != "") {
+					item->setText(ret.c_str());
+					_currentVariable = ret;
+				}
 			}
-
-			auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
-
-			// we put something in the cell, but the model couldn't process it.
-			if (strlen(item->text()) && ret == ""){
-				// update of variable name failed, resync UI
-				applyModel();
-
-			// we had a successful rename.  So update the variable we reference.
-			} else if (ret != "") {
-				item->setText(ret.c_str());
-				_currentVariable = ret;
-			}
-
 			// empty return and cell was handled earlier.
 		
 		// data cell was altered
@@ -335,6 +333,7 @@ void VariableDialog::onContainersTableUpdated()
 		return;
 	}
 
+
 } // could be new name
 
 void VariableDialog::onContainersSelectionChanged() 
@@ -345,15 +344,18 @@ void VariableDialog::onContainersSelectionChanged()
 
 	auto items = ui->containersTable->selectedItems();
 
-	SCP_string newVariableName = "";
+	SCP_string newContainerName = "";
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for(const auto& item : items) {
-		newVariableName = item->text().toStdString();
+		if (item->column() == 0){
+			newContainerName = item->text().toStdString();
+			break;
+		}
 	}
 
-	if (newVariableName != _currentVariable){
-		_currentVariable = newVariableName;
+	if (newContainerName != _currentContainer){
+		_currentContainer = newContainerName;
 		applyModel();
 	}
 }
@@ -372,6 +374,22 @@ void VariableDialog::onContainerContentsSelectionChanged() {
 		return;
 	}
 
+	auto items = ui->containersContentsTable->selectedItems();
+
+	SCP_string newContainerItemName = "";
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for(const auto& item : items) {
+		if (item->column() == 0){
+			newContainerItemName = item->text().toStdString();
+			break;
+		}
+	}
+
+	if (newContainerItemName != _currentContainerItem){
+		_currentContainerItem = newContainerItemName;
+		applyModel();
+	}
 }
 
 void VariableDialog::onAddVariableButtonPressed() 

@@ -118,23 +118,19 @@ private:
 	SCP_vector<variableInfo> _variableItems;
 	SCP_vector<containerInfo> _containerItems;
 
-	variableInfo* lookupVariable(SCP_string name){
-		for (int x = 0; x < static_cast<int>(_variableItems.size()); ++x){
-			if (_variableItems[x].name == name){
-				return &_variableItems[x];
-			}
+	variableInfo* lookupVariable(int index){
+		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){
+			return &_variableItems[index];	
 		}
 
 		return nullptr;
 	}
 
-	containerInfo* lookupContainer(SCP_string name){
-		for (int x = 0; x < static_cast<int>(_containerItems.size()); ++x){
-			if (_containerItems[x].name == name){
-				return &_containerItems[x];
-			}
+	containerInfo* lookupContainer(int index){
+		if(index > -1 &&  index < static_cast<int>(_containerItems.size()) ){
+			return &_containerItems[index];	
 		}
-
+		
 		return nullptr;
 	}
 
