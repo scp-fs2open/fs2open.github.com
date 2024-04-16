@@ -126,11 +126,31 @@ private:
 		return nullptr;
 	}
 
+	variableInfo* lookupVariableByName(SCP_string name){
+		for (int x = 0; x < static_cast<int>(_variableItems.size())){
+			if (_variableItems.name == name){
+				return &_variableItems[x];
+			}
+		}
+
+		return nullptr;
+	}
+
 	containerInfo* lookupContainer(int index){
 		if(index > -1 &&  index < static_cast<int>(_containerItems.size()) ){
 			return &_containerItems[index];	
 		}
 		
+		return nullptr;
+	}
+
+	containerInfo* lookupContainerByName(SCP_string name){
+		for (int x = 0; x < static_cast<int>(_containerItems.size())){
+			if (_containerItems.name == name){
+				return &_containerItems[x];
+			}
+		}
+
 		return nullptr;
 	}
 
