@@ -854,7 +854,10 @@ void multi_ingame_select_close()
 	multi_ingame_unload_icons();
 
 	// destroy the UI_WINDOW
-	Multi_ingame_window.destroy();	
+	Multi_ingame_window.destroy();
+
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
 
 	// stop main hall music
 	main_hall_stop_music(true);

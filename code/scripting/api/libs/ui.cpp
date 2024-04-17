@@ -3600,6 +3600,9 @@ ADE_FUNC(closePreJoin,
 		result = true;
 	}
 
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
+
 	return ade_set_args(L, "b", result);
 }
 
