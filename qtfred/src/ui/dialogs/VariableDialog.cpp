@@ -18,7 +18,8 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
-	resize(QDialog::sizeHint()); // The best I can tell without some research, when a dialog doesn't use an underling grid or layout, it needs to be resized this way before anything will show up 
+	resize(QDialog::sizeHint()); // The best I can tell without some research, when a dialog doesn't use an underlying grid or layout, it needs to be resized this way before anything will show up 
+
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::checkValidModel);
@@ -78,6 +79,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		&QRadioButton::toggled,
 		this, 
 		&VariableDialog::onSetVariableAsNumberRadioSelected);
+
+	connect(ui->doNotSaveVariableRadio,
+		&QRadioButton::toggled,
+		this,
+		&VariableDialog::onDoNotSaveVariableRadioSelected)
 
 	connect(ui->saveContainerOnMissionCompletedRadio,
 		&QRadioButton::toggled,
@@ -144,6 +150,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this, 
 		&VariableDialog::onSetContainerKeyAsNumberRadioSelected);
 
+	connect(ui->doNotSaveContainerRadio,
+		&QRadioButton::toggled,
+		this,
+		&VariableDialog::onDoNotSaveContainerRadioSelected)
+
 	connect(ui->saveContainerOnMissionCloseRadio,
 		&QRadioButton::toggled,
 		this,
@@ -184,25 +195,27 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 70);
-	ui->variablesTable->setColumnWidth(1, 70);
+	ui->variablesTable->setColumnWidth(0, 90);
+	ui->variablesTable->setColumnWidth(1, 90);
 	ui->variablesTable->setColumnWidth(2, 70);
+	// TODO! Make sure row 3 is not editable.
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 70);
-	ui->containersTable->setColumnWidth(1, 70);
+	ui->containersTable->setColumnWidth(0, 90);
+	ui->containersTable->setColumnWidth(1, 90);
 	ui->containersTable->setColumnWidth(2, 70);
-	
+	// TODO! Make sure row 3 is not editable.
+
 	ui->containerContentsTable->setColumnCount(2);
 
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 105);
-	ui->containerContentsTable->setColumnWidth(1, 105);
+	ui->containerContentsTable->setColumnWidth(0, 125);
+	ui->containerContentsTable->setColumnWidth(1, 125);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	ui->setVariableAsStringRadio->setAutoExclusive(false);
@@ -437,7 +450,6 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 		return;
 	}
 
-
 	auto items = ui->variablesTable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
@@ -453,7 +465,6 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 
 		break;
 	}
-
 }
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
@@ -477,6 +488,11 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 			ui->setVariableAsNumberRadio->setChecked(true);
 		}
 	}
+}
+
+void VariableDialog::onDoNotSaveVariableRadioSelected()
+{
+
 }
 
 
@@ -577,6 +593,7 @@ void VariableDialog::onSetContainerAsStringRadioSelected() {}
 void VariableDialog::onSetContainerAsNumberRadioSelected() {}
 void VariableDialog::onSetContainerKeyAsStringRadioSelected() {}
 void VariableDialog::onSetContainerKeyAsNumberRadioSelected() {}
+void VariableDialog::onDoNotSaveContainerRadioSelected(){}
 void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
 void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() {}
 void VariableDialog::onNetworkContainerCheckboxClicked() {}
@@ -724,6 +741,7 @@ void VariableDialog::updateVariableOptions()
 		ui->deleteVariableButton->setEnabled(false);
 		ui->setVariableAsStringRadio->setEnabled(false);
 		ui->setVariableAsNumberRadio->setEnabled(false);
+		ui->doNotSaveVariableRadio->setEnabled(false);
 		ui->saveVariableOnMissionCompletedRadio->setEnabled(false);
 		ui->saveVariableOnMissionCloseRadio->setEnabled(false);
 		ui->setVariableAsEternalcheckbox->setEnabled(false);
@@ -735,6 +753,7 @@ void VariableDialog::updateVariableOptions()
 	ui->deleteVariableButton->setEnabled(true);
 	ui->setVariableAsStringRadio->setEnabled(true);
 	ui->setVariableAsNumberRadio->setEnabled(true);
+	ui->doNotSaveVariableRadio->setEnabled(true);
 	ui->saveVariableOnMissionCompletedRadio->setEnabled(true);
 	ui->saveVariableOnMissionCloseRadio->setEnabled(true);
 	ui->setVariableAsEternalcheckbox->setEnabled(true);
@@ -762,11 +781,15 @@ void VariableDialog::updateVariableOptions()
 	int ret = _model->getVariableOnMissionCloseOrCompleteFlag(row);
 
 	if (ret == 0){
-		// TODO ADD NO PERSISTENCE
+		ui->doNotSaveVariableRadio->setChecked(true);
+		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCloseRadio->setChecked(false);		
 	} else if (ret == 1) {
+		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveVariableOnMissionCompletedRadio->setChecked(true);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);		
 	} else {
+		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
 		ui->saveVariableOnMissionCloseRadio->setChecked(true);
 	}
@@ -783,6 +806,7 @@ void VariableDialog::updateContainerOptions()
 		ui->deleteContainerButton->setEnabled(false);
 		ui->setContainerAsStringRadio->setEnabled(false);
 		ui->setContainerAsNumberRadio->setEnabled(false);
+		ui->doNotSaveContainerRadio->setEnabled(false);
 		ui->saveContainerOnMissionCompletedRadio->setEnabled(false);
 		ui->saveContainerOnMissionCloseRadio->setEnabled(false);
 		ui->setContainerAsEternalCheckbox->setEnabled(false);
@@ -803,15 +827,16 @@ void VariableDialog::updateContainerOptions()
 		}
 
 
-		ui->copyContainerButton->setEnabled(false);
-		ui->deleteContainerButton->setEnabled(false);
-		ui->setContainerAsStringRadio->setEnabled(false);
-		ui->setContainerAsNumberRadio->setEnabled(false);
-		ui->saveContainerOnMissionCompletedRadio->setEnabled(false);
-		ui->saveContainerOnMissionCloseRadio->setEnabled(false);
-		ui->setContainerAsEternalCheckbox->setEnabled(false);
-		ui->setContainerAsMapRadio->setEnabled(false);
-		ui->setContainerAsListRadio->setEnabled(false);
+		ui->copyContainerButton->setEnabled(true);
+		ui->deleteContainerButton->setEnabled(true);
+		ui->setContainerAsStringRadio->setEnabled(true);
+		ui->setContainerAsNumberRadio->setEnabled(true);
+		ui->doNotSaveContainerRadio->setEnabled(true);
+		ui->saveContainerOnMissionCompletedRadio->setEnabled(true);
+		ui->saveContainerOnMissionCloseRadio->setEnabled(true);
+		ui->setContainerAsEternalCheckbox->setEnabled(true);
+		ui->setContainerAsMapRadio->setEnabled(true);
+		ui->setContainerAsListRadio->setEnabled(true);
 
 		if (_model->getContainerValueType(row)){
 			ui->setContainerAsStringRadio->setChecked(true);
@@ -854,11 +879,15 @@ void VariableDialog::updateContainerOptions()
 		int ret = _model->getContainerOnMissionCloseOrCompleteFlag(row);		
 
 		if (ret == 0){
-		// TODO ADD NO PERSISTENCE
+			ui->doNotSaveContainerRadio->setChecked(true);
+			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+			ui->saveContainerOnMissionCloseRadio->setChecked(false);		
 		} else if (ret == 1) {
+			ui->doNotSaveContainerRadio->setChecked(false);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(true);
 			ui->saveContainerOnMissionCloseRadio->setChecked(false);		
 		} else {
+			ui->doNotSaveContainerRadio->setChecked(false);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 			ui->saveContainerOnMissionCloseRadio->setChecked(true);
 		}

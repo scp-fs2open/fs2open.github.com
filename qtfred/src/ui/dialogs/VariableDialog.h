@@ -43,6 +43,7 @@ class VariableDialog : public QDialog {
 	void onCopyVariableButtonPressed();
 	void onSetVariableAsStringRadioSelected();
 	void onSetVariableAsNumberRadioSelected();
+	void onDoNotSaveVariableRadioSelected();
 	void onSaveVariableOnMissionCompleteRadioSelected();
 	void onSaveVariableOnMissionCloseRadioSelected();
 	void onSaveVariableAsEternalCheckboxClicked();
@@ -57,6 +58,7 @@ class VariableDialog : public QDialog {
 	void onSetContainerAsNumberRadioSelected();
 	void onSetContainerKeyAsStringRadioSelected();
 	void onSetContainerKeyAsNumberRadioSelected();
+	void onDoNotSaveContainerRadioSelected();
 	void onSaveContainerOnMissionClosedRadioSelected();
 	void onSaveContainerOnMissionCompletedRadioSelected();
 	void onNetworkContainerCheckboxClicked();
