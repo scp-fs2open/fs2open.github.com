@@ -2622,7 +2622,7 @@ void multi_ts_select_ship()
 }
 
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)
-void multi_ts_commit_pressed()
+commit_pressed_status multi_ts_commit_pressed()
 {					
 	// if my team's slots are still not "locked", we cannot commit unless we're the only player in the game
 	if(!Multi_ts_team[Net_player->p_info.team].multi_players_locked){
@@ -2630,37 +2630,43 @@ void multi_ts_commit_pressed()
 		// skip this for red-alert missions too since nothing is selectable
 		if ( !red_alert_mission() && (multi_num_players() != 1) ) {
 			popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("Players have not yet been assigned to their ships",751));
-			return;
+			return commit_pressed_status::MULTI_PLAYERS_NO_SHIPS;
 		} else {
 			Multi_ts_team[Net_player->p_info.team].multi_players_locked = 1;
 		}
 	}
+	commit_pressed_status rc = commit_pressed_status::GENERAL_FAIL;
 
 	// check to see if its not ok for this player to commit
 	switch(multi_ts_ok_to_commit()){
 	// yes, it _is_ ok to commit
 	case 0:
-		commit_pressed();
+		rc = commit_pressed();
 		break;
 
 	// player has not assigned all necessary ships
 	case 1: 	
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		rc = commit_pressed_status::MULTI_NOT_ALL_ASSIGNED;
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("You have not yet assigned all necessary ships",752));
 		break;
 	
 	// there are ships without primary weapons
 	case 2: 
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		rc = commit_pressed_status::MULTI_NO_PRIMARY;
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without primary weapons!",753));
 		break;
 
 	// there are ships without secondary weapons
 	case 3: 
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		rc = commit_pressed_status::MULTI_NO_SECONDARY;
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without secondary weapons!",754));
 		break;
 	}
+
+	return rc;
 }
 
 // is it ok for this player to commit 

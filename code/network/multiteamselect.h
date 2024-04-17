@@ -17,6 +17,7 @@
 //
 #include "globalincs/pstypes.h"
 #include "gamesnd/gamesnd.h"
+#include "missionui/missionscreencommon.h"
 
 struct header;
 
@@ -71,7 +72,7 @@ void multi_ts_sync_interface();
 void multi_ts_handle_player_drop();
 
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)
-void multi_ts_commit_pressed();
+commit_pressed_status multi_ts_commit_pressed();
 
 // get the team # of the given ship
 int multi_ts_get_team(char *ship_name);

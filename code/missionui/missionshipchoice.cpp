@@ -319,7 +319,7 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num);
 
 // init functions
 void ss_init_pool(team_data *pteam);
-commit_pressed_status create_wings(bool API_Access = false);
+commit_pressed_status create_wings();
 
 // loading/unloading
 void ss_unload_all_icons();
@@ -1895,7 +1895,7 @@ commit_pressed_status commit_pressed(bool API_Access)
 	if ( Wss_num_wings > 0 ) {
 		if(!(Game_mode & GM_MULTIPLAYER)){
 			commit_pressed_status rc;
-			rc = create_wings(API_Access);
+			rc = create_wings();
 			if (rc != commit_pressed_status::SUCCESS) {
 				if (!API_Access) {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1916,9 +1916,7 @@ commit_pressed_status commit_pressed(bool API_Access)
 
 		update_player_ship( player_ship_info_index );
 		if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[0]) == -1 ) {
-			if (!API_Access) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
-			}
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
 			return commit_pressed_status::PLAYER_NO_WEAPONS;
 		}
 	}
@@ -1946,26 +1944,22 @@ commit_pressed_status commit_pressed(bool API_Access)
 	{
 		if (num_required_weapons == 1)
 		{
-			if (!API_Access) {
-				popup(PF_USE_AFFIRMATIVE_ICON,
-					1,
-					POPUP_OK,
-					XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624),
-					weapon_list.c_str());
-			} 
+			popup(PF_USE_AFFIRMATIVE_ICON,
+				1,
+				POPUP_OK,
+				XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624),
+				weapon_list.c_str());
 			return commit_pressed_status::NO_REQUIRED_WEAPON;
 		}
 		else if (num_required_weapons > 1)
 		{
-			if (!API_Access) {
-				popup(PF_USE_AFFIRMATIVE_ICON,
-					1,
-					POPUP_OK,
-					XSTR("The following weapons are required for this mission, but at least one of them has not been "
-						 "added to any ship loadout:\n\n%s",
-						1625),
-					weapon_list.c_str());
-			} 
+			popup(PF_USE_AFFIRMATIVE_ICON,
+				1,
+				POPUP_OK,
+				XSTR("The following weapons are required for this mission, but at least one of them has not been "
+						"added to any ship loadout:\n\n%s",
+					1625),
+				weapon_list.c_str());
 			return commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE;
 		}
 	}
@@ -1976,15 +1970,13 @@ commit_pressed_status commit_pressed(bool API_Access)
 	// Note2: don't check missions without briefings either
 	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
 	{
-		if (!API_Access) {
-			popup(PF_USE_AFFIRMATIVE_ICON,
-				1,
-				POPUP_OK,
-				XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must "
-					 "have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.",
-					1642),
-				weapon_list.c_str());
-		} 
+		popup(PF_USE_AFFIRMATIVE_ICON,
+			1,
+			POPUP_OK,
+			XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must "
+					"have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.",
+				1642),
+			weapon_list.c_str());
 		return commit_pressed_status::BANK_GAP_ERROR;
 	}
 
@@ -2426,7 +2418,7 @@ void unload_wing_icons()
 //
 // returns:   0 ==> success
 //           !0 ==> failure
-commit_pressed_status create_wings(bool API_Access)
+commit_pressed_status create_wings()
 {
 	ss_wing_info		*wb;
 	ss_slot_info		*ws;
@@ -2459,9 +2451,7 @@ commit_pressed_status create_wings(bool API_Access)
 					update_player_ship(Wss_slots[slot_index].ship_class);
 
 					if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[i*MAX_WING_SLOTS+j]) == -1 ) {
-						if (!API_Access) {
-							popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
-						}
+						popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
 						return commit_pressed_status::PLAYER_NO_WEAPONS;
 					}
 
@@ -2497,13 +2487,11 @@ commit_pressed_status create_wings(bool API_Access)
 			}
 			else if (ws->status & WING_SLOT_EMPTY) {
 				if ( ws->status & WING_SLOT_IS_PLAYER ) {						
-					if (!API_Access) {
-						popup(PF_USE_AFFIRMATIVE_ICON,
-							1,
-							POPUP_OK,
-							XSTR("Player %s must select a place in player wing", 462),
-							Player->callsign);
-					}
+					popup(PF_USE_AFFIRMATIVE_ICON,
+						1,
+						POPUP_OK,
+						XSTR("Player %s must select a place in player wing", 462),
+						Player->callsign);
 					return commit_pressed_status::PLAYER_NO_SLOT;
 				}
 			}
