@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>601</width>
+    <width>608</width>
     <height>701</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>600</width>
-    <height>640</height>
+    <width>608</width>
+    <height>701</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -83,7 +83,7 @@
          <rect>
           <x>10</x>
           <y>30</y>
-          <width>231</width>
+          <width>251</width>
           <height>151</height>
          </rect>
         </property>
@@ -114,7 +114,7 @@
           <rect>
            <x>10</x>
            <y>30</y>
-           <width>221</width>
+           <width>241</width>
            <height>151</height>
           </rect>
          </property>
@@ -131,9 +131,9 @@
         <widget class="QWidget" name="verticalLayoutWidget_3">
          <property name="geometry">
           <rect>
-           <x>240</x>
+           <x>260</x>
            <y>30</y>
-           <width>91</width>
+           <width>71</width>
            <height>91</height>
           </rect>
          </property>
@@ -141,14 +141,14 @@
           <item>
            <widget class="QPushButton" name="addContainerItemButton">
             <property name="text">
-             <string>Add Data</string>
+             <string>Add</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="copyContainerItemButton">
             <property name="text">
-             <string>Copy Data</string>
+             <string>Copy</string>
             </property>
            </widget>
           </item>
@@ -160,7 +160,7 @@
              </font>
             </property>
             <property name="text">
-             <string>Delete Data</string>
+             <string>Delete</string>
             </property>
            </widget>
           </item>
@@ -170,9 +170,9 @@
        <widget class="QWidget" name="verticalLayoutWidget_2">
         <property name="geometry">
          <rect>
-          <x>250</x>
-          <y>40</y>
-          <width>97</width>
+          <x>270</x>
+          <y>30</y>
+          <width>71</width>
           <height>91</height>
          </rect>
         </property>
@@ -180,14 +180,14 @@
          <item>
           <widget class="QPushButton" name="addContainerButton">
            <property name="text">
-            <string>Add Container</string>
+            <string>Add</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="copyContainerButton">
            <property name="text">
-            <string>Copy Container</string>
+            <string>Copy</string>
            </property>
           </widget>
          </item>
@@ -199,7 +199,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Delete Container</string>
+            <string>Delete</string>
            </property>
           </widget>
          </item>
@@ -235,16 +235,16 @@
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
+           <widget class="QRadioButton" name="saveContainerOnMissionCompletedRadio">
             <property name="text">
-             <string>Save on Mission Close</string>
+             <string>Save on Mission Completed</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="saveContainerOnMissionCompletedRadio">
+           <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
             <property name="text">
-             <string>Save on Mission Completed</string>
+             <string>Save on Mission Close</string>
             </property>
            </widget>
           </item>
@@ -258,7 +258,7 @@
           <item>
            <widget class="QCheckBox" name="networkContainerCheckbox">
             <property name="text">
-             <string>Network-Variable</string>
+             <string>Network Variable</string>
             </property>
            </widget>
           </item>
@@ -382,48 +382,37 @@
         <property name="geometry">
          <rect>
           <x>260</x>
-          <y>90</y>
-          <width>131</width>
-          <height>131</height>
+          <y>120</y>
+          <width>81</width>
+          <height>101</height>
          </rect>
         </property>
         <property name="title">
          <string>Type</string>
         </property>
-        <widget class="QWidget" name="horizontalLayoutWidget_2">
+        <widget class="QWidget" name="">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>20</y>
-           <width>300</width>
-           <height>101</height>
+           <width>71</width>
+           <height>80</height>
           </rect>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_6">
-            <item>
-             <widget class="QRadioButton" name="setVariableAsStringRadio">
-              <property name="text">
-               <string>String</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="setVariableAsNumberRadio">
-              <property name="text">
-               <string>Number</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="networkVariableCheckbox">
-              <property name="text">
-               <string>Network-Variable</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QRadioButton" name="setVariableAsStringRadio">
+            <property name="text">
+             <string>String</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="setVariableAsNumberRadio">
+            <property name="text">
+             <string>Number</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -447,58 +436,25 @@
          <enum>QAbstractItemView::SelectRows</enum>
         </property>
        </widget>
-       <widget class="QWidget" name="horizontalLayoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>270</x>
-          <y>50</y>
-          <width>291</width>
-          <height>31</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_5">
-         <item>
-          <widget class="QPushButton" name="addVariableButton">
-           <property name="text">
-            <string>Add Variable</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="copyVariableButton">
-           <property name="text">
-            <string>Copy Variable</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="deleteVariableButton">
-           <property name="text">
-            <string>Delete Variable</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
        <widget class="QGroupBox" name="groupBox_7">
         <property name="geometry">
          <rect>
-          <x>400</x>
-          <y>90</y>
-          <width>171</width>
-          <height>131</height>
+          <x>350</x>
+          <y>20</y>
+          <width>231</width>
+          <height>201</height>
          </rect>
         </property>
         <property name="title">
-         <string>Persistence</string>
+         <string>Persistence Options</string>
         </property>
-        <widget class="QWidget" name="">
+        <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
-           <x>13</x>
-           <y>18</y>
-           <width>174</width>
-           <height>108</height>
+           <x>10</x>
+           <y>20</y>
+           <width>221</width>
+           <height>181</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -510,16 +466,16 @@
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="saveVariableOnMissionCloseRadio">
+           <widget class="QRadioButton" name="saveVariableOnMissionCompletedRadio">
             <property name="text">
-             <string>Save on Mission Close</string>
+             <string>Save on Mission Completed</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="saveVariableOnMissionCompletedRadio">
+           <widget class="QRadioButton" name="saveVariableOnMissionCloseRadio">
             <property name="text">
-             <string>Save on Mission Completed</string>
+             <string>Save on Mission Close</string>
             </property>
            </widget>
           </item>
@@ -530,8 +486,48 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="networkVariableCheckbox">
+            <property name="text">
+             <string>Network Variable</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
+       </widget>
+       <widget class="QWidget" name="verticalLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>30</y>
+          <width>71</width>
+          <height>86</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QPushButton" name="addVariableButton">
+           <property name="text">
+            <string>Add</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="copyVariableButton">
+           <property name="text">
+            <string>Copy</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="deleteVariableButton">
+           <property name="text">
+            <string>Delete</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
      </item>

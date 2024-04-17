@@ -184,25 +184,25 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 200);
-	ui->variablesTable->setColumnWidth(1, 200);
-	ui->variablesTable->setColumnWidth(2, 200);
+	ui->variablesTable->setColumnWidth(0, 70);
+	ui->variablesTable->setColumnWidth(1, 70);
+	ui->variablesTable->setColumnWidth(2, 70);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 200);
-	ui->containersTable->setColumnWidth(1, 200);
-	ui->containersTable->setColumnWidth(2, 200);
+	ui->containersTable->setColumnWidth(0, 70);
+	ui->containersTable->setColumnWidth(1, 70);
+	ui->containersTable->setColumnWidth(2, 70);
 	
 	ui->containerContentsTable->setColumnCount(2);
 
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 200);
-	ui->containerContentsTable->setColumnWidth(1, 200);
+	ui->containerContentsTable->setColumnWidth(0, 105);
+	ui->containerContentsTable->setColumnWidth(1, 105);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	ui->setVariableAsStringRadio->setAutoExclusive(false);
@@ -595,6 +595,8 @@ void VariableDialog::applyModel()
 	auto variables = _model->getVariableValues();
 	int x, selectedRow = -1;
 
+	ui->variablesTable->setRowCount(static_cast<int>(variables.size()));
+
 	for (x = 0; x < static_cast<int>(variables.size()); ++x){
 		if (ui->variablesTable->item(x, 0)){
 			ui->variablesTable->item(x, 0)->setText(variables[x][0].c_str());
@@ -604,7 +606,7 @@ void VariableDialog::applyModel()
 		}
 
 		// check if this is the current variable.
-		if (!_currentVariable.empty() && variables[x][0].c_str() == _currentVariable){
+		if (!_currentVariable.empty() && variables[x][0] == _currentVariable){
 			selectedRow = x;
 		}
 
@@ -623,7 +625,7 @@ void VariableDialog::applyModel()
 		}
 	}
 
-	// TODO, try setting row count?
+	/*
 	// This empties rows that might have previously had variables
 	if (x < ui->variablesTable->rowCount()) {
 		++x;
@@ -641,6 +643,7 @@ void VariableDialog::applyModel()
 			}
 		}
 	}
+	*/
 
 	if (_currentVariable.empty() || selectedRow < 0){
 		if (ui->variablesTable->item(0,0) && strlen(ui->variablesTable->item(0,0)->text().toStdString().c_str())){
@@ -651,6 +654,7 @@ void VariableDialog::applyModel()
 	updateVariableOptions();
 
 	auto containers = _model->getContainerNames();
+	ui->containersTable->setRowCount(static_cast<int>(containers.size()));
 	selectedRow = -1;
 
 	// TODO! Change getContainerNames to a tuple with notes/maybe data key types?
@@ -742,6 +746,12 @@ void VariableDialog::updateVariableOptions()
 	for (const auto& item : items) {
 		row = item->row();
 	}
+
+	if (row == -1 && ui->variablesTable->rowCount() > 0) {
+		row = 0;
+		_currentVariable = ui->variablesTable->item(row, 0)->text().toStdString();
+	}
+
 
 	// start populating values
 	bool string = _model->getVariableType(row);
