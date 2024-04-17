@@ -460,6 +460,15 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(stopMusic, l_UserInterface_MainHall, "boolean Fade=false", "Stops the mainhall music. True to fade, false to stop immediately.", nullptr, "nothing")
+{
+	bool fade = false;
+	if (!ade_get_args(L, "|b", &fade))
+		return ADE_RETURN_NIL;
+	main_hall_stop_music(fade);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(toggleHelp,
 	l_UserInterface_MainHall,
 	"boolean",
@@ -1487,6 +1496,10 @@ ADE_INDEXER(l_Ship_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Ss_pool[idx] = 0;
 		} else {
@@ -1521,6 +1534,10 @@ ADE_INDEXER(l_Weapon_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Wl_pool[idx] = 0;
 		} else {
@@ -1607,6 +1624,48 @@ ADE_INDEXER(l_Loadout_Ships,
 ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number", "The number of loadout ships.")
 {
 	return ade_set_args(L, "i", MAX_WING_BLOCKS*MAX_WING_SLOTS);
+}
+
+ADE_FUNC(sendShipRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromType, number ToType, number FromSlotIndex, number ToSlotIndex, number ShipClassIndex",
+	"Sends a request to the host to change a ship slot. From/To types are 0 for Ship Slot, 1 for Player Slot, 2 for Pool",
+	nullptr,
+	nullptr)
+{
+	int fromType; //2 for pool, 1 for player, 0 for slot
+	int toType;  // 2 for pool, 1 for player, 0 for slot
+	int fromSlot;
+	int toSlot;
+	int shipClassIdx;
+	if (!ade_get_args(L, "iiiii", &fromType, &toType, &fromSlot, &toSlot, &shipClassIdx))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	multi_ts_drop(fromType, --fromSlot, toType, --toSlot,  --shipClassIdx);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendWeaponRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromBank, number ToBank, number fromPoolWepIdx, number toPoolWepIdx, number shipSlot",
+	"Sends a request to the host to change a ship slot.",
+	nullptr,
+	nullptr)
+{
+	int fromBank;
+	int toBank;
+	int fromList;
+	int toList;
+	int shipSlot;
+	if (!ade_get_args(L, "iiiii", &fromBank, &toBank, &fromList, &toList, &shipSlot))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	wl_drop(--fromBank, --fromList, --toBank, --toList, --shipSlot);
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/TechRoom
@@ -3363,14 +3422,14 @@ ADE_FUNC(closeMultiHostSetup,
 		int idx = -1;
 		if (Netgame.campaign_mode == MULTI_CREATE_SHOW_MISSIONS)
 			for (size_t i = 0; i < Multi_create_mission_list.size(); i++) {
-				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) != 0) {
+				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) == 0) {
 					idx = static_cast<int>(i);
 					break;
 				}
 			}
 		else {
 			for (size_t i = 0; i < Multi_create_campaign_list.size(); i++) {
-				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) != 0) {
+				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) == 0) {
 					idx = static_cast<int>(i);
 					break;
 				}
