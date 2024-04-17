@@ -461,6 +461,15 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(stopMusic, l_UserInterface_MainHall, "boolean Fade=false", "Stops the mainhall music. True to fade, false to stop immediately.", nullptr, "nothing")
+{
+	bool fade = false;
+	if (!ade_get_args(L, "|b", &fade))
+		return ADE_RETURN_NIL;
+	main_hall_stop_music(fade);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(toggleHelp,
 	l_UserInterface_MainHall,
 	"boolean",
@@ -781,14 +790,57 @@ ADE_FUNC(skipTraining,
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission. Returns an integer to represent "
-	"built-in errors or 0 if successful. 1 = general error, 2 = a player ship has no weapons, 3 = the required weapon was not found "
-	"loaded on a ship, 4 = 2 or more required weapons were not found loaded on a ship, 5 = a gap in a ship's weapon banks was discovered "
-	"and all empty banks must be at the bottom of the list, 6 = a player has no ship selected",
-	"number error",
+	"Commits to the current mission with current loadout data, and starts the mission. Returns one of the COMMIT_ enums to indicate any errors.",
+	"enumeration",
 	"the error value")
 {
-	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
+	commit_pressed_status rc;
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		rc = multi_ts_commit_pressed();
+	} else {
+		rc = commit_pressed();
+	}
+
+	lua_enum eh_idx = ENUM_INVALID;
+	switch (rc) {
+	case commit_pressed_status::GENERAL_FAIL:
+		eh_idx = LE_COMMIT_FAIL;
+		break;
+	case commit_pressed_status::PLAYER_NO_WEAPONS:
+		eh_idx = LE_COMMIT_PLAYER_NO_WEAPONS;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON_MULTIPLE;
+		break;
+	case commit_pressed_status::BANK_GAP_ERROR:
+		eh_idx = LE_COMMIT_BANK_GAP_ERROR;
+		break;
+	case commit_pressed_status::PLAYER_NO_SLOT:
+		eh_idx = LE_COMMIT_PLAYER_NO_SLOT;
+		break;
+	case commit_pressed_status::MULTI_PLAYERS_NO_SHIPS:
+		eh_idx = LE_COMMIT_MULTI_PLAYERS_NO_SHIPS;
+		break;
+	case commit_pressed_status::MULTI_NOT_ALL_ASSIGNED:
+		eh_idx = LE_COMMIT_MULTI_NOT_ALL_ASSIGNED;
+		break;
+	case commit_pressed_status::MULTI_NO_PRIMARY:
+		eh_idx = LE_COMMIT_MULTI_NO_PRIMARY;
+		break;
+	case commit_pressed_status::MULTI_NO_SECONDARY:
+		eh_idx = LE_COMMIT_MULTI_NO_SECONDARY;
+		break;
+	case commit_pressed_status::SUCCESS:
+	default:
+		eh_idx = LE_COMMIT_SUCCESS;
+		break;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_FUNC(renderBriefingModel,
@@ -1445,6 +1497,10 @@ ADE_INDEXER(l_Ship_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Ss_pool[idx] = 0;
 		} else {
@@ -1479,6 +1535,10 @@ ADE_INDEXER(l_Weapon_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Wl_pool[idx] = 0;
 		} else {
@@ -1565,6 +1625,48 @@ ADE_INDEXER(l_Loadout_Ships,
 ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number", "The number of loadout ships.")
 {
 	return ade_set_args(L, "i", MAX_WING_BLOCKS*MAX_WING_SLOTS);
+}
+
+ADE_FUNC(sendShipRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromType, number ToType, number FromSlotIndex, number ToSlotIndex, number ShipClassIndex",
+	"Sends a request to the host to change a ship slot. From/To types are 0 for Ship Slot, 1 for Player Slot, 2 for Pool",
+	nullptr,
+	nullptr)
+{
+	int fromType; //2 for pool, 1 for player, 0 for slot
+	int toType;  // 2 for pool, 1 for player, 0 for slot
+	int fromSlot;
+	int toSlot;
+	int shipClassIdx;
+	if (!ade_get_args(L, "iiiii", &fromType, &toType, &fromSlot, &toSlot, &shipClassIdx))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	multi_ts_drop(fromType, --fromSlot, toType, --toSlot,  --shipClassIdx);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendWeaponRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromBank, number ToBank, number fromPoolWepIdx, number toPoolWepIdx, number shipSlot",
+	"Sends a request to the host to change a ship slot.",
+	nullptr,
+	nullptr)
+{
+	int fromBank;
+	int toBank;
+	int fromList;
+	int toList;
+	int shipSlot;
+	if (!ade_get_args(L, "iiiii", &fromBank, &toBank, &fromList, &toList, &shipSlot))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	wl_drop(--fromBank, --fromList, --toBank, --toList, --shipSlot);
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/TechRoom
@@ -3321,14 +3423,14 @@ ADE_FUNC(closeMultiHostSetup,
 		int idx = -1;
 		if (Netgame.campaign_mode == MULTI_CREATE_SHOW_MISSIONS)
 			for (size_t i = 0; i < Multi_create_mission_list.size(); i++) {
-				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) != 0) {
+				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) == 0) {
 					idx = static_cast<int>(i);
 					break;
 				}
 			}
 		else {
 			for (size_t i = 0; i < Multi_create_campaign_list.size(); i++) {
-				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) != 0) {
+				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) == 0) {
 					idx = static_cast<int>(i);
 					break;
 				}

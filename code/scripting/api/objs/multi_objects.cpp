@@ -9,6 +9,7 @@
 #include "network/multi_team.h"
 #include "network/multimsgs.h"
 #include "network/multi_ingame.h"
+#include "network/multiteamselect.h"
 #include "mission/missionparse.h"
 #include "pilotfile/pilotfile.h"
 #include "ship/ship.h"
@@ -1173,6 +1174,23 @@ ADE_VIRTVAR(ObserverLimit, l_NetGame, nullptr, "The current observer limit", "nu
 	}
 
 	return ade_set_args(L, "i", current.getNetgame()->options.max_observers);
+}
+
+ADE_VIRTVAR(Locked, l_NetGame, nullptr, "Whether or not the loadouts have been locked for the current team. Can be set only by the host or team captain.", "number", "the locked status")
+{
+	net_game_h current;
+	bool locked = false;
+	if (!ade_get_args(L, "o|b", l_NetGame.Get(&current), &locked))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		if (locked) {
+			multi_ts_lock_pressed();
+		}
+		return locked;
+	}
+
+	return ade_set_args(L, "b", static_cast<bool>(multi_ts_is_locked()));
 }
 
 ADE_VIRTVAR(Type, l_NetGame, "enumeration Type", "The current game type. Will be one of the MULTI_TYPE enums. Returns nil if there's an error.", "enumeration", "the game type")

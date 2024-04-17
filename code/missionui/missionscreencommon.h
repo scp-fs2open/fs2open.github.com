@@ -73,7 +73,19 @@ extern int anim_timer_start;
 void common_button_do(int i);
 
 //If new enums are added here be sure to also update the description for the API version in scripting\api\libs\ui.cpp - Mjn
-enum class commit_pressed_status { SUCCESS, GENERAL_FAIL, PLAYER_NO_WEAPONS,  NO_REQUIRED_WEAPON, NO_REQUIRED_WEAPON_MULTIPLE, BANK_GAP_ERROR, PLAYER_NO_SLOT};
+enum class commit_pressed_status { 
+	SUCCESS, 
+	GENERAL_FAIL, 
+	PLAYER_NO_WEAPONS,  
+	NO_REQUIRED_WEAPON, 
+	NO_REQUIRED_WEAPON_MULTIPLE, 
+	BANK_GAP_ERROR, 
+	PLAYER_NO_SLOT, 
+	MULTI_PLAYERS_NO_SHIPS,
+	MULTI_NOT_ALL_ASSIGNED,
+	MULTI_NO_PRIMARY,
+	MULTI_NO_SECONDARY
+};
 
 // common_select_init() performs initialization common to the briefing/ship select/weapon select
 // screens.  This includes loading/setting the palette, loading the background animation, loading
