@@ -41,6 +41,7 @@
 #include "network/multi_pause.h"
 #include "network/multi_pxo.h"
 #include "network/multimsgs.h"
+#include "network/multi_ingame.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
@@ -3635,6 +3636,88 @@ ADE_FUNC(getCountdownTime,
 	SCP_UNUSED(L);
 
 	return ade_set_args(L, "i", Multi_sync_countdown);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPreJoin
+ADE_LIB_DERIV(l_UserInterface_MultiPreJoin,
+	"MultiPreJoin",
+	nullptr,
+	"API for accessing data related to the Pre Join UI.",
+	l_UserInterface);
+
+ADE_FUNC(initPreJoin,
+	l_UserInterface_MultiPreJoin,
+	nullptr,
+	"Makes sure everything is done correctly to init the pre join ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_ingame_select_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Join_Ship_Choices, "JoinShipChoices", nullptr, nullptr, l_UserInterface_MultiPreJoin);
+ADE_INDEXER(l_Join_Ship_Choices,
+	"number Index",
+	"Array of ship choices. Ingame Join must be inited first",
+	"net_join_choice",
+	"net choice handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Ingame_ship_choices, idx))
+		return ade_set_args(L, "o", l_Join_Ship_Choice.Set(join_ship_choices_h()));
+
+	return ade_set_args(L, "o", l_Join_Ship_Choice.Set(join_ship_choices_h(idx)));
+}
+
+ADE_FUNC(__len, l_Join_Ship_Choices, nullptr, "The number of ship choices", "number", "The number of ships.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Ingame_ship_choices.size()));
+}
+
+ADE_FUNC(closePreJoin,
+	l_UserInterface_MultiPreJoin,
+	"[boolean Accept]",
+	"Makes sure everything is done correctly to accept or cancel the pre join. True to accept, False to quit",
+	"boolean",
+	"returns true if successful, false otherwise")
+{
+	bool accept = false;
+	ade_get_args(L, "*b", &accept);
+
+	bool result;
+	if (accept) {
+		result = multi_ingame_join_accept(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+		result = true;
+	}
+
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
+
+	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiPreJoin,
+	nullptr,
+	"Runs the network required commands.", "number", "The seconds left until pre join times out")
+{
+	SCP_UNUSED(L);
+
+	multi_ingame_join_calc_avail(true);
+	int time = multi_ingame_handle_timeout(true);
+
+	return ade_set_args(L, "i", time);
 }
 
 //**********SUBLIBRARY: UserInterface/MultiPauseScreen

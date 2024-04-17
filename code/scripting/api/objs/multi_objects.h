@@ -5,6 +5,7 @@
 #include "network/multiui.h"
 #include "network/multi_pxo.h"
 #include "network/multiui.h"
+#include "object/object.h"
 #include "scripting/ade_api.h"
 
 namespace scripting {
@@ -68,6 +69,15 @@ struct dogfight_scores_h {
 	bool isValid() const;
 };
 
+struct join_ship_choices_h {
+	int choice;
+	join_ship_choices_h();
+	explicit join_ship_choices_h(int l_choice);
+	object* getObject() const;
+	int getIndex() const;
+	bool isValid() const;
+};
+
 DECLARE_ADE_OBJ(l_Channel, channel_h);
 DECLARE_ADE_OBJ(l_NetPlayer, net_player_h);
 DECLARE_ADE_OBJ(l_NetMission, net_mission_h);
@@ -75,6 +85,7 @@ DECLARE_ADE_OBJ(l_NetCampaign, net_campaign_h);
 DECLARE_ADE_OBJ(l_NetGame, net_game_h);
 DECLARE_ADE_OBJ(l_Active_Game, active_game_h);
 DECLARE_ADE_OBJ(l_Dogfight_Scores, dogfight_scores_h);
+DECLARE_ADE_OBJ(l_Join_Ship_Choice, join_ship_choices_h);
 
 } // namespace api
 } // namespace scripting

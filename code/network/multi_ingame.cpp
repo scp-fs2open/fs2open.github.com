@@ -88,6 +88,8 @@
 LOCAL	int	Ingame_ships_deleted = 0;
 //LOCAL	int	Ingame_ships_to_delete[MAX_SHIPS];
 
+SCP_vector<int> Ingame_ship_choices;
+
 
 // --------------------------------------------------------------------------------------------------
 // INGAME JOIN FORWARD DECLARATIONS
@@ -527,9 +529,6 @@ void multi_ingame_scroll_select_up();
 // try and scroll the selected ship down
 void multi_ingame_scroll_select_down();
 
-// handle all timeout details
-void multi_ingame_handle_timeout();
-
 int multi_ingame_get_ship_class_icon(int ship_class)
 {
 	int idx;
@@ -595,7 +594,7 @@ void multi_ingame_unload_icons()
 }
 
 // ingame join ship selection screen init
-void multi_ingame_select_init()
+void multi_ingame_select_init(bool API_Access)
 {
 	/// int objnum, wingnum_save,idx, goals_save;
 	// ushort net_signature;
@@ -632,8 +631,10 @@ void multi_ingame_select_init()
 	Player_ai = &Ai_info[Player_ship->ai_index];
 	*/
 
-	// load the temp ship icons
-	multi_ingame_load_icons();
+	if (!API_Access) {
+		// load the temp ship icons
+		multi_ingame_load_icons();
+	}
 
 	// blast all the ingame ship signatures
 	memset(Multi_ingame_ship_sigs,0,sizeof(ushort) * MAX_PLAYERS);
@@ -646,39 +647,40 @@ void multi_ingame_select_init()
 
 	// initialize GUI data	
 
-	// create the interface window
-	Multi_ingame_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_ingame_window.set_mask_bmap(Multi_ingame_join_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access){
+		// create the interface window
+		Multi_ingame_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
+		Multi_ingame_window.set_mask_bmap(Multi_ingame_join_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_ingame_bitmap = bm_load(Multi_ingame_join_bitmap_fname[gr_screen.res]);
-	if(Multi_ingame_bitmap < 0)
-		Error(LOCATION, "Couldn't load background bitmap for ingame join");	
+		// load the background bitmap
+		Multi_ingame_bitmap = bm_load(Multi_ingame_join_bitmap_fname[gr_screen.res]);
+		if(Multi_ingame_bitmap < 0)
+			Error(LOCATION, "Couldn't load background bitmap for ingame join");	
 	
-	// create the interface buttons
-	for(idx=0; idx<MULTI_INGAME_JOIN_NUM_BUTTONS; idx++) {
-		// create the object
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.create(&Multi_ingame_window, "", Multi_ingame_join_buttons[gr_screen.res][idx].x, Multi_ingame_join_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+		// create the interface buttons
+		for(idx=0; idx<MULTI_INGAME_JOIN_NUM_BUTTONS; idx++) {
+			// create the object
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.create(&Multi_ingame_window, "", Multi_ingame_join_buttons[gr_screen.res][idx].x, Multi_ingame_join_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
-		// set the sound to play when highlighted
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.set_bmaps(Multi_ingame_join_buttons[gr_screen.res][idx].filename);
+			// set the ani for the button
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.set_bmaps(Multi_ingame_join_buttons[gr_screen.res][idx].filename);
 
-		// set the hotspot
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.link_hotspot(Multi_ingame_join_buttons[gr_screen.res][idx].hotspot);
-	}	
+			// set the hotspot
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.link_hotspot(Multi_ingame_join_buttons[gr_screen.res][idx].hotspot);
+		}	
 	
-	// create all xstrs
-	for(idx=0; idx<MULTI_INGAME_JOIN_NUM_TEXT; idx++) {
-		Multi_ingame_window.add_XSTR(&Multi_ingame_join_text[gr_screen.res][idx]);
+		// create all xstrs
+		for(idx=0; idx<MULTI_INGAME_JOIN_NUM_TEXT; idx++) {
+			Multi_ingame_window.add_XSTR(&Multi_ingame_join_text[gr_screen.res][idx]);
+		}
+
+		// create the list item select button
+		Multi_ingame_select_button.create(&Multi_ingame_window, "", Mi_name_field[gr_screen.res][MI_FIELD_X], Mi_name_field[gr_screen.res][MI_FIELD_Y], Mi_width[gr_screen.res], Mi_height[gr_screen.res], 0, 1);
+		Multi_ingame_select_button.hide();	
 	}
-
-	// create the list item select button
-	Multi_ingame_select_button.create(&Multi_ingame_window, "", Mi_name_field[gr_screen.res][MI_FIELD_X], Mi_name_field[gr_screen.res][MI_FIELD_Y], Mi_width[gr_screen.res], Mi_height[gr_screen.res], 0, 1);
-	Multi_ingame_select_button.hide();			
-
 	// load freespace stuff
 	// JAS: Code to do paging used to be here.
 }
@@ -733,6 +735,46 @@ void multi_ingame_join_check_buttons()
 	}
 }
 
+void multi_ingame_set_selected(int index)
+{
+	if (index >= 0 && index < MAX_PLAYERS) {
+		Multi_ingame_ship_selected = index;
+	}
+}
+
+bool multi_ingame_join_accept(bool API_Access)
+{
+	// don't do further processing if the game is paused
+	if (Netgame.game_state == NETGAME_STATE_PAUSED)
+		return false;
+
+	if (Multi_ingame_join_sig == 0) {
+		// if he has a valid ship selected
+		if (Multi_ingame_ship_selected >= 0) {
+			if (!API_Access) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			}
+
+			// select the sig of this ship and send a request for it
+			Multi_ingame_join_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
+
+			// send a request to the
+			send_ingame_ship_request_packet(INGAME_SR_REQUEST, Multi_ingame_join_sig);
+			return true;
+		} else {
+			if (!API_Access) {
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			}
+		}
+	} else {
+		if (!API_Access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
+	}
+
+	return false;
+}
+
 // a button was pressed, so make it do its thing
 // this is the "acting accordingly" part
 void multi_ingame_join_button_pressed(int n)
@@ -742,26 +784,7 @@ void multi_ingame_join_button_pressed(int n)
 		multi_quit_game(PROMPT_CLIENT);
 		break;
 	case MIJ_JOIN:
-		// don't do further processing if the game is paused
-		if ( Netgame.game_state == NETGAME_STATE_PAUSED )
-			return;
-
-		if(Multi_ingame_join_sig == 0) {
-			// if he has a valid ship selected
-			if(Multi_ingame_ship_selected >= 0) {
-				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			
-				// select the sig of this ship and send a request for it
-				Multi_ingame_join_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
-				
-				// send a request to the
-				send_ingame_ship_request_packet(INGAME_SR_REQUEST,Multi_ingame_join_sig);
-			} else {
-				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			}
-		} else {
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		}
+		multi_ingame_join_accept();
 
 		break;
 	default:
@@ -831,7 +854,10 @@ void multi_ingame_select_close()
 	multi_ingame_unload_icons();
 
 	// destroy the UI_WINDOW
-	Multi_ingame_window.destroy();	
+	Multi_ingame_window.destroy();
+
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
 
 	// stop main hall music
 	main_hall_stop_music(true);
@@ -876,12 +902,37 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	hud_shield_show_mini(objp, Mi_status_field[gr_screen.res][MI_FIELD_X] + 15, y_start + 3,5,7);
 }
 
+// create the list of available ships the player can choose
+void multi_ingame_join_calc_avail(bool API_Access)
+{
+	// recalculate this # every frame
+	Multi_ingame_num_avail = 0;
+	Ingame_ship_choices.clear();
+
+	for (auto moveup: list_range(&Ship_obj_list)) {
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		if( !(Ships[Objects[moveup->objnum].instance].is_dying_or_departing()) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
+			// display the ship for normal UI but for API, store the access to the object
+			if (!API_Access){
+				multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
+			} else {
+				Ingame_ship_choices.push_back(moveup->objnum);
+			}
+
+			// set the ship signature
+			Multi_ingame_ship_sigs[Multi_ingame_num_avail] = Objects[moveup->objnum].net_signature;
+			
+			// inc the # available
+			Multi_ingame_num_avail++;
+		}
+	}
+}
+
 // display the available ships (OF_COULD_BE_PLAYER flagged)
 void multi_ingame_join_display_avail()
-{		
-	// recalculate this # every frame
-	Multi_ingame_num_avail = 0;	
-
+{
 	// display a background highlight rectangle for any selected lines
 	if(Multi_ingame_ship_selected != -1){		
 		int y_start = (Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_ship_selected * Mi_spacing[gr_screen.res]));		
@@ -894,21 +945,7 @@ void multi_ingame_join_display_avail()
 		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
 	}
 
-	for (auto moveup: list_range(&Ship_obj_list)) {
-		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
-		if( !(Ships[Objects[moveup->objnum].instance].is_dying_or_departing()) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
-			// display the ship
-			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
-
-			// set the ship signature
-			Multi_ingame_ship_sigs[Multi_ingame_num_avail] = Objects[moveup->objnum].net_signature;
-			
-			// inc the # available
-			Multi_ingame_num_avail++;
-		}
-	}		
+	multi_ingame_join_calc_avail();
 }
 
 // try and scroll the selected ship up
@@ -934,7 +971,7 @@ void multi_ingame_scroll_select_down()
 }
 
 // handle all timeout details
-void multi_ingame_handle_timeout()
+int multi_ingame_handle_timeout(bool API_Access)
 {
 	/*
 	// uncomment this block to disable the timer
@@ -946,16 +983,20 @@ void multi_ingame_handle_timeout()
 	// if we've timed out, leave the game
 	if( ui_timestamp_elapsed(Ingame_time_left) ) {
 		multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_INGAME_TIMEOUT, MULTI_END_ERROR_NONE);
-		return;
+		return 0;
 	}
 
 	// otherwise, blit how much time we have left
 	int time_left = ui_timestamp_until(Ingame_time_left) / MILLISECONDS_PER_SECOND;
-	char tl_string[100];
-	gr_set_color_fast(&Color_bright);
-	memset(tl_string,0,100);
-	sprintf(tl_string,XSTR("Time remaining : %d s\n",682),time_left);	
-	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string, GR_RESIZE_MENU);
+	if (!API_Access) {
+		char tl_string[100];
+		gr_set_color_fast(&Color_bright);
+		memset(tl_string, 0, 100);
+		sprintf(tl_string, XSTR("Time remaining : %d s\n", 682), time_left);
+		gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string, GR_RESIZE_MENU);
+	}
+
+	return time_left;
 }
 
 
