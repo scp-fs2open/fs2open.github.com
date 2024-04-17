@@ -192,9 +192,9 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 70);
-	ui->containersTable->setColumnWidth(1, 70);
-	ui->containersTable->setColumnWidth(2, 70);
+	ui->containersTable->setColumnWidth(0, 80);
+	ui->containersTable->setColumnWidth(1, 80);
+	ui->containersTable->setColumnWidth(2, 75);
 	
 	ui->containerContentsTable->setColumnCount(2);
 
