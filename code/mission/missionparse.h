@@ -220,12 +220,16 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 
 // defines for arrival locations.  These defines should match their counterparts in the arrival location
 // array
-#define	MAX_ARRIVAL_NAMES				5
+#define	MAX_ARRIVAL_NAMES				9
 #define	ARRIVE_AT_LOCATION			0
 #define	ARRIVE_NEAR_SHIP				1
 #define	ARRIVE_IN_FRONT_OF_SHIP		2
 #define	ARRIVE_IN_BACK_OF_SHIP		3
-#define	ARRIVE_FROM_DOCK_BAY			4
+#define ARRIVE_ABOVE_SHIP			4
+#define ARRIVE_BELOW_SHIP			5
+#define ARRIVE_TO_LEFT_OF_SHIP		6
+#define ARRIVE_TO_RIGHT_OF_SHIP		7
+#define	ARRIVE_FROM_DOCK_BAY			8
 
 // defines for departure locations.  These defines should match their counterparts in the departure location
 // array
