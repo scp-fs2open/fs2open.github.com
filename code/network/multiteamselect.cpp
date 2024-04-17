@@ -1244,11 +1244,17 @@ void multi_ts_blit_wings()
 
 bool multi_ts_is_player_in_slot(int slot_idx)
 {
+	Assertion(slot_idx > 0, "Call to check if player is allowed in a negative number slot!");
+	Assertion(slot_idx < MAX_WSS_SLOTS, "Call to check if player is allowed in slot greater than Max Slots!");
+
 	return (Multi_ts_team[Net_player->p_info.team].multi_ts_player[slot_idx] != nullptr);
 }
 
 bool multi_ts_is_player_allowed_in_slot(int slot_idx)
 {
+	Assertion(slot_idx > 0, "Call to check if player is allowed in a negative number slot!");
+	Assertion(slot_idx < MAX_WSS_SLOTS, "Call to check if player is allowed in slot greater than Max Slots!");
+
 	p_object * pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[slot_idx]].instance].ship_name);			
 	if ((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])) {
 		return false;
@@ -1275,7 +1281,7 @@ void multi_ts_blit_wing_callsigns()
 			strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
 		} else {
 			// determine if this is a locked AI ship		
-            if (multi_ts_is_player_allowed_in_slot(idx)) {
+            if (!multi_ts_is_player_allowed_in_slot(idx)) {
 				strcpy_s(callsign, NOX("<"));
 				strcat_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 				strcat_s(callsign, NOX(">"));
