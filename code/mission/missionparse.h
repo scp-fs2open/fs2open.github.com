@@ -32,6 +32,8 @@
 
 struct wing;
 struct p_dock_instance;
+enum class ArrivalLocation;
+enum class DepartureLocation;
 
 #define NUM_NEBULAS			3				// how many background nebulas we have altogether
 #define NUM_NEBULA_COLORS	9
@@ -86,9 +88,9 @@ extern bool check_for_24_1_data();
 
 // Goober5000
 typedef struct support_ship_info {
-	int		arrival_location;				// arrival location
+	ArrivalLocation		arrival_location;				// arrival location
 	int		arrival_anchor;					// arrival anchor
-	int		departure_location;				// departure location
+	DepartureLocation	departure_location;				// departure location
 	int		departure_anchor;				// departure anchor
 	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 	float	max_subsys_repair_val;			// same thing, except for subsystems -C
@@ -218,24 +220,28 @@ typedef struct mission {
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)
 
-// defines for arrival locations.  These defines should match their counterparts in the arrival location
-// array
+// enums for arrival locations.  The integer values of these enums should match their counterparts in the arrival location array
 #define	MAX_ARRIVAL_NAMES				9
-#define	ARRIVE_AT_LOCATION			0
-#define	ARRIVE_NEAR_SHIP				1
-#define	ARRIVE_IN_FRONT_OF_SHIP		2
-#define	ARRIVE_IN_BACK_OF_SHIP		3
-#define ARRIVE_ABOVE_SHIP			4
-#define ARRIVE_BELOW_SHIP			5
-#define ARRIVE_TO_LEFT_OF_SHIP		6
-#define ARRIVE_TO_RIGHT_OF_SHIP		7
-#define	ARRIVE_FROM_DOCK_BAY			8
+enum class ArrivalLocation : int
+{
+	AT_LOCATION = 0,
+	NEAR_SHIP = 1,
+	IN_FRONT_OF_SHIP = 2,
+	IN_BACK_OF_SHIP = 3,
+	ABOVE_SHIP = 4,
+	BELOW_SHIP = 5,
+	TO_LEFT_OF_SHIP = 6,
+	TO_RIGHT_OF_SHIP = 7,
+	FROM_DOCK_BAY = 8
+};
 
-// defines for departure locations.  These defines should match their counterparts in the departure location
-// array
+// enums for departure locations.  The integer values of these enums should match their counterparts in the departure location array
 #define MAX_DEPARTURE_NAMES			2
-#define DEPART_AT_LOCATION				0
-#define DEPART_AT_DOCK_BAY				1
+enum class DepartureLocation : int
+{
+	AT_LOCATION = 0,
+	TO_DOCK_BAY = 1
+};
 
 #define	MAX_GOAL_TYPE_NAMES	3
 
@@ -356,14 +362,14 @@ public:
 	int	initial_hull = 100;
 	int	initial_shields = 100;
 
-	int	arrival_location = ARRIVE_AT_LOCATION;
+	ArrivalLocation arrival_location = ArrivalLocation::AT_LOCATION;
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
 	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
 	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
-	int	departure_location = DEPART_AT_LOCATION;
+	DepartureLocation departure_location = DepartureLocation::AT_LOCATION;
 	int	departure_anchor = -1;
 	int departure_path_mask = 0;				// Goober5000
 	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.

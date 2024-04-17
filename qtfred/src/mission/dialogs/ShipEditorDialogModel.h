@@ -122,8 +122,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setPlayer(const bool);
 	bool getPlayer() const;
 
-	void setArrivalLocation(const int);
-	int getArrivalLocation() const;
+	void setArrivalLocationIndex(const int);
+	int getArrivalLocationIndex() const;
+	void setArrivalLocation(const ArrivalLocation);
+	ArrivalLocation getArrivalLocation() const;
 
 	void setArrivalTarget(const int);
 	int getArrivalTarget() const;
@@ -143,8 +145,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setNoArrivalWarp(const int);
 	int getNoArrivalWarp() const;
 
-	void setDepartureLocation(const int);
-	int getDepartureLocation() const;
+	void setDepartureLocationIndex(const int);
+	int getDepartureLocationIndex() const;
+	void setDepartureLocation(const DepartureLocation);
+	DepartureLocation getDepartureLocation() const;
 
 	void setDepartureTarget(const int);
 	int getDepartureTarget() const;

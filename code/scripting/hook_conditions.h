@@ -6,6 +6,7 @@ class object;
 class ship;
 struct weapon;
 class ship_subsys;
+enum class ArrivalLocation;
 
 #define HOOK_DEFINE_CONDITIONS static const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> conditions
 
@@ -85,7 +86,7 @@ struct ObjectDeathConditions {
 struct ShipArriveConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* spawned_shipp;
-	int arrival_location; // As of yet unused
+	ArrivalLocation arrival_location; // As of yet unused
 	const object* spawn_anchor_objp; // As of yet unused
 };
 

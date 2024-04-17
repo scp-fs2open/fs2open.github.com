@@ -4209,7 +4209,7 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 					if (wingnum >= 0)
 					{
 						auto wingp = &Wings[wingnum];
-						if (wingp->num_waves > 1 && wingp->arrival_location == ARRIVE_FROM_DOCK_BAY)
+						if (wingp->num_waves > 1 && wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY)
 						{
 							issue_msg = "Wing ";
 							issue_msg += wingp->name;
@@ -18862,7 +18862,7 @@ void sexp_ship_create(int n)
 	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_mission_log ? 0 : MLF_HIDDEN);
 
 	if (scripting::hooks::OnShipArrive->isActive()) {
-		scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, ARRIVE_AT_LOCATION, nullptr },
+		scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, ArrivalLocation::AT_LOCATION, nullptr },
 			scripting::hook_param_list(
 				scripting::hook_param("Ship", 'o', &Objects[objnum])
 			));
@@ -22756,29 +22756,27 @@ void sexp_damage_escort_list(int node)
 // Goober5000 - set stuff for mission support ship
 void sexp_set_support_ship(int n)
 {
-	int i, temp_val;
+	int temp_val;
 	bool is_nan, is_nan_forever;
 
 	// get arrival location
-	temp_val = -1;
-	for (i = 0; i < MAX_ARRIVAL_NAMES; i++)
-	{
-		if (!stricmp(CTEXT(n), Arrival_location_names[i]))
-			temp_val = i;
-	}
-	if (temp_val < 0)
+	auto arrival_location = ArrivalLocation::AT_LOCATION;
+	int index = string_lookup(CTEXT(n), Arrival_location_names, MAX_ARRIVAL_NAMES);
+	if (index >= 0)
+		arrival_location = static_cast<ArrivalLocation>(index);
+	else
 	{
 		Warning(LOCATION, "Support ship arrival location '%s' not found.\n", CTEXT(n));
 		return;
 	}
-	The_mission.support_ships.arrival_location = temp_val;
+	The_mission.support_ships.arrival_location = arrival_location;
 
 	// get arrival anchor
 	n = CDR(n);
 	if (!stricmp(CTEXT(n), "<no anchor>"))
 	{
 		// if no anchor, set arrival location to hyperspace
-		The_mission.support_ships.arrival_location = 0;
+		The_mission.support_ships.arrival_location = ArrivalLocation::AT_LOCATION;
 	}
 	else
 	{
@@ -22788,25 +22786,23 @@ void sexp_set_support_ship(int n)
 
 	// get departure location
 	n = CDR(n);
-	temp_val = -1;
-	for (i = 0; i < MAX_DEPARTURE_NAMES; i++)
-	{
-		if (!stricmp(CTEXT(n), Departure_location_names[i]))
-			temp_val = i;
-	}
-	if (temp_val < 0)
+	auto departure_location = DepartureLocation::AT_LOCATION;
+	index = string_lookup(CTEXT(n), Departure_location_names, MAX_DEPARTURE_NAMES);
+	if (index >= 0)
+		departure_location = static_cast<DepartureLocation>(index);
+	else
 	{
 		Warning(LOCATION, "Support ship departure location '%s' not found.\n", CTEXT(n));
 		return;
 	}
-	The_mission.support_ships.departure_location = temp_val;
+	The_mission.support_ships.departure_location = departure_location;
 
 	// get departure anchor
 	n = CDR(n);
 	if (!stricmp(CTEXT(n), "<no anchor>"))
 	{
 		// if no anchor, set departure location to hyperspace
-		The_mission.support_ships.departure_location = 0;
+		The_mission.support_ships.departure_location = DepartureLocation::AT_LOCATION;
 	}
 	else
 	{
@@ -22852,7 +22848,7 @@ void sexp_set_support_ship(int n)
 // Goober5000 - set stuff for arriving ships or wings
 void sexp_set_arrival_info(int node)
 {
-	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
+	int arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
 	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
@@ -22861,13 +22857,11 @@ void sexp_set_arrival_info(int node)
 	n = CDR(n);
 
 	// get arrival location
-	arrival_location = -1;
-	for (i=0; i<MAX_ARRIVAL_NAMES; i++)
-	{
-		if (!stricmp(CTEXT(n), Arrival_location_names[i]))
-			arrival_location = i;
-	}
-	if (arrival_location < 0)
+	auto arrival_location = ArrivalLocation::AT_LOCATION;
+	int index = string_lookup(CTEXT(n), Arrival_location_names, MAX_ARRIVAL_NAMES);
+	if (index >= 0)
+		arrival_location = static_cast<ArrivalLocation>(index);
+	else
 	{
 		Warning(LOCATION, "Arrival location '%s' not found.\n", CTEXT(n));
 		return;
@@ -22879,7 +22873,7 @@ void sexp_set_arrival_info(int node)
 	if ((n < 0) || !stricmp(CTEXT(n), "<no anchor>"))
 	{
 		// if no anchor, set arrival location to hyperspace
-		arrival_location = 0;
+		arrival_location = ArrivalLocation::AT_LOCATION;
 	}
 	else
 	{
@@ -22954,7 +22948,7 @@ void sexp_set_arrival_info(int node)
 // Goober5000 - set stuff for departing ships or wings
 void sexp_set_departure_info(int node)
 {
-	int i, departure_location, departure_anchor, departure_mask, departure_delay, n = node;
+	int departure_anchor, departure_mask, departure_delay, n = node;
 	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
@@ -22963,13 +22957,11 @@ void sexp_set_departure_info(int node)
 	n = CDR(n);
 
 	// get departure location
-	departure_location = -1;
-	for (i=0; i<MAX_DEPARTURE_NAMES; i++)
-	{
-		if (!stricmp(CTEXT(n), Departure_location_names[i]))
-			departure_location = i;
-	}
-	if (departure_location < 0)
+	auto departure_location = DepartureLocation::AT_LOCATION;
+	int index = string_lookup(CTEXT(n), Departure_location_names, MAX_DEPARTURE_NAMES);
+	if (index >= 0)
+		departure_location = static_cast<DepartureLocation>(index);
+	else
 	{
 		Warning(LOCATION, "Departure location '%s' not found.\n", CTEXT(n));
 		return;
@@ -22981,7 +22973,7 @@ void sexp_set_departure_info(int node)
 	if ((n < 0) || !stricmp(CTEXT(n), "<no anchor>"))
 	{
 		// if no anchor, set departure location to hyperspace
-		departure_location = 0;
+		departure_location = DepartureLocation::AT_LOCATION;
 	}
 	else
 	{

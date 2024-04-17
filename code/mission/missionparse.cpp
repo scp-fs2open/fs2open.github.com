@@ -452,7 +452,7 @@ bool post_process_mission(mission *pm);
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
-int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
+int mission_set_arrival_location(int anchor, ArrivalLocation location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
 int get_anchor(const char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
@@ -1961,7 +1961,7 @@ int parse_create_object(p_object *pobjp, bool standalone_ship)
 	// warp it in (moved from parse_create_object_sub)
 	if ((Game_mode & GM_IN_MISSION) && (!Fred_running) && (!Game_restoring))
 	{
-		if ((Ships[objp->instance].wingnum < 0) && (pobjp->arrival_location != ARRIVE_FROM_DOCK_BAY))
+		if ((Ships[objp->instance].wingnum < 0) && (pobjp->arrival_location != ArrivalLocation::FROM_DOCK_BAY))
 		{
 			shipfx_warpin_start(objp);
 		}
@@ -2496,15 +2496,13 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			// if this ship isn't in a wing, determine its arrival location
 			if (shipp->wingnum == -1)
 			{
-				int location;
-
 				// multiplayer clients set the arrival location of ships to be at location since their
 				// position has already been determined.  Don't actually set the variable since we
 				// don't want the warp effect to show if coming from a dock bay.
-				location = p_objp->arrival_location;
+				auto location = p_objp->arrival_location;
 
 				if (MULTIPLAYER_CLIENT)
-					location = ARRIVE_AT_LOCATION;
+					location = ArrivalLocation::AT_LOCATION;
 
 				anchor_objnum = mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
 
@@ -3153,7 +3151,9 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
 
-	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	find_and_stuff("$Arrival Location:", &temp, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	if (temp >= 0)
+		p_objp->arrival_location = static_cast<ArrivalLocation>(temp);
 
 	if (optional_string("+Arrival Distance:"))
 	{
@@ -3161,17 +3161,17 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 		// Goober5000
 		if ((p_objp->arrival_distance <= 0) && (
-			   (p_objp->arrival_location == ARRIVE_NEAR_SHIP)
-			|| (p_objp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP) || (p_objp->arrival_location == ARRIVE_IN_BACK_OF_SHIP)
-			|| (p_objp->arrival_location == ARRIVE_ABOVE_SHIP) || (p_objp->arrival_location == ARRIVE_BELOW_SHIP)
-			|| (p_objp->arrival_location == ARRIVE_TO_LEFT_OF_SHIP) || (p_objp->arrival_location == ARRIVE_TO_RIGHT_OF_SHIP) ))
+			   (p_objp->arrival_location == ArrivalLocation::NEAR_SHIP)
+			|| (p_objp->arrival_location == ArrivalLocation::IN_FRONT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP)
+			|| (p_objp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (p_objp->arrival_location == ArrivalLocation::BELOW_SHIP)
+			|| (p_objp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
 			Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
 			p_objp->arrival_distance = 1;
 		}
 	}
 
-	if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
+	if (p_objp->arrival_location != ArrivalLocation::AT_LOCATION)
 	{
 		required_string("$Arrival Anchor:");
 		stuff_string(name, F_NAME, NAME_LENGTH);
@@ -3204,9 +3204,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	required_string("$Arrival Cue:");
 	p_objp->arrival_cue = get_sexp_main();
 
-	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	find_and_stuff("$Departure Location:", &temp, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	if (temp >= 0)
+		p_objp->departure_location = static_cast<DepartureLocation>(temp);
 
-	if (p_objp->departure_location != DEPART_AT_LOCATION)
+	if (p_objp->departure_location != DepartureLocation::AT_LOCATION)
 	{
 		required_string("$Departure Anchor:");
 		stuff_string(name, F_NAME, NAME_LENGTH);
@@ -4148,7 +4150,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 		// if wing is coming from docking bay, then be sure that ship we are arriving from actually exists
 		// (or will exist).
-		if ( wingp->arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
 			Assert( wingp->arrival_anchor >= 0 );
 			auto anchor_ship_entry = ship_registry_get(Parse_names[wingp->arrival_anchor]);
 
@@ -4588,7 +4590,10 @@ void parse_wing(mission *pm)
 		stuff_float(&wingp->formation_scale);
 	}
 
-	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	int temp;
+	find_and_stuff("$Arrival Location:", &temp, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	if (temp >= 0)
+		wingp->arrival_location = static_cast<ArrivalLocation>(temp);
 
 	if ( optional_string("+Arrival Distance:") )
 	{
@@ -4596,17 +4601,17 @@ void parse_wing(mission *pm)
 
 		// Goober5000
 		if ((wingp->arrival_distance <= 0) && (
-			   (wingp->arrival_location == ARRIVE_NEAR_SHIP)
-			|| (wingp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP) || (wingp->arrival_location == ARRIVE_IN_BACK_OF_SHIP)
-			|| (wingp->arrival_location == ARRIVE_ABOVE_SHIP) || (wingp->arrival_location == ARRIVE_BELOW_SHIP)
-			|| (wingp->arrival_location == ARRIVE_TO_LEFT_OF_SHIP) || (wingp->arrival_location == ARRIVE_TO_RIGHT_OF_SHIP) ))
+			   (wingp->arrival_location == ArrivalLocation::NEAR_SHIP)
+			|| (wingp->arrival_location == ArrivalLocation::IN_FRONT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP)
+			|| (wingp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (wingp->arrival_location == ArrivalLocation::BELOW_SHIP)
+			|| (wingp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
 			Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
 			wingp->arrival_distance = 1;
 		}
 	}
 
-	if ( wingp->arrival_location != ARRIVE_AT_LOCATION )
+	if ( wingp->arrival_location != ArrivalLocation::AT_LOCATION )
 	{
 		required_string("$Arrival Anchor:");
 		stuff_string(name, F_NAME, NAME_LENGTH);
@@ -4639,9 +4644,11 @@ void parse_wing(mission *pm)
 	required_string("$Arrival Cue:");
 	wingp->arrival_cue = get_sexp_main();
 	
-	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	find_and_stuff("$Departure Location:", &temp, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	if (temp >= 0)
+		wingp->departure_location = static_cast<DepartureLocation>(temp);
 
-	if ( wingp->departure_location != DEPART_AT_LOCATION )
+	if ( wingp->departure_location != DepartureLocation::AT_LOCATION )
 	{
 		required_string("$Departure Anchor:");
 		stuff_string( name, F_NAME, NAME_LENGTH );
@@ -6884,7 +6891,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 	// get the starting index into the ship_index array of the first ship whose location we need set.
 
 	index = wingp->current_count - num_to_set;
-	if ( (wingp->arrival_location == ARRIVE_FROM_DOCK_BAY) || (wingp->arrival_location == ARRIVE_AT_LOCATION) ) {
+	if ( (wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY) || (wingp->arrival_location == ArrivalLocation::AT_LOCATION) ) {
 		while ( index < wingp->current_count ) {
 			object *objp;
 
@@ -6936,7 +6943,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 					));
 			}
 
-			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
+			if (wingp->arrival_location != ArrivalLocation::FROM_DOCK_BAY) {
 				shipfx_warpin_start(objp);
 			}
 		}
@@ -7358,13 +7365,13 @@ bool mission_check_ship_yet_to_arrive(const char *name)
  * Sets the arrival location of a parse object according to the arrival location of the object.
  * @return objnum of anchor ship if there is one, -1 otherwise.
  */
-int mission_set_arrival_location(int anchor, int location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
+int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
 {
 	int shipnum, anchor_objnum;
 	vec3d anchor_pos, rand_vec, new_fvec;
 	matrix orient;
 
-	if ( location == ARRIVE_AT_LOCATION )
+	if ( location == ArrivalLocation::AT_LOCATION )
 		return -1;
 
 	Assert(anchor >= 0);
@@ -7395,7 +7402,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	// arrive at its placed location
 	if (shipnum < 0)
 	{
-		Assert ( location != ARRIVE_FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
+		Assert ( location != ArrivalLocation::FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
 		nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
 		return -1;
 	}
@@ -7407,7 +7414,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	anchor_pos = Objects[anchor_objnum].pos;
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
-	if ( location == ARRIVE_FROM_DOCK_BAY ) {
+	if ( location == ArrivalLocation::FROM_DOCK_BAY ) {
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask) == -1 ) {
 			// get MWA or AL -- not sure what to do here when we cannot acquire a path
@@ -7429,15 +7436,15 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		// this ship should have.  Arriving near a ship we use a random normalized vector
 		// scaled by the distance given by the designer.  Arriving in front of a ship means
 		// entering the battle in the view cone.
-		if ( location == ARRIVE_NEAR_SHIP ) {
+		if ( location == ArrivalLocation::NEAR_SHIP ) {
 			// get a random vector -- use static randvec if in multiplayer
 			if ( Game_mode & GM_NORMAL )
 				vm_vec_rand_vec_quick(&rand_vec);
 			else
 				static_randvec( Objects[objnum].net_signature, &rand_vec );
-		} else if ( location == ARRIVE_IN_FRONT_OF_SHIP || location == ARRIVE_IN_BACK_OF_SHIP
-			     || location == ARRIVE_ABOVE_SHIP || location == ARRIVE_BELOW_SHIP
-			     || location == ARRIVE_TO_LEFT_OF_SHIP || location == ARRIVE_TO_RIGHT_OF_SHIP ) {
+		} else if ( location == ArrivalLocation::IN_FRONT_OF_SHIP || location == ArrivalLocation::IN_BACK_OF_SHIP
+			     || location == ArrivalLocation::ABOVE_SHIP || location == ArrivalLocation::BELOW_SHIP
+			     || location == ArrivalLocation::TO_LEFT_OF_SHIP || location == ArrivalLocation::TO_RIGHT_OF_SHIP ) {
 			vec3d t1, t2, t3;
 			int r1, r2;
 			float x;
@@ -7465,14 +7472,14 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			vm_vec_normalize(&rand_vec);
 
 			// vertical axis: rotate to up (around X axis)
-			if (location == ARRIVE_ABOVE_SHIP || location == ARRIVE_BELOW_SHIP)
+			if (location == ArrivalLocation::ABOVE_SHIP || location == ArrivalLocation::BELOW_SHIP)
 				vm_rot_point_around_line(&rand_vec, &rand_vec, PI_2, &vmd_zero_vector, &vmd_x_vector);
 			// lateral axis: rotate to right (backwards around Y axis)
-			else if (location == ARRIVE_TO_LEFT_OF_SHIP || location == ARRIVE_TO_RIGHT_OF_SHIP)
+			else if (location == ArrivalLocation::TO_LEFT_OF_SHIP || location == ArrivalLocation::TO_RIGHT_OF_SHIP)
 				vm_rot_point_around_line(&rand_vec, &rand_vec, -PI_2, &vmd_zero_vector, &vmd_y_vector);
 
 			// for the opposite directions, just flip the vector around
-			if (location == ARRIVE_IN_BACK_OF_SHIP || location == ARRIVE_BELOW_SHIP || location == ARRIVE_TO_LEFT_OF_SHIP)
+			if (location == ArrivalLocation::IN_BACK_OF_SHIP || location == ArrivalLocation::BELOW_SHIP || location == ArrivalLocation::TO_LEFT_OF_SHIP)
 				vm_vec_negate(&rand_vec);
 		} else {
 			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
@@ -7583,7 +7590,7 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 
 		// check to see if this ship is to arrive via a docking bay.  If so, and the ship to arrive from
 		// doesn't exist, don't create.
-		if ( objp->arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( objp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
 			Assert( objp->arrival_anchor >= 0 );
 			auto anchor_ship_entry = ship_registry_get(Parse_names[objp->arrival_anchor]);
 
@@ -7923,7 +7930,8 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 {
 	Assert(objp->type == OBJ_SHIP);
 	bool beginning_departure;
-	int location, anchor, path_mask;
+	DepartureLocation location;
+	int anchor, path_mask;
 	ship *shipp = &Ships[objp->instance];
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
@@ -7988,7 +7996,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
-	if (location == DEPART_AT_DOCK_BAY)
+	if (location == DepartureLocation::TO_DOCK_BAY)
 	{
 		Assert(anchor >= 0);
 		auto anchor_ship_entry = ship_registry_get(Parse_names[anchor]);
@@ -8088,7 +8096,7 @@ void mission_eval_departures()
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
 			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
 			// wookieejedi - fixed so it accounts for break and never warp too
-			if ( shipp->is_dying_or_departing() || ( !(ship_can_warp_full_check(shipp)) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			if ( shipp->is_dying_or_departing() || ( !(ship_can_warp_full_check(shipp)) && (shipp->departure_location != DepartureLocation::TO_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 
@@ -8939,8 +8947,8 @@ bool check_for_24_1_data()
 {
 	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
 	{
-		if (Wings[wingnum].arrival_location == ARRIVE_IN_BACK_OF_SHIP || Wings[wingnum].arrival_location == ARRIVE_ABOVE_SHIP || Wings[wingnum].arrival_location == ARRIVE_BELOW_SHIP
-			|| Wings[wingnum].arrival_location == ARRIVE_TO_LEFT_OF_SHIP || Wings[wingnum].arrival_location == ARRIVE_TO_RIGHT_OF_SHIP)
+		if (Wings[wingnum].arrival_location == ArrivalLocation::IN_BACK_OF_SHIP || Wings[wingnum].arrival_location == ArrivalLocation::ABOVE_SHIP || Wings[wingnum].arrival_location == ArrivalLocation::BELOW_SHIP
+			|| Wings[wingnum].arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP || Wings[wingnum].arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP)
 			return true;
 	}
 
@@ -8948,8 +8956,8 @@ bool check_for_24_1_data()
 	{
 		auto shipp = &Ships[Objects[so->objnum].instance];
 
-		if (shipp->arrival_location == ARRIVE_IN_BACK_OF_SHIP || shipp->arrival_location == ARRIVE_ABOVE_SHIP || shipp->arrival_location == ARRIVE_BELOW_SHIP
-			|| shipp->arrival_location == ARRIVE_TO_LEFT_OF_SHIP || shipp->arrival_location == ARRIVE_TO_RIGHT_OF_SHIP)
+		if (shipp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP || shipp->arrival_location == ArrivalLocation::ABOVE_SHIP || shipp->arrival_location == ArrivalLocation::BELOW_SHIP
+			|| shipp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP || shipp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP)
 			return true;
 	}
 

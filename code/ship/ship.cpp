@@ -6687,14 +6687,14 @@ void ship::clear()
 
 	time_cargo_revealed = 0;
 
-	arrival_location = 0;
+	arrival_location = ArrivalLocation::AT_LOCATION;
 	arrival_distance = 0;
 	arrival_anchor = -1;
 	arrival_path_mask = 0;
 	arrival_cue = -1;
 	arrival_delay = 0;
 
-	departure_location = 0;
+	departure_location = DepartureLocation::AT_LOCATION;
 	departure_anchor = -1;
 	departure_path_mask = 0;
 	departure_cue = -1;
@@ -7056,14 +7056,14 @@ void wing::clear()
 	special_ship = 0;
 	special_ship_ship_info_index = -1;
 
-	arrival_location = ARRIVE_AT_LOCATION;
+	arrival_location = ArrivalLocation::AT_LOCATION;
 	arrival_distance = 0;
 	arrival_anchor = -1;
 	arrival_path_mask = 0;
 	arrival_cue = -1;
 	arrival_delay = 0;
 
-	departure_location = DEPART_AT_LOCATION;
+	departure_location = DepartureLocation::AT_LOCATION;
 	departure_anchor = -1;
 	departure_path_mask = 0;
 	departure_cue = -1;
@@ -16426,7 +16426,7 @@ bool ship_can_warp_full_check(ship* sp)
 bool ship_can_bay_depart(ship* sp)
 {
 	// if this ship belongs to a wing, then use the wing departure information
-	int departure_location;
+	DepartureLocation departure_location;
 	int departure_anchor;
 	int departure_path_mask;
 	if (sp->wingnum >= 0)
@@ -16441,7 +16441,7 @@ bool ship_can_bay_depart(ship* sp)
 		departure_path_mask = sp->departure_path_mask;
 	}
 	
-	if ( departure_location == DEPART_AT_DOCK_BAY )
+	if ( departure_location == DepartureLocation::TO_DOCK_BAY )
 	{
 		Assertion( departure_anchor >= 0, "Ship %s must have a valid departure anchor", sp->ship_name );
 		auto anchor_ship_entry = ship_registry_get(Parse_names[departure_anchor]);
@@ -18523,7 +18523,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 	if (!do_simple_check)
 	{
 		// make sure, if exiting from bay, that parent ship is in the mission!
-		if ((result == 0 || result == 2) && (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY))
+		if ((result == 0 || result == 2) && (The_mission.support_ships.arrival_location == ArrivalLocation::FROM_DOCK_BAY))
 		{
 			Assert(The_mission.support_ships.arrival_anchor != -1);
 

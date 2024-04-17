@@ -263,7 +263,8 @@ ADE_VIRTVAR(TotalVanished, l_Wing, nullptr, "Gets the number of ships that have 
 	return wing_getset_helper(L, &wing::total_vanished);
 }
 
-static int wing_getset_location_helper(lua_State* L, int wing::* field, const char* location_type, const char** location_names, size_t location_names_size)
+template <typename LOC>
+static int wing_getset_location_helper(lua_State* L, LOC wing::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
 	int wingnum;
 	const char* s = nullptr;
@@ -281,10 +282,10 @@ static int wing_getset_location_helper(lua_State* L, int wing::* field, const ch
 			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
 			return ADE_RETURN_NIL;
 		}
-		Wings[wingnum].*field = location;
+		Wings[wingnum].*field = static_cast<LOC>(location);
 	}
 
-	return ade_set_args(L, "s", location_names[Wings[wingnum].*field]);
+	return ade_set_args(L, "s", location_names[static_cast<int>(Wings[wingnum].*field)]);
 }
 
 ADE_VIRTVAR(ArrivalLocation, l_Wing, "string", "The wing's arrival location", "string", "Arrival location, or nil if handle is invalid")

@@ -220,22 +220,22 @@ namespace fso {
 											cue_init = 1;
 											_m_arrival_tree_formula = Ships[i].arrival_cue;
 											_m_departure_tree_formula = Ships[i].departure_cue;
-											_m_arrival_location = Ships[i].arrival_location;
+											_m_arrival_location = static_cast<int>(Ships[i].arrival_location);
 											_m_arrival_dist = Ships[i].arrival_distance;
 											_m_arrival_target = Ships[i].arrival_anchor;
 											_m_arrival_delay = Ships[i].arrival_delay;
-											_m_departure_location = Ships[i].departure_location;
+											_m_departure_location = static_cast<int>(Ships[i].departure_location);
 											_m_departure_delay = Ships[i].departure_delay;
 											_m_departure_target = Ships[i].departure_anchor;
 
 										}
 										else {
 											cue_init++;
-											if (Ships[i].arrival_location != _m_arrival_location) {
+											if (static_cast<int>(Ships[i].arrival_location) != _m_arrival_location) {
 												_m_arrival_location = -1;
 											}
 
-											if (Ships[i].departure_location != _m_departure_location) {
+											if (static_cast<int>(Ships[i].departure_location) != _m_departure_location) {
 												_m_departure_location = -1;
 											}
 
@@ -681,9 +681,9 @@ namespace fso {
 				if (Ships[ship].wingnum < 0) {
 
 					if (_m_arrival_location != -1)
-						Ships[ship].arrival_location = _m_arrival_location;
+						Ships[ship].arrival_location = static_cast<ArrivalLocation>(_m_arrival_location);
 					if (_m_departure_location != -1)
-						Ships[ship].departure_location = _m_departure_location;
+						Ships[ship].departure_location = static_cast<DepartureLocation>(_m_departure_location);
 
 					if (!multi_edit || _m_update_arrival) { // should we update the arrival cue?
 						if (Ships[ship].arrival_cue >= 0)
@@ -706,7 +706,7 @@ namespace fso {
 
 						// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 						// greater than 2*radius of target.
-						if (((_m_arrival_location != ARRIVE_FROM_DOCK_BAY) && (_m_arrival_location != ARRIVE_AT_LOCATION)) &&
+						if (((_m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (_m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) &&
 							(_m_arrival_target >= 0) && !(_m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
 							d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
 							if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
@@ -1005,14 +1005,24 @@ namespace fso {
 				return _m_player_ship;
 			}
 
-			void ShipEditorDialogModel::setArrivalLocation(const int value)
+			void ShipEditorDialogModel::setArrivalLocationIndex(const int value)
 			{
 				modify(_m_arrival_location, value);
 			}
 
-			int ShipEditorDialogModel::getArrivalLocation() const
+			int ShipEditorDialogModel::getArrivalLocationIndex() const
 			{
 				return _m_arrival_location;
+			}
+
+			void ShipEditorDialogModel::setArrivalLocation(const ArrivalLocation value)
+			{
+				modify(_m_arrival_location, static_cast<int>(value));
+			}
+
+			ArrivalLocation ShipEditorDialogModel::getArrivalLocation() const
+			{
+				return static_cast<ArrivalLocation>(_m_arrival_location);
 			}
 
 			void ShipEditorDialogModel::setArrivalTarget(const int value)
@@ -1076,14 +1086,24 @@ namespace fso {
 				return _m_no_arrival_warp;
 			}
 
-			void ShipEditorDialogModel::setDepartureLocation(const int value)
+			void ShipEditorDialogModel::setDepartureLocationIndex(const int value)
 			{
 				modify(_m_departure_location, value);
 			}
 
-			int ShipEditorDialogModel::getDepartureLocation() const
+			int ShipEditorDialogModel::getDepartureLocationIndex() const
 			{
 				return _m_departure_location;
+			}
+
+			void ShipEditorDialogModel::setDepartureLocation(const DepartureLocation value)
+			{
+				modify(_m_departure_location, static_cast<int>(value));
+			}
+
+			DepartureLocation ShipEditorDialogModel::getDepartureLocation() const
+			{
+				return static_cast<DepartureLocation>(_m_departure_location);
 			}
 
 			void ShipEditorDialogModel::setDepartureTarget(const int value)

@@ -1169,7 +1169,8 @@ ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", 
 	return ade_set_args(L, "i", aip->waypoint_speed_cap);
 }
 
-static int ship_getset_location_helper(lua_State* L, int ship::* field, const char* location_type, const char** location_names, size_t location_names_size)
+template <typename LOC>
+static int ship_getset_location_helper(lua_State* L, LOC ship::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
 	object_h* objh;
 	const char* s = nullptr;
@@ -1189,10 +1190,10 @@ static int ship_getset_location_helper(lua_State* L, int ship::* field, const ch
 			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
 			return ADE_RETURN_NIL;
 		}
-		shipp->*field = location;
+		shipp->*field = static_cast<LOC>(location);
 	}
 
-	return ade_set_args(L, "s", location_names[shipp->*field]);
+	return ade_set_args(L, "s", location_names[static_cast<int>(shipp->*field)]);
 }
 
 ADE_VIRTVAR(ArrivalLocation, l_Ship, "string", "The ship's arrival location", "string", "Arrival location, or nil if handle is invalid")
