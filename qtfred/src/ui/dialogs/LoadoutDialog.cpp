@@ -516,7 +516,8 @@ void LoadoutDialog::onClearAllUsedWeaponsPressed()
 
 void LoadoutDialog::openEditVariablePressed() 
 {
-	viewport->on_actionVariables_triggered();
+	//TODO! FIX ME!
+	//viewport->on_actionVariables_triggered();
 }
 
 void LoadoutDialog::onSelectionRequiredPressed() 

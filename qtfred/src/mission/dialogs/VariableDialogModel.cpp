@@ -436,6 +436,7 @@ SCP_string VariableDialogModel::setVariableStringValue(int index, SCP_string val
     }
     
     variable->stringValue = value;
+	return value;
 }
 
 int VariableDialogModel::setVariableNumberValue(int index, int value)
@@ -448,6 +449,8 @@ int VariableDialogModel::setVariableNumberValue(int index, int value)
     }
     
     variable->numberValue = value;
+
+	return value;
 }
 
 SCP_string VariableDialogModel::addNewVariable()
@@ -1108,9 +1111,9 @@ const SCP_vector<int>& VariableDialogModel::getNumberValues(int index)
     return container->numberValues;
 }
 
-const SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string>> VariableDialogModel::getVariableValues()
+const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValues()
 {
-    SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string>> outStrings;
+    SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _variableItems) {
         SCP_string notes = "";
@@ -1127,16 +1130,16 @@ const SCP_vector<std::tuple<SCP_string, SCP_string, SCP_string>> VariableDialogM
 
 		SCP_string temp;
 		sprintf(temp, "%i", item.numberValue);
-        outStrings.emplace_back(item.name, (item.string) ? item.stringValue : temp, notes);
+		outStrings.push_back(std::array<SCP_string, 3>{item.name, (item.string) ? item.stringValue : temp, notes});
     }
 
     return outStrings;
 }
 
 
-const SCP_vector<std::pair<SCP_string, SCP_string>> VariableDialogModel::getContainerNames()
+const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
-    SCP_vector<std::pair<SCP_string, SCP_string>> outStrings;
+    SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _containerItems) {
         SCP_string notes = "";
@@ -1149,7 +1152,8 @@ const SCP_vector<std::pair<SCP_string, SCP_string>> VariableDialogModel::getCont
             notes = "Renamed";
         }
 
-        outStrings.emplace_back(item.name, notes);
+		//TODO! FIX ME
+		outStrings.push_back(std::array<SCP_string, 3>{item.name, item.name, notes});
     }
 
     return outStrings;   
