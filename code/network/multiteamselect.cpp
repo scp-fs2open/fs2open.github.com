@@ -1244,16 +1244,16 @@ void multi_ts_blit_wings()
 
 bool multi_ts_is_player_in_slot(int slot_idx)
 {
-	Assertion(slot_idx > 0, "Call to check if player is allowed in a negative number slot!");
-	Assertion(slot_idx < MAX_WSS_SLOTS, "Call to check if player is allowed in slot greater than Max Slots!");
+	Assertion(slot_idx >= 0 && slot_idx < MAX_WSS_SLOTS, "Slot index is out of bounds!");
+	Assertion(Net_player != nullptr, "Cannot check the slot for the player because the player is null!");
 
 	return (Multi_ts_team[Net_player->p_info.team].multi_ts_player[slot_idx] != nullptr);
 }
 
 bool multi_ts_is_player_allowed_in_slot(int slot_idx)
 {
-	Assertion(slot_idx > 0, "Call to check if player is allowed in a negative number slot!");
-	Assertion(slot_idx < MAX_WSS_SLOTS, "Call to check if player is allowed in slot greater than Max Slots!");
+	Assertion(slot_idx >= 0 && slot_idx < MAX_WSS_SLOTS, "Slot index is out of bounds!");
+	Assertion(Net_player != nullptr, "Cannot check the slot for the player because the player is null!");
 
 	p_object * pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[slot_idx]].instance].ship_name);			
 	if ((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])) {
