@@ -51,9 +51,10 @@ int get_special_anchor(const char *name);
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
 
-// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// These check to see if a mission has data that requires saving in a newer format.  This would warrant
 // a "soft version bump" rather than a hard bump because not all missions are affected.
 extern bool check_for_23_3_data();
+extern bool check_for_24_1_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -219,11 +220,16 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 
 // defines for arrival locations.  These defines should match their counterparts in the arrival location
 // array
-#define	MAX_ARRIVAL_NAMES				4
+#define	MAX_ARRIVAL_NAMES				9
 #define	ARRIVE_AT_LOCATION			0
 #define	ARRIVE_NEAR_SHIP				1
 #define	ARRIVE_IN_FRONT_OF_SHIP		2
-#define	ARRIVE_FROM_DOCK_BAY			3
+#define	ARRIVE_IN_BACK_OF_SHIP		3
+#define ARRIVE_ABOVE_SHIP			4
+#define ARRIVE_BELOW_SHIP			5
+#define ARRIVE_TO_LEFT_OF_SHIP		6
+#define ARRIVE_TO_RIGHT_OF_SHIP		7
+#define	ARRIVE_FROM_DOCK_BAY			8
 
 // defines for departure locations.  These defines should match their counterparts in the departure location
 // array
