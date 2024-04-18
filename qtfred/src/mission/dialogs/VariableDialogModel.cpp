@@ -814,7 +814,50 @@ SCP_string VariableDialogModel::addListItem(int index)
 
 std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 {
-    
+    auto container = lookupContainer(index);
+
+    std::pair <SCP_string, SCP_string> ret = {"", ""};
+
+    // no container available
+    if (!container){
+        return ret;
+    }
+
+    bool conflict;
+    int count = 0;
+    SCP_string newKey;
+
+    do {
+        conflict = false;
+        
+        if (container->integerKeys){
+            sprintf(newKey, "%i", count);
+        } else {
+            sprintf(newKey, "key%i", count);
+        }
+
+        for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
+            if (container->keys[x] == newKey){
+                conflict = true;
+                break;
+            }
+        }
+
+        ++count;
+    } while (conflict && count < 101);
+
+    if (conflict) {
+        return ret;
+    }
+
+    ret.first = newKey;
+
+    if (container.string)
+        ret.second = "";
+    else
+        ret.second = "0";
+
+    return ret;
 }
 
 SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
@@ -1136,35 +1179,138 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
     return outStrings;
 }
 
-
 const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
+    // This logic makes the mode which we use to display, easily configureable. 
+    SCP_string listPrefix;
+    SCP_string listPostscript;
+
+    SCP_string mapPrefix;
+    SCP_string mapMidScript;
+    SCP_string mapPostscript
+
+    switch (_listTextMode) {
+        case 1: 
+            listPrefix = "";
+            listPostscript = " List";
+            break;
+
+        case 2: 
+            listPrefix = "List (";
+            listPostscript = ")";
+            break;
+
+        case 3: 
+            listPrefix = "List <";
+            listPostscript = ">";            
+            break;
+        
+        case 4:
+            listPrefix = "(";
+            listPostscript = ")";            
+            break;
+
+        case 5:
+            listPrefix = "<"
+            listPostscript = ">"
+            break;
+
+        case 6:
+            listPrefix = ""
+            listPostscript = ""
+            break;
+
+
+        default:
+            // this takes care of weird cases.  The logic should be simple enough to not have bugs, but just in case, switch back to default.
+            _listTextMode = 0;
+            listPrefix = "List of";
+            listPostscript = "s";
+            break;
+    }
+
+    switch (_mapTextMode) {
+        case 1:
+            mapPrefix = "";
+            mapMidScript = "-keyed Map of ";
+            mapPostscript = " Values";
+       
+            break;
+        case 2:
+            mapPrefix = "Map (";
+            mapMidScript = ", ";
+            mapPostscript = ")";
+
+            break;
+        case 3:
+            mapPrefix = "Map <";
+            mapMidScript = ", ";
+            mapPostscript = ">";
+
+            break;
+        case 4:
+            mapPrefix = "(";
+            mapMidScript = ", ";
+            mapPostscript = ")";
+
+            break;
+        case 5:
+            mapPrefix = "<";
+            mapMidScript = ", ";
+            mapPostscript = ">";
+
+            break;
+        case 6:
+            mapPrefix = "";
+            mapMidScript = ", ";
+            mapPostscript = "";
+
+            break;
+
+        case default:
+            _mapTextMode = 0;
+            mapPrefix = "Map with ";
+            mapMidScript = " Keys and ";
+            mapPostscript = " Values";
+
+            break;
+    }
+
+
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _containerItems) {
         SCP_string type = "";
         SCP_string notes = "";
 
-        if (item.list){
-            type = "List of ";
-            
-            if (item.string) {
-                type += "Strings";
-            } else {
-                type += "Numbers";
-            }
+        if (item.string) {
+            type = "String";
         } else {
+            type += "Number";
+        }
+
+        if (item.list){
+            type = listPrefix + type + listPostscript;
+            
+        } else {
+
+            type = mapPrefix;
+
             if (item.integerKeys){
-                type = "Number-Keyed Map of "
+                type += "Number";
             } else {
-                type = "String-Keyed Map of "
+                type += "String";
             }
 
+            type += mapMidScript;
+
             if (item.string){
-                type += "Strings"
+                type += "String"
             } else {
-                type += "Numbers"
+                type += "Number"
             }
+
+            type += mapPostscript;
         }
 
 
@@ -1176,7 +1322,6 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
             notes = "Renamed";
         }
 
-		//TODO! FIX ME
 		outStrings.push_back(std::array<SCP_string, 3>{item.name, type, notes});
     }
 

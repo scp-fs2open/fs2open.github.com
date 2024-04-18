@@ -380,7 +380,8 @@ void VariableDialog::onContainerContentsTableUpdated()
 
 } // could be new key or new value
 
-void VariableDialog::onContainerContentsSelectionChanged() {
+void VariableDialog::onContainerContentsSelectionChanged() 
+{
 	if (_applyingModel){
 		return;
 	}
@@ -600,6 +601,7 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 	}
 }
 
+// TODO! 17 more functions to write
 void VariableDialog::onAddContainerButtonPressed() {}
 void VariableDialog::onCopyContainerButtonPressed() {}
 void VariableDialog::onDeleteContainerButtonPressed() {}

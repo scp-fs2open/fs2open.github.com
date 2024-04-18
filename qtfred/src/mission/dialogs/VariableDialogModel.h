@@ -121,6 +121,8 @@ public:
 private:
 	SCP_vector<variableInfo> _variableItems;
 	SCP_vector<containerInfo> _containerItems;
+	int _listTextMode = 0;
+	int _mapTextMode = 0;
 
 	variableInfo* lookupVariable(int index){
 		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){
@@ -158,6 +160,8 @@ private:
 		return nullptr;
 	}
 
+	static SCP_string trimNumberString(SCP_string source);
+
 	// many of the controls in this editor can lead to drastic actions, so this will be very useful.
 	const bool confirmAction(SCP_string question, SCP_string informativeText)
 	{
@@ -181,7 +185,6 @@ private:
 		}
 	}
 
-	static SCP_string trimNumberString(SCP_string source);
 };
 
 } // namespace dialogs
