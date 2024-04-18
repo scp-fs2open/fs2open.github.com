@@ -3063,7 +3063,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	} else {
 		if ( Hud_support_objnum == -1 ) {
-			if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+			if (The_mission.support_ships.arrival_location == ArrivalLocation::FROM_DOCK_BAY)
 			{
 				strcpy_s(outstr, XSTR( "exiting hangar", 1622));
 			}

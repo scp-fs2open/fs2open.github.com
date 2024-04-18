@@ -358,7 +358,7 @@ void ShipEditorDialog::updateColumnTwo()
 void ShipEditorDialog::updateArrival()
 {
 	util::SignalBlockers blockers(this);
-	auto idx = _model->getArrivalLocation();
+	auto idx = _model->getArrivalLocationIndex();
 	int i;
 	ui->arrivalLocationCombo->clear();
 	for (i = 0; i < MAX_ARRIVAL_NAMES; i++) {
@@ -369,7 +369,7 @@ void ShipEditorDialog::updateArrival()
 	object* objp;
 	int restrict_to_players;
 	ui->arrivalTargetCombo->clear();
-	if (_model->getArrivalLocation() != ARRIVE_FROM_DOCK_BAY) {
+	if (_model->getArrivalLocation() != ArrivalLocation::FROM_DOCK_BAY) {
 		// Add Special Arrivals
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (i = 0; i < (int)Iff_info.size(); i++) {
@@ -437,7 +437,7 @@ void ShipEditorDialog::updateArrival()
 void ShipEditorDialog::updateDeparture()
 {
 	util::SignalBlockers blockers(this);
-	auto idx = _model->getDepartureLocation();
+	auto idx = _model->getDepartureLocationIndex();
 	int i;
 	ui->departureLocationCombo->clear();
 	for (i = 0; i < MAX_DEPARTURE_NAMES; i++) {
@@ -512,14 +512,14 @@ void ShipEditorDialog::enableDisable()
 		ui->restrictDeparturePathsButton->setEnabled(false);
 	} else {
 		ui->arrivalLocationCombo->setEnabled(_model->getUIEnable());
-		if (_model->getArrivalLocation()) {
+		if (_model->getArrivalLocationIndex()) {
 			ui->arrivalDistanceEdit->setEnabled(_model->getUIEnable());
 			ui->arrivalTargetCombo->setEnabled(_model->getUIEnable());
 		} else {
 			ui->arrivalDistanceEdit->setEnabled(false);
 			ui->arrivalTargetCombo->setEnabled(false);
 		}
-		if (_model->getArrivalLocation() == ARRIVE_FROM_DOCK_BAY) {
+		if (_model->getArrivalLocation() == ArrivalLocation::FROM_DOCK_BAY) {
 			ui->restrictArrivalPathsButton->setEnabled(_model->getUIEnable());
 			ui->customWarpinButton->setEnabled(false);
 		} else {
@@ -528,12 +528,12 @@ void ShipEditorDialog::enableDisable()
 		}
 
 		ui->departureLocationCombo->setEnabled(_model->getUIEnable());
-		if (_model->getDepartureLocation()) {
+		if (_model->getDepartureLocationIndex()) {
 			ui->departureTargetCombo->setEnabled(_model->getUIEnable());
 		} else {
 			ui->departureTargetCombo->setEnabled(false);
 		}
-		if (_model->getDepartureLocation() == DEPART_AT_DOCK_BAY) {
+		if (_model->getDepartureLocation() == DepartureLocation::TO_DOCK_BAY) {
 			ui->restrictDeparturePathsButton->setEnabled(_model->getUIEnable());
 			ui->customWarpoutButton->setEnabled(false);
 		} else {
@@ -734,7 +734,7 @@ void ShipEditorDialog::playerChanged(const bool enabled)
 void ShipEditorDialog::arrivalLocationChanged(const int index)
 {
 	auto arrivalLocationIdx = ui->arrivalLocationCombo->itemData(index).value<int>();
-	_model->setArrivalLocation(arrivalLocationIdx);
+	_model->setArrivalLocationIndex(arrivalLocationIdx);
 }
 
 void ShipEditorDialog::arrivalTargetChanged(const int index)
@@ -766,7 +766,7 @@ void ShipEditorDialog::ArrivalCueChanged(const bool value)
 void ShipEditorDialog::departureLocationChanged(const int index)
 {
 	auto depLocationIdx = ui->departureLocationCombo->itemData(index).value<int>();
-	_model->setDepartureLocation(depLocationIdx);
+	_model->setDepartureLocationIndex(depLocationIdx);
 }
 
 void ShipEditorDialog::departureTargetChanged(const int index)

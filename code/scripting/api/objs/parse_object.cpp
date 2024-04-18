@@ -422,7 +422,8 @@ ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of t
 	return ade_set_args(L, "t", tbl);
 }
 
-static int parse_object_getset_location_helper(lua_State* L, int p_object::* field, const char* location_type, const char** location_names, size_t location_names_size)
+template <typename LOC>
+static int parse_object_getset_location_helper(lua_State* L, LOC p_object::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
 	parse_object_h* poh;
 	const char* s = nullptr;
@@ -440,10 +441,10 @@ static int parse_object_getset_location_helper(lua_State* L, int p_object::* fie
 			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
 			return ADE_RETURN_NIL;
 		}
-		poh->getObject()->*field = location;
+		poh->getObject()->*field = static_cast<LOC>(location);
 	}
 
-	return ade_set_args(L, "s", location_names[poh->getObject()->*field]);
+	return ade_set_args(L, "s", location_names[static_cast<int>(poh->getObject()->*field)]);
 }
 
 ADE_VIRTVAR(ArrivalLocation, l_ParseObject, "string", "The ship's arrival location", "string", "Arrival location, or nil if handle is invalid")
