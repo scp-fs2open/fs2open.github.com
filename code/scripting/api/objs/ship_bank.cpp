@@ -399,8 +399,6 @@ ADE_VIRTVAR(FOFCooldown, l_WeaponBank, "number", "The FOF cooldown value. A valu
 	{
 		case SWH_PRIMARY:
 		{
-			auto val = bh->typeh.sw->primary_bank_fof_cooldown[bh->bank];
-
 			if (ADE_SETTING_VAR) {
 				CLAMP(newValue, 0.0f, 1.0f);
 				bh->typeh.sw->primary_bank_fof_cooldown[bh->bank] = newValue;
