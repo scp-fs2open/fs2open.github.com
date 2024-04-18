@@ -1142,10 +1142,34 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _containerItems) {
+        SCP_string type = "";
         SCP_string notes = "";
 
+        if (item.list){
+            type = "List of ";
+            
+            if (item.string) {
+                type += "Strings";
+            } else {
+                type += "Numbers";
+            }
+        } else {
+            if (item.integerKeys){
+                type = "Number-Keyed Map of "
+            } else {
+                type = "String-Keyed Map of "
+            }
+
+            if (item.string){
+                type += "Strings"
+            } else {
+                type += "Numbers"
+            }
+        }
+
+
         if (item.deleted) {
-            notes = "Marked for Deletion";
+            notes = "Flaged for Deletion";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
@@ -1153,7 +1177,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
         }
 
 		//TODO! FIX ME
-		outStrings.push_back(std::array<SCP_string, 3>{item.name, item.name, notes});
+		outStrings.push_back(std::array<SCP_string, 3>{item.name, type, notes});
     }
 
     return outStrings;   

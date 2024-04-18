@@ -25,6 +25,7 @@ struct containerInfo {
 	bool deleted = false;
 	bool list = true;
 	bool string = true;
+	bool integerKeys = false;
 	int flags = 0;
 
 	// this will allow us to look up the original values used in the mission previously.
