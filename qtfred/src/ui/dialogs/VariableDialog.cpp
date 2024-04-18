@@ -895,15 +895,54 @@ void VariableDialog::updateContainerOptions()
 
 void VariableDialog::updateContainerDataOptions(bool list)
 {
+
 	if (_currentContainer.empty()){
 		ui->copyContainerItemButton->setEnabled(false);
 		ui->deleteContainerItemButton->setEnabled(false);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+
+		return;
 	} else if (list) {
+		ui->copyContainerItemButton->setEnabled(true);
+		ui->deleteContainerItemButton->setEnabled(true);
+		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
+		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+
+		 = _model->getMapKeys();
+
+		auto items = ui->containersTable->selectedItems();
+		int row = -1;
+
+		// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+		for (const auto& item : items) {
+			row = item->row();
+		}
+
+		const SCP_vector<SCP_string>& getMapKeys(int index);
+		const SCP_vector<SCP_string>& getStringValues(int index);
+		const SCP_vector<int>& getNumberValues(int index);
+
+
+		if (row < 0){
+			return;
+		}
+
+
+
+		ui->containerContentstable->setRowCount( );
+
+
+	} else {
+		ui->copyContainerItemButton->setEnabled(true);
+		ui->deleteContainerItemButton->setEnabled(true);
+		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
+		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
+
+
+		ui->continerContentsTable->setRowCount();
 
 	}
-
 
 
 }
