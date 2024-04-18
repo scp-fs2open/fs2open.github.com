@@ -12659,7 +12659,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				shipp->beam_sys_info.model_num = sip->model_num;
 				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
-				shipp->beam_sys_info.turret_fov = cosf((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
+				shipp->beam_sys_info.turret_fov = cosf(fl_radians((winfo_p->field_of_fire != 0.0f) ? winfo_p->field_of_fire : 180.0f) / 2.0f);
 
 				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
