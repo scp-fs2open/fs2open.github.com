@@ -1382,7 +1382,12 @@ ADE_FUNC(checkVisibility,
 	object_h* v1 = nullptr;
 	object_h* v2 = nullptr;
 	if (!ade_get_args(L, "o|o", l_Ship.GetPtr(&v1), l_Ship.GetPtr(&v2)))
-		return ade_set_error(L, "o", "");
+		return ade_set_error(L, "i", 0);
+	if (!v1 || !v1->isValid())
+		return ade_set_error(L, "i", 0);
+	if (v2 && !v2->isValid())
+		return ade_set_error(L, "i", 0);
+
 	ship* viewer_shipp = nullptr;
 	ship* viewed_shipp = nullptr;
 	viewed_shipp = &Ships[v1->objp->instance];
