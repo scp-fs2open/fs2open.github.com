@@ -30,6 +30,8 @@ struct containerInfo {
 	// this will allow us to look up the original values used in the mission previously.
 	SCP_string originalName = "";
 
+	// I found out that keys could be strictly typed as numbers *after* finishing the majority of the model....
+	// So I am just going to store numerical keys as strings and use a bool to differentiate. 
 	SCP_vector<SCP_string> keys;
 	SCP_vector<int> numberValues;
 	SCP_vector<SCP_string> stringValues;
@@ -177,6 +179,8 @@ private:
 			break;
 		}
 	}
+
+	static SCP_string trimNumberString(SCP_string source);
 };
 
 } // namespace dialogs

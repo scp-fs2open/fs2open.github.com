@@ -288,7 +288,7 @@ void VariableDialog::onVariablesTableUpdated()
 				item->setText(ret.c_str());
 			} else {
 				SCP_string source = item->text().toStdString();
-				SCP_string temp = trimNumberString(source);
+				SCP_string temp = _model->trimNumberString(source);
 
 				if (temp != source){
 					item->setText(temp.c_str());
@@ -492,8 +492,26 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 
 void VariableDialog::onDoNotSaveVariableRadioSelected()
 {
+	if (_currentVariable.empty() || ui->doNotSaveVariableRadio->isChecked()){
+		return;
+	}
 
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(item->row(), 1);
+
+		if (ret != 1){
+			applyModel();
+		} else {
+			ui->doNotSaveVariableRadio->setChecked(true);
+			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+			ui->saveVariableOnMissionCloseRadio->setChecked(false);
+		}
+	}
 }
+
 
 
 void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() 
@@ -511,10 +529,9 @@ void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected()
 		if (ret != 1){
 			applyModel();
 		} else {
-			// TODO!  Need "no persistence" options and functions!
+			ui->doNotSaveVariableRadio->setChecked(false);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(true);
 			ui->saveVariableOnMissionCloseRadio->setChecked(false);
-			//ui->saveContainerOnMissionCompletedRadio->setChecked(true);
 		}
 	}
 }
@@ -536,10 +553,9 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected()
 		if (ret != 2){
 			applyModel();
 		} else {
-			// TODO!  Need "no persistence" options.
+			ui->doNotSaveVariableRadio->setChecked(false);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 			ui->saveVariableOnMissionCloseRadio->setChecked(true);
-			//ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 		}
 	}
 }
@@ -612,7 +628,7 @@ void VariableDialog::applyModel()
 	auto variables = _model->getVariableValues();
 	int x, selectedRow = -1;
 
-	ui->variablesTable->setRowCount(static_cast<int>(variables.size()));
+	ui->variablesTable->setRowCount(static_cast<int>(variables.size() + 1));
 
 	for (x = 0; x < static_cast<int>(variables.size()); ++x){
 		if (ui->variablesTable->item(x, 0)){
@@ -622,7 +638,8 @@ void VariableDialog::applyModel()
 			ui->variablesTable->setItem(x, 0, item);
 		}
 
-		// check if this is the current variable.
+		// check if this is the current variable.  This keeps us selecting the correct variable even when
+		// there's a deletion.
 		if (!_currentVariable.empty() && variables[x][0] == _currentVariable){
 			selectedRow = x;
 		}
@@ -642,25 +659,14 @@ void VariableDialog::applyModel()
 		}
 	}
 
-	/*
-	// This empties rows that might have previously had variables
-	if (x < ui->variablesTable->rowCount()) {
-		++x;
-		for (; x < ui->variablesTable->rowCount(); ++x){
-			if (ui->variablesTable->item(x, 0)){
-				ui->variablesTable->item(x, 0)->setText("");
-			}
-
-			if (ui->variablesTable->item(x, 1)){
-				ui->variablesTable->item(x, 1)->setText("");
-			}
-
-			if (ui->variablesTable->item(x, 2)){
-				ui->variablesTable->item(x, 2)->setText("");
-			}
-		}
+	// set the Add varaible row
+	++x;
+	if (ui->variablesTable->item(x, 0)){
+		ui->variablesTable->item(x, 0)->setText("Add Variable ...");
+	} else {
+		QTableWidgetItem* item = new QTableWidgetItem("Add Variable ...");
+		ui->variablesTable->setItem(x, 0, item);
 	}
-	*/
 
 	if (_currentVariable.empty() || selectedRow < 0){
 		if (ui->variablesTable->item(0,0) && strlen(ui->variablesTable->item(0,0)->text().toStdString().c_str())){
@@ -674,7 +680,6 @@ void VariableDialog::applyModel()
 	ui->containersTable->setRowCount(static_cast<int>(containers.size()));
 	selectedRow = -1;
 
-	// TODO! Change getContainerNames to a tuple with notes/maybe data key types?
 	for (x = 0; x < static_cast<int>(containers.size()); ++x){
 		if (ui->containersTable->item(x, 0)){
 			ui->containersTable->item(x, 0)->setText(containers[x][0].c_str());
@@ -704,22 +709,13 @@ void VariableDialog::applyModel()
 		}
 	}
 
-	// This empties rows that might have previously had containers
-	if (x < ui->containersTable->rowCount()) {
-		++x;
-		for (; x < ui->containersTable->rowCount(); ++x){
-			if (ui->containersTable->item(x, 0)){
-				ui->containersTable->item(x, 0)->setText("");
-			}
-
-			if (ui->containersTable->item(x, 1)){
-				ui->containersTable->item(x, 1)->setText("");
-			}
-
-			if (ui->containersTable->item(x, 2)){
-				ui->containersTable->item(x, 2)->setText("");
-			}
-		}
+	// set the Add container row
+	++x;
+	if (ui->variablesTable->item(x, 0)){
+		ui->variablesTable->item(x, 0)->setText("Add Container ...");
+	} else {
+		QTableWidgetItem* item = new QTableWidgetItem("Add Container ...");
+		ui->variablesTable->setItem(x, 0, item);
 	}
 
 	if (_currentContainer.empty() || selectedRow < 0){
@@ -897,45 +893,17 @@ void VariableDialog::updateContainerOptions()
 
 void VariableDialog::updateContainerDataOptions(bool list)
 {
+	if (_currentContainer.empty()){
+		ui->copyContainerItemButton->setEnabled(false);
+		ui->deleteContainerItemButton->setEnabled(false);
+		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
+		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+	} else if (list) {
 
-}
-
-SCP_string VariableDialog::trimNumberString(SCP_string source) 
-{
-	SCP_string ret;
-
-	// account for a lead negative sign.
-	if (source[0] == '-') {
-		ret = "-";
 	}
 
-	// filter out non-numeric digits
-	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
-		[](char c) -> bool { 
-			bool result = false;
 
-			switch (c) {
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-					result = true;
-					break;
-				default:
-					break;
-			}
 
-			return result;
-		}
-	);
-
-	return ret;
 }
 
 

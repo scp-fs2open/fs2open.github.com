@@ -1159,6 +1159,43 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     return outStrings;   
 }
 
+SCP_string VariableDialogModel::trimNumberString(SCP_string source) 
+{
+	SCP_string ret;
+
+	// account for a lead negative sign.
+	if (source[0] == '-') {
+		ret = "-";
+	}
+
+	// filter out non-numeric digits
+	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
+		[](char c) -> bool { 
+			bool result = false;
+
+			switch (c) {
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					result = true;
+					break;
+				default:
+					break;
+			}
+
+			return result;
+		}
+	);
+
+	return ret;
+}
 
 } // dialogs
 } // fred
