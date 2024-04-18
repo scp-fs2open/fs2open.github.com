@@ -320,7 +320,7 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 		}
 	}
 
-	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
+	auto dist = hud_find_target_distance(targetee_h->objp(), targeter_pos);
 	return ade_set_args(L, "f", dist);
 }
 

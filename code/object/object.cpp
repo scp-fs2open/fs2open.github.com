@@ -81,6 +81,44 @@ int Object_next_signature = 1;	//0 is bogus, start at 1
 int Object_inited = 0;
 int Show_waypoints = 0;
 
+object_h::object_h(int in_objnum)
+	: objnum(in_objnum)
+{
+	if (objnum >= 0 && objnum < MAX_OBJECTS)
+		sig = Objects[objnum].signature;
+	else
+		objnum = -1;
+}
+
+object_h::object_h(const object* in_objp)
+{
+	if (in_objp)
+	{
+		objnum = OBJ_INDEX(in_objp);
+		sig = in_objp->signature;
+	}
+}
+
+object_h::object_h()
+{}
+
+bool object_h::isValid() const
+{
+	// a signature of 0 is invalid, per obj_init()
+	if (objnum < 0 || sig <= 0 || objnum >= MAX_OBJECTS)
+		return false;
+	return Objects[objnum].signature == sig;
+}
+
+object* object_h::objp() const
+{
+	return &Objects[objnum];
+}
+
+object* object_h::objp_or_null() const
+{
+	return isValid() ? &Objects[objnum] : nullptr;
+}
 
 //WMC - Made these prettier
 const char *Object_type_names[MAX_OBJECT_TYPES] = {

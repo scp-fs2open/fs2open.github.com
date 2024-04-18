@@ -77,7 +77,7 @@ class SourceOrigin {
 
 	inline SourceOriginType getType() const { return m_originType; }
 
-	inline object* getObjectHost() const { return m_origin.m_object.objp; }
+	inline object* getObjectHost() const { return m_origin.m_object.objp_or_null(); }
 
 	/**
 	 * @brief Determines if the origin is valid

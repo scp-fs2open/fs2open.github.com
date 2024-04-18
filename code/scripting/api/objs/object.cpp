@@ -29,7 +29,7 @@
 void object_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	object_h obj;
 	value.getValue(scripting::api::l_Object.Get(&obj));
-	const ushort& netsig = obj.isValid() ? obj.objp->net_signature : 0;
+	const ushort& netsig = obj.isValid() ? obj.objp()->net_signature : 0;
 	ADD_USHORT(netsig);
 }
 
@@ -72,16 +72,16 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 
 	char buf[512];
 
-	switch(objh->objp->type)
+	switch(objh->objp()->type)
 	{
 		case OBJ_SHIP:
-			sprintf(buf, "%s", Ships[objh->objp->instance].ship_name);
+			sprintf(buf, "%s", Ships[objh->objp()->instance].ship_name);
 			break;
 		case OBJ_WEAPON:
-			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].get_display_name());
+			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp()->instance].weapon_info_index].get_display_name());
 			break;
 		default:
-			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
+			sprintf(buf, "Object %d [%d]", objh->objnum, objh->sig);
 	}
 
 	return ade_set_args(L, "s", buf);
@@ -101,18 +101,18 @@ ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be
 	{
 		if(newparenth != NULL && newparenth->isValid())
 		{
-			objh->objp->parent = OBJ_INDEX(newparenth->objp);
-			objh->objp->parent_sig = newparenth->sig;
+			objh->objp()->parent = newparenth->objnum;
+			objh->objp()->parent_sig = newparenth->sig;
 		}
 		else
 		{
-			objh->objp->parent = -1;
-			objh->objp->parent_sig = 0;
+			objh->objp()->parent = -1;
+			objh->objp()->parent_sig = 0;
 		}
 	}
 
-	if(objh->objp->parent > -1)
-		return ade_set_object_with_breed(L, objh->objp->parent);
+	if(objh->objp()->parent > -1)
+		return ade_set_object_with_breed(L, objh->objp()->parent);
 	else
 		return ade_set_args(L, "o", l_Object.Set(object_h()));
 }
@@ -128,10 +128,10 @@ ADE_VIRTVAR(Radius, l_Object, "number", "Radius of an object", "number", "Radius
 		return ade_set_error(L, "f", 0.0f);
 
 	if (ADE_SETTING_VAR) {
-		objh->objp->radius = f;
+		objh->objp()->radius = f;
 	}
 
-	return ade_set_args(L, "f", objh->objp->radius);
+	return ade_set_args(L, "f", objh->objp()->radius);
 }
 
 ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
@@ -145,17 +145,17 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
-		objh->objp->pos = *v3;
-		if (objh->objp->type == OBJ_WAYPOINT) {
-			waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objh->objp));
+		objh->objp()->pos = *v3;
+		if (objh->objp()->type == OBJ_WAYPOINT) {
+			waypoint *wpt = find_waypoint_with_objnum(objh->objnum);
 			wpt->set_pos(v3);
 		}
 
-		if (objh->objp->flags[Object::Object_Flags::Collides])
-			obj_collide_obj_cache_stale(objh->objp);
+		if (objh->objp()->flags[Object::Object_Flags::Collides])
+			obj_collide_obj_cache_stale(objh->objp());
 	}
 
-	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp()->pos));
 }
 
 ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last frame (World vector)", "vector", "World position, or null vector if handle is invalid")
@@ -169,10 +169,10 @@ ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last 
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
-		objh->objp->last_pos = *v3;
+		objh->objp()->last_pos = *v3;
 	}
 
-	return ade_set_args(L, "o", l_Vector.Set(objh->objp->last_pos));
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp()->last_pos));
 }
 
 ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
@@ -186,13 +186,13 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
 	if(ADE_SETTING_VAR && mh != NULL) {
-		objh->objp->orient = *mh->GetMatrix();
+		objh->objp()->orient = *mh->GetMatrix();
 
-		if (objh->objp->flags[Object::Object_Flags::Collides])
-			obj_collide_obj_cache_stale(objh->objp);
+		if (objh->objp()->flags[Object::Object_Flags::Collides])
+			obj_collide_obj_cache_stale(objh->objp());
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp()->orient)));
 }
 
 ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation as of last frame (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
@@ -206,10 +206,10 @@ ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation 
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
 	if(ADE_SETTING_VAR && mh != NULL) {
-		objh->objp->last_orient = *mh->GetMatrix();
+		objh->objp()->last_orient = *mh->GetMatrix();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->last_orient)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp()->last_orient)));
 }
 
 ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this object", "model_instance", "Model instance, nil if this object does not have one, or invalid model instance handle if object handle is invalid")
@@ -224,7 +224,7 @@ ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this objec
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Assigning model instances is not implemented");
 
-	int id = object_get_model_instance(objh->objp);
+	int id = object_get_model_instance(objh->objp());
 	if (id < 0)
 		return ADE_RETURN_NIL;
 
@@ -242,10 +242,10 @@ ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship betwee
 		return ade_set_error(L, "o", l_Physics.Set(physics_info_h()));
 
 	if(ADE_SETTING_VAR && pih && pih->isValid()) {
-		objh->objp->phys_info = *pih->pi;
+		objh->objp()->phys_info = *pih->pi;
 	}
 
-	return ade_set_args(L, "o", l_Physics.Set(physics_info_h(objh->objp)));
+	return ade_set_args(L, "o", l_Physics.Set(physics_info_h(objh->objp())));
 }
 
 ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "number", "Hitpoints left, or 0 if handle is invalid")
@@ -260,10 +260,10 @@ ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "
 
 	//Set hull strength.
 	if(ADE_SETTING_VAR) {
-		objh->objp->hull_strength = f;
+		objh->objp()->hull_strength = f;
 	}
 
-	return ade_set_args(L, "f", objh->objp->hull_strength);
+	return ade_set_args(L, "f", objh->objp()->hull_strength);
 }
 
 ADE_VIRTVAR(SimHitpointsLeft, l_Object, "number", "Simulated hitpoints an object has left", "number", "Simulated hitpoints left, or 0 if handle is invalid")
@@ -278,10 +278,10 @@ ADE_VIRTVAR(SimHitpointsLeft, l_Object, "number", "Simulated hitpoints an object
 
 	//Set sim hull strength.
 	if (ADE_SETTING_VAR) {
-		objh->objp->sim_hull_strength = f;
+		objh->objp()->sim_hull_strength = f;
 	}
 
-	return ade_set_args(L, "f", objh->objp->sim_hull_strength);
+	return ade_set_args(L, "f", objh->objp()->sim_hull_strength);
 }
 
 ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle, or invalid shields handle if object handle is invalid")
@@ -297,11 +297,11 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	//WMC - copy shields
 	if(ADE_SETTING_VAR && sobjh && sobjh->isValid())
 	{
-		for(int i = 0; i < objh->objp->n_quadrants; i++)
-			shield_set_quad(objh->objp, i, shield_get_quad(sobjh->objp, i));
+		for(int i = 0; i < objh->objp()->n_quadrants; i++)
+			shield_set_quad(objh->objp(), i, shield_get_quad(sobjh->objp(), i));
 	}
 
-	return ade_set_args(L, "o", l_Shields.Set(object_h(objh->objp)));
+	return ade_set_args(L, "o", l_Shields.Set(*objh));
 }
 
 ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the object's unique numeric signature, or -1 if invalid.  Useful for creating a metadata system")
@@ -334,7 +334,7 @@ ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the shoul
 	if (!oh->isValid())
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", oh->objp->flags[Object::Object_Flags::Should_be_dead]);
+	return ade_set_args(L, "b", oh->objp()->flags[Object::Object_Flags::Should_be_dead]);
 }
 
 ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
@@ -346,7 +346,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
+	return ade_set_args(L, "s", Object_type_names[objh->objp()->type]);
 }
 
 ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
@@ -361,10 +361,10 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 
 	//Set collision group data
 	if(ADE_SETTING_VAR) {
-		objh->objp->collision_group_id = id;
+		objh->objp()->collision_group_id = id;
 	}
 
-	return ade_set_args(L, "i", objh->objp->collision_group_id);
+	return ade_set_args(L, "i", objh->objp()->collision_group_id);
 }
 
 ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
@@ -379,7 +379,7 @@ ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the
 		return ADE_RETURN_NIL;
 
 	if (group >= 0 && group <= 31)
-		objh->objp->collision_group_id |= (1 << group);
+		objh->objp()->collision_group_id |= (1 << group);
 	else
 		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
@@ -398,7 +398,7 @@ ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this objec
 		return ADE_RETURN_NIL;
 
 	if (group >= 0 && group <= 31)
-		objh->objp->collision_group_id &= ~(1 << group);
+		objh->objp()->collision_group_id &= ~(1 << group);
 	else
 		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
@@ -418,7 +418,7 @@ ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current
 	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	obj = objh->objp;
+	obj = objh->objp();
 	vec3d v1 = obj->orient.vec.fvec;
 	if (normalize)
 		vm_vec_normalize(&v1);
@@ -439,7 +439,7 @@ ADE_FUNC(getuvec, l_Object, "[boolean normalize]", "Returns the objects' current
 	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	obj = objh->objp;
+	obj = objh->objp();
 	vec3d v1 = obj->orient.vec.uvec;
 	if (normalize)
 		vm_vec_normalize(&v1);
@@ -460,7 +460,7 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	obj = objh->objp;
+	obj = objh->objp();
 	vec3d v1 = obj->orient.vec.rvec;
 	if (normalize)
 		vm_vec_normalize(&v1);
@@ -486,7 +486,7 @@ ADE_FUNC(
 	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	auto obj = objh->objp;
+	auto obj = objh->objp();
 	int flags = 0;
 
 	switch(obj->type) {
@@ -575,7 +575,7 @@ ADE_FUNC(addPreMoveHook, l_Object, "function(object object) => void callback",
 	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	objh->objp->pre_move_event.add(make_lua_callback<void, object*>(callback));
+	objh->objp()->pre_move_event.add(make_lua_callback<void, object*>(callback));
 
 	return ADE_RETURN_NIL;
 }
@@ -599,7 +599,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	objh->objp->post_move_event.add(make_lua_callback<void, object*>(callback));
+	objh->objp()->post_move_event.add(make_lua_callback<void, object*>(callback));
 
 	return ADE_RETURN_NIL;
 }
@@ -622,7 +622,6 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	if (!objh->isValid() || !seh->isValid() || (tgsh && !tgsh->isValid()))
 		return ade_set_error(L, "i", -1);
 
-	auto objp = objh->objp;
 	auto gs_id = seh->idx;
 	auto subsys = tgsh ? tgsh->ss : nullptr;
 	if (!offset)
@@ -630,7 +629,7 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	if (enum_flags.value)
 		flags = *enum_flags.value;
 
-	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
+	int snd_idx = obj_snd_assign(objh->objnum, gs_id, offset, flags, subsys);
 
 	return ade_set_args(L, "i", snd_idx);
 }
@@ -643,7 +642,7 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &snd_idx))
 		return ADE_RETURN_NIL;
 
-	auto objp = objh->objp;
+	auto objp = objh->objp();
 	snd_idx--;	// Lua -> C++
 
 	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
@@ -669,7 +668,7 @@ ADE_FUNC(getNumAssignedSounds,
 	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
-	auto objp = objh->objp;
+	auto objp = objh->objp();
 
 	return ade_set_args(L, "i", static_cast<int>(objp->objsnd_num.size()));
 }
@@ -689,11 +688,10 @@ ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
 	if (!objh->isValid() || !seh->isValid() || (tgsh && !tgsh->isValid()))
 		return ADE_RETURN_NIL;
 
-	auto objp = objh->objp;
 	auto gs_id = seh->idx;
 	auto subsys = tgsh ? tgsh->ss : nullptr;
 
-	obj_snd_delete_type(OBJ_INDEX(objp), gs_id, subsys);
+	obj_snd_delete_type(objh->objnum, gs_id, subsys);
 
 	return ADE_RETURN_NIL;
 }
@@ -713,7 +711,7 @@ ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType",
 	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	auto objp = objh->objp;
+	auto objp = objh->objp();
 	color* cur = hud_get_iff_color(objp);
 
 	if (!rc) {

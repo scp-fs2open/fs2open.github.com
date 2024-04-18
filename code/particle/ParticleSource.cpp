@@ -18,8 +18,8 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			*posOut = m_origin.m_object.objp->pos;
-			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp->orient);
+			*posOut = m_origin.m_object.objp()->pos;
+			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
@@ -41,7 +41,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			break;
 		}
 		case SourceOriginType::BEAM: {
-			auto beam = &Beams[m_origin.m_object.objp->instance];
+			auto beam = &Beams[m_origin.m_object.objp()->instance];
 			*posOut = beam->last_start;
 			// weight the random points towards the start linearly
 			// proportion along the beam the beam stopped, of its total potential length
@@ -67,14 +67,14 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	vec3d vec;
 	switch (m_originType) {
 	case SourceOriginType::OBJECT:
-		*matOut = m_origin.m_object.objp->orient;
+		*matOut = m_origin.m_object.objp()->orient;
 		break;
 	case SourceOriginType::PARTICLE:
 		vm_vector_2_matrix(matOut, &m_origin.m_particle.lock()->velocity, nullptr, nullptr);
 		break;
 	case SourceOriginType::BEAM:
 		vec = vmd_zero_vector;
-		vm_vec_normalized_dir(&vec, &Beams[m_origin.m_object.objp->instance].last_shot, &Beams[m_origin.m_object.objp->instance].last_start);
+		vm_vec_normalized_dir(&vec, &Beams[m_origin.m_object.objp()->instance].last_shot, &Beams[m_origin.m_object.objp()->instance].last_start);
 		vm_vector_2_matrix(matOut, &vec, nullptr, nullptr);
 		break;
 	case SourceOriginType::VECTOR: // Intentional fall-through, plain vectors have no orientation
@@ -90,8 +90,8 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
 			if (allow_relative) {
-				info.attached_objnum = static_cast<int>(OBJ_INDEX(m_origin.m_object.objp));
-				info.attached_sig = m_origin.m_object.objp->signature;
+				info.attached_objnum = m_origin.m_object.objnum;
+				info.attached_sig = m_origin.m_object.sig;
 
 				info.pos = m_offset;
 			} else {
@@ -125,11 +125,11 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 vec3d SourceOrigin::getVelocity() const {
 	switch (this->m_originType) {
 		case SourceOriginType::OBJECT:
-			return m_origin.m_object.objp->phys_info.vel;
+			return m_origin.m_object.objp()->phys_info.vel;
 		case SourceOriginType::PARTICLE:
 			return m_origin.m_particle.lock()->velocity;
 		case SourceOriginType::BEAM: {
-			beam* bm = &Beams[m_origin.m_object.objp->instance];
+			beam* bm = &Beams[m_origin.m_object.objp()->instance];
 			vec3d vel;
 			vm_vec_normalized_dir(&vel, &bm->last_shot, &bm->last_start);
 			vm_vec_scale(&vel, Weapon_info[bm->weapon_info_index].max_speed);
@@ -214,7 +214,7 @@ bool SourceOrigin::isValid() const {
 				return false;
 			}
 
-			auto objp = m_origin.m_object.objp;
+			auto objp = m_origin.m_object.objp();
 
 			if (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM) {
 				// The following checks are only relevant for weapons
@@ -398,7 +398,7 @@ void ParticleSource::initializeThrusterOffset(weapon*  /*wp*/, weapon_info* wip)
 void ParticleSource::finishCreation() {
 	if (m_origin.m_originType == SourceOriginType::OBJECT) {
 		if (IS_VEC_NULL(&m_origin.m_offset)) {
-			object* obj = m_origin.m_origin.m_object.objp;
+			object* obj = m_origin.m_origin.m_object.objp();
 
 			if (obj->type == OBJ_WEAPON) {
 				weapon* wp = &Weapons[obj->instance];
