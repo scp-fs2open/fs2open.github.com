@@ -1161,24 +1161,19 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
 SCP_string VariableDialogModel::trimNumberString(SCP_string source) 
 {
-    if (source.empty()){
-        return "";
-    }
-
 	SCP_string ret;
-
-	// account for a lead negative sign.
-	if (source[0] == '-') {
-		ret = "-";
-	}
+   bool foundNonZero = false;
 
 	// filter out non-numeric digits
 	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
-		[](char c) -> bool { 
-			bool result = false;
-
+		[&foundNonZero, &ret](char c) -> bool { 
 			switch (c) {
+                // ignore leading zeros
 				case '0':
+                    if (foundNonZero)
+                        return true;
+                    else 
+                        return false;
 				case '1':
 				case '2':
 				case '3':
@@ -1188,15 +1183,27 @@ SCP_string VariableDialogModel::trimNumberString(SCP_string source)
 				case '7':
 				case '8':
 				case '9':
-					result = true;
+                    foundNonZero = true;
+					return true;
 					break;
+                // only copy the '-' char if it is the first thing to be copied.
+                case '-':
+                    if (ret.empty()){
+                        return true;
+                    } else {
+                        return false;
+                    }
 				default:
+                    return false;
 					break;
 			}
-
-			return result;
 		}
 	);
+
+    // if all that made it out was a dash, then return nothing.
+    if (ret == "-"){
+        return "";
+    }
 
 	return ret;
 }
