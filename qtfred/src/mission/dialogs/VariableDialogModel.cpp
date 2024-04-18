@@ -1161,6 +1161,10 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
 SCP_string VariableDialogModel::trimNumberString(SCP_string source) 
 {
+    if (source.empty()){
+        return "";
+    }
+
 	SCP_string ret;
 
 	// account for a lead negative sign.
