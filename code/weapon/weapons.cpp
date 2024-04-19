@@ -3464,13 +3464,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->max_fof_spread = max_fof - wip->field_of_fire;
 
 			if (wip->max_fof_spread <= 0.0f) {
-				Warning(LOCATION, "WARNING: +Max FOF must be at least as big as $FOF for '%s'! Defaulting to match $FOF, no spread will occur!", wip->name);
+				error_display(0, "+Max FOF must be at least as big as $FOF for '%s'! Defaulting to match $FOF, no spread will occur!", wip->name);
 				wip->max_fof_spread = 0.0f;
 			}
 		}
 
 		if (max_required && wip->max_fof_spread <= 0.0f) {
-			Error(LOCATION, "ERROR: +Max FOF for '%s' must be used if +FOF Spread Rate: is used!", wip->name);
+			error_display(0, "+Max FOF for '%s' must be used if +FOF Spread Rate: is used! Disabling FOF spread instead...", wip->name);
+			wip->fof_spread_rate = 0.0f;
+			wip->fof_reset_rate = 0.0f;
 		}		
 	}
 

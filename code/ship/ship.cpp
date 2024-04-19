@@ -10456,7 +10456,7 @@ void ship_process_post(object * obj, float frametime)
 		weapon_info* wip = &Weapon_info[shipp->weapons.primary_bank_weapons[i]];
 		
 		if (wip->fof_reset_rate > 0.0f) {
-			shipp->weapons.primary_bank_fof_cooldown[i] -= wip->fof_reset_rate * flFrametime;
+			shipp->weapons.primary_bank_fof_cooldown[i] -= wip->fof_reset_rate * frametime;
 			CLAMP(shipp->weapons.primary_bank_fof_cooldown[i], 0.0f, 1.0f);
 		}
 	}
