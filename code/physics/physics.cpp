@@ -378,9 +378,12 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	*position += world_disp;
 	*position += grav_disp;
 
-	// update world velocity
-	vm_vec_unrotate(&pi->vel, &local_v_out, orient);
-	pi->vel += grav_vel;
+	// update world velocity	
+	if (!(pi->flags & PF_SCRIPTED_VELOCITY)) {
+		vm_vec_unrotate(&pi->vel, &local_v_out, orient);
+		pi->vel += grav_vel;
+		pi->flags &= ~PF_SCRIPTED_VELOCITY;
+	}
 
 	// update acceleration
 	pi->acceleration = pi->vel - old_vel;

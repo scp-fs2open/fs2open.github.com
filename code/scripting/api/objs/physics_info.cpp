@@ -296,6 +296,9 @@ ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->vel = *v3;
+		pih->pi->speed = vm_vec_mag(&pih->pi->vel);							
+		pih->pi->fspeed = vm_vec_dot(&pih->objh.objp->orient.vec.fvec, &pih->pi->vel);
+		pih->pi->flags |= PF_SCRIPTED_VELOCITY;
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->vel));

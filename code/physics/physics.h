@@ -34,6 +34,7 @@
 #define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
 #define PF_MANEUVER_NO_DAMP		(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 #define PF_BALLISTIC			(1 << 18)	// Asteroth - not moving 'under its own power', simplified physics calculations
+#define PF_SCRIPTED_VELOCITY    (1 << 19)   // Asteroth - velocity was modified via script, should not be altered by the engine for this frame
 
 extern const float SUPERCAP_WARP_T_CONST;
 extern const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD;
