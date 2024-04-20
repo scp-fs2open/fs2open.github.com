@@ -317,8 +317,6 @@ void VariableDialog::onVariablesSelectionChanged()
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
-
 	SCP_string newVariableName = "";
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
@@ -415,15 +413,15 @@ void VariableDialog::onCopyVariableButtonPressed()
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int currentRow = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for(const auto& item : items) {
-		auto ret = _model->copyVariable(item->row());
-		_currentVariable = ret;
-		applyModel();
-		break;
-	}
+	if (currentRow < 0){
+		return;
+	}	
+	
+	auto ret = _model->copyVariable(currentRow);
+	_currentVariable = ret;
+	applyModel();
 }
 
 void VariableDialog::onDeleteVariableButtonPressed() 
@@ -432,82 +430,85 @@ void VariableDialog::onDeleteVariableButtonPressed()
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int currentRow = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for(const auto& item : items) {
-		// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-		auto ret = _model->removeVariable(item->row());
-		applyModel();
-		break;
-	}
+	if (currentRow < 0){
+		return;
+	}	
+
+	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
+	_model->removeVariable(currentRow);
+	applyModel();
 }
 
 void VariableDialog::onSetVariableAsStringRadioSelected() 
 {
-	if (_currentVariable.empty() || ui->setVariableAsStringRadio->isChecked()){
+	if (ui->setVariableAsStringRadio->isChecked()){
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int currentRow = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for(const auto& item : items) {
-		// this doesn't return succeed or fail directly, 
-		// but if it doesn't return true then it failed since this is the string radio
-		if(!_model->setVariableType(item->row(), true)){
-			applyModel();
-		} else {
-			ui->setVariableAsStringRadio->setChecked(true);
-			ui->setVariableAsNumberRadio->setChecked(false);
-		}
+	if (currentRow < 0){
+		return;
+	}	
 
-		break;
+	// this doesn't return succeed or fail directly, 
+	// but if it doesn't return true then it failed since this is the string radio
+	if(!_model->setVariableType(currentRow, true)){
+		applyModel();
+	} else {
+		ui->setVariableAsStringRadio->setChecked(true);
+		ui->setVariableAsNumberRadio->setChecked(false);
 	}
+
+	break;
 }
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
 {
-	if (_currentVariable.empty() || ui->setVariableAsNumberRadio->isChecked()){
+	if (ui->setVariableAsNumberRadio->isChecked()){
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int currentRow = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
+	if (currentRow < 0){
+		return;
+	}	
 
-		// this doesn't return succeed or fail directly, 
-		// but if it doesn't return false then it failed since this is the number radio
-		if (!_model->setVariableType(item->row(), false)) {
-			applyModel();
-		}
-		else {
-			ui->setVariableAsStringRadio->setChecked(false);
-			ui->setVariableAsNumberRadio->setChecked(true);
-		}
+	// this doesn't return succeed or fail directly, 
+	// but if it doesn't return false then it failed since this is the number radio
+	if (!_model->setVariableType(currentRow, false)) {
+		applyModel();
 	}
+	else {
+		ui->setVariableAsStringRadio->setChecked(false);
+		ui->setVariableAsNumberRadio->setChecked(true);
+	}
+	break;
 }
 
 void VariableDialog::onDoNotSaveVariableRadioSelected()
 {
-	if (_currentVariable.empty() || ui->doNotSaveVariableRadio->isChecked()){
+	if (ui->doNotSaveVariableRadio->isChecked()){
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int currentRow = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(item->row(), 1);
+	if (currentRow < 0){
+		return;
+	}	
 
-		if (ret != 1){
-			applyModel();
-		} else {
-			ui->doNotSaveVariableRadio->setChecked(true);
-			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
-			ui->saveVariableOnMissionCloseRadio->setChecked(false);
-		}
+	int ret = _model->setVariableOnMissionCloseOrCompleteFlag(currentRow, 1);
+
+	if (ret != 1){
+		applyModel();
+	} else {
+		ui->doNotSaveVariableRadio->setChecked(true);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCloseRadio->setChecked(false);
 	}
 }
 
