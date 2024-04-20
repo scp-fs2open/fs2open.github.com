@@ -382,6 +382,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	if (!(pi->flags & PF_SCRIPTED_VELOCITY)) {
 		vm_vec_unrotate(&pi->vel, &local_v_out, orient);
 		pi->vel += grav_vel;
+	} else {
 		pi->flags &= ~PF_SCRIPTED_VELOCITY;
 	}
 
