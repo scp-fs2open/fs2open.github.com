@@ -67,6 +67,9 @@ class VariableDialog : public QDialog {
 	void onCopyContainerItemButtonPressed();
 	void onDeleteContainerItemButtonPressed();
 
+	int getCurrentVariableRow();
+	int getCurrentContainerRow();
+	int getCurrentContainerItemRow();
 
 	bool _applyingModel = false;
 	SCP_string _currentVariable = "";

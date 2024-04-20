@@ -615,7 +615,7 @@ void VariableDialog::onAddContainerButtonPressed()
 
 }
 
-// TODO! 16 more functions to write
+// TODO! 15 more functions to write
 void VariableDialog::onCopyContainerButtonPressed() {}
 
 void VariableDialog::onDeleteContainerButtonPressed() 
@@ -638,11 +638,101 @@ void VariableDialog::onDeleteContainerButtonPressed()
 	}
 
 }
-void VariableDialog::onSetContainerAsMapRadioSelected() {}
-void VariableDialog::onSetContainerAsListRadioSelected() {}
-void VariableDialog::onSetContainerAsStringRadioSelected() {}
-void VariableDialog::onSetContainerAsNumberRadioSelected() {}
-void VariableDialog::onSetContainerKeyAsStringRadioSelected() {}
+
+void VariableDialog::onSetContainerAsMapRadioSelected() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
+
+	if (row == -1){
+		return;
+	}
+
+	setContainerListOrMap(row, false);
+	applyModel();
+}
+
+void VariableDialog::onSetContainerAsListRadioSelected() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
+
+	if (row == -1){
+		return;
+	}
+
+	setContainerListOrMap(row, true);
+	applyModel();
+}
+
+
+void VariableDialog::onSetContainerAsStringRadioSelected() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
+
+	if (row == -1){
+		return;
+	}
+
+	setContainerValueType(row, true);
+	applyModel();
+}
+
+void VariableDialog::onSetContainerAsNumberRadioSelected() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
+
+	if (row == -1){
+		return;
+	}
+
+	setContainerValueType(row, false);
+	applyModel();
+}
+
+void VariableDialog::onSetContainerKeyAsStringRadioSelected() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
+
+	if (row == -1){
+		return;
+	}
+
+	setContainerKeyType(row, true);
+	applyModel();
+
+}
+
+
+
 void VariableDialog::onSetContainerKeyAsNumberRadioSelected() {}
 void VariableDialog::onDoNotSaveContainerRadioSelected(){}
 void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
@@ -978,6 +1068,44 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 }
 
+
+int VariableDialog::getCurrentVariableRow()
+{
+	auto items = ui->variablesTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		if (item){
+			return item->row();
+		}
+	}
+
+	return -1;
+}
+
+int VariableDialog::getCurrentContainerRow(){
+	auto items = ui->containersTable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		if (item) {
+			return item->row();
+		}
+	}
+
+	return -1;
+}
+
+int variableDialog::getCurrentContainerItemRow(){
+	auto items = ui->containerItemsTeable->selectedItems();
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		return item->row();
+	}
+
+	return -1;
+}
 
 } // namespace dialogs
 } // namespace fred

@@ -84,6 +84,7 @@ public:
 	bool getContainerEternalFlag(int index);
 
 	bool setContainerValueType(int index, bool type);
+	bool setContainerKeyType(int index, bool string);
 	bool setContainerListOrMap(int index, bool list);
 	bool setContainerNetworkStatus(int index, bool network);
 	int setContainerOnMissionCloseOrCompleteFlag(int index, int flags);
