@@ -198,7 +198,6 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setColumnWidth(0, 90);
 	ui->variablesTable->setColumnWidth(1, 90);
 	ui->variablesTable->setColumnWidth(2, 70);
-	// TODO! Make sure row 3 is not editable.
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
@@ -207,7 +206,6 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containersTable->setColumnWidth(0, 90);
 	ui->containersTable->setColumnWidth(1, 90);
 	ui->containersTable->setColumnWidth(2, 70);
-	// TODO! Make sure row 3 is not editable.
 
 	ui->containerContentsTable->setColumnCount(2);
 
@@ -601,10 +599,45 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 	}
 }
 
-// TODO! 17 more functions to write
-void VariableDialog::onAddContainerButtonPressed() {}
+void VariableDialog::onAddContainerButtonPressed() 
+{
+	auto result = (_model->addContainer());
+
+	if (result.empty()) {
+			QMessageBox msgBox;
+		msgBox.setText("Adding a container failed because the code is out of automatic names.  Try adding a container directly in the table.");
+		msgBox.setStandardButtons(QMessageBox::Ok);
+		msgBox.setDefaultButton(QMessageBox::Ok);
+		msgBox.exec();
+	}
+	
+	applyModel();
+
+}
+
+// TODO! 16 more functions to write
 void VariableDialog::onCopyContainerButtonPressed() {}
-void VariableDialog::onDeleteContainerButtonPressed() {}
+
+void VariableDialog::onDeleteContainerButtonPressed() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = -1;
+
+	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
+	for (const auto& item : items) {
+		row = item->row();
+	}
+
+	if (row == -1){
+		return;
+	}
+
+	// UI is somehow out of sync with the model, so update UI.
+	if (!_model->removeContainer(row)) {
+		applyModel();
+	}
+
+}
 void VariableDialog::onSetContainerAsMapRadioSelected() {}
 void VariableDialog::onSetContainerAsListRadioSelected() {}
 void VariableDialog::onSetContainerAsStringRadioSelected() {}
@@ -623,8 +656,10 @@ void VariableDialog::onDeleteContainerItemButtonPressed() {}
 
 VariableDialog::~VariableDialog(){}; // NOLINT
 
+
 void VariableDialog::applyModel()
 {
+	// TODO! We need an undelete action. Best way is to change the text on the button if the notes say "Deleted"
 	_applyingModel = true;
 
 	auto variables = _model->getVariableValues();
@@ -648,9 +683,11 @@ void VariableDialog::applyModel()
 
 		if (ui->variablesTable->item(x, 1)){
 			ui->variablesTable->item(x, 1)->setText(variables[x][1].c_str());
+			ui->varaiblesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][1].c_str());
 			ui->variablesTable->setItem(x, 1, item);
+			ui->variablesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
 		}
 
 		if (ui->variablesTable->item(x, 2)){
@@ -658,6 +695,7 @@ void VariableDialog::applyModel()
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][2].c_str());
 			ui->variablesTable->setItem(x, 2, item);
+			ui->variablesTable->item(x, 2)->setFlags(item->flags() & ~Qt::ItemIsEditable);
 		}
 	}
 
@@ -668,6 +706,24 @@ void VariableDialog::applyModel()
 	} else {
 		QTableWidgetItem* item = new QTableWidgetItem("Add Variable ...");
 		ui->variablesTable->setItem(x, 0, item);
+	}
+
+	if (ui->variablesTable->item(x, 1)){
+		ui->varaiblesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->variablesTable->item(x, 1)->setText("");
+	} else {
+		QTableWidgetItem* item = new QTableWidgetItem("");
+		item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->variablesTable->setItem(x, 1, item);
+	}
+
+	if (ui->variablesTable->item(x, 2)){
+		ui->varaiblesTable->item(x, 2)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->variablesTable->item(x, 2)->setText("");
+	} else {
+		QTableWidgetItem* item = new QTableWidgetItem("");
+		item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->variablesTable->setItem(x, 2, item);
 	}
 
 	if (_currentVariable.empty() || selectedRow < 0){
@@ -694,7 +750,6 @@ void VariableDialog::applyModel()
 		if (!_currentVariable.empty() && containers[x][0] == _currentVariable){
 			selectedRow = x;
 		}
-
 
 		if (ui->containersTable->item(x, 1)){
 			ui->containersTable->item(x, 1)->setText(containers[x][1].c_str());
@@ -908,30 +963,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->deleteContainerItemButton->setEnabled(true);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-
-		 = _model->getMapKeys();
-
-		auto items = ui->containersTable->selectedItems();
-		int row = -1;
-
-		// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-		for (const auto& item : items) {
-			row = item->row();
-		}
-
-		const SCP_vector<SCP_string>& getMapKeys(int index);
-		const SCP_vector<SCP_string>& getStringValues(int index);
-		const SCP_vector<int>& getNumberValues(int index);
-
-
-		if (row < 0){
-			return;
-		}
-
-
-
-		ui->containerContentstable->setRowCount( );
-
 
 	} else {
 		ui->copyContainerItemButton->setEnabled(true);

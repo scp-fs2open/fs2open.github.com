@@ -477,16 +477,22 @@ SCP_string VariableDialogModel::addNewVariable()
 }
 
 SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName)
-{
-    if (newName == "") {
-        return "";
-    }
- 
+{ 
     auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
         return "";
+    }
+
+    // no name means no variable
+    if (newName == "") {
+        variable->deleted = true;
+    }
+
+    // Truncate name if needed
+    if (newName.len() >= TOKEN_LENGTH){
+        newName = newName.substr(0, TAKEN_LENGTH - 1);
     }
 
     // We cannot have two variables with the same name, but we need to check this somewhere else (like on accept attempt).
@@ -508,7 +514,7 @@ SCP_string VariableDialogModel::copyVariable(int index)
 
     do {
         SCP_string newName;
-        sprintf(newName, "%s_copy%i", variable->name.c_str(), count);
+        sprintf(newName, "%s_copy%i", variable->name.substr(0, TOKEN_LENGTH - 6).c_str(), count);
         variableSearch = lookupVariableByName(newName);
 
         // open slot found!

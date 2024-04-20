@@ -90,6 +90,7 @@ public:
 	bool setContainerEternalFlag(int index, bool eternal);
 
 	SCP_string addContainer();
+	SCP_string copyContainer(int index);
 	SCP_string changeContainerName(int index, SCP_string newName);
 	bool removeContainer(int index);
 
