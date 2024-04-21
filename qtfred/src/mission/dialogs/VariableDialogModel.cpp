@@ -930,7 +930,7 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
     return true;
 }
 
-std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SCP_string keyIn)
+std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, int mapIndex)
 {
     auto container = lookupContainer(index);
 

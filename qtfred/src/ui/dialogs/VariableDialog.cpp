@@ -430,12 +430,13 @@ void VariableDialog::onContainerContentsSelectionChanged()
 	}
 
 	auto item = ui->containerContentsTable->item(row, 0);
-	
-	if (item){
-		SCP_string newContainerItemName = item->text().toStdString();
-	} else {
+	SCP_string newContainerItemName;
+
+	if (!item){
 		return;
 	}
+
+	newContainerItemName = item->text().toStdString();
 
 	item = ui->containerContentsTable->item(row, 1);	
 
@@ -667,7 +668,7 @@ void VariableDialog::onCopyContainerButtonPressed()
 	}
 
 	// This will always need an apply model update, whether it succeeds or fails.
-	copyContainer(row);
+	_model->copyContainer(row);
 	applyModel();
 }
 

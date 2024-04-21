@@ -101,7 +101,7 @@ public:
 	bool removeListItem(int containerindex, int index);
 
 	std::pair<SCP_string, SCP_string> addMapItem(int index);
-	std::pair<SCP_string, SCP_string> copyMapItem(int index, SCP_string key);
+	std::pair<SCP_string, SCP_string> copyMapItem(int index, int itemIndex);
 	bool removeMapItem(int index, int rowIndex);
 
 	SCP_string replaceMapItemKey(int index, SCP_string oldKey, SCP_string newKey);
