@@ -1192,7 +1192,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
     SCP_string mapPrefix;
     SCP_string mapMidScript;
-    SCP_string mapPostscript
+    SCP_string mapPostscript;
 
     switch (_listTextMode) {
         case 1: 
@@ -1216,13 +1216,13 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
             break;
 
         case 5:
-            listPrefix = "<"
-            listPostscript = ">"
+            listPrefix = "<";
+            listPostscript = ">";
             break;
 
         case 6:
-            listPrefix = ""
-            listPostscript = ""
+            listPrefix = "";
+            listPostscript = "";
             break;
 
 
@@ -1272,7 +1272,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
             break;
 
-        case default:
+        default:
             _mapTextMode = 0;
             mapPrefix = "Map with ";
             mapMidScript = " Keys and ";
@@ -1310,9 +1310,9 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
             type += mapMidScript;
 
             if (item.string){
-                type += "String"
+                type += "String";
             } else {
-                type += "Number"
+                type += "Number";
             }
 
             type += mapPostscript;

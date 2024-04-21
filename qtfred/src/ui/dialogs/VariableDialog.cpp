@@ -83,7 +83,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->doNotSaveVariableRadio,
 		&QRadioButton::toggled,
 		this,
-		&VariableDialog::onDoNotSaveVariableRadioSelected)
+		&VariableDialog::onDoNotSaveVariableRadioSelected);
 
 	connect(ui->saveContainerOnMissionCompletedRadio,
 		&QRadioButton::toggled,
@@ -243,7 +243,7 @@ void VariableDialog::onVariablesTableUpdated()
 		return;
 	}	
 	
-	auto item =  
+	auto item = ui->variablesTable->item(currentRow);
 
 	// so if the user just removed the name, mark it as deleted *before changing the name*
 	if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
@@ -272,7 +272,7 @@ void VariableDialog::onVariablesTableUpdated()
 	// empty return and cell was handled earlier.
 
 	// data cell was altered
-	} else if (item->column() == 1) {
+	if (item->column() == 1) {
 
 		// Variable is a string
 		if (_model->getVariableType(item->row())){
@@ -318,16 +318,18 @@ void VariableDialog::onVariablesSelectionChanged()
 		return;
 	}
 
+	int row = getCurrentVariableRow();
+
+	if (row < 0){
+		return;
+	}
+	
 	SCP_string newVariableName = "";
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for(const auto& item : items) {
-		if (item->column() == 0){
-			newVariableName = item->text().toStdString();
-			break;
-		}
+	if (item == 0){
+		newVariableName = item->text().toStdString();
 	}
-
+	
 	if (newVariableName != _currentVariable){
 		_currentVariable = newVariableName;
 		applyModel();
