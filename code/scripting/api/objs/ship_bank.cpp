@@ -389,26 +389,22 @@ ADE_VIRTVAR(FOFCooldown, l_WeaponBank, "number", "The FOF cooldown value. A valu
 {
 	ship_bank_h *bh = NULL;
 	float newValue = -1.f;
-	if(!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &newValue))
+	if(!ade_get_args(L, "o|f", l_WeaponBank.GetPtr(&bh), &newValue))
 		return ade_set_error(L, "f", -1.f);
 
 	if(!bh->isValid())
 		return ade_set_error(L, "f", -1.f);
 
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This function does not support setting values yet!");
-		return ade_set_error(L, "f", -1.f);
-	}
-
 	switch(bh->typeh.type)
 	{
 		case SWH_PRIMARY:
 		{
-			auto wif = &Weapon_info[bh->typeh.sw->primary_bank_weapons[bh->bank]];
-			float reset_amount = (timestamp_until(bh->typeh.sw->last_primary_fire_stamp[bh->bank]) / 1000.0f) * wif->fof_reset_rate;
-			auto val = bh->typeh.sw->primary_bank_fof_cooldown[bh->bank] + reset_amount;
-			CLAMP(val, 0.0f, 1.0f);
-			return ade_set_args(L, "f", val);
+			if (ADE_SETTING_VAR) {
+				CLAMP(newValue, 0.0f, 1.0f);
+				bh->typeh.sw->primary_bank_fof_cooldown[bh->bank] = newValue;
+			}
+
+			return ade_set_args(L, "f", bh->typeh.sw->primary_bank_fof_cooldown[bh->bank]);
 		}
 		case SWH_SECONDARY:
 		case SWH_TERTIARY:
