@@ -192,7 +192,6 @@ void VariableDialogModel::initializeData()
             } else {
                 item.string = false;
                 
-                Sexp_variables[i].text;
                 try {
 					item.numberValue = std::stoi(Sexp_variables[i].text);
                 }                
