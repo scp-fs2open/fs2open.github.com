@@ -153,7 +153,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->doNotSaveContainerRadio,
 		&QRadioButton::toggled,
 		this,
-		&VariableDialog::onDoNotSaveContainerRadioSelected)
+		&VariableDialog::onDoNotSaveContainerRadioSelected);
 
 	connect(ui->saveContainerOnMissionCloseRadio,
 		&QRadioButton::toggled,
@@ -231,6 +231,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 }
 
 // TODO! make sure that when a variable is added that the whole model is reloaded.  
+// TODO! Fix me.  This function does not work as intended because it must process both, not just one.
 void VariableDialog::onVariablesTableUpdated() 
 {
 	if (_applyingModel){
@@ -243,14 +244,14 @@ void VariableDialog::onVariablesTableUpdated()
 		return;
 	}	
 	
-	auto item = ui->variablesTable->item(currentRow);
+	auto item = ui->variablesTable->item(currentRow, 0);
+	bool apply = false;
 
 	// so if the user just removed the name, mark it as deleted *before changing the name*
 	if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
 		if (!_model->removeVariable(item->row())) {
 			// marking a variable as deleted failed, resync UI
-			applyModel();
-			return;
+			apply = true;
 		} else {
 			updateVariableOptions();
 		}
@@ -261,7 +262,7 @@ void VariableDialog::onVariablesTableUpdated()
 		// we put something in the cell, but the model couldn't process it.
 		if (strlen(item->text().toStdString().c_str()) && ret == ""){
 			// update of variable name failed, resync UI
-			applyModel();
+			apply = true;
 
 		// we had a successful rename.  So update the variable we reference.
 		} else if (ret != "") {
@@ -271,7 +272,11 @@ void VariableDialog::onVariablesTableUpdated()
 	}
 	// empty return and cell was handled earlier.
 
-	// data cell was altered
+
+	item = ui->variablesTable->item(currentRow, 1);
+
+	// check if data column was altered
+	// TODO!  Set up comparison between last and current value
 	if (item->column() == 1) {
 
 		// Variable is a string
@@ -281,11 +286,10 @@ void VariableDialog::onVariablesTableUpdated()
 
 			SCP_string ret = _model->setVariableStringValue(item->row(), temp);
 			if (ret == ""){
-				applyModel();
-				return;
-			}
-			
-			item->setText(ret.c_str());
+				apply = true;
+			} else {
+				item->setText(ret.c_str());
+			}			
 		} else {
 			SCP_string source = item->text().toStdString();
 			SCP_string temp = _model->trimNumberString(source);
@@ -323,10 +327,12 @@ void VariableDialog::onVariablesSelectionChanged()
 	if (row < 0){
 		return;
 	}
-	
+
 	SCP_string newVariableName = "";
 
-	if (item == 0){
+	auto item = ui->variablesTable->item(x, 0); 
+
+	if (item){
 		newVariableName = item->text().toStdString();
 	}
 	
@@ -351,19 +357,19 @@ void VariableDialog::onContainersTableUpdated()
 	}
 
 	// Are they adding a new container?
-	if (row == ui->containersTable->rowCount - 1){
+	if (row == ui->containersTable->rowCount() - 1){
 		if (ui->containersTable->item(row, 0)) {
-			SCP_string newString = ui->containersTable->item(row, 0).text().toStdString();
+			SCP_string newString = ui->containersTable->item(row, 0)->text().toStdString();
 			if (!newString.empty() && newString != "Add Container ..."){
-				_model->addContainer(newSTring);
-				_currentContainer = newString();
+				_model->addContainer(newString);
+				_currentContainer = newString;
 				applyModel();
 			}
 		}
 
 	// are they editing an existing container name?
 	} else if (ui->containersTable->item(row, 0)){
-		_currentContainer = ui->containersTable->item(row,0).toStdString();
+		_currentContainer = ui->containersTable->item(row,0)->text().toStdString();
 		
 		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0).toStdString())){
 			applyModel();
@@ -489,8 +495,6 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 		ui->setVariableAsStringRadio->setChecked(true);
 		ui->setVariableAsNumberRadio->setChecked(false);
 	}
-
-	break;
 }
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
@@ -514,7 +518,6 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 		ui->setVariableAsStringRadio->setChecked(false);
 		ui->setVariableAsNumberRadio->setChecked(true);
 	}
-	break;
 }
 
 void VariableDialog::onDoNotSaveVariableRadioSelected()
@@ -554,7 +557,7 @@ void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected()
 		return;
 	}
 	
-	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(row(), 1);
+	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(row, 1);
 
 	if (ret != 1){
 		applyModel();
@@ -668,7 +671,7 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 		return;
 	}
 
-	model->setContainerListOrMap(row, false);
+	_model->setContainerListOrMap(row, false);
 	applyModel();
 }
 
@@ -684,7 +687,7 @@ void VariableDialog::onSetContainerAsListRadioSelected()
 		return;
 	}
 
-	model->setContainerListOrMap(row, true);
+	_model->setContainerListOrMap(row, true);
 	applyModel();
 }
 
@@ -701,7 +704,7 @@ void VariableDialog::onSetContainerAsStringRadioSelected()
 		return;
 	}
 
-	model->setContainerValueType(row, true);
+	_model->setContainerValueType(row, true);
 	applyModel();
 }
 
@@ -718,7 +721,7 @@ void VariableDialog::onSetContainerAsNumberRadioSelected()
 		return;
 	}
 
-	model->setContainerValueType(row, false);
+	_model->setContainerValueType(row, false);
 	applyModel();
 }
 
@@ -734,7 +737,7 @@ void VariableDialog::onSetContainerKeyAsStringRadioSelected()
 		return;
 	}
 
-	model->setContainerKeyType(row, true);
+	_model->setContainerKeyType(row, true);
 	applyModel();
 }
 
@@ -751,7 +754,7 @@ void VariableDialog::onSetContainerKeyAsNumberRadioSelected()
 		return;
 	}
 
-	model->setContainerKeyType(row, false);
+	_model->setContainerKeyType(row, false);
 	applyModel();
 }
 
@@ -770,9 +773,9 @@ void VariableDialog::onDoNotSaveContainerRadioSelected()
 	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 0) != 0){
 		applyModel();
 	} else {
-		ui->doNotSaveContainerRadio.setChecked(true);
-		ui->saveContainerOnMissionClosedRadio.setChecked(false);
-		ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+		ui->doNotSaveContainerRadio->setChecked(true);
+		ui->saveContainerOnMissionCloseRadio->setChecked(false);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 	}
 }
 void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() 
@@ -790,9 +793,9 @@ void VariableDialog::onSaveContainerOnMissionClosedRadioSelected()
 	if (model->setContainerOnMissionCloseOrCompleteFlag(row, 2) != 2)
 		applyModel();
 	else {
-		ui->doNotSaveContainerRadio.setChecked(false);
-		ui->saveContainerOnMissionClosedRadio.setChecked(true);
-		ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+		ui->doNotSaveContainerRadio->setChecked(false);
+		ui->saveContainerOnMissionCloseRadio->setChecked(true);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 	}
 }
 
@@ -811,9 +814,9 @@ void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected()
 	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 1) != 1)	
 		applyModel();
 	else {
-		ui->doNotSaveContainerRadio.setChecked(false);
-		ui->saveContainerOnMissionClosedRadio.setChecked(false);
-		ui->saveContainerOnMissionCompletedRadio.setChecked(true);
+		ui->doNotSaveContainerRadio->setChecked(false);
+		ui->saveContainerOnMissionCloseRadio->setChecked(false);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
 	}
 }
 
@@ -825,7 +828,7 @@ void VariableDialog::onNetworkContainerCheckboxClicked()
 		return;
 	}
 
-	if (ui->networkContainerCheckbox->ischecked() != _model->setContainerNetworkStatus(row, ui->networkContainerCheckbox->ischecked())){
+	if (ui->networkContainerCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->networkContainerCheckbox->ischecked())){
 		applyModel();
 	}
 }
@@ -843,7 +846,11 @@ void VariableDialog::onSetContainerAsEternalCheckboxClicked()
 	} 
 }
 
-void VariableDialog::onAddContainerItemButtonPressed() {}
+void VariableDialog::onAddContainerItemButtonPressed() 
+{
+
+}
+
 void VariableDialog::onCopyContainerItemButtonPressed() {}
 void VariableDialog::onDeleteContainerItemButtonPressed() {}
 

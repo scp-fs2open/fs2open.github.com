@@ -798,6 +798,7 @@ bool VariableDialogModel::removeContainer(int index)
     }
 
     container->deleted = true;
+    return container->deleted;
 }
 
 SCP_string VariableDialogModel::addListItem(int index)
@@ -996,6 +997,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SC
             }
         }
     }
+
+    return std::make_pair("", "");
 }
 
 // it's really because of this feature that we need data to only be in one or the other vector for maps.
@@ -1184,7 +1187,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
     return outStrings;
 }
 
-const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
+SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
     // This logic makes the mode which we use to display, easily configureable. 
     SCP_string listPrefix;

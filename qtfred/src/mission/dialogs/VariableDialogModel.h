@@ -121,6 +121,9 @@ public:
 	void reject() override;
 
 	void initializeData();
+
+	static SCP_string trimNumberString(SCP_string source);
+
 private:
 	SCP_vector<variableInfo> _variableItems;
 	SCP_vector<containerInfo> _containerItems;
@@ -163,7 +166,6 @@ private:
 		return nullptr;
 	}
 
-	static SCP_string trimNumberString(SCP_string source);
 
 	// many of the controls in this editor can lead to drastic actions, so this will be very useful.
 	bool confirmAction(SCP_string question, SCP_string informativeText)
