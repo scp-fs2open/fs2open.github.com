@@ -542,88 +542,82 @@ void VariableDialog::onDoNotSaveVariableRadioSelected()
 
 void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() 
 {
-	if (_currentVariable.empty() || ui->saveContainerOnMissionCompletedRadio->isChecked()){
+	if (ui->saveContainerOnMissionCompletedRadio->isChecked()){
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int row = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(item->row(), 1);
+	if (row < 0){
+		return;
+	}
+	
+	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(row(), 1);
 
-		if (ret != 1){
-			applyModel();
-		} else {
-			ui->doNotSaveVariableRadio->setChecked(false);
-			ui->saveContainerOnMissionCompletedRadio->setChecked(true);
-			ui->saveVariableOnMissionCloseRadio->setChecked(false);
-		}
+	if (ret != 1){
+		applyModel();
+	} else {
+		ui->doNotSaveVariableRadio->setChecked(false);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+		ui->saveVariableOnMissionCloseRadio->setChecked(false);
 	}
 }
 
 void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() 
 {
-	if (_currentVariable.empty() || ui->saveContainerOnMissionCompletedRadio->isChecked()){
+	if (ui->saveContainerOnMissionCompletedRadio->isChecked()){
 		return;
 	}
 
+	int row = getCurrentVariableRow();
 
-	auto items = ui->variablesTable->selectedItems();
+	if (row < 0){
+		return;
+	}
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
+	auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(row, 2);
 
-		auto ret = _model->setVariableOnMissionCloseOrCompleteFlag(item->row(), 2);
-
-		if (ret != 2){
-			applyModel();
-		} else {
-			ui->doNotSaveVariableRadio->setChecked(false);
-			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
-			ui->saveVariableOnMissionCloseRadio->setChecked(true);
-		}
+	// out of sync because we did not get the expected return value.
+	if (ret != 2){
+		applyModel();
+	} else {
+		ui->doNotSaveVariableRadio->setChecked(false);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCloseRadio->setChecked(true);
 	}
 }
 
 void VariableDialog::onSaveVariableAsEternalCheckboxClicked() 
 {
-	if (_currentVariable.empty()){
+	int row = getCurrentVariableRow();
+
+	if (row < 0){
 		return;
 	}
 
-
-	auto items = ui->variablesTable->selectedItems();
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		// If the model returns the old status, then the change failed and we're out of sync.	
-		if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(item->row(), !ui->setVariableAsEternalcheckbox->isChecked())) {
-			applyModel();
-		} else {
-			ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
-		}
+	// If the model returns the old status, then the change failed and we're out of sync.	
+	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(row, !ui->setVariableAsEternalcheckbox->isChecked())) {
+		applyModel();
+	} else {
+		ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
 	}
 }
 
 void VariableDialog::onNetworkVariableCheckboxClicked()
 {
-	if (_currentVariable.empty()){
+	int row = getCurrentVariableRow();
+
+	if (row < 0){
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-
-		// If the model returns the old status, then the change failed and we're out of sync.	
-		if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(item->row(), !ui->networkVariableCheckbox->isChecked())) {
-			applyModel();
-		} else {
-			ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
-		}
+	// If the model returns the old status, then the change failed and we're out of sync.	
+	if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(row, !ui->networkVariableCheckbox->isChecked())) {
+		applyModel();
+	} else {
+		ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
 	}
+
 }
 
 void VariableDialog::onAddContainerButtonPressed() 
@@ -647,15 +641,9 @@ void VariableDialog::onCopyContainerButtonPressed() {}
 
 void VariableDialog::onDeleteContainerButtonPressed() 
 {
-	auto items = ui->containersTable->selectedItems();
-	int row = -1;
+	int row = getCurrentContainerRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
-
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 
@@ -668,12 +656,9 @@ void VariableDialog::onDeleteContainerButtonPressed()
 
 void VariableDialog::onSetContainerAsMapRadioSelected() 
 {
-	auto items = ui->containersTable->selectedItems();
-	int row = -1;
-
 	int row = getCurrentContainerRow();
 
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 
@@ -683,10 +668,9 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 
 void VariableDialog::onSetContainerAsListRadioSelected() 
 {
-	auto items = ui->containersTable->selectedItems();
 	int row = getCurrentContainerRow();
 
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 
@@ -697,10 +681,9 @@ void VariableDialog::onSetContainerAsListRadioSelected()
 
 void VariableDialog::onSetContainerAsStringRadioSelected() 
 {
-	auto items = ui->containersTable->selectedItems();
 	int row = getCurrentContainerRow();
 
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 
@@ -710,10 +693,9 @@ void VariableDialog::onSetContainerAsStringRadioSelected()
 
 void VariableDialog::onSetContainerAsNumberRadioSelected() 
 {
-	auto items = ui->containersTable->selectedItems();
 	int row = getCurrentContainerRow();
 
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 
@@ -723,10 +705,9 @@ void VariableDialog::onSetContainerAsNumberRadioSelected()
 
 void VariableDialog::onSetContainerKeyAsStringRadioSelected() 
 {
-	auto items = ui->containersTable->selectedItems();
 	int row = getCurrentContainerRow();
 
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 	setContainerKeyType(row, true);
@@ -738,10 +719,9 @@ void VariableDialog::onSetContainerKeyAsStringRadioSelected()
 
 void VariableDialog::onSetContainerKeyAsNumberRadioSelected() 
 {
-	auto items = ui->containersTable->selectedItems();
 	int row = getCurrentContainerRow();
 
-	if (row == -1){
+	if (row < 0){
 		return;
 	}
 
