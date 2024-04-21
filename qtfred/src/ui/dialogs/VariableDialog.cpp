@@ -237,76 +237,77 @@ void VariableDialog::onVariablesTableUpdated()
 		return;
 	}
 
-	auto items = ui->variablesTable->selectedItems();
+	int currentRow = getCurrentVariableRow();
 
-	// yes, selected items returns a list, but we really should only have one row of items because multiselect will be off.
-	for(const auto& item : items) {
-		if (item->column() == 0){
+	if (currentRow < 0){
+		return;
+	}	
+	
+	auto item =  
 
-			// so if the user just removed the name, mark it as deleted *before changing the name*
-			if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
-				if (!_model->removeVariable(item->row())) {
-					// marking a variable as deleted failed, resync UI
-					applyModel();
-					return;
-				} else {
-					updateVariableOptions();
-				}
-			} else {
-				
-				auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
-
-				// we put something in the cell, but the model couldn't process it.
-				if (strlen(item->text().toStdString().c_str()) && ret == ""){
-					// update of variable name failed, resync UI
-					applyModel();
-
-				// we had a successful rename.  So update the variable we reference.
-				} else if (ret != "") {
-					item->setText(ret.c_str());
-					_currentVariable = ret;
-				}
-			}
-			// empty return and cell was handled earlier.
-		
-		// data cell was altered
-		} else if (item->column() == 1) {
-
-			// Variable is a string
-			if (_model->getVariableType(item->row())){
-				SCP_string temp = item->text().toStdString().c_str();
-				temp = temp.substr(0, NAME_LENGTH - 1);
-
-				SCP_string ret = _model->setVariableStringValue(item->row(), temp);
-				if (ret == ""){
-					applyModel();
-					return;
-				}
-				
-				item->setText(ret.c_str());
-			} else {
-				SCP_string source = item->text().toStdString();
-				SCP_string temp = _model->trimNumberString(source);
-
-				if (temp != source){
-					item->setText(temp.c_str());
-				}
-
-				try {
-					int ret = _model->setVariableNumberValue(item->row(), std::stoi(temp));
-					temp = "";
-					sprintf(temp, "%i", ret);
-					item->setText(temp.c_str());
-				}
-				catch (...) {
-					applyModel();
-				}
-			}
-
-		// if the user somehow edited the info that should only come from the model and should not be editable, reload everything.
-		} else {
+	// so if the user just removed the name, mark it as deleted *before changing the name*
+	if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
+		if (!_model->removeVariable(item->row())) {
+			// marking a variable as deleted failed, resync UI
 			applyModel();
+			return;
+		} else {
+			updateVariableOptions();
 		}
+	} else {
+		
+		auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
+
+		// we put something in the cell, but the model couldn't process it.
+		if (strlen(item->text().toStdString().c_str()) && ret == ""){
+			// update of variable name failed, resync UI
+			applyModel();
+
+		// we had a successful rename.  So update the variable we reference.
+		} else if (ret != "") {
+			item->setText(ret.c_str());
+			_currentVariable = ret;
+		}
+	}
+	// empty return and cell was handled earlier.
+
+	// data cell was altered
+	} else if (item->column() == 1) {
+
+		// Variable is a string
+		if (_model->getVariableType(item->row())){
+			SCP_string temp = item->text().toStdString().c_str();
+			temp = temp.substr(0, NAME_LENGTH - 1);
+
+			SCP_string ret = _model->setVariableStringValue(item->row(), temp);
+			if (ret == ""){
+				applyModel();
+				return;
+			}
+			
+			item->setText(ret.c_str());
+		} else {
+			SCP_string source = item->text().toStdString();
+			SCP_string temp = _model->trimNumberString(source);
+
+			if (temp != source){
+				item->setText(temp.c_str());
+			}
+
+			try {
+				int ret = _model->setVariableNumberValue(item->row(), std::stoi(temp));
+				temp = "";
+				sprintf(temp, "%i", ret);
+				item->setText(temp.c_str());
+			}
+			catch (...) {
+				applyModel();
+			}
+		}
+
+	// if the user somehow edited the info that should only come from the model and should not be editable, reload everything.
+	} else {
+		applyModel();
 	}
 }
 
@@ -340,8 +341,33 @@ void VariableDialog::onContainersTableUpdated()
 		return;
 	}
 
+	int row = getCurrentContainerRow();
 
-} // could be new name
+	// just in case something is goofy, return
+	if (row < 0){
+		return;
+	}
+
+	// Are they adding a new container?
+	if (row == ui->containersTable->rowCount - 1){
+		if (ui->containersTable->item(row, 0)) {
+			SCP_string newString = ui->containersTable->item(row, 0).text().toStdString();
+			if (!newString.empty() && newString != "Add Container ..."){
+				_model->addContainer(newSTring);
+				_currentContainer = newString();
+				applyModel();
+			}
+		}
+
+	// are they editing an existing container name?
+	} else if (ui->containersTable->item(row, 0)){
+		_currentContainer = ui->containersTable->item(row,0).toStdString();
+		
+		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0).toStdString())){
+			applyModel();
+		}	
+	}
+}
 
 void VariableDialog::onContainersSelectionChanged() 
 {
@@ -645,10 +671,7 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 	auto items = ui->containersTable->selectedItems();
 	int row = -1;
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
+	int row = getCurrentContainerRow();
 
 	if (row == -1){
 		return;
@@ -661,12 +684,7 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 void VariableDialog::onSetContainerAsListRadioSelected() 
 {
 	auto items = ui->containersTable->selectedItems();
-	int row = -1;
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
+	int row = getCurrentContainerRow();
 
 	if (row == -1){
 		return;
@@ -680,12 +698,7 @@ void VariableDialog::onSetContainerAsListRadioSelected()
 void VariableDialog::onSetContainerAsStringRadioSelected() 
 {
 	auto items = ui->containersTable->selectedItems();
-	int row = -1;
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
+	int row = getCurrentContainerRow();
 
 	if (row == -1){
 		return;
@@ -698,12 +711,7 @@ void VariableDialog::onSetContainerAsStringRadioSelected()
 void VariableDialog::onSetContainerAsNumberRadioSelected() 
 {
 	auto items = ui->containersTable->selectedItems();
-	int row = -1;
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
+	int row = getCurrentContainerRow();
 
 	if (row == -1){
 		return;
@@ -716,17 +724,11 @@ void VariableDialog::onSetContainerAsNumberRadioSelected()
 void VariableDialog::onSetContainerKeyAsStringRadioSelected() 
 {
 	auto items = ui->containersTable->selectedItems();
-	int row = -1;
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
+	int row = getCurrentContainerRow();
 
 	if (row == -1){
 		return;
 	}
-
 	setContainerKeyType(row, true);
 	applyModel();
 
@@ -734,7 +736,19 @@ void VariableDialog::onSetContainerKeyAsStringRadioSelected()
 
 
 
-void VariableDialog::onSetContainerKeyAsNumberRadioSelected() {}
+void VariableDialog::onSetContainerKeyAsNumberRadioSelected() 
+{
+	auto items = ui->containersTable->selectedItems();
+	int row = getCurrentContainerRow();
+
+	if (row == -1){
+		return;
+	}
+
+	setContainerKeyType(row, false);
+	applyModel();
+}
+
 void VariableDialog::onDoNotSaveContainerRadioSelected(){}
 void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
 void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() {}
