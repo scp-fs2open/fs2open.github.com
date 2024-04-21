@@ -1174,8 +1174,8 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 		// with string contents
 		if (_model->getContainerValueType(row)){
-			auto strings = _model->getStringValues();
-			ui->continerContentsTable->setRowCount(static_cast<int>(strings.size()) + 1);
+			auto strings = _model->getStringValues(row);
+			ui->containerContentsTable->setRowCount(static_cast<int>(strings.size()) + 1);
 
 			int x;
 			for (x = 0; x < static_cast<int>(strings.size()); ++x){
@@ -1189,11 +1189,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				// empty out the second column as it's not needed in list mode
 				if (ui->containerContentsTable->item(x, 1)){
 					ui->containerContentsTable->item(x, 1)->setText("");
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem("");
-					ui->containerContentsTable->setItem(x, 1, item);
 					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
 
@@ -1207,17 +1207,17 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 			if (ui->containerContentsTable->item(x, 1)){
 				ui->containerContentsTable->item(x, 1)->setText("");
-				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 			} else {
 				QTableWidgetItem* item = new QTableWidgetItem("");
-				ui->containerContentsTable->setItem(x, 1, item);
 				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				ui->containerContentsTable->setItem(x, 1, item);
 			}
 		
 		// list with number contents
 		} else {
 			auto numbers = _model->getNumberValues();
-			ui->continerContentsTable->setRowCount(static_cast<int>(numbers.size()) + 1);
+			ui->containerContentsTable->setRowCount(static_cast<int>(numbers.size()) + 1);
 
 			int x;
 			for (x = 0; x < static_cast<int>(numbers.size()); ++x){
@@ -1231,7 +1231,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				// empty out the second column as it's not needed in list mode
 				if (ui->containerContentsTable->item(x, 1)){
 					ui->containerContentsTable->item(x, 1)->setText("");
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem("");
 					ui->containerContentsTable->setItem(x, 1, item);
@@ -1249,11 +1249,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 			if (ui->containerContentsTable->item(x, 1)){
 				ui->containerContentsTable->item(x, 1)->setText("");
-				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 			} else {
 				QTableWidgetItem* item = new QTableWidgetItem("");
-				ui->containerContentsTable->setItem(x, 1, item);
 				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				ui->containerContentsTable->setItem(x, 1, item);
 			}
 
 		}
@@ -1274,7 +1274,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 			auto strings = _model->getStringValues();
 
 			// use the map as the size because map containers are only as good as their keys anyway.
-			ui->continerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
+			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
 
 			int x;
 			for (x = 0; x < static_cast<int>(keys.size()); ++x){
@@ -1285,21 +1285,20 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->setItem(x, 0, item);
 				}
 
-
 				if (ui->containerContentsTable->item(x, 1)){
 					ui->containerContentsTable->item(x, 1)->setText(strings[x].c_str());
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
-					ui->containerContentsTable->setItem(x, 1, item);
 					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
 
 		// number valued map
 		} else {
-			auto numbers = _model->getNumberValues();
-			ui->continerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
+			auto numbers = _model->getNumberValues(row);
+			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
 
 			int x;
 			for (x = 0; x < static_cast<int>(keys.size()); ++x){
@@ -1312,11 +1311,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 				if (ui->containerContentsTable->item(x, 1)){
 					ui->containerContentsTable->item(x, 1)->setText(std::to_string(numbers[x]).c_str());
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
-					ui->containerContentsTable->setItem(x, 1, item);
 					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
 
@@ -1330,11 +1329,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 			if (ui->containerContentsTable->item(x, 1)){
 				ui->containerContentsTable->item(x, 1)->setText("Add Value ...");
-				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 			} else {
 				QTableWidgetItem* item = new QTableWidgetItem("Add Value ...");
-				ui->containerContentsTable->setItem(x, 1, item);
 				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				ui->containerContentsTable->setItem(x, 1, item);
 			}
 		}
 	}
@@ -1368,7 +1367,7 @@ int VariableDialog::getCurrentContainerRow(){
 	return -1;
 }
 
-int variableDialog::getCurrentContainerItemRow(){
+int VariableDialog::getCurrentContainerItemRow(){
 	auto items = ui->containerItemsTeable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.

@@ -899,6 +899,7 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
         container->numberValues.erase(container->numberValues.begin() + index);
     }
 
+    return true;
 }
 
 std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SCP_string keyIn)
@@ -1187,7 +1188,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
     return outStrings;
 }
 
-SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
+const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
     // This logic makes the mode which we use to display, easily configureable. 
     SCP_string listPrefix;
