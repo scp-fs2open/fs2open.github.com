@@ -160,6 +160,7 @@ extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
 extern bool Contrails_use_absolute_speed;
 extern bool Lua_API_returns_nil_instead_of_invalid_object;
+extern bool Scripted_velocity;
 
 void mod_table_init();
 void mod_table_post_process();

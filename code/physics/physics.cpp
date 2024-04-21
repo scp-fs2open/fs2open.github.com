@@ -371,18 +371,20 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	if ((pi->flags & PF_SUPERCAP_WARP_IN) && (excess < SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) {
 		pi->flags &= ~(PF_SUPERCAP_WARP_IN);
 	}
+	
+	if (!Scripted_velocity || !(pi->flags & PF_SCRIPTED_VELOCITY)) {
+		// update world position from local to world coords using orient
+		vec3d world_disp;
+		vm_vec_unrotate(&world_disp, &local_disp, orient);
+		*position += world_disp;
+		*position += grav_disp;
 
-	// update world position from local to world coords using orient
-	vec3d world_disp;
-	vm_vec_unrotate (&world_disp, &local_disp, orient);
-	*position += world_disp;
-	*position += grav_disp;
-
-	// update world velocity	
-	if (!(pi->flags & PF_SCRIPTED_VELOCITY)) {
+		// update world velocity	
 		vm_vec_unrotate(&pi->vel, &local_v_out, orient);
 		pi->vel += grav_vel;
 	} else {
+		// velocity set by script, just trust whatever that is, at least for this frame
+		*position += pi->vel * sim_time;
 		pi->flags &= ~PF_SCRIPTED_VELOCITY;
 	}
 

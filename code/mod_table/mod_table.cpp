@@ -151,6 +151,7 @@ bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
 bool Lua_API_returns_nil_instead_of_invalid_object;
+bool Scripted_velocity;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -1372,6 +1373,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Contrails_use_absolute_speed);
 			}
 
+			if (optional_string("$Scripted velocity:")) {
+				stuff_boolean(&Scripted_velocity);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1582,6 +1587,7 @@ void mod_table_reset()
 	Disable_internal_loadout_restoration_system = false;
 	Contrails_use_absolute_speed = false;
 	Lua_API_returns_nil_instead_of_invalid_object = false;
+	Scripted_velocity = false;
 }
 
 void mod_table_set_version_flags()
@@ -1599,5 +1605,8 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(24, 0, 0)) {
 		Calculate_subsystem_hitpoints_after_parsing = true;		// this is essentially a bugfix
+	}
+	if (mod_supports_version(24, 2, 0)) {
+		Scripted_velocity = true;		// more sensical behavior
 	}
 }
