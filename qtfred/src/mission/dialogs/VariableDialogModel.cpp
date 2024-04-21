@@ -1007,13 +1007,15 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SC
 // both of the map's data vectors might be undesired, and not deleting takes the map immediately
 // out of sync.  Also, just displaying both data sets would be misleading.
 // We just need to tell the user that the data cannot be maintained. 
-bool VariableDialogModel::removeMapItem(int index, SCP_string key)
+bool VariableDialogModel::removeMapItem(int index, int itemIndex)
 {
     auto container = lookupContainer(index);
 
     if (!container){
         return false;
     }
+
+    auto item = lookupContainerItem(itemIndex);
 
     for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
         if (container->keys[x] == key) {

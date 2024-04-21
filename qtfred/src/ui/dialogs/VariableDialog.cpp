@@ -335,7 +335,13 @@ void VariableDialog::onVariablesSelectionChanged()
 	if (item){
 		newVariableName = item->text().toStdString();
 	}
-	
+
+	item = ui->variablesTable->item(row, 1);
+
+	if (item){
+		_currentVariableData = item->text().toStdString();
+	}
+
 	if (newVariableName != _currentVariable){
 		_currentVariable = newVariableName;
 		applyModel();
@@ -401,6 +407,7 @@ void VariableDialog::onContainersSelectionChanged()
 	}
 }
 
+// TODO, finish this function
 void VariableDialog::onContainerContentsTableUpdated() 
 {
 	if (_applyingModel){
@@ -416,16 +423,26 @@ void VariableDialog::onContainerContentsSelectionChanged()
 		return;
 	}
 
-	auto items = ui->containerContentsTable->selectedItems();
+	int row = getCurrentContainerItemRow();
 
-	SCP_string newContainerItemName = "";
+	if (row < 0){
+		return;
+	}
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for(const auto& item : items) {
-		if (item->column() == 0){
-			newContainerItemName = item->text().toStdString();
-			break;
-		}
+	auto item = ui->containerContentsTable->item(row, 0);
+	
+	if (item){
+		SCP_string newContainerItemName = item->text().toStdString();
+	} else {
+		return;
+	}
+
+	item = ui->containerContentsTable->item(row, 1);	
+
+	if (item){
+		_currentContainerItemData = item->text().toStdString();
+	} else {
+		_currentContainerItemData = "";
 	}
 
 	if (newContainerItemName != _currentContainerItem){
@@ -641,10 +658,17 @@ void VariableDialog::onAddContainerButtonPressed()
 
 }
 
-// TODO! 3 more functions to write
 void VariableDialog::onCopyContainerButtonPressed() 
 {
+	int row = getCurrentContainerRow();
 
+	if (row < 0 ){
+		return;		
+	}
+
+	// This will always need an apply model update, whether it succeeds or fails.
+	copyContainer(row);
+	applyModel();
 }
 
 void VariableDialog::onDeleteContainerButtonPressed() 
@@ -851,11 +875,66 @@ void VariableDialog::onSetContainerAsEternalCheckboxClicked()
 
 void VariableDialog::onAddContainerItemButtonPressed() 
 {
+	int containerRow = getCurrentContainerRow();
+	
+	if (containerRow < 0){
+		return;
+	}
 
+	if (_model->getContainerListOrMap(containerRow)) {
+		_model->addListItem(containerRow);
+	} else {
+		_model->addMapItem(containerRow);
+	}
+
+	applyModel();
 }
 
-void VariableDialog::onCopyContainerItemButtonPressed() {}
-void VariableDialog::onDeleteContainerItemButtonPressed() {}
+void VariableDialog::onCopyContainerItemButtonPressed() 
+{
+	int containerRow = getCurrentContainerRow();
+	
+	if (containerRow < 0){
+		return;
+	}
+
+	int itemRow = getCurrentContainerItemRow();
+
+	if (itemRow < 0){
+		return;
+	}
+
+	if (_model->getContainerListOrMap(containerRow)) {
+		_model->copyListItem(containerRow, itemRow);
+	} else {
+		_model->copyMapItem(containerRow, itemRow);
+	}
+
+	applyModel();
+}
+
+void VariableDialog::onDeleteContainerItemButtonPressed()
+{
+	int containerRow = getCurrentContainerRow();
+	
+	if (containerRow < 0){
+		return;
+	}
+
+	int itemRow = getCurrentContainerItemRow();
+
+	if (itemRow < 0){
+		return;
+	}
+
+	if (_model->getContainerListOrMap(containerRow)) {
+		_model->removeListItem(containerRow, itemRow);
+	} else {
+		_model->removeMapItem(containerRow, itemRow);
+	}
+
+	applyModel();
+}
 
 
 VariableDialog::~VariableDialog(){}; // NOLINT
