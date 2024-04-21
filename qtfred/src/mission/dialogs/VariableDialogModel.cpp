@@ -490,8 +490,8 @@ SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName
     }
 
     // Truncate name if needed
-    if (newName.len() >= TOKEN_LENGTH){
-        newName = newName.substr(0, TAKEN_LENGTH - 1);
+    if (newName.length() >= TOKEN_LENGTH){
+        newName = newName.substr(0, TOKEN_LENGTH - 1);
     }
 
     // We cannot have two variables with the same name, but we need to check this somewhere else (like on accept attempt).
@@ -857,7 +857,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 
     ret.first = newKey;
 
-    if (container.string)
+    if (container->string)
         ret.second = "";
     else
         ret.second = "0";
@@ -1106,13 +1106,13 @@ const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getMapKeys() found that container %s does not exist.", container->name.c_str());
+		sprintf(temp, "getMapKeys() found that container %s does not exist.", container->name.c_str());
         throw std::invalid_argument(temp.c_str());
     }
 
     if (container->list) {
 		SCP_string temp;
-		sprintf("getMapKeys() found that container %s is not a map.", container->name.c_str());
+		sprintf(temp, "getMapKeys() found that container %s is not a map.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
@@ -1126,13 +1126,13 @@ const SCP_vector<SCP_string>& VariableDialogModel::getStringValues(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getStringValues() found that container %s does not exist.", container->name.c_str());
+		sprintf(temp, "getStringValues() found that container %s does not exist.", container->name.c_str());
         throw std::invalid_argument(temp);
     }
 
     if (!container->string) {
 		SCP_string temp;
-		sprintf("getStringValues() found that container %s does not store strings.", container->name.c_str());
+		sprintf(temp, "getStringValues() found that container %s does not store strings.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
@@ -1146,13 +1146,13 @@ const SCP_vector<int>& VariableDialogModel::getNumberValues(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getNumberValues() found that container %s does not exist.", container->name.c_str());
+		sprintf(temp, "getNumberValues() found that container %s does not exist.", container->name.c_str());
 		throw std::invalid_argument(temp);  
     }
 
     if (container->string) {
 		SCP_string temp;
-		sprintf("getNumberValues() found that container %s does not store numbers.", container->name.c_str());
+		sprintf(temp, "getNumberValues() found that container %s does not store numbers.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
