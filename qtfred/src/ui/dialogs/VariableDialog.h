@@ -59,7 +59,7 @@ class VariableDialog : public QDialog {
 	void onSetContainerKeyAsStringRadioSelected();
 	void onSetContainerKeyAsNumberRadioSelected();
 	void onDoNotSaveContainerRadioSelected();
-	void onSaveContainerOnMissionClosedRadioSelected();
+	void onSaveContainerOnMissionCloseRadioSelected();
 	void onSaveContainerOnMissionCompletedRadioSelected();
 	void onNetworkContainerCheckboxClicked();
 	void onSetContainerAsEternalCheckboxClicked();

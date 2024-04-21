@@ -158,7 +158,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->saveContainerOnMissionCloseRadio,
 		&QRadioButton::toggled,
 		this,
-		&VariableDialog::onSaveContainerOnMissionClosedRadioSelected);
+		&VariableDialog::onSaveContainerOnMissionCloseRadioSelected);
 
 	connect(ui->saveContainerOnMissionCompletedRadio,
 		&QRadioButton::toggled,
@@ -371,7 +371,7 @@ void VariableDialog::onContainersTableUpdated()
 	} else if (ui->containersTable->item(row, 0)){
 		_currentContainer = ui->containersTable->item(row,0)->text().toStdString();
 		
-		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0).toStdString())){
+		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0)->text().toStdString())){
 			applyModel();
 		}	
 	}
@@ -641,8 +641,11 @@ void VariableDialog::onAddContainerButtonPressed()
 
 }
 
-// TODO! 4 more functions to write
-void VariableDialog::onCopyContainerButtonPressed() {}
+// TODO! 3 more functions to write
+void VariableDialog::onCopyContainerButtonPressed() 
+{
+
+}
 
 void VariableDialog::onDeleteContainerButtonPressed() 
 {
@@ -778,9 +781,9 @@ void VariableDialog::onDoNotSaveContainerRadioSelected()
 		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 	}
 }
-void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() 
+void VariableDialog::onSaveContainerOnMissionCloseRadioSelected() 
 {
-	if (ui->saveContainerOnMissionClosedRadio->isChecked()){
+	if (ui->saveContainerOnMissionCloseRadio->isChecked()){
 		return;
 	}
 
@@ -828,7 +831,7 @@ void VariableDialog::onNetworkContainerCheckboxClicked()
 		return;
 	}
 
-	if (ui->networkContainerCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->networkContainerCheckbox->ischecked())){
+	if (ui->networkContainerCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->networkContainerCheckbox->isChecked())){
 		applyModel();
 	}
 }
@@ -841,7 +844,7 @@ void VariableDialog::onSetContainerAsEternalCheckboxClicked()
 		return;
 	}
 
-	if (ui->setContainerAsEternalCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->setContainerAsEternalCheckbox->ischecked())){
+	if (ui->setContainerAsEternalCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->setContainerAsEternalCheckbox->isChecked())){
 		applyModel();
 	} 
 }
@@ -884,7 +887,7 @@ void VariableDialog::applyModel()
 
 		if (ui->variablesTable->item(x, 1)){
 			ui->variablesTable->item(x, 1)->setText(variables[x][1].c_str());
-			ui->variablesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			ui->variablesTable->item(x, 1)->setFlags(ui->variablesTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][1].c_str());
 			ui->variablesTable->setItem(x, 1, item);
@@ -893,6 +896,7 @@ void VariableDialog::applyModel()
 
 		if (ui->variablesTable->item(x, 2)){
 			ui->variablesTable->item(x, 2)->setText(variables[x][2].c_str());
+			ui->variablesTable->item(x, 2)->setFlags(ui->variablesTable->item(x, 2)->flags() & ~Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][2].c_str());
 			ui->variablesTable->setItem(x, 2, item);
@@ -1271,7 +1275,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 		// string valued map.
 		if (_model->getContainerValueType(row)){
-			auto strings = _model->getStringValues();
+			auto strings = _model->getStringValues(row);
 
 			// use the map as the size because map containers are only as good as their keys anyway.
 			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
@@ -1368,7 +1372,7 @@ int VariableDialog::getCurrentContainerRow(){
 }
 
 int VariableDialog::getCurrentContainerItemRow(){
-	auto items = ui->containerItemsTable->selectedItems();
+	auto items = ui->containerContentsTable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
