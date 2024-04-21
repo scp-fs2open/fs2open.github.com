@@ -330,7 +330,7 @@ void VariableDialog::onVariablesSelectionChanged()
 
 	SCP_string newVariableName = "";
 
-	auto item = ui->variablesTable->item(x, 0); 
+	auto item = ui->variablesTable->item(row, 0); 
 
 	if (item){
 		newVariableName = item->text().toStdString();
@@ -790,7 +790,7 @@ void VariableDialog::onSaveContainerOnMissionClosedRadioSelected()
 		return;
 	}
 
-	if (model->setContainerOnMissionCloseOrCompleteFlag(row, 2) != 2)
+	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 2) != 2)
 		applyModel();
 	else {
 		ui->doNotSaveContainerRadio->setChecked(false);
@@ -841,7 +841,7 @@ void VariableDialog::onSetContainerAsEternalCheckboxClicked()
 		return;
 	}
 
-	if (ui->setContainerAsEternalCheckbox->ischecked() != _model->setContainerNetworkStatus(row, ui->setContainerAsEternalCheckbox->ischecked())){
+	if (ui->setContainerAsEternalCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->setContainerAsEternalCheckbox->ischecked())){
 		applyModel();
 	} 
 }
@@ -884,7 +884,7 @@ void VariableDialog::applyModel()
 
 		if (ui->variablesTable->item(x, 1)){
 			ui->variablesTable->item(x, 1)->setText(variables[x][1].c_str());
-			ui->varaiblesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			ui->variablesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][1].c_str());
 			ui->variablesTable->setItem(x, 1, item);
@@ -910,7 +910,7 @@ void VariableDialog::applyModel()
 	}
 
 	if (ui->variablesTable->item(x, 1)){
-		ui->varaiblesTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->variablesTable->item(x, 1)->setFlags(ui->variablesTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 		ui->variablesTable->item(x, 1)->setText("");
 	} else {
 		QTableWidgetItem* item = new QTableWidgetItem("");
@@ -919,7 +919,7 @@ void VariableDialog::applyModel()
 	}
 
 	if (ui->variablesTable->item(x, 2)){
-		ui->varaiblesTable->item(x, 2)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->variablesTable->item(x, 2)->setFlags(ui->variablesTable->item(x, 2)->flags() & ~Qt::ItemIsEditable);
 		ui->variablesTable->item(x, 2)->setText("");
 	} else {
 		QTableWidgetItem* item = new QTableWidgetItem("");
@@ -1216,7 +1216,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		
 		// list with number contents
 		} else {
-			auto numbers = _model->getNumberValues();
+			auto numbers = _model->getNumberValues(row);
 			ui->containerContentsTable->setRowCount(static_cast<int>(numbers.size()) + 1);
 
 			int x;
@@ -1278,7 +1278,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 			int x;
 			for (x = 0; x < static_cast<int>(keys.size()); ++x){
-				if (ui->contiainerContentsTable->item(x, 0)){
+				if (ui->containerContentsTable->item(x, 0)){
 					ui->containerContentsTable->item(x, 0)->setText(keys[x].c_str());
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(keys[x].c_str());
@@ -1302,7 +1302,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 			int x;
 			for (x = 0; x < static_cast<int>(keys.size()); ++x){
-				if (ui->contiainerContentsTable->item(x, 0)){
+				if (ui->containerContentsTable->item(x, 0)){
 					ui->containerContentsTable->item(x, 0)->setText(keys[x].c_str());
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(keys[x].c_str());
@@ -1368,7 +1368,7 @@ int VariableDialog::getCurrentContainerRow(){
 }
 
 int VariableDialog::getCurrentContainerItemRow(){
-	auto items = ui->containerItemsTeable->selectedItems();
+	auto items = ui->containerItemsTable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
