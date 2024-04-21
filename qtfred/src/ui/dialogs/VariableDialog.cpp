@@ -1142,32 +1142,193 @@ void VariableDialog::updateContainerOptions()
 
 void VariableDialog::updateContainerDataOptions(bool list)
 {
+	int row = getCurrentContainerRow();
 
-	if (_currentContainer.empty()){
+	// No overarching container, no container contents
+	if (row < 0){
+		ui->addContainerItemButton->setEnabled(false);
 		ui->copyContainerItemButton->setEnabled(false);
 		ui->deleteContainerItemButton->setEnabled(false);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+		ui->containerContentsTable->setRowCount(0);
 
 		return;
+	
+	// list type container
 	} else if (list) {
+		ui->addContainerItemButton->setEnabled(true);
 		ui->copyContainerItemButton->setEnabled(true);
 		ui->deleteContainerItemButton->setEnabled(true);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 
+		// with string contents
+		if (_model->getContainerValueType(row)){
+			auto strings = _model->getStringValues();
+			ui->continerContentsTable->setRowCount(static_cast<int>(strings.size()) + 1);
+
+			int x;
+			for (x = 0; x < static_cast<int>(strings.size()); ++x){
+				if (ui->containerContentsTable->item(x, 0)){
+					ui->containerContentsTable->item(x, 0)->setText(strings[x].c_str());
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
+					ui->containerContentsTable->setItem(x, 0, item);
+				}
+
+				// empty out the second column as it's not needed in list mode
+				if (ui->containerContentsTable->item(x, 1)){
+					ui->containerContentsTable->item(x, 1)->setText("");
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem("");
+					ui->containerContentsTable->setItem(x, 1, item);
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				}
+			}
+
+			++x;
+			if (ui->containerContentsTable->item(x, 0)){
+				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
+			} else {
+				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
+				ui->containerContentsTable->setItem(x, 0, item);
+			}
+
+			if (ui->containerContentsTable->item(x, 1)){
+				ui->containerContentsTable->item(x, 1)->setText("");
+				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			} else {
+				QTableWidgetItem* item = new QTableWidgetItem("");
+				ui->containerContentsTable->setItem(x, 1, item);
+				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			}
+		
+		// list with number contents
+		} else {
+			auto numbers = _model->getNumberValues();
+			ui->continerContentsTable->setRowCount(static_cast<int>(numbers.size()) + 1);
+
+			int x;
+			for (x = 0; x < static_cast<int>(numbers.size()); ++x){
+				if (ui->containerContentsTable->item(x, 0)){
+					ui->containerContentsTable->item(x, 0)->setText(std::to_string(numbers[x]).c_str());
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
+					ui->containerContentsTable->setItem(x, 0, item);
+				}
+
+				// empty out the second column as it's not needed in list mode
+				if (ui->containerContentsTable->item(x, 1)){
+					ui->containerContentsTable->item(x, 1)->setText("");
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem("");
+					ui->containerContentsTable->setItem(x, 1, item);
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				}
+			}
+
+			++x;
+			if (ui->containerContentsTable->item(x, 0)){
+				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
+			} else {
+				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
+				ui->containerContentsTable->setItem(x, 0, item);
+			}
+
+			if (ui->containerContentsTable->item(x, 1)){
+				ui->containerContentsTable->item(x, 1)->setText("");
+				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			} else {
+				QTableWidgetItem* item = new QTableWidgetItem("");
+				ui->containerContentsTable->setItem(x, 1, item);
+				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			}
+
+		}
+
+	// or it could be a map container
 	} else {
+		ui->addContainerItemButton->setEnabled(true);
 		ui->copyContainerItemButton->setEnabled(true);
 		ui->deleteContainerItemButton->setEnabled(true);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 
+		// keys I didn't bother to make separate.  Should have done the same with values.
+		auto keys = _model->getMapKeys(row);
 
-		ui->continerContentsTable->setRowCount();
+		// string valued map.
+		if (_model->getContainerValueType(row)){
+			auto strings = _model->getStringValues();
 
+			// use the map as the size because map containers are only as good as their keys anyway.
+			ui->continerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
+
+			int x;
+			for (x = 0; x < static_cast<int>(keys.size()); ++x){
+				if (ui->contiainerContentsTable->item(x, 0)){
+					ui->containerContentsTable->item(x, 0)->setText(keys[x].c_str());
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem(keys[x].c_str());
+					ui->containerContentsTable->setItem(x, 0, item);
+				}
+
+
+				if (ui->containerContentsTable->item(x, 1)){
+					ui->containerContentsTable->item(x, 1)->setText(strings[x].c_str());
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
+					ui->containerContentsTable->setItem(x, 1, item);
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				}
+			}
+
+		// number valued map
+		} else {
+			auto numbers = _model->getNumberValues();
+			ui->continerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
+
+			int x;
+			for (x = 0; x < static_cast<int>(keys.size()); ++x){
+				if (ui->contiainerContentsTable->item(x, 0)){
+					ui->containerContentsTable->item(x, 0)->setText(keys[x].c_str());
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem(keys[x].c_str());
+					ui->containerContentsTable->setItem(x, 0, item);
+				}
+
+				if (ui->containerContentsTable->item(x, 1)){
+					ui->containerContentsTable->item(x, 1)->setText(std::to_string(numbers[x]).c_str());
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				} else {
+					QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
+					ui->containerContentsTable->setItem(x, 1, item);
+					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				}
+			}
+
+			++x;
+			if (ui->containerContentsTable->item(x, 0)){
+				ui->containerContentsTable->item(x, 0)->setText("Add key ...");
+			} else {
+				QTableWidgetItem* item = new QTableWidgetItem("Add key ...");
+				ui->containerContentsTable->setItem(x, 0, item);
+			}
+
+			if (ui->containerContentsTable->item(x, 1)){
+				ui->containerContentsTable->item(x, 1)->setText("Add Value ...");
+				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+			} else {
+				QTableWidgetItem* item = new QTableWidgetItem("Add Value ...");
+				ui->containerContentsTable->setItem(x, 1, item);
+				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+			}
+		}
 	}
-
-
 }
 
 
