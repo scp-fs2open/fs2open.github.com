@@ -789,6 +789,9 @@ SCP_string VariableDialogModel::copyContainer(int index)
 
     // K.I.S.S.
     _containerItems.push_back(*container);
+    _containerItems.back().name += "_copy";
+    _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH);
+    return 
 }
 
 SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
