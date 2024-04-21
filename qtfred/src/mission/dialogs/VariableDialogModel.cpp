@@ -686,6 +686,11 @@ bool VariableDialogModel::setContainerValueType(int index, bool type)
     return container->string;
 }
 
+// TODO finish these two functions.
+bool VariableDialogModel::setContainerKeyType(int index, bool string) {
+    return false;
+}
+
 // This is the most complicated function, because we need to query the user on what they want to do if the had already entered data. 
 bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 {
