@@ -778,6 +778,19 @@ SCP_string VariableDialogModel::addContainer(SCP_string nameIn)
     return _containerItems.back().name;
 }
 
+SCP_string VariableDialogModel::copyContainer(int index)
+{
+    auto container = lookupContainer(index);
+
+    // nothing to copy, invalid entry
+    if (!container){
+        return "";
+    }
+
+    // K.I.S.S.
+    _containerItems.push_back(*container);
+}
+
 SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
 {
     if (newName == "") {
