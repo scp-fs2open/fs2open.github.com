@@ -636,7 +636,7 @@ void VariableDialog::onAddContainerButtonPressed()
 
 }
 
-// TODO! 15 more functions to write
+// TODO! 4 more functions to write
 void VariableDialog::onCopyContainerButtonPressed() {}
 
 void VariableDialog::onDeleteContainerButtonPressed() 
@@ -656,68 +656,166 @@ void VariableDialog::onDeleteContainerButtonPressed()
 
 void VariableDialog::onSetContainerAsMapRadioSelected() 
 {
+	if (ui->setContainerAsMapRadio->isChecked()){
+		return;
+	}
+
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
 		return;
 	}
 
-	setContainerListOrMap(row, false);
+	model->setContainerListOrMap(row, false);
 	applyModel();
 }
 
 void VariableDialog::onSetContainerAsListRadioSelected() 
 {
+	if (ui->setContainerAsListRadio->isChecked()){
+		return;
+	}
+
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
 		return;
 	}
 
-	setContainerListOrMap(row, true);
+	model->setContainerListOrMap(row, true);
 	applyModel();
 }
 
 
 void VariableDialog::onSetContainerAsStringRadioSelected() 
 {
+	if (ui->setContainerAsStringRadio->isChecked()){
+		return;
+	}
+
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
 		return;
 	}
 
-	setContainerValueType(row, true);
+	model->setContainerValueType(row, true);
 	applyModel();
 }
 
 void VariableDialog::onSetContainerAsNumberRadioSelected() 
 {
+	if (ui->setContainerAsNumberRadio->isChecked()){
+		return;
+	}
+
+
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
 		return;
 	}
 
-	setContainerValueType(row, false);
+	model->setContainerValueType(row, false);
 	applyModel();
 }
 
 void VariableDialog::onSetContainerKeyAsStringRadioSelected() 
 {
+	if (ui->setContainerKeyAsStringRadio->isChecked()){
+		return;
+	}
+
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
 		return;
 	}
-	setContainerKeyType(row, true);
-	applyModel();
 
+	model->setContainerKeyType(row, true);
+	applyModel();
 }
 
 
-
 void VariableDialog::onSetContainerKeyAsNumberRadioSelected() 
+{
+	if (ui->setContainerKeyAsNumberRadio->isChecked()){
+		return;
+	}
+
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
+		return;
+	}
+
+	model->setContainerKeyType(row, false);
+	applyModel();
+}
+
+void VariableDialog::onDoNotSaveContainerRadioSelected()
+{
+	if (ui->doNotSaveContainerRadio->isChecked()){
+		return;
+	}
+
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
+		return;
+	}
+
+	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 0) != 0){
+		applyModel();
+	} else {
+		ui->doNotSaveContainerRadio.setChecked(true);
+		ui->saveContainerOnMissionClosedRadio.setChecked(false);
+		ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+	}
+}
+void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() 
+{
+	if (ui->saveContainerOnMissionClosedRadio->isChecked()){
+		return;
+	}
+
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
+		return;
+	}
+
+	if (model->setContainerOnMissionCloseOrCompleteFlag(row, 2) != 2)
+		applyModel();
+	else {
+		ui->doNotSaveContainerRadio.setChecked(false);
+		ui->saveContainerOnMissionClosedRadio.setChecked(true);
+		ui->saveContainerOnMissionCompletedRadio.setChecked(false);
+	}
+}
+
+void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() 
+{
+	if (ui->saveContainerOnMissionCompletedRadio->isChecked()){
+		return;
+	}
+
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
+		return;
+	}
+
+	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 1) != 1)	
+		applyModel();
+	else {
+		ui->doNotSaveContainerRadio.setChecked(false);
+		ui->saveContainerOnMissionClosedRadio.setChecked(false);
+		ui->saveContainerOnMissionCompletedRadio.setChecked(true);
+	}
+}
+
+void VariableDialog::onNetworkContainerCheckboxClicked() 
 {
 	int row = getCurrentContainerRow();
 
@@ -725,15 +823,24 @@ void VariableDialog::onSetContainerKeyAsNumberRadioSelected()
 		return;
 	}
 
-	setContainerKeyType(row, false);
-	applyModel();
+	if (ui->networkContainerCheckbox->ischecked() != _model->setContainerNetworkStatus(row, ui->networkContainerCheckbox->ischecked())){
+		applyModel();
+	}
 }
 
-void VariableDialog::onDoNotSaveContainerRadioSelected(){}
-void VariableDialog::onSaveContainerOnMissionClosedRadioSelected() {}
-void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() {}
-void VariableDialog::onNetworkContainerCheckboxClicked() {}
-void VariableDialog::onSetContainerAsEternalCheckboxClicked() {}
+void VariableDialog::onSetContainerAsEternalCheckboxClicked() 
+{
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
+		return;
+	}
+
+	if (ui->setContainerAsEternalCheckbox->ischecked() != _model->setContainerNetworkStatus(row, ui->setContainerAsEternalCheckbox->ischecked())){
+		applyModel();
+	} 
+}
+
 void VariableDialog::onAddContainerItemButtonPressed() {}
 void VariableDialog::onCopyContainerItemButtonPressed() {}
 void VariableDialog::onDeleteContainerItemButtonPressed() {}
