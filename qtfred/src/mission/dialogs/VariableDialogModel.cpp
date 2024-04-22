@@ -972,7 +972,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
             // attempt did not work, try next number
             if (found) {
-                sprintf(newKey, "%s%i", *key.c_str(), ++count);
+                sprintf(newKey, "%s%i", key->c_str(), ++count);
             }
 
         } while (found && count < 100);
@@ -1010,7 +1010,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
             // attempt did not work, try next number
             if (found) {
-                sprintf(newKey, "%s%i", *key.c_str(), ++count);
+                sprintf(newKey, "%s%i", key->c_str(), ++count);
             }
 
         } while (found && count < 100);

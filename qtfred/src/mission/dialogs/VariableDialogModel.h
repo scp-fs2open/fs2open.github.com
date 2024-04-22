@@ -168,7 +168,7 @@ private:
 	SCP_string* lookupContainerKey(int containerIndex, int itemIndex){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
 			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].keys.size())){
-				return &_containerItems[index].keys[itemIndex];	
+				return &_containerItems[containerIndex].keys[itemIndex];	
 			}
 		}
 		
@@ -178,7 +178,7 @@ private:
 	SCP_string* lookupContainerStringItem(int containerIndex, int itemIndex){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
 			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].stringValues.size())){
-				return &_containerItems[index].stringValues[itemIndex];	
+				return &_containerItems[containerIndex].stringValues[itemIndex];	
 			}
 		}
 		
@@ -188,7 +188,7 @@ private:
 	int* lookupContainerNumberItem(int containerIndex, int itemIndex){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
 			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].numberValues.size())){
-				return &_containerItems[index].numberValues[itemIndex];	
+				return &_containerItems[containerIndex].numberValues[itemIndex];	
 			}
 		}
 		
