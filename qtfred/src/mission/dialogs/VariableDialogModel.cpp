@@ -932,104 +932,104 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
 
 std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, int mapIndex)
 {
-    /*auto container = lookupContainer(index);
+    auto container = lookupContainer(index);
 
     // any invalid case, early return
-    if (!container || mapIndex < 0 || mapIndex >= static_cast<int>(container->keys.size()) 
-        || (mapIndex >= static_cast<int>(container->stringValues.size()) && container->string)
-        || (mapIndex >= static_cast<int>(container->numberValues.size()) && !container->string)){
+    if (!container) {
         return std::make_pair("", "");
     }
 
-    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
-        if (container->keys[x] == keyIn){
-            if (container->string){
-                if (x < static_cast<int>(container->stringValues.size())){
-                    SCP_string copyValue = container->stringValues[x];
-                    SCP_string newKey;
-                    int size = static_cast<int>(container->keys.size());
-                    sprintf(newKey, "key%i", size);
-                    
-                    bool found = false;
+    auto key = lookupContainerKey(index, mapIndex);
 
-                    do {
-                        found = false;
-                        for (int y = 0; y < static_cast<int>(container->keys.size()); ++y){
-                            if (container->keys[y] == newKey) {
-                                found = true;
-                                break;
-                            }
-                        }
+    if (!key) {
+        return std::make_pair("", "");
+    }
+    
+    
 
-                        // attempt did not work, try next number
-                        if (found) {
-                            ++size;
-                            newKey = "";
-                            sprintf(newKey, "key%i", size);
-                        }
+    if (container->string){
+        auto value = lookupContainerStringItem(index, mapIndex);
 
-					} while (found && size < static_cast<int>(container->keys.size()) + 100);
-                    
-                    // we could not generate a new key .... somehow.
-                    if (found){
-                        return std::make_pair("", "");
-                    }
+        // no valid value.
+        if (!value){
+            return std::make_pair("", "");
+        }
 
-                    container->keys.push_back(newKey);
-                    container->stringValues.push_back(copyValue);
+        SCP_string copyValue = *value;
+        SCP_string newKey = *key + "0";
+        int count = 0;
 
-                    return std::make_pair(newKey, copyValue);
+        bool found;
 
-                } else {
-                    return std::make_pair("", "");
-                }
-            } else {
-                if (x < static_cast<int>(container->numberValues.size())){
-                    int copyValue = container->numberValues[x];
-                    SCP_string newKey;
-                    int size = static_cast<int>(container->keys.size());
-                    sprintf(newKey, "key%i", size);
-                    
-                    bool found = false;
-
-                    do {
-                        found = false;
-                        for (int y = 0; y < static_cast<int>(container->keys.size()); ++y){
-                            if (container->keys[y] == newKey) {
-                                found = true;
-                                break;
-                            }
-                        }
-
-                        // attempt did not work, try next number
-                        if (found) {
-                            ++size;
-                            newKey = "";
-                            sprintf(newKey, "key%i", size);
-                        }
-
-					} while (found && size < static_cast<int>(container->keys.size()) + 100);
-                    
-                    // we could not generate a new key .... somehow.
-                    if (found){
-                        return std::make_pair("", "");
-                    }
-
-                    container->keys.push_back(newKey);
-                    container->numberValues.push_back(copyValue);
-
-					SCP_string temp;
-					sprintf(temp, "%i", copyValue);
-
-                    return std::make_pair(newKey, temp);
-
-                } else {
-                    return std::make_pair("", "");
+        do {
+            found = false;
+            for (int y = 0; y < static_cast<int>(container->keys.size()); ++y){
+                if (container->keys[y] == newKey) {
+                    found = true;
+                    break;
                 }
             }
+
+            // attempt did not work, try next number
+            if (found) {
+                sprintf(newKey, "%s%i", *key.c_str(), ++count);
+            }
+
+        } while (found && count < 100);
+        
+        // we could not generate a new key .... somehow.
+        if (found){
+            return std::make_pair("", "");
         }
+
+        container->keys.push_back(newKey);
+        container->stringValues.push_back(copyValue);
+
+        return std::make_pair(newKey, copyValue);
+
+    } else {
+        auto value = lookupContainerNumberItem(index, mapIndex);
+
+        // no valid value.
+        if (!value){
+            return std::make_pair("", "");
+        }
+
+        bool found;
+        SCP_string newKey = *key + "0";
+        int count = 0;
+
+        do {
+            found = false;
+            for (int y = 0; y < static_cast<int>(container->keys.size()); ++y){
+                if (container->keys[y] == newKey) {
+                    found = true;
+                    break;
+                }
+            }
+
+            // attempt did not work, try next number
+            if (found) {
+                sprintf(newKey, "%s%i", *key.c_str(), ++count);
+            }
+
+        } while (found && count < 100);
+
+
+        // we could not generate a new key .... somehow.
+        if (found){
+            return std::make_pair("", "");
+        }
+
+        container->keys.push_back(newKey);
+        container->numberValues.push_back(copyValue);
+
+        SCP_string temp;
+        sprintf(temp, "%i", copyValue);
+
+        return std::make_pair(newKey, temp);
     }
-	*/
+
     return std::make_pair("", "");
 }
 
@@ -1040,33 +1040,33 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 // We just need to tell the user that the data cannot be maintained. 
 bool VariableDialogModel::removeMapItem(int index, int itemIndex)
 {
-/*    auto container = lookupContainer(index);
+    auto container = lookupContainer(index);
 
     if (!container){
         return false;
     }
+    // container is valid.
 
-    auto item = lookupContainerItem(itemIndex);
+    auto item = lookupContainerKey(itemIndex);
 
-    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
-        if (container->keys[x] == key) {
-            if (container->string && x < static_cast<int>(container->stringValues.size())) {
-                container->stringValues.erase(container->stringValues.begin() + x);
-            } else if (!container->string && x < static_cast<int>(container->numberValues.size())){
-                container->numberValues.erase(container->numberValues.begin() + x);
-            } else {
-                return false;
-            }
+    if (!item){
+        return false;
+    }
+    // key is valid
 
-            // if we get here, we've succeeded and it's time to bug out
-            container->keys.erase(container->keys.begin() + x);
-            // "I'm outta here!"
-            return true;
-        }
+    // Now double check that we have a data value.
+    if (container->string && lookupContainerStringItem(itemIndex)){
+        container->stringValues.erase(container->stringValues.begin() + itemIndex);
+    } else if (!container->string && lookupContainerNumberItem(itemIndex)){
+        container->numberValues.erase(container->numberValues.begin() + itemIndex);
+    } else {
+        return false;
     }
 
-    // NO SPRINGS!!! HEHEHEHEHE*/
-    return false;
+    // if we get here, we've succeeded and it's time to erase the key and bug out
+    container->keys.erase(container->keys.begin() + itemIndex);
+    // "I'm outta here!"
+    return true;
 }
 
 SCP_string VariableDialogModel::replaceMapItemKey(int index, SCP_string oldKey, SCP_string newKey)

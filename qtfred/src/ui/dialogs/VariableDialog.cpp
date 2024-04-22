@@ -1062,8 +1062,9 @@ void VariableDialog::applyModel()
 	}
 
 	if (_currentContainer.empty() || selectedRow < 0){
-		if (ui->containersTable->item(0,0) && strlen(ui->containersTable->item(0,0)->text().toStdString().c_str())){
+		if (ui->containersTable->item(0,0)){
 			_currentContainer = ui->containersTable->item(0,0)->text().toStdString();
+			ui->containersTable->item(row, 0).setSelected(true);
 		}
 	}
 

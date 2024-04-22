@@ -165,6 +165,36 @@ private:
 		return nullptr;
 	}
 
+	SCP_string* lookupContainerKey(int containerIndex, int itemIndex){
+		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
+			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].keys.size())){
+				return &_containerItems[index].keys[itemIndex];	
+			}
+		}
+		
+		return nullptr;
+	}
+
+	SCP_string* lookupContainerStringItem(int containerIndex, int itemIndex){
+		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
+			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].stringValues.size())){
+				return &_containerItems[index].stringValues[itemIndex];	
+			}
+		}
+		
+		return nullptr;
+	}
+	
+	int* lookupContainerNumberItem(int containerIndex, int itemIndex){
+		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
+			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].numberValues.size())){
+				return &_containerItems[index].numberValues[itemIndex];	
+			}
+		}
+		
+		return nullptr;
+	}
+
 
 	// many of the controls in this editor can lead to drastic actions, so this will be very useful.
 	bool confirmAction(SCP_string question, SCP_string informativeText)
@@ -185,6 +215,7 @@ private:
 			break;
 		default:
 			UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
+			return false;
 			break;
 		}
 	}
