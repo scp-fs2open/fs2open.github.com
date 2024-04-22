@@ -460,7 +460,7 @@ SCP_string VariableDialogModel::addNewVariable()
 
     do {
         name = "";
-        sprintf(name, "<unnamed_%i>", count);
+        sprintf(name, "newVar%i", count);
         variable = lookupVariableByName(name);
         ++count;
     } while (variable != nullptr && count < 51);
@@ -762,7 +762,7 @@ SCP_string VariableDialogModel::addContainer()
 
     do {
         name = "";
-        sprintf(name, "<unnamed_%i>", count);
+        sprintf(name, "newCont%i", count);
         container = lookupContainerByName(name);
         ++count;
     } while (container != nullptr && count < 51);
@@ -794,8 +794,8 @@ SCP_string VariableDialogModel::copyContainer(int index)
 
     // K.I.S.S.
     _containerItems.push_back(*container);
-    _containerItems.back().name += "_copy";
-    _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH);
+    _containerItems.back().name = "copy_" + _containerItems.back().name;
+    _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH - 1);
     return _containerItems.back().name;
 }
 

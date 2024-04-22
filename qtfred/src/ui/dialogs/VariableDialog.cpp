@@ -1119,7 +1119,7 @@ void VariableDialog::updateVariableOptions()
 	bool string = _model->getVariableType(row);
 	ui->setVariableAsStringRadio->setChecked(string);
 	ui->setVariableAsNumberRadio->setChecked(!string);
-	
+
 	int ret = _model->getVariableOnMissionCloseOrCompleteFlag(row);
 
 	if (ret == 0){
@@ -1158,7 +1158,7 @@ void VariableDialog::updateContainerOptions()
 
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-
+		ui->containerContentsTable->setRowCount(0);
 
 	} else {
 		auto items = ui->containersTable->selectedItems();
