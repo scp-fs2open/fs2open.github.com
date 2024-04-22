@@ -796,7 +796,7 @@ SCP_string VariableDialogModel::copyContainer(int index)
     _containerItems.push_back(*container);
     _containerItems.back().name += "_copy";
     _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH);
-    return 
+    return _containerItems.back().name;
 }
 
 SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
@@ -934,7 +934,10 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 {
     auto container = lookupContainer(index);
 
-    if (!container) {
+    // any invalid case, early return
+    if (!container || mapIndex < 0 || mapIndex >= static_cast<int>(container->keys.size()) 
+        || (mapIndex >= static_cast<int>(container->stringValues.size()) && container->string)
+        || (mapIndex >= static_cast<int>(container->numberValues.size()) && !container->string)){
         return std::make_pair("", "");
     }
 
