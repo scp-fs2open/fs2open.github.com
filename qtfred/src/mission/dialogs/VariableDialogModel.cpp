@@ -253,7 +253,7 @@ bool VariableDialogModel::getVariableType(int index)
 bool VariableDialogModel::getVariableNetworkStatus(int index)
 {
 	auto variable = lookupVariable(index);
-	return (variable) ? ((variable->flags & SEXP_VARIABLE_NETWORK) > 0) : false;
+	return (variable) ? ((variable->flags & SEXP_VARIABLE_NETWORK) != 0) : false;
 }
 
 
@@ -281,7 +281,7 @@ int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(int index)
 bool VariableDialogModel::getVariableEternalFlag(int index)
 {
 	auto variable = lookupVariable(index);
-    return (variable) ? ((variable->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) > 0) : false;
+    return (variable) ? ((variable->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) != 0) : false;
 }
 
 
@@ -398,7 +398,7 @@ int VariableDialogModel::setVariableOnMissionCloseOrCompleteFlag(int index, int 
     if (flags == 0) {
         variable->flags &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS | SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
     } else if (flags == 1) {
-        variable->flags &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
+        variable->flags &= ~SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
         variable->flags |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
     } else {
         variable->flags |= (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS | SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
@@ -580,7 +580,7 @@ bool VariableDialogModel::getContainerListOrMap(int index)
 bool VariableDialogModel::getContainerNetworkStatus(int index)
 {
 	auto container = lookupContainer(index);
-    return (container) ? ((container->flags & SEXP_VARIABLE_NETWORK) > 0) : false;    
+    return (container) ? ((container->flags & SEXP_VARIABLE_NETWORK) != 0) : false;    
 }
 
 // 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
@@ -603,7 +603,7 @@ int VariableDialogModel::getContainerOnMissionCloseOrCompleteFlag(int index)
 bool VariableDialogModel::getContainerEternalFlag(int index)
 {
 	auto container = lookupContainer(index);
-    return (container) ? ((container->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) > 0) : false;    
+    return (container) ? ((container->flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) != 0) : false;    
 }
 
 
