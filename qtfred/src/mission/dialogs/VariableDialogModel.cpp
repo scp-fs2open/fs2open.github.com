@@ -192,7 +192,6 @@ void VariableDialogModel::initializeData()
             } else {
                 item.string = false;
                 
-                Sexp_variables[i].text;
                 try {
 					item.numberValue = std::stoi(Sexp_variables[i].text);
                 }                
@@ -477,16 +476,22 @@ SCP_string VariableDialogModel::addNewVariable()
 }
 
 SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName)
-{
-    if (newName == "") {
-        return "";
-    }
- 
+{ 
     auto variable = lookupVariable(index);
 
     // nothing to change, or invalid entry
     if (!variable){
         return "";
+    }
+
+    // no name means no variable
+    if (newName == "") {
+        variable->deleted = true;
+    }
+
+    // Truncate name if needed
+    if (newName.length() >= TOKEN_LENGTH){
+        newName = newName.substr(0, TOKEN_LENGTH - 1);
     }
 
     // We cannot have two variables with the same name, but we need to check this somewhere else (like on accept attempt).
@@ -508,7 +513,7 @@ SCP_string VariableDialogModel::copyVariable(int index)
 
     do {
         SCP_string newName;
-        sprintf(newName, "%s_copy%i", variable->name.c_str(), count);
+        sprintf(newName, "%s_copy%i", variable->name.substr(0, TOKEN_LENGTH - 6).c_str(), count);
         variableSearch = lookupVariableByName(newName);
 
         // open slot found!
@@ -681,6 +686,11 @@ bool VariableDialogModel::setContainerValueType(int index, bool type)
     return container->string;
 }
 
+// TODO finish these two functions.
+bool VariableDialogModel::setContainerKeyType(int index, bool string) {
+    return false;
+}
+
 // This is the most complicated function, because we need to query the user on what they want to do if the had already entered data. 
 bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 {
@@ -763,7 +773,30 @@ SCP_string VariableDialogModel::addContainer()
 
     _containerItems.emplace_back();
     _containerItems.back().name = name;
-    return name;
+    return _containerItems.back().name;
+}
+
+SCP_string VariableDialogModel::addContainer(SCP_string nameIn)
+{
+    _containerItems.emplace_back();
+    _containerItems.back().name = nameIn;
+    return _containerItems.back().name;
+}
+
+SCP_string VariableDialogModel::copyContainer(int index)
+{
+    auto container = lookupContainer(index);
+
+    // nothing to copy, invalid entry
+    if (!container){
+        return "";
+    }
+
+    // K.I.S.S.
+    _containerItems.push_back(*container);
+    _containerItems.back().name += "_copy";
+    _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH);
+    return _containerItems.back().name;
 }
 
 SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
@@ -793,6 +826,7 @@ bool VariableDialogModel::removeContainer(int index)
     }
 
     container->deleted = true;
+    return container->deleted;
 }
 
 SCP_string VariableDialogModel::addListItem(int index)
@@ -814,7 +848,50 @@ SCP_string VariableDialogModel::addListItem(int index)
 
 std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 {
-    
+    auto container = lookupContainer(index);
+
+    std::pair <SCP_string, SCP_string> ret = {"", ""};
+
+    // no container available
+    if (!container){
+        return ret;
+    }
+
+    bool conflict;
+    int count = 0;
+    SCP_string newKey;
+
+    do {
+        conflict = false;
+        
+        if (container->integerKeys){
+            sprintf(newKey, "%i", count);
+        } else {
+            sprintf(newKey, "key%i", count);
+        }
+
+        for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
+            if (container->keys[x] == newKey){
+                conflict = true;
+                break;
+            }
+        }
+
+        ++count;
+    } while (conflict && count < 101);
+
+    if (conflict) {
+        return ret;
+    }
+
+    ret.first = newKey;
+
+    if (container->string)
+        ret.second = "";
+    else
+        ret.second = "0";
+
+    return ret;
 }
 
 SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
@@ -850,13 +927,17 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
         container->numberValues.erase(container->numberValues.begin() + index);
     }
 
+    return true;
 }
 
-std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SCP_string keyIn)
+std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, int mapIndex)
 {
     auto container = lookupContainer(index);
 
-    if (!container) {
+    // any invalid case, early return
+    if (!container || mapIndex < 0 || mapIndex >= static_cast<int>(container->keys.size()) 
+        || (mapIndex >= static_cast<int>(container->stringValues.size()) && container->string)
+        || (mapIndex >= static_cast<int>(container->numberValues.size()) && !container->string)){
         return std::make_pair("", "");
     }
 
@@ -948,6 +1029,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SC
             }
         }
     }
+
+    return std::make_pair("", "");
 }
 
 // it's really because of this feature that we need data to only be in one or the other vector for maps.
@@ -955,13 +1038,15 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, SC
 // both of the map's data vectors might be undesired, and not deleting takes the map immediately
 // out of sync.  Also, just displaying both data sets would be misleading.
 // We just need to tell the user that the data cannot be maintained. 
-bool VariableDialogModel::removeMapItem(int index, SCP_string key)
+bool VariableDialogModel::removeMapItem(int index, int itemIndex)
 {
     auto container = lookupContainer(index);
 
     if (!container){
         return false;
     }
+
+    auto item = lookupContainerItem(itemIndex);
 
     for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
         if (container->keys[x] == key) {
@@ -1058,13 +1143,13 @@ const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getMapKeys() found that container %s does not exist.", container->name.c_str());
+		sprintf(temp, "getMapKeys() found that container %s does not exist.", container->name.c_str());
         throw std::invalid_argument(temp.c_str());
     }
 
     if (container->list) {
 		SCP_string temp;
-		sprintf("getMapKeys() found that container %s is not a map.", container->name.c_str());
+		sprintf(temp, "getMapKeys() found that container %s is not a map.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
@@ -1078,13 +1163,13 @@ const SCP_vector<SCP_string>& VariableDialogModel::getStringValues(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getStringValues() found that container %s does not exist.", container->name.c_str());
+		sprintf(temp, "getStringValues() found that container %s does not exist.", container->name.c_str());
         throw std::invalid_argument(temp);
     }
 
     if (!container->string) {
 		SCP_string temp;
-		sprintf("getStringValues() found that container %s does not store strings.", container->name.c_str());
+		sprintf(temp, "getStringValues() found that container %s does not store strings.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
@@ -1098,13 +1183,13 @@ const SCP_vector<int>& VariableDialogModel::getNumberValues(int index)
 
     if (!container) {
 		SCP_string temp;
-		sprintf("getNumberValues() found that container %s does not exist.", container->name.c_str());
+		sprintf(temp, "getNumberValues() found that container %s does not exist.", container->name.c_str());
 		throw std::invalid_argument(temp);  
     }
 
     if (container->string) {
 		SCP_string temp;
-		sprintf("getNumberValues() found that container %s does not store numbers.", container->name.c_str());
+		sprintf(temp, "getNumberValues() found that container %s does not store numbers.", container->name.c_str());
 		throw std::invalid_argument(temp);
     }
 
@@ -1136,29 +1221,203 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
     return outStrings;
 }
 
-
 const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
+    // This logic makes the mode which we use to display, easily configureable. 
+    SCP_string listPrefix;
+    SCP_string listPostscript;
+
+    SCP_string mapPrefix;
+    SCP_string mapMidScript;
+    SCP_string mapPostscript;
+
+    switch (_listTextMode) {
+        case 1: 
+            listPrefix = "";
+            listPostscript = " List";
+            break;
+
+        case 2: 
+            listPrefix = "List (";
+            listPostscript = ")";
+            break;
+
+        case 3: 
+            listPrefix = "List <";
+            listPostscript = ">";            
+            break;
+        
+        case 4:
+            listPrefix = "(";
+            listPostscript = ")";            
+            break;
+
+        case 5:
+            listPrefix = "<";
+            listPostscript = ">";
+            break;
+
+        case 6:
+            listPrefix = "";
+            listPostscript = "";
+            break;
+
+
+        default:
+            // this takes care of weird cases.  The logic should be simple enough to not have bugs, but just in case, switch back to default.
+            _listTextMode = 0;
+            listPrefix = "List of";
+            listPostscript = "s";
+            break;
+    }
+
+    switch (_mapTextMode) {
+        case 1:
+            mapPrefix = "";
+            mapMidScript = "-keyed Map of ";
+            mapPostscript = " Values";
+       
+            break;
+        case 2:
+            mapPrefix = "Map (";
+            mapMidScript = ", ";
+            mapPostscript = ")";
+
+            break;
+        case 3:
+            mapPrefix = "Map <";
+            mapMidScript = ", ";
+            mapPostscript = ">";
+
+            break;
+        case 4:
+            mapPrefix = "(";
+            mapMidScript = ", ";
+            mapPostscript = ")";
+
+            break;
+        case 5:
+            mapPrefix = "<";
+            mapMidScript = ", ";
+            mapPostscript = ">";
+
+            break;
+        case 6:
+            mapPrefix = "";
+            mapMidScript = ", ";
+            mapPostscript = "";
+
+            break;
+
+        default:
+            _mapTextMode = 0;
+            mapPrefix = "Map with ";
+            mapMidScript = " Keys and ";
+            mapPostscript = " Values";
+
+            break;
+    }
+
+
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _containerItems) {
+        SCP_string type = "";
         SCP_string notes = "";
 
+        if (item.string) {
+            type = "String";
+        } else {
+            type += "Number";
+        }
+
+        if (item.list){
+            type = listPrefix + type + listPostscript;
+            
+        } else {
+
+            type = mapPrefix;
+
+            if (item.integerKeys){
+                type += "Number";
+            } else {
+                type += "String";
+            }
+
+            type += mapMidScript;
+
+            if (item.string){
+                type += "String";
+            } else {
+                type += "Number";
+            }
+
+            type += mapPostscript;
+        }
+
+
         if (item.deleted) {
-            notes = "Marked for Deletion";
+            notes = "Flaged for Deletion";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
             notes = "Renamed";
         }
 
-		//TODO! FIX ME
-		outStrings.push_back(std::array<SCP_string, 3>{item.name, item.name, notes});
+		outStrings.push_back(std::array<SCP_string, 3>{item.name, type, notes});
     }
 
     return outStrings;   
 }
 
+SCP_string VariableDialogModel::trimNumberString(SCP_string source) 
+{
+	SCP_string ret;
+   bool foundNonZero = false;
+
+	// filter out non-numeric digits
+	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
+		[&foundNonZero, &ret](char c) -> bool { 
+			switch (c) {
+                // ignore leading zeros
+				case '0':
+                    if (foundNonZero)
+                        return true;
+                    else 
+                        return false;
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+                    foundNonZero = true;
+					return true;
+					break;
+                // only copy the '-' char if it is the first thing to be copied.
+                case '-':
+                    if (ret.empty()){
+                        return true;
+                    } else {
+                        return false;
+                    }
+				default:
+                    return false;
+					break;
+			}
+		}
+	);
+
+    // if all that made it out was a dash, then return nothing.
+    if (ret == "-"){
+        return "";
+    }
+
+	return ret;
+}
 
 } // dialogs
 } // fred

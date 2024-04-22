@@ -25,11 +25,14 @@ struct containerInfo {
 	bool deleted = false;
 	bool list = true;
 	bool string = true;
+	bool integerKeys = false;
 	int flags = 0;
 
 	// this will allow us to look up the original values used in the mission previously.
 	SCP_string originalName = "";
 
+	// I found out that keys could be strictly typed as numbers *after* finishing the majority of the model....
+	// So I am just going to store numerical keys as strings and use a bool to differentiate. 
 	SCP_vector<SCP_string> keys;
 	SCP_vector<int> numberValues;
 	SCP_vector<SCP_string> stringValues;
@@ -81,23 +84,25 @@ public:
 	bool getContainerEternalFlag(int index);
 
 	bool setContainerValueType(int index, bool type);
+	bool setContainerKeyType(int index, bool string);
 	bool setContainerListOrMap(int index, bool list);
 	bool setContainerNetworkStatus(int index, bool network);
 	int setContainerOnMissionCloseOrCompleteFlag(int index, int flags);
 	bool setContainerEternalFlag(int index, bool eternal);
 
 	SCP_string addContainer();
+	SCP_string addContainer(SCP_string nameIn);
+	SCP_string copyContainer(int index);
 	SCP_string changeContainerName(int index, SCP_string newName);
 	bool removeContainer(int index);
 
 	SCP_string addListItem(int index);
-
 	SCP_string copyListItem(int containerIndex, int index);
 	bool removeListItem(int containerindex, int index);
 
 	std::pair<SCP_string, SCP_string> addMapItem(int index);
-	std::pair<SCP_string, SCP_string> copyMapItem(int index, SCP_string key);
-	bool removeMapItem(int index, SCP_string key);
+	std::pair<SCP_string, SCP_string> copyMapItem(int index, int itemIndex);
+	bool removeMapItem(int index, int rowIndex);
 
 	SCP_string replaceMapItemKey(int index, SCP_string oldKey, SCP_string newKey);
 	SCP_string changeMapItemStringValue(int index, SCP_string key, SCP_string newValue);
@@ -109,15 +114,20 @@ public:
 
 	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
 	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();
-	void VariableDialogModel::checkValidModel();
+	void checkValidModel();
 
 	bool apply() override;
 	void reject() override;
 
 	void initializeData();
+
+	static SCP_string trimNumberString(SCP_string source);
+
 private:
 	SCP_vector<variableInfo> _variableItems;
 	SCP_vector<containerInfo> _containerItems;
+	int _listTextMode = 0;
+	int _mapTextMode = 0;
 
 	variableInfo* lookupVariable(int index){
 		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){
@@ -155,8 +165,9 @@ private:
 		return nullptr;
 	}
 
+
 	// many of the controls in this editor can lead to drastic actions, so this will be very useful.
-	const bool confirmAction(SCP_string question, SCP_string informativeText)
+	bool confirmAction(SCP_string question, SCP_string informativeText)
 	{
 	QMessageBox msgBox;
 	msgBox.setText(question.c_str());
@@ -177,6 +188,7 @@ private:
 			break;
 		}
 	}
+
 };
 
 } // namespace dialogs

@@ -43,6 +43,7 @@ class VariableDialog : public QDialog {
 	void onCopyVariableButtonPressed();
 	void onSetVariableAsStringRadioSelected();
 	void onSetVariableAsNumberRadioSelected();
+	void onDoNotSaveVariableRadioSelected();
 	void onSaveVariableOnMissionCompleteRadioSelected();
 	void onSaveVariableOnMissionCloseRadioSelected();
 	void onSaveVariableAsEternalCheckboxClicked();
@@ -57,7 +58,8 @@ class VariableDialog : public QDialog {
 	void onSetContainerAsNumberRadioSelected();
 	void onSetContainerKeyAsStringRadioSelected();
 	void onSetContainerKeyAsNumberRadioSelected();
-	void onSaveContainerOnMissionClosedRadioSelected();
+	void onDoNotSaveContainerRadioSelected();
+	void onSaveContainerOnMissionCloseRadioSelected();
 	void onSaveContainerOnMissionCompletedRadioSelected();
 	void onNetworkContainerCheckboxClicked();
 	void onSetContainerAsEternalCheckboxClicked();
@@ -65,12 +67,16 @@ class VariableDialog : public QDialog {
 	void onCopyContainerItemButtonPressed();
 	void onDeleteContainerItemButtonPressed();
 
-	SCP_string trimNumberString(SCP_string source);
+	int getCurrentVariableRow();
+	int getCurrentContainerRow();
+	int getCurrentContainerItemRow();
 
 	bool _applyingModel = false;
 	SCP_string _currentVariable = "";
+	SCP_string _currentVariableData = "";
 	SCP_string _currentContainer = "";
 	SCP_string _currentContainerItem = "";
+	SCP_string _currentContainerItemData = "";
 };
 
 
