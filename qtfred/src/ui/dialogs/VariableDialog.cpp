@@ -197,7 +197,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
 	ui->variablesTable->setColumnWidth(0, 90);
 	ui->variablesTable->setColumnWidth(1, 90);
-	ui->variablesTable->setColumnWidth(2, 70);
+	ui->variablesTable->setColumnWidth(2, 65);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
@@ -205,7 +205,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
 	ui->containersTable->setColumnWidth(0, 90);
 	ui->containersTable->setColumnWidth(1, 90);
-	ui->containersTable->setColumnWidth(2, 70);
+	ui->containersTable->setColumnWidth(2, 65);
 
 	ui->containerContentsTable->setColumnCount(2);
 
@@ -213,7 +213,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 	ui->containerContentsTable->setColumnWidth(0, 125);
-	ui->containerContentsTable->setColumnWidth(1, 125);
+	ui->containerContentsTable->setColumnWidth(1, 120);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	ui->setVariableAsStringRadio->setAutoExclusive(false);
@@ -1279,7 +1279,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem("");
-					item->->setFlags(item->flags() & ~Qt::ItemIsEditable);
+					item->setFlags(item->flags() & ~Qt::ItemIsEditable);
 					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
