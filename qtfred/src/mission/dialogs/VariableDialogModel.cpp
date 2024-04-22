@@ -932,7 +932,7 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
 
 std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, int mapIndex)
 {
-    auto container = lookupContainer(index);
+    /*auto container = lookupContainer(index);
 
     // any invalid case, early return
     if (!container || mapIndex < 0 || mapIndex >= static_cast<int>(container->keys.size()) 
@@ -1029,7 +1029,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
             }
         }
     }
-
+	*/
     return std::make_pair("", "");
 }
 
@@ -1040,7 +1040,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 // We just need to tell the user that the data cannot be maintained. 
 bool VariableDialogModel::removeMapItem(int index, int itemIndex)
 {
-    auto container = lookupContainer(index);
+/*    auto container = lookupContainer(index);
 
     if (!container){
         return false;
@@ -1065,7 +1065,7 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
         }
     }
 
-    // NO SPRINGS!!! HEHEHEHEHE
+    // NO SPRINGS!!! HEHEHEHEHE*/
     return false;
 }
 

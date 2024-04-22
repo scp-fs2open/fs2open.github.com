@@ -277,6 +277,9 @@ void VariableDialog::onVariablesTableUpdated()
 
 	// check if data column was altered
 	// TODO!  Set up comparison between last and current value
+	// TODO! Also this crashes because item->(x, 1) is null
+	// TODO! Variable is not editable
+	// TODO! Network container does not turn off
 	if (item->column() == 1) {
 
 		// Variable is a string
@@ -1276,7 +1279,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem("");
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+					item->->setFlags(item->flags() & ~Qt::ItemIsEditable);
 					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
@@ -1294,7 +1297,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 			} else {
 				QTableWidgetItem* item = new QTableWidgetItem("");
-				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				item->setFlags(item->flags() & ~Qt::ItemIsEditable);
 				ui->containerContentsTable->setItem(x, 1, item);
 			}
 		
@@ -1318,8 +1321,8 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem("");
+					item->setFlags(item->flags() & ~Qt::ItemIsEditable);
 					ui->containerContentsTable->setItem(x, 1, item);
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
 				}
 			}
 
@@ -1336,7 +1339,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
 			} else {
 				QTableWidgetItem* item = new QTableWidgetItem("");
-				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() & ~Qt::ItemIsEditable);
+				item->setFlags(item->flags() & ~Qt::ItemIsEditable);
 				ui->containerContentsTable->setItem(x, 1, item);
 			}
 
@@ -1374,7 +1377,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+					item->setFlags(item->flags() | Qt::ItemIsEditable);
 					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
@@ -1398,7 +1401,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
-					ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+					item->setFlags(item->flags() | Qt::ItemIsEditable);
 					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
@@ -1416,7 +1419,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 			} else {
 				QTableWidgetItem* item = new QTableWidgetItem("Add Value ...");
-				ui->containerContentsTable->item(x, 1)->setFlags(item->flags() | Qt::ItemIsEditable);
+				item->setFlags(item->flags() | Qt::ItemIsEditable);
 				ui->containerContentsTable->setItem(x, 1, item);
 			}
 		}
