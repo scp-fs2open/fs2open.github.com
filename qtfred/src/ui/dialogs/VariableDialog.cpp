@@ -212,7 +212,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 125);
+	ui->containerContentsTable->setColumnWidth(0, 120);
 	ui->containerContentsTable->setColumnWidth(1, 120);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
