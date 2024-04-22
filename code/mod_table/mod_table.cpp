@@ -151,6 +151,7 @@ bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
 bool Lua_API_returns_nil_instead_of_invalid_object;
+bool Dont_show_callsigns_in_escort_list;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -443,6 +444,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$HUD drop shadows enabled by default:")) {
 				stuff_boolean(&HUD_shadows);
+			}
+
+			if (optional_string("$Don't show callsigns in the escort list:")) {
+				stuff_boolean(&Dont_show_callsigns_in_escort_list);
 			}
 
 			optional_string("#SEXP SETTINGS");
@@ -1582,6 +1587,7 @@ void mod_table_reset()
 	Disable_internal_loadout_restoration_system = false;
 	Contrails_use_absolute_speed = false;
 	Lua_API_returns_nil_instead_of_invalid_object = false;
+	Dont_show_callsigns_in_escort_list = false;
 }
 
 void mod_table_set_version_flags()
