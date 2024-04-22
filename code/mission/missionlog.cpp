@@ -7,9 +7,6 @@
  *
 */ 
 
-
-
-
 #include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "iff_defs/iff_defs.h"
@@ -25,15 +22,6 @@
 #include "ship/ship.h"
 
 
-
-#define MAX_LOG_ENTRIES		1500
-
-// used for high water mark for culling out log entries
-#define LOG_CULL_MARK				((int)(MAX_LOG_ENTRIES * 0.95f))
-#define LOG_CULL_DOORDIE_MARK		((int)(MAX_LOG_ENTRIES * 0.99f))
-#define LOG_LAST_DITCH_CULL_NUM	((int)(MAX_LOG_ENTRIES * 0.20f))
-#define LOG_HALFWAY_REPORT_NUM	((int)(MAX_LOG_ENTRIES * 0.50f))
-
 #define EMPTY_LOG_NAME		""
 
 // defines for X position offsets of different items for mission log
@@ -46,112 +34,12 @@
 static int X, P_width;
 
 SCP_vector<log_line_complete> Log_scrollback_vec;
-int Num_log_lines;
-
-std::array<log_entry, MAX_LOG_ENTRIES> log_entries;	// static array because John says....
-int last_entry;
+SCP_vector<log_entry> Log_entries;
 
 void mission_log_init()
 {
-	last_entry = 0;
-
 	// zero out all the memory so we don't get bogus information when playing across missions!
-	log_entries.fill({});
-}
-
-// function to clean up the mission log removing obsolete entries.  Entries might get marked obsolete
-// in several ways -- having to recycle entries, a ship's subsystem destroyed entries when a ship is
-// fully destroyed, etc.
-void mission_log_cull_obsolete_entries()
-{
-	int i, index;
-
-	nprintf(("missionlog", "culling obsolete entries.  starting last entry %d.\n", last_entry));
-	// find the first obsolete entry
-	for (i = 0; i < last_entry; i++ ) 
-		if ( log_entries[i].flags & MLF_OBSOLETE )
-			break;
-
-	// nothing to do if next if statement is true
-	if ( i == last_entry )
-		return;
-
-	// compact the log array, removing the obsolete entries.
-	index = i;						// index is the first obsolete entry
-
-	// 'index' should always point to the next element in the list
-	// which is getting compacted.  'i' points to the next array
-	// element to be replaced.
-	do {
-		// get to the next non-obsolete entry.  The obsolete entry must not be essential either!
-		while ( (log_entries[index].flags & MLF_OBSOLETE) && !(log_entries[index].flags & MLF_ESSENTIAL) ) {
-			index++;
-			last_entry--;
-		}
-
-		log_entries[i++] = log_entries[index++];
-	} while ( i < last_entry );
-
-#ifndef NDEBUG
-	nprintf(("missionlog", "Ending entry: %d.\n", last_entry));
-#endif
-}
-
-// function to mark entries as obsolete.  Passed is the type of entry that is getting added
-// to the log.  Some entries might get marked obsolete as a result of this type
-void mission_log_obsolete_entries(LogType type, const char *pname)
-{
-	int i;
-	log_entry *entry = NULL;
-
-	// before adding this entry, check to see if the entry type is a ship destroyed or destructed entry.
-	// If so, we can remove any subsystem destroyed entries from the log for this ship.  
-	if ( type == LOG_SHIP_DESTROYED || type == LOG_SELF_DESTRUCTED ) {
-		for (i = 0; i < last_entry; i++) {
-			entry = &log_entries[i];
-
-			// check to see if the type is a subsystem destroyed entry, and that it belongs to the
-			// ship passed into this routine.  If it matches, mark as obsolete.  We'll clean up
-			// the log when it starts to get full
-			if ( !stricmp( pname, entry->pname ) ) {
-				if ( (entry->type == LOG_SHIP_SUBSYS_DESTROYED) || (entry->type == LOG_SHIP_DISARMED) || (entry->type == LOG_SHIP_DISABLED) )
-					entry->flags |= MLF_OBSOLETE;
-			}
-		}
-	}
-
-	// check to see if we are getting to about 80% of our log capacity.  If so, cull the log.
-	if ( last_entry > LOG_CULL_MARK ) {
-		mission_log_cull_obsolete_entries();
-
-		// if we culled the entries, and we are still low on space, we need to take more drastic measures.
-		// these include removing all non-essential entries from the log.  These entries are entries 
-		// which has not been asked for by mission_log_get_time
-		if ( last_entry > LOG_CULL_MARK ) {
-			nprintf(("missionlog", "marking the first %d non-essential log entries as obsolete\n", LOG_LAST_DITCH_CULL_NUM));
-			for (i = 0; i < LOG_LAST_DITCH_CULL_NUM; i++ ) {
-				entry = &log_entries[i];
-				if ( !(entry->flags & MLF_ESSENTIAL) ){
-					entry->flags |= MLF_OBSOLETE;
-				}
-			}
-
-			// cull the obsolete entries again
-			mission_log_cull_obsolete_entries();
-
-			// if we get to this point, and there are no entries left -- we are in big trouble.  We will simply
-			// mark the first 20% of the log as obsolete and compress.  Don't do this unless we are *really*
-			// in trouble
-			if ( last_entry > LOG_CULL_DOORDIE_MARK ) {
-				nprintf(("missionlog", "removing the first %d entries in the mission log!!!!\n", LOG_LAST_DITCH_CULL_NUM));
-				for (i = 0; i < LOG_LAST_DITCH_CULL_NUM; i++ ){
-					entry->flags |= MLF_OBSOLETE;
-				}
-
-				mission_log_cull_obsolete_entries();
-			}
-		}
-	}
+	Log_entries.clear();
 }
 
 // following function adds an entry into the mission log.
@@ -159,26 +47,14 @@ void mission_log_obsolete_entries(LogType type, const char *pname)
 // that this event is for.  Don't add entries with this function for multiplayer
 void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags)
 {
-	__UNUSED int last_entry_save;
-	log_entry *entry;	
-
 	// multiplayer clients don't use this function to add log entries -- they will get
 	// all their info from the host
 	if ( MULTIPLAYER_CLIENT ){
 		return;
 	}
 
-	last_entry_save = last_entry;
-
-	// mark any entries as obsolete.  Part of the pruning is done based on the type (and name) passed
-	// for a new entry
-	mission_log_obsolete_entries(type, pname);
-
-	entry = &log_entries[last_entry];
-
-	if ( last_entry == MAX_LOG_ENTRIES ){
-		return;
-	}
+	Log_entries.emplace_back();
+	auto entry = &Log_entries.back();
 
 	entry->type = type;
 	if ( pname ) {
@@ -322,27 +198,18 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		// scan through all log entries and find at least one ship_depart entry for a ship
 		// that was in this wing.
 		if ( type == LOG_WING_DEPARTED ) {
-			int i;
-
 			// if all were destroyed, then don't do this debug code.
 			if ( (Wings[index].total_destroyed + Wings[index].total_vanished) == Wings[index].total_arrived_count ){
 				break;
 			}
 
-			for ( i = 0; i < last_entry; i++ ) {
-				if ( log_entries[i].type != LOG_SHIP_DEPARTED ){
-					continue;
-				}
-				if( log_entries[i].index == index ){
-					break;
-				}
-			}
-			if ( i == last_entry ){
-				Int3();						// get Allender -- cannot find any departed ships from wing that supposedly departed.
+			if (std::find_if(Log_entries.begin(), Log_entries.end(), [index](const log_entry& le) {
+				return (le.type == LOG_SHIP_DEPARTED) && (le.index == index);
+			}) == Log_entries.end()) {
+				UNREACHABLE("cannot find any departed ships from wing %s that supposedly departed.", Wings[index].name);	// get Allender
 			}
 		}
 #endif
-
 		break;
 
 		// don't display waypoint done entries
@@ -359,15 +226,15 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 
 	// if in multiplayer and I am the master, send this log entry to everyone
 	if ( MULTIPLAYER_MASTER ){
-		send_mission_log_packet( &log_entries[last_entry] );
+		send_mission_log_packet( entry );
 	}
 
-	last_entry++;
-
 #ifndef NDEBUG
-	if ( !(last_entry % 10) ) {
-		if ( (last_entry > LOG_HALFWAY_REPORT_NUM) && (last_entry > last_entry_save) ){
-			nprintf(("missionlog", "new highwater point reached for mission log (%d entries).\n", last_entry));
+	if ( (Log_entries.size() % 10) == 0 ) {
+		static size_t largest_size_save = Log_entries.size();
+		if ( (Log_entries.size() > 350) && (Log_entries.size() > largest_size_save) ){
+			largest_size_save = Log_entries.size();
+			nprintf(("missionlog", "new highwater point reached for mission log (" SIZE_T_ARG " entries).\n", largest_size_save));
 		}
 	}
 
@@ -438,23 +305,12 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 // the normal parameters used for adding an entry to the log
 void mission_log_add_entry_multi( LogType type, const char *pname, const char *sname, int index, fix timestamp, int flags )
 {
-	log_entry *entry;
-
 	// we'd better be in multiplayer and not the master of the game
 	Assert ( Game_mode & GM_MULTIPLAYER );
 	Assert ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 
-	// mark any entries as obsolete.  Part of the pruning is done based on the type (and name) passed
-	// for a new entry
-	mission_log_obsolete_entries(type, pname);
-
-	entry = &log_entries[last_entry];
-
-	if ( last_entry == MAX_LOG_ENTRIES ){
-		return;
-	}
-
-	last_entry++;
+	Log_entries.emplace_back();
+	auto entry = &Log_entries.back();
 
 	entry->type = type;
 	if ( pname ) {
@@ -479,14 +335,11 @@ void mission_log_add_entry_multi( LogType type, const char *pname, const char *s
 
 int mission_log_get_time_indexed( LogType type, const char *pname, const char *sname, int count, fix *time)
 {
-	int i, found;
-	log_entry *entry;
 	Assertion(count > 0, "The count parameter is %d; it should be greater than 0!", count);
 
-	entry = &log_entries[0];
-
-	for (i = 0; i < last_entry; i++, entry++) {
-		found = 0;
+	for (const auto &ii: Log_entries) {
+		auto entry = &ii;
+		bool found = false;
 
 		if ( entry->type == type ) {
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
@@ -528,8 +381,6 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 				count--;
 
 				if ( !count ) {
-					entry->flags |= MLF_ESSENTIAL;				// since the goal code asked for this entry, mark it as essential
-
 					if (time) {
 						*time = entry->timestamp;
 					}
@@ -555,13 +406,10 @@ int mission_log_get_time( LogType type, const char *pname, const char *sname, fi
 
 int mission_log_get_count( LogType type, const char *pname, const char *sname )
 {
-	int i;
-	log_entry *entry;
-	int count = 0;  
+	int count = 0;
 
-	entry = &log_entries[0];
-
-	for (i = 0; i < last_entry; i++, entry++) {
+	for (const auto& ii : Log_entries) {
+		auto entry = &ii;
 
 		if ( entry->type == type ) {
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
@@ -661,28 +509,25 @@ void message_log_add_segs(const char* source_string, int msg_color, int flags = 
 	vm_free(dup_string);
 }
 
-int message_log_color_get_team(int msg_color)
+int mission_log_color_get_team(int msg_color)
 {
 	return msg_color - NUM_LOG_COLORS;
 }
 
-int message_log_team_get_color(int team)
+int mission_log_team_get_color(int team)
 {
 	return NUM_LOG_COLORS + team;
 }
 
 // pw = total pixel width
-void message_log_init_scrollback(int pw, bool split_string)
+void mission_log_init_scrollback(int pw, bool split_string)
 {
 	P_width = pw;
-	mission_log_cull_obsolete_entries();  // compact array so we don't have gaps
 
 	Log_scrollback_vec.clear();
-	Num_log_lines = 0;
 
-	log_entry* entry;
-	for (int i=0; i<last_entry; i++) {
-		entry = &log_entries[i];
+	for (const auto& ii : Log_entries) {
+		auto entry = &ii;
 
 		if (entry->flags & MLF_HIDDEN)
 			continue;
@@ -709,7 +554,7 @@ void message_log_init_scrollback(int pw, bool split_string)
 		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
 			thisColor = LOG_COLOR_BRIGHT;
 		else if (entry->primary_team >= 0)
-			thisColor = message_log_team_get_color(entry->primary_team);
+			thisColor = mission_log_team_get_color(entry->primary_team);
 		else
 			thisColor = LOG_COLOR_OTHER;
 
@@ -738,7 +583,7 @@ void message_log_init_scrollback(int pw, bool split_string)
 
 		// Goober5000
 		if (entry->secondary_team >= 0)
-			thisColor = message_log_team_get_color(entry->secondary_team);
+			thisColor = mission_log_team_get_color(entry->secondary_team);
 		else
 			thisColor = LOG_COLOR_NORMAL;
 
@@ -870,14 +715,24 @@ void message_log_init_scrollback(int pw, bool split_string)
 		}
 
 		Log_scrollback_vec.push_back(std::move(thisEntry));
-		Num_log_lines++;
 	}
 }
 
-void message_log_shutdown_scrollback()
+void mission_log_shutdown_scrollback()
 {
 	Log_scrollback_vec.clear();
-	Num_log_lines = 0;
+}
+
+int mission_log_scrollback_num_lines()
+{
+	return static_cast<int>(Log_scrollback_vec.size());
+}
+
+const log_line_complete* mission_log_scrollback_get_line(int index)
+{
+	if (!SCP_vector_inbounds(Log_scrollback_vec, index))
+		return nullptr;
+	return &Log_scrollback_vec[index];
 }
 
 const color *log_line_get_color(int tag)
@@ -890,7 +745,7 @@ const color *log_line_get_color(int tag)
 			return &Color_normal;
 
 		default: {
-			int team = message_log_color_get_team(tag);
+			int team = mission_log_color_get_team(tag);
 			if (team < 0)
 				return &Color_text_normal;
 			else
@@ -907,7 +762,7 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 
 	int y = 0;
 
-	for (int i = line_offset; i < (int)Log_scrollback_vec.size(); i++) {
+	for (int i = line_offset; i < mission_log_scrollback_num_lines(); i++) {
 
 		// if we're beyond the printable area stop printing!
 		if (y + font_h > list_h)

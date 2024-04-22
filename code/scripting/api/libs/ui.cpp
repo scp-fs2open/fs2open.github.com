@@ -2078,10 +2078,8 @@ ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the M
 {
 	SCP_UNUSED(L);
 
-	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
-
-	//explicitely do not split lines!
-	message_log_init_scrollback(0, false);
+	//explicitly do not split lines!
+	mission_log_init_scrollback(0, false);
 
 	return ADE_RETURN_NIL;
 }
@@ -2090,7 +2088,7 @@ ADE_FUNC(closeMissionLog, l_UserInterface_MissionLog, nullptr, "Clears the Missi
 {
 	SCP_UNUSED(L);
 
-	message_log_shutdown_scrollback();
+	mission_log_shutdown_scrollback();
 
 	return ADE_RETURN_NIL;
 }
@@ -2107,7 +2105,7 @@ ADE_INDEXER(l_Log_Entries,
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 	idx--; //Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+	if ((idx < 0) || (idx >= mission_log_scrollback_num_lines()))
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 
 	return ade_set_args(L, "o", l_Log_Entry.Set(log_entry_h(idx)));
@@ -2115,7 +2113,7 @@ ADE_INDEXER(l_Log_Entries,
 
 ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of mission log entries", "number", "The number of log entries.")
 {
-	return ade_set_args(L, "i", (int)Log_scrollback_vec.size());
+	return ade_set_args(L, "i", mission_log_scrollback_num_lines());
 }
 
 ADE_LIB_DERIV(l_Log_Messages, "Log_Messages", nullptr, nullptr, l_UserInterface_MissionLog);
