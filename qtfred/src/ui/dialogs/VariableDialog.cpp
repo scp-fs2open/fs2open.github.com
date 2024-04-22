@@ -1064,7 +1064,7 @@ void VariableDialog::applyModel()
 	if (_currentContainer.empty() || selectedRow < 0){
 		if (ui->containersTable->item(0,0)){
 			_currentContainer = ui->containersTable->item(0,0)->text().toStdString();
-			ui->containersTable->item(row, 0).setSelected(true);
+			ui->containersTable->item(0, 0).setSelected(true);
 		}
 	}
 
@@ -1111,7 +1111,7 @@ void VariableDialog::updateVariableOptions()
 	// if nothing is selected, but something could be selected, make it so.
 	if (row == -1 && ui->variablesTable->rowCount() > 0) {
 		row = 0;
-		ui->variablesTable->item(row, 0).setSelected(true);
+		ui->variablesTable->item(row, 0)->setSelected(true);
 		_currentVariable = ui->variablesTable->item(row, 0)->text().toStdString();
 	}
 

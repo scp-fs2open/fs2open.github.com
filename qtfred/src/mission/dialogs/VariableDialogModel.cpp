@@ -995,9 +995,11 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
             return std::make_pair("", "");
         }
 
-        bool found;
+        int copyValue = *value;
         SCP_string newKey = *key + "0";
         int count = 0;
+
+        bool found;
 
         do {
             found = false;
@@ -1047,7 +1049,7 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
     }
     // container is valid.
 
-    auto item = lookupContainerKey(itemIndex);
+    auto item = lookupContainerKey(index, itemIndex);
 
     if (!item){
         return false;
@@ -1055,9 +1057,9 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
     // key is valid
 
     // Now double check that we have a data value.
-    if (container->string && lookupContainerStringItem(itemIndex)){
+    if (container->string && lookupContainerStringItem(index, itemIndex)){
         container->stringValues.erase(container->stringValues.begin() + itemIndex);
-    } else if (!container->string && lookupContainerNumberItem(itemIndex)){
+    } else if (!container->string && lookupContainerNumberItem(index, itemIndex)){
         container->numberValues.erase(container->numberValues.begin() + itemIndex);
     } else {
         return false;
