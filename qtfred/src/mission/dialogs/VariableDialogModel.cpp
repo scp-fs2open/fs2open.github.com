@@ -687,14 +687,105 @@ bool VariableDialogModel::setContainerValueType(int index, bool type)
 }
 
 // TODO finish these two functions.
-bool VariableDialogModel::setContainerKeyType(int index, bool string) {
+bool VariableDialogModel::setContainerKeyType(int index, bool string) 
+{    
+    auto container = lookupContainer(index);
+
+    // nothing to change, or invalid entry
+    if (!container){
+        return false;
+    }
+
+
+
     return false;
 }
 
 // This is the most complicated function, because we need to query the user on what they want to do if the had already entered data. 
 bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 {
-	return false;
+    auto container = lookupContainer(index);
+
+    // nothing to change, or invalid entry
+    if (!container){
+        return !list;
+    }
+
+    if (container->list && list) {
+        // no change needed
+        if (list){
+            return list;
+        }
+
+        // no data to either transfer to map/purge/ignore
+        if (container->string && container->stringValues.empty()){
+            container->list = list;
+
+            // still need to deal with extant keys by resizing data values.
+            if (!keys.empty()){
+                stringValues.resize(keys.size());
+            }
+
+            return list;
+        } else if (!container->string && container->numberValues.empty()){
+            container->list = list;
+
+            // still need to deal with extant keys by resizing data values.
+            if (!keys.empty()){
+                numberValues.resize(keys.size());
+            }
+
+            return list;
+        }
+
+        QMessageBox msgBoxListToMapConfirm;
+	    msgBoxListToMapConfirm.setText("This list already has data.  Continue conversion to map?");
+	    msgBoxListToMapConfirm.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+	    msgBoxListToMapConfirm.setDefaultButton(QMessageBox::Cancel);
+	    int ret = msgBoxListToMapConfirm.exec();
+
+	    switch (ret) {
+            case QMessageBox::Yes:
+                break;
+            case QMessageBox::Cancel:
+                return container->list;
+                break;
+            default:
+                UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
+                return false;
+                break;
+            }
+        }
+
+        // now ask about data
+        QMessageBox msgBoxListToMapRetainData;
+	    msgBoxListToMapRetainData.setText("Would you to keep the list data as keys or values, or would you like to purge the container contents?");
+        msgBoxListToMapRetainData.addButton("Keep as Keys", QMessageBox::Discard);
+        msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::Discard);
+        msgBoxListToMapRetainData.addButton("Purge", QMessageBox::Discard);
+        msgBoxListToMapRetainData.setStandardButtons(QMessageBox::Cancel);
+	    msgBoxListToMapRetainData.setDefaultButton(QMessageBox::Cancel);
+	    ret = msgBoxListToMapRetainData.exec();
+
+	    switch (ret) {
+            case QMessageBox::Discard:
+                if ()
+                container->list = list;
+                break;
+            case QMessageBox::Cancel:
+                return container->list;
+                break;
+            default:
+                UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
+                return false;
+                break;
+            }
+        }
+
+	}
+
+
+	return !list;
 }
 
 bool VariableDialogModel::setContainerNetworkStatus(int index, bool network)
