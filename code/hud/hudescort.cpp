@@ -359,19 +359,22 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 	{
 		hud_stuff_ship_name(buf, sp);
 
-		// maybe concatenate the callsign
-		if (*buf)
+		if (!Dont_show_callsigns_in_escort_list)
 		{
-			char callsign[NAME_LENGTH];
+			// maybe concatenate the callsign
+			if (*buf)
+			{
+				char callsign[NAME_LENGTH];
 
-			hud_stuff_ship_callsign(callsign, sp);
-			if (*callsign)
-				sprintf(&buf[strlen(buf)], " (%s)", callsign);
-		}
-		// maybe substitute the callsign
-		else
-		{
-			hud_stuff_ship_callsign(buf, sp);
+				hud_stuff_ship_callsign(callsign, sp);
+				if (*callsign)
+					sprintf(&buf[strlen(buf)], " (%s)", callsign);
+			}
+			// maybe substitute the callsign
+			else
+			{
+				hud_stuff_ship_callsign(buf, sp);
+			}
 		}
 	}
 

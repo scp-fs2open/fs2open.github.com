@@ -10448,6 +10448,19 @@ void ship_process_post(object * obj, float frametime)
 	// update radar status of the ship
 	ship_radar_process(obj, shipp, sip);
 
+	// update fof cooldowns
+	for (int i = 0; i < shipp->weapons.num_primary_banks; i++) {
+		if (shipp->weapons.primary_bank_weapons[i] < 0)
+			continue;
+
+		weapon_info* wip = &Weapon_info[shipp->weapons.primary_bank_weapons[i]];
+		
+		if (wip->fof_reset_rate > 0.0f) {
+			shipp->weapons.primary_bank_fof_cooldown[i] -= wip->fof_reset_rate * frametime;
+			CLAMP(shipp->weapons.primary_bank_fof_cooldown[i], 0.0f, 1.0f);
+		}
+	}
+
 	if ( (!(shipp->is_arriving()) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
 		|| ((Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])) )
 		&&	!(shipp->flags[Ship_Flags::Depart_warp]))
@@ -12512,11 +12525,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			next_fire_delay *= 1.0f + (effective_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
 		}
 
-		if (winfo_p->fof_spread_rate > 0.0f)
-		{
-			//Adjust the primary_bank_fof_cooldown based on how long it's been since the last shot. 
-			float reset_amount = (timestamp_until(swp->last_primary_fire_stamp[bank_to_fire]) / 1000.0f) * winfo_p->fof_reset_rate;
-			swp->primary_bank_fof_cooldown[bank_to_fire] += winfo_p->fof_spread_rate + reset_amount;
+		if (winfo_p->fof_spread_rate > 0.0f) {
+			swp->primary_bank_fof_cooldown[bank_to_fire] += winfo_p->fof_spread_rate;
 			CLAMP(swp->primary_bank_fof_cooldown[bank_to_fire], 0.0f, 1.0f);
 		}
 
