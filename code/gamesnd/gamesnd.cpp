@@ -956,17 +956,32 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 }
 
-void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *lookupVector)
+void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector)
 {
 	SCP_string name;
-
 	stuff_string(name, F_NAME, "\t \n");
+
+	int vectorIndex;
+	if (lookupVector)
+		vectorIndex = gamesnd_lookup_name(name.c_str(), *lookupVector);
+	else
+		vectorIndex = -1;
+
+	bool no_create = orig_no_create;
 
 	if (!no_create)
 	{
-		if (lookupVector != NULL)
+		if (vectorIndex >= 0)
 		{
-			if (gamesnd_lookup_name(name.c_str(), *lookupVector) >= 0)
+			auto existing_gs = &lookupVector->at(vectorIndex);
+
+			// if the existing sound was an empty or placeholder sound, replace it, don't warn
+			if (existing_gs->sound_entries.empty() || existing_gs->sound_entries[0].filename[0] == '\0')
+			{
+				gs = existing_gs;
+				no_create = orig_no_create = true;
+			}
+			else
 			{
 				Warning(LOCATION, "Duplicate sound name \"%s\" found!", name.c_str());
 			}
@@ -976,8 +991,6 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 	}
 	else
 	{
-		int vectorIndex = gamesnd_lookup_name(name.c_str(), *lookupVector);
-
 		if (vectorIndex < 0)
 		{
 			Warning(LOCATION, "No existing sound entry with name \"%s\" found!", name.c_str());
@@ -993,7 +1006,9 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 	if (optional_string("+Filename:"))
 	{
 		parse_gamesnd_new(gs, no_create);
-	} else if (optional_string("+Entry:")) {
+	}
+	else if (optional_string("+Entry:"))
+	{
 		parse_gamesnd_soundset(gs, no_create);
 	}
 	else
