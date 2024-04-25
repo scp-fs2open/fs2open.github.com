@@ -1360,6 +1360,8 @@ typedef struct sexp_node {
 #define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
 #define SNF_CHECKED_NODE_FOR_OPF_POSITIVE	(1<<6)
 #define SNF_NODE_IS_OPF_POSITIVE	(1<<7)
+#define SNF_DESCENDANT_OF_WHEN_ARG_OP		(1<<8)
+#define SNF_NOT_DESCENDANT_OF_WHEN_ARG_OP	(1<<9)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
@@ -1455,11 +1457,6 @@ extern wing *eval_wing(int node);
 extern int sexp_get_variable_index(int node);
 extern int sexp_atoi(int node);
 extern bool sexp_can_construe_as_integer(int node);
-
-// Goober5000
-void do_action_for_each_special_argument(int cur_node);
-bool special_argument_appears_in_sexp_tree(int node);
-bool special_argument_appears_in_sexp_list(int node);
 
 // Goober5000 - for special-arg SEXPs
 extern bool is_when_argument_op(int op_const);
