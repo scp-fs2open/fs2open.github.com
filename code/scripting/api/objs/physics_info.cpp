@@ -284,7 +284,7 @@ ADE_VIRTVAR(SlideDecelerationTime, l_Physics, "number", "Time to decelerate from
 	return ade_set_args(L, "f", pih->pi->slide_decel_time_const);
 }
 
-ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector). Setting this value will have minimal effect unless the $Scripted velocity game settings flag is used.", "vector", "Object velocity, or null vector if handle is invalid")
+ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector). Setting this value may have minimal effect unless the $Fix scripted velocity game settings flag is used.", "vector", "Object velocity, or null vector if handle is invalid")
 {
 	physics_info_h *pih;
 	vec3d *v3=NULL;
