@@ -372,7 +372,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 		pi->flags &= ~(PF_SUPERCAP_WARP_IN);
 	}
 	
-	if (!Scripted_velocity || !(pi->flags & PF_SCRIPTED_VELOCITY)) {
+	if (!(pi->flags & PF_SCRIPTED_VELOCITY)) {
 		// update world position from local to world coords using orient
 		vec3d world_disp;
 		vm_vec_unrotate(&world_disp, &local_disp, orient);
