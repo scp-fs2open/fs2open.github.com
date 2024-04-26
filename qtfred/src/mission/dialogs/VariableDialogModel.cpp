@@ -1475,7 +1475,7 @@ SCP_string VariableDialogModel::trimNumberString(SCP_string source)
 				case '0':
                     if (foundNonZero)
                         return true;
-                    else 
+                    else
                         return false;
 				case '1':
 				case '2':
@@ -1502,6 +1502,14 @@ SCP_string VariableDialogModel::trimNumberString(SCP_string source)
 			}
 		}
 	);
+
+    // -0 is not a possible edge case because if we haven't found a digit, we don't copy zero.
+    // but "-" is and an empty string that should be zero is possible as well.
+
+    // if we had a zero, but it was the only type of digit included and got filtered out.
+    if (ret.empty() && source.find('0') != std::string::npos){
+        return "0";
+    }
 
     // if all that made it out was a dash, then return nothing.
     if (ret == "-"){
