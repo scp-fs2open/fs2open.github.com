@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>608</width>
-    <height>665</height>
+    <width>641</width>
+    <height>678</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,7 +36,7 @@
        <widget class="QGroupBox" name="groupBox_4">
         <property name="geometry">
          <rect>
-          <x>270</x>
+          <x>330</x>
           <y>120</y>
           <width>81</width>
           <height>101</height>
@@ -77,9 +77,12 @@
          <rect>
           <x>10</x>
           <y>30</y>
-          <width>251</width>
+          <width>311</width>
           <height>191</height>
          </rect>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="editTriggers">
          <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
@@ -99,6 +102,9 @@
         <property name="cornerButtonEnabled">
          <bool>false</bool>
         </property>
+        <attribute name="horizontalHeaderHighlightSections">
+         <bool>false</bool>
+        </attribute>
         <attribute name="verticalHeaderVisible">
          <bool>false</bool>
         </attribute>
@@ -106,9 +112,9 @@
        <widget class="QGroupBox" name="groupBox_7">
         <property name="geometry">
          <rect>
-          <x>370</x>
+          <x>420</x>
           <y>20</y>
-          <width>211</width>
+          <width>191</width>
           <height>201</height>
          </rect>
         </property>
@@ -166,7 +172,7 @@
        <widget class="QWidget" name="verticalLayoutWidget">
         <property name="geometry">
          <rect>
-          <x>270</x>
+          <x>330</x>
           <y>30</y>
           <width>82</width>
           <height>86</height>
@@ -196,67 +202,35 @@
          </item>
         </layout>
        </widget>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QGroupBox" name="groupBox_2">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>380</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>Containers</string>
-       </property>
-       <widget class="QTableWidget" name="containersTable">
+       <widget class="QGroupBox" name="groupBox_2">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>30</y>
-          <width>251</width>
-          <height>151</height>
+          <x>0</x>
+          <y>230</y>
+          <width>611</width>
+          <height>401</height>
          </rect>
         </property>
-        <property name="editTriggers">
-         <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-        </property>
-        <property name="alternatingRowColors">
-         <bool>true</bool>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-        <property name="gridStyle">
-         <enum>Qt::DotLine</enum>
-        </property>
-        <attribute name="verticalHeaderVisible">
-         <bool>false</bool>
-        </attribute>
-       </widget>
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>190</y>
-          <width>351</width>
-          <height>191</height>
-         </rect>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>380</height>
+         </size>
         </property>
         <property name="title">
-         <string>Container Contents</string>
+         <string>Containers</string>
         </property>
-        <widget class="QTableWidget" name="containerContentsTable">
+        <widget class="QTableWidget" name="containersTable">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>30</y>
-           <width>241</width>
-           <height>151</height>
+           <width>311</width>
+           <height>161</height>
           </rect>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
          <property name="editTriggers">
           <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
@@ -273,36 +247,141 @@
          <property name="gridStyle">
           <enum>Qt::DotLine</enum>
          </property>
+         <attribute name="horizontalHeaderHighlightSections">
+          <bool>false</bool>
+         </attribute>
          <attribute name="verticalHeaderVisible">
           <bool>false</bool>
          </attribute>
         </widget>
-        <widget class="QWidget" name="verticalLayoutWidget_3">
+        <widget class="QGroupBox" name="groupBox_3">
          <property name="geometry">
           <rect>
-           <x>260</x>
-           <y>30</y>
-           <width>82</width>
-           <height>91</height>
+           <x>10</x>
+           <y>200</y>
+           <width>401</width>
+           <height>191</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
+         <property name="title">
+          <string>Container Contents</string>
+         </property>
+         <widget class="QTableWidget" name="containerContentsTable">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>30</y>
+            <width>291</width>
+            <height>151</height>
+           </rect>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::DotLine</enum>
+          </property>
+          <attribute name="horizontalHeaderHighlightSections">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+         <widget class="QWidget" name="verticalLayoutWidget_3">
+          <property name="geometry">
+           <rect>
+            <x>310</x>
+            <y>30</y>
+            <width>82</width>
+            <height>101</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QPushButton" name="addContainerItemButton">
+             <property name="text">
+              <string>Add</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="copyContainerItemButton">
+             <property name="text">
+              <string>Copy</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton">
+             <property name="text">
+              <string>Item Up</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_2">
+             <property name="text">
+              <string>Item Down</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QPushButton" name="deleteContainerItemButton">
+          <property name="geometry">
+           <rect>
+            <x>310</x>
+            <y>160</y>
+            <width>80</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>8</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Delete</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="verticalLayoutWidget_2">
+         <property name="geometry">
+          <rect>
+           <x>330</x>
+           <y>30</y>
+           <width>82</width>
+           <height>85</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QPushButton" name="addContainerItemButton">
+           <widget class="QPushButton" name="addContainerButton">
             <property name="text">
              <string>Add</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="copyContainerItemButton">
+           <widget class="QPushButton" name="copyContainerButton">
             <property name="text">
              <string>Copy</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="deleteContainerItemButton">
+           <widget class="QPushButton" name="deleteContainerButton">
             <property name="font">
              <font>
               <pointsize>8</pointsize>
@@ -315,203 +394,165 @@
           </item>
          </layout>
         </widget>
-       </widget>
-       <widget class="QWidget" name="verticalLayoutWidget_2">
-        <property name="geometry">
-         <rect>
-          <x>270</x>
-          <y>30</y>
-          <width>82</width>
-          <height>91</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QPushButton" name="addContainerButton">
-           <property name="text">
-            <string>Add</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="copyContainerButton">
-           <property name="text">
-            <string>Copy</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="deleteContainerButton">
-           <property name="font">
-            <font>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Delete</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QGroupBox" name="groupBox_5">
-        <property name="geometry">
-         <rect>
-          <x>370</x>
-          <y>190</y>
-          <width>211</width>
-          <height>181</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>Persistence Options</string>
-        </property>
-        <widget class="QWidget" name="verticalLayoutWidget_6">
+        <widget class="QGroupBox" name="groupBox_5">
          <property name="geometry">
           <rect>
-           <x>10</x>
-           <y>20</y>
-           <width>201</width>
-           <height>136</height>
+           <x>420</x>
+           <y>200</y>
+           <width>181</width>
+           <height>181</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_9">
-          <item>
-           <widget class="QRadioButton" name="doNotSaveContainerRadio">
-            <property name="text">
-             <string>No Persistence</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="saveContainerOnMissionCompletedRadio">
-            <property name="text">
-             <string>Save on Mission Completed</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
-            <property name="text">
-             <string>Save on Mission Close</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="setContainerAsEternalCheckbox">
-            <property name="text">
-             <string>Eternal</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="networkContainerCheckbox">
-            <property name="text">
-             <string>Network Variable</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <property name="title">
+          <string>Persistence Options</string>
+         </property>
+         <widget class="QWidget" name="verticalLayoutWidget_6">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>171</width>
+            <height>161</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_9">
+           <item>
+            <widget class="QRadioButton" name="doNotSaveContainerRadio">
+             <property name="text">
+              <string>No Persistence</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="saveContainerOnMissionCompletedRadio">
+             <property name="text">
+              <string>Save on Mission Completed</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
+             <property name="text">
+              <string>Save on Mission Close</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="setContainerAsEternalCheckbox">
+             <property name="text">
+              <string>Eternal</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="networkContainerCheckbox">
+             <property name="text">
+              <string>Network Variable</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
-       </widget>
-       <widget class="QGroupBox" name="groupBox_6">
-        <property name="geometry">
-         <rect>
-          <x>370</x>
-          <y>20</y>
-          <width>211</width>
-          <height>161</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>Type Options</string>
-        </property>
-        <widget class="QWidget" name="verticalLayoutWidget_7">
+        <widget class="QGroupBox" name="groupBox_6">
          <property name="geometry">
           <rect>
-           <x>10</x>
+           <x>420</x>
            <y>20</y>
-           <width>161</width>
-           <height>141</height>
+           <width>181</width>
+           <height>171</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_10">
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Container Type</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout">
-            <item>
-             <widget class="QRadioButton" name="setContainerAsListRadio">
-              <property name="text">
-               <string>List</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="setContainerAsMapRadio">
-              <property name="text">
-               <string>Map</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Key Type</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_6">
-            <item>
-             <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
-              <property name="text">
-               <string>Number</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
-              <property name="text">
-               <string>String</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Data Type</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <widget class="QRadioButton" name="setContainerAsNumberRadio">
-              <property name="text">
-               <string>Number</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="setContainerAsStringRadio">
-              <property name="text">
-               <string>String</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
+         <property name="title">
+          <string>Type Options</string>
+         </property>
+         <widget class="QWidget" name="verticalLayoutWidget_7">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>161</width>
+            <height>141</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Container Type</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QRadioButton" name="setContainerAsListRadio">
+               <property name="text">
+                <string>List</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="setContainerAsMapRadio">
+               <property name="text">
+                <string>Map</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Key Type</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <item>
+              <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
+               <property name="text">
+                <string>Number</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
+               <property name="text">
+                <string>String</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Data Type</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QRadioButton" name="setContainerAsNumberRadio">
+               <property name="text">
+                <string>Number</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="setContainerAsStringRadio">
+               <property name="text">
+                <string>String</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </widget>
       </widget>

@@ -498,10 +498,6 @@ void VariableDialog::onDeleteVariableButtonPressed()
 
 void VariableDialog::onSetVariableAsStringRadioSelected() 
 {
-	if (ui->setVariableAsStringRadio->isChecked()){
-		return;
-	}
-
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
@@ -520,10 +516,6 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
 {
-	if (ui->setVariableAsNumberRadio->isChecked()){
-		return;
-	}
-
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
@@ -543,22 +535,17 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 
 void VariableDialog::onDoNotSaveVariableRadioSelected()
 {
-	if (ui->doNotSaveVariableRadio->isChecked()){
-		return;
-	}
-
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
 		return;
 	}	
 
-	int ret = _model->setVariableOnMissionCloseOrCompleteFlag(currentRow, 1);
+	int ret = _model->setVariableOnMissionCloseOrCompleteFlag(currentRow, 0);
 
-	if (ret != 1){
+	if (ret != 0){
 		applyModel();
 	} else {
-		ui->doNotSaveVariableRadio->setChecked(true);
 		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);
 	}
@@ -568,10 +555,6 @@ void VariableDialog::onDoNotSaveVariableRadioSelected()
 
 void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() 
 {
-	if (ui->saveContainerOnMissionCompletedRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentVariableRow();
 
 	if (row < 0){
@@ -584,17 +567,12 @@ void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected()
 		applyModel();
 	} else {
 		ui->doNotSaveVariableRadio->setChecked(false);
-		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);
 	}
 }
 
 void VariableDialog::onSaveVariableOnMissionCloseRadioSelected() 
 {
-	if (ui->saveContainerOnMissionCompletedRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentVariableRow();
 
 	if (row < 0){
@@ -609,7 +587,6 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected()
 	} else {
 		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
-		ui->saveVariableOnMissionCloseRadio->setChecked(true);
 	}
 }
 
@@ -957,8 +934,10 @@ void VariableDialog::applyModel()
 	for (x = 0; x < static_cast<int>(variables.size()); ++x){
 		if (ui->variablesTable->item(x, 0)){
 			ui->variablesTable->item(x, 0)->setText(variables[x][0].c_str());
+			ui->variablesTable->item(x, 0)->setFlags(ui->variablesTable->item(x, 0)->flags() | Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][0].c_str());
+			item->setFlags(item->flags() | Qt::ItemIsEditable);
 			ui->variablesTable->setItem(x, 0, item);
 		}
 
@@ -970,8 +949,10 @@ void VariableDialog::applyModel()
 
 		if (ui->variablesTable->item(x, 1)){
 			ui->variablesTable->item(x, 1)->setText(variables[x][1].c_str());
+			ui->variablesTable->item(x, 1)->setFlags(ui->variablesTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(variables[x][1].c_str());
+			item->setFlags(item->flags() | Qt::ItemIsEditable);
 			ui->variablesTable->setItem(x, 1, item);
 		}
 
