@@ -2,6 +2,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include <unordered_set>
+#include <climits>
 
 namespace fso {
 namespace fred {
@@ -1462,11 +1463,16 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     return outStrings;   
 }
 
-//  This function should not normally return an error.
+// This function is for cleaning up input strings that should be numbers.  We could use std::stoi,
+// but this helps to not erase the entire string if user ends up mistyping just one digit.
+// If we ever allowed float types in sexp variables ... *shudder* ... we would definitely need a float
+// version of this cleanup. 
 SCP_string VariableDialogModel::trimIntegerString(SCP_string source) 
 {
 	SCP_string ret;
-   bool foundNonZero = false;
+    bool foundNonZero = false;
+    // I was tempted to prevent exceeding the max length of the destination c-string here, but no integer 
+    // can exceed the 31 digit limit. And we *will* have an integer at the end of this. 
 
 	// filter out non-numeric digits
 	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
@@ -1506,25 +1512,32 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
 
     // -0 as a string value is not a possible edge case because if we haven't found a digit, we don't copy zero.
     // "-" is possible and could be zero, however, and an empty string that should be zero is possible as well.
-
-
-
-    // if we had a zero, but it was the only type of digit included and got filtered out.
-    if (ret.empty() && source.find('0') != std::string::npos){
-        return "0";
+    if (ret.empty() || ret == "-"){
+        ret = "0";
     }
 
-    // if all that made it out was a dash, then return either zero or nothing.
-    if (ret == "-"){
-        // Checked for a filtered out 0
-        if (source.find('0') != std::string::npos){
-            return "0";
+    return std::move(clampIntegerString(ret));
+}
+
+// Helper function for trimIntegerString that makes sure we don't try to save a value that overflows or underflows
+// I don't recommend using outside of there, as there can be data loss if the input string is not cleaned first.
+SCP_string VariableDialogModel::clampIntegerString(SCP_string source)
+{
+    try {
+        long test = std::stol(source);
+
+        if (test > INT_MAX) {
+            return "2147483647";
+        } else if (test < INT_MIN) {
+            return "-2147483648";
         }
 
-        return "";
+        return std::move(source);
     }
-
-	return ret;
+    // most truly ludicrous cases should be caught before here in the calling function, so this should not cause much if any data loss
+    catch (...){
+        return "0";
+    }
 }
 
 } // dialogs
