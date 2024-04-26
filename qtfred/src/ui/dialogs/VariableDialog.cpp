@@ -85,7 +85,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onDoNotSaveVariableRadioSelected);
 
-	connect(ui->saveContainerOnMissionCompletedRadio,
+	connect(ui->saveVariableOnMissionCompletedRadio,
 		&QRadioButton::clicked,
 		this,
 		&VariableDialog::onSaveVariableOnMissionCompleteRadioSelected);
