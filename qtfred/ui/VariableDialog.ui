@@ -502,31 +502,6 @@
             </layout>
            </item>
            <item>
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Key Type</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
-               <property name="text">
-                <string>Number</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
-               <property name="text">
-                <string>String</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
             <widget class="QLabel" name="label_2">
              <property name="text">
               <string>Data Type</string>
@@ -544,6 +519,31 @@
              </item>
              <item>
               <widget class="QRadioButton" name="setContainerAsStringRadio">
+               <property name="text">
+                <string>String</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Key Type</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <item>
+              <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
+               <property name="text">
+                <string>Number</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
                <property name="text">
                 <string>String</string>
                </property>
