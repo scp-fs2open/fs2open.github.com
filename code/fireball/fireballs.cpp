@@ -37,11 +37,7 @@ constexpr int INTITIAL_FIREBALL_CONTAINTER_SIZE = 256;
 SCP_vector<fireball> Fireballs;
 SCP_vector<int> Unused_fireball_indices;
 
-fireball_info Fireball_info[MAX_FIREBALL_TYPES];
-
-int fireball_used[MAX_FIREBALL_TYPES];
-
-int Num_fireball_types = 0;
+SCP_vector<fireball_info> Fireball_info;
 
 bool fireballs_inited = false;
 bool fireballs_parsed = false;
@@ -120,7 +116,7 @@ void fireball_play_warphole_close_sound(fireball *fb)
 
 static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fireball_index)
 {
-	Assert((fireball_index >= 0) && (fireball_index < MAX_FIREBALL_TYPES));
+	Assertion(SCP_vector_inbounds(Fireball_info, fireball_index), "fireball_index is out of bounds!");
 
 	switch (fireball_index)
 	{
@@ -164,7 +160,7 @@ static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fir
  */
 static void fireball_set_default_color(int idx)
 {
-	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
+	Assertion(SCP_vector_inbounds(Fireball_info, idx), "idx is out of bounds!");
 
 	switch (idx)
 	{
@@ -200,7 +196,7 @@ static void fireball_set_default_color(int idx)
 
 static void fireball_set_default_warp_attributes(int idx)
 {
-	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
+	Assertion(SCP_vector_inbounds(Fireball_info, idx), "idx is out of bounds!");
 
 	switch (idx)
 	{
@@ -232,9 +228,9 @@ void fireball_info_clear(fireball_info *fb)
 
 int fireball_info_lookup(const char *unique_id)
 {
-	for (int i = 0; i < Num_fireball_types; ++i)
+	for (size_t i = 0; i < Fireball_info.size(); ++i)
 		if (!stricmp(Fireball_info[i].unique_id, unique_id))
-			return i;
+			return static_cast<int>(i);
 
 	return -1;
 }
@@ -308,25 +304,19 @@ static void parse_fireball_tbl(const char *table_filename)
 			// we are creating a new entry, so set some defaults
 			else
 			{
-				// make sure we don't exceed the max
-				if (Num_fireball_types >= MAX_FIREBALL_TYPES)
-				{
-					error_display(0, "Too many fireball entries!  Max is %d", MAX_FIREBALL_TYPES);
-					return;
-				}
-
-				fi = &Fireball_info[Num_fireball_types];
+				int new_fireball_index = static_cast<int>(Fireball_info.size());
+				Fireball_info.emplace_back();
+				fi = &Fireball_info.back();
 				fireball_info_clear(fi);
 
 				// If the table didn't specify a unique ID, generate one.  This will be assigned a few lines later.
 				if (strlen(unique_id) == 0)
-					fireball_generate_unique_id(unique_id, NAME_LENGTH, Num_fireball_types);
+					fireball_generate_unique_id(unique_id, NAME_LENGTH, new_fireball_index);
 
 				// Set remaining fireball defaults
-				fireball_set_default_color(Num_fireball_types);
-				fireball_set_default_warp_attributes(Num_fireball_types);
+				fireball_set_default_color(new_fireball_index);
+				fireball_set_default_warp_attributes(new_fireball_index);
 
-				Num_fireball_types++;
 				first_time = true;
 			}
 
@@ -399,9 +389,9 @@ void fireball_parse_tbl()
 	if (fireballs_parsed)
 		return;
 
-	// every newly parsed fireball_info will get cleared before being added
-	// must do this outside of parse_fireball_tbl because it's called twice
-	Num_fireball_types = 0;
+	// every newly parsed fireball_info will get cleared before being added;
+	// must clear the vector outside of parse_fireball_tbl because it's called more than once
+	Fireball_info.clear();
 
 	parse_fireball_tbl("fireball.tbl");
 
@@ -436,10 +426,11 @@ void fireball_parse_tbl()
 
 void fireball_load_data()
 {
-	int				i, idx;
+	int				i, n, idx;
 	fireball_info	*fd;
 
-	for ( i = 0; i < Num_fireball_types; i++ ) {
+	n = static_cast<int>(Fireball_info.size());
+	for ( i = 0; i < n; i++ ) {
 		fd = &Fireball_info[i];
 
 		for(idx=0; idx<fd->lod_count; idx++){
@@ -798,8 +789,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	object			*obj;
 	fireball_info	*fd;
 	fireball_lod	*fl;
-	Assert( fireball_type > -1 );
-	Assert( fireball_type < Num_fireball_types );
+	Assertion(SCP_vector_inbounds(Fireball_info, fireball_type), "fireball_type is out of bounds!");
 
 	fd = &Fireball_info[fireball_type];
 
@@ -946,13 +936,14 @@ void fireball_close()
 
 void fireballs_page_in()
 {
-	int				i, idx;
+	int				i, n, idx;
 	fireball_info	*fd;
 
-	for ( i = 0; i < Num_fireball_types; i++ ) {
+	n = static_cast<int>(Fireball_info.size());
+	for ( i = 0; i < n; i++ ) {
 		fd = &Fireball_info[i];
 
-		if((i < NUM_DEFAULT_FIREBALLS) || fireball_used[i]) {
+		if ((i < NUM_DEFAULT_FIREBALLS) || fd->fireball_used) {
 			// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
 			if ( (i == FIREBALL_KNOSSOS) && !Knossos_warp_ani_used)
 				continue;
@@ -984,8 +975,8 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 {
 	Assert( red && blue && green );
 
-	if ( (idx < 0) || (idx >= Num_fireball_types) ) {
-		Int3();
+	if (!SCP_vector_inbounds(Fireball_info, idx)) {
+		UNREACHABLE("idx is out of bounds!");
 		
 		*red = 1.0f;
 		*green = 1.0f;
@@ -1119,4 +1110,17 @@ int fireball_get_count()
 	Assert (count >= 0);
 	
 	return count;
+}
+
+void stuff_fireball_index_list(SCP_vector<int> &list, const char *name)
+{
+	stuff_int_list(list, RAW_INTEGER_TYPE);
+
+	list.erase(std::remove_if(list.begin(), list.end(), [&](int index) {
+		if (!SCP_vector_inbounds(Fireball_info, index)) {
+			Warning(LOCATION, "Fireball index %d for %s was out of bounds.  Removing this index.", index, name);
+			return true;
+		}
+		return false;
+	}), list.end());
 }

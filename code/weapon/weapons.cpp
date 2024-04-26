@@ -2634,8 +2634,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 			}
 			else {
-				if ((temp < 0) || (temp >= Num_fireball_types)) {
-					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon [%s].", temp, Num_fireball_types - 1, wip->name);
+				if (!SCP_vector_inbounds(Fireball_info, temp)) {
+					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon [%s].", temp, static_cast<int>(Fireball_info.size()) - 1, wip->name);
 					wip->lssm_warpeffect = FIREBALL_WARP;
 				}
 				else {

@@ -18,7 +18,7 @@ ADE_FUNC(__tostring, l_Fireballclass, NULL, "Fireball class name", "string", "Fi
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Fireball_info[idx].unique_id);
@@ -30,10 +30,10 @@ ADE_FUNC(__eq, l_Fireballclass, "fireballclass, fireballclass", "Checks if the t
 	if(!ade_get_args(L, "oo", l_Fireballclass.Get(&idx1), l_Fireballclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
-	if(idx1 < 0 || idx1 >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx1))
 		return ade_set_error(L, "b", false);
 
-	if(idx2 < 0 || idx2 >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx2))
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", idx1 == idx2);
@@ -45,7 +45,7 @@ ADE_VIRTVAR(UniqueID, l_Fireballclass, "string", "Fireball class name", "string"
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ade_set_error(L, "s", "");
 
 	if (ADE_SETTING_VAR)
@@ -60,7 +60,7 @@ ADE_VIRTVAR(Filename, l_Fireballclass, NULL, "Fireball class animation filename 
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ade_set_error(L, "s", "");
 
 	//Currently not settable as the bitmaps are only loaded once at level start
@@ -76,7 +76,7 @@ ADE_VIRTVAR(NumberFrames, l_Fireballclass, NULL, "Amount of frames the animation
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "i", -1);
 
-	if(idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ade_set_error(L, "i", -1);
 
 	if (ADE_SETTING_VAR)
@@ -91,7 +91,7 @@ ADE_VIRTVAR(FPS, l_Fireballclass, NULL, "The FPS with which this fireball's anim
 	if (!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "i", -1);
 
-	if (idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ade_set_error(L, "i", -1);
 
 	if (ADE_SETTING_VAR)
@@ -106,7 +106,7 @@ ADE_FUNC(isValid, l_Fireballclass, NULL, "Detects whether handle is valid", "boo
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -118,7 +118,7 @@ ADE_FUNC(getTableIndex, l_Fireballclass, NULL, "Gets the index value of the fire
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 
-	if(idx < 0 || idx >= Num_fireball_types)
+	if (!SCP_vector_inbounds(Fireball_info, idx))
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx + 1);

@@ -1593,9 +1593,8 @@ static float asteroid_create_explosion(object *objp)
 		fireball_type = FIREBALL_ASTEROID;
 	}
 
-	if (fireball_type >= Num_fireball_types) {
-		Warning(LOCATION, "Invalid fireball type %i specified for an asteroid, only %i fireball types are defined.", fireball_type, Num_fireball_types);
-
+	if (fireball_type >= static_cast<int>(Fireball_info.size())) {
+		Warning(LOCATION, "Invalid fireball type %i specified for an asteroid; only " SIZE_T_ARG " fireball types are defined.", fireball_type, Fireball_info.size());
 		return 0;
 	}
 
@@ -2251,10 +2250,7 @@ static void asteroid_parse_section()
 	}
 	
 	if(optional_string("$Explosion Animations:")){
-		int temp[MAX_FIREBALL_TYPES];
-		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
-		asteroid_p->explosion_bitmap_anims.clear();
-		asteroid_p->explosion_bitmap_anims.insert(asteroid_p->explosion_bitmap_anims.begin(), temp, temp + parsed_ints);
+		stuff_fireball_index_list(asteroid_p->explosion_bitmap_anims, asteroid_p->name);
 	}
 
 	if (optional_string("$Explosion Radius Mult:")) {
