@@ -195,17 +195,17 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 91);
-	ui->variablesTable->setColumnWidth(1, 90);
-	ui->variablesTable->setColumnWidth(2, 65);
+	ui->variablesTable->setColumnWidth(0, 95);
+	ui->variablesTable->setColumnWidth(1, 95);
+	ui->variablesTable->setColumnWidth(2, 120);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 91);
-	ui->containersTable->setColumnWidth(1, 90);
-	ui->containersTable->setColumnWidth(2, 65);
+	ui->containersTable->setColumnWidth(0, 95);
+	ui->containersTable->setColumnWidth(1, 95);
+	ui->containersTable->setColumnWidth(2, 120);
 
 	ui->containerContentsTable->setColumnCount(2);
 
@@ -1133,6 +1133,8 @@ void VariableDialog::updateContainerOptions()
 		ui->deleteContainerButton->setEnabled(false);
 		ui->setContainerAsStringRadio->setEnabled(false);
 		ui->setContainerAsNumberRadio->setEnabled(false);
+		ui->setContainerKeyAsStringRadio->setEnabled(false);
+		ui->setContainerKeyAsNumberRadio->setEnabled(false);
 		ui->doNotSaveContainerRadio->setEnabled(false);
 		ui->saveContainerOnMissionCompletedRadio->setEnabled(false);
 		ui->saveContainerOnMissionCloseRadio->setEnabled(false);
@@ -1144,6 +1146,16 @@ void VariableDialog::updateContainerOptions()
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 		ui->containerContentsTable->setRowCount(0);
+
+		// if there's no container, there's no container items
+		ui->addContainerItemButton->setEnabled(false);
+		ui->copyContainerItemButton->setEnabled(false);
+		ui->deleteContainerItemButton->setEnabled(false);
+		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
+		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+		ui->containerContentsTable->setRowCount(0);
+		ui->shiftItemDownButton->setEnabled(false);
+		ui->shiftItemUpButton->setEnabled(false);
 
 	} else {
 		auto items = ui->containersTable->selectedItems();
@@ -1240,7 +1252,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 {
 	int row = getCurrentContainerRow();
 
-	// No overarching container, no container contents
+	// Just in case, No overarching container, no container contents
 	if (row < 0){
 		ui->addContainerItemButton->setEnabled(false);
 		ui->copyContainerItemButton->setEnabled(false);
@@ -1248,14 +1260,20 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 		ui->containerContentsTable->setRowCount(0);
+		ui->shiftItemDownButton->setEnabled(false);
+		ui->shiftItemUpButton->setEnabled(false);
 
 		return;
 	
 	// list type container
 	} else if (list) {
+		// if there's no container, there's no container items
 		ui->addContainerItemButton->setEnabled(true);
 		ui->copyContainerItemButton->setEnabled(true);
 		ui->deleteContainerItemButton->setEnabled(true);
+		ui->containerContentsTable->setRowCount(0);
+		ui->shiftItemDownButton->setEnabled(true);
+		ui->shiftItemUpButton->setEnabled(true);		
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 

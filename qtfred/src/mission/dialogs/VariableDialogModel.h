@@ -131,6 +131,8 @@ private:
 	int _listTextMode = 0;
 	int _mapTextMode = 0;
 
+	static SCP_string clampIntegerString(SCP_string source);
+
 	variableInfo* lookupVariable(int index){
 		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){
 			return &_variableItems[index];	

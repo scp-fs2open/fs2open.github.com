@@ -572,7 +572,7 @@ bool VariableDialogModel::getContainerValueType(int index)
 bool VariableDialogModel::getContainerKeyType(int index)
 {
     auto container = lookupContainer(index);
-    return (container) ? container->
+	return (container) ? container->stringKeys : true;
 }
 
 // true on list, false on map
@@ -1301,7 +1301,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
         SCP_string notes = "";
 
         if (item.deleted) {
-            notes = "Marked for Deletion";
+            notes = "Flagged for Deletion";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
@@ -1454,7 +1454,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
 
         if (item.deleted) {
-            notes = "Flaged for Deletion";
+            notes = "Flagged for Deletion";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
@@ -1520,7 +1520,7 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
         ret = "0";
     }
 
-    return std::move(clampIntegerString(ret));
+	return std::move(clampIntegerString(ret));
 }
 
 // Helper function for trimIntegerString that makes sure we don't try to save a value that overflows or underflows
