@@ -258,7 +258,6 @@ bool VariableDialogModel::getVariableNetworkStatus(int index)
 }
 
 
-
 // 0 neither, 1 on mission complete, 2 on mission close (higher number saves more often)
 int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(int index)
 {
@@ -277,7 +276,6 @@ int VariableDialogModel::getVariableOnMissionCloseOrCompleteFlag(int index)
 
     return returnValue;
 }
-
 
 bool VariableDialogModel::getVariableEternalFlag(int index)
 {
@@ -569,6 +567,12 @@ bool VariableDialogModel::getContainerValueType(int index)
 {
 	auto container = lookupContainer(index);
     return (container) ? container->string : true;
+}
+
+bool VariableDialogModel::getContainerKeyType(int index)
+{
+    auto container = lookupContainer(index);
+    return (container) ? container->
 }
 
 // true on list, false on map
@@ -955,10 +959,10 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
     do {
         conflict = false;
         
-        if (container->integerKeys){
-            sprintf(newKey, "%i", count);
-        } else {
+        if (container->stringKeys){
             sprintf(newKey, "key%i", count);
+        } else {
+            sprintf(newKey, "%i", count);
         }
 
         for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
@@ -1316,7 +1320,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
 
 const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
-    // This logic makes the mode which we use to display, easily configureable. 
+    // This logic makes the string which we use to display the type of the container, based on the specific mode we're using. 
     SCP_string listPrefix;
     SCP_string listPostscript;
 
@@ -1431,10 +1435,10 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
             type = mapPrefix;
 
-            if (item.integerKeys){
-                type += "Number";
-            } else {
+            if (item.stringKeys){
                 type += "String";
+            } else {
+                type += "Number";
             }
 
             type += mapMidScript;

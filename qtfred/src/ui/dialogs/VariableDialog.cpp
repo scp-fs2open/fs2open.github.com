@@ -212,14 +212,17 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 120);
-	ui->containerContentsTable->setColumnWidth(1, 115);
+	ui->containerContentsTable->setColumnWidth(0, 118);
+	ui->containerContentsTable->setColumnWidth(1, 117);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
+	// and I don't mind just manually toggling them.
 	ui->setVariableAsStringRadio->setAutoExclusive(false);
 	ui->setVariableAsNumberRadio->setAutoExclusive(false);
-	ui->saveContainerOnMissionCompletedRadio->setAutoExclusive(false);
+	ui->doNotSaveVariableRadio->setAutoExclusive(false);
+	ui->saveVariableOnMissionCompletedRadio->setAutoExclusive(false);
 	ui->saveVariableOnMissionCloseRadio->setAutoExclusive(false);
+
 	ui->setContainerAsMapRadio->setAutoExclusive(false);
 	ui->setContainerAsListRadio->setAutoExclusive(false);
 	ui->setContainerAsStringRadio->setAutoExclusive(false);
@@ -1149,6 +1152,7 @@ void VariableDialog::updateContainerOptions()
 		// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 		for (const auto& item : items) {
 			row = item->row();
+			break;
 		}
 
 
@@ -1177,8 +1181,8 @@ void VariableDialog::updateContainerOptions()
 			ui->setContainerAsMapRadio->setChecked(false);
 
 			// Disable Key Controls			
-			ui->setContainerKeyAsStringRadio->setEnabled(true);
-			ui->setContainerKeyAsNumberRadio->setEnabled(true);
+			ui->setContainerKeyAsStringRadio->setEnabled(false);
+			ui->setContainerKeyAsNumberRadio->setEnabled(false);
 
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
@@ -1189,9 +1193,20 @@ void VariableDialog::updateContainerOptions()
 			ui->setContainerAsListRadio->setChecked(false);
 			ui->setContainerAsMapRadio->setChecked(true);
 
-			// Enabled Key Controls
-			ui->setContainerKeyAsStringRadio->setEnabled(false);
-			ui->setContainerKeyAsNumberRadio->setEnabled(false);
+			// Enable Key Controls
+			ui->setContainerKeyAsStringRadio->setEnabled(true);
+			ui->setContainerKeyAsNumberRadio->setEnabled(true);
+
+			// string keys
+			if (_model->getContainerKeyType(row)){
+				ui->setContainerKeyAsStringRadio->setChecked(true);
+				ui->setContainerKeyAsNumberRadio->setChecked(false);
+
+			// number keys
+			} else {
+				ui->setContainerKeyAsStringRadio->setChecked(false);
+				ui->setContainerKeyAsNumberRadio->setChecked(true);
+			}
 
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));

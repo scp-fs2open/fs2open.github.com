@@ -25,7 +25,7 @@ struct containerInfo {
 	bool deleted = false;
 	bool list = true;
 	bool string = true;
-	bool integerKeys = false;
+	bool stringKeys = false;
 	int flags = 0;
 
 	// this will allow us to look up the original values used in the mission previously.
@@ -76,6 +76,8 @@ public:
 
 	// true on string, false on number
 	bool getContainerValueType(int index);
+	// true on string, false on number -- this returns nonsense if it's not a map, please use responsibly!
+	bool getContainerKeyType(int index);
 	// true on list, false on map
 	bool getContainerListOrMap(int index);
 	bool getContainerNetworkStatus(int index);
