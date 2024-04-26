@@ -518,18 +518,18 @@ SCP_string VariableDialogModel::copyVariable(int index)
         // open slot found!
         if (!variableSearch){
             // create the new entry in the model
-            _variableItems.emplace_back();
+			variableSearch = &_variableItems.back();
 
             // and set everything as a copy from the original, except original name and deleted.
             auto& newVariable = _variableItems.back();
             newVariable.name = newName;
-            newVariable.flags = variableSearch->flags;
-            newVariable.string = variableSearch->string;
+            newVariable.flags = variable->flags;
+            newVariable.string = variable->string;
 
             if (newVariable.string) {
-                newVariable.stringValue = variableSearch->stringValue;
+                newVariable.stringValue = variable->stringValue;
             } else {
-                newVariable.numberValue = variableSearch->numberValue;
+                newVariable.numberValue = variable->numberValue;
             }
 
             return newName;
