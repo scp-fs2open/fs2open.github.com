@@ -121,7 +121,7 @@ public:
 
 	void initializeData();
 
-	static SCP_string trimNumberString(SCP_string source);
+	static SCP_string trimIntegerString(SCP_string source);
 
 private:
 	SCP_vector<variableInfo> _variableItems;

@@ -295,7 +295,7 @@ void VariableDialog::onVariablesTableUpdated()
 			}			
 		} else {
 			SCP_string source = item->text().toStdString();
-			SCP_string temp = _model->trimNumberString(source);
+			SCP_string temp = _model->trimIntegerString(source);
 
 			if (temp != source){
 				item->setText(temp.c_str());

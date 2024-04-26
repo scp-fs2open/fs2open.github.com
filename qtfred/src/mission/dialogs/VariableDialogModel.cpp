@@ -1462,7 +1462,8 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     return outStrings;   
 }
 
-SCP_string VariableDialogModel::trimNumberString(SCP_string source) 
+//  This function should not normally return an error.
+SCP_string VariableDialogModel::trimIntegerString(SCP_string source) 
 {
 	SCP_string ret;
    bool foundNonZero = false;
@@ -1471,7 +1472,7 @@ SCP_string VariableDialogModel::trimNumberString(SCP_string source)
 	std::copy_if(source.begin(), source.end(), std::back_inserter(ret),
 		[&foundNonZero, &ret](char c) -> bool { 
 			switch (c) {
-                // ignore leading zeros
+                // ignore leading zeros.  If all digits are zero, this will be handled elsewhere
 				case '0':
                     if (foundNonZero)
                         return true;
@@ -1503,16 +1504,23 @@ SCP_string VariableDialogModel::trimNumberString(SCP_string source)
 		}
 	);
 
-    // -0 is not a possible edge case because if we haven't found a digit, we don't copy zero.
-    // but "-" is and an empty string that should be zero is possible as well.
+    // -0 as a string value is not a possible edge case because if we haven't found a digit, we don't copy zero.
+    // "-" is possible and could be zero, however, and an empty string that should be zero is possible as well.
+
+
 
     // if we had a zero, but it was the only type of digit included and got filtered out.
     if (ret.empty() && source.find('0') != std::string::npos){
         return "0";
     }
 
-    // if all that made it out was a dash, then return nothing.
+    // if all that made it out was a dash, then return either zero or nothing.
     if (ret == "-"){
+        // Checked for a filtered out 0
+        if (source.find('0') != std::string::npos){
+            return "0";
+        }
+
         return "";
     }
 
