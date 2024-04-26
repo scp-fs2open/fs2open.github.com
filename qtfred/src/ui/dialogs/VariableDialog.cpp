@@ -22,7 +22,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
-	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::checkValidModel);
+	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::reject);
 	
 	connect(ui->variablesTable, 
@@ -195,7 +195,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 90);
+	ui->variablesTable->setColumnWidth(0, 91);
 	ui->variablesTable->setColumnWidth(1, 90);
 	ui->variablesTable->setColumnWidth(2, 65);
 
@@ -203,7 +203,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 90);
+	ui->containersTable->setColumnWidth(0, 91);
 	ui->containersTable->setColumnWidth(1, 90);
 	ui->containersTable->setColumnWidth(2, 65);
 
@@ -213,7 +213,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 	ui->containerContentsTable->setColumnWidth(0, 120);
-	ui->containerContentsTable->setColumnWidth(1, 120);
+	ui->containerContentsTable->setColumnWidth(1, 115);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	ui->setVariableAsStringRadio->setAutoExclusive(false);
@@ -622,7 +622,7 @@ void VariableDialog::onSaveVariableAsEternalCheckboxClicked()
 	}
 
 	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(row, !ui->setVariableAsEternalcheckbox->isChecked())) {
+	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(row, ui->setVariableAsEternalcheckbox->isChecked())) {
 		applyModel();
 	} else {
 		ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
@@ -638,7 +638,7 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 	}
 
 	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(row, !ui->networkVariableCheckbox->isChecked())) {
+	if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(row, ui->networkVariableCheckbox->isChecked())) {
 		applyModel();
 	} else {
 		ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
@@ -1054,11 +1054,11 @@ void VariableDialog::applyModel()
 
 	// set the Add container row
 	++x;
-	if (ui->variablesTable->item(x, 0)){
-		ui->variablesTable->item(x, 0)->setText("Add Container ...");
+	if (ui->containersTable->item(x, 0)){
+		ui->containersTable->item(x, 0)->setText("Add Container ...");
 	} else {
 		QTableWidgetItem* item = new QTableWidgetItem("Add Container ...");
-		ui->variablesTable->setItem(x, 0, item);
+		ui->containersTable->setItem(x, 0, item);
 	}
 
 	if (_currentContainer.empty() || selectedRow < 0){
@@ -1109,7 +1109,7 @@ void VariableDialog::updateVariableOptions()
 	}
 
 	// if nothing is selected, but something could be selected, make it so.
-	if (row == -1 && ui->variablesTable->rowCount() > 0) {
+	if (row == -1 && ui->variablesTable->rowCount() > 1) {
 		row = 0;
 		ui->variablesTable->item(row, 0)->setSelected(true);
 		_currentVariable = ui->variablesTable->item(row, 0)->text().toStdString();
@@ -1196,8 +1196,8 @@ void VariableDialog::updateContainerOptions()
 			ui->setContainerAsMapRadio->setChecked(false);
 
 			// Disable Key Controls			
-			ui->setContainerKeyAsStringRadio->setEnabled(false);
-			ui->setContainerKeyAsNumberRadio->setEnabled(false);
+			ui->setContainerKeyAsStringRadio->setEnabled(true);
+			ui->setContainerKeyAsNumberRadio->setEnabled(true);
 
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
@@ -1209,8 +1209,8 @@ void VariableDialog::updateContainerOptions()
 			ui->setContainerAsMapRadio->setChecked(true);
 
 			// Enabled Key Controls
-			ui->setContainerKeyAsStringRadio->setEnabled(true);
-			ui->setContainerKeyAsNumberRadio->setEnabled(true);
+			ui->setContainerKeyAsStringRadio->setEnabled(false);
+			ui->setContainerKeyAsNumberRadio->setEnabled(false);
 
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));

@@ -722,8 +722,8 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
             container->list = list;
 
             // still need to deal with extant keys by resizing data values.
-            if (!keys.empty()){
-                stringValues.resize(keys.size());
+            if (!container->keys.empty()){
+				container->stringValues.resize(container->keys.size());
             }
 
             return list;
@@ -731,8 +731,8 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
             container->list = list;
 
             // still need to deal with extant keys by resizing data values.
-            if (!keys.empty()){
-                numberValues.resize(keys.size());
+            if (!container->keys.empty()){
+				container->numberValues.resize(container->keys.size());
             }
 
             return list;
@@ -754,22 +754,21 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
                 return false;
                 break;
-            }
-        }
+            
+	    }
 
         // now ask about data
         QMessageBox msgBoxListToMapRetainData;
 	    msgBoxListToMapRetainData.setText("Would you to keep the list data as keys or values, or would you like to purge the container contents?");
-        msgBoxListToMapRetainData.addButton("Keep as Keys", QMessageBox::Discard);
-        msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::Discard);
-        msgBoxListToMapRetainData.addButton("Purge", QMessageBox::Discard);
+        msgBoxListToMapRetainData.addButton("Keep as Keys", QMessageBox::ActionRole);
+        msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::ApplyRole);
+        msgBoxListToMapRetainData.addButton("Purge", QMessageBox::RejectRole);
         msgBoxListToMapRetainData.setStandardButtons(QMessageBox::Cancel);
 	    msgBoxListToMapRetainData.setDefaultButton(QMessageBox::Cancel);
 	    ret = msgBoxListToMapRetainData.exec();
 
 	    switch (ret) {
             case QMessageBox::Discard:
-                if ()
                 container->list = list;
                 break;
             case QMessageBox::Cancel:
@@ -779,13 +778,13 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
                 return false;
                 break;
-            }
-        }
+            
+		}
 
 	}
 
 
-	return !list;
+	return !container->list;
 }
 
 bool VariableDialogModel::setContainerNetworkStatus(int index, bool network)
@@ -1359,7 +1358,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
         default:
             // this takes care of weird cases.  The logic should be simple enough to not have bugs, but just in case, switch back to default.
             _listTextMode = 0;
-            listPrefix = "List of";
+            listPrefix = "List of ";
             listPostscript = "s";
             break;
     }
