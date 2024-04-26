@@ -1037,7 +1037,6 @@ void VariableDialog::applyModel()
 	}
 
 	// set the Add container row
-	++x;
 	if (ui->containersTable->item(x, 0)){
 		ui->containersTable->item(x, 0)->setText("Add Container ...");
 	} else {
@@ -1302,7 +1301,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				}
 			}
 
-			++x;
 			if (ui->containerContentsTable->item(x, 0)){
 				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
 			} else {
