@@ -2058,14 +2058,20 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
 }
 
-ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration ResizeMode]", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
 	int x, y, width, height;
+	enum_h resize_arg;
 
-	if (!ade_get_args(L, "iiii", &x, &y, &width, &height))
+	if (!ade_get_args(L, "iiii|o", &x, &y, &width, &height, l_Enum.Get(&resize_arg)))
 		return ADE_RETURN_FALSE;
 
-	gr_set_clip(x, y, width, height, lua_ResizeMode);
+	int resize_mode = lua_ResizeMode;
+
+	if (resize_arg.isValid() && resize_arg.index >= LE_GR_RESIZE_NONE && resize_arg.index <= LE_GR_RESIZE_MENU_NO_OFFSET)
+		resize_mode = resize_arg.index - LE_GR_RESIZE_NONE;
+
+	gr_set_clip(x, y, width, height, resize_mode);
 
 	return ADE_RETURN_TRUE;
 }
