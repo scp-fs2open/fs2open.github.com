@@ -512,13 +512,13 @@ SCP_string VariableDialogModel::copyVariable(int index)
 
     do {
         SCP_string newName;
-        sprintf(newName, "%s_copy%i", variable->name.substr(0, TOKEN_LENGTH - 6).c_str(), count);
+        sprintf(newName, "%s_cpy%i", variable->name.substr(0, TOKEN_LENGTH - 6).c_str(), count);
         variableSearch = lookupVariableByName(newName);
 
         // open slot found!
         if (!variableSearch){
             // create the new entry in the model
-			variableSearch = &_variableItems.back();
+			_variableItems.emplace_back();
 
             // and set everything as a copy from the original, except original name and deleted.
             auto& newVariable = _variableItems.back();
@@ -887,7 +887,7 @@ SCP_string VariableDialogModel::copyContainer(int index)
         return "";
     }
 
-    // K.I.S.S.
+    // K.I.S.S. We could guarantee the names be unique, but so can the user, and there will definitely be a lower number of containers
     _containerItems.push_back(*container);
     _containerItems.back().name = "copy_" + _containerItems.back().name;
     _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH - 1);

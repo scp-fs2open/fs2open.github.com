@@ -230,6 +230,13 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->saveContainerOnMissionCloseRadio->setAutoExclusive(false);
 	ui->saveContainerOnMissionCompletedRadio->setAutoExclusive(false);
 
+	ui->variablesTable->setRowCount(0);
+	ui->containersTable->setRowCount(0);
+	ui->containerContentsTable->setRowCount(0);
+	ui->variablesTable->clearSelection();
+	ui->containersTable->clearSelection();
+	ui->containerContentsTable->clearSelection();
+
 	applyModel();
 }
 
@@ -663,19 +670,11 @@ void VariableDialog::onDeleteContainerButtonPressed()
 		return;
 	}
 
-	// UI is somehow out of sync with the model, so update UI.
-	if (!_model->removeContainer(row)) {
-		applyModel();
-	}
-
+	applyModel();
 }
 
 void VariableDialog::onSetContainerAsMapRadioSelected() 
 {
-	if (ui->setContainerAsMapRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -688,10 +687,6 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 
 void VariableDialog::onSetContainerAsListRadioSelected() 
 {
-	if (ui->setContainerAsListRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -705,10 +700,6 @@ void VariableDialog::onSetContainerAsListRadioSelected()
 
 void VariableDialog::onSetContainerAsStringRadioSelected() 
 {
-	if (ui->setContainerAsStringRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -721,11 +712,6 @@ void VariableDialog::onSetContainerAsStringRadioSelected()
 
 void VariableDialog::onSetContainerAsNumberRadioSelected() 
 {
-	if (ui->setContainerAsNumberRadio->isChecked()){
-		return;
-	}
-
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -738,10 +724,6 @@ void VariableDialog::onSetContainerAsNumberRadioSelected()
 
 void VariableDialog::onSetContainerKeyAsStringRadioSelected() 
 {
-	if (ui->setContainerKeyAsStringRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -755,10 +737,6 @@ void VariableDialog::onSetContainerKeyAsStringRadioSelected()
 
 void VariableDialog::onSetContainerKeyAsNumberRadioSelected() 
 {
-	if (ui->setContainerKeyAsNumberRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -771,10 +749,6 @@ void VariableDialog::onSetContainerKeyAsNumberRadioSelected()
 
 void VariableDialog::onDoNotSaveContainerRadioSelected()
 {
-	if (ui->doNotSaveContainerRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -791,10 +765,6 @@ void VariableDialog::onDoNotSaveContainerRadioSelected()
 }
 void VariableDialog::onSaveContainerOnMissionCloseRadioSelected() 
 {
-	if (ui->saveContainerOnMissionCloseRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -812,10 +782,6 @@ void VariableDialog::onSaveContainerOnMissionCloseRadioSelected()
 
 void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() 
 {
-	if (ui->saveContainerOnMissionCompletedRadio->isChecked()){
-		return;
-	}
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -970,7 +936,6 @@ void VariableDialog::applyModel()
 	}
 
 	// set the Add variable row
-	// TODO, fix this not appearing
 	if (ui->variablesTable->item(x, 0)){
 		ui->variablesTable->item(x, 0)->setText("Add Variable ...");
 	} else {
@@ -1005,7 +970,7 @@ void VariableDialog::applyModel()
 	updateVariableOptions();
 
 	auto containers = _model->getContainerNames();
-	ui->containersTable->setRowCount(static_cast<int>(containers.size()));
+	ui->containersTable->setRowCount(static_cast<int>(containers.size() + 1));
 	selectedRow = -1;
 
 	for (x = 0; x < static_cast<int>(containers.size()); ++x){
@@ -1045,7 +1010,7 @@ void VariableDialog::applyModel()
 	}
 
 	if (_currentContainer.empty() || selectedRow < 0){
-		if (ui->containersTable->item(0,0)){
+		if (ui->containersTable->item(0,0) && ui->containersTable->item(0,0)->text().toStdString() != "Add Container ..."){
 			_currentContainer = ui->containersTable->item(0,0)->text().toStdString();
 			ui->containersTable->item(0, 0)->setSelected(true);
 		}
