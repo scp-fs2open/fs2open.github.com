@@ -116,7 +116,7 @@ public:
 
 	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
 	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();
-	void checkValidModel();
+	bool checkValidModel();
 
 	bool apply() override;
 	void reject() override;

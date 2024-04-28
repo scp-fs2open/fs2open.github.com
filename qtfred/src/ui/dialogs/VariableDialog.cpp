@@ -20,8 +20,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->setupUi(this);
 	resize(QDialog::sizeHint()); // The best I can tell without some research, when a dialog doesn't use an underlying grid or layout, it needs to be resized this way before anything will show up 
 
-
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
+	// Here we need to check that there are no issues with variable names or container names, or with maps having duplicate keys.
+	connect(ui->OkCancelButtons, &QDialogButtonBox::accepted, this, &VariableDialog::checkValidModel);
+	// Reject if the user wants to.
+	connect(ui->OkCancelButtons, &QDialogButtonBox::rejected, this, &VariableDialog::preReject);
 	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::reject);
 	
@@ -1422,7 +1425,8 @@ int VariableDialog::getCurrentVariableRow()
 	return -1;
 }
 
-int VariableDialog::getCurrentContainerRow(){
+int VariableDialog::getCurrentContainerRow()
+{
 	auto items = ui->containersTable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
@@ -1435,7 +1439,8 @@ int VariableDialog::getCurrentContainerRow(){
 	return -1;
 }
 
-int VariableDialog::getCurrentContainerItemRow(){
+int VariableDialog::getCurrentContainerItemRow()
+{
 	auto items = ui->containerContentsTable->selectedItems();
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
@@ -1444,6 +1449,25 @@ int VariableDialog::getCurrentContainerItemRow(){
 	}
 
 	return -1;
+}
+
+void VariableDialog::preReject()
+{
+	QMessageBox msgBox;
+	msgBox.setText("Are you sure you want to discard your changes?");
+	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+	int ret = msgBox.exec();
+
+	if (ret == QMessageBox::Yes) {
+		this->reject();
+	}
+}
+
+void VariableDialog::checkValidModel()
+{
+	if (_model->checkValidModel()) {
+		accept();
+	}
 }
 
 } // namespace dialogs

@@ -21,7 +21,7 @@ void VariableDialogModel::reject()
     _containerItems.clear();
 }
 
-void VariableDialogModel::checkValidModel()
+bool VariableDialogModel::checkValidModel()
 {
     std::unordered_set<SCP_string> namesTaken;
     std::unordered_set<SCP_string> duplicates;
@@ -100,7 +100,7 @@ void VariableDialogModel::checkValidModel()
     }
 
     if (messageOut1.empty()){
-        apply();
+        return true;
     } else {
         messageOut1 = "Please correct these variable, container and key names. The editor cannot apply your changes until they are fixed:\n\n" + messageOut1;
 
@@ -108,6 +108,8 @@ void VariableDialogModel::checkValidModel()
         msgBox.setText(messageOut1.c_str());
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
+
+		return false;
     }
 
 

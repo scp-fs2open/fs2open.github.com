@@ -27,6 +27,9 @@ class VariableDialog : public QDialog {
 
 	// basically UpdateUI, but called when there is an inconsistency between model and UI
 	void applyModel();
+	void preReject();
+	void checkValidModel();
+
 	// Helper functions for this
 	void updateVariableOptions();
 	void updateContainerOptions();
