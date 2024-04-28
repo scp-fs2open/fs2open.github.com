@@ -1459,7 +1459,7 @@ void VariableDialog::preReject()
 	int ret = msgBox.exec();
 
 	if (ret == QMessageBox::Yes) {
-		this->reject();
+		reject();
 	}
 }
 
