@@ -200,7 +200,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
 	ui->variablesTable->setColumnWidth(0, 95);
 	ui->variablesTable->setColumnWidth(1, 95);
-	ui->variablesTable->setColumnWidth(2, 120);
+	ui->variablesTable->setColumnWidth(2, 105);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
@@ -208,15 +208,15 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
 	ui->containersTable->setColumnWidth(0, 95);
 	ui->containersTable->setColumnWidth(1, 95);
-	ui->containersTable->setColumnWidth(2, 120);
+	ui->containersTable->setColumnWidth(2, 105);
 
 	ui->containerContentsTable->setColumnCount(2);
 
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 118);
-	ui->containerContentsTable->setColumnWidth(1, 117);
+	ui->containerContentsTable->setColumnWidth(0, 150);
+	ui->containerContentsTable->setColumnWidth(1, 150);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	// and I don't mind just manually toggling them.
@@ -290,9 +290,6 @@ void VariableDialog::onVariablesTableUpdated()
 
 	// check if data column was altered
 	// TODO!  Set up comparison between last and current value
-	// TODO! Also this crashes because item->(x, 1) is null
-	// TODO! Variable is not editable
-	// TODO! Network container does not turn off
 	if (item->column() == 1) {
 
 		// Variable is a string
@@ -341,10 +338,11 @@ void VariableDialog::onVariablesSelectionChanged()
 	int row = getCurrentVariableRow();
 
 	if (row < 0){
+		updateVariableOptions();
 		return;
 	}
 
-	SCP_string newVariableName = "";
+	SCP_string newVariableName;
 
 	auto item = ui->variablesTable->item(row, 0); 
 
@@ -407,15 +405,15 @@ void VariableDialog::onContainersSelectionChanged()
 
 	auto items = ui->containersTable->selectedItems();
 
-	SCP_string newContainerName = "";
+	int row = getCurrentContainerRow();
 
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for(const auto& item : items) {
-		if (item->column() == 0){
-			newContainerName = item->text().toStdString();
-			break;
-		}
+	if (row < 0) {
+		updateContainerOptions();
+		return;
 	}
+
+	// guaranteed not to be null, since getCurrentContainerRow already checked.
+	SCP_string newContainerName = ui->containersTable->item(row, 0)->text().toStdString();
 
 	if (newContainerName != _currentContainer){
 		_currentContainer = newContainerName;
@@ -1027,7 +1025,9 @@ void VariableDialog::applyModel()
 
 void VariableDialog::updateVariableOptions()
 {
-	if (_currentVariable.empty()){
+	int row = getCurrentVariableRow();
+
+	if (row < 0){
 		ui->copyVariableButton->setEnabled(false);
 		ui->deleteVariableButton->setEnabled(false);
 		ui->setVariableAsStringRadio->setEnabled(false);
@@ -1050,14 +1050,6 @@ void VariableDialog::updateVariableOptions()
 	ui->saveVariableOnMissionCloseRadio->setEnabled(true);
 	ui->setVariableAsEternalcheckbox->setEnabled(true);
 	ui->networkVariableCheckbox->setEnabled(true);
-
-	auto items = ui->variablesTable->selectedItems();
-	int row = -1;
-
-	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-	for (const auto& item : items) {
-		row = item->row();
-	}
 
 	// if nothing is selected, but something could be selected, make it so.
 	if (row == -1 && ui->variablesTable->rowCount() > 1) {
@@ -1095,7 +1087,9 @@ void VariableDialog::updateVariableOptions()
 
 void VariableDialog::updateContainerOptions()
 {
-	if (_currentContainer.empty()){
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
 		ui->copyContainerButton->setEnabled(false);
 		ui->deleteContainerButton->setEnabled(false);
 		ui->setContainerAsStringRadio->setEnabled(false);
@@ -1126,14 +1120,6 @@ void VariableDialog::updateContainerOptions()
 
 	} else {
 		auto items = ui->containersTable->selectedItems();
-		int row = -1;
-
-		// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
-		for (const auto& item : items) {
-			row = item->row();
-			break;
-		}
-
 
 		ui->copyContainerButton->setEnabled(true);
 		ui->deleteContainerButton->setEnabled(true);
@@ -1310,7 +1296,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				}
 			}
 
-			++x;
 			if (ui->containerContentsTable->item(x, 0)){
 				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
 			} else {
@@ -1417,7 +1402,7 @@ int VariableDialog::getCurrentVariableRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item){
+		if (item && item->column() == 0 && item->text().toStdString() != "Add Variable ...") {
 			return item->row();
 		}
 	}
@@ -1431,7 +1416,7 @@ int VariableDialog::getCurrentContainerRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item) {
+		if (item && item->column() == 0 && item->text().toStdString() != "Add Container ...") {
 			return item->row();
 		}
 	}
@@ -1445,7 +1430,9 @@ int VariableDialog::getCurrentContainerItemRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		return item->row();
+		if (item && item->column() == 0 && item->text().toStdString() != "Add Item ...") {
+			return item->row();
+		}
 	}
 
 	return -1;
