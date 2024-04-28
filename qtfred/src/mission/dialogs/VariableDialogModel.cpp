@@ -1522,7 +1522,7 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
         ret = "0";
     }
 
-	return std::move(clampIntegerString(ret));
+	return clampIntegerString(ret);
 }
 
 // Helper function for trimIntegerString that makes sure we don't try to save a value that overflows or underflows
@@ -1538,7 +1538,7 @@ SCP_string VariableDialogModel::clampIntegerString(SCP_string source)
             return "-2147483648";
         }
 
-        return std::move(source);
+        return source;
     }
     // most truly ludicrous cases should be caught before here in the calling function, so this should not cause much if any data loss
     catch (...){
