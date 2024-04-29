@@ -284,7 +284,7 @@ ADE_VIRTVAR(SlideDecelerationTime, l_Physics, "number", "Time to decelerate from
 	return ade_set_args(L, "f", pih->pi->slide_decel_time_const);
 }
 
-ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)", "vector", "Object velocity, or null vector if handle is invalid")
+ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector). Setting this value may have minimal effect unless the $Fix scripted velocity game settings flag is used.", "vector", "Object velocity, or null vector if handle is invalid")
 {
 	physics_info_h *pih;
 	vec3d *v3=NULL;
@@ -296,6 +296,10 @@ ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->vel = *v3;
+		pih->pi->speed = vm_vec_mag(&pih->pi->vel);							
+		pih->pi->fspeed = vm_vec_dot(&pih->objh.objp->orient.vec.fvec, &pih->pi->vel);
+		if (Fix_scripted_velocity)
+			pih->pi->flags |= PF_SCRIPTED_VELOCITY; // set flag to ensure physics respects this new value
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->vel));
