@@ -671,6 +671,7 @@ void VariableDialog::onDeleteContainerButtonPressed()
 		return;
 	}
 
+	_model->removeContainer(row);
 	applyModel();
 }
 
