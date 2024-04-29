@@ -358,8 +358,9 @@ void VariableDialog::onVariablesSelectionChanged()
 
 	if (newVariableName != _currentVariable){
 		_currentVariable = newVariableName;
-		applyModel();
 	}
+
+	applyModel();
 }
 
 
@@ -403,8 +404,6 @@ void VariableDialog::onContainersSelectionChanged()
 		return;
 	}
 
-	auto items = ui->containersTable->selectedItems();
-
 	int row = getCurrentContainerRow();
 
 	if (row < 0) {
@@ -417,8 +416,9 @@ void VariableDialog::onContainersSelectionChanged()
 
 	if (newContainerName != _currentContainer){
 		_currentContainer = newContainerName;
-		applyModel();
 	}
+
+	applyModel(); // Seems to be buggy unless I have this outside the if.
 }
 
 // TODO, finish this function
@@ -1347,11 +1347,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 
 		// keys I didn't bother to make separate.  Should have done the same with values.
-		auto keys = _model->getMapKeys(row);
+		auto& keys = _model->getMapKeys(row);
 
 		// string valued map.
 		if (_model->getContainerValueType(row)){
-			auto strings = _model->getStringValues(row);
+			auto& strings = _model->getStringValues(row);
 
 			// use the map as the size because map containers are only as good as their keys anyway.
 			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
@@ -1377,7 +1377,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 		// number valued map
 		} else {
-			auto numbers = _model->getNumberValues(row);
+			auto& numbers = _model->getNumberValues(row);
 			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
 
 			int x;

@@ -511,32 +511,35 @@ SCP_string VariableDialogModel::copyVariable(int index)
 
     int count = 1;
     variableInfo* variableSearch;
+	SCP_string newName;
 
     do {
-        SCP_string newName;
-        sprintf(newName, "%s_cpy%i", variable->name.substr(0, TOKEN_LENGTH - 6).c_str(), count);
+        sprintf(newName, "%i_%s", count, variable->name.substr(0, TOKEN_LENGTH - 4).c_str());
         variableSearch = lookupVariableByName(newName);
 
         // open slot found!
         if (!variableSearch){
             // create the new entry in the model
-			_variableItems.emplace_back();
+			variableInfo newInfo;
 
             // and set everything as a copy from the original, except original name and deleted.
-            auto& newVariable = _variableItems.back();
-            newVariable.name = newName;
-            newVariable.flags = variable->flags;
-            newVariable.string = variable->string;
+			newInfo.name = newName;
+			newInfo.flags = variable->flags;
+			newInfo.string = variable->string;
 
-            if (newVariable.string) {
-                newVariable.stringValue = variable->stringValue;
+            if (newInfo.string) {
+				newInfo.stringValue = variable->stringValue;
             } else {
-                newVariable.numberValue = variable->numberValue;
+				newInfo.numberValue = variable->numberValue;
             }
+
+			_variableItems.push_back(std::move(newInfo));
 
             return newName;
         }
-    } while (variableSearch != nullptr && count < 51);
+
+		++count;
+    } while (variableSearch != nullptr && count < 100);
 
     return "";
 }
