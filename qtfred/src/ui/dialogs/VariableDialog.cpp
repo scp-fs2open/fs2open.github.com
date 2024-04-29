@@ -819,7 +819,7 @@ void VariableDialog::onSetContainerAsEternalCheckboxClicked()
 		return;
 	}
 
-	if (ui->setContainerAsEternalCheckbox->isChecked() != _model->setContainerNetworkStatus(row, ui->setContainerAsEternalCheckbox->isChecked())){
+	if (ui->setContainerAsEternalCheckbox->isChecked() != _model->setContainerEternalFlag(row, ui->setContainerAsEternalCheckbox->isChecked())){
 		applyModel();
 	} 
 }
@@ -1008,6 +1008,24 @@ void VariableDialog::applyModel()
 	} else {
 		QTableWidgetItem* item = new QTableWidgetItem("Add Container ...");
 		ui->containersTable->setItem(x, 0, item);
+	}
+
+	if (ui->containersTable->item(x, 1)){
+		ui->containersTable->item(x, 1)->setFlags(ui->containersTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
+		ui->containersTable->item(x, 1)->setText("");
+	} else {
+		QTableWidgetItem* item = new QTableWidgetItem("");
+		item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->containersTable->setItem(x, 1, item);
+	}
+
+	if (ui->containersTable->item(x, 2)){
+		ui->containersTable->item(x, 2)->setFlags(ui->containersTable->item(x, 2)->flags() & ~Qt::ItemIsEditable);
+		ui->containersTable->item(x, 2)->setText("");
+	} else {
+		QTableWidgetItem* item = new QTableWidgetItem("");
+		item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+		ui->containersTable->setItem(x, 2, item);
 	}
 
 	if (_currentContainer.empty() || selectedRow < 0){

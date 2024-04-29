@@ -497,16 +497,16 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QRadioButton" name="setContainerAsNumberRadio">
+              <widget class="QRadioButton" name="setContainerAsStringRadio">
                <property name="text">
-                <string>Number</string>
+                <string>String</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="setContainerAsStringRadio">
+              <widget class="QRadioButton" name="setContainerAsNumberRadio">
                <property name="text">
-                <string>String</string>
+                <string>Number</string>
                </property>
               </widget>
              </item>
@@ -522,16 +522,16 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
-              <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
+              <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
                <property name="text">
-                <string>Number</string>
+                <string>String</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
+              <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
                <property name="text">
-                <string>String</string>
+                <string>Number</string>
                </property>
               </widget>
              </item>
