@@ -721,12 +721,11 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
         return !list;
     }
 
-    if (container->list && list) {
-        // no change needed
-        if (list){
-            return list;
-        }
+    if (container->list == list){
+        return list;
+    }
 
+    if (container->list && !list) {
         // no data to either transfer to map/purge/ignore
         if (container->string && container->stringValues.empty()){
             container->list = list;
@@ -770,7 +769,7 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
         // now ask about data
         QMessageBox msgBoxListToMapRetainData;
 	    msgBoxListToMapRetainData.setText("Would you to keep the list data as keys or values, or would you like to purge the container contents?");
-        msgBoxListToMapRetainData.addButton("Keep as Keys", QMessageBox::ActionRole);
+        msgBoxListToMapRetainData.addButton("Convert to Keys", QMessageBox::ActionRole);
         msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::ApplyRole);
         msgBoxListToMapRetainData.addButton("Purge", QMessageBox::RejectRole);
         msgBoxListToMapRetainData.setStandardButtons(QMessageBox::Cancel);
@@ -778,8 +777,36 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 	    ret = msgBoxListToMapRetainData.exec();
 
 	    switch (ret) {
-            case QMessageBox::Discard:
+            case QMessageBox::ActionRole:
+                // TODO! overwite the current keys with the current list values.  Empty list values.
+
+            case QMessageBox::ApplyRole:
+
+                if ((container->string && container->stringValues.size() == container->keys.size())
+                || (!container->string && container->numberValues.size() == container->keys.size())){
+                    container->list = list;
+                    return;
+                }
+
+                auto currentSize = (container->string) ? container->stringValues.size() : container->numberValues.size();
+                int index = 0;
+
+
+                if (currentSize < containe)
+
+                for (; currentSize < container->keys.size(); ++currentSize){
+                    if (container->string){
+                        
+                    }
+                } 
+
+            case QMessageBox::RejectRole:
+
                 container->list = list;
+                container->stringValues.clear();
+                container->numberValues.clear();
+                container->keys.clear();
+                return container->list;
                 break;
             case QMessageBox::Cancel:
                 return container->list;
