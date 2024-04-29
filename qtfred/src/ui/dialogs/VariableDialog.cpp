@@ -963,8 +963,12 @@ void VariableDialog::applyModel()
 	}
 
 	if (_currentVariable.empty() || selectedRow < 0){
-		if (ui->variablesTable->item(0,0) && strlen(ui->variablesTable->item(0,0)->text().toStdString().c_str())){
-			_currentVariable = ui->variablesTable->item(0,0)->text().toStdString();
+		if (ui->variablesTable->item(0, 0) && !ui->variablesTable->item(0, 0)->text().toStdString().empty()){
+			_currentVariable = ui->variablesTable->item(0, 0)->text().toStdString();	
+		}
+
+		if (ui->variablesTable->item(0, 1)) {
+			_currentVariableData = ui->variablesTable->item(0, 1)->text().toStdString();
 		}
 	}
 
@@ -977,8 +981,10 @@ void VariableDialog::applyModel()
 	for (x = 0; x < static_cast<int>(containers.size()); ++x){
 		if (ui->containersTable->item(x, 0)){
 			ui->containersTable->item(x, 0)->setText(containers[x][0].c_str());
+			ui->containersTable->item(x, 0)->setFlags(ui->containersTable->item(x, 0)->flags() | Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem(containers[x][0].c_str());
+			item->setFlags(item->flags() | Qt::ItemIsEditable);
 			ui->containersTable->setItem(x, 0, item);
 		}
 
@@ -1028,9 +1034,9 @@ void VariableDialog::applyModel()
 		ui->containersTable->setItem(x, 2, item);
 	}
 
-	if (_currentContainer.empty() || selectedRow < 0){
-		if (ui->containersTable->item(0,0) && ui->containersTable->item(0,0)->text().toStdString() != "Add Container ..."){
-			_currentContainer = ui->containersTable->item(0,0)->text().toStdString();
+	if (selectedRow < 0 && ui->containersTable->rowCount() > 1) {
+		if (ui->containersTable->item(0, 0) && ui->containersTable->item(0, 0)->text().toStdString() != "Add Container ..."){
+			_currentContainer = ui->containersTable->item(0, 0)->text().toStdString();
 			ui->containersTable->item(0, 0)->setSelected(true);
 		}
 	}
@@ -1070,7 +1076,7 @@ void VariableDialog::updateVariableOptions()
 	ui->networkVariableCheckbox->setEnabled(true);
 
 	// if nothing is selected, but something could be selected, make it so.
-	if (row == -1 && ui->variablesTable->rowCount() > 1) {
+	if (row < 0 && ui->variablesTable->rowCount() > 1) {
 		row = 0;
 		ui->variablesTable->item(row, 0)->setSelected(true);
 		_currentVariable = ui->variablesTable->item(row, 0)->text().toStdString();
@@ -1393,7 +1399,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				}
 			}
 
-			++x;
 			if (ui->containerContentsTable->item(x, 0)){
 				ui->containerContentsTable->item(x, 0)->setText("Add key ...");
 			} else {
