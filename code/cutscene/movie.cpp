@@ -45,7 +45,7 @@ struct PlaybackState {
 	vec2d posBottomRight;
 
 	int subtitle_font = -1;
-	color subtitle_color;
+	color subtitle_color = Color_bright_white;
 };
 
 void processEvents()
@@ -182,10 +182,11 @@ void initialize_player_state(Player* player, PlaybackState* state) {
 			Warning(LOCATION, "Failed to load subtitle font '%s'! Subtitles will be disabled.", Movie_subtitle_font.c_str());
 		} 
 
-		if (state->subtitle_color.red < 0 || state->subtitle_color.green < 0 || state->subtitle_color.blue < 0)
+		if ((state->subtitle_color.red >= 0 && state->subtitle_color.red <= 255) &&
+			(state->subtitle_color.green >= 0 && state->subtitle_color.green <= 255) &&
+			(state->subtitle_color.blue >= 0 && state->subtitle_color.blue <= 255) &&
+			(state->subtitle_color.alpha >= 0 && state->subtitle_color.alpha <= 255))
 		{
-			state->subtitle_color = Color_bright_white;
-		} else {
 			gr_init_alphacolor(&state->subtitle_color,
 				Movie_subtitle_rgba[0],
 				Movie_subtitle_rgba[1],
