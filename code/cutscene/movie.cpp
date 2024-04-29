@@ -182,10 +182,10 @@ void initialize_player_state(Player* player, PlaybackState* state) {
 			Warning(LOCATION, "Failed to load subtitle font '%s'! Subtitles will be disabled.", Movie_subtitle_font.c_str());
 		} 
 
-		if ((state->subtitle_color.red >= 0 && state->subtitle_color.red <= 255) &&
-			(state->subtitle_color.green >= 0 && state->subtitle_color.green <= 255) &&
-			(state->subtitle_color.blue >= 0 && state->subtitle_color.blue <= 255) &&
-			(state->subtitle_color.alpha >= 0 && state->subtitle_color.alpha <= 255))
+		if ((Movie_subtitle_rgba[0] >= 0 && Movie_subtitle_rgba[0] <= 255) &&
+			(Movie_subtitle_rgba[1] >= 0 && Movie_subtitle_rgba[1] <= 255) &&
+			(Movie_subtitle_rgba[2] >= 0 && Movie_subtitle_rgba[2] <= 255) &&
+			(Movie_subtitle_rgba[3] >= 0 && Movie_subtitle_rgba[3] <= 255))
 		{
 			gr_init_alphacolor(&state->subtitle_color,
 				Movie_subtitle_rgba[0],
