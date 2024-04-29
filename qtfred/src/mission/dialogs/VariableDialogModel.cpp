@@ -756,21 +756,23 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 	    switch (ret) {
             case QMessageBox::Yes:
                 break;
+
             case QMessageBox::Cancel:
                 return container->list;
                 break;
+
             default:
                 UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
                 return false;
-                break;
-            
+                break;            
 	    }
 
         // now ask about data
         QMessageBox msgBoxListToMapRetainData;
 	    msgBoxListToMapRetainData.setText("Would you to keep the list data as keys or values, or would you like to purge the container contents?");
-        msgBoxListToMapRetainData.addButton("Convert to Keys", QMessageBox::ActionRole);
+        msgBoxListToMapRetainData.setInformativeText("Converting to keys will erase current keys and cannot be undone.  Purging all container data cannot be undone.")
         msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::ApplyRole);
+        msgBoxListToMapRetainData.addButton("Convert to Keys", QMessageBox::ActionRole);
         msgBoxListToMapRetainData.addButton("Purge", QMessageBox::RejectRole);
         msgBoxListToMapRetainData.setStandardButtons(QMessageBox::Cancel);
 	    msgBoxListToMapRetainData.setDefaultButton(QMessageBox::Cancel);
@@ -778,27 +780,76 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 
 	    switch (ret) {
             case QMessageBox::ActionRole:
-                // TODO! overwite the current keys with the current list values.  Empty list values.
+                // The easy version. (I know ... I should have standardized all storage as strings internally.... Now I'm in too deep)
+                if (container->string){
+                    container->keys = contianer->stringValues;
+                    container->stringValues.clear();
+                    container->list = list;
+                    return container->list;
+                }
+
+                // The hard version ...... I guess it's not that bad, actually
+                container->keys.clear();
+
+                for (auto& number : container->numberValues){
+                    SCP_string temp;
+                    sprintf(temp, "%i", number);
+                    contianer->keys.push_back(temp);
+                }
+                
+                container->numberValues.clear();
+                container->list = list;
+                return container->list;
 
             case QMessageBox::ApplyRole:
 
-                if ((container->string && container->stringValues.size() == container->keys.size())
-                || (!container->string && container->numberValues.size() == container->keys.size())){
+                auto currentSize = (container->string) ? container->stringValues.size() : container->numberValues.size();
+
+                // Keys and data are already set to the correct sizes. Key type should persist from the last time it was a map, so no need
+                // to adjust keys.
+                if (currentSize == container->keys.size()){
                     container->list = list;
-                    return;
+                    return container->list;
                 }
 
-                auto currentSize = (container->string) ? container->stringValues.size() : container->numberValues.size();
-                int index = 0;
+                // not enough data items.
+                if (currentSize < container->keys.size()){
+                    // just put the default value in them. Any string I specify for string values will
+                    // be inconvenient to someone.
+                    SCP_string newValue = "";
 
-
-                if (currentSize < containe)
-
-                for (; currentSize < container->keys.size(); ++currentSize){
                     if (container->string){
-                        
+                        container->stringValues.resize(container->keys.size(), newValue);
+                    } else {
+                        // But differentiating numbers by having zero be the default is a good idea and does
+                        newvalue = "0";
+                        container->numberValues.resize(container->keys.size(), newValue);
                     }
-                } 
+                
+                } else {
+                    // here currentSize must be greater than the key size, because we already dealt with equal size.
+                    // So let's add a few keys to make them level.
+                    while (currentSize > container->keys.size() ){
+                        int keyIndex = 0;
+                        SCPstring newKey;
+                        
+                        if (container->stringKeys){
+                            sprintf(newKey, "key%i", keyIndex);
+                        } else {
+                            sprintf(newKey, "%i", KeyIndex);
+                        }
+
+                        // avoid duplicates
+                        if (!lookupContainerKeyByName(index, newKey)) {
+                            container->keys.push_back(newKey);
+                        }
+
+                        ++keyIndex;                        
+                    }
+                }
+
+                container->list = list;
+                return container->list;
 
             case QMessageBox::RejectRole:
 
@@ -808,20 +859,20 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 container->keys.clear();
                 return container->list;
                 break;
+
             case QMessageBox::Cancel:
-                return container->list;
+            	return !list;
                 break;
+
             default:
                 UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
                 return false;
                 break;
             
 		}
-
 	}
 
-
-	return !container->list;
+	return !list;
 }
 
 bool VariableDialogModel::setContainerNetworkStatus(int index, bool network)

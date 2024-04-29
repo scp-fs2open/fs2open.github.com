@@ -179,6 +179,18 @@ private:
 		return nullptr;
 	}
 
+	SCP_string* lookupContainerKeyByName(int containerIndex, SCP_string keyIn){
+		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
+			for (const auto& key ; _containerItems[containerIndex].keys){
+				if (key == keyIn){
+					return &key;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	SCP_string* lookupContainerStringItem(int containerIndex, int itemIndex){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
 			if (itemIndex > -1 && itemIndex < static_cast<int>(_containerItems[containerIndex].stringValues.size())){
