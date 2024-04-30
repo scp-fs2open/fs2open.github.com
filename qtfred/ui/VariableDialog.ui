@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>754</width>
-    <height>693</height>
+    <width>899</width>
+    <height>729</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>754</width>
-    <height>693</height>
+    <width>899</width>
+    <height>729</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>754</width>
-    <height>693</height>
+    <width>899</width>
+    <height>729</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -36,19 +36,13 @@
          <height>643</height>
         </size>
        </property>
-       <property name="maximumSize">
-        <size>
-         <width>734</width>
-         <height>643</height>
-        </size>
-       </property>
        <property name="title">
         <string>Variables</string>
        </property>
        <widget class="QGroupBox" name="groupBox_4">
         <property name="geometry">
          <rect>
-          <x>430</x>
+          <x>550</x>
           <y>120</y>
           <width>81</width>
           <height>101</height>
@@ -89,7 +83,7 @@
          <rect>
           <x>10</x>
           <y>30</y>
-          <width>411</width>
+          <width>521</width>
           <height>191</height>
          </rect>
         </property>
@@ -124,7 +118,7 @@
        <widget class="QGroupBox" name="groupBox_7">
         <property name="geometry">
          <rect>
-          <x>530</x>
+          <x>650</x>
           <y>20</y>
           <width>191</width>
           <height>201</height>
@@ -138,7 +132,7 @@
           <rect>
            <x>10</x>
            <y>20</y>
-           <width>221</width>
+           <width>181</width>
            <height>181</height>
           </rect>
          </property>
@@ -184,7 +178,7 @@
        <widget class="QWidget" name="verticalLayoutWidget">
         <property name="geometry">
          <rect>
-          <x>430</x>
+          <x>550</x>
           <y>30</y>
           <width>82</width>
           <height>86</height>
@@ -219,8 +213,8 @@
          <rect>
           <x>0</x>
           <y>230</y>
-          <width>721</width>
-          <height>411</height>
+          <width>881</width>
+          <height>451</height>
          </rect>
         </property>
         <property name="minimumSize">
@@ -237,8 +231,8 @@
           <rect>
            <x>10</x>
            <y>210</y>
-           <width>511</width>
-           <height>191</height>
+           <width>631</width>
+           <height>221</height>
           </rect>
          </property>
          <property name="title">
@@ -249,7 +243,7 @@
            <rect>
             <x>10</x>
             <y>30</y>
-            <width>401</width>
+            <width>471</width>
             <height>151</height>
            </rect>
           </property>
@@ -278,10 +272,10 @@
          <widget class="QWidget" name="verticalLayoutWidget_3">
           <property name="geometry">
            <rect>
-            <x>420</x>
-            <y>30</y>
-            <width>85</width>
-            <height>157</height>
+            <x>520</x>
+            <y>20</y>
+            <width>106</width>
+            <height>175</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -314,30 +308,11 @@
             </widget>
            </item>
            <item>
-            <spacer name="verticalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+            <widget class="QPushButton" name="swapKeysAndValuesButton">
+             <property name="text">
+              <string>Swap Key/Value</string>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <spacer name="verticalSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="deleteContainerItemButton">
@@ -357,7 +332,7 @@
         <widget class="QWidget" name="verticalLayoutWidget_2">
          <property name="geometry">
           <rect>
-           <x>430</x>
+           <x>550</x>
            <y>30</y>
            <width>82</width>
            <height>85</height>
@@ -395,7 +370,7 @@
         <widget class="QGroupBox" name="groupBox_5">
          <property name="geometry">
           <rect>
-           <x>530</x>
+           <x>650</x>
            <y>210</y>
            <width>181</width>
            <height>191</height>
@@ -409,7 +384,7 @@
            <rect>
             <x>10</x>
             <y>20</y>
-            <width>174</width>
+            <width>171</width>
             <height>171</height>
            </rect>
           </property>
@@ -455,7 +430,7 @@
         <widget class="QGroupBox" name="groupBox_6">
          <property name="geometry">
           <rect>
-           <x>530</x>
+           <x>650</x>
            <y>20</y>
            <width>181</width>
            <height>181</height>
@@ -557,7 +532,7 @@
           <rect>
            <x>10</x>
            <y>30</y>
-           <width>411</width>
+           <width>521</width>
            <height>171</height>
           </rect>
          </property>
