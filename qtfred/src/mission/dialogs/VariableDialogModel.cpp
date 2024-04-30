@@ -32,7 +32,7 @@ bool VariableDialogModel::checkValidModel()
         } 
     }
 
-    SCP_string messageOut1;
+    SCP_string messageOut;
     SCP_string messageBuffer;
 
     if (!duplicates.empty()){
@@ -44,8 +44,8 @@ bool VariableDialogModel::checkValidModel()
             }
         }
         
-        sprintf(messageOut1, "There are %zu duplicate variables:\n", duplicates.size());
-        messageOut1 += messageBuffer + "\n\n";
+        sprintf(messageOut, "There are %zu duplicate variables:\n", duplicates.size());
+        messageOut += messageBuffer + "\n\n";
     }
 
     duplicates.clear();
@@ -83,7 +83,7 @@ bool VariableDialogModel::checkValidModel()
         SCP_string temp;
 
         sprintf(temp, "There are %zu duplicate containers:\n\n", duplicates.size());
-        messageOut1 += temp + messageBuffer + "\n";
+        messageOut += temp + messageBuffer + "\n";
     }
 
     messageBuffer.clear();
@@ -96,13 +96,13 @@ bool VariableDialogModel::checkValidModel()
         SCP_string temp;
 
         sprintf(temp, "There are %zu duplicate map keys:\n\n", duplicateKeys.size());
-        messageOut1 += messageBuffer + "\n";
+        messageOut += messageBuffer + "\n";
     }
 
     if (messageOut1.empty()){
         return true;
     } else {
-        messageOut1 = "Please correct these variable, container and key names. The editor cannot apply your changes until they are fixed:\n\n" + messageOut1;
+        messageOut = "Please correct these issues. The editor cannot apply your changes until they are fixed:\n\n" + messageOut1;
 
 	    QMessageBox msgBox;
         msgBox.setText(messageOut1.c_str());
@@ -694,7 +694,6 @@ bool VariableDialogModel::setContainerValueType(int index, bool type)
     return container->string;
 }
 
-// TODO finish these two functions.
 bool VariableDialogModel::setContainerKeyType(int index, bool string) 
 {    
     auto container = lookupContainer(index);
@@ -704,7 +703,72 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
         return false;
     }
 
+    if (container->stringKeys == string){
+        return container->stringKeys;
+    }
 
+    if (container->stringKeys) {
+        // Ok, this is the complicated type.  First check if all keys can just quickly be transferred to numbers.
+        bool quickConvert = true;
+
+        for (auto& key : container->keys) {
+            try {                    
+                std::stoi(key);
+            }
+            catch (...) {
+                quickConvert = false;
+            }
+        } 
+
+        // Don't even notify the user. Switching back is exceedingly easy.
+        if (quickConvert) {
+            container->stringKeys = string;
+            return container->stringKeys;
+        }
+
+        // If we couldn't convert easily, then we need some input from the user
+                // now ask about data
+        QMessageBox msgBoxListToMapRetainData;
+		msgBoxListToMapRetainData.setWindowTitle("Key Type Conversion");
+	    msgBoxListToMapRetainData.setText("Fred could not convert all string keys to numbers automatically.  Would you like to use default keys, filter out integers from the current keys or cancel the operation?");
+	    msgBoxListToMapRetainData.setInformativeText("Current keys will be overwritten unless you cancel and cannot be restored. Filtering will keep *any* numerical digits and starting \"-\" in the string.  Filtering also does not prevent duplicate keys.");
+		msgBoxListToMapRetainData.addButton("Use Default Keys", QMessageBox::ActionRole); // No, these categories don't make sense, but QT makes underlying assumptions about where each button will be
+        msgBoxListToMapRetainData.addButton("Filter Current Keys ", QMessageBox::RejectRole);
+		auto defaultButton = msgBoxListToMapRetainData.addButton("Cancel", QMessageBox::HelpRole);
+	    msgBoxListToMapRetainData.setDefaultButton(defaultButton);
+	    ret = msgBoxListToMapRetainData.exec();
+
+        switch(ret){
+            // just use default keys
+            case QMessageBox::ActionRole:
+            {
+                int current = 0;
+                for (auto& key : container->keys){
+                    sprintf(key, "%i", current);
+                    key = temp;
+                    ++current;
+                }
+
+            }
+
+            // filter out current keys
+            case QMessageBox::RejectRole:
+                for (auto& key: container->keys){
+                    key = trimIntegerString(key);
+                }
+
+            // cancel the operation
+            case QMessageBox::HelpRole:
+                return !string;
+            default:
+                UNREACHABLE("Bad button value from confirmation message box in the Variable editor, please report!");
+        }
+
+    } else {
+        // transferring to keys to string type. This can just change because a valid number is always a valid string.
+        container->stringKeys = string;
+        return container->stringKeys;
+    }
 
     return false;
 }
@@ -760,7 +824,7 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 break;
 
             default:
-                UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
+                UNREACHABLE("Bad button value from confirmation message box in the Variable editor, please report!");
                 return false;
                 break;            
 	    }
@@ -866,7 +930,7 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 break;
 
             default:
-                UNREACHABLE("Bad button value from confirmation message box in the Variable dialog editor, please report!");
+                UNREACHABLE("Bad button value from confirmation message box in the Variable editor, please report!");
                 return false;
                 break;
             
