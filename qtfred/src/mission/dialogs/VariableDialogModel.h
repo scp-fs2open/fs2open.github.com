@@ -25,7 +25,7 @@ struct containerInfo {
 	bool deleted = false;
 	bool list = true;
 	bool string = true;
-	bool stringKeys = false;
+	bool stringKeys = true;
 	int flags = 0;
 
 	// this will allow us to look up the original values used in the mission previously.
@@ -181,9 +181,9 @@ private:
 
 	SCP_string* lookupContainerKeyByName(int containerIndex, SCP_string keyIn){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
-			for (const auto& key ; _containerItems[containerIndex].keys){
-				if (key == keyIn){
-					return &key;
+			for (auto key = _containerItems[containerIndex].keys.begin(); key != _containerItems[containerIndex].keys.end(); ++key) {
+				if (*key == keyIn){
+					return &(*key);
 				}
 			}
 		}

@@ -725,7 +725,7 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
         return list;
     }
 
-    if (container->list && !list) {
+    if (container->list) {
         // no data to either transfer to map/purge/ignore
         if (container->string && container->stringValues.empty()){
             container->list = list;
@@ -769,21 +769,23 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 
         // now ask about data
         QMessageBox msgBoxListToMapRetainData;
+		msgBoxListToMapRetainData.setWindowTitle("List to Map Conversion");
 	    msgBoxListToMapRetainData.setText("Would you to keep the list data as keys or values, or would you like to purge the container contents?");
-        msgBoxListToMapRetainData.setInformativeText("Converting to keys will erase current keys and cannot be undone.  Purging all container data cannot be undone.")
-        msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::ApplyRole);
-        msgBoxListToMapRetainData.addButton("Convert to Keys", QMessageBox::ActionRole);
-        msgBoxListToMapRetainData.addButton("Purge", QMessageBox::RejectRole);
-        msgBoxListToMapRetainData.setStandardButtons(QMessageBox::Cancel);
-	    msgBoxListToMapRetainData.setDefaultButton(QMessageBox::Cancel);
+		msgBoxListToMapRetainData.setInformativeText("Converting to keys will erase current keys and cannot be undone.  Purging all container data cannot be undone.");
+		msgBoxListToMapRetainData.addButton("Keep as Values", QMessageBox::ActionRole); // No, these categories don't make sense, but QT makes underlying assumptions about where each button will be
+        msgBoxListToMapRetainData.addButton("Convert to Keys", QMessageBox::RejectRole); // Instead of putting them in order of input to the 
+        msgBoxListToMapRetainData.addButton("Purge", QMessageBox::ApplyRole);
+		auto defaultButton = msgBoxListToMapRetainData.addButton("Cancel", QMessageBox::HelpRole);
+	    msgBoxListToMapRetainData.setDefaultButton(defaultButton);
 	    ret = msgBoxListToMapRetainData.exec();
 
 	    switch (ret) {
-            case QMessageBox::ActionRole:
+            case QMessageBox::RejectRole:
                 // The easy version. (I know ... I should have standardized all storage as strings internally.... Now I'm in too deep)
                 if (container->string){
-                    container->keys = contianer->stringValues;
+                    container->keys = container->stringValues;
                     container->stringValues.clear();
+					container->stringValues.resize(container->keys.size(), "");
                     container->list = list;
                     return container->list;
                 }
@@ -794,64 +796,65 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 for (auto& number : container->numberValues){
                     SCP_string temp;
                     sprintf(temp, "%i", number);
-                    contianer->keys.push_back(temp);
+                    container->keys.push_back(temp);
                 }
                 
                 container->numberValues.clear();
                 container->list = list;
                 return container->list;
 
+            case QMessageBox::ActionRole:
+			{
+				auto currentSize = (container->string) ? container->stringValues.size() : container->numberValues.size();
+
+				// Keys and data are already set to the correct sizes. Key type should persist from the last time it was a map, so no need
+				// to adjust keys.
+				if (currentSize == container->keys.size()) {
+					container->list = list;
+					return container->list;
+				}
+
+				// not enough data items.
+				if (currentSize < container->keys.size()) {
+					// just put the default value in them. Any string I specify for string values will
+					// be inconvenient to someone.
+					if (container->string) {
+						SCP_string newValue = "";
+						container->stringValues.resize(container->keys.size(), newValue);
+					}
+					else {
+						// But differentiating numbers by having zero be the default is a good idea and does
+						container->numberValues.resize(container->keys.size(), 0);
+					}
+
+				}
+				else {
+					// here currentSize must be greater than the key size, because we already dealt with equal size.
+					// So let's add a few keys to make them level.
+					while (currentSize > container->keys.size()) {
+						int keyIndex = 0;
+						SCP_string newKey;
+
+						if (container->stringKeys) {
+							sprintf(newKey, "key%i", keyIndex);
+						}
+						else {
+							sprintf(newKey, "%i", keyIndex);
+						}
+
+						// avoid duplicates
+						if (!lookupContainerKeyByName(index, newKey)) {
+							container->keys.push_back(newKey);
+						}
+
+						++keyIndex;
+					}
+				}
+
+				container->list = list;
+				return container->list;
+			}
             case QMessageBox::ApplyRole:
-
-                auto currentSize = (container->string) ? container->stringValues.size() : container->numberValues.size();
-
-                // Keys and data are already set to the correct sizes. Key type should persist from the last time it was a map, so no need
-                // to adjust keys.
-                if (currentSize == container->keys.size()){
-                    container->list = list;
-                    return container->list;
-                }
-
-                // not enough data items.
-                if (currentSize < container->keys.size()){
-                    // just put the default value in them. Any string I specify for string values will
-                    // be inconvenient to someone.
-                    SCP_string newValue = "";
-
-                    if (container->string){
-                        container->stringValues.resize(container->keys.size(), newValue);
-                    } else {
-                        // But differentiating numbers by having zero be the default is a good idea and does
-                        newvalue = "0";
-                        container->numberValues.resize(container->keys.size(), newValue);
-                    }
-                
-                } else {
-                    // here currentSize must be greater than the key size, because we already dealt with equal size.
-                    // So let's add a few keys to make them level.
-                    while (currentSize > container->keys.size() ){
-                        int keyIndex = 0;
-                        SCPstring newKey;
-                        
-                        if (container->stringKeys){
-                            sprintf(newKey, "key%i", keyIndex);
-                        } else {
-                            sprintf(newKey, "%i", KeyIndex);
-                        }
-
-                        // avoid duplicates
-                        if (!lookupContainerKeyByName(index, newKey)) {
-                            container->keys.push_back(newKey);
-                        }
-
-                        ++keyIndex;                        
-                    }
-                }
-
-                container->list = list;
-                return container->list;
-
-            case QMessageBox::RejectRole:
 
                 container->list = list;
                 container->stringValues.clear();
@@ -860,7 +863,7 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 return container->list;
                 break;
 
-            case QMessageBox::Cancel:
+            case QMessageBox::HelpRole:
             	return !list;
                 break;
 
@@ -870,6 +873,10 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 break;
             
 		}
+	} else {
+		// why yes, in this case it really is that simple.  It doesn't matter what keys are doing, and there should already be valid values.
+		container->list = list;
+		return container->list;
 	}
 
 	return !list;
