@@ -33,19 +33,19 @@ bool VariableDialogModel::checkValidModel()
     }
 
     SCP_string messageOut1;
-    SCP_string messageOut2;
+    SCP_string messageBuffer;
 
     if (!duplicates.empty()){
         for (const auto& item : duplicates){
-            if (messageOut2.empty()){
-                messageOut2 = "\"" + item + "\"";
+            if (messageBuffer.empty()){
+                messageBuffer = "\"" + item + "\"";
             } else {
-                messageOut2 += ", ""\"" + item + "\"";
+                messageBuffer += ", ""\"" + item + "\"";
             }
         }
         
         sprintf(messageOut1, "There are %zu duplicate variables:\n", duplicates.size());
-        messageOut1 += messageOut2 + "\n\n";
+        messageOut1 += messageBuffer + "\n\n";
     }
 
     duplicates.clear();
@@ -69,34 +69,34 @@ bool VariableDialogModel::checkValidModel()
         }
     }
 
-    messageOut2.clear();
+    messageBuffer.clear();
     
     if (!duplicates.empty()){
         for (const auto& item : duplicates){
-            if (messageOut2.empty()){
-                messageOut2 = "\"" + item + "\"";
+            if (messageBuffer.empty()){
+                messageBuffer = "\"" + item + "\"";
             } else {
-                messageOut2 += ", ""\"" + item + "\"";
+                messageBuffer += ", ""\"" + item + "\"";
             }
         }
         
         SCP_string temp;
 
         sprintf(temp, "There are %zu duplicate containers:\n\n", duplicates.size());
-        messageOut1 += messageOut2 + "\n";
+        messageOut1 += temp + messageBuffer + "\n";
     }
 
-    messageOut2.clear();
+    messageBuffer.clear();
 
     if (!duplicateKeys.empty()){
         for (const auto& key : duplicateKeys){
-            messageOut2 += key;
+            messageBuffer += key;
         }
 
         SCP_string temp;
 
         sprintf(temp, "There are %zu duplicate map keys:\n\n", duplicateKeys.size());
-        messageOut1 += messageOut2 + "\n";
+        messageOut1 += messageBuffer + "\n";
     }
 
     if (messageOut1.empty()){
@@ -111,11 +111,9 @@ bool VariableDialogModel::checkValidModel()
 
 		return false;
     }
-
-
-
 }
 
+// TODO! This function in general just needs a lot of work.
 bool VariableDialogModel::apply() 
 {
 
