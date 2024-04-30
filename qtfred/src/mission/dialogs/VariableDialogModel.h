@@ -67,6 +67,7 @@ public:
 	int setVariableNumberValue(int index, int value);
 
 	SCP_string addNewVariable();
+	SCP_string addNewVariable(SCP_string nameIn);
 	SCP_string changeVariableName(int index, SCP_string newName);
 	SCP_string copyVariable(int index);
 	// returns whether it succeeded
