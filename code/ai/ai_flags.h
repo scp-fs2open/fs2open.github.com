@@ -32,6 +32,8 @@ namespace AI {
 		Unload_primaries,			//	Fire primaries as fast as possible!
 		Trying_unsuccessfully_to_warp,	// Trying to warp, but can't warp at the moment
 		Free_afterburner_use,		// Use afterburners while following waypoints or flying towards objects
+		Waypoints_no_formation,		// wont get into formation when running waypoints as part of a wing
+
 
 		NUM_VALUES
 	};
