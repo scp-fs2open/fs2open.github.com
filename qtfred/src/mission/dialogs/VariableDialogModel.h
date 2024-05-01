@@ -101,11 +101,11 @@ public:
 
 	SCP_string addListItem(int index);
 	SCP_string copyListItem(int containerIndex, int index);
-	bool removeListItem(int containerindex, int index, bool toDelete);
+	bool removeListItem(int containerindex, int index);
 
 	std::pair<SCP_string, SCP_string> addMapItem(int index);
 	std::pair<SCP_string, SCP_string> copyMapItem(int index, int itemIndex);
-	bool removeMapItem(int index, int rowIndex, bool toDelete);
+	bool removeMapItem(int index, int rowIndex);
 
 	void shiftListItemUp(int containerIndex, int itemIndex);
 	void shiftListItemDown(int containerIndex, int itemIndex);
@@ -117,6 +117,8 @@ public:
 	const SCP_vector<SCP_string>& getMapKeys(int index);
 	const SCP_vector<SCP_string>& getStringValues(int index);
 	const SCP_vector<int>& getNumberValues(int index);
+
+	void swapKeyAndValues(int index);
 
 	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
 	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();

@@ -196,13 +196,17 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->shiftItemUpButton,
 		&QPushButton::clicked,
 		this,
-		&VarableDialog::onShiftItemUpButtonPressed);
+		&VariableDialog::onShiftItemUpButtonPressed);
 
 	connect(ui->shiftItemDownButton,
 		&QPushButton::clicked,
 		this,
-		&VarableDialog::onShiftItemDownButtonPressed);
+		&VariableDialog::onShiftItemDownButtonPressed);
 
+	connect(ui->swapKeysAndValuesButton,
+		&QPushButton::clicked,
+		this,
+		&VariableDialog::onSwapKeysAndValuesButtonPressed);
 
 	ui->variablesTable->setColumnCount(3);
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
@@ -899,7 +903,7 @@ void VariableDialog::onDeleteContainerItemButtonPressed()
 	applyModel();
 }
 
-VariableDialog::onShiftItemUpButtonPressed()
+void VariableDialog::onShiftItemUpButtonPressed()
 {
 	int containerRow = getCurrentContainerRow();
 	
@@ -917,7 +921,7 @@ VariableDialog::onShiftItemUpButtonPressed()
 	applyModel();
 }
 
-VariableDialog::onShiftItemDownButtonPressed()
+void VariableDialog::onShiftItemDownButtonPressed()
 {
 	int containerRow = getCurrentContainerRow();
 	
@@ -935,6 +939,17 @@ VariableDialog::onShiftItemDownButtonPressed()
 	applyModel();
 }
 
+void VariableDialog::onSwapKeysAndValuesButtonPressed()
+{
+	int containerRow = getCurrentContainerRow();
+	
+	if (containerRow < 0){
+		return;
+	}
+
+	_model->swapKeyAndValues(containerRow);
+	applyModel();
+}
 
 VariableDialog::~VariableDialog(){}; // NOLINT
 

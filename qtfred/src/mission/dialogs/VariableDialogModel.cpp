@@ -1483,6 +1483,106 @@ SCP_string VariableDialogModel::changeMapItemStringValue(int index, SCP_string k
     return "";
 }
 
+void VariableDialogModel::swapKeyAndValues(int index)
+{
+    auto container = lookupContainer(index);
+
+    // bogus cases
+    if (!container || container->list){
+        return;
+    }
+
+    // data type is the same as the key type
+    if (container->string == container->stringKeys){
+        // string-string is the easiest case
+        if (container->string){
+            std::swap(container->stringValues, container->keys);
+        
+        // Complicated
+        } else {
+            // All right, make a copy.
+            SCP_vector<SCP_string> keysCopy = container->keys;
+
+            // easy part 1
+            for (int x = 0; x < static_cast<int>(container->numberValues.size()); ++x) {
+                // Honestly, if we did our job correctly, this shouldn't happen, but just in case.
+                if (x >= static_cast<int>(container->keys.size()) ){
+                    // emplacing should be sufficient since we start at index 0.
+                    container->keys.emplace_back();
+                    keysCopy.emplace_back();
+                }
+            
+                container->keys[x] = "";
+                sprintf(container->keys[x], "%i", container->numberValues[x]);
+            }
+
+            // not as easy part 2
+            for (int x = 0; x < static_cast<int>(container->keysCopy)) {
+                if (container->keysCopy[x] == ""){
+                    container->numberValues[x] = 0;
+                } else {
+                    try {
+                        // why *yes* it did occur to me that I made a mistake when I designed this 
+                        int temp = std::stoi(container->keysCopy[x]);
+                        container->numberValues[x] = temp;
+                    }
+                    catch(...){
+                        container->numberValues[x] = 0;
+                    }
+                }
+            }
+        }
+    // not the same types
+    } else {
+        // Ok.  Because keys are always strings, it will be easier when keys are numbers, because they are underlied by strings.
+        if (container->string){
+            // Make a copy of the keys....
+            SCP_vector<SCP_string> keysCopy = container->keys;
+            // make the easy transfer from stringvalues to keys. Requiring that key values change type.
+            container->keys = container->stringValues;
+            container->stringKeys = true;
+
+            for (int x = 0; x < static_cast<int>(container->keysCopy.size()); ++x){
+                // This *is* likely to happen as these sizes were not in sync.
+                if (x >= static_cast<int>(container->numberValues.size())){
+                    container->numberValues.emplace_back();
+                }
+
+                try {
+                    // why *yes* it did occur to me that I made a mistake when I designed this 
+                    int temp = std::stoi(container->keysCopy[x]);
+                    container->numberValues[x] = temp;
+                }
+                catch(...){
+                    container->numberValues[x] = 0;
+                }
+            }
+
+            container->string = false;
+
+        // so here values are numbers and keys are strings.  This might actually be easier than I thought.
+        } else {
+            // Directly copy key strings to the string values
+            container->stringValues = container->keys;
+
+            // Transfer the number values to a temporary string, then place that string in the keys vector
+            for (int x = 0; x < static_cast<int>(container->numberValues.size()); ++x){
+                // Here, this shouldn't happen, but just in case.  The direct assignment above is where it could have been mis-aligned.
+                if (x >= static_cast<int>(container->keys.size())){
+                    container->keys.emplace_back();
+                }
+
+                sprintf(container->keys[x], "%i", container->numberValues[x]);
+            }
+
+            // change the types of the container keys and values.
+            container->string = true;
+            container->stringKeys = false;
+        }
+
+    }
+}
+
 SCP_string VariableDialogModel::changeMapItemNumberValue(int index, SCP_string key, int newValue)
 {
     auto container = lookupContainer(index);
@@ -1507,6 +1607,7 @@ SCP_string VariableDialogModel::changeMapItemNumberValue(int index, SCP_string k
     // Failure
     return "";
 }
+
 
 // These functions should only be called when the container is guaranteed to exist!
 const SCP_vector<SCP_string>& VariableDialogModel::getMapKeys(int index) 

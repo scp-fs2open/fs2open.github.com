@@ -71,6 +71,7 @@ class VariableDialog : public QDialog {
 	void onDeleteContainerItemButtonPressed();
 	void onShiftItemUpButtonPressed();
 	void onShiftItemDownButtonPressed();
+	void onSwapKeysAndValuesButtonPressed();
 
 	int getCurrentVariableRow();
 	int getCurrentContainerRow();
