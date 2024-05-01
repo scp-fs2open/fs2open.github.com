@@ -3126,10 +3126,11 @@ int CFred_mission_save::save_mission_info()
 
 void CFred_mission_save::save_mission_internal(const char *pathname)
 {
-	CTime t;
+	time_t currentTime;
+	time(&currentTime);
+	auto timeinfo = localtime(&currentTime);
 
-	t = CTime::GetCurrentTime();
-	strcpy_s(The_mission.modified, t.Format("%x at %X"));
+	time_to_mission_info_string(timeinfo, The_mission.modified, DATE_TIME_LENGTH - 1);
 
 	// Migrate the version!
 	The_mission.required_fso_version = MISSION_VERSION;

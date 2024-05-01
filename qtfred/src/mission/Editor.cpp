@@ -33,6 +33,7 @@
 
 #include "object.h"
 #include "management.h"
+#include "util.h"
 #include "FredApplication.h"
 
 namespace {
@@ -418,13 +419,11 @@ void Editor::clearMission(bool fast_reload) {
 
 	time_t currentTime;
 	time(&currentTime);
-	auto tm_info = localtime(&currentTime);
-	char time_buffer[26];
-	strftime(time_buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+	auto timeinfo = localtime(&currentTime);
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = userName;
-	strcpy_s(The_mission.created, time_buffer);
+	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");

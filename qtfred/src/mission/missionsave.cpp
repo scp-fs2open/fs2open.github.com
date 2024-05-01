@@ -3035,11 +3035,11 @@ int CFred_mission_save::save_mission_info()
 
 void CFred_mission_save::save_mission_internal(const char* pathname)
 {
-	time_t rawtime;
+	time_t currentTime;
+	time(&currentTime);
+	auto timeinfo = localtime(&currentTime);
 
-	time(&rawtime);
-	auto timeinfo = localtime(&rawtime);
-	strftime(The_mission.modified, sizeof(The_mission.modified), "%x at %X", timeinfo);
+	time_to_mission_info_string(timeinfo, The_mission.modified, DATE_TIME_LENGTH - 1);
 
 	// Migrate the version!
 	The_mission.required_fso_version = MISSION_VERSION;
