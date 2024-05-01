@@ -35,7 +35,7 @@
 
 HudGaugeRadarDradis::HudGaugeRadarDradis():
 HudGaugeRadar(HUD_OBJECT_RADAR_BSG, 255, 255, 255), 
-xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6.0), sweep_percent(0.0), scale(1.20f), sub_y_clip(false)
+xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6 * MILLISECONDS_PER_SECOND), sweep_percent(0.0f), scale(1.20f), sub_y_clip(false)
 {
 	vm_vec_copy_scale(&sweep_normal_x, &vmd_zero_vector, 1.0f);
 	vm_vec_copy_scale(&sweep_normal_y, &vmd_zero_vector, 1.0f);
@@ -138,7 +138,7 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	if (b->last_update.isNever()) {
 		*alpha = 0.0f;
 	} else {
-		*alpha = ((sweep_duration - timestamp_since(b->last_update)) / sweep_duration) * fade_multi / 2.0f;
+		*alpha = ((sweep_duration - timestamp_since(b->last_update)) / i2fl(sweep_duration)) * fade_multi / 2.0f;
 
 		if (*alpha < 0.0f) {
 			*alpha = 0.0f;
@@ -382,7 +382,7 @@ void HudGaugeRadarDradis::drawSweeps()
 	if (sweep_plane == -1)
 		return;
 	
-	sweep_percent = (fmod(((float)game_get_overall_frametime() / (float)65536), sweep_duration) /  sweep_duration) * PI * 2; // convert to radians from 0 <-> 1
+	sweep_percent = (fmod(f2fl(game_get_overall_frametime()) * MILLISECONDS_PER_SECOND, static_cast<float>(sweep_duration)) /  sweep_duration) * PI2; // convert to radians from 0 <-> 1
 	float sweep_perc_z = sweep_percent * -0.5f;
 
 	vec3d sweep_a;
