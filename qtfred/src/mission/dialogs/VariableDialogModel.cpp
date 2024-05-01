@@ -1288,6 +1288,54 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
     return std::make_pair("", "");
 }
 
+// requires a model reload anyway, so no return value.
+void VariableDialogModel::shiftListItemUp(int containerIndex, int itemIndex)
+{
+    auto container = lookupContainer(containerIndex);
+    
+    // handle bogus cases;  < 1 is not a typo, since shifting the top item up should do nothing.
+    if (!container || !container->list || itemIndex < 1) {
+        return;
+    }
+
+    // handle itemIndex out of bounds
+    if ( (container->string && itemIndex <= static_cast<int>(container->stringValues.size())) 
+    ||   (!container->string && itemIndex <= static_cast<int>(container->numberValues.size())) ){
+        return;
+    }
+
+    // now that we know it's going to work, just swap em.
+    if (container->string) {
+        std::swap(container->stringValues[itemIndex], container->stringValues[itemIndex - 1]);
+    } else {
+        std::swap(container->numberValues[itemIndex], container->numberValues[itemIndex - 1]);
+    }
+}
+
+// requires a model reload anyway, so no return value.
+void VariableDialogModel::shiftListItemDown(int containerIndex, int itemIndex)
+{
+    auto container = lookupContainer(containerIndex);
+    
+    // handle bogus cases
+    if (!container || !container->list || itemIndex < 0) {
+        return;
+    }
+
+    // handle itemIndex out of bounds.  -1 is necessary. since the bottom item is cannot be moved down.
+    if ( (container->string && itemIndex <= static_cast<int>(container->stringValues.size()) - 1) 
+    ||   (!container->string && itemIndex <= static_cast<int>(container->numberValues.size()) - 1) ){
+        return;
+    }
+
+    // now that we know it's going to work, just swap em.
+    if (container->string) {
+        std::swap(container->stringValues[itemIndex], container->stringValues[itemIndex + 1]);
+    } else {
+        std::swap(container->numberValues[itemIndex], container->numberValues[itemIndex + 1]);
+    }
+}
+
 // it's really because of this feature that we need data to only be in one or the other vector for maps.
 // If we attempted to maintain data automatically and there was a deletion, deleting the data in
 // both of the map's data vectors might be undesired, and not deleting takes the map immediately

@@ -193,6 +193,16 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onDeleteContainerItemButtonPressed);
 
+	connect(ui->shiftItemUpButton,
+		&QPushButton::clicked,
+		this,
+		&VarableDialog::onShiftItemUpButtonPressed);
+
+	connect(ui->shiftItemDownButton,
+		&QPushButton::clicked,
+		this,
+		&VarableDialog::onShiftItemDownButtonPressed);
+
 
 	ui->variablesTable->setColumnCount(3);
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
@@ -451,17 +461,12 @@ void VariableDialog::onContainerContentsSelectionChanged()
 	}
 
 	newContainerItemName = item->text().toStdString();
-
 	item = ui->containerContentsTable->item(row, 1);	
+	SCP_string newContainerDataText = (item) ? item->text().toStdString() : "";
 
-	if (item){
-		_currentContainerItemData = item->text().toStdString();
-	} else {
-		_currentContainerItemData = "";
-	}
-
-	if (newContainerItemName != _currentContainerItem){
+	if (newContainerItemName != _currentContainerItem || _currentContainerItemData != newContainerDataText){
 		_currentContainerItem = newContainerItemName;
+		_currentContainerItemData = newContainerDataText;
 		applyModel();
 	}
 }
@@ -888,6 +893,40 @@ void VariableDialog::onDeleteContainerItemButtonPressed()
 	applyModel();
 }
 
+VariableDialog::onShiftItemUpButtonPressed()
+{
+	int containerRow = getCurrentContainerRow();
+	
+	if (containerRow < 0){
+		return;
+	}
+
+	int itemRow = getCurrentContainerItemRow();
+
+	if (itemRow < 0){
+		return;
+	}
+
+	_model->shiftListItemUp(containerRow, itemRow);
+}
+
+VariableDialog::onShiftItemDownButtonPressed()
+{
+	int containerRow = getCurrentContainerRow();
+	
+	if (containerRow < 0){
+		return;
+	}
+
+	int itemRow = getCurrentContainerItemRow();
+
+	if (itemRow < 0){
+		return;
+	}
+
+	_model->shiftListItemUp(containerRow, itemRow);
+}
+
 
 VariableDialog::~VariableDialog(){}; // NOLINT
 
@@ -1036,9 +1075,11 @@ void VariableDialog::applyModel()
 	}
 
 	if (selectedRow < 0 && ui->containersTable->rowCount() > 1) {
-		if (ui->containersTable->item(0, 0) && ui->containersTable->item(0, 0)->text().toStdString() != "Add Container ..."){
+		if (ui->containersTable->item(0, 0)){
 			_currentContainer = ui->containersTable->item(0, 0)->text().toStdString();
+			ui->containersTable->clearSelection();
 			ui->containersTable->item(0, 0)->setSelected(true);
+			
 		}
 	}
 
@@ -1062,7 +1103,8 @@ void VariableDialog::updateVariableOptions()
 		ui->saveVariableOnMissionCloseRadio->setEnabled(false);
 		ui->setVariableAsEternalcheckbox->setEnabled(false);
 		ui->networkVariableCheckbox->setEnabled(false);
-
+		ui->onShiftItemUpButton->setEnabled(false);
+		ui->onShiftItemDownButton->setEnabled(false);
 		return;
 	}
 
@@ -1128,6 +1170,8 @@ void VariableDialog::updateContainerOptions()
 		ui->setContainerAsMapRadio->setEnabled(false);
 		ui->setContainerAsListRadio->setEnabled(false);
 		ui->networkContainerCheckbox->setEnabled(false);
+		ui->onShiftItemUpButton->setEnabled(false);
+		ui->onShiftItemDownButton->setEnabled(false);
 
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
@@ -1177,6 +1221,7 @@ void VariableDialog::updateContainerOptions()
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+
 			updateContainerDataOptions(true);
 
 		} else {
@@ -1255,6 +1300,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 
+
 		// with string contents
 		if (_model->getContainerValueType(row)){
 			auto strings = _model->getStringValues(row);
@@ -1267,6 +1313,21 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
 					ui->containerContentsTable->setItem(x, 0, item);
+				}
+
+				// set selected and enable shifting functions
+				if (strings[x] == _currentContainerItem){
+					ui->containerContentsTable->clearSelection();
+					ui->containerContentsTable->item(x,0)->setSelected(true);
+
+					// more than one item and not already at the top of the list.
+					if (x > 0 && x < static_cast<int>(strings.size())){
+						ui->onShiftItemUpButton->setEnabled(false);
+					}
+					
+					if (x > -1 && x < static_Cast<int>(strings.size()) - 1){
+						ui->onShiftItemDownButton->setEnabled(false);
+					}
 				}
 
 				// empty out the second column as it's not needed in list mode
@@ -1346,6 +1407,10 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->deleteContainerItemButton->setEnabled(true);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
+
+		// Enable shift up and down buttons are off in Map mode.
+		ui->onShiftItemUpButton->setEnabled(false);
+		ui->onShiftItemDownButton->setEnabled(false);
 
 		// keys I didn't bother to make separate.  Should have done the same with values.
 		auto& keys = _model->getMapKeys(row);
