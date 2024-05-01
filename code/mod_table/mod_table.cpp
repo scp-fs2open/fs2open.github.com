@@ -1190,12 +1190,19 @@ void parse_mod_table(const char *filename)
 				stuff_string(Movie_subtitle_font, F_NAME);
 			}
 			
-			if (optional_string("$Movie subtitle color:")) {
+			if (optional_string("$Movie subtitle color:") || optional_string("$Movie subtitle colour:")) {
 				int rgba[4];
-				stuff_int_list(rgba, 4);
-				for (int i = 0; i < 4; i++) {
-					CLAMP(rgba[i], 0, 255);
-					Movie_subtitle_rgba[i] = rgba[i];
+				auto n = stuff_int_list(rgba, 4);
+				if (n < 3) {
+					Warning(LOCATION, "Movie subtitle color requires 3 or 4 values from 0 to 255");
+				} else {
+					if (n < 4) {
+						rgba[3] = 255;
+					}
+					for (int i = 0; i < 4; i++) {
+						CLAMP(rgba[i], 0, 255);
+						Movie_subtitle_rgba[i] = rgba[i];
+					}
 				}
 			}
 
