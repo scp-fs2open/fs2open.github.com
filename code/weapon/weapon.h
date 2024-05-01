@@ -613,6 +613,8 @@ struct weapon_info
 	
 	SCP_map<SCP_string, SCP_string> custom_data;
 
+	SCP_vector<custom_string> custom_strings;
+
 	decals::creation_info impact_decal;
 
 	actions::ProgramSet on_create_program;

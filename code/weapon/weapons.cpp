@@ -3752,6 +3752,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		parse_string_map(wip->custom_data, "$end_custom_data", "+Val:");
 	}
 
+	if (optional_string("$Custom Strings")) {
+		while (optional_string("$Name:")) {
+			custom_string cs;
+
+			// The name of the string
+			stuff_string(cs.name, F_NAME);
+
+			// Arbitrary string value used for grouping strings together
+			required_string("+Value:");
+			stuff_string(cs.value, F_NAME);
+
+			// The string text itself
+			required_string("+String:");
+			stuff_string(cs.text, F_MULTITEXT);
+
+			wip->custom_strings.push_back(cs);
+		}
+
+		required_string("$end_custom_strings");
+	}
+
 	return w_id;
 }
 

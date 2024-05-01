@@ -621,6 +621,66 @@ ADE_FUNC(hasCustomData, l_Weaponclass, nullptr, "Detects whether the weapon clas
 	return ade_set_args(L, "b", result);
 }
 
+ADE_VIRTVAR(CustomStrings,
+	l_Weaponclass,
+	nullptr,
+	"Gets the indexed custom string table for this weapon. Each item in the table is a table with the following values: "
+	"Name - the name of the custom string, Value - the value associated with the custom string, String - the custom "
+	"string itself.",
+	"table",
+	"The weapon's custom data table")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	weapon_info* wip = &Weapon_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	int cnt = 0;
+
+	for (const auto& cs : wip->custom_strings) {
+		cnt++;
+		auto item = luacpp::LuaTable::create(L);
+
+		item.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.name));
+		item.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.value));
+		item.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.text));
+
+		table.addValue(cnt, item);
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_FUNC(hasCustomStrings,
+	l_Weaponclass,
+	nullptr,
+	"Detects whether the weapon has any custom strings",
+	"boolean",
+	"true if the weapon's custom_strings is not empty, false otherwise")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	weapon_info* wip = &Weapon_info[idx];
+
+	bool result = !wip->custom_strings.empty();
+	return ade_set_args(L, "b", result);
+}
+
 ADE_VIRTVAR(InTechDatabase, l_Weaponclass, "boolean", "Gets or sets whether this weapon class is visible in the tech room", "boolean", "True or false")
 {
 	int idx;

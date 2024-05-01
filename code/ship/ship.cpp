@@ -1287,6 +1287,8 @@ void ship_info::clone(const ship_info& other)
 
 	custom_data = other.custom_data;
 
+	custom_strings = other.custom_strings;
+
 	rcs_thrusters = other.rcs_thrusters;
 
 	radar_image_2d_idx = other.radar_image_2d_idx;
@@ -1618,6 +1620,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(ship_sounds, other.ship_sounds);
 
 	std::swap(custom_data, other.custom_data);
+
+	std::swap(custom_strings, other.custom_strings);
 
 	std::swap(rcs_thrusters, other.rcs_thrusters);
 
@@ -2071,6 +2075,8 @@ ship_info::ship_info()
 	rcs_thrusters.clear();
 
 	custom_data.clear();
+
+	custom_strings.clear();
 
 	radar_image_2d_idx = -1;
 	radar_color_image_2d_idx = -1;
@@ -5136,6 +5142,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if (optional_string("$Custom data:")) 
 	{
 		parse_string_map(sip->custom_data, "$end_custom_data", "+Val:");
+	}
+
+	if (optional_string("$Custom Strings")) {
+		while (optional_string("$Name:")) {
+			custom_string cs;
+
+			// The name of the string
+			stuff_string(cs.name, F_NAME);
+
+			// Arbitrary string value used for grouping strings together
+			required_string("+Value:");
+			stuff_string(cs.value, F_NAME);
+
+			// The string text itself
+			required_string("+String:");
+			stuff_string(cs.text, F_MULTITEXT);
+
+			sip->custom_strings.push_back(cs);
+		}
+
+		required_string("$end_custom_strings");
 	}
 
 	int n_subsystems = 0;

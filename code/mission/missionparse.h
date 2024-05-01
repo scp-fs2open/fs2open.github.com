@@ -130,11 +130,11 @@ typedef struct mission_default_custom_data {
 	SCP_string description;
 } mission_default_custom_data;
 
-typedef struct mission_custom_string {
+typedef struct custom_string {
 	SCP_string name;
 	SCP_string value;
 	SCP_string text;
-} mission_custom_string;
+} custom_string;
 
 // descriptions of flags for FRED
 template <class T>
@@ -195,7 +195,7 @@ typedef struct mission {
 
 	SCP_map<SCP_string, SCP_string> custom_data;
 
-	SCP_vector<mission_custom_string> custom_strings;
+	SCP_vector<custom_string> custom_strings;
 
 	void Reset( );
 
@@ -569,7 +569,7 @@ void clear_texture_replacements();
 subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name);
 
 // MjnMixael
-mission_custom_string* get_custom_string_by_name(SCP_string name);
+custom_string* get_custom_string_by_name(SCP_string name);
 
 #endif
 
