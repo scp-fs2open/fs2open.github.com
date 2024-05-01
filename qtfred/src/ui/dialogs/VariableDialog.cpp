@@ -914,6 +914,7 @@ VariableDialog::onShiftItemUpButtonPressed()
 	}
 
 	_model->shiftListItemUp(containerRow, itemRow);
+	applyModel();
 }
 
 VariableDialog::onShiftItemDownButtonPressed()
@@ -931,6 +932,7 @@ VariableDialog::onShiftItemDownButtonPressed()
 	}
 
 	_model->shiftListItemUp(containerRow, itemRow);
+	applyModel();
 }
 
 
@@ -1504,7 +1506,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		}
 	}
 }
-
 
 int VariableDialog::getCurrentVariableRow()
 {
