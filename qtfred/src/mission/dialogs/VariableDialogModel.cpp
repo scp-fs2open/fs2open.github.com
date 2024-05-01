@@ -549,7 +549,7 @@ SCP_string VariableDialogModel::copyVariable(int index)
 }
 
 // returns whether it succeeded
-bool VariableDialogModel::removeVariable(int index)
+bool VariableDialogModel::removeVariable(int index, bool toDelete)
 {
     auto variable = lookupVariable(index);
 
@@ -558,14 +558,32 @@ bool VariableDialogModel::removeVariable(int index)
         return false;
     }
 
-	SCP_string question = "Are you sure you want to delete this variable? Any references to it will have to be replaced.";
-    SCP_string info = "";
-    if (!confirmAction(question, info)){
-        return false;
+    if (variable->deleted == toDelete){
+        return variable->deleted;
     }
 
-    variable->deleted = true;
-    return true;
+    if (toDelete){
+        if (_deleteWarningCount < 3){
+
+            SCP_string question = "Are you sure you want to delete this variable? Any references to it will have to be changed.";
+            SCP_string info = "";
+
+            if (!confirmAction(question, info)){
+                --_deleteWarningCount;
+                return variable->deleted;
+            }
+
+            // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.
+            ++_deleteWarningCount;
+        }
+
+        variable->deleted = toDelete;
+        return variable->deleted;
+
+    } else {
+        variable->deleted = toDelete;
+        return variable->deleted;
+    }
 }
 
 
@@ -1070,7 +1088,7 @@ SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newNam
     return newName;
 }
 
-bool VariableDialogModel::removeContainer(int index)
+bool VariableDialogModel::removeContainer(int index, bool toDelete)
 {
     auto container = lookupContainer(index);
 
@@ -1078,8 +1096,31 @@ bool VariableDialogModel::removeContainer(int index)
         return false;
     }
 
-    container->deleted = true;
-    return container->deleted;
+    if (container->deleted == toDelete){
+        return container->deleted;
+    }
+
+    if (toDelete){
+        
+        if (_deleteWarningCount < 3){
+            SCP_string question = "Are you sure you want to delete this container? Any references to it will have to be changed.";
+            SCP_string info = "";
+
+            if (!confirmAction(question, info)){
+                return variable->deleted;
+            }
+
+            // adjust to the user's actions.  If they are deleting container after container, allow after a while.
+            ++_deleteWarningCount;
+        }
+
+        variable->deleted = toDelete;
+        return variable->deleted;
+
+    } else {
+        variable->deleted = toDelete;
+        return variable->deleted;
+    }
 }
 
 SCP_string VariableDialogModel::addListItem(int index)
@@ -1171,6 +1212,19 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
 
     if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
         return false;
+    }
+
+    if (_deleteWarningCount < 3){
+        SCP_string question = "Are you sure you want to delete this list item? This can't be undone.";
+        SCP_string info = "";
+
+        if (!confirmAction(question, info)){
+            --_deleteWarningCount;
+            return variable->deleted;
+        }
+
+        // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.
+        ++_deleteWarningCount;
     }
 
     // Most efficient, given the situation (single deletions)
@@ -1356,6 +1410,21 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
         return false;
     }
     // key is valid
+
+    // double check that we want to delete
+    if (_deleteWarningCount < 3){
+        SCP_string question = "Are you sure you want to delete this map item?  This can't be undone.";
+        SCP_string info = "";
+
+        if (!confirmAction(question, info)){
+            --_deleteWarningCount;
+            return variable->deleted;
+        }
+
+        // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.
+        ++_deleteWarningCount;
+    }
+
 
     // Now double check that we have a data value.
     if (container->string && lookupContainerStringItem(index, itemIndex)){

@@ -71,7 +71,7 @@ public:
 	SCP_string changeVariableName(int index, SCP_string newName);
 	SCP_string copyVariable(int index);
 	// returns whether it succeeded
-	bool removeVariable(int index);
+	bool removeVariable(int index, bool toDelete);
 
 	// Container Section
 
@@ -97,15 +97,15 @@ public:
 	SCP_string addContainer(SCP_string nameIn);
 	SCP_string copyContainer(int index);
 	SCP_string changeContainerName(int index, SCP_string newName);
-	bool removeContainer(int index);
+	bool removeContainer(int index, bool toDelete);
 
 	SCP_string addListItem(int index);
 	SCP_string copyListItem(int containerIndex, int index);
-	bool removeListItem(int containerindex, int index);
+	bool removeListItem(int containerindex, int index, bool toDelete);
 
 	std::pair<SCP_string, SCP_string> addMapItem(int index);
 	std::pair<SCP_string, SCP_string> copyMapItem(int index, int itemIndex);
-	bool removeMapItem(int index, int rowIndex);
+	bool removeMapItem(int index, int rowIndex, bool toDelete);
 
 	void shiftListItemUp(int containerIndex, int itemIndex);
 	void shiftListItemDown(int containerIndex, int itemIndex);
@@ -134,6 +134,8 @@ private:
 	SCP_vector<containerInfo> _containerItems;
 	int _listTextMode = 0;
 	int _mapTextMode = 0;
+
+	static int _deleteWarningCount = 0;
 
 	static SCP_string clampIntegerString(SCP_string source);
 

@@ -508,8 +508,14 @@ void VariableDialog::onDeleteVariableButtonPressed()
 	}	
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	_model->removeVariable(currentRow);
-	applyModel();
+	if (ui->deleteVariableButton->item(currentRow, 2) && ui->deleteVariableButton->item(currentRow, 2)->text().toStdString() == "Flagged For Deletion"){
+		_model->removeVariable(currentRow, false);
+		applyModel();
+	} else {
+		_model->removeVariable(currentRow, true);
+		applyModel();
+	}
+
 }
 
 void VariableDialog::onSetVariableAsStringRadioSelected() 
@@ -1048,6 +1054,13 @@ void VariableDialog::applyModel()
 		}
 	}
 
+	// do we need to switch the delete button to a restore button?
+	if (ui->containersTable->item(row, 2) && ui->containersTable->item(row, 2)->text().toStdString() == "Flagged for Deletion"){
+		ui->deleteContainerButton->setText("Restore");
+	} else {
+		ui->deleteContainerButton->setText("Delete");
+	}
+
 	// set the Add container row
 	if (ui->containersTable->item(x, 0)){
 		ui->containersTable->item(x, 0)->setText("Add Container ...");
@@ -1096,6 +1109,7 @@ void VariableDialog::updateVariableOptions()
 	if (row < 0){
 		ui->copyVariableButton->setEnabled(false);
 		ui->deleteVariableButton->setEnabled(false);
+		ui->deleteVariableButton->setText("Delete");
 		ui->setVariableAsStringRadio->setEnabled(false);
 		ui->setVariableAsNumberRadio->setEnabled(false);
 		ui->doNotSaveVariableRadio->setEnabled(false);
@@ -1125,11 +1139,17 @@ void VariableDialog::updateVariableOptions()
 		_currentVariable = ui->variablesTable->item(row, 0)->text().toStdString();
 	}
 
-
 	// start populating values
 	bool string = _model->getVariableType(row);
 	ui->setVariableAsStringRadio->setChecked(string);
 	ui->setVariableAsNumberRadio->setChecked(!string);
+
+	// do we need to switch the delete button to a restore button?
+	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "Flagged for Deletion"){
+		ui->deleteVariableButton->setText("Restore");
+	} else {
+		ui->deleteVariableButton->setText("Delete");
+	}
 
 	int ret = _model->getVariableOnMissionCloseOrCompleteFlag(row);
 
@@ -1159,6 +1179,7 @@ void VariableDialog::updateContainerOptions()
 	if (row < 0){
 		ui->copyContainerButton->setEnabled(false);
 		ui->deleteContainerButton->setEnabled(false);
+		ui->deleteContainerButton->setText("Delete");
 		ui->setContainerAsStringRadio->setEnabled(false);
 		ui->setContainerAsNumberRadio->setEnabled(false);
 		ui->setContainerKeyAsStringRadio->setEnabled(false);
