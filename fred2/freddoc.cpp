@@ -77,7 +77,7 @@ CFREDDoc::CFREDDoc() {
 
 	FREDDoc_ptr = this;
 
-	for (i = 0; i < BACKUP_DEPTH; i++)
+	for (i = 0; i < MISSION_BACKUP_DEPTH; i++)
 		undo_desc[i].Empty();
 }
 
@@ -124,7 +124,7 @@ bool CFREDDoc::autoload() {
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 
 	// Rename Backups. .002 becomes .001, .003 becomes .002, etc.
-	for (i = 1; i < BACKUP_DEPTH; i++) {
+	for (i = 1; i < MISSION_BACKUP_DEPTH; i++) {
 		sprintf(backup_name + len, ".%.3d", i + 1);
 		sprintf(name + len, ".%.3d", i);
 		cf_rename(backup_name, name, CF_TYPE_MISSIONS);
@@ -155,7 +155,7 @@ int CFREDDoc::autosave(char *desc) {
 		return -1;
 	}
 
-	for (i = BACKUP_DEPTH; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		undo_desc[i] = undo_desc[i - 1];
 	}
 
@@ -604,7 +604,7 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	// now check all the autosaves
 	SCP_string backup_name;
 	CFileLocation backup_res;
-	for (int i = 1; i <= BACKUP_DEPTH; ++i)
+	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
 	{
 		backup_name = MISSION_BACKUP_NAME;
 		char extension[5];

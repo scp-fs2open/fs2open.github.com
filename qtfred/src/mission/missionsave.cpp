@@ -79,9 +79,9 @@ int CFred_mission_save::autosave_mission_file(char* pathname)
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
-	sprintf(backup_name + len, ".%.3d", BACKUP_DEPTH);
+	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = BACKUP_DEPTH; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		sprintf(backup_name + len, ".%.3d", i - 1);
 		sprintf(name2 + len, ".%.3d", i);
 		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);

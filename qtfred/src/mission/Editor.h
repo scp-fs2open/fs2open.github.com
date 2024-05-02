@@ -15,6 +15,9 @@
 #include <memory>
 #include <stdexcept>
 
+#define MISSION_BACKUP_NAME     "Backup"
+#define MISSION_BACKUP_DEPTH    9
+
 namespace fso {
 namespace fred {
 
