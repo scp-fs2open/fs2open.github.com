@@ -411,11 +411,11 @@ void parse_mod_table(const char *filename)
 				Cutscene_camera_displays_hud = !temp;
 			}
 
-			if (optional_string("$Full color head animations:")) {
+			if (optional_string("$Full color head animations:") || optional_string("$Full colour head animations:")) {
 				stuff_boolean(&Full_color_head_anis);
 			}
 			// compatibility
-			if (optional_string("$Color head animations with hud colors:")) {
+			if (optional_string("$Color head animations with hud colors:") || optional_string("$Colour head animations with hud colours:")) {
 				mprintf(("Game Settings Table: \"$Color head animations with hud colors\" is deprecated in favor of \"$Full color head animations\"\n"));
 				bool temp;
 				stuff_boolean(&temp);
@@ -594,7 +594,7 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
-			if (optional_string("$EMP Pain Flash Color:")) {
+			if (optional_string("$EMP Pain Flash Color:") || optional_string("$EMP Pain Flash Colour:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
@@ -612,8 +612,8 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: $BMPMAN Slot Limit is deprecated and should be removed. It is not needed anymore.\n"));
 			}
 
-			if (optional_string("$EMP Arc Color:")) {
-				if (optional_string("+Primary Color Option 1:")) {
+			if (optional_string("$EMP Arc Color:") || optional_string("$EMP Arc Colour:")) {
+				if (optional_string("+Primary Color Option 1:") || optional_string("+Primary Colour Option 1:")) {
 					int rgb[3];
 					stuff_int_list(rgb, 3);
 					if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
@@ -623,7 +623,7 @@ void parse_mod_table(const char *filename)
 							"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
 					}
 				}
-				if (optional_string("+Primary Color Option 2:")) {
+				if (optional_string("+Primary Color Option 2:") || optional_string("+Primary Colour Option 2:")) {
 					int rgb[3];
 					stuff_int_list(rgb, 3);
 					if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
@@ -633,7 +633,7 @@ void parse_mod_table(const char *filename)
 							"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
 					}
 				}
-				if (optional_string("+Secondary Color Option 1:")) {
+				if (optional_string("+Secondary Color Option 1:") || optional_string("+Secondary Colour Option 1:")) {
 					int rgb[3];
 					stuff_int_list(rgb, 3);
 					if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
@@ -660,8 +660,8 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
-			if (optional_string("$Damage Arc Color:")) {
-				if (optional_string("+Primary Color Option 1:")) {
+			if (optional_string("$Damage Arc Color:") || optional_string("$Damage Arc Colour:")) {
+				if (optional_string("+Primary Color Option 1:") || optional_string("+Primary Colour Option 1:")) {
 					int rgb[3];
 					stuff_int_list(rgb, 3);
 					if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
@@ -671,7 +671,7 @@ void parse_mod_table(const char *filename)
 							"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
 					}
 				}
-				if (optional_string("+Primary Color Option 2:")) {
+				if (optional_string("+Primary Color Option 2:") || optional_string("+Primary Colour Option 2:")) {
 					int rgb[3];
 					stuff_int_list(rgb, 3);
 					if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
@@ -681,7 +681,7 @@ void parse_mod_table(const char *filename)
 							"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
 					}
 				}
-				if (optional_string("+Secondary Color Option 1:")) {
+				if (optional_string("+Secondary Color Option 1:") || optional_string("+Secondary Colour Option 1:")) {
 					int rgb[3];
 					stuff_int_list(rgb, 3);
 					if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
