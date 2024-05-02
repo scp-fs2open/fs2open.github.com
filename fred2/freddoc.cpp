@@ -568,7 +568,8 @@ BOOL CFREDDoc::OnNewDocument() {
 	return TRUE;
 }
 
-BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
+BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
+{
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
 
@@ -585,7 +586,58 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	strncpy(Mission_filename, filename, len);
 	Mission_filename[len] = 0;
 
-	if (!load_mission(pathname)) {
+	// first, just grab the info of this mission
+	if (!parse_main(pathname, MPF_ONLY_MISSION_INFO))
+	{
+		*Mission_filename = 0;
+		return FALSE;
+	}
+	SCP_string created = The_mission.created;
+	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
+	time_t modified = res.m_time;
+	if (!res.found)
+	{
+		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
+		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
+	}
+
+	// now check all the autosaves
+	SCP_string backup_name;
+	CFileLocation backup_res;
+	for (int i = 1; i <= BACKUP_DEPTH; ++i)
+	{
+		backup_name = MISSION_BACKUP_NAME;
+		char extension[5];
+		sprintf(extension, ".%.3d", i);
+		backup_name += extension;
+
+		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
+		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
+		{
+			SCP_string this_created = The_mission.created;
+			time_t this_modified = backup_res.m_time;
+
+			if (created == this_created && this_modified > modified)
+				break;
+		}
+
+		backup_name.clear();
+	}
+
+	// maybe load from the backup instead
+	if (!backup_name.empty())
+	{
+		SCP_string prompt = "Autosaved file ";
+		prompt += backup_name;
+		prompt += " has a file modification time more recent than the specified file.  Do you want to load the autosave instead?";
+		int z = Fred_view_wnd->MessageBox(prompt.c_str(), "Recover from autosave", MB_ICONQUESTION | MB_YESNO);
+		if (z == IDYES)
+			pathname = backup_res.full_name.c_str();
+	}
+
+	// now we can actually load either the original path or the backup path
+	if (!load_mission(pathname))
+	{
 		*Mission_filename = 0;
 		return FALSE;
 	}
