@@ -117,32 +117,33 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	*pos = b->position;
 	vm_vec_normalize(pos);
 
-	if (ship_is_tagged(b->objp)) {
+	auto objp = &Objects[b->objnum];
+
+	if (ship_is_tagged(objp)) {
 		*alpha = 1.0f;
 		return;
 	}
 
 	float fade_multi = 1.5f;
 	
-	if (b->objp->type == OBJ_SHIP) {
-		if (Ships[b->objp->instance].flags[Ship::Ship_Flags::Stealth]) {
+	if (objp->type == OBJ_SHIP) {
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth]) {
 			fade_multi *= 2.0f;
 		}
 	}
+
+	auto& last_update = Blip_last_update[b->objnum];
 	
 	// If the blip has been pinged by the local x-axis sweep, update
 	if (std::abs(vm_vec_dot(&sweep_normal_x, pos)) < 0.01f) {
-		b->last_update = _timestamp();
+		last_update = _timestamp();
 	}
 
-	if (b->last_update.isNever()) {
+	if (last_update.isNever()) {
 		*alpha = 0.0f;
 	} else {
-		*alpha = ((sweep_duration - timestamp_since(b->last_update)) / i2fl(sweep_duration)) * fade_multi / 2.0f;
-
-		if (*alpha < 0.0f) {
-			*alpha = 0.0f;
-		}
+		*alpha = ((sweep_duration - timestamp_since(last_update)) / i2fl(sweep_duration)) * fade_multi / 2.0f;
+		CLAMP(*alpha, 0.0f, 1.0f);
 	}
 }
 
