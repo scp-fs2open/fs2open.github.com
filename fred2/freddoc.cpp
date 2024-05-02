@@ -535,7 +535,7 @@ void CFREDDoc::OnFileImportFSM() {
 	if (num_files > 1)
 	{
 		create_new_mission();
-		MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+		Fred_view_wnd->MessageBox("Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
 	}
 	else if (num_files == 1)
 	{
@@ -816,7 +816,7 @@ Assert((flag == 0) || (flag == 1));
 
 //	fp = cfopen(filename, flag ? "wb" : "rb");
 //	if (!fp)
-//		MessageBox(NULL, strerror(errno), "File Open Error!", MB_ICONSTOP);
+//		Fred_view_wnd->MessageBox(strerror(errno), "File Open Error!", MB_ICONSTOP);
 
 //	Find highest used object if writing.
 if (flag == 1) {
