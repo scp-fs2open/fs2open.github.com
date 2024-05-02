@@ -399,11 +399,6 @@ void HudGaugeRadarDradis::drawSweeps()
 	vm_vec_copy_scale(&sweep_normal_y, &sweep_b, 1.0f);
 	
 	g3_start_instance_matrix(&vmd_zero_vector, /*&Player_obj->orient*/&vmd_identity_matrix, true);
-//		gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
-		
-// 		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-// 		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-// 		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 
 		material mat_params;
 		material_set_unlit(&mat_params, sweep_plane, 1.0f, true, false);
@@ -415,40 +410,9 @@ void HudGaugeRadarDradis::drawSweeps()
 		vm_rot_point_around_line(&sweep_b, &vmd_y_vector, sweep_angle, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
 		vm_rot_point_around_line(&sweep_c, &vmd_x_vector, sweep_angle_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
 		
-		//gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL);
-
-// 		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: XZ
-// 		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: YZ
-// 		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-
 		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_a, scale, scale); // Sweep line: XZ
 		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_b, scale, scale); // Sweep line: YZ
 		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_c, scale, scale);
-
-		/*int dist = 90;
-
-		for(int i = 1; i < dist; i++)
-		{
-			float rotation = sweep_percent - (i * RADIANS_PER_DEGREE);
-			float alpha	= (1.0f - (float)((float)i / (float)dist)) * 0.25f;
-			
-			//if (i < 2)
-				//alpha = 1.0f;
-
-			gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
-			
-			vm_rot_point_around_line(&sweep_a, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_z_vector); // Sweep line: XZ
-			vm_rot_point_around_line(&sweep_b, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
-			
-			g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: XZ
-			g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: YZ
-			
-			if (i < (dist * 0.5f))
-			{
-				vm_rot_point_around_line(&sweep_c, &vmd_x_vector,sweep_perc_z + (i * RADIANS_PER_DEGREE), &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
-				g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-			}
-		}*/
 		
 	g3_done_instance(true);
 }
