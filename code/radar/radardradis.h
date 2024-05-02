@@ -26,7 +26,7 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	int unknown_contact_icon;
 
 	int sweep_duration; // in milliseconds
-	float sweep_percent;
+	float sweep_angle;
 
 	matrix view_perturb;
 	vec3d Orb_eye_position;

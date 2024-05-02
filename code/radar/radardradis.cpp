@@ -35,7 +35,7 @@
 
 HudGaugeRadarDradis::HudGaugeRadarDradis():
 HudGaugeRadar(HUD_OBJECT_RADAR_BSG, 255, 255, 255), 
-xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6 * MILLISECONDS_PER_SECOND), sweep_percent(0.0f), scale(1.20f), sub_y_clip(false)
+xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6 * MILLISECONDS_PER_SECOND), sweep_angle(0.0f), scale(1.20f), sub_y_clip(false)
 {
 	vm_vec_copy_scale(&sweep_normal_x, &vmd_zero_vector, 1.0f);
 	vm_vec_copy_scale(&sweep_normal_y, &vmd_zero_vector, 1.0f);
@@ -382,16 +382,18 @@ void HudGaugeRadarDradis::drawSweeps()
 	if (sweep_plane == -1)
 		return;
 	
-	sweep_percent = (fmod(f2fl(game_get_overall_frametime()) * MILLISECONDS_PER_SECOND, static_cast<float>(sweep_duration)) /  sweep_duration) * PI2; // convert to radians from 0 <-> 1
-	float sweep_perc_z = sweep_percent * -0.5f;
+	float modulo = fmod(f2fl(game_get_overall_frametime()) * MILLISECONDS_PER_SECOND, static_cast<float>(sweep_duration));
+	float fraction = modulo / sweep_duration;
+	sweep_angle = fraction * PI2; // convert to radians from 0 <-> 1
+	float sweep_angle_z = sweep_angle * -0.5f;
 
 	vec3d sweep_a;
 	vec3d sweep_b;
 	vec3d sweep_c;
 	
-	vm_rot_point_around_line(&sweep_a, &vmd_y_vector, sweep_percent, &vmd_zero_vector, &vmd_z_vector); // Sweep line: XZ
-	vm_rot_point_around_line(&sweep_b, &vmd_y_vector, sweep_percent, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
-	vm_rot_point_around_line(&sweep_c, &vmd_x_vector, sweep_perc_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: XY
+	vm_rot_point_around_line(&sweep_a, &vmd_y_vector, sweep_angle, &vmd_zero_vector, &vmd_z_vector); // Sweep line: XZ
+	vm_rot_point_around_line(&sweep_b, &vmd_y_vector, sweep_angle, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
+	vm_rot_point_around_line(&sweep_c, &vmd_x_vector, sweep_angle_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: XY
 	
 	vm_vec_copy_scale(&sweep_normal_x, &sweep_a, 1.0f);
 	vm_vec_copy_scale(&sweep_normal_y, &sweep_b, 1.0f);
@@ -409,11 +411,9 @@ void HudGaugeRadarDradis::drawSweeps()
 		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_b, scale, scale);
 		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_c, scale, scale);
 
-		float rotation = sweep_percent;
-
-		vm_rot_point_around_line(&sweep_a, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_z_vector); // Sweep line: XZ
-		vm_rot_point_around_line(&sweep_b, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
-		vm_rot_point_around_line(&sweep_c, &vmd_x_vector,sweep_perc_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
+		vm_rot_point_around_line(&sweep_a, &vmd_y_vector, sweep_angle, &vmd_zero_vector, &vmd_z_vector); // Sweep line: XZ
+		vm_rot_point_around_line(&sweep_b, &vmd_y_vector, sweep_angle, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
+		vm_rot_point_around_line(&sweep_c, &vmd_x_vector, sweep_angle_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
 		
 		//gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL);
 
