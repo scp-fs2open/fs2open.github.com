@@ -38451,8 +38451,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tMarks the specified default key as having not been pressed, so key-pressed will be false "
 		"until the player presses it again.  See key-pressed help for more information about "
 		"what a default key is.\r\n\r\n"
-		"\tNote that this sexp will not work properly in repeating events.  Use key-reset-multiple "
-		"if this is to be called multiple times in one event.\r\n\r\n"
+		"\tNote that this sexp will only fire once when used in a repeating event, which may not be what you want.  Use key-reset-multiple "
+		"if a key should be reset each time the event repeats.\r\n\r\n"
 		"Returns a boolean value.  Takes 1 or more arguments...\r\n"
 		"\tAll:\tDefault key to reset." },
 
@@ -38461,7 +38461,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tMarks the specified default key as having not been pressed, so key-pressed will be false "
 		"until the player presses it again.  See key-pressed help for more information about "
 		"what a default key is.\r\n\r\n"
-		"\tThis sexp, unlike key-reset, will work properly if called multiple times in one event.\r\n\r\n"
+		"\tNote that this sexp will fire every time an event repeats.  If you only want a key to be reset once regardless of how many times the event repeats, use key-reset.\r\n\r\n"
 		"Returns a boolean value.  Takes 1 or more arguments...\r\n"
 		"\tAll:\tDefault key to reset." },
 
