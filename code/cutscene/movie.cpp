@@ -45,6 +45,7 @@ struct PlaybackState {
 	vec2d posBottomRight;
 
 	int subtitle_font = -1;
+	color subtitle_color = Color_bright_white;
 };
 
 void processEvents()
@@ -102,7 +103,7 @@ void displayVideo(Player* player, PlaybackState* state) {
 
 	auto subtitle = player->getCurrentSubtitle();
 	if (!subtitle.empty() && state->subtitle_font >= 0) {
-		gr_set_color_fast(&Color_bright_white);
+		gr_set_color_fast(&state->subtitle_color);
 		font::set_font(state->subtitle_font);
 
 		int width;
@@ -179,7 +180,20 @@ void initialize_player_state(Player* player, PlaybackState* state) {
 
 		if (state->subtitle_font < 0) {
 			Warning(LOCATION, "Failed to load subtitle font '%s'! Subtitles will be disabled.", Movie_subtitle_font.c_str());
+		} 
+
+		if ((Movie_subtitle_rgba[0] >= 0 && Movie_subtitle_rgba[0] <= 255) &&
+			(Movie_subtitle_rgba[1] >= 0 && Movie_subtitle_rgba[1] <= 255) &&
+			(Movie_subtitle_rgba[2] >= 0 && Movie_subtitle_rgba[2] <= 255) &&
+			(Movie_subtitle_rgba[3] >= 0 && Movie_subtitle_rgba[3] <= 255))
+		{
+			gr_init_alphacolor(&state->subtitle_color,
+				Movie_subtitle_rgba[0],
+				Movie_subtitle_rgba[1],
+				Movie_subtitle_rgba[2],
+				Movie_subtitle_rgba[3]);
 		}
+
 	}
 	else if (font::FontManager::numberOfFonts() > 0) {
 		state->subtitle_font = 0;	// if not explicitly specified, default to the first available font

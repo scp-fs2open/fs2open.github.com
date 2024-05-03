@@ -78,6 +78,7 @@ bool Use_tabled_strings_for_default_language;
 bool No_built_in_languages;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
+std::array<int, 4> Movie_subtitle_rgba;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
@@ -1194,6 +1195,22 @@ void parse_mod_table(const char *filename)
 				// Fonts have not been parsed at this point so we can't validate the font name here
 				stuff_string(Movie_subtitle_font, F_NAME);
 			}
+			
+			if (optional_string("$Movie subtitle color:") || optional_string("$Movie subtitle colour:")) {
+				int rgba[4];
+				auto n = stuff_int_list(rgba, 4);
+				if (n < 3) {
+					Warning(LOCATION, "Movie subtitle color requires 3 or 4 values from 0 to 255");
+				} else {
+					if (n < 4) {
+						rgba[3] = 255;
+					}
+					for (int i = 0; i < 4; i++) {
+						CLAMP(rgba[i], 0, 255);
+						Movie_subtitle_rgba[i] = rgba[i];
+					}
+				}
+			}
 
 			if (optional_string("$Disable built-in translations:")) {
 				stuff_boolean(&Disable_built_in_translations);
@@ -1510,6 +1527,7 @@ void mod_table_reset()
 	No_built_in_languages = false;
 	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "";
+	Movie_subtitle_rgba = std::array<int, 4>{-1, -1, -1, -1};
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
