@@ -12,7 +12,8 @@ namespace dialogs {
 VariableDialogModel::VariableDialogModel(QObject* parent, EditorViewport* viewport) 
 		: AbstractDialogModel(parent, viewport)
 {
-		initializeData();
+	_deleteWarningCount = 0;
+	initializeData();
 }
 
 void VariableDialogModel::reject() 
@@ -99,13 +100,13 @@ bool VariableDialogModel::checkValidModel()
         messageOut += messageBuffer + "\n";
     }
 
-    if (messageOut1.empty()){
+    if (messageOut.empty()){
         return true;
     } else {
-        messageOut = "Please correct these issues. The editor cannot apply your changes until they are fixed:\n\n" + messageOut1;
+        messageOut = "Please correct these issues. The editor cannot apply your changes until they are fixed:\n\n" + messageOut;
 
 	    QMessageBox msgBox;
-        msgBox.setText(messageOut1.c_str());
+        msgBox.setText(messageOut.c_str());
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
 
@@ -760,7 +761,7 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
         msgBoxListToMapRetainData.addButton("Filter Current Keys ", QMessageBox::RejectRole);
 		auto defaultButton = msgBoxListToMapRetainData.addButton("Cancel", QMessageBox::HelpRole);
 	    msgBoxListToMapRetainData.setDefaultButton(defaultButton);
-	    ret = msgBoxListToMapRetainData.exec();
+	    auto ret = msgBoxListToMapRetainData.exec();
 
         switch(ret){
             // just use default keys
@@ -769,7 +770,6 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
                 int current = 0;
                 for (auto& key : container->keys){
                     sprintf(key, "%i", current);
-                    key = temp;
                     ++current;
                 }
 
@@ -1107,19 +1107,19 @@ bool VariableDialogModel::removeContainer(int index, bool toDelete)
             SCP_string info = "";
 
             if (!confirmAction(question, info)){
-                return variable->deleted;
+                return container->deleted;
             }
 
             // adjust to the user's actions.  If they are deleting container after container, allow after a while.
             ++_deleteWarningCount;
         }
 
-        variable->deleted = toDelete;
-        return variable->deleted;
+		container->deleted = toDelete;
+        return container->deleted;
 
     } else {
-        variable->deleted = toDelete;
-        return variable->deleted;
+		container->deleted = toDelete;
+        return container->deleted;
     }
 }
 
@@ -1220,7 +1220,7 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
 
         if (!confirmAction(question, info)){
             --_deleteWarningCount;
-            return variable->deleted;
+            return container->deleted;
         }
 
         // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.
@@ -1418,7 +1418,7 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
 
         if (!confirmAction(question, info)){
             --_deleteWarningCount;
-            return variable->deleted;
+            return container->deleted;
         }
 
         // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.
@@ -1517,13 +1517,13 @@ void VariableDialogModel::swapKeyAndValues(int index)
             }
 
             // not as easy part 2
-            for (int x = 0; x < static_cast<int>(container->keysCopy)) {
-                if (container->keysCopy[x] == ""){
+			for (int x = 0; x < static_cast<int>(keysCopy.size()); ++x) {
+                if (keysCopy[x] == ""){
                     container->numberValues[x] = 0;
                 } else {
                     try {
                         // why *yes* it did occur to me that I made a mistake when I designed this 
-                        int temp = std::stoi(container->keysCopy[x]);
+                        int temp = std::stoi(keysCopy[x]);
                         container->numberValues[x] = temp;
                     }
                     catch(...){
@@ -1542,7 +1542,7 @@ void VariableDialogModel::swapKeyAndValues(int index)
             container->keys = container->stringValues;
             container->stringKeys = true;
 
-            for (int x = 0; x < static_cast<int>(container->keysCopy.size()); ++x){
+            for (int x = 0; x < static_cast<int>(keysCopy.size()); ++x){
                 // This *is* likely to happen as these sizes were not in sync.
                 if (x >= static_cast<int>(container->numberValues.size())){
                     container->numberValues.emplace_back();
@@ -1550,7 +1550,7 @@ void VariableDialogModel::swapKeyAndValues(int index)
 
                 try {
                     // why *yes* it did occur to me that I made a mistake when I designed this 
-                    int temp = std::stoi(container->keysCopy[x]);
+                    int temp = std::stoi(keysCopy[x]);
                     container->numberValues[x] = temp;
                 }
                 catch(...){

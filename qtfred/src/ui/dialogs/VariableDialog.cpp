@@ -276,7 +276,7 @@ void VariableDialog::onVariablesTableUpdated()
 
 	// so if the user just removed the name, mark it as deleted *before changing the name*
 	if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
-		if (!_model->removeVariable(item->row())) {
+		if (!_model->removeVariable(item->row(), true)) {
 			// marking a variable as deleted failed, resync UI
 			apply = true;
 		} else {
@@ -512,14 +512,13 @@ void VariableDialog::onDeleteVariableButtonPressed()
 	}	
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->deleteVariableButton->item(currentRow, 2) && ui->deleteVariableButton->item(currentRow, 2)->text().toStdString() == "Flagged For Deletion"){
+	if (ui->variablesTable->item(currentRow, 2) && ui->variablesTable->item(currentRow, 2)->text().toStdString() == "Flagged For Deletion"){
 		_model->removeVariable(currentRow, false);
 		applyModel();
 	} else {
 		_model->removeVariable(currentRow, true);
 		applyModel();
 	}
-
 }
 
 void VariableDialog::onSetVariableAsStringRadioSelected() 
@@ -686,8 +685,14 @@ void VariableDialog::onDeleteContainerButtonPressed()
 		return;
 	}
 
-	_model->removeContainer(row);
-	applyModel();
+	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
+	if (ui->containersTable->item(row, 2) && ui->containersTable->item(row, 2)->text().toStdString() == "Flagged For Deletion"){
+		_model->removeVariable(row, false);
+		applyModel();
+	} else {
+		_model->removeVariable(row, true);
+		applyModel();
+	}
 }
 
 void VariableDialog::onSetContainerAsMapRadioSelected() 
@@ -1072,7 +1077,7 @@ void VariableDialog::applyModel()
 	}
 
 	// do we need to switch the delete button to a restore button?
-	if (ui->containersTable->item(row, 2) && ui->containersTable->item(row, 2)->text().toStdString() == "Flagged for Deletion"){
+	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "Flagged for Deletion") {
 		ui->deleteContainerButton->setText("Restore");
 	} else {
 		ui->deleteContainerButton->setText("Delete");
@@ -1134,8 +1139,8 @@ void VariableDialog::updateVariableOptions()
 		ui->saveVariableOnMissionCloseRadio->setEnabled(false);
 		ui->setVariableAsEternalcheckbox->setEnabled(false);
 		ui->networkVariableCheckbox->setEnabled(false);
-		ui->onShiftItemUpButton->setEnabled(false);
-		ui->onShiftItemDownButton->setEnabled(false);
+		ui->shiftItemUpButton->setEnabled(false);
+		ui->shiftItemDownButton->setEnabled(false);
 		return;
 	}
 
@@ -1208,8 +1213,8 @@ void VariableDialog::updateContainerOptions()
 		ui->setContainerAsMapRadio->setEnabled(false);
 		ui->setContainerAsListRadio->setEnabled(false);
 		ui->networkContainerCheckbox->setEnabled(false);
-		ui->onShiftItemUpButton->setEnabled(false);
-		ui->onShiftItemDownButton->setEnabled(false);
+		ui->shiftItemUpButton->setEnabled(false);
+		ui->shiftItemDownButton->setEnabled(false);
 
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
@@ -1360,11 +1365,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 					// more than one item and not already at the top of the list.
 					if (x > 0 && x < static_cast<int>(strings.size())){
-						ui->onShiftItemUpButton->setEnabled(false);
+						ui->shiftItemUpButton->setEnabled(false);
 					}
 					
-					if (x > -1 && x < static_Cast<int>(strings.size()) - 1){
-						ui->onShiftItemDownButton->setEnabled(false);
+					if (x > -1 && x < static_cast<int>(strings.size()) - 1){
+						ui->shiftItemDownButton->setEnabled(false);
 					}
 				}
 
@@ -1447,8 +1452,8 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 
 		// Enable shift up and down buttons are off in Map mode.
-		ui->onShiftItemUpButton->setEnabled(false);
-		ui->onShiftItemDownButton->setEnabled(false);
+		ui->shiftItemUpButton->setEnabled(false);
+		ui->shiftItemDownButton->setEnabled(false);
 
 		// keys I didn't bother to make separate.  Should have done the same with values.
 		auto& keys = _model->getMapKeys(row);

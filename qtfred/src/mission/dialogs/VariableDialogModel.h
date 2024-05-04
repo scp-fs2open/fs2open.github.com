@@ -137,7 +137,7 @@ private:
 	int _listTextMode = 0;
 	int _mapTextMode = 0;
 
-	static int _deleteWarningCount = 0;
+	int _deleteWarningCount;
 
 	static SCP_string clampIntegerString(SCP_string source);
 
