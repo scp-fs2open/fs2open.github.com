@@ -272,19 +272,56 @@ void VariableDialog::onVariablesTableUpdated()
 	}	
 	
 	auto item = ui->variablesTable->item(currentRow, 0);
+	SCP_string itemText = item->text().toStdString();
 	bool apply = false;
 
-	// so if the user just removed the name, mark it as deleted *before changing the name*
-	if (_currentVariable != "" && !strlen(item->text().toStdString().c_str())) {
-		if (!_model->removeVariable(item->row(), true)) {
+	// This will only be true if the user is trying to add a new variable.
+	if (currentRow == ui->variablesTable->rowCount() - 1) {
+
+		// make sure the item exists before we dereference
+		if (ui->variablesTable->item(currentRow, 0)) {
+
+			// Add the new container.
+			if (!itemText.empty() && itemText != "Add Variable ...") {
+				_model->addNewVariable(itemText);
+				_currentVariable = itemText;
+				_currentVariableData = "";
+				applyModel();
+			}
+
+		} else {
+			// reapply the model if the item is null.
+			applyModel();
+		}
+
+		// we're done here because we cannot edit the data column on the add variable row
+		return;
+	}
+
+	// so if the user just removed the name, mark it as deleted
+	if (itemText.empty() && !_currentVariable.empty()) {
+		if (!_model->removeVariable(item->row(), true) ) {
 			// marking a variable as deleted failed, resync UI
 			apply = true;
 		} else {
+			// now that we know that the variable was deleted 
 			updateVariableOptions();
 		}
-	} else {
-		
-		auto ret = _model->changeVariableName(item->row(), item->text().toStdString());
+
+	// if the user is restoring a deleted variable by inserting a name....
+	} else if (!itemText.empty() && _currentVariable.empty()){
+
+		if (!_model->removeVariable(item->row(), true) ) {
+			// marking a variable as deleted failed, resync UI
+			apply = true;
+		} else {
+			// now that we know that the variable was deleted 
+			updateVariableOptions();
+		}
+
+	} else if (itemText != _currentVariable){
+
+		auto ret = _model->changeVariableName(item->row(), itemText);
 
 		// we put something in the cell, but the model couldn't process it.
 		if (strlen(item->text().toStdString().c_str()) && ret == ""){
@@ -296,19 +333,18 @@ void VariableDialog::onVariablesTableUpdated()
 			item->setText(ret.c_str());
 			_currentVariable = ret;
 		}
-	}
-	// empty return and cell was handled earlier.
+	}// No action needed if the first cell was not changed.
 
 
+	// now work on the variable data cell
 	item = ui->variablesTable->item(currentRow, 1);
+	itemText = item->text().toStdString();
 
 	// check if data column was altered
-	// TODO!  Set up comparison between last and current value
-	if (item->column() == 1) {
-
+	if (itemText != _currentVariableData) {
 		// Variable is a string
 		if (_model->getVariableType(item->row())){
-			SCP_string temp = item->text().toStdString().c_str();
+			SCP_string temp = itemText;
 			temp = temp.substr(0, NAME_LENGTH - 1);
 
 			SCP_string ret = _model->setVariableStringValue(item->row(), temp);
@@ -316,14 +352,13 @@ void VariableDialog::onVariablesTableUpdated()
 				apply = true;
 			} else {
 				item->setText(ret.c_str());
-			}			
+				_currentVariableData = ret;
+			}
+		
+		// Variable is a number
 		} else {
 			SCP_string source = item->text().toStdString();
 			SCP_string temp = _model->trimIntegerString(source);
-
-			if (temp != source){
-				item->setText(temp.c_str());
-			}
 
 			try {
 				int ret = _model->setVariableNumberValue(item->row(), std::stoi(temp));
@@ -332,12 +367,16 @@ void VariableDialog::onVariablesTableUpdated()
 				item->setText(temp.c_str());
 			}
 			catch (...) {
-				applyModel();
+				// that's not good....
+				apply = true;
 			}
-		}
 
-	// if the user somehow edited the info that should only come from the model and should not be editable, reload everything.
-	} else {
+			// best we can do is to set this to temp, whether conversion fails or not.
+			_currentContainerItemData = temp;
+		}
+	}
+
+	if (apply) {
 		applyModel();
 	}
 }
@@ -404,6 +443,11 @@ void VariableDialog::onContainersTableUpdated()
 				applyModel();
 			}
 		}
+		else {
+			applyModel();
+		}
+
+		return;
 
 	// are they editing an existing container name?
 	} else if (ui->containersTable->item(row, 0)){
@@ -442,8 +486,52 @@ void VariableDialog::onContainerContentsTableUpdated()
 		return;
 	}
 
+	int containerRow = getCurrentContainerRow();
+	int row = getCurrentContainerItemRow();
 
-} // could be new key or new value
+	// just in case something is goofy, return
+	if (row < 0 || containerRow < 0){
+		applyModel();
+		return;
+	}
+
+	// Are they adding a new item?
+	if (row == ui->containerContentsTable->rowCount() - 1){
+		if (ui->containerContentsTable->item(row, 0)) {
+			SCP_string newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
+			if (!newString.empty() && newString != "Add Item ..."){
+				
+				if (_model->getContainerListOrMap(containerRow)) {
+					_model->addListItem(containerRow, newString);
+
+				} else {
+
+					_model->addMapItem(containerRow, newString);
+				}
+				
+				_currentContainer = newString;
+				applyModel();
+			}
+		}
+		else {
+			applyModel();
+		}
+
+		return;
+
+		// are they editing an existing container name?
+	} else if (ui->containerContentsTable->item(row, 0)){
+		_currentContainer = ui->containersTable->item(row,0)->text().toStdString();
+
+		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0)->text().toStdString())){
+			applyModel();
+		}	
+	}
+
+
+
+
+} 
 
 void VariableDialog::onContainerContentsSelectionChanged() 
 {

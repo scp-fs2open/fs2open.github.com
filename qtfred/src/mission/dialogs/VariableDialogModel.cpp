@@ -1123,6 +1123,34 @@ SCP_string VariableDialogModel::addListItem(int index)
     }
 }
 
+SCP_string VariableDialogModel::addListItem(int index, SCP_string item)
+{
+	auto container = lookupContainer(index);
+
+	if (!container){
+		return "";
+	}
+
+	if (container->string) {
+		container->stringValues.push_back(item);
+		return container->stringValues.back();
+	} else {
+		auto temp = trimIntegerString(item);
+		
+		try {
+			int tempNumber = std::stoi(temp);
+			container->numberValues.push_back(tempNumber);
+		}
+		catch(...){
+			container->numberValues.push_back(0);
+			return "0";
+		}
+
+		sprintf(temp, "%i", container->numberValues.back());
+		return temp;
+	}
+}
+
 std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 {
     auto container = lookupContainer(index);

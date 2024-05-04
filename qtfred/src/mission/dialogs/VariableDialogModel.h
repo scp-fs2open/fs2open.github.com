@@ -100,10 +100,12 @@ public:
 	bool removeContainer(int index, bool toDelete);
 
 	SCP_string addListItem(int index);
+	SCP_string addListItem(int index, SCP_string item);
 	SCP_string copyListItem(int containerIndex, int index);
 	bool removeListItem(int containerindex, int index);
 
 	std::pair<SCP_string, SCP_string> addMapItem(int index);
+	std::pair<SCP_string, SCP_string> addMapItem(int index, SCP_string key, SCP_string value);
 	std::pair<SCP_string, SCP_string> copyMapItem(int index, int itemIndex);
 	bool removeMapItem(int index, int rowIndex);
 
