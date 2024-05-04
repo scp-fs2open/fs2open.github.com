@@ -212,25 +212,25 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 180);
-	ui->variablesTable->setColumnWidth(1, 180);
-	ui->variablesTable->setColumnWidth(2, 140);
+	ui->variablesTable->setColumnWidth(0, 190);
+	ui->variablesTable->setColumnWidth(1, 190);
+	ui->variablesTable->setColumnWidth(2, 120);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 180);
-	ui->containersTable->setColumnWidth(1, 180);
-	ui->containersTable->setColumnWidth(2, 140);
+	ui->containersTable->setColumnWidth(0, 190);
+	ui->containersTable->setColumnWidth(1, 190);
+	ui->containersTable->setColumnWidth(2, 120);
 
 	ui->containerContentsTable->setColumnCount(2);
 
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 230);
-	ui->containerContentsTable->setColumnWidth(1, 230);
+	ui->containerContentsTable->setColumnWidth(0, 225);
+	ui->containerContentsTable->setColumnWidth(1, 225);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	// and I don't mind just manually toggling them.

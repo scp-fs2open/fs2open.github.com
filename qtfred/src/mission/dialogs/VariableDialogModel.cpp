@@ -1660,7 +1660,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
         SCP_string notes = "";
 
         if (item.deleted) {
-            notes = "Flagged for Deletion";
+            notes = "Deleted";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
@@ -1813,7 +1813,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
 
         if (item.deleted) {
-            notes = "Flagged for Deletion";
+            notes = "Deleted";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
