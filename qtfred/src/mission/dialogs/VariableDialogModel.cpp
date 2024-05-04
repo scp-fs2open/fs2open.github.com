@@ -311,7 +311,6 @@ bool VariableDialogModel::setVariableType(int index, bool string)
         return !string;
     }
 
-
     // Here we change the variable type!
     // this variable is currently a string
     if (variable->string) {
@@ -320,26 +319,18 @@ bool VariableDialogModel::setVariableType(int index, bool string)
             variable->string = string;
             return variable->string;
         } else {
-            SCP_string question;
-            sprintf(question, "Changing variable %s to number variable type will make its string value irrelevant.  Continue?", variable->name.c_str());
-            SCP_string info;
-			sprintf(info, "If the string cleanly converts to an integer and a number has not previously been set for this variable, the converted number value will be retained.");
-            
-            // if this was a misclick, let the user say so
-            if (!confirmAction(question, info)) {
-                return variable->string;
-            }
-
             // if there was no previous number value 
             if (variable->numberValue == 0){
                 try {                    
                     variable->numberValue = std::stoi(variable->stringValue);
                 }
-                // nothing to do here, because that just means we can't convert.
+                // nothing to do here, because that just means we can't convert and we have to use the old value.
                 catch (...) {}
+
             }
 
-            return string;
+			variable->string = string;
+            return variable->string;
         }
     
     // this variable is currently a number
@@ -349,22 +340,13 @@ bool VariableDialogModel::setVariableType(int index, bool string)
             variable->string = string;
             return variable->string;
         } else {
-            SCP_string question;
-            sprintf(question, "Changing variable %s to a string variable type will make the number value irrelevant.  Continue?", variable->name.c_str());
-            SCP_string info;
-			sprintf(info, "If no string value has been previously set for this variable, then the number value specified will be set as the default string value.");
-            
-            // if this was a misclick, let the user say so
-            if (!confirmAction(question, info)) {
-                return variable->string;
-            }
-
             // if there was no previous string value 
             if (variable->stringValue == ""){
                 sprintf(variable->stringValue, "%i", variable->numberValue);
             }
 
-            return string;
+			variable->string = string;
+            return variable->string;
         }
     }
 }
@@ -735,13 +717,14 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
     if (container->stringKeys) {
         // Ok, this is the complicated type.  First check if all keys can just quickly be transferred to numbers.
         bool quickConvert = true;
-
+		int test;
         for (auto& key : container->keys) {
             try {                    
-                std::stoi(key);
+                test = std::stoi(key);
             }
             catch (...) {
                 quickConvert = false;
+				nprintf(("Cyborg", "This is Cyborg. Long story short, I don't need this variable, but c++ thinks I do. Last good number on conversion was: %i\n", test));
             }
         } 
 

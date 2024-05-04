@@ -571,7 +571,7 @@ void VariableDialog::onDoNotSaveVariableRadioSelected()
 	if (ret != 0){
 		applyModel();
 	} else {
-		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);
 	}
 }
@@ -611,7 +611,7 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected()
 		applyModel();
 	} else {
 		ui->doNotSaveVariableRadio->setChecked(false);
-		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
 	}
 }
 
@@ -697,6 +697,8 @@ void VariableDialog::onDeleteContainerButtonPressed()
 
 void VariableDialog::onSetContainerAsMapRadioSelected() 
 {
+	// to avoid visual weirdness, make it false.
+	ui->setContainerAsListRadio->setChecked(false);
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -709,6 +711,8 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 
 void VariableDialog::onSetContainerAsListRadioSelected() 
 {
+	// to avoid visual weirdness, make it false.
+	ui->setContainerAsMapRadio->setChecked(false);
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
@@ -785,22 +789,6 @@ void VariableDialog::onDoNotSaveContainerRadioSelected()
 		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 	}
 }
-void VariableDialog::onSaveContainerOnMissionCloseRadioSelected() 
-{
-	int row = getCurrentContainerRow();
-
-	if (row < 0){
-		return;
-	}
-
-	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 2) != 2)
-		applyModel();
-	else {
-		ui->doNotSaveContainerRadio->setChecked(false);
-		ui->saveContainerOnMissionCloseRadio->setChecked(true);
-		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
-	}
-}
 
 void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected() 
 {
@@ -816,6 +804,23 @@ void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected()
 		ui->doNotSaveContainerRadio->setChecked(false);
 		ui->saveContainerOnMissionCloseRadio->setChecked(false);
 		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+	}
+}
+
+void VariableDialog::onSaveContainerOnMissionCloseRadioSelected() 
+{
+	int row = getCurrentContainerRow();
+
+	if (row < 0){
+		return;
+	}
+
+	if (_model->setContainerOnMissionCloseOrCompleteFlag(row, 2) != 2)
+		applyModel();
+	else {
+		ui->doNotSaveContainerRadio->setChecked(false);
+		ui->saveContainerOnMissionCloseRadio->setChecked(true);
+		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 	}
 }
 
