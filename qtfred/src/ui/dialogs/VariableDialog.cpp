@@ -212,25 +212,25 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 95);
-	ui->variablesTable->setColumnWidth(1, 95);
-	ui->variablesTable->setColumnWidth(2, 105);
+	ui->variablesTable->setColumnWidth(0, 175);
+	ui->variablesTable->setColumnWidth(1, 175);
+	ui->variablesTable->setColumnWidth(2, 140);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 95);
-	ui->containersTable->setColumnWidth(1, 95);
-	ui->containersTable->setColumnWidth(2, 105);
+	ui->containersTable->setColumnWidth(0, 175);
+	ui->containersTable->setColumnWidth(1, 175);
+	ui->containersTable->setColumnWidth(2, 140);
 
 	ui->containerContentsTable->setColumnCount(2);
 
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 150);
-	ui->containerContentsTable->setColumnWidth(1, 150);
+	ui->containerContentsTable->setColumnWidth(0, 240);
+	ui->containerContentsTable->setColumnWidth(1, 240);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	// and I don't mind just manually toggling them.
@@ -258,7 +258,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 }
 
 // TODO! make sure that when a variable is added that the whole model is reloaded.  
-// TODO! Fix me.  This function does not work as intended because it must process both, not just one.
+// TODO! Fix me.  This function does not work as intended because it must process both varaible and contents, not just one.
 void VariableDialog::onVariablesTableUpdated() 
 {
 	if (_applyingModel){
@@ -346,6 +346,7 @@ void VariableDialog::onVariablesTableUpdated()
 void VariableDialog::onVariablesSelectionChanged() 
 {
 	if (_applyingModel){
+		applyModel();
 		return;
 	}
 
@@ -381,6 +382,7 @@ void VariableDialog::onVariablesSelectionChanged()
 void VariableDialog::onContainersTableUpdated() 
 {
 	if (_applyingModel){
+		applyModel();
 		return;
 	}
 
@@ -388,6 +390,7 @@ void VariableDialog::onContainersTableUpdated()
 
 	// just in case something is goofy, return
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -415,6 +418,7 @@ void VariableDialog::onContainersTableUpdated()
 void VariableDialog::onContainersSelectionChanged() 
 {
 	if (_applyingModel){
+		applyModel();
 		return;
 	}
 
@@ -426,19 +430,15 @@ void VariableDialog::onContainersSelectionChanged()
 	}
 
 	// guaranteed not to be null, since getCurrentContainerRow already checked.
-	SCP_string newContainerName = ui->containersTable->item(row, 0)->text().toStdString();
-
-	if (newContainerName != _currentContainer){
-		_currentContainer = newContainerName;
-	}
-
-	applyModel(); // Seems to be buggy unless I have this outside the if.
+	_currentContainer = ui->containersTable->item(row, 0)->text().toStdString();
+	applyModel();
 }
 
 // TODO, finish this function
 void VariableDialog::onContainerContentsTableUpdated() 
 {
 	if (_applyingModel){
+		applyModel();
 		return;
 	}
 
@@ -448,12 +448,14 @@ void VariableDialog::onContainerContentsTableUpdated()
 void VariableDialog::onContainerContentsSelectionChanged() 
 {
 	if (_applyingModel){
+		applyModel();
 		return;
 	}
 
 	int row = getCurrentContainerItemRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -461,6 +463,7 @@ void VariableDialog::onContainerContentsSelectionChanged()
 	SCP_string newContainerItemName;
 
 	if (!item){
+		applyModel();
 		return;
 	}
 
@@ -485,12 +488,14 @@ void VariableDialog::onAddVariableButtonPressed()
 void VariableDialog::onCopyVariableButtonPressed()
 {
 	if (_currentVariable.empty()){
+		applyModel();
 		return;
 	}
 
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
+		applyModel();
 		return;
 	}	
 	
@@ -502,12 +507,14 @@ void VariableDialog::onCopyVariableButtonPressed()
 void VariableDialog::onDeleteVariableButtonPressed() 
 {
 	if (_currentVariable.empty()){
+		applyModel();
 		return;
 	}
 
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
+		applyModel();
 		return;
 	}	
 
@@ -526,17 +533,14 @@ void VariableDialog::onSetVariableAsStringRadioSelected()
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
+		applyModel();
 		return;
 	}	
 
 	// this doesn't return succeed or fail directly, 
 	// but if it doesn't return true then it failed since this is the string radio
-	if(!_model->setVariableType(currentRow, true)){
-		applyModel();
-	} else {
-		ui->setVariableAsStringRadio->setChecked(true);
-		ui->setVariableAsNumberRadio->setChecked(false);
-	}
+	_model->setVariableType(currentRow, true);
+	applyModel();
 }
 
 void VariableDialog::onSetVariableAsNumberRadioSelected() 
@@ -544,25 +548,22 @@ void VariableDialog::onSetVariableAsNumberRadioSelected()
 	int currentRow = getCurrentVariableRow();
 
 	if (currentRow < 0){
+		applyModel();
 		return;
 	}	
 
 	// this doesn't return succeed or fail directly, 
 	// but if it doesn't return false then it failed since this is the number radio
-	if (!_model->setVariableType(currentRow, false)) {
-		applyModel();
-	}
-	else {
-		ui->setVariableAsStringRadio->setChecked(false);
-		ui->setVariableAsNumberRadio->setChecked(true);
-	}
+	_model->setVariableType(currentRow, false);
+	applyModel();
 }
 
 void VariableDialog::onDoNotSaveVariableRadioSelected()
 {
 	int currentRow = getCurrentVariableRow();
 
-	if (currentRow < 0){
+	if (currentRow < 0 || !ui->doNotSaveVariableRadio->isChecked()){
+		applyModel();
 		return;
 	}	
 
@@ -576,13 +577,12 @@ void VariableDialog::onDoNotSaveVariableRadioSelected()
 	}
 }
 
-
-
 void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected() 
 {
 	int row = getCurrentVariableRow();
 
-	if (row < 0){
+	if (row < 0 || !ui->saveVariableOnMissionCompletedRadio->isChecked()){
+		applyModel();
 		return;
 	}
 	
@@ -600,7 +600,8 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected()
 {
 	int row = getCurrentVariableRow();
 
-	if (row < 0){
+	if (row < 0 || !ui->saveVariableOnMissionCloseRadio->isChecked()){
+		applyModel();
 		return;
 	}
 
@@ -645,7 +646,6 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 	} else {
 		ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
 	}
-
 }
 
 void VariableDialog::onAddContainerButtonPressed() 
@@ -682,17 +682,18 @@ void VariableDialog::onDeleteContainerButtonPressed()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
 	if (ui->containersTable->item(row, 2) && ui->containersTable->item(row, 2)->text().toStdString() == "Flagged For Deletion"){
 		_model->removeVariable(row, false);
-		applyModel();
 	} else {
 		_model->removeVariable(row, true);
-		applyModel();
 	}
+
+	applyModel();
 }
 
 void VariableDialog::onSetContainerAsMapRadioSelected() 
@@ -702,6 +703,7 @@ void VariableDialog::onSetContainerAsMapRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -716,6 +718,7 @@ void VariableDialog::onSetContainerAsListRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -729,6 +732,7 @@ void VariableDialog::onSetContainerAsStringRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -741,6 +745,7 @@ void VariableDialog::onSetContainerAsNumberRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -753,6 +758,7 @@ void VariableDialog::onSetContainerKeyAsStringRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -766,6 +772,7 @@ void VariableDialog::onSetContainerKeyAsNumberRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -778,6 +785,7 @@ void VariableDialog::onDoNotSaveContainerRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -795,6 +803,7 @@ void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -812,6 +821,7 @@ void VariableDialog::onSaveContainerOnMissionCloseRadioSelected()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -829,6 +839,7 @@ void VariableDialog::onNetworkContainerCheckboxClicked()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -842,6 +853,7 @@ void VariableDialog::onSetContainerAsEternalCheckboxClicked()
 	int row = getCurrentContainerRow();
 
 	if (row < 0){
+		applyModel();
 		return;
 	}
 
@@ -855,6 +867,7 @@ void VariableDialog::onAddContainerItemButtonPressed()
 	int containerRow = getCurrentContainerRow();
 	
 	if (containerRow < 0){
+		applyModel();
 		return;
 	}
 
@@ -872,12 +885,14 @@ void VariableDialog::onCopyContainerItemButtonPressed()
 	int containerRow = getCurrentContainerRow();
 	
 	if (containerRow < 0){
+		applyModel();
 		return;
 	}
 
 	int itemRow = getCurrentContainerItemRow();
 
 	if (itemRow < 0){
+		applyModel();
 		return;
 	}
 
@@ -895,12 +910,14 @@ void VariableDialog::onDeleteContainerItemButtonPressed()
 	int containerRow = getCurrentContainerRow();
 	
 	if (containerRow < 0){
+		applyModel();
 		return;
 	}
 
 	int itemRow = getCurrentContainerItemRow();
 
 	if (itemRow < 0){
+		applyModel();
 		return;
 	}
 
@@ -918,12 +935,14 @@ void VariableDialog::onShiftItemUpButtonPressed()
 	int containerRow = getCurrentContainerRow();
 	
 	if (containerRow < 0){
+		applyModel();
 		return;
 	}
 
 	int itemRow = getCurrentContainerItemRow();
 
 	if (itemRow < 0){
+		applyModel();
 		return;
 	}
 
@@ -936,12 +955,14 @@ void VariableDialog::onShiftItemDownButtonPressed()
 	int containerRow = getCurrentContainerRow();
 	
 	if (containerRow < 0){
+		applyModel();
 		return;
 	}
 
 	int itemRow = getCurrentContainerItemRow();
 
 	if (itemRow < 0){
+		applyModel();
 		return;
 	}
 
@@ -954,6 +975,7 @@ void VariableDialog::onSwapKeysAndValuesButtonPressed()
 	int containerRow = getCurrentContainerRow();
 	
 	if (containerRow < 0){
+		applyModel();
 		return;
 	}
 
@@ -966,7 +988,10 @@ VariableDialog::~VariableDialog(){}; // NOLINT
 
 void VariableDialog::applyModel()
 {
-	// TODO! We need an undelete action. Best way is to change the text on the button if the notes say "Deleted"
+	if (_applyingModel) {
+		return;
+	}
+
 	_applyingModel = true;
 
 	auto variables = _model->getVariableValues();
@@ -986,7 +1011,7 @@ void VariableDialog::applyModel()
 
 		// check if this is the current variable.  This keeps us selecting the correct variable even when
 		// there's a deletion.
-		if (!_currentVariable.empty() && variables[x][0] == _currentVariable){
+		if (selectedRow < 0 && !_currentVariable.empty() && variables[x][0] == _currentVariable){
 			selectedRow = x;
 		}
 
@@ -1062,7 +1087,7 @@ void VariableDialog::applyModel()
 		}
 
 		// check if this is the current variable.
-		if (!_currentVariable.empty() && containers[x][0] == _currentVariable){
+		if (selectedRow < 0 && !_currentContainer.empty() && containers[x][0] == _currentContainer){
 			selectedRow = x;
 		}
 
@@ -1119,7 +1144,6 @@ void VariableDialog::applyModel()
 			_currentContainer = ui->containersTable->item(0, 0)->text().toStdString();
 			ui->containersTable->clearSelection();
 			ui->containersTable->item(0, 0)->setSelected(true);
-			
 		}
 	}
 
@@ -1220,6 +1244,7 @@ void VariableDialog::updateContainerOptions()
 		ui->networkContainerCheckbox->setEnabled(false);
 		ui->shiftItemUpButton->setEnabled(false);
 		ui->shiftItemDownButton->setEnabled(false);
+		ui->swapKeysAndValuesButton->setEnabled(false);
 
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
@@ -1333,6 +1358,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setRowCount(0);
 		ui->shiftItemDownButton->setEnabled(false);
 		ui->shiftItemUpButton->setEnabled(false);
+		ui->swapKeysAndValuesButton->setEnabled(false);
 
 		return;
 	
@@ -1347,6 +1373,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->shiftItemUpButton->setEnabled(true);		
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
+		ui->swapKeysAndValuesButton->setEnabled(false);
 
 
 		// with string contents
@@ -1459,6 +1486,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		// Enable shift up and down buttons are off in Map mode.
 		ui->shiftItemUpButton->setEnabled(false);
 		ui->shiftItemDownButton->setEnabled(false);
+		ui->swapKeysAndValuesButton->setEnabled(true);
 
 		// keys I didn't bother to make separate.  Should have done the same with values.
 		auto& keys = _model->getMapKeys(row);
