@@ -229,8 +229,8 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 237);
-	ui->containerContentsTable->setColumnWidth(1, 237);
+	ui->containerContentsTable->setColumnWidth(0, 230);
+	ui->containerContentsTable->setColumnWidth(1, 230);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	// and I don't mind just manually toggling them.
@@ -687,7 +687,7 @@ void VariableDialog::onDeleteContainerButtonPressed()
 	}
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->containersTable->item(row, 2) && ui->containersTable->item(row, 2)->text().toStdString() == "Flagged For Deletion"){
+	if (ui->deleteContainerButton->text().toStdString() == "Restore"){
 		_model->removeContainer(row, false);
 	} else {
 		_model->removeContainer(row, true);
@@ -1107,7 +1107,7 @@ void VariableDialog::applyModel()
 	}
 
 	// do we need to switch the delete button to a restore button?
-	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "Flagged for Deletion") {
+	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "Deleted") {
 		ui->deleteContainerButton->setText("Restore");
 	} else {
 		ui->deleteContainerButton->setText("Delete");
@@ -1196,7 +1196,7 @@ void VariableDialog::updateVariableOptions()
 	ui->setVariableAsNumberRadio->setChecked(!string);
 
 	// do we need to switch the delete button to a restore button?
-	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "Flagged for Deletion"){
+	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "Deleted"){
 		ui->deleteVariableButton->setText("Restore");
 	} else {
 		ui->deleteVariableButton->setText("Delete");
