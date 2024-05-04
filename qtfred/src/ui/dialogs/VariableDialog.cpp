@@ -212,16 +212,16 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 175);
-	ui->variablesTable->setColumnWidth(1, 175);
+	ui->variablesTable->setColumnWidth(0, 180);
+	ui->variablesTable->setColumnWidth(1, 180);
 	ui->variablesTable->setColumnWidth(2, 140);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(0, 175);
-	ui->containersTable->setColumnWidth(1, 175);
+	ui->containersTable->setColumnWidth(0, 180);
+	ui->containersTable->setColumnWidth(1, 180);
 	ui->containersTable->setColumnWidth(2, 140);
 
 	ui->containerContentsTable->setColumnCount(2);
@@ -229,8 +229,8 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 240);
-	ui->containerContentsTable->setColumnWidth(1, 240);
+	ui->containerContentsTable->setColumnWidth(0, 237);
+	ui->containerContentsTable->setColumnWidth(1, 237);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	// and I don't mind just manually toggling them.
@@ -519,7 +519,7 @@ void VariableDialog::onDeleteVariableButtonPressed()
 	}	
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->variablesTable->item(currentRow, 2) && ui->variablesTable->item(currentRow, 2)->text().toStdString() == "Flagged For Deletion"){
+	if (ui->deleteVariableButton->text().toStdString() == "Restore") {
 		_model->removeVariable(currentRow, false);
 		applyModel();
 	} else {
@@ -688,9 +688,9 @@ void VariableDialog::onDeleteContainerButtonPressed()
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
 	if (ui->containersTable->item(row, 2) && ui->containersTable->item(row, 2)->text().toStdString() == "Flagged For Deletion"){
-		_model->removeVariable(row, false);
+		_model->removeContainer(row, false);
 	} else {
-		_model->removeVariable(row, true);
+		_model->removeContainer(row, true);
 	}
 
 	applyModel();
