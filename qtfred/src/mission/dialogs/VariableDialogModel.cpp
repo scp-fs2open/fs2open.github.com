@@ -1191,12 +1191,77 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 
     ret.first = newKey;
 
-    if (container->string)
+
+    if (container->string){
         ret.second = "";
-    else
+		container->stringValues.push_back("");
+    } else {
         ret.second = "0";
+		container->numberValues.push_back(0);
+	}
 
     return ret;
+}
+
+std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP_string key, SCP_string value)
+{
+	auto container = lookupContainer(index);
+
+	std::pair <SCP_string, SCP_string> ret = { "", "" };
+
+	// no container available
+	if (!container) {
+		return ret;
+	}
+
+	bool conflict;
+	int count = 0;
+	SCP_string newKey;
+
+	if (key.empty()) {
+		do {
+			conflict = false;
+
+			if (container->stringKeys){
+				sprintf(newKey, "key%i", count);
+			} else {
+				sprintf(newKey, "%i", count);
+			}
+
+			for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
+				if (container->keys[x] == newKey){
+					conflict = true;
+					break;
+				}
+			}
+
+			++count;
+		} while (conflict && count < 101);
+	} else {
+		newKey = key;
+	}
+
+	if (conflict) {
+		return ret;
+	}
+
+	ret.first = newKey;
+	container->keys.push_back(ret.first);
+
+	if (container->string) {
+		ret.second = value;
+	} else {
+		try {
+			container->numberValues.push_back(std::stoi(value));
+			ret.second = value;
+		}
+		catch (...) {
+			ret.second = "0";
+			container->numberValues.push_back(0);
+		}
+	}
+
+	return ret;
 }
 
 SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
@@ -1215,6 +1280,43 @@ SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
         return "0";
     }
 
+}
+
+SCP_string VariableDialogModel::changeListItem(int containerIndex, int index, SCP_string newString)
+{
+	auto container = lookupContainer(containerIndex);
+
+	if (!container){
+		return "";
+	}
+
+	if (container->string){
+		auto listItem = lookupContainerStringItem(containerIndex, index);
+
+		if (!listItem){
+			return "";
+		}
+	
+		*listItem = newString;
+
+	} else {
+		auto listItem = lookupContainerNumberItem(containerIndex, index);
+		
+		if (!listItem){
+			return "";
+		}
+
+		try{
+			*listItem = std::stoi(newString);
+		}
+		catch(...){
+			SCP_string temp;
+			sprintf(temp, "%i", *listItem);
+			return temp;
+		}
+	}
+
+	return "";
 }
 
 bool VariableDialogModel::removeListItem(int containerIndex, int index)
@@ -1452,7 +1554,7 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
     return true;
 }
 
-SCP_string VariableDialogModel::replaceMapItemKey(int index, SCP_string oldKey, SCP_string newKey)
+SCP_string VariableDialogModel::changeMapItemKey(int index, SCP_string oldKey, SCP_string newKey)
 {
     auto container = lookupContainer(index);
 
@@ -1471,27 +1573,17 @@ SCP_string VariableDialogModel::replaceMapItemKey(int index, SCP_string oldKey, 
     return oldKey;
 }
 
-SCP_string VariableDialogModel::changeMapItemStringValue(int index, SCP_string key, SCP_string newValue)
+SCP_string VariableDialogModel::changeMapItemStringValue(int index, int itemIndex, SCP_string newValue)
 {
-    auto container = lookupContainer(index);
-
-    if (!container || !container->string){
+	auto item = lookupContainerStringItem(index, itemIndex);
+    
+	if (!item){
         return "";
     }
 
-    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x){
-        if (container->keys[x] == key) {
-            if (x < static_cast<int>(container->stringValues.size())){
-                container->stringValues[x] = newValue;
-                return newValue;
-            } else {
-                return "";
-            }
-        }
-    }
+	*item = newValue;
 
-    // Failure
-    return "";
+    return *item;
 }
 
 void VariableDialogModel::swapKeyAndValues(int index)
@@ -1594,29 +1686,19 @@ void VariableDialogModel::swapKeyAndValues(int index)
     }
 }
 
-SCP_string VariableDialogModel::changeMapItemNumberValue(int index, SCP_string key, int newValue)
+SCP_string VariableDialogModel::changeMapItemNumberValue(int index, int itemIndex, int newValue)
 {
-    auto container = lookupContainer(index);
+	auto mapItem = lookupContainerNumberItem(index, itemIndex);
 
-    if (!container || !container->string){
+    if (!mapItem){
         return "";
     }
 
-    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x){
-        if (container->keys[x] == key) {
-            if (x < static_cast<int>(container->numberValues.size())){
-                container->numberValues[x] = newValue;
-                SCP_string returnValue;
-				sprintf(returnValue, "%i", newValue);
-                return returnValue;
-            } else {
-                return "";
-            }
-        }
-    }
-
-    // Failure
-    return "";
+	*mapItem = newValue;
+	
+	SCP_string ret;
+	sprintf(ret, "%i", newValue);
+	return ret;
 }
 
 

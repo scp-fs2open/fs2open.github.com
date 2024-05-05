@@ -81,8 +81,8 @@ class VariableDialog : public QDialog {
 	SCP_string _currentVariable = "";
 	SCP_string _currentVariableData = "";
 	SCP_string _currentContainer = "";
-	SCP_string _currentContainerItem = "";
-	SCP_string _currentContainerItemData = "";
+	SCP_string _currentContainerItemCol1 = "";
+	SCP_string _currentContainerItemCol2 = "";
 };
 
 

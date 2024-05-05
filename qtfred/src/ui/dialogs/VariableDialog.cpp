@@ -372,7 +372,7 @@ void VariableDialog::onVariablesTableUpdated()
 			}
 
 			// best we can do is to set this to temp, whether conversion fails or not.
-			_currentContainerItemData = temp;
+			_currentContainerItemCol2 = temp;
 		}
 	}
 
@@ -497,8 +497,13 @@ void VariableDialog::onContainerContentsTableUpdated()
 
 	// Are they adding a new item?
 	if (row == ui->containerContentsTable->rowCount() - 1){
+	
+		bool newItemCreated = false;
+		SCP_string newString;
+
 		if (ui->containerContentsTable->item(row, 0)) {
-			SCP_string newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
+			newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
+			
 			if (!newString.empty() && newString != "Add Item ..."){
 				
 				if (_model->getContainerListOrMap(containerRow)) {
@@ -506,31 +511,94 @@ void VariableDialog::onContainerContentsTableUpdated()
 
 				} else {
 
-					_model->addMapItem(containerRow, newString);
+					_model->addMapItem(containerRow, newString, "");
 				}
 				
 				_currentContainer = newString;
 				applyModel();
+				return;
+			}
+		
+		} 
+		
+		if (!ui->containerContentsTable->item(row, 1)) {
+			// At this point there's nothing else we can do and something may be off, anyway.
+			applyModel();
+			return;
+		}
+
+		// if we got here, we know that the second cell is valid.
+		newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
+			
+		// But we can only create a new map item here.  Ignore if this container is a list.
+		if (!newString.empty() && newString.substr(0, 10) != "Add Item ..."){
+			if (!_model->getContainerListOrMap(containerRow)) {
+				auto ret = _model->addMapItem(containerRow, "", newString);								
+				_currentContainerItemCol1 = ret.first;
+				_currentContainerItemCol2 = ret.second;
 			}
 		}
-		else {
-			applyModel();
-		}
-
+		
+		// nothing else to determine at this point.
+		applyModel();
 		return;
 
-		// are they editing an existing container name?
+	// are they editing an existing container item column 1?
 	} else if (ui->containerContentsTable->item(row, 0)){
-		_currentContainer = ui->containersTable->item(row,0)->text().toStdString();
+		SCP_string newText = ui->containerContentsTable->item(row, 0)->text().toStdString();
+			
+		if (_model->getContainerListOrMap(containerRow)){
 
-		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0)->text().toStdString())){
-			applyModel();
-		}	
+			if (newText != _currentContainerItemCol1){
+
+				// Trim the string if necessary
+				if (!_model->getContainerValueType(containerRow)){
+					newText = _model->trimIntegerString(newText);		
+				}
+				
+				// Finally change the list item
+				_currentContainerItemCol1 = _model->changeListItem(containerRow, row, newText);
+				return;
+			} 	
+				
+		} else if (newText != _currentContainerItemCol1){
+			
+			if (!_model->getContainerKeyType(containerRow)){
+				
+				if (!_model->getContainerKeyType(containerRow)){
+					newText = _model->trimIntegerString(newText);	
+				}
+				
+				// TODO!  Write a key change function so you can put something here.
+
+			}
+
+			return;
+		}
 	}
 
+	// if we're here, nothing has changed so far.  So let's attempt column 2
+	if (ui->containerContentsTable->item(row, 1) && !_model->getContainerListOrMap(containerRow)){
+		
+		SCP_string newText = ui->containerContentsTable->item(row, 1)->text().toStdString();
+		
+		if(newText != _currentContainerItemCol2){
+			
+			if (_model->getContainerValueType(containerRow)){
+				_currentContainerItemCol2 = _model->changeMapItemStringValue(containerRow, row, newText);
+			
+			} else {	
+				try{
+					_currentContainerItemCol2 = _model->changeMapItemNumberValue(containerRow, row, std::stoi(_model->trimIntegerString(newText)));
+				}
+				catch(...) {
+					_currentContainerItemCol2 = _model->changeMapItemNumberValue(containerRow, row, 0);					
+				}				
+			}
 
-
-
+			applyModel();
+		}
+	}
 } 
 
 void VariableDialog::onContainerContentsSelectionChanged() 
@@ -559,9 +627,9 @@ void VariableDialog::onContainerContentsSelectionChanged()
 	item = ui->containerContentsTable->item(row, 1);	
 	SCP_string newContainerDataText = (item) ? item->text().toStdString() : "";
 
-	if (newContainerItemName != _currentContainerItem || _currentContainerItemData != newContainerDataText){
-		_currentContainerItem = newContainerItemName;
-		_currentContainerItemData = newContainerDataText;
+	if (newContainerItemName != _currentContainerItemCol1 || _currentContainerItemCol2 != newContainerDataText){
+		_currentContainerItemCol1 = newContainerItemName;
+		_currentContainerItemCol2 = newContainerDataText;
 		applyModel();
 	}
 }
@@ -1336,7 +1404,7 @@ void VariableDialog::updateContainerOptions()
 
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-		ui->containerContentsTable->setRowCount(0);
+
 
 		// if there's no container, there's no container items
 		ui->addContainerItemButton->setEnabled(false);
@@ -1344,9 +1412,11 @@ void VariableDialog::updateContainerOptions()
 		ui->deleteContainerItemButton->setEnabled(false);
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-		ui->containerContentsTable->setRowCount(0);
 		ui->shiftItemDownButton->setEnabled(false);
 		ui->shiftItemUpButton->setEnabled(false);
+		ui->containerContentsTable->clearSelection();
+		ui->containerContentsTable->setRowCount(0);
+
 
 	} else {
 		auto items = ui->containersTable->selectedItems();
@@ -1479,7 +1549,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				}
 
 				// set selected and enable shifting functions
-				if (strings[x] == _currentContainerItem){
+				if (strings[x] == _currentContainerItemCol1){
 					ui->containerContentsTable->clearSelection();
 					ui->containerContentsTable->item(x,0)->setSelected(true);
 
@@ -1704,7 +1774,7 @@ void VariableDialog::preReject()
 
 void VariableDialog::checkValidModel()
 {
-	if (_model->checkValidModel()) {
+	if (ui->OkCancelButtons->button(QDialogButtonBox::Ok)->hasFocus() && _model->checkValidModel()){		
 		accept();
 	}
 }
