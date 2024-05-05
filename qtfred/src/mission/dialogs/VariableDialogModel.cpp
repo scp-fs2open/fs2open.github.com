@@ -472,11 +472,6 @@ SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName
         return "";
     }
 
-    // no name means no variable
-    if (newName == "") {
-        variable->deleted = true;
-    }
-
     // Truncate name if needed
     if (newName.length() >= TOKEN_LENGTH){
         newName = newName.substr(0, TOKEN_LENGTH - 1);
@@ -546,7 +541,7 @@ bool VariableDialogModel::removeVariable(int index, bool toDelete)
     }
 
     if (toDelete){
-        if (_deleteWarningCount < 3){
+        if (_deleteWarningCount < 2){
 
             SCP_string question = "Are you sure you want to delete this variable? Any references to it will have to be changed.";
             SCP_string info = "";
@@ -1055,10 +1050,6 @@ SCP_string VariableDialogModel::copyContainer(int index)
 
 SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
 {
-    if (newName == "") {
-        return "";
-    }
- 
     auto container = lookupContainer(index);
 
     // nothing to change, or invalid entry
@@ -1190,7 +1181,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
     }
 
     ret.first = newKey;
-
+	container->keys.push_back(newKey);
 
     if (container->string){
         ret.second = "";
@@ -2016,6 +2007,7 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
 			}
 		}
 		
+		// emergency return value
 		return "0";
     }
 }

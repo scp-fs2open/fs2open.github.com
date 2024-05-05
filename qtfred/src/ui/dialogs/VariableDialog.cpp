@@ -311,27 +311,20 @@ void VariableDialog::onVariablesTableUpdated()
 
 	// so if the user just removed the name, mark it as deleted
 	if (itemText.empty() && !_currentVariable.empty()) {
-		if (!_model->removeVariable(item->row(), true) ) {
-			// marking a variable as deleted failed, resync UI
-			apply = true;
-		} else {
-			_model->changeVariableName(item->row(), itemText);
-			// now that we know that the variable was deleted 
-			applyModel();
-		}
+
+		_model->removeVariable(item->row(), true);
+		// these things need to be done whether the deletion failed or not.
+		_currentVariable = _model->changeVariableName(item->row(), itemText);
+		apply = true;
 
 	// if the user is restoring a deleted variable by inserting a name....
 	} else if (!itemText.empty() && _currentVariable.empty()){
 
-		if (!_model->removeVariable(item->row(), true) ) {
-			// marking a variable as deleted failed, resync UI
-			apply = true;
-		} else {
-			_model->changeVariableName(item->row(), itemText);
-			// now that we know that the variable was deleted 
-			applyModel();
-		}
-
+		_model->removeVariable(item->row(), false);
+		// these things need to be done whether the restoration failed or not.
+		_currentVariable =_model->changeVariableName(item->row(), itemText);
+		apply = true;
+		
 	} else if (itemText != _currentVariable){
 
 		auto ret = _model->changeVariableName(item->row(), itemText);
@@ -464,11 +457,18 @@ void VariableDialog::onContainersTableUpdated()
 
 	// are they editing an existing container name?
 	} else if (ui->containersTable->item(row, 0)){
-		_currentContainer = ui->containersTable->item(row,0)->text().toStdString();
-		
-		if (_currentContainer != _model->changeContainerName(row, ui->containersTable->item(row,0)->text().toStdString())){
-			applyModel();
-		}	
+		SCP_string newName = ui->containersTable->item(row,0)->text().toStdString();
+
+		// Restoring a deleted container?
+		if (_currentContainer.empty()){
+			_model->removeContainer(row, false);
+		// Removing a container?
+		} else if (newName.empty()) {
+			_model->removeContainer(row, true);		
+		}
+
+		_currentContainer = _model->changeContainerName(row, newName);
+		applyModel();
 	}
 }
 
@@ -1262,7 +1262,7 @@ void VariableDialog::applyModel()
 		}
 
 		// check if this is the current variable.
-		if (selectedRow < 0 && !_currentContainer.empty() && containers[x][0] == _currentContainer){
+		if (selectedRow < 0 && containers[x][0] == _currentContainer){
 			selectedRow = x;
 		}
 
@@ -1284,6 +1284,14 @@ void VariableDialog::applyModel()
 	// do we need to switch the delete button to a restore button?
 	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "Deleted") {
 		ui->deleteContainerButton->setText("Restore");
+		
+		// We can't restore empty container names.
+		if (ui->containersTable->item(selectedRow, 0) && ui->containersTable->item(selectedRow, 0)->text().toStdString().empty()){
+			ui->deleteContainerButton->setEnabled(false);
+		} else {
+			ui->deleteContainerButton->setEnabled(true);		
+		}
+
 	} else {
 		ui->deleteContainerButton->setText("Delete");
 	}
@@ -1373,6 +1381,14 @@ void VariableDialog::updateVariableOptions()
 	// do we need to switch the delete button to a restore button?
 	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "Deleted"){
 		ui->deleteVariableButton->setText("Restore");
+
+		// We can't restore empty variable names.
+		if (ui->variablesTable->item(row, 0) && ui->variablesTable->item(row, 0)->text().toStdString().empty()){
+			ui->deleteVariableButton->setEnabled(false);
+		} else {
+			ui->deleteVariableButton->setEnabled(true);		
+		}
+
 	} else {
 		ui->deleteVariableButton->setText("Delete");
 	}
@@ -1551,14 +1567,16 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 		ui->swapKeysAndValuesButton->setEnabled(false);
-
+		
+		int x;
 
 		// with string contents
 		if (_model->getContainerValueType(row)){
-			auto strings = _model->getStringValues(row);
+			auto& strings = _model->getStringValues(row);
+			int containerItemsRow = -1;
 			ui->containerContentsTable->setRowCount(static_cast<int>(strings.size()) + 1);
 
-			int x;
+			
 			for (x = 0; x < static_cast<int>(strings.size()); ++x){
 				if (ui->containerContentsTable->item(x, 0)){
 					ui->containerContentsTable->item(x, 0)->setText(strings[x].c_str());
@@ -1568,7 +1586,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				}
 
 				// set selected and enable shifting functions
-				if (strings[x] == _currentContainerItemCol1){
+				if (containerItemsRow < 0 && strings[x] == _currentContainerItemCol1){
 					ui->containerContentsTable->clearSelection();
 					ui->containerContentsTable->item(x,0)->setSelected(true);
 
@@ -1593,28 +1611,11 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				}
 			}
 
-			if (ui->containerContentsTable->item(x, 0)){
-				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
-			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
-				ui->containerContentsTable->setItem(x, 0, item);
-			}
-
-			if (ui->containerContentsTable->item(x, 1)){
-				ui->containerContentsTable->item(x, 1)->setText("");
-				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
-			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("");
-				item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-				ui->containerContentsTable->setItem(x, 1, item);
-			}
-		
 		// list with number contents
 		} else {
-			auto numbers = _model->getNumberValues(row);
+			auto& numbers = _model->getNumberValues(row);
 			ui->containerContentsTable->setRowCount(static_cast<int>(numbers.size()) + 1);
 
-			int x;
 			for (x = 0; x < static_cast<int>(numbers.size()); ++x){
 				if (ui->containerContentsTable->item(x, 0)){
 					ui->containerContentsTable->item(x, 0)->setText(std::to_string(numbers[x]).c_str());
@@ -1633,23 +1634,24 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->setItem(x, 1, item);
 				}
 			}
+		}
 
-			if (ui->containerContentsTable->item(x, 0)){
-				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
-			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
-				ui->containerContentsTable->setItem(x, 0, item);
-			}
+		if (ui->containerContentsTable->item(x, 0)){
+			ui->containerContentsTable->item(x, 0)->setText("Add item ...");
+			ui->containerContentsTable->item(x, 0)->setFlags(ui->containerContentsTable->item(x, 0)->flags() | Qt::ItemIsEditable);
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
+			item->setFlags(item->flags() | Qt::ItemIsEditable);
+			ui->containerContentsTable->setItem(x, 0, item);
+		}
 
-			if (ui->containerContentsTable->item(x, 1)){
-				ui->containerContentsTable->item(x, 1)->setText("");
-				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
-			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("");
-				item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-				ui->containerContentsTable->setItem(x, 1, item);
-			}
-
+		if (ui->containerContentsTable->item(x, 1)){
+			ui->containerContentsTable->item(x, 1)->setText("");
+			ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() & ~Qt::ItemIsEditable);
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem("");
+			item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			ui->containerContentsTable->setItem(x, 1, item);
 		}
 
 	// or it could be a map container
@@ -1667,7 +1669,8 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 		// keys I didn't bother to make separate.  Should have done the same with values.
 		auto& keys = _model->getMapKeys(row);
-
+		
+		int x;
 		// string valued map.
 		if (_model->getContainerValueType(row)){
 			auto& strings = _model->getStringValues(row);
@@ -1675,7 +1678,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 			// use the map as the size because map containers are only as good as their keys anyway.
 			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
 
-			int x;
 			for (x = 0; x < static_cast<int>(keys.size()); ++x){
 				if (ui->containerContentsTable->item(x, 0)){
 					ui->containerContentsTable->item(x, 0)->setText(keys[x].c_str());
@@ -1701,7 +1703,6 @@ void VariableDialog::updateContainerDataOptions(bool list)
 			auto& numbers = _model->getNumberValues(row);
 			ui->containerContentsTable->setRowCount(static_cast<int>(keys.size()) + 1);
 
-			int x;
 			for (x = 0; x < static_cast<int>(keys.size()); ++x){
 				if (ui->containerContentsTable->item(x, 0)){
 					ui->containerContentsTable->item(x, 0)->setText(keys[x].c_str());
@@ -1721,22 +1722,22 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					}				
 				}
 			}
+		}
 
-			if (ui->containerContentsTable->item(x, 0)){
-				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
-			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
-				ui->containerContentsTable->setItem(x, 0, item);
-			}
+		if (ui->containerContentsTable->item(x, 0)){
+			ui->containerContentsTable->item(x, 0)->setText("Add item ...");
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
+			ui->containerContentsTable->setItem(x, 0, item);
+		}
 
-			if (ui->containerContentsTable->item(x, 1)){
-				ui->containerContentsTable->item(x, 1)->setText("Add item ...");
-				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
-			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
-				item->setFlags(item->flags() | Qt::ItemIsEditable);
-				ui->containerContentsTable->setItem(x, 1, item);
-			}
+		if (ui->containerContentsTable->item(x, 1)){
+			ui->containerContentsTable->item(x, 1)->setText("Add item ...");
+			ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
+		} else {
+			QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
+			item->setFlags(item->flags() | Qt::ItemIsEditable);
+			ui->containerContentsTable->setItem(x, 1, item);
 		}
 	}
 }
