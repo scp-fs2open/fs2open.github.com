@@ -1991,15 +1991,10 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
         ret = "0";
     }
 
-	return clampIntegerString(ret);
-}
-
-// Helper function for trimIntegerString that makes sure we don't try to save a value that overflows or underflows
-// I don't recommend using outside of there, as there can be data loss if the input string is not cleaned first.
-SCP_string VariableDialogModel::clampIntegerString(SCP_string source)
-{
+	// here we deal with overflow values.
     try {
-        long test = std::stol(source);
+		// some OS's will deal with this properly.
+        long test = std::stol(ret);
 
         if (test > INT_MAX) {
             return "2147483647";
@@ -2007,13 +2002,24 @@ SCP_string VariableDialogModel::clampIntegerString(SCP_string source)
             return "-2147483648";
         }
 
-        return source;
+        return ret;
     }
-    // most truly ludicrous cases should be caught before here in the calling function, so this should not cause much if any data loss
+    // Others will not, sadly.
+	// So down here, we can still return the right overflow values if stol derped out.  Since we've already cleaned out non-digits, 
+	// checking for length *really should* allow us to know if something overflowed
     catch (...){
-        return "0";
+		if (ret.size() > 9){
+			if (ret[0] == '-'){
+				return "-2147483648";
+			} else {
+				return "2147483647";
+			}
+		}
+		
+		return "0";
     }
 }
+
 
 } // dialogs
 } // fred
