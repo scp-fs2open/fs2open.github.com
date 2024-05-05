@@ -573,6 +573,32 @@
           <bool>false</bool>
          </attribute>
         </widget>
+        <widget class="QLabel" name="label">
+         <property name="geometry">
+          <rect>
+           <x>550</x>
+           <y>140</y>
+           <width>81</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Type Format</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+        <widget class="QComboBox" name="selectFormatCombobox">
+         <property name="geometry">
+          <rect>
+           <x>540</x>
+           <y>160</y>
+           <width>101</width>
+           <height>24</height>
+          </rect>
+         </property>
+        </widget>
        </widget>
       </widget>
      </item>

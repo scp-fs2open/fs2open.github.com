@@ -208,6 +208,11 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&VariableDialog::onSwapKeysAndValuesButtonPressed);
 
+	connect(ui->selectFormatCombobox,
+		QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this,
+		&VariableDialog::onSelectFormatComboboxSelectionChanged);
+
 	ui->variablesTable->setColumnCount(3);
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
@@ -254,11 +259,17 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->containersTable->clearSelection();
 	ui->containerContentsTable->clearSelection();
 
+	ui->selectFormatCombobox->addItem("Verbose");
+	ui->selectFormatCombobox->addItem("Simplified");
+	ui->selectFormatCombobox->addItem("Type and ()");
+	ui->selectFormatCombobox->addItem("Type and <>");
+	ui->selectFormatCombobox->addItem("Only ()");
+	ui->selectFormatCombobox->addItem("Only <>");
+	ui->selectFormatCombobox->addItem("No extra Marks");
+
 	applyModel();
 }
 
-// TODO! make sure that when a variable is added that the whole model is reloaded.  
-// TODO! Fix me.  This function does not work as intended because it must process both varaible and contents, not just one.
 void VariableDialog::onVariablesTableUpdated() 
 {
 	if (_applyingModel){
@@ -504,7 +515,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 		if (ui->containerContentsTable->item(row, 0)) {
 			newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
 			
-			if (!newString.empty() && newString != "Add Item ..."){
+			if (!newString.empty() && newString != "Add item ..."){
 				
 				if (_model->getContainerListOrMap(containerRow)) {
 					_model->addListItem(containerRow, newString);
@@ -531,7 +542,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 		newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
 			
 		// But we can only create a new map item here.  Ignore if this container is a list.
-		if (!newString.empty() && newString.substr(0, 10) != "Add Item ..."){
+		if (!newString.empty() && newString.substr(0, 10) != "Add item ..."){
 			if (!_model->getContainerListOrMap(containerRow)) {
 				auto ret = _model->addMapItem(containerRow, "", newString);								
 				_currentContainerItemCol1 = ret.first;
@@ -1139,6 +1150,12 @@ void VariableDialog::onSwapKeysAndValuesButtonPressed()
 	applyModel();
 }
 
+void VariableDialog::onSelectFormatComboboxSelectionChanged()
+{
+	_model->setTextMode(ui->selectFormatCombobox->currentIndex());
+	applyModel();
+}
+
 VariableDialog::~VariableDialog(){}; // NOLINT
 
 
@@ -1665,13 +1682,15 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->setItem(x, 0, item);
 				}
 
-				if (ui->containerContentsTable->item(x, 1)){
-					ui->containerContentsTable->item(x, 1)->setText(strings[x].c_str());
-					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
-				} else {
-					QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
-					item->setFlags(item->flags() | Qt::ItemIsEditable);
-					ui->containerContentsTable->setItem(x, 1, item);
+				if (x < static_cast<int>(strings.size())){
+					if (ui->containerContentsTable->item(x, 1)){
+						ui->containerContentsTable->item(x, 1)->setText(strings[x].c_str());
+						ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
+					} else {
+						QTableWidgetItem* item = new QTableWidgetItem(strings[x].c_str());
+						item->setFlags(item->flags() | Qt::ItemIsEditable);
+						ui->containerContentsTable->setItem(x, 1, item);
+					}				
 				}
 			}
 
@@ -1689,28 +1708,30 @@ void VariableDialog::updateContainerDataOptions(bool list)
 					ui->containerContentsTable->setItem(x, 0, item);
 				}
 
-				if (ui->containerContentsTable->item(x, 1)){
-					ui->containerContentsTable->item(x, 1)->setText(std::to_string(numbers[x]).c_str());
-					ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
-				} else {
-					QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
-					item->setFlags(item->flags() | Qt::ItemIsEditable);
-					ui->containerContentsTable->setItem(x, 1, item);
+				if (x < static_cast<int>(numbers.size())){
+					if (ui->containerContentsTable->item(x, 1)){
+						ui->containerContentsTable->item(x, 1)->setText(std::to_string(numbers[x]).c_str());
+						ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
+					} else {
+						QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
+						item->setFlags(item->flags() | Qt::ItemIsEditable);
+						ui->containerContentsTable->setItem(x, 1, item);
+					}				
 				}
 			}
 
 			if (ui->containerContentsTable->item(x, 0)){
-				ui->containerContentsTable->item(x, 0)->setText("Add key ...");
+				ui->containerContentsTable->item(x, 0)->setText("Add item ...");
 			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("Add key ...");
+				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
 				ui->containerContentsTable->setItem(x, 0, item);
 			}
 
 			if (ui->containerContentsTable->item(x, 1)){
-				ui->containerContentsTable->item(x, 1)->setText("Add Value ...");
+				ui->containerContentsTable->item(x, 1)->setText("Add item ...");
 				ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 			} else {
-				QTableWidgetItem* item = new QTableWidgetItem("Add Value ...");
+				QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
 				item->setFlags(item->flags() | Qt::ItemIsEditable);
 				ui->containerContentsTable->setItem(x, 1, item);
 			}
@@ -1752,7 +1773,7 @@ int VariableDialog::getCurrentContainerItemRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item && item->column() == 0 && item->text().toStdString() != "Add Item ...") {
+		if (item && item->column() == 0 && item->text().toStdString() != "Add item ...") {
 			return item->row();
 		}
 	}

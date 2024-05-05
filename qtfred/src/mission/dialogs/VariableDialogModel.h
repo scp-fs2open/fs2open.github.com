@@ -125,6 +125,8 @@ public:
 
 	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
 	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();
+	void setTextMode(int modeIn);
+
 	bool checkValidModel();
 
 	bool apply() override;
@@ -137,8 +139,6 @@ public:
 private:
 	SCP_vector<variableInfo> _variableItems;
 	SCP_vector<containerInfo> _containerItems;
-	int _listTextMode = 0;
-	int _mapTextMode = 0;
 
 	int _deleteWarningCount;
 

@@ -72,6 +72,7 @@ class VariableDialog : public QDialog {
 	void onShiftItemUpButtonPressed();
 	void onShiftItemDownButtonPressed();
 	void onSwapKeysAndValuesButtonPressed();
+	void onSelectFormatComboboxSelectionChanged();
 
 	int getCurrentVariableRow();
 	int getCurrentContainerRow();

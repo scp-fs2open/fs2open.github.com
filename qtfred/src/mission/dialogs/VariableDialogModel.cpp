@@ -7,7 +7,7 @@
 namespace fso {
 namespace fred {
 namespace dialogs {
-
+	static int _textMode = 0;
 
 VariableDialogModel::VariableDialogModel(QObject* parent, EditorViewport* viewport) 
 		: AbstractDialogModel(parent, viewport)
@@ -1797,7 +1797,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     SCP_string mapMidScript;
     SCP_string mapPostscript;
 
-    switch (_listTextMode) {
+    switch (_textMode) {
         case 1: 
             listPrefix = "";
             listPostscript = " List";
@@ -1831,13 +1831,13 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
         default:
             // this takes care of weird cases.  The logic should be simple enough to not have bugs, but just in case, switch back to default.
-            _listTextMode = 0;
+            _textMode = 0;
             listPrefix = "List of ";
             listPostscript = "s";
             break;
     }
 
-    switch (_mapTextMode) {
+    switch (_textMode) {
         case 1:
             mapPrefix = "";
             mapMidScript = "-keyed Map of ";
@@ -1876,7 +1876,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
             break;
 
         default:
-            _mapTextMode = 0;
+            _textMode = 0;
             mapPrefix = "Map with ";
             mapMidScript = " Keys and ";
             mapPostscript = " Values";
@@ -1935,6 +1935,8 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
     return outStrings;   
 }
+
+void VariableDialogModel::setTextMode(int modeIn) { _textMode = modeIn;}
 
 // This function is for cleaning up input strings that should be numbers.  We could use std::stoi,
 // but this helps to not erase the entire string if user ends up mistyping just one digit.
