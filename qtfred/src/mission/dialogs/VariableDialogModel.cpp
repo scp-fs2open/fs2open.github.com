@@ -1466,8 +1466,8 @@ void VariableDialogModel::shiftListItemUp(int containerIndex, int itemIndex)
     }
 
     // handle itemIndex out of bounds
-    if ( (container->string && itemIndex <= static_cast<int>(container->stringValues.size())) 
-    ||   (!container->string && itemIndex <= static_cast<int>(container->numberValues.size())) ){
+    if ( (container->string && itemIndex >= static_cast<int>(container->stringValues.size())) 
+    ||   (!container->string && itemIndex >= static_cast<int>(container->numberValues.size())) ){
         return;
     }
 
@@ -1490,8 +1490,8 @@ void VariableDialogModel::shiftListItemDown(int containerIndex, int itemIndex)
     }
 
     // handle itemIndex out of bounds.  -1 is necessary. since the bottom item is cannot be moved down.
-    if ( (container->string && itemIndex <= static_cast<int>(container->stringValues.size()) - 1) 
-    ||   (!container->string && itemIndex <= static_cast<int>(container->numberValues.size()) - 1) ){
+    if ( (container->string && itemIndex >= static_cast<int>(container->stringValues.size()) - 1) 
+    ||   (!container->string && itemIndex >= static_cast<int>(container->numberValues.size()) - 1) ){
         return;
     }
 

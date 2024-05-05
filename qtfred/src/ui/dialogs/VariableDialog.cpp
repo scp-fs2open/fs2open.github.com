@@ -315,8 +315,9 @@ void VariableDialog::onVariablesTableUpdated()
 			// marking a variable as deleted failed, resync UI
 			apply = true;
 		} else {
+			_model->changeVariableName(item->row(), itemText);
 			// now that we know that the variable was deleted 
-			updateVariableOptions();
+			applyModel();
 		}
 
 	// if the user is restoring a deleted variable by inserting a name....
@@ -326,8 +327,9 @@ void VariableDialog::onVariablesTableUpdated()
 			// marking a variable as deleted failed, resync UI
 			apply = true;
 		} else {
+			_model->changeVariableName(item->row(), itemText);
 			// now that we know that the variable was deleted 
-			updateVariableOptions();
+			applyModel();
 		}
 
 	} else if (itemText != _currentVariable){
@@ -1133,7 +1135,7 @@ void VariableDialog::onShiftItemDownButtonPressed()
 		return;
 	}
 
-	_model->shiftListItemUp(containerRow, itemRow);
+	_model->shiftListItemDown(containerRow, itemRow);
 	applyModel();
 }
 
