@@ -669,7 +669,8 @@ wing_flag_name Wing_flag_names[] = {
 	{ Wing_Flags::No_arrival_warp,					"no-arrival-warp" },
 	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
-	{ Wing_Flags::Same_departure_warp_when_docked,	"same-departure-warp-when-docked" }
+	{ Wing_Flags::Same_departure_warp_when_docked,	"same-departure-warp-when-docked" },
+	{ Wing_Flags::Waypoints_no_formation,	"waypoints-no-formation" }
 };
 
 wing_flag_description Wing_flag_descriptions[] = {
@@ -679,7 +680,8 @@ wing_flag_description Wing_flag_descriptions[] = {
 	{ Wing_Flags::No_arrival_warp,					"No ship in the wing will use a warp effect upon arrival."},
 	{ Wing_Flags::No_departure_warp,				"No ship in the wing will use a warp effect upon departure."},
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size."},
-	{ Wing_Flags::Same_departure_warp_when_docked,	"All ships in the wing will use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size."}
+	{ Wing_Flags::Same_departure_warp_when_docked,	"All ships in the wing will use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size."},
+	{ Wing_Flags::Waypoints_no_formation,		"Ships in the wing will not try to form up when running a waypoint together." },
 };
 
 extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
