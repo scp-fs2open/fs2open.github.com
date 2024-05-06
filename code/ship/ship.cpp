@@ -2840,6 +2840,40 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 	return find_or_add_warp_params(params);
 }
 
+bool lookup_ship_flag(Ship::Info_Flags& flag, const char* name, bool required, const char* info_type_name, ship_info* sip) {
+	// First, try a direct lookup.
+	for (size_t idx = 0; idx < Num_ship_flags; idx++) {
+		if (!stricmp(Ship_flags[idx].name, name)) {
+			if (Ship_flags[idx].in_use) {
+				flag = Ship_flags[idx].def;
+				return true;
+			} else {
+				Warning(LOCATION, "Use of '%s' flag for %s '%s' - this flag is no longer needed.", Ship_flags[idx].name, info_type_name, sip->name);
+				return false;
+			}
+		}
+	}
+	// Handle typos and legacy flag names.
+	if (!stricmp(name, "no-collide") || !stricmp(name, "no_collide")) {
+		flag = Ship::Info_Flags::No_collide;
+		return true;
+	} else if (!stricmp(name, "dont collide invisible")) {
+		flag = Ship::Info_Flags::Ship_class_dont_collide_invis;
+		return true;
+	} else if (!stricmp(name, "dont bank when turning")) {
+		flag = Ship::Info_Flags::Dont_bank_when_turning;
+		return true;
+	} else if (!stricmp(name, "dont clamp max velocity")) {
+		flag = Ship::Info_Flags::Dont_clamp_max_velocity;
+		return true;
+	} else if (required) {
+		Warning(LOCATION, "Bogus string in ship flags: %s\n", name);
+		return false;
+	} else {
+		return false;
+	}
+}
+
 /**
  * Puts values into a ship_info.
  */
@@ -4080,10 +4114,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			Warning(LOCATION,"Invalid armor name %s specified for shield in %s '%s'", buf, info_type_name, sip->name);
 	}
 
-	if (optional_string("$Flags:"))
-	{
-		SCP_vector<SCP_string> ship_strings;
-		stuff_string_list(ship_strings);
+	if (optional_string("$Flags:")) {
+		SCP_vector<SCP_string> flag_names;
+		stuff_string_list(flag_names);
 
 		int ship_type_index = -1;
 
@@ -4099,61 +4132,34 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->flags.set(Ship::Info_Flags::Has_display_name, has_display_name);
 		}
 
-		for (const auto &flag : ship_strings)
-		{
-			// get ship type from ship flags
-			const char *cur_flag = flag.c_str();
-			bool flag_found = false;
-
-			// look it up in the object types table
-			ship_type_index = ship_type_name_lookup(cur_flag);
-
-			// set ship class type
-			if (ship_type_index >= 0)
+		for (const auto &flag : flag_names) {
+			Ship::Info_Flags info_flag;
+			const char* flag_name = flag.c_str();
+			ship_type_index = ship_type_name_lookup(flag_name);
+			if (ship_type_index >= 0) {
 				sip->class_type = ship_type_index;
-
-			// check various ship flags
-			for (size_t idx = 0; idx < Num_ship_flags; idx++) {
-				if ( !stricmp(Ship_flags[idx].name, cur_flag) ) {
-					flag_found = true;
-
-					if (!Ship_flags[idx].in_use)
-						Warning(LOCATION, "Use of '%s' flag for %s '%s' - this flag is no longer needed.", Ship_flags[idx].name, info_type_name, sip->name);
-					else 
-						sip->flags.set(Ship_flags[idx].def);
-
-					break;
-				}
 			}
-
-			// catch typos or deprecations
-			if (!stricmp(cur_flag, "no-collide") || !stricmp(cur_flag, "no_collide")) {
-				flag_found = true;
-				sip->flags.set(Ship::Info_Flags::No_collide);
+			if (lookup_ship_flag(info_flag, flag_name, ship_type_index < 0, info_type_name, sip)) {
+				sip->flags.set(info_flag);
 			}
-			if (!stricmp(cur_flag, "dont collide invisible")) {
-				flag_found = true;
-				sip->flags.set(Ship::Info_Flags::Ship_class_dont_collide_invis);
-			}
-			if (!stricmp(cur_flag, "dont bank when turning")) {
-				flag_found = true;
-				sip->flags.set(Ship::Info_Flags::Dont_bank_when_turning);
-			}
-			if (!stricmp(cur_flag, "dont clamp max velocity")) {
-				flag_found = true;
-				sip->flags.set(Ship::Info_Flags::Dont_clamp_max_velocity);
-			}
-
-			if ( !flag_found && (ship_type_index < 0) )
-				Warning(LOCATION, "Bogus string in ship flags: %s\n", cur_flag);
 		}
 
-		// set original status of tech database flags - Goober5000
-		if (sip->flags[Info_Flags::In_tech_database])
-			sip->flags.set(Info_Flags::Default_in_tech_database);
-		if (sip->flags[Info_Flags::In_tech_database_m])
-			sip->flags.set(Info_Flags::Default_in_tech_database_m);
 	}
+
+	if (optional_string("$Remove Flags:")) {
+		SCP_vector<SCP_string> flag_names;
+		stuff_string_list(flag_names);
+		for (const auto &flag : flag_names) {
+			Ship::Info_Flags info_flag;
+			if (lookup_ship_flag(info_flag, flag.c_str(), true, info_type_name, sip)) {
+				sip->flags.remove(info_flag);
+			}
+		}
+  }
+
+  // Ensure we can properly reset the tech database to its original state
+	sip->flags.set(Info_Flags::Default_in_tech_database, sip->flags[Info_Flags::In_tech_database]);
+	sip->flags.set(Info_Flags::Default_in_tech_database_m, sip->flags[Info_Flags::In_tech_database_m]);
 
 	// Goober5000 - ensure number of banks checks out
 	if (sip->num_primary_banks > MAX_SHIP_PRIMARY_BANKS)
