@@ -3995,7 +3995,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (type2 == SEXP_ATOM_NUMBER || can_construe_as_integer(CTEXT(node)))
 				{
 					int num = atoi(CTEXT(node));
-					if (num < 0 || num >= Num_fireball_types)
+					if (!SCP_vector_inbounds(Fireball_info, num))
 					{
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
@@ -14234,7 +14234,7 @@ void sexp_explosion_effect(int n)
 		{
 			fireball_type = FIREBALL_EXPLOSION_LARGE2;
 		}
-		else if (num >= Num_fireball_types)
+		else if (!SCP_vector_inbounds(Fireball_info, num))
 		{
 			Warning(LOCATION, "explosion-effect fireball type is out of range; quitting the explosion...\n");
 			return;
@@ -14431,7 +14431,7 @@ void sexp_warp_effect(int n)
 		{
 			fireball_type = FIREBALL_KNOSSOS;
 		}
-		else if (num >= Num_fireball_types)
+		else if (!SCP_vector_inbounds(Fireball_info, num))
 		{
 			Warning(LOCATION, "warp-effect fireball type is out of range; quitting the warp...\n");
 			return;

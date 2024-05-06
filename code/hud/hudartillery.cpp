@@ -132,8 +132,8 @@ void parse_ssm(const char *filename)
 				{
 					int temp = atoi(unique_id);
 
-					if ((temp < 0) || (temp >= Num_fireball_types))
-						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s->name);
+					if (!SCP_vector_inbounds(Fireball_info, temp))
+						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, static_cast<int>(Fireball_info.size()) - 1, s->name);
 					else
 						s->fireball_type = temp;
 				}

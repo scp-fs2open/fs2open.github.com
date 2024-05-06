@@ -3064,13 +3064,16 @@ const char* get_lookup_type_name(int lookup_type)
 	return "Unknown lookup type, tell a coder!";
 }
 
-//	Stuffs an integer list.
-//	This is of the form ( i* )
-//	  where i is an integer.
-// For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
-size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
+// use a functor here so that we don't need to re-roll the parsing function for both variants of stuff_int_lists
+struct StuffIntListParser
 {
-	return stuff_token_list(ilp, max_ints, [&](int *buf)->bool {
+	int lookup_type;
+
+	StuffIntListParser(int _lookup_type)
+		: lookup_type(_lookup_type)
+	{}
+
+	bool operator()(int* buf) {
 		if (*Mp == '"') {
 			int num = 0;
 			bool valid_negative = false;
@@ -3123,7 +3126,25 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 		}
 
 		return true;
-	}, get_lookup_type_name(lookup_type));
+	}
+};
+
+//	Stuffs an integer list.
+//	This is of the form ( i* )
+//	  where i is an integer.
+// For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
+size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
+{
+	return stuff_token_list(ilp, max_ints, StuffIntListParser(lookup_type), get_lookup_type_name(lookup_type));
+}
+
+//	Stuffs an integer list.
+//	This is of the form ( i* )
+//	  where i is an integer.
+// For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
+void stuff_int_list(SCP_vector<int> &ilp, int lookup_type)
+{
+	stuff_token_list(ilp, StuffIntListParser(lookup_type), get_lookup_type_name(lookup_type));
 }
 
 // Karajorma/Goober5000 - Stuffs a loadout list by parsing a list of ship or weapon choices.

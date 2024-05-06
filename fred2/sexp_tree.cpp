@@ -7656,9 +7656,9 @@ sexp_list_item *sexp_tree::get_listing_opf_fireball()
 {
 	sexp_list_item head;
 
-	for (int i = 0; i < Num_fireball_types; ++i)
+	for (const auto &fi: Fireball_info)
 	{
-		char *unique_id = Fireball_info[i].unique_id;
+		auto unique_id = fi.unique_id;
 
 		if (strlen(unique_id) > 0)
 			head.add_data(unique_id);

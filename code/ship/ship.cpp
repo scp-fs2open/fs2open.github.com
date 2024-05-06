@@ -3778,10 +3778,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	parse_game_sound("$Shockwave Sound:", &sci->blast_sound_id);
 
 	if(optional_string("$Explosion Animations:")){
-		int temp[MAX_FIREBALL_TYPES];
-		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
-		sip->explosion_bitmap_anims.clear();
-		sip->explosion_bitmap_anims.insert(sip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
+		stuff_fireball_index_list(sip->explosion_bitmap_anims, sci->name);
 	}
 
 	if (optional_string("$Weapon Model Draw Distance:")) {
@@ -5810,10 +5807,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 
 	if(optional_string("$Explosion Animations:"))
 	{
-		int temp[MAX_FIREBALL_TYPES];
-		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
-		stp->explosion_bitmap_anims.clear();
-		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
+		stuff_fireball_index_list(stp->explosion_bitmap_anims, stp->name);
 	}
 
 	auto skip_str = "$Skip Death Roll Percent Chance:";
@@ -18144,7 +18138,8 @@ void ship_page_in()
 	int num_ship_types_used = 0;
 	int test_id __UNUSED = -1;
 
-	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
+	for (auto& fi : Fireball_info)
+		fi.fireball_used = false;
 
 	i = 0;
 	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); i++, ++sip) {
@@ -18258,15 +18253,13 @@ void ship_page_in()
 
 		// Page in the shockwave stuff. -C
 		shockwave_create_info_load(&sip->shockwave);
-		if(!sip->explosion_bitmap_anims.empty()) {
-			int num_fireballs = (int)sip->explosion_bitmap_anims.size();
-			for(j = 0; j < num_fireballs; j++){
-				fireball_used[sip->explosion_bitmap_anims[j]] = 1;
+		if (!sip->explosion_bitmap_anims.empty()) {
+			for (int explosion_bitmap_anim: sip->explosion_bitmap_anims) {
+				Fireball_info[explosion_bitmap_anim].fireball_used = true;
 			}
-		} else if(sip->class_type >= 0 && !Ship_types[sip->class_type].explosion_bitmap_anims.empty()) { 
-			int num_fireballs = (int)Ship_types[sip->class_type].explosion_bitmap_anims.size();
-			for(j = 0; j < num_fireballs; j++){
-				fireball_used[Ship_types[sip->class_type].explosion_bitmap_anims[j]] = 1;
+		} else if (sip->class_type >= 0 && !Ship_types[sip->class_type].explosion_bitmap_anims.empty()) {
+			for (int explosion_bitmap_anim: Ship_types[sip->class_type].explosion_bitmap_anims) {
+				Fireball_info[explosion_bitmap_anim].fireball_used = true;
 			}
 		}
 	}
