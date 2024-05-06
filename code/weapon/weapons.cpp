@@ -1250,6 +1250,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Unrecognized laser radius curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 	}
 
+	float mpsbuffer;
+	if (parse_optional_float_into("@Min Pixel Size:", &mpsbuffer))
+		wip->min_pixel_size = mpsbuffer;
+	else
+		wip->min_pixel_size = Min_pixel_size_laser;
+
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
@@ -8814,8 +8820,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
-				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp,
+					wip->laser_head_radius * radius_mult,
+					wip->min_pixel_size);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos,
+					wip->laser_tail_radius * radius_mult,
+					wip->min_pixel_size);
 
 				int alpha = static_cast<int>(alphaf * 255.0f);
 
@@ -8901,10 +8911,16 @@ void weapon_render(object* obj, model_draw_list *scene)
 						alphaf *= nebalpha;
 				}
 
+
+
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
-				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2,
+					wip->laser_head_radius * radius_mult,
+					wip->min_pixel_size);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp,
+					wip->laser_tail_radius * radius_mult,
+					wip->min_pixel_size);
 
 				int r = static_cast<int>(static_cast<float>(c.red) * alphaf);
 				int g = static_cast<int>(static_cast<float>(c.green) * alphaf);
