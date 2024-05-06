@@ -2844,43 +2844,39 @@ int hud_get_dock_time( object *docker_objp )
 /**
  * @brief Locate the closest support ship which is trying to dock with player
  * 
- * @param objnum Object number of player
+ * @param objp Object of player
  * @return Number of support ship, -1 if there is no support ship currently trying to dock
  */
-int hud_support_find_closest( int objnum )
+int hud_support_find_closest( object *objp )
 {
-	ai_info		*aip;
-	object		*objp;
-	int i;
-
-	objp = &Objects[objnum];
+	// invalid if player is dead or a ghost
+	if (objp->flags[Object::Object_Flags::Should_be_dead] || objp->type != OBJ_SHIP)
+		return -1;
 
 	for (auto sop: list_range(&Ship_obj_list)) {
 		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
-		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
-			int pship_index, sindex;
+		auto shipp = &Ships[Objects[sop->objnum].instance];
+		if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support] ) {
 
 			// make sure support ship is not dying
-            auto shipp = &Ships[Objects[sop->objnum].instance];
-            
 			if ( !(shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Exploded]) ) {
-
-				Assert( objp->type == OBJ_SHIP );
-				aip = &Ai_info[Ships[Objects[sop->objnum].instance].ai_index];
-				pship_index = objp->instance;
+				auto aip = &Ai_info[shipp->ai_index];
 
 				// we must check all goals for this support ship -- not just the first one
-				for ( i = 0; i < MAX_AI_GOALS; i++ ) {
+				for ( int i = 0; i < MAX_AI_GOALS; i++ ) {
 
 					// we can use == in the next statement (and should) since a ship will only ever be
 					// following one order at a time.
 					if ( aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR ) {
 						Assert( aip->goals[i].target_name );
-						sindex = ship_name_lookup( aip->goals[i].target_name );
-						if ( sindex == pship_index )
-							return sop->objnum;
+
+						auto entry = ship_registry_get( aip->goals[i].target_name );
+						if (entry && entry->status == ShipStatus::PRESENT) {
+							if ( entry->shipnum == objp->instance )
+								return sop->objnum;
+						}
 					}
 				}
 			}
@@ -2902,7 +2898,7 @@ void hud_support_view_update()
 
 	// If we haven't determined yet who the rearm ship is, try to!
 	if (Hud_support_objnum == -1) {
-		Hud_support_objnum = hud_support_find_closest( OBJ_INDEX(Player_obj) );
+		Hud_support_objnum = hud_support_find_closest( Player_obj );
 		if ( Hud_support_objnum >= 0 ) {
 			Hud_support_obj_sig = Objects[Hud_support_objnum].signature;
 			Hud_support_target_sig = Player_obj->signature;
