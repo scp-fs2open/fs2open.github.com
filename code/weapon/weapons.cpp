@@ -1250,6 +1250,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Unrecognized laser radius curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 	}
 
+	if (optional_string("@Laser Glow Length Scale:")) {
+		stuff_float(&wip->laser_glow_length_scale);
+	}
+
+	if (optional_string("@Laser Glow Head Scale:")) {
+		stuff_float(&wip->laser_glow_head_scale);
+	}
+
+	if (optional_string("@Laser Glow Tail Scale:")) {
+		stuff_float(&wip->laser_glow_tail_scale);
+	}
+
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
@@ -4688,9 +4700,6 @@ void weapon_level_init()
 
 MONITOR( NumWeaponsRend )
 
-const float weapon_glow_scale_f = 2.3f;
-const float weapon_glow_scale_r = 2.3f;
-const float weapon_glow_scale_l = 1.5f;
 const float weapon_glow_alpha = 0.85f;
 
 void weapon_delete(object *obj)
@@ -8847,8 +8856,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 				//  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
 				vec3d headp2, tailp;
 
-				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, laser_length * weapon_glow_scale_l);
-				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, laser_length * (1 -  weapon_glow_scale_l) );
+				float glow_scale_l_modified = wip->laser_glow_length_scale / 2.f + 0.5f;
+
+				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, laser_length * glow_scale_l_modified);
+				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, laser_length * (1 - glow_scale_l_modified));
 
 				framenum = 0;
 
@@ -8914,8 +8925,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
 					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
-						scaled_head_radius * weapon_glow_scale_f,
-						scaled_tail_radius * weapon_glow_scale_r,
+						scaled_head_radius * wip->laser_glow_head_scale,
+						scaled_tail_radius * wip->laser_glow_tail_scale,
 						r, g, b);
 					r = static_cast<int>(static_cast<float>(c.red) * alphaf * main_bitmap_alpha_mult);
 					g = static_cast<int>(static_cast<float>(c.green) * alphaf * main_bitmap_alpha_mult);
@@ -8925,9 +8936,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 				batching_add_laser(
 					wip->laser_glow_bitmap.first_frame + framenum,
 					&headp2,
-					scaled_head_radius * weapon_glow_scale_f,
+					scaled_head_radius * wip->laser_glow_head_scale,
 					&tailp,
-					scaled_tail_radius * weapon_glow_scale_r,
+					scaled_tail_radius * wip->laser_glow_tail_scale,
 					r, g, b);
 			}
 
@@ -9125,6 +9136,9 @@ void weapon_info::reset()
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
+	this->laser_glow_length_scale = 2.0f;
+	this->laser_glow_head_scale = 2.3f;
+	this->laser_glow_tail_scale = 2.3f;
 	this->laser_radius_curve_idx = -1;
 	this->laser_alpha_curve_idx = -1;
 
