@@ -628,94 +628,100 @@ int weapon_info_get_index(const weapon_info *wip)
 }
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp)
-{
-    //Make sure we HAVE flags :p
-    if (!optional_string("$Flags:"))
-        return;
+void parse_wi_flags(weapon_info *weaponp) {
+	bool set_nopierce = false;
+	if (optional_string("$Flags:")) {
+		// have to do this slightly out of order in order to handle spawn properly
+		// skip OVER flags, check for +override and reset num_spawn_weapons_defined
+		// otherwise if done afterward, new and old spawn weapons can get mixed up
+		pause_parse();
+		SCP_vector<SCP_string> flags;
+		stuff_string_list(flags);
+		if (optional_string("+override")) {
+			// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
+			const Weapon::Info_Flags preset_wi_flag_defs[] = {
+				Weapon::Info_Flags::Homing_heat,
+				Weapon::Info_Flags::Homing_aspect,
+				Weapon::Info_Flags::Cmeasure,
+				Weapon::Info_Flags::Homing_javelin,
+				Weapon::Info_Flags::Turns,
+				Weapon::Info_Flags::Swarm,
+				Weapon::Info_Flags::Trail,
+				Weapon::Info_Flags::Particle_spew,
+				Weapon::Info_Flags::Beam,
+				Weapon::Info_Flags::Tag,
+				Weapon::Info_Flags::Shudder,
+				Weapon::Info_Flags::Transparent,
+				Weapon::Info_Flags::Variable_lead_homing,
+				Weapon::Info_Flags::Custom_seeker_str,
+				Weapon::Info_Flags::Aoe_Electronics,
+				Weapon::Info_Flags::Apply_Recoil,
+				Weapon::Info_Flags::Has_display_name,
+				Weapon::Info_Flags::Vampiric,
+				Weapon::Info_Flags::Detonate_on_expiration
+			};
 
-    // have to do this slightly out of order in order to handle spawn properly
-    // skip OVER flags, check for +override and reset num_spawn_weapons_defined
-    // otherwise if done afterward, new and old spawn weapons can get mixed up
-    pause_parse();
-    SCP_vector<SCP_string> flags;
-    stuff_string_list(flags);
-    if (optional_string("+override")) {
-		// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
-		const Weapon::Info_Flags preset_wi_flag_defs[] = {
-			Weapon::Info_Flags::Homing_heat,
-			Weapon::Info_Flags::Homing_aspect,
-			Weapon::Info_Flags::Cmeasure,
-			Weapon::Info_Flags::Homing_javelin,
-			Weapon::Info_Flags::Turns,
-			Weapon::Info_Flags::Swarm,
-			Weapon::Info_Flags::Trail,
-			Weapon::Info_Flags::Particle_spew,
-			Weapon::Info_Flags::Beam,
-			Weapon::Info_Flags::Tag,
-			Weapon::Info_Flags::Shudder,
-			Weapon::Info_Flags::Transparent,
-			Weapon::Info_Flags::Variable_lead_homing,
-			Weapon::Info_Flags::Custom_seeker_str,
-			Weapon::Info_Flags::Aoe_Electronics,
-			Weapon::Info_Flags::Apply_Recoil,
-			Weapon::Info_Flags::Has_display_name,
-			Weapon::Info_Flags::Vampiric,
-			Weapon::Info_Flags::Detonate_on_expiration
-		};
+			// clear all flags except for the ones that are preset by other fields in the weapon
+			flagset<Weapon::Info_Flags> cleared_wi_flags;
+			cleared_wi_flags.set_multiple_from_source(weaponp->wi_flags, std::begin(preset_wi_flag_defs), std::end(preset_wi_flag_defs));
 
-		// clear all flags except for the ones that are preset by other fields in the weapon
-		flagset<Weapon::Info_Flags> cleared_wi_flags;
-		cleared_wi_flags.set_multiple_from_source(weaponp->wi_flags, std::begin(preset_wi_flag_defs), std::end(preset_wi_flag_defs));
+			// resetting the flag values if set to override the existing flags
+			weaponp->wi_flags = cleared_wi_flags;
+			weaponp->num_spawn_weapons_defined = 0;
+		}
+		unpause_parse();
 
-    	// resetting the flag values if set to override the existing flags
-    	weaponp->wi_flags = cleared_wi_flags;
-    	weaponp->num_spawn_weapons_defined = 0;
+		// To make sure +override doesn't overwrite previously parsed values we parse the flags into a separate flagset
+		SCP_vector<SCP_string> unparsed;
+		flagset<Weapon::Info_Flags> parsed_flags;
+		parse_string_flag_list_special(parsed_flags, Weapon_Info_Flags, &unparsed, weaponp, parsed_flags);
+
+		optional_string("+override"); // already parsed above
+
+		// Now add the parsed flags to the weapon flags
+		weaponp->wi_flags |= parsed_flags;
+
+		for (auto flag = unparsed.begin(); flag != unparsed.end(); ++flag) {
+			SCP_string flag_text = *flag;
+			// Parse non-flag strings 
+			if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
+				set_nopierce = true;
+			} else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
+				weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
+				weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
+			} else {
+				Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
+			}
+		}
+	}
+
+	if (optional_string("$Remove Flags:")) {
+		SCP_vector<SCP_string> unparsed;
+		flagset<Weapon::Info_Flags> parsed_flags;
+		parse_string_flag_list(parsed_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed);
+    weaponp->wi_flags &= ~parsed_flags;
+		for (auto flag = unparsed.begin(); flag != unparsed.end(); ++flag) {
+			Warning(LOCATION, "Unrecognized or unremovable flag in $Remove Flags: list for weapon %s: \"%s\"", weaponp->name, flag->c_str());
     }
-    unpause_parse();
+  }
 
-	// To make sure +override doesn't overwrite previously parsed values we parse the flags into a separate flagset
-    SCP_vector<SCP_string> unparsed;
-	flagset<Weapon::Info_Flags> parsed_flags;
-    parse_string_flag_list_special(parsed_flags, Weapon_Info_Flags, &unparsed, weaponp, parsed_flags);
+	//Do cleanup and sanity checks
 
-	optional_string("+override"); // already parsed above
+	if (set_nopierce) {
+		weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
+	}
 
-	// Now add the parsed flags to the weapon flags
-	weaponp->wi_flags |= parsed_flags;
+	if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database]) {
+		weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
+	}
 
-    bool set_nopierce = false;
-
-    for (auto flag = unparsed.begin(); flag != unparsed.end(); ++flag) {
-        SCP_string flag_text = *flag;
-		// Parse non-flag strings 
-        if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
-            set_nopierce = true;
-        }
-        else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
-            weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
-            weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
-        }
-        else {
-            Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
-        }
-    }
-
-    //Do cleanup and sanity checks
-        
-	if (set_nopierce)
-        weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
-
-    if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
-        weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
-
-    if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
-        if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Swarm);
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
-            Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
-        }
-    }
+	if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
+		if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+			weaponp->wi_flags.remove(Weapon::Info_Flags::Swarm);
+			weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
+			Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!	Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
+		}
+	}
 
 	if (weaponp->wi_flags[Weapon::Info_Flags::Beam]) {
 		//If we're not doing damage anyway, then we don't care.. but also this prevents a retail
@@ -723,53 +729,49 @@ void parse_wi_flags(weapon_info *weaponp)
 		if (weaponp->damage != 0.0f) {
 			if ((weaponp->armor_factor != 1.0f) && !Beams_use_damage_factors) {
 				Warning(LOCATION,
-					"Armor factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
-					weaponp->armor_factor, weaponp->name);
+						"Armor factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+						weaponp->armor_factor, weaponp->name);
 			}
 			if ((weaponp->shield_factor != 1.0f) && !Beams_use_damage_factors) {
 				Warning(LOCATION,
-					"Shield factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
-					weaponp->shield_factor, weaponp->name);
+						"Shield factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+						weaponp->shield_factor, weaponp->name);
 			}
 			if ((weaponp->subsystem_factor != 1.0f) && !Beams_use_damage_factors) {
 				Warning(LOCATION,
-					"Subsystem factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
-					weaponp->subsystem_factor, weaponp->name);
+						"Subsystem factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+						weaponp->subsystem_factor, weaponp->name);
 			}
 		}
 	}
 
-    if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-        weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
-        Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
-    }
+	if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+		weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
+		Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!	Defaulting to Swarm on weapon %s.\n", weaponp->name);
+	}
 
-    if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
-        if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
-            Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
-        }
-    }
+	if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
+		if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
+			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
+		}
+	}
 
-    if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
-    {
-        Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nThe AI can not use this weapon on any targets", weaponp->name);
-    }
+	if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge]) {
+		Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nThe AI can not use this weapon on any targets", weaponp->name);
+	}
 
-    if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
-    {
-        Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
-    }
+	if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn]) {
+		Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
+	}
 
-    if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
-    {
-        Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
-    }
+	if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker]) {
+		Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
+	}
 
-    if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
-    {
-        weaponp->wi_flags.remove(Weapon::Info_Flags::Cmeasure_aspect_home_on);
-        Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
-    }
+	if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on]) {
+		weaponp->wi_flags.remove(Weapon::Info_Flags::Cmeasure_aspect_home_on);
+		Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
+	}
 }
 
 void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)

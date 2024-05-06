@@ -37,6 +37,11 @@ class flagset {
 		return result;
 	}
 
+	flagset<T>& operator&=(const flagset<T>& other) {
+		this->values &= other.values;
+		return *this;
+	}
+
 	flagset<T> operator+(const T flag) const {
 		flagset<T> result = *this;
 		result.set(flag);
@@ -67,7 +72,6 @@ class flagset {
 
 	flagset<T>& operator|=(const flagset<T>& other) {
 		this->values |= other.values;
-
 		return *this;
 	}
 
@@ -75,8 +79,19 @@ class flagset {
 		set(flag);
 	}
 
-	bool operator==(const flagset<T>& other) const { return this->values == other.values; }
-	bool operator!=(const flagset<T>& other) const { return this->values != other.values; }
+  flagset<T> operator~() {
+    flagset<T> result;
+    result.values = ~this->values;
+    return result;
+  }
+
+	bool operator==(const flagset<T>& other) const {
+		return this->values == other.values;
+	}
+
+	bool operator!=(const flagset<T>& other) const {
+		return this->values != other.values;
+	}
 
 	void reset() { values.reset(); }
 
