@@ -1951,6 +1951,7 @@ void game_init()
 
 	player_controls_init();
 	model_init();	
+	virtual_pof_init();
 
 	event_music_init();
 
@@ -1970,7 +1971,6 @@ void game_init()
 	sexp_startup();
 
 	obj_init();	
-	virtual_pof_init();
 	mflash_game_init();	
 	armor_init();
 	ai_init();
