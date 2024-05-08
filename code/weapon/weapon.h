@@ -345,6 +345,9 @@ struct weapon_info
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
+	float laser_glow_length_scale;
+	float laser_glow_head_scale;
+	float laser_glow_tail_scale;
 	int	laser_radius_curve_idx;				// tail + head radius over time curve
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
 	int laser_alpha_curve_idx;			// alpha over time curve
