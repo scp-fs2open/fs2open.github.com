@@ -25,6 +25,19 @@ ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist",
 	return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 }
 
+ADE_FUNC(getIndex, l_Waypoint, nullptr, "Returns the index of this waypoint in its list", "number", "waypoint index or 0 if waypoint was invalid")
+{
+	object_h *oh = nullptr;
+	if(!ade_get_args(L, "o", l_Waypoint.GetPtr(&oh)))
+		return ade_set_error(L, "i", 0);
+
+	if(!oh->isValid() || oh->objp()->type != OBJ_WAYPOINT)
+		return ade_set_error(L, "i", 0);
+
+	int wp_index = calc_waypoint_index(oh->objp()->instance);
+	return ade_set_args(L, "i", wp_index + 1);
+}
+
 waypointlist_h::waypointlist_h()
 	: wl_index(-1)
 {}

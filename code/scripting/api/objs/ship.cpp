@@ -1554,6 +1554,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	ai_goal_mode ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
 	const char *ai_shipname = NULL;
+	int int_data = 0;
+	float float_data = 0.0f;
 	switch(eh->index)
 	{
 		case LE_ORDER_ATTACK:
@@ -1585,24 +1587,18 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_WAYPOINTS:
-		{
-			if(tgh_valid && tgh->objp()->type == OBJ_WAYPOINT)
-			{
-				ai_mode = AI_GOAL_WAYPOINTS;
-				waypoint_list *wp_list = find_waypoint_list_with_instance(tgh->objp()->instance);
-				if(wp_list != NULL)
-					ai_shipname = wp_list->get_name();
-			}
-			break;
-		}
 		case LE_ORDER_WAYPOINTS_ONCE:
 		{
 			if(tgh_valid && tgh->objp()->type == OBJ_WAYPOINT)
 			{
-				ai_mode = AI_GOAL_WAYPOINTS_ONCE;
-				waypoint_list *wp_list = find_waypoint_list_with_instance(tgh->objp()->instance);
-				if(wp_list != NULL)
-					ai_shipname = wp_list->get_name();
+				ai_mode = eh->index == LE_ORDER_WAYPOINTS_ONCE ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
+				int wp_list_index, wp_index;
+				calc_waypoint_indexes(tgh->objp()->instance, wp_list_index, wp_index);
+				if (wp_list_index >= 0 && wp_index >= 0)
+				{
+					ai_shipname = Waypoint_lists[wp_list_index].get_name();
+					int_data = wp_index;
+				}
 			}
 			break;
 		}
@@ -1797,7 +1793,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 		return ade_set_error(L, "b", false);
 
 	//Fire off the goal
-	ai_add_ship_goal_scripting(ai_mode, ai_submode, (int)(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index]);
+	ai_add_ship_goal_scripting(ai_mode, ai_submode, (int)(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data);
 
 	return ADE_RETURN_TRUE;
 }
