@@ -36,10 +36,9 @@ typedef struct blip	{
 	int radar_color_image_2d;
 	int radar_image_size;
 	float radar_projection_size;
-	TIMESTAMP last_update;
 
 	float   dist;
-	object* objp;
+	int		objnum;
 } blip;
 
 
@@ -70,6 +69,8 @@ extern blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
 
 extern blip	Blips[MAX_BLIPS];								// blips pool
 extern int	N_blips;										// next blip index to take from pool
+
+extern SCP_map<int, TIMESTAMP> Blip_last_update;	// map of objnums to timestamps
 
 // blip flags
 #define BLIP_CURRENT_TARGET	(1<<0)

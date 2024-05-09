@@ -77,6 +77,8 @@ blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
 blip	Blips[MAX_BLIPS];								// blips pool
 int	N_blips;											// next blip index to take from pool
 
+SCP_map<int, TIMESTAMP> Blip_last_update;	// map of objnums to timestamps
+
 float	Radar_bright_range;					// range at which we start dimming the radar blips
 TIMESTAMP	Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
 
@@ -279,6 +281,8 @@ void radar_plot_object( object *objp )
 		return;
 	}
 
+	int objnum = OBJ_INDEX(objp);
+
 	b = &Blips[N_blips];
 	b->rad = 0;
 	b->flags = 0;
@@ -287,7 +291,7 @@ void radar_plot_object( object *objp )
 	blip_bright = (dist <= Radar_bright_range);
 
 	// flag the blip as a current target if it is
-	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
+	if (objnum == Player_ai->target_objnum)
 	{
 		b->flags |= BLIP_CURRENT_TARGET;
 		blip_bright = 1;
@@ -305,9 +309,12 @@ void radar_plot_object( object *objp )
 	b->radar_color_image_2d = -1;
 	b->radar_image_size = -1;
 	b->radar_projection_size = 1.0f;
-	b->last_update = TIMESTAMP::never();
 	b->dist = dist;
-	b->objp = objp;
+	b->objnum = objnum;
+
+	auto it = Blip_last_update.find(objnum);
+	if (it == Blip_last_update.end())
+		Blip_last_update.emplace(objnum, TIMESTAMP::never());
 
 
 	// see if blip should be drawn distorted
@@ -346,6 +353,8 @@ void radar_plot_object( object *objp )
 
 void radar_mission_init()
 {
+	Blip_last_update.clear();
+
 	for (int i=0; i<MAX_RADAR_COLORS; i++ )	{
 		for (int j=0; j<MAX_RADAR_LEVELS; j++ )	{
 			if (radar_iff_color[i][j][0] >= 0) {

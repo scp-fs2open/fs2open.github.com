@@ -283,9 +283,14 @@ ADE_FUNC(findPointOnLineNearestSkewLine,
 	return ade_set_args(L, "o", l_Vector.Set(dest));
 }
 
-ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+ADE_FUNC(getFrametimeOverall, l_Base, nullptr, "The overall frame time in fix units (seconds * 65536) since the engine has started", "number", "Overall time (fix units)")
 {
 	return ade_set_args(L, "x", game_get_overall_frametime());
+}
+
+ADE_FUNC(getSecondsOverall, l_Base, nullptr, "The overall time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "f", f2fl(game_get_overall_frametime()));
 }
 
 ADE_FUNC(getMissionFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
