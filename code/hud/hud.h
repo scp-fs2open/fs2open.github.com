@@ -194,7 +194,7 @@ void hud_maybe_render_multi_text();
 int hud_get_draw();
 void hud_toggle_draw();
 int	hud_disabled();
-int hud_support_find_closest( int objnum );
+int hud_support_find_closest( object *objp );
 
 // Goober5000
 void hud_set_draw(int draw);
