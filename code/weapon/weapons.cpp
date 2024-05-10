@@ -1250,11 +1250,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Unrecognized laser radius curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 	}
 
-	float mpsbuffer;
-	if (parse_optional_float_into("@Min Pixel Size:", &mpsbuffer))
-		wip->min_pixel_size = mpsbuffer;
-	else
-		wip->min_pixel_size = Min_pixel_size_laser;
+	parse_optional_float_into("@Min Pixel Size:", &wip->min_pixel_size);
 
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
@@ -9142,6 +9138,7 @@ void weapon_info::reset()
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
 	this->laser_radius_curve_idx = -1;
+	this->min_pixel_size = Min_pixel_size_laser;
 	this->laser_alpha_curve_idx = -1;
 
 	this->light_color_set = false;
