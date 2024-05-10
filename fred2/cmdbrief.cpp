@@ -93,11 +93,15 @@ void cmd_brief_dlg::update_data(int update)
 	if (last_cmd_brief && m_last_stage >= 0 && m_last_stage < last_cmd_brief->num_stages) {
 		cmd_brief_stage *last_stage = &last_cmd_brief->stage[m_last_stage];
 
-		deconvert_multiline_string(last_stage->text, m_text);
-		lcl_fred_replace_stuff(last_stage->text);
+		SCP_string text;
+		deconvert_multiline_string(text, m_text);
+		lcl_fred_replace_stuff(text);
+		if (last_stage->text != text)
+			set_modified();
+		last_stage->text = std::move(text);
 
-		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN - 1);
-		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN - 1);
+		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN - 1, true);
+		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN - 1, true);
 	}
 
 	// load data of new stage into dialog
