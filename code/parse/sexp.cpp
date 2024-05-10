@@ -1079,6 +1079,7 @@ void sexp_copy_variable_from_index(int node);
 void sexp_copy_variable_between_indexes(int node);
 
 int verify_vector(const char *text);
+bool is_descendant_of_when_argument_op(int node);
 
 
 #define ARG_ITEM_F_DUP	(1<<0)
@@ -2402,18 +2403,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 		// if this is the special argument, make sure it is being properly used
 		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) {
-			bool found = false;
-			z = node;
-			while (true) {
-				z = find_parent_operator(z);
-				if (z < 0) {
-					break;
-				}
-				if (is_when_argument_op(get_operator_const(z))) {
-					found = true;
-					break;
-				}
-			}
+			bool found = is_descendant_of_when_argument_op(node);
 
 			// if there is no argument operator higher in the tree, we have a problem
 			if (!found) {
@@ -10536,6 +10526,35 @@ void do_action_for_each_special_argument( int cur_node )
 		// continue along argument list
 		ptr = ptr->get_next();
 	}
+}
+
+bool is_descendant_of_when_argument_op(int node)
+{
+	// empty tree
+	if (node < 0)
+		return false;
+
+	// cached?
+	if (Sexp_nodes[node].flags & SNF_DESCENDANT_OF_WHEN_ARG_OP)
+		return true;
+	if (Sexp_nodes[node].flags & SNF_NOT_DESCENDANT_OF_WHEN_ARG_OP)
+		return false;
+
+	// see whether this node or any parent node qualifies
+	// (note that find_parent_operator() is expensive, so we want to cache any and all results)
+	bool result;
+	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR && is_when_argument_op(get_operator_const(node)))
+		result = true;
+	else
+		result = is_descendant_of_when_argument_op(find_parent_operator(node));
+
+	// cache this result
+	if (result)
+		Sexp_nodes[node].flags |= SNF_DESCENDANT_OF_WHEN_ARG_OP;
+	else
+		Sexp_nodes[node].flags |= SNF_NOT_DESCENDANT_OF_WHEN_ARG_OP;
+
+	return result;
 }
 
 // Goober5000
@@ -27102,12 +27121,13 @@ int eval_sexp(int cur_node, int referenced_node)
 	type = SEXP_NODE_TYPE(cur_node);
 	Assert( (type == SEXP_LIST) || (type == SEXP_ATOM) );
 
-	// trap known true and known false sexpressions.  We don't trap on SEXP_NAN sexpressions since
-	// they may yet evaluate to true or false. If the sexp depends on the special argument,
-	// we can't 'know' its value so we skip this behaviour.
+	// Trap known true and known false sexpressions.  We don't trap on SEXP_NAN sexpressions since
+	// they may yet evaluate to true or false.  If the sexp is part of a when-argument tree,
+	// we can't 'know' its value since the sexp nodes may be evaluated in different ways for
+	// different arguments, so we skip this behaviour.
 
-	// we want to log event values for KNOWN_X or FOREVER_X before returning
-	if (!special_argument_appears_in_sexp_tree(cur_node)) {
+	if (!is_descendant_of_when_argument_op(cur_node)) {
+		// we want to log event values for KNOWN_X or FOREVER_X before returning
 		if (Log_event && ((Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) || (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER))) {
 			// if this is a node that has been assigned the value by short-circuiting,
 			// it might not be the operator that returned the value

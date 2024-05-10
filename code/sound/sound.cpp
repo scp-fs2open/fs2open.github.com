@@ -131,7 +131,7 @@ struct aav {
 aav aav_data[3];
 
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
-#define	MIN_SOUND_VOLUME				0.05f
+#define	MIN_SOUND_VOLUME				0.005f
 
 static int snd_next_sig	= 1;
 
