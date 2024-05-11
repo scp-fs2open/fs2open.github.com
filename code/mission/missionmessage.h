@@ -254,7 +254,7 @@ void	message_queue_message(int message_num, int priority, int timing, const char
 // functions which send messages to player -- called externally
 void	message_send_unique(const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
 
-bool	message_send_builtin(int type, ship* sender, ship* subject, int multi_target, int multi_team_filter);
+bool	message_send_builtin(int type, ship* sender, ship* subject, int multi_target = -1, int multi_team_filter = -1);
 
 // functions to deal with personas
 int message_persona_name_lookup(const char* name);
