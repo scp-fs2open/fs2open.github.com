@@ -2373,12 +2373,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	// muzzle flash
-	if ( optional_string("$Muzzleflash:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+	if (optional_string("$Muzzle Effect:")) {
+		wip->muzzle_effect = particle::util::parseEffect(wip->name);
+	} else {
+		// muzzle flash
+		if (optional_string("$Muzzleflash:")) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		// look it up
-		wip->muzzle_flash = mflash_lookup(fname);
+			// look it up
+			wip->muzzle_flash = mflash_lookup(fname);
+		}
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -6791,6 +6795,16 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		wip->animations.getAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn).start(animation::ModelAnimationDirection::FWD);
 	}
 
+	if (wip->muzzle_effect.isValid()) {
+		auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
+		particleSource.moveTo(&wp->start_pos);
+		particleSource.setOrientationMatrix(orient);
+		if(parent_objp != NULL){
+			particleSource.setVelocity(&parent_objp->phys_info.vel);
+		}
+		particleSource.finish();
+	}
+
 	if (scripting::hooks::OnWeaponCreated->isActive()) {
 		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, &Objects[parent_objnum] },
 			scripting::hook_param_list(
@@ -9285,6 +9299,8 @@ void weapon_info::reset()
 
 	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
+
+	this->muzzle_effect = particle::ParticleEffectHandle::invalid();
 
 	this->state_effects.clear();
 

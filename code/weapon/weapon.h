@@ -481,6 +481,8 @@ struct weapon_info
 	particle::ParticleEffectHandle piercing_impact_effect;
 	particle::ParticleEffectHandle piercing_impact_secondary_effect;
 
+	particle::ParticleEffectHandle muzzle_effect;
+
 	// Particle effect for the various states, WeaponState::NORMAL is the state for the whole lifetime, even for missiles
 	SCP_unordered_map<WeaponState, particle::ParticleEffectHandle, WeaponStateHash> state_effects;
 
