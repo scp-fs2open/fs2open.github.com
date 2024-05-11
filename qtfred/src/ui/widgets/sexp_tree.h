@@ -360,6 +360,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_bolt_types();
 	sexp_list_item *get_listing_opf_traitor_overrides();
 	sexp_list_item *get_listing_opf_lua_general_orders();
+	sexp_list_item *get_listing_opf_message_types();
 	sexp_list_item *get_listing_opf_lua_enum(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_mission_custom_strings();
 

@@ -3419,6 +3419,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<container value>";
 			break;
 
+		case OPF_MESSAGE_TYPE:
+			str = Builtin_messages[0].name;
+			break;
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -3529,6 +3533,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_CONTAINER_VALUE:
 		case OPF_WING_FORMATION:
 		case OPF_CHILD_LUA_ENUM:
+		case OPF_MESSAGE_TYPE:
 			return 1;
 
 		case OPF_SHIP:
@@ -5764,6 +5769,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_lua_general_orders();
 			break;
 
+		case OPF_MESSAGE_TYPE:
+			list = get_listing_opf_message_types();
+			break;
+
 		case OPF_CHILD_LUA_ENUM:
 			list = get_listing_opf_lua_enum(parent_node, arg_index);
 			break;
@@ -7619,6 +7628,17 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
 
 	for (const auto& val : orders) {
 		head.add_data(val.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_message_types()
+{
+	sexp_list_item head;
+
+	for (const auto& val : Builtin_messages) {
+		head.add_data(val.name);
 	}
 
 	return head.next;
