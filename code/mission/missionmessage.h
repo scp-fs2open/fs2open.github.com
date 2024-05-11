@@ -239,6 +239,7 @@ void	message_parse(MessageFormat format);
 void	persona_parse();
 
 void	messages_init();
+void	message_types_init();
 void	message_mission_shutdown();
 void	message_queue_process();
 int	message_is_playing();

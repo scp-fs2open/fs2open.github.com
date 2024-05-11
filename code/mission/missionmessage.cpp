@@ -674,6 +674,64 @@ void message_moods_parse()
 	required_string("#End");
 }
 
+int parse_existing_message_type() {
+	char name[NAME_LENGTH];
+	stuff_string(name, F_NAME, NAME_LENGTH);
+	int type = get_builtin_message_type(name);
+	if (type == MESSAGE_NONE && stricmp(name, "None")) {
+		Warning(LOCATION, "Unknown message type %s", name);
+	}
+	return type;
+}
+
+int parse_message_priority() {
+	// TODO: Convert this to required_string_one_of.
+	if (optional_string("High")) {
+		return MESSAGE_PRIORITY_HIGH;
+	} else if (optional_string("Low")) {
+		return MESSAGE_PRIORITY_LOW;
+	} else {
+		required_string("Normal");
+		return MESSAGE_PRIORITY_NORMAL;
+	}
+}
+
+void parse_custom_message_types(bool live = true) {
+	if (optional_string("#Custom Message Types")) {
+		while (optional_string("$Custom Message Type:")) {
+			char name[NAME_LENGTH];
+			stuff_string(name, F_NAME, NAME_LENGTH);
+			required_string("+Fallback:");
+			int fallback = parse_existing_message_type();
+			required_string("+Priority:");
+			int priority = parse_message_priority();
+			if (live) {
+				if (get_builtin_message_type(name) == MESSAGE_NONE) {
+					Builtin_messages.push_back({ strdup(name), 100, -1, 0, priority, MESSAGE_TIME_SOON, fallback });
+				} else {
+					Warning(LOCATION, "Custom message type %s is already defined", name);
+				}
+			}
+		}
+		required_string("#End");
+	}
+}
+
+void parse_custom_message_table(const char* filename) {
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
+	parse_custom_message_types();
+}
+
+void message_types_init() {
+	static bool table_read = false;
+	if (!table_read) {
+		table_read = true;
+		parse_custom_message_table("messages.tbl");
+		parse_modular_table("*-msg.tbm", parse_custom_message_table);
+	}
+}
+
 void parse_msgtbl(const char* filename)
 {
 	try {
@@ -697,6 +755,7 @@ void parse_msgtbl(const char* filename)
 		}
 
 		// now we can start parsing
+		parse_custom_message_types(false); // Already parsed, so skip it
 		if (optional_string("#Message Settings")) {
 			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
 				stuff_boolean(&Allow_generic_backup_messages);
@@ -789,6 +848,8 @@ void messages_init()
 	static int table_read = 0;
 
 	if ( !table_read ) {
+		message_types_init(); // To be safe, but in practice this should have been called already
+
 		Default_command_persona = -1;
 		Default_support_persona = -1;
 
