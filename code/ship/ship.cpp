@@ -5128,385 +5128,382 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	while (cont_flag) {
 		int r = required_string_one_of(3, "#End", "$Subsystem:", type_name);
 		switch (r) {
-		case 0:
-			cont_flag = 0;
-			break;
-		case 1:
-		{
-			float	turning_rate;
-			float	percentage_of_hits;
-			bool turret_has_base_fov = false;
-			bool turret_has_max_fov = false;
-			bool turret_has_barrel_fov = false;
-			model_subsystem *sp = NULL;			// to append on the ships list of subsystems
-			
-			int sfo_return;
-			required_string("$Subsystem:");
-			stuff_string(name_tmp, F_NAME, sizeof(name_tmp), ",");
-			Mp++;
-			for(auto i = 0;i < sip->n_subsystems; i++)
-			{
-				if(!subsystem_stricmp(sip->subsystems[i].subobj_name, name_tmp))
-					sp = &sip->subsystems[i];
-			}
-
-			if(sp == NULL)
-			{
-				if( sip->n_subsystems + n_subsystems >= MAX_MODEL_SUBSYSTEMS )
+			case 0:
+				cont_flag = 0;
+				break;
+			case 1:
 				{
-					n_excess_subsystems++;
-					skip_to_start_of_string_one_of({"$Subsystem:", type_name, "#End"});
-					break;
-				}
-				sp = &subsystems[n_subsystems++];			// subsystems a local -- when done, we will malloc and copy
-				strcpy_s(sp->subobj_name, name_tmp);
-				
-				//Init blank values
-				sp->max_subsys_strength = 0.0f;
-				sp->turret_turning_rate = 0.0f;
-				sp->weapon_rotation_pbank = -1;
+					float	turning_rate;
+					float	percentage_of_hits;
+					bool turret_has_base_fov = false;
+					bool turret_has_max_fov = false;
+					bool turret_has_barrel_fov = false;
+					model_subsystem *sp = NULL;			// to append on the ships list of subsystems
 
-                memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name));
-                memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name));
-
-				for (auto i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
-					sp->primary_banks[i] = -1;
-					sp->primary_bank_capacity[i] = 0;
-				}
-
-				for (auto i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
-					sp->secondary_banks[i] = -1;
-					sp->secondary_bank_capacity[i] = 0;
-				}
-
-				sp->engine_wash_pointer = NULL;
-				
-				sp->alive_snd = gamesnd_id();
-				sp->dead_snd = gamesnd_id();
-				sp->rotation_snd = gamesnd_id();
-				sp->turret_gun_rotation_snd = gamesnd_id();
-				sp->turret_gun_rotation_snd_mult = 1.0f;
-				sp->turret_base_rotation_snd = gamesnd_id();
-				sp->turret_base_rotation_snd_mult = 1.0f;
-				
-                sp->flags.reset();
-				
-				sp->model_num = -1;		// init value for later sanity checking!!
-				sp->armor_type_idx = -1;
-				sp->path_num = -1;
-				sp->turret_max_fov = 1.0f;
-
-				sp->awacs_intensity = 0.0f;
-				sp->awacs_radius = 0.0f;
-				sp->scan_time = -1;
-
-				sp->turret_reset_delay = 2000;
-
-				sp->num_target_priorities = 0;
-				for (auto i = 0; i < 32; i++) {
-					sp->target_priority[i] = -1;
-				}
-				sp->optimum_range = 0.0f;
-				sp->favor_current_facing = 0.0f;
-
-				sp->turret_rof_scaler = 1.0f;
-
-				sp->turret_max_bomb_ownage = -1;
-				sp->turret_max_target_ownage = -1;
-				sp->density = 1.0f;
-			}
-			sfo_return = stuff_float_optional(&percentage_of_hits);
-			if(sfo_return==2)
-			{
-				if (Calculate_subsystem_hitpoints_after_parsing)
-					sp->max_subsys_strength = percentage_of_hits;
-				else
-					sp->max_subsys_strength = sip->max_hull_strength * (percentage_of_hits / 100.0f);
-
-				sp->type = SUBSYSTEM_UNKNOWN;
-			}
-			if(sfo_return > 0)
-			{
-				if(stuff_float_optional(&turning_rate)==2)
-				{
-					// specified as how long to turn 360 degrees in ships.tbl
-					if ( turning_rate > 0.0f ){
-						sp->turret_turning_rate = PI2 / turning_rate;		
-					} else {
-						sp->turret_turning_rate = 0.0f;		
+					int sfo_return;
+					required_string("$Subsystem:");
+					stuff_string(name_tmp, F_NAME, sizeof(name_tmp), ",");
+					Mp++;
+					for (auto i = 0; i < sip->n_subsystems; i++) {
+						if (!subsystem_stricmp(sip->subsystems[i].subobj_name, name_tmp)) {
+							sp = &sip->subsystems[i];
+						}
 					}
-				}
-				else
-				{
-					Error(LOCATION, "Malformed $Subsystem entry '%s' in %s '%s'.\n\n"
-						"Specify a turning rate or remove the trailing comma.",
-						sp->subobj_name, info_type_name, sip->name);
-				}
-			}
 
-			if(optional_string("$Alt Subsystem Name:")) {
-				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				strcpy_s(sp->alt_sub_name,  buf);
-			}
-
-			if(optional_string("$Alt Damage Popup Subsystem Name:")) {
-				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-                strcpy_s(sp->alt_dmg_sub_name, buf);
-			}
-
-			if(optional_string("$Armor Type:")) {
-				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				sp->armor_type_idx = armor_type_get_idx(buf);
-
-				if (sp->armor_type_idx == -1)
-					WarningEx(LOCATION, "%s '%s', subsystem %s\nInvalid armor type %s!", info_type_name, sip->name, sp->subobj_name, buf);
-			}
-
-			//	Get primary bank weapons
-			parse_weapon_bank(sip, true, NULL, sp->primary_banks, sp->primary_bank_capacity);
-
-			//	Get secondary bank weapons
-			parse_weapon_bank(sip, false, NULL, sp->secondary_banks, sp->secondary_bank_capacity);
-
-			// Get optional engine wake info
-			if (optional_string("$Engine Wash:")) {
-				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
-				// get and set index
-				sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
-
-				if(sp->engine_wash_pointer == NULL)
-					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
-			}
-
-			parse_game_sound("$AliveSnd:", &sp->alive_snd);
-			parse_game_sound("$DeadSnd:", &sp->dead_snd);
-			parse_game_sound("$RotationSnd:", &sp->rotation_snd);
-			parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd);
-			parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd);
-
-			if (optional_string("$Turret BaseSnd Volume:"))
-				stuff_float(&sp->turret_base_rotation_snd_mult);
-
-			if (optional_string("$Turret GunSnd Volume:"))
-				stuff_float(&sp->turret_gun_rotation_snd_mult);
-				
-			// Get any AWACS info
-			if(optional_string("$AWACS:")){
-				sfo_return = stuff_float_optional(&sp->awacs_intensity);
-				if(sfo_return > 0)
-					stuff_float_optional(&sp->awacs_radius);
-				sip->flags.set(Ship::Info_Flags::Has_awacs);
-			}
-
-			if(optional_string("$Scan time:")){
-				stuff_int(&sp->scan_time);
-			}
-
-			if(optional_string("$Maximum Barrel Elevation:")){
-				float value;
-				stuff_float(&value);
-				CAP(value, 0.0f, 90.0f);
-				float angle = fl_radians(90.0f - value);
-				sp->turret_max_fov = cosf(angle);
-				turret_has_max_fov = true;
-			}
-
-			if(optional_string("$Turret Base FOV:")) {
-				float value;
-				stuff_float(&value);
-				CAP(value, 0.0f, 360.0f);
-				float angle = fl_radians(value)/2.0f;
-				sp->turret_base_fov = cosf(angle);
-				turret_has_base_fov = true;
-			}
-
-			if (optional_string("$Turret Barrel FOV:")) {
-				float value;
-				stuff_float(&value);
-				CAP(value, 0.0f, 360.0f);
-				float angle = fl_radians(value) / 2.0f;
-				sp->turret_fov = cosf(angle);
-				turret_has_barrel_fov = true;
-			}
-
-			if (optional_string("$Turret Reset Delay:"))
-				stuff_int(&sp->turret_reset_delay);
-
-			if (optional_string("$Turret Optimum Range:"))
-				stuff_float(&sp->optimum_range);
-
-			if (optional_string("$Turret Direction Preference:")) {
-				int temp;
-				stuff_int(&temp);
-				if (temp == 0) {
-					sp->favor_current_facing = 0.0f;
-				} else {
-					CAP(temp, 1, 100);
-					sp->favor_current_facing = 1.0f + (((float) (100 - temp)) / 10.0f);
-				}
-			}
-
-			if (optional_string("$Target Priority:")) {
-				SCP_vector <SCP_string> tgt_priorities;
-				stuff_string_list(tgt_priorities);
-				sp->num_target_priorities = 0;
-
-				if (tgt_priorities.size() > 32)
-					tgt_priorities.resize(32);
-
-				size_t num_groups = Ai_tp_list.size();
-
-				for (size_t i = 0; i < tgt_priorities.size(); ++i) {
-					size_t j;
-					for(j = 0; j < num_groups; j++) {
-						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							sp->target_priority[i] = (int)j;
-							sp->num_target_priorities++;
+					if (sp == NULL) {
+						if (sip->n_subsystems + n_subsystems >= MAX_MODEL_SUBSYSTEMS) {
+							n_excess_subsystems++;
+							skip_to_start_of_string_one_of({"$Subsystem:", type_name, "#End"});
 							break;
 						}
-					}
-					if (j == num_groups) {
-						Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in %s '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, info_type_name, sip->name);
-					}
-				}
-			}
+						sp = &subsystems[n_subsystems++];			// subsystems a local -- when done, we will malloc and copy
+						strcpy_s(sp->subobj_name, name_tmp);
 
-			if (optional_string("$Max Turrets per Bomb:")) {
-				stuff_int(&sp->turret_max_bomb_ownage);
-			}
+						//Init blank values
+						sp->max_subsys_strength = 0.0f;
+						sp->turret_turning_rate = 0.0f;
+						sp->weapon_rotation_pbank = -1;
 
-			if (optional_string("$Max Turrets per Target:")) {
-				stuff_int(&sp->turret_max_target_ownage);
-			}
+						memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name));
+						memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name));
 
-			if (optional_string("$ROF:")) {
-
-				if (optional_string("+Use firingpoints")) {
-					sp->turret_rof_scaler = 0;
-				} else {
-					if (optional_string("+Multiplier:")) {
-						float tempf;
-						stuff_float(&tempf);
-
-						if (tempf < 0) {
-							mprintf(("RoF multiplier clamped to 0 for subsystem '%s' in %s '%s'.\n", sp->subobj_name, info_type_name, sip->name));
-							sp->turret_rof_scaler = 0;
-						} else {
-							sp->turret_rof_scaler = tempf;
+						for (auto i=0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+							sp->primary_banks[i] = -1;
+							sp->primary_bank_capacity[i] = 0;
 						}
-					} else {
-						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in %s '%s'.", sp->subobj_name, info_type_name, sip->name);
+
+						for (auto i=0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+							sp->secondary_banks[i] = -1;
+							sp->secondary_bank_capacity[i] = 0;
+						}
+
+						sp->engine_wash_pointer = NULL;
+
+						sp->alive_snd = gamesnd_id();
+						sp->dead_snd = gamesnd_id();
+						sp->rotation_snd = gamesnd_id();
+						sp->turret_gun_rotation_snd = gamesnd_id();
+						sp->turret_gun_rotation_snd_mult = 1.0f;
+						sp->turret_base_rotation_snd = gamesnd_id();
+						sp->turret_base_rotation_snd_mult = 1.0f;
+
+						sp->flags.reset();
+
+						sp->model_num = -1;		// init value for later sanity checking!!
+						sp->armor_type_idx = -1;
+						sp->path_num = -1;
+						sp->turret_max_fov = 1.0f;
+
+						sp->awacs_intensity = 0.0f;
+						sp->awacs_radius = 0.0f;
+						sp->scan_time = -1;
+
+						sp->turret_reset_delay = 2000;
+
+						sp->num_target_priorities = 0;
+						for (auto i = 0; i < 32; i++) {
+							sp->target_priority[i] = -1;
+						}
+						sp->optimum_range = 0.0f;
+						sp->favor_current_facing = 0.0f;
+
+						sp->turret_rof_scaler = 1.0f;
+
+						sp->turret_max_bomb_ownage = -1;
+						sp->turret_max_target_ownage = -1;
+						sp->density = 1.0f;
 					}
+					sfo_return = stuff_float_optional(&percentage_of_hits);
+					if (sfo_return == 2) {
+						if (Calculate_subsystem_hitpoints_after_parsing) {
+							sp->max_subsys_strength = percentage_of_hits;
+						} else {
+							sp->max_subsys_strength = sip->max_hull_strength * (percentage_of_hits / 100.0f);
+						}
+						sp->type = SUBSYSTEM_UNKNOWN;
+					}
+					if (sfo_return > 0) {
+						if (stuff_float_optional(&turning_rate) == 2) {
+							// specified as how long to turn 360 degrees in ships.tbl
+							if (turning_rate > 0.0f) {
+								sp->turret_turning_rate = PI2 / turning_rate;		
+							} else {
+								sp->turret_turning_rate = 0.0f;		
+							}
+						} else {
+							Error(LOCATION, "Malformed $Subsystem entry '%s' in %s '%s'.\n\n"
+									"Specify a turning rate or remove the trailing comma.",
+									sp->subobj_name, info_type_name, sip->name);
+						}
+					}
+
+					if (optional_string("$Alt Subsystem Name:")) {
+						stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+						strcpy_s(sp->alt_sub_name, buf);
+					}
+
+					if (optional_string("$Alt Damage Popup Subsystem Name:")) {
+						stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+						strcpy_s(sp->alt_dmg_sub_name, buf);
+					}
+
+					if (optional_string("$Armor Type:")) {
+						stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+						sp->armor_type_idx = armor_type_get_idx(buf);
+
+						if (sp->armor_type_idx == -1) {
+							WarningEx(LOCATION, "%s '%s', subsystem %s\nInvalid armor type %s!", info_type_name, sip->name, sp->subobj_name, buf);
+						}
+					}
+
+					// Get primary bank weapons
+					parse_weapon_bank(sip, true, NULL, sp->primary_banks, sp->primary_bank_capacity);
+
+					// Get secondary bank weapons
+					parse_weapon_bank(sip, false, NULL, sp->secondary_banks, sp->secondary_bank_capacity);
+
+					// Get optional engine wake info
+					if (optional_string("$Engine Wash:")) {
+						stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
+						// get and set index
+						sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
+
+						if (sp->engine_wash_pointer == NULL) {
+							WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
+						}
+					}
+
+					parse_game_sound("$AliveSnd:", &sp->alive_snd);
+					parse_game_sound("$DeadSnd:", &sp->dead_snd);
+					parse_game_sound("$RotationSnd:", &sp->rotation_snd);
+					parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd);
+					parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd);
+
+					if (optional_string("$Turret BaseSnd Volume:")) {
+						stuff_float(&sp->turret_base_rotation_snd_mult);
+					}
+
+					if (optional_string("$Turret GunSnd Volume:")) {
+						stuff_float(&sp->turret_gun_rotation_snd_mult);
+					}
+
+					// Get any AWACS info
+					if (optional_string("$AWACS:")) {
+						sfo_return = stuff_float_optional(&sp->awacs_intensity);
+						if (sfo_return > 0) {
+							stuff_float_optional(&sp->awacs_radius);
+						}
+						sip->flags.set(Ship::Info_Flags::Has_awacs);
+					}
+
+					if (optional_string("$Scan time:")) {
+						stuff_int(&sp->scan_time);
+					}
+
+					if (optional_string("$Maximum Barrel Elevation:")) {
+						float value;
+						stuff_float(&value);
+						CAP(value, 0.0f, 90.0f);
+						float angle = fl_radians(90.0f - value);
+						sp->turret_max_fov = cosf(angle);
+						turret_has_max_fov = true;
+					}
+
+					if (optional_string("$Turret Base FOV:")) {
+						float value;
+						stuff_float(&value);
+						CAP(value, 0.0f, 360.0f);
+						float angle = fl_radians(value)/2.0f;
+						sp->turret_base_fov = cosf(angle);
+						turret_has_base_fov = true;
+					}
+
+					if (optional_string("$Turret Barrel FOV:")) {
+						float value;
+						stuff_float(&value);
+						CAP(value, 0.0f, 360.0f);
+						float angle = fl_radians(value) / 2.0f;
+						sp->turret_fov = cosf(angle);
+						turret_has_barrel_fov = true;
+					}
+
+					if (optional_string("$Turret Reset Delay:")) {
+						stuff_int(&sp->turret_reset_delay);
+					}
+
+					if (optional_string("$Turret Optimum Range:")) {
+						stuff_float(&sp->optimum_range);
+					}
+
+					if (optional_string("$Turret Direction Preference:")) {
+						int temp;
+						stuff_int(&temp);
+						if (temp == 0) {
+							sp->favor_current_facing = 0.0f;
+						} else {
+							CAP(temp, 1, 100);
+							sp->favor_current_facing = 1.0f + (((float) (100 - temp)) / 10.0f);
+						}
+					}
+
+					if (optional_string("$Target Priority:")) {
+						SCP_vector <SCP_string> tgt_priorities;
+						stuff_string_list(tgt_priorities);
+						sp->num_target_priorities = 0;
+
+						if (tgt_priorities.size() > 32) {
+							tgt_priorities.resize(32);
+						}
+
+						size_t num_groups = Ai_tp_list.size();
+
+						for (size_t i = 0; i < tgt_priorities.size(); ++i) {
+							size_t j;
+							for(j = 0; j < num_groups; j++) {
+								if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str())) {
+									sp->target_priority[i] = (int)j;
+									sp->num_target_priorities++;
+									break;
+								}
+							}
+							if (j == num_groups) {
+								Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in %s '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, info_type_name, sip->name);
+							}
+						}
+					}
+
+					if (optional_string("$Max Turrets per Bomb:")) {
+						stuff_int(&sp->turret_max_bomb_ownage);
+					}
+
+					if (optional_string("$Max Turrets per Target:")) {
+						stuff_int(&sp->turret_max_target_ownage);
+					}
+
+					if (optional_string("$ROF:")) {
+						if (optional_string("+Use firingpoints")) {
+							sp->turret_rof_scaler = 0;
+						} else if (optional_string("+Multiplier:")) {
+							float tempf;
+							stuff_float(&tempf);
+
+							if (tempf < 0) {
+								mprintf(("RoF multiplier clamped to 0 for subsystem '%s' in %s '%s'.\n", sp->subobj_name, info_type_name, sip->name));
+								sp->turret_rof_scaler = 0;
+							} else {
+								sp->turret_rof_scaler = tempf;
+							}
+						} else {
+							Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in %s '%s'.", sp->subobj_name, info_type_name, sip->name);
+						}
+					}
+
+					if (optional_string("$Debris Density:")) {
+						stuff_float(&sp->density);
+					}
+
+					if (optional_string("$Flags:")) {
+						SCP_vector<SCP_string> errors;
+						flagset<Model::Subsystem_Flags> tmp_flags;
+						parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
+
+						if (optional_string("+noreplace")) {
+							sp->flags |= tmp_flags;
+						} else {
+							sp->flags = tmp_flags;
+						}
+
+						if (!errors.empty()) {
+							for (auto const &error : errors) {
+								Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
+							}
+						}
+
+						//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
+						if (sp->flags[Model::Subsystem_Flags::Allow_landing]) {
+							sip->flags.set(Ship::Info_Flags::Allow_landings);
+						}
+					}
+
+					if (turret_has_barrel_fov) {
+						sp->flags.set(Model::Subsystem_Flags::Turret_barrel_fov_overridden);
+					}
+					if (turret_has_base_fov) {
+						sp->flags.set(Model::Subsystem_Flags::Turret_base_fov_overridden);
+					}
+					if (turret_has_max_fov) {
+						sp->flags.set(Model::Subsystem_Flags::Turret_max_fov_overridden);
+					}
+
+					if (optional_string("+non-targetable")) {
+						Warning(LOCATION, "Grammar error in table file. Please change \"+non-targetable\" to \"+untargetable\".");
+						sp->flags.set(Model::Subsystem_Flags::Untargetable);
+					}
+
+					bool old_flags = false;
+					if (optional_string("+untargetable")) {
+						sp->flags.set(Model::Subsystem_Flags::Untargetable);
+						old_flags = true;
+					}
+
+					if (optional_string("+carry-no-damage")) {
+						sp->flags.set(Model::Subsystem_Flags::Carry_no_damage); 
+						old_flags = true;
+					}
+
+					if (optional_string("+use-multiple-guns")) {
+						sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
+						old_flags = true;
+					}
+
+					if (optional_string("+fire-down-normals")) {
+						sp->flags.set(Model::Subsystem_Flags::Fire_on_normal);
+						old_flags = true;
+					}
+
+					if ((sp->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && !(sp->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
+						Warning(LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag on a subsystem on %s '%s'.\n\"use multiple guns\" flags added by default\n", info_type_name, sip->name);
+						sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
+					}
+
+					if ((sp->flags[Model::Subsystem_Flags::Autorepair_if_disabled]) && (sp->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])) {
+						Warning(LOCATION, "\"autorepair if disabled\" flag used with \"don't autorepair if disabled\" flag on a subsystem on %s '%s'.\nWhichever flag would be default behavior anyway for this ship has been removed.\n", info_type_name, sip->name);
+						if (sip->flags[Ship::Info_Flags::Subsys_repair_when_disabled]) {
+							sp->flags.remove(Model::Subsystem_Flags::Autorepair_if_disabled);
+						} else {
+							sp->flags.remove(Model::Subsystem_Flags::No_autorepair_if_disabled);
+						}
+					}
+
+					if (old_flags) {
+						mprintf(("Use of deprecated subsystem syntax. Please use the $Flags: field for subsystem flags.\n\n" \
+									"At least one of the following tags was used on %s '%s', subsystem %s:\n" \
+									"\t+untargetable\n" \
+									"\t+carry-no-damage\n" \
+									"\t+use-multiple-guns\n" \
+									"\t+fire-down-normals\n", info_type_name, sip->name, sp->subobj_name));
+					}
+
+					while (optional_string("$animation:")) {
+						stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
+						if (!stricmp(name_tmp, "triggered")) {
+							animation::ModelAnimationParseHelper::parseLegacyAnimationTable(sp, sip);
+						} else if (!stricmp(name_tmp, "linked")) {
+							mprintf(("TODO: set up linked animation\n"));
+						}
+					}
+
+					sp->beam_warmdown_program = actions::ProgramSet::parseProgramSet("$On Beam Warmdown:",
+							{actions::ProgramContextFlags::HasObject, actions::ProgramContextFlags::HasSubobject});
 				}
-			}
-
-			if (optional_string("$Debris Density:")) {
-				stuff_float(&sp->density);
-			}
-
-			if (optional_string("$Flags:")) {
-                SCP_vector<SCP_string> errors;
-                flagset<Model::Subsystem_Flags> tmp_flags;
-                parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
-                
-                if (optional_string("+noreplace")) {
-                    sp->flags |= tmp_flags;
-                }
-                else {
-                    sp->flags = tmp_flags;
-                }
-
-                if (!errors.empty()) {
-                    for (auto const &error : errors) {
-                        Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
-                    }
-                }
-
-				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
-				if (sp->flags[Model::Subsystem_Flags::Allow_landing])
-					sip->flags.set(Ship::Info_Flags::Allow_landings);
-			}
-
-			if (turret_has_barrel_fov)
-				sp->flags.set(Model::Subsystem_Flags::Turret_barrel_fov_overridden);
-			if (turret_has_base_fov)
-				sp->flags.set(Model::Subsystem_Flags::Turret_base_fov_overridden);
-			if (turret_has_max_fov)
-				sp->flags.set(Model::Subsystem_Flags::Turret_max_fov_overridden);
-
-			if (optional_string("+non-targetable")) {
-				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
-				sp->flags.set(Model::Subsystem_Flags::Untargetable);
-			}
-
-			bool old_flags = false;
-			if (optional_string("+untargetable")) {
-				sp->flags.set(Model::Subsystem_Flags::Untargetable);
-				old_flags = true;
-			}
-
-			if (optional_string("+carry-no-damage")) {
-				sp->flags.set(Model::Subsystem_Flags::Carry_no_damage); 
-				old_flags = true;
-			}
-
-			if (optional_string("+use-multiple-guns")) {
-				sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
-				old_flags = true;
-			}
-
-			if (optional_string("+fire-down-normals")) {
-				sp->flags.set(Model::Subsystem_Flags::Fire_on_normal);
-				old_flags = true;
-			}
-
-			if ((sp->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && !(sp->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
-				Warning(LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag on a subsystem on %s '%s'.\n\"use multiple guns\" flags added by default\n", info_type_name, sip->name);
-				sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
-			}
-
-			if ((sp->flags[Model::Subsystem_Flags::Autorepair_if_disabled]) && (sp->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])) {
-				Warning(LOCATION, "\"autorepair if disabled\" flag used with \"don't autorepair if disabled\" flag on a subsystem on %s '%s'.\nWhichever flag would be default behavior anyway for this ship has been removed.\n", info_type_name, sip->name);
-				if (sip->flags[Ship::Info_Flags::Subsys_repair_when_disabled]){
-                    sp->flags.remove(Model::Subsystem_Flags::Autorepair_if_disabled);
-				} else {
-                    sp->flags.remove(Model::Subsystem_Flags::No_autorepair_if_disabled);
-				}
-			}
-
-			if (old_flags) {
-				mprintf(("Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
-				"At least one of the following tags was used on %s '%s', subsystem %s:\n" \
-				"\t+untargetable\n" \
-				"\t+carry-no-damage\n" \
-				"\t+use-multiple-guns\n" \
-				"\t+fire-down-normals\n", info_type_name, sip->name, sp->subobj_name));
-			}
-
-			while(optional_string("$animation:"))
-			{
-				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
-				if(!stricmp(name_tmp, "triggered"))
-				{
-					animation::ModelAnimationParseHelper::parseLegacyAnimationTable(sp, sip);
-				}
-				else if(!stricmp(name_tmp, "linked"))
-				{
-					mprintf(("TODO: set up linked animation\n"));
-				}
-			}
-
-			sp->beam_warmdown_program = actions::ProgramSet::parseProgramSet("$On Beam Warmdown:",
-				{actions::ProgramContextFlags::HasObject, actions::ProgramContextFlags::HasSubobject});
-		}
-		break;
-		case 2:
-			cont_flag = 0;
-			break;
-		case -1:	// Possible return value if -noparseerrors is used
-			break;
-		default:
-			UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
+				break;
+			case 2:
+				cont_flag = 0;
+				break;
+			case -1:	// Possible return value if -noparseerrors is used
+				break;
+			default:
+				UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
 		}
 	}
 
@@ -5517,7 +5514,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	int orig_n_subsystems = sip->n_subsystems;
-	if ( n_subsystems > 0 ) {
+	if (n_subsystems > 0) {
 		// Let's make sure that n_subsystems is not negative
 		Assertion(sip->n_subsystems >= 0, "Invalid n_subsystems detected!");
 		auto new_n = sip->n_subsystems + n_subsystems;
@@ -5536,12 +5533,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->n_subsystems += n_subsystems;
 		}
 		sip->subsystems = subsys_storage.release();
-
-	    Assert(sip->subsystems != NULL);
-    }
+		Assert(sip->subsystems != NULL);
+	}
 		
-	for ( int i = 0; i < n_subsystems; i++ ){
-		sip->subsystems[orig_n_subsystems+i] = subsystems[i];
+	for (int i = 0; i < n_subsystems; i++) {
+		sip->subsystems[orig_n_subsystems + i] = subsystems[i];
 	}
 }
 
