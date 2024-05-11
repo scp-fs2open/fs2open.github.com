@@ -1210,7 +1210,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 		return ret;
 	}
 
-	bool conflict;
+	bool conflict = false;
 	int count = 0;
 	SCP_string newKey;
 
@@ -1234,7 +1234,11 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 			++count;
 		} while (conflict && count < 101);
 	} else {
-		newKey = key;
+		if (container->stringKeys){
+			newKey = key;
+		} else {
+			newKey = trimIntegerString(key);
+		}
 	}
 
 	if (conflict) {
@@ -1248,7 +1252,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 		ret.second = value;
 	} else {
 		try {
-			container->numberValues.push_back(std::stoi(value));
+			ret.second = trimIntegerString(value);
+			container->numberValues.push_back(std::stoi(ret.second));
 			ret.second = value;
 		}
 		catch (...) {

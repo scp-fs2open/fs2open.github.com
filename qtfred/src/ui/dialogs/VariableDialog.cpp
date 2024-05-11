@@ -521,13 +521,13 @@ void VariableDialog::onContainerContentsTableUpdated()
 				
 				if (_model->getContainerListOrMap(containerRow)) {
 					_model->addListItem(containerRow, newString);
-
 				} else {
-
 					_model->addMapItem(containerRow, newString, "");
 				}
 				
-				_currentContainer = newString;
+				_currentContainerItemCol1 = newString;
+				_currentContainerItemCol2 = "";
+
 				applyModel();
 				return;
 			}
@@ -535,9 +535,24 @@ void VariableDialog::onContainerContentsTableUpdated()
 		} 
 		
 		if (!ui->containerContentsTable->item(row, 1)) {
-			// At this point there's nothing else we can do and something may be off, anyway.
-			applyModel();
-			return;
+			newString = ui->containerContentsTable->item(row, 1)->text().toStdString();
+			
+			if (!newString.empty() && newString != "Add item ..."){
+				
+				// This should not be a list container.
+				if (_model->getContainerListOrMap(containerRow)) {
+					applyModel();
+					return;
+				} else {
+					_model->addMapItem(containerRow, "", newString);
+				}
+				
+				_currentContainerItemCol1 = newString;
+				_currentContainerItemCol2 = "";
+
+				applyModel();
+				return;
+			}
 		}
 
 		// if we got here, we know that the second cell is valid.
@@ -571,11 +586,13 @@ void VariableDialog::onContainerContentsTableUpdated()
 				
 				// Finally change the list item
 				_currentContainerItemCol1 = _model->changeListItem(containerRow, row, newText);
+				applyModel();
 				return;
 			} 	
 				
 		} else if (newText != _currentContainerItemCol1){
 			_model->changeMapItemKey(containerRow, row, newText);
+			applyModel();
 			return;
 		}
 	}
