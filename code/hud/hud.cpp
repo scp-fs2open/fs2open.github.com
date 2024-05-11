@@ -3764,7 +3764,7 @@ void HUD_set_offsets()
 		HUD_get_nose_coordinates(&HUD_nose_x, &HUD_nose_y);
 	}
 
-	hud_reticle_set_aim_cursor_offset();
+	hud_reticle_set_flight_cursor_offset();
 }
 
 /**

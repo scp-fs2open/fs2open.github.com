@@ -1263,6 +1263,9 @@ void ship_info::clone(const ship_info& other)
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
+	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
+
 	topdown_offset_def = other.topdown_offset_def;
 	topdown_offset = other.topdown_offset;
 
@@ -1591,6 +1594,9 @@ void ship_info::move(ship_info&& other)
 	}
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
+
+	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
 
 	topdown_offset_def = other.topdown_offset_def;
 	std::swap(topdown_offset, other.topdown_offset);
@@ -2039,6 +2045,9 @@ ship_info::ship_info()
 	}
 	autoaim_lock_snd = gamesnd_id();
 	autoaim_lost_snd = gamesnd_id();
+
+	aims_at_flight_cursor = false;
+	flight_cursor_aim_extent = -1.0f;
 
 	topdown_offset_def = false;
 	vm_vec_zero(&topdown_offset);
@@ -3560,6 +3569,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&sip->bank_autoaim_fov[bank_fov_count]);
 		} else {
 			error_display(1, "Too many bank autoaims defined. Ship only has %i banks!", sip->num_primary_banks);
+		}
+	}
+
+	if (optional_string("$Aims at Flight Cursor:")) {
+		stuff_boolean(&sip->aims_at_flight_cursor);
+
+		if (optional_string("+Extent:")) {
+			stuff_float(&sip->flight_cursor_aim_extent);
+			sip->flight_cursor_aim_extent = fl_radians(sip->flight_cursor_aim_extent);
+		} else if (sip->aims_at_flight_cursor && sip->flight_cursor_aim_extent < 0.0f) {
+			error_display(0, "Ship %s needs to have an +Extent defined if $Aims at Flight Cursor is true.", sip->name);
+			sip->aims_at_flight_cursor = false;
 		}
 	}
 
@@ -12583,8 +12604,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if ( pm->n_guns > 0 ) {
 			vec3d predicted_target_pos, plr_to_target_vec;
 			matrix firing_orient = obj->orient;
-			if (obj == Player_obj) {
-				vm_angles_2_matrix(&firing_orient, &Player_aim_cursor);
+			if (obj == Player_obj && Player_flight_mode == FlightMode::FlightCursor && sip->aims_at_flight_cursor) {
+				vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
 				firing_orient = firing_orient * obj->orient;
 			}
 

@@ -1445,6 +1445,9 @@ public:
 	float autoaim_fov;
 	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
+	bool aims_at_flight_cursor;
+	float flight_cursor_aim_extent;
+
 	bool topdown_offset_def;
 	vec3d topdown_offset;
 

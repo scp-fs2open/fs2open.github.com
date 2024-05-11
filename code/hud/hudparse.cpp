@@ -2132,7 +2132,7 @@ void load_gauge_center_reticle(gauge_settings* settings)
 	int scaleY = 10;
 	int size = 5;
 	int autoaim_frame = -1;
-	int aim_cursor_frame = -1;
+	int flight_cursor_frame = -1;
 	
 	settings->origin[0] = 0.5f;
 	settings->origin[1] = 0.5f;
@@ -2186,13 +2186,13 @@ void load_gauge_center_reticle(gauge_settings* settings)
 		stuff_int(&autoaim_frame);
 
 	if (optional_string("Aim Cursor Frame:"))
-		stuff_int(&aim_cursor_frame);
+		stuff_int(&flight_cursor_frame);
 
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHiRes(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
 	hud_gauge->setAutoaimFrame(autoaim_frame);
-	hud_gauge->setAimCursorFrame(aim_cursor_frame);
+	hud_gauge->setFlightCursorFrame(flight_cursor_frame);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
