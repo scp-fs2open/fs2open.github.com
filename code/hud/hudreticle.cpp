@@ -1182,7 +1182,7 @@ void hud_update_reticle( player *pp )
 	} 
 }
 
-// calculates what the screen position of the aim cursor should be
+// calculates what the screen position of the flight cursor should be
 void hud_reticle_set_flight_cursor_offset() {
 	matrix view_mat;
 	vm_angles_2_matrix(&view_mat, &Player_flight_cursor);

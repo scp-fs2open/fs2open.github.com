@@ -12868,8 +12868,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
-
-							matrix firing_orient2;
 							
 							/*	I AIM autoaim convergence
 								II AIM autoaim

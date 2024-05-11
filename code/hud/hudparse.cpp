@@ -2185,7 +2185,7 @@ void load_gauge_center_reticle(gauge_settings* settings)
 	if (optional_string("Autoaim Frame:"))
 		stuff_int(&autoaim_frame);
 
-	if (optional_string("Aim Cursor Frame:"))
+	if (optional_string("Flight Cursor Frame:"))
 		stuff_int(&flight_cursor_frame);
 
 	hud_gauge->initBitmaps(fname);
