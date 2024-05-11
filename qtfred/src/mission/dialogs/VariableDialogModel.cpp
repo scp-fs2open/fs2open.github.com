@@ -1319,7 +1319,7 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
 {
     auto container = lookupContainer(containerIndex);
 
-    if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
+    if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (!container->string && index >= static_cast<int>(container->numberValues.size()))){
         return false;
     }
 
