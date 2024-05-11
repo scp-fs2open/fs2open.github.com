@@ -1110,7 +1110,8 @@ void VariableDialog::onShiftItemUpButtonPressed()
 
 	int itemRow = getCurrentContainerItemRow();
 
-	if (itemRow < 0){
+	// item row being 0 is bad here since we're shifting up.
+	if (itemRow < 1){
 		applyModel();
 		return;
 	}
@@ -1614,6 +1615,7 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		// list with number contents
 		} else {
 			auto& numbers = _model->getNumberValues(row);
+			int containerItemsRow = -1;
 			ui->containerContentsTable->setRowCount(static_cast<int>(numbers.size()) + 1);
 
 			for (x = 0; x < static_cast<int>(numbers.size()); ++x){
@@ -1622,6 +1624,32 @@ void VariableDialog::updateContainerDataOptions(bool list)
 				} else {
 					QTableWidgetItem* item = new QTableWidgetItem(std::to_string(numbers[x]).c_str());
 					ui->containerContentsTable->setItem(x, 0, item);
+				}
+
+				// set selected and enable shifting functions
+				if (containerItemsRow < 0 ){
+
+					SCP_string temp;
+
+					if (numbers[x] == 0){
+						temp = "0";
+					} else {
+						sprintf(temp, "%i", numbers[x]);
+					}
+					
+					if (temp == _currentContainerItemCol1){
+						ui->containerContentsTable->clearSelection();
+						ui->containerContentsTable->item(x,0)->setSelected(true);
+
+						// more than one item and not already at the top of the list.
+						if (!(x > 0 && x < static_cast<int>(numbers.size()))){
+							ui->shiftItemUpButton->setEnabled(false);
+						}
+					
+						if (!(x > -1 && x < static_cast<int>(numbers.size()) - 1)){
+							ui->shiftItemDownButton->setEnabled(false);
+						}
+					}
 				}
 
 				// empty out the second column as it's not needed in list mode
@@ -1726,8 +1754,10 @@ void VariableDialog::updateContainerDataOptions(bool list)
 
 		if (ui->containerContentsTable->item(x, 0)){
 			ui->containerContentsTable->item(x, 0)->setText("Add item ...");
+			ui->containerContentsTable->item(x, 0)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
 		} else {
 			QTableWidgetItem* item = new QTableWidgetItem("Add item ...");
+			item->setFlags(item->flags() | Qt::ItemIsEditable);
 			ui->containerContentsTable->setItem(x, 0, item);
 		}
 

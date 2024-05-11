@@ -751,6 +751,8 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
                     ++current;
                 }
 
+				container->stringKeys = string;
+				return container->stringKeys;
             }
 
             // filter out current keys
@@ -758,6 +760,9 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
                 for (auto& key: container->keys){
                     key = trimIntegerString(key);
                 }
+
+				container->stringKeys = string;
+				return container->stringKeys;
 
             // cancel the operation
             case QMessageBox::HelpRole:
@@ -1259,7 +1264,7 @@ SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
 {
     auto container = lookupContainer(containerIndex);
 
-    if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (container->string && index >= static_cast<int>(container->numberValues.size()))){
+    if (!container || index < 0 || (container->string && index >= static_cast<int>(container->stringValues.size())) || (!container->string && index >= static_cast<int>(container->numberValues.size()))){
         return "";
     }
 
