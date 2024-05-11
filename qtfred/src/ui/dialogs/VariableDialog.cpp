@@ -502,6 +502,8 @@ void VariableDialog::onContainerContentsTableUpdated()
 	int containerRow = getCurrentContainerRow();
 	int row = getCurrentContainerItemRow();
 
+
+
 	// just in case something is goofy, return
 	if (row < 0 || containerRow < 0){
 		applyModel();
@@ -1822,7 +1824,7 @@ int VariableDialog::getCurrentContainerItemRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item && item->column() == 0 && item->text().toStdString() != "Add item ...") {
+		if (item && ((item->column() == 0 && item->text().toStdString() != "Add item ...") || (item->column() == 1 && item->text().toStdString() != "Add item ..."))) {
 			return item->row();
 		}
 	}
