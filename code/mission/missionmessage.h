@@ -134,11 +134,11 @@ X(STRAY,               "Stray",                100, -1,  0,     LOW, SOON, NONE)
 
 enum {
   #define X(NAME, ...) MESSAGE_ ## NAME
-	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES, MAX_BUILTIN_MESSAGE_TYPES
+	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES
 	#undef X
 };
 
-extern builtin_message Builtin_messages[MAX_BUILTIN_MESSAGE_TYPES];
+extern SCP_vector<builtin_message> Builtin_messages;
 
 int get_builtin_message_type(const char* name);
 

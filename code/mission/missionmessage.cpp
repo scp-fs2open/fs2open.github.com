@@ -48,7 +48,7 @@ float Command_announces_enemy_arrival_chance = 0.25;
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
-builtin_message Builtin_messages[] = {
+SCP_vector<builtin_message> Builtin_messages = {
   #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
     NAME,                                                              \
     CHANCE,                                                            \
@@ -73,7 +73,8 @@ constexpr int BUILTIN_MATCHES_PERSONA = 64;
 constexpr int BUILTIN_BOOST_LEVEL_THREE = (BUILTIN_BOOST_LEVEL_ONE | BUILTIN_BOOST_LEVEL_TWO);
 
 int get_builtin_message_type(const char* name) {
-	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+	size_t count = Builtin_messages.size();
+	for (unsigned int i = 0; i < count; i++) {
 		if (!stricmp(Builtin_messages[i].name, name)) {
 			return i;
 		}
