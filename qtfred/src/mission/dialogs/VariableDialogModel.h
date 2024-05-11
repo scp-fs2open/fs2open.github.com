@@ -113,7 +113,7 @@ public:
 	void shiftListItemUp(int containerIndex, int itemIndex);
 	void shiftListItemDown(int containerIndex, int itemIndex);
 	
-	SCP_string changeMapItemKey(int index, SCP_string oldKey, SCP_string newKey);
+	SCP_string changeMapItemKey(int index, int keyIndex, SCP_string newKey);
 	SCP_string changeMapItemStringValue(int index, int itemIndex, SCP_string newValue);
 	SCP_string changeMapItemNumberValue(int index, int itemIndex, int newValue);
 	

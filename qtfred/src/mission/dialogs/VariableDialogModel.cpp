@@ -1550,23 +1550,21 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
     return true;
 }
 
-SCP_string VariableDialogModel::changeMapItemKey(int index, SCP_string oldKey, SCP_string newKey)
+SCP_string VariableDialogModel::changeMapItemKey(int index, int keyRow, SCP_string newKey)
 {
     auto container = lookupContainer(index);
 
-    if (!container){
+    if (!container || container->list){
         return "";
     }
 
-    for (auto& key : container->keys){
-        if (key == oldKey) {
-            key = newKey;
-            return newKey;
-        }
+	if (container->stringKeys){
+        container->keys[keyRow] = newKey;		
+	} else {
+		container->keys[keyRow] = trimIntegerString(newKey);
     }
 
-    // Failure
-    return oldKey;
+	return container->keys[keyRow];
 }
 
 SCP_string VariableDialogModel::changeMapItemStringValue(int index, int itemIndex, SCP_string newValue)
@@ -2004,12 +2002,10 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
 	// So down here, we can still return the right overflow values if stol derped out.  Since we've already cleaned out non-digits, 
 	// checking for length *really should* allow us to know if something overflowed
     catch (...){
-		if (ret.size() > 9){
-			if (ret[0] == '-'){
-				return "-2147483648";
-			} else {
+		if (ret.size() > 10 && ret[0] == '-'){
+			return "-2147483648";
+		} else if (ret.size() > 9) {
 				return "2147483647";
-			}
 		}
 		
 		// emergency return value

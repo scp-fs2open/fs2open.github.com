@@ -575,17 +575,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 			} 	
 				
 		} else if (newText != _currentContainerItemCol1){
-			
-			if (!_model->getContainerKeyType(containerRow)){
-				
-				if (!_model->getContainerKeyType(containerRow)){
-					newText = _model->trimIntegerString(newText);	
-				}
-				
-				// TODO!  Write a key change function so you can put something here.
-
-			}
-
+			_model->changeMapItemKey(containerRow, row, newText);
 			return;
 		}
 	}
@@ -1748,6 +1738,15 @@ void VariableDialog::updateContainerDataOptions(bool list)
 						item->setFlags(item->flags() | Qt::ItemIsEditable);
 						ui->containerContentsTable->setItem(x, 1, item);
 					}				
+				} else {
+					if (ui->containerContentsTable->item(x, 1)){
+						ui->containerContentsTable->item(x, 1)->setText("");
+						ui->containerContentsTable->item(x, 1)->setFlags(ui->containerContentsTable->item(x, 1)->flags() | Qt::ItemIsEditable);
+					} else {
+						QTableWidgetItem* item = new QTableWidgetItem("");
+						item->setFlags(item->flags() | Qt::ItemIsEditable);
+						ui->containerContentsTable->setItem(x, 1, item);
+					}
 				}
 			}
 		}
