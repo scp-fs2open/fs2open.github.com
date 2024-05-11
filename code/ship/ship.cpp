@@ -5413,10 +5413,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 							sp->flags = tmp_flags;
 						}
 
-						if (!errors.empty()) {
-							for (auto const &error : errors) {
-								Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
-							}
+						for (auto const &error : errors) {
+							Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
 						}
 
 						//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
@@ -5482,6 +5480,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 									"\t+carry-no-damage\n" \
 									"\t+use-multiple-guns\n" \
 									"\t+fire-down-normals\n", info_type_name, sip->name, sp->subobj_name));
+					}
+
+					if (optional_string("$Remove Flags:")) {
+						SCP_vector<SCP_string> errors;
+						flagset<Model::Subsystem_Flags> tmp_flags;
+						parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
+						sp->flags &= ~tmp_flags;
+						for (auto const &error : errors) {
+							Warning(LOCATION, "Could not remove unknown subsystem flag: %s\n", error.c_str());
+						}
 					}
 
 					while (optional_string("$animation:")) {
