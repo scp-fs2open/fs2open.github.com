@@ -7,13 +7,12 @@
  *
 */
 
-
-
 //	Parse a symbolic expression.
 //	These are identical to Lisp functions.
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -417,6 +416,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Change Category
 	//Messaging Sub-Category
 	{ "send-message",					OP_SEND_MESSAGE,						3,	3,			SEXP_ACTION_OPERATOR,	},
+	{ "send-builtin-message",					OP_SEND_BUILTIN_MESSAGE,						4,	INT_MAX,			SEXP_ACTION_OPERATOR,	},
 	{ "send-message-list",				OP_SEND_MESSAGE_LIST,					4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "send-message-chain",				OP_SEND_MESSAGE_CHAIN,					5,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "send-random-message",			OP_SEND_RANDOM_MESSAGE,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -2113,6 +2113,10 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
 	}
 }
 
+bool is_special_sender(const char* name) {
+	return name[0] == '#';
+}
+
 /**
  * Check SEXP syntax
  * @return 0 if ok, negative if there's an error in expression..
@@ -3419,9 +3423,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if (*CTEXT(node) != '#') {  // not a manual source?
-					if ( stricmp(CTEXT(node), "<any wingman>") != 0)  
-						if ( stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
+				if (!is_special_sender(CTEXT(node))) {  // not a manual source?
+					if (stricmp(CTEXT(node), "<any wingman>") != 0)
+						if (stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
 							if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
 								if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
@@ -14602,7 +14606,7 @@ void sexp_abort_rearm(int node)
 	}
 }
 
-// this function get called by send-message or send-message random with the name of the message, sender,
+// this function get called by send-message or send-message-random with the name of the message, sender,
 // and priority.
 void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1, bool do_hash_fallback = false )
 {
@@ -14639,7 +14643,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	// may be any allied person, any wingman, a wingman from a specific wing, or a specific ship
 	shipp = nullptr;
 	source = MESSAGE_SOURCE_COMMAND;
-	if ( who_from[0] == '#' ) {
+	if (is_special_sender(who_from)) {
 		message_send_unique( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if ( !ship_entry && wingnum < 0 && do_hash_fallback ) {
@@ -14714,6 +14718,73 @@ void sexp_send_message(int n)
 	}
 
 	sexp_send_one_message( name, who_from, priority, 0, 0, -1, do_hash_fallback );
+}
+
+ship* get_builtin_message_sender(const char* name) {
+	auto ship_entry = ship_registry_get(name);
+	if (ship_entry && ship_entry->has_shipp()) {
+		return ship_entry->shipp();
+	}
+	
+	auto wing_index = wing_lookup(name);
+	if (wing_index >= 0) {
+		auto ship_index = ship_get_random_ship_in_wing(wing_index, SHIP_GET_UNSILENCED);
+		return ship_index < 0 ? nullptr : &Ships[ship_index];
+	}
+
+	if (!stricmp(name, "<any wingman>")) {
+		auto ship_index = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
+		return ship_index < 0 ? nullptr : &Ships[ship_index];
+	}
+
+	return nullptr;
+}
+
+void sexp_send_builtin_message(int n) {
+	// Argument 1: Message type
+	auto type = get_builtin_message_type(CTEXT(n));
+	n = CDR(n);
+	// Argument 2: Subject (or <none>)
+	auto subject_name = CTEXT(n);
+	auto need_subject = stricmp(subject_name, SEXP_NONE_STRING) != 0;
+	auto subject_entry = ship_registry_get(subject_name);
+	auto have_subject = subject_entry && subject_entry->has_shipp();
+	n = CDR(n);
+	// Argument 3: Shuffle the senders?
+	auto shuffle = is_sexp_true(n);
+	n = CDR(n);
+	// Argument 4+: Possible senders
+	SCP_vector<const char*> sender_names;
+	while (n >= 0) {
+		sender_names.push_back(CTEXT(n));
+		n = CDR(n);
+	}
+
+	// Done consuming arguments; maybe short-circuit?
+	if (type == MESSAGE_NONE) {
+		return;
+	}
+	if (need_subject && !have_subject) {
+		return;
+	}
+
+	if (shuffle) {
+		std::random_shuffle(sender_names.begin(), sender_names.end());
+	}
+
+	auto subject = have_subject ? subject_entry->shipp() : nullptr;
+	for (auto sender_name : sender_names) {
+		if (is_special_sender(sender_name)) {
+			message_send_builtin(type, nullptr, subject);
+			return;
+		} else {
+			auto sender = get_builtin_message_sender(sender_name);
+			if (sender != nullptr) {
+				message_send_builtin(type, sender, subject);
+				return;
+			}
+		}
+	}
 }
 
 void sexp_send_message_list(int n, bool send_message_chain)
@@ -28174,6 +28245,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SEND_BUILTIN_MESSAGE:
+				sexp_send_builtin_message(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Karajorma
 			case OP_ENABLE_BUILTIN_MESSAGES:
 			case OP_DISABLE_BUILTIN_MESSAGES:
@@ -30451,6 +30527,7 @@ int query_operator_return_type(int op)
 		case OP_NOP:
 		case OP_GOALS_ID:
 		case OP_SEND_MESSAGE:
+		case OP_SEND_BUILTIN_MESSAGE:
 		case OP_SET_HUD_TIME_PAD:
 		case OP_SELF_DESTRUCT:
 		case OP_NEXT_MISSION:
@@ -32063,6 +32140,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_PRIORITY;
 			else
 				return OPF_MESSAGE;
+
+		case OP_SEND_BUILTIN_MESSAGE:
+			switch (argnum) {
+				case 0 : return OPF_MESSAGE_TYPE;
+				case 1 : return OPF_SHIP_OR_NONE;
+				case 2 : return OPF_BOOL;
+				default: return OPF_WHO_FROM;
+			}
 
 		case OP_SEND_MESSAGE_LIST:
 		case OP_SEND_MESSAGE_CHAIN:
@@ -35511,6 +35596,7 @@ int get_category(int op_id)
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_PROTECT_SHIP:
 		case OP_SEND_MESSAGE:
+		case OP_SEND_BUILTIN_MESSAGE:
 		case OP_SELF_DESTRUCT:
 		case OP_CLEAR_GOALS:
 		case OP_ADD_GOAL:
@@ -35972,6 +36058,7 @@ int get_subcategory(int op_id)
 		case OP_SEND_MESSAGE_LIST:
 		case OP_SEND_MESSAGE_CHAIN:
 		case OP_SEND_MESSAGE:
+		case OP_SEND_BUILTIN_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
@@ -37925,6 +38012,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message list)." },
+
+	{ OP_SEND_BUILTIN_MESSAGE, "Send builtin message (Action operator)\r\n"
+		"\tSends a builtin message (from messages.tbl) to the player. The message is sent exactly the same way "
+		"as it would be if it were sent automatically; i.e. the sender's persona and species are considered, as "
+		"is the mission mood and any message filters, and disable-builtin-messages is respected.\r\n"
+		"Due to technical limitations, all #special sources are treated as #Command.\r\n"
+		"It is legal to send a message from a source which can't normally send it, so long as appropriate messages "
+		"are defined in messages.tbl. For example, this can be used to make a cruiser send a Help message.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tThe type of message to send.\r\n"
+		"\t2:\tThe message's subject (used with message filters). If you don't know what this means, set it to <none>."
+		"\t3:\tPick a random sender? If this is false, the first available sender will be used.\r\n"
+		"\tRest:\tWho should send the message - a ship, a wing, #Command, or <any wingman>.\r\n"
+	},
 
 	// Karajorma	
 	{ OP_ENABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
