@@ -1,8 +1,7 @@
 
 #include "ai/ailua.h"
-
+#include "mission/missionmessage.h"
 #include "parse/sexp/sexp_lookup.h"
-
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/LuaSEXP.h"
@@ -40,6 +39,7 @@ global_state& globals()
 
 void parse_sexp_table(const char* filename) {
 	try {
+		message_types_init();
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 

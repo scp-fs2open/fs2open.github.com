@@ -783,6 +783,56 @@ void parse_msgtbl(const char* filename)
 	}
 }
 
+int parse_message_type() {
+	char name[NAME_LENGTH];
+	stuff_string(name, F_NAME, NAME_LENGTH);
+	int type = get_builtin_message_type(name);
+	if (type == MESSAGE_NONE && stricmp(name, "None")) {
+		Warning(LOCATION, "Unknown message type %s", name);
+	}
+	return type;
+}
+
+int parse_message_priority() {
+	// TODO: Convert this to required_string_one_of.
+	if (optional_string("High")) {
+		return MESSAGE_PRIORITY_HIGH;
+	} else if (optional_string("Low")) {
+		return MESSAGE_PRIORITY_LOW;
+	} else {
+		required_string("Normal");
+		return MESSAGE_PRIORITY_NORMAL;
+	}
+}
+
+void parse_custom_message_table(const char* filename) {
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
+	required_string("#Custom Message Types");
+	while (optional_string("$Message Type:")) {
+		char name[NAME_LENGTH];
+		stuff_string(name, F_NAME, NAME_LENGTH);
+		required_string("+Fallback:");
+		int fallback = parse_message_type();
+		required_string("+Priority:");
+		int priority = parse_message_priority();
+		if (get_builtin_message_type(name) == MESSAGE_NONE) {
+			Builtin_messages.push_back({ strdup(name), 100, -1, 0, priority, MESSAGE_TIME_SOON, fallback });
+		} else {
+			Warning(LOCATION, "Custom message type %s is already defined", name);
+		}
+	}
+	required_string("#End");
+}
+
+void message_types_init() {
+	static bool table_read = false;
+	if (!table_read) {
+		table_read = true;
+		parse_modular_table("*-msgtype.tbm", parse_custom_message_table);
+	}
+}
+
 // this is called at the start of each level
 void messages_init()
 {
