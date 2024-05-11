@@ -4153,6 +4153,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 				break;
 
+			case OPF_MESSAGE_TYPE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (get_builtin_message_type(CTEXT(node)) == MESSAGE_NONE) {
+					return SEXP_CHECK_INVALID_MESSAGE_TYPE;
+				}
+				break;
+
 			default: //This handles OPF_CHILD_LUA_ENUM as well
 				if (Dynamic_enums.size() > 0) {
 					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -34265,6 +34275,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_CUSTOM_STRING:
 			return "Invalid custom string name";
+
+		case SEXP_CHECK_INVALID_MESSAGE_TYPE:
+			return "Invalid message type";
 
 		case SEXP_CHECK_POTENTIAL_ISSUE:
 			return "This particular SEXP_CHECK_ code is handled differently from the others.  You shouldn't actually see this message; if you do, report it to a SCP coder.";
