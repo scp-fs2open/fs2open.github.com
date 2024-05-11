@@ -6795,16 +6795,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		wip->animations.getAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn).start(animation::ModelAnimationDirection::FWD);
 	}
 
-	if (wip->muzzle_effect.isValid()) {
-		auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-		particleSource.moveTo(&wp->start_pos);
-		particleSource.setOrientationMatrix(orient);
-		if(parent_objp != NULL){
-			particleSource.setVelocity(&parent_objp->phys_info.vel);
-		}
-		particleSource.finish();
-	}
-
 	if (scripting::hooks::OnWeaponCreated->isActive()) {
 		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, &Objects[parent_objnum] },
 			scripting::hook_param_list(
