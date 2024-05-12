@@ -1755,6 +1755,7 @@ ship_info::ship_info()
 	collision_physics.bounce = 5.0;
 	collision_physics.friction = COLLISION_FRICTION_FACTOR;
 	collision_physics.rotation_factor = COLLISION_ROTATION_FACTOR;
+	collision_physics.rotation_factor_player_multiplier = 0.0f;
 	collision_physics.reorient_mult = 1.0f;
 	collision_physics.landing_sound_idx = gamesnd_id();
 	collision_physics.collision_sound_light_idx = gamesnd_id();
@@ -3242,6 +3243,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 		if(optional_string("+Rotation Factor:")) {
 			stuff_float(&sip->collision_physics.rotation_factor);
+		}
+		if (optional_string("+Player Multiplier for Rotation Factor:")) {
+			stuff_float(&sip->collision_physics.rotation_factor_player_multiplier);
 		}
 		if(optional_string("+Landing Max Forward Vel:")) {
 			stuff_float(&sip->collision_physics.landing_max_z);
