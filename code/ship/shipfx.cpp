@@ -1055,8 +1055,8 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 		objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
 	if (!(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
+			//if there's a muzzle effect entry, we use that
 			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
-				//if there's a muzzle effect entry, we use that
 				vec3d gun_world_pos;
 				vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[OBJ_INDEX(objp)].orient);
 				vm_vec_add2(&gun_world_pos, &Objects[OBJ_INDEX(objp)].pos);
@@ -1067,8 +1067,8 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				particleSource.setOrientationFromVec(gun_dir);
 				particleSource.setVelocity(&objp->phys_info.vel);
 				particleSource.finish();
+			//if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
 			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
-				//if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
 				vec3d real_dir;
 				vm_vec_rotate(&real_dir, gun_dir, &objp->orient);
 				mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
