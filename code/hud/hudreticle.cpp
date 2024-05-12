@@ -299,8 +299,8 @@ void HudGaugeReticle::render(float  /*frametime*/)
 
 	int mobile_reticle = flight_reticle;
 	int fixed_reticle = shoot_reticle;
-	// depending on the parameters of the ship, if theyre using the flight cursor mode, the 'mobile' reticle may be the one indicating the shoot direction
-	if (sip->aims_at_flight_cursor && Player_flight_mode == FlightMode::FlightCursor) {
+	// depending on the parameters of the ship the 'mobile' reticle may be the one indicating the shoot direction
+	if (sip->aims_at_flight_cursor) {
 		mobile_reticle = shoot_reticle;
 		fixed_reticle = flight_reticle;
 	}
@@ -323,22 +323,22 @@ void HudGaugeReticle::render(float  /*frametime*/)
 
 		renderBitmap(fixed_reticle, position[0], position[1]);
 	} else {
-		renderCircle(base_w * 0.5, base_h * 0.5, base_h * 0.03, false);
+		renderCircle((int)(base_w * 0.5f), (int)(base_h * 0.5f), (int)(base_h * 0.03f), false);
 	}
 
-	if (Player_flight_mode == FlightMode::FlightCursor) {
+	if (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor) {
 		if (mobile_reticle == shoot_reticle)
 			setGaugeColor(HUD_C_BRIGHT);
 		else
 			setGaugeColor(HUD_C_NORMAL);
 
-		int x = Player_flight_cursor_offset.screen.xyw.x;
-		int y = Player_flight_cursor_offset.screen.xyw.y;
+		int x = (int)(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
+		int y = (int)(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
 		unsize(&x, &y);
 		if (mobile_reticle >= 0)
-			renderBitmap(mobile_reticle, (x - base_w * 0.5) + position[0], (y - base_h * 0.5) + position[1]);
+			renderBitmap(mobile_reticle, (int)(x - base_w * 0.5f) + position[0], (int)(y - base_h * 0.5f) + position[1]);
 		else {
-			renderCircle(x, y, base_h * 0.03, false);
+			renderCircle(x, y, (int)(base_h * 0.03f), false);
 		}
 	}
 
@@ -1186,7 +1186,7 @@ void hud_update_reticle( player *pp )
 void hud_reticle_set_flight_cursor_offset() {
 	matrix view_mat;
 	vm_angles_2_matrix(&view_mat, &Player_flight_cursor);
-	view_mat = view_mat * Player_obj->orient;
+	view_mat = view_mat * Eye_matrix;
 
 	vec3d view_pos = Eye_position + view_mat.vec.fvec * 10000.0f;
 	g3_rotate_vertex(&Player_flight_cursor_offset, &view_pos);

@@ -1025,31 +1025,38 @@ void read_player_controls(object *objp, float frametime)
 			if (Player_obj->type == OBJ_SHIP) {
 				auto sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
 
-				if (Player_flight_mode == FlightMode::FlightCursor) {
-					float max_aim_angle = flight_cursor_extent;
+				if ((Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor)) {
 
-					if (sip->aims_at_flight_cursor)
-						max_aim_angle = sip->flight_cursor_aim_extent;
+					if (Viewer_mode & VM_CAMERA_LOCKED) {
+						float max_aim_angle = flight_cursor_extent;
 
-					Player_flight_cursor.p += Player->ci.pitch * 0.015f;
-					Player_flight_cursor.h += Player->ci.heading * 0.015f;
+						if (sip->aims_at_flight_cursor)
+							max_aim_angle = sip->flight_cursor_aim_extent;
 
-					float mag = powf(powf(Player_flight_cursor.p, 2.0f) + powf(Player_flight_cursor.h, 2.0f), 0.5f);
-					if (mag > max_aim_angle) {
-						Player_flight_cursor.p *= max_aim_angle / mag;
-						Player_flight_cursor.h *= max_aim_angle / mag;
-						mag = max_aim_angle;
-					}
+						Player_flight_cursor.p += Player->ci.pitch * 0.015f;
+						Player_flight_cursor.h += Player->ci.heading * 0.015f;
 
-					float deadzone = flight_cursor_deadzone;
-					if (mag > deadzone) {
-						float p = Player_flight_cursor.p * ((mag - deadzone) / mag);
-						float h = Player_flight_cursor.h * ((mag - deadzone) / mag);
+						float mag = powf(powf(Player_flight_cursor.p, 2.0f) + powf(Player_flight_cursor.h, 2.0f), 0.5f);
+						if (mag > max_aim_angle) {
+							Player_flight_cursor.p *= max_aim_angle / mag;
+							Player_flight_cursor.h *= max_aim_angle / mag;
+							mag = max_aim_angle;
+						}
 
-						Player->ci.pitch = p / (max_aim_angle - deadzone);
-						Player->ci.heading = h / (max_aim_angle - deadzone);
-					}
-					else {
+						float deadzone = flight_cursor_deadzone;
+						if (mag > deadzone) {
+							float p = Player_flight_cursor.p * ((mag - deadzone) / mag);
+							float h = Player_flight_cursor.h * ((mag - deadzone) / mag);
+
+							Player->ci.pitch = p / (max_aim_angle - deadzone);
+							Player->ci.heading = h / (max_aim_angle - deadzone);
+						}
+						else {
+							Player->ci.pitch = 0.0f;
+							Player->ci.heading = 0.0f;
+						}
+					} else {
+						Player_flight_cursor = vmd_zero_angles;
 						Player->ci.pitch = 0.0f;
 						Player->ci.heading = 0.0f;
 					}

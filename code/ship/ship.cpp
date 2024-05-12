@@ -12604,7 +12604,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if ( pm->n_guns > 0 ) {
 			vec3d predicted_target_pos, plr_to_target_vec;
 			matrix firing_orient = obj->orient;
-			if (obj == Player_obj && Player_flight_mode == FlightMode::FlightCursor && sip->aims_at_flight_cursor) {
+			if (obj == Player_obj && (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor)) {
 				vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
 				firing_orient = firing_orient * obj->orient;
 			}
