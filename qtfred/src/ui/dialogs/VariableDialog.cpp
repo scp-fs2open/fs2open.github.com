@@ -217,16 +217,16 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->variablesTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->variablesTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 	ui->variablesTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
-	ui->variablesTable->setColumnWidth(0, 190);
-	ui->variablesTable->setColumnWidth(1, 190);
-	ui->variablesTable->setColumnWidth(2, 120);
+	ui->variablesTable->setColumnWidth(0, 200);
+	ui->variablesTable->setColumnWidth(1, 200);
+	ui->variablesTable->setColumnWidth(2, 130);
 
 	ui->containersTable->setColumnCount(3);
 	ui->containersTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Name"));
 	ui->containersTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Types"));
 	ui->containersTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Notes"));
 	ui->containersTable->setColumnWidth(0, 190);
-	ui->containersTable->setColumnWidth(1, 190);
+	ui->containersTable->setColumnWidth(1, 220);
 	ui->containersTable->setColumnWidth(2, 120);
 
 	ui->containerContentsTable->setColumnCount(2);
@@ -234,8 +234,8 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Default to list
 	ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 	ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
-	ui->containerContentsTable->setColumnWidth(0, 225);
-	ui->containerContentsTable->setColumnWidth(1, 225);
+	ui->containerContentsTable->setColumnWidth(0, 245);
+	ui->containerContentsTable->setColumnWidth(1, 245);
 
 	// set radio buttons to manually toggled, as some of these have the same parent widgets and some don't
 	// and I don't mind just manually toggling them.
@@ -513,7 +513,6 @@ void VariableDialog::onContainerContentsTableUpdated()
 	// Are they adding a new item?
 	if (row == ui->containerContentsTable->rowCount() - 1){
 	
-		bool newItemCreated = false;
 		SCP_string newString;
 
 		if (ui->containerContentsTable->item(row, 0)) {
@@ -536,7 +535,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 		
 		} 
 		
-		if (!ui->containerContentsTable->item(row, 1)) {
+		if (ui->containerContentsTable->item(row, 1)) {
 			newString = ui->containerContentsTable->item(row, 1)->text().toStdString();
 			
 			if (!newString.empty() && newString != "Add item ..."){
@@ -545,33 +544,17 @@ void VariableDialog::onContainerContentsTableUpdated()
 				if (_model->getContainerListOrMap(containerRow)) {
 					applyModel();
 					return;
-				} else {
-					_model->addMapItem(containerRow, "", newString);
 				}
+
+				auto ret = _model->addMapItem(containerRow, "", newString);
 				
-				_currentContainerItemCol1 = newString;
-				_currentContainerItemCol2 = "";
+				_currentContainerItemCol1 = ret.first;
+				_currentContainerItemCol2 = ret.second;
 
 				applyModel();
 				return;
 			}
 		}
-
-		// if we got here, we know that the second cell is valid.
-		newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
-			
-		// But we can only create a new map item here.  Ignore if this container is a list.
-		if (!newString.empty() && newString.substr(0, 10) != "Add item ..."){
-			if (!_model->getContainerListOrMap(containerRow)) {
-				auto ret = _model->addMapItem(containerRow, "", newString);								
-				_currentContainerItemCol1 = ret.first;
-				_currentContainerItemCol2 = ret.second;
-			}
-		}
-		
-		// nothing else to determine at this point.
-		applyModel();
-		return;
 
 	// are they editing an existing container item column 1?
 	} else if (ui->containerContentsTable->item(row, 0)){

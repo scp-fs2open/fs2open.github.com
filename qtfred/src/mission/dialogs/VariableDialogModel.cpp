@@ -551,7 +551,7 @@ bool VariableDialogModel::removeVariable(int index, bool toDelete)
                 return variable->deleted;
             }
 
-            // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.
+            // adjust to the user's actions.  If they are deleting variable after variable, allow after a while.  No one expects Cybog the Careless
             ++_deleteWarningCount;
         }
 
@@ -719,7 +719,7 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
             }
             catch (...) {
                 quickConvert = false;
-				nprintf(("Cyborg", "This is Cyborg. Long story short, I don't need this variable, but c++ thinks I do. Last good number on conversion was: %i\n", test));
+				nprintf(("Cyborg", "This is Cyborg. Long story short, I don't need this variable, but c++ and its linters think I do. So who knows, maybe you can use this. Last good number on conversion was: %i\n", test));
             }
         } 
 
@@ -731,15 +731,16 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
 
         // If we couldn't convert easily, then we need some input from the user
                 // now ask about data
-        QMessageBox msgBoxListToMapRetainData;
-		msgBoxListToMapRetainData.setWindowTitle("Key Type Conversion");
-	    msgBoxListToMapRetainData.setText("Fred could not convert all string keys to numbers automatically.  Would you like to use default keys, filter out integers from the current keys or cancel the operation?");
-	    msgBoxListToMapRetainData.setInformativeText("Current keys will be overwritten unless you cancel and cannot be restored. Filtering will keep *any* numerical digits and starting \"-\" in the string.  Filtering also does not prevent duplicate keys.");
-		msgBoxListToMapRetainData.addButton("Use Default Keys", QMessageBox::ActionRole); // No, these categories don't make sense, but QT makes underlying assumptions about where each button will be
-        msgBoxListToMapRetainData.addButton("Filter Current Keys ", QMessageBox::RejectRole);
-		auto defaultButton = msgBoxListToMapRetainData.addButton("Cancel", QMessageBox::HelpRole);
-	    msgBoxListToMapRetainData.setDefaultButton(defaultButton);
-	    auto ret = msgBoxListToMapRetainData.exec();
+        QMessageBox msgBoxContainerKeyTypeSwitch;
+		msgBoxContainerKeyTypeSwitch.setWindowTitle("Key Type Conversion");
+	    msgBoxContainerKeyTypeSwitch.setText("Fred could not convert all string keys to numbers automatically.  Would you like to use default keys, filter out integers from the current keys or cancel the operation?");
+	    msgBoxContainerKeyTypeSwitch.setInformativeText("Current keys will be overwritten unless you cancel and cannot be restored. Filtering will keep *any* numerical digits and starting \"-\" in the string.  Filtering also does not prevent duplicate keys.");
+		msgBoxContainerKeyTypeSwitch.addButton("Use Default Keys", QMessageBox::ActionRole); // No, these categories don't make sense, but QT makes underlying assumptions about where each button will be
+        msgBoxContainerKeyTypeSwitch.addButton("Filter Current Keys ", QMessageBox::RejectRole);
+		auto defaultButton = msgBoxContainerKeyTypeSwitch.addButton("Cancel", QMessageBox::HelpRole);
+	    msgBoxContainerKeyTypeSwitch.setDefaultButton(defaultButton);
+	    msgBoxContainerKeyTypeSwitch.exec();
+		auto ret = msgBoxContainerKeyTypeSwitch.buttonRole(msgBoxContainerKeyTypeSwitch.clickedButton());
 
         switch(ret){
             // just use default keys
@@ -846,7 +847,8 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
         msgBoxListToMapRetainData.addButton("Purge", QMessageBox::ApplyRole);
 		auto defaultButton = msgBoxListToMapRetainData.addButton("Cancel", QMessageBox::HelpRole);
 	    msgBoxListToMapRetainData.setDefaultButton(defaultButton);
-	    ret = msgBoxListToMapRetainData.exec();
+	    msgBoxListToMapRetainData.exec();
+		ret = msgBoxListToMapRetainData.buttonRole(msgBoxListToMapRetainData.clickedButton());
 
 	    switch (ret) {
             case QMessageBox::RejectRole:
@@ -869,8 +871,10 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
                 }
                 
                 container->numberValues.clear();
+				container->numberValues.resize(container->keys.size(), 0);
                 container->list = list;
                 return container->list;
+				break;
 
             case QMessageBox::ActionRole:
 			{
@@ -896,12 +900,12 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 						container->numberValues.resize(container->keys.size(), 0);
 					}
 
-				}
-				else {
+				} else {
 					// here currentSize must be greater than the key size, because we already dealt with equal size.
 					// So let's add a few keys to make them level.
+					int keyIndex = 0;
+
 					while (currentSize > container->keys.size()) {
-						int keyIndex = 0;
 						SCP_string newKey;
 
 						if (container->stringKeys) {
@@ -923,7 +927,9 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 				container->list = list;
 				return container->list;
 			}
-            case QMessageBox::ApplyRole:
+				break;
+
+			case QMessageBox::ApplyRole:
 
                 container->list = list;
                 container->stringValues.clear();
@@ -1190,11 +1196,12 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 
     if (container->string){
         ret.second = "";
-		container->stringValues.push_back("");
-    } else {
+	} else {
         ret.second = "0";
-		container->numberValues.push_back(0);
 	}
+
+	container->stringValues.push_back("");
+	container->numberValues.push_back(0);
 
     return ret;
 }
@@ -1250,6 +1257,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 
 	if (container->string) {
 		ret.second = value;
+		container->stringValues.push_back(ret.second);
+		container->numberValues.push_back(0);
 	} else {
 		try {
 			ret.second = trimIntegerString(value);
@@ -1260,6 +1269,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 			ret.second = "0";
 			container->numberValues.push_back(0);
 		}
+		
+		container->stringValues.emplace_back("");
 	}
 
 	return ret;
@@ -1308,7 +1319,7 @@ SCP_string VariableDialogModel::changeListItem(int containerIndex, int index, SC
 		}
 
 		try{
-			*listItem = std::stoi(newString);
+			*listItem = std::stoi(trimIntegerString(newString));
 		}
 		catch(...){
 			SCP_string temp;
