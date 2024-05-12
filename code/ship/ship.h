@@ -1095,7 +1095,6 @@ typedef struct ship_collision_physics {
 	float bounce{};				// Bounce factor for all other cases
 	float friction{};				// Controls lateral velocity lost when colliding with a large ship
 	float rotation_factor{};		// Affects the rotational energy of collisions... TBH not sure how.
-	float rotation_factor_player_multiplier{}; // Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
 
 	// Speed & angle constraints for a smooth landing
 	// Note that all angles are stored as a dotproduct between normalized vectors instead. This saves us from having
