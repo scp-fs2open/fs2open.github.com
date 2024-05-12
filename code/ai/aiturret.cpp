@@ -2111,9 +2111,6 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 		// muzzle flash?
 		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
-			//vec3d gun_world_pos;
-			//vm_vec_unrotate(&gun_world_pos, turret_pos, &Objects[OBJ_INDEX(objp)].orient);
-			//vm_vec_add2(&gun_world_pos, &Objects[OBJ_INDEX(objp)].pos);
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
 			particleSource.moveTo(&turret_pos);
