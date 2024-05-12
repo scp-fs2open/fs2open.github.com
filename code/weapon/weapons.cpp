@@ -8795,11 +8795,13 @@ void weapon_render(object* obj, model_draw_list *scene)
 			if (laser_length < 0.0001f)
 				return;
 
-			const float scaled_laser_length_pos_offset = laser_length*wip->laser_pos_offset.xyz.x;
+			vec3d rotated_offset;
+
+			vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &obj->orient);
 
 			vec3d headp, tailp;
-				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, (laser_length + scaled_laser_length_pos_offset));
-				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, scaled_laser_length_pos_offset);
+				vm_vec_scale_add(&tailp, &obj->pos, &rotated_offset, laser_length);
+				vm_vec_scale_add(&headp, &tailp, &obj->orient.vec.fvec, laser_length);
 
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
@@ -8824,20 +8826,20 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				if (Neb_affects_weapons) {
 					float nebalpha = 1.0f;
-					if(nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+					if(nebula_handle_alpha(nebalpha, &tailp, Neb2_fog_visibility_weapon))
 						alphaf *= nebalpha;
 				}
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
 
 				int alpha = static_cast<int>(alphaf * 255.0f);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &obj->pos,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
@@ -8915,7 +8917,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				if (Neb_affects_weapons) {
 					float nebalpha = 1.0f;
-					if (nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+					if (nebula_handle_alpha(nebalpha, &tailp, Neb2_fog_visibility_weapon))
 						alphaf *= nebalpha;
 				}
 
