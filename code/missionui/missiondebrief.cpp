@@ -2115,11 +2115,13 @@ void debrief_close(bool API_Access)
 	}
 
 	// unload bitmaps
-	if (Background_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Background_bitmap >= 0) {
 		bm_release(Background_bitmap);
 	}
 
-	if (Award_bg_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Award_bg_bitmap >= 0) {
 		bm_release(Award_bg_bitmap);
 	}
 
