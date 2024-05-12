@@ -1262,6 +1262,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->laser_glow_tail_scale);
 	}
 
+	if (optional_string("@Laser Position Offset:")) {
+			stuff_vec3d(&wip->laser_pos_offset);
+	}
+
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
@@ -8791,6 +8795,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 			if (laser_length < 0.0001f)
 				return;
 
+			const float scaled_laser_length_pos_offset = laser_length*wip->laser_pos_offset.xyz.x;
+
+			vec3d headp, tailp;
+				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, (laser_length + scaled_laser_length_pos_offset));
+				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, scaled_laser_length_pos_offset);
+
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
 
@@ -8818,9 +8828,6 @@ void weapon_render(object* obj, model_draw_list *scene)
 						alphaf *= nebalpha;
 				}
 
-				vec3d headp;
-				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, laser_length);
-
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
@@ -8842,7 +8849,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wip->laser_bitmap.first_frame + framenum,
 					&headp,
 					scaled_head_radius,
-					&obj->pos,
+					&tailp,
 					scaled_tail_radius,
 					alpha, alpha, alpha);
 			}
@@ -8854,12 +8861,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
 				//  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
-				vec3d headp2, tailp;
+				vec3d headp2, tailp2;
 
 				float glow_scale_l_modified = wip->laser_glow_length_scale / 2.f + 0.5f;
 
-				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, laser_length * glow_scale_l_modified);
-				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, laser_length * (1 - glow_scale_l_modified));
+				vm_vec_scale_add(&headp2, &tailp, &obj->orient.vec.fvec, laser_length * glow_scale_l_modified);
+				vm_vec_scale_add(&tailp2, &tailp, &obj->orient.vec.fvec, laser_length * (1 - glow_scale_l_modified));
 
 				framenum = 0;
 
@@ -8915,7 +8922,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp2, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
 
 				int r = static_cast<int>(static_cast<float>(c.red) * alphaf);
 				int g = static_cast<int>(static_cast<float>(c.green) * alphaf);
@@ -8923,7 +8930,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp2,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius * wip->laser_glow_head_scale,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
@@ -8937,7 +8944,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wip->laser_glow_bitmap.first_frame + framenum,
 					&headp2,
 					scaled_head_radius * wip->laser_glow_head_scale,
-					&tailp,
+					&tailp2,
 					scaled_tail_radius * wip->laser_glow_tail_scale,
 					r, g, b);
 			}
@@ -9140,6 +9147,7 @@ void weapon_info::reset()
 	this->laser_glow_head_scale = 2.3f;
 	this->laser_glow_tail_scale = 2.3f;
 	this->laser_radius_curve_idx = -1;
+	vm_vec_zero(&this->laser_pos_offset);
 	this->laser_alpha_curve_idx = -1;
 
 	this->light_color_set = false;
