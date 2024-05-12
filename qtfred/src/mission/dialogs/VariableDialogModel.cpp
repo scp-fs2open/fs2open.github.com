@@ -712,15 +712,12 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
     if (container->stringKeys) {
         // Ok, this is the complicated type.  First check if all keys can just quickly be transferred to numbers.
         bool quickConvert = true;
-		int test;
+
         for (auto& key : container->keys) {
-            try {                    
-                test = std::stoi(key);
-            }
-            catch (...) {
-                quickConvert = false;
-				nprintf(("Cyborg", "This is Cyborg. Long story short, I don't need this variable, but c++ and its linters think I do. So who knows, maybe you can use this. Last good number on conversion was: %i\n", test));
-            }
+            if(key != trimIntegerString(key)){
+				quickConvert = false;
+				break;
+			}
         } 
 
         // Don't even notify the user. Switching back is exceedingly easy.
