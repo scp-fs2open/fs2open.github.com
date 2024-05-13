@@ -8799,6 +8799,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 			vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &obj->orient);
 
+			// By default, the laser's actual position is at its tail point, near the trailing edge of the bitmap.
+			// Before deriving the headp from the tailp, we move the tailp by the modder-specified offset, multiplied by laser_length.
+			// That way, the offset is relative to laser_length, and moving the bitmap so that the laser's position is, for example,
+			// at the center or head of the laser is easy.
 			vec3d headp, tailp;
 				vm_vec_scale_add(&tailp, &obj->pos, &rotated_offset, laser_length);
 				vm_vec_scale_add(&headp, &tailp, &obj->orient.vec.fvec, laser_length);
