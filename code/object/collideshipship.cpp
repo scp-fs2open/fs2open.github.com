@@ -704,6 +704,9 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	}
 	heavy_denom += 1.0f / heavy->phys_info.mass;
 
+	// calculate the effect on the velocity of the collison point per unit impulse
+	// first find the effect thru change in rotvel
+	// then find the change in the cm vel
 	vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
 	get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
 	vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
