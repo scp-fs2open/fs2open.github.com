@@ -633,7 +633,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$align to target when guarding stationary ship:", AI::Profile_Flags::Align_to_target_when_guarding_still);
 
-				if (optional_string("$rotation fac multiplier for player collisions:")) {
+				if (optional_string("$rotation factor multiplier for player collisions:")) {
 					stuff_float(&profile->rot_fac_multiplier_ply_collisions);
 				}
 
