@@ -126,20 +126,20 @@ class SourceOrigin {
 	 * @brief Moves the source to the specified world location
 	 * @param pos The world position
 	 */
-	void moveTo(vec3d* pos);
+	void moveTo(const vec3d* pos);
 
 	/**
 	 * @brief Moves the source to the specified beam object
 	 * @param objp The hosting beam
 	 */
-	void moveToBeam(object* objp);
+	void moveToBeam(const object* objp);
 
 	/**
 	 * @brief Moves the source to the specified object with an offset
 	 * @param objp The hosting object
 	 * @param offset The position relative to this object
 	 */
-	void moveToObject(object* objp, vec3d* offset);
+	void moveToObject(const object* objp, const vec3d* offset);
 
 	/**
 	 * @brief Moves the source to the specified particle
@@ -151,7 +151,7 @@ class SourceOrigin {
 	* @brief Sets the velocity of the source, will not move the source, but particles created may inherit this velocity
 	* @param vel The world velocity
 	*/
-	void setVelocity(vec3d* vel);
+	void setVelocity(const vec3d* vel);
 
 	friend class ParticleSource;
 };

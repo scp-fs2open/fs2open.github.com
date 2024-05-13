@@ -68,7 +68,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveToObject(object* obj, vec3d* d)
+	void ParticleSourceWrapper::moveToObject(const object* obj, const vec3d* d)
 	{
 		for (auto& source : m_sources)
 		{
@@ -76,7 +76,7 @@ namespace particle
 		}
 	}	
 	
-	void ParticleSourceWrapper::moveToBeam(object* obj)
+	void ParticleSourceWrapper::moveToBeam(const object* obj)
 	{
 		for (auto& source : m_sources)
 		{
@@ -84,7 +84,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveTo(vec3d* pos)
+	void ParticleSourceWrapper::moveTo(const vec3d* pos)
 	{
 		for (auto& source : m_sources)
 		{
@@ -92,7 +92,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setVelocity(vec3d* vel)
+	void ParticleSourceWrapper::setVelocity(const vec3d* vel)
 	{
 		for (auto& source : m_sources)
 		{
@@ -100,7 +100,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative)
+	void ParticleSourceWrapper::setOrientationFromNormalizedVec(const vec3d* normalizedDir, const bool relative)
 	{
 		for (auto& source : m_sources)
 		{
@@ -109,7 +109,7 @@ namespace particle
 	}
 
 
-	void ParticleSourceWrapper::setOrientationFromVec(vec3d* dir, bool relative)
+	void ParticleSourceWrapper::setOrientationFromVec(const vec3d* dir, const bool relative)
 	{
 		for (auto& source : m_sources)
 		{
@@ -117,7 +117,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationMatrix(matrix* mtx, bool relative)
+	void ParticleSourceWrapper::setOrientationMatrix(const matrix* mtx, const bool relative)
 	{
 		for (auto& source : m_sources)
 		{
@@ -125,7 +125,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationNormal(vec3d* normal)
+	void ParticleSourceWrapper::setOrientationNormal(const vec3d* normal)
 	{
 		for (auto& source : m_sources)
 		{

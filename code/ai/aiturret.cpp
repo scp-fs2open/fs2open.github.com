@@ -1989,14 +1989,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					// do mflash if the weapon has it
 					if (wip->muzzle_effect.isValid()) {
-						//copy to convert from const vecs to vecs
-						//should be removed when changes are made to particle functions
-						vec3d firing_pos2 = *firing_pos;
-						vec3d firing_vec2 = *firing_vec;
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-						particleSource.moveTo(&firing_pos2);
-						particleSource.setOrientationFromVec(&firing_vec2);
+						particleSource.moveTo(firing_pos);
+						particleSource.setOrientationFromVec(firing_vec);
 						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
 						particleSource.finish();
 					}
