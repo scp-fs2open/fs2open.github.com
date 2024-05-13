@@ -1051,12 +1051,28 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// HACK - let the flak guns do this on their own since they fire so quickly
 	// Also don't create if its the player in the cockpit unless he's also got show_ship_model, provided render_player_mflash isnt on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
-	bool player_show_ship_model = objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
-	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
+	bool player_show_ship_model =
+		objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
+	if (!(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
-		vec3d real_dir;
-		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);	
-		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
+			//if there's a muzzle effect entry, we use that
+			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
+				vec3d gun_world_pos;
+				vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[OBJ_INDEX(objp)].orient);
+				vm_vec_add2(&gun_world_pos, &Objects[OBJ_INDEX(objp)].pos);
+
+				//spawn particle effect
+				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
+				particleSource.moveTo(&gun_world_pos);
+				particleSource.setOrientationFromVec(gun_dir);
+				particleSource.setVelocity(&objp->phys_info.vel);
+				particleSource.finish();
+			//if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
+			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
+				vec3d real_dir;
+				vm_vec_rotate(&real_dir, gun_dir, &objp->orient);
+				mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
+			}
 	}
 
 	if ( pm->num_lights < 1 ) return;

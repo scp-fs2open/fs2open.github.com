@@ -2373,12 +2373,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	// muzzle flash
-	if ( optional_string("$Muzzleflash:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+	if (optional_string("$Muzzle Effect:")) {
+		wip->muzzle_effect = particle::util::parseEffect(wip->name);
+	} else {
+		// muzzle flash
+		if (optional_string("$Muzzleflash:")) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		// look it up
-		wip->muzzle_flash = mflash_lookup(fname);
+			// look it up
+			wip->muzzle_flash = mflash_lookup(fname);
+		}
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -9285,6 +9289,8 @@ void weapon_info::reset()
 
 	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
+
+	this->muzzle_effect = particle::ParticleEffectHandle::invalid();
 
 	this->state_effects.clear();
 
