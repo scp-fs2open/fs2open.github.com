@@ -633,6 +633,10 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$align to target when guarding stationary ship:", AI::Profile_Flags::Align_to_target_when_guarding_still);
 
+				if (optional_string("$rotation factor multiplier for player collisions:")) {
+					stuff_float(&profile->rot_fac_multiplier_ply_collisions);
+				}
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -722,6 +726,7 @@ void ai_profile_t::reset()
 	second_order_lead_predict_factor = 0;
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 	turret_target_recheck_time = 2000.0f;
+	rot_fac_multiplier_ply_collisions = 0.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
