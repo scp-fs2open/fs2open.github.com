@@ -491,7 +491,6 @@ void VariableDialog::onContainersSelectionChanged()
 	applyModel();
 }
 
-// TODO, finish this function
 void VariableDialog::onContainerContentsTableUpdated() 
 {
 	if (_applyingModel){

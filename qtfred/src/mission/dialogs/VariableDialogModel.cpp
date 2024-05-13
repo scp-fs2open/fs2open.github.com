@@ -27,9 +27,15 @@ bool VariableDialogModel::checkValidModel()
     std::unordered_set<SCP_string> namesTaken;
     std::unordered_set<SCP_string> duplicates;
 
+    int emptyVarNames = 0;
+
     for (const auto& variable : _variableItems){
         if (!namesTaken.insert(variable.name).second) {
             duplicates.insert(variable.name);
+        }
+
+        if (variable.name.empty()){
+            ++emptyVarNames;
         } 
     }
 
@@ -45,17 +51,24 @@ bool VariableDialogModel::checkValidModel()
             }
         }
         
-        sprintf(messageOut, "There are %zu duplicate variables:\n", duplicates.size());
+        sprintf(messageOut, "There are %zu duplicate variable names:\n", duplicates.size());
         messageOut += messageBuffer + "\n\n";
     }
 
     duplicates.clear();
     std::unordered_set<SCP_string> namesTakenContainer;
     SCP_vector<SCP_string> duplicateKeys;
+    int emptyContainerNames = 0;
+    int emptyKeys = 0;
+    int notNumberKeys = 0;
 
     for (const auto& container : _containerItems){
         if (!namesTakenContainer.insert(container.name).second) {
             duplicates.insert(container.name);
+        }
+
+        if (container.name.empty()){
+            ++emptyContainerNames;
         }
 
         if (!container.list){
@@ -63,8 +76,17 @@ bool VariableDialogModel::checkValidModel()
 
             for (const auto& key : container.keys){
                 if (!keysTakenContainer.insert(key).second) {
-                    SCP_string temp = key + "in map" + container.name + ", ";
+                    SCP_string temp = "\"" + key + "\" in map \"" + container.name + "\", ";
                     duplicateKeys.push_back(temp);
+                }
+
+                if (key.empty()){
+                    ++emptyKeys;
+                } else if (!container->stringKeys){
+                        if (key != trimNumberString(key)){
+                            ++notNumberKeys;
+                        }
+                    }
                 }
             }
         }
@@ -99,6 +121,28 @@ bool VariableDialogModel::checkValidModel()
         sprintf(temp, "There are %zu duplicate map keys:\n\n", duplicateKeys.size());
         messageOut += messageBuffer + "\n";
     }
+
+    if (emptyVarNames > 0){
+        messageBuffer.clear();
+        sprintf(messageBuffer, "There are %i empty variable names which must be populated.\n", emptyVarNames);
+
+        messageOut += messageBuffer;        
+    }
+
+    if (emptyContainerNames > 0){
+        messageBuffer.clear();
+        sprintf(messageBuffer, "There are %i empty container names which must be populated.\n", emptyContainerNames);
+
+        messageOut += messageBuffer;        
+    }
+
+    if (emptyKeys > 0){
+        messageBuffer.clear();
+        sprintf(messageBuffer, "There are %i empty keys which must be populated.\n", emptyKeys);
+
+        messageOut += messageBuffer;
+    }
+
 
     if (messageOut.empty()){
         return true;
