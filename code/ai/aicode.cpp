@@ -10949,7 +10949,8 @@ void ai_guard()
 					set_accel_for_target_speed(Pl_objp, (dist_to_goal_point-10.0f)/2.0f);
 				} else if (Pl_objp->phys_info.speed < 1.0f) {
 					if (aip->ai_profile_flags[AI::Profile_Flags::Align_to_target_when_guarding_still]) {
-						turn_towards_point(Pl_objp, &guard_objp->pos, nullptr, 0.0f, &guard_objp->orient);
+						vec3d goal_vec = guard_objp->orient.vec.fvec + Pl_objp->pos;
+						turn_towards_point(Pl_objp, &goal_vec, nullptr, 0.0f, &guard_objp->orient);
 					} else {
 						turn_away_from_point(Pl_objp, &guard_objp->pos, 0.0f);
 					}
