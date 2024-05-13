@@ -477,6 +477,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$debris damage respects 'big damage' flag:", AI::Profile_Flags::Debris_respects_big_damage);
 
+				set_flag(profile, "$don't limit change in speed due to physics whack:", AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);

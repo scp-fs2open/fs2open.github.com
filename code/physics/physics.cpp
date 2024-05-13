@@ -32,8 +32,8 @@
 #define ROTVEL_CAP		14.0			// Rotational velocity cap for live objects
 #define DEAD_ROTVEL_CAP	16.3			// Rotational velocity cap for dead objects
 
-#define MAX_SHIP_SPEED		500		// Maximum speed allowed after whack or shockwave
-#define RESET_SHIP_SPEED	440		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
+constexpr float MAX_SHIP_WHACK_DELTA = 500.0f;		// Maximum change in speed allowed after whack or shockwave
+constexpr float RESET_SHIP_WHACK_DELTA = 440.0f;	// Change in speed that a ship is reset to after exceeding MAX_SHIP_WHACK_DELTA
 
 #define	REDUCED_DAMP_FACTOR	10		// increase in side_slip and acceleration time constants (scaled according to reduced damp time)
 #define	REDUCED_DAMP_VEL		30		// change in velocity at which reduced_damp_time is 2000 ms
@@ -780,6 +780,27 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 }
 
 
+void physics_maybe_reset_speed_after_whack(physics_info *pi, const vec3d *previous_vel, const char *source)
+{
+	// for release builds
+	SCP_UNUSED(source);
+
+	if (pi->flags & PF_USE_VEL || The_mission.ai_profile->flags[AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack])
+		return;
+
+	vec3d delta_vel = pi->vel - *previous_vel;
+	float speed_delta = vm_vec_mag(&delta_vel);
+
+	// Limit change in speed due to whack
+	if (speed_delta > MAX_SHIP_WHACK_DELTA)
+	{
+		// Get DaveA
+		nprintf(("Physics", "speed reset in %s [change in speed: %f; current speed: %f]\n", source, speed_delta, vm_vec_mag(&pi->vel)));
+		vm_vec_normalize(&delta_vel);
+		vm_vec_scale_add(&pi->vel, previous_vel, &delta_vel, RESET_SHIP_WHACK_DELTA);
+	}
+}
+
 #define WHACK_LIMIT 0.001f
 #define ROTVEL_WHACK_CONST 0.12f
 
@@ -828,7 +849,6 @@ void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info 
 	physics_apply_whack(vm_vec_mag(impulse), pi, &delta_rotvel, &delta_vel, orient);
 }
 
-
 // This function applies the calculated delta rotational and linear velocities calculated by physics_calculate_and_apply_whack
 // or dock_calculate_and_apply_whack_docked_object in objectdock.cpp if it was a docked object
 void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
@@ -852,13 +872,10 @@ void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotv
 		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
 	}
 
+	vec3d previous_vel = pi->vel;
 	vm_vec_add2(&pi->vel, delta_vel);
-	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
-		// Get DaveA
-		nprintf(("Physics", "speed reset in physics_apply_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
-		vm_vec_normalize(&pi->vel);
-		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
-	}
+
+	physics_maybe_reset_speed_after_whack(pi, &previous_vel, "physics_apply_whack");
 
 	// set so velocity will ramp starting from current speed
 	// ramped velocity is now affected by collision
@@ -1039,20 +1056,21 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 		vm_vec_add2(&pi->rotvel, &delta_rotvel);
 	}
 
+
 	// set reduced translational damping, set flags
 	float velocity_scale = (float)MAX_VEL*scale;
 	pi->flags |= PF_REDUCED_DAMP;
 	update_reduced_damp_timestamp( pi, velocity_scale*pi->mass );
+
+	vec3d previous_vel = pi->vel;
 	vm_vec_scale_add2( &pi->vel, direction_vec, velocity_scale );
-	vm_vec_rotate(&pi->prev_ramp_vel, &pi->vel, orient);	// set so velocity will ramp starting from current speed
 
 	// check that kick from shockwave is not too large
-	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
-		// Get DaveA
-		nprintf(("Physics", "speed reset in physics_apply_shock [speed: %f]\n", vm_vec_mag(&pi->vel)));
-		vm_vec_normalize(&pi->vel);
-		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
-	}
+	physics_maybe_reset_speed_after_whack(pi, &previous_vel, "physics_apply_shock");
+
+	// set so velocity will ramp starting from current speed
+	// ramped velocity is now affected by shockwave
+	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );
 }
 
 // ----------------------------------------------------------------------------
@@ -1081,6 +1099,7 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 //	vm_vec_scale( &body_delta_rotvel, (float)	ROTVEL_COLLIDE_WHACK_CONST );
 	vm_vec_add2( &pi->rotvel, &body_delta_rotvel );
 
+	pi->flags |= PF_REDUCED_DAMP;
 	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
 
 	// find time for shake from weapon to end
@@ -1091,19 +1110,15 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 		}
 	}
 
-	pi->flags |= PF_REDUCED_DAMP;
+	vec3d previous_vel = pi->vel;
 	vm_vec_scale_add2( &pi->vel, impulse, 1.0f / pi->mass );
+
 	// check that collision does not give ship too much speed
-	// reset if too high
-	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
-		// Get DaveA
-		nprintf(("Physics", "speed reset in physics_collide_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
-		vm_vec_normalize(&pi->vel);
-		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
-	}
-	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );		// set so velocity will ramp starting from current speed
-																					// ramped velocity is now affected by collision
-	// rotate previous ramp velocity (in model coord) to be same as vel (in world coords)
+	physics_maybe_reset_speed_after_whack(pi, &previous_vel, "physics_collide_whack");
+
+	// set so velocity will ramp starting from current speed
+	// ramped velocity is now affected by collision
+	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );
 }
 
 

@@ -163,6 +163,7 @@ namespace AI {
 		Hudsquadmsg_tactical_disarm_disable,
 		Align_to_target_when_guarding_still,
 		Debris_respects_big_damage,
+		Dont_limit_change_in_speed_due_to_physics_whack,
 
 		NUM_VALUES
 	};
