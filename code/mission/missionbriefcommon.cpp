@@ -691,14 +691,6 @@ void brief_init_screen(int  /*multiplayer_flag*/)
 	bscreen.resize          = GR_RESIZE_MENU;
 }
 
-// --------------------------------------------------------------------------------------
-//	brief_init_colors()
-//
-//
-void brief_init_colors()
-{
-}
-
 bool brief_special_closeup(int briefing_icon_type)
 {
 	switch (briefing_icon_type)
@@ -870,7 +862,6 @@ void brief_init_map()
 	The_grid = brief_create_default_grid();
 	brief_maybe_create_new_grid(The_grid, pos, orient, 1);
 
-	brief_init_colors();
 	brief_move_icon_reset();
 
 	brief_preload_anims();
