@@ -49,23 +49,23 @@ namespace particle
 
 		void moveToParticle(const WeakParticlePtr& ptr);
 
-		void moveToObject(object* obj, vec3d* localPos);
+		void moveToObject(const object* obj, const vec3d* localPos);
 
-		void moveToBeam(object* obj);
+		void moveToBeam(const object* obj);
 
-		void moveTo(vec3d* pos);
+		void moveTo(const vec3d* pos);
 
-		void setVelocity(vec3d* vel);
+		void setVelocity(const vec3d* vel);
 
-		void setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative = false);
+		void setOrientationFromNormalizedVec(const vec3d* normalizedDir, const bool relative = false);
 
-		void setOrientationFromVec(vec3d* dir, bool relative = false);
+		void setOrientationFromVec(const vec3d* dir, const bool relative = false);
 
-		void setOrientationMatrix(matrix* mtx, bool relative = false);
+		void setOrientationMatrix(const matrix* mtx, const bool relative = false);
 
-		void setOrientationNormal(vec3d* normal);
+		void setOrientationNormal(const vec3d* normal);
 
-		void setWeaponState(WeaponState state);
+		void setWeaponState(const WeaponState state);
 	};
 }
 
