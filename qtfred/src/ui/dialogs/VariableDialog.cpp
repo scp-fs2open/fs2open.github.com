@@ -26,7 +26,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Reject if the user wants to.
 	connect(ui->OkCancelButtons, &QDialogButtonBox::rejected, this, &VariableDialog::preReject);
 	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::reject);
+	connect(this, &QDialog::rejected, _model.get(), &VariableDialogModel::preReject);
 	
 	connect(ui->variablesTable, 
 		&QTableWidget::itemChanged,
