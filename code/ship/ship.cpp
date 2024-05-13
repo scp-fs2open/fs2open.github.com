@@ -3778,7 +3778,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	parse_game_sound("$Shockwave Sound:", &sci->blast_sound_id);
 
 	if(optional_string("$Explosion Animations:")){
-		stuff_fireball_index_list(sip->explosion_bitmap_anims, sci->name);
+		stuff_fireball_index_list(sip->explosion_bitmap_anims, sip->name);
 	}
 
 	if (optional_string("$Weapon Model Draw Distance:")) {
