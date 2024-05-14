@@ -40553,14 +40553,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//phreak
 	{ OP_SCRAMBLE_MESSAGES, "scramble-messages\r\n"
-		"\tCauses messages to be sent as if the player has sustained communications subsystem or EMP damage.  This effect can be reversed using unscramble-messages.  Takes zero or more arguments.\r\n"
-		"\tAll (Optional):\tName of the ship for which to scramble messages.  If no ships are specified, message scrambling will be turned on for all messages the player receives.\r\n"
+		"\tCauses messages to be sent or received as if the player had sustained communications subsystem or EMP damage.  This effect can be reversed using unscramble-messages.  Takes zero or more arguments.\r\n"
+		"\tAll (Optional):\tName of the ship for which to scramble messages.  If no ships are specified, message scrambling will be turned on for the player.\r\n"
 	},
 
 	//phreak
 	{ OP_UNSCRAMBLE_MESSAGES, "unscramble-messages\r\n"
-		"\tUndoes the effects of scramble-messages, causing messages to be sent clearly.  Takes zero or more arguments.\r\n"
-		"\tAll (Optional):\tName of the ship for which to scramble messages.  If no ships are specified, message scrambling will be turned on for all messages the player receives.\r\n"
+		"\tUndoes the effects of scramble-messages, causing messages to be sent or received clearly (conditions permitting).  Takes zero or more arguments.\r\n"
+		"\tAll (Optional):\tName of the ship for which to scramble messages.  If no ships are specified, message scrambling will be turned off for the player.\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CUTSCENE_BARS, "set-cutscene-bars\r\n"

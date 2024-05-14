@@ -1988,7 +1988,15 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					}
 
 					// do mflash if the weapon has it
-					if (wip->muzzle_flash >= 0) {
+					if (wip->muzzle_effect.isValid()) {
+						//spawn particle effect
+						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
+						particleSource.moveTo(firing_pos);
+						particleSource.setOrientationFromVec(firing_vec);
+						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
+						particleSource.finish();
+					}
+					else if (wip->muzzle_flash >= 0) {
 						mflash_create(firing_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
@@ -2098,7 +2106,15 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		}
 
 		// muzzle flash?
-		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
+		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
+			//spawn particle effect
+			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
+			particleSource.moveTo(&turret_pos);
+			particleSource.setOrientationFromVec(&turret_fvec);
+			particleSource.setVelocity(&Objects[tsi->parent_objnum].phys_info.vel);
+			particleSource.finish();
+		}
+		else if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
 			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
 		}
 

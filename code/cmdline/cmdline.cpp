@@ -200,6 +200,7 @@ Flag exe_params[] =
 	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
 	{ "-vr",				"Enable Virtual Reality Mode",				true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vr", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
+	{ "-orig_speedx_range", "Restrict speedup/slowdown (1x to 4x)", 	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-orig_speedx_range", },
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -534,6 +535,7 @@ cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_f
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
+cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
 cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
@@ -572,6 +574,7 @@ int Cmdline_verify_vps = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
+bool Cmdline_retail_time_compression_range = false;
 bool Cmdline_benchmark_mode = false;
 const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
@@ -2264,6 +2267,11 @@ bool SetCmdlineParams()
 	if (no_unfocused_pause_arg.found())
 	{
 		Cmdline_no_unfocus_pause = true;
+	}
+
+	if (retail_time_compression_range_arg.found())
+	{
+		Cmdline_retail_time_compression_range = true;
 	}
 	
 	if (benchmark_mode_arg.found())

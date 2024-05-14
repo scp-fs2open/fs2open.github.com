@@ -118,6 +118,9 @@ public:
 	// how often turrets shoulds check for new targets, milliseconds
 	float turret_target_recheck_time;
 
+	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
+	float rot_fac_multiplier_ply_collisions; 
+
     void reset();
 };
 

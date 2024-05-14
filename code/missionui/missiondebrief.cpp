@@ -2029,21 +2029,23 @@ void debrief_init(bool API_Access)
 		multi_debrief_init();
 
 		// if i'm not the host of the game, disable the multi kick button
-		if (!(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if (!API_Access && !(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Buttons[gr_screen.res][MULTI_KICK].button.disable();
 		}
 	} else {
-		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
-		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
-		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
-		Buttons[gr_screen.res][MULTI_KICK].button.disable();
-		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.hide();
-		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.hide();
-		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.hide();		
-		Buttons[gr_screen.res][MULTI_KICK].button.hide();
+		if (!API_Access) {
+			Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
+			Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
+			Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
+			Buttons[gr_screen.res][MULTI_KICK].button.disable();
+			Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.hide();
+			Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.hide();
+			Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.hide();
+			Buttons[gr_screen.res][MULTI_KICK].button.hide();
+		}
 	}
 
-	if (!Award_active) {
+	if (!API_Access && !Award_active) {
 		Buttons[gr_screen.res][MEDALS_BUTTON].button.disable();
 		Buttons[gr_screen.res][MEDALS_BUTTON].button.hide();
 	}
@@ -2115,11 +2117,13 @@ void debrief_close(bool API_Access)
 	}
 
 	// unload bitmaps
-	if (Background_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Background_bitmap >= 0) {
 		bm_release(Background_bitmap);
 	}
 
-	if (Award_bg_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Award_bg_bitmap >= 0) {
 		bm_release(Award_bg_bitmap);
 	}
 
@@ -2135,8 +2139,10 @@ void debrief_close(bool API_Access)
 		bm_release(Badge_bitmap);
 	}
 
-	Debrief_ui_window.destroy();
-	common_free_interface_palette(); // restore game palette
+	if (!API_Access) {
+		Debrief_ui_window.destroy();
+		common_free_interface_palette(); // restore game palette
+	}
 	show_stats_close();
 
 	if (Game_mode & GM_MULTIPLAYER){

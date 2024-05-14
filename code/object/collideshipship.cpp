@@ -688,47 +688,45 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
 	// then find the change in the cm vel
+	vm_vec_cross(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
+	get_I_inv(&heavy_I_inv, &heavy->phys_info.I_body_inv, &heavy->orient);
+	vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
+	float rotation_factor_heavy = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 	if (heavy == Player_obj) {
-		vm_vec_zero( &delta_rotvel_heavy );
-		heavy_denom = 1.0f / heavy->phys_info.mass;
-	} else {
-		vm_vec_cross(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
-		get_I_inv(&heavy_I_inv, &heavy->phys_info.I_body_inv, &heavy->orient);
-		vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
-		float rotation_factor = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
-		vm_vec_scale(&delta_rotvel_heavy, rotation_factor);		// hack decrease rotation (delta_rotvel)
-		vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
-		heavy_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
-		if (heavy_denom < 0) {
-			// sanity check
-			heavy_denom = 0.0f;
-		}
-		heavy_denom += 1.0f / heavy->phys_info.mass;
-	} 
+		rotation_factor_heavy *= The_mission.ai_profile->rot_fac_multiplier_ply_collisions;
+	}
+	vm_vec_scale(&delta_rotvel_heavy, rotation_factor_heavy); // hack decrease rotation (delta_rotvel)
+	vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
+	heavy_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
+	if (heavy_denom < 0) {
+		// sanity check
+		heavy_denom = 0.0f;
+	}
+	heavy_denom += 1.0f / heavy->phys_info.mass;
 
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
 	// then find the change in the cm vel
-	// SUSHI: If on a landing surface, use the same shortcut the player gets
-	// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
-	// when trying to do AI landings for certain ships
-	if (lighter == Player_obj || subsys_landing_allowed) {
-		vm_vec_zero( &delta_rotvel_light );
-		light_denom = 1.0f / lighter->phys_info.mass;
-	} else {
-		vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
-		get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
-		vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
-		float rotation_factor = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
-		vm_vec_scale(&delta_rotvel_light, rotation_factor);		// hack decrease rotation (delta_rotvel)
-		vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
-		light_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
-		if (light_denom < 0) {
-			// sanity check
-			light_denom = 0.0f;
-		}
-		light_denom += 1.0f / lighter->phys_info.mass;
-	} 
+	vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
+	get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
+	vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
+	float rotation_factor_light = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
+	if (subsys_landing_allowed) {
+		// SUSHI: If on a landing surface, use the same shortcut the player gets
+		// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
+		// when trying to do AI landings for certain ships
+		rotation_factor_light *= 0.0f;
+	} else if (lighter == Player_obj) {
+		rotation_factor_light *= The_mission.ai_profile->rot_fac_multiplier_ply_collisions;
+	}
+	vm_vec_scale(&delta_rotvel_light, rotation_factor_light); // hack decrease rotation (delta_rotvel)
+	vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
+	light_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
+	if (light_denom < 0) {
+		// sanity check
+		light_denom = 0.0f;
+	}
+	light_denom += 1.0f / lighter->phys_info.mass;
 
 	// calculate the necessary impulse to achieved the desired relative velocity after the collision
 	// update damage info in mc

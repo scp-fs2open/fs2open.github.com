@@ -350,6 +350,8 @@ struct weapon_info
 	float laser_glow_tail_scale;
 	int	laser_radius_curve_idx;				// tail + head radius over time curve
 	float laser_min_pixel_size;
+	vec3d	laser_pos_offset;
+
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
 	int laser_alpha_curve_idx;			// alpha over time curve
 
@@ -481,6 +483,8 @@ struct weapon_info
 
 	particle::ParticleEffectHandle piercing_impact_effect;
 	particle::ParticleEffectHandle piercing_impact_secondary_effect;
+
+	particle::ParticleEffectHandle muzzle_effect;
 
 	// Particle effect for the various states, WeaponState::NORMAL is the state for the whole lifetime, even for missiles
 	SCP_unordered_map<WeaponState, particle::ParticleEffectHandle, WeaponStateHash> state_effects;

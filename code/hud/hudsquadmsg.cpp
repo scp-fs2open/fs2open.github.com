@@ -639,7 +639,7 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 		if ( mission_is_repair_scheduled( tobj ) ) {
 			message_send_builtin(MESSAGE_ALREADY_ON_WAY, nullptr, nullptr, multi_player_num, multi_player_team);
 		} else {
-			robjnum = hud_support_find_closest(OBJ_INDEX(tobj));
+			robjnum = hud_support_find_closest( tobj );
 			if ( robjnum != -1 ) {
 				message_send_builtin(MESSAGE_ALREADY_ON_WAY, &Ships[Objects[robjnum].instance], nullptr, multi_player_num, multi_player_team);
 			} else {

@@ -1261,7 +1261,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->laser_glow_tail_scale);
 	}
 
-	parse_optional_float_into("@Laser Min Pixel Size:", &wip->laser_min_pixel_size);
+  if (optional_string("@Laser Position Offset:")) {
+			stuff_vec3d(&wip->laser_pos_offset);
+	}
+
+  parse_optional_float_into("@Laser Min Pixel Size:", &wip->laser_min_pixel_size);
 
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
@@ -2374,12 +2378,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	// muzzle flash
-	if ( optional_string("$Muzzleflash:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+	if (optional_string("$Muzzle Effect:")) {
+		wip->muzzle_effect = particle::util::parseEffect(wip->name);
+	} else {
+		// muzzle flash
+		if (optional_string("$Muzzleflash:")) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		// look it up
-		wip->muzzle_flash = mflash_lookup(fname);
+			// look it up
+			wip->muzzle_flash = mflash_lookup(fname);
+		}
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -8792,6 +8800,18 @@ void weapon_render(object* obj, model_draw_list *scene)
 			if (laser_length < 0.0001f)
 				return;
 
+			vec3d rotated_offset;
+
+			vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &obj->orient);
+
+			// By default, the laser's actual position is at its tail point, near the trailing edge of the bitmap.
+			// Before deriving the headp from the tailp, we move the tailp by the modder-specified offset, multiplied by laser_length.
+			// That way, the offset is relative to laser_length, and moving the bitmap so that the laser's position is, for example,
+			// at the center or head of the laser is easy.
+			vec3d headp, tailp;
+				vm_vec_scale_add(&tailp, &obj->pos, &rotated_offset, laser_length);
+				vm_vec_scale_add(&headp, &tailp, &obj->orient.vec.fvec, laser_length);
+
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
 
@@ -8815,27 +8835,20 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				if (Neb_affects_weapons) {
 					float nebalpha = 1.0f;
-					if(nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+					if(nebula_handle_alpha(nebalpha, &tailp, Neb2_fog_visibility_weapon))
 						alphaf *= nebalpha;
 				}
 
-				vec3d headp;
-				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, laser_length);
-
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
-				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp,
-					wip->laser_head_radius * radius_mult,
-					wip->laser_min_pixel_size);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos,
-					wip->laser_tail_radius * radius_mult,
-					wip->laser_min_pixel_size);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, wip->laser_min_pixel_size);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, wip->laser_min_pixel_size);
 
 				int alpha = static_cast<int>(alphaf * 255.0f);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &obj->pos,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
@@ -8847,7 +8860,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wip->laser_bitmap.first_frame + framenum,
 					&headp,
 					scaled_head_radius,
-					&obj->pos,
+					&tailp,
 					scaled_tail_radius,
 					alpha, alpha, alpha);
 			}
@@ -8859,12 +8872,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
 				//  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
-				vec3d headp2, tailp;
+				vec3d headp2, tailp2;
 
 				float glow_scale_l_modified = wip->laser_glow_length_scale / 2.f + 0.5f;
 
-				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, laser_length * glow_scale_l_modified);
-				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, laser_length * (1 - glow_scale_l_modified));
+				vm_vec_scale_add(&headp2, &tailp, &obj->orient.vec.fvec, laser_length * glow_scale_l_modified);
+				vm_vec_scale_add(&tailp2, &tailp, &obj->orient.vec.fvec, laser_length * (1 - glow_scale_l_modified));
 
 				framenum = 0;
 
@@ -8913,7 +8926,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				if (Neb_affects_weapons) {
 					float nebalpha = 1.0f;
-					if (nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+					if (nebula_handle_alpha(nebalpha, &tailp, Neb2_fog_visibility_weapon))
 						alphaf *= nebalpha;
 				}
 
@@ -8921,12 +8934,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
-				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2,
-					wip->laser_head_radius * radius_mult,
-					wip->laser_min_pixel_size);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp,
-					wip->laser_tail_radius * radius_mult,
-					wip->laser_min_pixel_size);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius * radius_mult, wip->laser_min_pixel_size);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp2, wip->laser_tail_radius * radius_mult, wip->laser_min_pixel_size);
 
 				int r = static_cast<int>(static_cast<float>(c.red) * alphaf);
 				int g = static_cast<int>(static_cast<float>(c.green) * alphaf);
@@ -8934,7 +8943,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp2,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius * wip->laser_glow_head_scale,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
@@ -8948,7 +8957,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wip->laser_glow_bitmap.first_frame + framenum,
 					&headp2,
 					scaled_head_radius * wip->laser_glow_head_scale,
-					&tailp,
+					&tailp2,
 					scaled_tail_radius * wip->laser_glow_tail_scale,
 					r, g, b);
 			}
@@ -9152,6 +9161,7 @@ void weapon_info::reset()
 	this->laser_glow_tail_scale = 2.3f;
 	this->laser_radius_curve_idx = -1;
 	this->laser_min_pixel_size = Min_pixel_size_laser;
+	vm_vec_zero(&this->laser_pos_offset);
 	this->laser_alpha_curve_idx = -1;
 
 	this->light_color_set = false;
@@ -9297,6 +9307,8 @@ void weapon_info::reset()
 
 	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
+
+	this->muzzle_effect = particle::ParticleEffectHandle::invalid();
 
 	this->state_effects.clear();
 
