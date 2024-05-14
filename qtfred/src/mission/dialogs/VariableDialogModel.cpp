@@ -83,10 +83,10 @@ bool VariableDialogModel::checkValidModel()
                 if (key.empty()){
                     ++emptyKeys;
                 } else if (!container->stringKeys){
-                        if (key != trimNumberString(key)){
-                            ++notNumberKeys;
-                        }
+                    if (key != trimNumberString(key)){
+                        ++notNumberKeys;
                     }
+                    
                 }
             }
         }
@@ -143,6 +143,10 @@ bool VariableDialogModel::checkValidModel()
         messageOut += messageBuffer;
     }
 
+    if (_variableItems.size() >= MAX_SEXP_VARIABLES){
+        messageOut += "There are more than the max of 250 variables.\n"
+    }
+
 
     if (messageOut.empty()){
         return true;
@@ -176,10 +180,7 @@ bool VariableDialogModel::apply()
             for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
                 if (!stricmp(Sexp_variables[i].variable_name, variable.originalName.c_str())){
                     if (variable.deleted) {
-                        memset(Sexp_variables[i].variable_name, 0, NAME_LENGTH);
-                        memset(Sexp_variables[i].text, 0, NAME_LENGTH);
-                        Sexp_variables[i].type = 0;
-
+                        sexp_variable_delete(i);
                         deletedVariables.insert(variable.originalName);
                     } else {
                         if (variable.name != variable.originalName) {
@@ -202,10 +203,25 @@ bool VariableDialogModel::apply()
                     break;
                 }
             }
+        } else {
+            if (variable.string){
+                variable.flags |= SEXP_VARIABLE_STRING;
+                sexp_add_variable(variable.stringValue.c_str(), variable.name.c_str(), variable.flags, -1);
+            } else {
+                variable.flags |= SEXP_VARIABLE_NUMBER;
+                sexp_add_variable(std::to_string(variable.numberValue).c_str(), variable.name.c_str(), variable.flags, -1);
+            }
         }
 
+        // just in case
         if (!found) {
-            // TODO! Lookup how FRED adds new variables.  (look for an empty slot maybe?)
+            if (variable.string){
+                variable.flags |= SEXP_VARIABLE_STRING;
+                sexp_add_variable(variable.stringValue.c_str(), variable.name.c_str(), variable.flags, -1);
+            } else {
+                variable.flags |= SEXP_VARIABLE_NUMBER;
+                sexp_add_variable(std::to_string(variable.numberValue).c_str(), variable.name.c_str(), variable.flags, -1);
+            }
         }
     }
     
@@ -355,6 +371,10 @@ bool VariableDialogModel::setVariableType(int index, bool string)
         return !string;
     }
 
+    if (!safeToAlterVariable(index)){
+        return variable->string;
+    }
+
     // Here we change the variable type!
     // this variable is currently a string
     if (variable->string) {
@@ -459,7 +479,11 @@ SCP_string VariableDialogModel::setVariableStringValue(int index, SCP_string val
     if (!variable || !variable->string){
         return "";
     }
-    
+
+    if (!safeToAlterVariable(index)){
+        return variable->stringValue;
+    }
+
     variable->stringValue = value;
 	return value;
 }
@@ -473,6 +497,10 @@ int VariableDialogModel::setVariableNumberValue(int index, int value)
         return 0;
     }
     
+    if (!safeToAlterVariable(index)){
+        return variable->numberValue;
+    }
+
     variable->numberValue = value;
 
 	return value;
@@ -484,13 +512,16 @@ SCP_string VariableDialogModel::addNewVariable()
     int count = 1;
     SCP_string name;
 
+    if (atMaxVariables()){
+        return "";
+    }
+
     do {
         name = "";
         sprintf(name, "newVar%i", count);
         variable = lookupVariableByName(name);
         ++count;
-    } while (variable != nullptr && count < 51);
-
+    } while (variable != nullptr && count < MAX_SEXP_VARIABLES);
 
     if (variable){
         return "";
@@ -501,9 +532,14 @@ SCP_string VariableDialogModel::addNewVariable()
     return name;
 }
 
-SCP_string VariableDialogModel::addNewVariable(SCP_string nameIn){
+SCP_string VariableDialogModel::addNewVariable(SCP_string nameIn)
+{
+    if (atMaxVariables()){
+        return "";
+    }
+    
     _variableItems.emplace_back();
-    _variableItems.back().name = nameIn;
+    _variableItems.back().name.substr(0, TOKEN_LENGTH - 1) = nameIn;
     return _variableItems.back().name;
 }
 
@@ -514,6 +550,10 @@ SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName
     // nothing to change, or invalid entry
     if (!variable){
         return "";
+    }
+
+    if (!safeToAlterVariable(index)){
+        return variable->name;
     }
 
     // Truncate name if needed
@@ -532,6 +572,10 @@ SCP_string VariableDialogModel::copyVariable(int index)
 
     // nothing to change, or invalid entry
     if (!variable){
+        return "";
+    }
+
+    if (atMaxVariables()){
         return "";
     }
 
@@ -580,7 +624,7 @@ bool VariableDialogModel::removeVariable(int index, bool toDelete)
         return false;
     }
 
-    if (variable->deleted == toDelete){
+    if (variable->deleted == toDelete || !safeToAlterVariable(index)){
         return variable->deleted;
     }
 
@@ -608,6 +652,9 @@ bool VariableDialogModel::removeVariable(int index, bool toDelete)
     }
 }
 
+bool safeToAlterVariable(int /*index*/){    
+    return true;
+}
 
 // Container Section
 
@@ -1735,6 +1782,10 @@ void VariableDialogModel::swapKeyAndValues(int index)
         }
 
     }
+}
+
+bool safeToAlterContainer(int /*index*/){    
+    return true;
 }
 
 SCP_string VariableDialogModel::changeMapItemNumberValue(int index, int itemIndex, int newValue)
