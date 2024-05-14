@@ -398,7 +398,7 @@ void VariableDialog::onVariablesSelectionChanged()
 	int row = getCurrentVariableRow();
 
 	if (row < 0){
-		updateVariableOptions();
+		updateVariableOptions(false);
 		return;
 	}
 
@@ -482,7 +482,7 @@ void VariableDialog::onContainersSelectionChanged()
 	int row = getCurrentContainerRow();
 
 	if (row < 0) {
-		updateContainerOptions();
+		updateContainerOptions(false);
 		return;
 	}
 
@@ -1165,6 +1165,7 @@ void VariableDialog::applyModel()
 	int x = 0, selectedRow = -1;
 
 	ui->variablesTable->setRowCount(static_cast<int>(variables.size()) + 1);
+	bool safeToAlter = false;
 
 	for (x = 0; x < static_cast<int>(variables.size()); ++x){
 		if (ui->variablesTable->item(x, 0)){
@@ -1180,6 +1181,10 @@ void VariableDialog::applyModel()
 		// there's a deletion.
 		if (selectedRow < 0 && !_currentVariable.empty() && variables[x][0] == _currentVariable){
 			selectedRow = x;
+
+		    if (_model->!safeToAlterVariable(selectedRow)){
+				safeToAlter = true;
+   			}
 		}
 
 		if (ui->variablesTable->item(x, 1)){
@@ -1237,7 +1242,7 @@ void VariableDialog::applyModel()
 		}
 	}
 
-	updateVariableOptions();
+	updateVariableOptions(safeToAlter);
 
 	auto containers = _model->getContainerNames();
 	ui->containersTable->setRowCount(static_cast<int>(containers.size() + 1));
@@ -1314,21 +1319,25 @@ void VariableDialog::applyModel()
 		ui->containersTable->setItem(x, 2, item);
 	}
 
+	bool safeToAlterContainer = false;
+
 	if (selectedRow < 0 && ui->containersTable->rowCount() > 1) {
 		if (ui->containersTable->item(0, 0)){
 			_currentContainer = ui->containersTable->item(0, 0)->text().toStdString();
 			ui->containersTable->clearSelection();
 			ui->containersTable->item(0, 0)->setSelected(true);
 		}
+	} else if (selectedRow > -1){
+		safeToAlterContainer = _model->safeToAlterContainer(selectedRow);
 	}
 
 	// this will update the list/map items.
-	updateContainerOptions();
+	updateContainerOptions(safeToAlterContainer);
 
 	_applyingModel = false;
 };
 
-void VariableDialog::updateVariableOptions()
+void VariableDialog::updateVariableOptions(bool safeToAlter)
 {
 	int row = getCurrentVariableRow();
 
@@ -1348,21 +1357,23 @@ void VariableDialog::updateVariableOptions()
 		return;
 	}
 
+	// options that are always safe
 	ui->copyVariableButton->setEnabled(true);
-	ui->deleteVariableButton->setEnabled(true);
-	ui->setVariableAsStringRadio->setEnabled(true);
-	ui->setVariableAsNumberRadio->setEnabled(true);
 	ui->doNotSaveVariableRadio->setEnabled(true);
 	ui->saveVariableOnMissionCompletedRadio->setEnabled(true);
 	ui->saveVariableOnMissionCloseRadio->setEnabled(true);
 	ui->setVariableAsEternalcheckbox->setEnabled(true);
 	ui->networkVariableCheckbox->setEnabled(true);
 
-	// if nothing is selected, but something could be selected, make it so.
-	if (row < 0 && ui->variablesTable->rowCount() > 1) {
-		row = 0;
-		ui->variablesTable->item(row, 0)->setSelected(true);
-		_currentVariable = ui->variablesTable->item(row, 0)->text().toStdString();
+	// options that are only safe if there are no references
+	if (safeToAlter){
+		ui->deleteVariableButton->setEnabled(true);
+		ui->setVariableAsStringRadio->setEnabled(true);
+		ui->setVariableAsNumberRadio->setEnabled(true);
+	} else {
+		ui->deleteVariableButton->setEnabled(false);
+		ui->setVariableAsStringRadio->setEnabled(false);
+		ui->setVariableAsNumberRadio->setEnabled(false);
 	}
 
 	// start populating values
@@ -1372,7 +1383,7 @@ void VariableDialog::updateVariableOptions()
 
 	// do we need to switch the delete button to a restore button?
 	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "Deleted"){
-		ui->deleteVariableButton->setText("Restore");
+		ui->deleteVariableButton->setText("Restore");		
 
 		// We can't restore empty variable names.
 		if (ui->variablesTable->item(row, 0) && ui->variablesTable->item(row, 0)->text().toStdString().empty()){
@@ -1406,7 +1417,7 @@ void VariableDialog::updateVariableOptions()
 
 }
 
-void VariableDialog::updateContainerOptions()
+void VariableDialog::updateContainerOptions(bool safeToAlter)
 {
 	int row = getCurrentContainerRow();
 
@@ -1448,17 +1459,20 @@ void VariableDialog::updateContainerOptions()
 	} else {
 		auto items = ui->containersTable->selectedItems();
 
+		// options that should always be turned on
 		ui->copyContainerButton->setEnabled(true);
-		ui->deleteContainerButton->setEnabled(true);
-		ui->setContainerAsStringRadio->setEnabled(true);
-		ui->setContainerAsNumberRadio->setEnabled(true);
 		ui->doNotSaveContainerRadio->setEnabled(true);
 		ui->saveContainerOnMissionCompletedRadio->setEnabled(true);
 		ui->saveContainerOnMissionCloseRadio->setEnabled(true);
 		ui->setContainerAsEternalCheckbox->setEnabled(true);
-		ui->setContainerAsMapRadio->setEnabled(true);
-		ui->setContainerAsListRadio->setEnabled(true);
 		ui->networkContainerCheckbox->setEnabled(true);
+
+		// options that require it be safe to alter because the container is not referenced
+		ui->deleteContainerButton->setEnabled(safeToAlter);
+		ui->setContainerAsStringRadio->setEnabled(safeToAlter);
+		ui->setContainerAsNumberRadio->setEnabled(safeToAlter);
+		ui->setContainerAsMapRadio->setEnabled(safeToAlter);
+		ui->setContainerAsListRadio->setEnabled(safeToAlter);
 
 		if (_model->getContainerValueType(row)){
 			ui->setContainerAsStringRadio->setChecked(true);
@@ -1480,15 +1494,15 @@ void VariableDialog::updateContainerOptions()
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 
-			updateContainerDataOptions(true);
+			updateContainerDataOptions(true, safeToAlter);
 
 		} else {
 			ui->setContainerAsListRadio->setChecked(false);
 			ui->setContainerAsMapRadio->setChecked(true);
 
 			// Enable Key Controls
-			ui->setContainerKeyAsStringRadio->setEnabled(true);
-			ui->setContainerKeyAsNumberRadio->setEnabled(true);
+			ui->setContainerKeyAsStringRadio->setEnabled(safeToAlter);
+			ui->setContainerKeyAsNumberRadio->setEnabled(safeToAlter);
 
 			// string keys
 			if (_model->getContainerKeyType(row)){
@@ -1504,7 +1518,7 @@ void VariableDialog::updateContainerOptions()
 			// Don't forget to change headings
 			ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
 			ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
-			updateContainerDataOptions(false);
+			updateContainerDataOptions(false, safeToAlter);
 		}
 
 		ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerEternalFlag(row));
@@ -1529,7 +1543,7 @@ void VariableDialog::updateContainerOptions()
 	}
 }
 
-void VariableDialog::updateContainerDataOptions(bool list)
+void VariableDialog::updateContainerDataOptions(bool list, bool safeToAlter)
 {
 	int row = getCurrentContainerRow();
 
@@ -1553,13 +1567,14 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->addContainerItemButton->setEnabled(true);
 		ui->copyContainerItemButton->setEnabled(true);
 		ui->deleteContainerItemButton->setEnabled(true);
-		ui->containerContentsTable->setRowCount(0);
 		ui->shiftItemDownButton->setEnabled(true);
 		ui->shiftItemUpButton->setEnabled(true);		
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Value"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem(""));
 		ui->swapKeysAndValuesButton->setEnabled(false);
-		
+
+		ui->containerContentsTable->setRowCount(0);
+
 		int x;
 
 		// with string contents
@@ -1681,12 +1696,14 @@ void VariableDialog::updateContainerDataOptions(bool list)
 		ui->containerContentsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Key"));
 		ui->containerContentsTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Value"));
 
-		// Enable shift up and down buttons are off in Map mode.
+		// Enable shift up and down buttons are off in Map mode, because order makes no difference
 		ui->shiftItemUpButton->setEnabled(false);
 		ui->shiftItemDownButton->setEnabled(false);
-		ui->swapKeysAndValuesButton->setEnabled(true);
 
-		// keys I didn't bother to make separate.  Should have done the same with values.
+		// we can swap if it's safe or if the data types match.  If the data types *don't* match, then we run into reference issues.
+		ui->swapKeysAndValuesButton->setEnabled(safeToAlter || _containerItems[row].stringKeys == _containerItems[row].string);
+
+		// keys I didn't bother to make separate.  Should have done the same with values, ah regrets.
 		auto& keys = _model->getMapKeys(row);
 		
 		int x;

@@ -31,9 +31,9 @@ class VariableDialog : public QDialog {
 	void checkValidModel();
 
 	// Helper functions for this
-	void updateVariableOptions();
-	void updateContainerOptions();
-	void updateContainerDataOptions(bool list);
+	void updateVariableOptions(bool safeToAlter);
+	void updateContainerOptions(bool safeToAlter);
+	void updateContainerDataOptions(bool list, bool safeToAlter);
 
 	void onVariablesTableUpdated();
 	void onVariablesSelectionChanged();
