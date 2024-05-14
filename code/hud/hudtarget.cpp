@@ -4751,7 +4751,7 @@ int hud_communications_state(ship *sp, bool for_death_scream)
 	}
 
 	// Goober5000 - check for scrambled communications
-	if (emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages])
+	if ((emp_active_local() && !sp->flags[Ship::Ship_Flags::EMP_doesnt_scramble_messages]) || sp->flags[Ship::Ship_Flags::Scramble_messages])
 		return COMM_SCRAMBLED;
 
 	return COMM_OK;
