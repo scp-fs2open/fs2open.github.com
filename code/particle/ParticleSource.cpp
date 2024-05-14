@@ -156,7 +156,7 @@ float SourceOrigin::getScale() const {
 	}
 }
 
-void SourceOrigin::setVelocity(vec3d* vel) {
+void SourceOrigin::setVelocity(const vec3d* vel) {
 	Assertion(vel, "Invalid vector pointer passed!");
 	if (!vel)
 		return;
@@ -168,26 +168,26 @@ void SourceOrigin::setWeaponState(WeaponState state) {
 	m_weaponState = state;
 }
 
-void SourceOrigin::moveTo(vec3d* pos) {
+void SourceOrigin::moveTo(const vec3d* pos) {
 	Assertion(pos, "Invalid vector pointer passed!");
 
 	m_originType = SourceOriginType::VECTOR;
 	m_origin.m_pos = *pos;
 }
 
-void SourceOrigin::moveToBeam(object* objp) {
+void SourceOrigin::moveToBeam(const object* objp) {
 	Assertion(objp, "Invalid object pointer passed!");
 
 	m_originType = SourceOriginType::BEAM;
-	m_origin.m_object = object_h(objp);
+	m_origin.m_object = object_h(OBJ_INDEX(objp));
 }
 
-void SourceOrigin::moveToObject(object* objp, vec3d* offset) {
+void SourceOrigin::moveToObject(const object* objp, const vec3d* offset) {
 	Assertion(objp, "Invalid object pointer passed!");
 	Assertion(offset, "Invalid vector pointer passed!");
 
 	m_originType = SourceOriginType::OBJECT;
-	m_origin.m_object = object_h(objp);
+	m_origin.m_object = object_h(OBJ_INDEX(objp));
 
 	m_offset = *offset;
 }
