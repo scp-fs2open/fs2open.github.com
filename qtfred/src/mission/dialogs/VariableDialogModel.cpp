@@ -584,7 +584,7 @@ SCP_string VariableDialogModel::copyVariable(int index)
 	SCP_string newName;
 
     do {
-        sprintf(newName, "%i_%s", count, variable->name.substr(0, TOKEN_LENGTH - 4).c_str());
+        sprintf(newName, "%s_%i", variable->name.substr(0, TOKEN_LENGTH - 4).c_str(), count);
         variableSearch = lookupVariableByName(newName);
 
         // open slot found!
@@ -609,7 +609,7 @@ SCP_string VariableDialogModel::copyVariable(int index)
         }
 
 		++count;
-    } while (variableSearch != nullptr && count < 100);
+    } while (variableSearch != nullptr && count < MAX_SEXP_VARIABLES);
 
     return "";
 }
@@ -716,7 +716,7 @@ bool VariableDialogModel::setContainerValueType(int index, bool type)
         return true;
     }
 
-    if (container->string == type){
+    if (container->string == type || !safeToAlterContainer(index)){
         return container->string;
     }
 
@@ -796,7 +796,7 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
         return false;
     }
 
-    if (container->stringKeys == string){
+    if (container->stringKeys == string || !safeToAlterContainer(index)){
         return container->stringKeys;
     }
 
@@ -818,7 +818,7 @@ bool VariableDialogModel::setContainerKeyType(int index, bool string)
         }
 
         // If we couldn't convert easily, then we need some input from the user
-                // now ask about data
+        // now ask about data
         QMessageBox msgBoxContainerKeyTypeSwitch;
 		msgBoxContainerKeyTypeSwitch.setWindowTitle("Key Type Conversion");
 	    msgBoxContainerKeyTypeSwitch.setText("Fred could not convert all string keys to numbers automatically.  Would you like to use default keys, filter out integers from the current keys or cancel the operation?");
@@ -879,8 +879,8 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
         return !list;
     }
 
-    if (container->list == list){
-        return list;
+    if (container->list == list || !safeToAlterContainer(index)){
+        return container->list;
     }
 
     if (container->list) {
@@ -1127,7 +1127,7 @@ SCP_string VariableDialogModel::addContainer()
 SCP_string VariableDialogModel::addContainer(SCP_string nameIn)
 {
     _containerItems.emplace_back();
-    _containerItems.back().name = nameIn;
+    _containerItems.back().name = nameIn.substr(0, TOKEN_LENGTH - 1);
     return _containerItems.back().name;
 }
 
@@ -1140,9 +1140,25 @@ SCP_string VariableDialogModel::copyContainer(int index)
         return "";
     }
 
-    // K.I.S.S. We could guarantee the names be unique, but so can the user, and there will definitely be a lower number of containers
+    // searching for a duplicate is not that hard.
     _containerItems.push_back(*container);
-    _containerItems.back().name = "copy_" + _containerItems.back().name;
+    container = &_containerItems.back();
+
+    SCP_string newName;
+    int count = 0;
+
+    do {
+        sprintf(newName, "%s_%i", container->name.substr(0, TOKEN_LENGTH - 4).c_str(), count);
+        auto containerSearch = lookupVariableByName(newName);
+
+        // open slot found!
+        if (!containerSearch){
+            break;
+        }
+        ++count;
+    }
+
+    _containerItems.back().name = newName;
     _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH - 1);
     return _containerItems.back().name;
 }
@@ -1152,13 +1168,13 @@ SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newNam
     auto container = lookupContainer(index);
 
     // nothing to change, or invalid entry
-    if (!container){
+    if (!container || !safeToAlterContainer(index)){
         return "";
     }
 
-    // We cannot have two containers with the same name, but we need to check this somewhere else (like on accept attempt).
-    container->name = newName;
-    return newName;
+    // We cannot have two containers with the same name, but we need to check that somewhere else (like on accept attempt).
+    container->name = newName.substring(0, TOKEN_LENGTH - 1);
+    return container->name;
 }
 
 bool VariableDialogModel::removeContainer(int index, bool toDelete)
@@ -1169,7 +1185,7 @@ bool VariableDialogModel::removeContainer(int index, bool toDelete)
         return false;
     }
 
-    if (container->deleted == toDelete){
+    if (container->deleted == toDelete || !safeToAlterContainer(index)){
         return container->deleted;
     }
 
@@ -1689,7 +1705,7 @@ void VariableDialogModel::swapKeyAndValues(int index)
     auto container = lookupContainer(index);
 
     // bogus cases
-    if (!container || container->list){
+    if (!container || container->list || !safeToAlterContainer(index)){
         return;
     }
 
