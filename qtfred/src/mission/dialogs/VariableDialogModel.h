@@ -32,7 +32,9 @@ struct containerInfo {
 	SCP_string originalName = "";
 
 	// I found out that keys could be strictly typed as numbers *after* finishing the majority of the model....
-	// So I am just going to store numerical keys as strings and use a bool to differentiate. 
+	// So I am just going to store numerical keys as strings and use a bool to differentiate.
+	// Additionally the reason why these are separate and not in a map is to allow duplicates that the user can fix.
+	// Less friction than a popup telling them they did it wrong.
 	SCP_vector<SCP_string> keys;
 	SCP_vector<int> numberValues;
 	SCP_vector<SCP_string> stringValues;
@@ -145,7 +147,8 @@ private:
 
 	int _deleteWarningCount;
 
-	static SCP_string clampIntegerString(SCP_string source);
+	void sortMap(int index);
+	SCP_string clampIntegerString(SCP_string source);
 
 	variableInfo* lookupVariable(int index){
 		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){

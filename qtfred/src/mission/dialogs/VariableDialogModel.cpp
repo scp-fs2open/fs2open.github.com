@@ -162,12 +162,9 @@ bool VariableDialogModel::checkValidModel()
     }
 }
 
-// TODO! This function in general just needs a lot of work.
 bool VariableDialogModel::apply() 
 {
-
     // what did we delete from the original list?  We need to check these references and clean them.
-    std::unordered_set<SCP_string> deletedVariables;
     SCP_vector<std::pair<int, SCP_string>> nameChangedVariables;
     bool found;
 
@@ -181,7 +178,6 @@ bool VariableDialogModel::apply()
                 if (!stricmp(Sexp_variables[i].variable_name, variable.originalName.c_str())){
                     if (variable.deleted) {
                         sexp_variable_delete(i);
-                        deletedVariables.insert(variable.originalName);
                     } else {
                         if (variable.name != variable.originalName) {
                             nameChangedVariables.emplace_back(i, variable.originalName);   
@@ -226,11 +222,8 @@ bool VariableDialogModel::apply()
     }
     
 
-    // TODO! containers
+    // TODO! containers need to be saved.
     std::unordered_set<SCP_string> deletedContainers;
-
-    // TODO!  Look for referenced variables and containers. 
-    // Need a way to clean up references.  I'm thinking making some pop ups to confirm replacements created in the editor.
 
 	return false;
 }
@@ -652,9 +645,27 @@ bool VariableDialogModel::removeVariable(int index, bool toDelete)
     }
 }
 
-bool safeToAlterVariable(int /*index*/){    
+bool VariableDialogModel::safeToAlterVariable(int index)
+{
+    auto variable = lookupVariable(index);
+    if (!variable){
+        return false;
+    }
+
+    // FIXME! until we can actually count references (via a SEXP backend), this is the best way to go.
+    if (variable.orginalName != ""){
+        return false;
+    }
+
     return true;
 }
+
+bool VariableDialogModel::safeToAlterVariable(const variableInfo& variableItem)
+{
+    // again, FIXME!  Needs actally reference count.
+    return variableItem.originalName == "";
+}
+
 
 // Container Section
 
@@ -1800,8 +1811,25 @@ void VariableDialogModel::swapKeyAndValues(int index)
     }
 }
 
-bool safeToAlterContainer(int /*index*/){    
+bool VariableDialogModel::safeToAlterContainer(int index)
+{   auto container = lookupContainer(index);
+
+    if (!container){
+        return false;
+    }
+
+    // FIXME! Until there's a sexp backend, we can only check if we just created the container.
+    if (container.originalName != ""){
+        return false;
+    }
+
     return true;
+}
+
+bool VariableDialogModel::safeToAlterContainer(const containerInfo& containerItem)
+{
+    // again, FIXME!  Needs actally reference count.
+    return containerItem.originalName == "";
 }
 
 SCP_string VariableDialogModel::changeMapItemNumberValue(int index, int itemIndex, int newValue)
@@ -1884,17 +1912,19 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
 {
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
-    for (const auto& item : _variableItems) {
+    for (const auto& item : _variableItems){
         SCP_string notes = "";
 
-        if (item.deleted) {
+        if (!safeToAlterVariable(item)){
+            notes = "Referenced";            
+        } else if (item.deleted){
             notes = "Deleted";
-        } else if (item.originalName == "") {
+        } else if (item.originalName == ""){
             notes = "New";
         } else if (item.name != item.originalName){
             notes = "Renamed";
-        } else if (item.string && item.stringValue == "") {
-            notes = "Defaulting to empty string";
+        } else if (item.string && item.stringValue == "" || !item.string && item.numberValue == 0){
+            notes = "At default";
         }
 
 		SCP_string temp;
@@ -2040,12 +2070,18 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
         }
 
 
-        if (item.deleted) {
+        if (!safeToAlterContainer(item)){
+            notes = "Referenced"
+        } else if (item.deleted) {
             notes = "Deleted";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
             notes = "Renamed";
+        } else if (!item.list && item.keys.empty()){
+            notes = "Empty Map";
+        } else if (item.list && ((item.string && item.stringValues.empty()) || (!item.string && item.numberValues.empty()))){
+            notes = "Empty List";
         }
 
 		outStrings.push_back(std::array<SCP_string, 3>{item.name, type, notes});
