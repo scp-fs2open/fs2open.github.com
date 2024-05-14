@@ -57,7 +57,7 @@ namespace particle
 
 		void setVelocity(const vec3d* vel);
 
-		void setOrientationFromNormalizedVec(const vec3d* normalizedDir, const bool relative = false);
+		void setOrientationFromNormalizedVec(const vec3d* normalizedDir, bool relative = false);
 
 		void setOrientationFromVec(const vec3d* dir, const bool relative = false);
 
@@ -65,7 +65,7 @@ namespace particle
 
 		void setOrientationNormal(const vec3d* normal);
 
-		void setWeaponState(const WeaponState state);
+		void setWeaponState(WeaponState state);
 	};
 }
 
