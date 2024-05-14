@@ -349,6 +349,7 @@ struct weapon_info
 	float laser_glow_head_scale;
 	float laser_glow_tail_scale;
 	int	laser_radius_curve_idx;				// tail + head radius over time curve
+	float laser_min_pixel_size;
 	vec3d	laser_pos_offset;
 
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
