@@ -1318,6 +1318,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 	container->stringValues.push_back("");
 	container->numberValues.push_back(0);
 
+    sortMap(index);
+
     return ret;
 }
 
@@ -1388,6 +1390,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 		container->stringValues.emplace_back("");
 	}
 
+    sortMap(index);
 	return ret;
 }
 
@@ -1531,7 +1534,9 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         container->keys.push_back(newKey);
         container->stringValues.push_back(copyValue);
+        container->numberValues.push_back(0);
 
+        sortMap(index);
         return std::make_pair(newKey, copyValue);
 
     } else {
@@ -1572,10 +1577,12 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         container->keys.push_back(newKey);
         container->numberValues.push_back(copyValue);
+        container->stringValues.push_back("");
 
         SCP_string temp;
         sprintf(temp, "%i", copyValue);
-
+        sortMap(index);
+    
         return std::make_pair(newKey, temp);
     }
 
@@ -1695,6 +1702,7 @@ SCP_string VariableDialogModel::changeMapItemKey(int index, int keyRow, SCP_stri
 		container->keys[keyRow] = trimIntegerString(newKey);
     }
 
+    sortMap(index);
 	return container->keys[keyRow];
 }
 
@@ -1807,8 +1815,9 @@ void VariableDialogModel::swapKeyAndValues(int index)
             container->string = true;
             container->stringKeys = false;
         }
-
     }
+
+    sortMap(index);
 }
 
 bool VariableDialogModel::safeToAlterContainer(int index)
