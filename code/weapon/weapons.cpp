@@ -8740,6 +8740,16 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 	return side_alpha;
 }
 
+// renders another glow bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
+// uses the alpha data already gathered by weapon_render_headon_bitmap, because the alpha of the glow should always match the alpha of the laser
+void weapon_render_headon_glow_bitmap(float side_alpha, vec3d* headp, vec3d* tailp, int bitmap, float width1, float width2, int r, int g, int b){
+	float head_alpha = 1.0 - side_alpha;
+
+	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
+
+	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b);
+}
+
 void weapon_render(object* obj, model_draw_list *scene)
 {
 	int num;
@@ -8812,6 +8822,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 				vm_vec_scale_add(&tailp, &obj->pos, &rotated_offset, laser_length);
 				vm_vec_scale_add(&headp, &tailp, &obj->orient.vec.fvec, laser_length);
 
+			float main_bitmap_alpha_mult = 1.0;
+
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
 
@@ -8848,7 +8860,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
+					main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
@@ -8943,7 +8955,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp2,
+					weapon_render_headon_glow_bitmap(main_bitmap_alpha_mult, &headp2, &tailp2,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius * wip->laser_glow_head_scale,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
