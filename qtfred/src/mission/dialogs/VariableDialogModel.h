@@ -75,6 +75,7 @@ public:
 	// returns whether it succeeded
 	bool removeVariable(int index, bool toDelete);
 	bool safeToAlterVariable(int index);
+	bool safeToAlterVariable(const VariableInfo& variableItem);
 
 	// Container Section
 
@@ -127,6 +128,7 @@ public:
 	void swapKeyAndValues(int index);
 	
 	bool safeToAlterContainer(int index);
+	bool safeToAlterContainer(const containerInfo& containerItem);
 
 	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
 	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();

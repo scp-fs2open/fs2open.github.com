@@ -1457,8 +1457,6 @@ void VariableDialog::updateContainerOptions(bool safeToAlter)
 
 
 	} else {
-		auto items = ui->containersTable->selectedItems();
-
 		// options that should always be turned on
 		ui->copyContainerButton->setEnabled(true);
 		ui->doNotSaveContainerRadio->setEnabled(true);

@@ -2092,6 +2092,61 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
 void VariableDialogModel::setTextMode(int modeIn) { _textMode = modeIn;}
 
+void VariableDialogModel::sortMap(int index)
+{
+    auto container = lookupContainer(index);
+
+    // No sorting of non maps, and no point to sort if size is less than 2
+    if (container.list || static_cast<int>(container.keys.size() < 2)){
+        return;
+    }
+
+    // Yes, a little inefficient, but I didn't realize this was done in the original dialog when I designed the model.
+    SCP_vector<SCP_string> keyCopy = container->keys; 
+    SCP_vector<SCP_string> sortedStringValues;
+    SCP_vector<int> sortedNumberValues;
+
+    // code borrowed from jg18, but going to try simple sorting first.  Just need to see what it does with numbers.
+//    if (container->string) {
+	std::sort(container->keys.begin(), container->keys.end());
+/*	} else {
+		std::sort(container->keys.begin(),
+			container->keys.end(),
+			[](const SCP_string &str1, const SCP_string &str2) -> bool {
+                try{
+    				return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
+                }
+                catch(...)
+			}
+        );
+*/
+
+    int y = 0;
+
+    for (int x = 0; static_cast<int>(container.keys.size()); ++x){
+        // look for the first match in the temporary copy.
+        for (; y < static_cast<int>(keyCopy.size()); ++y){
+            // copy the values over.
+            if (container->keys[x] == keyCopy[y]){
+                sortedStringValues.push_back(container->stringValues[y]);
+                sortedNumberValues.push_back(container->numberValues[y]);
+                break;
+            }
+        }
+
+        // only reset y if we *dont* have a duplicate key coming up next.  The first part of this check is simply a bound check.
+        // If the last item is a duplicate, that was checked on the previous iteration. 
+        if ((x >= static_cast<int>(container.keys.size()) - 1) || container.keys[x] != container.keys[x + 1]){
+            y = 0;
+        }
+    }
+
+    // TODO! Switch to Assertion after testing.
+    Verification(container->keys.size() == sortedStringValues.size(), "Keys size %uz and values %uz have a size mismatch after sorting. Please report to the SCP.", container->keys.size(), sortedStringValues.size());
+    container->stringValues = std::move(sortedStringValues);
+    container->numberValues = std::move(sortedNumberValues);
+}
+
 // This function is for cleaning up input strings that should be numbers.  We could use std::stoi,
 // but this helps to not erase the entire string if user ends up mistyping just one digit.
 // If we ever allowed float types in sexp variables ... *shudder* ... we would definitely need a float
