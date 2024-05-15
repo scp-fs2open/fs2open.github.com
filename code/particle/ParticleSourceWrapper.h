@@ -59,9 +59,9 @@ namespace particle
 
 		void setOrientationFromNormalizedVec(const vec3d* normalizedDir, bool relative = false);
 
-		void setOrientationFromVec(const vec3d* dir, const bool relative = false);
+		void setOrientationFromVec(const vec3d* dir, bool relative = false);
 
-		void setOrientationMatrix(const matrix* mtx, const bool relative = false);
+		void setOrientationMatrix(const matrix* mtx, bool relative = false);
 
 		void setOrientationNormal(const vec3d* normal);
 
