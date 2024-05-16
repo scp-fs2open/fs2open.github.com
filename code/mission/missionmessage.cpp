@@ -40,7 +40,6 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
-#include "weapon/emp.h"
 
 bool Allow_generic_backup_messages = false;
 float Command_announces_enemy_arrival_chance = 0.25;
@@ -2384,10 +2383,10 @@ void message_maybe_distort()
 		
 			if ( Message_wave_muted ) {
 				if ( !was_muted )
-					snd_set_volume(Playing_messages[i].wave, 0.0f);
+					snd_set_volume(Playing_messages[i].wave, 0.0f, true);
 			} else {
 				if ( was_muted )
-					snd_set_volume(Playing_messages[i].wave, (Master_sound_volume * aav_voice_volume));
+					snd_set_volume(Playing_messages[i].wave, (Master_voice_volume * aav_voice_volume), true);
 			}
 		}
 	}

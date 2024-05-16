@@ -1073,7 +1073,7 @@ void snd_set_volume(sound_handle sig, float volume, bool is_voice)
 	//looping sound volumes are updated in snd_do_frame
 	if(!isLoopingSound) {
 		if (is_voice) {
-			new_volume = volume * (Master_voice_volume * aav_effect_volume);
+			new_volume = volume * (Master_voice_volume * aav_voice_volume);
 		} else {
 			new_volume = volume * (Master_sound_volume * aav_effect_volume);
 		}
