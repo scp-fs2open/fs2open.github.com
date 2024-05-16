@@ -1934,8 +1934,8 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
             notes = "New";
         } else if (item.name != item.originalName){
             notes = "Renamed";
-        } else if (item.string && item.stringValue == "" || !item.string && item.numberValue == 0){
-            notes = "At default";
+        } else if ((item.string && item.stringValue == "") || (!item.string && item.numberValue == 0)){
+            notes = "Default Value";
         }
 
 		SCP_string temp;
@@ -2156,7 +2156,7 @@ void VariableDialogModel::sortMap(int index)
     }
 
     // TODO! Switch to Assertion after testing.
-    Verification(container->keys.size() == sortedStringValues.size(), "Keys size %uz and values %uz have a size mismatch after sorting. Please report to the SCP.", container->keys.size(), sortedStringValues.size());
+    Verification(container->keys.size() == sortedStringValues.size(), "Keys size %zu and values %zu have a size mismatch after sorting. Please report to the SCP.", container->keys.size(), sortedStringValues.size());
     container->stringValues = std::move(sortedStringValues);
     container->numberValues = std::move(sortedNumberValues);
 }
