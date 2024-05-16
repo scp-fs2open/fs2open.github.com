@@ -84,7 +84,7 @@ class VariableDialog : public QDialog {
 	SCP_string _currentContainerItemCol1 = "";
 	SCP_string _currentContainerItemCol2 = "";
 	
-	void override reject() 
+	void reject() override 
 	{
 		QMessageBox msgBox;
 		msgBox.setText("Are you sure you want to discard your changes?");

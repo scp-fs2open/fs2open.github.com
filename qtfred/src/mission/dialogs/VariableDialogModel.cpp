@@ -1179,7 +1179,6 @@ SCP_string VariableDialogModel::copyContainer(int index)
     } 
 
     _containerItems.back().name = newName;
-    _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH - 1);
     return _containerItems.back().name;
 }
 
@@ -1193,6 +1192,7 @@ SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newNam
     }
 
     // We cannot have two containers with the same name, but we need to check that somewhere else (like on accept attempt).
+    // Otherwise editing variables and containers becomes super annoying.
     container->name = newName.substr(0, TOKEN_LENGTH - 1);
     return container->name;
 }
@@ -1258,7 +1258,7 @@ SCP_string VariableDialogModel::addListItem(int index, SCP_string item)
 	}
 
 	if (container->string) {
-		container->stringValues.push_back(item);
+		container->stringValues.push_back(item.substr(0, TOKEN_LENGTH - 1));
 		return container->stringValues.back();
 	} else {
 		auto temp = trimIntegerString(item);
@@ -1332,6 +1332,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
     return ret;
 }
 
+// Overload for specified key and/or Value
 std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP_string key, SCP_string value)
 {
 	auto container = lookupContainer(index);
@@ -1368,7 +1369,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 		} while (conflict && count < 101);
 	} else {
 		if (container->stringKeys){
-			newKey = key;
+			newKey = key.substr(0, TOKEN_LENGTH - 1);
 		} else {
 			newKey = trimIntegerString(key);
 		}
@@ -1382,7 +1383,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP
 	container->keys.push_back(ret.first);
 
 	if (container->string) {
-		ret.second = value;
+		ret.second = value.substr(0, TOKEN_LENGTH - 1);
 		container->stringValues.push_back(ret.second);
 		container->numberValues.push_back(0);
 	} else {
@@ -1436,7 +1437,7 @@ SCP_string VariableDialogModel::changeListItem(int containerIndex, int index, SC
 			return "";
 		}
 	
-		*listItem = newString;
+		*listItem = newString.substr(0, TOKEN_LENGTH - 1);
 
 	} else {
 		auto listItem = lookupContainerNumberItem(containerIndex, index);
@@ -1500,7 +1501,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
     auto key = lookupContainerKey(index, mapIndex);
 
-    if (!key) {
+    if (key == nullptr) {
         return std::make_pair("", "");
     }
     
@@ -1509,13 +1510,14 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
     if (container->string){
         auto value = lookupContainerStringItem(index, mapIndex);
 
-        // no valid value.
-        if (!value){
+        // not a valid value.
+        if (value == nullptr){
             return std::make_pair("", "");
         }
 
         SCP_string copyValue = *value;
-        SCP_string newKey = *key + "0";
+        SCP_string baseNewKey = key->substr(0, TOKEN_LENGTH - 4);
+        SCP_string newKey = baseNewKey + "0";
         int count = 0;
 
         bool found;
@@ -1531,10 +1533,10 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
             // attempt did not work, try next number
             if (found) {
-                sprintf(newKey, "%s%i", key->c_str(), ++count);
+                sprintf(newKey, "%s%i", baseNewKey.c_str(), ++count);
             }
 
-        } while (found && count < 100);
+        } while (found && count < 999);
         
         // we could not generate a new key .... somehow.
         if (found){
@@ -1557,7 +1559,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
         }
 
         int copyValue = *value;
-        SCP_string newKey = *key + "0";
+        SCP_string baseNewKey = key->substr(0, TOKEN_LENGTH - 4);
+        SCP_string newKey = baseNewKey + "0";
         int count = 0;
 
         bool found;
@@ -1573,7 +1576,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
             // attempt did not work, try next number
             if (found) {
-                sprintf(newKey, "%s%i", key->c_str(), ++count);
+                sprintf(newKey, "%s%i", baseNewKey.c_str(), ++count);
             }
 
         } while (found && count < 100);
@@ -1706,7 +1709,7 @@ SCP_string VariableDialogModel::changeMapItemKey(int index, int keyRow, SCP_stri
     }
 
 	if (container->stringKeys){
-        container->keys[keyRow] = newKey;		
+        container->keys[keyRow] = newKey.substr(0, TOKEN_LENGTH - 1);		
 	} else {
 		container->keys[keyRow] = trimIntegerString(newKey);
     }
@@ -1723,7 +1726,7 @@ SCP_string VariableDialogModel::changeMapItemStringValue(int index, int itemInde
         return "";
     }
 
-	*item = newValue;
+	*item = newValue.substr(0, TKEN_LENGTH - 1);
 
     return *item;
 }
@@ -1936,13 +1939,15 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
         if (!safeToAlterVariable(item)){
             notes = "Referenced";            
         } else if (item.deleted){
-            notes = "Deleted";
+            notes = "To Be Deleted";
         } else if (item.originalName == ""){
             notes = "New";
-        } else if (item.name != item.originalName){
-            notes = "Renamed";
         } else if ((item.string && item.stringValue == "") || (!item.string && item.numberValue == 0)){
             notes = "Default Value";
+        } else if (item.name != item.originalName){
+            notes = "Renamed";
+        } else {
+            notes = "Unreferenced";
         }
 
 		SCP_string temp;
@@ -2091,7 +2096,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
         if (!safeToAlterContainer(item)){
             notes = "Referenced";
         } else if (item.deleted) {
-            notes = "Deleted";
+            notes = "To Be Deleted";
         } else if (item.originalName == "") {
             notes = "New";
         } else if (item.name != item.originalName){
@@ -2100,6 +2105,8 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
             notes = "Empty Map";
         } else if (item.list && ((item.string && item.stringValues.empty()) || (!item.string && item.numberValues.empty()))){
             notes = "Empty List";
+        } else {
+            notes = "Unreferenced";
         }
 
 		outStrings.push_back(std::array<SCP_string, 3>{item.name, type, notes});
