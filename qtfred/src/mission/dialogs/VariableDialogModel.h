@@ -75,7 +75,7 @@ public:
 	// returns whether it succeeded
 	bool removeVariable(int index, bool toDelete);
 	bool safeToAlterVariable(int index);
-	bool safeToAlterVariable(const VariableInfo& variableItem);
+	bool safeToAlterVariable(const variableInfo& variableItem);
 
 	// Container Section
 
@@ -150,6 +150,7 @@ private:
 	int _deleteWarningCount;
 
 	void sortMap(int index);
+	bool atMaxVariables();
 	SCP_string clampIntegerString(SCP_string source);
 
 	variableInfo* lookupVariable(int index){

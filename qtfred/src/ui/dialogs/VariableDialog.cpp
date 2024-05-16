@@ -24,9 +24,8 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	// Here we need to check that there are no issues with variable names or container names, or with maps having duplicate keys.
 	connect(ui->OkCancelButtons, &QDialogButtonBox::accepted, this, &VariableDialog::checkValidModel);
 	// Reject if the user wants to.
-	connect(ui->OkCancelButtons, &QDialogButtonBox::rejected, this, &VariableDialog::preReject);
+	connect(ui->OkCancelButtons, &QDialogButtonBox::rejected, this, &VariableDialog::reject);
 	connect(this, &QDialog::accepted, _model.get(), &VariableDialogModel::apply);
-	connect(this, &QDialog::rejected, this, &VariableDialog::preReject);
 	
 	connect(ui->variablesTable, 
 		&QTableWidget::itemChanged,
@@ -1182,7 +1181,7 @@ void VariableDialog::applyModel()
 		if (selectedRow < 0 && !_currentVariable.empty() && variables[x][0] == _currentVariable){
 			selectedRow = x;
 
-		    if (_model->!safeToAlterVariable(selectedRow)){
+		    if (!_model->safeToAlterVariable(selectedRow)){
 				safeToAlter = true;
    			}
 		}
@@ -1699,7 +1698,7 @@ void VariableDialog::updateContainerDataOptions(bool list, bool safeToAlter)
 		ui->shiftItemDownButton->setEnabled(false);
 
 		// we can swap if it's safe or if the data types match.  If the data types *don't* match, then we run into reference issues.
-		ui->swapKeysAndValuesButton->setEnabled(safeToAlter || _containerItems[row].stringKeys == _containerItems[row].string);
+		ui->swapKeysAndValuesButton->setEnabled(safeToAlter || _model->getContainerKeyType(row) == _model->getContainerValueType(row));
 
 		// keys I didn't bother to make separate.  Should have done the same with values, ah regrets.
 		auto& keys = _model->getMapKeys(row);
@@ -1827,18 +1826,6 @@ int VariableDialog::getCurrentContainerItemRow()
 	}
 
 	return -1;
-}
-
-void VariableDialog::preReject()
-{
-	QMessageBox msgBox;
-	msgBox.setText("Are you sure you want to discard your changes?");
-	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-	int ret = msgBox.exec();
-
-	if (ret == QMessageBox::Yes) {
-		reject();
-	}
 }
 
 void VariableDialog::checkValidModel()

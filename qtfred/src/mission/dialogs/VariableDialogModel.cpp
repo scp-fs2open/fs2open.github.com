@@ -82,8 +82,8 @@ bool VariableDialogModel::checkValidModel()
 
                 if (key.empty()){
                     ++emptyKeys;
-                } else if (!container->stringKeys){
-                    if (key != trimNumberString(key)){
+                } else if (!container.stringKeys){
+                    if (key != trimIntegerString(key)){
                         ++notNumberKeys;
                     }
                     
@@ -119,7 +119,7 @@ bool VariableDialogModel::checkValidModel()
         SCP_string temp;
 
         sprintf(temp, "There are %zu duplicate map keys:\n\n", duplicateKeys.size());
-        messageOut += messageBuffer + "\n";
+        messageOut += temp + messageBuffer + "\n";
     }
 
     if (emptyVarNames > 0){
@@ -144,7 +144,7 @@ bool VariableDialogModel::checkValidModel()
     }
 
     if (_variableItems.size() >= MAX_SEXP_VARIABLES){
-        messageOut += "There are more than the max of 250 variables.\n"
+        messageOut += "There are more than the max of 250 variables.\n";
     }
 
 
@@ -169,7 +169,7 @@ bool VariableDialogModel::apply()
     bool found;
 
     // first we have to edit known variables.
-    for (const auto& variable : _variableItems){
+    for (auto& variable : _variableItems){
         found = false;
 
         // set of instructions for updating variables
@@ -653,7 +653,7 @@ bool VariableDialogModel::safeToAlterVariable(int index)
     }
 
     // FIXME! until we can actually count references (via a SEXP backend), this is the best way to go.
-    if (variable.orginalName != ""){
+    if (variable->originalName != ""){
         return false;
     }
 
@@ -983,21 +983,23 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 				// to adjust keys.
 				if (currentSize == container->keys.size()) {
 					container->list = list;
+
+					// we need all key related vectors to be size synced
+					if (container->string){
+						container->numberValues.resize(container->keys.size(), 0);
+					} else {
+						container->stringValues.resize(container->keys.size(), "");
+					}
+
 					return container->list;
 				}
 
 				// not enough data items.
 				if (currentSize < container->keys.size()) {
 					// just put the default value in them. Any string I specify for string values will
-					// be inconvenient to someone.
-					if (container->string) {
-						SCP_string newValue = "";
-						container->stringValues.resize(container->keys.size(), newValue);
-					}
-					else {
-						// But differentiating numbers by having zero be the default is a good idea and does
-						container->numberValues.resize(container->keys.size(), 0);
-					}
+					// be inconvenient to someone.  Zero is a good default, too.
+					container->stringValues.resize(container->keys.size(), "");
+					container->numberValues.resize(container->keys.size(), 0);
 
 				} else {
 					// here currentSize must be greater than the key size, because we already dealt with equal size.
@@ -1158,16 +1160,16 @@ SCP_string VariableDialogModel::copyContainer(int index)
     SCP_string newName;
     int count = 0;
 
-    do {
+    while(true) {
         sprintf(newName, "%s_%i", container->name.substr(0, TOKEN_LENGTH - 4).c_str(), count);
-        auto containerSearch = lookupVariableByName(newName);
+        auto containerSearch = lookupContainerByName(newName);
 
         // open slot found!
         if (!containerSearch){
             break;
         }
         ++count;
-    }
+    } 
 
     _containerItems.back().name = newName;
     _containerItems.back().name = _containerItems.back().name.substr(0, TOKEN_LENGTH - 1);
@@ -1184,7 +1186,7 @@ SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newNam
     }
 
     // We cannot have two containers with the same name, but we need to check that somewhere else (like on accept attempt).
-    container->name = newName.substring(0, TOKEN_LENGTH - 1);
+    container->name = newName.substr(0, TOKEN_LENGTH - 1);
     return container->name;
 }
 
@@ -1828,7 +1830,7 @@ bool VariableDialogModel::safeToAlterContainer(int index)
     }
 
     // FIXME! Until there's a sexp backend, we can only check if we just created the container.
-    if (container.originalName != ""){
+    if (container->originalName != ""){
         return false;
     }
 
@@ -2080,7 +2082,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
 
 
         if (!safeToAlterContainer(item)){
-            notes = "Referenced"
+            notes = "Referenced";
         } else if (item.deleted) {
             notes = "Deleted";
         } else if (item.originalName == "") {
@@ -2106,7 +2108,7 @@ void VariableDialogModel::sortMap(int index)
     auto container = lookupContainer(index);
 
     // No sorting of non maps, and no point to sort if size is less than 2
-    if (container.list || static_cast<int>(container.keys.size() < 2)){
+    if (container->list || static_cast<int>(container->keys.size() < 2)){
         return;
     }
 
@@ -2116,23 +2118,26 @@ void VariableDialogModel::sortMap(int index)
     SCP_vector<int> sortedNumberValues;
 
     // code borrowed from jg18, but going to try simple sorting first.  Just need to see what it does with numbers.
-//    if (container->string) {
-	std::sort(container->keys.begin(), container->keys.end());
-/*	} else {
+    if (container->string) {
+		std::sort(container->keys.begin(), container->keys.end());
+	} else {
 		std::sort(container->keys.begin(),
 			container->keys.end(),
 			[](const SCP_string &str1, const SCP_string &str2) -> bool {
                 try{
     				return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
                 }
-                catch(...)
+                catch(...){
+					// we're up the creek if this happens anyway.
+					return true;
+				}
 			}
         );
-*/
+	}
 
     int y = 0;
 
-    for (int x = 0; static_cast<int>(container.keys.size()); ++x){
+    for (int x = 0; x < static_cast<int>(container->keys.size()); ++x){
         // look for the first match in the temporary copy.
         for (; y < static_cast<int>(keyCopy.size()); ++y){
             // copy the values over.
@@ -2145,7 +2150,7 @@ void VariableDialogModel::sortMap(int index)
 
         // only reset y if we *dont* have a duplicate key coming up next.  The first part of this check is simply a bound check.
         // If the last item is a duplicate, that was checked on the previous iteration. 
-        if ((x >= static_cast<int>(container.keys.size()) - 1) || container.keys[x] != container.keys[x + 1]){
+        if ((x >= static_cast<int>(container->keys.size()) - 1) || container->keys[x] != container->keys[x + 1]){
             y = 0;
         }
     }
@@ -2154,6 +2159,27 @@ void VariableDialogModel::sortMap(int index)
     Verification(container->keys.size() == sortedStringValues.size(), "Keys size %uz and values %uz have a size mismatch after sorting. Please report to the SCP.", container->keys.size(), sortedStringValues.size());
     container->stringValues = std::move(sortedStringValues);
     container->numberValues = std::move(sortedNumberValues);
+}
+
+bool VariableDialogModel::atMaxVariables()
+{
+	if (_variableItems.size() < MAX_SEXP_VARIABLES){
+		return false;
+	}
+
+	int count = 0;
+
+	for (const auto& item : _variableItems){
+		if (!item.deleted){
+			++count;
+		}
+	}
+
+	if (count < MAX_SEXP_VARIABLES){
+		return false;
+	} else {
+		return true;
+	}
 }
 
 // This function is for cleaning up input strings that should be numbers.  We could use std::stoi,

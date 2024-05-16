@@ -27,7 +27,6 @@ class VariableDialog : public QDialog {
 
 	// basically UpdateUI, but called when there is an inconsistency between model and UI
 	void applyModel();
-	void preReject();
 	void checkValidModel();
 
 	// Helper functions for this
@@ -84,6 +83,18 @@ class VariableDialog : public QDialog {
 	SCP_string _currentContainer = "";
 	SCP_string _currentContainerItemCol1 = "";
 	SCP_string _currentContainerItemCol2 = "";
+
+	void VariableDialog::reject() 
+	{
+		QMessageBox msgBox;
+		msgBox.setText("Are you sure you want to discard your changes?");
+		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+		int ret = msgBox.exec();
+
+		if (ret == QMessageBox::Yes) {
+			QDialog::reject();
+		}
+	}	
 };
 
 
