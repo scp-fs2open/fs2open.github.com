@@ -143,6 +143,13 @@ bool VariableDialogModel::checkValidModel()
         messageOut += messageBuffer;
     }
 
+    if (notNumberKeys > 0){
+        messageBuffer.clear();
+        sprintf(messageBuffer, "There are %i numeric keys that are not numbers.\n", notNumberKeys);
+
+        messageOut += messageBuffer;
+    }
+
     if (_variableItems.size() >= MAX_SEXP_VARIABLES){
         messageOut += "There are more than the max of 250 variables.\n";
     }
