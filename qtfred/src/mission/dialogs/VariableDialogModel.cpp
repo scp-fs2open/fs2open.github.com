@@ -1726,7 +1726,7 @@ SCP_string VariableDialogModel::changeMapItemStringValue(int index, int itemInde
         return "";
     }
 
-	*item = newValue.substr(0, TKEN_LENGTH - 1);
+	*item = newValue.substr(0, TOKEN_LENGTH - 1);
 
     return *item;
 }
