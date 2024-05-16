@@ -233,7 +233,7 @@ void VariableDialogModel::initializeData()
     _variableItems.clear();
     _containerItems.clear();
 
-    for (int i = 0; i < static_cast<int>(_variableItems.size()); ++i){ 
+    for (int i = 0; i < MAX_SEXP_VARIABLES; ++i){ 
         if (strlen(Sexp_variables[i].text)) {
             _variableItems.emplace_back();
             auto& item = _variableItems.back();
