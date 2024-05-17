@@ -149,10 +149,10 @@ private:
 
 	int _deleteWarningCount;
 
+	sexp_container createContainer(const containerInfo& infoIn);
+
 	void sortMap(int index);
 	bool atMaxVariables();
-
-	sexp_container createContainerFromModel(const containerInfo& infoIn);
 
 	variableInfo* lookupVariable(int index){
 		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){

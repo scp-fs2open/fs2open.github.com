@@ -169,7 +169,7 @@ bool VariableDialogModel::checkValidModel()
     }
 }
 
-sexp_container VariableDialogModel::createContainerFromModel(const containerInfo& infoIn)
+sexp_container VariableDialogModel::createContainer(const containerInfo& infoIn)
 {
     sexp_container containerOut;
 
@@ -241,6 +241,8 @@ sexp_container VariableDialogModel::createContainerFromModel(const containerInfo
             }
         }
     }
+
+	return containerOut;
 }
 
 bool VariableDialogModel::apply() 
