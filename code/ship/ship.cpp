@@ -11156,6 +11156,7 @@ static void ship_model_change(int n, int ship_type)
 	// create new model instance data
 	// note: this is needed for both subsystem stuff and submodel animation stuff
 	sp->model_instance_num = model_create_instance(OBJ_INDEX(objp), sip->model_num);
+	pmi = model_get_instance(sp->model_instance_num);
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
 	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
