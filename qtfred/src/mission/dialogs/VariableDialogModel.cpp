@@ -169,6 +169,71 @@ bool VariableDialogModel::checkValidModel()
     }
 }
 
+sexp_container VariableDialogModel::createContainerFromModel(const containerInfo& infoIn)
+{
+    sexp_container containerOut;
+
+    containerOut.container_name = infoIn.name;
+
+    // handle type info, which defaults to List
+    if (!infoIn.list) {
+        contianerOut.type &= ~ContainerType::LIST;
+        containerOut.type |= ContainerType::MAP;
+        
+        // Map Key type.  This is not set by default, so we have explicity set it.
+        if (infoIn.stringKeys){
+            containerOut.type |= ContainerType::STRING_KEYS;
+        } else {
+            containerOut.type |= ContainerType::NUMBER_KEYS;
+        }
+    }
+
+    // New Containers also default to string data
+    if (!infoIn.String){
+        containerOut.type &= ~ContainerType::STRING_DATA;
+        containerOut.type |= ContainerType::NUMBER_DATA;
+    }
+
+    // Now flags
+    if (infoIn.flags & SEXP_VARIABLE_NETWORK){
+        containerOut.type |= ContainerType::NETWORK;
+    }
+
+    
+    if (infoIn.flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE){
+        containerOut.type |= ContainerType::SAVE_TO_PLAYER_FILE;
+    }
+
+    // No persistence means No flag, which is the default, but if anything else is true, then this has to be
+    if (infoIn.flags & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE){
+        containerOut.type |= ContainerType::SAVE_ON_MISSION_CLOSE;
+    } else if (infoIn.flags & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS){
+        containerOut.type |= ContainerType::SAVE_ON_MISSION_PROGRESS;
+    } else {
+        containerOut.type &= ~ContainerType::SAVE_TO_PLAYER_FILE;
+    }
+
+
+    // Handle contained data
+    if (infoIn.list){
+        if (infoIn.string){
+            containerOut.list_data = infoIn.stringValues;
+        } else {
+            for (const auto& number : infoIn.numberValues){
+                containerOut.list_data.push_back(std::to_string(number));
+            }
+        }
+    } else {
+        for (int x = 0; x < infoIn.keys; ++x){
+            if (infoIn.string){
+                map_data[infoIn.keys[x]] = infoIn.stringValues[x];
+            } else {
+                map_data[infoIn.keys[x]] = std::to_string(infoIn.numberValues[x]);
+            }
+        }
+    }
+}
+
 bool VariableDialogModel::apply() 
 {
     // what did we delete from the original list?  We need to check these references and clean them.
@@ -229,10 +294,20 @@ bool VariableDialogModel::apply()
     }
     
 
-    // TODO! containers need to be saved.
-    std::unordered_set<SCP_string> deletedContainers;
+    SCP_vector<container> newContainers;
+    SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> renamedContainers;
 
-	return false;
+    for (const auto& container : _containerItems){
+        newContainers.push_back(createContainerFromModel(container));
+
+        if (container.name != container.originalName){
+            renamedContainers[container.originalName] = container.name;
+        }
+    }
+    
+    update_sexp_containers(newContainers, renamed_containers);
+
+	return true;
 }
 
 void VariableDialogModel::initializeData()

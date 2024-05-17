@@ -151,7 +151,8 @@ private:
 
 	void sortMap(int index);
 	bool atMaxVariables();
-	SCP_string clampIntegerString(SCP_string source);
+
+	sexp_container& createContainerFromModel(const containerInfo& infoIn);
 
 	variableInfo* lookupVariable(int index){
 		if(index > -1 &&  index < static_cast<int>(_variableItems.size()) ){
