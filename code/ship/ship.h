@@ -761,9 +761,6 @@ public:
 
 	// Goober5000 - range of primitive sensors
 	int primitive_sensor_range;
-	
-	// Goober5000 - revised nameplate implementation
-	int *ship_replacement_textures;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
