@@ -200,15 +200,19 @@ sexp_container VariableDialogModel::createContainerFromModel(const containerInfo
     }
 
     
-    if (infoIn.flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE){
-        containerOut.type |= ContainerType::SAVE_TO_PLAYER_FILE;
-    }
-
     // No persistence means No flag, which is the default, but if anything else is true, then this has to be
     if (infoIn.flags & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE){
         containerOut.type |= ContainerType::SAVE_ON_MISSION_CLOSE;
+        
+        if (infoIn.flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE){
+            containerOut.type |= ContainerType::SAVE_TO_PLAYER_FILE;
+        }
     } else if (infoIn.flags & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS){
         containerOut.type |= ContainerType::SAVE_ON_MISSION_PROGRESS;
+        
+        if (infoIn.flags & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE){
+            containerOut.type |= ContainerType::SAVE_TO_PLAYER_FILE;
+        }
     } else {
         containerOut.type &= ~ContainerType::SAVE_TO_PLAYER_FILE;
     }
@@ -300,7 +304,7 @@ bool VariableDialogModel::apply()
     for (const auto& container : _containerItems){
         newContainers.push_back(createContainerFromModel(container));
 
-        if (container.name != container.originalName){
+        if (container.originalName != "" && container.name != container.originalName){
             renamedContainers[container.originalName] = container.name;
         }
     }

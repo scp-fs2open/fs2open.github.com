@@ -1361,7 +1361,6 @@ void VariableDialog::updateVariableOptions(bool safeToAlter)
 	ui->doNotSaveVariableRadio->setEnabled(true);
 	ui->saveVariableOnMissionCompletedRadio->setEnabled(true);
 	ui->saveVariableOnMissionCloseRadio->setEnabled(true);
-	ui->setVariableAsEternalcheckbox->setEnabled(true);
 	ui->networkVariableCheckbox->setEnabled(true);
 
 	// options that are only safe if there are no references
@@ -1400,20 +1399,28 @@ void VariableDialog::updateVariableOptions(bool safeToAlter)
 	if (ret == 0){
 		ui->doNotSaveVariableRadio->setChecked(true);
 		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
-		ui->saveVariableOnMissionCloseRadio->setChecked(false);		
+		ui->saveVariableOnMissionCloseRadio->setChecked(false);
+
+		ui->setVariableAsEternalcheckbox->setChecked(false);
+		ui->setVariableAsEternalcheckbox->setEnabled(false);
 	} else if (ret == 1) {
 		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveVariableOnMissionCompletedRadio->setChecked(true);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);		
+
+		ui->setVariableAsEternalcheckbox->setEnabled(true);
+		ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));
 	} else {
+		ui->setVariableAsEternalcheckbox->setEnabled(true);
 		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
 		ui->saveVariableOnMissionCloseRadio->setChecked(true);
+
+		ui->setVariableAsEternalcheckbox->setEnabled(true);
+		ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));
 	}
 
 	ui->networkVariableCheckbox->setChecked(_model->getVariableNetworkStatus(row));
-	ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));
-
 }
 
 void VariableDialog::updateContainerOptions(bool safeToAlter)
@@ -1461,7 +1468,6 @@ void VariableDialog::updateContainerOptions(bool safeToAlter)
 		ui->doNotSaveContainerRadio->setEnabled(true);
 		ui->saveContainerOnMissionCompletedRadio->setEnabled(true);
 		ui->saveContainerOnMissionCloseRadio->setEnabled(true);
-		ui->setContainerAsEternalCheckbox->setEnabled(true);
 		ui->networkContainerCheckbox->setEnabled(true);
 
 		// options that require it be safe to alter because the container is not referenced
@@ -1518,7 +1524,6 @@ void VariableDialog::updateContainerOptions(bool safeToAlter)
 			updateContainerDataOptions(false, safeToAlter);
 		}
 
-		ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerEternalFlag(row));
 		ui->networkContainerCheckbox->setChecked(_model->getContainerNetworkStatus(row));
 
 		int ret = _model->getContainerOnMissionCloseOrCompleteFlag(row);		
@@ -1526,15 +1531,25 @@ void VariableDialog::updateContainerOptions(bool safeToAlter)
 		if (ret == 0){
 			ui->doNotSaveContainerRadio->setChecked(true);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
-			ui->saveContainerOnMissionCloseRadio->setChecked(false);		
+			ui->saveContainerOnMissionCloseRadio->setChecked(false);
+
+			ui->setContainerAsEternalCheckbox->setChecked(false);
+			ui->setContainerAsEternalCheckbox->setEnabled(false);
+					
 		} else if (ret == 1) {
 			ui->doNotSaveContainerRadio->setChecked(false);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(true);
 			ui->saveContainerOnMissionCloseRadio->setChecked(false);		
+
+			ui->setContainerAsEternalCheckbox->setEnabled(true);
+			ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerEternalFlag(row));
 		} else {
 			ui->doNotSaveContainerRadio->setChecked(false);
 			ui->saveContainerOnMissionCompletedRadio->setChecked(false);
 			ui->saveContainerOnMissionCloseRadio->setChecked(true);
+
+			ui->setContainerAsEternalCheckbox->setEnabled(true);
+			ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerEternalFlag(row));
 		}
 
 	}
