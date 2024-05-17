@@ -177,7 +177,7 @@ sexp_container VariableDialogModel::createContainerFromModel(const containerInfo
 
     // handle type info, which defaults to List
     if (!infoIn.list) {
-        contianerOut.type &= ~ContainerType::LIST;
+        containerOut.type &= ~ContainerType::LIST;
         containerOut.type |= ContainerType::MAP;
         
         // Map Key type.  This is not set by default, so we have explicity set it.
@@ -189,7 +189,7 @@ sexp_container VariableDialogModel::createContainerFromModel(const containerInfo
     }
 
     // New Containers also default to string data
-    if (!infoIn.String){
+    if (!infoIn.string){
         containerOut.type &= ~ContainerType::STRING_DATA;
         containerOut.type |= ContainerType::NUMBER_DATA;
     }
@@ -220,19 +220,24 @@ sexp_container VariableDialogModel::createContainerFromModel(const containerInfo
 
     // Handle contained data
     if (infoIn.list){
-        if (infoIn.string){
-            containerOut.list_data = infoIn.stringValues;
-        } else {
-            for (const auto& number : infoIn.numberValues){
-                containerOut.list_data.push_back(std::to_string(number));
-            }
-        }
+
+		if (infoIn.string){
+			for (const auto& string : infoIn.stringValues){
+				containerOut.list_data.push_back(string);
+			}
+		} else {
+			for (const auto& number : infoIn.numberValues){
+
+				containerOut.list_data.push_back(std::to_string(number));
+			
+			}
+		}
     } else {
-        for (int x = 0; x < infoIn.keys; ++x){
+        for (int x = 0; x < static_cast<int>(infoIn.keys.size()); ++x){
             if (infoIn.string){
-                map_data[infoIn.keys[x]] = infoIn.stringValues[x];
+                containerOut.map_data[infoIn.keys[x]] = infoIn.stringValues[x];
             } else {
-                map_data[infoIn.keys[x]] = std::to_string(infoIn.numberValues[x]);
+                containerOut.map_data[infoIn.keys[x]] = std::to_string(infoIn.numberValues[x]);
             }
         }
     }
@@ -298,7 +303,7 @@ bool VariableDialogModel::apply()
     }
     
 
-    SCP_vector<container> newContainers;
+    SCP_vector<sexp_container> newContainers;
     SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> renamedContainers;
 
     for (const auto& container : _containerItems){
@@ -309,7 +314,7 @@ bool VariableDialogModel::apply()
         }
     }
     
-    update_sexp_containers(newContainers, renamed_containers);
+    update_sexp_containers(newContainers, renamedContainers);
 
 	return true;
 }
