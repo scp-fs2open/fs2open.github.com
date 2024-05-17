@@ -214,6 +214,21 @@ ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a fairly random normalize
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(createRandomOrientation, l_Base, nullptr, "Creates a fairly random orientation object.", "orientation", "Orientation object")
+{
+	vec3d fvec, uvec;
+	matrix fvec_orient, final_orient;
+
+	vm_vec_rand_vec(&fvec);
+	vm_vector_2_matrix(&fvec_orient, &fvec, nullptr, nullptr);
+
+	vm_vec_random_in_circle(&uvec, &vmd_zero_vector, &fvec_orient, 1.0f, true);
+
+	vm_vector_2_matrix(&final_orient, &fvec, &uvec);
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final_orient)));
+}
+
 ADE_FUNC(createSurfaceNormal,
 	l_Base,
 	"vector point1, vector point2, vector point3",
