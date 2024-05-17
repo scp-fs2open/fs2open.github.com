@@ -132,7 +132,7 @@ int	Num_reinforcements = 0;
 ship	Ships[MAX_SHIPS];
 
 ship	*Player_ship;
-int		*Player_cockpit_textures;
+std::shared_ptr<model_texture_replace> Player_cockpit_textures;
 SCP_vector<cockpit_display> Player_displays;
 bool Disable_cockpits = false;
 bool Disable_cockpit_sway = false;
@@ -6829,11 +6829,6 @@ void ship::clear()
 
 	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
-	if (ship_replacement_textures != nullptr) {
-		vm_free(ship_replacement_textures);
-	}
-	ship_replacement_textures = nullptr;
-
 	current_viewpoint = -1;
 
 	for (int i = 0; i < MAX_SHIP_CONTRAILS; i++)
@@ -6911,13 +6906,12 @@ const char* ship::get_display_name() const {
 
 void ship::apply_replacement_textures(const SCP_vector<texture_replace> &replacements)
 {
-	if (!replacements.empty())
-	{
-		ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
+	if (replacements.empty())
+		return;
 
-		for (auto i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			ship_replacement_textures[i] = -1;
-	}
+	polymodel_instance* pmi = model_get_instance(model_instance_num);
+
+	pmi->texture_replace = make_shared<model_texture_replace>();
 
 	auto pm = model_get(Ship_info[ship_info_index].model_num);
 
@@ -6930,8 +6924,8 @@ void ship::apply_replacement_textures(const SCP_vector<texture_replace> &replace
 			texture_map *tmap = &pm->maps[j];
 
 			int tnum = tmap->FindTexture(tr.old_texture);
-			if(tnum > -1)
-				ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
+			if (tnum > -1)
+				(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
 		}
 	}
 }
@@ -7881,6 +7875,7 @@ extern bool Rendering_to_shadow_map;
 void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override) {
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
 
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
@@ -7937,7 +7932,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		render_info.set_object_number(OBJ_INDEX(objp));
 
 		// update any replacement and/or team color textures (wookieejedi), then render
-		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+		render_info.set_replacement_textures(pmi->texture_replace);
 
 		if (sip->uses_team_colors)
 			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
@@ -8030,7 +8025,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
 		render_info.set_flags(render_flags);
-		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+		render_info.set_replacement_textures(pmi->texture_replace);
 		render_info.set_object_number(OBJ_INDEX(objp));
 		if (sip->uses_team_colors)
 			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
@@ -8101,20 +8096,14 @@ void ship_init_cockpit_displays(ship *shipp)
 		return;
 	}
 
-	if ( Player_cockpit_textures != NULL) {
+	if ( Player_cockpit_textures != nullptr) {
 		return;
 	}
 
 	// ship's cockpit texture replacements haven't been setup yet, so do it.
-	Player_cockpit_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+	Player_cockpit_textures = make_shared<model_texture_replace>();
 
-	int i;
-
-	for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ ) {
-		Player_cockpit_textures[i] = -1;
-	}
-
-	for ( i = 0; i < (int)sip->displays.size(); i++ ) {
+	for ( int i = 0; i < (int)sip->displays.size(); i++ ) {
 		ship_add_cockpit_display(&sip->displays[i], cockpit_model_num);
 	}
 
@@ -8142,11 +8131,7 @@ void ship_close_cockpit_displays(ship* shipp)
 	}
 
 	Player_displays.clear();
-
-	if ( Player_cockpit_textures != NULL ) {
-		vm_free(Player_cockpit_textures);
-		Player_cockpit_textures = NULL;
-	}
+	Player_cockpit_textures.reset();
 }
 
 static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num)
@@ -8179,13 +8164,13 @@ static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_
 	}
 
 	// create a render target for this cockpit texture
-	if ( Player_cockpit_textures[glow_target] < 0) {
-
+	auto& glow_texture = (*Player_cockpit_textures)[glow_target];
+	if ( glow_texture == -1) {
 		bm_get_info(diffuse_handle, &w, &h);
-		Player_cockpit_textures[glow_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+		glow_texture = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
 
 		// if no render target was made, bail
-		if ( Player_cockpit_textures[glow_target] < 0 ) {
+		if ( glow_texture < 0 ) {
 			return;
 		}
 	}
@@ -8214,7 +8199,7 @@ static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_
 	new_display.size[0] = display->size[0];
 	new_display.size[1] = display->size[1];
 	new_display.source = glow_handle;
-	new_display.target = Player_cockpit_textures[glow_target];
+	new_display.target = glow_texture;
 
 	Player_displays.push_back(new_display);
 }
@@ -8241,7 +8226,7 @@ int ship_start_render_cockpit_display(size_t cockpit_display_num)
 		return -1;
 	}
 
-	if ( Player_cockpit_textures == NULL ) {
+	if ( Player_cockpit_textures == nullptr ) {
 		return -1;
 	}
 
@@ -8287,7 +8272,7 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num)
 		return;
 	}
 
-	if ( Player_cockpit_textures == NULL ) {
+	if ( Player_cockpit_textures == nullptr ) {
 		return;
 	}
 
@@ -8354,11 +8339,6 @@ void ship_delete( object * obj )
 	shipp->objnum = -1;
 
 	animation::ModelAnimationSet::stopAnimations(model_get_instance(shipp->model_instance_num));
-
-	if (shipp->ship_replacement_textures != NULL) {
-		vm_free(shipp->ship_replacement_textures);
-		shipp->ship_replacement_textures = NULL;
-	}
 
 	// glow point banks
 	shipp->glow_point_bank_active.clear();
@@ -11087,15 +11067,14 @@ static void ship_model_change(int n, int ship_type)
 	ship_info	*sip;
 	ship			*sp;
 	polymodel * pm;
+	polymodel_instance * pmi;
 	object *objp;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 	objp = &Objects[sp->objnum];
-
-	//Stop Animation on the old model
-	animation::ModelAnimationSet::stopAnimations(model_get_instance(sp->model_instance_num));
+	pmi = model_get_instance(sp->model_instance_num);
 
 	// get new model
 	if (sip->model_num == -1) {
@@ -11110,41 +11089,6 @@ static void ship_model_change(int n, int ship_type)
 
 	pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
-
-	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
-	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
-	if ( !sip->replacement_textures.empty() ) {
-
-		// clear and reset replacement textures because the new positions may be different
-		if (sp->ship_replacement_textures == nullptr)
-			sp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-		for (auto k = 0; k < MAX_REPLACEMENT_TEXTURES; k++)
-			sp->ship_replacement_textures[k] = -1;
-
-		// now fill them in according to texture name
-		for (const auto& tr : sip->replacement_textures) {
-			// look for textures
-			for (auto j = 0; j < pm->n_textures; j++) {
-
-				texture_map* tmap = &pm->maps[j];
-				int tnum = tmap->FindTexture(tr.old_texture);
-
-				if (tnum > -1) {
-					// load new texture
-					int new_tex = bm_load_either(tr.new_texture);
-					if (new_tex > -1) {
-						sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = new_tex;
-					}
-				}
-			}
-		}
-	} else {
-		// ensure that any texture replacements are cleared from old ship 
-		if (sp->ship_replacement_textures != nullptr) {
-			vm_free(sp->ship_replacement_textures);
-			sp->ship_replacement_textures = nullptr;
-		}
-	}
 
 	// page in nondims in game
 	if ( !Fred_running )
@@ -11206,6 +11150,40 @@ static void ship_model_change(int n, int ship_type)
 
 	// reset texture animations
 	sp->base_texture_anim_timestamp = _timestamp();
+
+	model_delete_instance(sp->model_instance_num);
+
+	// create new model instance data
+	// note: this is needed for both subsystem stuff and submodel animation stuff
+	sp->model_instance_num = model_create_instance(OBJ_INDEX(objp), sip->model_num);
+
+	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
+	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
+	// Lafiel - this now has to happen last, as the texture replacement stuff is stored in the pmi
+	if ( !sip->replacement_textures.empty() ) {
+
+		// clear and reset replacement textures because the new positions may be different
+		if (pmi->texture_replace == nullptr)
+			pmi->texture_replace = make_shared<model_texture_replace>();
+
+		// now fill them in according to texture name
+		for (const auto& tr : sip->replacement_textures) {
+			// look for textures
+			for (auto j = 0; j < pm->n_textures; j++) {
+
+				texture_map* tmap = &pm->maps[j];
+				int tnum = tmap->FindTexture(tr.old_texture);
+
+				if (tnum > -1) {
+					// load new texture
+					int new_tex = bm_load_either(tr.new_texture);
+					if (new_tex > -1) {
+						(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = new_tex;
+					}
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -11472,10 +11450,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// point to new ship data
 	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
-
-	// create new model instance data
-	// note: this is needed for both subsystem stuff and submodel animation stuff
-	sp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	// if we have the same warp parameters as the ship class, we will need to update them to point to the new class
 	if (sp->warpin_params_index == sip_orig->warpin_params_index) {
@@ -15732,11 +15706,6 @@ void ship_close()
 	for (i=0; i<MAX_SHIPS; i++ )	{
 		ship *shipp = &Ships[i];
 
-		if (shipp->ship_replacement_textures != NULL) {
-			vm_free(shipp->ship_replacement_textures);
-			shipp->ship_replacement_textures = NULL;
-		}
-
 		if(shipp->warpin_effect != NULL)
 			delete shipp->warpin_effect;
 		shipp->warpin_effect = NULL;
@@ -18312,15 +18281,15 @@ void ship_page_in()
 		// is this a valid ship?
 		if (Ships[i].objnum >= 0)
 		{
+			polymodel_instance* pmi = model_get_instance(object_get_model_instance(&Objects[Ships[i].objnum]));
 			// do we have any textures?
-			if (Ships[i].ship_replacement_textures != NULL)
+			if (pmi->texture_replace != nullptr)
 			{
 				// page in replacement textures
-				for (j=0; j<MAX_REPLACEMENT_TEXTURES; j++)
+				for (const auto& texture : *pmi->texture_replace)
 				{
-					if (Ships[i].ship_replacement_textures[j] > -1)
-					{
-						bm_page_in_texture( Ships[i].ship_replacement_textures[j] );
+					if (texture >= 0) {
+						bm_page_in_texture(texture);
 					}
 				}
 			}
@@ -18449,6 +18418,8 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 {
 	ship* shipp = &Ships[ship_index];
 	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
+
 	int final_index = -1;
 
 	for (int i = 0; i < pm->n_textures; i++)
@@ -18470,14 +18441,11 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 		else
 			texture = bm_load_either(new_name);
 
-		if (shipp->ship_replacement_textures == nullptr) {
-			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-				shipp->ship_replacement_textures[i] = -1;
+		if (pmi->texture_replace == nullptr) {
+			pmi->texture_replace = make_shared<model_texture_replace>();
 		}
 
-		shipp->ship_replacement_textures[final_index] = texture;
+		(*pmi->texture_replace)[final_index] = texture;
 	} else
 		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
 }
@@ -20997,7 +20965,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	ship_render_weapon_models(&render_info, scene, obj, render_flags);
 
 	render_info.set_object_number(OBJ_INDEX(obj));
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
+	render_info.set_replacement_textures(pmi->texture_replace);
 
 	// small ships
 	if ( !( shipp->flags[Ship_Flags::Cloaked] ) ) {

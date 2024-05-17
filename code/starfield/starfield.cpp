@@ -2311,6 +2311,9 @@ void stars_draw_background()
 		render_info.set_alpha_mult(Nmodel_alpha);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
+	if (Nmodel_instance_num >= 0)
+		render_info.set_replacement_textures(model_get_instance(Nmodel_instance_num)->texture_replace);
+
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 

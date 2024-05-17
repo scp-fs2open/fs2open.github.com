@@ -6,6 +6,7 @@
 #include "cockpit_display.h"
 #include "enums.h"
 #include "message.h"
+#include "modelinstance.h"
 #include "object.h"
 #include "order.h"
 #include "parse_object.h"
@@ -40,108 +41,6 @@ extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool
 
 namespace scripting {
 namespace api {
-
-//**********HANDLE: shiptextures
-ADE_OBJ(l_ShipTextures, object_h, "shiptextures", "Ship textures handle");
-
-ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "Number of textures on ship, or 0 if handle is invalid")
-{
-	object_h *objh;
-	if(!ade_get_args(L, "o", l_ShipTextures.GetPtr(&objh)))
-		return ade_set_error(L, "i", 0);
-
-	if(!objh->isValid())
-		return ade_set_error(L, "i", 0);
-
-	polymodel *pm = model_get(Ship_info[Ships[objh->objp->instance].ship_info_index].model_num);
-
-	if(pm == NULL)
-		return ade_set_error(L, "i", 0);
-
-	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
-}
-
-ADE_INDEXER(l_ShipTextures, "number/string IndexOrTextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
-{
-	object_h *oh;
-	const char* s;
-	texture_h* tdx = nullptr;
-	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.GetPtr(&tdx)))
-		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-
-	if (!oh->isValid() || s==NULL)
-		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-
-	ship *shipp = &Ships[oh->objp->instance];
-	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-	int final_index = -1;
-	int i;
-
-	char fname[MAX_FILENAME_LEN];
-	if (shipp->ship_replacement_textures != NULL)
-	{
-		for(i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-		{
-			bm_get_filename(shipp->ship_replacement_textures[i], fname);
-
-			if(!strextcmp(fname, s)) {
-				final_index = i;
-				break;
-			}
-		}
-	}
-
-	if(final_index < 0)
-	{
-		for (i = 0; i < pm->n_textures; i++)
-		{
-			int tm_num = pm->maps[i].FindTexture(s);
-			if(tm_num > -1)
-			{
-				final_index = i*TM_NUM_TYPES+tm_num;
-				break;
-			}
-		}
-	}
-
-	if (final_index < 0)
-	{
-		final_index = atoi(s) - 1;	//Lua->FS2
-
-		if (final_index < 0 || final_index >= MAX_REPLACEMENT_TEXTURES)
-			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-	}
-
-	if (ADE_SETTING_VAR) {
-		if (shipp->ship_replacement_textures == NULL) {
-			shipp->ship_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-			for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-				shipp->ship_replacement_textures[i] = -1;
-		}
-
-		if (tdx != nullptr) {
-			if (tdx->isValid())
-				shipp->ship_replacement_textures[final_index] = tdx->handle;
-			else
-				shipp->ship_replacement_textures[final_index] = -1;
-		}
-	}
-
-	if (shipp->ship_replacement_textures != NULL && shipp->ship_replacement_textures[final_index] >= 0)
-		return ade_set_args(L, "o", l_Texture.Set(texture_h(shipp->ship_replacement_textures[final_index])));
-	else
-		return ade_set_args(L, "o", l_Texture.Set(texture_h(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture())));
-}
-
-ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	object_h *oh;
-	if(!ade_get_args(L, "o", l_ShipTextures.GetPtr(&oh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", oh->isValid());
-}
 
 //**********HANDLE: Ship
 ADE_OBJ_DERIV(l_Ship, object_h, "ship", "Ship handle", l_Object);
@@ -919,30 +818,28 @@ ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The inde
 	return ade_set_args(L, "i", shipp->persona_index + 1);
 }
 
-ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
+ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "modelinstancetextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
 {
 	object_h *sh = nullptr;
 	object_h *dh;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&dh), l_Ship.GetPtr(&sh)))
-		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
+		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
 
 	if(!dh->isValid())
-		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
+		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
+
+	polymodel_instance *dest = model_get_instance(Ships[dh->objp->instance].model_instance_num);
 
 	if(ADE_SETTING_VAR && sh && sh->isValid()) {
-		ship *src = &Ships[sh->objp->instance];
-		ship *dest = &Ships[dh->objp->instance];
+		polymodel_instance *src = model_get_instance(Ships[sh->objp->instance].model_instance_num);
 
-		if (src->ship_replacement_textures != NULL)
+		if (src->texture_replace != nullptr)
 		{
-			if (dest->ship_replacement_textures == NULL)
-				dest->ship_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-			memcpy(dest->ship_replacement_textures, src->ship_replacement_textures, MAX_REPLACEMENT_TEXTURES * sizeof(int));
+			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
 		}
 	}
 
-	return ade_set_args(L, "o", l_ShipTextures.Set(object_h(dh->objp)));
+	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
 }
 
 ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected-by-gravity\" flag", "boolean", "True if flag is set, false if flag is not set and nil on error")

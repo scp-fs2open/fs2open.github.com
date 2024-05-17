@@ -21,6 +21,7 @@ class modelinstance_h
 
 	bool isValid() const;
 };
+DECLARE_ADE_OBJ(l_ModelInstanceTextures, modelinstance_h);
 DECLARE_ADE_OBJ(l_ModelInstance, modelinstance_h);
 
 class submodelinstance_h

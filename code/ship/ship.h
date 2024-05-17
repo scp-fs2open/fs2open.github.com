@@ -1538,7 +1538,7 @@ extern const size_t Num_subsystem_flags;
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
-extern int	*Player_cockpit_textures;
+extern std::shared_ptr<model_texture_replace> Player_cockpit_textures;
 
 // Data structure to track the active missiles
 typedef struct ship_obj {

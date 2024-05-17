@@ -641,7 +641,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			model_render_params render_info;
 
 			render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING);
-			render_info.set_replacement_textures(sp->ship_replacement_textures);
+			render_info.set_replacement_textures(model_get_instance(sp->model_instance_num)->texture_replace);
 			render_info.set_detail_level_lock(1);
 			render_info.set_object_number(OBJ_INDEX(objp));
 

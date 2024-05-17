@@ -64,8 +64,7 @@ model_render_params::model_render_params() :
 	Xparent_alpha(1.0f),
 	Forced_bitmap(-1),
 	Insignia_bitmap(-1),
-	Replacement_textures(NULL),
-	Manage_replacement_textures(false),
+	Replacement_textures(nullptr),
 	Team_color_set(false),
 	Clip_plane_set(false),
 	Animated_effect(-1),
@@ -89,12 +88,6 @@ model_render_params::model_render_params() :
 	}
 
 	gr_init_color(&Color, 0, 0, 0);
-}
-
-model_render_params::~model_render_params() 
-{
-	if (Manage_replacement_textures)
-		vm_free(const_cast<int*>(Replacement_textures));
 }
 
 uint model_render_params::get_model_flags() const
@@ -157,7 +150,7 @@ int model_render_params::get_insignia_bitmap() const
 	return Insignia_bitmap; 
 }
 
-const int* model_render_params::get_replacement_textures() const
+std::shared_ptr<const model_texture_replace> model_render_params::get_replacement_textures() const
 { 
 	return Replacement_textures; 
 }
@@ -223,19 +216,14 @@ bool model_render_params::is_team_color_set() const
 	return Team_color_set;
 }
 
-void model_render_params::set_replacement_textures(const int *textures)
+void model_render_params::set_replacement_textures(std::shared_ptr<const model_texture_replace> textures)
 {
-	Replacement_textures = textures;
+	Replacement_textures = std::move(textures);
 }
 
 void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	auto textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-	for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-		textures[i] = -1;
-
-	Manage_replacement_textures = true;
+	auto textures = make_shared<model_texture_replace>();
 
 	polymodel* pm = model_get(modelnum);
 
@@ -247,11 +235,11 @@ void model_render_params::set_replacement_textures(int modelnum, const SCP_vecto
 
 			int tnum = tmap->FindTexture(tr.old_texture);
 			if (tnum > -1)
-				textures[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
+				(*textures)[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
 		}
 	}
 
-	Replacement_textures = textures;
+	Replacement_textures = std::move(textures);
 }
 
 void model_render_params::set_insignia_bitmap(int bitmap)
@@ -1054,7 +1042,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 	int texture_maps[TM_NUM_TYPES] = { -1 };
 	size_t buffer_size = buffer->tex_buf.size();
-	const int *replacement_textures = interp->get_replacement_textures();
+	const auto& replacement_textures = interp->get_replacement_textures();
 
 	for ( size_t i = 0; i < buffer_size; i++ ) {
 		int tmap_num = buffer->tex_buf[i].texture;
@@ -1081,12 +1069,12 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			
 		} else if ( !no_texturing ) {
 			// pick the texture, animating it if necessary
-			if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] == REPLACE_WITH_INVISIBLE) ) {
+			if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] == REPLACE_WITH_INVISIBLE) ) {
 				// invisible textures aren't rendered, but we still have to skip assigning the underlying model texture
 				texture_maps[TM_BASE_TYPE] = -1;
-			} else if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+			} else if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
 				// an underlying texture is replaced with a real new texture
-				tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+				tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
 				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
 			} else {
 				// we just use the underlying texture
@@ -1101,8 +1089,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			if ( !(model_flags & MR_NO_GLOWMAPS) ) {
 				auto tglow = &tmap->textures[TM_GLOW_TYPE];
 
-				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
-					tex_replace[TM_GLOW_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_GLOW_TYPE]);
+				if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
+					tex_replace[TM_GLOW_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_GLOW_TYPE]);
 					texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(&tex_replace[TM_GLOW_TYPE], elapsed_time);
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
@@ -1115,8 +1103,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 
 			if (!(debug_flags & MR_DEBUG_NO_SPEC)) {
-				if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
-					tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+				if (replacement_textures != nullptr && (*replacement_textures)[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
+					tex_replace[TM_SPECULAR_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_SPECULAR_TYPE]);
 					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], elapsed_time);
 				}
 				else {
@@ -1124,8 +1112,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				}
 			}
 
-			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
-				tex_replace[TM_SPEC_GLOSS_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE]);
+			if ( replacement_textures != nullptr && (*replacement_textures)[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
+				tex_replace[TM_SPEC_GLOSS_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_SPEC_GLOSS_TYPE]);
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tex_replace[TM_SPEC_GLOSS_TYPE], elapsed_time);
 			} else {
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], elapsed_time);
@@ -1138,24 +1126,25 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				auto ambient_map = &tmap->textures[TM_AMBIENT_TYPE];
 				auto misc_map = &tmap->textures[TM_MISC_TYPE];
 
-				if (replacement_textures != NULL) {
-					if (replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
-						tex_replace[TM_NORMAL_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
+				if (replacement_textures != nullptr) {
+					const auto& replacement_textures_deref = *replacement_textures;
+					if (replacement_textures_deref[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
+						tex_replace[TM_NORMAL_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_NORMAL_TYPE]);
 						norm_map = &tex_replace[TM_NORMAL_TYPE];
 					}
 
-					if (replacement_textures[rt_begin_index + TM_HEIGHT_TYPE] >= 0) {
-						tex_replace[TM_HEIGHT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
+					if (replacement_textures_deref[rt_begin_index + TM_HEIGHT_TYPE] >= 0) {
+						tex_replace[TM_HEIGHT_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_HEIGHT_TYPE]);
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
 
-					if (replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0) {
-						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_AMBIENT_TYPE]);
+					if (replacement_textures_deref[rt_begin_index + TM_AMBIENT_TYPE] >= 0) {
+						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_AMBIENT_TYPE]);
 						ambient_map = &tex_replace[TM_AMBIENT_TYPE];
 					}
 
-					if (replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
-						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_MISC_TYPE]);
+					if (replacement_textures_deref[rt_begin_index + TM_MISC_TYPE] >= 0) {
+						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_MISC_TYPE]);
 						misc_map = &tex_replace[TM_MISC_TYPE];
 					}
 				}
@@ -1174,8 +1163,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 			//Check for invisible or transparent textures so they don't show up in the shadow maps - Valathil
 			if ( Rendering_to_shadow_map ) {
-				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
-					tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+				if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+					tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
 					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
 				} else {
 					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
@@ -3113,6 +3102,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
 			break;
 

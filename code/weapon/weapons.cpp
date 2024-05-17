@@ -9021,6 +9021,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 			render_info.set_flags(render_flags);
 
+			if (wp->model_instance_num >= 0)
+				render_info.set_replacement_textures(model_get_instance(wp->model_instance_num)->texture_replace);
+
 			model_render_queue(&render_info, scene, wip->model_num, &obj->orient, &obj->pos);
 
 			break;
