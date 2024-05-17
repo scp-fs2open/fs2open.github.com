@@ -1,6 +1,5 @@
 #include "VariableDialogModel.h"
 #include "parse/sexp.h"
-#include "parse/sexp_container.h"
 #include <unordered_set>
 #include <climits>
 
@@ -309,7 +308,7 @@ bool VariableDialogModel::apply()
     SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> renamedContainers;
 
     for (const auto& container : _containerItems){
-        newContainers.push_back(createContainerFromModel(container));
+        newContainers.push_back(createContainer(container));
 
         if (container.originalName != "" && container.name != container.originalName){
             renamedContainers[container.originalName] = container.name;

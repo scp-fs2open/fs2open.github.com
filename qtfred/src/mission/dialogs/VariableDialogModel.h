@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 
 #include "AbstractDialogModel.h"
+#include "parse/sexp_container.h"
 #include <QMessageBox>
 
 namespace fso {
