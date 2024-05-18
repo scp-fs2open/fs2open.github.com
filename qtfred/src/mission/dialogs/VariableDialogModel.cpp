@@ -281,18 +281,19 @@ bool VariableDialogModel::apply()
                     break;
                 }
             }
-        } else {
-            if (variable.string){
-                variable.flags |= SEXP_VARIABLE_STRING;
-                sexp_add_variable(variable.stringValue.c_str(), variable.name.c_str(), variable.flags, -1);
-            } else {
-                variable.flags |= SEXP_VARIABLE_NUMBER;
-                sexp_add_variable(std::to_string(variable.numberValue).c_str(), variable.name.c_str(), variable.flags, -1);
-            }
-        }
 
-        // just in case
-        if (!found) {
+			// just in case
+			if (!found) {
+				if (variable.string){
+					variable.flags |= SEXP_VARIABLE_STRING;
+					sexp_add_variable(variable.stringValue.c_str(), variable.name.c_str(), variable.flags, -1);
+				} else {
+					variable.flags |= SEXP_VARIABLE_NUMBER;
+					sexp_add_variable(std::to_string(variable.numberValue).c_str(), variable.name.c_str(), variable.flags, -1);
+				}
+			}
+
+        } else {
             if (variable.string){
                 variable.flags |= SEXP_VARIABLE_STRING;
                 sexp_add_variable(variable.stringValue.c_str(), variable.name.c_str(), variable.flags, -1);
@@ -326,7 +327,7 @@ void VariableDialogModel::initializeData()
     _containerItems.clear();
 
     for (int i = 0; i < MAX_SEXP_VARIABLES; ++i){ 
-        if (strlen(Sexp_variables[i].text)) {
+        if (!(Sexp_variables[i].type & SEXP_VARIABLE_NOT_USED)) {
             _variableItems.emplace_back();
             auto& item = _variableItems.back();
             item.name = Sexp_variables[i].variable_name;
