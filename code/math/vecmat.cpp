@@ -1374,7 +1374,7 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 	vm_vec_scale_add(q, p, &normal, -k);
 }
 
-//	Generate a random vector that's normalized.
+//	Generate a fairly random vector that's normalized.
 void vm_vec_rand_vec(vec3d *rvec)
 {
 	rvec->xyz.x = (frand() - 0.5f) * 2;

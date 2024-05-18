@@ -428,7 +428,7 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p);
 //						plane_point		=>		plane point
 void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec3d *plane_normal, const vec3d *plane_point);
 
-//	Returns random vector, normalized
+//	Returns fairly random vector, normalized
 void vm_vec_rand_vec(vec3d *rvec);
 
 // Given an point "in" rotate it by "angle" around an
