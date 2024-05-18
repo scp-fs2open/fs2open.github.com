@@ -128,6 +128,13 @@ vec3d SourceOrigin::getVelocity() const {
 			return m_origin.m_object.objp->phys_info.vel;
 		case SourceOriginType::PARTICLE:
 			return m_origin.m_particle.lock()->velocity;
+		case SourceOriginType::BEAM: {
+			beam* bm = &Beams[m_origin.m_object.objp->instance];
+			vec3d vel;
+			vm_vec_normalized_dir(&vel, &bm->last_shot, &bm->last_start);
+			vm_vec_scale(&vel, Weapon_info[bm->weapon_info_index].max_speed);
+			return vel;
+		}
 		default:
 			return m_velocity;
 	}
