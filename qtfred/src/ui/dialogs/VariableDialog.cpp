@@ -793,7 +793,7 @@ void VariableDialog::onSaveVariableAsEternalCheckboxClicked()
 	}
 
 	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->setVariableAsEternalcheckbox->isChecked() != _model->setVariableEternalFlag(row, ui->setVariableAsEternalcheckbox->isChecked())) {
+	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(row, ui->setVariableAsEternalcheckbox->isChecked())) {
 		applyModel();
 	} else {
 		ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
@@ -809,7 +809,7 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 	}
 
 	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->networkVariableCheckbox->isChecked() != _model->setVariableNetworkStatus(row, ui->networkVariableCheckbox->isChecked())) {
+	if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(row, ui->networkVariableCheckbox->isChecked())) {
 		applyModel();
 	} else {
 		ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
