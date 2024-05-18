@@ -733,6 +733,9 @@ void VariableDialog::onDoNotSaveVariableRadioSelected()
 	} else {
 		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);
+
+		ui->setVariableAsEternalcheckbox->setChecked(false);
+		ui->setVariableAsEternalcheckbox->setEnabled(false);
 	}
 }
 
@@ -752,6 +755,9 @@ void VariableDialog::onSaveVariableOnMissionCompleteRadioSelected()
 	} else {
 		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveVariableOnMissionCloseRadio->setChecked(false);
+
+		ui->setVariableAsEternalcheckbox->setEnabled(true);
+		ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));
 	}
 }
 
@@ -772,6 +778,9 @@ void VariableDialog::onSaveVariableOnMissionCloseRadioSelected()
 	} else {
 		ui->doNotSaveVariableRadio->setChecked(false);
 		ui->saveVariableOnMissionCompletedRadio->setChecked(false);
+
+		ui->setVariableAsEternalcheckbox->setEnabled(true);
+		ui->setVariableAsEternalcheckbox->setChecked(_model->getVariableEternalFlag(row));		
 	}
 }
 
@@ -784,7 +793,7 @@ void VariableDialog::onSaveVariableAsEternalCheckboxClicked()
 	}
 
 	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->setVariableAsEternalcheckbox->isChecked() == _model->setVariableEternalFlag(row, ui->setVariableAsEternalcheckbox->isChecked())) {
+	if (ui->setVariableAsEternalcheckbox->isChecked() != _model->setVariableEternalFlag(row, ui->setVariableAsEternalcheckbox->isChecked())) {
 		applyModel();
 	} else {
 		ui->setVariableAsEternalcheckbox->setChecked(!ui->setVariableAsEternalcheckbox->isChecked());
@@ -800,7 +809,7 @@ void VariableDialog::onNetworkVariableCheckboxClicked()
 	}
 
 	// If the model returns the old status, then the change failed and we're out of sync.	
-	if (ui->networkVariableCheckbox->isChecked() == _model->setVariableNetworkStatus(row, ui->networkVariableCheckbox->isChecked())) {
+	if (ui->networkVariableCheckbox->isChecked() != _model->setVariableNetworkStatus(row, ui->networkVariableCheckbox->isChecked())) {
 		applyModel();
 	} else {
 		ui->networkVariableCheckbox->setChecked(!ui->networkVariableCheckbox->isChecked());
@@ -954,6 +963,9 @@ void VariableDialog::onDoNotSaveContainerRadioSelected()
 		ui->doNotSaveContainerRadio->setChecked(true);
 		ui->saveContainerOnMissionCloseRadio->setChecked(false);
 		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+
+		ui->setContainerAsEternalCheckbox->setChecked(false);
+		ui->setContainerAsEternalCheckbox->setEnabled(false);
 	}
 }
 
@@ -972,6 +984,9 @@ void VariableDialog::onSaveContainerOnMissionCompletedRadioSelected()
 		ui->doNotSaveContainerRadio->setChecked(false);
 		ui->saveContainerOnMissionCloseRadio->setChecked(false);
 		ui->saveContainerOnMissionCompletedRadio->setChecked(true);
+
+		ui->setContainerAsEternalCheckbox->setEnabled(true);
+		ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerEternalFlag(row));
 	}
 }
 
@@ -990,6 +1005,9 @@ void VariableDialog::onSaveContainerOnMissionCloseRadioSelected()
 		ui->doNotSaveContainerRadio->setChecked(false);
 		ui->saveContainerOnMissionCloseRadio->setChecked(true);
 		ui->saveContainerOnMissionCompletedRadio->setChecked(false);
+
+		ui->setContainerAsEternalCheckbox->setEnabled(true);
+		ui->setContainerAsEternalCheckbox->setChecked(_model->getContainerEternalFlag(row));
 	}
 }
 
@@ -1181,7 +1199,7 @@ void VariableDialog::applyModel()
 		if (selectedRow < 0 && !_currentVariable.empty() && variables[x][0] == _currentVariable){
 			selectedRow = x;
 
-		    if (!_model->safeToAlterVariable(selectedRow)){
+		    if (_model->safeToAlterVariable(selectedRow)){
 				safeToAlter = true;
    			}
 		}
