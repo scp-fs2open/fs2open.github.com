@@ -219,7 +219,7 @@ ADE_FUNC(createRandomOrientation, l_Base, nullptr, "Creates a random orientation
 	vec3d fvec, uvec;
 	matrix fvec_orient, final_orient;
 
-	vm_vec_rand_vec(&fvec);
+	vm_vec_random_in_sphere(&fvec, &vmd_zero_vector, 1.0f, true);
 	vm_vector_2_matrix(&fvec_orient, &fvec, nullptr, nullptr);
 
 	vm_vec_random_in_circle(&uvec, &vmd_zero_vector, &fvec_orient, 1.0f, true);
