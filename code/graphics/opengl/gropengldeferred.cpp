@@ -571,8 +571,12 @@ void gr_opengl_deferred_lighting_finish()
 			data->nebPos = neb.getPos();
 			data->nebSize = neb.getSize();
 			data->stepsize = neb.getStepsize();
-			data->globalstepalpha = neb.getStepalpha();
+			data->opacitydistance = neb.getOpacityDistance();
 			data->alphalimit = neb.getAlphaLim();
+			data->nebColor[0] = std::get<0>(neb.getNebulaColor());
+			data->nebColor[1] = std::get<1>(neb.getNebulaColor());
+			data->nebColor[2] = std::get<2>(neb.getNebulaColor());
+			data->udfScale = neb.getUDFScale();
 			data->emissiveSpreadFactor = neb.getEmissiveSpread();
 			data->emissiveIntensity = neb.getEmissiveIntensity();
 			data->emissiveFalloff = neb.getEmissiveFalloff();
