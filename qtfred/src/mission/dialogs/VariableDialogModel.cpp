@@ -386,10 +386,47 @@ void VariableDialogModel::initializeData()
         }
         
         newContainer.list = container.is_list();
+
+		if (any(container.type & ContainerType::LIST)) {
+			for (const auto& item : container.list_data){
+				if (any(container.type & ContainerType::STRING_DATA)){
+					newContainer.stringValues.push_back(item);
+				} else {
+					try {
+						newContainer.numberValues.push_back(std::stoi(item));				
+					}
+					catch (...){
+						newContainer.numberValues.push_back(0);
+					}					
+				}
+			}
+		} else {
+			if (any(container.type & ContainerType::STRING_KEYS)){
+				newContainer.stringKeys = true;					
+			} else {
+				newContainer.stringKeys = false;								
+			}
+
+			for (const auto& item : container.map_data){
+				newContainer.keys.push_back(item.first);
+
+				if (any(container.type & ContainerType::STRING_DATA)){
+					newContainer.stringValues.push_back(item.second);
+					newContainer.numberValues.push_back(0);				
+				} else {
+					newContainer.stringValues.push_back("");
+					
+					try{
+						newContainer.numberValues.push_back(std::stoi(item.second));				
+					}
+					catch (...){
+						newContainer.numberValues.push_back(0);						
+					}
+				}
+			}
+		}
     }
 }
-
-
 
 // true on string, false on number
 bool VariableDialogModel::getVariableType(int index)
@@ -747,7 +784,7 @@ bool VariableDialogModel::safeToAlterVariable(int index)
 
     // FIXME! until we can actually count references (via a SEXP backend), this is the best way to go.
     if (variable->originalName != ""){
-        return false;
+        return true;
     }
 
     return true;
@@ -1927,7 +1964,7 @@ bool VariableDialogModel::safeToAlterContainer(int index)
 
     // FIXME! Until there's a sexp backend, we can only check if we just created the container.
     if (container->originalName != ""){
-        return false;
+        return true;
     }
 
     return true;
@@ -2252,7 +2289,9 @@ void VariableDialogModel::sortMap(int index)
         // If the last item is a duplicate, that was checked on the previous iteration. 
         if ((x >= static_cast<int>(container->keys.size()) - 1) || container->keys[x] != container->keys[x + 1]){
             y = 0;
-        }
+        } else {
+			++y;
+		}
     }
 
     // TODO! Switch to Assertion after testing.

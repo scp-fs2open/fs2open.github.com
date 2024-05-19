@@ -1296,7 +1296,7 @@ void VariableDialog::applyModel()
 	}
 
 	// do we need to switch the delete button to a restore button?
-	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "Deleted") {
+	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "To Be Deleted") {
 		ui->deleteContainerButton->setText("Restore");
 		
 		// We can't restore empty container names.
@@ -1398,7 +1398,7 @@ void VariableDialog::updateVariableOptions(bool safeToAlter)
 	ui->setVariableAsNumberRadio->setChecked(!string);
 
 	// do we need to switch the delete button to a restore button?
-	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "Deleted"){
+	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "To Be Deleted"){
 		ui->deleteVariableButton->setText("Restore");		
 
 		// We can't restore empty variable names.
