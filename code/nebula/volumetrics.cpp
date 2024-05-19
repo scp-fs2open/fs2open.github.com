@@ -507,7 +507,7 @@ float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) co
 	}
 
 	float alpha = 1.0f;
-	const float stepalpha = -(powf(getAlphaLim(), 1.0 / (getOpacityDistance() / getStepsize())) - 1.0f);
+	const float stepalpha = -(powf(getAlphaLim(), 1.0f / (getOpacityDistance() / getStepsize())) - 1.0f);
 	const int n = 1 << resolution;
 	for (float stept = maxTmin; stept < minTmax; stept += getStepsize()) {
 		vec3d localpos = (Eye_position + (ray_direction * stept) - bb_min) / size * static_cast<float>(n);
