@@ -149,8 +149,8 @@ struct submodel_instance
 #define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
 #define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
 #define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
-//Used by scripting - if you change this, do a search
-//to update switch() statement in lua.cpp
+									//Used by scripting - if you change this, do a search
+									//to update switch() statement in lua.cpp
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
