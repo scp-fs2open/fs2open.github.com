@@ -258,10 +258,17 @@ static inline std::array<ivec3, 6> getNeighbors(const ivec3& pnt){
 }
 
 //Nebula distance must be a lower bound to avoid errors, so subtract sqrt(2) in each dimension
-static inline float getNebDistSquared(const ivec3& l, const ivec3& r, const vec3d& scale) {
-	int dx = (l.x - r.x) * (l.x - r.x) - 2;
-	int dy = (l.y - r.y) * (l.y - r.y) - 2;
-	int dz = (l.z - r.z) * (l.z - r.z) - 2;
+static inline float getNebDistSquared(const ivec3& l, const ivec3& r, const vec3d& scale, bool lowerBound) {
+	int dx = (l.x - r.x) * (l.x - r.x);
+	int dy = (l.y - r.y) * (l.y - r.y);
+	int dz = (l.z - r.z) * (l.z - r.z);
+
+	if (lowerBound){
+		dx -= 2;
+		dy -= 2;
+		dz -= 2;
+	}
+
 	return (dx < 0 ? 0 : dx) * scale.xyz.x * scale.xyz.x + (dy < 0 ? 0 : dy) * scale.xyz.y * scale.xyz.y + (dz < 0 ? 0 : dz) * scale.xyz.z * scale.xyz.z;
 }
 
@@ -415,7 +422,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 
 				ivec3& neighborClosestEdgeTile = volumeEdgeCache[neighbor.x * n * n + neighbor.y * n + neighbor.z];
 
-				if (neighborClosestEdgeTile.x < 0 || getNebDistSquared(neighbor, closestEdgeTile, size) < getNebDistSquared(neighbor, neighborClosestEdgeTile, size)) {
+				if (neighborClosestEdgeTile.x < 0 || getNebDistSquared(neighbor, closestEdgeTile, size, false) < getNebDistSquared(neighbor, neighborClosestEdgeTile, size, false)) {
 					neighborClosestEdgeTile = closestEdgeTile;
 					udfBFS_to_check.emplace(neighbor);
 				}
@@ -429,7 +436,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 	for (int x = 0; x < n; x++) {
 		for (int y = 0; y < n; y++) {
 			for (int z = 0; z < n; z++) {
-				float dist = sqrtf(getNebDistSquared(ivec3{x, y, z}, volumeEdgeCache[x * n * n + y * n + z], size)) / static_cast<float>(n); //in meters
+				float dist = sqrtf(getNebDistSquared(ivec3{x, y, z}, volumeEdgeCache[x * n * n + y * n + z], size, true)) / static_cast<float>(n); //in meters
 				volumeBitmapData[COLOR_3D_ARRAY_POS(n, R, x, y, z)] = static_cast<ubyte>(dist / udfScale * 255.0f); //UDF
 				volumeBitmapData[COLOR_3D_ARRAY_POS(n, G, x, y, z)] = 0; // Reserved
 				volumeBitmapData[COLOR_3D_ARRAY_POS(n, B, x, y, z)] = 0; // Reserved
