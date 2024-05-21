@@ -8103,8 +8103,8 @@ void ship_init_cockpit_displays(ship *shipp)
 	// ship's cockpit texture replacements haven't been setup yet, so do it.
 	Player_cockpit_textures = make_shared<model_texture_replace>();
 
-	for ( int i = 0; i < (int)sip->displays.size(); i++ ) {
-		ship_add_cockpit_display(&sip->displays[i], cockpit_model_num);
+	for ( auto& display : sip->displays ) {
+		ship_add_cockpit_display(&display, cockpit_model_num);
 	}
 
 	ship_set_hud_cockpit_targets();
@@ -11164,8 +11164,8 @@ static void ship_model_change(int n, int ship_type)
 	if ( !sip->replacement_textures.empty() ) {
 
 		// clear and reset replacement textures because the new positions may be different
-		if (pmi->texture_replace == nullptr)
-			pmi->texture_replace = make_shared<model_texture_replace>();
+		pmi->texture_replace = make_shared<model_texture_replace>();
+		auto& texture_replace_deref = *pmi->texture_replace;
 
 		// now fill them in according to texture name
 		for (const auto& tr : sip->replacement_textures) {
@@ -11179,7 +11179,7 @@ static void ship_model_change(int n, int ship_type)
 					// load new texture
 					int new_tex = bm_load_either(tr.new_texture);
 					if (new_tex > -1) {
-						(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = new_tex;
+						texture_replace_deref[j * TM_NUM_TYPES + tnum] = new_tex;
 					}
 				}
 			}
