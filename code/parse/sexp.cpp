@@ -20792,6 +20792,7 @@ void sexp_replace_texture(int n, bool skybox)
 		}
 		polymodel_instance* skybox_pmi = model_get_instance(Nmodel_instance_num);
 		modelinstance_replace_active_texture(skybox_pmi, old_name, new_name);
+		stars_invalidate_environment_map();
 		return;
 	}
 
