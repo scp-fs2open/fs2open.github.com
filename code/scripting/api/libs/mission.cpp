@@ -50,6 +50,7 @@
 #include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
+#include "scripting/api/objs/modelinstance.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
@@ -2175,6 +2176,44 @@ ADE_VIRTVAR(SkyboxAlpha, l_Mission, "number", "Sets or returns the current skybo
 		stars_set_background_alpha(alpha);
 
 	return ade_set_args(L, "f", Nmodel_alpha);
+}
+
+ADE_VIRTVAR(Skybox, l_Mission, "model", "Sets or returns the current skybox model", "model", "The skybox model")
+{
+	model_h* model = nullptr;
+	if (!ade_get_args(L, "*|o", l_Model.GetPtr(&model)))
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	if (ADE_SETTING_VAR && model && model->isValid()) {
+		if (Nmodel_num >= 0) {
+			model_unload(Nmodel_num);
+			Nmodel_num = -1;
+		}
+
+		if (Nmodel_instance_num >= 0) {
+			model_delete_instance(Nmodel_instance_num);
+			Nmodel_instance_num = -1;
+		}
+
+		Nmodel_num = model->GetID();
+
+		if (Nmodel_num >= 0) {
+			model_page_in_textures(Nmodel_num);
+
+			Nmodel_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Nmodel_num);
+			The_mission.skybox_model_animations.initializeMoveables(model_get_instance(Nmodel_instance_num));
+		}
+
+		// Since we have a new skybox we need to rerender the environment map
+		stars_invalidate_environment_map();
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(Nmodel_num)));
+}
+
+ADE_FUNC(getSkyboxInstance, l_Mission, nullptr, "Returns the current skybox model instance", "model_instance", "The skybox model instance")
+{
+	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(Nmodel_instance_num)));
 }
 
 ADE_FUNC(isRedAlertMission,
