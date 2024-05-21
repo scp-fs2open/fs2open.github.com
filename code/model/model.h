@@ -1426,6 +1426,8 @@ void model_page_out_textures(int model_num, bool release = false);
 // given a model, without respect to usage state of the polymodel
 void model_page_out_textures(polymodel* pm, bool release = false, const SCP_set<int>& skipTextures = {}, const SCP_set<int>& skipGlowBanks = {});
 
+void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name);
+
 void model_do_intrinsic_motions(object *objp);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);

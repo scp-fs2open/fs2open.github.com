@@ -615,6 +615,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
+	{ "replace-texture-skybox",				OP_REPLACE_TEXTURE_SKYBOX,						2, 2,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
 	{ "trigger-ship-animation",			OP_TRIGGER_ANIMATION_NEW,				3,	7,			SEXP_ACTION_OPERATOR,	}, //Lafiel
 	{ "stop-looping-animation",			OP_STOP_LOOPING_ANIMATION,				3,  3,			SEXP_ACTION_OPERATOR,   }, //Lafiel
@@ -4832,6 +4833,7 @@ int get_sexp()
 				break;
 
 			case OP_REPLACE_TEXTURE:
+			case OP_REPLACE_TEXTURE_SKYBOX:
 				//Texture name is argument 2
 				n = CDDR(start);
 				do_preload_for_arguments(preload_texture, n, arg_handler);
@@ -20775,13 +20777,19 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	}
 }
 
-void sexp_replace_texture(int n)
+void sexp_replace_texture(int n, bool skybox)
 {
 	auto old_name = CTEXT(n);
 	n = CDR(n);
 
 	auto new_name = CTEXT(n);
 	n = CDR(n);
+
+	if (skybox) {
+		polymodel_instance* skybox_pmi = model_get_instance(Nmodel_instance_num);
+		modelinstance_replace_active_texture(skybox_pmi, old_name, new_name);
+		return;
+	}
 
 	for (; n != -1; n = CDR(n))
 	{
@@ -29524,8 +29532,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_REPLACE_TEXTURE:
+			case OP_REPLACE_TEXTURE_SKYBOX:
 				sexp_val = SEXP_TRUE;
-				sexp_replace_texture(node);
+				sexp_replace_texture(node, op_num == OP_REPLACE_TEXTURE_SKYBOX);
 				break;
 
 			case OP_SET_ALPHA_MULT:
@@ -30783,6 +30792,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
+		case OP_REPLACE_TEXTURE_SKYBOX:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
@@ -33540,6 +33550,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_REPLACE_TEXTURE_SKYBOX:
+			return OPF_STRING;
       
 		case OP_SET_ALPHA_MULT:
 			if (argnum == 0)
@@ -35812,6 +35825,7 @@ int get_category(int op_id)
 		case OP_SEND_MESSAGE_CHAIN:
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
+		case OP_REPLACE_TEXTURE_SKYBOX:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
@@ -36139,6 +36153,7 @@ int get_subcategory(int op_id)
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
+		case OP_REPLACE_TEXTURE_SKYBOX:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_UPDATE_MOVEABLE:
@@ -41198,6 +41213,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Name of the texture to be replaced.\r\n"
 		"\t2: Name of the texture to be changed to.\r\n"
 		"\tRest: Name of the ship or wing (ship/wing does not need to be in-mission).\r\n"
+	},
+
+	{ OP_REPLACE_TEXTURE_SKYBOX, "replace-texture-skybox\r\n"
+		"\tChanges a texture of the skybox to a different texture, similar to the FRED texture replace.\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1: Name of the texture to be replaced.\r\n"
+		"\t2: Name of the texture to be changed to.\r\n"
 	},
 
 	{ OP_SET_ALPHA_MULT, "set-alpha-multiplier\r\n"
