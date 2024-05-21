@@ -140,12 +140,39 @@ struct submodel_instance
 	}
 };
 
+#define TM_BASE_TYPE		0		// the standard base map
+#define TM_GLOW_TYPE		1		// optional glow map
+#define TM_SPECULAR_TYPE	2		// optional specular map
+#define TM_NORMAL_TYPE		3		// optional normal map
+#define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
+#define TM_MISC_TYPE		5		// optional utility map
+#define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
+#define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
+#define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
+									//Used by scripting - if you change this, do a search
+									//to update switch() statement in lua.cpp
+
+#define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
+
+// Goober5000 - since we need something < 0
+#define REPLACE_WITH_INVISIBLE	-47
+
+class model_texture_replace : public std::array<int, MAX_REPLACEMENT_TEXTURES> {
+public:
+	model_texture_replace() : std::array<int, MAX_REPLACEMENT_TEXTURES>() {
+		for (int& tex : *this)
+			tex = -1;
+	}
+};
+
 // Data specific to a particular instance of a model.
 struct polymodel_instance
 {
 	int id = -1;							// global model_instance num index
 	int model_num = -1;						// global model num index, same as polymodel->id
 	submodel_instance *submodel = nullptr;	// array of submodel instances; mirrors the polymodel->submodel array
+
+	std::shared_ptr<model_texture_replace> texture_replace = nullptr;
 
 	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox) 
 };
@@ -730,17 +757,6 @@ public:
 	int SetTexture(int n_tex);
 };
 
-#define TM_BASE_TYPE		0		// the standard base map
-#define TM_GLOW_TYPE		1		// optional glow map
-#define TM_SPECULAR_TYPE	2		// optional specular map
-#define TM_NORMAL_TYPE		3		// optional normal map
-#define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
-#define TM_MISC_TYPE		5		// optional utility map
-#define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
-#define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
-#define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
-									//Used by scripting - if you change this, do a search
-									//to update switch() statement in lua.cpp
 // taylor
 //WMC - OOPified
 class texture_map
@@ -764,11 +780,6 @@ public:
 		: is_ambient(false), is_transparent(false)
 	{}
 };
-
-#define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
-
-// Goober5000 - since we need something < 0
-#define REPLACE_WITH_INVISIBLE	-47
 
 //used to describe a polygon model
 // NOTE: Because WMC OOPified the textures, this must now be treated as a class, rather than a struct.
