@@ -20786,6 +20786,10 @@ void sexp_replace_texture(int n, bool skybox)
 	n = CDR(n);
 
 	if (skybox) {
+		if (Nmodel_instance_num < 0) {
+			mprintf(("Tried to replace texture of a non-existant skybox\n"));
+			return;
+		}
 		polymodel_instance* skybox_pmi = model_get_instance(Nmodel_instance_num);
 		modelinstance_replace_active_texture(skybox_pmi, old_name, new_name);
 		return;
