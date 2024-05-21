@@ -820,7 +820,7 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	stars_clear_instances();
 
-	stars_set_background_model(NULL, NULL);
+	stars_set_background_model(nullptr, nullptr);
 	stars_set_background_orientation();
 
 	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
@@ -2317,23 +2317,12 @@ void stars_draw_background()
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
-// call this to set a specific model as the background model
-void stars_set_background_model(const char* model_name, const char* texture_name, int flags, float alpha)
+void stars_set_background_model(int new_model, int new_bitmap, int flags, float alpha)
 {
-	int new_model = -1;
-	int new_bitmap = -1;
-
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
-	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
-		new_model = model_load(model_name, 0, nullptr, -1);
-
-		if (texture_name != nullptr && *texture_name != '\0') {
-			new_bitmap = bm_load(texture_name);
-		}
-	}
 	CLAMP(alpha, 0.0f, 1.0f);
 
 	// see if we are actually changing anything
@@ -2345,7 +2334,7 @@ void stars_set_background_model(const char* model_name, const char* texture_name
 		bm_unload(Nmodel_bitmap);
 		Nmodel_bitmap = -1;
 	}
-	
+
 	if (Nmodel_num >= 0) {
 		model_unload(Nmodel_num);
 		Nmodel_num = -1;
@@ -2370,6 +2359,27 @@ void stars_set_background_model(const char* model_name, const char* texture_name
 
 	// Since we have a new skybox we need to rerender the environment map
 	stars_invalidate_environment_map();
+}
+
+// call this to set a specific model as the background model
+void stars_set_background_model(const char* model_name, const char* texture_name, int flags, float alpha)
+{
+	int new_model = -1;
+	int new_bitmap = -1;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
+		new_model = model_load(model_name, 0, nullptr, -1);
+
+		if (texture_name != nullptr && *texture_name != '\0') {
+			new_bitmap = bm_load(texture_name);
+		}
+	}
+
+	stars_set_background_model(new_model, new_bitmap, flags, alpha);
 }
 
 // call this to set a specific orientation for the background

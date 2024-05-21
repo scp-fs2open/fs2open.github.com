@@ -2185,27 +2185,7 @@ ADE_VIRTVAR(Skybox, l_Mission, "model", "Sets or returns the current skybox mode
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
 	if (ADE_SETTING_VAR && model && model->isValid()) {
-		if (Nmodel_num >= 0) {
-			model_unload(Nmodel_num);
-			Nmodel_num = -1;
-		}
-
-		if (Nmodel_instance_num >= 0) {
-			model_delete_instance(Nmodel_instance_num);
-			Nmodel_instance_num = -1;
-		}
-
-		Nmodel_num = model->GetID();
-
-		if (Nmodel_num >= 0) {
-			model_page_in_textures(Nmodel_num);
-
-			Nmodel_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Nmodel_num);
-			The_mission.skybox_model_animations.initializeMoveables(model_get_instance(Nmodel_instance_num));
-		}
-
-		// Since we have a new skybox we need to rerender the environment map
-		stars_invalidate_environment_map();
+		stars_set_background_model(model->GetID(), -1, Nmodel_flags, Nmodel_alpha);
 	}
 
 	return ade_set_args(L, "o", l_Model.Set(model_h(Nmodel_num)));
