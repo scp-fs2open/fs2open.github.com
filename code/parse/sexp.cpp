@@ -615,7 +615,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
-	{ "replace-texture-skybox",				OP_REPLACE_TEXTURE_SKYBOX,						2, 2,	SEXP_ACTION_OPERATOR,   },  // Lafiel
+	{ "replace-skybox-texture",				OP_REPLACE_TEXTURE_SKYBOX,						2, 2,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
 	{ "trigger-ship-animation",			OP_TRIGGER_ANIMATION_NEW,				3,	7,			SEXP_ACTION_OPERATOR,	}, //Lafiel
 	{ "stop-looping-animation",			OP_STOP_LOOPING_ANIMATION,				3,  3,			SEXP_ACTION_OPERATOR,   }, //Lafiel
@@ -41219,7 +41219,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRest: Name of the ship or wing (ship/wing does not need to be in-mission).\r\n"
 	},
 
-	{ OP_REPLACE_TEXTURE_SKYBOX, "replace-texture-skybox\r\n"
+	{ OP_REPLACE_TEXTURE_SKYBOX, "replace-skybox-texture\r\n"
 		"\tChanges a texture of the skybox to a different texture, similar to the FRED texture replace.\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1: Name of the texture to be replaced.\r\n"
