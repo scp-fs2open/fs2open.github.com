@@ -265,8 +265,9 @@ void ShipEditorDialog::updateColumnOne()
 	}
 	auto cargo = _model->getCargo();
 	ui->cargoCombo->clear();
-	for (i = 0; i < Num_cargo; i++) {
-		ui->cargoCombo->addItem(Cargo_names[i]);
+	int j;
+	for (j = 0; j < Num_cargo; j++) {
+		ui->cargoCombo->addItem(Cargo_names[j]);
 	}
 	if (ui->cargoCombo->findText(QString(cargo.c_str()))) {
 		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
@@ -283,8 +284,8 @@ void ShipEditorDialog::updateColumnOne()
 			auto altname = _model->getAltName();
 			ui->altNameCombo->setEnabled(true);
 			ui->altNameCombo->addItem("<none>");
-			for (i = 0; i < Mission_alt_type_count; i++) {
-				ui->altNameCombo->addItem(Mission_alt_types[i]);
+			for (j = 0; j < Mission_alt_type_count; j++) {
+				ui->altNameCombo->addItem(Mission_alt_types[j]);
 			}
 			if (ui->altNameCombo->findText(QString(altname.c_str()))) {
 				ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
@@ -301,8 +302,8 @@ void ShipEditorDialog::updateColumnOne()
 			auto callsign = _model->getCallsign();
 			ui->callsignCombo->addItem("<none>");
 			ui->callsignCombo->setEnabled(true);
-			for (i = 0; i < Mission_callsign_count; i++) {
-				ui->callsignCombo->addItem(Mission_callsigns[i], QVariant(Mission_callsigns[i]));
+			for (j = 0; j < Mission_callsign_count; j++) {
+				ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
 			}
 
 			if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
@@ -372,9 +373,9 @@ void ShipEditorDialog::updateArrival()
 	if (_model->getArrivalLocation() != ArrivalLocation::FROM_DOCK_BAY) {
 		// Add Special Arrivals
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
-			for (i = 0; i < Iff_info.size(); i++) {
+			for (size_t j = 0; j < Iff_info.size(); j++) {
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, j, restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}
