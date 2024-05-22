@@ -516,8 +516,7 @@ void LoadoutDialog::onClearAllUsedWeaponsPressed()
 
 void LoadoutDialog::openEditVariablePressed() 
 {
-	//TODO! FIX ME!
-	//viewport->on_actionVariables_triggered();
+	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
 }
 
 void LoadoutDialog::onSelectionRequiredPressed() 

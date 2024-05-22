@@ -43,6 +43,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void newMission();
 
+	// this can be triggered by the loadout dialog and so needs to be public
+	void on_actionVariables_triggered(bool);
+
  private slots:
 	 void on_actionSave_As_triggered(bool);
 	 void on_actionSave_triggered(bool);
@@ -91,7 +94,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionReinforcements_triggered(bool);
 	void on_actionLoadout_triggered(bool);
-	void on_actionVariables_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
 

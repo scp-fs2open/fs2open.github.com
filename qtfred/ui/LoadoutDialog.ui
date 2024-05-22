@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>fso::fred::dialogs::LoadoutDialog</class>
  <widget class="QDialog" name="fso::fred::dialogs::LoadoutDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="enabled">
    <bool>true</bool>
   </property>

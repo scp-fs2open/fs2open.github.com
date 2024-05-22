@@ -2294,8 +2294,7 @@ void VariableDialogModel::sortMap(int index)
 		}
     }
 
-    // TODO! Switch to Assertion after testing.
-    Verification(container->keys.size() == sortedStringValues.size(), "Keys size %zu and values %zu have a size mismatch after sorting. Please report to the SCP.", container->keys.size(), sortedStringValues.size());
+    Assertion(container->keys.size() == sortedStringValues.size(), "Keys size %zu and values %zu have a size mismatch after sorting. Please report to the SCP.", container->keys.size(), sortedStringValues.size());
     container->stringValues = std::move(sortedStringValues);
     container->numberValues = std::move(sortedNumberValues);
 }

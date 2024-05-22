@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>fso::fred::dialogs::VariableEditorDialog</class>
  <widget class="QDialog" name="fso::fred::dialogs::VariableEditorDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
