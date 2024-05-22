@@ -572,7 +572,7 @@ namespace fso {
 						_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
 						_editor->update_texture_replacements(old_name, str);
 						int j;
-						for (j = 0; i < Num_reinforcements; j++) {
+						for (j = 0; j < Num_reinforcements; j++) {
 							if (!strcmp(old_name, Reinforcements[j].name)) {
 								Assert(strlen(str) < NAME_LENGTH);
 								strcpy_s(Reinforcements[j].name, str);
