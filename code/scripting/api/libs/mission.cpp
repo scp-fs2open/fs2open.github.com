@@ -50,6 +50,7 @@
 #include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
+#include "scripting/api/objs/modelinstance.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
@@ -2175,6 +2176,24 @@ ADE_VIRTVAR(SkyboxAlpha, l_Mission, "number", "Sets or returns the current skybo
 		stars_set_background_alpha(alpha);
 
 	return ade_set_args(L, "f", Nmodel_alpha);
+}
+
+ADE_VIRTVAR(Skybox, l_Mission, "model", "Sets or returns the current skybox model", "model", "The skybox model")
+{
+	model_h* model = nullptr;
+	if (!ade_get_args(L, "*|o", l_Model.GetPtr(&model)))
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	if (ADE_SETTING_VAR && model && model->isValid()) {
+		stars_set_background_model(model->GetID(), -1, Nmodel_flags, Nmodel_alpha);
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(Nmodel_num)));
+}
+
+ADE_FUNC(getSkyboxInstance, l_Mission, nullptr, "Returns the current skybox model instance", "model_instance", "The skybox model instance")
+{
+	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(Nmodel_instance_num)));
 }
 
 ADE_FUNC(isRedAlertMission,

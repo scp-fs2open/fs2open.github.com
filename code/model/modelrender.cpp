@@ -3072,6 +3072,41 @@ void model_render_set_wireframe_color(const color* clr)
 	Wireframe_color = *clr;
 }
 
+void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name)
+{
+	Assert(pmi != nullptr);
+	polymodel* pm = model_get(pmi->model_num);
+
+	int final_index = -1;
+
+	for (int i = 0; i < pm->n_textures; i++)
+	{
+		int tm_num = pm->maps[i].FindTexture(old_name);
+		if (tm_num > -1)
+		{
+			final_index = i * TM_NUM_TYPES + tm_num;
+			break;
+		}
+	}
+
+	if (final_index >= 0)
+	{
+		int texture;
+
+		if (!stricmp(new_name, "invisible"))
+			texture = REPLACE_WITH_INVISIBLE;
+		else
+			texture = bm_load_either(new_name);
+
+		if (pmi->texture_replace == nullptr) {
+			pmi->texture_replace = make_shared<model_texture_replace>();
+		}
+
+		(*pmi->texture_replace)[final_index] = texture;
+	} else
+		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
+}
+
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos)

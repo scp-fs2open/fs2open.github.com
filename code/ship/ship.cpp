@@ -18419,38 +18419,8 @@ void ship_page_out_textures(int ship_index, bool release)
 
 void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name)
 {
-	ship* shipp = &Ships[ship_index];
-	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-	polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
-
-	int final_index = -1;
-
-	for (int i = 0; i < pm->n_textures; i++)
-	{
-		int tm_num = pm->maps[i].FindTexture(old_name);
-		if (tm_num > -1)
-		{
-			final_index = i * TM_NUM_TYPES + tm_num;
-			break;
-		}
-	}
-
-	if (final_index >= 0)
-	{
-		int texture;
-
-		if (!stricmp(new_name, "invisible"))
-			texture = REPLACE_WITH_INVISIBLE;
-		else
-			texture = bm_load_either(new_name);
-
-		if (pmi->texture_replace == nullptr) {
-			pmi->texture_replace = make_shared<model_texture_replace>();
-		}
-
-		(*pmi->texture_replace)[final_index] = texture;
-	} else
-		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
+	polymodel_instance* pmi = model_get_instance(Ships[ship_index].model_instance_num);
+	modelinstance_replace_active_texture(pmi, old_name, new_name);
 }
 
 // function to return true if support ships are allowed in the mission for the given object.
