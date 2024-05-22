@@ -232,14 +232,14 @@ void ShipEditorDialog::updateColumnOne()
 	auto idx = _model->getShipClass();
 	ui->shipClassCombo->clear();
 	for (i = 0; i < Ship_info.size(); i++) {
-		ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(i));
+		ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(static_cast<int>(i)));
 	}
 	ui->shipClassCombo->setCurrentIndex(ui->shipClassCombo->findData(idx));
 
 	auto ai = _model->getAIClass();
 	ui->AIClassCombo->clear();
-	for (i = 0; i < Num_ai_classes; i++) {
-		ui->AIClassCombo->addItem(Ai_class_names[i], QVariant(i));
+	for (int j = 0; j < Num_ai_classes; j++) {
+		ui->AIClassCombo->addItem(Ai_class_names[i], QVariant(j));  
 	}
 	ui->AIClassCombo->setCurrentIndex(ui->AIClassCombo->findData(ai));
 
@@ -252,14 +252,14 @@ void ShipEditorDialog::updateColumnOne()
 
 		ui->teamCombo->clear();
 		for (i = 0; i < MAX_TVT_TEAMS; i++) {
-			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(i));
+			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
 		}
 	} else {
 		idx = _model->getTeam();
 		ui->teamCombo->setEnabled(_model->getUIEnable());
 		ui->teamCombo->clear();
 		for (i = 0; i < Iff_info.size(); i++) {
-			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(i));
+			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
 		}
 		ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
 	}
@@ -343,7 +343,7 @@ void ShipEditorDialog::updateColumnTwo()
 					persona_name += species_name[j];
 			}
 
-			ui->personaCombo->addItem(persona_name.c_str(), QVariant(i));
+			ui->personaCombo->addItem(persona_name.c_str(), QVariant(static_cast<int>(i)));
 		}
 	}
 	auto idx = _model->getPersona();
@@ -358,8 +358,8 @@ void ShipEditorDialog::updateColumnTwo()
 void ShipEditorDialog::updateArrival()
 {
 	util::SignalBlockers blockers(this);
-	auto idx = _model->getArrivalLocation();
-	size_t i;
+	auto idx = _model->getArrivalLocationIndex();
+	int i;
 	ui->arrivalLocationCombo->clear();
 	for (i = 0; i < MAX_ARRIVAL_NAMES; i++) {
 		ui->arrivalLocationCombo->addItem(Arrival_location_names[i], QVariant(i));
@@ -374,7 +374,7 @@ void ShipEditorDialog::updateArrival()
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (i = 0; i < Iff_info.size(); i++) {
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, static_cast<int>(i), restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}

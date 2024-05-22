@@ -238,7 +238,7 @@ namespace fso {
 			bool ShipTextureReplacementDialogModel::apply()
 			{
 				if (query_modified()) {
-					for (int i = 0; i < getSize(); i++) {
+					for (size_t i = 0; i < getSize(); i++) {
 						if ((!currentTextures[i]["main"].empty()) && (currentTextures[i]["main"] != defaultTextures[i])) {
 							mainChanged = true;
 							SCP_string name = currentTextures[i]["main"];

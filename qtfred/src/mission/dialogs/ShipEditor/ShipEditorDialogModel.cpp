@@ -537,12 +537,13 @@ namespace fso {
 					wing = Ships[single_ship].wingnum;
 					if (wing >= 0) {
 						Assert((wing < MAX_WINGS) && Wings[wing].wave_count);
-						for (i = 0; i < Wings[wing].wave_count; i++)
-							if (_editor->wing_objects[wing][i] == Ships[single_ship].objnum)
+						int j;
+						for ( j = 0; j < Wings[wing].wave_count; j++)
+							if (_editor->wing_objects[wing][j] == Ships[single_ship].objnum)
 								break;
 
-						Assert(i < Wings[wing].wave_count);
-						wing_bash_ship_name(old_name, Wings[wing].name, static_cast<int>(i + 1));
+						Assert(j < Wings[wing].wave_count);
+						wing_bash_ship_name(old_name, Wings[wing].name, static_cast<int>(j + 1));
 						if (strcmp(old_name, _m_ship_name.c_str())) {
 
 							auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -570,10 +571,11 @@ namespace fso {
 						update_sexp_references(old_name, str);
 						_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
 						_editor->update_texture_replacements(old_name, str);
-						for (i = 0; i < Num_reinforcements; i++) {
-							if (!strcmp(old_name, Reinforcements[i].name)) {
+						int j;
+						for (j = 0; i < Num_reinforcements; j++) {
+							if (!strcmp(old_name, Reinforcements[j].name)) {
 								Assert(strlen(str) < NAME_LENGTH);
-								strcpy_s(Reinforcements[i].name, str);
+								strcpy_s(Reinforcements[j].name, str);
 							}
 						}
 
