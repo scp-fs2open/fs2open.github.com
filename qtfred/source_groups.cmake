@@ -86,6 +86,8 @@ add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.cpp
 	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.h
+	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h
 )
 
 add_file_folder("Source/UI"
@@ -152,6 +154,10 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipTBLViewer.h
 	src/ui/dialogs/ShipEditor/ShipTBLViewer.cpp
+	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.h
+	src/ui/dialogs/ShipEditor/BankModel.cpp
+	src/ui/dialogs/ShipEditor/BankModel.h
 )
 
 add_file_folder("Source/UI/Util"
@@ -170,6 +176,10 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/sexp_tree.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
+	src/ui/widgets/weaponList.cpp
+	src/ui/widgets/weaponList.h
+	src/ui/widgets/BankTree.cpp
+	src/ui/widgets/BankTree.h
 )
 
 add_file_folder("UI"
@@ -201,6 +211,7 @@ add_file_folder("UI"
 	ui/PlayerOrdersDialog.ui
 	ui/ShipTextureReplacementDialog.ui
 	ui/ShipTBLViewer.ui
+	ui/ShipWeaponsDialog.ui
 )
 
 add_file_folder("Resources"
