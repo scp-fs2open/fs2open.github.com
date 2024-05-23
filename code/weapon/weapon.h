@@ -418,7 +418,7 @@ struct weapon_info
     int maximum_children_spawned;		// An upper bound for the total number of spawned children, used by multi
     spawn_weapon_info spawn_info[MAX_SPAWN_TYPES_PER_WEAPON];
 
-	float as_child_life_rand_factor;
+	float lifetime_variation_factor_when_child;
 
 	// swarm count
 	short swarm_count;						// how many swarm missiles are fired for this weapon
