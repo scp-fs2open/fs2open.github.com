@@ -2616,6 +2616,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$As Child Life Rand Factor:"))
+	{
+		stuff_float(&wip->as_child_life_rand_factor);
+	}
+
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm] && optional_string("$Local SSM:"))
 	{
 		if(optional_string("+Warpout Delay:")) {
@@ -6969,7 +6974,9 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 						rand_val = static_randf(objp->net_signature + j);
 					}
 
-					Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
+					float child_factor = child_wip->as_child_life_rand_factor;
+
+					Weapons[Objects[weapon_objnum].instance].lifeleft *= std::max(0.01f, rand_val*(child_factor*2.0f) + (1.0f - child_factor));
 					if (child_wip->wi_flags[Weapon::Info_Flags::Remote]) {
 						parent_shipp->weapons.detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));
 						parent_shipp->weapons.remote_detonaters_active++;
@@ -9242,6 +9249,8 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_interval_delay = -1.f;
 		this->spawn_info[i].spawn_chance = 1.f;
 	}
+
+	this->as_child_life_rand_factor = 0.2;
 
 	this->swarm_count = -1;
 	// *Default is 150  -Et1
