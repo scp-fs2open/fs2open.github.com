@@ -323,7 +323,7 @@ void HudGaugeReticle::render(float  /*frametime*/)
 
 		renderBitmap(fixed_reticle, position[0], position[1]);
 	} else {
-		renderCircle((int)(base_w * 0.5f), (int)(base_h * 0.5f), (int)(base_h * 0.03f), false);
+		renderCircle(fl2i(base_w * 0.5f), fl2i(base_h * 0.5f), fl2i(base_h * 0.03f), false);
 	}
 
 	if (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor) {
@@ -332,13 +332,13 @@ void HudGaugeReticle::render(float  /*frametime*/)
 		else
 			setGaugeColor(HUD_C_NORMAL);
 
-		int x = (int)(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
-		int y = (int)(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
+		int x = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
+		int y = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
 		unsize(&x, &y);
 		if (mobile_reticle >= 0)
-			renderBitmap(mobile_reticle, (int)(x - base_w * 0.5f) + position[0], (int)(y - base_h * 0.5f) + position[1]);
+			renderBitmap(mobile_reticle, fl2i(x - base_w * 0.5f) + position[0], fl2i(y - base_h * 0.5f) + position[1]);
 		else {
-			renderCircle(x, y, (int)(base_h * 0.03f), false);
+			renderCircle(x, y, fl2i(base_h * 0.03f), false);
 		}
 	}
 
