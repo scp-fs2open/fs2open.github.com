@@ -16,7 +16,7 @@ namespace fso {
 
 			int MapModel::rowCount(const QModelIndex& /*parent*/) const
 			{
-				return _model->getSize();
+				return static_cast<int>(_model->getSize());
 			}
 
 			QVariant MapModel::data(const QModelIndex& index, int role) const

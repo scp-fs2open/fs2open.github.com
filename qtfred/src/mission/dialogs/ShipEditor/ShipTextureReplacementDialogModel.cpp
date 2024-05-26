@@ -48,11 +48,11 @@ namespace fso {
 
 					// check for duplicate textures in list
 					duplicate = -1;
-					for (int k = 0; k < (int)defaultTextures.size(); k++)
+					for (size_t k = 0; k < defaultTextures.size(); k++)
 					{
 						if (!stricmp(defaultTextures[k].c_str(), texture_file))
 						{
-							duplicate = k;
+							duplicate = static_cast<int>(k);
 							break;
 						}
 					}
@@ -83,7 +83,7 @@ namespace fso {
 							}
 
 							// look for corresponding old texture
-							for (int i = 0; i < (int)defaultTextures.size(); i++)
+							for (size_t i = 0; i < defaultTextures.size(); i++)
 							{
 								// if match
 								if (!stricmp(defaultTextures[i].c_str(), pureName.c_str()))
@@ -238,7 +238,7 @@ namespace fso {
 			bool ShipTextureReplacementDialogModel::apply()
 			{
 				if (query_modified()) {
-					for (int i = 0; i < getSize(); i++) {
+					for (size_t i = 0; i < getSize(); i++) {
 						if ((!currentTextures[i]["main"].empty()) && (currentTextures[i]["main"] != defaultTextures[i])) {
 							mainChanged = true;
 							SCP_string name = currentTextures[i]["main"];
@@ -354,7 +354,7 @@ namespace fso {
 				return dest;
 			}
 
-			void ShipTextureReplacementDialogModel::saveSubMap(const int index, const SCP_string& type) {
+			void ShipTextureReplacementDialogModel::saveSubMap(const size_t index, const SCP_string& type) {
 				SCP_string fullName;
 				if (replaceMap[index][type]) {
 					if (inheritMap[index][type]) {
@@ -568,18 +568,18 @@ namespace fso {
 				}
 			}
 
-			int ShipTextureReplacementDialogModel::getSize() const
+			size_t ShipTextureReplacementDialogModel::getSize() const
 			{
-				return (int)defaultTextures.size();
+				return defaultTextures.size();
 			}
-			SCP_string ShipTextureReplacementDialogModel::getDefaultName(const int index) const
+			SCP_string ShipTextureReplacementDialogModel::getDefaultName(const size_t index) const
 			{
-				Assert(index <= (int)defaultTextures.size());
+				Assert(index <= defaultTextures.size());
 				return defaultTextures[index];
 			}
-			void ShipTextureReplacementDialogModel::setMap(const int index, const SCP_string& type, const SCP_string& newName)
+			void ShipTextureReplacementDialogModel::setMap(const size_t index, const SCP_string& type, const SCP_string& newName)
 			{
-				Assert(index < (int)currentTextures.size());
+				Assert(index < currentTextures.size());
 				auto pos = currentTextures[index].find(type);
 				if (pos == currentTextures[index].end()) {
 					//handle the error
@@ -590,8 +590,8 @@ namespace fso {
 				}
 
 			}
-			SCP_string ShipTextureReplacementDialogModel::getMap(const int index, const SCP_string& type) const {
-				Assert(index < (int)currentTextures.size());
+			SCP_string ShipTextureReplacementDialogModel::getMap(const size_t index, const SCP_string& type) const {
+				Assert(index < currentTextures.size());
 				auto pos = currentTextures[index].find(type);
 				if (pos == currentTextures[index].end()) {
 					error_display(1, "Asked for non existant map type %s. Get a programmer", type.c_str());
@@ -601,30 +601,30 @@ namespace fso {
 					return pos->second;
 				}
 			}
-			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getSubtypesForMap(int index) const
+			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getSubtypesForMap(const size_t index) const
 			{
-				Assert(index < (int)currentTextures.size());
+				Assert(index < currentTextures.size());
 				return subTypesAvailable[index];
 			}
-			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getReplace(int index) const
+			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getReplace(const size_t index) const
 			{
-				Assert(index < (int)currentTextures.size());
+				Assert(index < currentTextures.size());
 				return replaceMap[index];
 			}
-			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getInherit(int index) const
+			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getInherit(const size_t index) const
 			{
-				Assert(index < (int)currentTextures.size());
+				Assert(index < currentTextures.size());
 				return inheritMap[index];
 			}
 
-			void ShipTextureReplacementDialogModel::setReplace(const int index, const SCP_string& type, const bool state)
+			void ShipTextureReplacementDialogModel::setReplace(const size_t index, const SCP_string& type, const bool state)
 			{
-				Assert(index < (int)currentTextures.size());
+				Assert(index < currentTextures.size());
 				modify(replaceMap[index][type], state);
 			}
-			void ShipTextureReplacementDialogModel::setInherit(const int index, const SCP_string& type, const bool state)
+			void ShipTextureReplacementDialogModel::setInherit(const size_t index, const SCP_string& type, const bool state)
 			{
-				Assert(index < (int)currentTextures.size());
+				Assert(index < currentTextures.size());
 				modify(inheritMap[index][type], state);
 			}
 			void ShipTextureReplacementDialogModel::set_modified()

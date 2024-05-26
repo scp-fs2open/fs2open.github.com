@@ -3,7 +3,7 @@
 
 #include "ShipFlagsDialogModel.h"
 
-#include "ui/dialogs/ShipFlagsDialog.h"
+#include "ui/dialogs/ShipEditor/ShipFlagsDialog.h"
 
 #include <globalincs/linklist.h>
 

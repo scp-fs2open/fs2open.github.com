@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mission/dialogs/ShipSpecialStatsDialogModel.h>
+#include <mission/dialogs/ShipEditor/ShipSpecialStatsDialogModel.h>
 
 #include <QtWidgets/QDialog>
 

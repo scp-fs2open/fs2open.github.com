@@ -4,7 +4,7 @@
 #include <QAbstractListModel>
 #include <QItemSelectionModel>
 #include "ShipEditorDialog.h"
-#include <mission/dialogs/ShipTextureReplacementDialogModel.h>
+#include <mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.h>
 
 namespace fso {
 	namespace fred {

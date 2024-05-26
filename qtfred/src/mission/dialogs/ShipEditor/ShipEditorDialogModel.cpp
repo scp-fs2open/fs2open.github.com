@@ -269,7 +269,7 @@ namespace fso {
 										_m_cargo1 = Cargo_names[cargo];
 										_m_hotkey = Ships[i].hotkey + 1;
 										_m_score = Ships[i].score;
-										_m_assist_score = ((int)(Ships[i].assist_score_pct * 100));
+										_m_assist_score = static_cast<int>(Ships[i].assist_score_pct * 100);
 
 										_m_persona = Ships[i].persona_index;
 										_m_alt_name = Fred_alt_names[base_ship];
@@ -308,7 +308,7 @@ namespace fso {
 										}
 
 										_m_score = Ships[i].score;
-										_m_assist_score = (int)(Ships[i].assist_score_pct * 100);
+										_m_assist_score = static_cast<int>(Ships[i].assist_score_pct * 100);
 
 										if (Ships[i].hotkey != _m_hotkey - 1) {
 											_m_hotkey = -1;
@@ -412,7 +412,8 @@ namespace fso {
 			{
 				char* str, old_name[255];
 				object* ptr;
-				int i, z, wing;
+				size_t i;
+				int z, wing;
 				if (multi_edit) {
 					ptr = GET_FIRST(&obj_used_list);
 					while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -467,7 +468,7 @@ namespace fso {
 
 					// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
-					for (i = 0; i < (int)Ai_tp_list.size(); i++) {
+					for (i = 0; i < Ai_tp_list.size(); i++) {
 						if (!stricmp(_m_ship_name.c_str(), Ai_tp_list[i].name)) {
 
 							auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -536,12 +537,13 @@ namespace fso {
 					wing = Ships[single_ship].wingnum;
 					if (wing >= 0) {
 						Assert((wing < MAX_WINGS) && Wings[wing].wave_count);
-						for (i = 0; i < Wings[wing].wave_count; i++)
-							if (_editor->wing_objects[wing][i] == Ships[single_ship].objnum)
+						int j;
+						for ( j = 0; j < Wings[wing].wave_count; j++)
+							if (_editor->wing_objects[wing][j] == Ships[single_ship].objnum)
 								break;
 
-						Assert(i < Wings[wing].wave_count);
-						wing_bash_ship_name(old_name, Wings[wing].name, i + 1);
+						Assert(j < Wings[wing].wave_count);
+						wing_bash_ship_name(old_name, Wings[wing].name, static_cast<int>(j + 1));
 						if (strcmp(old_name, _m_ship_name.c_str())) {
 
 							auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -569,10 +571,11 @@ namespace fso {
 						update_sexp_references(old_name, str);
 						_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
 						_editor->update_texture_replacements(old_name, str);
-						for (i = 0; i < Num_reinforcements; i++) {
-							if (!strcmp(old_name, Reinforcements[i].name)) {
+						int j;
+						for (j = 0; j < Num_reinforcements; j++) {
+							if (!strcmp(old_name, Reinforcements[j].name)) {
 								Assert(strlen(str) < NAME_LENGTH);
-								strcpy_s(Reinforcements[i].name, str);
+								strcpy_s(Reinforcements[j].name, str);
 							}
 						}
 
@@ -715,7 +718,7 @@ namespace fso {
 									"Value has been reset to this.  Use with caution!\r\n"
 									"Recommended distance is %d meters.\r\n",
 									d,
-									(int)(2.0f * Objects[Ships[ship].objnum].radius));
+									static_cast<int>(2.0f * Objects[Ships[ship].objnum].radius));
 
 								_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", str, { DialogButton::Ok });
 								if (Ships[ship].arrival_distance < 0)

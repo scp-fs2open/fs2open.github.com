@@ -1,7 +1,7 @@
 #ifndef SHIPGOALSDIALOG_H
 #define SHIPGOALSDIALOG_H
 
-#include <mission/dialogs/ShipGoalsDialogModel.h>
+#include <mission/dialogs/ShipEditor/ShipGoalsDialogModel.h>
 
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>

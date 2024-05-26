@@ -1,7 +1,7 @@
 #ifndef SHIPINITIALSTATUSDIALOG_H
 #define SHIPINITIALSTATUSDIALOG_H
 
-#include <mission/dialogs/ShipInitialStatusDialogModel.h>
+#include <mission/dialogs/ShipEditor/ShipInitialStatusDialogModel.h>
 #include "ShipEditorDialog.h"
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QListWidget>
