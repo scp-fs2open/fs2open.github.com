@@ -69,7 +69,7 @@ auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
 	std::pair<const char*, int>{"Flight Mode", 1842},
 	std::pair<const char*, int>{"Choose the flying style to use during gameplay.", 1843})
 	.category(std::make_pair("Game", 1824))
-	.level(options::ExpertLevel::Advanced)
+	.level(options::ExpertLevel::Beginner)
 	.values({ {FlightMode::ShipLocked, {"Ship Locked", 1844}},
 			{FlightMode::FlightCursor, {"Flight Cursor", 1845}} })
 	.default_val(FlightMode::ShipLocked)
@@ -95,7 +95,7 @@ auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursor
 	.range(0.0f, 0.698f)
 	.display(degrees_display)
 	.default_val(0.348f)
-	.level(options::ExpertLevel::Advanced)
+	.level(options::ExpertLevel::Beginner)
 	.bind_to(&flight_cursor_extent)
 	.importance(44)
 	.finish();
@@ -109,7 +109,7 @@ auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCurs
 	.range(0.0f, 0.349f)
 	.display(degrees_display)
 	.default_val(0.02f)
-	.level(options::ExpertLevel::Advanced)
+	.level(options::ExpertLevel::Beginner)
 	.bind_to(&flight_cursor_deadzone)
 	.importance(43)
 	.finish();
