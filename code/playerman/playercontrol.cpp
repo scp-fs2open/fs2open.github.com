@@ -32,6 +32,7 @@
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "observer/observer.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -59,6 +60,59 @@ int		lua_game_control = 0;
 physics_info Descent_physics;			// used when we want to control the player like the descent ship
 
 angles chase_slew_angles;
+
+angles Player_flight_cursor;
+
+FlightMode Player_flight_mode = FlightMode::ShipLocked;
+
+auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
+	std::pair<const char*, int>{"Flight Mode", 1842},
+	std::pair<const char*, int>{"Choose the flying style to use during gameplay.", 1843})
+	.category(std::make_pair("Game", 1824))
+	.level(options::ExpertLevel::Beginner)
+	.values({ {FlightMode::ShipLocked, {"Ship Locked", 1844}},
+			{FlightMode::FlightCursor, {"Flight Cursor", 1845}} })
+	.default_val(FlightMode::ShipLocked)
+	.bind_to(&Player_flight_mode)
+	.flags({ options::OptionFlags::ForceMultiValueSelection })
+	.importance(45)
+	.finish();
+
+static SCP_string degrees_display(float val)
+{
+	auto degrees = fl_degrees(val);
+	SCP_string out;
+	sprintf(out, u8"%.1f\u00B0", degrees);
+	return out;
+}
+
+float flight_cursor_extent;
+
+auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursorExtent",
+	std::pair<const char*, int>{"Flight Cursor Extent", 1846},
+	std::pair<const char*, int>{"How far from the center the cursor can go.", 1847})
+	.category(std::make_pair("Game", 1824))
+	.range(0.0f, 0.698f)
+	.display(degrees_display)
+	.default_val(0.348f)
+	.level(options::ExpertLevel::Beginner)
+	.bind_to(&flight_cursor_extent)
+	.importance(44)
+	.finish();
+
+float flight_cursor_deadzone;
+
+auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCursorDeadzone",
+	std::pair<const char*, int>{"Flight Cursor Deadzone", 1848},
+	std::pair<const char*, int>{"How far from the center the cursor needs to go before registering.", 1849})
+	.category(std::make_pair("Game", 1824))
+	.range(0.0f, 0.349f)
+	.display(degrees_display)
+	.default_val(0.02f)
+	.level(options::ExpertLevel::Beginner)
+	.bind_to(&flight_cursor_deadzone)
+	.importance(43)
+	.finish();
 
 int toggle_glide = 0;
 int press_glide = 0;
@@ -968,10 +1022,47 @@ void read_player_controls(object *objp, float frametime)
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
 
-			// this is similar to ai_control_info_check
 			if (Player_obj->type == OBJ_SHIP) {
 				auto sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
 
+				if ((Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor)) {
+
+					if (Viewer_mode & VM_CAMERA_LOCKED) {
+						float max_aim_angle = flight_cursor_extent;
+
+						if (sip->aims_at_flight_cursor)
+							max_aim_angle = sip->flight_cursor_aim_extent;
+
+						Player_flight_cursor.p += Player->ci.pitch * 0.015f;
+						Player_flight_cursor.h += Player->ci.heading * 0.015f;
+
+						float mag = powf(powf(Player_flight_cursor.p, 2.0f) + powf(Player_flight_cursor.h, 2.0f), 0.5f);
+						if (mag > max_aim_angle) {
+							Player_flight_cursor.p *= max_aim_angle / mag;
+							Player_flight_cursor.h *= max_aim_angle / mag;
+							mag = max_aim_angle;
+						}
+
+						float deadzone = flight_cursor_deadzone;
+						if (mag > deadzone) {
+							float p = Player_flight_cursor.p * ((mag - deadzone) / mag);
+							float h = Player_flight_cursor.h * ((mag - deadzone) / mag);
+
+							Player->ci.pitch = p / (max_aim_angle - deadzone);
+							Player->ci.heading = h / (max_aim_angle - deadzone);
+						}
+						else {
+							Player->ci.pitch = 0.0f;
+							Player->ci.heading = 0.0f;
+						}
+					} else {
+						Player_flight_cursor = vmd_zero_angles;
+						Player->ci.pitch = 0.0f;
+						Player->ci.heading = 0.0f;
+					}
+				}
+
+				// this is similar to ai_control_info_check
 				if (sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
 					Player->ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
 				if (sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
@@ -1307,6 +1398,8 @@ void player_level_init()
 	Viewer_external_info.angles.h = 0.0f;
 	Viewer_external_info.preferred_distance = 0.0f;
 	Viewer_external_info.current_distance = 0.0f;
+
+	Player_flight_cursor = vmd_zero_angles;
 
 	
 	if (Default_start_chase_view != The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view])

@@ -1269,6 +1269,9 @@ void ship_info::clone(const ship_info& other)
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
+	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
+
 	topdown_offset_def = other.topdown_offset_def;
 	topdown_offset = other.topdown_offset;
 
@@ -1597,6 +1600,9 @@ void ship_info::move(ship_info&& other)
 	}
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
+
+	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
 
 	topdown_offset_def = other.topdown_offset_def;
 	std::swap(topdown_offset, other.topdown_offset);
@@ -2045,6 +2051,9 @@ ship_info::ship_info()
 	}
 	autoaim_lock_snd = gamesnd_id();
 	autoaim_lost_snd = gamesnd_id();
+
+	aims_at_flight_cursor = false;
+	flight_cursor_aim_extent = -1.0f;
 
 	topdown_offset_def = false;
 	vm_vec_zero(&topdown_offset);
@@ -3566,6 +3575,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&sip->bank_autoaim_fov[bank_fov_count]);
 		} else {
 			error_display(1, "Too many bank autoaims defined. Ship only has %i banks!", sip->num_primary_banks);
+		}
+	}
+
+	if (optional_string("$Aims at Flight Cursor:")) {
+		stuff_boolean(&sip->aims_at_flight_cursor);
+
+		if (optional_string("+Extent:")) {
+			stuff_float(&sip->flight_cursor_aim_extent);
+			sip->flight_cursor_aim_extent = fl_radians(sip->flight_cursor_aim_extent);
+		} else if (sip->aims_at_flight_cursor && sip->flight_cursor_aim_extent < 0.0f) {
+			error_display(0, "Ship %s needs to have an +Extent defined if $Aims at Flight Cursor is true.", sip->name);
+			sip->aims_at_flight_cursor = false;
 		}
 	}
 
@@ -12567,7 +12588,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		if ( pm->n_guns > 0 ) {
 			vec3d predicted_target_pos, plr_to_target_vec;
-			vec3d player_forward_vec = obj->orient.vec.fvec;
+			matrix firing_orient = obj->orient;
+			if (obj == Player_obj && (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor)) {
+				vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
+				firing_orient = firing_orient * obj->orient;
+			}
+
 			bool in_automatic_aim_fov = false;
 			float dist_to_aim = 0;
 
@@ -12594,7 +12620,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
 
 				if (has_autoaim) {
-					angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
+					angle_to_target = vm_vec_delta_ang(&firing_orient.vec.fvec, &plr_to_target_vec, NULL);
 					if (angle_to_target < autoaim_fov)
 						in_automatic_aim_fov = true;
 				}
@@ -12827,8 +12853,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
-
-							matrix firing_orient;
 							
 							/*	I AIM autoaim convergence
 								II AIM autoaim
@@ -12854,7 +12878,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vec3d target_vec, firing_vec, convergence_offset;
 								
 								// make sure vector is of the set length
-								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+								vm_vec_copy_normalize(&target_vec, &firing_orient.vec.fvec);
 								if ((sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence]) && (aip->target_objnum != -1)) {
 									// auto convergence
 									vm_vec_scale(&target_vec, dist_to_aim);
@@ -12879,9 +12903,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vec3d firing_vec;
 								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else {
-								// no autoaim or convergence
-								firing_orient = obj->orient;
 							}
 							
 							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount

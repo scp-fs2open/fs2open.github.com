@@ -226,6 +226,15 @@ extern player *Player;								// pointer to my information
 extern int Player_use_ai;
 extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to.
 
+extern angles Player_flight_cursor;
+
+enum class FlightMode {
+	ShipLocked = 0,
+	FlightCursor = 1,
+};
+
+extern FlightMode Player_flight_mode;
+
 extern void player_init();							// initialization per level
 extern void player_level_init();
 extern void player_controls_init();				// initialize Descent style controls for use in various places
