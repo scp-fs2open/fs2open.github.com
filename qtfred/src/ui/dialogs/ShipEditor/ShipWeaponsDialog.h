@@ -31,6 +31,7 @@ class ShipWeaponsDialog : public QDialog {
   private slots:
 	void on_AIButton_clicked();
 	void on_setAllButton_clicked();
+	void on_TBLButton_clicked();
 
   private:
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;
