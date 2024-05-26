@@ -50,8 +50,17 @@ struct Bank {
 	Banks* parent;
 };
 namespace dialogs {
+/**
+ * @brief QTFred's Weapons Editor Model
+ */
 class ShipWeaponsDialogModel : public AbstractDialogModel {
   public:
+	/**
+	 * @brief QTFred's Weapons Editor Model Constructer.
+	 * @param [in/out]	parent		The dialogs parent.
+	 * @param [in/out]	viewport	Editor viewport.
+	 * @param [in]		multi If editing multiple ships.
+	 */
 	ShipWeaponsDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
 
 	// void initTertiary(int inst, bool first);
