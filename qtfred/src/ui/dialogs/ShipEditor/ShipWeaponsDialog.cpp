@@ -17,12 +17,15 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 {
 	ui->setupUi(this);
 
+	//Connect the mode change buttons
 	connect(ui->radioPrimary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 0); });
 	connect(ui->radioSecondary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 1); });
 	connect(ui->radioTertiary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 2); });
 
 
 	connect(this, &QDialog::accepted, _model.get(), &ShipWeaponsDialogModel::apply);
+	
+	//Build the model of ship weapons and set inital mode.
 	if (!_model->getPrimaryBanks().empty()) {
 		const util::SignalBlockers blockers(this);
 		bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
@@ -39,20 +42,26 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 		Error("No Valid Weapon banks on ship");
 	}
 	ui->treeBanks->setModel(bankModel);
+	ui->listWeapons->setModel(weapons);
+
+	//Update the UI whenever selections change
 	connect(ui->treeBanks->selectionModel(),
 		&QItemSelectionModel::selectionChanged,
 		this,
 		&ShipWeaponsDialog::updateUI);
-	connect(ui->AICombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipWeaponsDialog::aiClassChanged);
-	ui->listWeapons->setModel(weapons);
-	ui->treeBanks->expandAll();
 	connect(ui->listWeapons->selectionModel(),
 		&QItemSelectionModel::selectionChanged,
 		this,
 		&ShipWeaponsDialog::updateUI);
+
+	//Setup ai combo box
+	connect(ui->AICombo,
+		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+		this,
+		&ShipWeaponsDialog::aiClassChanged);
+
+	//Resize Bank view
+	ui->treeBanks->expandAll();
 	ui->treeBanks->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	updateUI();
 }
@@ -109,6 +118,11 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 			dialogMode = 0;
 		}
+		//Reconnect Meacuse the model has changed
+		connect(ui->treeBanks->selectionModel(),
+			&QItemSelectionModel::selectionChanged,
+			this,
+			&ShipWeaponsDialog::updateUI);
 		connect(ui->listWeapons->selectionModel(),
 			&QItemSelectionModel::selectionChanged,
 			this,
@@ -121,22 +135,25 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 void ShipWeaponsDialog::updateUI()
 {
 	const util::SignalBlockers blockers(this);
+	//Radio Buttons
 	ui->radioPrimary->setEnabled(!_model->getPrimaryBanks().empty());
 	ui->radioSecondary->setEnabled(!_model->getSecondaryBanks().empty());
 	ui->radioTertiary->setEnabled(false);
-	ui->treeBanks->expandAll();
 
+	ui->treeBanks->expandAll();
+	// Setall button
 	if (ui->treeBanks->getTypeSelected() == 0) {
 		ui->setAllButton->setEnabled(true);
 	} else {
 		ui->setAllButton->setEnabled(false);
 	}
-
+	// Change AI Button
 	if (ui->treeBanks->getTypeSelected() == 1) {
 		ui->AIButton->setEnabled(true);
 	} else {
 		ui->AIButton->setEnabled(false);
 	}
+	// AI Combo Box
 	ui->AICombo->clear();
 	for (int i = 0; i < Num_ai_classes; i++) {
 		ui->AICombo->addItem(Ai_class_names[i], QVariant(i));

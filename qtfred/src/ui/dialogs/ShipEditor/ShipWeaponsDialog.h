@@ -17,11 +17,19 @@ namespace dialogs {
 namespace Ui {
 class ShipWeaponsDialog;
 }
-
+/**
+ * @brief QTFred's Weapons Editor
+ */
 class ShipWeaponsDialog : public QDialog {
 	Q_OBJECT
 
   public:
+	/**
+	 * @brief QTFred's Weapons Editor Constructer.
+	 * @param [in/out]	parent		The dialogs parent.
+	 * @param [in/out]	viewport	Editor viewport.
+	 * @param [in]		isMultiEdit If editing multiple ships.
+	 */
 	explicit ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, bool isMultiEdit);
 	~ShipWeaponsDialog() override;
 
@@ -36,6 +44,11 @@ class ShipWeaponsDialog : public QDialog {
   private:
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;
 	std::unique_ptr<ShipWeaponsDialogModel> _model;
+	/**
+	 * @brief Changes current weapon type.
+	 * @param [in]	enabled		Always True
+	 * @param [in]	mode	The mode to change to. 0 = Primary, 1 = Secondary
+	 */
 	void modeChanged(const bool enabled, const int mode);
 	EditorViewport* _viewport;
 	void updateUI();
