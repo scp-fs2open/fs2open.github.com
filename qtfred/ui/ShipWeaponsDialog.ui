@@ -54,7 +54,7 @@
        <property name="title">
         <string>Weapons</string>
        </property>
-       <layout class="QHBoxLayout" name="WeaponsLayout">
+       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="fso::fred::weaponList" name="listWeapons">
           <property name="sizeAdjustPolicy">
@@ -68,6 +68,13 @@
           </property>
           <property name="dragDropMode">
            <enum>QAbstractItemView::DragOnly</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="TBLButton">
+          <property name="text">
+           <string>View Table</string>
           </property>
          </widget>
         </item>

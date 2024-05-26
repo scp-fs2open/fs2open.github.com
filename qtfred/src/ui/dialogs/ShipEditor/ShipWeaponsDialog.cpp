@@ -1,6 +1,7 @@
 #include "ShipWeaponsDialog.h"
 
 #include "ui_ShipWeaponsDialog.h"
+#include "WeaponsTBLViewer.h"
 
 #include <ui/util/SignalBlockers.h>
 #include <weapon/weapon.h>
@@ -48,6 +49,10 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 		&ShipWeaponsDialog::aiClassChanged);
 	ui->listWeapons->setModel(weapons);
 	ui->treeBanks->expandAll();
+	connect(ui->listWeapons->selectionModel(),
+		&QItemSelectionModel::selectionChanged,
+		this,
+		&ShipWeaponsDialog::updateUI);
 	ui->treeBanks->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	updateUI();
 }
@@ -69,15 +74,29 @@ void ShipWeaponsDialog::on_setAllButton_clicked()
 		bankModel->setWeapon(index, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
 	}
 }
+void ShipWeaponsDialog::on_TBLButton_clicked() {
+	if (ui->listWeapons->currentIndex().data(Qt::UserRole).toInt() >= 0) {
+		auto dialog = new WeaponsTBLViewer(this, _viewport, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
+		dialog->show();
+	} else {
+		return;
+	}
+}
 void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 {
 	if (enabled) {
 		if (mode == 0) {
 			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 			dialogMode = 0;
+			delete weapons;
+			weapons = new WeaponModel(0);
+			ui->listWeapons->setModel(weapons);
 		} else if (mode == 1) {
 			bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
 			dialogMode = 1;
+			delete weapons;
+			weapons = new WeaponModel(1);
+			ui->listWeapons->setModel(weapons);
 		} else if (mode == 2) {
 			// bankModel = new BankTreeModel(_model->getTertiaryBanks(), this);
 			dialogMode = 2;
@@ -90,6 +109,10 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 			dialogMode = 0;
 		}
+		connect(ui->listWeapons->selectionModel(),
+			&QItemSelectionModel::selectionChanged,
+			this,
+			&ShipWeaponsDialog::updateUI);
 		ui->treeBanks->setModel(bankModel);
 		ui->treeBanks->expandAll();
 	}
@@ -119,6 +142,12 @@ void ShipWeaponsDialog::updateUI()
 		ui->AICombo->addItem(Ai_class_names[i], QVariant(i));
 	}
 	ui->AICombo->setCurrentIndex(ui->AICombo->findData(m_currentAI));
+	if (ui->listWeapons->selectionModel()->hasSelection() &&
+		ui->listWeapons->currentIndex().data(Qt::UserRole).toInt() != -1) {
+		ui->TBLButton->setEnabled(true);
+	} else {
+		ui->TBLButton->setEnabled(false);
+	}
 }
 
 void ShipWeaponsDialog::aiClassChanged(const int index) {

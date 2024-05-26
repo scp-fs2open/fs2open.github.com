@@ -88,6 +88,8 @@ add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.h
 	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h
+	src/mission/dialogs/ShipEditor/WeaponsTBLViewerModel.cpp
+	src/mission/dialogs/ShipEditor/WeaponsTBLViewerModel.h
 	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.h
 	src/mission/dialogs/ShipEditor/ShipCustomWarpDialogModel.h
@@ -166,6 +168,8 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipPathsDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.cpp
+	src/ui/dialogs/ShipEditor/WeaponsTBLViewer.cpp
+	src/ui/dialogs/ShipEditor/WeaponsTBLViewer.h
 )
 
 add_file_folder("Source/UI/Util"
