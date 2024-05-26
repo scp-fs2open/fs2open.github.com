@@ -521,7 +521,11 @@ void ShipEditorDialog::enableDisable()
 			ui->arrivalTargetCombo->setEnabled(false);
 		}
 		if (_model->getArrivalLocation() == ArrivalLocation::FROM_DOCK_BAY) {
-			ui->restrictArrivalPathsButton->setEnabled(_model->getUIEnable());
+			if (_model->getArrivalTarget() >= 0) {
+				ui->restrictArrivalPathsButton->setEnabled(_model->getUIEnable());
+			} else {
+				ui->restrictArrivalPathsButton->setEnabled(false);
+			}
 			ui->customWarpinButton->setEnabled(false);
 		} else {
 			ui->restrictArrivalPathsButton->setEnabled(false);
@@ -535,7 +539,11 @@ void ShipEditorDialog::enableDisable()
 			ui->departureTargetCombo->setEnabled(false);
 		}
 		if (_model->getDepartureLocation() == DepartureLocation::TO_DOCK_BAY) {
-			ui->restrictDeparturePathsButton->setEnabled(_model->getUIEnable());
+			if (_model->getDepartureTarget() >= 0) {
+				ui->restrictDeparturePathsButton->setEnabled(_model->getUIEnable());
+			} else {
+				ui->restrictDeparturePathsButton->setEnabled(false);
+			}
 			ui->customWarpoutButton->setEnabled(false);
 		} else {
 			ui->restrictDeparturePathsButton->setEnabled(false);
@@ -863,7 +871,11 @@ void ShipEditorDialog::on_hideCuesButton_clicked()
 }
 void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 {
-	// TODO:: Restrict Paths Dialog
+	int target_class = Ships[_model->getArrivalTarget()].ship_info_index;
+	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, false);
+	dialog->show();
+
+
 }
 void ShipEditorDialog::on_customWarpinButton_clicked()
 {
@@ -871,7 +883,9 @@ void ShipEditorDialog::on_customWarpinButton_clicked()
 }
 void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 {
-	// TODO:: Restrict Paths Dialog
+	int target_class = Ships[_model->getDepartureTarget()].ship_info_index;
+	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, true);
+	dialog->show();
 }
 void ShipEditorDialog::on_customWarpoutButton_clicked()
 { // TODO:: Custom warp Dialog
