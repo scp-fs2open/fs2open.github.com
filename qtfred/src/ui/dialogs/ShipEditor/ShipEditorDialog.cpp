@@ -239,7 +239,7 @@ void ShipEditorDialog::updateColumnOne()
 	auto ai = _model->getAIClass();
 	ui->AIClassCombo->clear();
 	for (int j = 0; j < Num_ai_classes; j++) {
-		ui->AIClassCombo->addItem(Ai_class_names[i], QVariant(j));  
+		ui->AIClassCombo->addItem(Ai_class_names[j], QVariant(j));  
 	}
 	ui->AIClassCombo->setCurrentIndex(ui->AIClassCombo->findData(ai));
 
@@ -375,7 +375,7 @@ void ShipEditorDialog::updateArrival()
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (size_t j = 0; j < Iff_info.size(); j++) {
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, j, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, static_cast<int>(j), restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}
