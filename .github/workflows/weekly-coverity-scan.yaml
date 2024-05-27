@@ -2,13 +2,16 @@ name: Weekly Coverity Scan for Freespace Open
 # adapted from code by "albert-github" on the doxygen repository
 # many thanks for figuring this out first so it could be less painful for us!
 
+# keep this from running on everyone's fork
+# if: github.ref == 'refs/heads/master'
+
 #This mode is for testing
 #on: [push, pull_request]
 
 # In production, push on a specific schedule
 on:
   schedule:
-    - cron: "5 0 * * 5" # Run once per a week on Friday morning (midnight UTC, 4 AM EST), to avoid Coverity's submission limits
+    - cron: "5 7 * * 5" # Run once per a week on Friday morning (4 AM EST), to avoid Coverity's submission limits
 
 env:
   QT_VERSION: 5.12.12
@@ -18,19 +21,17 @@ env:
 jobs:
   build:
     name: Build FSO With Coverity Wrapper
-    runs-on: ${{ matrix.config.os }}
+    runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     strategy:
       fail-fast: false
-      matrix:
-        config:
-          - { name: "GCC on ubuntu", os: ubuntu-latest, build_type: "Release" }
+       
 
     steps:
       - name: Checkout
         uses: actions/checkout@v1
         with:
-          submodules: recursive # `true` to checkout submodules, `recursive` to recursively checkout submodules
+          submodules: true # `true` to checkout submodules, `recursive` to recursively checkout submodules
 
       # pipe results of wget to a log file because it's very verbose and rarely fails
       - name: Install Coverity
@@ -46,8 +47,8 @@ jobs:
 
       - name: Configure CMake for FSO
         env:
-          CONFIGURATION: Release
-          compiler: gcc-9
+          CONFIGURATION: FastDebug
+          COMPILER: gcc-9
           ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
 
