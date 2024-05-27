@@ -22,9 +22,9 @@ class ShipPathsDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 	bool modify(const int, const bool);
-	const bool query_modified() const;
-	const SCP_vector<bool> getPathList() const;
-	const polymodel* getModel() const;
+	bool query_modified() const;
+	SCP_vector<bool> getPathList() const;
+	polymodel* getModel() const;
 };
 } // namespace dialogs
 } // namespace fred

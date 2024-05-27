@@ -76,15 +76,15 @@ bool ShipPathsDialogModel::modify(const int index, const bool value)
 		return false;
 	}
 }
-const bool ShipPathsDialogModel::query_modified() const
+bool ShipPathsDialogModel::query_modified() const
 {
 	return _modified;
 }
-const SCP_vector<bool> ShipPathsDialogModel::getPathList() const
+SCP_vector<bool> ShipPathsDialogModel::getPathList() const
 {
 	return m_path_list;
 }
-const polymodel* ShipPathsDialogModel::getModel() const
+polymodel* ShipPathsDialogModel::getModel() const
 {
 	return m_model;
 }

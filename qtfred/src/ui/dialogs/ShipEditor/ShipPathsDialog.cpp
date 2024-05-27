@@ -11,8 +11,8 @@ ShipPathsDialog::ShipPathsDialog(QWidget* parent,
 	const int ship,
 	const int target_class,
 	const bool departure)
-	: QDialog(parent), ui(new Ui::ShipPathsDialog()), _viewport(viewport),
-	  _model(new ShipPathsDialogModel(this, viewport, ship, target_class, departure))
+	: QDialog(parent), ui(new Ui::ShipPathsDialog()),
+	  _model(new ShipPathsDialogModel(this, viewport, ship, target_class, departure)), _viewport(viewport)
 {
 	ui->setupUi(this);
 	connect(ui->pathList, &QListWidget::itemChanged, this, &ShipPathsDialog::changed);
