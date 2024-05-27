@@ -11,7 +11,7 @@ name: Weekly Coverity Scan for Freespace Open
 # In production, push on a specific schedule
 on:
   schedule:
-    - cron: "0 44 * * *" # Run once per a week on Friday morning (4 AM EST), to avoid Coverity's submission limits
+    - cron: "47 18 * * *" # Run once per a week on Friday morning (4 AM EST), to avoid Coverity's submission limits
   workflow_dispatch:
   
 env:
