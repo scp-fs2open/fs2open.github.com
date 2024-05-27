@@ -1,8 +1,8 @@
 #include "ShipWeaponsDialogModel.h"
 namespace fso {
 namespace fred {
-Banks::Banks(const SCP_string& name, int aiIndex, int ship, int multiedit, ship_subsys* subsys)
-	: name(name), subsys(subsys), ship(ship), m_isMultiEdit(multiedit), initalAI(aiIndex)
+Banks::Banks(const SCP_string& _name, int aiIndex, int _ship, int multiedit, ship_subsys* _subsys)
+	: m_isMultiEdit(multiedit) ,name(_name), subsys(_subsys), initalAI(aiIndex), ship(_ship)
 {
 	aiClass = aiIndex;
 }
@@ -74,13 +74,13 @@ int Banks::getInitalAI()
 {
 	return initalAI;
 }
-Bank::Bank(const int weaponId, const int bankId, const int ammoMax, const int ammo, Banks* parent)
+Bank::Bank(const int _weaponId, const int _bankId, const int _ammoMax, const int _ammo, Banks* _parent)
 {
-	this->weaponId = weaponId;
-	this->bankId = bankId;
-	this->ammo = ammo;
-	this->ammoMax = ammoMax;
-	this->parent = parent;
+	this->weaponId = _weaponId;
+	this->bankId = _bankId;
+	this->ammo = _ammo;
+	this->ammoMax = _ammoMax;
+	this->parent = _parent;
 }
 int Bank::getWeaponId() const
 {

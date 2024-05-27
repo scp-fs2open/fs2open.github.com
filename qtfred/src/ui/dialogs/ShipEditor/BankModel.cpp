@@ -4,7 +4,8 @@
 #include <weapon/weapon.h>
 namespace fso {
 namespace fred {
-BankTreeItem::BankTreeItem(BankTreeItem* parentItem) : m_parentItem(parentItem) {}
+BankTreeItem::BankTreeItem(BankTreeItem* parentItem, const QString& inName) : name(inName), m_parentItem(parentItem) {
+}
 BankTreeItem::~BankTreeItem()
 {
 	qDeleteAll(m_childItems);
@@ -66,9 +67,8 @@ int BankTreeBank::getId() const
 	return bank->getWeaponId();
 }
 
-BankTreeBank::BankTreeBank(Bank* bank, BankTreeItem* parentItem) : BankTreeItem(parentItem)
+BankTreeBank::BankTreeBank(Bank* inBank, BankTreeItem* parentItem) : BankTreeItem(parentItem), bank(inBank)
 {
-	this->bank = bank;
 	switch (bank->getWeaponId()) {
 	case -2:
 		this->name = "CONFLICT";
@@ -125,11 +125,9 @@ void BankTreeBank::setAmmo(int value)
 	bank->setAmmo(value);
 }
 
-BankTreeLabel::BankTreeLabel(const QString& name, Banks* banks, BankTreeItem* parentItem) : BankTreeItem(parentItem)
-{
-	this->name = name;
-	this->banks = banks;
-}
+BankTreeLabel::BankTreeLabel(const QString& inName, Banks* inBanks, BankTreeItem* parentItem)
+	: BankTreeItem(parentItem, inName), banks(inBanks)
+{}
 
 QVariant BankTreeLabel::data(int column) const
 {
@@ -145,6 +143,7 @@ QVariant BankTreeLabel::data(int column) const
 
 Qt::ItemFlags BankTreeLabel::getFlags(int column) const
 {
+	Q_UNUSED(column);
 		return Qt::ItemIsSelectable;
 }
 
@@ -156,6 +155,7 @@ void BankTreeLabel::setAIClass(int value)
 
 bool BankTreeLabel::setData(int column, const QVariant& value)
 {
+		Q_UNUSED(column);
 		setAIClass(value.toInt());
 		return true;
 }
@@ -191,6 +191,7 @@ void BankTreeModel::setupModelData(const SCP_vector<Banks*>& data, BankTreeItem*
 
 QVariant BankTreeModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
+	Q_UNUSED(orientation);
 	if (role == Qt::DisplayRole) {
 		switch (section) {
 		case 0:
@@ -336,13 +337,7 @@ bool BankTreeModel::dropMimeData(const QMimeData* data,
 	if (action == Qt::IgnoreAction)
 		return true;
 
-	int beginRow;
-
-	if (row != -1)
-		beginRow = row;
-	else if (parent.isValid())
-		beginRow = parent.row();
-	else
+	if (!(row != -1 || parent.isValid()))
 		return false;
 
 	QByteArray encodedData = data->data("application/weaponid");
@@ -366,6 +361,8 @@ void BankTreeModel::setWeapon(const QModelIndex& index, int data) const
 
 bool BankTreeRoot::setData(int column, const QVariant& value)
 {
+	Q_UNUSED(column);
+	Q_UNUSED(value);
 	return false;
 }
 QVariant BankTreeRoot::data(int column) const
@@ -383,6 +380,7 @@ QVariant BankTreeRoot::data(int column) const
 }
 Qt::ItemFlags BankTreeRoot::getFlags(int column) const
 {
+	Q_UNUSED(column);
 	return {};
 }
 

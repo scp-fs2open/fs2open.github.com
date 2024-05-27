@@ -5,7 +5,7 @@ namespace fso {
 namespace fred {
 class BankTreeItem {
   public:
-	explicit BankTreeItem(BankTreeItem* parentItem = nullptr);
+	explicit BankTreeItem(BankTreeItem* parentItem = nullptr, const QString& inName = "");
 	virtual ~BankTreeItem();
 	virtual QVariant data(int column) const = 0;
 	void appendChild(BankTreeItem* child);
@@ -34,7 +34,7 @@ class BankTreeRoot : public BankTreeItem {
 };
 class BankTreeBank : public BankTreeItem {
   public:
-	explicit BankTreeBank(Bank* bank, BankTreeItem* parentItem = nullptr);
+	explicit BankTreeBank(Bank* inBank, BankTreeItem* parentItem = nullptr);
 	void setWeapon(int id);
 	void setAmmo(int value);
 	int getId() const;
@@ -73,8 +73,11 @@ class BankTreeModel : public QAbstractItemModel {
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
 
 	QStringList mimeTypes() const override;
-	bool
-	canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const;
+	bool canDropMimeData(const QMimeData* data,
+		Qt::DropAction action,
+		int row,
+		int column,
+		const QModelIndex& parent) const override;
 	bool
 	dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
 	void setWeapon(const QModelIndex& index, int data) const;
