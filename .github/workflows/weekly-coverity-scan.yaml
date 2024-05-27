@@ -12,7 +12,8 @@ name: Weekly Coverity Scan for Freespace Open
 on:
   schedule:
     - cron: "5 7 * * 5" # Run once per a week on Friday morning (4 AM EST), to avoid Coverity's submission limits
-
+  workflow_dispatch:
+  
 env:
   QT_VERSION: 5.12.12
   coverity_email: SirKnightlySCP@gmail.com
