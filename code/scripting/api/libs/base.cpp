@@ -207,7 +207,7 @@ ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vect
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
-ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a uniformly random normalized vector object.", "vector", "Vector object")
+ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a random normalized vector object.", "vector", "Vector object")
 {
 	vec3d v3;
 	vm_vec_random_in_sphere(&v3, &vmd_zero_vector, 1.0f, true);
