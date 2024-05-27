@@ -20,7 +20,7 @@ class WeaponModel : public QAbstractListModel {
 	~WeaponModel();
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-	QMimeData* mimeData(const QModelIndexList& indexes) const;
+	QMimeData* mimeData(const QModelIndexList& indexes) const override;
 	QVector<WeaponItem*> weapons;
 };
 class weaponList : public QListView {

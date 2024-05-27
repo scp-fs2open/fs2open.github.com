@@ -6,9 +6,10 @@ weaponList::weaponList(QWidget* parent) : QListView(parent) {}
 
 void weaponList::mousePressEvent(QMouseEvent* event)
 {
-	if (event->button() == Qt::LeftButton)
+	if (event->button() == Qt::LeftButton) {
 		dragStartPosition = event->pos();
-		QListView::mousePressEvent(event);
+	}
+	QListView::mousePressEvent(event);
 }
 void weaponList::mouseMoveEvent(QMouseEvent* event)
 {
@@ -30,7 +31,7 @@ void weaponList::mouseMoveEvent(QMouseEvent* event)
 	painter.drawText(QPoint(100, 100), model()->data(idx, Qt::DisplayRole).toString());
 	drag->setPixmap(*iconPixmap);
 	drag->setMimeData(mimeData);
-	Qt::DropAction dropAction = drag->exec();
+	drag->exec();
 }
 
 WeaponModel::WeaponModel(int type)
@@ -67,17 +68,17 @@ WeaponModel::~WeaponModel()
 }
 int WeaponModel::rowCount(const QModelIndex& parent) const
 {
+	Q_UNUSED(parent);
 	return static_cast<int>(weapons.size());
 }
 QVariant WeaponModel::data(const QModelIndex& index, int role) const
 {
 	if (role == Qt::DisplayRole) {
-		const QString out =
-			weapons[index.row()]->name;
+		const QString out = weapons[index.row()]->name;
 		return out;
 	}
 	if (role == Qt::UserRole) {
-		const size_t id = weapons[index.row()]->id;
+		const int id = weapons[index.row()]->id;
 		return id;
 	}
 	return {};
@@ -98,6 +99,6 @@ QMimeData* WeaponModel::mimeData(const QModelIndexList& indexes) const
 
 	return mimeData;
 }
-WeaponItem::WeaponItem(const int id, const QString& name) : name(name), id(id) {}
+WeaponItem::WeaponItem(const int inID, const QString& inName) : name(inName), id(inID) {}
 } // namespace fred
 } // namespace fso

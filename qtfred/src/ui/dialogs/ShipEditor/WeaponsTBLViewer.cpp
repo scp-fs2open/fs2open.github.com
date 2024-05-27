@@ -1,4 +1,5 @@
 #include "WeaponsTBLViewer.h"
+
 #include "ui_ShipTBLViewer.h"
 
 #include <ui/util/SignalBlockers.h>
@@ -9,8 +10,8 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 WeaponsTBLViewer::WeaponsTBLViewer(QWidget* parent, EditorViewport* viewport, int wc)
-	: QDialog(parent), ui(new Ui::ShipTBLViewer()), _viewport(viewport),
-	  _model(new WeaponsTBLViewerModel(this, viewport, wc))
+	: QDialog(parent), ui(new Ui::ShipTBLViewer()), _model(new WeaponsTBLViewerModel(this, viewport, wc)),
+	  _viewport(viewport)
 {
 
 	ui->setupUi(this);

@@ -78,7 +78,6 @@ void ShipWeaponsDialog::closeEvent(QCloseEvent* event)
 }
 void ShipWeaponsDialog::on_setAllButton_clicked()
 {
-	int test = 0;
 	for (auto& index : ui->treeBanks->selectionModel()->selectedIndexes()) {
 		bankModel->setWeapon(index, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
 	}
@@ -112,7 +111,7 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 		} else {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 				"Illegal Mode",
-				"Somehow an Illegal mode has been set. Get a coder.\n Illegal mode is " + mode,
+				"Somehow an Illegal mode has been set. Get a coder.\n Illegal mode is " + std::to_string(mode),
 				{DialogButton::Ok});
 			ui->radioPrimary->toggled(true);
 			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
