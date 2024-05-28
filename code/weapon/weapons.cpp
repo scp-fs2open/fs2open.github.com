@@ -8740,16 +8740,6 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 	return side_alpha;
 }
 
-// renders another glow bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
-// uses the alpha data already gathered by weapon_render_headon_bitmap, because the alpha of the glow should always match the alpha of the laser
-void weapon_render_headon_glow_bitmap(float side_alpha, vec3d* headp, vec3d* tailp, int bitmap, float width1, float width2, int r, int g, int b){
-	float head_alpha = 1.0 - side_alpha;
-
-	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
-
-	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b);
-}
-
 void weapon_render(object* obj, model_draw_list *scene)
 {
 	int num;
@@ -8856,7 +8846,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, wip->laser_min_pixel_size);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, wip->laser_min_pixel_size);
 
-				int alpha = static_cast<int>(alphaf * 255.0f);
+				int alpha = fl2i(alphaf * 255.0f);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
@@ -8865,7 +8855,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius,
 						scaled_tail_radius,
 						alpha, alpha, alpha);
-					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult * 255.0);
+					alpha = fl2i(alphaf * main_bitmap_alpha_mult * 255.0);
 				}
 
 				batching_add_laser(
@@ -8949,20 +8939,26 @@ void weapon_render(object* obj, model_draw_list *scene)
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius * radius_mult, wip->laser_min_pixel_size);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp2, wip->laser_tail_radius * radius_mult, wip->laser_min_pixel_size);
 
-				int r = static_cast<int>(static_cast<float>(c.red) * alphaf);
-				int g = static_cast<int>(static_cast<float>(c.green) * alphaf);
-				int b = static_cast<int>(static_cast<float>(c.blue) * alphaf);
+				int r = fl2i(i2fl(c.red) * alphaf);
+				int g = fl2i(i2fl(c.green) * alphaf);
+				int b = fl2i(i2fl(c.blue) * alphaf);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					weapon_render_headon_glow_bitmap(main_bitmap_alpha_mult, &headp2, &tailp2,
+					float head_alpha = 1.0 - main_bitmap_alpha_mult;
+
+					r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
+
+					batching_add_laser(
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
+						&headp2,
 						scaled_head_radius * wip->laser_glow_head_scale,
+						&tailp2,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
 						r, g, b);
-					r = static_cast<int>(static_cast<float>(c.red) * alphaf * main_bitmap_alpha_mult);
-					g = static_cast<int>(static_cast<float>(c.green) * alphaf * main_bitmap_alpha_mult);
-					b = static_cast<int>(static_cast<float>(c.blue) * alphaf * main_bitmap_alpha_mult);
+					r = fl2i(i2fl(c.red) * alphaf * main_bitmap_alpha_mult);
+					g = fl2i(i2fl(c.green) * alphaf * main_bitmap_alpha_mult);
+					b = fl2i(i2fl(c.blue) * alphaf * main_bitmap_alpha_mult);
 				}
 
 				batching_add_laser(
