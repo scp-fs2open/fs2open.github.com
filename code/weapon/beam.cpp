@@ -2654,9 +2654,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			// randomness
 			vm_vec_random_in_sphere(&random_offset, &vmd_zero_vector, 1.f, false, true);
 			random_offset *= scale_factor;
-			random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
-			random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
-			random_offset.xyz.z *= bwi->t5info.start_pos_rand.xyz.z;
+			random_offset.xyz.x *= bwi->t5info.end_pos_rand.xyz.x;
+			random_offset.xyz.y *= bwi->t5info.end_pos_rand.xyz.y;
+			random_offset.xyz.z *= bwi->t5info.end_pos_rand.xyz.z;
 			offset += random_offset;
 
 			// rotate
