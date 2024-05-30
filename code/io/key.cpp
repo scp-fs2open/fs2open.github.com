@@ -520,6 +520,20 @@ void key_mark( uint code, int state, uint latency )
 			Current_key_down |= KEY_CTRLED;
 		}
 
+#ifndef NDEBUG
+		if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+			Current_key_down |= KEY_DEBUGGED;
+		}
+#else
+		if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
+				if (Cheats_enabled && Key_normal_game) {
+					Current_key_down |= KEY_DEBUGGED1;
+				}
+			}
+
+#endif
+
 		if (scripting::hooks::OnKeyReleased->isActive()) {
 			scripting::hooks::OnKeyReleased->run(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
 				scripting::hook_param_list(
@@ -556,6 +570,20 @@ void key_mark( uint code, int state, uint latency )
 			if ( key_is_pressed(KEY_LCTRL) || key_is_pressed(KEY_RCTRL) ) {
 				Current_key_down |= KEY_CTRLED;
 			}
+
+#ifndef NDEBUG
+			if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+				Current_key_down |= KEY_DEBUGGED;
+			}
+#else
+			if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
+				if (Cheats_enabled && Key_normal_game) {
+					Current_key_down |= KEY_DEBUGGED1;
+				}
+			}
+
+#endif
 
 			bool overrideKey = false;
 			if (scripting::hooks::OnKeyPressed->isActive()) {

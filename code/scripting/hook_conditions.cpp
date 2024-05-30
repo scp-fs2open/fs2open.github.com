@@ -98,6 +98,8 @@ static bool conditionObjectIsWeaponDo(fnc_t fnc, const object* objp, const value
 }
 
 static int conditionCompareRawControl(int keypress, const int& cached_key) {
+	//For reasons only known to Volition, LCtrl and RCtrl are differentiated in name, while Alt and Shift are not.
+	//As only the first of these identical names will be matched, replace the R versions with the L versions
 	int key_down = keypress & KEY_MASK;
 	switch(key_down) {
 		case KEY_RALT:
