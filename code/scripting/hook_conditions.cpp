@@ -300,7 +300,7 @@ HOOK_CONDITIONS_START(ObjectDrawConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(KeyPressConditions)
-	HOOK_CONDITION(KeyPressConditions, "Raw key press", "The key that is pressed, with no consideration for any modifier keys.", keycode, conditionParseRawControl, conditionCompareRawControl);
+	HOOK_CONDITION(KeyPressConditions, "Raw KeyPress", "The key that is pressed, with no consideration for any modifier keys.", keycode, conditionParseRawControl, conditionCompareRawControl);
 HOOK_CONDITIONS_END
 
 }

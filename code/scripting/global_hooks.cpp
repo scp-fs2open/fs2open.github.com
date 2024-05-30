@@ -64,7 +64,7 @@ const std::shared_ptr<Hook<ControlActionConditions>> OnActionStopped = Hook<Cont
 const std::shared_ptr<OverridableHook<KeyPressConditions>> OnKeyPressed = OverridableHook<KeyPressConditions>::Factory("On Key Pressed",
 	"Invoked whenever a key is pressed. If overridden, FSO behaves as if this key has simply not been pressed. "
 	"The only thing that FSO will do with this key if overridden is fire the corresponding OnKeyReleased hook once the key is released. "
-	"Be especially careful if overriding modifier keys with this.",
+	"Be especially careful if overriding modifier keys (such as Alt and Shift) with this.",
 	{
 		{"Key", "string", "The scancode of the key that has been pressed."},
 		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."}
