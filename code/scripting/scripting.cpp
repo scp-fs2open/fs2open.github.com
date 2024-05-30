@@ -241,7 +241,7 @@ static bool global_condition_valid(const script_condition& condition)
 			return false;
 
 		//Remove key masks that the API does not check against
-		int key_down_modifier = ~(KEY_CTRLED | KEY_DEBUGGED | KEY_DEBUGGED1) & ~KEY_MASK & Current_key_down;
+		int key_down_modifier = ~KEY_CTRLED & ~KEY_MASK & Current_key_down;
 
 		//Pretend that debug is the same as cheat
 		if (key_down_modifier & KEY_DEBUGGED)
