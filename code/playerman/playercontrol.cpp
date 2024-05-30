@@ -86,7 +86,7 @@ static SCP_string degrees_display(float val)
 	return out;
 }
 
-float flight_cursor_extent;
+float Flight_cursor_extent;
 
 auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursorExtent",
 	std::pair<const char*, int>{"Flight Cursor Extent", 1846},
@@ -96,11 +96,11 @@ auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursor
 	.display(degrees_display)
 	.default_val(0.348f)
 	.level(options::ExpertLevel::Beginner)
-	.bind_to(&flight_cursor_extent)
+	.bind_to(&Flight_cursor_extent)
 	.importance(44)
 	.finish();
 
-float flight_cursor_deadzone;
+float Flight_cursor_deadzone;
 
 auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCursorDeadzone",
 	std::pair<const char*, int>{"Flight Cursor Deadzone", 1848},
@@ -110,7 +110,7 @@ auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCurs
 	.display(degrees_display)
 	.default_val(0.02f)
 	.level(options::ExpertLevel::Beginner)
-	.bind_to(&flight_cursor_deadzone)
+	.bind_to(&Flight_cursor_deadzone)
 	.importance(43)
 	.finish();
 
@@ -1028,7 +1028,7 @@ void read_player_controls(object *objp, float frametime)
 				if ((Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor)) {
 
 					if (Viewer_mode & VM_CAMERA_LOCKED) {
-						float max_aim_angle = flight_cursor_extent;
+						float max_aim_angle = Flight_cursor_extent;
 
 						if (sip->aims_at_flight_cursor)
 							max_aim_angle = sip->flight_cursor_aim_extent;
@@ -1043,7 +1043,7 @@ void read_player_controls(object *objp, float frametime)
 							mag = max_aim_angle;
 						}
 
-						float deadzone = flight_cursor_deadzone;
+						float deadzone = Flight_cursor_deadzone;
 						if (mag > deadzone) {
 							float p = Player_flight_cursor.p * ((mag - deadzone) / mag);
 							float h = Player_flight_cursor.h * ((mag - deadzone) / mag);

@@ -12,6 +12,7 @@
 #include "gamesequence/gamesequence.h"
 #include "controlconfig/controlsconfig.h"
 #include "headtracking/headtracking.h"
+#include "playerman/player.h"
 
 extern int mouse_inited;
 
@@ -312,6 +313,48 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(toggleFlightCursorMode, l_Mouse, "boolean", "Gets or sets whether to use Flight Cursor mode.", "boolean", "true if using Flight Cursor mode, false otherwise")
+{
+	bool choice;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice))
+	{
+		if (choice)
+			Player_flight_mode = FlightMode::FlightCursor;
+		else
+			Player_flight_mode = FlightMode::ShipLocked;
+	}
+
+	if (Player_flight_mode == FlightMode::FlightCursor)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(FlightCursorExtent, l_Mouse, "number angle", "How far from the center the cursor can go.", "number", "Flight cursor extent in radians")
+{
+	float extent_angle;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &extent_angle))
+	{
+		Flight_cursor_extent = extent_angle;
+	}
+
+	return ade_set_args(L, "f", Flight_cursor_extent);
+}
+
+ADE_VIRTVAR(FlightCursorDeadzone, l_Mouse, "number angle", "How far from the center the cursor needs to go before registering.", "number", "Flight cursor deadzone in radians")
+{
+	float deadzone_angle;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &deadzone_angle))
+	{
+		Flight_cursor_deadzone = deadzone_angle;
+	}
+
+	return ade_set_args(L, "f", Flight_cursor_deadzone);
 }
 
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
