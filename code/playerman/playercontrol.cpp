@@ -841,7 +841,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		// for debugging, check to see if the debug key is down -- if so, make fire the debug laser instead
 #ifndef NDEBUG
-		if ( keyd_pressed[KEY_DEBUG_KEY] ) {
+		if ( key_is_pressed(KEY_DEBUG_KEY) ) {
 			ci->fire_debug_count = ci->fire_primary_count;
 			ci->fire_primary_count = 0;
 		}

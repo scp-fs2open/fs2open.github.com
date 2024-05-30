@@ -36,6 +36,8 @@ SDL_Scancode fs2_to_sdl( int scancode );
 int key_to_ascii(int keycode );
 int key_inkey();
 
+bool key_is_pressed(int keycode, bool include_since_last_count = false);
+
 // global flag that will enable/disable the backspace key from stopping execution
 //extern int Backspace_debug;
 
