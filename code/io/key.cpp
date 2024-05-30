@@ -21,24 +21,21 @@
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
 
-
-#define KEY_BUFFER_SIZE 16
-
 //-------- Variable accessed by outside functions ---------
 ubyte				keyd_repeat;
 ubyte				keyd_pressed[NUM_KEYS];
 int				keyd_time_when_last_pressed;
 
 typedef struct keyboard	{
-	ushort			keybuffer[KEY_BUFFER_SIZE];
-	uint				time_pressed[KEY_BUFFER_SIZE];
+	enum class key_state : uint8_t { RELEASED, PRESSED, PRESSED_OVERRIDDEN };
+	std::array<key_state, NUM_KEYS> state;
+	SCP_queue<uint> key_queue;
 	uint				TimeKeyWentDown[NUM_KEYS];
 	uint				TimeKeyHeldDown[NUM_KEYS];
 	uint				TimeKeyDownChecked[NUM_KEYS];
 	uint				NumDowns[NUM_KEYS];
 	uint				NumUps[NUM_KEYS];
 	int				down_check[NUM_KEYS];  // nonzero if has been pressed yet this mission
-	uint				keyhead, keytail;
 } keyboard;
 
 keyboard key_data;
@@ -296,18 +293,12 @@ void key_flush()
 
 	SDL_LockMutex( key_lock );	
 
-	key_data.keyhead = key_data.keytail = 0;
-
 	//Clear the keyboard buffer
-	for (i=0; i<KEY_BUFFER_SIZE; i++ )	{
-		key_data.keybuffer[i] = 0;
-		key_data.time_pressed[i] = 0;
-	}
+	key_data.key_queue = {};
 	
 	//Clear the keyboard array
 
 	CurTime = timer_get_milliseconds();
-
 
 	for (i=0; i<NUM_KEYS; i++ )	{
 		keyd_pressed[i] = 0;
@@ -332,17 +323,13 @@ int add_one( int n )
 }
 
 // Returns 1 if character waiting... 0 otherwise
-int key_checkch()
+bool key_checkch()
 {
-	int is_one_waiting = 0;
-
 	if ( !key_inited ) return 0;
 
-	SDL_LockMutex( key_lock );	
+	SDL_LockMutex( key_lock );
 
-	if (key_data.keytail != key_data.keyhead){
-		is_one_waiting = 1;
-	}
+	bool is_one_waiting = !key_data.key_queue.empty();
 
 	SDL_UnlockMutex( key_lock );		
 
@@ -363,9 +350,9 @@ int key_inkey()
 
 	SDL_LockMutex( key_lock );	
 
-	if (key_data.keytail!=key_data.keyhead)	{
-		key = key_data.keybuffer[key_data.keyhead];
-		key_data.keyhead = add_one(key_data.keyhead);
+	if (!key_data.key_queue.empty())	{
+		key = key_data.key_queue.front();
+		key_data.key_queue.pop();
 	}
 
 	SDL_UnlockMutex( key_lock );	
@@ -613,14 +600,7 @@ void key_mark( uint code, int state, uint latency )
 #endif
 
 			if ( keycode ) {
-				temp = key_data.keytail+1;
-				if ( temp >= KEY_BUFFER_SIZE ) temp=0;
-
-				if (temp!=key_data.keyhead) {
-					key_data.keybuffer[key_data.keytail] = keycode;
-					key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
-					key_data.keytail = temp;
-				}
+				key_data.key_queue.push(keycode);
 			}
 		}
 	}
