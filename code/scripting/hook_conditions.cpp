@@ -6,6 +6,7 @@
 #include "gamesequence/gamesequence.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "io/key.h"
 
 // ---- Hook Condition System Macro and Class defines ----
 
@@ -17,6 +18,8 @@
 	build.emplace(conditionParseName, ::make_unique<ParseableConditionImpl<conditionsClassName, \
 		decltype(std::declval<conditionsClassName>().argument), decltype(argumentParse(std::declval<SCP_string>()))>> \
 		(documentation, &conditionsClassName::argument, argumentParse, argumentValid))
+
+extern const char *Scan_code_text_english[];
 
 namespace scripting {
 
@@ -94,6 +97,22 @@ static bool conditionObjectIsWeaponDo(fnc_t fnc, const object* objp, const value
 	return false;
 }
 
+static int conditionCompareRawControl(int keypress, const int& cached_key) {
+	int key_down = keypress & KEY_MASK;
+	switch(key_down) {
+		case KEY_RALT:
+			key_down = KEY_LALT;
+			break;
+		case KEY_RSHIFT:
+			key_down = KEY_LSHIFT;
+			break;
+		default:
+			break;
+	}
+
+	return cached_key == key_down;
+}
+
 
 static SCP_string conditionParseString(const SCP_string& name) {
 	return name;
@@ -123,6 +142,14 @@ static int conditionParseObjectType(const SCP_string& name) {
 	for (int i = 0; i < MAX_OBJECT_TYPES; i++) {
 		if (stricmp(Object_type_names[i], name.c_str()) == 0)
 			return i;
+	}
+	return -1;
+}
+
+static int conditionParseRawControl(const SCP_string& name) {
+	for (int key = 0; key < NUM_KEYS; key++){
+		if (stricmp(Scan_code_text_english[key], name.c_str()) == 0)
+			return key & KEY_MASK;
 	}
 	return -1;
 }
@@ -270,6 +297,10 @@ HOOK_CONDITIONS_START(ObjectDrawConditions)
 		return conditionObjectIsWeaponDo(&conditionCompareWeaponClass, objp, weaponclass);
 	});
 	HOOK_CONDITION(ObjectDrawConditions, "Object type", "Specifies the type of the object that was drawn / drawn from.", drawn_from_objp, conditionParseObjectType, conditionIsObjecttype);
+HOOK_CONDITIONS_END
+
+HOOK_CONDITIONS_START(KeyPressConditions)
+	HOOK_CONDITION(KeyPressConditions, "Raw key press", "The key that is pressed, with no consideration for any modifier keys.", keycode, conditionParseRawControl, conditionCompareRawControl);
 HOOK_CONDITIONS_END
 
 }

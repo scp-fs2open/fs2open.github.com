@@ -101,6 +101,7 @@ struct script_condition
 	// CHC_STATE, CHC_OBJECTTYPE - stores the value of enum matching the name requested by the condition string.
 	// CHC_SHIPCLASS, CHC_WEAPONCLASS - stores the index of the info object requested by the condition
 	// CHC_VERSION, CHC_APPLICATION - stores validity of the check in 1 for true or 0 for false, as the condition will not change after load.
+	// CHC_KEYPRESS - stores the keycode
 	// see ConditionedHook::AddCondition for exact implimentation
 	int condition_cached_value;
 };

@@ -20,8 +20,8 @@ extern const std::shared_ptr<Hook<>>									OnGameplayStart;
 
 extern const std::shared_ptr<Hook<ControlActionConditions>>				OnAction;
 extern const std::shared_ptr<Hook<ControlActionConditions>>				OnActionStopped;
-extern const std::shared_ptr<Hook<>>									OnKeyPressed;
-extern const std::shared_ptr<Hook<>>									OnKeyReleased;
+extern const std::shared_ptr<OverridableHook<KeyPressConditions>>		OnKeyPressed;
+extern const std::shared_ptr<Hook<KeyPressConditions>>					OnKeyReleased;
 extern const std::shared_ptr<Hook<>>									OnMouseMoved;
 extern const std::shared_ptr<Hook<>>									OnMousePressed;
 extern const std::shared_ptr<Hook<>>									OnMouseReleased;

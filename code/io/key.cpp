@@ -29,7 +29,7 @@ typedef struct keyboard	{
 	std::array<key_state, NUM_KEYS> state;
 	SCP_queue<uint> key_queue;
 
-	//The time that the key was pressed
+	//The time that the key was pressed. Tracks actual presses, even those overridden
 	uint TimeKeyWentDown[NUM_KEYS];
 
 	//The cumulative time that the key has been held down.
@@ -500,12 +500,11 @@ void key_mark( uint code, int state, uint latency )
 	
 	if (breakbit) {
 		// Key going up
-		key_data.state[scancode] = keyboard::key_state::RELEASED;
-		key_data.NumUps[scancode]++;
-	
+
+		int time_held = 0;
 		if (event_time >= key_data.TimeKeyWentDown[scancode]) {
 			//If the suspected key lift is "before" the key was pressed (i.e. fluctuating latency) we don't add any time to the pressed time since last poll
-			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
+			time_held = event_time - key_data.TimeKeyWentDown[scancode];
 		}
 
 		Current_key_down = scancode;
@@ -522,17 +521,27 @@ void key_mark( uint code, int state, uint latency )
 		}
 
 		if (scripting::hooks::OnKeyReleased->isActive()) {
-			scripting::hooks::OnKeyReleased->run(scripting::hook_param_list(
-				scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down))));
+			scripting::hooks::OnKeyReleased->run(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
+				scripting::hook_param_list(
+					scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down)),
+					scripting::hook_param("RawKey", 's', textify_scancode_universal(scancode)),
+					scripting::hook_param("TimeHeld", 'i', time_held),
+					scripting::hook_param("WasOverridden", 'b', key_data.state[scancode] == keyboard::key_state::PRESSED_OVERRIDDEN)
+				));
 		}
+
+		// Don't increment counters if was overridden
+		if (key_data.state[scancode] == keyboard::key_state::PRESSED) {
+			key_data.NumUps[scancode]++;
+			key_data.TimeKeyHeldDown[scancode] += time_held;
+		}
+
+		key_data.state[scancode] = keyboard::key_state::RELEASED;
 	} else {
 		// Key going down
 		if (!key_is_pressed(scancode)) {
 			// First time down
 			key_data.TimeKeyWentDown[scancode] = event_time;
-			key_data.state[scancode] = keyboard::key_state::PRESSED;
-			key_data.NumDowns[scancode]++;
-			key_data.down_check[scancode]++;
 
 			//WMC - For scripting
 			Current_key_down = scancode;
@@ -548,9 +557,29 @@ void key_mark( uint code, int state, uint latency )
 				Current_key_down |= KEY_CTRLED;
 			}
 
+			bool overrideKey = false;
 			if (scripting::hooks::OnKeyPressed->isActive()) {
-				scripting::hooks::OnKeyPressed->run(scripting::hook_param_list(
-					scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down))));
+				scripting::hooks::OnKeyPressed->run(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
+					scripting::hook_param_list(
+						scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down)),
+						scripting::hook_param("RawKey", 's', textify_scancode_universal(scancode))
+					));
+
+				overrideKey = scripting::hooks::OnKeyPressed->isOverride(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
+					scripting::hook_param_list(
+						scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down)),
+						scripting::hook_param("RawKey", 's', textify_scancode_universal(scancode))
+					));
+			}
+
+			if (overrideKey) {
+				key_data.state[scancode] = keyboard::key_state::PRESSED_OVERRIDDEN;
+				scancode = 0xAA; //Skip queueing this key
+			}
+			else {
+				key_data.state[scancode] = keyboard::key_state::PRESSED;
+				key_data.NumDowns[scancode]++;
+				key_data.down_check[scancode]++;
 			}
 		} else if (!key_allow_repeat) {
 			// Don't buffer repeating key if repeat mode is off
