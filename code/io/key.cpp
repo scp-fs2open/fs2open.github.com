@@ -25,10 +25,7 @@
 #define KEY_BUFFER_SIZE 16
 
 //-------- Variable accessed by outside functions ---------
-ubyte				keyd_buffer_type;		// 0=No buffer, 1=buffer ASCII, 2=buffer scans
 ubyte				keyd_repeat;
-uint				keyd_last_pressed;
-uint				keyd_last_released;
 ubyte				keyd_pressed[NUM_KEYS];
 int				keyd_time_when_last_pressed;
 
@@ -520,7 +517,6 @@ void key_mark( uint code, int state, uint latency )
 	
 	if (breakbit) {
 		// Key going up
-		keyd_last_released = scancode;
 		keyd_pressed[scancode] = 0;
 		key_data.NumUps[scancode]++;
 
@@ -556,7 +552,6 @@ void key_mark( uint code, int state, uint latency )
 		}
 	} else {
 		// Key going down
-		keyd_last_pressed = scancode;
 		keyd_time_when_last_pressed = event_time;
 		if (!keyd_pressed[scancode]) {
 			// First time down
@@ -660,7 +655,6 @@ void key_init()
 	FillSDLArray();
 
 	keyd_time_when_last_pressed = timer_get_milliseconds();
-	keyd_buffer_type = 1;
 	keyd_repeat = 1;
 
 	// Clear the keyboard array
