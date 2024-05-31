@@ -357,6 +357,13 @@ ADE_VIRTVAR(FlightCursorDeadzone, l_Mouse, "number angle", "How far from the cen
 	return ade_set_args(L, "f", Flight_cursor_deadzone);
 }
 
+ADE_FUNC(resetFlightCursor, l_Mouse, nullptr, "Resets flight cursor position to the center of the screen and resets the player pitch and heading to 0.", nullptr, nullptr)
+{
+	Player_flight_cursor = vmd_zero_angles;
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;
