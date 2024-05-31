@@ -315,7 +315,43 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(toggleFlightCursorMode, l_Mouse, "boolean", "Gets or sets whether to use Flight Cursor mode.", "boolean", "true if using Flight Cursor mode, false otherwise")
+ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration FlightMode", "Flight Mode; uses LE_FLIGHTMODE_* enumerations.", "enumeration", "enumeration flight mode")
+{
+	enum_h flightmode_arg;
+
+	if (!ade_get_args(L, "*|o", l_Enum.Get(&flightmode_arg)))
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+
+	if (!flightmode_arg.isValid()) {
+		return ade_set_error(L, "o", l_Enum.Set(enum_h(flightmode_arg)));
+	}
+
+	if (ADE_SETTING_VAR) {
+		switch (flightmode_arg.index) {
+		case LE_FLIGHTMODE_FLIGHTCURSOR:
+			Player_flight_mode = FlightMode::FlightCursor;
+			break;
+		case LE_FLIGHTMODE_SHIPLOCKED:
+			Player_flight_mode = FlightMode::ShipLocked;
+			break;
+		default:
+			Warning(LOCATION, "Invalid flight mode index %d in io.FlightCursorMode", flightmode_arg.index);
+			break;
+		}
+	}
+
+	switch (Player_flight_mode) {
+	case FlightMode::FlightCursor:
+		return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_FLIGHTMODE_FLIGHTCURSOR)));
+	case FlightMode::ShipLocked:
+		return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_FLIGHTMODE_SHIPLOCKED)));
+	default:
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+	}
+
+}
+
+ADE_VIRTVAR(FlightCursorMode, l_Mouse, "number", "Gets or sets the Flight Mode.", "number", "true if using Flight Cursor mode, false otherwise")
 {
 	bool choice;
 
