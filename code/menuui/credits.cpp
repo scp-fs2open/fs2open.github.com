@@ -875,7 +875,7 @@ void credits_do_frame(float  /*frametime*/)
 	Credits_last_time = temp_time;
 
 	float fl_frametime = i2fl(Credits_frametime) / 1000.f;
-	if (keyd_pressed[KEY_LSHIFT]) {
+	if (key_is_pressed(KEY_LSHIFT)) {
 		Credit_position -= fl_frametime * Credits_scroll_rate * 4.0f;
 	} else {
 		Credit_position -= fl_frametime * Credits_scroll_rate;

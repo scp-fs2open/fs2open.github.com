@@ -2091,7 +2091,7 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		}
 
 		if ((ctrl == BANK_WHEN_PRESSED || ctrl == GLIDE_WHEN_PRESSED) && (Last_key >= 0) && (k <= 0) &&
-			!keyd_pressed[Last_key]) {
+			!key_is_pressed(Last_key)) {
 			// If the selected cc_item is BANK_WHEN_PRESSED or GLIDE_WHEN_PRESSED, and
 			// If the polled key is a modifier, and
 			// k was consumed, and
@@ -2820,12 +2820,12 @@ int check_control_used(int id, int key)
 
 		// check what current modifiers are pressed
 		mask = 0;
-		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT)) {
+		if (key_is_pressed(KEY_LSHIFT, true) || key_is_pressed(KEY_RSHIFT, true)) {
 			// Any shift key is pressed, add KEY_SHIFTED mask
 			mask |= KEY_SHIFTED;
 		}
 
-		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT)) {
+		if (key_is_pressed(KEY_LALT, true) || key_is_pressed(KEY_RALT, true)) {
 			// Any alt key is pressed, add KEY_ALTED to the mask
 			mask |= KEY_ALTED;
 		}
@@ -2841,7 +2841,7 @@ int check_control_used(int id, int key)
 
 			z &= KEY_MASK;
 
-			if (keyd_pressed[z] || key_down_count(z)) {
+			if (key_is_pressed(z, true)) {
 				// Key combo is pressed, control activated
 				control_used(id);
 				return 1;
