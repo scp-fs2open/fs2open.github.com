@@ -357,10 +357,37 @@ ADE_VIRTVAR(FlightCursorDeadzone, l_Mouse, "number angle", "How far from the cen
 	return ade_set_args(L, "f", Flight_cursor_deadzone);
 }
 
-ADE_FUNC(resetFlightCursor, l_Mouse, nullptr, "Resets flight cursor position to the center of the screen and resets the player pitch and heading to 0.", nullptr, nullptr)
+ADE_VIRTVAR(FlightCursorPitch, l_Mouse, "number", "Flight cursor pitch value", "number", "Flight cursor pitch value")
 {
-	Player_flight_cursor = vmd_zero_angles;
+	float val_pitch;
+	if (!ade_get_args(L, "f", val_pitch))
+		return ade_set_error(L, "f", 0.0f);
 
+	if (ADE_SETTING_VAR) {
+		Player_flight_cursor.p = val_pitch;
+	}
+
+	return ade_set_args(L, "f", Player_flight_cursor.p);
+}
+
+ADE_VIRTVAR(FlightCursorHeading, l_Mouse, "number", "Flight cursor heading value", "number", "Flight cursor heading value")
+{
+	float val_heading;
+	if (!ade_get_args(L, "f", val_heading))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		Player_flight_cursor.h = val_heading;
+	}
+
+	return ade_set_args(L, "f", Player_flight_cursor.h);
+}
+
+ADE_FUNC(resetFlightCursor, l_Mouse, nullptr, "Resets flight cursor position to the center of the screen.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	Player_flight_cursor.p = 0.0f;
+	Player_flight_cursor.h = 0.0f;
 	return ADE_RETURN_NIL;
 }
 
