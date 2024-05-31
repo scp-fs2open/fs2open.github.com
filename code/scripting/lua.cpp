@@ -154,6 +154,17 @@ int script_state::CreateLuaState()
 	}
 	lua_pop(L, 1);	//os table
 
+	lua_pushstring(L, "io");
+	lua_rawget(L, LUA_GLOBALSINDEX);
+	int io_ldx = lua_gettop(L);
+	if(lua_istable(L, io_ldx))
+	{
+		lua_pushstring(L, "popen");
+		lua_pushnil(L);
+		lua_rawset(L, io_ldx);
+	}
+	lua_pop(L, 1);	//io table
+
 	//*****INITIALIZE ADE
 	uint i;
 	mprintf(("LUA: Beginning ADE initialization\n"));
