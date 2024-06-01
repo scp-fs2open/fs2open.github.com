@@ -234,6 +234,8 @@ enum class FlightMode {
 };
 
 extern FlightMode Player_flight_mode;
+extern float Flight_cursor_extent;
+extern float Flight_cursor_deadzone;
 
 extern void player_init();							// initialization per level
 extern void player_level_init();
