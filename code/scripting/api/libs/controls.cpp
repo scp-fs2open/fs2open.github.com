@@ -319,14 +319,11 @@ ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration FlightMode", "Flight Mode; u
 {
 	enum_h flightmode_arg;
 
-	if (!ade_get_args(L, "*|o", l_Enum.Get(&flightmode_arg)))
+	if (!ade_get_args(L, "*|o", l_Enum.Get(&flightmode_arg))) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
-
-	if (!flightmode_arg.isValid()) {
-		return ade_set_error(L, "o", l_Enum.Set(enum_h(flightmode_arg)));
 	}
 
-	if (ADE_SETTING_VAR) {
+	if (ADE_SETTING_VAR && flightmode_arg.isValid()) {
 		switch (flightmode_arg.index) {
 		case LE_FLIGHTMODE_FLIGHTCURSOR:
 			Player_flight_mode = FlightMode::FlightCursor;
