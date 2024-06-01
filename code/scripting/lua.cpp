@@ -9,7 +9,7 @@ extern "C" {
 #include "scripting/lua/lua_ext.h"
 
 #ifdef WIN32
-#include <fileapi.h>
+#include <Windows.h>
 #else
 #include <sys/stat.h>
 #endif
@@ -117,14 +117,18 @@ static int io_open_limited (lua_State *L) {
 	const char *filename = luaL_checkstring(L, 1);
 	const char *mode = luaL_optstring(L, 2, "r");
 
+	if (filename == nullptr)
+		return 0;
+
 	//We allow fifo-pipes, and direct character access. Neither should be too risky, and they allow for features such as communicating with speedrun tools or specialized hardware
+	//This explicitly blocks access to files, directories, and block devices
 #ifdef WIN32
-	auto handle = CreateFileA(filename, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0);
+	auto handle = CreateFileA(filename, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
 	bool file_allowed = false;
 	if (handle != INVALID_HANDLE_VALUE) {
 		auto file_type = GetFileType(handle);
 		CloseHandle(handle);
-		file_allowed = (file_type == FILE_TYPE_CHAR) || (file_type == FILE_TYPE_PIPE);
+		file_allowed = (file_type == FILE_TYPE_PIPE) || (file_type == FILE_TYPE_CHAR);
 	}
 #else
 	struct stat file_stat_buffer;
