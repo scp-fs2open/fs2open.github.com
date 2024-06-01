@@ -7,6 +7,12 @@
 
 extern "C" {
 #include "scripting/lua/lua_ext.h"
+
+#ifdef WIN32
+#include <fileapi.h>
+#else
+#include <sys/stat.h>
+#endif
 }
 
 /**
@@ -106,6 +112,44 @@ static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
 	}
 }
 
+//kind of fake, prevents true file access (only allows pipes and stuff) and also returns nil on fail instead of error handling string
+static int io_open_limited (lua_State *L) {
+	const char *filename = luaL_checkstring(L, 1);
+	const char *mode = luaL_optstring(L, 2, "r");
+
+	//We allow fifo-pipes, and direct character access. Neither should be too risky, and they allow for features such as communicating with speedrun tools or specialized hardware
+#ifdef WIN32
+	auto handle = CreateFileA(filename, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0);
+	bool file_allowed = false;
+	if (handle != INVALID_HANDLE_VALUE) {
+		auto file_type = GetFileType(handle);
+		CloseHandle(handle);
+		file_allowed = (file_type == FILE_TYPE_CHAR) || (file_type == FILE_TYPE_PIPE);
+	}
+#else
+	struct stat file_stat_buffer;
+	int query_stat = stat( filename, &file_stat_buffer );
+	bool file_allowed = (query_stat == 0) && (S_ISFIFO(file_stat_buffer.st_mode) || S_ISCHR(file_stat_buffer.st_mode));
+#endif
+
+	//Check that our requested file is nice and not evil
+	if (file_allowed) {
+		FILE **pf = (FILE **) lua_newuserdata(L, sizeof(FILE *));
+		*pf = nullptr;  /* file handle is currently `closed' */
+		luaL_getmetatable(L, LUA_FILEHANDLE);
+		lua_setmetatable(L, -2);
+		*pf = fopen(filename, mode);
+
+		if (*pf != nullptr) {
+			return 1;
+		}
+
+		lua_pop(L, 1);
+	}
+
+	return 0;
+}
+
 //Inits LUA
 //Note that "libraries" must end with a {NULL, NULL}
 //element
@@ -161,6 +205,11 @@ int script_state::CreateLuaState()
 	{
 		lua_pushstring(L, "popen");
 		lua_pushnil(L);
+		lua_rawset(L, io_ldx);
+
+		//Instead of just removing open alltogether
+		lua_pushstring(L, "open");
+		lua_pushcfunction(L, io_open_limited);
 		lua_rawset(L, io_ldx);
 	}
 	lua_pop(L, 1);	//io table
