@@ -33,6 +33,7 @@
 
 #include "object.h"
 #include "management.h"
+#include "util.h"
 #include "FredApplication.h"
 
 namespace {
@@ -124,6 +125,61 @@ void Editor::update() {
 	for (auto& viewport : _viewports) {
 		viewport->game_do_frame(currentObject);
 	}
+}
+
+std::string Editor::maybeUseAutosave(const std::string& filepath)
+{
+	// first, just grab the info of this mission
+	if (!parse_main(filepath.c_str(), MPF_ONLY_MISSION_INFO))
+		return filepath;
+	SCP_string created = The_mission.created;
+	CFileLocation res = cf_find_file_location(filepath.c_str(), CF_TYPE_ANY);
+	time_t modified = res.m_time;
+	if (!res.found)
+	{
+		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", filepath.c_str());
+		return filepath;	// just load the actual specified file
+	}
+
+	// now check all the autosaves
+	SCP_string backup_name;
+	CFileLocation backup_res;
+	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
+	{
+		backup_name = MISSION_BACKUP_NAME;
+		char extension[5];
+		sprintf(extension, ".%.3d", i);
+		backup_name += extension;
+
+		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
+		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
+		{
+			SCP_string this_created = The_mission.created;
+			time_t this_modified = backup_res.m_time;
+
+			if (created == this_created && this_modified > modified)
+				break;
+		}
+
+		backup_name.clear();
+	}
+
+	// maybe load from the backup instead
+	if (!backup_name.empty())
+	{
+		SCP_string prompt = "Autosaved file ";
+		prompt += backup_name;
+		prompt += " has a file modification time more recent than the specified file.  Do you want to load the autosave instead?";
+
+		auto z = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Question,
+																	"Recover from autosave",
+																	prompt.c_str(),
+																	{ DialogButton::Yes, DialogButton::No });
+		if (z == DialogButton::Yes)
+			return backup_res.full_name.c_str();
+	}
+
+	return filepath;
 }
 
 bool Editor::loadMission(const std::string& mission_name, int flags) {
@@ -418,13 +474,11 @@ void Editor::clearMission(bool fast_reload) {
 
 	time_t currentTime;
 	time(&currentTime);
-	auto tm_info = localtime(&currentTime);
-	char time_buffer[26];
-	strftime(time_buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+	auto timeinfo = localtime(&currentTime);
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = userName;
-	strcpy_s(The_mission.created, time_buffer);
+	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");

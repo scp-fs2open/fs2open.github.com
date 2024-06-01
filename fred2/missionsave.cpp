@@ -92,9 +92,9 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
-	sprintf(backup_name + len, ".%.3d", BACKUP_DEPTH);
+	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = BACKUP_DEPTH; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		sprintf(backup_name + len, ".%.3d", i - 1);
 		sprintf(name2 + len, ".%.3d", i);
 		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
@@ -3126,10 +3126,11 @@ int CFred_mission_save::save_mission_info()
 
 void CFred_mission_save::save_mission_internal(const char *pathname)
 {
-	CTime t;
+	time_t currentTime;
+	time(&currentTime);
+	auto timeinfo = localtime(&currentTime);
 
-	t = CTime::GetCurrentTime();
-	strcpy_s(The_mission.modified, t.Format("%x at %X"));
+	time_to_mission_info_string(timeinfo, The_mission.modified, DATE_TIME_LENGTH - 1);
 
 	// Migrate the version!
 	The_mission.required_fso_version = MISSION_VERSION;

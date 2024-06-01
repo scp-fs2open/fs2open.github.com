@@ -815,11 +815,14 @@ void clear_mission(bool fast_reload)
 			}
 		}
 	}
-	t = CTime::GetCurrentTime();
+
+	time_t currentTime;
+	time(&currentTime);
+	auto timeinfo = localtime(&currentTime);
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = str;
-	strcpy_s(The_mission.created, t.Format("%x at %X"));
+	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
@@ -2539,4 +2542,9 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 		if (!stricmp(ii->ship_name, old_name))
 			strcpy_s(ii->ship_name, new_name);
 	}
+}
+
+void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len)
+{
+	std::strftime(dest, dest_max_len, "%x at %X", src);
 }
