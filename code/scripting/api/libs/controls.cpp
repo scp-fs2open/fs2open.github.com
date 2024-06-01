@@ -351,24 +351,6 @@ ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration FlightMode", "Flight Mode; u
 
 }
 
-ADE_VIRTVAR(FlightCursorMode, l_Mouse, "number", "Gets or sets the Flight Mode.", "number", "true if using Flight Cursor mode, false otherwise")
-{
-	bool choice;
-
-	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice))
-	{
-		if (choice)
-			Player_flight_mode = FlightMode::FlightCursor;
-		else
-			Player_flight_mode = FlightMode::ShipLocked;
-	}
-
-	if (Player_flight_mode == FlightMode::FlightCursor)
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
-}
-
 ADE_VIRTVAR(FlightCursorExtent, l_Mouse, "number angle", "How far from the center the cursor can go.", "number", "Flight cursor extent in radians")
 {
 	float extent_angle;
