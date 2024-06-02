@@ -245,6 +245,43 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 	return ade_set_args(L, "s", name);
 }
 
+ADE_VIRTVAR(ImpactDamageClass, l_Ship, "string", "Current Impact Damage class", "string", "Impact Damage class name, or empty string if none is set")
+{
+	object_h *objh;
+	const char* s    = nullptr;
+	const char *name = nullptr;
+
+	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
+		return ade_set_error(L, "s", "");
+
+	if(!objh->isValid())
+		return ade_set_error(L, "s", "");
+
+	ship *shipp = &Ships[objh->objp->instance];
+	int damage_index = -1;
+
+	if (ADE_SETTING_VAR && s != nullptr) {
+		for (size_t i = 0; i < Damage_types.size(); i++) {
+			if (!stricmp(Damage_types[i].name, s)) {
+				damage_index = (int)i;
+				break;
+			}
+		}
+		if (damage_index > 0) {
+			shipp->collision_damage_type_idx = damage_index;
+		}
+	} else {
+		damage_index = shipp->collision_damage_type_idx;
+	}
+
+	if (damage_index != -1)
+		name = Damage_types[damage_index].name;
+	else
+		name = "";
+
+	return ade_set_args(L, "s", name);
+}
+
 ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
 	object_h *objh;
