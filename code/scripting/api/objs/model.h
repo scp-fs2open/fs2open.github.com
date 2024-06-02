@@ -11,7 +11,7 @@ namespace api {
 class model_h
 {
  protected:
-	polymodel *model;
+	int model_num;
 
  public:
 	explicit model_h(int n_modelnum);
@@ -19,7 +19,6 @@ class model_h
 	model_h();
 
 	polymodel *Get() const;
-
 	int GetID() const;
 
 	bool isValid() const;
@@ -29,7 +28,7 @@ DECLARE_ADE_OBJ(l_Model, model_h);
 class submodel_h
 {
 protected:
-	polymodel *model;
+	int model_num;
 	int submodel_num;
 
 public:
