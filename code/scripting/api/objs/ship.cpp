@@ -267,9 +267,7 @@ ADE_VIRTVAR(ImpactDamageClass, l_Ship, "string", "Current Impact Damage class", 
 				break;
 			}
 		}
-		if (damage_index > 0) {
-			shipp->collision_damage_type_idx = damage_index;
-		}
+		shipp->collision_damage_type_idx = damage_index;
 	} else {
 		damage_index = shipp->collision_damage_type_idx;
 	}
