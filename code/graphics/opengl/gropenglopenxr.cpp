@@ -1,5 +1,16 @@
 #include "gropenglopenxr.h"
 
+// this block should go before the #includes otherwise MSVC will sometimes warn about APIENTRY redefinition
+// (glad.h checks for redefinition of the symbol, but minwindef.h does not)
+#ifdef WIN32
+
+#define XR_USE_PLATFORM_WIN32
+#include <unknwn.h>
+
+#endif
+// the other platforms do not go before the #includes because this will cause conflicts from symbols defined in XLib,
+// specifically None and Always; see https://stackoverflow.com/questions/22476110/c-compiling-error-including-x11-x-h-x11-xlib-h
+
 #include "io/cursor.h"
 #include "io/mouse.h"
 #include "graphics/matrix.h"
@@ -10,13 +21,7 @@
 #include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
 
-
-#ifdef WIN32
-
-#define XR_USE_PLATFORM_WIN32
-#include <unknwn.h>
-
-#elif defined __APPLE_CC__
+#if defined __APPLE_CC__
 
 //Not supported
 
