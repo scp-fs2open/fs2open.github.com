@@ -836,5 +836,6 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(24, 2, 0)) {
 		flags.set(AI::Profile_Flags::Debris_respects_big_damage);
+		flags.set(AI::Profile_Flags::Force_beam_turret_fov);
 	}
 }
