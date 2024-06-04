@@ -525,7 +525,7 @@ int beam_fire(beam_fire_info *fire_info)
 	} else {
 		float burst_rot = 0.0f;
 		if (new_item->type == BeamType::OMNI && !wip->b_info.t5info.burst_rot_pattern.empty()) {
-			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index];
+			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index % wip->b_info.t5info.burst_rot_pattern.size()];
 		}
 		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots,fire_info->burst_seed, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
 	}	

@@ -12636,23 +12636,21 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				}
 			}
 			
-			if(winfo_p->wi_flags[Weapon::Info_Flags::Beam]){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
-				beam_fire_info fbfire_info;				
+			if(winfo_p->wi_flags[Weapon::Info_Flags::Beam]){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau				
 
-				int points;
+				int points = 0, numtimes = 1;
 				if (winfo_p->b_info.beam_shots){
-					if (winfo_p->b_info.beam_shots > num_slots){
-						points = num_slots;
-					}else{
-						points = winfo_p->b_info.beam_shots;
-					}
+					numtimes = winfo_p->shots;
+					points = MIN(winfo_p->b_info.beam_shots, num_slots);
 				} else if (winfo_p->wi_flags[Weapon::Info_Flags::Cycle]) {
-					points = 1;
+					numtimes = 1;
+					points = MIN(num_slots, winfo_p->shots);
 				} else {
+					numtimes = winfo_p->shots;
 					points = num_slots;
 				}
 
-				bool no_energy = shipp->weapon_energy < points * winfo_p->energy_consumed * flFrametime;
+				bool no_energy = shipp->weapon_energy < points * numtimes * winfo_p->energy_consumed * flFrametime;
 				if (no_energy || (winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] && shipp->weapons.primary_bank_ammo[bank_to_fire] <= 0))
 				{
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
@@ -12663,36 +12661,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
 				}			
-				
-				shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
-				shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
-				shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
-				shipp->beam_sys_info.model_num = sip->model_num;
-				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
-				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
-				shipp->beam_sys_info.turret_fov = cosf(fl_radians((winfo_p->field_of_fire != 0.0f) ? winfo_p->field_of_fire : 180.0f) / 2.0f);
-
-				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
-				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
-				shipp->fighter_beam_turret_data.current_hits = 1.0;
-				shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
-				
-				fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
-				fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
-				fbfire_info.beam_info_override = NULL;
-				fbfire_info.shooter = &Objects[shipp->objnum];
-				
-				if (aip->target_objnum >= 0) {
-					fbfire_info.target = &Objects[aip->target_objnum];
-				} else {
-					fbfire_info.target = NULL;
-				}
-				fbfire_info.turret = &shipp->fighter_beam_turret_data;
-				fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
-				fbfire_info.bank = bank_to_fire;
-				fbfire_info.burst_index = old_burst_counter;
-				fbfire_info.burst_seed = old_burst_seed;
-				fbfire_info.per_burst_rotation = swp->per_burst_rot;
 
 				for ( v = 0; v < points; v++ ){
 					if(winfo_p->b_info.beam_shots || winfo_p->wi_flags[Weapon::Info_Flags::Cycle]){
@@ -12701,16 +12669,49 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					}else{
 						j=v;
 					}
+					int current_burst_index = old_burst_counter * numtimes;
+					for ( w = 0; w < numtimes; w++ ) {
+						beam_fire_info fbfire_info;
+						shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
+						shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
+						shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
+						shipp->beam_sys_info.model_num = sip->model_num;
+						shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
+						shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
+						shipp->beam_sys_info.turret_fov = cosf(fl_radians((winfo_p->field_of_fire != 0.0f) ? winfo_p->field_of_fire : 180.0f) / 2.0f);
 
-					fbfire_info.local_fire_postion = pm->gun_banks[bank_to_fire].pnt[j];
-					shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
-					shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
-					fbfire_info.point = j;
-					fbfire_info.fire_method = BFM_FIGHTER_FIRED;
+						shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
+						shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
+						shipp->fighter_beam_turret_data.current_hits = 1.0;
+						shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
 
-					beam_fire(&fbfire_info);
-					has_fired = true;
-					num_fired++;
+						fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
+						fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
+						fbfire_info.beam_info_override = NULL;
+						fbfire_info.shooter = &Objects[shipp->objnum];
+
+						if (aip->target_objnum >= 0) {
+							fbfire_info.target = &Objects[aip->target_objnum];
+						} else {
+							fbfire_info.target = NULL;
+						}
+						fbfire_info.turret = &shipp->fighter_beam_turret_data;
+						fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
+						fbfire_info.bank = bank_to_fire;
+						fbfire_info.burst_index = current_burst_index;
+						fbfire_info.burst_seed = old_burst_seed;
+						fbfire_info.per_burst_rotation = swp->per_burst_rot;
+
+						fbfire_info.local_fire_postion = pm->gun_banks[bank_to_fire].pnt[j];
+						shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
+						shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
+						fbfire_info.point = j;
+						fbfire_info.fire_method = BFM_FIGHTER_FIRED;
+						beam_fire(&fbfire_info);
+						has_fired = true;
+						num_fired++;
+						current_burst_index++;
+					}
 				}
 			}
 			else	//if this isn't a fighter beam, do it normally -Bobboau

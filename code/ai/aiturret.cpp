@@ -1781,45 +1781,49 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
 				return false;
 			}
-			beam_fire_info fire_info;
 
-			// stuff beam firing info
-			memset(&fire_info, 0, sizeof(beam_fire_info));
-			fire_info.accuracy = 1.0f;
-			fire_info.beam_info_index = turret_weapon_class;
-			fire_info.beam_info_override = nullptr;
-			fire_info.shooter = &Objects[parent_objnum];
-			fire_info.target = turret_enemy_objp;
-			if (wip->wi_flags[Weapon::Info_Flags::Antisubsysbeam])
-				fire_info.target_subsys = turret->targeted_subsys;
-			else
-				fire_info.target_subsys = nullptr;
-			fire_info.turret = turret;
-			fire_info.burst_seed = old_burst_seed;
-			fire_info.fire_method = BFM_TURRET_FIRED;
-			fire_info.per_burst_rotation = swp->per_burst_rot;
-			fire_info.burst_index = old_burst_counter;
+			int current_burst_index = old_burst_counter * wip->shots;
+			for (int i = 0; i < wip->shots; i++) {
+				beam_fire_info fire_info;
 
-			// fire a beam weapon
-			weapon_objnum = beam_fire(&fire_info);
+				// stuff beam firing info
+				memset(&fire_info, 0, sizeof(beam_fire_info));
+				fire_info.accuracy = 1.0f;
+				fire_info.beam_info_index = turret_weapon_class;
+				fire_info.beam_info_override = nullptr;
+				fire_info.shooter = &Objects[parent_objnum];
+				fire_info.target = turret_enemy_objp;
+				if (wip->wi_flags[Weapon::Info_Flags::Antisubsysbeam])
+					fire_info.target_subsys = turret->targeted_subsys;
+				else
+					fire_info.target_subsys = nullptr;
+				fire_info.turret = turret;
+				fire_info.burst_seed = old_burst_seed;
+				fire_info.fire_method = BFM_TURRET_FIRED;
+				fire_info.per_burst_rotation = swp->per_burst_rot;
+				fire_info.burst_index = current_burst_index;
 
-			if (weapon_objnum != -1) {
-				objp = &Objects[weapon_objnum];
+				// fire a beam weapon
+				weapon_objnum = beam_fire(&fire_info);
 
-				parent_ship->last_fired_turret = turret;
-				turret->last_fired_weapon_info_index = turret_weapon_class;
-				turret->turret_last_fired = _timestamp();
+				if (weapon_objnum != -1) {
+					objp = &Objects[weapon_objnum];
 
-				if (scripting::hooks::OnTurretFired->isActive()) {
-					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
-						scripting::hook_param_list(
-							scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
-							scripting::hook_param("Beam", 'o', objp),
-							scripting::hook_param("Target", 'o', turret_enemy_objp)
-						));
+					parent_ship->last_fired_turret = turret;
+					turret->last_fired_weapon_info_index = turret_weapon_class;
+					turret->turret_last_fired = _timestamp();
+
+					if (scripting::hooks::OnTurretFired->isActive()) {
+						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
+							scripting::hook_param_list(
+								scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
+								scripting::hook_param("Beam", 'o', objp),
+								scripting::hook_param("Target", 'o', turret_enemy_objp)
+							));
+					}
 				}
+				current_burst_index++;
 			}
-
 			turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set fired flag for scripting -nike
 			return true;
 		}
