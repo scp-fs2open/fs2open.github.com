@@ -63,21 +63,5 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::ShipPathsDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>335</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>133</x>
-     <y>106</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
 </ui>

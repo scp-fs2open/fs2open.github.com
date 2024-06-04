@@ -21,6 +21,7 @@ class ShipPathsDialog : public QDialog {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void rejectHandler();
 
   private:
 	std::unique_ptr<Ui::ShipPathsDialog> ui;

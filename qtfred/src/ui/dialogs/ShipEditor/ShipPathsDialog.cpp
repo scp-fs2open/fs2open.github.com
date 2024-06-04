@@ -17,7 +17,7 @@ ShipPathsDialog::ShipPathsDialog(QWidget* parent,
 	ui->setupUi(this);
 	connect(ui->pathList, &QListWidget::itemChanged, this, &ShipPathsDialog::changed);
 	connect(this, &QDialog::accepted, _model.get(), &ShipPathsDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &ShipPathsDialogModel::reject);
+	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ShipPathsDialog::rejectHandler);
 	if (departure) {
 		ui->instructLabel->setText("Restrict departure paths to the following:");
 	} else {
@@ -45,11 +45,39 @@ void ShipPathsDialog::closeEvent(QCloseEvent* event) {
 			accept();
 			return;
 		}
+		if (button == DialogButton::No) {
+			_model->reject();
+		}
 	}
 
 	QDialog::closeEvent(event);
 }
-void dialogs::ShipPathsDialog::updateUI() {
+void ShipPathsDialog::rejectHandler()
+{
+	if (_model->query_modified()) {
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
+			"Changes detected",
+			"Do you want to keep your changes?",
+			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
+
+		if (button == DialogButton::Cancel) {
+			return;
+		}
+
+		if (button == DialogButton::Yes) {
+			accept();
+			return;
+		}
+		if (button == DialogButton::No) {
+			_model->reject();
+			QDialog::reject();
+		}
+	} else {
+		_model->reject();
+		QDialog::reject();
+	}
+}
+void ShipPathsDialog::updateUI() {
 	util::SignalBlockers blockers(this);
 	for (size_t i = 0; i < _model->getPathList().size(); i++) {
 		QString name = _model->getModel()->paths[_model->getModel()->ship_bay->path_indexes[i]].name;
