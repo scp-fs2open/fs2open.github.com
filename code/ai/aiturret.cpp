@@ -1782,7 +1782,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				return false;
 			}
 
-			int current_burst_index = old_burst_counter * wip->shots;
 			for (int i = 0; i < wip->shots; i++) {
 				beam_fire_info fire_info;
 
@@ -1801,7 +1800,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				fire_info.burst_seed = old_burst_seed;
 				fire_info.fire_method = BFM_TURRET_FIRED;
 				fire_info.per_burst_rotation = swp->per_burst_rot;
-				fire_info.burst_index = current_burst_index;
+				fire_info.burst_index = (old_burst_counter * wip->shots) + i;
 
 				// fire a beam weapon
 				weapon_objnum = beam_fire(&fire_info);
@@ -1822,7 +1821,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							));
 					}
 				}
-				current_burst_index++;
 			}
 			turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set fired flag for scripting -nike
 			return true;

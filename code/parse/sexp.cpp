@@ -21377,12 +21377,10 @@ void sexp_beam_fire(int node, bool at_coords)
 		// fire the beam
 		if (fire_info.beam_info_index != -1) {
 			fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
-			int current_burst_index = 0;
 			for ( int i = 0; i < Weapon_info[fire_info.beam_info_index].shots; i++ ) {
-				fire_info.burst_index = current_burst_index;
+				fire_info.burst_index = i;
 				beam_fire(&fire_info);
 				fire_info.turret->turret_next_fire_pos++;
-				current_burst_index++;
 			}
 		} else {
 			// it would appear the turret doesn't have any beam weapons

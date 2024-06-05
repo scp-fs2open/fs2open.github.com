@@ -12669,7 +12669,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					}else{
 						j=v;
 					}
-					int current_burst_index = old_burst_counter * numtimes;
 					for ( w = 0; w < numtimes; w++ ) {
 						beam_fire_info fbfire_info;
 						shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
@@ -12698,7 +12697,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 						fbfire_info.turret = &shipp->fighter_beam_turret_data;
 						fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
 						fbfire_info.bank = bank_to_fire;
-						fbfire_info.burst_index = current_burst_index;
+						fbfire_info.burst_index = (old_burst_counter * numtimes) + i;
 						fbfire_info.burst_seed = old_burst_seed;
 						fbfire_info.per_burst_rotation = swp->per_burst_rot;
 
@@ -12710,7 +12709,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 						beam_fire(&fbfire_info);
 						has_fired = true;
 						num_fired++;
-						current_burst_index++;
 					}
 				}
 			}
