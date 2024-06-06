@@ -150,7 +150,8 @@ typename T::size_type stringcost(const T& op, const T& input, typename T::size_t
 template <typename T>
 int count_items_with_name(const char* name, const T* item_array, int num_items)
 {
-	Assert(name != nullptr && item_array != nullptr);
+	if (!name || !item_array)
+		return 0;
 
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
@@ -163,7 +164,8 @@ int count_items_with_name(const char* name, const T* item_array, int num_items)
 template <typename T>
 int count_items_with_name(const char* name, const T& item_vector)
 {
-	Assert(name != nullptr);
+	if (!name)
+		return 0;
 
 	int count = 0;
 	for (const auto& item : item_vector)
@@ -176,7 +178,8 @@ int count_items_with_name(const char* name, const T& item_vector)
 template <typename T>
 int count_items_with_scp_string_name(const char* name, const T& item_vector)
 {
-	Assert(name != nullptr);
+	if (!name)
+		return 0;
 
 	int count = 0;
 	for (const auto& item : item_vector)
@@ -189,7 +192,8 @@ int count_items_with_scp_string_name(const char* name, const T& item_vector)
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
 int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
 {
-	Assert(str != nullptr);
+	if (!str)
+		return -1;
 
 	int index = 0;
 	for (const ITEM_T& item : item_vector)
@@ -236,7 +240,8 @@ int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, c
 template <typename ITEM_T, typename FIELD_T>
 int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
 {
-	Assert(str != nullptr);
+	if (!str)
+		return -1;
 
 	for (int i = 0; i < num_items; ++i)
 		if (!stricmp(item_array[i].*field, str))
@@ -268,7 +273,8 @@ int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T
 template <typename VECTOR_T>
 int find_item_with_name(const VECTOR_T& item_vector, const char* str)
 {
-	Assert(str != nullptr);
+	if (!str)
+		return -1;
 
 	int index = 0;
 	for (const auto& item : item_vector)
