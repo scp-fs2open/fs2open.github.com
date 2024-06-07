@@ -212,14 +212,15 @@ int script_state::CreateLuaState()
 		lua_pushnil(L);
 		lua_rawset(L, io_ldx);
 
-		//Instead of just removing open alltogether
-		lua_pushstring(L, "open");
-		lua_rawgeti(L, 1, -1); //grab the old function to stack 3
-		lua_pushcfunction(L, io_open_limited); //put the new function to stack 4
-		lua_getfenv(L, -2); //put the old function's environment to stack 5
-		lua_setfenv(L, -2); //grab the old function's environment and put it to stack 4 (new function)
-		lua_rawseti(L, io_ldx, -3);
-		lua_pop(L, 2); //since we did a rawseti, both the old function and the key string are still on stack;
+		//Instead of just removing open alltogether. Make sure to copy over the original fenv, as to allow lua to have the correct close already associated
+		lua_pushstring(L, "open"); // [io, "open"]
+		lua_pushstring(L, "open"); // [io, "open", "open"]
+		lua_rawget(L, io_ldx); // [io, "open", open()]
+		lua_pushcfunction(L, io_open_limited); // [io, "open", open(), open_limited()]
+		lua_getfenv(L, -2); // [io, "open", open(), open_limited(), open_fenv]
+		lua_setfenv(L, -2); // [io, "open", open(), open_limited()]
+		lua_remove(L, -2); // [io, "open", open_limited()]
+		lua_rawset(L, io_ldx); // [io]
 	}
 	lua_pop(L, 1);	//io table
 
