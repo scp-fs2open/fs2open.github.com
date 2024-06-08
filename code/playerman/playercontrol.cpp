@@ -1706,7 +1706,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 			if (reveal_cargo) {
 				if (cargo_sp->cargo_title[0] != '\0') {
 					if (cargo_sp->cargo_title[0] == '#') {
-						sprintf(outstr, XSTR("<unknown>", 1852));
+						strcpy(outstr, XSTR("<unknown>", 1852));
 					} else {
 						sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
 					}
@@ -1729,7 +1729,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		if (reveal_cargo) {
 			if (cargo_sp->cargo_title[0] != '\0') {
 				if (cargo_sp->cargo_title[0] == '#') {
-					sprintf(outstr, XSTR("inspecting", 1853));
+					strcpy(outstr, XSTR("inspecting", 1853));
 				} else {
 					sprintf(outstr, XSTR("%s: inspecting", 1851), cargo_sp->cargo_title);
 				}
@@ -1752,7 +1752,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		if (reveal_cargo){
 			if (cargo_sp->cargo_title[0] != '\0') {
 				if (cargo_sp->cargo_title[0] == '#') {
-					sprintf(outstr, XSTR("<unknown>", 1852));
+					strcpy(outstr, XSTR("<unknown>", 1852));
 				} else {
 					sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
 				}
@@ -1869,7 +1869,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			if (reveal_cargo)
 				if (subsys->subsys_cargo_title[0] != '\0') {
 					if (subsys->subsys_cargo_title[0] == '#') {
-						sprintf(outstr, XSTR("<unknown>", 1852));
+						strcpy(outstr, XSTR("<unknown>", 1852));
 					} else {
 						sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
 					}
@@ -1891,7 +1891,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		if (reveal_cargo)
 			if (subsys->subsys_cargo_title[0] != '\0') {
 				if (subsys->subsys_cargo_title[0] == '#') {
-					sprintf(outstr, XSTR("inspecting", 1853));
+					strcpy(outstr, XSTR("inspecting", 1853));
 				} else {
 					sprintf(outstr, XSTR("%s: inspecting", 1851), subsys->subsys_cargo_title);
 				}
@@ -1917,7 +1917,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		if (reveal_cargo)
 			if (subsys->subsys_cargo_title[0] != '\0') {
 				if (subsys->subsys_cargo_title[0] == '#') {
-					sprintf(outstr, XSTR("<unknown>", 1852));
+					strcpy(outstr, XSTR("<unknown>", 1852));
 				} else {
 					sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
 				}
