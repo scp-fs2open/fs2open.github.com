@@ -1986,45 +1986,6 @@ int check_operator_argument_count(int count, int op)
 	return 1;
 }
 
-template <typename T>
-int count_items_with_name(const char *name, const T* item_array, int num_items)
-{
-	Assert(name != nullptr && item_array != nullptr);
-
-	int count = 0;
-	for (int i = 0; i < num_items; ++i)
-		if (!stricmp(name, item_array[i].name))
-			++count;
-
-	return count;
-}
-
-template <typename T>
-int count_items_with_name(const char *name, const T& item_vector)
-{
-	Assert(name != nullptr);
-
-	int count = 0;
-	for (const auto &item: item_vector)
-		if (!stricmp(name, item.name))
-			++count;
-
-	return count;
-}
-
-template <typename T>
-int count_items_with_scp_string_name(const char *name, const T& item_vector)
-{
-	Assert(name != nullptr);
-
-	int count = 0;
-	for (const auto &item: item_vector)
-		if (!stricmp(name, item.name.c_str()))
-			++count;
-
-	return count;
-}
-
 // helper functions for check_container_value_data_type()
 bool check_container_data_sexp_arg_type(ContainerType con_type, bool is_string, bool is_number)
 {

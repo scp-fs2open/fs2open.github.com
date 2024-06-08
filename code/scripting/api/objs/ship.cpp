@@ -21,6 +21,7 @@
 #include "wing.h"
 
 #include "ai/aigoals.h"
+#include "globalincs/utility.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "mission/missionlog.h"
@@ -258,15 +259,10 @@ ADE_VIRTVAR(ImpactDamageClass, l_Ship, "string", "Current Impact Damage class", 
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
-	int damage_index = -1;
+	int damage_index;
 
 	if (ADE_SETTING_VAR && s != nullptr) {
-		for (size_t i = 0; i < Damage_types.size(); i++) {
-			if (!stricmp(Damage_types[i].name, s)) {
-				damage_index = (int)i;
-				break;
-			}
-		}
+		damage_index = find_item_with_name(Damage_types, s);
 		shipp->collision_damage_type_idx = damage_index;
 	} else {
 		damage_index = shipp->collision_damage_type_idx;
