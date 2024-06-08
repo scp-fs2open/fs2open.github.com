@@ -1701,7 +1701,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
 			if (reveal_cargo) {
 				if (cargo_sp->cargo_title[0] != '\0') {
-					sprintf(outstr, XSTR("%s: <unknown>", 1842), cargo_sp->cargo_title);
+					sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
 				} else {
 					strcpy(outstr, XSTR("cargo: <unknown>", 86));
 				}
@@ -1720,7 +1720,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 
 		if (reveal_cargo) {
 			if (cargo_sp->cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: inspecting", 1843), cargo_sp->cargo_title);
+				sprintf(outstr, XSTR("%s: inspecting", 1851), cargo_sp->cargo_title);
 			} else {
 				strcpy(outstr, XSTR("cargo: inspecting", 88));
 			}
@@ -1739,7 +1739,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 	} else {
 		if (reveal_cargo){
 			if (cargo_sp->cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: <unknown>", 1842), cargo_sp->cargo_title);
+				sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
 			} else {
 				strcpy(outstr, XSTR("cargo: <unknown>", 86));
 			}
@@ -1848,7 +1848,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
 			if (reveal_cargo)
 				if (subsys->subsys_cargo_title[0] != '\0') {
-					sprintf(outstr, XSTR("%s: <unknown>", 1842), subsys->subsys_cargo_title);
+					sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
 				} else {
 					strcpy(outstr, XSTR("cargo: <unknown>", 86));
 				}
@@ -1866,7 +1866,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		if (reveal_cargo)
 			if (subsys->subsys_cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: inspecting", 1843), subsys->subsys_cargo_title);
+				sprintf(outstr, XSTR("%s: inspecting", 1851), subsys->subsys_cargo_title);
 			} else {
 				strcpy(outstr, XSTR("cargo: inspecting", 88));
 			}
@@ -1888,7 +1888,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	} else {
 		if (reveal_cargo)
 			if (subsys->subsys_cargo_title[0] != '\0') {
-				sprintf(outstr, XSTR("%s: <unknown>", 1842), subsys->subsys_cargo_title);
+				sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
 			} else {
 				strcpy(outstr, XSTR("cargo: <unknown>", 86));
 			}
