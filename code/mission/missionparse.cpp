@@ -5845,9 +5845,13 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.debris_genre = (debris_genre_t)type;
 		}
 
-		Asteroid_field.field_debris_type[0] = -1;
-		Asteroid_field.field_debris_type[1] = -1;
-		Asteroid_field.field_debris_type[2] = -1;
+		for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			Asteroid_field.field_debris_type[j] = -1;
+		}
+
+		for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
+			Asteroid_field.field_asteroid_type[j] = false;
+		}
 
 		// Debris types
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
@@ -5880,24 +5884,24 @@ void parse_asteroid_fields(mission *pm)
 		} else {
 
 			// Obsolete and only for backwards compatibility
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					int subtype;
 					stuff_int(&subtype);
-					Asteroid_field.field_debris_type[subtype] = 1;
+					Asteroid_field.field_asteroid_type[subtype] = true;
 					count++;
 				}
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 				if (optional_string("+Field Debris Type Name:")) {
 					SCP_string ast_name;
 					stuff_string(ast_name, F_NAME);
 					int subtype = get_asteroid_index(ast_name.c_str());
 					// If the returned index is valid but not one of the first three then it's a debris type instead of asteroid
 					if ((subtype >= 0) && (subtype < NUM_ASTEROID_SIZES)) {
-						Asteroid_field.field_debris_type[subtype] = 1;
+						Asteroid_field.field_asteroid_type[subtype] = true;
 						count++;
 					} else {
 						WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
@@ -5921,7 +5925,7 @@ void parse_asteroid_fields(mission *pm)
 
 		// backward compatibility
 		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
-			Asteroid_field.field_debris_type[0] = 0;
+			Asteroid_field.field_asteroid_type[0] = true;
 			Asteroid_field.num_used_field_debris_types = 1;
 		}
 
