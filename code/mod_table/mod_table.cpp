@@ -449,11 +449,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&HUD_shadows);
 			}
 
-		if (optional_string("$Unify scanning behavior:")) {
-			stuff_boolean(&Use_new_scanning_behavior);
-		}
+			if (optional_string("$Unify scanning behavior:")) {
+				stuff_boolean(&Use_new_scanning_behavior);
+			}
 
-		optional_string("#SEXP SETTINGS");
 			if (optional_string("$Don't show callsigns in the escort list:")) {
 				stuff_boolean(&Dont_show_callsigns_in_escort_list);
 			}
