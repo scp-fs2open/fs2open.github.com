@@ -57,7 +57,7 @@ static int Target_static_next;
 static int Target_static_playing;
 sound_handle Target_static_looping = sound_handle::invalid();
 
-int Target_display_cargo;
+bool Target_display_cargo;
 char Cargo_string[256] = "";
 
 #ifndef NDEBUG

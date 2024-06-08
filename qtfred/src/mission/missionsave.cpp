@@ -1590,6 +1590,17 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 			fout_ext(NULL, "%s", Cargo_names[ptr->subsys_cargo_name]);
 		}
 
+		if (save_format != MissionFormat::RETAIL) {
+			if (ptr->subsys_cargo_title[0] != '\0') {
+				if (optional_string_fred("+Cargo Title:", "$Name:", "+Subsystem:")) {
+					parse_comments();
+				} else {
+					fout("\n+Cargo Title:");
+				}
+				fout_ext(nullptr, "%s", ptr->subsys_cargo_title);
+			}
+		}
+
 		if (ptr->system_info->type == SUBSYSTEM_TURRET) {
 			save_turret_info(ptr, SHIP_INDEX(shipp));
 		}
@@ -3518,6 +3529,17 @@ int CFred_mission_save::save_objects()
 		required_string_fred("$Cargo 1:");
 		parse_comments();
 		fout_ext(" ", "%s", Cargo_names[shipp->cargo1]);
+
+		if (save_format != MissionFormat::RETAIL) {
+			if (shipp->cargo_title[0] != '\0') {
+				if (optional_string_fred("$Cargo Title:", "$Name:")) {
+					parse_comments();
+				} else {
+					fout("\n$Cargo Title:");
+				}
+				fout_ext(nullptr, "%s", shipp->cargo_title);
+			}
+		}
 
 		save_common_object_data(&Objects[shipp->objnum], &Ships[i]);
 

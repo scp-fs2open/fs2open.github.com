@@ -621,6 +621,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_builtin_messages,			"no-builtin-messages"},
 	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
 	{ Ship_Flags::Maneuver_despite_engines,		"maneuver-despite-engines" },
+	{ Ship_Flags::No_scanned_cargo,             "no-scanned-cargo"},
 	{ Ship_Flags::EMP_doesnt_scramble_messages,	"emp-doesn't-scramble-messages" },
 };
 
@@ -660,6 +661,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::No_builtin_messages,			"Ship will not send any persona messages."},
 	{ Ship_Flags::Scramble_messages,			"All messages sent from or received by this ship will appear scrambled, as if the ship had been hit by an EMP." },
 	{ Ship_Flags::Maneuver_despite_engines,		"Ship can maneuver even if its engines are disabled or disrupted" },
+	{ Ship_Flags::No_scanned_cargo,             "Ship cargo will never be revealed and will instead only show scanned or not scanned. Only available if using New Scanning Behavior in game_settings.tbl."},
 	{ Ship_Flags::EMP_doesnt_scramble_messages, "EMP does not affect whether messages appear scrambled when sent from or received by this ship." },
 };
 
@@ -7489,6 +7491,7 @@ void ship_subsys::clear()
 	disruption_timestamp = timestamp(0);
 
 	subsys_cargo_name = 0;
+	subsys_cargo_title[0] = '\0';
 	time_subsys_cargo_revealed = 0;
 
 	triggered_rotation_index = -1;
