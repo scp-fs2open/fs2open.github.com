@@ -6703,7 +6703,7 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 	vec3d end = Objects[target_objnum].pos;
 
 	//Don't collision check against ourselves or our target
-	return test_line_of_sight(&start, &end, {&Objects[objnum], &Objects[target_objnum]}, threshold);
+	return test_line_of_sight(&start, &end, {objnum, target_objnum}, threshold);
 }
 
 //	--------------------------------------------------------------------------
@@ -16698,7 +16698,7 @@ void maybe_cheat_fire_synaptic(object *objp)
 	}
 }
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
@@ -16706,7 +16706,7 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 			continue;
 
 		//Don't collision check against excluded objects
-		if (excluded_objects.count(objp) > 0)
+		if (excluded_object_ids.count(OBJ_INDEX(objp)) > 0)
 			continue;
 
 		int model_num = 0;

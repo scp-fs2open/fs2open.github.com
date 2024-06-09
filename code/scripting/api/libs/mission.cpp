@@ -928,7 +928,7 @@ ADE_FUNC(sendMessage,
 		if (ship_h == nullptr || !ship_h->isValid())
 			return ADE_RETURN_FALSE;
 
-		sender = &Ships[ship_h->objp->instance];
+		sender = &Ships[ship_h->objp()->instance];
 		messageSource = MESSAGE_SOURCE_SHIP;
 	}
 
@@ -1159,7 +1159,7 @@ ADE_FUNC(createDebris,
 		if (source_ship == nullptr || !source_ship->isValid())
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
-		source_shipp = &Ships[source_ship->objp->instance];
+		source_shipp = &Ships[source_ship->objp()->instance];
 		source_objnum = source_shipp->objnum;
 		source_class = source_shipp->ship_info_index;
 		model_num = Ship_info[source_class].model_num;
@@ -1304,7 +1304,7 @@ ADE_FUNC(createWeapon,
 		real_orient = orient->GetMatrix();
 	}
 
-	int parent_idx = (parent && parent->isValid()) ? OBJ_INDEX(parent->objp) : -1;
+	int parent_idx = (parent && parent->isValid()) ? parent->objnum : -1;
 
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
@@ -1412,7 +1412,7 @@ ADE_FUNC(createExplosion,
 
 	int type = big ? FIREBALL_LARGE_EXPLOSION : FIREBALL_MEDIUM_EXPLOSION;
 
-	int parent_idx = (parent && parent->isValid()) ? OBJ_INDEX(parent->objp) : -1;
+	int parent_idx = (parent && parent->isValid()) ? parent->objnum : -1;
 
 	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
 
@@ -2296,7 +2296,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 		return ADE_RETURN_TRUE;
 	}
 
-	std::unordered_set<const object*> excludedObjectIDs;
+	std::unordered_set<int> excludedObjectIDs;
 
 	if (excludedObjects.isValid()) {
 		for (const auto& object : excludedObjects) {
@@ -2305,7 +2305,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 				try {
 					object_h obj;
 					object.second.getValue(l_Object.Get(&obj));
-					excludedObjectIDs.emplace(obj.objp);
+					excludedObjectIDs.emplace(obj.objnum);
 				}
 				catch (const luacpp::LuaException& /*e*/) {
 					// We were likely fed a userdata that was not an object. 

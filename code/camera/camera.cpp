@@ -364,10 +364,7 @@ void camera::do_frame(float  /*in_frametime*/)
 
 object *camera::get_object_host()
 {
-	if(object_host.isValid())
-		return object_host.objp;
-	else
-		return NULL;
+	return object_host.objp_or_null();
 }
 
 int camera::get_object_host_submodel()
@@ -377,10 +374,7 @@ int camera::get_object_host_submodel()
 
 object *camera::get_object_target()
 {
-	if(object_target.isValid())
-		return object_target.objp;
-	else
-		return NULL;
+	return object_target.objp_or_null();
 }
 
 int camera::get_object_target_submodel()
@@ -424,7 +418,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 
 		if(object_host.isValid())
 		{
-			object *objp = object_host.objp;
+			object *objp = object_host.objp();
 			int model_num = object_get_model(objp);
 			polymodel *pm = nullptr;
 			polymodel_instance *pmi = nullptr;
@@ -438,8 +432,8 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 
 			if(object_host_submodel < 0 || pm == NULL)
 			{
-				vm_vec_unrotate(&c_pos, &pt, &object_host.objp->orient);
-				vm_vec_add2(&c_pos, &object_host.objp->pos);
+				vm_vec_unrotate(&c_pos, &pt, &object_host.objp()->orient);
+				vm_vec_add2(&c_pos, &object_host.objp()->pos);
 			}
 			else
 			{
@@ -488,7 +482,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 		{
 			if(object_target.isValid())
 			{
-				object *target_objp = object_target.objp;
+				object *target_objp = object_target.objp();
 				int model_num = object_get_model(target_objp);
 				polymodel *target_pm = nullptr;
 				polymodel_instance *target_pmi = nullptr;
@@ -525,7 +519,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 			{
 				if(eyep)
 				{
-					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp->orient.vec.uvec)?NULL:&object_host.objp->orient.vec.uvec, NULL);
+					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp()->orient.vec.uvec)?NULL:&object_host.objp()->orient.vec.uvec, NULL);
 					target_set = true;
 				}
 				else if (use_host_orient)
@@ -534,7 +528,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 				}
 				else
 				{
-					c_ori = object_host.objp->orient;
+					c_ori = object_host.objp()->orient;
 				}
 			}
 			else
