@@ -1715,10 +1715,11 @@ bool player_inspect_cargo(float frametime, char *outstr)
 				}
 			} else {
 				strcpy(outstr, XSTR("not scanned", 87));
-				hud_targetbox_end_flash(TBOX_FLASH_CARGO);
-				Player->cargo_inspect_time = 0;
-				return true;
 			}
+
+			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
+			Player->cargo_inspect_time = 0;
+			return true;
 		}
 
 		// player is facing the cargo, and within range, so proceed with inspection
@@ -1866,7 +1867,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
-			if (reveal_cargo)
+			if (reveal_cargo) {
 				if (subsys->subsys_cargo_title[0] != '\0') {
 					if (subsys->subsys_cargo_title[0] == '#') {
 						strcpy(outstr, XSTR("<unknown>", 1852));
@@ -1876,8 +1877,10 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 				} else {
 					strcpy(outstr, XSTR("cargo: <unknown>", 86));
 				}
-			else
+			} else {
 				strcpy(outstr,XSTR( "not scanned", 87));
+			}
+
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
 			Player->cargo_inspect_time = 0;
 			return true;

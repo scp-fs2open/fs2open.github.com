@@ -266,7 +266,6 @@ void player_set_squad_bitmap(player *p, const char *fnamem, bool ismulti);
 void player_set_squad(player *p, char *squad_name);
 
 bool player_inspect_cargo(float frametime, char *outstr);
-bool better_player_inspect_cargo(float frametime, char* outstr);
 
 extern int use_descent;						// player is using descent-style physics
 extern void toggle_player_object();		// toggles between descent-style ship and player ship
