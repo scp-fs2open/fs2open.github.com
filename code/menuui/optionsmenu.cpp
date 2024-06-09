@@ -709,6 +709,9 @@ void options_change_gamma(float delta)
 
 	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
 
+	// The Gamma option sets its display value differently to the serialized value itself
+	// so we'll leave this here instead of trying to make a global method that works just
+	// for this one specific case
 	if (Using_in_game_options) {
 		const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey("Graphics.Gamma");
 		if (thisOpt != nullptr) {
@@ -716,59 +719,6 @@ void options_change_gamma(float delta)
 			SCP_string newVal = std::to_string(gamma);  // OptionsManager stores values as serialized strings
 			thisOpt->setValueDescription({val.display, newVal.c_str()});
 		}
-	}
-}
-
-void options_set_ingame_binary_option(SCP_string key, bool value)
-{
-	if (!Using_in_game_options) {
-		return;
-	}
-
-	const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(key);
-	if (thisOpt != nullptr) {
-		auto val = thisOpt->getCurrentValueDescription();
-		SCP_string newVal = value ? "true" : "false";  // OptionsManager stores values as serialized strings
-		thisOpt->setValueDescription({val.display, newVal.c_str()});
-	}
-}
-
-void options_set_ingame_multi_option(SCP_string key, int value)
-{
-	if (!Using_in_game_options) {
-		return;
-	}
-
-	const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(key);
-	if (thisOpt != nullptr) {
-		auto values = thisOpt->getValidValues();
-		thisOpt->setValueDescription(values[value]);
-	}
-}
-
-void options_set_ingame_range_option(SCP_string key, int value)
-{
-	if (!Using_in_game_options) {
-		return;
-	}
-
-	const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(key);
-	if (thisOpt != nullptr) {
-		SCP_string newVal = std::to_string(value);  // OptionsManager stores values as serialized strings
-		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
-	}
-}
-
-void options_set_ingame_range_option(SCP_string key, float value)
-{
-	if (!Using_in_game_options) {
-		return;
-	}
-
-	const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(key);
-	if (thisOpt != nullptr) {
-		SCP_string newVal = std::to_string(value);  // OptionsManager stores values as serialized strings
-		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
 	}
 }
 
@@ -891,25 +841,25 @@ void options_button_pressed(int n)
 
 		case BRIEF_VOICE_ON:
 			Briefing_voice_enabled = true;
-			options_set_ingame_binary_option("Audio.BriefingVoice", true);
+			options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", true);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case BRIEF_VOICE_OFF:
 			Briefing_voice_enabled = false;
-			options_set_ingame_binary_option("Audio.BriefingVoice", false);
+			options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", false);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MOUSE_ON:
 			Use_mouse_to_fly = 1;
-			options_set_ingame_binary_option("Input.UseMouse", true);
+			options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", true);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MOUSE_OFF:
 			Use_mouse_to_fly = 0;
-			options_set_ingame_binary_option("Input.UseMouse", false);
+			options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", false);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 	}
@@ -921,7 +871,7 @@ void options_sliders_update()
 	if (Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos != Sound_volume_int) {
 		Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos;
 		snd_set_effects_volume((float) (Sound_volume_int) / 9.0f);
-		options_set_ingame_range_option("Audio.Effects", Master_sound_volume); // Volume options save the global float, not the range slider position
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume); // Volume options save the global float, not the range slider position
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
@@ -929,7 +879,7 @@ void options_sliders_update()
 	if (Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos != Music_volume_int) {
 		Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos;
 		event_music_set_volume((float) (Music_volume_int) / 9.0f);
-		options_set_ingame_range_option("Audio.Music", Master_event_music_volume); // Volume options save the global float, not the range slider position
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume); // Volume options save the global float, not the range slider position
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
@@ -937,31 +887,31 @@ void options_sliders_update()
 	if (Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos != Voice_volume_int) {
 		Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos;
 		snd_set_voice_volume((float) (Voice_volume_int) / 9.0f);
-		options_set_ingame_range_option("Audio.Voice", Master_voice_volume); // Volume options save the global float, not the range slider position
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume); // Volume options save the global float, not the range slider position
 		options_play_voice_clip();
 	}
 
 	if (Mouse_sensitivity != Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos) {
 		Mouse_sensitivity = Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos;
-		options_set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
+		options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Joy_sensitivity != Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos) {
 		Joy_sensitivity = Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos;
-		options_set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
+		options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Joy_dead_zone_size != Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5) {
 		Joy_dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
-		options_set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
+		options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Game_skill_level != Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos) {
 		Game_skill_level = Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos;
-		options_set_ingame_range_option("Game.SkillLevel", Game_skill_level);
+		options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 }
@@ -969,14 +919,14 @@ void options_sliders_update()
 void options_detail_sliders_in_game_update()
 {
 	// Save in-game options settings
-	options_set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
-	options_set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
-	options_set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
-	options_set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
-	options_set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
-	options_set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
-	options_set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
-	options_set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
 }
 
 void options_accept()
