@@ -23,12 +23,12 @@ namespace api {
 ship_subsys_h::ship_subsys_h() : objh(), ss(nullptr) {}
 ship_subsys_h::ship_subsys_h(object* objp_in, ship_subsys* sub) : objh(objp_in), ss(sub) {}
 
-bool ship_subsys_h::isValid() const { return objh.isValid() && objh.objp->type == OBJ_SHIP && ss != nullptr; }
+bool ship_subsys_h::isValid() const { return objh.isValid() && objh.objp()->type == OBJ_SHIP && ss != nullptr; }
 
 void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	ship_subsys_h subsys;
 	value.getValue(l_Subsystem.Get(&subsys));
-	const ushort& netsig = subsys.objh.isValid() ? subsys.objh.objp->net_signature : 0;
+	const ushort& netsig = subsys.objh.isValid() ? subsys.objh.objp()->net_signature : 0;
 	const int& subsys_index = subsys.isValid() ? ship_get_subsys_index(subsys.ss) : -1;
 	ADD_USHORT(netsig);
 	ADD_INT(subsys_index);
@@ -221,7 +221,7 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 		//Only go down to 0 hits
 		sso->ss->current_hits = MAX(0.0f, f);
 
-		ship *shipp = &Ships[sso->objh.objp->instance];
+		ship *shipp = &Ships[sso->objh.objp()->instance];
 		if (f <= -1.0f && sso->ss->current_hits <= 0.0f) {
 			do_subobj_destroyed_stuff(shipp, sso->ss, NULL);
 		}
@@ -245,7 +245,7 @@ ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "num
 	{
 		sso->ss->max_hits = MIN(0.0f, f);
 
-		ship_recalc_subsys_strength(&Ships[sso->objh.objp->instance]);
+		ship_recalc_subsys_strength(&Ships[sso->objh.objp()->instance]);
 	}
 
 	return ade_set_args(L, "f", sso->ss->max_hits);
@@ -282,7 +282,7 @@ ADE_VIRTVAR(WorldPosition, l_Subsystem, "vector",
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d world_pos;
-	get_subsystem_world_pos(sso->objh.objp, sso->ss, &world_pos);
+	get_subsystem_world_pos(sso->objh.objp(), sso->ss, &world_pos);
 
 	return ade_set_args(L, "o", l_Vector.Set(world_pos));
 }
@@ -297,7 +297,7 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with reg
 	if (!sso->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	polymodel *pm = model_get(Ship_info[Ships[sso->objh.objp->instance].ship_info_index].model_num);
+	polymodel *pm = model_get(Ship_info[Ships[sso->objh.objp()->instance].ship_info_index].model_num);
 	Assert(pm != NULL);
 
 	if(sso->ss->system_info->turret_gun_sobj < 0)
@@ -407,7 +407,7 @@ ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapo
 		memcpy(dst->primary_bank_weapons, src->primary_bank_weapons, sizeof(dst->primary_bank_weapons));
 	}
 
-	return ade_set_args(L, "o", l_WeaponBankType.Set(ship_banktype_h(sso->objh.objp, dst, SWH_PRIMARY)));
+	return ade_set_args(L, "o", l_WeaponBankType.Set(ship_banktype_h(sso->objh.objp(), dst, SWH_PRIMARY)));
 }
 
 ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary weapon banks", "weaponbanktype", "Secondary banks, or invalid weaponbanktype handle if subsystem handle is invalid")
@@ -438,7 +438,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 		memcpy(dst->secondary_next_slot, src->secondary_next_slot, sizeof(dst->secondary_next_slot));
 	}
 
-	return ade_set_args(L, "o", l_WeaponBankType.Set(ship_banktype_h(sso->objh.objp, dst, SWH_SECONDARY)));
+	return ade_set_args(L, "o", l_WeaponBankType.Set(ship_banktype_h(sso->objh.objp(), dst, SWH_SECONDARY)));
 }
 
 
@@ -456,7 +456,7 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 
 	if(ADE_SETTING_VAR)	{
 		if (objh && objh->isValid()) {
-			ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
+			ss->turret_enemy_objnum = objh->objnum;
 			ss->turret_enemy_sig = objh->sig;
 			ss->targeted_subsys = nullptr;
 			ss->scripting_target_override = true;
@@ -795,9 +795,9 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 		return ADE_RETURN_NIL;
 
 	vec3d	tpos,tvec;
-	ship_get_global_turret_info(sso->objh.objp, sso->ss->system_info, &tpos, &tvec);
+	ship_get_global_turret_info(sso->objh.objp(), sso->ss->system_info, &tpos, &tvec);
 
-	int in_fov = object_in_turret_fov(newh->objp,sso->ss,&tvec,&tpos,vm_vec_dist(&newh->objp->pos,&tpos));
+	int in_fov = object_in_turret_fov(newh->objp(),sso->ss,&tvec,&tpos,vm_vec_dist(&newh->objp()->pos,&tpos));
 
 	if (in_fov)
 		return ADE_RETURN_TRUE;
@@ -816,7 +816,7 @@ ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a positio
 		return ADE_RETURN_NIL;
 
 	vec3d tpos, tvec;
-	ship_get_global_turret_info(sso->objh.objp, sso->ss->system_info, &tpos, &tvec);
+	ship_get_global_turret_info(sso->objh.objp(), sso->ss->system_info, &tpos, &tvec);
 
 	vec3d v2e;
 	vm_vec_normalized_dir(&v2e, &target, &tpos);
@@ -862,11 +862,11 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	//Get default turret info
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objh.objp, sso->ss, &gpos, false, &gvec, true, nullptr);
+	ship_get_global_turret_gun_info(sso->objh.objp(), sso->ss, &gpos, false, &gvec, true, nullptr);
 	if (override_gvec != nullptr)
 		gvec = *override_gvec;
 
-	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objh.objp), &gpos, &gvec, NULL, flak_range);
+	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, &gpos, &gvec, NULL, flak_range);
 
 	sso->ss->turret_next_fire_pos++;
 
@@ -888,7 +888,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
-	object *objp = sso->objh.objp;
+	object *objp = sso->objh.objp();
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
@@ -911,7 +911,7 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d gvec;
-	object *objp = sso->objh.objp;
+	object *objp = sso->objh.objp();
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
@@ -958,7 +958,7 @@ ADE_FUNC(
 
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objh.objp, sso->ss, &gpos, false, &gvec, true, nullptr);
+	ship_get_global_turret_gun_info(sso->objh.objp(), sso->ss, &gpos, false, &gvec, true, nullptr);
 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }
@@ -991,7 +991,7 @@ ADE_FUNC(getParent, l_Subsystem, NULL, "The object parent of this subsystem, is 
 	if (!sso->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	return ade_set_object_with_breed(L, OBJ_INDEX(sso->objh.objp));
+	return ade_set_object_with_breed(L, sso->objh.objnum);
 }
 
 ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
@@ -1008,10 +1008,10 @@ ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
 		return ADE_RETURN_FALSE;
 
 	vec3d world_pos;
-	get_subsystem_world_pos(sso->objh.objp, sso->ss, &world_pos);
+	get_subsystem_world_pos(sso->objh.objp(), sso->ss, &world_pos);
 
 	// Disable facing check since the HUD code does the same
-	bool in_sight = ship_subsystem_in_sight(sso->objh.objp, sso->ss, from, &world_pos, false);
+	bool in_sight = ship_subsystem_in_sight(sso->objh.objp(), sso->ss, from, &world_pos, false);
 
 	return ade_set_args(L, "b", in_sight);
 }

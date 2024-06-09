@@ -179,26 +179,16 @@ extern object Objects[];
 
 struct object_h final	// prevent subclassing because classes which might use this should have their own isValid member function
 {
-	object *objp;
-	int sig;
+	int objnum = -1;
+	int sig = -1;
 
-	bool isValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
-	object_h(object *in) {objp = in; sig = (in == nullptr) ? -1 : in->signature; }
-	object_h() { objp = nullptr; sig = -1; }
+	object_h(const object* in_objp);
+	object_h(int in_objnum);
+	object_h();
 
-	object_h(int objnum)
-	{
-		if (objnum >= 0 && objnum < MAX_OBJECTS)
-		{
-			objp = &Objects[objnum];
-			sig = objp->signature;
-		}
-		else
-		{
-			objp = nullptr;
-			sig = -1;
-		}
-	}
+	bool isValid() const;
+	object* objp() const;
+	object* objp_or_null() const;
 
 	static void serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
 	static void deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);

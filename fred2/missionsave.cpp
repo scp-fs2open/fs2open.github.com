@@ -784,8 +784,8 @@ int CFred_mission_save::save_asteroid_fields()
 			}
 		} else {
 			// asteroid subtypes stored in field_debris_type as -1 or 1
-			for (int idx = 0; idx < MAX_ACTIVE_DEBRIS_TYPES; idx++) {
-				if (Asteroid_field.field_debris_type[idx] != -1) {
+			for (int idx = 0; idx < NUM_ASTEROID_SIZES; idx++) {
+				if (Asteroid_field.field_asteroid_type[idx] != false) {
 
 					if (Mission_save_format == FSO_FORMAT_RETAIL) {
 						if (optional_string_fred("+Field Debris Type:")) {
@@ -1806,6 +1806,17 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 				fout("\n+Cargo Name:");
 
 			fout_ext(NULL, "%s", Cargo_names[ptr->subsys_cargo_name]);
+		}
+
+		if (Mission_save_format != FSO_FORMAT_RETAIL) {
+			if (ptr->subsys_cargo_title[0] != '\0') {
+				if (optional_string_fred("+Cargo Title:", "$Name:", "+Subsystem:")) {
+					parse_comments();
+				} else {
+					fout("\n+Cargo Title:");
+				}
+				fout_ext(nullptr, "%s", ptr->subsys_cargo_title);
+			}
 		}
 
 		if (ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -3600,6 +3611,17 @@ int CFred_mission_save::save_objects()
 		required_string_fred("$Cargo 1:");
 		parse_comments();
 		fout_ext(" ", "%s", Cargo_names[shipp->cargo1]);
+
+		if (Mission_save_format != FSO_FORMAT_RETAIL) {
+			if (shipp->cargo_title[0] != '\0') {
+				if (optional_string_fred("$Cargo Title:", "$Name:")) {
+					parse_comments();
+				} else {
+					fout("\n$Cargo Title:");
+				}
+				fout_ext(nullptr, "%s", shipp->cargo_title);
+			}
+		}
 
 		save_common_object_data(&Objects[shipp->objnum], &Ships[i]);
 

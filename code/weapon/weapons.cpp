@@ -3145,7 +3145,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Per Burst Rotation:")) {
 				stuff_float(&t5info->per_burst_rot);
 				t5info->per_burst_rot = fl_radians(t5info->per_burst_rot);
-				if (t5info->per_burst_rot < -PI2 || t5info->per_burst_rot > PI2) {
+				if (t5info->per_burst_rot > PI2) {
 					Warning(LOCATION, "Per Burst Rotation on beam '%s' must not exceed 360 degrees.", wip->name);
 					t5info->per_burst_rot = 0.0f;
 				}
@@ -8952,9 +8952,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float head_alpha = 1.0 - main_bitmap_alpha_mult;
+					float head_alpha = 1.0f - main_bitmap_alpha_mult;
 
-					r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
+					r = fl2i(r * head_alpha);
+					g = fl2i(g * head_alpha);
+					b = fl2i(b * head_alpha);
 
 					batching_add_laser(
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
@@ -9258,7 +9260,7 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_chance = 1.f;
 	}
 
-	this->lifetime_variation_factor_when_child = 0.2;
+	this->lifetime_variation_factor_when_child = 0.2f;
 
 	this->swarm_count = -1;
 	// *Default is 150  -Et1

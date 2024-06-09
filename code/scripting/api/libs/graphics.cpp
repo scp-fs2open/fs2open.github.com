@@ -1061,7 +1061,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		return ADE_RETURN_NIL;
 	}
 
-	object *targetp = objh->objp;
+	object *targetp = objh->objp();
 
 	int x1,x2,y1,y2;
 	int bound_rc, pof;
@@ -1218,7 +1218,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 	}
 
-	object *targetp = objh->objp;
+	object *targetp = objh->objp();
 	bool in_frame = g3_in_frame() > 0;
 
 	if (!in_frame)
@@ -2171,8 +2171,8 @@ ADE_FUNC(createPersistentParticle,
 		pi.reverse = false;
 
 	if (objh != nullptr && objh->isValid()) {
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig    = objh->objp->signature;
+		pi.attached_objnum = objh->objnum;
+		pi.attached_sig    = objh->sig;
 	}
 
 	particle::WeakParticlePtr p = particle::createPersistent(&pi);
@@ -2244,8 +2244,8 @@ ADE_FUNC(createParticle,
 		pi.reverse = false;
 
 	if (objh != nullptr && objh->isValid()) {
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig    = objh->objp->signature;
+		pi.attached_objnum = objh->objnum;
+		pi.attached_sig    = objh->sig;
 	}
 
 	particle::create(&pi);

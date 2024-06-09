@@ -621,6 +621,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_builtin_messages,			"no-builtin-messages"},
 	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
 	{ Ship_Flags::Maneuver_despite_engines,		"maneuver-despite-engines" },
+	{ Ship_Flags::No_scanned_cargo,             "no-scanned-cargo"},
 	{ Ship_Flags::EMP_doesnt_scramble_messages,	"emp-doesn't-scramble-messages" },
 };
 
@@ -660,6 +661,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::No_builtin_messages,			"Ship will not send any persona messages."},
 	{ Ship_Flags::Scramble_messages,			"All messages sent from or received by this ship will appear scrambled, as if the ship had been hit by an EMP." },
 	{ Ship_Flags::Maneuver_despite_engines,		"Ship can maneuver even if its engines are disabled or disrupted" },
+	{ Ship_Flags::No_scanned_cargo,             "Ship cargo will never be revealed and will instead only show scanned or not scanned. Only available if using New Scanning Behavior in game_settings.tbl."},
 	{ Ship_Flags::EMP_doesnt_scramble_messages, "EMP does not affect whether messages appear scrambled when sent from or received by this ship." },
 };
 
@@ -7489,6 +7491,7 @@ void ship_subsys::clear()
 	disruption_timestamp = timestamp(0);
 
 	subsys_cargo_name = 0;
+	subsys_cargo_title[0] = '\0';
 	time_subsys_cargo_revealed = 0;
 
 	triggered_rotation_index = -1;
@@ -12672,34 +12675,34 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					for ( w = 0; w < numtimes; w++ ) {
 						beam_fire_info fbfire_info;
 						shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
-						shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
-						shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
-						shipp->beam_sys_info.model_num = sip->model_num;
-						shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
-						shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
-						shipp->beam_sys_info.turret_fov = cosf(fl_radians((winfo_p->field_of_fire != 0.0f) ? winfo_p->field_of_fire : 180.0f) / 2.0f);
+				    shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
+    				shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
+		    		shipp->beam_sys_info.model_num = sip->model_num;
+				    shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
+    				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
+		    		shipp->beam_sys_info.turret_fov = -1.0f;
 
-						shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
-						shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
-						shipp->fighter_beam_turret_data.current_hits = 1.0;
-						shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
-
-						fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
-						fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
-						fbfire_info.beam_info_override = NULL;
-						fbfire_info.shooter = &Objects[shipp->objnum];
-
-						if (aip->target_objnum >= 0) {
-							fbfire_info.target = &Objects[aip->target_objnum];
-						} else {
-							fbfire_info.target = NULL;
-						}
-						fbfire_info.turret = &shipp->fighter_beam_turret_data;
-						fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
-						fbfire_info.bank = bank_to_fire;
-						fbfire_info.burst_index = (old_burst_counter * numtimes) + i;
-						fbfire_info.burst_seed = old_burst_seed;
-						fbfire_info.per_burst_rotation = swp->per_burst_rot;
+				    shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
+    				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
+		    		shipp->fighter_beam_turret_data.current_hits = 1.0;
+				    shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
+				
+    				fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
+    				fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
+    				fbfire_info.beam_info_override = NULL;
+    				fbfire_info.shooter = &Objects[shipp->objnum];
+				
+	    			if (aip->target_objnum >= 0) {
+    					fbfire_info.target = &Objects[aip->target_objnum];
+    				} else {
+    					fbfire_info.target = NULL;
+	    			}
+	    			fbfire_info.turret = &shipp->fighter_beam_turret_data;
+    				fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
+    				fbfire_info.bank = bank_to_fire;
+    				fbfire_info.burst_index = old_burst_counter;
+	    			fbfire_info.burst_seed = old_burst_seed;
+	    			fbfire_info.per_burst_rotation = swp->per_burst_rot;
 
 						fbfire_info.local_fire_postion = pm->gun_banks[bank_to_fire].pnt[j];
 						shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];

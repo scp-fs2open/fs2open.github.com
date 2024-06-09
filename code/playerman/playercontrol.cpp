@@ -1594,7 +1594,7 @@ int player_process_pending_praise()
 	return 1;
 }
 
-int player_inspect_cap_subsys_cargo(float frametime, char *outstr);
+bool player_inspect_cap_subsys_cargo(float frametime, char *outstr);
 
 /**
  * See if the player should be inspecting cargo, and update progress.
@@ -1602,21 +1602,18 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr);
  * @param frametime	Time since last frame in seconds
  * @param outstr (output parm) holds string that HUD should display
  *
- * @return 1 if player should display outstr on HUD; 0if don't display cargo on HUD
+ * @return true if player should display outstr on HUD; false if don't display cargo on HUD
  */
-int player_inspect_cargo(float frametime, char *outstr)
+bool player_inspect_cargo(float frametime, char *outstr)
 {
 	object		*cargo_objp;
-	ship			*cargo_sp;
+	ship		*cargo_sp;
 	ship_info	*cargo_sip;
-	vec3d		vec_to_cargo;
-	float			dot;
-	int scan_subsys;
 
 	outstr[0] = 0;
 
 	if ( Player_ai->target_objnum < 0 || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
-		return 0;
+		return false;
 	}
 
 	cargo_objp = &Objects[Player_ai->target_objnum];
@@ -1624,39 +1621,64 @@ int player_inspect_cargo(float frametime, char *outstr)
 	cargo_sp = &Ships[cargo_objp->instance];
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
-	// Goober5000 - possibly swap cargo scan behavior
-    scan_subsys = cargo_sip->is_huge_ship();
-    if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
-		scan_subsys = !scan_subsys;
-	if (scan_subsys)
-		return player_inspect_cap_subsys_cargo(frametime, outstr);
-
-	// check if target is ship class that can be inspected
-	// MWA -- 1/27/98 -- added fighters/bombers to this list.  For multiplayer, we
-	// want to show callsign of player
-	// G5K -- 10/20/08 -- moved the callsign code into hud_stuff_ship_callsign, where
-	// it makes more sense
-
-	// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
-	// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
-	if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
-        if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
-			return 0;
+	if (Use_new_scanning_behavior) {
+		// If this flag is active, no matter the ship class, we do subsystem scanning
+		if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) {
+			return player_inspect_cap_subsys_cargo(frametime, outstr);
 		}
+	} else {
+		// Goober5000 - possibly swap cargo scan behavior
+		int scan_subsys = cargo_sip->is_huge_ship();
+		if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
+			scan_subsys = !scan_subsys;
+		if (scan_subsys)
+			return player_inspect_cap_subsys_cargo(frametime, outstr);
+	}
+
+	if (Use_new_scanning_behavior) {
+		// If this flag is inactive then the ship cannot be scanned at all
+		if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
+			return false;
+		}
+	} else {
+		// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
+		// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
+		if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
+			if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
+				return false;
+			}
+		}
+	}
+
+	// Whether or not we are scanning in a mode that will reveal the cargo contents
+	bool reveal_cargo = false;
+	if (Use_new_scanning_behavior && !(cargo_sp->flags[Ship::Ship_Flags::No_scanned_cargo])) {
+		reveal_cargo = true;
+	} else if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
+		reveal_cargo = true;
 	}
 
 	// if cargo is already revealed
 	if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
-		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
+		if (reveal_cargo) {
 			auto cargo_name = (cargo_sp->cargo1 & CARGO_INDEX_MASK) == 0
 				? XSTR("Nothing", 1674)
 				: Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-            Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
+			//Why was this assert here? I'm not sure it makes much sense because any ship can be scanned and have cargo revealed...
+            //Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
-			if ( cargo_name[0] == '#' ) {
-				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			if (cargo_sp->cargo_title[0] != '\0') {
+				if (cargo_sp->cargo_title[0] == '#') {
+					sprintf(outstr, "%s", cargo_name);
+				} else {
+					sprintf(outstr, "%s: %s", cargo_sp->cargo_title, cargo_name);
+				}
 			} else {
-				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+				if (cargo_name[0] == '#') {
+					sprintf(outstr, XSTR("passengers: %s", 83), cargo_name + 1);
+				} else {
+					sprintf(outstr, XSTR("cargo: %s", 84), cargo_name);
+				}
 			}
 		} else {
 			strcpy(outstr, XSTR( "Scanned", 85) );
@@ -1666,7 +1688,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 		// are in the process of scanning
 		Player->cargo_inspect_time = 0;
 
-		return 1;
+		return true;
 	}
 
 	// see if player is within inspection range
@@ -1675,18 +1697,28 @@ int player_inspect_cargo(float frametime, char *outstr)
 	scan_dist *= player_sip->scanning_range_multiplier;
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
+		vec3d vec_to_cargo;
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
-		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
+		float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
-			if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
-				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
-			else
-				strcpy(outstr,XSTR( "not scanned", 87));
-			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
-			Player->cargo_inspect_time = 0;
-			return 1;
+			if (reveal_cargo) {
+				if (cargo_sp->cargo_title[0] != '\0') {
+					if (cargo_sp->cargo_title[0] == '#') {
+						strcpy(outstr, XSTR("<unknown>", 1852));
+					} else {
+						sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
+					}
+				} else {
+					strcpy(outstr, XSTR("cargo: <unknown>", 86));
+				}
+			} else {
+				strcpy(outstr, XSTR("not scanned", 87));
+				hud_targetbox_end_flash(TBOX_FLASH_CARGO);
+				Player->cargo_inspect_time = 0;
+				return true;
+			}
 		}
 
 		// player is facing the cargo, and within range, so proceed with inspection
@@ -1694,10 +1726,19 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
-		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
-			strcpy(outstr,XSTR( "cargo: inspecting", 88));
-		else
-			strcpy(outstr,XSTR( "scanning", 89));
+		if (reveal_cargo) {
+			if (cargo_sp->cargo_title[0] != '\0') {
+				if (cargo_sp->cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("inspecting", 1853));
+				} else {
+					sprintf(outstr, XSTR("%s: inspecting", 1851), cargo_sp->cargo_title);
+				}
+			} else {
+				strcpy(outstr, XSTR("cargo: inspecting", 88));
+			}
+		} else {
+			strcpy(outstr, XSTR("scanning", 89));
+		}
 
 		float scan_time = i2fl(cargo_sip->scan_time);
 		scan_time *= player_sip->scanning_time_multiplier;
@@ -1708,56 +1749,83 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
-			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
-		else
-			strcpy(outstr,XSTR( "not scanned", 87));
+		if (reveal_cargo){
+			if (cargo_sp->cargo_title[0] != '\0') {
+				if (cargo_sp->cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("<unknown>", 1852));
+				} else {
+					sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
+				}
+			} else {
+				strcpy(outstr, XSTR("cargo: <unknown>", 86));
+			}
+		} else {
+			strcpy(outstr, XSTR("not scanned", 87));
+		}
 	}
 
-	return 1;
+	return true;
 }
 
 /**
  * @return 1 if player should display outstr on HUD; 0 if don't display cargo on HUD
  */
-int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
+bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 {
 	object		*cargo_objp;
-	ship			*cargo_sp;
+	ship		*cargo_sp;
 	ship_info	*cargo_sip;
-	vec3d		vec_to_cargo;
-	float			dot;
 	ship_subsys	*subsys;
 
 	outstr[0] = 0;
 	subsys = Player_ai->targeted_subsys;
 
 	if ( subsys == NULL || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
-		return 0;
-	} 
+		return false;
+	}
 
 	cargo_objp = &Objects[Player_ai->target_objnum];
 	Assert(cargo_objp->type == OBJ_SHIP);
 	cargo_sp = &Ships[cargo_objp->instance];
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
+	// If we're using the new scanning behavior then we have to check that the ship is actually scannable first
+	if (Use_new_scanning_behavior && !(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
+		return false;
+	}
+
 	// don't do any sort of scanning thing unless capship has a non-"nothing" cargo
 	// this compensates for changing the "no display" index from -1 to 0
 	if (subsys->subsys_cargo_name == 0) {
-		return 0;
+		return false;
+	}
+
+	// Whether or not we are scanning in a mode that will reveal the cargo contents
+	bool reveal_cargo = false;
+	if (Use_new_scanning_behavior && !(cargo_sp->flags[Ship::Ship_Flags::No_scanned_cargo])) {
+		reveal_cargo = true;
+	} else if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
+		reveal_cargo = true;
 	}
 
 	// if cargo is already revealed
 	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
-		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
+		if (reveal_cargo) {
 			auto cargo_name = (subsys->subsys_cargo_name & CARGO_INDEX_MASK) == 0
 				? XSTR("Nothing", 1674)
 				: Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
-
-			if ( cargo_name[0] == '#' ) {
-				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			if (subsys->subsys_cargo_title[0] != '\0') {
+				if (subsys->subsys_cargo_title[0] == '#') {
+					sprintf(outstr, "%s", cargo_name);
+				} else {
+					sprintf(outstr, "%s: %s", subsys->subsys_cargo_title, cargo_name);
+				}
 			} else {
-				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+				if (cargo_name[0] == '#') {
+					sprintf(outstr, XSTR("passengers: %s", 83), cargo_name + 1);
+				} else {
+					sprintf(outstr, XSTR("cargo: %s", 84), cargo_name);
+				}
 			}
 		} else {
 			strcpy(outstr, XSTR( "Scanned", 85) );
@@ -1767,7 +1835,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		// are in the process of scanning
 		Player->cargo_inspect_time = 0;
 
-		return 1;
+		return true;
 	}
 
 	// see if player is within inspection range [ok for subsys]
@@ -1789,20 +1857,30 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	scan_dist *= player_sip->scanning_range_multiplier;
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
+		vec3d vec_to_cargo;
+
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
-		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
+		float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy);
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
-			if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
-				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
+			if (reveal_cargo)
+				if (subsys->subsys_cargo_title[0] != '\0') {
+					if (subsys->subsys_cargo_title[0] == '#') {
+						strcpy(outstr, XSTR("<unknown>", 1852));
+					} else {
+						sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
+					}
+				} else {
+					strcpy(outstr, XSTR("cargo: <unknown>", 86));
+				}
 			else
 				strcpy(outstr,XSTR( "not scanned", 87));
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
 			Player->cargo_inspect_time = 0;
-			return 1;
+			return true;
 		}
 
 		// player is facing the cargo, and within range, so proceed with inspection
@@ -1810,8 +1888,16 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
-		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
-			strcpy(outstr,XSTR( "cargo: inspecting", 88));
+		if (reveal_cargo)
+			if (subsys->subsys_cargo_title[0] != '\0') {
+				if (subsys->subsys_cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("inspecting", 1853));
+				} else {
+					sprintf(outstr, XSTR("%s: inspecting", 1851), subsys->subsys_cargo_title);
+				}
+			} else {
+				strcpy(outstr, XSTR("cargo: inspecting", 88));
+			}
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
@@ -1828,13 +1914,21 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
-			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
+		if (reveal_cargo)
+			if (subsys->subsys_cargo_title[0] != '\0') {
+				if (subsys->subsys_cargo_title[0] == '#') {
+					strcpy(outstr, XSTR("<unknown>", 1852));
+				} else {
+					sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
+				}
+			} else {
+				strcpy(outstr, XSTR("cargo: <unknown>", 86));
+			}
 		else
 			strcpy(outstr,XSTR( "not scanned", 87));
 	}
 
-	return 1;
+	return true;
 }
 
 

@@ -404,6 +404,7 @@ public:
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
 	int subsys_cargo_name;			// cap ship cargo on subsys
+	char subsys_cargo_title[NAME_LENGTH];  // cap ship cargo title (IE: Cargo: or Passengers:)
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
 	int triggered_rotation_index;		//the actual currently running animation and assosiated states
@@ -552,6 +553,7 @@ public:
 	ubyte	pre_death_explosion_happened;		// If set, it means the 4 or 5 smaller explosions 
 	ubyte wash_killed;
 	char	cargo1;
+	char cargo_title[NAME_LENGTH];
 
 	// ship wing status info
 	char	wing_status_wing_index;			// wing index (0-4) in wingman status gauge

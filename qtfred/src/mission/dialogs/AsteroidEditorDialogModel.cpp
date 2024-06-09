@@ -335,9 +335,9 @@ bool AsteroidEditorDialogModel::validate_data()
 
 		// check at least one asteroid subtype is selected
 		if (_a_field.debris_genre == DG_ASTEROID) {
-			if ( (_a_field.field_debris_type[_AST_BROWN] == -1) && \
-					(_a_field.field_debris_type[_AST_BLUE] == -1) && \
-					(_a_field.field_debris_type[_AST_ORANGE] == -1) ) {
+			if ( (!_a_field.field_asteroid_type[_AST_BROWN]) && \
+					(!_a_field.field_asteroid_type[_AST_BLUE]) && \
+					(!_a_field.field_asteroid_type[_AST_ORANGE]) ) {
 				showErrorDialogNoCancel("You must choose one or more asteroid subtypes\n");
 				return false;
 			}
@@ -393,9 +393,9 @@ void AsteroidEditorDialogModel::update_init()
 
 		// asteroids
 		if ( _debris_genre == DG_ASTEROID ) {
-			modify(_a_field.field_debris_type[_AST_BROWN], getAsteroidEnabled(_AST_BROWN) == true ? 1 : -1);
-			modify(_a_field.field_debris_type[_AST_BLUE], getAsteroidEnabled(_AST_BLUE) == true ? 1 : -1);
-			modify(_a_field.field_debris_type[_AST_ORANGE], getAsteroidEnabled(_AST_ORANGE) == true ? 1 : -1);
+			modify(_a_field.field_asteroid_type[_AST_BROWN], getAsteroidEnabled(_AST_BROWN));
+			modify(_a_field.field_asteroid_type[_AST_BLUE], getAsteroidEnabled(_AST_BLUE));
+			modify(_a_field.field_asteroid_type[_AST_ORANGE], getAsteroidEnabled(_AST_ORANGE));
 		}
 
 		modify(_a_field.has_inner_bound, _enable_inner_bounds);

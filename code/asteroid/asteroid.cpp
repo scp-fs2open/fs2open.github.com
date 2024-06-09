@@ -602,7 +602,7 @@ void asteroid_create_all()
 
 	int num_debris_types = 0;
 
-	// get number of ship debris types
+	// get number of debris types
 	if (Asteroid_field.debris_genre == DG_DEBRIS) {
 		for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 			if (Asteroid_field.field_debris_type[idx] != -1) {
@@ -619,25 +619,25 @@ void asteroid_create_all()
 		}
 	}
 
-	// Load Asteroid/ship models
+	// Load Asteroid/debris models
 	if (Asteroid_field.debris_genre == DG_DEBRIS) {
 		for (idx=0; idx<num_debris_types; idx++) {
 			asteroid_load(Asteroid_field.field_debris_type[idx], 0);
 		}
 	} else {
-		if (Asteroid_field.field_debris_type[0] != -1) {
+		if (Asteroid_field.field_asteroid_type[0]) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 0);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 0);
 			asteroid_load(ASTEROID_TYPE_LARGE, 0);
 		}
 
-		if (Asteroid_field.field_debris_type[1] != -1) {
+		if (Asteroid_field.field_asteroid_type[1]) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 1);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 1);
 			asteroid_load(ASTEROID_TYPE_LARGE, 1);
 		}
 
-		if (Asteroid_field.field_debris_type[2] != -1) {
+		if (Asteroid_field.field_asteroid_type[2]) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 2);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 2);
 			asteroid_load(ASTEROID_TYPE_LARGE, 2);
@@ -653,7 +653,7 @@ void asteroid_create_all()
 			int counter = Random::next(Asteroid_field.num_used_field_debris_types);
 			int subtype = -1;
 			for (int j = 0; j < NUM_ASTEROID_POFS; j++) {
-				if (Asteroid_field.field_debris_type[j] >= 0) {
+				if (Asteroid_field.field_asteroid_type[j]) {
 					if (counter == 0) {
 						subtype = j;
 						break;
@@ -732,21 +732,25 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 	Asteroid_field.speed = (float)asteroid_speed;
 	Asteroid_field.debris_genre = DG_ASTEROID;
 
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
+	for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			Asteroid_field.field_debris_type[j] = -1;
+	}
+
+	for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
+			Asteroid_field.field_asteroid_type[j] = false;
+	}
 
 	int count = 0;
 	if (brown) {
-		Asteroid_field.field_debris_type[0] = 1;
+		Asteroid_field.field_asteroid_type[0] = true;
 		count++;
 	}
 	if (blue) {
-		Asteroid_field.field_debris_type[1] = 1;
+		Asteroid_field.field_asteroid_type[1] = true;
 		count++;
 	}
 	if (orange) {
-		Asteroid_field.field_debris_type[2] = 1;
+		Asteroid_field.field_asteroid_type[2] = true;
 		count++;
 	}
 
@@ -792,9 +796,13 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int deb
 	Asteroid_field.speed = (float)asteroid_speed;
 	Asteroid_field.debris_genre = DG_DEBRIS;
 
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
+	for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+		Asteroid_field.field_debris_type[j] = -1;
+	}
+
+	for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
+		Asteroid_field.field_asteroid_type[j] = false;
+	}
 
 	int count = 0;
 	for (int i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; i++) {
@@ -850,9 +858,13 @@ void asteroid_level_init()
 	Asteroid_field.has_inner_bound = false;
 	Asteroid_field.field_type = FT_ACTIVE;
 	Asteroid_field.debris_genre = DG_ASTEROID;
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
+	for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+		Asteroid_field.field_debris_type[j] = -1;
+	}
+
+	for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
+		Asteroid_field.field_asteroid_type[j] = false;
+	}
 	Asteroid_field.num_used_field_debris_types = 0;
 	Asteroid_field.target_names.clear();
 
@@ -1070,7 +1082,7 @@ static void maybe_throw_asteroid()
 		int counter = Random::next(Asteroid_field.num_used_field_debris_types);
 		int subtype = -1;
 		for (int i = 0; i < NUM_ASTEROID_POFS; i++) {
-			if (Asteroid_field.field_debris_type[i] >= 0) {
+			if (Asteroid_field.field_asteroid_type[i]) {
 				if (counter == 0) {
 					subtype = i;
 					break;
@@ -2710,7 +2722,7 @@ void asteroid_page_in()
 				Assertion(i < NUM_ASTEROID_SIZES, "Got invalid call to load a debris type instead of asteroid type!");
 				asip = &Asteroid_info[i];
 			} else {
-				// ship debris - always full until empty
+				// debris - always full until empty
 				if (Asteroid_field.field_debris_type[i] != -1) {
 					asip = &Asteroid_info[Asteroid_field.field_debris_type[i]];
 				} else {
@@ -2721,14 +2733,14 @@ void asteroid_page_in()
 
 			for (k=0; k<NUM_ASTEROID_POFS; k++) {
 
-				// SHIP DEBRIS - use subtype 0
+				// DEBRIS FIELDS - always use subtype 0
 				if (Asteroid_field.debris_genre == DG_DEBRIS) {
 					if (k > 0) {
 						break;
 					}
 				} else {
-					// ASTEROID DEBRIS - use subtype (Asteroid_field.field_debris_type[] != -1)
-					if (Asteroid_field.field_debris_type[k] == -1) {
+					// ASTEROID FIELDS - use subtype k, if active
+					if (!Asteroid_field.field_asteroid_type[k]) {
 						continue;
 					}
 				}
