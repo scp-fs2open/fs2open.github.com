@@ -21250,7 +21250,6 @@ void sexp_beam_fire(int node, bool at_coords)
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
-	fire_info.burst_index = 0;
 
 	// get the firing ship
 	auto shooter = eval_ship(n);
@@ -21336,16 +21335,18 @@ void sexp_beam_fire(int node, bool at_coords)
 		}
 	}
 
-	// fire the beam
-	if (fire_info.beam_info_index != -1) {
-		fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
-
-		beam_fire(&fire_info);
-		fire_info.turret->turret_next_fire_pos++;
-	} else {
-		// it would appear the turret doesn't have any beam weapons
-		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node)));
-	}
+		// fire the beam
+		if (fire_info.beam_info_index != -1) {
+			fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
+			for ( int i = 0; i < Weapon_info[fire_info.beam_info_index].shots; i++ ) {
+				fire_info.burst_index = i;
+				beam_fire(&fire_info);
+				fire_info.turret->turret_next_fire_pos++;
+			}
+		} else {
+			// it would appear the turret doesn't have any beam weapons
+			Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node)));
+		}
 }	
 
 void sexp_beam_floating_fire(int n)
