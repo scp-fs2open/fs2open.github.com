@@ -2973,6 +2973,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->selection_effect = 0;
 	}
 
+	// This only works if the hud gauge defined uses $ships setup and has $name defined
+	if (optional_string("$HUD Gauge Configs:")) {
+		SCP_vector<SCP_string> gauge_configs;
+		stuff_string_list(gauge_configs);
+
+		// Save the ship name and not the index because we don't know what the final index will be yet
+		for (const auto& config : gauge_configs) {
+			Hud_parsed_ships.push_back(std::make_pair(config, sip->name));
+		}
+
+	}
+
 	if(optional_string( "$Cockpit POF file:" ))
 	{
 		char temp[MAX_FILENAME_LEN];
@@ -6217,6 +6229,7 @@ void ship_init()
 			//Parse main TBL first
 			Removed_ships.clear();
 			Ship_info.clear();
+			Hud_parsed_ships.clear();
 			parse_shiptbl("ships.tbl");
 
 			//Then other ones

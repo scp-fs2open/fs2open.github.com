@@ -216,6 +216,8 @@ int parse_ship_start()
 	return ship_index;
 }
 
+SCP_vector<std::pair<SCP_string, SCP_string>> Hud_parsed_ships;
+
 void parse_hud_gauges_tbl(const char *filename)
 {
 	int i;
@@ -343,6 +345,12 @@ void parse_hud_gauges_tbl(const char *filename)
 		int n_ships = 0;
 
 		while (optional_string("#Gauge Config")) {
+
+			SCP_string name;
+			if (optional_string("$Name:")) {
+				stuff_string(name, F_NAME);
+			}
+
 			ship_classes.clear();
 			switch (optional_string_either("$Ship:", "$Ships:")) {
 			case 0:
@@ -403,6 +411,16 @@ void parse_hud_gauges_tbl(const char *filename)
 					ship_classes.push_back(shiparray[i]);
 					Ship_info[shiparray[i]].hud_enabled = true;
 					Ship_info[shiparray[i]].hud_retail = retail_config;
+				}
+
+				// Here we add in any ships who set their HUD Config in ships.tbl
+				for (const auto& pair : Hud_parsed_ships) {
+					if (!stricmp(pair.first.c_str(), name.c_str())) {
+						int idx = ship_info_lookup(pair.second.c_str());
+						ship_classes.push_back(idx);
+						Ship_info[idx].hud_enabled = true;
+						Ship_info[idx].hud_retail = retail_config;
+					}
 				}
 
 				if (optional_string("$Color:")) {
@@ -580,6 +598,8 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
+
+	Hud_parsed_ships.clear();
 }
 
 void load_missing_retail_gauges()

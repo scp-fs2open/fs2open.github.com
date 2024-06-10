@@ -112,6 +112,11 @@ extern float Player_rearm_eta;
 
 extern int Hud_max_targeting_range;
 
+// maps of hud gauges configs to apply to ships as parsed in ships.tbl
+// this is cleared once parsing is completed
+// First string in the pair is the gauge name, second is the ship name
+extern SCP_vector<std::pair<SCP_string, SCP_string>> Hud_parsed_ships;
+
 void HUD_init_colors();
 void HUD_init();
 void hud_scripting_close(lua_State*);
