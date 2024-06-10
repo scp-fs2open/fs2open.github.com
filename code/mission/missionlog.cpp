@@ -230,14 +230,6 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	}
 
 #ifndef NDEBUG
-	if ( (Log_entries.size() % 10) == 0 ) {
-		static size_t largest_size_save = Log_entries.size();
-		if ( (Log_entries.size() > 350) && (Log_entries.size() > largest_size_save) ){
-			largest_size_save = Log_entries.size();
-			nprintf(("missionlog", "new highwater point reached for mission log (" SIZE_T_ARG " entries).\n", largest_size_save));
-		}
-	}
-
 	float mission_time = f2fl(Missiontime);
 	int minutes = (int)(mission_time / 60);
 	int seconds = (int)mission_time % 60;
@@ -352,7 +344,7 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 				}
 
 				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) ) {
-					found = 1;
+					found = true;
 				}
 			} else {
 				// for non dock/undock goals, then the names are important!
@@ -368,11 +360,11 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 				// if we are looking for a subsystem entry, the subsystem names must be compared
 				if ((type == LOG_SHIP_SUBSYS_DESTROYED || type == LOG_CAP_SUBSYS_CARGO_REVEALED)) {
 					if ( (sname == NULL) || !subsystem_stricmp(sname, entry->sname) ) {
-						found = 1;
+						found = true;
 					}
 				} else {
 					if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
-						found = 1;
+						found = true;
 					}
 				}
 			}
