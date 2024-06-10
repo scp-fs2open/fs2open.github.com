@@ -16719,7 +16719,7 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& exclud
 			model_instance_num = -1;
 		}
 		else if (type == OBJ_ASTEROID) {
-			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 			model_instance_num = Asteroids[objp->instance].model_instance_num;
 		}
 		else if (type == OBJ_SHIP) {

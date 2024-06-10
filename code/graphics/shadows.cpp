@@ -494,8 +494,8 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 				render_info.set_object_number(OBJ_INDEX(objp));
 				render_info.set_flags(MR_IS_ASTEROID | MR_NO_TEXTURING | MR_NO_LIGHTING);
 				
-				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype]);
-				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype], &objp->orient, &objp->pos);
+				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number);
+				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number, &objp->orient, &objp->pos);
 			}
 			break;
 

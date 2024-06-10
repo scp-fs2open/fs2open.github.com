@@ -2162,7 +2162,7 @@ int beam_get_model(object *objp)
 		if(Asteroids[objp->instance].asteroid_type < 0){
 			return -1;
 		}
-		return Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[pof];
+		return Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[pof].model_number;
 
 	default:
 		// this shouldn't happen too often

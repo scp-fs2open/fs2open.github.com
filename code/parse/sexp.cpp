@@ -16387,12 +16387,21 @@ void sexp_set_debris_field(int n)
 	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
 	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
 
+	SCP_vector<int> debris_types;
+	if (debris1 > 0) {
+		debris_types.push_back(debris1);
+	}
+	if (debris2 > 0) {
+		debris_types.push_back(debris2);
+	}
+	if (debris3 > 0) {
+		debris_types.push_back(debris3);
+	}
+
 	asteroid_create_debris_field(
 		num_asteroids,
 		asteroid_speed,
-		debris1,
-		debris2,
-		debris3,
+		debris_types,
 		o_min,
 		o_max,
 		enhanced);

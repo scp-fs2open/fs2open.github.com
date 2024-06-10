@@ -2057,7 +2057,7 @@ int object_get_model(const object *objp)
 		case OBJ_ASTEROID:
 		{
 			asteroid *asp = &Asteroids[objp->instance];
-			return Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
+			return Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
 		}
 		case OBJ_DEBRIS:
 		{
