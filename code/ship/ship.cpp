@@ -2973,7 +2973,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->selection_effect = 0;
 	}
 
-	// This only works if the hud gauge defined uses $ships setup and has $name defined
+	// This only works if the hud gauge defined uses $name assignment
 	if (optional_string("$HUD Gauge Configs:")) {
 		SCP_vector<SCP_string> gauge_configs;
 		stuff_string_list(gauge_configs);
