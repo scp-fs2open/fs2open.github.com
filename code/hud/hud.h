@@ -598,7 +598,7 @@ public:
 
 HudGauge *hud_get_custom_gauge(const char *name, bool check_all_gauges = false);
 int hud_get_default_gauge_index(const char *name);
-HudGauge *hud_get_gauge(const char *name);
+HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges = false);
 
 extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 

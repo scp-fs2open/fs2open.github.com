@@ -3608,7 +3608,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (hud_get_gauge(CTEXT(node)) == nullptr) {
+				if (hud_get_gauge(CTEXT(node), true) == nullptr) {
 					return SEXP_CHECK_INVALID_ANY_HUD_GAUGE;
 				}
 

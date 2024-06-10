@@ -343,16 +343,11 @@ void parse_hud_gauges_tbl(const char *filename)
 		SCP_vector<int> ship_classes;
 		bool retail_config = false;
 		int n_ships = 0;
+		SCP_string name;
 
 		while (optional_string("#Gauge Config")) {
-
-			SCP_string name;
-			if (optional_string("$Name:")) {
-				stuff_string(name, F_NAME);
-			}
-
 			ship_classes.clear();
-			switch (optional_string_either("$Ship:", "$Ships:")) {
+			switch (optional_string_one_of(3, "$Ship:", "$Ships:", "$Name:")) {
 			case 0:
 				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
@@ -399,6 +394,8 @@ void parse_hud_gauges_tbl(const char *filename)
 				}
 				break;
 			case 1:
+				mprintf(("$Ships in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Name:\" and define Gauge Config Settings in ships.tbl per-ship instead.\n"));
+
 				int shiparray[256];
 
 				n_ships = (int)stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
@@ -411,6 +408,28 @@ void parse_hud_gauges_tbl(const char *filename)
 					ship_classes.push_back(shiparray[i]);
 					Ship_info[shiparray[i]].hud_enabled = true;
 					Ship_info[shiparray[i]].hud_retail = retail_config;
+				}
+
+				if (optional_string("$Color:")) {
+					stuff_int_list(colors, 3);
+
+					check_color(colors);
+					gr_init_alphacolor(&ship_color, colors[0], colors[1], colors[2], 255);
+					ship_clr_p = &ship_color;
+				}
+
+				if (optional_string("$Font:")) {
+					ship_font = font::parse_font();
+				}
+				if (optional_string("$Chase View Only:")) {
+					stuff_boolean(&chase_view_only);
+				}
+				break;
+			case 2:
+				stuff_string(name, F_NAME);
+
+				if (optional_string("$Load Retail Configuration:")) {
+					stuff_boolean(&retail_config);
 				}
 
 				// Here we add in any ships who set their HUD Config in ships.tbl
