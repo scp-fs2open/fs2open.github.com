@@ -265,20 +265,9 @@ static void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
 /**
 * Randomly select an asteroid subtype
 */
-SCP_string pick_random_asteroid_type()
+const SCP_string& pick_random_asteroid_type()
 {
-	// get a valid subtype
-	int counter = Random::next(Asteroid_field.num_used_field_debris_types);
-	SCP_string subtype = "";
-	for (size_t j = 0; j < Asteroid_field.field_asteroid_type.size(); j++) {
-		if (counter == 0) {
-			subtype = Asteroid_field.field_asteroid_type[j];
-			break;
-		} else
-			counter--;
-	}
-
-	return subtype;
+	return Asteroid_field.field_asteroid_type[Random::next(static_cast<int>(Asteroid_field.field_asteroid_type.size()))];
 }
 
 int get_asteroid_subtype_index_by_name(const SCP_string &name, int asteroid_idx) {
@@ -607,7 +596,7 @@ void asteroid_create_all()
 		return;
 	}
 
-	if (Asteroid_field.num_used_field_debris_types <= 0) {
+	if (Asteroid_field.field_debris_type.size() <= 0) {
 		Warning(LOCATION, "An asteroid field is enabled, but no asteroid types were enabled.");
 		return;
 	}
@@ -661,7 +650,7 @@ void asteroid_create_all()
 			asteroid_load(Asteroid_field.field_debris_type[idx], 0);
 		}
 	} else {
-		for (auto subtype : Asteroid_field.field_asteroid_type) {
+		for (const auto& subtype : Asteroid_field.field_asteroid_type) {
 			asteroid_load(ASTEROID_TYPE_SMALL, get_asteroid_subtype_index_by_name(subtype, ASTEROID_TYPE_SMALL));
 			asteroid_load(ASTEROID_TYPE_MEDIUM, get_asteroid_subtype_index_by_name(subtype, ASTEROID_TYPE_MEDIUM));
 			asteroid_load(ASTEROID_TYPE_LARGE, get_asteroid_subtype_index_by_name(subtype, ASTEROID_TYPE_LARGE));
@@ -750,21 +739,15 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.field_asteroid_type.clear();
 
-	int count = 0;
 	if (brown) {
 		Asteroid_field.field_asteroid_type.push_back("Brown");
-		count++;
 	}
 	if (blue) {
 		Asteroid_field.field_asteroid_type.push_back("Blue");
-		count++;
 	}
 	if (orange) {
 		Asteroid_field.field_asteroid_type.push_back("Orange");
-		count++;
 	}
-
-	Asteroid_field.num_used_field_debris_types = count;
 
 	Asteroid_field.min_bound = o_min;
 	Asteroid_field.max_bound = o_max;
@@ -785,7 +768,7 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 	Asteroid_field.target_names = targets;
 
 	// Only create asteroids if we have some to create
-	if ((count > 0) && (num_asteroids > 0)) {
+	if ((Asteroid_field.field_debris_type.size() > 0) && (num_asteroids > 0)) {
 		asteroid_create_all();
 	}
 }
@@ -810,11 +793,7 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, SCP_vec
 
 	Asteroid_field.field_asteroid_type.clear();
 
-	Asteroid_field.field_debris_type = debris_types;
-
-	int count = static_cast<int>(Asteroid_field.field_debris_type.size());
-
-	Asteroid_field.num_used_field_debris_types = count;
+	Asteroid_field.field_debris_type = std::move(debris_types);
 
 	Asteroid_field.min_bound = o_min;
 	Asteroid_field.max_bound = o_max;
@@ -827,7 +806,7 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, SCP_vec
 	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
 
 	// Only create debris if we have some to create
-	if ((count > 0) && (num_asteroids > 0)) {
+	if ((Asteroid_field.field_debris_type.size() > 0) && (num_asteroids > 0)) {
 		asteroid_create_all();
 	}
 }
@@ -848,7 +827,6 @@ void asteroid_level_init()
 	Asteroid_field.debris_genre = DG_ASTEROID;
 	Asteroid_field.field_debris_type.clear();
 	Asteroid_field.field_asteroid_type.clear();
-	Asteroid_field.num_used_field_debris_types = 0;
 	Asteroid_field.target_names.clear();
 
 	if (!Fred_running)
@@ -1044,7 +1022,7 @@ bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
  */
 static void maybe_throw_asteroid()
 {
-	Assertion(Asteroid_field.num_used_field_debris_types > 0, "maybe_throw_asteroid() called while num_used_field_debris_types was 0; this should never happen, get a coder!");
+	Assertion(Asteroid_field.field_debris_type.size() > 0, "maybe_throw_asteroid() called while field_debris_type.size was 0; this should never happen, get a coder!");
 
 	for (asteroid_target& target : Asteroid_targets) {
 		if (!timestamp_elapsed(target.throw_stamp))
@@ -2257,7 +2235,7 @@ static void asteroid_parse_section()
 			thisType.model_pointer = nullptr;
 
 			bool exists = false;
-			for (auto type : asteroid_p->subtypes) {
+			for (const auto& type : asteroid_p->subtypes) {
 				if (type.type_name == thisType.type_name) {
 					exists = true;
 				}
@@ -2474,11 +2452,11 @@ SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
 {
 	SCP_vector<SCP_string> list;
 
-	for (auto this_asteroid : Asteroid_info) {
+	for (const auto& this_asteroid : Asteroid_info) {
 		if (this_asteroid.type != ASTEROID_TYPE_DEBRIS) {
-			for (auto subtype : this_asteroid.subtypes) {
+			for (const auto& subtype : this_asteroid.subtypes) {
 				bool exists = false;
-				for (auto entry : list) {
+				for (const auto& entry : list) {
 					if (subtype.type_name == entry) {
 						exists = true;
 					}
@@ -2573,15 +2551,6 @@ static void verify_asteroid_list()
 
 	//Check that we have the appropriate POF files-Mjn
 	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		/*if (Asteroid_info[i].pof_files[0][0] == '\0')
-			Error(LOCATION, "Missing [POF File 1] for %s", Asteroid_info[i].name);
-
-		if (Asteroid_info[i].type != ASTEROID_TYPE_DEBRIS) {
-			if (Asteroid_info[i].pof_files[1][0] == '\0')
-				Error(LOCATION, "Missing [POF File 2] for %s", Asteroid_info[i].name);
-			if (Asteroid_info[i].pof_files[2][0] == '\0')
-				Error(LOCATION, "Missing [POF File 3] for %s", Asteroid_info[i].name);
-		}*/
 		if (Asteroid_info[i].subtypes.size() == 0) {
 			Error(LOCATION, "Asteroid %s needs at least one subtype!", Asteroid_info[i].name);
 		}
@@ -2661,7 +2630,7 @@ void asteroid_frame()
 	}
 
 	// If no asteroid types are defined for the field, abort.
-	if (Asteroid_field.num_used_field_debris_types <= 0) {
+	if (Asteroid_field.field_debris_type.size() <= 0) {
 		return;
 	}
 
@@ -2811,7 +2780,7 @@ void asteroid_page_in()
 				} else {
 					// ASTEROID FIELDS - use subtype k, if active
 					bool active = false;
-					for (auto active_type : Asteroid_field.field_asteroid_type) {
+					for (const auto& active_type : Asteroid_field.field_asteroid_type) {
 						if (active_type == asip->subtypes[k].type_name) {
 							active = true;
 						}

@@ -106,7 +106,7 @@ void AsteroidEditorDialogModel::setAsteroidEnabled(_roid_types type, bool enable
 	}
 
 	bool in_list = false;
-	for (auto asteroid : _field_asteroid_type) {
+	for (const auto& asteroid : _field_asteroid_type) {
 		if (name == asteroid) {
 			in_list = true;
 		}

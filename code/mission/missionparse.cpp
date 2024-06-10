@@ -5811,14 +5811,13 @@ void parse_bitmaps(mission *pm)
 
 void parse_asteroid_fields(mission *pm)
 {
-	int i, count;
+	int i;
 
 	Assert(pm != NULL);
 
 	Asteroid_field.num_initial_asteroids = 0;
 
 	i = 0;
-	count = 0;
 
 	if (!optional_string("#Asteroid Fields"))
 		return;
@@ -5856,7 +5855,6 @@ void parse_asteroid_fields(mission *pm)
 			for (int j = 0; j < MAX_RETAIL_DEBRIS_TYPES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					stuff_int(&Asteroid_field.field_debris_type[j]);
-					count++;
 				}
 			}
 
@@ -5868,7 +5866,6 @@ void parse_asteroid_fields(mission *pm)
 				subtype = get_asteroid_index(ast_name.c_str());
 				if (subtype >= 0) {
 					Asteroid_field.field_debris_type.push_back(subtype);
-					count++;
 				} else {
 					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
 				}
@@ -5886,7 +5883,6 @@ void parse_asteroid_fields(mission *pm)
 					int subtype;
 					stuff_int(&subtype);
 					Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
-					count++;
 				}
 			}
 
@@ -5909,7 +5905,7 @@ void parse_asteroid_fields(mission *pm)
 
 				//validate the asteroid subtype name
 				bool valid = false;
-				for (auto entry : list) {
+				for (const auto& entry : list) {
 					if (ast_name == entry) {
 						valid = true;
 						break;
@@ -5918,14 +5914,11 @@ void parse_asteroid_fields(mission *pm)
 
 				if (valid){
 					Asteroid_field.field_asteroid_type.push_back(ast_name);
-					count++;
 				} else {
 					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
 			}
 		}
-
-		Asteroid_field.num_used_field_debris_types = count;
 
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
@@ -5939,9 +5932,11 @@ void parse_asteroid_fields(mission *pm)
 			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
-		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
-			Asteroid_field.field_asteroid_type[0] = true;
-			Asteroid_field.num_used_field_debris_types = 1;
+		// Is this a good idea? This doesn't seem like a good idea. What is this compatibility actually for??
+		// If you've defined an asteroid field but didn't define any 'roids, then tough luck. Fix your mission.
+		// If this is for a retail mission then this needs to be hardcoded for that specific mission file probably. - Mjn
+		if ((Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.field_debris_type.size() == 0)) {
+			Asteroid_field.field_asteroid_type.push_back("Brown");
 		}
 
 		required_string("$Average Speed:");

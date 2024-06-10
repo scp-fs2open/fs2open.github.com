@@ -143,7 +143,6 @@ typedef	struct asteroid_field {
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	SCP_vector<int>	field_debris_type;	// one of the debris type defines above
 	SCP_vector<SCP_string> field_asteroid_type; // one of the asteroid subtypes
-	int				num_used_field_debris_types;	// how many of the above are used
 	bool            enhanced_visibility_checks;     // if true then range checks are overridden for spawning and wrapping asteroids in the field
 
 	SCP_vector<SCP_string> target_names;	// default retail behavior is to just throw at the first big ship in the field
