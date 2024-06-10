@@ -11,6 +11,7 @@
 #include "ShipSpecialStatsDialog.h"
 #include "ShipTextureReplacementDialog.h"
 #include "ShipTBLViewer.h"
+#include "ShipPathsDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
