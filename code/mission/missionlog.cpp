@@ -54,30 +54,30 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	}
 
 	Log_entries.emplace_back();
-	auto entry = &Log_entries.back();
+	auto &entry = Log_entries.back();
 
-	entry->type = type;
+	entry.type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strncpy_s(entry->pname, pname, NAME_LENGTH - 1);
+		strncpy_s(entry.pname, pname, NAME_LENGTH - 1);
 	} else
-		strcpy_s( entry->pname, EMPTY_LOG_NAME );
+		strcpy_s( entry.pname, EMPTY_LOG_NAME );
 
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strncpy_s(entry->sname, sname, NAME_LENGTH - 1);
+		strncpy_s(entry.sname, sname, NAME_LENGTH - 1);
 	} else
-		strcpy_s( entry->sname, EMPTY_LOG_NAME );
+		strcpy_s( entry.sname, EMPTY_LOG_NAME );
 
-	entry->index = info_index;
-	entry->flags = flags;
-	entry->primary_team = -1;
-	entry->secondary_team = -1;
-	entry->pname_display = entry->pname;
-	entry->sname_display = entry->sname;
+	entry.index = info_index;
+	entry.flags = flags;
+	entry.primary_team = -1;
+	entry.secondary_team = -1;
+	entry.pname_display = entry.pname;
+	entry.sname_display = entry.sname;
 
-	end_string_at_first_hash_symbol(entry->pname_display);
-	end_string_at_first_hash_symbol(entry->sname_display);
+	end_string_at_first_hash_symbol(entry.pname_display);
+	end_string_at_first_hash_symbol(entry.sname_display);
 
 	// determine the contents of the flags member based on the type of entry we added.  We need to store things
 	// like team for the primary and (possibly) secondary object for this entry.
@@ -102,11 +102,11 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		}
 
 		Assert (index >= 0);
-		entry->primary_team = Ships[index].team;
-		entry->pname_display = Ships[index].get_display_name();
+		entry.primary_team = Ships[index].team;
+		entry.pname_display = Ships[index].get_display_name();
 
 		if (Ships[index].flags[Ship::Ship_Flags::Hide_mission_log]) {
-			entry->flags |= MLF_HIDDEN;
+			entry.flags |= MLF_HIDDEN;
 		}
 
 		// some of the entries have a secondary component.  Figure out what is up with them.
@@ -114,8 +114,8 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			if ( sname ) {
 				index = ship_name_lookup( sname );
 				Assert (index >= 0);
-				entry->secondary_team = Ships[index].team;
-				entry->sname_display = Ships[index].get_display_name();
+				entry.secondary_team = Ships[index].team;
+				entry.sname_display = Ships[index].get_display_name();
 			}
 		} else if ( type == LOG_SHIP_DESTROYED ) {
 			if ( sname ) {
@@ -129,12 +129,12 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 					{
 						// argh. badness
 						Int3();
-						entry->secondary_team = Player_ship->team;
+						entry.secondary_team = Player_ship->team;
 					}
 					else
 					{
-						entry->secondary_team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
-						entry->sname_display = Ships[Objects[Net_players[np_index].m_player->objnum].instance].get_display_name();
+						entry.secondary_team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
+						entry.sname_display = Ships[Objects[Net_players[np_index].m_player->objnum].instance].get_display_name();
 					}
 				}
 				else 
@@ -146,11 +146,11 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 						if ( index == -1 ) {
 							break;
 						}
-						entry->secondary_team = Ships_exited[index].team;
-						entry->sname_display = Ships_exited[index].display_name;
+						entry.secondary_team = Ships_exited[index].team;
+						entry.sname_display = Ships_exited[index].display_name;
 					} else {
-						entry->secondary_team = Ships[index].team;
-						entry->sname_display = Ships[index].get_display_name();
+						entry.secondary_team = Ships[index].team;
+						entry.sname_display = Ships[index].get_display_name();
 					}
 				}
  			} else {
@@ -158,10 +158,10 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			}
 		} else if ( (type == LOG_SHIP_SUBSYS_DESTROYED) && (Ship_info[Ships[index].ship_info_index].is_small_ship()) ) {
 			// make subsystem destroyed entries for small ships hidden
-			entry->flags |= MLF_HIDDEN;
+			entry.flags |= MLF_HIDDEN;
 		} else if ( (type == LOG_SHIP_ARRIVED) && (Ships[index].wingnum != -1 ) ) {
 			// arrival of ships in wings don't display
-			entry->flags |= MLF_HIDDEN;
+			entry.flags |= MLF_HIDDEN;
 		}
 		break;
 
@@ -188,9 +188,9 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 				}
 			}
 			Assert( si != -1 );
-			entry->primary_team = Ships[si].team;
+			entry.primary_team = Ships[si].team;
 		} else {
-			entry->primary_team = info_index;
+			entry.primary_team = info_index;
 		}
 
 #ifndef NDEBUG
@@ -214,19 +214,19 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 
 		// don't display waypoint done entries
 	case LOG_WAYPOINTS_DONE:
-		entry->flags |= MLF_HIDDEN;
+		entry.flags |= MLF_HIDDEN;
 		break;
 
 	default:
 		break;
 	}
 
-	entry->timestamp = Missiontime;
-	entry->timer_padding = The_mission.HUD_timer_padding;
+	entry.timestamp = Missiontime;
+	entry.timer_padding = The_mission.HUD_timer_padding;
 
 	// if in multiplayer and I am the master, send this log entry to everyone
 	if ( MULTIPLAYER_MASTER ){
-		send_mission_log_packet( entry );
+		send_mission_log_packet( &entry );
 	}
 
 #ifndef NDEBUG
@@ -235,58 +235,58 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	int seconds = (int)mission_time % 60;
 
 	// record the entry to the debug log too
-	switch (entry->type) {
+	switch (entry.type) {
 		case LOG_SHIP_DESTROYED:
 		case LOG_WING_DESTROYED:
-			nprintf(("missionlog", "MISSION LOG: %s destroyed at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s destroyed at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_SHIP_ARRIVED:
 		case LOG_WING_ARRIVED:
-			nprintf(("missionlog", "MISSION LOG: %s arrived at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s arrived at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_SHIP_DEPARTED:
 		case LOG_WING_DEPARTED:
-			nprintf(("missionlog", "MISSION LOG: %s departed at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s departed at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_SHIP_DOCKED:
 		case LOG_SHIP_UNDOCKED:
-			nprintf(("missionlog", "MISSION LOG: %s %sdocked with %s at %02d:%02d\n", entry->pname, entry->type == LOG_SHIP_UNDOCKED ? "un" : "", entry->sname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s %sdocked with %s at %02d:%02d\n", entry.pname, entry.type == LOG_SHIP_UNDOCKED ? "un" : "", entry.sname, minutes, seconds));
 			break;
 		case LOG_SHIP_SUBSYS_DESTROYED:
-			nprintf(("missionlog", "MISSION LOG: %s subsystem %s destroyed at %02d:%02d\n", entry->pname, entry->sname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s subsystem %s destroyed at %02d:%02d\n", entry.pname, entry.sname, minutes, seconds));
 			break;
 		case LOG_SHIP_DISABLED:
-			nprintf(("missionlog", "MISSION LOG: %s disabled at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s disabled at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_SHIP_DISARMED:
-			nprintf(("missionlog", "MISSION LOG: %s disarmed at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s disarmed at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_PLAYER_CALLED_FOR_REARM:
-			nprintf(("missionlog", "MISSION LOG: Player %s called for rearm at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: Player %s called for rearm at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_PLAYER_ABORTED_REARM:
-			nprintf(("missionlog", "MISSION LOG: Player %s aborted rearm at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: Player %s aborted rearm at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_PLAYER_CALLED_FOR_REINFORCEMENT:
-			nprintf(("missionlog", "MISSION LOG: A player called for reinforcement %s at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: A player called for reinforcement %s at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_GOAL_SATISFIED:
-			nprintf(("missionlog", "MISSION LOG: Goal %s satisfied at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: Goal %s satisfied at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_GOAL_FAILED:
-			nprintf(("missionlog", "MISSION LOG: Goal %s failed at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: Goal %s failed at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 		case LOG_WAYPOINTS_DONE:
-			nprintf(("missionlog", "MISSION LOG: %s completed waypoint path %s at %02d:%02d\n", entry->pname, entry->sname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s completed waypoint path %s at %02d:%02d\n", entry.pname, entry.sname, minutes, seconds));
 			break;
 		case LOG_CARGO_REVEALED:
-			nprintf(("missionlog", "MISSION LOG: %s cargo %s revealed at %02d:%02d\n", entry->pname, Cargo_names[entry->index], minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s cargo %s revealed at %02d:%02d\n", entry.pname, Cargo_names[entry.index], minutes, seconds));
 			break;
 		case LOG_CAP_SUBSYS_CARGO_REVEALED:
-			nprintf(("missionlog", "MISSION LOG: %s subsystem %s cargo %s revealed at %02d:%02d\n", entry->pname, entry->sname, Cargo_names[entry->index], minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s subsystem %s cargo %s revealed at %02d:%02d\n", entry.pname, entry.sname, Cargo_names[entry.index], minutes, seconds));
 			break;
 		case LOG_SELF_DESTRUCTED:
-			nprintf(("missionlog", "MISSION LOG: %s self-destructed at %02d:%02d\n", entry->pname, minutes, seconds));
+			nprintf(("missionlog", "MISSION LOG: %s self-destructed at %02d:%02d\n", entry.pname, minutes, seconds));
 			break;
 	}
 #endif
@@ -302,25 +302,25 @@ void mission_log_add_entry_multi( LogType type, const char *pname, const char *s
 	Assert ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 
 	Log_entries.emplace_back();
-	auto entry = &Log_entries.back();
+	auto &entry = Log_entries.back();
 
-	entry->type = type;
+	entry.type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strcpy_s(entry->pname, pname);
+		strcpy_s(entry.pname, pname);
 	}
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strcpy_s(entry->sname, sname);
+		strcpy_s(entry.sname, sname);
 	}
-	entry->index = index;
+	entry.index = index;
 
-	entry->flags = flags;
-	entry->timestamp = timestamp;
-	entry->timer_padding = The_mission.HUD_timer_padding;
+	entry.flags = flags;
+	entry.timestamp = timestamp;
+	entry.timer_padding = The_mission.HUD_timer_padding;
 
-	entry->pname_display = entry->pname;
-	entry->sname_display = entry->sname;
+	entry.pname_display = entry.pname;
+	entry.sname_display = entry.sname;
 }
 
 // function to determine is the given event has taken place count number of times.
@@ -329,11 +329,10 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 {
 	Assertion(count > 0, "The count parameter is %d; it should be greater than 0!", count);
 
-	for (const auto &ii: Log_entries) {
-		auto entry = &ii;
+	for (const auto& entry: Log_entries) {
 		bool found = false;
 
-		if ( entry->type == type ) {
+		if ( entry.type == type ) {
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
 			// were passed into this function.  Count the entry as found if either name matches both in the other
 			// set.
@@ -343,7 +342,7 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 					return 0;
 				}
 
-				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) ) {
+				if ( (!stricmp(entry.pname, pname) && !stricmp(entry.sname, sname)) || (!stricmp(entry.pname, sname) && !stricmp(entry.sname, pname)) ) {
 					found = true;
 				}
 			} else {
@@ -353,17 +352,17 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 					return 0;
 				}
 
-				if ( stricmp(entry->pname, pname) != 0 ) {
+				if ( stricmp(entry.pname, pname) != 0 ) {
 					continue;
 				}
 
 				// if we are looking for a subsystem entry, the subsystem names must be compared
 				if ((type == LOG_SHIP_SUBSYS_DESTROYED || type == LOG_CAP_SUBSYS_CARGO_REVEALED)) {
-					if ( (sname == NULL) || !subsystem_stricmp(sname, entry->sname) ) {
+					if ( (sname == NULL) || !subsystem_stricmp(sname, entry.sname) ) {
 						found = true;
 					}
 				} else {
-					if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
+					if ( (sname == NULL) || !stricmp(sname, entry.sname) ) {
 						found = true;
 					}
 				}
@@ -374,7 +373,7 @@ int mission_log_get_time_indexed( LogType type, const char *pname, const char *s
 
 				if ( !count ) {
 					if (time) {
-						*time = entry->timestamp;
+						*time = entry.timestamp;
 					}
 
 					return 1;
@@ -400,10 +399,8 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 {
 	int count = 0;
 
-	for (const auto& ii : Log_entries) {
-		auto entry = &ii;
-
-		if ( entry->type == type ) {
+	for (const auto& entry : Log_entries) {
+		if ( entry.type == type ) {
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
 			// were passed into this function.  Count the entry as found if either name matches both in the other
 			// set.
@@ -413,7 +410,7 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 					return 0;
 				}
 
-				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) ) {
+				if ( (!stricmp(entry.pname, pname) && !stricmp(entry.sname, sname)) || (!stricmp(entry.pname, sname) && !stricmp(entry.sname, pname)) ) {
 					count++;
 				}
 			} else {
@@ -423,11 +420,11 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 					return 0;
 				}
 
-				if ( stricmp(entry->pname, pname) != 0 ) {
+				if ( stricmp(entry.pname, pname) != 0 ) {
 					continue;
 				}
 
-				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
+				if ( (sname == NULL) || !stricmp(sname, entry.sname) ) {
 					count++;
 				}
 			}
@@ -518,15 +515,13 @@ void mission_log_init_scrollback(int pw, bool split_string)
 
 	Log_scrollback_vec.clear();
 
-	for (const auto& ii : Log_entries) {
-		auto entry = &ii;
-
-		if (entry->flags & MLF_HIDDEN)
+	for (const auto& entry : Log_entries) {
+		if (entry.flags & MLF_HIDDEN)
 			continue;
 
 		// don't display failed bonus goals
-		if (entry->type == LOG_GOAL_FAILED) {
-			int type = Mission_goals[entry->index].type & GOAL_TYPE_MASK;
+		if (entry.type == LOG_GOAL_FAILED) {
+			int type = Mission_goals[entry.index].type & GOAL_TYPE_MASK;
 
 			if (type == BONUS_GOAL) {
 				continue;
@@ -536,35 +531,35 @@ void mission_log_init_scrollback(int pw, bool split_string)
 		log_line_complete thisEntry;
 
 		// track time of event (normal Missiontime format)
-		thisEntry.timestamp = entry->timestamp;
-		thisEntry.timer_padding = entry->timer_padding;
+		thisEntry.timestamp = entry.timestamp;
+		thisEntry.timer_padding = entry.timer_padding;
 
 		// keep track of base color for the entry
 		int thisColor;
 
 		// Goober5000
-		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
+		if ((entry.type == LOG_GOAL_SATISFIED) || (entry.type == LOG_GOAL_FAILED))
 			thisColor = LOG_COLOR_BRIGHT;
-		else if (entry->primary_team >= 0)
-			thisColor = mission_log_team_get_color(entry->primary_team);
+		else if (entry.primary_team >= 0)
+			thisColor = mission_log_team_get_color(entry.primary_team);
 		else
 			thisColor = LOG_COLOR_OTHER;
 
-		if ( (Lcl_gr) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
+		if ( (Lcl_gr) && ((entry.type == LOG_GOAL_FAILED) || (entry.type == LOG_GOAL_SATISFIED)) ) {
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
 			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Einsatzziel");
-		} else if ( (Lcl_pl) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
+		} else if ( (Lcl_pl) && ((entry.type == LOG_GOAL_FAILED) || (entry.type == LOG_GOAL_SATISFIED)) ) {
 			// same thing for polish
 			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Cel misji");
 		} else {
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, entry->pname_display.c_str());
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, entry.pname_display.c_str());
 		}
 
 		//Set the flags for objectives
-		if (entry->type == LOG_GOAL_SATISFIED) {
+		if (entry.type == LOG_GOAL_SATISFIED) {
 			thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
-		} else if (entry->type == LOG_GOAL_FAILED) {
+		} else if (entry.type == LOG_GOAL_FAILED) {
 			thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
 		} else {
 			thisEntry.objective.flags = 0;
@@ -574,21 +569,21 @@ void mission_log_init_scrollback(int pw, bool split_string)
 		X = ACTION_X;
 
 		// Goober5000
-		if (entry->secondary_team >= 0)
-			thisColor = mission_log_team_get_color(entry->secondary_team);
+		if (entry.secondary_team >= 0)
+			thisColor = mission_log_team_get_color(entry.secondary_team);
 		else
 			thisColor = LOG_COLOR_NORMAL;
 
 		char text[256];
 
-		switch (entry->type) {
+		switch (entry.type) {
 			case LOG_SHIP_DESTROYED:
 				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				if (!entry->sname_display.empty()) {
+				if (!entry.sname_display.empty()) {
 					message_log_add_segs(XSTR("  Kill: ", 405), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-					message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
-					if (entry->index >= 0) {
-						sprintf(text, NOX(" (%d%%)"), entry->index);
+					message_log_add_segs(entry.sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
+					if (entry.index >= 0) {
+						sprintf(text, NOX(" (%d%%)"), entry.index);
 						message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 					}
 				}
@@ -607,8 +602,8 @@ void mission_log_init_scrollback(int pw, bool split_string)
 				break;
 
 			case LOG_WING_ARRIVED:
-				if (entry->index > 1){
-					sprintf(text, XSTR( "Arrived (wave %d)", 407), entry->index);
+				if (entry.index > 1){
+					sprintf(text, XSTR( "Arrived (wave %d)", 407), entry.index);
 				} else {
 					strcpy_s(text, XSTR( "Arrived", 406));
 				}
@@ -625,12 +620,12 @@ void mission_log_init_scrollback(int pw, bool split_string)
 
 			case LOG_SHIP_DOCKED:
 				message_log_add_segs(XSTR("Docked with ", 409), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(entry.sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_SUBSYS_DESTROYED: {
-				ship_info* sip = &Ship_info[(int)((entry->index >> 16) & 0xffff)];
-				int model_index = (int)(entry->index & 0xffff);
+				ship_info* sip = &Ship_info[(int)((entry.index >> 16) & 0xffff)];
+				int model_index = (int)(entry.index & 0xffff);
 				const char* subsys_name;
 				if (strlen(sip->subsystems[model_index].alt_sub_name)) {
 					subsys_name = sip->subsystems[model_index].alt_sub_name;
@@ -646,7 +641,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 
 			case LOG_SHIP_UNDOCKED:
 				message_log_add_segs(XSTR("Undocked with ", 412), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(entry.sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_DISABLED:
@@ -670,30 +665,30 @@ void mission_log_init_scrollback(int pw, bool split_string)
 				break;
 
 			case LOG_CARGO_REVEALED:
-				Assert( entry->index >= 0 );
-				Assert(!(entry->index & CARGO_NO_DEPLETE));
+				Assert( entry.index >= 0 );
+				Assert(!(entry.index & CARGO_NO_DEPLETE));
 
 				message_log_add_segs(XSTR("Cargo revealed: ", 418), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
+				strncpy(text, Cargo_names[entry.index], sizeof(text) - 1);
 				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_CAP_SUBSYS_CARGO_REVEALED:
-				Assert( entry->index >= 0 );
-				Assert(!(entry->index & CARGO_NO_DEPLETE));
+				Assert( entry.index >= 0 );
+				Assert(!(entry.index & CARGO_NO_DEPLETE));
 
-				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(entry.sname_display.c_str(), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
+				strncpy(text, Cargo_names[entry.index], sizeof(text) - 1);
 				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 
 
 			case LOG_GOAL_SATISFIED:
 			case LOG_GOAL_FAILED: {
-				int type = Mission_goals[entry->index].type & GOAL_TYPE_MASK;
+				int type = Mission_goals[entry.index].type & GOAL_TYPE_MASK;
 				sprintf( text, XSTR( "%s objective ", 419), Goal_type_text(type) );
-				if ( entry->type == LOG_GOAL_SATISFIED )
+				if ( entry.type == LOG_GOAL_SATISFIED )
 					strcat_s(text, XSTR( "satisfied.", 420));
 				else
 					strcat_s(text, XSTR( "failed.", 421));
