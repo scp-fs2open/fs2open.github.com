@@ -7964,7 +7964,8 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
 		render_info.set_detail_level_lock(0);
-		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_TRANS);
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
@@ -8008,7 +8009,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 			//If we just want to recieve, we still have to write to the color buffer but not to the zbuffer, otherwise shadow recieving breaks
 			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | (Show_ship_casts_shadow ? 0 : MR_NO_ZBUFFER));
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
 		}
 		if (renderCockpitModel) {
 			model_render_params shadow_render_info;
@@ -8019,7 +8020,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
 			if (!Disable_cockpit_sway)
 				offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset, MODEL_RENDER_OPAQUE);
 		}
 
 		shadows_end_render();
@@ -8046,44 +8047,58 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
+	model_render_params ship_render_info;
+	model_render_params cockpit_render_info;
+	vec3d cockpit_offset = sip->cockpit_offset;
+
 	//Properly render ship and cockpit model
 	if (deferredRenderShipModel) {
-		model_render_params render_info;
-		render_info.set_detail_level_lock(0);
-		render_info.set_flags(render_flags);
-		render_info.set_replacement_textures(pmi->texture_replace);
-		render_info.set_object_number(OBJ_INDEX(objp));
+		ship_render_info.set_detail_level_lock(0);
+		ship_render_info.set_flags(render_flags);
+		ship_render_info.set_replacement_textures(pmi->texture_replace);
+		ship_render_info.set_object_number(OBJ_INDEX(objp));
 		if (sip->uses_team_colors)
-			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
+			ship_render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
-		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		model_render_immediate(&ship_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
 		gr_zbuffer_clear(true);
 	}
 	if (renderCockpitModel) {
-		model_render_params render_info;
-		render_info.set_detail_level_lock(0);
-		render_info.set_flags(render_flags);
-		render_info.set_replacement_textures(Player_cockpit_textures);
-		vec3d offset = sip->cockpit_offset;
-		vm_vec_unrotate(&offset, &offset, &objp->orient);
+		cockpit_render_info.set_detail_level_lock(0);
+		cockpit_render_info.set_flags(render_flags);
+		cockpit_render_info.set_replacement_textures(Player_cockpit_textures);
+		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
 		if (!Disable_cockpit_sway)
-			offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
-		model_render_immediate(&render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
+			cockpit_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_OPAQUE);
 	}
 
-
 	if (Cmdline_deferred_lighting_cockpit) {
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
 		gr_deferred_lighting_msaa();
 		gr_deferred_lighting_end();
 		gr_deferred_lighting_finish();
 
 		gr_reset_lighting();
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
+		gr_set_view_matrix(&leaning_position, &eye_orient);
+	}
+
+	//Transparent stuff has to come after deferred closes
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+
+	if (deferredRenderShipModel) {
+		model_render_immediate(&ship_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_TRANS);
+	}
+
+	if (renderCockpitModel) {
+		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_TRANS);
+	}
+
+	if (Cmdline_deferred_lighting_cockpit) {
 		gr_set_lighting();
 	}
 
