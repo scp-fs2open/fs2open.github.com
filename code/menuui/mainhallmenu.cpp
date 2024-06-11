@@ -475,6 +475,13 @@ void main_hall_init(const SCP_string &main_hall_name)
 		return;
 	}
 
+	extern bool Campaign_room_no_campaigns;
+
+	// Log if we don't have a campaign set yet.
+	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
+		mprintf(("No valid campaign is currently selected for the active player!\n"));
+	}
+
 	// gameseq_post_event(GS_EVENT_SCRIPTING);
 
 	int idx;
@@ -1095,11 +1102,6 @@ void main_hall_do(float frametime)
 
 	gr_flip();
 	gr_reset_screen_scale();
-
-	// Log if we don't have a campaign set yet.
-	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
-		mprintf(("No valid campaign is currently selected for the active player!\n"));
-	}
 
 	// Display a popup if playermenu loaded a player file with a different version than expected
 	bool popup_shown = player_tips_controls();
