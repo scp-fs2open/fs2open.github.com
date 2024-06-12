@@ -222,7 +222,6 @@ static EnhancedSoundData Default_sound_priorities[NUM_RETAIL_GAMEPLAY_SOUNDS] =
 
 static const EnhancedSoundData default_enhanced_sound_data(SND_ENHANCED_PRIORITY_MEDIUM_HIGH, 1);
 
-
 /*
  * Update any uninitialized EnhancedSoundData in Snds
   * with hardcoded defaults for retail.
@@ -545,7 +544,7 @@ void gamesnd_preload_common_sounds()
 
 	Assert( Snds.size() <= INT_MAX );
 	for (auto& gs: Snds) {
-		if ( gs.preload ) {
+		if ( gs.flags & GAME_SND_PRELOAD ) {
 			for (auto& entry : gs.sound_entries) {
 				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 					game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
@@ -566,7 +565,7 @@ void gamesnd_load_gameplay_sounds()
 
 	Assert( Snds.size() <= INT_MAX );
 	for (auto& gs: Snds) {
-		if ( !gs.preload ) { // don't try to load anything that's already preloaded
+		if ( !(gs.flags & GAME_SND_PRELOAD) ) { // don't try to load anything that's already preloaded
 			for (auto& entry : gs.sound_entries) {
 				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0) {
 					game_busy(NOX("** preloading gameplay sounds **"));        // Animate loading cursor... does nothing if loading screen not active.
@@ -641,6 +640,7 @@ void parse_gamesnd_old(game_snd* gs)
 	gs->pitch_range = util::UniformFloatRange(1.0f);
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
+	gs->flags |= GAME_SND_RETAIL_STYLE;
 
 	// since we have a new filename, first assume it's valid
 	gs->flags &= ~GAME_SND_NOT_VALID;
@@ -658,7 +658,7 @@ void parse_gamesnd_old(game_snd* gs)
 
 	if (temp > 0)
 	{
-		gs->preload = true;
+		gs->flags |= GAME_SND_PRELOAD;
 	}
 
 	float default_volume;
@@ -783,7 +783,13 @@ void parse_gamesnd_soundset(game_snd* gs, bool no_create) {
 
 	if (required_string_no_create("+Preload:", no_create))
 	{
-		stuff_boolean(&gs->preload);
+		bool temp;
+		stuff_boolean(&temp);
+
+		if (temp)
+			gs->flags |= GAME_SND_PRELOAD;
+		else
+			gs->flags &= ~GAME_SND_PRELOAD;
 	}
 
 	if (required_string_no_create("+Volume:", no_create))
@@ -888,7 +894,13 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 
 	if (required_string_no_create("+Preload:", no_create))
 	{
-		stuff_boolean(&gs->preload);
+		bool temp;
+		stuff_boolean(&temp);
+
+		if (temp)
+			gs->flags |= GAME_SND_PRELOAD;
+		else
+			gs->flags &= ~GAME_SND_PRELOAD;
 	}
 
 	if (required_string_no_create("+Volume:", no_create))
@@ -944,17 +956,32 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 }
 
-void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *lookupVector)
+void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector)
 {
 	SCP_string name;
-
 	stuff_string(name, F_NAME, "\t \n");
+
+	int vectorIndex;
+	if (lookupVector)
+		vectorIndex = gamesnd_lookup_name(name.c_str(), *lookupVector);
+	else
+		vectorIndex = -1;
+
+	bool no_create = orig_no_create;
 
 	if (!no_create)
 	{
-		if (lookupVector != NULL)
+		if (vectorIndex >= 0)
 		{
-			if (gamesnd_lookup_name(name.c_str(), *lookupVector) >= 0)
+			auto existing_gs = &lookupVector->at(vectorIndex);
+
+			// if the existing sound was an empty or placeholder sound, replace it, don't warn
+			if (existing_gs->sound_entries.empty() || existing_gs->sound_entries[0].filename[0] == '\0')
+			{
+				gs = existing_gs;
+				no_create = orig_no_create = true;
+			}
+			else
 			{
 				Warning(LOCATION, "Duplicate sound name \"%s\" found!", name.c_str());
 			}
@@ -964,8 +991,6 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 	}
 	else
 	{
-		int vectorIndex = gamesnd_lookup_name(name.c_str(), *lookupVector);
-
 		if (vectorIndex < 0)
 		{
 			Warning(LOCATION, "No existing sound entry with name \"%s\" found!", name.c_str());
@@ -981,7 +1006,9 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 	if (optional_string("+Filename:"))
 	{
 		parse_gamesnd_new(gs, no_create);
-	} else if (optional_string("+Entry:")) {
+	}
+	else if (optional_string("+Entry:"))
+	{
 		parse_gamesnd_soundset(gs, no_create);
 	}
 	else
@@ -1189,6 +1216,26 @@ void parse_sound_environments()
 	required_string("#Sound Environments End");
 }
 
+bool gamesnd_is_reserved_game_index(int index)
+{
+	if (index >= 0 && index <= 161)
+		return true;
+	if (index >= 173 && index <= 191)
+		return true;
+	if (index == 200 || index == 201)
+		return true;
+
+	return false;
+}
+
+bool gamesnd_is_reserved_interface_index(int index)
+{
+	if (index >= 0 && index <= 64)
+		return true;
+
+	return false;
+}
+
 // Due to the cyclic depdendency between sounds and species, the parsing is now broken up into two stages.
 // First, just the sounds are parsed; and second, just the flyby sounds are parsed (or assigned).
 static bool Sound_table_first_stage = false;
@@ -1212,6 +1259,26 @@ void parse_sound_table(const char* filename)
 					game_snd tempSound;
 					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
 					{
+						int tempIndex = static_cast<int>(Snds.size());
+
+						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
+						{
+							// retail sounds must have names that match their indexes
+							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
+								Warning(LOCATION, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+						}
+						else
+						{
+							// prevent new sounds from colliding with reserved indexes
+							while (gamesnd_is_reserved_game_index(tempIndex))
+							{
+								Snds.emplace_back();
+								sprintf(Snds.back().name, "%d", tempIndex);
+								Snds.back().sound_entries.emplace_back();
+								tempIndex = static_cast<int>(Snds.size());
+							}
+						}
+
 						Snds.push_back(game_snd(tempSound));
 					}
 				}
@@ -1232,6 +1299,27 @@ void parse_sound_table(const char* filename)
 					game_snd tempSound;
 					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
 					{
+						int tempIndex = static_cast<int>(Snds_iface.size());
+
+						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
+						{
+							// retail sounds must have names that match their indexes
+							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
+								Warning(LOCATION, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+						}
+						else
+						{
+							// prevent new sounds from colliding with reserved indexes
+							while (gamesnd_is_reserved_interface_index(tempIndex))
+							{
+								Snds_iface.emplace_back();
+								sprintf(Snds_iface.back().name, "%d", tempIndex);
+								Snds_iface.back().sound_entries.emplace_back();
+								Snds_iface_handle.push_back(sound_handle::invalid());
+								tempIndex = static_cast<int>(Snds_iface.size());
+							}
+						}
+
 						Snds_iface.push_back(game_snd(tempSound));
 						Snds_iface_handle.push_back(sound_handle::invalid());
 					}
@@ -1377,6 +1465,17 @@ bool gamesnd_game_sound_try_load(gamesnd_id sound)
 	}
 	auto gs = gamesnd_get_game_sound(sound);
 
+	// check flag the first time
+	if (gs->flags & GAME_SND_NOT_VALID) {
+		return false;
+	}
+
+	if (gs->sound_entries.empty()) {
+		Warning(LOCATION, "No sound entries found in game sound %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
+		return false;
+	}
+
 	for (auto& entry : gs->sound_entries) {
 		if (!entry.id.isValid()) {
 			// Lazily load unloaded sound entries when required
@@ -1384,7 +1483,7 @@ bool gamesnd_game_sound_try_load(gamesnd_id sound)
 		}
 	}
 
-	// check flag
+	// check flag again
 	return (gs->flags & GAME_SND_NOT_VALID) == 0;
 }
 
