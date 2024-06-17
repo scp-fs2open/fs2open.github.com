@@ -395,7 +395,7 @@ bool obj_compare(object *left, object *right);
  *
  * @author J Fernandez
  */
-void physics_populate_snapshot(physics_snapshot& snapshot, object* objp);
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp);
 
 /**
  * @brief Change the object's physics info to match the info contained in a snapshot.
