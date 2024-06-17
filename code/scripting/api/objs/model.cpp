@@ -614,7 +614,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	polymodel *pm = mth->Get();
-	if (s == NULL || pm == NULL)
+	if (s == nullptr || pm == nullptr)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	texture_info *tinfo = NULL;
