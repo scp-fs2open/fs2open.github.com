@@ -2101,7 +2101,7 @@ bool obj_compare(object* left, object* right) {
 	return OBJ_INDEX(left) == OBJ_INDEX(right);
 }
 
-void physics_populate_snapshot(physics_snapshot& snapshot, object* objp)
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp)
 {
     Assertion(objp != nullptr, "Bad object (nullptr) passed to physics_overwrite_snapshot, please report to the SCP!");
 
