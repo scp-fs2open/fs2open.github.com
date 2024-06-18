@@ -695,8 +695,11 @@ void obj_delete(int objnum)
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
 
+	// this avoids include issues from physics state, multi interpolate and object code
+	extern void multi_interpolate_clear_helper(int objnum);
+
 	// clean up interpolation info
-	objp->interp_info.clean_up();
+	multi_interpolate_clear_helper(objnum);
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
@@ -1583,7 +1586,9 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
+				extern void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
+
+				interpolate_main_helper(OBJ_INDEX(objp), &objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
@@ -2133,3 +2138,28 @@ bool obj_compare(object* left, object* right) {
 
 	return OBJ_INDEX(left) == OBJ_INDEX(right);
 }
+
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp)
+{
+    Assertion(objp != nullptr, "Bad object (nullptr) passed to physics_overwrite_snapshot, please report to the SCP!");
+
+    snapshot.position = objp->pos;
+    snapshot.orientation = objp->orient;
+    snapshot.velocity = objp->phys_info.vel;
+    snapshot.desired_velocity = objp->phys_info.desired_vel;
+    snapshot.rotational_velocity = objp->phys_info.rotvel;
+    snapshot.desired_rotational_velocity = objp->phys_info.desired_rotvel;
+}
+
+void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source)
+{
+    Assertion(objp != nullptr, "Bad object passed to phsyics snapshot application code.  This is a coder mistake, please report!");
+
+    objp->pos = source.position;
+    objp->orient = source.orientation;
+    objp->phys_info.vel = source.velocity;
+    objp->phys_info.desired_vel = source.desired_velocity;
+    objp->phys_info.rotvel = source.rotational_velocity;
+    objp->phys_info.desired_rotvel = source.desired_rotational_velocity;
+}
+

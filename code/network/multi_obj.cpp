@@ -314,7 +314,7 @@ void multi_rollback_ship_record_add_ship(int obj_num)
 	
 	if (objp->type == OBJ_SHIP) {
 		int subsystem_count = Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-		objp->interp_info.reset(subsystem_count);
+		Interp_info[obj_num].reset(subsystem_count);
 	}
 	
 	// if we're right where we should be.
@@ -915,9 +915,9 @@ void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIM
 
 	// now that we have valid values, we need to fix the affected values in the record.
 	do {
-		Objects[objnum].interp_info.reinterpolate_previous(
+		Interp_info[objnum].reinterpolate_previous(
 			Oo_info.timestamps[prev_index], prev_packet_index, current_packet_index,  
-			&info->positions[prev_index], &info->orientations[prev_index], &info->velocities[prev_index], &info->rotational_velocities[prev_index]
+			info->positions[prev_index], info->orientations[prev_index], info->velocities[prev_index], info->rotational_velocities[prev_index]
 			);
 		++prev_index;
 
@@ -981,7 +981,7 @@ void multi_oo_respawn_reset_info(object* objp)
 
 	// To ensure clean interpolation, we should probably just reset everything.
 	int subsystem_count = Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-	objp->interp_info.reset(subsystem_count);
+	Interp_info[OBJ_INDEX(objp)].reset(subsystem_count);
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -1797,6 +1797,8 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		return offset;
 	}
 
+	int objnum = OBJ_INDEX(pobjp);
+
 	// ship pointer
 	shipp = &Ships[pobjp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
@@ -1864,7 +1866,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 			new_phys_info.desired_rotvel = new_phys_info.rotvel;
 		}
 
-		pobjp->interp_info.add_packet(OBJ_INDEX(pobjp), seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
+		Interp_info[objnum].add_packet(objnum, seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
 	}
 
 	// Packet processing needs to stop here if the ship is still arriving, leaving, dead or dying to prevent bugs.
@@ -1881,9 +1883,9 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		UNPACK_PERCENT(fpct);
-		if (seq_num > pobjp->interp_info.get_hull_comparison_frame()) {
+		if (seq_num > Interp_info[objnum].get_hull_comparison_frame()) {
 			pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;
-			pobjp->interp_info.set_hull_comparison_frame(seq_num);
+			Interp_info[objnum].set_hull_comparison_frame(seq_num);
 		}
 	}	
 
@@ -1892,12 +1894,12 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		float quad = shield_get_max_quad(pobjp);
 
 		// check before unpacking here so we don't have to recheck for each quadrant.
-		if (seq_num > pobjp->interp_info.get_shields_comparison_frame()) {
+		if (seq_num > Interp_info[objnum].get_shields_comparison_frame()) {
 			for (int i = 0; i < pobjp->n_quadrants; i++) {
 				UNPACK_PERCENT(fpct);
 				pobjp->shield_quadrant[i] = fpct * quad;
 			}
-			pobjp->interp_info.set_shields_comparison_frame(seq_num);
+			Interp_info[objnum].set_shields_comparison_frame(seq_num);
 		}
 		else {
 			for (int i = 0; i < pobjp->n_quadrants; i++) {
@@ -1937,8 +1939,8 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 				// update health
 				if (flags[i] & OO_SUBSYS_HEALTH) {
-					if (seq_num > pobjp->interp_info.get_subsystem_health_frame(i)) {
-						pobjp->interp_info.set_subsystem_health_frame(i, seq_num);
+					if (seq_num > Interp_info[objnum].get_subsystem_health_frame(i)) {
+						Interp_info[objnum].set_subsystem_health_frame(i, seq_num);
 						subsysp->current_hits = subsys_data[data_idx] * subsysp->max_hits;
 
 						// Aggregate if necessary.
@@ -1954,9 +1956,9 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					bool animations_valid = false;
 
-					if (seq_num > pobjp->interp_info.get_subsystem_animation_frame(i)) {
+					if (seq_num > Interp_info[objnum].get_subsystem_animation_frame(i)) {
 						animations_valid = true;
-						pobjp->interp_info.set_subsystem_animation_frame(i, seq_num);						
+						Interp_info[objnum].set_subsystem_animation_frame(i, seq_num);						
 					}
 
 					angles prev_angs_1 = vmd_zero_angles;
@@ -2097,7 +2099,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		float weapon_energy_pct;
 		UNPACK_PERCENT(weapon_energy_pct);
 
-		if( seq_num > pobjp->interp_info.get_ai_comparison_frame() ){
+		if( seq_num > Interp_info[objnum].get_ai_comparison_frame() ){
 			if ( shipp->ai_index >= 0 ){
 				// make sure to undo the wrap if it occurred during compression for unset ai mode.
 				if (umode == 255) {
@@ -2137,7 +2139,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 			shipp->weapon_energy = sip->max_weapon_reserve * weapon_energy_pct;
 
-			pobjp->interp_info.set_ai_comparison_frame(seq_num);
+			Interp_info[objnum].set_ai_comparison_frame(seq_num);
 		}		
 	}	
 

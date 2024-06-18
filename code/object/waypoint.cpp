@@ -5,6 +5,7 @@
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "network/multiutil.h"
+#include <limits.h>
 
 //********************GLOBALS********************
 SCP_vector<waypoint_list> Waypoint_lists;
