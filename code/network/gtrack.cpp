@@ -262,7 +262,8 @@ static void DeserializeGamePacket(const ubyte *data, const int data_size, game_p
 		}
 
 		case GNT_NAT_HOLE_PUNCH_REQ: {
-			if (gph->len == (GAME_HEADER_ONLY_SIZE+sizeof(hole_punch_addr_ip6))) {
+			// using data_size here since gph.len hasn't been adjusted yet
+			if (data_size == (GAME_HEADER_ONLY_SIZE+sizeof(hole_punch_addr_ip6))) {
 				auto ipv6 = reinterpret_cast<hole_punch_addr_ip6 *>(&gph->data);
 
 				PXO_GET_DATA(ipv6->addr);
