@@ -14,7 +14,8 @@
 
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
-
+#include <array>
+ 
 #include "actions/Program.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
