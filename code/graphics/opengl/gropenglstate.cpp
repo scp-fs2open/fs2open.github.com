@@ -182,7 +182,7 @@ void opengl_state::init()
 
 	glBlendFunc(GL_ONE, GL_ZERO);
 	blendfunc_Value.first = GL_ONE;
-	blendfunc_Value.first = GL_ZERO;
+	blendfunc_Value.second = GL_ZERO;
 	buffer_blendfunc_Value.fill(blendfunc_Value);
 
 	glDepthFunc(GL_LESS);
