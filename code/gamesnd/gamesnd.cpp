@@ -1260,23 +1260,25 @@ void parse_sound_table(const char* filename)
 					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
 					{
 						int tempIndex = static_cast<int>(Snds.size());
+						bool name_not_match_index = (atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0');
 
 						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
 						{
 							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
+							if (name_not_match_index)
 								Warning(LOCATION, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
 						}
 						else
 						{
 							// prevent new sounds from colliding with reserved indexes
-							while (gamesnd_is_reserved_game_index(tempIndex))
-							{
-								Snds.emplace_back();
-								sprintf(Snds.back().name, "%d", tempIndex);
-								Snds.back().sound_entries.emplace_back();
-								tempIndex = static_cast<int>(Snds.size());
-							}
+							if (name_not_match_index)
+								while (gamesnd_is_reserved_game_index(tempIndex))
+								{
+									Snds.emplace_back();
+									sprintf(Snds.back().name, "%d", tempIndex);
+									Snds.back().sound_entries.emplace_back();
+									tempIndex = static_cast<int>(Snds.size());
+								}
 						}
 
 						Snds.push_back(game_snd(tempSound));
@@ -1300,24 +1302,26 @@ void parse_sound_table(const char* filename)
 					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
 					{
 						int tempIndex = static_cast<int>(Snds_iface.size());
+						bool name_not_match_index = (atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0');
 
 						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
 						{
 							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
+							if (name_not_match_index)
 								Warning(LOCATION, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
 						}
 						else
 						{
 							// prevent new sounds from colliding with reserved indexes
-							while (gamesnd_is_reserved_interface_index(tempIndex))
-							{
-								Snds_iface.emplace_back();
-								sprintf(Snds_iface.back().name, "%d", tempIndex);
-								Snds_iface.back().sound_entries.emplace_back();
-								Snds_iface_handle.push_back(sound_handle::invalid());
-								tempIndex = static_cast<int>(Snds_iface.size());
-							}
+							if (name_not_match_index)
+								while (gamesnd_is_reserved_interface_index(tempIndex))
+								{
+									Snds_iface.emplace_back();
+									sprintf(Snds_iface.back().name, "%d", tempIndex);
+									Snds_iface.back().sound_entries.emplace_back();
+									Snds_iface_handle.push_back(sound_handle::invalid());
+									tempIndex = static_cast<int>(Snds_iface.size());
+								}
 						}
 
 						Snds_iface.push_back(game_snd(tempSound));
