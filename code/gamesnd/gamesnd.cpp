@@ -1271,7 +1271,8 @@ void parse_sound_table(const char* filename)
 						else
 						{
 							// prevent new sounds from colliding with reserved indexes
-							if (name_not_match_index) {
+							if (name_not_match_index) 
+							{
 								while (gamesnd_is_reserved_game_index(tempIndex))
 								{
 									Snds.emplace_back();
@@ -1314,7 +1315,8 @@ void parse_sound_table(const char* filename)
 						else
 						{
 							// prevent new sounds from colliding with reserved indexes
-							if (name_not_match_index) {
+							if (name_not_match_index) 
+							{
 								while (gamesnd_is_reserved_interface_index(tempIndex))
 								{
 									Snds_iface.emplace_back();
