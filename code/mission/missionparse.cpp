@@ -5263,13 +5263,12 @@ void parse_event(mission *pm)
 		
 		stuff_string_list(buffer); 
 		for (int i = 0; i < (int)buffer.size(); i++) {
-			int add_flag = 1; 
 
 			for (int j = 0; j < MAX_MISSION_EVENT_LOG_FLAGS; j++) {
 				if (!stricmp(buffer[i].c_str(), Mission_event_log_flags[j])) {
-					// bitshift add_flag so that it equals the index of the flag in Mission_event_log_flags[]
-					add_flag = add_flag << j; 
-					event->mission_log_flags |= add_flag;
+					// add the flag to the variable, bitshifted by the index used in Mission_event_log_flags[]
+					event->mission_log_flags |= 1 << j; 
+					break;
 				}
 			}
 		}
