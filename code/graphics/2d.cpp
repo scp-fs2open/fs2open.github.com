@@ -1601,6 +1601,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		}
 	}
 
+	if (!gr_is_viewport_window() && !Cmdline_window_res.has_value()) {
+		// For whatever reason, it seems that a combination of Win 11 and presumably NVidia GPU's causes weird artifacts.
+		// These artifacts do not appear in windowed mode, or with an attached renderdoc / nvidia nsight.
+		// Similarly using the -window_res command line parameter prevents this.
+		// To the best of our knowledge, this is because all of the aforementioned methods route the rendering through another buffer
+		// (be that a window, a render overlay from nsight, or an FSO-internal buffer) instead of directly rendering to the OS-provided direct screen backbuffer.
+		// As the cost of -window_res is one single blit of a fullscreen buffer, it's probably an acceptable compromise to get rid of render artifacts.
+		// As such, forcibly enable -window_res at the screen resolution here, if we're in fullscreen.
+		Cmdline_window_res.emplace(width, height);
+	}
+
 	if (d_mode == GR_DEFAULT) {
 		// OpenGL should be default
 		mode = GR_OPENGL;
