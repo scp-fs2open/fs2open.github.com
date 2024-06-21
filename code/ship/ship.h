@@ -404,6 +404,7 @@ public:
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
 	int subsys_cargo_name;			// cap ship cargo on subsys
+	char subsys_cargo_title[NAME_LENGTH];  // cap ship cargo title (IE: Cargo: or Passengers:)
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
 	int triggered_rotation_index;		//the actual currently running animation and assosiated states
@@ -552,6 +553,7 @@ public:
 	ubyte	pre_death_explosion_happened;		// If set, it means the 4 or 5 smaller explosions 
 	ubyte wash_killed;
 	char	cargo1;
+	char cargo_title[NAME_LENGTH];
 
 	// ship wing status info
 	char	wing_status_wing_index;			// wing index (0-4) in wingman status gauge
@@ -761,9 +763,6 @@ public:
 
 	// Goober5000 - range of primitive sensors
 	int primitive_sensor_range;
-	
-	// Goober5000 - revised nameplate implementation
-	int *ship_replacement_textures;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
@@ -1445,6 +1444,9 @@ public:
 	float autoaim_fov;
 	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
+	bool aims_at_flight_cursor;
+	float flight_cursor_aim_extent;
+
 	bool topdown_offset_def;
 	vec3d topdown_offset;
 
@@ -1538,7 +1540,7 @@ extern const size_t Num_subsystem_flags;
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
-extern int	*Player_cockpit_textures;
+extern std::shared_ptr<model_texture_replace> Player_cockpit_textures;
 
 // Data structure to track the active missiles
 typedef struct ship_obj {

@@ -2616,6 +2616,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$Lifetime Variation Factor When Child:"))
+	{
+		stuff_float(&wip->lifetime_variation_factor_when_child);
+	}
+
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm] && optional_string("$Local SSM:"))
 	{
 		if(optional_string("+Warpout Delay:")) {
@@ -3140,7 +3145,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Per Burst Rotation:")) {
 				stuff_float(&t5info->per_burst_rot);
 				t5info->per_burst_rot = fl_radians(t5info->per_burst_rot);
-				if (t5info->per_burst_rot < -PI2 || t5info->per_burst_rot > PI2) {
+				if (t5info->per_burst_rot > PI2) {
 					Warning(LOCATION, "Per Burst Rotation on beam '%s' must not exceed 360 degrees.", wip->name);
 					t5info->per_burst_rot = 0.0f;
 				}
@@ -6969,7 +6974,9 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 						rand_val = static_randf(objp->net_signature + j);
 					}
 
-					Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
+					float child_factor = child_wip->lifetime_variation_factor_when_child;
+
+					Weapons[Objects[weapon_objnum].instance].lifeleft *= std::max(0.01f, rand_val*(child_factor*2.0f) + (1.0f - child_factor));
 					if (child_wip->wi_flags[Weapon::Info_Flags::Remote]) {
 						parent_shipp->weapons.detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));
 						parent_shipp->weapons.remote_detonaters_active++;
@@ -8812,6 +8819,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 				vm_vec_scale_add(&tailp, &obj->pos, &rotated_offset, laser_length);
 				vm_vec_scale_add(&headp, &tailp, &obj->orient.vec.fvec, laser_length);
 
+			float main_bitmap_alpha_mult = 1.0;
+
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
 
@@ -8844,16 +8853,16 @@ void weapon_render(object* obj, model_draw_list *scene)
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, wip->laser_min_pixel_size);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, wip->laser_min_pixel_size);
 
-				int alpha = static_cast<int>(alphaf * 255.0f);
+				int alpha = fl2i(alphaf * 255.0f);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
+					main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
 						alpha, alpha, alpha);
-					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult * 255.0);
+					alpha = fl2i(alphaf * main_bitmap_alpha_mult * 255.0);
 				}
 
 				batching_add_laser(
@@ -8937,20 +8946,28 @@ void weapon_render(object* obj, model_draw_list *scene)
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius * radius_mult, wip->laser_min_pixel_size);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp2, wip->laser_tail_radius * radius_mult, wip->laser_min_pixel_size);
 
-				int r = static_cast<int>(static_cast<float>(c.red) * alphaf);
-				int g = static_cast<int>(static_cast<float>(c.green) * alphaf);
-				int b = static_cast<int>(static_cast<float>(c.blue) * alphaf);
+				int r = fl2i(i2fl(c.red) * alphaf);
+				int g = fl2i(i2fl(c.green) * alphaf);
+				int b = fl2i(i2fl(c.blue) * alphaf);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp2,
+					float head_alpha = 1.0f - main_bitmap_alpha_mult;
+
+					r = fl2i(r * head_alpha);
+					g = fl2i(g * head_alpha);
+					b = fl2i(b * head_alpha);
+
+					batching_add_laser(
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
+						&headp2,
 						scaled_head_radius * wip->laser_glow_head_scale,
+						&tailp2,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
 						r, g, b);
-					r = static_cast<int>(static_cast<float>(c.red) * alphaf * main_bitmap_alpha_mult);
-					g = static_cast<int>(static_cast<float>(c.green) * alphaf * main_bitmap_alpha_mult);
-					b = static_cast<int>(static_cast<float>(c.blue) * alphaf * main_bitmap_alpha_mult);
+					r = fl2i(i2fl(c.red) * alphaf * main_bitmap_alpha_mult);
+					g = fl2i(i2fl(c.green) * alphaf * main_bitmap_alpha_mult);
+					b = fl2i(i2fl(c.blue) * alphaf * main_bitmap_alpha_mult);
 				}
 
 				batching_add_laser(
@@ -9020,6 +9037,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 			}
 
 			render_info.set_flags(render_flags);
+
+			if (wp->model_instance_num >= 0)
+				render_info.set_replacement_textures(model_get_instance(wp->model_instance_num)->texture_replace);
 
 			model_render_queue(&render_info, scene, wip->model_num, &obj->orient, &obj->pos);
 
@@ -9239,6 +9259,8 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_interval_delay = -1.f;
 		this->spawn_info[i].spawn_chance = 1.f;
 	}
+
+	this->lifetime_variation_factor_when_child = 0.2f;
 
 	this->swarm_count = -1;
 	// *Default is 150  -Et1

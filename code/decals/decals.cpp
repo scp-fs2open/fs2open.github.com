@@ -224,13 +224,13 @@ struct Decal {
 		if (!object.isValid()) {
 			return false;
 		}
-		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {
+		if (object.objp()->flags[Object::Object_Flags::Should_be_dead]) {
 			return false;
 		}
 
-		if (orig_obj_type != object.objp->type) {
+		if (orig_obj_type != object.objp()->type) {
 			mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
-			         OBJ_INDEX(object.objp), Object_type_names[orig_obj_type], Object_type_names[object.objp->type]));
+			         object.objnum, Object_type_names[orig_obj_type], Object_type_names[object.objp()->type]));
 			return false;
 		}
 
@@ -241,7 +241,7 @@ struct Decal {
 			}
 		}
 
-		auto objp = object.objp;
+		auto objp = object.objp();
 		if (objp->type == OBJ_SHIP) {
 			auto shipp = &Ships[objp->instance];
 			auto model_instance = model_get_instance(shipp->model_instance_num);
@@ -393,9 +393,9 @@ void initializeMission() {
 }
 
 matrix4 getDecalTransform(Decal& decal) {
-	Assertion(decal.object.objp->type == OBJ_SHIP, "Only ships are currently supported for decals!");
+	Assertion(decal.object.objp()->type == OBJ_SHIP, "Only ships are currently supported for decals!");
 
-	auto objp = decal.object.objp;
+	auto objp = decal.object.objp();
 	auto ship = &Ships[objp->instance];
 	auto pmi = model_get_instance(ship->model_instance_num);
 	auto pm = model_get(pmi->model_num);

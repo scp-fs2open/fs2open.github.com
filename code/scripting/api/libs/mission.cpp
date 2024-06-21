@@ -50,6 +50,7 @@
 #include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
+#include "scripting/api/objs/modelinstance.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
@@ -927,7 +928,7 @@ ADE_FUNC(sendMessage,
 		if (ship_h == nullptr || !ship_h->isValid())
 			return ADE_RETURN_FALSE;
 
-		sender = &Ships[ship_h->objp->instance];
+		sender = &Ships[ship_h->objp()->instance];
 		messageSource = MESSAGE_SOURCE_SHIP;
 	}
 
@@ -1158,7 +1159,7 @@ ADE_FUNC(createDebris,
 		if (source_ship == nullptr || !source_ship->isValid())
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
-		source_shipp = &Ships[source_ship->objp->instance];
+		source_shipp = &Ships[source_ship->objp()->instance];
 		source_objnum = source_shipp->objnum;
 		source_class = source_shipp->ship_info_index;
 		model_num = Ship_info[source_class].model_num;
@@ -1303,7 +1304,7 @@ ADE_FUNC(createWeapon,
 		real_orient = orient->GetMatrix();
 	}
 
-	int parent_idx = (parent && parent->isValid()) ? OBJ_INDEX(parent->objp) : -1;
+	int parent_idx = (parent && parent->isValid()) ? parent->objnum : -1;
 
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
@@ -1411,7 +1412,7 @@ ADE_FUNC(createExplosion,
 
 	int type = big ? FIREBALL_LARGE_EXPLOSION : FIREBALL_MEDIUM_EXPLOSION;
 
-	int parent_idx = (parent && parent->isValid()) ? OBJ_INDEX(parent->objp) : -1;
+	int parent_idx = (parent && parent->isValid()) ? parent->objnum : -1;
 
 	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
 
@@ -2177,6 +2178,24 @@ ADE_VIRTVAR(SkyboxAlpha, l_Mission, "number", "Sets or returns the current skybo
 	return ade_set_args(L, "f", Nmodel_alpha);
 }
 
+ADE_VIRTVAR(Skybox, l_Mission, "model", "Sets or returns the current skybox model", "model", "The skybox model")
+{
+	model_h* model = nullptr;
+	if (!ade_get_args(L, "*|o", l_Model.GetPtr(&model)))
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	if (ADE_SETTING_VAR && model && model->isValid()) {
+		stars_set_background_model(model->GetID(), -1, Nmodel_flags, Nmodel_alpha);
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(Nmodel_num)));
+}
+
+ADE_FUNC(getSkyboxInstance, l_Mission, nullptr, "Returns the current skybox model instance", "model_instance", "The skybox model instance")
+{
+	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(Nmodel_instance_num)));
+}
+
 ADE_FUNC(isRedAlertMission,
 	l_Mission,
 	nullptr,
@@ -2277,7 +2296,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 		return ADE_RETURN_TRUE;
 	}
 
-	std::unordered_set<const object*> excludedObjectIDs;
+	std::unordered_set<int> excludedObjectIDs;
 
 	if (excludedObjects.isValid()) {
 		for (const auto& object : excludedObjects) {
@@ -2286,7 +2305,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 				try {
 					object_h obj;
 					object.second.getValue(l_Object.Get(&obj));
-					excludedObjectIDs.emplace(obj.objp);
+					excludedObjectIDs.emplace(obj.objnum);
 				}
 				catch (const luacpp::LuaException& /*e*/) {
 					// We were likely fed a userdata that was not an object. 

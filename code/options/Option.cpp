@@ -181,9 +181,10 @@ void OptionBase::setRangeValues(float min, float max)
 }
 
 bool operator<(const OptionBase& lhs, const OptionBase& rhs) {
-	if (lhs._category < rhs._category)
+	auto val = stricmp(lhs._category.first, rhs._category.first);
+	if (val < 0)
 		return true;
-	if (rhs._category < lhs._category)
+	if (val > 0)
 		return false;
 	return lhs._importance > rhs._importance; // Importance is sorted from highest to lowest
 }

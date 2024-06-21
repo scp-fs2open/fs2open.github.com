@@ -57,7 +57,7 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 		throw std::runtime_error("Invalid key");
 	}
 
-	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str());
+	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str(), (const char*)0, true);
 
 	if (value == nullptr) {
 		// TODO: This is not really an error but I would like to avoid return nullptr here...
@@ -156,7 +156,7 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 
 	auto val = json_dump_string(iter->second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 
-	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 
 	auto changed = option->valueChanged(iter->second.get());
 
@@ -178,7 +178,7 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 
 		auto val = json_dump_string(entry.second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 
-		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 	}
 	SCP_vector<const options::OptionBase*> unchanged;
 
@@ -221,6 +221,67 @@ void OptionsManager::printValues()
 		mprintf(("Option.%s: %s\n",
 			opt->getConfigKey().c_str(),
 			opt->getCurrentValueDescription().display.c_str()));
+	}
+}
+
+//Sets the value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_binary_option(SCP_string key, bool value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		auto val = thisOpt->getCurrentValueDescription();
+		SCP_string newVal = value ? "true" : "false"; // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({val.display, newVal.c_str()});
+	}
+}
+
+//Sets the value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_multi_option(SCP_string key, int value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		auto values = thisOpt->getValidValues();
+		thisOpt->setValueDescription(values[value]);
+	}
+}
+
+//Sets value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_range_option(SCP_string key, int value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+	}
+}
+
+//Sets the value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_range_option(SCP_string key, float value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
 	}
 }
 

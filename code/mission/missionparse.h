@@ -319,6 +319,7 @@ typedef struct subsys_status {
 	int	secondary_ammo[MAX_SHIP_SECONDARY_BANKS];
 	int	ai_class;
 	int	subsys_cargo_name;
+	char subsys_cargo_title[NAME_LENGTH];
 } subsys_status;
 
 typedef struct texture_replace {
@@ -354,6 +355,7 @@ public:
 	int loadout_team = -1;						// original team, should never be changed after being set!!
 	int	ai_goals = -1;							// sexp of lists of goals that this ship should try and do
 	char	cargo1 = '\0';
+	char cargo_title[NAME_LENGTH] = "";
 	SCP_string team_color_setting;
 
 	int	subsys_index = -1;						// index into subsys_status array

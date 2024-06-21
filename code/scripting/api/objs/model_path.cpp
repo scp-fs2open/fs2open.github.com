@@ -47,7 +47,7 @@ ADE_VIRTVAR(Position, l_ModelPathPoint, "vector", "The current, global position 
 	}
 
 	// A submodel is only valid if the object is a ship so this is safe
-	auto objp  = p->parent->subsys.objh.objp;
+	auto objp  = p->parent->subsys.objh.objp();
 	auto shipp = &Ships[objp->instance];
 
 	auto pmi = model_get_instance(shipp->model_instance_num);

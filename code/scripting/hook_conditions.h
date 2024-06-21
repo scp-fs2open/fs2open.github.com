@@ -129,6 +129,11 @@ struct ObjectDrawConditions {
 	const object* drawn_from_objp;
 };
 
+struct KeyPressConditions {
+	HOOK_DEFINE_CONDITIONS;
+	int keycode;
+};
+
 }
 }
 

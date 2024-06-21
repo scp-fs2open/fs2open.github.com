@@ -615,6 +615,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
+	{ "replace-skybox-texture",				OP_REPLACE_TEXTURE_SKYBOX,						2, 2,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
 	{ "trigger-ship-animation",			OP_TRIGGER_ANIMATION_NEW,				3,	7,			SEXP_ACTION_OPERATOR,	}, //Lafiel
 	{ "stop-looping-animation",			OP_STOP_LOOPING_ANIMATION,				3,  3,			SEXP_ACTION_OPERATOR,   }, //Lafiel
@@ -1983,45 +1984,6 @@ int check_operator_argument_count(int count, int op)
 			return 0;
 
 	return 1;
-}
-
-template <typename T>
-int count_items_with_name(const char *name, const T* item_array, int num_items)
-{
-	Assert(name != nullptr && item_array != nullptr);
-
-	int count = 0;
-	for (int i = 0; i < num_items; ++i)
-		if (!stricmp(name, item_array[i].name))
-			++count;
-
-	return count;
-}
-
-template <typename T>
-int count_items_with_name(const char *name, const T& item_vector)
-{
-	Assert(name != nullptr);
-
-	int count = 0;
-	for (const auto &item: item_vector)
-		if (!stricmp(name, item.name))
-			++count;
-
-	return count;
-}
-
-template <typename T>
-int count_items_with_scp_string_name(const char *name, const T& item_vector)
-{
-	Assert(name != nullptr);
-
-	int count = 0;
-	for (const auto &item: item_vector)
-		if (!stricmp(name, item.name.c_str()))
-			++count;
-
-	return count;
 }
 
 // helper functions for check_container_value_data_type()
@@ -4832,6 +4794,7 @@ int get_sexp()
 				break;
 
 			case OP_REPLACE_TEXTURE:
+			case OP_REPLACE_TEXTURE_SKYBOX:
 				//Texture name is argument 2
 				n = CDDR(start);
 				do_preload_for_arguments(preload_texture, n, arg_handler);
@@ -16424,12 +16387,21 @@ void sexp_set_debris_field(int n)
 	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
 	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
 
+	SCP_vector<int> debris_types;
+	if (debris1 > 0) {
+		debris_types.push_back(debris1);
+	}
+	if (debris2 > 0) {
+		debris_types.push_back(debris2);
+	}
+	if (debris3 > 0) {
+		debris_types.push_back(debris3);
+	}
+
 	asteroid_create_debris_field(
 		num_asteroids,
 		asteroid_speed,
-		debris1,
-		debris2,
-		debris3,
+		debris_types,
 		o_min,
 		o_max,
 		enhanced);
@@ -20775,13 +20747,24 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	}
 }
 
-void sexp_replace_texture(int n)
+void sexp_replace_texture(int n, bool skybox)
 {
 	auto old_name = CTEXT(n);
 	n = CDR(n);
 
 	auto new_name = CTEXT(n);
 	n = CDR(n);
+
+	if (skybox) {
+		if (Nmodel_instance_num < 0) {
+			mprintf(("Tried to replace texture of a non-existant skybox\n"));
+			return;
+		}
+		polymodel_instance* skybox_pmi = model_get_instance(Nmodel_instance_num);
+		modelinstance_replace_active_texture(skybox_pmi, old_name, new_name);
+		stars_invalidate_environment_map();
+		return;
+	}
 
 	for (; n != -1; n = CDR(n))
 	{
@@ -21276,7 +21259,6 @@ void sexp_beam_fire(int node, bool at_coords)
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
-	fire_info.burst_index = 0;
 
 	// get the firing ship
 	auto shooter = eval_ship(n);
@@ -21362,16 +21344,18 @@ void sexp_beam_fire(int node, bool at_coords)
 		}
 	}
 
-	// fire the beam
-	if (fire_info.beam_info_index != -1) {
-		fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
-
-		beam_fire(&fire_info);
-		fire_info.turret->turret_next_fire_pos++;
-	} else {
-		// it would appear the turret doesn't have any beam weapons
-		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node)));
-	}
+		// fire the beam
+		if (fire_info.beam_info_index != -1) {
+			fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
+			for ( int i = 0; i < Weapon_info[fire_info.beam_info_index].shots; i++ ) {
+				fire_info.burst_index = i;
+				beam_fire(&fire_info);
+				fire_info.turret->turret_next_fire_pos++;
+			}
+		} else {
+			// it would appear the turret doesn't have any beam weapons
+			Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node)));
+		}
 }	
 
 void sexp_beam_floating_fire(int n)
@@ -29524,8 +29508,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_REPLACE_TEXTURE:
+			case OP_REPLACE_TEXTURE_SKYBOX:
 				sexp_val = SEXP_TRUE;
-				sexp_replace_texture(node);
+				sexp_replace_texture(node, op_num == OP_REPLACE_TEXTURE_SKYBOX);
 				break;
 
 			case OP_SET_ALPHA_MULT:
@@ -30783,6 +30768,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
+		case OP_REPLACE_TEXTURE_SKYBOX:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
@@ -33540,6 +33526,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_REPLACE_TEXTURE_SKYBOX:
+			return OPF_STRING;
       
 		case OP_SET_ALPHA_MULT:
 			if (argnum == 0)
@@ -35812,6 +35801,7 @@ int get_category(int op_id)
 		case OP_SEND_MESSAGE_CHAIN:
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
+		case OP_REPLACE_TEXTURE_SKYBOX:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
@@ -36139,6 +36129,7 @@ int get_subcategory(int op_id)
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
+		case OP_REPLACE_TEXTURE_SKYBOX:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_UPDATE_MOVEABLE:
@@ -41198,6 +41189,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Name of the texture to be replaced.\r\n"
 		"\t2: Name of the texture to be changed to.\r\n"
 		"\tRest: Name of the ship or wing (ship/wing does not need to be in-mission).\r\n"
+	},
+
+	{ OP_REPLACE_TEXTURE_SKYBOX, "replace-skybox-texture\r\n"
+		"\tChanges a texture of the skybox to a different texture, similar to the FRED texture replace.\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1: Name of the texture to be replaced.\r\n"
+		"\t2: Name of the texture to be changed to.\r\n"
 	},
 
 	{ OP_SET_ALPHA_MULT, "set-alpha-multiplier\r\n"

@@ -1197,6 +1197,9 @@ void debris_render(object * obj, model_draw_list *scene)
 		// render_info.set_flags(MR_NO_LIGHTING);
 	}
 
+	if (db->model_instance_num >= 0)
+		render_info.set_replacement_textures(model_get_instance(db->model_instance_num)->texture_replace);
+
 	submodel_render_queue( &render_info, scene, pm, pmi, db->submodel_num, &obj->orient, &obj->pos );
 
 	if (tbase != NULL && (swapped!=-1) && pm)	{

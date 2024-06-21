@@ -5,9 +5,107 @@
 #include "modelinstance.h"
 #include "object.h"
 #include "vecmath.h"
+#include "texture.h"
 
 namespace scripting {
 namespace api {
+
+//**********HANDLE: modelinstancetextures (compatible with preceding shiptextures)
+ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Model instance textures handle");
+
+ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of textures on a model instance", "number", "Number of textures on the model instance, or 0 if handle is invalid")
+{
+	modelinstance_h *mih;
+	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
+		return ade_set_error(L, "i", 0);
+
+	if(!mih->isValid())
+		return ade_set_error(L, "i", 0);
+
+	polymodel *pm = model_get(mih->Get()->model_num);
+
+	if(pm == nullptr)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
+}
+
+ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Array of model instance textures", "texture", "Texture, or invalid texture handle on failure")
+{
+	modelinstance_h *mih;
+	const char* s;
+	texture_h* tdx = nullptr;
+	if (!ade_get_args(L, "os|o", l_ModelInstanceTextures.GetPtr(&mih), &s, l_Texture.GetPtr(&tdx)))
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
+
+	if (!mih->isValid() || s == nullptr)
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
+
+	polymodel_instance *pmi = mih->Get();
+	polymodel *pm = model_get(pmi->model_num);
+	int final_index = -1;
+	int i;
+
+	char fname[MAX_FILENAME_LEN];
+	if (pmi->texture_replace != nullptr)
+	{
+		for(i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+		{
+			bm_get_filename((*pmi->texture_replace)[i], fname);
+
+			if(!strextcmp(fname, s)) {
+				final_index = i;
+				break;
+			}
+		}
+	}
+
+	if(final_index < 0)
+	{
+		for (i = 0; i < pm->n_textures; i++)
+		{
+			int tm_num = pm->maps[i].FindTexture(s);
+			if(tm_num > -1)
+			{
+				final_index = i*TM_NUM_TYPES+tm_num;
+				break;
+			}
+		}
+	}
+
+	if (final_index < 0)
+	{
+		final_index = atoi(s) - 1;	//Lua->FS2
+
+		if (final_index < 0 || final_index >= MAX_REPLACEMENT_TEXTURES)
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		if (pmi->texture_replace == nullptr) {
+			pmi->texture_replace = make_shared<model_texture_replace>();
+		}
+
+		if (tdx != nullptr) {
+			(*pmi->texture_replace)[final_index] = tdx->isValid() ? tdx->handle : -1;
+		}
+	}
+
+	if (pmi->texture_replace != nullptr && (*pmi->texture_replace)[final_index] >= 0)
+		return ade_set_args(L, "o", l_Texture.Set(texture_h((*pmi->texture_replace)[final_index])));
+	else
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture())));
+}
+
+ADE_FUNC(isValid, l_ModelInstanceTextures, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	modelinstance_h *mih;
+	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", mih->isValid());
+}
+
 
 ADE_OBJ(l_ModelInstance, modelinstance_h, "model_instance", "Model instance handle");
 
@@ -92,6 +190,29 @@ ADE_FUNC(getObject, l_ModelInstance, nullptr, "Returns the object that this inst
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	return ade_set_object_with_breed(L, mih->Get()->objnum);
+}
+
+ADE_VIRTVAR(Textures, l_ModelInstance, "modelinstancetextures", "Gets model instance textures", "modelinstancetextures", "Model instance textures, or invalid modelinstancetextures handle if modelinstance handle is invalid")
+{
+	modelinstance_h *sh = nullptr;
+	modelinstance_h *dh;
+	if(!ade_get_args(L, "o|o", l_ModelInstance.GetPtr(&dh), l_ModelInstance.GetPtr(&sh)))
+		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
+
+	if(!dh->isValid())
+		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
+
+	if(ADE_SETTING_VAR && sh && sh->isValid()) {
+		polymodel_instance *src = sh->Get();
+		polymodel_instance *dest = dh->Get();
+
+		if (src->texture_replace != nullptr)
+		{
+			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
+		}
+	}
+
+	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dh->Get())));
 }
 
 ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "submodel_instances", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")

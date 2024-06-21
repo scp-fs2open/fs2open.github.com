@@ -189,7 +189,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 	if (ADE_SETTING_VAR)
 	{
 		if (newObj != nullptr && newObj->isValid())
-			ph->Get().lock()->attached_objnum = newObj->objp->signature;
+			ph->Get().lock()->attached_objnum = newObj->sig;
 	}
 
 	return ade_set_object_with_breed(L, ph->Get().lock()->attached_objnum);

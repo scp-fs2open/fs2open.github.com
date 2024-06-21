@@ -7,23 +7,21 @@
 namespace scripting {
 namespace api {
 
-physics_info_h::physics_info_h() {
-	objh = object_h();
-	pi = NULL;
+physics_info_h::physics_info_h()
+	: objh(), pi(nullptr)
+{}
+physics_info_h::physics_info_h(object* objp)
+	: objh(objp), pi(nullptr)
+{
+	if (objh.isValid())
+		pi = &objh.objp()->phys_info;
 }
-physics_info_h::physics_info_h(object* objp) {
-	objh = object_h(objp);
-	pi = &objp->phys_info;
-}
-physics_info_h::physics_info_h(physics_info* in_pi) {
-	pi = in_pi;
-}
-bool physics_info_h::isValid() const {
-	if (objh.objp != NULL) {
-		return objh.isValid();
-	} else {
-		return (pi != NULL);
-	}
+physics_info_h::physics_info_h(physics_info* in_pi)
+	: objh(), pi(in_pi)
+{}
+bool physics_info_h::isValid() const
+{
+	return pi != nullptr && objh.isValid();
 }
 
 
@@ -297,7 +295,7 @@ ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->vel = *v3;
 		pih->pi->speed = vm_vec_mag(&pih->pi->vel);							
-		pih->pi->fspeed = vm_vec_dot(&pih->objh.objp->orient.vec.fvec, &pih->pi->vel);
+		pih->pi->fspeed = vm_vec_dot(&pih->objh.objp()->orient.vec.fvec, &pih->pi->vel);
 		if (Fix_scripted_velocity)
 			pih->pi->flags |= PF_SCRIPTED_VELOCITY; // set flag to ensure physics respects this new value
 	}
@@ -492,11 +490,11 @@ ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a
 
 	objh = pih->objh;
 	if (offset == nullptr)
-		offset = &objh.objp->pos;
+		offset = &objh.objp()->pos;
 	else
-		vm_vec_add2(offset, &objh.objp->pos);
+		vm_vec_add2(offset, &objh.objp()->pos);
 
-	ship_apply_whack(impulse, offset, objh.objp);
+	ship_apply_whack(impulse, offset, objh.objp());
 
 	return ADE_RETURN_TRUE;
 
@@ -514,10 +512,10 @@ ADE_FUNC(applyWhackWorld, l_Physics, "vector Impulse, [ vector Position]", "Appl
 
 	objh = pih->objh;
 	if (!world_pos) {
-		world_pos = &objh.objp->pos;
+		world_pos = &objh.objp()->pos;
 	}
 
-	ship_apply_whack(impulse, world_pos, objh.objp);
+	ship_apply_whack(impulse, world_pos, objh.objp());
 
 	return ADE_RETURN_TRUE;
 

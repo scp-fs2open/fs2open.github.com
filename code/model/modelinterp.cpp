@@ -824,7 +824,7 @@ DCF_BOOL( Arcs, Interp_lightning )
 
 int interp_box_offscreen( vec3d *min, vec3d *max )
 {
-	if ( keyd_pressed[KEY_LSHIFT] )	{
+	if ( key_is_pressed(KEY_LSHIFT) )	{
 		return IBOX_ALL_ON;
 	}
 

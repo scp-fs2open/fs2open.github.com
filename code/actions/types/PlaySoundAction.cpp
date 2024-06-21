@@ -26,7 +26,7 @@ ActionResult PlaySoundAction::execute(ProgramLocals& locals) const
 	vec3d local_pos;
 	matrix local_orient;
 	if (locals.hostSubobject != -1) {
-		auto instance = object_get_model_instance(locals.host.objp);
+		auto instance = object_get_model_instance(locals.host.objp());
 		Assertion(instance != -1, "Model instances are required if a host subobject is specified.");
 
 		auto pmi = model_get_instance(instance);
@@ -47,8 +47,8 @@ ActionResult PlaySoundAction::execute(ProgramLocals& locals) const
 	local_pos += locals.variables.getValue({"locals", "position"}).getVector();
 
 	vec3d global_pos;
-	vm_vec_unrotate(&global_pos, &local_pos, &locals.host.objp->orient);
-	global_pos += locals.host.objp->pos;
+	vm_vec_unrotate(&global_pos, &local_pos, &locals.host.objp()->orient);
+	global_pos += locals.host.objp()->pos;
 
 	const auto soundId = gamesnd_get_by_name(m_soundIdExpression.execute(locals.variables).c_str());
 

@@ -18,8 +18,8 @@ ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist",
 	if(!ade_get_args(L, "o", l_Waypoint.GetPtr(&oh)))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
-	if(oh->isValid() && oh->objp->type == OBJ_WAYPOINT) {
-		wp_list = find_waypoint_list_with_instance(oh->objp->instance);
+	if(oh->isValid() && oh->objp()->type == OBJ_WAYPOINT) {
+		wp_list = find_waypoint_list_with_instance(oh->objp()->instance);
 		if(wp_list != NULL)
 			wpl = waypointlist_h(wp_list);
 	}

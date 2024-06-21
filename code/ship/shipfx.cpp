@@ -979,7 +979,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 		mc.model_instance_num = -1;
-		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
+		mc.model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;	// Fill in the model to check
 		mc.submodel_num = -1;
 		mc.orient = &objp->orient;					// The object's orient
 		mc.pos = &objp->pos;							// The object's position
@@ -1662,7 +1662,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 				model_render_params render_info;
 
 				render_info.set_clip_plane(debris_clip_plane_pt, clip_plane_norm);
-				render_info.set_replacement_textures(shipp->ship_replacement_textures);
+				render_info.set_replacement_textures(pmi->texture_replace);
 				render_info.set_flags(render_flags);
 
 				submodel_render_queue(&render_info, scene, pm, pmi, pm->debris_objects[i], &half_ship->orient, &tmp);
@@ -1706,7 +1706,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 	render_info.set_flags(render_flags);
 	render_info.set_clip_plane(model_clip_plane_pt, clip_plane_norm);
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
+	render_info.set_replacement_textures(pmi->texture_replace);
 	render_info.set_object_number(shipp->objnum);
 
 	if (Ship_info[shipp->ship_info_index].uses_team_colors && !shipp->flags[Ship::Ship_Flags::Render_without_miscmap]) {

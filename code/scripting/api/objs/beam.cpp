@@ -31,7 +31,7 @@ ADE_VIRTVAR(Class, l_Beam, "weaponclass", "Weapon's class", "weaponclass", "Weap
 	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
-	beam *bp = &Beams[oh->objp->instance];
+	beam *bp = &Beams[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR && nc > -1) {
 		bp->weapon_info_index = nc;
@@ -50,7 +50,7 @@ ADE_VIRTVAR(LastShot, l_Beam, "vector", "End point of the beam", "vector", "vect
 	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	beam *bp = &Beams[oh->objp->instance];
+	beam *bp = &Beams[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR && vec3) {
 		bp->last_shot = *vec3;
@@ -69,7 +69,7 @@ ADE_VIRTVAR(LastStart, l_Beam, "vector", "Start point of the beam", "vector", "v
 	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	beam *bp = &Beams[oh->objp->instance];
+	beam *bp = &Beams[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR && v3) {
 		bp->last_start = *v3;
@@ -89,8 +89,8 @@ ADE_VIRTVAR(Target, l_Beam, "object", "Target of beam. Value may also be a deriv
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
@@ -100,7 +100,7 @@ ADE_VIRTVAR(Target, l_Beam, "object", "Target of beam. Value may also be a deriv
 		{
 			if(bp->target_sig != newh->sig)
 			{
-				bp->target = newh->objp;
+				bp->target = newh->objp();
 				bp->target_sig = newh->sig;
 			}
 		}
@@ -125,8 +125,8 @@ ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is target
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
@@ -136,7 +136,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is target
 		{
 			if(bp->target_sig != newh->objh.sig)
 			{
-				bp->target = newh->objh.objp;
+				bp->target = newh->objh.objp();
 				bp->target_subsys = newh->ss;
 				bp->target_sig = newh->objh.sig;
 			}
@@ -162,8 +162,8 @@ ADE_VIRTVAR(ParentShip, l_Beam, "object", "Parent of the beam.", "object", "Beam
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
@@ -173,7 +173,7 @@ ADE_VIRTVAR(ParentShip, l_Beam, "object", "Parent of the beam.", "object", "Beam
 		{
 			if(bp->sig != newh->sig)
 			{
-				bp->objp = newh->objp;
+				bp->objp = newh->objp();
 				bp->sig = newh->sig;
 			}
 		}
@@ -198,8 +198,8 @@ ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired 
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
@@ -209,7 +209,7 @@ ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired 
 		{
 			if(bp->sig != newh->objh.sig)
 			{
-				bp->objp = newh->objh.objp;
+				bp->objp = newh->objh.objp();
 				bp->subsys = newh->ss;
 			}
 		}
@@ -233,7 +233,7 @@ ADE_VIRTVAR(Team, l_Beam, "team", "Beam's team", "team", "Beam team, or invalid 
 	if (!oh->isValid())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
-	beam* b = &Beams[oh->objp->instance];
+	beam* b = &Beams[oh->objp()->instance];
 
 	if (ADE_SETTING_VAR && nt >= 0 && nt < (int)Iff_info.size())
 		b->team = (char)nt;
@@ -248,8 +248,8 @@ ADE_FUNC(getCollisionCount, l_Beam, NULL, "Get the number of collisions in frame
 		return ADE_RETURN_NIL;
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ADE_RETURN_NIL;
 
@@ -269,8 +269,8 @@ ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the define
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -292,8 +292,8 @@ ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision informati
 		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
@@ -314,8 +314,8 @@ ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined co
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
@@ -336,8 +336,8 @@ ADE_FUNC(isExitCollision, l_Beam, "number", "Checks if the defined collision was
 		return ADE_RETURN_NIL;
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ADE_RETURN_NIL;
 
@@ -355,8 +355,8 @@ ADE_FUNC(getStartDirectionInfo, l_Beam, NULL, "Gets the start information about 
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -372,8 +372,8 @@ ADE_FUNC(getEndDirectionInfo, l_Beam, NULL, "Gets the end information about the 
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	beam *bp = NULL;
-	if(objh->objp->instance > -1)
-		bp = &Beams[objh->objp->instance];
+	if(objh->objp()->instance > -1)
+		bp = &Beams[objh->objp()->instance];
 	else
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -391,7 +391,7 @@ ADE_FUNC(vanish, l_Beam, nullptr, "Vanishes this beam from the mission.", "boole
 	if (!objh->isValid())
 		return ADE_RETURN_FALSE;
 
-	beam_delete(&Beams[objh->objp->instance]);
+	beam_delete(&Beams[objh->objp()->instance]);
 
 	return ADE_RETURN_TRUE;
 }

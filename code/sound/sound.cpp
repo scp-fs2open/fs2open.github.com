@@ -322,11 +322,14 @@ sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_l
 	if (!ds_initialized)
 		return sound_load_id::invalid();
 
-	if (!VALID_FNAME(entry->filename))
-		return sound_load_id::invalid();
-
 	if (flags && *flags & GAME_SND_NOT_VALID)
 		return sound_load_id::invalid();
+
+	if (!VALID_FNAME(entry->filename)) {
+		if (flags)
+			*flags |= GAME_SND_NOT_VALID;
+		return sound_load_id::invalid();
+	}
 
 	for (n = 0; n < Sounds.size(); n++) {
 		if ( !(Sounds[n].flags & SND_F_USED) ) {

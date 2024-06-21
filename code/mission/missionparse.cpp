@@ -2091,6 +2091,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	shipp->cargo1 = p_objp->cargo1;
+	strcpy_s(shipp->cargo_title, p_objp->cargo_title);
 
 	shipp->arrival_location = p_objp->arrival_location;
 	shipp->arrival_distance = p_objp->arrival_distance;
@@ -2422,6 +2423,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 
 		ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+		strcpy_s(ptr->subsys_cargo_title, sssp->subsys_cargo_title);
 
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
@@ -3149,6 +3151,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
 
+	if (optional_string("$Cargo Title:"))
+	{
+		stuff_string(p_objp->cargo_title, F_NAME, NAME_LENGTH);
+	}
+
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
 
 	find_and_stuff("$Arrival Location:", &temp, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
@@ -3762,6 +3769,11 @@ void parse_common_object_data(p_object *p_objp)
 				}
 			}
 			Subsys_status[i].subsys_cargo_name = index;
+		}
+
+		Subsys_status[i].subsys_cargo_title[0] = '\0';
+		if (optional_string("+Cargo Title:")) {
+			stuff_string(Subsys_status[i].subsys_cargo_title, F_NAME, NAME_LENGTH);
 		}
 
 		if (optional_string("+AI Class:"))
@@ -5251,13 +5263,12 @@ void parse_event(mission *pm)
 		
 		stuff_string_list(buffer); 
 		for (int i = 0; i < (int)buffer.size(); i++) {
-			int add_flag = 1; 
 
 			for (int j = 0; j < MAX_MISSION_EVENT_LOG_FLAGS; j++) {
 				if (!stricmp(buffer[i].c_str(), Mission_event_log_flags[j])) {
-					// bitshift add_flag so that it equals the index of the flag in Mission_event_log_flags[]
-					add_flag = add_flag << j; 
-					event->mission_log_flags |= add_flag;
+					// add the flag to the variable, bitshifted by the index used in Mission_event_log_flags[]
+					event->mission_log_flags |= 1 << j; 
+					break;
 				}
 			}
 		}
@@ -5811,14 +5822,13 @@ void parse_bitmaps(mission *pm)
 
 void parse_asteroid_fields(mission *pm)
 {
-	int i, count;
+	int i;
 
 	Assert(pm != NULL);
 
 	Asteroid_field.num_initial_asteroids = 0;
 
 	i = 0;
-	count = 0;
 
 	if (!optional_string("#Asteroid Fields"))
 		return;
@@ -5845,68 +5855,81 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.debris_genre = (debris_genre_t)type;
 		}
 
-		Asteroid_field.field_debris_type[0] = -1;
-		Asteroid_field.field_debris_type[1] = -1;
-		Asteroid_field.field_debris_type[2] = -1;
+		Asteroid_field.field_debris_type.clear();
+
+		Asteroid_field.field_asteroid_type.clear();
 
 		// Debris types
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
 
 			// Obsolete and only for backwards compatibility
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < MAX_RETAIL_DEBRIS_TYPES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					stuff_int(&Asteroid_field.field_debris_type[j]);
-					count++;
 				}
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-				if (optional_string("+Field Debris Type Name:")) {
-					SCP_string ast_name;
-					stuff_string(ast_name, F_NAME);
-					int subtype;
-					subtype = get_asteroid_index(ast_name.c_str());
-					if (subtype >= 0) {
-						Asteroid_field.field_debris_type[j] = subtype;
-						count++;
-					} else {
-						WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
-					}
+			while (optional_string("+Field Debris Type Name:")) {
+				SCP_string ast_name;
+				stuff_string(ast_name, F_NAME);
+				int subtype;
+				subtype = get_asteroid_index(ast_name.c_str());
+				if (subtype >= 0) {
+					Asteroid_field.field_debris_type.push_back(subtype);
+				} else {
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
 				}
-			}
+				}
 
 		// Asteroid types
 		} else {
 
+			// Retail asteroid subtypes
+			SCP_string colors[NUM_ASTEROID_SIZES] = {"Brown", "Blue", "Orange"};
+
 			// Obsolete and only for backwards compatibility
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					int subtype;
 					stuff_int(&subtype);
-					Asteroid_field.field_debris_type[subtype] = 1;
-					count++;
+					Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
 				}
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-				if (optional_string("+Field Debris Type Name:")) {
-					SCP_string ast_name;
-					stuff_string(ast_name, F_NAME);
-					int subtype = get_asteroid_index(ast_name.c_str());
-					// If the returned index is valid but not one of the first three then it's a debris type instead of asteroid
-					if ((subtype >= 0) && (subtype < NUM_ASTEROID_SIZES)) {
-						Asteroid_field.field_debris_type[subtype] = 1;
-						count++;
-					} else {
-						WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
+			while (optional_string("+Field Debris Type Name:")) {
+				SCP_string ast_name;
+				stuff_string(ast_name, F_NAME);
+
+				// Old saving for asteroids was bugged and saved the asteroid size rather than the subtype color
+				// so we'll compensate for that here
+				for (size_t k = 0; k < NUM_ASTEROID_SIZES; k++) {
+					// if we get the name for small/medium/large asteroid then convert it to retail colors
+					if (stricmp(ast_name.c_str(), Asteroid_info[k].name) == 0) {
+						ast_name = colors[k];
+						break;
 					}
+				}
+
+				auto list = get_list_valid_asteroid_subtypes();
+
+				//validate the asteroid subtype name
+				bool valid = false;
+				for (const auto& entry : list) {
+					if (ast_name == entry) {
+						valid = true;
+						break;
+					}
+				}
+
+				if (valid){
+					Asteroid_field.field_asteroid_type.push_back(ast_name);
+				} else {
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
 			}
 		}
-
-		Asteroid_field.num_used_field_debris_types = count;
 
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
@@ -5920,9 +5943,11 @@ void parse_asteroid_fields(mission *pm)
 			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
-		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
-			Asteroid_field.field_debris_type[0] = 0;
-			Asteroid_field.num_used_field_debris_types = 1;
+		// Is this a good idea? This doesn't seem like a good idea. What is this compatibility actually for??
+		// If you've defined an asteroid field but didn't define any 'roids, then tough luck. Fix your mission.
+		// If this is for a retail mission then this needs to be hardcoded for that specific mission file probably. - Mjn
+		if ((Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.field_debris_type.size() == 0)) {
+			Asteroid_field.field_asteroid_type.push_back("Brown");
 		}
 
 		required_string("$Average Speed:");

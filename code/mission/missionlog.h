@@ -43,9 +43,7 @@ enum LogType {
 
 // structure definition for log entries
 
-#define MLF_ESSENTIAL						(1 << 0)	// this entry is essential for goal checking code
-#define MLF_OBSOLETE						(1 << 1)	// this entry is obsolete and will be removed
-#define MLF_HIDDEN							(1 << 2)	// entry doesn't show up in displayed log.
+#define MLF_HIDDEN							(1 << 0)	// entry doesn't show up in displayed log.
 
 // defines for log flags
 #define LOG_FLAG_GOAL_FAILED (1 << 0)
@@ -87,9 +85,6 @@ struct log_line_complete {
 	SCP_vector<log_text_seg> segments;
 };
 
-extern SCP_vector<log_line_complete> Log_scrollback_vec;
-extern int Num_log_lines;
-
 // function prototypes
 
 // to be called before each mission starts
@@ -112,13 +107,16 @@ extern int mission_log_get_time_indexed(LogType type, const char *name, const ch
 extern int mission_log_get_count(LogType type, const char *pname, const char *sname);
 
 // get the team for a log item
-extern int message_log_color_get_team(int msg_color);
+extern int mission_log_color_get_team(int msg_color);
 
 // get the actual color for a line item
 extern const color *log_line_get_color(int tag);
 
-void message_log_init_scrollback(int pw, bool split_string = true);
-void message_log_shutdown_scrollback();
-void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w, int list_h);
+extern void mission_log_init_scrollback(int pw, bool split_string = true);
+extern void mission_log_shutdown_scrollback();
+extern void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w, int list_h);
+
+extern int mission_log_scrollback_num_lines();
+extern const log_line_complete* mission_log_scrollback_get_line(int index);
 
 #endif

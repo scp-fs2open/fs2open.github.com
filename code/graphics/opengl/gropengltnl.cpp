@@ -959,7 +959,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 		if (material_info->get_animated_effect() > 0) {
 			if (Scene_framebuffer_in_frame) {
-				GL_state.Texture.Enable(9, GL_TEXTURE_2D, Scene_effect_texture);
+				GL_state.Texture.Enable(9, GL_TEXTURE_2D, Scene_composite_texture);
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			} else {
 				GL_state.Texture.Enable(9, GL_TEXTURE_2D, Framebuffer_fallback_texture_id);
@@ -1050,7 +1050,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 		});
 
 	Current_shader->program->Uniforms.setTextureUniform("frameBuffer", 2);
-	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_effect_texture);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_composite_texture);
 
 	Current_shader->program->Uniforms.setTextureUniform("distMap", 3);
 	if (material_info->get_thruster_rendering()) {

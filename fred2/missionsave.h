@@ -24,8 +24,6 @@
 
 struct sexp_container;
 
-#define BACKUP_DEPTH	9
-
 /**
  * @class CFred_mission_save
  *

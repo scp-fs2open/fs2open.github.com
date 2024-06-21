@@ -225,6 +225,8 @@ int Reticle_launch_coords[GR_NUM_RESOLUTIONS][2] = {
 static int Threat_lock_timer;				// timestamp for when to show next flashing frame for lock threat
 static int Threat_lock_frame;				// frame offset of current lock flashing warning
 
+static vertex Player_flight_cursor_offset;
+
 
 HudGaugeReticle::HudGaugeReticle():
 HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_TOPDOWN | VM_OTHER_SHIP), 255, 255, 255)
@@ -254,6 +256,8 @@ void HudGaugeReticle::render(float  /*frametime*/)
 	}
 
 	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	int bitmap_size_x, bitmap_size_y;
+	bm_get_info(crosshair.first_frame, &bitmap_size_x, &bitmap_size_y);
 
 	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid()) {
 		ship *shipp = &Ships[Objects[Player->objnum].instance];
@@ -283,38 +287,66 @@ void HudGaugeReticle::render(float  /*frametime*/)
 
 	setGaugeColor(HUD_C_BRIGHT);
 
-	if (HUD_shadows){
-		gr_set_color_fast(&Color_black);
+	// the typical reticle indicating the direction of shooting
+	int shoot_reticle = 0;
+	if (has_autoaim_lock)
+		shoot_reticle = crosshair.first_frame + autoaim_frame_offset;
+	else
+		shoot_reticle = crosshair.first_frame;
 
-		if (has_autoaim_lock)
-		{
-			// Render the shadow twice to increase visibility
-			renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0] + 1, position[1] + 1);
-			renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0] + 1, position[1] + 1);
-		}
-		else
-		{
-			// Render the shadow twice to increase visibility
-			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
-			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
-		}
-		gr_set_color_fast(&gauge_color);
+	// a secondary 'reticle' for distinguishing the flight cursor from the above
+	int flight_reticle = flight_cursor_frame_offset >= 0 ? crosshair.first_frame + flight_cursor_frame_offset : -1;
+
+	int mobile_reticle = flight_reticle;
+	int fixed_reticle = shoot_reticle;
+	// depending on the parameters of the ship the 'mobile' reticle may be the one indicating the shoot direction
+	if (sip->aims_at_flight_cursor) {
+		mobile_reticle = shoot_reticle;
+		fixed_reticle = flight_reticle;
 	}
 
-	if (has_autoaim_lock)
-		renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0], position[1]);
+
+	if (fixed_reticle == shoot_reticle)
+		setGaugeColor(HUD_C_BRIGHT);
 	else
-		renderBitmap(crosshair.first_frame, position[0], position[1]);
+		setGaugeColor(HUD_C_NORMAL);
+
+	if (fixed_reticle >= 0) {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+
+			// Render the shadow twice to increase visibility
+			renderBitmap(fixed_reticle, position[0] + 1, position[1] + 1);
+			renderBitmap(fixed_reticle, position[0] + 1, position[1] + 1);
+			gr_set_color_fast(&gauge_color);
+		}
+
+		renderBitmap(fixed_reticle, position[0], position[1]);
+	} else {
+		renderCircle(fl2i(base_w * 0.5f), fl2i(base_h * 0.5f), fl2i(base_h * 0.03f), false);
+	}
+
+	if (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor) {
+		if (mobile_reticle == shoot_reticle)
+			setGaugeColor(HUD_C_BRIGHT);
+		else
+			setGaugeColor(HUD_C_NORMAL);
+
+		int x = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
+		int y = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
+		unsize(&x, &y);
+		if (mobile_reticle >= 0)
+			renderBitmap(mobile_reticle, fl2i(x - base_w * 0.5f) + position[0], fl2i(y - base_h * 0.5f) + position[1]);
+		else {
+			renderCircle(x, y, fl2i(base_h * 0.03f), false);
+		}
+	}
 
 	if (firepoint_display) {
 		fp.clear();
 		getFirepointStatus();
 		
 		if (!fp.empty()) {
-			int ax, ay;
-			bm_get_info(crosshair.first_frame, &ax, &ay);
-			int centerX = position[0] + (ax / 2);
-			int centerY = position[1] + (ay / 2);
 
 			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
 				if (fpi->active == 2)
@@ -323,7 +355,9 @@ void HudGaugeReticle::render(float  /*frametime*/)
 					setGaugeColor(HUD_C_NORMAL);
 				else
 					setGaugeColor(HUD_C_DIM);
-			
+
+				int centerX = position[0] + (bitmap_size_x / 2);
+				int centerY = position[1] + (bitmap_size_y / 2);
 				renderCircle((int) (centerX + (fpi->xy.x * firepoint_scale_x)), (int) (centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size);
 			}
 		}
@@ -413,6 +447,13 @@ void HudGaugeReticle::getFirepointStatus() {
 			}
 		}
 	}
+}
+
+void HudGaugeReticle::setFlightCursorFrame(int framenum) {
+	if (framenum < 0 || framenum > crosshair.num_frames - 1)
+		flight_cursor_frame_offset = -1;
+	else
+		flight_cursor_frame_offset = framenum;
 }
 
 void HudGaugeReticle::setAutoaimFrame(int framenum) {
@@ -1139,4 +1180,15 @@ void hud_update_reticle( player *pp )
 			}
 		}
 	} 
+}
+
+// calculates what the screen position of the flight cursor should be
+void hud_reticle_set_flight_cursor_offset() {
+	matrix view_mat;
+	vm_angles_2_matrix(&view_mat, &Player_flight_cursor);
+	view_mat = view_mat * Eye_matrix;
+
+	vec3d view_pos = Eye_position + view_mat.vec.fvec * 10000.0f;
+	g3_rotate_vertex(&Player_flight_cursor_offset, &view_pos);
+	g3_project_vertex(&Player_flight_cursor_offset);
 }

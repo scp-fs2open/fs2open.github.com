@@ -32,7 +32,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	sdx--;
 
 	if(ADE_SETTING_VAR && ndx != NULL && ndx->isValid()) {
-		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
+		Wings[wdx].ship_index[sdx] = ndx->objp()->instance;
 	}
 
 	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));

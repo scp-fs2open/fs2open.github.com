@@ -30,12 +30,15 @@ inline bool fl_is_nan(float fl) {
 #define fl_sqrt(fl) sqrtf(fl)
 #define fl_isqrt(fl) (1.0f/sqrtf(fl))
 #define fl_abs(fl) fabsf(fl)
-#define i2fl(i) (static_cast<float>(i))
-#define fl2i(fl) (static_cast<int>(fl))
-#define fl2ir(fl) (static_cast<int>(fl + (((fl) < 0.0f) ? -0.5f : 0.5f)))
-#define f2fl(fx) (static_cast<float>(fx)/65536.0f)
-#define f2d(fx) (static_cast<double>(fx)/65536.0)
-#define fl2f(fl) (static_cast<int>((fl)*65536.0f))
+#define i2fl(i) (static_cast<float>(i))                                     // int to float
+#define l2d(l) (static_cast<double>(l))                                     // long to double
+#define fl2i(fl) (static_cast<int>(fl))                                     // float to int
+#define d2l(d) (static_cast<long>(d))                                       // double to long
+#define fl2ir(fl) (static_cast<int>(fl + (((fl) < 0.0f) ? -0.5f : 0.5f)))   // float to int, rounding
+#define d2lr(d) (static_cast<long>(d + (((d) < 0.0) ? -0.5 : 0.5)))         // double to long, rounding
+#define f2fl(fx) (static_cast<float>(fx)/65536.0f)                          // fix to float
+#define f2d(fx) (static_cast<double>(fx)/65536.0)                           // fix to double
+#define fl2f(fl) (static_cast<int>((fl)*65536.0f))                          // float to fix
 #define fl_tan(fl) tanf(fl)
 
 // convert a measurement in degrees to radians

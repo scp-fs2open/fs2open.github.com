@@ -508,7 +508,7 @@ int hud_squadmsg_read_key( int k )
 		// after messaging is over.  Return true for a while.
 		if ( !timestamp_elapsed(Msg_eat_key_timestamp) ) {
 			for (i = 0; i < num_keys_used; i++ ) {
-				if ( keyd_pressed[keys_used[i]] )
+				if ( key_is_pressed(keys_used[i]) )
 					return 1;
 			}
 		}
@@ -524,7 +524,7 @@ int hud_squadmsg_read_key( int k )
 				key_found = 1;
 			}
 
-			if ( keyd_pressed[k] ) {
+			if ( key_is_pressed(k) ) {
 				key_found = 1;
 			}
 

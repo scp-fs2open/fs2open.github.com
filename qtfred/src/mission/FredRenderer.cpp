@@ -874,7 +874,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		model_render_params render_info;
 		render_info.set_debug_flags(debug_flags);
 		render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-		render_info.set_replacement_textures(Ships[z].ship_replacement_textures);
+		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
 		render_info.set_flags(j);
 
 		g3_done_instance(0);

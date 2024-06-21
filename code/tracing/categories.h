@@ -109,6 +109,8 @@ extern Category RenderNavBracket;
 extern Category MainFrame;
 extern Category PageFlip;
 
+extern Category Volumetrics;
+
 extern Category NanoVGFlushFrame;
 extern Category NanoVGDrawFill;
 extern Category NanoVGDrawConvexFill;

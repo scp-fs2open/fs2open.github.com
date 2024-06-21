@@ -83,10 +83,7 @@ class model_render_params
 
 	int Insignia_bitmap;
 
-	const int *Replacement_textures;
-	bool Manage_replacement_textures; // This is set when we are rendering a model without an associated ship object;
-									  // in that case, model_render_params is responsible for allocating and destroying
-									  // the Replacement_textures array (this is handled elsewhere otherwise)
+	std::shared_ptr<const model_texture_replace> Replacement_textures;
 
 	bool Team_color_set;
 	team_color Current_team_color;
@@ -109,7 +106,6 @@ class model_render_params
 	model_render_params& operator=(const model_render_params&) = delete;
 public:
 	model_render_params();
-	~model_render_params();
 
 	void set_flags(uint flags);
 	void set_debug_flags(uint flags);
@@ -122,7 +118,7 @@ public:
 	void set_alpha(float alpha);
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
-	void set_replacement_textures(const int *textures);
+	void set_replacement_textures(std::shared_ptr<const model_texture_replace> textures);
 	void set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures);
 	void set_team_color(const team_color &clr);
 	void set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
@@ -149,7 +145,7 @@ public:
 	float get_alpha() const;
 	int get_forced_bitmap() const;
 	int get_insignia_bitmap() const;
-	const int* get_replacement_textures() const;
+	std::shared_ptr<const model_texture_replace> get_replacement_textures() const;
 	const team_color& get_team_color() const;
 	const vec3d& get_clip_plane_pos() const;
 	const vec3d& get_clip_plane_normal() const;

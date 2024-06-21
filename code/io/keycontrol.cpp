@@ -1265,17 +1265,17 @@ void process_debug_keys(int k)
 		case KEY_PADMINUS: {
 			int init_flag = 0;
 
-			if ( keyd_pressed[KEY_1] )	{
+			if ( key_is_pressed(KEY_1) ) {
 				init_flag = 1;
 				HUD_color_red -= 4;
 			} 
 
-			if ( keyd_pressed[KEY_2] )	{
+			if ( key_is_pressed(KEY_2) ) {
 				init_flag = 1;
 				HUD_color_green -= 4;
-			} 
+			}
 
-			if ( keyd_pressed[KEY_3] )	{
+			if ( key_is_pressed(KEY_3) ) {
 				init_flag = 1;
 				HUD_color_blue -= 4;
 			} 
@@ -1294,17 +1294,17 @@ void process_debug_keys(int k)
 		case KEY_PADPLUS: {
 			int init_flag = 0;
 
-			if ( keyd_pressed[KEY_1] )	{
+			if ( key_is_pressed(KEY_1) ) {
 				init_flag = 1;
 				HUD_color_red += 4;
 			} 
 
-			if ( keyd_pressed[KEY_2] )	{
+			if ( key_is_pressed(KEY_2) ) {
 				init_flag = 1;
 				HUD_color_green += 4;
 			} 
 
-			if ( keyd_pressed[KEY_3] )	{
+			if ( key_is_pressed(KEY_3) ) {
 				init_flag = 1;
 				HUD_color_blue += 4;
 			} 
@@ -1458,7 +1458,7 @@ void process_player_ship_keys(int k)
 	// moved this line to beginning of function since hotkeys now encompass
 	// F5 - F12.  We can return after using F11 as a hotkey.
 	ppsk_hotkeys(masked_k);
-	if (keyd_pressed[KEY_DEBUG_KEY]){
+	if (key_is_pressed(KEY_DEBUG_KEY)){
 		return;
 	}
 

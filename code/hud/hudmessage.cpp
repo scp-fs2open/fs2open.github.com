@@ -812,7 +812,7 @@ void hud_scrollback_button_pressed(int n)
 
 		case SHOW_EVENTS_BUTTON:
 			Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-			Scroll_max = Num_log_lines * gr_get_font_height();
+			Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 			hud_scroll_reset();
 			break;
 
@@ -913,9 +913,9 @@ void hud_scrollback_init()
 	Background_bitmap = bm_load(Hud_mission_log_fname[gr_screen.res]);
 	// Status_bitmap = bm_load(Hud_mission_log_status_fname[gr_screen.res]);
 
-	message_log_init_scrollback(Hud_mission_log_list_coords[gr_screen.res][2]);
+	mission_log_init_scrollback(Hud_mission_log_list_coords[gr_screen.res][2]);
 	if (Scrollback_mode == SCROLLBACK_MODE_EVENT_LOG)
-		Scroll_max = Num_log_lines * gr_get_font_height();
+		Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 	else if (Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES)
 		Scroll_max = Num_obj_lines * gr_get_font_height();
 	else
@@ -928,7 +928,7 @@ void hud_scrollback_init()
 void hud_scrollback_close()
 {
 	ML_objectives_close();
-	message_log_shutdown_scrollback();
+	mission_log_shutdown_scrollback();
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
 	//if (Status_bitmap >= 0)
@@ -960,7 +960,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 
 			} else if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
 				Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-				Scroll_max = Num_log_lines * gr_get_font_height();
+				Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 				hud_scroll_reset();
 
 			} else {
@@ -975,7 +975,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 		case KEY_SHIFTED | KEY_TAB:
 			if (Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES) {
 				Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-				Scroll_max = Num_log_lines * gr_get_font_height();
+				Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 				hud_scroll_reset();
 
 			} else if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {

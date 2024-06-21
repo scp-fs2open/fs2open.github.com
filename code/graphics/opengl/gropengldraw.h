@@ -31,7 +31,6 @@ extern GLuint Scene_normal_texture_ms;
 extern GLuint Scene_specular_texture_ms;
 extern GLuint Scene_emissive_texture_ms;
 extern GLuint Scene_luminance_texture;
-extern GLuint Scene_effect_texture;
 extern GLuint Scene_composite_texture;
 extern GLuint Scene_depth_texture;
 extern GLuint Scene_depth_texture_ms;
@@ -156,7 +155,6 @@ extern int Scene_texture_initialized;
 extern GLuint Scene_color_texture;
 extern GLuint Scene_ldr_texture;
 extern GLuint Scene_luminance_texture;
-extern GLuint Scene_effect_texture;
 
 extern int Scene_texture_width;
 extern int Scene_texture_height;

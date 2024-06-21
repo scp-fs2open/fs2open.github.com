@@ -237,6 +237,8 @@ enum class GameSounds {
 	BALLISTIC_START_LOAD       = 200,//!< (SCP)
 	BALLISTIC_LOAD             = 201,//!< (SCP)
 
+	// NOTE: If any other indexes become reserved, be sure to update gamesnd_is_reserved_game_index()
+
 	/**
 	 * Keep this below all defined enum values
 	 */
@@ -310,8 +312,10 @@ enum class InterfaceSounds {
 	INTERFACE_UNDEFINED_60  =60,//!< vasudan hall - vasudan pa 3
 	VASUDAN_BUP             =61,//!< bup bup bup-bup bup bup
 	INTERFACE_UNDEFINED_62  =62,//!< thankyou
-	INTERFACE_UNDEFINED_63  =62,//!< vasudan hall - exit open
-	INTERFACE_UNDEFINED_64  =62,//!< vasudan hall - exit close
+	INTERFACE_UNDEFINED_63  =63,//!< vasudan hall - exit open
+	INTERFACE_UNDEFINED_64  =64,//!< vasudan hall - exit close
+
+	// NOTE: If any other indexes become reserved, be sure to update gamesnd_is_reserved_interface_index()
 
 	/**
 	* Keep this below all defined enum values
@@ -351,6 +355,9 @@ class interface_snd_id : public util::ID<interface_snd_tag, int, -1> {
 	explicit interface_snd_id(int val) : ID(val) {
 	}
 };
+
+bool gamesnd_is_reserved_game_index(int index);
+bool gamesnd_is_reserved_interface_index(int index);
 
 void gamesnd_parse_soundstbl(bool first_stage);	// Loads in general game sounds from sounds.tbl
 void gamesnd_close();	// close out gamesnd... only call from game_shutdown()!

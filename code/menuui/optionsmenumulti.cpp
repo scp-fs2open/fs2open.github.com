@@ -21,6 +21,7 @@
 #include "network/multi.h"
 #include "network/multiui.h"
 #include "network/multi_voice.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -1005,10 +1006,10 @@ void options_multi_protocol_button_pressed(int n)
 
 		if(!Om_local_broadcast){			
 			Om_local_broadcast = 1;
-			options_set_ingame_binary_option("Multi.LocalBroadcast", true);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", true);
 		} else {
 			Om_local_broadcast = 0;
-			options_set_ingame_binary_option("Multi.LocalBroadcast", false);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", false);
 		}
 
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1050,12 +1051,12 @@ void options_multi_protocol_button_pressed(int n)
 			Om_tracker_login.enable();
 			Om_tracker_passwd.enable();
 			Om_tracker_squad_name.enable();
-			options_set_ingame_binary_option("Multi.TogglePXO", true);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", true);
 		} else {
 			Om_tracker_login.disable();
 			Om_tracker_passwd.disable();
 			Om_tracker_squad_name.disable();
-			options_set_ingame_binary_option("Multi.TogglePXO", false);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", false);
 		}
 
 		// play a sound
@@ -1543,7 +1544,7 @@ void options_multi_gen_button_pressed(int n)
 		if(!Om_gen_xfer_multidata){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_xfer_multidata = 1;
-			options_set_ingame_binary_option("Multi.TransferMissions", true);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", true);
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1554,7 +1555,7 @@ void options_multi_gen_button_pressed(int n)
 		if(Om_gen_xfer_multidata){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_xfer_multidata = 0;
-			options_set_ingame_binary_option("Multi.TransferMissions", false);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", false);
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1565,7 +1566,7 @@ void options_multi_gen_button_pressed(int n)
 		if(!Om_gen_flush_cache){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_flush_cache = 1;
-			options_set_ingame_binary_option("Multi.FlushCache", true);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", true);
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1576,7 +1577,7 @@ void options_multi_gen_button_pressed(int n)
 		if(Om_gen_flush_cache){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_flush_cache = 0;
-			options_set_ingame_binary_option("Multi.FlushCache", false);
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", false);
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}

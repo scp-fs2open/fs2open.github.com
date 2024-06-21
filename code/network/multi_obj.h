@@ -17,7 +17,6 @@
 //
 #include "globalincs/pstypes.h"
 
-struct interp_info;
 class object;
 struct header;
 struct net_player;

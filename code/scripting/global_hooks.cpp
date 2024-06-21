@@ -61,13 +61,23 @@ const std::shared_ptr<Hook<ControlActionConditions>> OnActionStopped = Hook<Cont
 	"Invoked whenever a user action is no longer invoked through control input.",
 	{ {"Action", "string", "The name of the action that was stopped."} });
 
-const std::shared_ptr<Hook<>> OnKeyPressed = Hook<>::Factory("On Key Pressed",
-	"Invoked whenever a key is pressed.",
-	{ {"Key", "string", "The scancode of the key that has been pressed."} });
+const std::shared_ptr<OverridableHook<KeyPressConditions>> OnKeyPressed = OverridableHook<KeyPressConditions>::Factory("On Key Pressed",
+	"Invoked whenever a key is pressed. If overridden, FSO behaves as if this key has simply not been pressed. "
+	"The only thing that FSO will do with this key if overridden is fire the corresponding OnKeyReleased hook once the key is released. "
+	"Be especially careful if overriding modifier keys (such as Alt and Shift) with this.",
+	{
+		{"Key", "string", "The scancode of the key that has been pressed."},
+		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."}
+	});
 
-const std::shared_ptr<Hook<>> OnKeyReleased = Hook<>::Factory("On Key Released",
+const std::shared_ptr<Hook<KeyPressConditions>> OnKeyReleased = Hook<KeyPressConditions>::Factory("On Key Released",
 	"Invoked whenever a key is released.",
-	{ {"Key", "string", "The scancode of the key that has been released."} });
+	{
+		{"Key", "string", "The scancode of the key that has been pressed."},
+		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."},
+		{"TimeHeld", "number", "The time that this key has been held down in milliseconds. Can be 0 if input latency fluctuates."},
+		{"WasOverridden", "boolean", "Whether or not the key press corresponding to this release was overridden."}
+	});
 
 const std::shared_ptr<Hook<>> OnMouseMoved = Hook<>::Factory("On Mouse Moved",
 	"Invoked whenever the mouse is moved.",

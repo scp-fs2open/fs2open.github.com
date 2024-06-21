@@ -27,8 +27,6 @@ struct sexp_container;
 namespace fso {
 namespace fred {
 
-#define BACKUP_DEPTH    9
-
 enum class MissionFormat {
 	RETAIL = 0, STANDARD = 1, COMPATIBILITY_MODE = 2
 };

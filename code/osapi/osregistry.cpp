@@ -23,6 +23,8 @@
 #include <sddl.h>
 #endif
 
+bool Ingame_options_save_found = true;
+
 namespace
 {
 	// ------------------------------------------------------------------------------------------------------------
@@ -464,6 +466,7 @@ const char *Osreg_app_name = "FreeSpace2";
 const char *Osreg_title = "FreeSpace 2";
 
 const char *Osreg_config_file_name = "fs2_open.ini";
+SCP_string Mod_options_file_name = "data/retail_fs2_settings.ini";
 
 #define DEFAULT_SECTION "Default"
 
@@ -838,25 +841,121 @@ static void profile_save(Profile *profile, const char *file)
 // os registry functions -------------------------------------------------------------
 
 static Profile* Osreg_profile = nullptr;
+static Profile* Mod_settings_profile = nullptr;
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff(const char *company, const char *app)
+void os_init_registry_stuff(const char* company, const char* app)
 {
 	if (company) {
 		strcpy_s(szCompanyName, company);
-	}
-	else {
+	} else {
 		strcpy_s(szCompanyName, Osreg_company_name);
 	}
 
 	if (app) {
 		strcpy_s(szAppName, app);
-	}
-	else {
+	} else {
 		strcpy_s(szAppName, Osreg_app_name);
 	}
 
 	Osreg_profile = profile_read(Osreg_config_file_name);
+
+	// Handle mod specific settings and in-game options through a mod specific file
+	// This gets the mod file using the mod cmdline string, stripping Launcher version data
+	// so that mod settings are mod-version agnostic but still specific to a unique mod.
+	if (Cmdline_mod != nullptr) {
+		SCP_string str = Cmdline_mod;
+		// Trim any trailing folders so we get just the name of the root mod folder
+		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
+		
+		// Now trim off any Knossos versioning details so that settings are not mod version specific
+		// This is a little silly because Knossos and KNet sometimes append other stuff to the mod folder
+		// like "-DevEnv". So what we do here is go section by section across the string using "-" as a
+		// delimiter. If that section is not the semantic version for the mod we discard it. Once we find
+		// the semantic version, we know we're done. Drop the version and we have the full mod folder string.
+		// This allows for mods that have a "-" in the folder string while also handling any number of trailing
+		// data sections.
+		auto isSemanticVersion = [](const SCP_string& input) {
+			int dotCount = 0;
+			bool isNumeric = true;
+
+			for (char c : input) {
+				if (c == '.') {
+					dotCount++;
+				} else if (!(c >= '0' && c <= '9')) {
+					isNumeric = false;
+					break;
+				}
+			}
+
+			// I don't think true Semantic versioning allows for additional dots
+			// and anything after a dash would be handled in a previous run of this lambda
+			// but in our limited use-case here, allowing for 2 or more dots is probably fine.
+			// The point is to find the version so we have a reference point in the string
+			// so the exact format isn't super important here.
+			return (dotCount >= 2 && isNumeric);
+		};
+
+		auto getLastSection = [](const SCP_string& input)
+		{
+			// Find the position of the last dash in the string
+			size_t pos = input.rfind('-');
+			// Extract the substring before the last dash (if found)
+			SCP_string result = (pos != SCP_string::npos) ? input.substr(pos + 1) : input;
+
+			return result;
+		};
+
+		int count = 0;
+
+		// The count is used here as a limiter. If we don't find the semantic version after a
+		// few tries then we are probably running the game outside of the Knossos/KNet environment. 
+		// So after that we should give up and go with the string we have.
+		while (!isSemanticVersion(getLastSection(str)) && (count <= 4)) {
+			size_t dashPos = str.rfind("-");
+			str = (dashPos != std::string::npos) ? str.substr(0, dashPos) : str;
+			count++;
+		}
+
+		// Now we know we have just the mod root and the version. So drop the version and we're done!
+		size_t pos = str.rfind("-");
+		str = (pos != std::string::npos) ? str.substr(0, pos) : str;
+
+		// Make sure we have a usable string
+		if (str.length() > 0) {
+			// Append "_settings.ini" and use the data/ directory
+			Mod_options_file_name = "data/" + str + "_settings.ini";
+
+			// Test if the new save file exists
+			FILE* file = fopen(os_get_config_path(Mod_options_file_name).c_str(), "r");
+			if (file != nullptr) {
+				fclose(file);
+			} else {
+				Ingame_options_save_found = false;
+			}
+		} else {
+			// If we can't find the mod specific string then fallback to the fs2_open ini
+			// We don't set Ingame_options_save_found to false here because if we do that
+			// then we are assuming we have a proper save file to use later during runtime,
+			// but in this case we do not.
+			Mod_options_file_name = Osreg_config_file_name;
+		}
+	}
+
+	mprintf(("Setting local mod settings ini file to '%s'\n", Mod_options_file_name.c_str()));
+
+	// If the mod settings file doesn't exist create it if it doesn't so that the
+	// Mod_options_profile can be written to later during runtime.
+	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
+	fclose(fp);
+
+	// Load the mod settings profile if we have one, otherwise pull the settings from the
+	// fs2_open.ini to start with.
+	if (Ingame_options_save_found) {
+		Mod_settings_profile = profile_read(Mod_options_file_name.c_str());
+	} else {
+		Mod_settings_profile = profile_read(Osreg_config_file_name);
+	}
 
 	Os_reg_inited = 1;
 }
@@ -866,39 +965,55 @@ void os_deinit_registry_stuff()
 		profile_free(Osreg_profile);
 		Osreg_profile = nullptr;
 	}
+
+	if (Mod_settings_profile != nullptr) {
+		profile_free(Mod_settings_profile);
+		Mod_settings_profile = nullptr;
+	}
 }
-bool os_config_has_value(const char* section, const char* name) {
+bool os_config_has_value(const char* section, const char* name, bool use_mod_file)
+{
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, nullptr) != nullptr;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+	}
+
 	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
 	return ptr != nullptr;
 }
 
-const char *os_config_read_string(const char *section, const char *name, const char *default_value)
+const char* os_config_read_string(const char* section, const char* name, const char* default_value, bool use_mod_file)
 {
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, default_value);
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+	}
+
 	nprintf(("Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
 		(section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL")));
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
-	if (ptr != NULL) {
+	if (ptr != nullptr) {
 		strncpy(tmp_string_data, ptr, 1023);
 		default_value = tmp_string_data;
 	}
@@ -906,64 +1021,80 @@ const char *os_config_read_string(const char *section, const char *name, const c
 	return default_value;
 }
 
-unsigned int os_config_read_uint(const char *section, const char *name, unsigned int default_value)
+unsigned int os_config_read_uint(const char* section, const char* name, unsigned int default_value, bool use_mod_file)
 {
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_uint(section, name, default_value);
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
-	if (ptr != NULL) {
+	if (ptr != nullptr) {
 		default_value = atoi(ptr);
 	}
 
 	return default_value;
 }
 
-void os_config_write_string(const char *section, const char *name, const char *value)
+void os_config_write_string(const char* section, const char* name, const char* value, bool use_mod_file)
 {
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		registry_write_string(section, name, value);
 		return;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	const char* file = Osreg_config_file_name;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+		file = Mod_options_file_name.c_str();
+	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	Osreg_profile = profile_update(Osreg_profile, section, name, value);
-	profile_save(Osreg_profile, Osreg_config_file_name);
+	profile = profile_update(profile, section, name, value);
+	profile_save(profile, file);
 }
 
-void os_config_write_uint(const char *section, const char *name, unsigned int value)
+void os_config_write_uint(const char* section, const char* name, unsigned int value, bool use_mod_file)
 {
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		registry_write_uint(section, name, value);
 		return;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	const char* file = Osreg_config_file_name;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+		file = Mod_options_file_name.c_str();
+	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
 	char buf[21];
 
 	snprintf(buf, 20, "%u", value);
 
-	Osreg_profile = profile_update(Osreg_profile, section, name, buf);
-	profile_save(Osreg_profile, Osreg_config_file_name);
+	profile = profile_update(profile, section, name, buf);
+	profile_save(profile, file);
 }
 

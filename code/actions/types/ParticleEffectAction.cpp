@@ -37,7 +37,7 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	vec3d local_pos;
 	matrix local_orient;
 	if (locals.hostSubobject != -1) {
-		auto instance = object_get_model_instance(locals.host.objp);
+		auto instance = object_get_model_instance(locals.host.objp());
 		Assertion(instance != -1, "Model instances are required if a host subobject is specified.");
 
 		auto pmi = model_get_instance(instance);
@@ -59,7 +59,7 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 
 	auto direction = locals.variables.getValue({"locals", "direction"}).getVector();
 
-	source.moveToObject(locals.host.objp, &local_pos);
+	source.moveToObject(locals.host.objp(), &local_pos);
 	source.setOrientationFromNormalizedVec(&direction, true);
 
 	source.finish();

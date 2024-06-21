@@ -4865,7 +4865,7 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		if (model_instance_num < 0) {
 			return;
 		}
-		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 	}
 	else {
 		return;

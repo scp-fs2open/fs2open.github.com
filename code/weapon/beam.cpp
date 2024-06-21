@@ -525,7 +525,7 @@ int beam_fire(beam_fire_info *fire_info)
 	} else {
 		float burst_rot = 0.0f;
 		if (new_item->type == BeamType::OMNI && !wip->b_info.t5info.burst_rot_pattern.empty()) {
-			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index];
+			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index % wip->b_info.t5info.burst_rot_pattern.size()];
 		}
 		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots,fire_info->burst_seed, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
 	}	
@@ -2162,7 +2162,7 @@ int beam_get_model(object *objp)
 		if(Asteroids[objp->instance].asteroid_type < 0){
 			return -1;
 		}
-		return Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[pof];
+		return Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[pof].model_number;
 
 	default:
 		// this shouldn't happen too often
@@ -2382,7 +2382,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 	// get a model # to work with
 	model_num = beam_get_model(b->target);
-	if ((model_num < 0) && !(b->flags & BF_TARGETING_COORDS)) {
+	if ((model_num < 0) && !(b->flags & BF_TARGETING_COORDS) && b->type != BeamType::OMNI) {
 		return;
 	}
 
@@ -2654,9 +2654,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			// randomness
 			vm_vec_random_in_sphere(&random_offset, &vmd_zero_vector, 1.f, false, true);
 			random_offset *= scale_factor;
-			random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
-			random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
-			random_offset.xyz.z *= bwi->t5info.start_pos_rand.xyz.z;
+			random_offset.xyz.x *= bwi->t5info.end_pos_rand.xyz.x;
+			random_offset.xyz.y *= bwi->t5info.end_pos_rand.xyz.y;
+			random_offset.xyz.z *= bwi->t5info.end_pos_rand.xyz.z;
 			offset += random_offset;
 
 			// rotate
@@ -2757,8 +2757,8 @@ void beam_aim(beam *b)
 	if (!(b->flags & BF_TARGETING_COORDS)) {
 		// targeting type beam weapons have no target
 		if (b->target == NULL) {
-			Assert(b->type == BeamType::TARGETING);
-			if(b->type != BeamType::TARGETING){
+			Assert(b->type == BeamType::TARGETING || b->type == BeamType::OMNI);
+			if(b->type != BeamType::TARGETING && b->type != BeamType::OMNI){
 				return;
 			}
 		}
@@ -4167,25 +4167,23 @@ int beam_ok_to_fire(beam *b)
 		vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 		vm_vec_normalize(&aim_dir);
 
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
-			vec3d turret_normal;
-
-			if (b->flags & BF_IS_FIGHTER_BEAM) {
-				turret_normal = b->objp->orient.vec.fvec;
-			} else {
+		if (!(b->flags & BF_IS_FIGHTER_BEAM)) {
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
+				vec3d turret_normal;
 				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
-			}
 
-			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {
-				nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
-				return 0;
+				if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {
+					nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+					return 0;
+				}
 			}
-		} else {
-			vec3d turret_dir, turret_pos;
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, false, &turret_dir, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-			if (vm_vec_dot(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
-				nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
-				return 0;
+			else {
+				vec3d turret_dir, turret_pos;
+				beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, false, &turret_dir, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
+				if (vm_vec_dot(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
+					nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+					return 0;
+				}
 			}
 		}
 
