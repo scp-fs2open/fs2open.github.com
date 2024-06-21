@@ -319,10 +319,13 @@ struct volumetric_fog_data {
 	float stepsize;
 	
 	vec3d nebPos;
-	float globalstepalpha;
+	float opacitydistance;
 	
 	vec3d nebSize;
 	float alphalimit;
+
+	float nebColor[3];
+	float udfScale;
 	
 	float emissiveSpreadFactor;
 	float emissiveIntensity;

@@ -99,6 +99,14 @@ struct ivec2 {
 	int x, y;
 };
 
+inline bool operator<(const ivec3& l, const ivec3& r){
+	return l.x < r.x || (l.x == r.x && (l.y < r.y || (l.y == r.y && l.z < r.z)));
+}
+
+inline bool operator<(const ivec2& l, const ivec2& r){
+	return l.x < r.x || (l.x == r.x && l.y < r.y);
+}
+
 namespace scripting {
 	class ade_table_entry;
 }

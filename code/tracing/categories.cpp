@@ -96,6 +96,8 @@ Category RenderNavBracket("Render Nav bracket", true);
 Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);
 
+Category Volumetrics("Volumetrics", true);
+
 Category NanoVGFlushFrame("NanoVG flush frame", true);
 Category NanoVGDrawFill("NanoVG Draw fill", true);
 Category NanoVGDrawConvexFill("NanoVG Draw convex fill", true);

@@ -525,6 +525,8 @@ void gr_opengl_deferred_lighting_finish()
 	}
 	else if (The_mission.volumetrics && !override_fog) {
 		GR_DEBUG_SCOPE("Volumetric Nebulae");
+		TRACE_SCOPE(tracing::Volumetrics);
+
 		const volumetric_nebula& neb = *The_mission.volumetrics;
 
 		Assertion(neb.isVolumeBitmapValid(), "The volumetric nebula was not properly initialized!");
@@ -550,9 +552,11 @@ void gr_opengl_deferred_lighting_finish()
 			uint32_t array_index;
 			gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			if (neb.getNoiseActive()) {
 				gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
 				gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			}
 		}
 
@@ -567,8 +571,12 @@ void gr_opengl_deferred_lighting_finish()
 			data->nebPos = neb.getPos();
 			data->nebSize = neb.getSize();
 			data->stepsize = neb.getStepsize();
-			data->globalstepalpha = neb.getStepalpha();
+			data->opacitydistance = neb.getOpacityDistance();
 			data->alphalimit = neb.getAlphaLim();
+			data->nebColor[0] = std::get<0>(neb.getNebulaColor());
+			data->nebColor[1] = std::get<1>(neb.getNebulaColor());
+			data->nebColor[2] = std::get<2>(neb.getNebulaColor());
+			data->udfScale = neb.getUDFScale();
 			data->emissiveSpreadFactor = neb.getEmissiveSpread();
 			data->emissiveIntensity = neb.getEmissiveIntensity();
 			data->emissiveFalloff = neb.getEmissiveFalloff();
