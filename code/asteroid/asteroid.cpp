@@ -596,7 +596,8 @@ void asteroid_create_all()
 		return;
 	}
 
-	if (Asteroid_field.field_debris_type.size() <= 0) {
+	if ((Asteroid_field.debris_genre == DG_DEBRIS && Asteroid_field.field_debris_type.size() <= 0) ||
+		(Asteroid_field.debris_genre == DG_ASTEROID && Asteroid_field.field_asteroid_type.size() <= 0)) {
 		Warning(LOCATION, "An asteroid field is enabled, but no asteroid types were enabled.");
 		return;
 	}
@@ -768,7 +769,7 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 	Asteroid_field.target_names = targets;
 
 	// Only create asteroids if we have some to create
-	if ((Asteroid_field.field_debris_type.size() > 0) && (num_asteroids > 0)) {
+	if ((Asteroid_field.field_asteroid_type.size() > 0) && (num_asteroids > 0)) {
 		asteroid_create_all();
 	}
 }
@@ -1022,7 +1023,7 @@ bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
  */
 static void maybe_throw_asteroid()
 {
-	Assertion(Asteroid_field.field_debris_type.size() > 0, "maybe_throw_asteroid() called while field_debris_type.size was 0; this should never happen, get a coder!");
+	Assertion(Asteroid_field.field_asteroid_type.size() > 0, "maybe_throw_asteroid() called while field_debris_type.size was 0; this should never happen, get a coder!");
 
 	for (asteroid_target& target : Asteroid_targets) {
 		if (!timestamp_elapsed(target.throw_stamp))
@@ -2630,7 +2631,7 @@ void asteroid_frame()
 	}
 
 	// If no asteroid types are defined for the field, abort.
-	if (Asteroid_field.field_debris_type.size() <= 0) {
+	if (Asteroid_field.field_asteroid_type.size() <= 0) {
 		return;
 	}
 
