@@ -8986,5 +8986,9 @@ bool check_for_24_1_data()
 			return true;
 	}
 
+	if ((Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
+		(Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty()))
+		return true;
+
 	return false;
 }
