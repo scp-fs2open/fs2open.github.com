@@ -5946,7 +5946,7 @@ void parse_asteroid_fields(mission *pm)
 		// Is this a good idea? This doesn't seem like a good idea. What is this compatibility actually for??
 		// If you've defined an asteroid field but didn't define any 'roids, then tough luck. Fix your mission.
 		// If this is for a retail mission then this needs to be hardcoded for that specific mission file probably. - Mjn
-		if ((Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.field_debris_type.size() == 0)) {
+		if ((Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.field_debris_type.empty())) {
 			Asteroid_field.field_asteroid_type.push_back("Brown");
 		}
 
@@ -8985,6 +8985,10 @@ bool check_for_24_1_data()
 			|| shipp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP || shipp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP)
 			return true;
 	}
+
+	if ((Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
+		(Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty()))
+		return true;
 
 	return false;
 }
