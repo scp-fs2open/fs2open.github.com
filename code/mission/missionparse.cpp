@@ -6754,6 +6754,7 @@ void mission_init(mission *pm)
 	mission_parse_reset_callsign();
 	ai_lua_reset_general_orders();
 
+	Parse_names.clear();
 	Num_path_restrictions = 0;
 	Num_ai_dock_names = 0;
 	ai_clear_goal_target_names();
