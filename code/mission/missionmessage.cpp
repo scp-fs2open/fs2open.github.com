@@ -1449,6 +1449,11 @@ void message_queue_process()
 			if ((Playing_messages[i].wave.isValid()) && (snd_time_remaining(Playing_messages[i].wave) > 250))
 				wave_done = 0;
 
+			// Don't kill paused messages
+			if ((Playing_messages[i].wave.isValid()) && snd_is_paused(Playing_messages[i].wave)) {
+				wave_done = 0;
+			}
+
 			// Goober5000
 			if (fsspeech_playing())
 				wave_done = 0;
