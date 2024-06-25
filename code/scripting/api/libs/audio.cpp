@@ -418,5 +418,14 @@ ADE_FUNC(pauseVoiceMessages,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(killVoiceMessages, l_Audio, nullptr, "Kills all currently playing voice messages.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	message_kill_all(true);
+
+	return ADE_RETURN_NIL;
+}
+
 } // namespace api
 } // namespace scripting
