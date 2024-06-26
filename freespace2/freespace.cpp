@@ -3001,7 +3001,7 @@ bool is_screenshake_enabled()
 		return true;
 	} else {
 		if (Using_in_game_options) {
-			return Screenshake_enabled;
+			return ScreenShakeOption->getValue();
 		} else {
 			return !Cmdline_no_screenshake;
 		}
