@@ -8075,6 +8075,13 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	}
 
 	if (Cmdline_deferred_lighting_cockpit) {
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		gr_deferred_lighting_msaa();
 		gr_deferred_lighting_end();
 		gr_deferred_lighting_finish();
