@@ -891,9 +891,7 @@ void message_mission_shutdown()
 	training_mission_shutdown();
 
 	// kill/stop all playing messages sounds and animations if we need to
-	if (Num_messages_playing) {
-		message_kill_all(1);
-	}
+	message_kill_all(true);
 
 	// remove the wave sounds from memory
 	for (i = 0; i < Num_message_waves; i++ ) {
@@ -955,16 +953,14 @@ void message_resume_all()
 
 // function to kill all currently playing messages.  kill_all parameter tells us to
 // kill only the animations that are playing, or wave files too
-void message_kill_all( int kill_all )
+void message_kill_all( bool kill_all )
 {
-	int i;
-
 	if (Num_messages_playing <= 0) {
 		return;
 	}
 
 	// kill sounds for all voices currently playing
-	for ( i = 0; i < Num_messages_playing; i++ ) {
+	for (int i = 0; i < Num_messages_playing; i++ ) {
 		/*if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
 			anim_stop_playing( Playing_messages[i].anim );
 			Playing_messages[i].anim=NULL;
@@ -1065,10 +1061,9 @@ int message_playing_unique()
 
 // returns the highest priority of the currently playing messages
 #define MESSAGE_GET_HIGHEST		1
-#define MESSAGE_GET_LOWEST			2
+#define MESSAGE_GET_LOWEST		2
 int message_get_priority(int which)
 {
-	int i;
 	int priority;
 
 	if ( which == MESSAGE_GET_HIGHEST ){
@@ -1077,7 +1072,7 @@ int message_get_priority(int which)
 		priority = MESSAGE_PRIORITY_HIGH;
 	}
 
-	for ( i = 0; i < Num_messages_playing; i++ ) {
+	for (int i = 0; i < Num_messages_playing; i++ ) {
 		if ( (which == MESSAGE_GET_HIGHEST) && (Playing_messages[i].priority > priority) ){
 			priority = Playing_messages[i].priority;
 		} else if ( (which == MESSAGE_GET_LOWEST) && (Playing_messages[i].priority < priority) ){
@@ -1398,10 +1393,8 @@ void message_play_anim( message_q *q )
 		// This call relies on the fact that AVI_play will return -1 if the AVI cannot be played
 		// if any messages are already playing, kill off any head anims that are currently playing.  We will
 		// only play a head anim of the newest messages being played
-		if ( Num_messages_playing > 0 ) {
-			nprintf(("messaging", "killing off any currently playing head animations\n"));
-			message_kill_all( 0 );
-		}
+		nprintf(("messaging", "killing off any currently playing head animations\n"));
+		message_kill_all(false);
 
 		if ( hud_disabled() ) {
 			return;
@@ -1637,7 +1630,7 @@ void message_queue_process()
 		// message priority.
 
 		if ( q->builtin_type == MESSAGE_HAMMER_SWINE ) {
-			message_kill_all(1);
+			message_kill_all(true);
 		} else if ( message_playing_specific_builtin(MESSAGE_HAMMER_SWINE) ) {
 			MessageQ_num = 0;
 			return;
@@ -1645,7 +1638,7 @@ void message_queue_process()
 			// builtin is playing and we have a unique message to play.  Kill currently playing message
 			// so unique can play uninterrupted.  Only unique messages higher than low priority will interrupt
 			// other messages.
-			message_kill_all(1);
+			message_kill_all(true);
 			nprintf(("messaging", "Killing all currently playing messages to play unique message\n"));
 		} else if ( message_playing_builtin() && (q->message_num < Num_builtin_messages) ) {
 			// when a builtin message is queued, we might either overlap or interrupt the currently
@@ -1656,7 +1649,7 @@ void message_queue_process()
 			if ( Num_messages_playing ) {
 				if ( message_get_priority(MESSAGE_GET_HIGHEST) < q->priority ) {
 					// lower priority message playing -- kill it.
-					message_kill_all(1);
+					message_kill_all(true);
 					nprintf(("messaging", "Killing all currently playing messages to play high priority builtin\n"));
 				} else if ( message_get_priority(MESSAGE_GET_LOWEST) > q->priority ) {
 					// queued message is a lower priority, so wait it out
@@ -1671,7 +1664,7 @@ void message_queue_process()
 			// code messages can kill any low priority mission specific messages
 			if ( Num_messages_playing ) {
 				if ( message_get_priority(MESSAGE_GET_HIGHEST) == MESSAGE_PRIORITY_LOW ) {
-					message_kill_all(1);
+					message_kill_all(true);
 					nprintf(("messaging", "Killing low priority unique messages to play code message\n"));
 				} else {
 					return;			// do nothing.
