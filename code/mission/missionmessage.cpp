@@ -959,7 +959,9 @@ void message_kill_all( int kill_all )
 {
 	int i;
 
-	Assert( Num_messages_playing );
+	if (Num_messages_playing <= 0) {
+		return;
+	}
 
 	// kill sounds for all voices currently playing
 	for ( i = 0; i < Num_messages_playing; i++ ) {
