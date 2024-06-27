@@ -1460,6 +1460,8 @@ public:
 
 	SCP_map<SCP_string, SCP_string> custom_data;
 
+	SCP_vector<custom_string> custom_strings;
+
 	SCP_vector<rcs_thruster_info> rcs_thrusters;
 
 	int radar_image_2d_idx;
