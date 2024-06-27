@@ -534,6 +534,13 @@ float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) co
 	return alpha;
 }
 
+void volumetric_nebula::set_enabled(bool set_enabled){
+	enabled = set_enabled;
+}
+bool volumetric_nebula::get_enabled() const {
+	return enabled;
+};
+
 void volumetrics_level_close() {
 	if (The_mission.volumetrics)
 		The_mission.volumetrics.reset();

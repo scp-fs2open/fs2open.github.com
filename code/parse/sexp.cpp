@@ -758,6 +758,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "nebula-fade-poof",				OP_NEBULA_FADE_POOF,					3,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
+	{ "volumetrics-toggle", 			OP_VOLUMETRICS_TOGGLE, 					1,	1,			SEXP_ACTION_OPERATOR,	},	// Lafiel
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-skybox-alpha",				OP_SET_SKYBOX_ALPHA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -16171,6 +16172,14 @@ void sexp_nebula_change_fog_color(int node)
 	The_mission.flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 }
 
+void sexp_volumetrics_toggle(int n)
+{
+	if (!The_mission.volumetrics)
+		return;
+
+	The_mission.volumetrics->set_enabled(is_sexp_true(n));
+}
+
 void sexp_toggle_asteroid_field(int n)
 {
 	Asteroids_enabled = is_sexp_true(n);
@@ -28322,6 +28331,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_VOLUMETRICS_TOGGLE:
+				sexp_volumetrics_toggle(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_TOGGLE_ASTEROID_FIELD:
 				sexp_toggle_asteroid_field(node);
 				sexp_val = SEXP_TRUE;
@@ -30691,6 +30705,7 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_FADE_POOF:
+		case OP_VOLUMETRICS_TOGGLE:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -33372,6 +33387,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPF_POSITIVE;
 
+		case OP_VOLUMETRICS_TOGGLE:
+			return OPF_BOOL;
+
 		case OP_TOGGLE_ASTEROID_FIELD:
 			return OPF_BOOL;
 
@@ -35638,6 +35656,7 @@ int get_category(int op_id)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_FADE_POOF:
+		case OP_VOLUMETRICS_TOGGLE:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
@@ -36272,6 +36291,7 @@ int get_subcategory(int op_id)
 		case OP_NEBULA_FADE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
+		case OP_VOLUMETRICS_TOGGLE:
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
@@ -40951,6 +40971,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tRed (0 - 255)\r\n"
 		"\t2:\tGreen (0 - 255)\r\n"
 		"\t3:\tBlue (0 - 255)\r\n"
+	},
+
+	{ OP_VOLUMETRICS_TOGGLE, "volumetrics-toggle\r\n"
+	"\tToggles whether the volumetrics for the current mission are shown or not\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tWill be shown\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_BOOL, "script-eval-bool\r\n"
