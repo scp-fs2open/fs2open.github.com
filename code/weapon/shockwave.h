@@ -92,6 +92,8 @@ typedef struct shockwave_create_info {
 
 } shockwave_create_info;
 
+extern bool Use_3D_shockwaves;
+
 extern void shockwave_create_info_init(shockwave_create_info *sci);
 extern void shockwave_create_info_load(shockwave_create_info *sci);
 
