@@ -37153,7 +37153,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SUBSYSTEM_DESTROYED_DELAY, "Is subsystem destroyed delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified subsystem of the specified "
-		"ship is destroyed.\r\n\r\n"
+		"ship is destroyed. Subsequent repairs to that subsystem have no effect on this "
+		"operator.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 arguments...\r\n"
 		"\t1:\tName of ship the subsystem we are checking is on.\r\n"
 		"\t2:\tThe name of the subsystem we are checking status of.\r\n"
@@ -37161,16 +37162,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_DISABLED_DELAY, "Is disabled delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified ship(s) are disabled.  A "
-		"ship is disabled when all of its engine subsystems are destroyed.  All "
-		"ships must be disabled for this function to return true.\r\n\r\n"
+		"ship is disabled when all of its engine subsystems are destroyed. All "
+		"ships must be disabled for this function to return true. Subsequent repairs "
+		"to any of these ships' engines have no effect on this operator.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disabled status of." },
 
 	{ OP_IS_DISARMED_DELAY, "Is disarmed delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified ship(s) are disarmed.  A "
-		"ship is disarmed when all of its turret subsystems are destroyed.  All "
-		"ships must be disarmed for this function to return true.\r\n\r\n"
+		"ship is disarmed when all of its turret subsystems are destroyed. All "
+		"ships must be disarmed for this function to return true. Subsequent repairs "
+		"to any of these ships' weapons and turrets have no effect on this operator."
+		"\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disarmed status of." },
@@ -37194,7 +37198,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4:\tTime delay in seconds (see above)." },
 
 	{ OP_HAS_ARRIVED_DELAY, "Has arrived delay (Boolean operator)\r\n"
-		"\tBecomes true <delay> seconds after the specified ship(s) have arrived into the mission\r\n\r\n"
+		"\tBecomes true <delay> seconds after the specified ship(s) have arrived into the mission. "
+		"Note that a ship which is present at mission start is NOT considered to have arrived.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay in seconds (see above).\r\n"
 		"\tRest:\tName of ship (or wing) we want to check has arrived." },
@@ -37569,34 +37574,28 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_ANY_OF, "Any-of (Conditional operator)\r\n"
-		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any of the supplied arguments can satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
-		"In practice, this will behave like a standard \"for-each\" statement, evaluating the action operators for each argument that satisfies the condition.\r\n\r\n"
-		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item. The parent when-argument will fire if its condition holds for at least one of the given " SEXP_ARGUMENT_STRING " values; when it fires, all of its actions are evaluated for each " SEXP_ARGUMENT_STRING " for which the condition held.\r\n\r\n"
+		"\tThis operator also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Goober5000
 	{ OP_EVERY_OF, "Every-of (Conditional operator)\r\n"
-		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Every one of the supplied arguments will be evaluated to satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
-		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item. This operator behaves identically to any-of except that the parent when-argument will fire only when the condition holds for every argument, rather than at least one. Invalidated arguments are ignored.\r\n\r\n"
+		"\tThis operator also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Goober5000
 	{ OP_RANDOM_OF, "Random-of (Conditional operator)\r\n"
-		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used. The same argument will be returned by all subsequent calls\r\n\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item. One of the provided arguments is chosen at random and is used for every occurrence of " SEXP_ARGUMENT_STRING ". This choice is made only once, and the same " SEXP_ARGUMENT_STRING " is used every time. If you want it to change, use random-multiple-of. Note that invalidating this argument will cause the parent when-argument to never fire again.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Karajorma
 	{ OP_RANDOM_MULTIPLE_OF, "Random-multiple-of (Conditional operator)\r\n"
-		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used.\r\n"
-		"\tUnlike random-of, the random selection is performed each time this SEXP is evaluated.\r\n"
-		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item. One of the provided arguments is chosen at random and is used for every occurrence of " SEXP_ARGUMENT_STRING ". Unlike random-of, the random selection is performed each time this SEXP is evaluated. It is safe to use invalidate-argument with this operator.\r\n"
+		"\tThis operator also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -37631,35 +37630,35 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_FOR_SHIP_CLASS, "For-Ship-Class (Conditional operator)\r\n"
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain class (or classes) in the mission, and each ship will be provided as an argument to the action operators.  "
-		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly. Note that the parent when-argument will not fire if no matching ships are currently present, even if the conditions do not mention " SEXP_ARGUMENT_STRING ".\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tShip class from which to list ships\r\n" },
 
 	// Goober5000
 	{ OP_FOR_SHIP_TYPE, "For-Ship-Type (Conditional operator)\r\n"
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain type (or types) in the mission, and each ship will be provided as an argument to the action operators.  "
-		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly. Note that the parent when-argument will not fire if no matching ships are currently present, even if the conditions do not mention " SEXP_ARGUMENT_STRING ".\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tShip type from which to list ships\r\n" },
 
 	// Goober5000
 	{ OP_FOR_SHIP_TEAM, "For-Ship-Team (Conditional operator)\r\n"
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain team (or teams) in the mission, and each ship will be provided as an argument to the action operators.  "
-		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly. Note that the parent when-argument will not fire if no matching ships are currently present, even if the conditions do not mention " SEXP_ARGUMENT_STRING ".\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tTeam (IFF) from which to list ships\r\n" },
 
 	// Goober5000
 	{ OP_FOR_SHIP_SPECIES, "For-Ship-Species (Conditional operator)\r\n"
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain species (or multiple species) in the mission, and each ship will be provided as an argument to the action operators.  "
-		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly. Note that the parent when-argument will not fire if no matching ships are currently present, even if the conditions do not mention " SEXP_ARGUMENT_STRING ".\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tSpecies from which to list ships\r\n" },
 
 	// Goober5000
 	{ OP_FOR_PLAYERS, "For-Players (Conditional operator)\r\n"
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
-		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly. Note that the parent when-argument will not fire if no matching ships are currently present, even if the conditions do not mention " SEXP_ARGUMENT_STRING ".\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
 
 	// Goober5000
@@ -38736,9 +38735,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tA short string which will appear in the warning, or a message if the string matches a message name.\r\n"},
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
-		"\tIn a single player game, this function grants a player an automatic promotion to the "
-		"next rank which the player can obtain.  If he is already at the highest rank, this "
-		"operator has no effect.  It takes no arguments." },
+		"\tIn a single player game, this function grants a player an automatic promotion to the next rank which the player can obtain. If they are already at the highest rank, this operator has no effect. It takes no arguments." },
 
 	{ OP_GRANT_MEDAL, "Grant medal (Action operator)\r\n"
 		"\tIn single player missions, this function grants the given medal to the player.  "
@@ -39270,7 +39267,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 
-		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
+		"\tEnds the mission without the usual jump-out sequence. This immediately dumps the player back into a normal debriefing. Red-alert status is not invoked.\r\n"
 		"\t1:\tEnd Mission even if the player is dead (optional; defaults to true)\r\n"
 		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)\r\n"
 		"\t3:\tGo to the mainhall instead of starting the next mission (optional; defaults to false; not yet tested in multi)"
@@ -39406,10 +39403,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAll:\tList of ships whose are allowed to warp out (ships do not need to be in-mission)"},
 
 	{ OP_SET_SUBSPACE_DRIVE, "set-subspace-drive\r\n"
-		"\tTurns on or off the subspace edrive for the given ships.  A ship with no subspace drive will act "
-		"as though it doesn't even occur to him to depart via subspace, and if ordered to do so, he will look "
-		"for a friendly ship with a hangar bay.  If the ship is the player, pressing Alt-J will not not initiate "
-		"a jump, nor give any indication that a jump failed.  Takes 2 or more arguments...\r\n"
+		"\tTurns on or off the subspace edrive for the given ships.  A ship with no subspace drive will act as though it doesn't even occur to it to depart via subspace, and if ordered to do so, it will look for a friendly ship with a hangar bay. If the ship is the player, pressing Alt-J will not not initiate a jump, nor give any indication that a jump failed. Takes 2 or more arguments...\r\n"
 		"\t1:\tTrue if the ship should have a drive; false otherwise\r\n"
 		"\tRest:\tList of ships (ships do not need to be in-mission)" },
 
@@ -41032,7 +41026,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_FORCE_GLIDE, "force-glide\r\n"
-		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode on his own,, and that a ship in glide mode cannot warp out or enter autopilot."
+		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot."
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tShip to force (ship must be in-mission)\r\n"
 		"\t2:\tTrue to activate glide, False to deactivate\r\n"
