@@ -78,6 +78,8 @@ class volumetric_nebula {
 
 	float udfScale = 1.0f;
 
+	bool enabled = true;
+
 	//Friend things that are allowed to directly manipulate "current" volumetrics. Only FRED and the Lab. In all other cases, "sensibly constant" values behave properly RAII and stay constant afterwards.
 	friend class LabUi; //Lab
 	friend class CFred_mission_save; //FRED
@@ -121,6 +123,9 @@ public:
 	float getUDFScale() const;
 
 	float getAlphaToPos(const vec3d& pnt, float distance_mult) const;
+
+	void set_enabled(bool set_enabled);
+	bool get_enabled() const;
 };
 
 void volumetrics_level_close();
