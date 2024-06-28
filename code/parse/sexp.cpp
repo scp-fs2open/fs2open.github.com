@@ -40975,7 +40975,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_VOLUMETRICS_TOGGLE, "volumetrics-toggle\r\n"
 	"\tToggles whether the volumetrics for the current mission are shown or not. "
-	"Does nothing if no voluemtrics are defined for the mission\r\n"
+	"Does nothing if no volumetrics are defined for the mission\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tWill be shown\r\n"
 	},
