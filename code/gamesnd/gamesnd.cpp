@@ -770,8 +770,8 @@ void parse_gamesnd_soundset(game_snd* gs, bool no_create) {
 	// If this gets called then we just saw "+Entry:" so we can begin processing the first entry immediately
 
 	do {
-		// For now there is no way to change an existing entry so ever +Entry statement creates a new sound entry
-		gs->sound_entries.resize(gs->sound_entries.size() + 1);
+		// For now there is no way to change an existing entry so every +Entry statement creates a new sound entry
+		gs->sound_entries.emplace_back();
 		auto& entry = gs->sound_entries.back();
 
 		stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN);
@@ -857,7 +857,9 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 		gs->sound_entries.resize(1);
 		entry = &gs->sound_entries.back();
 	} else {
-		if (gs->sound_entries.size() != 1) {
+		if (gs->sound_entries.empty()) {
+			gs->sound_entries.resize(1);
+		} else if (gs->sound_entries.size() > 1) {
 			error_display(1, "The SCP syntax cannot be used to modify an existing sound that has more than one entry! Use the soundset syntax for adding new entries.");
 		}
 		entry = &gs->sound_entries.back();
@@ -956,10 +958,26 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 }
 
-void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector)
+void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize)
 {
 	SCP_string name;
 	stuff_string(name, F_NAME, "\t \n");
+
+	if (lookupVector && can_construe_as_integer(name.c_str()))
+	{
+		int candidate_index = atoi(name.c_str());
+
+		// if this is a number within the range of possible indexes, make sure the vector contains an entry for that index
+		if (candidate_index >= 0 && static_cast<size_t>(candidate_index) < lookupVectorMaxIndexableSize)
+		{
+			while (lookupVector->size() <= static_cast<size_t>(candidate_index))
+			{
+				size_t back_index = lookupVector->size();
+				lookupVector->emplace_back();
+				sprintf(lookupVector->back().name, SIZE_T_ARG, back_index);
+			}
+		}
+	}
 
 	int vectorIndex;
 	if (lookupVector)
@@ -1023,11 +1041,13 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
  * @param gs The game_snd instance to fill in
  * @param tag The tag that's required before an entry
  * @param lookupVector If non-NULL used to look up @c +nocreate entries
+ * @param lookupVectorMaxIndexableSize Numbers less than this size will be treated as indexes;
+ *        numbers at or above this size will be treated as numeric IDs that aren't indexes
  *
  * @return @c true when a new entry has been parsed and should be added to the list of known
  *			entries. @c false otherwise, for example in case of @c +nocreate
  */
-bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *lookupVector = NULL)
+bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *lookupVector = NULL, size_t lookupVectorMaxIndexableSize = 0)
 {
 	Assertion(gs != NULL, "Invalid game_snd pointer passed to gamesnd_parse_line!");
 
@@ -1043,7 +1063,7 @@ bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *loo
 		}
 	}
 
-	gamesnd_parse_entry(gs, no_create, lookupVector);
+	gamesnd_parse_entry(gs, no_create, lookupVector, lookupVectorMaxIndexableSize);
 
 	return !no_create;
 }
@@ -1257,8 +1277,9 @@ void parse_sound_table(const char* filename)
 				while (!check_for_string("#Game Sounds End"))
 				{
 					game_snd tempSound;
-					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
+					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds, static_cast<size_t>(GameSounds::MIN_GAME_SOUNDS)))
 					{
+						// if we are in this block, this is a new sound that will be appended
 						int tempIndex = static_cast<int>(Snds.size());
 
 						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
@@ -1274,7 +1295,6 @@ void parse_sound_table(const char* filename)
 							{
 								Snds.emplace_back();
 								sprintf(Snds.back().name, "%d", tempIndex);
-								Snds.back().sound_entries.emplace_back();
 								tempIndex = static_cast<int>(Snds.size());
 							}
 						}
@@ -1297,7 +1317,7 @@ void parse_sound_table(const char* filename)
 				while (!check_for_string("#Interface Sounds End"))
 				{
 					game_snd tempSound;
-					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
+					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface, static_cast<size_t>(InterfaceSounds::MIN_INTERFACE_SOUNDS)))
 					{
 						int tempIndex = static_cast<int>(Snds_iface.size());
 
@@ -1314,14 +1334,11 @@ void parse_sound_table(const char* filename)
 							{
 								Snds_iface.emplace_back();
 								sprintf(Snds_iface.back().name, "%d", tempIndex);
-								Snds_iface.back().sound_entries.emplace_back();
-								Snds_iface_handle.push_back(sound_handle::invalid());
 								tempIndex = static_cast<int>(Snds_iface.size());
 							}
 						}
 
 						Snds_iface.push_back(game_snd(tempSound));
-						Snds_iface_handle.push_back(sound_handle::invalid());
 					}
 				}
 
@@ -1402,10 +1419,19 @@ void gamesnd_parse_soundstbl(bool first_stage)
 
 	parse_modular_table("*-snd.tbm", parse_sound_table);
 
-	if (!first_stage) {
+	if (first_stage)
+	{
+		// these vectors should be the same size
+		while (Snds_iface_handle.size() < Snds_iface.size())
+			Snds_iface_handle.push_back(sound_handle::invalid());
+	}
+	else
+	{
 		//Set any flyby sounds for species that use the borrowed feature
-		for (size_t i = 0; i < Species_info.size(); i++) {
-			if (Species_info[i].borrows_flyby_sounds_species >= 0) {
+		for (size_t i = 0; i < Species_info.size(); i++)
+		{
+			if (Species_info[i].borrows_flyby_sounds_species >= 0)
+			{
 				int idx = Species_info[i].borrows_flyby_sounds_species;
 				Species_info[i].snd_flyby_fighter = Species_info[idx].snd_flyby_fighter;
 				Species_info[i].snd_flyby_bomber = Species_info[idx].snd_flyby_bomber;
@@ -1471,7 +1497,6 @@ bool gamesnd_game_sound_try_load(gamesnd_id sound)
 	}
 
 	if (gs->sound_entries.empty()) {
-		Warning(LOCATION, "No sound entries found in game sound %s!", gs->name.c_str());
 		gs->flags |= GAME_SND_NOT_VALID;
 		return false;
 	}
@@ -1502,7 +1527,11 @@ float gamesnd_get_max_duration(game_snd* gs) {
 	return max_length / gs->pitch_range.max();
 }
 game_snd_entry* gamesnd_choose_entry(game_snd* gs) {
-	Assertion(!gs->sound_entries.empty(), "No sound entries found in game sound! This may not happen!");
+	if (gs->sound_entries.empty()) {
+		// This entire game_snd should have been skipped due to having the GAME_SND_NOT_VALID flag before we get to this function
+		UNREACHABLE("No sound entries found in game sound %s! This may not happen!", gs->name.c_str());
+		gs->sound_entries.emplace_back();	// add an empty entry so that we can return something; it will be invalid and will not be played
+	}
 
 	size_t index = 0;
 	switch(gs->cycle_type) {
