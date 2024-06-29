@@ -2356,20 +2356,20 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	while (optional_string("$Conditional Impact Effect:")) {
 		int armor_index;
 		ConditionalImpact ci;
-		ci.min_health_threshold = 0.0;
-		ci.max_health_threshold = 1.0;
-		ci.min_angle_threshold = 0.0;
-		ci.max_angle_threshold = 180.0;
+		ci.min_health_threshold_0_to_1 = 0.0;
+		ci.max_health_threshold_0_to_1 = 1.0;
+		ci.min_angle_threshold_degrees = 0.0;
+		ci.max_angle_threshold_degrees = 180.0;
 		ci.dinky = false;
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 		armor_index = armor_type_get_idx(fname);
 		required_string("+Effect Name:");
 			ci.effect = particle::util::parseEffect(wip->name);
-		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
-		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
-		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
-		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold);
+		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold_0_to_1);
+		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold_0_to_1);
+		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold_degrees);
+		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold_degrees);
 		parse_optional_bool_into("+Dinky:", &ci.dinky);
 		SCP_vector<ConditionalImpact> ci_vec;
 		if (wip->conditional_impacts.count(armor_index) == 1) {
@@ -7532,7 +7532,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	vec3d reverse_incoming = (vmd_zero_vector - weapon_obj->orient.vec.fvec);
 
 	if (hitnormal) {
-		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, NULL);
+		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
 	if (other_obj != nullptr && other_obj->type == OBJ_SHIP) {
@@ -7545,13 +7545,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
 		}
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
-			SCP_vector<ConditionalImpact> cis = wip->conditional_impacts[relevant_armor_idx];
-			for (auto &ci : cis) {
+			const auto* cis = &wip->conditional_impacts[relevant_armor_idx];
+			for (auto &ci : *cis) {
 				if (((!armed_weapon) == ci.dinky)
-					&& relevant_fraction >= ci.min_health_threshold
-					&& relevant_fraction <= ci.max_health_threshold
-					&& hit_angle >= fl_radians(ci.min_angle_threshold)
-					&& hit_angle <= fl_radians(ci.max_angle_threshold)
+					&& relevant_fraction >= ci.min_health_threshold_0_to_1
+					&& relevant_fraction <= ci.max_health_threshold_0_to_1
+					&& hit_angle >= fl_radians(ci.min_angle_threshold_degrees)
+					&& hit_angle <= fl_radians(ci.max_angle_threshold_degrees)
 				) {
 					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
 					particleSource.moveTo(hitpos);
@@ -7584,7 +7584,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 
 		particleSource.finish();
-	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon && !valid_conditional_impact) {
+	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);

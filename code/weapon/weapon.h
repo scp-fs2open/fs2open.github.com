@@ -305,10 +305,10 @@ enum class HomingAcquisitionType {
 
 struct ConditionalImpact {
 	particle::ParticleEffectHandle effect;
-	float min_health_threshold;
-	float max_health_threshold;
-	float min_angle_threshold;
-	float max_angle_threshold;
+	float min_health_threshold_0_to_1;
+	float max_health_threshold_0_to_1;
+	float min_angle_threshold_degrees;
+	float max_angle_threshold_degrees;
 	bool dinky;
 };
 
