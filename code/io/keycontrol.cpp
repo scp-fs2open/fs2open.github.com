@@ -798,11 +798,8 @@ void process_debug_keys(int k)
 		// play the next mission message
 		case KEY_DEBUGGED + KEY_V:		
 			extern int Message_debug_index;
-			extern int Num_messages_playing;
 			// stop any other messages
-			if(Num_messages_playing){
-				message_kill_all(1);
-			}
+			message_kill_all(true);
 
 			// next message
 			if(Message_debug_index >= Num_messages - 1){
@@ -821,11 +818,8 @@ void process_debug_keys(int k)
 		// play the previous mission message
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_V:
 			extern int Message_debug_index;
-			extern int Num_messages_playing;
 			// stop any other messages
-			if(Num_messages_playing){
-				message_kill_all(1);
-			}
+			message_kill_all(true);
 
 			// go maybe go down one
 			if(Message_debug_index == Num_builtin_messages - 1){

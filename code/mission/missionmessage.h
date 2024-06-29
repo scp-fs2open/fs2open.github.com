@@ -244,7 +244,7 @@ void	message_mission_shutdown();
 void	message_queue_process();
 int	message_is_playing();
 void	message_maybe_distort();
-void	message_kill_all( int kill_all );
+void	message_kill_all( bool kill_all );
 
 void	message_pause_all();
 void	message_resume_all();
