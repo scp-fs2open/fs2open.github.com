@@ -134,11 +134,11 @@ X(STRAY,               "Stray",                100, -1,  0,     LOW, SOON, NONE)
 
 enum {
   #define X(NAME, ...) MESSAGE_ ## NAME
-	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES, MAX_BUILTIN_MESSAGE_TYPES
+	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES
 	#undef X
 };
 
-extern builtin_message Builtin_messages[MAX_BUILTIN_MESSAGE_TYPES];
+extern SCP_vector<builtin_message> Builtin_messages;
 
 int get_builtin_message_type(const char* name);
 
@@ -239,6 +239,7 @@ void	message_parse(MessageFormat format);
 void	persona_parse();
 
 void	messages_init();
+void	message_types_init();
 void	message_mission_shutdown();
 void	message_queue_process();
 int	message_is_playing();
@@ -253,7 +254,7 @@ void	message_queue_message(int message_num, int priority, int timing, const char
 // functions which send messages to player -- called externally
 void	message_send_unique(const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
 
-bool	message_send_builtin(int type, ship* sender, ship* subject, int multi_target, int multi_team_filter);
+bool	message_send_builtin(int type, ship* sender, ship* subject, int multi_target = -1, int multi_team_filter = -1);
 
 // functions to deal with personas
 int message_persona_name_lookup(const char* name);

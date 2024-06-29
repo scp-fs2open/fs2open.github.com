@@ -143,6 +143,7 @@ enum sexp_opf_t : int {
 	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
 	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
 	OPF_MISSION_CUSTOM_STRING,      // MjnMixael - The custom strings as defined in FRED
+	OPF_MESSAGE_TYPE,      // naomimyselfandi - A message type (Attack Target et al.)
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -528,6 +529,7 @@ enum : int {
 	OP_SET_SUBSYSTEM_STRNGTH,
 	OP_PROTECT_SHIP,
 	OP_SEND_MESSAGE,
+	OP_SEND_BUILTIN_MESSAGE,
 	OP_SELF_DESTRUCT,
 	OP_CLEAR_GOALS,
 	OP_ADD_GOAL,
@@ -1258,6 +1260,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
 	SEXP_CHECK_MUST_BE_INTEGER,
 	SEXP_CHECK_INVALID_CUSTOM_STRING,
+	SEXP_CHECK_INVALID_MESSAGE_TYPE,
 	SEXP_CHECK_POTENTIAL_ISSUE,
 };
 
