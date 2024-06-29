@@ -2377,7 +2377,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
 		}
 		ci_vec.push_back(ci);
-		wip->conditional_impacts.insert_or_assign(armor_index, ci_vec);
+		wip->conditional_impacts[armor_index] = ci_vec;
 	}
 
 	if (optional_string("$Inflight Effect:")) {
