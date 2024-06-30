@@ -5857,7 +5857,6 @@ void parse_asteroid_fields(mission *pm)
 		}
 
 		Asteroid_field.field_debris_type.clear();
-
 		Asteroid_field.field_asteroid_type.clear();
 
 		// Debris types
@@ -5866,7 +5865,9 @@ void parse_asteroid_fields(mission *pm)
 			// Obsolete and only for backwards compatibility
 			for (int j = 0; j < MAX_RETAIL_DEBRIS_TYPES; j++) {
 				if (optional_string("+Field Debris Type:")) {
-					stuff_int(&Asteroid_field.field_debris_type[j]);
+					int subtype;
+					stuff_int(&subtype);
+					Asteroid_field.field_debris_type.push_back(subtype);
 				}
 			}
 
@@ -5881,7 +5882,7 @@ void parse_asteroid_fields(mission *pm)
 				} else {
 					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
 				}
-				}
+			}
 
 		// Asteroid types
 		} else {
