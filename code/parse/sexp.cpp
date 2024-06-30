@@ -37153,28 +37153,30 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SUBSYSTEM_DESTROYED_DELAY, "Is subsystem destroyed delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified subsystem of the specified "
-		"ship is destroyed. Subsequent repairs to that subsystem have no effect on this "
-		"operator.\r\n\r\n"
+		"ship is destroyed. This will remain true even if the subsystem is subsequently "
+		"repaired. If the subsystem is destroyed multiple times, the delay is measured "
+		"from the first time.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 arguments...\r\n"
 		"\t1:\tName of ship the subsystem we are checking is on.\r\n"
 		"\t2:\tThe name of the subsystem we are checking status of.\r\n"
 		"\t3:\tTime delay in seconds (see above)." },
 
 	{ OP_IS_DISABLED_DELAY, "Is disabled delay (Boolean operator)\r\n"
-		"\tBecomes true <delay> seconds after the specified ship(s) are disabled.  A "
+		"\tBecomes true <delay> seconds after the specified ship(s) are disabled. A "
 		"ship is disabled when all of its engine subsystems are destroyed. All "
-		"ships must be disabled for this function to return true. Subsequent repairs "
-		"to any of these ships' engines have no effect on this operator.\r\n\r\n"
+		"ships must be disabled for this operator to return true. This will remain "
+		"true even if an engine subsystem is subsequently repaired. If a ship becomes "
+		"disabled multiple times, the delay is measured from the first time.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disabled status of." },
 
 	{ OP_IS_DISARMED_DELAY, "Is disarmed delay (Boolean operator)\r\n"
-		"\tBecomes true <delay> seconds after the specified ship(s) are disarmed.  A "
+		"\tBecomes true <delay> seconds after the specified ship(s) are disarmed. A "
 		"ship is disarmed when all of its turret subsystems are destroyed. All "
-		"ships must be disarmed for this function to return true. Subsequent repairs "
-		"to any of these ships' weapons and turrets have no effect on this operator."
-		"\r\n\r\n"
+		"ships must be disarmed for this function to return true. This will remain "
+		"true even if a turret subsystem is subsequently repaired. If a ship becomes "
+		"disarmed multiple times, the delay is measured from the first time.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay is seconds (see above).\r\n"
 		"\tRest:\tNames of ships to check disarmed status of." },
@@ -38735,7 +38737,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tA short string which will appear in the warning, or a message if the string matches a message name.\r\n"},
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
-		"\tIn a single player game, this function grants a player an automatic promotion to the next rank which the player can obtain. If they are already at the highest rank, this operator has no effect. It takes no arguments." },
+		"\tIn a single player game, grants the player an automatic promotion to the "
+		"next rank which they can obtain. If they are already at the highest rank, "
+		"this operator has no effect. It takes no arguments." },
 
 	{ OP_GRANT_MEDAL, "Grant medal (Action operator)\r\n"
 		"\tIn single player missions, this function grants the given medal to the player.  "
@@ -39403,7 +39407,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAll:\tList of ships whose are allowed to warp out (ships do not need to be in-mission)"},
 
 	{ OP_SET_SUBSPACE_DRIVE, "set-subspace-drive\r\n"
-		"\tTurns on or off the subspace edrive for the given ships.  A ship with no subspace drive will act as though it doesn't even occur to it to depart via subspace, and if ordered to do so, it will look for a friendly ship with a hangar bay. If the ship is the player, pressing Alt-J will not not initiate a jump, nor give any indication that a jump failed. Takes 2 or more arguments...\r\n"
+		"\tTurns on or off the subspace edrive for the given ships.  A ship with no "
+		"subspace drive will act as though it doesn't even occur to it to depart "
+		"via subspace, and if ordered to do so, it will look for a friendly ship with "
+		"a hangar bay. If the ship is the player, pressing Alt-J will not not initiate "
+		"a jump, nor give any indication that a jump failed. Takes 2 or more arguments...\r\n"
 		"\t1:\tTrue if the ship should have a drive; false otherwise\r\n"
 		"\tRest:\tList of ships (ships do not need to be in-mission)" },
 
