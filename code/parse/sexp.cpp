@@ -25986,6 +25986,8 @@ void sexp_force_perspective(int n)
 			return;
 		switch(option)
 		{
+			case -1:
+				break;
 			case 0:
 				Viewer_mode = 0;
 				break;
@@ -25997,6 +25999,9 @@ void sexp_force_perspective(int n)
 				break;
 			case 3:
 				Viewer_mode = VM_TOPDOWN;
+				break;
+			default:
+				Warning(LOCATION, "Unhandled option %d supplied to lock-perspective!", option);
 				break;
 		}
 		n = CDR(n);
@@ -33347,7 +33352,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 			if (argnum == 1)
-				return OPF_POSITIVE;
+				return OPF_NUMBER;
 			else
 				return OPF_BOOL;
 
@@ -40910,7 +40915,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tPrevents or allows the player from changing the view mode.  "
 		"Takes 1 or 2 arguments...\r\n"
 		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
-		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down\r\n"
+		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down, or -1 to not change the current view mode\r\n"
 		"\t3:\tIf in first-person, true to lock the hat/slew/free-look view, false to unlock it (optional)\r\n"
 	},
 
