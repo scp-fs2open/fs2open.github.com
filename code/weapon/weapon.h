@@ -303,6 +303,15 @@ enum class HomingAcquisitionType {
 	RANDOM,
 };
 
+struct ConditionalImpact {
+	particle::ParticleEffectHandle effect;
+	float min_health_threshold; //factor, 0-1
+	float max_health_threshold; //factor, 0-1
+	float min_angle_threshold; //in degrees
+	float max_angle_threshold; //in degrees
+	bool dinky;
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -485,6 +494,8 @@ struct weapon_info
 
 	particle::ParticleEffectHandle piercing_impact_effect;
 	particle::ParticleEffectHandle piercing_impact_secondary_effect;
+
+	SCP_map<int, SCP_vector<ConditionalImpact>> conditional_impacts;
 
 	particle::ParticleEffectHandle muzzle_effect;
 

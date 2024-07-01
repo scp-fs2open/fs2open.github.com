@@ -2353,6 +2353,33 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	while (optional_string("$Conditional Impact:")) {
+		int armor_index;
+		ConditionalImpact ci;
+		ci.min_health_threshold = 0.0;
+		ci.max_health_threshold = 1.0;
+		ci.min_angle_threshold = 0.0;
+		ci.max_angle_threshold = 180.0;
+		ci.dinky = false;
+		required_string("+Armor Type:");
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+		armor_index = armor_type_get_idx(fname);
+		required_string("+Effect Name:");
+			ci.effect = particle::util::parseEffect(wip->name);
+		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
+		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
+		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
+		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold);
+		parse_optional_bool_into("+Dinky:", &ci.dinky);
+		SCP_vector<ConditionalImpact> ci_vec;
+		if (wip->conditional_impacts.count(armor_index) == 1) {
+			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[armor_index];
+			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
+		}
+		ci_vec.push_back(ci);
+		wip->conditional_impacts[armor_index] = ci_vec;
+	}
+
 	if (optional_string("$Inflight Effect:")) {
 		auto effetIdx = particle::util::parseEffect(wip->name);
 		wip->state_effects[WeaponState::NORMAL] = effetIdx;
@@ -7518,7 +7545,55 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
-	if (wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
+
+ 	bool valid_conditional_impact = false;
+	int relevant_armor_idx = -1;
+	float relevant_fraction = 1.0f;
+	float hit_angle = 0.0f;
+	vec3d reverse_incoming = weapon_obj->orient.vec.fvec;
+	vm_vec_negate(&reverse_incoming);
+
+	if (hitnormal) {
+		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
+	}
+
+	if (other_obj != nullptr && other_obj->type == OBJ_SHIP) {
+		shipp = &Ships[other_obj->instance];
+		if (quadrant == -1) {
+			relevant_armor_idx = shipp->armor_type_idx;
+			relevant_fraction = other_obj->hull_strength / shipp->ship_max_hull_strength;
+		} else {
+			relevant_armor_idx = shipp->shield_armor_type_idx;
+			relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
+		}
+		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
+			for (const auto& ci : wip->conditional_impacts[relevant_armor_idx]) {
+				if (((!armed_weapon) == ci.dinky)
+					&& relevant_fraction >= ci.min_health_threshold
+					&& relevant_fraction <= ci.max_health_threshold
+					&& hit_angle >= fl_radians(ci.min_angle_threshold)
+					&& hit_angle <= fl_radians(ci.max_angle_threshold)
+				) {
+					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
+					particleSource.moveTo(hitpos);
+					particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+					particleSource.setVelocity(&weapon_obj->phys_info.vel);
+
+					if (hitnormal)
+					{
+						particleSource.setOrientationNormal(hitnormal);
+					}
+
+					particleSource.finish();
+
+					valid_conditional_impact = true;
+				}
+			}
+		}
+	}
+
+
+	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
@@ -7530,7 +7605,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 
 		particleSource.finish();
-	} else if (wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
+	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
@@ -7544,7 +7619,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	}
 
-	if ((other_obj != nullptr) && (quadrant == -1) && (wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if ((other_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
@@ -9350,6 +9425,8 @@ void weapon_info::reset()
 
 	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
+
+	this->conditional_impacts.clear();
 
 	this->muzzle_effect = particle::ParticleEffectHandle::invalid();
 
