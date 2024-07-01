@@ -237,6 +237,9 @@ extern FlightMode Player_flight_mode;
 extern float Flight_cursor_extent;
 extern float Flight_cursor_deadzone;
 
+extern bool Perspective_locked;
+extern bool Slew_locked;
+
 extern void player_init();							// initialization per level
 extern void player_level_init();
 extern void player_controls_init();				// initialize Descent style controls for use in various places
