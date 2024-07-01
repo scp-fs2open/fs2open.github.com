@@ -3068,9 +3068,10 @@ const char* get_lookup_type_name(int lookup_type)
 struct StuffIntListParser
 {
 	int lookup_type;
+	bool warn_on_lookup_failure;
 
-	StuffIntListParser(int _lookup_type)
-		: lookup_type(_lookup_type)
+	StuffIntListParser(int _lookup_type, bool _warn_on_lookup_failure)
+		: lookup_type(_lookup_type), warn_on_lookup_failure(_warn_on_lookup_failure)
 	{}
 
 	bool operator()(int* buf) {
@@ -3083,19 +3084,19 @@ struct StuffIntListParser
 			switch (lookup_type) {
 				case SHIP_TYPE:
 					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
-					if (num < 0)
+					if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
-					if (num < 0)
+					if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_POOL_TYPE:
 					num = weapon_info_lookup(str.c_str());
-					if (num < 0)
+					if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
@@ -3103,7 +3104,7 @@ struct StuffIntListParser
 					num = weapon_info_lookup(str.c_str());
 					if (str.empty())
 						valid_negative = true;
-					else if (num < 0)
+					else if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
@@ -3133,18 +3134,18 @@ struct StuffIntListParser
 //	This is of the form ( i* )
 //	  where i is an integer.
 // For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
-size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
+size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type, bool warn_on_lookup_failure)
 {
-	return stuff_token_list(ilp, max_ints, StuffIntListParser(lookup_type), get_lookup_type_name(lookup_type));
+	return stuff_token_list(ilp, max_ints, StuffIntListParser(lookup_type, warn_on_lookup_failure), get_lookup_type_name(lookup_type));
 }
 
 //	Stuffs an integer list.
 //	This is of the form ( i* )
 //	  where i is an integer.
 // For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
-void stuff_int_list(SCP_vector<int> &ilp, int lookup_type)
+void stuff_int_list(SCP_vector<int> &ilp, int lookup_type, bool warn_on_lookup_failure)
 {
-	stuff_token_list(ilp, StuffIntListParser(lookup_type), get_lookup_type_name(lookup_type));
+	stuff_token_list(ilp, StuffIntListParser(lookup_type, warn_on_lookup_failure), get_lookup_type_name(lookup_type));
 }
 
 // Karajorma/Goober5000 - Stuffs a loadout list by parsing a list of ship or weapon choices.

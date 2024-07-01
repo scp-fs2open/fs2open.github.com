@@ -233,8 +233,8 @@ void stuff_flagset(T *dest) {
     diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }
 
-extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE);
-extern void stuff_int_list(SCP_vector<int> &ilp, int lookup_type = RAW_INTEGER_TYPE);
+extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
+extern void stuff_int_list(SCP_vector<int> &ilp, int lookup_type = RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
 extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
