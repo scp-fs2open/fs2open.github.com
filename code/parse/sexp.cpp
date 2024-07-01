@@ -40916,7 +40916,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 or 2 arguments...\r\n"
 		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
 		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down, or -1 to not change the current view mode\r\n"
-		"\t3:\tIf in first-person, true to lock the hat/slew/free-look view, false to unlock it (optional)\r\n"
+		"\t3:\tIf in first-person, true to lock the hat/slew/free-look/target-track mode, false to unlock it (optional)\r\n"
 	},
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"

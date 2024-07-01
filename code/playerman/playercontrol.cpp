@@ -64,6 +64,8 @@ angles chase_slew_angles;
 angles Player_flight_cursor;
 
 FlightMode Player_flight_mode = FlightMode::ShipLocked;
+bool Perspective_locked = false;
+bool Slew_locked = false;
 
 auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
 	std::pair<const char*, int>{"Flight Mode", 1842},
