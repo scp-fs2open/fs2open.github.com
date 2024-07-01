@@ -737,7 +737,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "show-subtitle-text",				OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6,	15,			SEXP_ACTION_OPERATOR,	},
 	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	11,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-subtitles",				OP_CLEAR_SUBTITLES,						0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -25981,10 +25981,10 @@ void sexp_force_perspective(int n)
 	if(n != -1)
 	{
 		bool is_nan, is_nan_forever;
-		n = eval_num(n, is_nan, is_nan_forever);
+		int option = eval_num(n, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
 			return;
-		switch(n)
+		switch(option)
 		{
 			case 0:
 				Viewer_mode = 0;
@@ -25998,6 +25998,16 @@ void sexp_force_perspective(int n)
 			case 3:
 				Viewer_mode = VM_TOPDOWN;
 				break;
+		}
+		n = CDR(n);
+
+		// optionally prevent hat/slew/free-look
+		if (n != -1)
+		{
+			Slew_locked = is_sexp_true(n);
+
+			if (Slew_locked)
+				Viewer_mode |= VM_CENTERING;	// start centering so that we don't get stuck in a slewed position
 		}
 	}
 }
@@ -33336,10 +33346,10 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_NONE;
 
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
-			if(argnum==0)
-				return OPF_BOOL;
-			else
+			if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_SET_CAMERA_SHUDDER:
 			if (argnum == 0 || argnum == 1)
@@ -40900,7 +40910,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tPrevents or allows the player from changing the view mode.  "
 		"Takes 1 or 2 arguments...\r\n"
 		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
-		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down"
+		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down\r\n"
+		"\t3:\tIf in first-person, true to lock the hat/slew/free-look view, false to unlock it (optional)\r\n"
 	},
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"

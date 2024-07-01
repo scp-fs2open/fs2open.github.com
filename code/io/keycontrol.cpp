@@ -218,6 +218,7 @@ static struct Cheat cheatsTable[] = {
 
 int Tool_enabled = 0;
 bool Perspective_locked=false;
+bool Slew_locked=false;
 
 extern int AI_watch_object;
 extern int Countermeasures_enabled;

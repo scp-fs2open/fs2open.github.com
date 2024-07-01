@@ -183,10 +183,10 @@ angles	Viewer_slew_angles_delta;
 angles	Viewer_external_angles_delta;
 
 /**
- * @brief Modifies the camera veiw angles according to its current view mode: External, External Locked,
+ * @brief Modifies the camera view angles according to its current view mode: External, External Locked,
  *   TrackIR, Freelook (Unlocked), Normal (Locked), and Centering
  *
- * @param[in,out]   ma      The camera veiw angles to modify (magnitude is saturated to be within max_p and max_h).
+ * @param[in,out]   ma      The camera view angles to modify (magnitude is saturated to be within max_p and max_h).
  * @param[out]  da      The delta angles applied to ma (magnitude is saturated to 1 radian).
  * @param[in]   max_p   The maximum pitch magnitude ma may have (radians).
  * @param[in]   max_h   The maximum heading magnitude ma may have (radians).
@@ -232,7 +232,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 			} else if (Viewer_mode & VM_PADLOCK_LEFT) {
 				ma->h = -max_h;
 				ma->p = 0.0f;
-			} // Else, don't do any ajustments. player_set_padlock_state will reset the states
+			} // Else, don't do any adjustments. do_view_slew() will reset the states
 
 			return;
 
@@ -397,7 +397,7 @@ void do_view_slew()
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3);
 
 	// Check Track target
-	if (Viewer_mode & VM_TRACK) {
+	if (Viewer_mode & VM_TRACK && !Slew_locked) {
 		// Player's vision will track current target.
 		do_view_track_target();
 		Viewer_mode |= VM_CAMERA_LOCKED;
@@ -405,27 +405,29 @@ void do_view_slew()
 	}
 
 	// Check Padlock controls
-	if (check_control(PADLOCK_UP)) {
+	// (Check Slew_locked second so that we don't short-circuit before processing the control)
+	if (check_control(PADLOCK_UP) && !Slew_locked) {
 		Viewer_mode |= (VM_PADLOCK_UP | VM_CAMERA_LOCKED);
 		Viewer_mode &= ~(VM_CENTERING);
 		return;
 
-	} else if (check_control(PADLOCK_DOWN)) {
+	} else if (check_control(PADLOCK_DOWN) && !Slew_locked) {
 		Viewer_mode |= (VM_PADLOCK_REAR | VM_CAMERA_LOCKED);
 		Viewer_mode &= ~(VM_CENTERING);
 		return;
 
-	} else if (check_control(PADLOCK_RIGHT)) {
+	} else if (check_control(PADLOCK_RIGHT) && !Slew_locked) {
 		Viewer_mode |= (VM_PADLOCK_RIGHT | VM_CAMERA_LOCKED);
 		Viewer_mode &= ~(VM_CENTERING);
 		return;
 
-	} else if (check_control(PADLOCK_LEFT)) {
+	} else if (check_control(PADLOCK_LEFT) && !Slew_locked) {
 		Viewer_mode |= (VM_PADLOCK_LEFT | VM_CAMERA_LOCKED);
 		Viewer_mode &= ~(VM_CENTERING);
 		return;
 
 	} else if (Viewer_mode & VM_PADLOCK_ANY) {
+		// at this point the view is in padlock mode but no controls are currently pressed;
 		// clear padlock views and center the view once 
 		// the player lets go of a padlock control
 		Viewer_mode &= ~(VM_PADLOCK_ANY);
@@ -449,7 +451,7 @@ void do_view_slew()
 			return;
 		}
 		
-		if (check_control_timef(VIEW_SLEW)) {
+		if (check_control_timef(VIEW_SLEW) && !Slew_locked) {
 			// Enable freelook mode
 			Viewer_mode &= ~VM_CAMERA_LOCKED;
 

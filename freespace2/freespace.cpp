@@ -1008,6 +1008,7 @@ void game_level_init()
 	Game_shudder_time = TIMESTAMP::invalid();
 
 	Perspective_locked = false;
+	Slew_locked = false;
 
 	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
