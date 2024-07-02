@@ -47,19 +47,22 @@ int Shockwave_inited = 0;
 // Externals
 // -----------------------------------------------------------
 extern int Show_area_effect;
-extern int Cmdline_enable_3d_shockwave;
 
 static SCP_string shockwave_mode_display(bool mode) { return mode ? XSTR("3D", 1691) : XSTR("2D", 1692); }
 
-static bool Use_3D_shockwaves = true;
+bool Use_3D_shockwaves = true;
 
-static auto Shockwave3DMode __UNUSED = options::OptionBuilder<bool>("Graphics.3DShockwaves",
+static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwaves",
                      std::pair<const char*, int>{"Shockwaves", 1722},
-                     std::pair<const char*, int>{"The way shockwaves are displayed", 1723})
+                     std::pair<const char*, int>{"The way shockwaves are displayed. Changes will be reflected in the next loaded mission.", 1723})
                      .category(std::make_pair("Graphics", 1825))
                      .display(shockwave_mode_display)
                      .default_val(true)
-                     .bind_to_once(&Use_3D_shockwaves)
+                     .bind_to(&Use_3D_shockwaves)
+                     .change_listener([](float, bool) {
+                         Default_shockwave_loaded = 0; // If we change then we have to force shockwave reload
+                         return true;
+                     })
                      .level(options::ExpertLevel::Advanced)
                      .importance(66)
                      .finish();
@@ -518,10 +521,7 @@ void shockwave_level_init()
 {
 	int i;
 
-	if (!Using_in_game_options) {
-		// If the new option system is not in use then use the command line
-		Use_3D_shockwaves = Cmdline_enable_3d_shockwave != 0;
-	}
+	bool shockwaveStyle3d = Shockwave3DMode->getValue();
 
 	if ( !Default_shockwave_loaded ) {
 		i = -1;
@@ -531,7 +531,7 @@ void shockwave_level_init()
 		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check 
 		// 	to use the static name instead, and added a check to override the command line if a 2d default filename is not found
 		//  Note - The 3d shockwave flag is forced on by TBP's flag as of rev 4983
-		if ( Use_3D_shockwaves && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+		if (shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS)) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );
@@ -561,7 +561,7 @@ void shockwave_level_init()
 		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
 		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to 
 		// spit out a more meaningful message.  Might as well not bother trying again if the command line option was checked as it should have tried the first time through
-		if ( i < 0 && !Use_3D_shockwaves && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+		if (i < 0 && !shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS)) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model as last resort... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );
