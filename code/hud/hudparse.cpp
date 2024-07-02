@@ -394,7 +394,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				}
 				break;
 			case 1:
-				mprintf(("$Ships in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Name:\" and define Gauge Config Settings in ships.tbl per-ship instead.\n"));
+				mprintf(("$Ships in hud_gauges.tbl and -hdg.tbms can be replaced. Gauge Config Settings can now be defined per-ship in ships.tbl. \n"));
 
 				int shiparray[256];
 
