@@ -1777,8 +1777,13 @@ void game_init()
 		Cmdline_freespace_no_music = 1;
 		Cmdline_NoFPSCap = 0;
 		Cmdline_load_all_weapons = 0;
-		Cmdline_enable_3d_shockwave = 0;
+
+		// Force some ingame options to off
 		Fireball_use_3d_warp = false;
+		options::OptionsManager::instance()->set_ingame_binary_option("Graphics.WarpFlash", false);
+
+		Use_3D_shockwaves = false;
+		options::OptionsManager::instance()->set_ingame_binary_option("Graphics.3DShockwaves", false);
 
 		// now init the standalone server code
 		std_init_standalone();
@@ -3001,11 +3006,7 @@ bool is_screenshake_enabled()
 	if (Game_mode & GM_MULTIPLAYER) {
 		return true;
 	} else {
-		if (Using_in_game_options) {
-			return ScreenShakeOption->getValue();
-		} else {
-			return !Cmdline_no_screenshake;
-		}
+		return ScreenShakeOption->getValue();
 	}
 }
 

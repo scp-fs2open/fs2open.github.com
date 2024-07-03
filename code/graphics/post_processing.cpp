@@ -224,11 +224,7 @@ bool gr_lightshafts_enabled()
 		return false;
 	}
 
-	if (Using_in_game_options) {
-		return graphics::LightshaftsOption->getValue();
-	} else {
-		return !Cmdline_force_lightshaft_off;
-	}
+	return graphics::LightshaftsOption->getValue();
 }
 
 int gr_bloom_intensity()
@@ -241,11 +237,7 @@ int gr_bloom_intensity()
 		return 0;
 	}
 
-	if (Using_in_game_options) {
-		return graphics::BloomIntensityOption->getValue();
-	} else {
-		return Cmdline_bloom_intensity;
-	}
+	return graphics::BloomIntensityOption->getValue();
 }
 
 void gr_set_bloom_intensity(int intensity)
@@ -254,9 +246,6 @@ void gr_set_bloom_intensity(int intensity)
 		return;
 	}
 
-	if (Using_in_game_options) {
-		graphics::Post_processing_bloom_intensity = intensity;
-	} else {
-		Cmdline_bloom_intensity = intensity;
-	}
+	graphics::Post_processing_bloom_intensity = intensity;
+	options::OptionsManager::instance()->set_ingame_range_option("Graphics.BloomIntensity", intensity);
 }

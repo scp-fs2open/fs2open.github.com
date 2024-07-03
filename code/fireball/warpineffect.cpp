@@ -30,7 +30,7 @@ static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.Wa
                      .category(std::make_pair("Graphics", 1825))
                      .default_val(true)
                      .level(options::ExpertLevel::Advanced)
-                     .bind_to_once(&Fireball_warp_flash)
+                     .bind_to(&Fireball_warp_flash)
                      .importance(65)
                      .finish();
 
