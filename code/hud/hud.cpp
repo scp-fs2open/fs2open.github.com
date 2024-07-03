@@ -3971,9 +3971,9 @@ int hud_get_default_gauge_index(const char *name)
 	return -1;
 }
 
-HudGauge *hud_get_gauge(const char *name)
+HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges)
 {
-	auto gauge = hud_get_custom_gauge(name);
+	auto gauge = hud_get_custom_gauge(name, check_all_custom_gauges);
 	if (gauge == nullptr)
 	{
 		int idx = hud_get_default_gauge_index(name);
