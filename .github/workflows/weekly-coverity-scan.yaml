@@ -47,7 +47,7 @@ jobs:
       - name: Configure CMake for FSO
         env:
           CONFIGURATION: Release
-          compiler: gcc-9
+          COMPILER: gcc-9
           ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
 
