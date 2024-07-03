@@ -843,7 +843,7 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 	new_poof.rot_speed = fl_radians(pinfo->rotation.next());
 	new_poof.alpha = pinfo->alpha.next();
 	new_poof.anim_time = frand_range(0.0f, pinfo->bitmap.total_time);
-	if (pinfo->alignment != vmd_zero_vector)
+	if (pinfo->alignment == vmd_zero_vector)
 		vm_vec_rand_vec(&new_poof.up_vec);
 	else
 		new_poof.up_vec = pinfo->alignment;
