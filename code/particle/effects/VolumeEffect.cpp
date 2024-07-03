@@ -108,12 +108,12 @@ namespace particle {
 				float chance;
 				stuff_float(&chance);
 				if (chance <= 0.0f) {
-					Warning(LOCATION,
+					error_display(0,
 						"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
 						m_name.c_str(),
 						chance);
 				} else if (chance >= 1.0f) {
-					Warning(LOCATION,
+					error_display(0,
 						"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: "
 						"(min,max) to spawn multiple particles.",
 						m_name.c_str(),
@@ -129,7 +129,7 @@ namespace particle {
 				stuff_float(&radius);
 
 				if (radius < 0.001f) {
-					Warning(LOCATION, "A volume radius of %f is not valid. Must be greater than 0. Defaulting to 10.", radius);
+					error_display(0, "A volume radius of %f is not valid. Must be greater than 0. Defaulting to 10.", radius);
 					radius = 10.0f;
 				}
 				m_radius = radius;
@@ -140,7 +140,7 @@ namespace particle {
 				stuff_float(&bias);
 
 				if (bias < 0.001f) {
-					Warning(LOCATION, "A volume bias value of %f is not valid. Must be greater than 0.", bias);
+					error_display(0, "A volume bias value of %f is not valid. Must be greater than 0.", bias);
 					bias = 1.0f;
 				}
 				m_bias = bias;
@@ -151,7 +151,7 @@ namespace particle {
 				stuff_float(&stretch);
 
 				if (stretch < 0.001f) {
-					Warning(LOCATION, "A volume stretch value of %f is not valid. Must be greater than 0.", stretch);
+					error_display(0, "A volume stretch value of %f is not valid. Must be greater than 0.", stretch);
 					stretch = 1.0f;
 				}
 				m_stretch = stretch;

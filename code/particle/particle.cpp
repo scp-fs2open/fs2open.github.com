@@ -252,7 +252,7 @@ namespace particle
 			return;
 		}
 
-		Particles.push_back(part);
+		Particles.push_back(std::move(part));
 	}
 
 	// Creates a single particle. See the PARTICLE_?? defines for types.

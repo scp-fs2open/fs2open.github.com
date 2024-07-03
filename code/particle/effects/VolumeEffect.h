@@ -24,7 +24,7 @@ namespace particle {
 			util::EffectTiming m_timing;
 
 			::util::UniformUIntRange m_particleNum;
-			float m_particleChance;
+			float m_particleChance = 1.0f;
 			::util::UniformFloatRange m_particleRoll;
 
 			::util::UniformFloatRange m_velocity;
