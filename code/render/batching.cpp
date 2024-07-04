@@ -439,6 +439,53 @@ void batching_add_quad_internal(primitive_batch* batch, int texture, vertex* ver
 	batch->add_triangle(&v[0], &v[2], &v[3]);
 }
 
+void batching_add_quad_twisted_internal(primitive_batch* batch, int texture, vertex* verts)
+{
+    Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
+
+    const int NUM_VERTICES = 5;
+    batch_vertex v[NUM_VERTICES];
+
+    auto array_index = texture - batch->get_render_info().texture;
+
+    auto& vertex_center = v[4];
+    vertex_center.tex_coord = vm_vec4_new(0, 0, (float)array_index, 1.0f);
+    vertex_center.position = ZERO_VECTOR;
+    uint16_t center_a = 0, center_r = 0, center_g = 0, center_b = 0;
+
+    for ( int i = 0; i < NUM_VERTICES - 1; i++ ) {
+        v[i].tex_coord = vm_vec4_new(verts[i].texture_position.u, verts[i].texture_position.v, (float)array_index, 1.0f);
+
+        v[i].position = verts[i].world;
+
+        v[i].r = verts[i].r;
+        v[i].g = verts[i].g;
+        v[i].b = verts[i].b;
+        v[i].a = verts[i].a;
+
+        vertex_center.tex_coord.xyzw.x += verts[i].texture_position.u;
+        vertex_center.tex_coord.xyzw.y += verts[i].texture_position.v;
+        vertex_center.position += verts[i].world;
+        center_r += verts[i].r;
+        center_g += verts[i].g;
+        center_b += verts[i].b;
+        center_a += verts[i].a;
+    }
+
+    vertex_center.tex_coord.xyzw.x /= 4.0f;
+    vertex_center.tex_coord.xyzw.y /= 4.0f;
+    vertex_center.position *= 1.0f / 4.0f;
+    vertex_center.r = static_cast<ubyte>(center_r / 4);
+    vertex_center.g = static_cast<ubyte>(center_g / 4);
+    vertex_center.b = static_cast<ubyte>(center_b / 4);
+    vertex_center.a = static_cast<ubyte>(center_a / 4);
+
+    batch->add_triangle(&v[0], &v[1], &v[4]);
+    batch->add_triangle(&v[1], &v[2], &v[4]);
+    batch->add_triangle(&v[2], &v[3], &v[4]);
+    batch->add_triangle(&v[0], &v[4], &v[3]);
+}
+
 void batching_add_tri_internal(primitive_batch *batch, int texture, vertex *verts)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
@@ -909,6 +956,19 @@ void batching_add_quad(int texture, vertex *verts, primitive_batch *batch, float
 
 	batching_add_quad_internal(batch, texture, verts, trapezoidal_correction);
 }
+
+void batching_add_quad_twisted(int texture, vertex *verts, primitive_batch *batch)
+{
+    Assertion((texture >= 0), "batching_add_quad() attempted for invalid texture");
+    if ( texture < 0 ) {
+        return;
+    }
+
+    batching_add_quad_twisted_internal(batch, texture, verts);
+}
+
+void batching_add_quad_twisted(int texture, vertex *verts, primitive_batch* batch);
+
 void batching_add_tri(int texture, vertex *verts)
 {
 	Assertion((texture >= 0), "batching_add_tri() attempted for invalid texture");
