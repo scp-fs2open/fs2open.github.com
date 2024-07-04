@@ -812,84 +812,82 @@ void pilotfile::csg_read_redalert()
 
 	ship_list_size = cfread_int(cfp);
 
-	if (ship_list_size <= 0) {
-		return;
-	}
+	if (ship_list_size > 0) {
+		cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
 
-	cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
+		Red_alert_precursor_mission = t_string;
 
-	Red_alert_precursor_mission = t_string;
+		for (idx = 0; idx < ship_list_size; idx++) {
+			red_alert_ship_status ras;
 
-	for (idx = 0; idx < ship_list_size; idx++) {
-		red_alert_ship_status ras;
+			cfread_string_len(t_string, NAME_LENGTH, cfp);
+			ras.name = t_string;
 
-		cfread_string_len(t_string, NAME_LENGTH, cfp);
-		ras.name = t_string;
+			ras.hull = cfread_float(cfp);
 
-		ras.hull = cfread_float(cfp);
-
-		// ship class, index into ship_list[]
-		i = cfread_int(cfp);
-		if ( (i >= (int)ship_list.size()) || (i < RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {
-			mprintf(("CSG => Parse Warning: Invalid value for red alert ship index (%d), emptying slot.\n", i));
-			ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
-		} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
-			ras.ship_class = i;
-		} else {
-			ras.ship_class = ship_list[i].index;
-		}
-
-		// subsystem hits
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
-			hit = cfread_float(cfp);
-			ras.subsys_current_hits.push_back( hit );
-		}
-
-		// subsystem aggregate hits
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
-			hit = cfread_float(cfp);
-			ras.subsys_aggregate_current_hits.push_back( hit );
-		}
-
-		// primary weapon loadout and status
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
+			// ship class, index into ship_list[]
 			i = cfread_int(cfp);
-			weapons.index = weapon_list[i].index;
-			weapons.count = cfread_int(cfp);
-
-			// triggering this means something is really fubar
-			if (weapons.index < 0) {
-				continue;
+			if ( (i >= (int)ship_list.size()) || (i < RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {
+				mprintf(("CSG => Parse Warning: Invalid value for red alert ship index (%d), emptying slot.\n", i));
+				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+			} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
+				ras.ship_class = i;
+			} else {
+				ras.ship_class = ship_list[i].index;
 			}
 
-			ras.primary_weapons.push_back( weapons );
-		}
+			// subsystem hits
+			count = cfread_int(cfp);
 
-		// secondary weapon loadout and status
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
-			i = cfread_int(cfp);
-			weapons.index = weapon_list[i].index;
-			weapons.count = cfread_int(cfp);
-
-			// triggering this means something is really fubar
-			if (weapons.index < 0) {
-				continue;
+			for (j = 0; j < count; j++) {
+				hit = cfread_float(cfp);
+				ras.subsys_current_hits.push_back( hit );
 			}
 
-			ras.secondary_weapons.push_back( weapons );
-		}
+			// subsystem aggregate hits
+			count = cfread_int(cfp);
 
-		// this is quite likely a *bad* thing if it doesn't happen
-		if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
-			Red_alert_ship_status.push_back( ras );
+			for (j = 0; j < count; j++) {
+				hit = cfread_float(cfp);
+				ras.subsys_aggregate_current_hits.push_back( hit );
+			}
+
+			// primary weapon loadout and status
+			count = cfread_int(cfp);
+
+			for (j = 0; j < count; j++) {
+				i = cfread_int(cfp);
+				weapons.index = weapon_list[i].index;
+				weapons.count = cfread_int(cfp);
+
+				// triggering this means something is really fubar
+				if (weapons.index < 0) {
+					continue;
+				}
+
+				ras.primary_weapons.push_back( weapons );
+			}
+
+			// secondary weapon loadout and status
+			count = cfread_int(cfp);
+
+			for (j = 0; j < count; j++) {
+				i = cfread_int(cfp);
+				weapons.index = weapon_list[i].index;
+				weapons.count = cfread_int(cfp);
+
+				// triggering this means something is really fubar
+				if (weapons.index < 0) {
+					continue;
+				}
+
+				ras.secondary_weapons.push_back( weapons );
+			}
+
+			// this is quite likely a *bad* thing if it doesn't happen
+			if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
+				Red_alert_ship_status.push_back( ras );
+			}
 		}
 	}
 
@@ -902,26 +900,25 @@ void pilotfile::csg_read_redalert()
 
 	wing_list_size = cfread_int(cfp);
 
-	if (wing_list_size <= 0) {
-		return;
+	if (wing_list_size > 0) {
+		for (idx = 0; idx < wing_list_size; idx++) {
+			red_alert_wing_status rws;
+
+			cfread_string_len(t_string, NAME_LENGTH, cfp);
+			rws.name = t_string;
+
+			rws.latest_wave = cfread_int(cfp);
+
+			rws.wave_count = cfread_int(cfp);
+			rws.total_arrived_count = cfread_int(cfp);
+			rws.total_departed = cfread_int(cfp);
+			rws.total_destroyed = cfread_int(cfp);
+			rws.total_vanished = cfread_int(cfp);
+
+			Red_alert_wing_status.push_back(rws);
+		}
 	}
 
-	for (idx = 0; idx < wing_list_size; idx++) {
-		red_alert_wing_status rws;
-
-		cfread_string_len(t_string, NAME_LENGTH, cfp);
-		rws.name = t_string;
-
-		rws.latest_wave = cfread_int(cfp);
-
-		rws.wave_count = cfread_int(cfp);
-		rws.total_arrived_count = cfread_int(cfp);
-		rws.total_departed = cfread_int(cfp);
-		rws.total_destroyed = cfread_int(cfp);
-		rws.total_vanished = cfread_int(cfp);
-
-		Red_alert_wing_status.push_back(rws);
-	}
 }
 
 void pilotfile::csg_write_redalert()
