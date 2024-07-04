@@ -95,7 +95,7 @@ void ds_stop_easy(int sid);
 int ds_get_channel_size(int channel);
 
 int ds_get_sound_id(int channel);
-int ds_get_sound_index(int channel_id);
+int ds_get_sound_buffers_index(int channel_id);
 
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
