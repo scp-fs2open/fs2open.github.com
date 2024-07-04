@@ -1797,7 +1797,7 @@ void render_one_model_briefing_screen(object *objp) {
 }
 
 void render_one_model_htl(object *objp) {
-	int j, z;
+	int z;
 	uint debug_flags = 0;
 	object *o2;
 
@@ -1851,7 +1851,7 @@ void render_one_model_htl(object *objp) {
 	if ((Show_ship_models || Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
 
-		j = MR_NORMAL;
+		uint64_t flags = MR_NORMAL;
 
 		if (Show_dock_points) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
@@ -1866,11 +1866,11 @@ void render_one_model_htl(object *objp) {
 		model_clear_instance(Ship_info[Ships[z].ship_info_index].model_num);
 
 		if (!Lighting_on) {
-			j |= MR_NO_LIGHTING;
+			flags |= MR_NO_LIGHTING;
 		}
 
 		if (FullDetail) {
-			j |= MR_FULL_DETAIL;
+			flags |= MR_FULL_DETAIL;
 		}
 
 		model_render_params render_info;
@@ -1880,7 +1880,7 @@ void render_one_model_htl(object *objp) {
 
 		if (Fred_outline) {
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-			render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
 			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
@@ -1898,7 +1898,7 @@ void render_one_model_htl(object *objp) {
 				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
 
 				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
-				render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
 				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
 			}
 		}
@@ -1906,7 +1906,7 @@ void render_one_model_htl(object *objp) {
 		g3_done_instance(0);
 
 		if (Show_ship_models) {
-			render_info.set_flags(j);
+			render_info.set_flags(flags);
 			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 	} else {
@@ -1955,7 +1955,7 @@ void render_one_model_htl(object *objp) {
 	}
 
 	if (objp->type == OBJ_WAYPOINT) {
-		for (j = 0; j < render_count; j++) {
+		for (int j = 0; j < render_count; j++) {
 			o2 = &Objects[rendering_order[j]];
 			if (o2->type == OBJ_WAYPOINT) {
 				if ((o2->instance == objp->instance - 1) || (o2->instance == objp->instance + 1)) {

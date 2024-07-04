@@ -7351,7 +7351,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 	vertex draw_point;
 	vec3d subobj_pos;
 
-	int render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
+	uint64_t render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
 
 	setGaugeColor();
 	float alpha = gr_screen.current_color.alpha / 255.0f;

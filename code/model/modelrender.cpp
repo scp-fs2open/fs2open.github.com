@@ -49,7 +49,7 @@ color Wireframe_color;
 
 extern void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth);
 
-int model_render_determine_elapsed_time(int objnum, uint flags);
+int model_render_determine_elapsed_time(int objnum, uint64_T flags);
 
 model_batch_buffer TransformBufferHandler;
 
@@ -90,7 +90,7 @@ model_render_params::model_render_params() :
 	gr_init_color(&Color, 0, 0, 0);
 }
 
-uint model_render_params::get_model_flags() const
+uint64_t model_render_params::get_model_flags() const
 {
 	return Model_flags; 
 }
@@ -289,7 +289,7 @@ void model_render_params::set_object_number(int num)
 	Objnum = num;
 }
 
-void model_render_params::set_flags(uint flags)
+void model_render_params::set_flags(uint64_t flags)
 {
 	Model_flags = flags;
 }
@@ -977,7 +977,7 @@ int model_render_determine_detail(float depth, int model_num, int detail_level_l
 void model_render_buffers(model_draw_list* scene, model_material *rendering_material, const model_render_params* interp, const vertex_buffer *buffer, const polymodel *pm, int mn, int detail_level, uint tmap_flags)
 {
 	bsp_info *submodel = nullptr;
-	const uint model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 	const uint debug_flags = interp->get_debug_flags();
 	const int obj_num = interp->get_object_number();
 
@@ -1264,7 +1264,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		}
 	}
 
-	const uint model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 
 	if (sm->flags[Model::Submodel_flags::Is_thruster]) {
 		if ( !( model_flags & MR_SHOW_THRUSTERS ) ) {
@@ -1325,7 +1325,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	scene->pop_transform();
 }
 
-float model_render_determine_light_factor(const model_render_params* interp, const vec3d *pos, uint flags)
+float model_render_determine_light_factor(const model_render_params* interp, const vec3d *pos, uint64_t flags)
 {
 	if ( flags & MR_IS_ASTEROID ) {
 		// Dim it based on distance
@@ -1373,7 +1373,7 @@ float model_render_determine_box_scale()
 
 // Goober5000
 // Returns milliseconds since texture animation started.
-int model_render_determine_elapsed_time(int objnum, uint flags)
+int model_render_determine_elapsed_time(int objnum, uint64_t flags)
 {
 	if ( objnum >= 0 ) {
 		object *objp = &Objects[objnum];
@@ -1389,7 +1389,7 @@ int model_render_determine_elapsed_time(int objnum, uint flags)
 	return timestamp_get_mission_time_in_milliseconds();
 }
 
-bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, int detail_level, uint flags)
+bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, int detail_level, uint64_t flags)
 {
 	if ( flags & MR_AUTOCENTER ) {
 		// standard autocenter using data in model
@@ -1439,7 +1439,7 @@ gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending)
 	return ALPHA_BLEND_ALPHA_BLEND_ALPHA;
 }
 
-bool model_render_check_detail_box(const vec3d *view_pos, const polymodel *pm, int submodel_num, uint flags)
+bool model_render_check_detail_box(const vec3d *view_pos, const polymodel *pm, int submodel_num, uint64_t flags)
 {
 	Assert(pm != NULL);
 
@@ -1528,7 +1528,7 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 		rendering_material.set_team_color(render_info->get_team_color());
 	}
 		
-	uint flags = render_info->get_model_flags();
+	uint64_t flags = render_info->get_model_flags();
 	int objnum = render_info->get_object_number();
 
 	// Set the flags we will pass to the tmapper
@@ -2685,7 +2685,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	int i;
 
 	const int objnum = interp->get_object_number();
-	const int model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 
 	model_material rendering_material;
 	polymodel *pm = model_get(model_num);
@@ -2980,7 +2980,8 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		}
 	}
 
-	if ( !( model_flags & MR_NO_TEXTURING ) ) {
+	// MARKED!
+	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) ) {
 		scene->add_insignia(interp, pm, detail_level, interp->get_insignia_bitmap());
 	}
 
@@ -3014,7 +3015,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 void model_render_only_glowpoint_lights(const model_render_params* interp, int model_num, int model_instance_num, const matrix* orient, const vec3d* pos)
 {
 	const int objnum = interp->get_object_number();
-	const int model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 
 	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = nullptr;
@@ -3117,7 +3118,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	float closeup_zoom;
 	int model_num;
 	bool model_lighting = true;
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+	uint64_t render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	switch (model_type) {
 		case TECH_SHIP:

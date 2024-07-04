@@ -8081,7 +8081,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 			gr_zbuffer_clear(true);
 	}
 
-	uint render_flags = MR_NORMAL;
+	uint64_t render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
 
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
@@ -20629,7 +20629,7 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
-void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj, int render_flags)
+void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj, uint64_t render_flags)
 {
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
@@ -20907,7 +20907,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		}
 	}
 
-	uint render_flags = MR_NORMAL;
+	uint64_t render_flags = MR_NORMAL;
 
 	if ( shipp->large_ship_blowup_index >= 0 )	{
 		shipfx_large_blowup_queue_render(scene, shipp);

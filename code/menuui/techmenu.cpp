@@ -632,7 +632,7 @@ void techroom_ships_render(float frametime)
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-	uint render_flags = MR_AUTOCENTER;
+	uint64_t render_flags = MR_AUTOCENTER;
 
 	if(noLighting)
 		render_flags |= MR_NO_LIGHTING;

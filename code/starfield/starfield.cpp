@@ -153,7 +153,7 @@ int Stars_background_inited = 0;			// if we're inited
 int Nmodel_num = -1;							// model num
 int Nmodel_instance_num = -1;					// model instance num
 matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
-int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
+uint64_t Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
 float Nmodel_alpha = 1.0f;					// model transparency
 
@@ -1676,7 +1676,7 @@ void subspace_render()
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
+	uint64_t render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
 
 	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;

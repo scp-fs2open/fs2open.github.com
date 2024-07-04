@@ -570,7 +570,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 	target_shipp	= &Ships[target_objp->instance];
 	target_sip		= &Ship_info[target_shipp->ship_info_index];
 
-	int flags=0;
+	uint64_t flags = 0;
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target
 		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
@@ -746,7 +746,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 	debris	*debrisp;
 	vec3d	orient_vec, up_vector;
 	float		factor;	
-	int flags=0;
+	uint64_t flags = 0;
 
 	debrisp = &Debris[target_objp->instance];
 
@@ -868,7 +868,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	object		*viewer_obj, *viewed_obj;
 	std::shared_ptr<model_texture_replace> replacement_textures = nullptr;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
-	int flags=0;
+	uint64_t flags = 0;
 
 	target_team = obj_team(target_objp);
 
@@ -1141,7 +1141,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 	float			time_to_impact, factor;	
 	int			pof;
 
-	int flags=0;									//draw flags for wireframe
+	uint64_t flags = 0;									//draw flags for wireframe
 	asteroidp = &Asteroids[target_objp->instance];
 
 	pof = asteroidp->asteroid_subtype;

@@ -62,7 +62,7 @@ extern int model_interp_get_texture(const texture_info *tinfo, int elapsed_time)
 
 class model_render_params
 {
-	uint Model_flags;
+	uint64_t Model_flags;
 	uint Debug_flags;
 
 	int Objnum;
@@ -107,7 +107,7 @@ class model_render_params
 public:
 	model_render_params();
 
-	void set_flags(uint flags);
+	void set_flags(uint64_t flags);
 	void set_debug_flags(uint flags);
 	void set_object_number(int num);
 	void set_detail_level_lock(int detail_level_lock);
@@ -133,7 +133,7 @@ public:
 	bool is_alpha_mult_set() const;
 	bool uses_thick_outlines() const;
 
-	uint get_model_flags() const;
+	uint64_t get_model_flags() const;
 	uint get_debug_flags() const;
 	int get_object_number() const;
 	int get_detail_level_lock() const;

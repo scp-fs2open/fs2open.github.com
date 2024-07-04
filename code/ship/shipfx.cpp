@@ -1622,7 +1622,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	vm_vec_add2(&debris_clip_plane_pt, &half_ship->local_pivot);
 
 	// set up render flags
-	uint render_flags = MR_NORMAL;
+	uint64_t render_flags = MR_NORMAL;
 
 	if ( Rendering_to_shadow_map ) {
 		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
