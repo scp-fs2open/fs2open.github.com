@@ -8,7 +8,6 @@
 */
 
 
-#include "gropengllight.h"
 #include "gropenglshader.h"
 #include "graphics/material.h"
 #include "gropenglstate.h"
@@ -97,6 +96,20 @@ void opengl_texture_state::Enable(GLuint tex_id)
 	}
 }
 
+void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id) {
+	Assertion(unit < num_texture_units, "Invalid texture unit value!");
+
+	if (units[unit].texture_target == tex_target && units[unit].texture_id == tex_id) {
+		// The texture unit already uses this texture. There is no need to change it
+		return;
+	}
+
+	// Go the standard route
+	SetActiveUnit(unit);
+	SetTarget(tex_target);
+	Enable(tex_id);
+}
+
 void opengl_texture_state::Delete(GLuint tex_id)
 {
 	if (tex_id == 0) {
@@ -168,15 +181,14 @@ void opengl_state::init()
 	cullface_Value = GL_BACK;
 
 	glBlendFunc(GL_ONE, GL_ZERO);
-	blendfunc_Value[0] = GL_ONE;
-	blendfunc_Value[1] = GL_ZERO;
+	blendfunc_Value.first = GL_ONE;
+	blendfunc_Value.first = GL_ZERO;
+	buffer_blendfunc_Value.fill(blendfunc_Value);
 
 	glDepthFunc(GL_LESS);
 	depthfunc_Value = GL_LESS;
 
 	glGetFloatv(GL_LINE_WIDTH, &line_width_Value);
-
-	Current_alpha_blend_mode = ALPHA_BLEND_NONE;
 
 	current_program = 0;
 	glUseProgram(0);
@@ -185,6 +197,30 @@ void opengl_state::init()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	framebuffer_stack.clear();
+
+	stencilFunc = GL_ALWAYS;
+	stencilFuncRef = 0;
+	stencilFuncMask = 0xFFFFFFFF;
+	glStencilFunc(stencilFunc, stencilFuncRef, stencilFuncMask);
+
+	stencilMask = 0xFFFFFFFF;
+	glStencilMask(stencilMask);
+
+	stencilOpFrontStencilFail = GL_KEEP;
+	stencilOpFrontDepthFail = GL_KEEP;
+	stencilOpFrontPass = GL_KEEP;
+
+	stencilOpBackStencilFail = GL_KEEP;
+	stencilOpBackDepthFail = GL_KEEP;
+	stencilOpBackPass = GL_KEEP;
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	colormask_Status.x = true;
+	colormask_Status.y = true;
+	colormask_Status.z = true;
+	colormask_Status.w = true;
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 GLboolean opengl_state::Blend(GLint state)
@@ -200,8 +236,6 @@ GLboolean opengl_state::Blend(GLint state)
 			glDisable(GL_BLEND);
 			blend_Status = GL_FALSE;
 		}
-
-		Current_alpha_blend_mode = (gr_alpha_blend)(-1);
 	}
 
 	return save_state;
@@ -353,30 +387,55 @@ GLboolean opengl_state::DepthMask(GLint state)
 	return save_state;
 }
 
-GLboolean opengl_state::ColorMask(GLint state)
+bvec4 opengl_state::ColorMask(bool red, bool green, bool blue, bool alpha)
 {
-    GLboolean save_state = colormask_Status;
+    auto save_state = colormask_Status;
 
-    if ( !((state == -1) || (state == colormask_Status)) ) {
-        if (state) {
-            Assert( state == GL_TRUE );
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            colormask_Status = GL_TRUE;
-        } else {
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            colormask_Status = GL_FALSE;
-        }
+	if (colormask_Status.x != red || colormask_Status.y != green || colormask_Status.z != blue
+		|| colormask_Status.w != alpha) {
+		glColorMask(red ? GL_TRUE : GL_FALSE,
+					green ? GL_TRUE : GL_FALSE,
+					blue ? GL_TRUE : GL_FALSE,
+					alpha ? GL_TRUE : GL_FALSE);
+		colormask_Status = { red, green, blue, alpha };
     }
 
     return save_state;
 }
 
-void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
+void opengl_state::BlendFunc(GLenum s_val, GLenum d_val)
 {
-	if (ab == Current_alpha_blend_mode) {
+	if (s_val != blendfunc_Value.first || d_val != blendfunc_Value.second) {
+		glBlendFunc(s_val, d_val);
+		blendfunc_Value.first = s_val;
+		blendfunc_Value.second = d_val;
+
+		// This has set all the buffer blend modes as well
+		buffer_blendfunc_Value.fill(blendfunc_Value);
+	}
+}
+void opengl_state::BlendFunci(int buffer, GLenum s_val, GLenum d_val) {
+	Assertion(GLAD_GL_ARB_draw_buffers_blend != 0, "Buffer blend modes are not supported by this OpenGL implementation!");
+	Assertion(buffer >= 0 && buffer < (int) buffer_blendfunc_Value.size(), "Unsupported index %d specified for buffer blend mode!", buffer);
+
+	auto& state = buffer_blendfunc_Value[buffer];
+	if (state.first == s_val && state.second == d_val) {
+		// Already uses the correct blend mode
 		return;
 	}
 
+	glBlendFunciARB(buffer, s_val, d_val);
+
+	// Update the saved state
+	state.first = s_val;
+	state.second = d_val;
+	// Set the non-buffer values to an invalid value to make sure that the next call to BlendFunc resets the state.
+	blendfunc_Value.first = GL_INVALID_ENUM;
+	blendfunc_Value.second = GL_INVALID_ENUM;
+}
+
+void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
+{
 	switch (ab) {
 		case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
 			GL_state.BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -407,8 +466,38 @@ void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
 	}
 
 	GL_state.Blend( (ab == ALPHA_BLEND_NONE) ? GL_FALSE : GL_TRUE );
+}
 
-	Current_alpha_blend_mode = ab;
+void opengl_state::SetAlphaBlendModei(int buffer, gr_alpha_blend ab)
+{
+	switch (ab) {
+	case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
+		GL_state.BlendFunci(buffer, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+
+	case ALPHA_BLEND_NONE:
+		GL_state.BlendFunci(buffer, GL_ONE, GL_ZERO);
+		break;
+
+	case ALPHA_BLEND_ADDITIVE:
+		GL_state.BlendFunci(buffer, GL_ONE, GL_ONE);
+		break;
+
+	case ALPHA_BLEND_ALPHA_ADDITIVE:
+		GL_state.BlendFunci(buffer, GL_SRC_ALPHA, GL_ONE);
+		break;
+
+	case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
+		GL_state.BlendFunci(buffer, /*GL_SRC_COLOR*/GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+		break;
+
+	case ALPHA_BLEND_PREMULTIPLIED:
+		GL_state.BlendFunci(buffer, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+
+	default:
+		break;
+	}
 }
 
 void opengl_state::SetZbufferType(gr_zbuffer_type zt)
@@ -441,37 +530,6 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 	GL_state.DepthTest( (zt == ZBUFFER_TYPE_NONE) ? GL_FALSE : GL_TRUE );
 }
 
-void opengl_state::SetStencilType(gr_stencil_type st)
-{
-    if (st == Current_stencil_type) {
-        return;
-    }
-    
-    switch (st) {
-        case STENCIL_TYPE_NONE:
-            glStencilFunc( GL_NEVER, 1, 0xFFFF );
-            glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
-            break;
-            
-        case STENCIL_TYPE_READ:
-            glStencilFunc( GL_NOTEQUAL, 1, 0XFFFF );
-            glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
-            break;
-            
-        case STENCIL_TYPE_WRITE:
-            glStencilFunc( GL_ALWAYS, 1, 0xFFFF );
-            glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE );
-            break;
-                     
-        default:
-            break;
-    }
-           
-    GL_state.StencilTest( (st == STENCIL_TYPE_NONE) ? GL_FALSE : GL_TRUE );
-         
-    Current_stencil_type = st;
-}
-
 void opengl_state::SetLineWidth(GLfloat width)
 {
 	if ( width == line_width_Value ) {
@@ -493,9 +551,9 @@ void opengl_state::UseProgram(GLuint program)
 bool opengl_state::IsCurrentProgram(GLuint program) {
 	return current_program == program;
 }
-void opengl_state::BindFrameBuffer(GLuint name) {
+void opengl_state::BindFrameBuffer(GLuint name, GLenum mode) {
 	if (current_framebuffer != name) {
-		glBindFramebuffer(GL_FRAMEBUFFER, name);
+		glBindFramebuffer(mode, name);
 		current_framebuffer = name;
 	}
 }
@@ -509,6 +567,64 @@ void opengl_state::PopFramebufferState() {
 	framebuffer_stack.pop_back();
 
 	BindFrameBuffer(restoreBuffer);
+}
+void opengl_state::BindVertexArray(GLuint vao) {
+	if (current_vao == vao) {
+		return;
+	}
+
+	glBindVertexArray(vao);
+	current_vao = vao;
+
+	Array.VertexArrayChanged();
+}
+void opengl_state::StencilFunc(GLenum func, GLint ref, GLuint mask) {
+	if (stencilFunc == func && stencilFuncRef == ref && stencilFuncMask == mask) {
+		return;
+	}
+
+	glStencilFunc(func, ref, mask);
+
+	stencilFunc = func;
+	stencilFuncRef = ref;
+	stencilFuncMask = mask;
+}
+void opengl_state::StencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass) {
+	if (face == GL_FRONT_AND_BACK) {
+		StencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
+		StencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+		return;
+	}
+
+	if (face == GL_FRONT) {
+		if (stencilOpFrontStencilFail == sfail && stencilOpFrontDepthFail == dpfail && stencilOpFrontPass == dppass) {
+			return;
+		}
+
+		glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
+
+		stencilOpFrontStencilFail = sfail;
+		stencilOpFrontDepthFail = dpfail;
+		stencilOpFrontPass = dppass;
+	} else {
+		if (stencilOpBackStencilFail == sfail && stencilOpBackDepthFail == dpfail && stencilOpBackPass == dppass) {
+			return;
+		}
+
+		glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+
+		stencilOpBackStencilFail = sfail;
+		stencilOpBackDepthFail = dpfail;
+		stencilOpBackPass = dppass;
+	}
+}
+void opengl_state::StencilMask(GLuint mask) {
+	if (stencilMask == mask) {
+		return;
+	}
+
+	glStencilMask(mask);
+	stencilMask = mask;
 }
 
 opengl_array_state::~opengl_array_state()
@@ -602,10 +718,8 @@ void opengl_array_state::VertexAttribPointer(GLuint index, GLint size, GLenum ty
 
 void opengl_array_state::ResetVertexAttribs()
 {
-	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
-
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		DisableVertexAttrib(it->first);
+	for (auto &it : vertex_attrib_units) {
+		DisableVertexAttrib(it.first);
 	}
 
 	vertex_attrib_units.clear();
@@ -617,52 +731,50 @@ void opengl_array_state::BindPointersBegin()
 		client_texture_units[i].used_for_draw = false;
 	}
 
-	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
-
-	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
-		it->second.used_for_draw = false;
+	for (auto &it : vertex_attrib_units) {
+		it.second.used_for_draw = false;
 	}
 }
 
 void opengl_array_state::BindPointersEnd()
 {
-	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
-
-	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
-		if ( !it->second.used_for_draw ) DisableVertexAttrib(it->first);
+	for (auto &it : vertex_attrib_units) {
+		if (!it.second.used_for_draw) {
+			DisableVertexAttrib(it.first);
+		}
 	}
 }
 
 void opengl_array_state::BindArrayBuffer(GLuint id)
 {
-	if ( array_buffer == id ) {
+	if ( array_buffer_valid && array_buffer == id ) {
 		return;
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 
 	array_buffer = id;
+	array_buffer_valid = true;
 
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].reset_ptr = true;
 	}
 
-	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
-
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		it->second.reset_ptr = true;
+	for (auto &it : vertex_attrib_units) {
+		it.second.reset_ptr = true;
 	}
 }
 
 void opengl_array_state::BindElementBuffer(GLuint id)
 {
-	if ( element_array_buffer == id ) {
+	if ( element_array_buffer_valid && element_array_buffer == id ) {
 		return;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
 
 	element_array_buffer = id;
+	element_array_buffer_valid = true;
 }
 
 void opengl_array_state::BindTextureBuffer(GLuint id)
@@ -697,17 +809,66 @@ void opengl_array_state::BindUniformBuffer(GLuint id)
 
 	uniform_buffer = id;
 }
+void opengl_array_state::VertexArrayChanged() {
+	array_buffer_valid = false;
+	element_array_buffer_valid = false;
+
+	for (auto& bindingInfo : vertex_buffer_bindings) {
+		bindingInfo.valid_data = false;
+	}
+}
+void opengl_array_state::BindVertexBuffer(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride) {
+	if (bindingindex >= vertex_buffer_bindings.size()) {
+		// Make sure that we have the place for this information
+		vertex_buffer_bindings.resize(bindingindex + 1);
+	}
+
+	auto& bindingInfo = vertex_buffer_bindings[bindingindex];
+
+	if (bindingInfo.valid_data && bindingInfo.buffer == buffer && bindingInfo.offset == offset
+		&& bindingInfo.stride == stride) {
+		return;
+	}
+
+	glBindVertexBuffer(bindingindex, buffer, offset, stride);
+
+	bindingInfo.valid_data = true;
+	bindingInfo.buffer = buffer;
+	bindingInfo.stride = stride;
+	bindingInfo.offset = offset;
+}
+opengl_constant_state::opengl_constant_state() {
+}
+void opengl_constant_state::init() {
+	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &_uniform_buffer_offset_alignment);
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &_max_uniform_block_size);
+	glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &_max_uniform_block_bindings);
+
+	if (GLAD_GL_EXT_texture_filter_anisotropic) {
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &_max_anisotropy);
+	} else {
+		_max_anisotropy = -1.0f;
+	}
+}
+GLint opengl_constant_state::GetUniformBufferOffsetAlignment() {
+	return _uniform_buffer_offset_alignment;
+}
+GLint opengl_constant_state::GetMaxUniformBlockSize() {
+	return _max_uniform_block_size;
+}
+GLint opengl_constant_state::GetMaxUniformBlockBindings() {
+	return _max_uniform_block_bindings;
+}
+GLfloat opengl_constant_state::GetMaxAnisotropy() {
+	return _max_anisotropy;
+}
 
 void gr_opengl_clear_states()
 {
-	glBindVertexArray(GL_vao);
-
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_set_cull(0);
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
-	gr_reset_lighting();
-	gr_set_lighting(false, false);
 
 	opengl_shader_set_current();
 }

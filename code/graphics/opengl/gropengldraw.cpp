@@ -7,73 +7,63 @@
  *
 */
 
+#include "gropengldraw.h"
+
 #include "globalincs/pstypes.h"
-#include "cmdline/cmdline.h"
+
+#include "ShaderProgram.h"
 #include "freespace.h"
 #include "gropengl.h"
-#include "gropengldraw.h"
-#include "gropengllight.h"
+#include "gropengldeferred.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglshader.h"
+#include "gropengltexture.h"
 #include "gropengltnl.h"
-#include "graphics/paths/PathRenderer.h"
-#include "tracing/tracing.h"
-#include "render/3d.h"
 
-#include <algorithm>
+#include "cmdline/cmdline.h"
+#include "graphics/light.h"
+#include "graphics/matrix.h"
+#include "graphics/paths/PathRenderer.h"
+#include "graphics/util/uniform_structs.h"
+#include "lighting/lighting.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
 
 GLuint Scene_framebuffer;
+GLuint Scene_framebuffer_ms;
 GLuint Scene_ldr_texture;
 GLuint Scene_color_texture;
 GLuint Scene_position_texture;
 GLuint Scene_normal_texture;
 GLuint Scene_specular_texture;
+GLuint Scene_emissive_texture;
+GLuint Scene_color_texture_ms;
+GLuint Scene_position_texture_ms;
+GLuint Scene_normal_texture_ms;
+GLuint Scene_specular_texture_ms;
+GLuint Scene_emissive_texture_ms;
+GLuint Scene_composite_texture;
 GLuint Scene_luminance_texture;
-GLuint Scene_effect_texture;
 GLuint Scene_depth_texture;
+GLuint Scene_depth_texture_ms;
 GLuint Cockpit_depth_texture;
 GLuint Scene_stencil_buffer;
+
+GLuint Back_framebuffer;
+GLuint Back_texture;
+GLuint Back_depth_texture;
 
 GLuint Distortion_framebuffer = 0;
 GLuint Distortion_texture[2];
 int Distortion_switch = 0;
 
 int Scene_texture_initialized;
-bool Scene_framebuffer_in_frame;
-
-bool Deferred_lighting = false;
-bool High_dynamic_range = false;
 
 int Scene_texture_width;
 int Scene_texture_height;
 
 GLfloat Scene_texture_u_scale = 1.0f;
 GLfloat Scene_texture_v_scale = 1.0f;
-
-GLuint deferred_light_sphere_vbo = 0;
-GLuint deferred_light_sphere_ibo = 0;
-GLushort deferred_light_sphere_vcount = 0;
-GLuint deferred_light_sphere_icount = 0;
-
-GLuint deferred_light_cylinder_vbo = 0;
-GLuint deferred_light_cylinder_ibo = 0;
-GLushort deferred_light_cylinder_vcount = 0;
-GLuint deferred_light_cylinder_icount = 0;
-
-static opengl_vertex_bind GL_array_binding_data[] =
-{
-	{ vertex_format_data::POSITION4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::POSITION3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::POSITION2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE,opengl_vert_attrib::COLOR		},
-	{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
-	{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
-	{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
-	{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
-	{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
-	{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
-	{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
-	{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
-};
 
 inline GLenum opengl_primitive_type(primitive_type prim_type)
 {
@@ -95,307 +85,11 @@ inline GLenum opengl_primitive_type(primitive_type prim_type)
 	}
 }
 
-void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_vertex, ubyte* base_ptr)
-{
-	opengl_vertex_bind &bind_info = GL_array_binding_data[vert_component.format_type];
-	opengl_vert_attrib &attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
-
-	Assert(bind_info.attribute_id == attrib_info.attribute_id);
-
-	size_t byte_offset = 0;
-
-	// determine if we need to offset into this vertex buffer by # of base_vertex vertices
-	if ( base_vertex > 0 ) {
-		if ( vert_component.stride > 0 ) {
-			// we have a stride so it's just number of bytes per stride times number of verts
-			byte_offset = vert_component.stride * base_vertex;
-		} else {
-			// no stride so that means verts are tightly packed so offset based off of the data type and width.
-			byte_offset = bind_info.size * opengl_data_type_size(bind_info.data_type) * base_vertex;
-		}
-	}
-
-	GLubyte *data_src;
-
-	if ( vert_component.offset >= 0 ) {
-		data_src = (GLubyte*)base_ptr + vert_component.offset + byte_offset;
-	} else {
-		data_src = (GLubyte*)vert_component.data_src + byte_offset;
-	}
-
-	if ( Current_shader != NULL ) {
-		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
-		GLint index = opengl_shader_get_attribute(attrib_info.name.c_str());
-
-		if ( index >= 0 ) {
-			GL_state.Array.EnableVertexAttrib(index);
-			GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, data_src);
-		}
-	}
-}
-
-void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex, ubyte* base_ptr)
-{
-	GL_state.Array.BindPointersBegin();
-
-	size_t num_vertex_bindings = layout.get_num_vertex_components();
-
-	for ( size_t i = 0; i < num_vertex_bindings; ++i ) {
-		opengl_bind_vertex_component(*layout.get_vertex_component(i), base_vertex, base_ptr);
-	}
-
-	GL_state.Array.BindPointersEnd();
-}
-
-void gr_opengl_sphere(material* material_def, float rad)
+void gr_opengl_sphere(material* material_def, float  /*rad*/)
 {
 	opengl_tnl_set_material(material_def, true);
 
 	opengl_draw_sphere();
-}
-
-void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a VBO of a sphere of radius 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
-{
-	unsigned int nVertex = (rings + 1) * (segments+1) * 3;
-	unsigned int nIndex = deferred_light_sphere_icount = 6 * rings * (segments + 1);
-	float *Vertices = (float*)vm_malloc(sizeof(float) * nVertex);
-	float *pVertex = Vertices;
-	ushort *Indices = (ushort*)vm_malloc(sizeof(ushort) * nIndex);
-	ushort *pIndex = Indices;
-
-	float fDeltaRingAngle = (PI / rings);
-	float fDeltaSegAngle = (2.0f * PI / segments);
-	unsigned short wVerticeIndex = 0 ;
-
-	// Generate the group of rings for the sphere
-	for( int ring = 0; ring <= rings; ring++ ) {
-		float r0 = sinf (ring * fDeltaRingAngle);
-		float y0 = cosf (ring * fDeltaRingAngle);
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= segments; seg++) {
-			float x0 = r0 * sinf(seg * fDeltaSegAngle);
-			float z0 = r0 * cosf(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the sphere
-			*pVertex++ = x0;
-			*pVertex++ = y0;
-			*pVertex++ = z0;
-
-			if (ring != rings) {
-				// each vertex (except the last) has six indices pointing to it
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex;
-				*pIndex++ = wVerticeIndex + (ushort)segments;
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex + 1;
-				*pIndex++ = wVerticeIndex;
-				wVerticeIndex ++;
-			}
-		}; // end for seg
-	} // end for ring
-
-	deferred_light_sphere_vcount = wVerticeIndex;
-
-	glGetError();
-
-	glGenBuffers(1, &deferred_light_sphere_vbo);
-
-	// make sure we have one
-	if (deferred_light_sphere_vbo) {
-		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_sphere_vbo);
-		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_sphere_vbo);
-			deferred_light_sphere_vbo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
-	}
-
-	glGenBuffers(1, &deferred_light_sphere_ibo);
-
-	// make sure we have one
-	if (deferred_light_sphere_ibo) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_sphere_ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_sphere_ibo);
-			deferred_light_sphere_ibo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
-	}
-
-}
-
-void opengl_draw_sphere()
-{
-	GL_state.Array.BindArrayBuffer(deferred_light_sphere_vbo);
-	GL_state.Array.BindElementBuffer(deferred_light_sphere_ibo);
-
-	vertex_layout vertex_declare;
-
-	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
-
-	opengl_bind_vertex_layout(vertex_declare);
-
-	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_sphere_vcount, deferred_light_sphere_icount, GL_UNSIGNED_SHORT, 0);
-}
-
-void gr_opengl_draw_deferred_light_sphere(vec3d *position, float rad, bool clearStencil = true)
-{
-	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
-	
-	Current_shader->program->Uniforms.setUniform3f("scale", rad, rad, rad);
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-
-	opengl_draw_sphere();
-
-	g3_done_instance(true);
-}
-
-void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a cylinder of radius and height 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
-{
-	unsigned int nVertex = (segments + 1) * 2 * 3 + 6; // Can someone verify this?
-	unsigned int nIndex = deferred_light_cylinder_icount = 12 * (segments + 1) - 6; //This too
-	float *Vertices = (float*)vm_malloc(sizeof(float) * nVertex);
-	float *pVertex = Vertices;
-	ushort *Indices = (ushort*)vm_malloc(sizeof(ushort) * nIndex);
-	ushort *pIndex = Indices;
-
-	float fDeltaSegAngle = (2.0f * PI / segments);
-	unsigned short wVerticeIndex = 0 ;
-
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	wVerticeIndex ++;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 1.0f;
-	wVerticeIndex ++;
-
-	for( int ring = 0; ring <= 1; ring++ ) {
-		float z0 = (float)ring;
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= segments; seg++) {
-			float x0 = sinf(seg * fDeltaSegAngle);
-			float y0 = cosf(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the cylinder
-			*pVertex++ = x0;
-			*pVertex++ = y0;
-			*pVertex++ = z0;
-
-			if (!ring) {
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex;
-				*pIndex++ = wVerticeIndex + (ushort)segments;
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex + 1;
-				*pIndex++ = wVerticeIndex;
-				if(seg != segments)
-				{
-					*pIndex++ = wVerticeIndex + 1;
-					*pIndex++ = wVerticeIndex;
-					*pIndex++ = 0;
-				}
-				wVerticeIndex ++;
-			}
-			else
-			{
-				if(seg != segments)
-				{
-					*pIndex++ = wVerticeIndex + 1;
-					*pIndex++ = wVerticeIndex;
-					*pIndex++ = 1;
-					wVerticeIndex ++;
-				}
-			}
-		}; // end for seg
-	} // end for ring
-
-	deferred_light_cylinder_vcount = wVerticeIndex;
-
-	glGetError();
-
-	glGenBuffers(1, &deferred_light_cylinder_vbo);
-
-	// make sure we have one
-	if (deferred_light_cylinder_vbo) {
-		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_cylinder_vbo);
-		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_cylinder_vbo);
-			deferred_light_cylinder_vbo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
-	}
-
-	glGenBuffers(1, &deferred_light_cylinder_ibo);
-
-	// make sure we have one
-	if (deferred_light_cylinder_ibo) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_cylinder_ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_cylinder_ibo);
-			deferred_light_cylinder_ibo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
-	}
-
-}
-
-void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, float rad, float length, bool clearStencil = true)
-{
-	g3_start_instance_matrix(position, orient, true);
-
-	Current_shader->program->Uniforms.setUniform3f("scale", rad, rad, length);
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-
-	GL_state.Array.BindArrayBuffer(deferred_light_cylinder_vbo);
-	GL_state.Array.BindElementBuffer(deferred_light_cylinder_ibo);
-
-	vertex_layout vertex_declare;
-
-	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
-
-	opengl_bind_vertex_layout(vertex_declare);
-
-	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_cylinder_vcount, deferred_light_cylinder_icount, GL_UNSIGNED_SHORT, 0);
-
-	g3_done_instance(true);
 }
 
 extern int opengl_check_framebuffer();
@@ -404,13 +98,12 @@ void opengl_setup_scene_textures()
 	Scene_texture_initialized = 0;
 
 	if ( Cmdline_no_fbo ) {
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
-		Cmdline_fb_explosions = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
+		Gr_framebuffer_effects = {};
 
 		Scene_ldr_texture = 0;
 		Scene_color_texture = 0;
-		Scene_effect_texture = 0;
 		Scene_depth_texture = 0;
 		return;
 	}
@@ -522,6 +215,43 @@ void opengl_setup_scene_textures()
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, Scene_specular_texture, 0);
 
+	// setup emissive render texture
+	glGenTextures(1, &Scene_emissive_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_emissive_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	opengl_set_object_label(GL_TEXTURE, Scene_emissive_texture, "Scene Emissive texture");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_emissive_texture, 0);
+
+	// setup compositing render texture
+	glGenTextures(1, &Scene_composite_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_composite_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	opengl_set_object_label(GL_TEXTURE, Scene_composite_texture, "Scene Composite texture");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, Scene_composite_texture, 0);
+
 	//Set up luminance texture (used as input for FXAA)
 	// also used as a light accumulation buffer during the deferred pass
 	glGenTextures(1, &Scene_luminance_texture);
@@ -538,25 +268,6 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	opengl_set_object_label(GL_TEXTURE, Scene_luminance_texture, "Scene Luminance texture");
-
-	// setup effect texture
-
-	glGenTextures(1, &Scene_effect_texture);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_effect_texture);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	opengl_set_object_label(GL_TEXTURE, Scene_effect_texture, "Scene Effect texture");
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_effect_texture, 0);
 
 	// setup cockpit depth texture
 	glGenTextures(1, &Cockpit_depth_texture);
@@ -622,8 +333,8 @@ void opengl_setup_scene_textures()
 		glDeleteTextures(1, &Scene_specular_texture);
 		Scene_specular_texture = 0;
 
-		glDeleteTextures(1, &Scene_effect_texture);
-		Scene_effect_texture = 0;
+		glDeleteTextures(1, &Scene_emissive_texture);
+		Scene_emissive_texture = 0;
 
 		glDeleteTextures(1, &Scene_depth_texture);
 		Scene_depth_texture = 0;
@@ -634,13 +345,216 @@ void opengl_setup_scene_textures()
 		//glDeleteTextures(1, &Scene_fxaa_output_texture);
 		//Scene_fxaa_output_texture = 0;
 
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
 		return;
 	}
 
+	if (Cmdline_msaa_enabled > 0) {
+		glEnable(GL_MULTISAMPLE);
+
+		// Make sure our MSAA setting are valid
+		int maxSamples;
+		glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+
+		//Disallow >16 samples due to manual sorting networks in shader
+		if (maxSamples > 16)
+			maxSamples = 16;
+
+		if (maxSamples < Cmdline_msaa_enabled) {
+			Warning(LOCATION, "Requested MSAA level of %d is not supported. Max MSAA level is %d.", Cmdline_msaa_enabled, maxSamples);
+			Cmdline_msaa_enabled = maxSamples;
+		}
+		else if (Cmdline_msaa_enabled & (Cmdline_msaa_enabled - 1)) {
+			int newLevel = 1 << (sizeof(int) * 8 - 2);
+			while ((newLevel & Cmdline_msaa_enabled) == 0)
+				newLevel = newLevel >> 1;
+			Warning(LOCATION, "Requested MSAA level of %d is not a power of 2. Setting to %d.", Cmdline_msaa_enabled, newLevel);
+			Cmdline_msaa_enabled = newLevel;
+		}
+
+		// create framebuffer
+		glGenFramebuffers(1, &Scene_framebuffer_ms);
+		GL_state.BindFrameBuffer(Scene_framebuffer_ms);
+		opengl_set_object_label(GL_FRAMEBUFFER, Scene_framebuffer_ms, "Scene framebuffer multisampling");
+
+		// setup high dynamic range color texture
+		glGenTextures(1, &Scene_color_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_color_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_RGBA16F,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_color_texture_ms,
+			0);
+		opengl_set_object_label(GL_TEXTURE, Scene_color_texture_ms, "Scene color texture multisampling");
+
+		// setup position render texture
+		glGenTextures(1, &Scene_position_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_position_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_RGBA16F,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+		opengl_set_object_label(GL_TEXTURE, Scene_position_texture_ms, "Scene Position texture multisampling");
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT1,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_position_texture_ms,
+			0);
+
+		// setup normal render texture
+		glGenTextures(1, &Scene_normal_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_normal_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_RGBA16F,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+		opengl_set_object_label(GL_TEXTURE, Scene_normal_texture_ms, "Scene Normal texture multisampling");
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT2,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_normal_texture_ms,
+			0);
+
+		// setup specular render texture
+		glGenTextures(1, &Scene_specular_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_specular_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_RGBA8,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+		opengl_set_object_label(GL_TEXTURE, Scene_specular_texture_ms, "Scene Specular texture multisample");
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT3,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_specular_texture_ms,
+			0);
+
+		// setup emissive render texture
+		glGenTextures(1, &Scene_emissive_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_emissive_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_RGBA16F,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+		opengl_set_object_label(GL_TEXTURE, Scene_emissive_texture_ms, "Scene Emissive texture multisample");
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT4,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_emissive_texture_ms,
+			0);
+
+		// setup main depth texture
+		glGenTextures(1, &Scene_depth_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_depth_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_DEPTH_COMPONENT24,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+		opengl_set_object_label(GL_TEXTURE, Scene_depth_texture_ms, "Scene depth texture multisample");
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_DEPTH_ATTACHMENT,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_depth_texture_ms,
+			0);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	}
+
+	if (Cmdline_window_res) {
+		//Gen Framebuffer
+		glGenFramebuffers(1, &Back_framebuffer);
+		GL_state.BindFrameBuffer(Back_framebuffer);
+		opengl_set_object_label(GL_FRAMEBUFFER, Back_framebuffer, "Backbuffer");
+
+		// setup main render texture
+
+		// setup high dynamic range color texture
+		glGenTextures(1, &Back_texture);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Back_texture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Back_texture, 0);
+		opengl_set_object_label(GL_TEXTURE, Back_texture, "Backbuffer texture");
+
+		glGenTextures(1, &Back_depth_texture);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Back_depth_texture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, gr_screen.max_w, gr_screen.max_h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		opengl_set_object_label(GL_TEXTURE, Back_depth_texture, "Backbuffer depth texture");
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Back_depth_texture, 0);
+		gr_zbuffer_set(GR_ZBUFF_FULL);
+		glClear(GL_DEPTH_BUFFER_BIT);
+	}
+
 	//Setup thruster distortion framebuffer
-    if (Cmdline_fb_thrusters || Cmdline_fb_explosions) 
+    if (Gr_framebuffer_effects.any_set())
     {
         glGenFramebuffers(1, &Distortion_framebuffer);
 		GL_state.BindFrameBuffer(Distortion_framebuffer);
@@ -688,8 +602,8 @@ void opengl_setup_scene_textures()
 		Scene_color_texture = 0;
 		Scene_depth_texture = 0;
 
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
 		return;
 	}
 
@@ -718,7 +632,6 @@ void opengl_scene_texture_shutdown()
 	if ( Scene_normal_texture ) {
 		glDeleteTextures(1, &Scene_normal_texture);
 		Scene_normal_texture = 0;
-
 	}
 
 	if ( Scene_specular_texture ) {
@@ -726,9 +639,9 @@ void opengl_scene_texture_shutdown()
 		Scene_specular_texture = 0;
 	}
 
-	if ( Scene_effect_texture ) {
-		glDeleteTextures(1, &Scene_effect_texture);
-		Scene_effect_texture = 0;
+	if (Scene_emissive_texture) {
+		glDeleteTextures(1, &Scene_emissive_texture);
+		Scene_emissive_texture = 0;
 	}
 
 	if ( Scene_depth_texture ) {
@@ -769,7 +682,6 @@ void gr_opengl_scene_texture_begin()
 
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Scene_framebuffer);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 	if (GL_rendering_to_texture)
 	{
@@ -785,24 +697,36 @@ void gr_opengl_scene_texture_begin()
 		Scene_texture_v_scale = 1.0f;
 	}
 
-	if ( Cmdline_no_deferred_lighting ) {
+	if (!light_deferred_enabled()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {
-		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-		glDrawBuffers(4, buffers);
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+		glDrawBuffers(6, buffers);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		opengl_clear_deferred_buffers();
 
+		if (Cmdline_msaa_enabled > 0) {
+			GL_state.BindFrameBuffer(Scene_framebuffer_ms);
+
+			glDrawBuffers(6, buffers);
+
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			opengl_clear_deferred_buffers();
+
+			GL_state.BindFrameBuffer(Scene_framebuffer);
+		}
+
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
 	Scene_framebuffer_in_frame = true;
 
-	if ( Cmdline_postprocess && !PostProcessing_override ) {
+	if ( Gr_post_processing_enabled && !PostProcessing_override ) {
 		High_dynamic_range = true;
 	}
 }
@@ -825,8 +749,8 @@ void gr_opengl_scene_texture_end()
 		time_buffer = 0.0f;
 	}
 
-	if ( Cmdline_postprocess && !PostProcessing_override ) {
-		gr_post_process_end();
+	if ( Gr_post_processing_enabled && !PostProcessing_override ) {
+		gr_opengl_post_process_end();
 	} else {
 		GR_DEBUG_SCOPE("Draw scene texture");
 		TRACE_SCOPE(tracing::DrawSceneTexture);
@@ -838,14 +762,12 @@ void gr_opengl_scene_texture_end()
 
 		GL_state.PopFramebufferState();
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Scene_color_texture);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		opengl_shader_set_passthrough(true);
+		opengl_shader_set_passthrough(true, High_dynamic_range);
 
 		GL_state.Array.BindArrayBuffer(0);
 
@@ -876,231 +798,30 @@ void gr_opengl_scene_texture_end()
 
 void gr_opengl_copy_effect_texture()
 {
+	GR_DEBUG_SCOPE("Copy effect texture");
+
 	if ( !Scene_framebuffer_in_frame ) {
 		return;
 	}
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT4);
+    //Make sure we're reading from the up-to-date color texture
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
-void opengl_clear_deferred_buffers()
-{
-	GR_DEBUG_SCOPE("Clear deferred buffers");
-
-	GLboolean depth = GL_state.DepthTest(GL_FALSE);
-	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean blend = GL_state.Blend(GL_FALSE);
-	GLboolean cull = GL_state.CullFace(GL_FALSE);
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0) );
-
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-	opengl_shader_set_current();
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-
-	GL_state.DepthTest(depth);
-	GL_state.DepthMask(depth_mask);
-	GL_state.Blend(blend);
-	GL_state.CullFace(cull);
-}
-
-void gr_opengl_deferred_lighting_begin()
-{
-	if ( Cmdline_no_deferred_lighting)
-		return;
-
-	GR_DEBUG_SCOPE("Deferred lighting begin");
-
-	Deferred_lighting = true;
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-	glDrawBuffers(4, buffers);
-}
-
-void gr_opengl_deferred_lighting_end()
-{
-	if(!Deferred_lighting)
-		return;
-
-	GR_DEBUG_SCOPE("Deferred lighting end");
-
-	Deferred_lighting = false;
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-}
-
-extern light Lights[MAX_LIGHTS];
-extern int Num_lights;
-extern float static_point_factor;
-extern float static_light_factor;
-extern float static_tube_factor;
-
-void gr_opengl_deferred_lighting_finish()
-{
-	GR_DEBUG_SCOPE("Deferred lighting finish");
-	TRACE_SCOPE(tracing::ApplyLights);
-
-	if ( Cmdline_no_deferred_lighting ) {
-		return;
-	}
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE);
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-
-	//GL_state.DepthFunc(GL_GREATER);
-	//GL_state.DepthMask(GL_FALSE);
-
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0) );
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-
-	GL_state.Texture.SetShaderMode(GL_TRUE);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_color_texture);
-
-	GL_state.Texture.SetActiveUnit(1);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_normal_texture);
-
-	GL_state.Texture.SetActiveUnit(2);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_position_texture);
-
-	GL_state.Texture.SetActiveUnit(3);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_specular_texture);
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	light lights_copy[MAX_LIGHTS];
-	memcpy(lights_copy, Lights, MAX_LIGHTS * sizeof(light));
-
-	std::sort(lights_copy, lights_copy+Num_lights, light_compare_by_type);
-
-	for(int i = 0; i < Num_lights; ++i)
-	{
-		GR_DEBUG_SCOPE("Deferred apply single light");
-
-		light *l = &lights_copy[i];
-		Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
-		switch(l->type)
-		{
-			case LT_CONE:
-				Current_shader->program->Uniforms.setUniformi( "lightType", 2 );
-				Current_shader->program->Uniforms.setUniformi( "dualCone", l->dual_cone );
-				Current_shader->program->Uniforms.setUniformf( "coneAngle", l->cone_angle );
-				Current_shader->program->Uniforms.setUniformf( "coneInnerAngle", l->cone_inner_angle );
-				Current_shader->program->Uniforms.setUniform3f( "coneDir", l->vec2.xyz.x, l->vec2.xyz.y, l->vec2.xyz.z);
-			case LT_POINT:
-				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity, l->g * l->intensity, l->b * l->intensity );
-				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_point_factor, l->spec_g * l->intensity * static_point_factor, l->spec_b * l->intensity * static_point_factor );
-				Current_shader->program->Uniforms.setUniformf( "lightRadius", MAX(l->rada, l->radb) * 1.25f );
-
-				/*float dist;
-				vec3d a;
-
-				vm_vec_sub(&a, &Eye_position, &l->vec);
-				dist = vm_vec_mag(&a);*/
-
-				gr_opengl_draw_deferred_light_sphere(&l->vec, MAX(l->rada, l->radb) * 1.28f);
-				break;
-			case LT_TUBE:
-				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity, l->g * l->intensity, l->b * l->intensity );
-				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_tube_factor, l->spec_g * l->intensity * static_tube_factor, l->spec_b * l->intensity * static_tube_factor );
-				Current_shader->program->Uniforms.setUniformf( "lightRadius", l->radb * 1.5f );
-				Current_shader->program->Uniforms.setUniformi( "lightType", 1 );
-			
-				vec3d a, b;
-				matrix orient;
-				float length, dist;
-
-				vm_vec_sub(&a, &l->vec, &l->vec2);
-				vm_vector_2_matrix(&orient, &a, NULL, NULL);
-				length = vm_vec_mag(&a);
-				int pos = vm_vec_dist_to_line(&Eye_position, &l->vec, &l->vec2, &b, &dist);
-				if(pos == -1)
-				{
-					vm_vec_sub(&a, &Eye_position, &l->vec);
-					dist = vm_vec_mag(&a);
-				}
-				else if (pos == 1)
-				{
-					vm_vec_sub(&a, &Eye_position, &l->vec2);
-					dist = vm_vec_mag(&a);
-				}
-
-				gr_opengl_draw_deferred_light_cylinder(&l->vec2, &orient, l->radb * 1.53f, length);
-				Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
-				gr_opengl_draw_deferred_light_sphere(&l->vec, l->radb * 1.53f, false);
-				gr_opengl_draw_deferred_light_sphere(&l->vec2, l->radb * 1.53f, false);
-				break;
-		}
-	}
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	GLboolean depth = GL_state.DepthTest(GL_FALSE);
-	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean blend = GL_state.Blend(GL_FALSE);
-	GLboolean cull = GL_state.CullFace(GL_FALSE);
-	
-	if ( High_dynamic_range ) {
-		High_dynamic_range = false;
-		opengl_shader_set_passthrough(true);
-		High_dynamic_range = true;
-	} else {
-		opengl_shader_set_passthrough(true);
-	}
-	
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_luminance_texture);
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE );
-	GL_state.DepthMask(GL_FALSE);
-
-	opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, Scene_texture_v_scale, (float)gr_screen.max_w, (float)gr_screen.max_h, Scene_texture_u_scale, 0.0f);
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	// reset state
-	GL_state.DepthTest(depth);
-	GL_state.DepthMask(depth_mask);
-	GL_state.Blend(blend);
-	GL_state.CullFace(cull);
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_NONE );
-	GL_state.Texture.SetShaderMode(GL_FALSE);
-
-	gr_clear_states();
-}
-
-void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts)
+void gr_opengl_render_shield_impact(shield_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	gr_buffer_handle buffer_handle,
+	int n_verts)
 {
 	matrix4 impact_transform;
 	matrix4 impact_projection;
 	vec3d min;
 	vec3d max;
-	
+
 	opengl_tnl_set_material(material_info, false);
 
 	float radius = material_info->get_impact_radius();
@@ -1115,24 +836,27 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
 
 	uint32_t array_index = 0;
-	if ( material_info->get_texture_map(TM_BASE_TYPE) >= 0 ) {
+	if (material_info->get_texture_map(TM_BASE_TYPE) >= 0) {
 		float u_scale, v_scale;
 
-		if ( !gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(), &u_scale, &v_scale, &array_index) ) {
+		if (!gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(),
+								  &u_scale, &v_scale, &array_index)) {
 			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->get_texture_map(TM_BASE_TYPE)));
 		}
 	}
 
-	Current_shader->program->Uniforms.setUniform3f("hitNormal", impact_orient.vec.fvec);
-	Current_shader->program->Uniforms.setUniformMatrix4f("shieldProjMatrix", impact_projection);
-	Current_shader->program->Uniforms.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
-	Current_shader->program->Uniforms.setUniformi("shieldMap", 0);
-	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
-	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
-	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-	
+	opengl_set_generic_uniform_data<graphics::generic_data::shield_impact_data>(
+		[&](graphics::generic_data::shield_impact_data* data) {
+			data->hitNormal             = impact_orient.vec.fvec;
+			data->shieldProjMatrix      = impact_projection;
+			data->shieldModelViewMatrix = impact_transform;
+			data->shieldMapIndex        = array_index;
+			data->srgb                  = High_dynamic_range ? 1 : 0;
+			data->color                 = material_info->get_color();
+		});
+
+	gr_matrix_set_uniforms();
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }
 
@@ -1151,7 +875,7 @@ void gr_opengl_update_distortion()
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-	opengl_shader_set_passthrough(true);
+	opengl_shader_set_passthrough(true, High_dynamic_range);
 
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Distortion_framebuffer);
@@ -1159,9 +883,7 @@ void gr_opengl_update_distortion()
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glViewport(0,0,32,32);
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Distortion_texture[Distortion_switch]);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Distortion_texture[Distortion_switch]);
 	glClearColor(0.5f, 0.5f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1198,14 +920,14 @@ void gr_opengl_update_distortion()
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, vertices, sizeof(vertex) * 4);
 
-	opengl_shader_set_passthrough(false);
+	opengl_shader_set_passthrough(false, High_dynamic_range);
 
 	vertex distortion_verts[33];
 
 	for(int i = 0; i < 33; i++)
 	{
-		distortion_verts[i].r = (ubyte)rand() % 256;
-		distortion_verts[i].g = (ubyte)rand() % 256;
+		distortion_verts[i].r = (ubyte)Random::next(256);
+		distortion_verts[i].g = (ubyte)Random::next(256);
 		distortion_verts[i].b = 255;
 		distortion_verts[i].a = 255;
 
@@ -1233,132 +955,247 @@ void gr_opengl_update_distortion()
 	GL_state.CullFace(cull);
 }
 
-void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset)
+void opengl_render_primitives(primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t vert_offset,
+	size_t byte_offset)
 {
 	GR_DEBUG_SCOPE("Render primitives");
 
-	if ( buffer_handle >= 0 ) {
-		opengl_bind_buffer_object(buffer_handle);
-	} else {
-		GL_state.Array.BindArrayBuffer(0);
-	}
+	Assertion(buffer_handle.isValid(),
+		"A valid buffer handle is required! Use the immediate buffer if data is not in GPU buffer yet.");
 
-	opengl_bind_vertex_layout(*layout, 0, (ubyte*)byte_offset);
+	opengl_bind_vertex_layout(*layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, buffer_handle), 0, byte_offset);
 
 	glDrawArrays(opengl_primitive_type(prim_type), (GLint)vert_offset, n_verts);
 }
 
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
 {
-	uint offset = opengl_add_to_immediate_buffer(size, data);
+	auto offset = gr_add_to_immediate_buffer(size, data);
 
-	opengl_render_primitives(prim_type, layout, n_verts, GL_immediate_buffer_handle, 0, offset);
+	opengl_render_primitives(prim_type, layout, n_verts, gr_immediate_buffer_handle, 0, offset);
 }
 
-void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+void gr_opengl_render_primitives(material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t buffer_offset)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives()");
 
 	opengl_tnl_set_material(material_info, true);
 
-	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, buffer_offset);
 
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives()");
 }
 
-void gr_opengl_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-	opengl_tnl_set_material(material_info, true);
-
-	opengl_render_primitives_immediate(prim_type, layout, n_verts, data, size);
-}
-
-void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
-{
-	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_2d()");
-
-	//glPushMatrix();
-	//glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, -0.99f);
-
-	gr_opengl_set_2d_matrix();
-
-	gr_opengl_render_primitives(material_info, prim_type, layout, offset, n_verts, buffer_handle);
-
-	gr_opengl_end_2d_matrix();
-
-	//glPopMatrix();
-
-	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_2d()");
-}
-
-void gr_opengl_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_2d_immediate()");
-
-	//glPushMatrix();
-	//glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, -0.99f);
-
-	gr_opengl_set_2d_matrix();
-
-	gr_opengl_render_primitives_immediate(material_info, prim_type, layout, n_verts, data, size);
-
-	gr_opengl_end_2d_matrix();
-
-	//glPopMatrix();
-
-	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_2d_immediate()");
-}
-
-void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+void gr_opengl_render_primitives_particle(particle_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_particle()");
 
 	opengl_tnl_set_material_particle(material_info);
-	
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_particle()");
 }
 
-void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+void gr_opengl_render_primitives_distortion(distortion_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");
 
 	opengl_tnl_set_material_distortion(material_info);
-	
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 	glDrawBuffers(2, buffers);
 
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");
 }
+
 void gr_opengl_render_movie(movie_material* material_info,
-							primitive_type prim_type,
-							vertex_layout* layout,
-							int n_verts,
-							int buffer) {
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer,
+	size_t buffer_offset)
+{
 	GR_DEBUG_SCOPE("Render movie frame");
 
-	gr_opengl_set_2d_matrix();
+	gr_set_2d_matrix();
 
 	opengl_tnl_set_material_movie(material_info);
 
-	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, 0);
+	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, buffer_offset);
 
-	gr_opengl_end_2d_matrix();
+	gr_end_2d_matrix();
 }
+
+void gr_opengl_render_nanovg(nanovg_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
+{
+	GR_DEBUG_SCOPE("Render NanoVG primitives");
+
+	opengl_tnl_set_material_nanovg(material_info);
+
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
+}
+
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
-										 primitive_type prim_type,
-										 vertex_layout* layout,
-										 int offset,
-										 int n_verts,
-										 int buffer_handle) {
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
+{
 	GR_DEBUG_SCOPE("Render batched primitives");
 
 	opengl_tnl_set_material_batched(material_info);
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
+}
+void gr_opengl_render_rocket_primitives(interface_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_indices,
+	gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer)
+{
+	GR_DEBUG_SCOPE("Render rocket ui primitives");
+
+	gr_set_2d_matrix();
+
+	opengl_tnl_set_rocketui_material(material_info);
+
+	opengl_bind_vertex_layout(*layout,
+		opengl_buffer_get_id(GL_ARRAY_BUFFER, vertex_buffer),
+		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, index_buffer));
+
+	glDrawElements(opengl_primitive_type(prim_type), n_indices, GL_UNSIGNED_INT, nullptr);
+
+	gr_end_2d_matrix();
+}
+
+void opengl_draw_textured_quad(GLfloat x1,
+							   GLfloat y1,
+							   GLfloat u1,
+							   GLfloat v1,
+							   GLfloat x2,
+							   GLfloat y2,
+							   GLfloat u2,
+							   GLfloat v2) {
+	GR_DEBUG_SCOPE("Draw textured quad");
+
+	GLfloat glVertices[4][4] = {
+		{ x1, y1, u1, v1 },
+		{ x1, y2, u1, v2 },
+		{ x2, y1, u2, v1 },
+		{ x2, y2, u2, v2 }
+	};
+
+	vertex_layout vert_def;
+
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
+
+	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(glVertices));
+}
+
+void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2)
+{
+	GR_DEBUG_SCOPE("Draw full screen triangle");
+
+	GLfloat glVertices[3][4] = {
+	    {-1.f, -1.f, u1, v1},
+	    {3.f, -1.f, u2 * 2.f, v1},
+	    {-1.f, 3.f, u1, v2 * 2.f},
+	};
+
+	vertex_layout vert_def;
+
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
+
+	opengl_render_primitives_immediate(PRIM_TYPE_TRIS, &vert_def, 3, glVertices, sizeof(glVertices));
+}
+
+void gr_opengl_render_decals(decal_material* material_info,
+							 primitive_type prim_type,
+							 vertex_layout* layout,
+							 int num_elements,
+							 const indexed_vertex_source& binding) {
+	opengl_tnl_set_material_decal(material_info);
+
+	opengl_bind_vertex_layout(*layout,
+							  opengl_buffer_get_id(GL_ARRAY_BUFFER, binding.Vbuffer_handle),
+							  opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, binding.Ibuffer_handle));
+
+	glDrawElements(opengl_primitive_type(prim_type), num_elements, GL_UNSIGNED_INT, nullptr);
+}
+
+void gr_opengl_start_decal_pass() {
+	// For now we only render into the diffuse channel of the framebuffer
+	GLenum buffers[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_ATTACHMENT2,
+		GL_COLOR_ATTACHMENT4,
+	};
+	glDrawBuffers(3, buffers);
+}
+void gr_opengl_stop_decal_pass() {
+	GLenum buffers2[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_ATTACHMENT1,
+		GL_COLOR_ATTACHMENT2,
+		GL_COLOR_ATTACHMENT3,
+		GL_COLOR_ATTACHMENT4,
+		GL_COLOR_ATTACHMENT5,
+	};
+	glDrawBuffers(6, buffers2);
+}
+
+void gr_opengl_calculate_irrmap()
+{
+
+	auto previous_target = gr_screen.rendering_to_texture;
+	int irr_shader = gr_opengl_maybe_create_shader(SDR_TYPE_IRRADIANCE_MAP_GEN, 0);
+	opengl_shader_set_current(irr_shader);
+	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
+	glBindTexture(env_tex->texture_target, env_tex->texture_id);
+	GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, env_tex->texture_id);
+	Current_shader->program->Uniforms.setTextureUniform("envmap", 0);
+
+	for (int i = 0; i < 6; i++) {
+		bm_set_render_target(gr_screen.irrmap_render_target, i);
+		gr_clear();
+		opengl_set_generic_uniform_data<graphics::generic_data::irrmap_data>(
+			[&](graphics::generic_data::irrmap_data* data) { data->face = i; });
+		opengl_draw_full_screen_textured(-1.0f, -1.0f, 1.0f, 1.0f);
+	}
+
+	bm_set_render_target(previous_target);
 }

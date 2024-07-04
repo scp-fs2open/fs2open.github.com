@@ -14,6 +14,7 @@
 #include "parse/parselo.h"
 #include "particle/particle.h"
 #include "weapon/muzzleflash.h"
+#include "model/modelrender.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -43,12 +44,14 @@ typedef struct mflash_blob_info {
 		name[ 0 ] = '\0';
 	}
 
-	void operator=( const mflash_blob_info& r )
+	mflash_blob_info& operator=( const mflash_blob_info& r )
 	{
 		strcpy_s( name, r.name );
 		anim_id = r.anim_id;
 		offset = r.offset;
 		radius = r.radius;
+
+		return *this;
 	}
 } mflash_blob_info;
 
@@ -70,11 +73,13 @@ typedef struct mflash_info {
 		blobs = mi.blobs;
 	}
 
-	void operator=( const mflash_info& r )
+	mflash_info& operator=( const mflash_info& r )
 	{
 		strcpy_s( name, r.name );
 		used_this_level = r.used_this_level;
 		blobs = r.blobs;
+
+		return *this;
 	}
 } mflash_info;
 
@@ -236,12 +241,11 @@ void mflash_level_close()
 }
 
 // create a muzzle flash on the guy
-void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type, object *local)
+void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_info *pip, int mflash_type, const object *local)
 {	
 	// mflash *mflashp;
 	mflash_info *mi;
 	mflash_blob_info *mbi;
-	particle::particle_info p;
 	uint idx;
 
 	// standalone server should never create trails
@@ -257,6 +261,13 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	mi = &Mflash_info[mflash_type];
 
 	if (local != NULL) {
+		int attached_objnum = OBJ_INDEX(local);
+
+		// This muzzle flash is in local space, so its world position must be derived to apply scaling.
+		vec3d gun_world_pos;
+		vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[attached_objnum].orient);
+		vm_vec_add2(&gun_world_pos, &Objects[attached_objnum].pos);
+
 		for (idx = 0; idx < mi->blobs.size(); idx++) {
 			mbi = &mi->blobs[idx];
 
@@ -265,15 +276,18 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 				continue;
 
 			// fire it up
-			memset(&p, 0, sizeof(particle::particle_info));
+			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_zero(&p.vel);
 			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.rad = mbi->radius;
 			p.type = particle::PARTICLE_BITMAP;
 			p.optional_data = mbi->anim_id;
-			p.attached_objnum = OBJ_INDEX(local);
+			p.attached_objnum = attached_objnum;
 			p.attached_sig = local->signature;
+
+			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
+			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&gun_world_pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
+
 			particle::create(&p);
 		}
 	} else {
@@ -285,21 +299,24 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 				continue;
 
 			// fire it up
-			memset(&p, 0, sizeof(particle::particle_info));
+			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.rad = mbi->radius;
 			p.type = particle::PARTICLE_BITMAP;
 			p.optional_data = mbi->anim_id;
 			p.attached_objnum = -1;
 			p.attached_sig = 0;
+
+			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
+			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&p.pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
+
 			particle::create(&p);
 		}
 	}		
 }
 
 // lookup type by name
-int mflash_lookup(char *name)
+int mflash_lookup(const char *name)
 {	
 	uint idx;
 

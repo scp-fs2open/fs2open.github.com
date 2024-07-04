@@ -7,6 +7,7 @@
 
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
+#include "io/timer.h"
 
 #include <memory>
 
@@ -26,7 +27,7 @@ namespace io
 
 			int mBitmapHandle; //!< The bitmap of this cursor
 
-			int mBeginTimeStamp; //!< The timestamp when the animation was started, unused when not animated
+			UI_TIMESTAMP mBeginTimeStamp; //!< The UI timestamp when the animation was started, unused when not animated
 			size_t mLastFrame; //!< The last frame which was set
 			
 			Cursor(const Cursor&); // Not implemented
@@ -36,21 +37,21 @@ namespace io
 			 * @brief Default constructor
 			 * @param bitmap The bitmap handle of the cursor. The cursor takes ownership over this handle
 			 */
-			explicit Cursor(int bitmap) : mBitmapHandle(bitmap), mBeginTimeStamp(-1), mLastFrame(static_cast<size_t>(-1)) {}
+			explicit Cursor(int bitmap) : mBitmapHandle(bitmap), mLastFrame(static_cast<size_t>(-1)) {}
 
 			/**
 			 * @brief Move constructor
 			 *
 			 * Transfers SDL resources to this newly constructed object
 			 */
-			Cursor(Cursor&& other);
+			Cursor(Cursor&& other) noexcept;
 			
 			/**
 			 * @brief Move operator
 			 *
 			 * Transfers SDL resources to this object
 			 */
-			Cursor& operator=(Cursor&& other);
+			Cursor& operator=(Cursor&& other) noexcept;
 
 			/**
 			 * @brief Cursor destructor
@@ -76,6 +77,11 @@ namespace io
 			 * @brief Called to set the correct frame
 			 */
 			void setCurrentFrame();
+
+			/**
+			 * @brief Query the cursors bitmap handle for bmpman
+			 */
+			int getBitmapHandle();
 		};
 
 		/**

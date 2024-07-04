@@ -14,6 +14,7 @@
 #include "globalincs/alphacolors.h"
 #include "graphics/grbatch.h"
 #include "graphics/tmapper.h"
+#include "graphics/matrix.h"
 #include "io/key.h"
 #include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
 #include "render/3dinternal.h"
@@ -212,22 +213,6 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 	return 0;
 }
 
-/** As a define only for readability. */
-#define TRIANGLE_AREA(_p, _q, _r)	do {\
-	vec3d a, b, cross;\
-	\
-	a.xyz.x = _q->world.xyz.x - _p->world.xyz.x;\
-	a.xyz.y = _q->world.xyz.y - _p->world.xyz.y;\
-	a.xyz.z = 0.0f;\
-	\
-	b.xyz.x = _r->world.xyz.x - _p->world.xyz.x;\
-	b.xyz.y = _r->world.xyz.y - _p->world.xyz.y;\
-	b.xyz.z = 0.0f;\
-	\
-	vm_vec_cross(&cross, &a, &b);\
-	total_area += vm_vec_mag(&cross) * 0.5f;\
-} while(0);
-
 #include "graphics/2d.h"
 
 //draws a horizon. takes eax=sky_color, edx=ground_color
@@ -329,8 +314,6 @@ vec3d g3_square[4] = {
 	{ { { 1.0f, -1.0f, 20.0f } } }
 };
 
-#define MAX_PERSPECTIVE_DIVISIONS			5				// should never even come close to this limit
-
 void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta )
 {		
 	float a = PI * phi;
@@ -349,19 +332,28 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end)
 	g3_render_line_3d(true, start, end);
 }
 
-void g3_draw_htl_sphere(color *clr, const vec3d* position, float radius)
+void g3_draw_htl_sphere(color* clr,
+	const vec3d* position,
+	float radius,
+	gr_alpha_blend alpha_blend_mode,
+	gr_zbuffer_type zbuffer_mode)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
 	material material_def;
 
-	material_def.set_blend_mode(ALPHA_BLEND_NONE);
-	material_def.set_depth_mode(ZBUFFER_TYPE_FULL);
+	material_def.set_blend_mode(alpha_blend_mode);
+	material_def.set_depth_mode(zbuffer_mode);
 	material_def.set_color(*clr);
 
 	gr_sphere(&material_def, radius);
 
 	g3_done_instance(true);
+}
+
+void g3_draw_htl_sphere(color *clr, const vec3d* position, float radius)
+{
+	g3_draw_htl_sphere(clr, position, radius, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
 }
 
 void g3_draw_htl_sphere(const vec3d* position, float radius)
@@ -518,7 +510,9 @@ void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float 
 //void render_rotated_bitmap(int texture, float alpha, vertex *pnt, float angle, float rad)
 void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad)
 {
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	// holdover mistake from retail causes these bitmaps to be rendered 41% bigger than rad
+	// this turns radius into the diagonal distance, but the methods below presume manhattan distance (unadjusted radius)
+	rad *= 1.41421356f;
 
 	angle -= Physics_viewer_bank;
 	if ( angle < 0.0f ) {
@@ -756,7 +750,9 @@ void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int ori
 // adapted from g3_draw_bitmap_3d
 void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient, float rad, float depth)
 {
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	// holdover mistake from retail causes these bitmaps to be rendered 41% bigger than rad
+	// this turns radius into the diagonal distance, but the methods below presume manhattan distance (unadjusted radius)
+	rad *= 1.41421356f;
 
 	vec3d PNT(pnt->world);
 	vec3d p[4];
@@ -812,73 +808,6 @@ void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient
 	}
 
 	g3_render_primitives_textured(mat_params, P, 4, PRIM_TYPE_TRIFAN, false);
-}
-
-// adapted from g3_draw_laser_htl()
-void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width)
-{
-	head_width *= 0.5f;
-	tail_width *= 0.5f;
-	vec3d uvec, fvec, rvec, center, reye, rfvec;
-
-	vm_vec_sub(&fvec, headp, tailp);
-	vm_vec_normalize_safe(&fvec);
-	vm_vec_copy_scale(&rfvec, &fvec, -1.0f);
-
-	vm_vec_avg(&center, headp, tailp); //needed for the return value only
-	vm_vec_sub(&reye, &Eye_position, &center);
-	vm_vec_normalize(&reye);
-
-	// code intended to prevent possible null vector normalize issue - start
-	if ( vm_vec_equal(reye, fvec) ) {
-		fvec.xyz.x = -reye.xyz.z;
-		fvec.xyz.y = 0.0f;
-		fvec.xyz.z = -reye.xyz.x;
-
-	} else if ( vm_vec_equal(reye, rfvec) ) {
-		fvec.xyz.x = reye.xyz.z;
-		fvec.xyz.y = 0.0f;
-		fvec.xyz.z = reye.xyz.x;
-	}
-	// code intended to prevent possible null vector normalize issue - end
-
-	vm_vec_cross(&uvec, &fvec, &reye);
-	vm_vec_normalize(&uvec);
-	vm_vec_cross(&fvec, &uvec, &reye);
-	vm_vec_normalize(&fvec);
-
-	//now recompute right vector, in case it wasn't entirely perpendiclar
-	vm_vec_cross(&rvec, &uvec, &fvec);
-
-	// Now have uvec, which is up vector and rvec which is the normal
-	// of the face.
-
-	int i;
-	vec3d start, end;
-	vm_vec_scale_add(&start, headp, &fvec, -head_width);
-	vm_vec_scale_add(&end, tailp, &fvec, tail_width);
-	vec3d vecs[4];
-	vertex pts[4];
-
-	vm_vec_scale_add(&vecs[0], &start, &uvec, head_width);
-	vm_vec_scale_add(&vecs[1], &end, &uvec, tail_width);
-	vm_vec_scale_add(&vecs[2], &end, &uvec, -tail_width);
-	vm_vec_scale_add(&vecs[3], &start, &uvec, -head_width);
-
-	for ( i = 0; i < 4; i++ ) {
-		g3_transfer_vertex(&pts[i], &vecs[i]);
-	}
-
-	pts[0].texture_position.u = 0.0f;
-	pts[0].texture_position.v = 0.0f;
-	pts[1].texture_position.u = 1.0f;
-	pts[1].texture_position.v = 0.0f;
-	pts[2].texture_position.u = 1.0f;
-	pts[2].texture_position.v = 1.0f;
-	pts[3].texture_position.u = 0.0f;
-	pts[3].texture_position.v = 1.0f;
-
-	g3_render_primitives_textured(mat_params, pts, 4, PRIM_TYPE_TRIFAN, false);
 }
 
 // adapted from g3_draw_laser()
@@ -1021,7 +950,7 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 }
 
 // adapted from g3_draw_rod()
-void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
+void g3_render_rod(const color *clr, int num_points, const vec3d *pvecs, float width)
 {
 	const int MAX_ROD_VERTS = 100;
 	vec3d uvec, fvec, rvec;
@@ -1220,7 +1149,7 @@ void g3_render_line_3d(color *clr, bool depth_testing, const vec3d *start, const
 
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
+	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
 	gr_render_primitives_immediate(&mat, PRIM_TYPE_LINES, &vert_def, 2, line, sizeof(float) * 6);
 }
@@ -1254,80 +1183,10 @@ void g3_render_sphere(vec3d* position, float radius)
 	g3_render_sphere(&gr_screen.current_color, position, radius);
 }
 
-void g3_render_colored_rect(color *clr, int x, int y, int w, int h, int resize_mode)
-{
-	if ( resize_mode != GR_RESIZE_NONE ) {
-		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
-	}
-
-	vertex v[4];
-
-	memset(v, 0, sizeof(vertex) * 4);
-
-	float sw = 0.1f;
-
-	// stuff coords		
-	v[0].screen.xyw.x = i2fl(x);
-	v[0].screen.xyw.y = i2fl(y);
-	v[0].screen.xyw.w = sw;
-	v[0].texture_position.u = 0.0f;
-	v[0].texture_position.v = 0.0f;
-	v[0].flags = PF_PROJECTED;
-	v[0].codes = 0;
-	v[0].r = (ubyte)clr->red;
-	v[0].g = (ubyte)clr->green;
-	v[0].b = (ubyte)clr->blue;
-	v[0].a = (ubyte)clr->alpha;
-
-	v[1].screen.xyw.x = i2fl(x + w);
-	v[1].screen.xyw.y = i2fl(y);
-	v[1].screen.xyw.w = sw;
-	v[1].texture_position.u = 0.0f;
-	v[1].texture_position.v = 0.0f;
-	v[1].flags = PF_PROJECTED;
-	v[1].codes = 0;
-	v[1].r = (ubyte)clr->red;
-	v[1].g = (ubyte)clr->green;
-	v[1].b = (ubyte)clr->blue;
-	v[1].a = (ubyte)clr->alpha;
-
-	v[2].screen.xyw.x = i2fl(x + w);
-	v[2].screen.xyw.y = i2fl(y + h);
-	v[2].screen.xyw.w = sw;
-	v[2].texture_position.u = 0.0f;
-	v[2].texture_position.v = 0.0f;
-	v[2].flags = PF_PROJECTED;
-	v[2].codes = 0;
-	v[2].r = (ubyte)clr->red;
-	v[2].g = (ubyte)clr->green;
-	v[2].b = (ubyte)clr->blue;
-	v[2].a = (ubyte)clr->alpha;
-
-	v[3].screen.xyw.x = i2fl(x);
-	v[3].screen.xyw.y = i2fl(y + h);
-	v[3].screen.xyw.w = sw;
-	v[3].texture_position.u = 0.0f;
-	v[3].texture_position.v = 0.0f;
-	v[3].flags = PF_PROJECTED;
-	v[3].codes = 0;
-	v[3].r = (ubyte)clr->red;
-	v[3].g = (ubyte)clr->green;
-	v[3].b = (ubyte)clr->blue;
-	v[3].a = (ubyte)clr->alpha;
-
-	material material_params;
-	material_params.set_depth_mode(ZBUFFER_TYPE_NONE);
-	material_params.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	material_params.set_cull_mode(false);
-
-	// draw the polys
-	g3_render_primitives_colored(&material_params, v, 4, PRIM_TYPE_TRIFAN, true);
-}
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //flash ball stuff
 
-void flash_ball::initialize(int number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+void flash_ball::initialize(uint number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	if(number < 1)
 		return;
@@ -1340,21 +1199,21 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 		n_rays = number;
 	}
 
-	int i;
+	uint i;
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
+			ray[i].start.r = (ubyte)Random::next(min_r, max_r);
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
+			ray[i].start.g = (ubyte)Random::next(min_g, max_g);
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
+			ray[i].start.b = (ubyte)Random::next(min_b, max_b);
 		}else{
 			ray[i].start.b = 255;
 		}
@@ -1373,8 +1232,8 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 			//random cones
 			vec3d start, end;
 
-			vm_vec_random_cone(&start, dir, outer, inner);
-			vm_vec_random_cone(&end, dir, outer, inner);
+			vm_vec_random_cone(&start, dir, inner, outer);
+			vm_vec_random_cone(&end, dir, inner, outer);
 
 			ray[i].start.world = start;
 			ray[i].end.world = end;
@@ -1394,9 +1253,9 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 
 void flash_ball::defpoint(int off, ubyte *bsp_data)
 {
-	int n;
-	int nverts = w(off+bsp_data+8);	
-	int offset = w(off+bsp_data+16);
+	uint n;
+	uint nverts = uw(off+bsp_data+8);	
+	uint offset = uw(off+bsp_data+16);
 	ubyte * normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);
 
@@ -1428,6 +1287,8 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 #define OP_TMAPPOLY		3
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
+#define OP_TMAP2POLY    6
+#define OP_SORTNORM2	7
 
 
 void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
@@ -1445,11 +1306,15 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 			break;
 		case OP_SORTNORM:
 			break;
+		case OP_SORTNORM2:
+			break;
 		case OP_FLATPOLY:
 			break;
 		case OP_TMAPPOLY:
 			break;
 		case OP_BOUNDBOX:
+			break;
+		case OP_TMAP2POLY:
 			break;
 		default:
 			return;
@@ -1470,21 +1335,21 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 	parse_bsp(0,bsp_data);
 	center = vmd_zero_vector;
 
-	int i;
+	uint i;
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
+			ray[i].start.r = (ubyte)Random::next(min_r, max_r);
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
+			ray[i].start.g = (ubyte)Random::next(min_g, max_g);
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
+			ray[i].start.b = (ubyte)Random::next(min_b, max_b);
 		}else{
 			ray[i].start.b = 255;
 		}
@@ -1501,7 +1366,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 			//random cones
 			vec3d end;
 
-			vm_vec_random_cone(&end, dir, outer, inner);
+			vm_vec_random_cone(&end, dir, inner, outer);
 
 			ray[i].end.world = end;
 		}
@@ -1514,7 +1379,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 //intinsity	how visable it should be
 //life		how far along from start to end should it be
 void flash_ball::render(int texture, float rad, float intinsity, float life){
-	for(int i = 0; i < n_rays; i++){
+	for(uint i = 0; i < n_rays; i++){
 		vec3d end;
 		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
 		vm_vec_scale(&end, rad);

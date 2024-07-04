@@ -16,6 +16,7 @@
 #include "io/timer.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
 #include "ship/afterburner.h"
@@ -24,7 +25,7 @@
 // ----------------------------------------------------------
 // Global to file
 // ----------------------------------------------------------
-static int		Player_afterburner_loop_id;		// identifies the looping afterburner sound of the player ship
+static sound_handle Player_afterburner_loop_id; // identifies the looping afterburner sound of the player ship
 static int		Player_afterburner_loop_delay;	// timestamp used to time the start of the looping afterburner sound
 static int		Player_disengage_timer;
 static float	Player_afterburner_vol;
@@ -34,9 +35,6 @@ static int		Player_afterburner_start_time;
 // ----------------------------------------------------------
 // local constants
 // ----------------------------------------------------------
-
-// The minimum required fuel to engage afterburners
-#define MIN_AFTERBURNER_FUEL_TO_ENGAGE		10
 
 #define AFTERBURNER_DEFAULT_VOL					0.5f	// default starting volume (0.0f -> 1.0f)
 #define AFTERBURNER_PERCENT_VOL_ATTENUATE		0.30f	// % at which afterburner volume is reduced
@@ -54,7 +52,7 @@ void afterburner_level_init()
 {
 	Player_disengage_timer = 1;
 	Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
-	Player_afterburner_loop_id = -1;
+	Player_afterburner_loop_id    = sound_handle::invalid();
 	Player_afterburner_start_time = 0;
 }
 
@@ -80,7 +78,7 @@ void afterburners_start(object *objp)
 	Assert( objp->instance >= 0 && objp->instance < MAX_SHIPS );
 
 	shipp = &Ships[objp->instance];
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size() );
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	// bail if afterburners are locked
@@ -88,12 +86,23 @@ void afterburners_start(object *objp)
 		return;
 	}
 
-	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
-		unsigned int now;
-		now = timer_get_milliseconds();
+	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 
+	int now = timer_get_milliseconds();
+
+	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
+
+		if ((objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj))
+			snd_play(gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)));
+
+		return;
+	}
+
+
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
+		
 		if ( (now - Player_afterburner_start_time) < 1300 ) {
-			snd_play( &Snds[ship_get_sound(objp, SND_ABURN_FAIL)] );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 			return;
 		}
 
@@ -115,12 +124,14 @@ void afterburners_start(object *objp)
 	}
 
 	// Check if there is enough afterburner fuel
-	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) && !MULTIPLAYER_CLIENT ) {
+	if ( (shipp->afterburner_fuel < sip->afterburner_min_start_fuel) && !MULTIPLAYER_CLIENT ) {
 		if ( objp == Player_obj ) {
-			snd_play( &Snds[ship_get_sound(objp, SND_ABURN_FAIL)] );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 		}
 		return;
 	}
+
+	shipp->afterburner_last_engage_fuel = shipp->afterburner_fuel;
 
 	objp->phys_info.flags |= PF_AFTERBURNER_ON;
 
@@ -129,7 +140,7 @@ void afterburners_start(object *objp)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, 1);
+	Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner).start(animation::ModelAnimationDirection::FWD);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -143,15 +154,18 @@ void afterburners_start(object *objp)
 			Player_afterburner_loop_delay = 0;
 		}
 
-		snd_play( &Snds[ship_get_sound(objp, SND_ABURN_ENGAGE)], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_ENGAGE)), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 		joy_ff_afterburn_on();
 	} else {
-		snd_play_3d( &Snds[ship_get_sound(objp, SND_ABURN_ENGAGE)], &objp->pos, &View_position, objp->radius );
+		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_ENGAGE)), &objp->pos, &View_position, objp->radius );
 	}
 
-	Script_system.SetHookObjects(1, "Ship", objp);
-	Script_system.RunCondition(CHA_AFTERBURNSTART, 0, NULL, objp);
-	Script_system.RemHookVars(1, "Ship");
+	if (scripting::hooks::OnAfterburnerStart->isActive()) {
+		scripting::hooks::OnAfterburnerStart->run(scripting::hooks::ShipSourceConditions{ shipp },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', objp)
+			));
+	}
 	
 	objp->phys_info.flags |= PF_AFTERBURNER_WAIT;
 }
@@ -177,7 +191,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size() );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags[Object::Object_Flags::Player_ship] ) && (Game_mode & GM_DEAD) ) {
@@ -235,7 +249,13 @@ void afterburners_update(object *objp, float fl_frametime)
 				shipp->afterburner_fuel = 0.0f;
 				afterburners_stop(objp);
 				return;
+			} // if the ship had to burn a certain amount of fuel, and it did so and isn't still trying to afterburn, stop it
+			else if (!(shipp->flags[Ship::Ship_Flags::Attempting_to_afterburn]) && sip->afterburner_min_fuel_to_burn > 0.0f &&
+				shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel > sip->afterburner_min_fuel_to_burn) {
+				afterburners_stop(objp);
+				return;
 			}
+
 		}
 
 		// afterburners are firing at this point
@@ -251,8 +271,8 @@ void afterburners_update(object *objp, float fl_frametime)
 		if ( timestamp_elapsed(Player_afterburner_loop_delay) ) {
 			Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
 			Player_afterburner_loop_delay = 0;
-			if ( Player_afterburner_loop_id == -1 ) {
-				Player_afterburner_loop_id = snd_play_looping( &Snds[ship_get_sound(objp, SND_ABURN_LOOP)], 0.0f , -1, -1);
+			if (!Player_afterburner_loop_id.isValid()) {
+				Player_afterburner_loop_id = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_LOOP)), 0.0f , -1, -1);
 				snd_set_volume(Player_afterburner_loop_id, Player_afterburner_vol);
 			}
 		}
@@ -286,7 +306,7 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size() );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags[Object::Object_Flags::Player_ship]) && key_released ) {
@@ -298,26 +318,39 @@ void afterburners_stop(object *objp, int key_released)
 		return;
 	}
 
+	shipp->flags.remove(Ship::Ship_Flags::Attempting_to_afterburn);
+
+	// if they need to burn a certain a amount of fuel but haven't done so, dont let them stop unless they have no fuel
+	// the removal of the above flag will turn it off later
+	if (shipp->afterburner_fuel > 0.0f && sip->afterburner_min_fuel_to_burn > 0.0f && 
+		shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel < sip->afterburner_min_fuel_to_burn)
+		return;
+
 	if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 		return;
 	}
 
-	Script_system.SetHookObjects(1, "Ship", objp);
-	Script_system.RunCondition(CHA_AFTERBURNEND, 0, NULL, objp);
-	Script_system.RemHookVars(1, "Ship");
+	shipp->afterburner_last_end_time = timer_get_milliseconds();
+
+	if (scripting::hooks::OnAfterburnerEnd->isActive()) {
+		scripting::hooks::OnAfterburnerEnd->run(scripting::hooks::ShipSourceConditions{ shipp },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', objp)
+			));
+	}
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 
 	//Do anim
-	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, -1);
+	Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner).start(animation::ModelAnimationDirection::RWD);
 
 	if ( objp == Player_obj ) {
 
 		if ( !key_released ) {
-			snd_play( &Snds[ship_get_sound(objp, SND_ABURN_FAIL)] );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 		}
 
-		if ( Player_afterburner_loop_id > -1 )	{
+		if (Player_afterburner_loop_id.isValid()) {
 			Player_disengage_timer = timestamp(DISENGAGE_TIME);
 		}
 
@@ -331,11 +364,11 @@ void afterburners_stop(object *objp, int key_released)
  */
 void afterburner_stop_sounds()
 {
-	if ( Player_afterburner_loop_id != -1 ) {
+	if (Player_afterburner_loop_id.isValid()) {
 		snd_stop(Player_afterburner_loop_id);
 	}
 
-	Player_afterburner_loop_id = -1;
+	Player_afterburner_loop_id    = sound_handle::invalid();
 	Player_disengage_timer = 1;
 	Player_afterburner_loop_delay = 0;
 }

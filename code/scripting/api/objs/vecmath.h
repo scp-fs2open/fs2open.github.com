@@ -35,14 +35,18 @@ struct matrix_h {
 	void ValidateMatrix();
  public:
 	matrix_h();
-	explicit matrix_h(matrix* in);
-	explicit matrix_h(angles* in);
+	explicit matrix_h(const matrix* in);
+	explicit matrix_h(const angles* in);
+	explicit matrix_h(const vec3d *fvec, const vec3d *uvec = nullptr, const vec3d *rvec = nullptr);
 
 	angles* GetAngles();
 
 	matrix* GetMatrix();
 
 	void SetStatus(MatrixState n_status);
+
+	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 DECLARE_ADE_OBJ(l_Matrix, matrix_h);

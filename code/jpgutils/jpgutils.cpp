@@ -9,9 +9,8 @@
 
 
 
-#include <stdio.h>
-#include <string.h>
-#include <setjmp.h>
+#include <cstdio>
+#include <cstring>
 
 #include "globalincs/pstypes.h"
 #include "jpgutils/jpgutils.h"
@@ -58,7 +57,6 @@ static int jpeg_error_code;
 
 // error handler stuff, rather than the default, which will screw us
 //
-jmp_buf FSJpegError;
 
 // error (exit) handler
 void jpg_error_exit(j_common_ptr cinfo)
@@ -73,7 +71,7 @@ void jpg_error_exit(j_common_ptr cinfo)
 	Jpeg_Set_Error(JPEG_ERROR_READING);
 
 	// bail
-	longjmp(FSJpegError, 1);
+	throw std::runtime_error("JPEG_ERROR_READING");
 }
 
 // message handler for errors
@@ -104,7 +102,7 @@ void jpg_output_message(j_common_ptr cinfo)
 //
 // returns - JPEG_ERROR_NONE if successful, otherwise error code
 //
-int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
+int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte * /*palette*/)
 {
 	CFILE *jpeg_file = NULL;
 	char filename[MAX_FILENAME_LEN];
@@ -127,11 +125,6 @@ int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, 
 	} else {
 		jpeg_file = img_cfp;
 	}
-
-	Assert( jpeg_file != NULL );
-
-	if (jpeg_file == NULL)
-		return JPEG_ERROR_READING;
 
 	// set the basic/default error code
 	Jpeg_Set_Error(JPEG_ERROR_NONE);
@@ -172,7 +165,7 @@ int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, 
 //
 // returns - true if succesful, false otherwise
 //
-int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
+int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte * /*palette*/, int dest_size, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	CFILE *img_cfp = NULL;
@@ -202,7 +195,7 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palett
 	// or we risk needed more memory than we have available in "image_data".  The only exception is
 	// bpp since 'dest_size' should already indicate what we want to end up with.
 
-	if ( setjmp( FSJpegError ) == 0) {
+	try {
 		// initialize decompression struct
 		jpeg_create_decompress(&jpeg_info);
 
@@ -218,6 +211,9 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palett
 		// NOTE: only 24-bit is actually supported right now, we don't currently up/down sample at all
 		jpeg_info.output_components = dest_size;
 		jpeg_info.out_color_components = dest_size;	// may need/have to match above
+
+		// Actually check the precondition specified in the comment above
+		Assertion(dest_size == 3, "JPEG decompression currently only support 24-bit bitmap locking!");
 
 		// multiplying by rec_outbuf_height isn't required but is more efficient
 		int size = jpeg_info.output_width * jpeg_info.output_components * jpeg_info.rec_outbuf_height;
@@ -252,6 +248,9 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palett
 
 		// cleanup
 		jpeg_destroy_decompress(&jpeg_info);
+	}
+	catch (const std::exception &e) {
+		mprintf(("jpgutils: error code %d (%s) while reading %s\n", jpeg_error_code, e.what(), real_filename));
 	}
 
 	cfclose(img_cfp);
@@ -321,7 +320,7 @@ void jpeg_cf_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 	}
 }
 
-void jpeg_cf_term_source(j_decompress_ptr cinfo)
+void jpeg_cf_term_source(j_decompress_ptr  /*cinfo*/)
 {
 	// no work necessary here
 }

@@ -5,9 +5,12 @@
 #define _SPHERE_SHAPE_H
 #pragma once
 
-#include <math/bitarray.h>
 #include "globalincs/pstypes.h"
-#include "particle/util/RandomRange.h"
+
+#include "math/bitarray.h"
+#include "math/vecmat.h"
+#include "particle/ParticleEffect.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {
@@ -16,21 +19,15 @@ namespace effects {
  * @ingroup particleEffects
  */
 class SphereShape {
-	util::UniformFloatRange m_sphereRange;
+	::util::UniformFloatRange m_sphereRange;
  public:
 	SphereShape() : m_sphereRange(0.f, 1.f) {}
 
 	matrix getDisplacementMatrix() {
-		auto u = m_sphereRange.next();
-		auto v = m_sphereRange.next();
-
-		auto theta = 2 * PI * u;
-		auto phi = acos(2 * v - 1);
 
 		vec3d vec;
-		vec.xyz.x = sin(theta)*cos(phi);
-		vec.xyz.y = sin(theta)*sin(phi);
-		vec.xyz.z = cos(theta);
+
+		vm_vec_unit_sphere_point(&vec, m_sphereRange.next(), m_sphereRange.next());
 
 		matrix m;
 		vm_vector_2_matrix_norm(&m, &vec);
@@ -38,7 +35,7 @@ class SphereShape {
 		return m;
 	}
 
-	void parse(bool nocreate) {
+	void parse(bool  /*nocreate*/) {
 	}
 
 	EffectType getType() const { return EffectType::Sphere; }
@@ -47,7 +44,7 @@ class SphereShape {
 	 * @brief Specifies if the velocities of the particles should be scaled with the deviation from the direction
 	 * @return @c true
 	 */
-	static SCP_CONSTEXPR bool scale_velocity_deviation() {
+	static constexpr bool scale_velocity_deviation() {
 		return false;
 	}
 };

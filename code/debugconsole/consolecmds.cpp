@@ -28,10 +28,6 @@ debug_command *dc_commands[DC_MAX_COMMANDS];
 int dc_commands_size = 0;
 
 // ========================= LOCALS ==========================
-// dcf_shell commands
-void dc_shell_font( void );
-void dc_shell_resize( void );
-void dc_shell_resize_buf( void );
 
 // =================== class debug_command ===================
 debug_command::debug_command()
@@ -156,5 +152,3 @@ DCF(help, "Displays the help list." )
 		dc_printf(" %s - %s\n", dc_commands[i]->name, dc_commands[i]->help);
 	}
 }
-
-debug_command dc_man("man", "Also displays the help list", dcf_help);

@@ -33,7 +33,7 @@ class sync_queue_is_closed : public std::runtime_error
 {
 public:
 	sync_queue_is_closed() : std::runtime_error("Sync Bounded Queue is closed") {}
-	~sync_queue_is_closed() throw() {}
+	~sync_queue_is_closed() noexcept override = default;
 };
 
 template <typename ValueType>
@@ -276,7 +276,7 @@ queue_op_status sync_bounded_queue<ValueType>::try_pull_front(ValueType& elem)
 template <typename ValueType>
 queue_op_status sync_bounded_queue<ValueType>::nonblocking_pull_front(ValueType& elem)
 {
-		std::unique_lock<std::mutex> lk(mtx_, std::try_lock);
+		std::unique_lock<std::mutex> lk(mtx_, std::try_to_lock);
 		if (!lk.owns_lock())
 		{
 			return queue_op_status::busy;
@@ -388,7 +388,7 @@ queue_op_status sync_bounded_queue<ValueType>::wait_push_back(const ValueType& e
 template <typename ValueType>
 queue_op_status sync_bounded_queue<ValueType>::nonblocking_push_back(const ValueType& elem)
 {
-	std::unique_lock<std::mutex> lk(mtx_, std::try_lock);
+	std::unique_lock<std::mutex> lk(mtx_, std::try_to_lock);
 	if (!lk.owns_lock()) return queue_op_status::busy;
 	return try_push_back(elem, lk);
 }
@@ -452,7 +452,7 @@ queue_op_status sync_bounded_queue<ValueType>::wait_push_back(ValueType&& elem)
 template <typename ValueType>
 queue_op_status sync_bounded_queue<ValueType>::nonblocking_push_back(ValueType&& elem)
 {
-		std::unique_lock<std::mutex> lk(mtx_, std::try_lock);
+		std::unique_lock<std::mutex> lk(mtx_, std::try_to_lock);
 		if (!lk.owns_lock())
 		{
 			return queue_op_status::busy;
@@ -470,7 +470,7 @@ void sync_bounded_queue<ValueType>::push_back(ValueType&& elem)
 template <typename ValueType>
 sync_bounded_queue<ValueType>& operator<<(sync_bounded_queue<ValueType>& sbq, ValueType&& elem)
 {
-	sbq.push_back(std::move(elem));
+	sbq.push_back(std::forward<ValueType>(elem));
 	return sbq;
 }
 

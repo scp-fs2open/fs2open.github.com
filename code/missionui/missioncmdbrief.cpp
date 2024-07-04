@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 
@@ -19,10 +19,17 @@
 #include "graphics/font.h"
 #include "io/key.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
+#include "network/multi_endgame.h"
+#include "network/multiteamselect.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
@@ -192,7 +199,7 @@ void cmd_brief_init_voice()
 	Assert(Cur_cmd_brief);
 	for (i=0; i<Cur_cmd_brief->num_stages; i++) {
 		Cur_cmd_brief->stage[i].wave = -1;
-		if (stricmp(Cur_cmd_brief->stage[i].wave_filename, NOX("none")) && Cur_cmd_brief->stage[i].wave_filename[0]) {
+		if (stricmp(Cur_cmd_brief->stage[i].wave_filename, NOX("none")) != 0 && Cur_cmd_brief->stage[i].wave_filename[0]) {
 			Cur_cmd_brief->stage[i].wave = audiostream_open(Cur_cmd_brief->stage[i].wave_filename, ASF_VOICE);
 			if (Cur_cmd_brief->stage[i].wave < 0) {
 				nprintf(("General", "Failed to load \"%s\"\n", Cur_cmd_brief->stage[i].wave_filename));
@@ -353,6 +360,9 @@ void cmd_brief_new_stage(int stage)
 	// Make sure that the text wrapping and the rendering code use the same font
 	font::set_font(font::FONT1);
 
+	// fire the script hook
+	common_fire_stage_script_hook(stage, Cur_stage);
+
 	Cur_stage = stage;
 	brief_color_text_init(Cur_cmd_brief->stage[stage].text.c_str(), Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD], default_command_briefing_color);
 
@@ -440,11 +450,11 @@ void cmd_brief_button_pressed(int n)
 	switch (n) {
 		case CMD_BRIEF_BUTTON_HELP:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case CMD_BRIEF_BUTTON_OPTIONS:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
 
@@ -456,10 +466,10 @@ void cmd_brief_button_pressed(int n)
 			}
 			else if (Cur_stage) {
 				cmd_brief_new_stage(0);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} 
 			else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -472,9 +482,9 @@ void cmd_brief_button_pressed(int n)
 			}
 			else if (Cur_stage) {
 				cmd_brief_new_stage(Cur_stage - 1);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -482,9 +492,9 @@ void cmd_brief_button_pressed(int n)
 		case CMD_BRIEF_BUTTON_NEXT_STAGE:
 			if (Cur_stage < Cur_cmd_brief->num_stages - 1) {
 				cmd_brief_new_stage(Cur_stage + 1);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -492,19 +502,19 @@ void cmd_brief_button_pressed(int n)
 		case CMD_BRIEF_BUTTON_LAST_STAGE:
 			if (Cur_stage < Cur_cmd_brief->num_stages - 1) {
 				cmd_brief_new_stage(Cur_cmd_brief->num_stages - 1);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
 		case CMD_BRIEF_BUTTON_ACCEPT:
 			cmd_brief_exit();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			break;
 
 		case CMD_BRIEF_BUTTON_PAUSE:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			fsspeech_pause(Player->auto_advance != 0);
 			Player->auto_advance ^= 1;
 			break;
@@ -513,9 +523,9 @@ void cmd_brief_button_pressed(int n)
 			Top_cmd_brief_text_line--;
 			if ( Top_cmd_brief_text_line < 0 ) {
 				Top_cmd_brief_text_line = 0;
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			} else {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			}
 			break;
 
@@ -523,9 +533,9 @@ void cmd_brief_button_pressed(int n)
 			Top_cmd_brief_text_line++;
 			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Max_cmdbrief_Lines) {
 				Top_cmd_brief_text_line--;
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			} else {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			}
 			break;
 	}
@@ -554,11 +564,19 @@ void cmd_brief_init(int team)
 	Cur_cmd_brief = &Cmd_briefs[team];
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Cur_cmd_brief->num_stages; i++)
+	// karajorma/jg18 - replace container references as well
+	for (i = 0; i < Cur_cmd_brief->num_stages; i++) {
 		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text);
+		sexp_container_replace_refs_with_values(Cur_cmd_brief->stage[i].text);
+	}
 
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
+
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+	}
 
 	gr_reset_clip();
 	gr_clear();
@@ -572,6 +590,7 @@ void cmd_brief_init(int team)
 		Uses_scroll_buttons = 0;	// nope, sorry
 		Cmd_brief_background_bitmap = mission_ui_background_load(NULL, Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
 	}
+	mprintf(("Command Briefing UI: %s scroll buttons\n", Uses_scroll_buttons != 0 ? "Using" : "Not using"));
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Cmd_brief_mask[Uses_scroll_buttons][gr_screen.res]);
@@ -681,8 +700,13 @@ void cmd_brief_do_frame(float frametime)
 
 	switch (k) {
 	case KEY_ESC:
-		common_music_close();
-		gameseq_post_event(GS_EVENT_MAIN_MENU);
+		if (Game_mode & GM_MULTIPLAYER) {
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			multi_quit_game(PROMPT_ALL);
+		} else {
+			common_music_close();
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		}
 		break;
 	}	// end switch
 

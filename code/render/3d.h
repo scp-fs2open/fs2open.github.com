@@ -54,10 +54,15 @@ extern void g3_end_frame_func(const char *filename, int lineno);
  */
 extern int g3_in_frame();
 
+constexpr float PROJ_FOV_FACTOR = 1.39626348f;
+extern fov_t Proj_fov;					// Projection matrix fov (for HT&L)
+
 /**
- * Set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
+ * Sets the Proj_fov from the specified zoom value
  */
-void g3_set_view_angles(const vec3d *view_pos, const angles *view_orient, float zoom);
+void g3_set_fov(fov_t zoom);
+
+float g3_get_hfov(const fov_t& fov);
 
 /**
  * Set view from camera
@@ -67,7 +72,7 @@ void g3_set_view(camera *cam);
 /**
  * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
  */
-void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
+void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, fov_t zoom);
 
 // Never set these!
 extern matrix		View_matrix;		// The matrix to convert local coordinates to screen
@@ -78,12 +83,10 @@ extern vec3d		Light_base;			// Used to rotate world points into current local co
 
 extern matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 extern vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
-extern float		Eye_fov;			// What the viewer's FOV is
+extern fov_t		Eye_fov;			// What the viewer's FOV is
 
 extern vec3d Object_position;
 extern matrix	Object_matrix;			// Where the opject is pointing in World coordinates
-
-extern float Proj_fov;					// Projection matrix fov (for HT&L)
 
 
 /**
@@ -123,11 +126,6 @@ int g3_check_normal_facing(const vec3d *v, const vec3d *norm);
  * Rotates a point. returns codes.  does not check if already rotated
  */
 ubyte g3_rotate_vertex(vertex *dest, const vec3d *src);
-
-/**
- * Same as above, only ignores the current instancing
- */
-ubyte g3_rotate_vertex_popped(vertex *dest, const vec3d *src);
 
 /**
  * Use this for stars, etc
@@ -208,31 +206,6 @@ int g3_draw_sphere(vertex *pnt, float rad);
  */
 int g3_draw_sphere_ez(const vec3d *pnt, float rad);
 
-
-/**
- * Enables clipping with an arbritary plane.   
- *
- * This will be on until g3_stop_clip_plane is called or until next frame.
- * The points passed should be relative to the instance. Probably
- * that means world coordinates.
- * 
- * This works like any other clip plane... if this is enabled and you
- * rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
- * It is completely handled by most g3_draw primitives, except maybe lines.
- *
- * As far as performance, when enabled, it will slow down each point
- * rotation (or g3_code_vertex call) by a vec3d subtraction and dot
- * product.   It won't slow anything down for polys that are completely
- * clipped on or off by the plane, and will slow each clipped polygon by
- * not much more than any other clipping we do.
- */
-void g3_start_user_clip_plane(const vec3d *plane_point, const vec3d *plane_normal);
-
-/**
- * Stops arbritary plane clipping
- */
-void g3_stop_user_clip_plane();
-
 ubyte g3_transfer_vertex(vertex *dest, const vec3d *src);
 
 /**
@@ -243,7 +216,12 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end);
 /**
  * Draw a sphere mode without having to go through the rotate/project stuff
  */
-void g3_draw_htl_sphere(color *clr, const vec3d *position, float radius);
+void g3_draw_htl_sphere(color* clr,
+	const vec3d* position,
+	float radius,
+	gr_alpha_blend alpha_blend_mode,
+	gr_zbuffer_type zbuffer_mode);
+void g3_draw_htl_sphere(color* clr, const vec3d* position, float radius);
 void g3_draw_htl_sphere(const vec3d* position, float radius);
 
 void g3_render_primitives(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
@@ -251,9 +229,8 @@ void g3_render_primitives_textured(material* mat, vertex* verts, int n_verts, pr
 void g3_render_primitives_colored(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
 void g3_render_primitives_colored_textured(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
 
-void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width);
+void g3_render_rod(const color *clr, int num_points, const vec3d *pvecs, float width);
 
-void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width);
 void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width, float max_len);
 
 void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad);
@@ -272,8 +249,6 @@ void g3_render_sphere(vec3d* position, float radius);
 
 void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode = GR_RESIZE_FULL);
 void g3_render_shield_icon(coord2d coords[6], int resize_mode = GR_RESIZE_FULL);
-
-void g3_render_colored_rect(color *clr, int x, int y, int w, int h, int resize_mode);
 
 typedef struct horz_pt {
 	float x, y;
@@ -294,7 +269,7 @@ struct flash_beam{
 class flash_ball{
 	flash_beam *ray;
 	vec3d center;
-	int n_rays;
+	uint n_rays;
 	void parse_bsp(int offset, ubyte *bsp_data);
 	void defpoint(int off, ubyte *bsp_data);
 
@@ -311,7 +286,7 @@ public:
 			vm_free(ray);
 	}
 
-	void initialize(int number, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(uint number, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void render(int texture, float rad, float intinsity, float life);
 };

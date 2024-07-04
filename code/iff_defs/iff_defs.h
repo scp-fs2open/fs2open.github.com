@@ -17,10 +17,12 @@
 class object;
 
 // Goober5000 - new IFF color system
-#define IFF_COLOR_SELECTION			0
-#define IFF_COLOR_MESSAGE			1
-#define IFF_COLOR_TAGGED			2
-#define MAX_IFF_COLORS				(MAX_IFFS + 3)
+// Now variables so that modular tables can actually affect them. -MageKing17
+extern int IFF_COLOR_SELECTION;
+extern int IFF_COLOR_MESSAGE;
+extern int IFF_COLOR_TAGGED;
+
+enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
 
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
@@ -40,19 +42,20 @@ typedef struct iff_info {
 	// relationships
 	int attackee_bitmask;						// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	int attackee_bitmask_all_teams_at_war;		// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
-	int observed_color_index[MAX_IFFS];			// treat this as private and use iff_get_color or iff_get_color_by_team
+	SCP_map<int, int> observed_color_map;			// treat this as private and use iff_get_color or iff_get_color_by_team
+	IFF_hotkey_team hotkey_team;
 
 	// flags
 	int flags;
 	flagset<Mission::Parse_Object_Flags> default_parse_flags;
 
 	// used internally, not parsed
-	int ai_rearm_timestamp;
+	TIMESTAMP ai_good_rearm_timestamp;
+	TIMESTAMP ai_bad_rearm_timestamp;
 
 } iff_info;
 
-extern int Num_iffs;
-extern iff_info Iff_info[MAX_IFFS];
+extern SCP_vector<iff_info> Iff_info;
 
 extern int Iff_traitor;
 
@@ -74,11 +77,11 @@ extern int iff_lookup(const char *iff_name);
 // If he fires at you, you don't react unless you are coded to attack him, because you are oblivious.
 extern int iff_get_attackee_mask(int attacker_team);
 extern int iff_get_attacker_mask(int attackee_team);
-extern int iff_x_attacks_y(int team_x, int team_y);
+extern bool iff_x_attacks_y(int team_x, int team_y);
 
 // mask stuff
 extern int iff_get_mask(int team);
-extern int iff_matches_mask(int team, int mask);
+extern bool iff_matches_mask(int team, int mask);
 
 // get color stuff
 extern color *iff_get_color(int color_index, int is_bright);

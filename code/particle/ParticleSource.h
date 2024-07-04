@@ -25,6 +25,7 @@ namespace particle {
 enum class SourceOriginType {
 	NONE, //!< Invalid origin
 	VECTOR, //!< World-space offset
+	BEAM, //!< A beam
 	OBJECT, //!< An object
 	PARTICLE //!< A particle
 };
@@ -55,6 +56,8 @@ class SourceOrigin {
 
 	vec3d m_offset;
 
+	vec3d m_velocity;
+
  public:
 	/**
 	 * @brief Initializes the origin with default values
@@ -63,13 +66,18 @@ class SourceOrigin {
 
 	/**
 	 * @brief Gets the current, global position of the origin
+	 * 
+	 * Be aware for beam sources this will give *random* points along its length
+	 * 
 	 * @param posOut The pointer where the location will be stored
 	 */
 	void getGlobalPosition(vec3d* posOut) const;
 
+	void getHostOrientation(matrix* matOut) const;
+
 	inline SourceOriginType getType() const { return m_originType; }
 
-	inline object* getObjectHost() const { return m_origin.m_object.objp; }
+	inline object* getObjectHost() const { return m_origin.m_object.objp_or_null(); }
 
 	/**
 	 * @brief Determines if the origin is valid
@@ -83,10 +91,10 @@ class SourceOrigin {
 	/**
 	 * @brief Applies the information to a particle info
 	 *
-	 * This can be used to initialize the position of a created particle from a source.
+	 * This fills the provided &info with certain data from the origin, such as objnum/signature of an object origin,
+	 * the scale and remaining lifetime of a particle origin, or simply the current global position of the origin
 	 *
 	 * @param info The particle_info this should be applied to
-	 * @param allowRelative If @c true then the location of the particle can be relative to the host
 	 */
 	void applyToParticleInfo(particle_info& info, bool allowRelative = false) const;
 
@@ -95,6 +103,18 @@ class SourceOrigin {
 	 * @return The velocity of the host
 	 */
 	vec3d getVelocity() const;
+
+	/**
+	 * @brief Gets the current scale of the origin host, always 1 for non-particles
+	 * @return The scale of the host
+	 */
+	float getScale() const;
+
+	/**
+	 * @brief Gets the remaining lifetime of the origin host, always -1.0 for non-particles
+	 * @return The lifeleft of the host
+	 */
+	float getLifetime() const;
 
 	/**
 	 * @brief Sets the weapon state in which this origin is valid
@@ -106,20 +126,32 @@ class SourceOrigin {
 	 * @brief Moves the source to the specified world location
 	 * @param pos The world position
 	 */
-	void moveTo(vec3d* pos);
+	void moveTo(const vec3d* pos);
+
+	/**
+	 * @brief Moves the source to the specified beam object
+	 * @param objp The hosting beam
+	 */
+	void moveToBeam(const object* objp);
 
 	/**
 	 * @brief Moves the source to the specified object with an offset
 	 * @param objp The hosting object
 	 * @param offset The position relative to this object
 	 */
-	void moveToObject(object* objp, vec3d* offset);
+	void moveToObject(const object* objp, const vec3d* offset);
 
 	/**
 	 * @brief Moves the source to the specified particle
 	 * @param weakParticlePtr The hosting particle
 	 */
-	void moveToParticle(WeakParticlePtr weakParticlePtr);
+	void moveToParticle(const WeakParticlePtr& weakParticlePtr);
+
+	/**
+	* @brief Sets the velocity of the source, will not move the source, but particles created may inherit this velocity
+	* @param vel The world velocity
+	*/
+	void setVelocity(const vec3d* vel);
 
 	friend class ParticleSource;
 };
@@ -129,6 +161,9 @@ class SourceOrigin {
  *
  * Currently only the forward direction vector is useful because the other vectors of the matrix are chosen pretty
  * arbitrarily. This also contains a normal vector if it was specified when creating the source.
+ *
+ * An orientation can be either relative or global. In relative mode all transforms should be relative to the host
+ * object while in global mode all directions are in world-space. Normals are always in world-space.
  */
 class SourceOrientation {
  private:
@@ -136,6 +171,9 @@ class SourceOrientation {
 
 	bool m_hasNormal = false;
 	vec3d m_normal;
+
+	// By default the orientation of a source is relative to the host
+	bool m_isRelative = true;
 
  public:
 	SourceOrientation();
@@ -147,19 +185,22 @@ class SourceOrientation {
 	 *
 	 * @param vec The vector to create the matrix from
 	 */
-	void setFromVector(const vec3d& vec);
+	void setFromVector(const vec3d& vec, bool relative = false);
 
 	/**
 	 * @brief Sets the direction from an already normalized vector
+	 *
 	 * @param vec The normalized vector
 	 */
-	void setFromNormalizedVector(const vec3d& vec);
+	void setFromNormalizedVector(const vec3d& vec, bool relative = false);
 
 	void setNormal(const vec3d& normal);
 
-	void setFromMatrix(const matrix& mat);
+	void setFromMatrix(const matrix& mat, bool relative = false);
 
-	vec3d getDirectionVector() const;
+	vec3d getDirectionVector(const SourceOrigin* origin) const;
+
+	bool isRelative() const { return m_isRelative; }
 
 	/**
 	 * @brief Gets the normal of this orientation
@@ -185,6 +226,7 @@ class SourceOrientation {
 class SourceTiming {
  private:
 	int m_creationTimestamp;
+	int m_nextCreation; //! The next time the source should generate a particle. Controlled by the effect of the source.
 
 	int m_beginTimestamp;
 	int m_endTimestamp;
@@ -226,6 +268,23 @@ class SourceTiming {
 	 * @return The progress of the source through its lifetime
 	 */
 	float getLifeTimeProgress() const;
+
+	/**
+	 * @brief Determine if the timestamp for the next particle creation has expired
+	 * @return @c true if the timestamp has expired, false otherwise
+	 */
+	bool nextCreationTimeExpired() const;
+
+	/**
+	 * @brief Move the internal timestamp for the next creation forward
+	 *
+	 * Use this for achieving a consistent amount of created particles regardless of FPS by setting time_diff_ms to a
+	 * constant time and call nextCreationTimeExpired() until that returns false. Then all particles for that frame have
+	 * been created.
+	 *
+	 * @param time_diff_ms
+	 */
+	void incrementNextCreationTime(int time_diff_ms);
 
 	friend class ParticleSource;
 };

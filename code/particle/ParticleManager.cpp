@@ -5,6 +5,7 @@
 
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/CompositeEffect.h"
+#include "particle/effects/VolumeEffect.h"
 
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
@@ -25,7 +26,8 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
-	"Sphere"
+	"Sphere",
+	"Volume"
 };
 
 const char* getEffectTypeName(EffectType type) {
@@ -59,6 +61,11 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 		case EffectType::Sphere: {
 			effect.reset(new GenericShapeEffect<SphereShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::Volume: {
+			effect.reset(new VolumeEffect(name));
 			effect->parseValues(false);
 			break;
 		}
@@ -155,10 +162,11 @@ ParticleSource* ParticleManager::createSource() {
 	return source;
 }
 
-ParticleEffectIndex ParticleManager::getEffectByName(const SCP_string& name) {
+ParticleEffectHandle ParticleManager::getEffectByName(const SCP_string& name)
+{
 	if (name.empty()) {
 		// Don't allow empty names, it's a special case for effects that should not be referenced.
-		return -1;
+		return ParticleEffectHandle::invalid();
 	}
 
 	auto foundIterator = find_if(m_effects.begin(), m_effects.end(),
@@ -167,50 +175,56 @@ ParticleEffectIndex ParticleManager::getEffectByName(const SCP_string& name) {
 								 });
 
 	if (foundIterator == m_effects.end()) {
-		return -1;
+		return ParticleEffectHandle::invalid();
 	}
 
-	return distance(m_effects.begin(), foundIterator);
+	return ParticleEffectHandle(distance(m_effects.begin(), foundIterator));
 }
 
 void ParticleManager::doFrame(float) {
 	if (Is_standalone) {
-		// Don't process sources for standalone server
-		m_sources.clear(); // Always clear the vector to free memory
+		return;
 	}
-	else {
-		TRACE_SCOPE(tracing::ProcessParticleEffects);
 
-		m_processingSources = true;
+	TRACE_SCOPE(tracing::ProcessParticleEffects);
 
-		for (auto source = std::begin(m_sources); source != std::end(m_sources);) {
-			if (!source->isValid() || !source->process()) {
-				// if we're sitting on the very last source, popping-back will invalidate the iterator!
-				if (std::next(source) == m_sources.end()) {
-					m_sources.pop_back();
-					break;
-				}
+	m_processingSources = true;
 
-				*source = std::move(m_sources.back());
+	for (auto source = std::begin(m_sources); source != std::end(m_sources);) {
+		if (!source->isValid() || !source->process()) {
+			// if we're sitting on the very last source, popping-back will invalidate the iterator!
+			if (std::next(source) == m_sources.end()) {
 				m_sources.pop_back();
-				continue;
+				break;
 			}
 
-			// source is only incremented here as elements would be skipped in
-			// the case that a source needs to be removed
-			++source;
+			*source = std::move(m_sources.back());
+			m_sources.pop_back();
+			continue;
 		}
 
-		m_processingSources = false;
-
-		for (auto& source : m_deferredSourceAdding) {
-			m_sources.push_back(source);
-		}
-		m_deferredSourceAdding.clear();
+		// source is only incremented here as elements would be skipped in
+		// the case that a source needs to be removed
+		++source;
 	}
+
+	m_processingSources = false;
+
+	for (auto& source : m_deferredSourceAdding) {
+		m_sources.push_back(source);
+	}
+	m_deferredSourceAdding.clear();
 }
 
-ParticleEffectIndex ParticleManager::addEffect(ParticleEffectPtr effect) {
+ParticleEffectHandle ParticleManager::addEffect(ParticleEffectPtr effect)
+{
+	// we don't need this on standalone so remove the effect and return something invalid
+	if (Is_standalone) {
+		delete effect;
+
+		return ParticleEffectHandle::invalid();
+	}
+
 	Assertion(effect, "Invalid effect pointer passed!");
 
 #ifndef NDEBUG
@@ -218,7 +232,7 @@ ParticleEffectIndex ParticleManager::addEffect(ParticleEffectPtr effect) {
 		// This check is a bit expensive and will only be used in debug
 		auto index = getEffectByName(effect->getName());
 
-		if (index >= 0) {
+		if (index.isValid()) {
 			Warning(LOCATION, "Effect with name '%s' already exists!", effect->getName().c_str());
 			return index;
 		}
@@ -227,7 +241,7 @@ ParticleEffectIndex ParticleManager::addEffect(ParticleEffectPtr effect) {
 
 	m_effects.push_back(std::shared_ptr<ParticleEffect>(effect));
 
-	return static_cast<ParticleEffectIndex>(m_effects.size() - 1);
+	return ParticleEffectHandle(static_cast<ParticleEffectHandle::impl_type>(m_effects.size() - 1));
 }
 
 void ParticleManager::pageIn() {
@@ -236,7 +250,8 @@ void ParticleManager::pageIn() {
 	}
 }
 
-ParticleSourceWrapper ParticleManager::createSource(ParticleEffectIndex index) {
+ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
+{
 	ParticleEffectPtr eff = this->getEffect(index);
 	ParticleSourceWrapper wrapper;
 
@@ -247,7 +262,12 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectIndex index) {
 
 		// UGH, HACK! To implement the source wrapper we need constant pointers to all sources.
 		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
-		m_sources.reserve(m_sources.size() + childEffects.size());
+		if (m_processingSources) {
+			// If we are already in our onFrame, we need to apply the hack to the right vector though
+			m_deferredSourceAdding.reserve(m_sources.size() + childEffects.size());
+		} else {
+			m_sources.reserve(m_sources.size() + childEffects.size());
+		}
 
 		for (auto& effect : childEffects) {
 			ParticleSource* source = createSource();
@@ -274,16 +294,18 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectIndex index) {
 
 void ParticleManager::clearSources() {
 	m_sources.clear();
+	m_deferredSourceAdding.clear();
 }
 
 namespace util {
-ParticleEffectIndex parseEffect(const SCP_string& objectName) {
+ParticleEffectHandle parseEffect(const SCP_string& objectName)
+{
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
 	auto idx = ParticleManager::get()->getEffectByName(name);
 
-	if (idx < 0) {
+	if (!idx.isValid()) {
 		if (objectName.empty()) {
 			error_display(0, "Unknown particle effect name '%s' encountered!", name.c_str());
 		} else {
@@ -297,14 +319,15 @@ ParticleEffectIndex parseEffect(const SCP_string& objectName) {
 }
 
 namespace internal {
-ParticleEffectIndex parseEffectElement(EffectType forcedType, const SCP_string& name) {
+ParticleEffectHandle parseEffectElement(EffectType forcedType, const SCP_string& name)
+{
 	if (!optional_string("$New Effect")) {
 		SCP_string newName;
 		stuff_string(newName, F_NAME);
 
 		auto index = ParticleManager::get()->getEffectByName(newName);
 
-		if (index < 0) {
+		if (!index.isValid()) {
 			error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
 		}
 		if (forcedType != EffectType::Invalid) {
@@ -338,18 +361,38 @@ bool required_string_if_new(const char* token, bool no_create) {
 	return true;
 }
 
-int parseAnimation(bool critical) {
-	SCP_string name;
-	stuff_string(name, F_FILESPEC);
+SCP_vector<int> parseAnimationList(bool critical) {
 
-	auto handle = bm_load_animation(name.c_str());
+	SCP_vector<SCP_string> bitmap_strings;
+	
+	// check to see if we are parsing a single value or list
+	ignore_white_space();
+	if (*Mp == '(') {
+		// list of names case
+		stuff_string_list(bitmap_strings);
+	}
+	else {
+		// single name case
+		SCP_string name;
+		stuff_string(name, F_FILESPEC);
+		bitmap_strings.push_back(name);
+	}
+	
+	SCP_vector<int> handles;
 
-	if (handle < 0) {
-		int level = critical ? 1 : 0;
-		error_display(level, "Failed to load effect %s!", name.c_str());
+	for (auto const &name: bitmap_strings) {
+		auto handle = bm_load_animation(name.c_str());
+		if (handle >= 0) {
+			handles.push_back(handle);
+		}
+		else {
+			int level = critical ? 1 : 0;
+			error_display(level, "Failed to load effect %s!", name.c_str());
+		}
 	}
 
-	return handle;
+	return handles;
 }
+
 }
 }

@@ -11,7 +11,6 @@
 
 #ifndef _FREESPACE_H
 #define _FREESPACE_H
-#ifndef STAMPER_PROGRAM							// because of all the dependancies, I have to do this...yuck!!!  MWA 7/21/97
 
 #include "camera/camera.h"
 #include "globalincs/pstypes.h"
@@ -36,8 +35,8 @@ extern fix Frametime;
 extern float flRealframetime;
 extern float flFrametime;
 extern fix Missiontime;
-extern int Last_frame_timestamp; // A timestamp for when the previous frame ended
-extern fix Skybox_timestamp;	// A timestamp for animated skyboxes -MageKing17
+extern TIMESTAMP Last_frame_timestamp;			// A timestamp for when the previous frame ended, in mission time
+extern UI_TIMESTAMP Last_frame_ui_timestamp;	// Ditto, in real time (independent of pause and time compression)
 
 // 0 - 4
 extern int Game_skill_level;
@@ -59,17 +58,11 @@ extern int Game_subspace_effect;
 // The current mission being played.
 extern char Game_current_mission_filename[MAX_FILENAME_LEN];
 
-// game's CDROM directory
-extern char Game_CDROM_dir[MAX_PATH_LEN];
-
 // if the ships.tbl the player has is valid
 extern int Game_ships_tbl_valid;
 
 // if the weapons.tbl the player has is valid
 extern int Game_weapons_tbl_valid;
-
-// to disable networking at runtime
-extern int Networking_disabled;
 
 // this is a mission actually designed at Volition
 #define MAX_BUILTIN_MISSIONS					100
@@ -93,7 +86,7 @@ typedef struct fs_builtin_mission {
 // mission management -------------------------------------------------
 
 // loads in the currently selected mission
-int game_start_mission();		
+bool game_start_mission();		
 
 // shutdown a mission
 void game_level_close();
@@ -102,10 +95,12 @@ void game_level_close();
 // gameplay stuff -----------------------------------------------------
 
 // stop the game (mission) timer
-void game_stop_time();
+void game_stop_time(bool by_os_focus = false);
+
+bool game_time_is_stopped();
 
 // start the game (mission) timer
-void game_start_time();
+void game_start_time(bool by_os_focus = false);
 
 // call whenever in a loop or if you need to get a keypress
 int game_check_key();
@@ -128,7 +123,7 @@ void change_time_compression(float multiplier);
 // call this to set frametime properly (once per frame)
 void game_set_frametime(int state);
 
-// overall frametime of game, indepedent of mission timer
+// overall frametime of game in fix units (seconds * 65536), independent of mission timer
 fix game_get_overall_frametime();
 
 // Used to halt all looping game sounds
@@ -155,7 +150,7 @@ bool game_using_low_mem();
 // misc ---------------------------------------------------------------
 
 // lookup the specified filename. return an fs_builtin_mission* if found, NULL otherwise
-fs_builtin_mission *game_find_builtin_mission(char *filename);
+const fs_builtin_mission *game_find_builtin_mission(const char *filename);
 
 
 
@@ -174,10 +169,6 @@ void game_flash( float r, float g, float b );
 // cap range from 0 to 1
 void big_explosion_flash(float flash);
 
-// Call once a frame to diminish the
-// flash effect to 0.
-void game_flash_diminish();
-
 //================================================================
 
 // Call at the beginning of each frame
@@ -187,30 +178,18 @@ void game_whack_reset();
 void game_whack_apply( float x, float y );
 
 // call to apply a "shudder"
-void game_shudder_apply(int time, float intensity);
+void game_shudder_apply(int time, float intensity, bool perpetual = false, bool everywhere = false);
 
 //===================================================================
 
-// make sure a CD is in the drive before continuing (returns 1 to continue, otherwise 0).
-int game_do_cd_check(char *volume_name=NULL);
-int game_do_cd_check_specific(char *volume_name, int cdnum);
-int find_freespace_cd(char *volume_name=NULL);
-int set_cdrom_path(int drive_num);
-
 // Used to tell the player that a feature is disabled by build settings
 void game_feature_disabled_popup();
-
-//	Return version string for build.
-void get_version_string(char *str, int max_size);
 
 // format the specified time (fixed point) into a nice string
 void game_format_time(fix m_time,char *time_str);
 
 // if the game is running using hacked data
 int game_hacked_data();
-
-// show the oem upsell screens (end of campaign, or close of game
-void oem_upsell_show_screens();
 
 // calls to be executed when the game is put in or restored from minimized or inactive state
 void game_pause();
@@ -222,10 +201,9 @@ extern camid Main_camera;
 extern void game_level_init();
 extern void game_post_level_init();
 extern camid game_render_frame_setup();
-extern void game_render_frame(camid cid);
+extern void game_render_frame(camid cid, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void game_simulation_frame();
 extern void game_update_missiontime();
 extern void game_render_post_frame();
 
-#endif			// endif of #ifndef STAMPER_PROGRAM
-#endif 
+#endif

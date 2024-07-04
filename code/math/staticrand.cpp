@@ -7,28 +7,26 @@
  *
 */ 
 
-
-
 #include "math/staticrand.h"
 #include "math/vecmat.h"
+#include "utils/Random.h"
 
-
-int Semirand_inited = 0;
-int Semirand[SEMIRAND_MAX];
+bool Semirand_inited = false;
+unsigned int Semirand[SEMIRAND_MAX];
 
 /**
  * @brief Initialize Semirand array. Doesn't have to be called.
  */
 void init_semirand()
 {
-	int	i;
+	Semirand_inited = true;
 
-	Semirand_inited = 1;
-
-	for (i=0; i<SEMIRAND_MAX; i++)
-		Semirand[i] = (myrand() << 15) + myrand();
+	// Originally this made a 30-bit rand by sticking two 15-bit rands from myrand() together. Instead we trim Random::next() down to size.
+	for (auto & number : Semirand)
+		number = (unsigned) (util::Random::next() & STATIC_RAND_MAX);
 }
 
+// TODO: figure out what to do with these
 /**
  * @brief Return a pseudo random 32 bit value given a reasonably small number.
  *
@@ -37,17 +35,16 @@ void init_semirand()
  */
 int static_rand(int num)
 {
-	int	a, b, c;
-
-	if (num < 0) 
+	if (num < 0)
 		num *= -1;
 
 	if (!Semirand_inited)
 		init_semirand();
 
-	a = num & (SEMIRAND_MAX - 1);
-	b = (num >> SEMIRAND_MAX_LOG) & (SEMIRAND_MAX - 1);
-	c = (num >> (2 * SEMIRAND_MAX_LOG)) & (SEMIRAND_MAX - 1);
+	const unsigned int num_unsigned = num;
+	auto a = num_unsigned & (SEMIRAND_MAX - 1);
+	auto b = (num_unsigned >> SEMIRAND_MAX_LOG) & (SEMIRAND_MAX - 1);
+	auto c = (num_unsigned >> (2 * SEMIRAND_MAX_LOG)) & (SEMIRAND_MAX - 1);
 
 	return Semirand[a] ^ Semirand[b] ^ Semirand[c];
 }
@@ -60,10 +57,7 @@ int static_rand(int num)
  */
 float static_randf(int num)
 {
-	int	a;
-
-	a = static_rand(num);
-
+	unsigned int	a = static_rand(num);
 	return (a & 0xffff) / 65536.0f;
 }
 
@@ -94,16 +88,14 @@ int static_rand_range(int num, int min, int max)
  */
 float static_randf_range(int num, float min, float max)
 {
-	float	rval;
-	
-	rval = static_randf(num);
+	float rval = static_randf(num);
 	rval = rval * (max - min) + min;
 
 	return rval;
 }
 
 /**
- * @brief [To be described]
+ * @brief Create a random, normalized vector in unit sphere
  *
  * @param num Seed input number
  * @param vp Vector
@@ -118,6 +110,20 @@ void static_randvec(int num, vec3d *vp)
 }
 
 /**
+ *
+ * @brief Create a random, unnormalized vector in the (half) unit cube
+ *
+ * @param num Seed input vector
+ * @param vp Vector
+ */
+void static_randvec_unnormalized(int num, vec3d* vp)
+{
+	vp->xyz.x = static_randf(num) - 0.5f;
+	vp->xyz.y = static_randf(num + 1) - 0.5f;
+	vp->xyz.z = static_randf(num + 2) - 0.5f;
+}
+
+/**
  * @brief Randomly perturb a vector around a given (normalized vector) or optional orientation matrix.
  *
  * @param num
@@ -126,17 +132,17 @@ void static_randvec(int num, vec3d *vp)
  * @param max_angle
  * @param orient
  */
-void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient)
+void static_rand_cone(int num, vec3d *out, const vec3d* const in, float max_angle, const matrix* const orient)
 {
 	vec3d t1, t2;
-	matrix *rot;
+	const matrix *rot;
 	matrix m;
 
 	// get an orientation matrix
-	if(orient != NULL){
+	if(orient != nullptr){
 		rot = orient;
 	} else {
-		vm_vector_2_matrix(&m, in, NULL, NULL);
+		vm_vector_2_matrix(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 	
@@ -150,15 +156,46 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 	vm_rot_point_around_line(out, &t2, fl_radians(static_randf_range(num+2,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
+//generates a random vector in a cone, with a min amd max angle. 
+//Clone of vm_vec_random_cone overload of the same function, adapted to use static_randf_range
+void static_rand_cone(int num, vec3d* out, const vec3d* const in, float min_angle, float max_angle, const matrix* const orient)
+{
+	vec3d temp;
+	const matrix* rot;
+	matrix m;
+
+	if (max_angle < min_angle) {
+		std::swap(min_angle, max_angle);
+	}
+
+	// get an orientation matrix
+	if (orient != nullptr) {
+		rot = orient;
+	}
+	else {
+		vm_vector_2_matrix(&m, in, nullptr, nullptr);
+		rot = &m;
+	}
+
+	// Get properly distributed spherical coordinates (DahBlount)
+	// This might not seem intuitive, but the min_angle is the angle that will have a larger z coordinate
+	float z = static_randf_range(num, cosf(fl_radians(max_angle)), cosf(fl_radians(min_angle))); // Take a 2-sphere slice
+	float phi = static_randf_range(num+1, 0.0f, PI2);
+	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
+
+	vm_vec_unrotate(out, &temp, rot); // We find the final vector by rotating temp to the correct orientation
+}
+
+
 /////////////////////////////////////////////////////////////////////
 // Alternate random number generator, that doesn't affect rand() sequence
 /////////////////////////////////////////////////////////////////////
-#define RND_MASK	0x6000
-#define RND_MAX	0x7fff
-int Rnd_seed = 1;
+constexpr unsigned int RND_MASK = 0x6000;
+constexpr int RND_MAX = 0x7fff;
+unsigned int Rnd_seed = 1;
 
-/** 
- * @brief Seed the alternative random number generator. 
+/**
+ * @brief Seed the alternative random number generator.
  * Doesn't have to be called.
  *
  * @param seed Seed input number
@@ -175,11 +212,10 @@ void init_static_rand_alt(int seed)
  */
 int static_rand_alt()
 {
-	static int x=Rnd_seed;
-	int old_x;
-	old_x = x;
-	x >>= 1;
-	if ( old_x & 1 ) {
+	static unsigned int x=Rnd_seed;
+	unsigned int old_x = x;
+	x >>= 1u;
+	if ( old_x & 1u ) {
 		x ^= RND_MASK;
 	}
 	return x;

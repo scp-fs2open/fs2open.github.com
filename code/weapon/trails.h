@@ -25,18 +25,25 @@ typedef struct trail_info {
 	float w_end;			// ending width
 	float a_start;			// starting alpha
 	float a_end;			// ending alpha
-	float max_life;		// max_life for a section
-	int stamp;				// spew timestamp
+	float a_decay_exponent; // applied to val to determine final alpha
+	float max_life;			// max_life for a section, in seconds
+	int spew_duration;		// in milliseconds
 	generic_bitmap texture;	// texture to use for trail
+	float texture_stretch;  // stretches ... the texture
 	int n_fade_out_sections;// number of initial sections used for fading out start 'edge' of the effect
+	float spread;           // casues the trail points to spread and drift away over its lifetime
+	                        // trail points move away sideways randomly between 0 - spread m/s
 } trail_info;
 
 typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
 	vec3d	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
-	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
+	vec3d	vel[NUM_TRAIL_SECTIONS];	// velocities of trail points (only non-zero if spread is set)
+	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out for normal trails
+										// uv offset for single segment trails
 	bool	object_died;					// set to zero as long as object	
-	int		trail_stamp;					// trail timestamp	
+	TIMESTAMP	trail_stamp;				// for when this trail expires
+	bool	single_segment;				// special case where the entire trail is a single, scrolling rectangle
 
 	// trail info
 	trail_info info;							// this is passed when creating a trail
@@ -44,6 +51,8 @@ typedef struct trail {
 	struct	trail * next;
 
 } trail;
+
+void trail_info_init(trail_info* t_info);
 
 // Call at the start of freespace to init trails
 
@@ -62,8 +71,8 @@ void trail_render_all();
 // to deal with trails:
 
 // Returns -1 if failed
-trail *trail_create(trail_info *info);
-void trail_add_segment( trail *trailp, vec3d *pos );
+trail *trail_create(trail_info *info, bool const_vel = false);
+void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient, vec3d* velocity = nullptr );
 void trail_set_segment( trail *trailp, vec3d *pos );
 void trail_object_died( trail *trailp );
 int trail_stamp_elapsed( trail *trailp );

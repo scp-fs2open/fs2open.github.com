@@ -30,6 +30,7 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	// (we used to do a memcpy here, but that doesn't work any longer, so let's just assign the values we need)
 	Hud_obs_ship.clear();
 	strcpy_s(Hud_obs_ship.ship_name, shipp->ship_name);
+	Hud_obs_ship.display_name = shipp->display_name;
 	Hud_obs_ship.team = shipp->team;
 	Hud_obs_ship.ai_index = shipp->ai_index;
 	Hud_obs_ship.flags = shipp->flags;
@@ -38,7 +39,6 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	Hud_obs_ship.wingnum = shipp->wingnum;
 	Hud_obs_ship.alt_type_index = shipp->alt_type_index;
 	Hud_obs_ship.callsign_index = shipp->callsign_index;
-	memcpy(&Hud_obs_ship.np_updates, shipp->np_updates, MAX_PLAYERS * sizeof(np_update));
 	Hud_obs_ship.ship_max_hull_strength = shipp->ship_max_hull_strength;
 	Hud_obs_ship.ship_max_shield_strength = shipp->ship_max_shield_strength;
 	Hud_obs_ship.weapons = shipp->weapons;
@@ -54,30 +54,6 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	hud_init_target_static();
 }
 
-void hud_obs_render_player(int loc,net_player *pl)
+void hud_obs_render_player(int  /*loc*/,net_player * /*pl*/)
 {
-}
-
-void hud_obs_render_players_all()
-{
-	int idx,count;
-
-	// render kills and stats information for all players
-	count = 0;
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) ){
-			hud_obs_render_player(count,&Net_players[idx]);
-		}
-	}
-}
-
-/**
- * Render any specific observer stuff
- */
-void hud_render_observer()
-{
-	Assert((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-
-	// render individual player text
-	hud_obs_render_players_all();
 }

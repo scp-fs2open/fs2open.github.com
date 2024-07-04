@@ -13,11 +13,11 @@
 
 #include "stdafx.h"
 #include "FRED.h"
-#include "FolderDlg.h"
 
 #include <stdlib.h>
 //#include <atlbase.h>
 //#include <atlconv.h>
+#include <shlobj.h>
 
 #include "FREDDoc.h"
 #include "FREDView.h"
@@ -43,6 +43,7 @@
 #include "ship/ship.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
+#include "scripting/global_hooks.h"
 
 extern int Num_objects;
 
@@ -59,13 +60,6 @@ IMPLEMENT_DYNCREATE(CFREDDoc, CDocument)
 
 BEGIN_MESSAGE_MAP(CFREDDoc, CDocument)
 	//{{AFX_MSG_MAP(CFREDDoc)
-	ON_COMMAND(ID_EDIT_DELETE, OnEditDelete)
-	ON_COMMAND(ID_DUPLICATE, OnDuplicate)
-	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
-	ON_COMMAND(ID_EDIT_CUT, OnEditCut)
-	ON_COMMAND(ID_EDIT_HOLD, OnEditHold)
-	ON_COMMAND(ID_EDIT_FETCH, OnEditFetch)
-	ON_COMMAND(ID_EDIT_PASTE, OnEditPaste)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_COMMAND(ID_FILE_IMPORT_FSM, OnFileImportFSM)
 	//}}AFX_MSG_MAP
@@ -77,18 +71,13 @@ int Local_modified = 0;
 int Undo_available = 0;
 int Undo_count = 0;
 
-// From Missionsave.cpp
-extern int Num_unknown_ship_classes;
-extern int Num_unknown_weapon_classes;
-extern int Num_unknown_loadout_classes;
-
 
 CFREDDoc::CFREDDoc() {
 	int i;
 
 	FREDDoc_ptr = this;
 
-	for (i = 0; i < BACKUP_DEPTH; i++)
+	for (i = 0; i < MISSION_BACKUP_DEPTH; i++)
 		undo_desc[i].Empty();
 }
 
@@ -100,12 +89,16 @@ void CFREDDoc::AssertValid() const {
 }
 #endif //_DEBUG
 
-int CFREDDoc::autoload() {
+bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
-	int i, r;
+	int i;
+	bool r;
 	FILE *fp;
 
-	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+		return 0;
+	}
+
 	strcat_s(name, MISSION_BACKUP_NAME);
 	strcpy_s(backup_name, name);
 	strcat_s(name, ".002");
@@ -122,8 +115,7 @@ int CFREDDoc::autoload() {
 	}
 
 	// Load Backup.002
-	//	editor_init_mission();  
-	r = load_mission(name);
+	r = load_mission(name, MPF_FAST_RELOAD);
 	Update_window = 1;
 
 	// Delete Backup.001
@@ -132,7 +124,7 @@ int CFREDDoc::autoload() {
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 
 	// Rename Backups. .002 becomes .001, .003 becomes .002, etc.
-	for (i = 1; i < BACKUP_DEPTH; i++) {
+	for (i = 1; i < MISSION_BACKUP_DEPTH; i++) {
 		sprintf(backup_name + len, ".%.3d", i + 1);
 		sprintf(name + len, ".%.3d", i);
 		cf_rename(backup_name, name, CF_TYPE_MISSIONS);
@@ -163,7 +155,7 @@ int CFREDDoc::autosave(char *desc) {
 		return -1;
 	}
 
-	for (i = BACKUP_DEPTH; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		undo_desc[i] = undo_desc[i - 1];
 	}
 
@@ -187,7 +179,10 @@ int CFREDDoc::check_undo() {
 		return 0;
 	}
 
-	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+		return 0;
+	}
+
 	strcat_s(name, MISSION_BACKUP_NAME);
 	strcat_s(name, ".002");
 
@@ -217,7 +212,7 @@ void CFREDDoc::editor_init_mission() {
 	recreate_dialogs();
 }
 
-int CFREDDoc::load_mission(char *pathname, int flags) {
+bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// make sure we're in the correct working directory!!!!!!
 	chdir(Fred_base_dir);
 
@@ -232,20 +227,25 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
-	clear_mission();
+	clear_mission(flags & MPF_FAST_RELOAD);
 
-	if (parse_main(pathname, flags)) {
-		if (flags & MPF_IMPORT_FSM) {
-			sprintf(name, "Unable to import the file \"%s\".", pathname);
-			Fred_view_wnd->MessageBox(name);
+	// message 1: required version
+	if (!parse_main(pathname, flags)) {
+		auto term = (flags & MPF_IMPORT_FSM) ? "import" : "load";
+
+		// the version will have been assigned before loading was aborted
+		if (!gameversion::check_at_least(The_mission.required_fso_version)) {
+			sprintf(name, "The file \"%s\" cannot be %sed because it requires FSO version %s", pathname, term, format_version(The_mission.required_fso_version, true).c_str());
 		} else {
-			sprintf(name, "Unable to load the file \"%s\".", pathname);
-			Fred_view_wnd->MessageBox(name);
+			sprintf(name, "Unable to %s the file \"%s\".", term, pathname);
 		}
+
+		Fred_view_wnd->MessageBox(name);
 		create_new_mission();
-		return -1;
+		return false;
 	}
 
+	// message 2: unknown classes
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
 			char msg[256];
@@ -254,6 +254,16 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 		} else {
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}
+	}
+
+	// message 3: warning about saving under a new version
+	if (!(flags & MPF_IMPORT_FSM) && (The_mission.required_fso_version != LEGACY_MISSION_VERSION) && (MISSION_VERSION > The_mission.required_fso_version)) {
+		SCP_string msg = "This mission's file format is ";
+		msg += format_version(The_mission.required_fso_version, true);
+		msg += ".  When you save this mission, the file format will be migrated to ";
+		msg += format_version(MISSION_VERSION, true);
+		msg += ".  FSO versions earlier than this will not be able to load the mission.";
+		Fred_view_wnd->MessageBox(msg.c_str());
 	}
 
 	obj_merge_created_list();
@@ -283,7 +293,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name)) {  // need to fix name
 					update_sexp_references(old_name, name);
-					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k = 0; k < Num_reinforcements; k++)
 						if (!strcmp(old_name, Reinforcements[k].name)) {
@@ -313,8 +323,8 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 			}
 		}
 		// double check the used pool is empty
-		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
-			if (used_pool[j] != 0) {
+		for (j = 0; j < weapon_info_size(); j++) {
+			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
 				Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[j].name, i + 1);
 
 				// add the weapon as a new entry
@@ -335,14 +345,14 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 		// if this is a ship, check it, and mark its possible alternate name down in the auxiliary array
 		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0)) {
 			if (Ships[objp->instance].alt_type_index >= 0) {
-				mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
+				strcpy_s(Fred_alt_names[objp->instance], mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index));
 
 				// also zero it
 				Ships[objp->instance].alt_type_index = -1;
 			}
 
 			if (Ships[objp->instance].callsign_index >= 0) {
-				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index, Fred_callsigns[objp->instance]);
+				strcpy_s(Fred_callsigns[objp->instance], mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index));
 
 				// also zero it
 				Ships[objp->instance].callsign_index = -1;
@@ -360,45 +370,17 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 
 	recreate_dialogs();
 
-	return 0;
-}
+	// This hook will allow for scripts to know when a mission has been loaded
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionLoad->isActive()) {
+		scripting::hooks::FredOnMissionLoad->run();
+	}
 
-void CFREDDoc::OnDuplicate() {
-	// TODO: Add your command handler code here
-
+	return true;
 }
 
 void CFREDDoc::OnEditClearAll() {
 	DeleteContents();
-}
-
-void CFREDDoc::OnEditCopy() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditCut() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditDelete() {
-	// TODO: Add your command handler code here
-}
-
-void CFREDDoc::OnEditFetch() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditHold() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditPaste() {
-	// TODO: Add your command handler code here
-
 }
 
 void CFREDDoc::OnEditUndo() {
@@ -450,15 +432,9 @@ void CFREDDoc::OnFileImportFSM() {
 
 	memset(dest_directory, 0, sizeof(dest_directory));
 
-	// get location to save to    
-#if ( _MFC_VER >= 0x0700 )
-	//ITEMIDLIST fs2_mission_pidl = {0};
-
-	//SHParseDisplayName(A2CW(fs2_mission_path), NULL, fs2_mission_pidl, 0, 0);
-
+	// get location to save to
 	BROWSEINFO bi;
 	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
-	//bi.pidlRoot = &fs2_mission_pidl;
 	bi.pidlRoot = NULL;
 	bi.pszDisplayName = dest_directory;
 	bi.lpszTitle = "Select a location to save in";
@@ -473,19 +449,19 @@ void CFREDDoc::OnFileImportFSM() {
 		return;
 
 	SHGetPathFromIDList(ret_val, dest_directory);
-#else
-	CFolderDialog dlgFolder(_T("Select a location to save in"), fs2_mission_path, NULL);
-	if (dlgFolder.DoModal() != IDOK)
-		return;
 
-	strcpy_s(dest_directory, dlgFolder.GetFolderPath());
-#endif
+	if (*dest_directory == '\0')
+		return;
 
 	// clean things up first
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);
 
-	clear_mission();
+	clear_mission(true);
+
+	int num_files = 0;
+	int successes = 0;
+	char dest_path[MAX_PATH_LEN] = "";
 
 	// process all missions
 	POSITION pos(dlgFile.GetStartPosition());
@@ -493,9 +469,9 @@ void CFREDDoc::OnFileImportFSM() {
 		char *ch;
 		char filename[1024];
 		char fs1_path[MAX_PATH_LEN];
-		char dest_path[MAX_PATH_LEN];
 
 		CString fs1_path_mfc(dlgFile.GetNextPathName(pos));
+		num_files++;
 		CFred_mission_save save;
 
 		DWORD attrib;
@@ -514,7 +490,7 @@ void CFREDDoc::OnFileImportFSM() {
 		strcpy_s(fs1_path, fs1_path_mfc);
 
 		// load mission into memory
-		if (load_mission(fs1_path, MPF_IMPORT_FSM))
+		if (!load_mission(fs1_path, MPF_IMPORT_FSM | MPF_FAST_RELOAD))
 			continue;
 
 		// get filename
@@ -553,11 +529,32 @@ void CFREDDoc::OnFileImportFSM() {
 			continue;
 
 		// success
+		successes++;
 	}
 
-	create_new_mission();
+	if (num_files > 1)
+	{
+		create_new_mission();
+		Fred_view_wnd->MessageBox("Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+	}
+	else if (num_files == 1)
+	{
+		if (successes == 1)
+			SetModifiedFlag(FALSE);
 
-	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+		if (Briefing_dialog) {
+			Briefing_dialog->restore_editor_state();
+			Briefing_dialog->update_data(1);
+		}
+
+		if (successes == 1)
+		{
+			// these aren't done automatically for imports
+			theApp.AddToRecentFileList((LPCTSTR)dest_path);
+			SetTitle((LPCTSTR)Mission_filename);
+		}
+	}
+
 	recreate_dialogs();
 }
 
@@ -571,33 +568,76 @@ BOOL CFREDDoc::OnNewDocument() {
 	return TRUE;
 }
 
-BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
-	char name[1024];
-
-	if (pathname)
-		strcpy_s(mission_pathname, pathname);
-
+BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
+{
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
 
-	auto len = strlen(mission_pathname);
-	strcpy_s(name, mission_pathname);
-	if (name[len - 4] == '.')
-		len -= 4;
+	auto sep_ch = strrchr(pathname, '\\');
+	auto filename = (sep_ch != nullptr) ? (sep_ch + 1) : pathname;
+	auto len = strlen(filename);
 
-	name[len] = 0;  // drop extension
-	auto i = len;
-	while (i--)
-		if ((name[i] == '\\') || (name[i] == ':'))
-			break;
+	// drop extension and copy to Mission_filename
+	auto ext_ch = strrchr(filename, '.');
+	if (ext_ch != nullptr)
+		len = ext_ch - filename;
+	if (len >= 80)
+		len = 79;
+	strncpy(Mission_filename, filename, len);
+	Mission_filename[len] = 0;
 
-	strcpy_s(Mission_filename, name + i + 1);
-	//	for (i=1; i<=BACKUP_DEPTH; i++) {
-	//		sprintf(name + len, ".%.3d", i);
-	//		unlink(name);
-	//	}
+	// first, just grab the info of this mission
+	if (!parse_main(pathname, MPF_ONLY_MISSION_INFO))
+	{
+		*Mission_filename = 0;
+		return FALSE;
+	}
+	SCP_string created = The_mission.created;
+	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
+	time_t modified = res.m_time;
+	if (!res.found)
+	{
+		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
+		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
+	}
 
-	if (load_mission(mission_pathname)) {
+	// now check all the autosaves
+	SCP_string backup_name;
+	CFileLocation backup_res;
+	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
+	{
+		backup_name = MISSION_BACKUP_NAME;
+		char extension[5];
+		sprintf(extension, ".%.3d", i);
+		backup_name += extension;
+
+		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
+		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
+		{
+			SCP_string this_created = The_mission.created;
+			time_t this_modified = backup_res.m_time;
+
+			if (created == this_created && this_modified > modified)
+				break;
+		}
+
+		backup_name.clear();
+	}
+
+	// maybe load from the backup instead
+	if (!backup_name.empty())
+	{
+		SCP_string prompt = "Autosaved file ";
+		prompt += backup_name;
+		prompt += " has a file modification time more recent than the specified file.  Do you want to load the autosave instead?";
+		int z = Fred_view_wnd->MessageBox(prompt.c_str(), "Recover from autosave", MB_ICONQUESTION | MB_YESNO);
+		if (z == IDYES)
+			pathname = backup_res.full_name.c_str();
+	}
+
+	// now we can actually load either the original path or the backup path
+	if (!load_mission(pathname))
+	{
 		*Mission_filename = 0;
 		return FALSE;
 	}
@@ -608,23 +648,34 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	return TRUE;
 }
 
+// For tokenizing
+#define MAX_FILENAME_LEN_1	31
+#if (MAX_FILENAME_LEN_1) != (MAX_FILENAME_LEN - 1)
+#error MAX_FILENAME_LEN_1 must be equal to MAX_FILENAME_LEN - 1!
+#endif
+
 BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	CFred_mission_save save;
-	char name[1024];
 	DWORD attrib;
 	FILE *fp;
 
-	auto len = strlen(pathname);
-	strcpy_s(name, pathname);
-	if (name[len - 4] == '.')
-		len -= 4;
+	auto sep_ch = strrchr(pathname, '\\');
+	auto filename = (sep_ch != nullptr) ? (sep_ch + 1) : pathname;
+	auto len = strlen(filename);
 
-	name[len] = 0;  // drop extension
-	while (len--)
-		if ((name[len] == '\\') || (name[len] == ':'))
-			break;
+	if (len >= MAX_FILENAME_LEN)
+		Fred_main_wnd->MessageBox("The filename is too long for FreeSpace.  The game will not be able to read this file.  Max length, including extension, is " SCP_TOKEN_TO_STR(MAX_FILENAME_LEN_1) " characters.", NULL, MB_OK | MB_ICONEXCLAMATION);
 
-	strcpy_s(Mission_filename, name + len + 1);
+	// drop extension and copy to Mission_filename
+	auto ext_ch = strrchr(filename, '.');
+	if (ext_ch != nullptr)
+		len = ext_ch - filename;
+	if (len >= 80)
+		len = 79;
+	strncpy(Mission_filename, filename, len);
+	Mission_filename[len] = 0;
+
+
 	Fred_view_wnd->global_error_check();
 	if (Briefing_dialog) {
 		Briefing_dialog->update_data(1);
@@ -647,13 +698,13 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 		}
 	}
 
-	if (save.save_mission_file((char *) pathname)) {
+	if (save.save_mission_file(pathname)) {
 		Fred_main_wnd->MessageBox("An error occured while saving!", NULL, MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
 	SetModifiedFlag(FALSE);
-	if (load_mission((char *) pathname))
+	if (!load_mission(pathname, MPF_FAST_RELOAD))
 		Error(LOCATION, "Failed attempting to reload mission after saving.  Report this bug now!");
 
 	if (Briefing_dialog) {
@@ -662,7 +713,6 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	}
 
 	return TRUE;
-	//	return CDocument::OnSaveDocument(pathname);
 }
 
 void CFREDDoc::Serialize(CArchive& ar) {
@@ -765,7 +815,6 @@ SerializeInt(fp, mode, objp->signature);
 SerializeInt(fp, mode, objp->type);
 SerializeInt(fp, mode, objp->parent);
 SerializeInt(fp, mode, objp->parent_sig);
-SerializeInt(fp, mode, objp->parent_type);
 SerializeInt(fp, mode, objp->instance);
 SerializeInt(fp, mode, objp->flags);
 SerializeInt(fp, mode, objp->flags2);	// Goober5000 - code is obsolete, but I added this just in case
@@ -819,7 +868,7 @@ Assert((flag == 0) || (flag == 1));
 
 //	fp = cfopen(filename, flag ? "wb" : "rb");
 //	if (!fp)
-//		MessageBox(NULL, strerror(errno), "File Open Error!", MB_ICONSTOP);
+//		Fred_view_wnd->MessageBox(strerror(errno), "File Open Error!", MB_ICONSTOP);
 
 //	Find highest used object if writing.
 if (flag == 1) {

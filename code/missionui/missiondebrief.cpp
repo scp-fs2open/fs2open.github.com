@@ -25,6 +25,7 @@
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "mission/missiontraining.h"
 #include "missionui/chatbox.h"
 #include "missionui/missiondebrief.h"
 #include "missionui/missionpause.h"
@@ -39,6 +40,7 @@
 #include "network/multiutil.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -319,10 +321,10 @@ static int Rank_bitmap;
 static int Medal_bitmap;
 static int Badge_bitmap;
 
-static int Promoted;
+int Promoted;
 static int Debrief_accepted;
-static int Turned_traitor;
-static int Must_replay_mission;
+int Turned_traitor;
+int Must_replay_mission;
 
 static int Current_mode;
 static int New_mode;
@@ -337,7 +339,7 @@ static int Current_stage;
 static int Num_stages;
 static int Num_debrief_stages;
 static int Stage_voice = -1;
-static int Debrief_music_timeout = 0;
+static UI_TIMESTAMP Debrief_music_timeout;
 
 static int Multi_list_size;
 static int Multi_list_offset;
@@ -353,7 +355,7 @@ int Debrief_multi_voice_loaded = 0;
 static int Debrief_voices[MAX_DEBRIEF_STAGES];
 
 #define DEBRIEF_VOICE_DELAY 400				// time to delay voice playback when a new stage starts
-static int Debrief_cue_voice;					// timestamp to cue the playback of the voice
+static UI_TIMESTAMP Debrief_cue_voice;		// timestamp to cue the playback of the voice
 static int Debrief_first_voice_flag = 1;	// used to delay the first voice playback extra long
 
 static int Debriefing_paused = 0;
@@ -365,7 +367,7 @@ debriefing	Traitor_debriefing;				// used when player is a traitor
 
 // pointers to the active stages for this debriefing
 static debrief_stage *Debrief_stages[MAX_DEBRIEF_STAGES];
-static debrief_stage Promotion_stage, Badge_stage;
+debrief_stage Promotion_stage, Badge_stage;
 static debrief_stats_kill_info *Debrief_stats_kills = NULL;
 static debrief_multi_list_info Multi_list[MAX_PLAYERS];
 int Multi_list_select;
@@ -377,7 +379,7 @@ int Debrief_should_show_popup = 1;
 static int Debrief_skip_popup_already_shown = 0;
 
 void debrief_text_init();
-void debrief_accept(int ok_to_post_start_game_event = 1);
+bool debrief_can_accept();
 void debrief_kick_selected_player();
 
 
@@ -458,8 +460,9 @@ int Debrief_award_text_num_lines = 0;
 
 
 // prototypes, you know you love 'em
-void debrief_add_award_text(char *str);
+void debrief_add_award_text(const char *str);
 void debrief_award_text_clear();
+void debrief_replace_stage_text(debrief_stage &stage);
 
 
 
@@ -483,7 +486,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Medal"))) {
 		if (Medal_bitmap >= 0){
-			return Medals[Player->stats.m_medal_earned].name;
+			return Medals[Player->stats.m_medal_earned].get_display_name();
 		}
 
 	} else if (!stricmp(str, NOX("@Rank"))) {
@@ -493,7 +496,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned.back()].name;
+			return Medals[Player->stats.m_badge_earned.back()].get_display_name();
 		}
 	}
 
@@ -529,14 +532,6 @@ void debrief_load_voice_file(int voice_num, char *name)
 			break;
 		}
 
-		// couldn't load voice, ask user to insert CD (if necessary)
-
-		// if ( Debrief_voice_ask_for_cd ) {
-			// if ( game_do_cd_check() == 0 ) {
-				// Debrief_voice_ask_for_cd = 0;
-				// break;
-			// }
-		// }
 	}
 }
 
@@ -551,7 +546,7 @@ void debrief_voice_load_all()
 		if ( strlen(Debrief_stages[i]->voice) <= 0 ) {
 			continue;
 		}
-		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) ) {
+		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) != 0 ) {
 			debrief_load_voice_file(i, Debrief_stages[i]->voice);
 //			Debrief_voices[i] = audiostream_open(Debrief_stages[i]->voice, ASF_VOICE);
 		}
@@ -584,15 +579,15 @@ void debrief_voice_play()
 	}
 
 	// if in delayed start, see if delay has elapsed and start voice if so
-	if (Debrief_cue_voice) {
-		if (!timestamp_elapsed(Debrief_cue_voice)){
+	if (Debrief_cue_voice.isValid()) {
+		if (!ui_timestamp_elapsed(Debrief_cue_voice)){
 			return;
 		}
 
 		Stage_voice++;  // move up to next voice
 		if ((Stage_voice < Num_debrief_stages) && (Debrief_voices[Stage_voice] >= 0)) {
 			audiostream_play(Debrief_voices[Stage_voice], Master_voice_volume, 0);
-			Debrief_cue_voice = 0;  // indicate no longer in delayed start checking
+			Debrief_cue_voice = UI_TIMESTAMP::invalid();  // indicate no longer in delayed start checking
 		}
 
 		return;
@@ -604,7 +599,7 @@ void debrief_voice_play()
 	}
 
 	// set voice to play in a little while from now.
-	Debrief_cue_voice = timestamp(DEBRIEF_VOICE_DELAY);
+	Debrief_cue_voice = ui_timestamp(DEBRIEF_VOICE_DELAY);
 }
 
 // stop playback of the voice for a particular briefing stage
@@ -706,6 +701,9 @@ void debrief_set_multi_clients( int stage_count, int active_stages[] )
 	// set the pointers to the debriefings for this client
 	for (i = 0; i < stage_count; i++) {
 		Debrief_stages[Num_debrief_stages++] = &Debriefing->stages[active_stages[i]];
+		// in multi, debriefing text replacement must occur client-side
+		// update most recently added stage only, in case replacement has side effects
+		debrief_replace_stage_text(*Debrief_stages[Num_debrief_stages - 1]);
 	}
 
 	Debrief_multi_stages_loaded = 1;
@@ -788,7 +786,9 @@ int debrief_set_stages_and_multi_stuff()
 	}
 
 	for (i=0; i<debriefp->num_stages; i++) {
-		if (eval_sexp(debriefp->stages[i].formula) == 1) {
+		if (eval_sexp(debriefp->stages[i].formula) == SEXP_TRUE) {
+			// replacement in single-player and for host/server in multi
+			debrief_replace_stage_text(debriefp->stages[i]);
 			Debrief_stages[Num_debrief_stages++] = &debriefp->stages[i];
 		}
 	}
@@ -918,16 +918,18 @@ int debrief_find_persona_index()
 // Goober5000
 // V sez: "defaults to number 9 (Petrarch) for non-volition missions
 // this is an ugly, nasty, hateful way of doing this, but it saves us changing the missions at this point"
-void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index, int default_to_base = 0)
+void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, int persona_index, int default_to_base = 0)
 {
 	if (persona_index >= 0)
 	{
-		// get voice file
-		sprintf(voice_dest, NOX("%d_%s"), persona_index, voice_base);
+		// get voice file, also check for too long base file names via the return value of snprintf
+		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
+		{
+			// if it exists, we're done
+			if (cf_exists_full_ext(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list))
+				return;
+		}
 
-		// if it exists, we're done
-		if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
-			return;
 	}
 
 	// that didn't work, so use the default
@@ -935,14 +937,16 @@ void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index,
 	// use the base file; don't prepend anything to it
 	if (default_to_base)
 	{
-		strcpy(voice_dest, voice_base);
+		strncpy(voice_dest, voice_base, buf_size);
 	}
 	// default to Petrarch
 	else
 	{
-		strcpy(voice_dest, "9_");
-		strcpy(voice_dest + 2, voice_base);
+		strncpy(voice_dest, "9_", buf_size);
+		strncat(voice_dest, voice_base, buf_size-2);
 	}
+	// Ensure null terminator
+	voice_dest[buf_size-1] = '\0';
 }
 
 void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_version_index)
@@ -992,7 +996,7 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
 		Medal_bitmap = bm_load(buf);
 
-		debrief_add_award_text(Medals[Player->stats.m_medal_earned].name);
+		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_name());
 	}
 	
 	// handle promotions
@@ -1002,7 +1006,7 @@ void debrief_award_init()
 		Rank_bitmap = bm_load(buf);
 
 		// see if we have a persona
-		int persona_index = debrief_find_persona_index();
+		int persona_index = The_mission.debriefing_persona;
 
 		// use persona-specific promotion text if it exists; otherwise, use default
 		if (Ranks[Promoted].promotion_text.find(persona_index) != Ranks[Promoted].promotion_text.end()) {
@@ -1013,9 +1017,9 @@ void debrief_award_init()
 		Promotion_stage.recommendation_text = "";
 
 		// choose appropriate promotion voice for this mission
-		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base, persona_index);
+		debrief_choose_voice(Promotion_stage.voice, sizeof(Promotion_stage.voice), Ranks[Promoted].promotion_voice_base, persona_index);
 
-		debrief_add_award_text(Ranks[Promoted].name);
+		debrief_add_award_text(get_rank_display_name(&Ranks[Promoted]).c_str());
 	}
 
 	// handle badge earned
@@ -1025,7 +1029,7 @@ void debrief_award_init()
 		Badge_bitmap = bm_load(buf);
 
 		// see if we have a persona
-		int persona_index = debrief_find_persona_index();
+		int persona_index = The_mission.debriefing_persona;
 
 		// use persona-specific badge text if it exists; otherwise, use default
 		if (Medals[Player->stats.m_badge_earned.back()].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned.back()].promotion_text.end()) {
@@ -1036,9 +1040,9 @@ void debrief_award_init()
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
+		debrief_choose_voice(Badge_stage.voice, sizeof(Badge_stage.voice), Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_name());
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
@@ -1052,71 +1056,44 @@ void debrief_award_init()
 // mission a traitor.  The same debriefing always gets played
 void debrief_traitor_init()
 {
-	static int inited = 0;
+	Debrief_accepted = 0;
+	Turned_traitor = Must_replay_mission = 0;
 
-	if ( !inited ) {
-		debriefing		*debrief;
-		debrief_stage	*stagep;
-		int stage_num;
+	if (Player_ship->team == Iff_traitor) {
+		Turned_traitor = 1;
+
+		// if traitor, set up persona-specific traitor debriefing
+		auto stagep = &Traitor_debriefing.stages[0];
 		
-		try
-		{
-			read_file_text("traitor.tbl", CF_TYPE_TABLES);
-			reset_parse();
+		// see if we are using a traitor override
+		if (The_mission.traitor_override != nullptr) {
+			stagep->text = The_mission.traitor_override->text;
+			strcpy_s(stagep->voice, The_mission.traitor_override->voice_filename);
+			stagep->recommendation_text = The_mission.traitor_override->recommendation_text;
+		} else {
+			// see if we have a persona
+			int persona_index = The_mission.debriefing_persona;
 
-			// simplied form of the debriefing stuff.
-			debrief = &Traitor_debriefing;
-			required_string("#Debriefing_info");
+			// use persona-specific traitor text if it exists; otherwise, use default
+			if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
+				stagep->text = Traitor.debriefing_text[persona_index];
+			else
+				stagep->text = Traitor.debriefing_text[-1];
 
-			required_string("$Num stages:");
-			stuff_int(&debrief->num_stages);
-			Assert(debrief->num_stages == 1);
+			// choose appropriate traitor voice for this mission
+			debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
 
-			stage_num = 0;
-			stagep = &debrief->stages[stage_num++];
-			required_string("$Formula:");
-			stagep->formula = get_sexp_main();
-			required_string("$multi text");
-			stuff_string(stagep->text, F_MULTITEXT, NULL);
-			required_string("$Voice:");
-			char traitor_voice_file[MAX_FILENAME_LEN];
-			stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
-
-			// DKA 9/13/99	Only 1 traitor msg for FS2
-			//		if ( Player->main_hall ) {
-			//			strcpy_s(stagep->voice, NOX("3_"));
-			//		} else {
-			//			strcpy_s(stagep->voice, NOX("1_"));
-			//		}
-
-			// Goober5000
-			debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
-
-			required_string("$Recommendation text:");
-			stuff_string(stagep->recommendation_text, F_MULTITEXT, NULL);
-
-			inited = 1;
-		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
-			return;
+			stagep->recommendation_text = Traitor.recommendation_text;
 		}
 	}
 
-	// disable the accept button if in single player and I am a traitor
-	Debrief_accepted = 0;
-	Turned_traitor = Must_replay_mission = 0;
 	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
-		if (Player_ship->team == Iff_traitor){
-			Turned_traitor = 1;
-		}
-
 		if (Campaign.next_mission == Campaign.current_mission){
 			Must_replay_mission = 1;
 		}
 	}
 
+	// disable the accept button if in single player and I am a traitor
 	if (Turned_traitor || Must_replay_mission) {
 		Buttons[gr_screen.res][ACCEPT_BUTTON].button.hide();
 
@@ -1149,30 +1126,30 @@ void debrief_multi_list_scroll_up()
 {
 	// if we're at the beginning of the list, don't do anything
 	if(Multi_list_offset == 0){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise scroll up
 	Multi_list_offset--;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 void debrief_multi_list_scroll_down()
 {		
 	// if we can scroll down no further
 	if(Multi_list_size < Debrief_multi_list_team_max_display[gr_screen.res]){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	if((Multi_list_offset + Debrief_multi_list_team_max_display[gr_screen.res]) >= Multi_list_size){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise scroll down
 	Multi_list_offset++;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 // draw the connected net players
@@ -1299,14 +1276,18 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 	strcat(buffer, XSTR("\n\n\nDo you want to play the optional mission?", 1491));
 }
 
-// what to do when the accept button is hit
-void debrief_accept(int ok_to_post_start_game_event)
+bool debrief_can_accept()
 {
-	extern int Weapon_energy_cheat;
-	int go_loop = 0;
-	Weapon_energy_cheat=0;
+	return !(/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission);
+}
 
-	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
+// what to do when the accept button is hit
+void debrief_accept(int ok_to_post_start_game_event, bool API_Access)
+{
+	int go_loop = 0;
+
+	//Skip this bit if we're in API mode because the API handles these popups differently
+	if ( !debrief_can_accept() && (Game_mode & GM_CAMPAIGN_MODE) && !API_Access) {
 		const char *str;
 		int z;
 
@@ -1347,7 +1328,8 @@ void debrief_accept(int ok_to_post_start_game_event)
 		// mission that isn't in a campaign.
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 
-			mission_campaign_store_variables();
+			mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
+			mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
 
 			// check for possible mission loop
 			// check for (1) mission loop available, (2) don't have to repeat last mission
@@ -1405,7 +1387,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 
 		// Goober5000
 		if ( play_commit_sound && !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing])) {
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 
 		game_flush();
@@ -1433,10 +1415,10 @@ void debrief_next_stage()
 {
 	if (Current_stage < Num_stages - 1) {
 		New_stage = Current_stage + 1;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1446,10 +1428,10 @@ void debrief_prev_stage()
 {
 	if (Current_stage) {
 		New_stage = Current_stage - 1;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1458,10 +1440,10 @@ void debrief_first_stage()
 {
 	if (Current_stage) {
 		New_stage = 0;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1470,10 +1452,10 @@ void debrief_last_stage()
 {
 	if (Current_stage != Num_stages - 1) {
 		New_stage = Num_stages - 1;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // draw what stage number the debriefing is on
@@ -1603,7 +1585,7 @@ void debrief_replay_pressed()
 	}
 
 	gameseq_post_event(GS_EVENT_START_GAME);	// restart mission
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 }
 
 // -------------------------------------------------------------------
@@ -1636,7 +1618,7 @@ void debrief_button_pressed(int num)
 			Buttons[gr_screen.res][RECOMMENDATIONS].button.enable();			
 			// Debrief_ui_window.use_hack_to_get_around_stupid_problem_flag = 0;
 			if (num != Current_mode){
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			}
 			New_mode = num;
 			break;
@@ -1644,7 +1626,7 @@ void debrief_button_pressed(int num)
 			// Debrief_ui_window.use_hack_to_get_around_stupid_problem_flag = 1;			// allows failure sound to be played
 			Buttons[gr_screen.res][RECOMMENDATIONS].button.disable();			
 			if (num != Current_mode){
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			}
 			New_mode = num;
 			break;
@@ -1652,18 +1634,18 @@ void debrief_button_pressed(int num)
 		case TEXT_SCROLL_UP:
 			if (Text_offset) {
 				Text_offset--;
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
 		case TEXT_SCROLL_DOWN:
 			if (Max_debrief_Lines < (Num_text_lines - Text_offset)) {
 				Text_offset++;
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
@@ -1676,7 +1658,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case RECOMMENDATIONS:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Recommend_active = !Recommend_active;
 			debrief_text_init();
 			break;
@@ -1698,12 +1680,12 @@ void debrief_button_pressed(int num)
 			break;
 
 		case HELP_BUTTON:
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			launch_context_help();
 			break;
 
 		case OPTIONS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event( GS_EVENT_OPTIONS_MENU );
 			break;
 
@@ -1712,7 +1694,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case MEDALS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_VIEW_MEDALS);
 			break;
 
@@ -1734,7 +1716,7 @@ void debrief_button_pressed(int num)
 	} // end swtich
 }
 
-void debrief_setup_ship_kill_stats(int stage_num)
+void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 {
 	int i;
 	//ushort *kill_arr;
@@ -1807,7 +1789,7 @@ void debrief_check_buttons()
 			Debrief_player = Net_players[Multi_list[z].net_player_index].m_player;
 			Multi_list_select = z;
 			debrief_setup_ship_kill_stats(Current_stage);
-			gamesnd_play_iface(SND_USER_SELECT);			
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	}	
 
@@ -1891,6 +1873,23 @@ void debrief_text_init()
 	debrief_setup_ship_kill_stats(Current_stage);
 }
 
+//Move this into its own method to allow easier API access - Mjn
+int debrief_select_music()
+{
+
+	if (Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission))) {
+		// you failed the mission, so you get the fail music
+		return SCORE_DEBRIEFING_FAILURE;
+	} else if (mission_goals_met()) {
+		// you completed all primaries and secondaries, so you get the win music
+		return SCORE_DEBRIEFING_SUCCESS;
+	} else {
+		// you somehow passed the mission, so you get a little something for your efforts.
+		return SCORE_DEBRIEFING_AVERAGE;
+	}
+
+}
+
 
 // --------------------------------------------------------------------------------------
 //
@@ -1898,35 +1897,23 @@ void debrief_text_init()
 // start up the appropriate music
 static void debrief_init_music()
 {
-	int score = SCORE_DEBRIEF_AVERAGE;
+	
+	Debrief_music_timeout = UI_TIMESTAMP::invalid();
 
-	Debrief_music_timeout = 0;
-
-	if ( (Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission) ) {
-		// you failed the mission, so you get the fail music
-		score = SCORE_DEBRIEF_FAIL;
-	} else if ( mission_goals_met() ) {
-		// you completed all primaries and secondaries, so you get the win music
-		score = SCORE_DEBRIEF_SUCCESS;
-	} else {
-		// you somehow passed the mission, so you get a little something for your efforts.
-		score = SCORE_DEBRIEF_AVERAGE;
-	}
+	int score = debrief_select_music();
 
 	// if multi client then give a slight delay before playing average music
 	// since we'd like to eval the goals once more for slow clients
-	if ( MULTIPLAYER_CLIENT && (score == SCORE_DEBRIEF_AVERAGE) ) {
-		Debrief_music_timeout = timestamp(2000);
+	if ( MULTIPLAYER_CLIENT && (score == SCORE_DEBRIEFING_AVERAGE) ) {
+		Debrief_music_timeout = ui_timestamp(2000);
 		return;
 	}
 
 	common_music_init(score);
 }
 
-void debrief_init()
+void debrief_init(bool API_Access)
 {
-	int i;
-
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
@@ -1941,12 +1928,6 @@ void debrief_init()
 		Debriefing = &Debriefings[0];			
 	}
 
-	// Goober5000 - replace any variables with their values
-	for (i = 0; i < Debriefing->num_stages; i++) {
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].text);
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].recommendation_text);
-	}
-
 	// no longer is mission
 	Game_mode &= ~(GM_IN_MISSION);	
 
@@ -1957,7 +1938,7 @@ void debrief_init()
 
 	Current_stage = -1;
 	New_stage = 0;
-	Debrief_cue_voice = 0;
+	Debrief_cue_voice = UI_TIMESTAMP::invalid();
 	Num_text_lines = 0;
 	Debrief_first_voice_flag = 1;
 
@@ -1982,7 +1963,9 @@ void debrief_init()
 	// be backed out if used chooses to replace them.
 	scoring_level_close();
 
-	debrief_ui_init();  // init UI items
+	if (!API_Access) {
+		debrief_ui_init(); // init UI items
+	}
 	debrief_award_init();
 	show_stats_init();
 	debrief_voice_init();
@@ -1996,58 +1979,73 @@ void debrief_init()
 	Debrief_player = Player;
 //	Debrief_current_net_player_index = debrief_multi_list[0].net_player_index;
 
-	// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
-	// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
-	// info directly from the server.
-	if ( !MULTIPLAYER_CLIENT ) {
-		debrief_set_stages_and_multi_stuff();
+	// Only setup Debrief_stages and Recommendations if not running through API access.
+	if (!API_Access) {
+		// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
+		// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
+		// info directly from the server.
+		if (!MULTIPLAYER_CLIENT) {
+			debrief_set_stages_and_multi_stuff();
 
-		if ( Num_debrief_stages <= 0 ) {
-			Num_debrief_stages = 0;
+			if (Num_debrief_stages <= 0) {
+				Num_debrief_stages = 0;
+			} else if (!API_Access) { // Do not load voice files in API mode -Mjn
+				debrief_voice_load_all();
+			}
 		} else {
-			debrief_voice_load_all();
-		}
-	} else {
-		// multiplayer client may have already received their debriefing info.  If they have not,
-		// then set the num debrief stages to 0
-		if ( !Debrief_multi_stages_loaded ) {
-			Num_debrief_stages = 0;
+			// multiplayer client may have already received their debriefing info.  If they have not,
+			// then set the num debrief stages to 0
+			if (!Debrief_multi_stages_loaded) {
+				Num_debrief_stages = 0;
+			}
 		}
 	}
 
 	/*
 	if (mission_evaluate_primary_goals() == PRIMARY_GOALS_COMPLETE) {
-		common_music_init(SCORE_DEBRIEF_SUCCESS);
+		common_music_init(SCORE_DEBRIEFING_SUCCESS);
 	} else {
-		common_music_init(SCORE_DEBRIEF_FAIL);
+		common_music_init(SCORE_DEBRIEFING_FAILURE);
 	}
 	*/
 
 	// Just calculate this once instead of every frame. -MageKing17
 	Max_debrief_Lines = Debrief_text_wnd_coords[gr_screen.res][3]/gr_get_font_height(); //Make the max number of lines dependent on the font height.
 
-	// start up the appropriate music
-	debrief_init_music();
+	// start up the appropriate music only if we're not in API mode - Mjn
+	if (!API_Access) {
+		debrief_init_music();
+	}
+
+	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
+		// Better luck next time; increase retries.
+		Player->failures_this_session++;
+	} else {
+		// Clear retry count regardless of whether or not the player accepts.
+		Player->failures_this_session = 0;
+	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
 
 		// if i'm not the host of the game, disable the multi kick button
-		if (!(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if (!API_Access && !(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Buttons[gr_screen.res][MULTI_KICK].button.disable();
 		}
 	} else {
-		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
-		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
-		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
-		Buttons[gr_screen.res][MULTI_KICK].button.disable();
-		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.hide();
-		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.hide();
-		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.hide();		
-		Buttons[gr_screen.res][MULTI_KICK].button.hide();
+		if (!API_Access) {
+			Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
+			Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
+			Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
+			Buttons[gr_screen.res][MULTI_KICK].button.disable();
+			Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.hide();
+			Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.hide();
+			Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.hide();
+			Buttons[gr_screen.res][MULTI_KICK].button.hide();
+		}
 	}
 
-	if (!Award_active) {
+	if (!API_Access && !Award_active) {
 		Buttons[gr_screen.res][MEDALS_BUTTON].button.disable();
 		Buttons[gr_screen.res][MEDALS_BUTTON].button.hide();
 	}
@@ -2059,7 +2057,7 @@ void debrief_init()
 
 // --------------------------------------------------------------------------------------
 //	debrief_close()
-void debrief_close()
+void debrief_close(bool API_Access)
 {
 	int i;
 	scoring_struct *sc;
@@ -2079,13 +2077,13 @@ void debrief_close()
 						scoring_backout_accept(sc);
 
 						if (Net_player == &Net_players[i]) {
-							Pilot.update_stats_backout( sc );
+							Pilot.update_stats_backout( sc, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
-				Pilot.update_stats_backout( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 			}
 		}
 	} else {
@@ -2096,7 +2094,7 @@ void debrief_close()
 				Campaign.next_mission = Campaign.current_mission;
 			}
 			scoring_backout_accept( &Player->stats );
-			Pilot.update_stats_backout( &Player->stats );
+			Pilot.update_stats_backout( &Player->stats, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 		}
 	}
 
@@ -2111,16 +2109,21 @@ void debrief_close()
 	// clear out award text 
 	Debrief_award_text_num_lines = 0;
 
-	debrief_voice_unload_all();
-	common_music_close();
-	chatbox_close();
+	//These don't need to be handled when accessing through the API -Mjn
+	if (!API_Access) {
+		debrief_voice_unload_all();
+		common_music_close();
+		chatbox_close();
+	}
 
 	// unload bitmaps
-	if (Background_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Background_bitmap >= 0) {
 		bm_release(Background_bitmap);
 	}
 
-	if (Award_bg_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Award_bg_bitmap >= 0) {
 		bm_release(Award_bg_bitmap);
 	}
 
@@ -2136,8 +2139,10 @@ void debrief_close()
 		bm_release(Badge_bitmap);
 	}
 
-	Debrief_ui_window.destroy();
-	common_free_interface_palette();		// restore game palette
+	if (!API_Access) {
+		Debrief_ui_window.destroy();
+		common_free_interface_palette(); // restore game palette
+	}
 	show_stats_close();
 
 	if (Game_mode & GM_MULTIPLAYER){
@@ -2247,7 +2252,7 @@ void debrief_award_text_clear() {
 }
 
 // this is the nastiest code I have ever written.  if you are modifying this, i feel bad for you.
-void debrief_add_award_text(char *str)
+void debrief_add_award_text(const char *str)
 {
 	Assert(Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES);
 	if (Debrief_award_text_num_lines >= AWARD_TEXT_MAX_LINES) {
@@ -2260,11 +2265,13 @@ void debrief_add_award_text(char *str)
 	// copy in the line
 	strcpy_s(Debrief_award_text[Debrief_award_text_num_lines], str);	
 
-	// maybe translate for displaying
-	if (Lcl_gr) {
-		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
-	} else if (Lcl_pl) {
-		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+	if (!Disable_built_in_translations) {
+		// maybe translate for displaying
+		if (Lcl_gr) {
+			lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+		} else if (Lcl_pl) {
+			lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+		}
 	}
 
 	Debrief_award_text_num_lines++;
@@ -2388,10 +2395,10 @@ void debrief_do_frame(float frametime)
 		New_stage = 0;
 		if (New_mode == DEBRIEF_TAB) {
 			Num_stages = 1;
-			Debrief_cue_voice = 0;
+			Debrief_cue_voice = UI_TIMESTAMP::invalid();
 			Stage_voice = -1;
 			if (Debrief_first_voice_flag) {
-				Debrief_cue_voice = timestamp(DEBRIEF_VOICE_DELAY * 3);
+				Debrief_cue_voice = ui_timestamp(DEBRIEF_VOICE_DELAY * 3);
 				Debrief_first_voice_flag = 0;
 			}
 		} else {
@@ -2407,14 +2414,14 @@ void debrief_do_frame(float frametime)
 	debrief_voice_play();
 
 	// multi clients get a slight delay before music start to check goals again
-	if ( timestamp_valid(Debrief_music_timeout) ) {
-		if ( timestamp_elapsed(Debrief_music_timeout) ) {
-			Debrief_music_timeout = 0;
+	if ( Debrief_music_timeout.isValid() ) {
+		if ( ui_timestamp_elapsed(Debrief_music_timeout) ) {
+			Debrief_music_timeout = UI_TIMESTAMP::invalid();
 
 			if ( mission_goals_met() ) {
-				common_music_init(SCORE_DEBRIEF_SUCCESS);
+				common_music_init(SCORE_DEBRIEFING_SUCCESS);
 			} else {
-				common_music_init(SCORE_DEBRIEF_AVERAGE);
+				common_music_init(SCORE_DEBRIEFING_AVERAGE);
 			}
 
 			common_music_do();
@@ -2594,6 +2601,27 @@ void debrief_handle_player_drop()
 	debrief_rebuild_player_list();
 }
 
+void debrief_maybe_auto_accept()
+{
+	if (debrief_can_accept()) {
+		debrief_accept(0);
+	}
+}
+
 void debrief_disable_accept()
 {
+}
+
+// Goober5000 - replace any variables with their values
+// karajorma/jg18 - replace container references as well
+// MjnMixael - replace keybinds also
+void debrief_replace_stage_text(debrief_stage &stage)
+{
+	sexp_replace_variable_names_with_values(stage.text);
+	sexp_replace_variable_names_with_values(stage.recommendation_text);
+	sexp_container_replace_refs_with_values(stage.text);
+	sexp_container_replace_refs_with_values(stage.recommendation_text);
+
+	stage.text = message_translate_tokens(stage.text.c_str());
+	stage.recommendation_text = message_translate_tokens(stage.recommendation_text.c_str());
 }

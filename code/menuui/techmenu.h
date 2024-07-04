@@ -13,36 +13,37 @@
 #define _TECHMENU_H
 
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
-#define MAX_INTEL_ENTRIES		75
-#define TECH_INTEL_DESC_LEN		5120
-
-typedef struct {
+typedef struct intel_data {
 	char name[NAME_LENGTH];
-	char desc[TECH_INTEL_DESC_LEN];
+	SCP_string desc;
 	char anim_filename[NAME_LENGTH];
 	int  flags;
+	SCP_map<SCP_string, SCP_string> custom_data;
 } intel_data;
 
 // flags by Goober5000
 #define IIF_DEFAULT_VALUE				0
 #define IIF_IN_TECH_DATABASE			(1 << 0)	// in tech database? - Goober5000
-#define IIF_DEFAULT_IN_TECH_DATABASE	(1 << 1)	// in tech database by default? - Goober5000
+#define IIF_DEFAULT_IN_TECH_DATABASE	(1 << 1)	// this entry's default tech database status, as specified in species.tbl; used when the tech db is "reset to default" - Goober5000
 
 extern int Techroom_overlay_id;
 
-extern intel_data Intel_info[MAX_INTEL_ENTRIES];
-extern int Intel_info_size;
+extern SCP_vector<intel_data> Intel_info;
 
+inline int intel_info_size()
+{
+	return static_cast<int>(Intel_info.size());
+}
 
 // function prototypes
 void techroom_init();
 void techroom_close();
 void techroom_do_frame(float frametime);
-int techroom_on_ships_tab();
 void techroom_intel_init();			// called on startup so campaigns can manipulate tech room visibility
 void techroom_intel_reset(); // for testing
-int intel_info_lookup(char *name);
+int intel_info_lookup(const char *name);
 extern void tech_reset_to_default();
 
 #endif

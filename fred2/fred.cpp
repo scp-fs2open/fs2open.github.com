@@ -118,6 +118,8 @@ CWnd*                Prev_window;
 CShipEditorDlg       Ship_editor_dialog;
 wing_editor          Wing_editor_dialog;
 waypoint_path_dlg    Waypoint_editor_dialog;
+jumpnode_dlg         Jumpnode_editor_dialog;
+music_player_dlg	 Music_player_dialog;
 bg_bitmap_dlg*       Bg_bitmap_dialog = NULL;
 briefing_editor_dlg* Briefing_dialog = NULL;
 
@@ -126,6 +128,7 @@ window_data Ship_wnd_data;
 window_data Wing_wnd_data;
 window_data Object_wnd_data;
 window_data Mission_goals_wnd_data;
+window_data Mission_cutscenes_wnd_data;
 window_data Messages_wnd_data;
 window_data Player_wnd_data;
 window_data Events_wnd_data;
@@ -133,9 +136,12 @@ window_data Bg_wnd_data;
 window_data Briefing_wnd_data;
 window_data Reinforcement_wnd_data;
 window_data Waypoint_wnd_data;
+window_data Jumpnode_wnd_data;
+window_data MusPlayer_wnd_data;
 window_data Starfield_wnd_data;
 window_data Asteroid_wnd_data;
 window_data Mission_notes_wnd_data;
+window_data Custom_data_wnd_data;
 
 float Sun_spot = 0.0f;	//!< Used to help link FRED with the codebase
 
@@ -175,9 +181,9 @@ CFREDApp::CFREDApp() {
 
 	SCP_mspdbcs_Initialise();
 
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 }
 
 CFREDApp::~CFREDApp() {
@@ -224,23 +230,31 @@ BOOL CFREDApp::InitInstance() {
 	Hide_ship_cues = GetProfileInt("Preferences", "Hide ship cues", Hide_ship_cues);
 	Hide_wing_cues = GetProfileInt("Preferences", "Hide wing cues", Hide_wing_cues);
 	Autosave_disabled = GetProfileInt("Preferences", "Autosave disabled", Autosave_disabled);
-	double_fine_gridlines = GetProfileInt("Preferences", "Double fine gridlines", double_fine_gridlines);
+	double_fine_gridlines = GetProfileInt("Preferences", "Double fine gridlines", double_fine_gridlines ? 1 : 0) != 0;
 	Aa_gridlines = GetProfileInt("Preferences", "Anti aliased gridlines", Aa_gridlines);
 	Show_dock_points = GetProfileInt("Preferences", "Show dock points", Show_dock_points);
 	Show_paths_fred = GetProfileInt("Preferences", "Show paths", Show_paths_fred);
 	Lighting_on = GetProfileInt("Preferences", "Lighting On", Lighting_on);
 
 	// Goober5000
-	Format_fs2_open = GetProfileInt("Preferences", "FS2 open format", Format_fs2_open);
-	Format_fs2_retail = GetProfileInt("Preferences", "FS2 retail format", Format_fs2_retail);
-	Format_fs1_retail = GetProfileInt("Preferences", "FS1 retail format", Format_fs1_retail);
+	Mission_save_format = GetProfileInt("Preferences", "FS2 open format", FSO_FORMAT_STANDARD);
+	Mission_save_format = GetProfileInt("Preferences", "Mission save format", Mission_save_format);
+	Move_ships_when_undocking = GetProfileInt("Preferences", "Move ships when undocking", 1);
+	Highlight_selectable_subsys = GetProfileInt("Preferences", "Highlight selectable subsys", Highlight_selectable_subsys);
+	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
+	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
+	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
+	Error_checker_checks_potential_issues = GetProfileInt("Preferences", "Error checker checks potential issues", 1) != 0;
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
 	read_window("Wing window", &Wing_wnd_data);
 	read_window("Waypoint window", &Waypoint_wnd_data);
+	read_window("Jumpnode window", &Jumpnode_wnd_data);
+	read_window("Musicplayer window", &MusPlayer_wnd_data);
 	read_window("Object window", &Object_wnd_data);
 	read_window("Mission goals window", &Mission_goals_wnd_data);
+	read_window("Mission cutscenes window", &Mission_cutscenes_wnd_data);
 	read_window("Messages window", &Messages_wnd_data);
 	read_window("Player window", &Player_wnd_data);
 	read_window("Events window", &Events_wnd_data);
@@ -250,6 +264,7 @@ BOOL CFREDApp::InitInstance() {
 	read_window("Starfield window", &Starfield_wnd_data);
 	read_window("Asteroid window", &Asteroid_wnd_data);
 	read_window("Mission notes window", &Mission_notes_wnd_data);
+	read_window("Custom data window", &Custom_data_wnd_data);
 	write_ini_file(1);
 
 	// Register the application's document templates.  Document templates
@@ -370,22 +385,33 @@ void CFREDApp::OnAppAbout() {
 }
 
 BOOL CFREDApp::OnIdle(LONG lCount) {
-	int adjust = 0;
 	CWnd *top, *wnd;
-
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
 	if (!app_init) {
 		app_init = 1;
-		theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, adjust, 1);
-		theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, adjust, 1);
+		theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0, 1);
+		theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0, 1);
+		theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog, 0, 1);
 		theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog, 0, 1);
+		theApp.init_window(&Jumpnode_wnd_data, &Jumpnode_editor_dialog, 0, 1);
 		init_window(&Main_wnd_data, Fred_main_wnd);
 		Fred_main_wnd->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
 		Ship_editor_dialog.calc_cue_height();
+		Ship_editor_dialog.calc_help_height();
+		// on initial setup, these must be called in this order
+		if (!Show_sexp_help)
+			Ship_editor_dialog.show_hide_sexp_help();
+		if (Hide_ship_cues)
+			Ship_editor_dialog.show_hide_cues();
+
 		Wing_editor_dialog.calc_cue_height();
+		Wing_editor_dialog.calc_help_height();
+		// on initial setup, these must be called in this order
+		if (!Show_sexp_help)
+			Wing_editor_dialog.show_hide_sexp_help();
+		if (Hide_wing_cues)
+			Wing_editor_dialog.show_hide_cues();
 	}
 
 	CWinApp::OnIdle(lCount);
@@ -493,12 +519,18 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Lighting On", Lighting_on);
 
 	// Goober5000
-	WriteProfileInt("Preferences", "FS2 open format", Format_fs2_open);
-	WriteProfileInt("Preferences", "FS2 retail format", Format_fs2_retail);
-	WriteProfileInt("Preferences", "FS1 retail format", Format_fs1_retail);
+	WriteProfileInt("Preferences", "Mission save format", Mission_save_format);
+	WriteProfileInt("Preferences", "Move ships when undocking", Move_ships_when_undocking);
+	WriteProfileInt("Preferences", "Highlight selectable subsys", Highlight_selectable_subsys);
+	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
+	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
+	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
+	WriteProfileInt("Preferences", "Error checker checks potential issues", Error_checker_checks_potential_issues ? 1 : 0);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);
+		record_window_data(&Jumpnode_wnd_data, &Jumpnode_editor_dialog);
+		record_window_data(&MusPlayer_wnd_data, &Music_player_dialog);
 		record_window_data(&Wing_wnd_data, &Wing_editor_dialog);
 		record_window_data(&Ship_wnd_data, &Ship_editor_dialog);
 		record_window_data(&Main_wnd_data, Fred_main_wnd);
@@ -507,8 +539,11 @@ void CFREDApp::write_ini_file(int degree) {
 		write_window("Ship window", &Ship_wnd_data);
 		write_window("Wing window", &Wing_wnd_data);
 		write_window("Waypoint window", &Waypoint_wnd_data);
+		write_window("Jumpnode window", &Jumpnode_wnd_data);
+		write_window("Musicplayer window", &MusPlayer_wnd_data);
 		write_window("Object window", &Object_wnd_data);
 		write_window("Mission goals window", &Mission_goals_wnd_data);
+		write_window("Mission cutscenes window", &Mission_cutscenes_wnd_data);
 		write_window("Messages window", &Messages_wnd_data);
 		write_window("Player window", &Player_wnd_data);
 		write_window("Events window", &Events_wnd_data);
@@ -518,6 +553,7 @@ void CFREDApp::write_ini_file(int degree) {
 		write_window("Starfield window", &Starfield_wnd_data);
 		write_window("Asteroid window", &Asteroid_wnd_data);
 		write_window("Mission notes window", &Mission_notes_wnd_data);
+		write_window("Custom data window", &Custom_data_wnd_data);
 	}
 	m_pRecentFileList->WriteList();
 }
@@ -644,8 +680,6 @@ void update_map_window() {
 
 	render_frame();	// "do the rendering!"
 
-	gr_flip();
-
 	show_control_mode();
 	process_pending_messages();
 
@@ -669,7 +703,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX) {
 }
 
 void CAboutDlg::OnBug() {
-	char *path = "http://scp.indiegames.us/mantis/";
+	char *path = "https://github.com/scp-fs2open/fs2open.github.com/issues";
 
 	char buffer[MAX_PATH];
 	sprintf(buffer, "explorer.exe \"%s\"", path);
@@ -678,7 +712,7 @@ void CAboutDlg::OnBug() {
 }
 
 void CAboutDlg::OnForums() {
-	char *path = "http://www.hard-light.net/forums/";
+	char *path = "https://www.hard-light.net/forums/";
 
 	char buffer[MAX_PATH];
 	sprintf(buffer, "explorer.exe \"%s\"", path);

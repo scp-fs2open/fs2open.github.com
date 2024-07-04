@@ -12,6 +12,7 @@
 #ifndef SCP_UNIX
 
 #ifdef _WIN32
+#include <winsock2.h>
 #include <windows.h>
 #include <commctrl.h>
 #endif
@@ -35,7 +36,7 @@
 #include "globalincs/version.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 #include "osapi/osapi.h"
 
 #include <string>
@@ -58,7 +59,6 @@ static void standalone_do_systray(int mode);
 #define STP_RESET_ALL		1
 #define STP_SHUTDOWN		2
 #define STP_SHOW			3
-#define STP_RESET_FS2NETD	4
 
 
 // -----------------------------------------------------------------------------------------
@@ -92,10 +92,10 @@ static PROPSHEETHEADER Sheet;
 static int Active_standalone_page;
 
 // timestamp for updating currently selected player stats on the player info page
-int Standalone_stats_stamp;
+UI_TIMESTAMP Standalone_stats_stamp;
 
 // timestamp for updating the netgame information are text controls
-int Standalone_ng_stamp;
+UI_TIMESTAMP Standalone_ng_stamp;
 
 // banned player callsigns
 #define STANDALONE_MAX_BAN			50
@@ -111,7 +111,7 @@ char title_str[512];
 static HWND Multi_gen_dialog = NULL;		// the dialog itself
 
 // dialog proc for this dialog
-BOOL CALLBACK std_gen_dialog_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK std_gen_dialog_proc(HWND /*hwndDlg*/, UINT uMsg, WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
 	switch(uMsg){		
 	case WM_INITDIALOG:
@@ -331,7 +331,7 @@ void std_connect_update_ping(net_player *p)
 	// as long as his ping is not -1, do an update
 	if(p->s_info.ping.ping_avg > -1){	
 		// get the lookup string
-		psnet_addr_to_string(lookup,&p->p_info.addr);
+		psnet_addr_to_string(&p->p_info.addr, lookup, sizeof(lookup));
 		
 		// build the string to replace the ping with
 		strcpy_s(str,lookup); 
@@ -383,13 +383,6 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy_s(Netgame.name,name);
-
-		// update fs2netd
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_disconnect();
-			os_sleep(50);
-			fs2netd_gameserver_start();
-		}
 	}
 
 	// update systray icon
@@ -423,13 +416,6 @@ void std_connect_handle_name_change()
 
 		// update systray icon
 		standalone_do_systray(ST_MODE_UPDATE);
-
-		// update fs2netd with the info
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_disconnect();
-			os_sleep(50);
-			fs2netd_gameserver_start();
-		}
 	}
 }
 
@@ -469,7 +455,7 @@ int std_connect_lindex_to_npindex(int index)
 		// only look at connected players
 		if(MULTI_CONNECTED(Net_players[idx])){
 			strcpy_s(addr_text,"");
-			psnet_addr_to_string(addr_text,&Net_players[idx].p_info.addr);
+			psnet_addr_to_string(&Net_players[idx].p_info.addr, addr_text, sizeof(addr_text));
 
 			// if we found the match
 			if((addr_text[0] != '\0') && (strstr(list_text,addr_text) != NULL)){
@@ -483,7 +469,7 @@ int std_connect_lindex_to_npindex(int index)
 }
 
 // message handler for the connect tab
-BOOL CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
    switch(uMsg){
 	// initialize the dialog
@@ -593,7 +579,7 @@ void std_multi_init_framecap_slider(HWND hwndDlg);
 void std_multi_init_multi_controls(HWND hwndDlg);
 
 // return the handle to the item matching the given parameters
-HTREEITEM std_multi_get_goal_item(char *goal_string,int type);
+HTREEITEM std_multi_get_goal_item(const char *goal_string,int type);
 
 // set the mission time in seconds
 void std_multi_set_standalone_missiontime(float mission_time)
@@ -624,7 +610,7 @@ void std_multi_setup_goal_tree()
 	char goal_name[NAME_LENGTH+1];
 
 	// clear out the tree control
-	TreeView_DeleteAllItems(Standalone_goals);
+	(void)TreeView_DeleteAllItems(Standalone_goals);
 
    // add the primary goal tag
    new_item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
@@ -668,11 +654,11 @@ void std_multi_add_goals()
 	tree_insert.hInsertAfter = TVI_LAST;	
 
 	perm_goal_flags = 0;
-	for(idx=0;idx<Num_goals;idx++){		
+	for (const auto& goal: Mission_goals) {
 		// reset the goal flags
 		goal_flags = 0;
 
-      switch(Mission_goals[idx].type & GOAL_TYPE_MASK){
+      switch(goal.type & GOAL_TYPE_MASK){
 		// primary goal
 		case PRIMARY_GOAL :
 			goal_flags |= (1<<1);		// (image index == 1, primary goal)						
@@ -697,11 +683,11 @@ void std_multi_add_goals()
 		}
 		
       // first select whether to insert under primary, secondary, or bonus tree roots
-		tree_insert.hParent = Goal_items[Mission_goals[idx].type & GOAL_TYPE_MASK];  
+		tree_insert.hParent = Goal_items[goal.type & GOAL_TYPE_MASK];
 
 		// set the goal name
 		new_item.pszText = goal_name;
-		strcpy(new_item.pszText,Mission_goals[idx].name);
+		strcpy(new_item.pszText, goal.name.c_str());
 		
 		// set the correct image indices
 		new_item.iImage = (goal_flags & (1<<0)) ? 3 : 0;
@@ -709,7 +695,7 @@ void std_multi_add_goals()
 
 		// insert the item
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}	
 
 	// check to see if there are any of the three types of mission goals. If not, then 
@@ -722,7 +708,7 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 	if(!(perm_goal_flags & (1<<2))){
 		// insert the "none" item
@@ -732,7 +718,7 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 	if(!(perm_goal_flags & (1<<3))){
 		// insert the "none" item
@@ -742,12 +728,12 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 
 	// expand out all the tree roots so all goals are shown
 	for(idx=0;idx<3;idx++){
-		TreeView_Expand(Standalone_goals,Goal_items[idx],TVE_EXPAND);
+		(void)TreeView_Expand(Standalone_goals,Goal_items[idx],TVE_EXPAND);
 	}
 }
 
@@ -756,15 +742,15 @@ void std_multi_update_goals()
 {
 	HTREEITEM update_item;
 	TV_ITEM setting,lookup;
-	int idx,should_update;
+	bool should_update;
 
    setting.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 
 	// go through all the goals
-	for(idx=0;idx<Num_goals;idx++){
+	for(const auto& goal: Mission_goals){
 		// get a handle to the tree item
 		update_item = NULL;
-		update_item = std_multi_get_goal_item(Mission_goals[idx].name,Mission_goals[idx].type & GOAL_TYPE_MASK);
+		update_item = std_multi_get_goal_item(goal.name.c_str(), goal.type & GOAL_TYPE_MASK);
 
 		// continue if we didn't get a valid item
 		if(update_item == NULL){
@@ -780,7 +766,7 @@ void std_multi_update_goals()
 		
 		should_update = 0;		
 		// determine what image to set for each one (failed, satisfied, incomplete, etc)
-		switch(Mission_goals[idx].satisfied){
+		switch(goal.satisfied){
 		case GOAL_FAILED : 			
 			// determine if we should update the item
 			if((lookup.iImage != 4) && (lookup.iSelectedImage != 4)){
@@ -814,7 +800,7 @@ void std_multi_update_goals()
 		// set the actual image
 		if(should_update){
 			setting.hItem = update_item;
-			TreeView_SetItem(Standalone_goals,&setting);		
+			(void)TreeView_SetItem(Standalone_goals,&setting);
 		}
 	}
 }
@@ -980,11 +966,11 @@ void std_multi_init_multi_controls(HWND hwndDlg)
         WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES, 
         GOALVIEW_X,GOALVIEW_Y,GOALVIEW_W,GOALVIEW_H,
         hwndDlg, NULL, GetModuleHandle(NULL), NULL); 
-	TreeView_SetImageList(Standalone_goals,Goal_bitmaps,TVSIL_NORMAL);
+	(void)TreeView_SetImageList(Standalone_goals,Goal_bitmaps,TVSIL_NORMAL);
 }
 
 // return the handle to the item matching the given parameters
-HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
+HTREEITEM std_multi_get_goal_item(const char *goal_string,int type)
 {
 	HTREEITEM ret,moveup;
 	TV_ITEM lookup;
@@ -1003,7 +989,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 	moveup = TreeView_GetChild(Standalone_goals,Goal_items[type]);
 	while(!done && moveup!=NULL){
 		lookup.hItem = moveup;
-		TreeView_GetItem(Standalone_goals,&lookup);
+		(void)TreeView_GetItem(Standalone_goals,&lookup);
 		if(strcmp(lookup.pszText,goal_string)==0){
 			ret = moveup;
 			done=1;
@@ -1016,7 +1002,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 }
 
 // message handler for the multiplayer tab
-BOOL CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
 {
 	switch(uMsg){
 	// initialize the page
@@ -1069,7 +1055,7 @@ static HWND Player_mstats[MAX_PLAYER_STAT_FIELDS];		// text boxes for player mis
 #define STD_ADDSTRING(hwnd,val) { snprintf(txt,sizeof(txt)-1,"%d",(int)val); SetWindowText(hwnd,txt); }
 
 // intialize all the controls in the player info tab
-void std_pinfo_init_player_info_controls(HWND hwndDlg);
+void std_pinfo_init_player_info_controls();
 
 // returns true or false depending on whether the passed netplayer is the currently selected guy
 int std_pinfo_player_is_active(net_player *p);
@@ -1080,8 +1066,10 @@ void std_pinfo_display_player_info(net_player *p)
 	char txt[40];
 	txt[sizeof(txt)-1] = '\0';
 
-	// set his ship type
-	SetWindowText(Player_ship_type,Ship_info[p->p_info.ship_class].name);
+	// set his ship type -- Cyborg17, if it's valid!
+	if (p->p_info.ship_class >= 0 && p->p_info.ship_class < static_cast<int>(Ship_info.size())) {
+		SetWindowText(Player_ship_type, Ship_info[p->p_info.ship_class].name);
+	}
 
 	// display his ping time
 	std_pinfo_update_ping(p);
@@ -1206,7 +1194,7 @@ void std_pinfo_clear_controls()
 }
 
 // intialize all the controls in the player info tab
-void std_pinfo_init_player_info_controls(HWND hwndDlg)
+void std_pinfo_init_player_info_controls()
 {	
 	// create the player callsign listbox
 	Player_name_list = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)(uintptr_t)MAKEINTRESOURCE(IDC_PLAYER_LIST));
@@ -1271,7 +1259,7 @@ int std_pinfo_player_is_active(net_player *p)
 }
 
 // message handler for the player info tab
-BOOL CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
 	int player_num;	
 	char callsign[40];
@@ -1283,7 +1271,7 @@ BOOL CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lPara
 		Page_handles[PLAYER_INFO_PAGE] = hwndDlg;
 
 		// intialize all the control
-      std_pinfo_init_player_info_controls(hwndDlg);
+      std_pinfo_init_player_info_controls();
 		return 1;
 		break;
 
@@ -1347,7 +1335,7 @@ static int  Godstuff_longest_message = 0;				// longest width of a string in the
 
 
 // initialize all the controls in the godstuff tab
-void std_gs_init_godstuff_controls(HWND hwndDlg);
+void std_gs_init_godstuff_controls();
 
 // add a player to the listbox on the godstuff page
 void std_gs_add_god_player(net_player *p)
@@ -1424,7 +1412,7 @@ void std_gs_clear_controls()
 }
 
 // initialize all the controls in the godstuff tab
-void std_gs_init_godstuff_controls(HWND hwndDlg)
+void std_gs_init_godstuff_controls()
 {
 	// initialize the player listbox control   
 	God_player_list = GetDlgItem(Page_handles[GODSTUFF_PAGE], (int)(uintptr_t)MAKEINTRESOURCE(IDC_PLAYER_GOD_LIST));
@@ -1453,7 +1441,7 @@ void std_gs_init_godstuff_controls(HWND hwndDlg)
 }
 
 // message handler for the godstuff tab
-BOOL CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -1464,7 +1452,7 @@ BOOL CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			Page_handles[GODSTUFF_PAGE] = hwndDlg;
 
 			// initialize the controls for this page
-			std_gs_init_godstuff_controls(hwndDlg);
+			std_gs_init_godstuff_controls();
 
 			return 1;
 		}
@@ -1607,7 +1595,7 @@ void std_debug_init_debug_controls(HWND hwndDlg)
 }
 
 // message handler for the godstuff tab
-BOOL CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
 {
 	switch(uMsg){
 	// initialize the dialog
@@ -1649,7 +1637,7 @@ void std_add_player(net_player *p)
 	char ip_string[60];	
 	
 	// get his ip string and add it to the list
-	psnet_addr_to_string(ip_string,&p->p_info.addr);
+	psnet_addr_to_string(&p->p_info.addr, ip_string, sizeof(ip_string));
 	std_connect_add_ip_string(ip_string);
 
 	// add to the player info player list box, and update his info
@@ -1673,7 +1661,7 @@ int std_remove_player(net_player *p)
 	char ip_string[60];	
    
 	// determine his ip string and remove it from the list
-	psnet_addr_to_string(ip_string,&p->p_info.addr);
+	psnet_addr_to_string(&p->p_info.addr, ip_string, sizeof(ip_string));
 	std_connect_remove_ip_string(ip_string);
 
 	// remove from the player info player list box
@@ -1742,26 +1730,22 @@ void std_reset_standalone_gui()
 	std_multi_set_standalone_missiontime((float)0);	
 
 	// reset the stats update timestamp
-	Standalone_stats_stamp = -1;
+	Standalone_stats_stamp = UI_TIMESTAMP::invalid();
 
 	// reset the netgame info timestamp
-	Standalone_ng_stamp = -1;	
+	Standalone_ng_stamp = UI_TIMESTAMP::invalid();
 }
 
 // do any gui related issues on the standalone (like periodically updating player stats, etc...)
-// notify the user that the standalone has failed to login to the tracker on startup
-void std_notify_tracker_login_fail()
-{
-}
 
 void std_do_gui_frame()
 {
 	int idx;
 	
 	// check to see if the timestamp for updating player selected stats has popped
-	if((Standalone_stats_stamp == -1) || timestamp_elapsed(Standalone_stats_stamp)){
+	if (!Standalone_stats_stamp.isValid() || ui_timestamp_elapsed(Standalone_stats_stamp)){
 		// reset the timestamp
-		Standalone_stats_stamp = timestamp(STD_STATS_UPDATE_TIME);
+		Standalone_stats_stamp = ui_timestamp(STD_STATS_UPDATE_TIME);
 
 		// update any player currently selected
 		// there's probably a nicer way to do this, but...
@@ -1775,30 +1759,45 @@ void std_do_gui_frame()
 	}
 
 	// check to see if the timestamp for updating the netgame information controls has popped
-	if((Standalone_ng_stamp == -1) || timestamp_elapsed(Standalone_ng_stamp)){
+	if (!Standalone_ng_stamp.isValid() || ui_timestamp_elapsed(Standalone_ng_stamp)){
 		// reset the timestamp
-		Standalone_ng_stamp = timestamp(STD_NG_UPDATE_TIME);
+		Standalone_ng_stamp = ui_timestamp(STD_NG_UPDATE_TIME);
 
 		// update the controls
 		std_multi_update_netgame_info_controls();
 	}
 }
 
-
+// notify the user that the standalone has failed to login to the tracker on startup
+void std_tracker_notify_login_fail()
+{
+}
 
 // attempt to log the standalone into the tracker
 void std_tracker_login()
 {
+	if ( !Multi_options_g.pxo ) {
+		return;
+	}
+
+	multi_fs_tracker_init();
+
+	if ( !multi_fs_tracker_inited() ) {
+		std_tracker_notify_login_fail();
+		return;
+	}
+
+	multi_fs_tracker_login_freespace();
 }
 
 // reset all stand gui timestamps
 void std_reset_timestamps()
 {
 	// reset the stats update stamp
-	Standalone_stats_stamp = timestamp(STD_STATS_UPDATE_TIME);
+	Standalone_stats_stamp = ui_timestamp(STD_STATS_UPDATE_TIME);
 
 	// reset the netgame controls update timestamp
-	Standalone_ng_stamp = timestamp(STD_NG_UPDATE_TIME);
+	Standalone_ng_stamp = ui_timestamp(STD_NG_UPDATE_TIME);
 }
 
 // add a line of text chat to the standalone
@@ -2106,14 +2105,8 @@ static HMENU std_create_systray_menu()
 	HMENU stdPopup = CreatePopupMenu();
 
 	// Type of connection:
-	snprintf(tstr, sizeof(tstr)-1, "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "FS2NetD" : "Local/IP");
+	snprintf(tstr, sizeof(tstr)-1, "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "PXO" : "Local/IP");
 	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
-
-	// Status of FS2NetD connection:
-	if (MULTI_IS_TRACKER_GAME) {
-		snprintf(tstr, sizeof(tstr)-1, "FS2NetD Status: %s", fs2netd_is_online() ? "Online" : "Offline");
-		AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
-	}
 
 	// ----------------------------------------------
 	AppendMenu(stdPopup, MF_SEPARATOR, 0, NULL);
@@ -2135,11 +2128,6 @@ static HMENU std_create_systray_menu()
 
 	// Reset All (main window command):
 	AppendMenu(stdPopup, MF_STRING, STP_RESET_ALL, "Reset All");
-
-	// Reset FS2NetD (not a main window command, yet):
-	if (MULTI_IS_TRACKER_GAME) {
-		AppendMenu(stdPopup, MF_STRING, STP_RESET_FS2NETD, "Reset FS2NetD");
-	}
 
 	// Shutdown server (main window command):
 	AppendMenu(stdPopup, MF_STRING, STP_SHUTDOWN, "Shutdown");
@@ -2187,13 +2175,9 @@ LRESULT CALLBACK std_message_handler_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam
 
 				DestroyMenu(stdPopup);
 
-				// reset all (does not include fs2netd!)
+				// reset all
 				if (choice == STP_RESET_ALL) {
 					multi_quit_game(PROMPT_NONE);
-				}
-				// reset fs2netd
-				else if (choice == STP_RESET_FS2NETD) {
-					fs2netd_reset_connection();
 				}
 				// shutdown
 				else if (choice == STP_SHUTDOWN) {
@@ -2251,7 +2235,7 @@ BOOL std_create_standalone_window()
 						WS_POPUP, CW_USEDEFAULT, CW_USEDEFAULT, 10, 10,
 						NULL, NULL, hInst, NULL);
 
-	// create the propery sheet dialog itself
+	// create the property sheet dialog itself
 	std_init_property_sheet(NULL);
 
 	// this is kind of a big-ass hack. But here's what it does. Property sheets only 
@@ -2279,9 +2263,9 @@ BOOL std_create_standalone_window()
 	std_reset_standalone_gui();
 
 	// initialize the debug outwindow
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 
 	Standalone_minimized = FALSE;
 
@@ -2343,7 +2327,7 @@ static void standalone_do_systray(int mode)
 }
 
 // just like the osapi version for the nonstandalone mode of FreeSpace
-DWORD standalone_process(WORD lparam)
+DWORD standalone_process(LPVOID /*lparam*/)
 {
 	MSG msg;
 
@@ -2401,20 +2385,11 @@ DWORD standalone_process(WORD lparam)
 	return 0;
 }
 
-void std_init_os()
-{
-	os_init_registry_stuff(Osreg_company_name, Osreg_app_name,NULL);
-}
-
-
 // called when freespace initialized
 void std_init_standalone()
 {
 	// start the main thread
 	Standalone_thread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)standalone_process, NULL, 0, &Standalone_thread_id );
-	
-	// set the close functions
-	atexit(std_deinit_standalone);
 }
 
 // called when freespace closes

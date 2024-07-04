@@ -1,0 +1,25 @@
+
+#include "gamma.sdr"
+
+in vec4 fragTexCoord;
+in vec4 fragColor;
+
+out vec4 fragOut0;
+
+uniform sampler2DArray baseMap;
+
+layout (std140) uniform genericData {
+	vec4 color;
+	float intensity;
+};
+
+void main()
+{
+	float y =  fragTexCoord.y / fragTexCoord.w;
+	vec4 baseColor = texture(baseMap, vec3(fragTexCoord.x, y, fragTexCoord.z));
+
+	baseColor.rgb = srgb_to_linear(baseColor.rgb);
+	vec4 blendColor = vec4(srgb_to_linear(fragColor.rgb), fragColor.a);
+
+	fragOut0 = baseColor * blendColor * intensity;
+}

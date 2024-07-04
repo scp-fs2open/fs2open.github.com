@@ -10,7 +10,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 #include "network/multi_pmsg.h"
 #include "network/multi.h"
@@ -38,7 +38,7 @@
 #define MULTI_MSG_KEYDOWN_WAIT				325							// in ms
 
 // sound to play before displaying incoming text messages in-mission
-#define MULTI_MSG_TEXT_SOUND					SND_CUE_VOICE
+#define MULTI_MSG_TEXT_SOUND					GameSounds::CUE_VOICE
 
 // max length of a string we'll allow players to send
 #define MULTI_MSG_MAX_LEN						75
@@ -47,13 +47,13 @@
 int Multi_msg_mode = MULTI_MSG_NONE;
 
 // timestamp for timing keydown
-int Multi_msg_stamp = -1;
+static UI_TIMESTAMP Multi_msg_stamp;
 
 // flag indicating if there is _still_ a key down for the current message mode
 int Multi_msg_repeat_flag = 0;
 
 // timestamp set when we leave messaging mode, use to keep eating keys for a short period of time
-int Multi_msg_eat_stamp = -1;
+static UI_TIMESTAMP Multi_msg_eat_stamp;
 
 // text message input vars
 int Multi_msg_text_enter = 0;
@@ -89,7 +89,7 @@ void multi_msg_perform_command(int command,char *param);
 void multi_msg_key_down(int mode)
 {		
 	// keep eating keys for a short period of time
-	if((Multi_msg_eat_stamp != -1) && !timestamp_elapsed(Multi_msg_eat_stamp)){
+	if ( Multi_msg_eat_stamp.isValid() && !ui_timestamp_elapsed(Multi_msg_eat_stamp) ) {
 		return;
 	}	
 
@@ -112,21 +112,21 @@ void multi_msg_key_down(int mode)
 	// otherwise set the message mode and set the timestamp
 	Multi_msg_mode = mode;
 	Multi_msg_repeat_flag = 1;
-	Multi_msg_stamp = timestamp(MULTI_MSG_KEYDOWN_WAIT);
+	Multi_msg_stamp = ui_timestamp(MULTI_MSG_KEYDOWN_WAIT);
 }
 
 // returns true when messaging system has determined that we should be messaging with voice
 int multi_msg_voice_record()
 {
-	return ((Multi_msg_mode != MULTI_MSG_NONE) && timestamp_elapsed(Multi_msg_stamp) && Multi_msg_repeat_flag && !Multi_msg_text_enter) ? 1 : 0;
+	return ((Multi_msg_mode != MULTI_MSG_NONE) && ui_timestamp_elapsed(Multi_msg_stamp) && Multi_msg_repeat_flag && !Multi_msg_text_enter) ? 1 : 0;
 }
 
 // general processing function to do things like timing keydown, etc. call from multi_do_frame()
 void multi_msg_process()
 {
 	// keep eating keys for a short period of time
-	if((Multi_msg_eat_stamp != -1) && timestamp_elapsed(Multi_msg_eat_stamp)){
-		Multi_msg_eat_stamp = -1;
+	if (ui_timestamp_elapsed(Multi_msg_eat_stamp)) {
+		Multi_msg_eat_stamp = UI_TIMESTAMP::invalid();
 		return;
 	}	
 	
@@ -136,16 +136,16 @@ void multi_msg_process()
 	}
 
 	// if the key has been released
-	if(!Multi_msg_repeat_flag && (Multi_msg_stamp != -1) && !Multi_msg_text_enter){
+	if(!Multi_msg_repeat_flag && Multi_msg_stamp.isValid() && !Multi_msg_text_enter){
 		// if the timestamp had not yet elapsed, fire up the text messaging system
 		// this is the equivalent of a (TAP)
-		if(!timestamp_elapsed(Multi_msg_stamp) && !Multi_msg_text_enter){
+		if(!ui_timestamp_elapsed(Multi_msg_stamp) && !Multi_msg_text_enter){
 			// fire up text messaging system here
 			Multi_msg_text_enter = 1;			
 			memset(Multi_msg_text,0,MULTI_MSG_MAX_TEXT_LEN+1);
 		} else {
 			Multi_msg_mode = MULTI_MSG_NONE;
-			Multi_msg_stamp = -1;		
+			Multi_msg_stamp = UI_TIMESTAMP::invalid();
 		}		
 	}
 	
@@ -207,9 +207,10 @@ void multi_msg_eval_text_msg()
 int multi_msg_text_process(int k)
 {
 	char str[2];
+	int ascii;
 
 	// keep eating keys for a short period of time
-	if((Multi_msg_eat_stamp != -1) && !timestamp_elapsed(Multi_msg_eat_stamp)){
+	if ( Multi_msg_eat_stamp.isValid() && !ui_timestamp_elapsed(Multi_msg_eat_stamp) ) {
 		return 1;
 	}	
 	
@@ -248,9 +249,16 @@ int multi_msg_text_process(int k)
 
 	// stick other printable characters onto the text
 	default :					
+		ascii = key_to_ascii(k);
+
+		// make sure it's actually a printable character
+		if (ascii == 255) {
+			break;
+		}
+
 		// if we're not already at the maximum length
 		if(strlen(Multi_msg_text) < MULTI_MSG_MAX_LEN){
-			str[0] = (char)key_to_ascii(k);
+			str[0] = static_cast<char>(ascii);
 			str[1] = '\0';
 			strcat_s(Multi_msg_text,str);		
 		}
@@ -303,7 +311,7 @@ void multi_msg_display_mission_text(const char *msg, int player_index)
 {
 	// play a cue voice sound and text to speech if not from this player
 	if(Net_players[player_index].player_id != MY_NET_PLAYER_NUM) {
-		snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
+		snd_play(gamesnd_get_game_sound(MULTI_MSG_TEXT_SOUND));
 		fsspeech_play(FSSPEECH_FROM_MULTI, msg);
 	}
 
@@ -330,10 +338,10 @@ void multi_msg_text_flush()
 {
 	Multi_msg_text_enter = 0;
 	Multi_msg_mode = MULTI_MSG_NONE;
-	Multi_msg_stamp = -1;		
+	Multi_msg_stamp = UI_TIMESTAMP::invalid();
 
 	// keep eating keys for a short period of time and unset any used control bits
-	Multi_msg_eat_stamp = timestamp(350);
+	Multi_msg_eat_stamp = ui_timestamp(350);
 	control_config_clear_used_status();
 	key_flush();
 }
@@ -467,7 +475,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// attack my target
 	case ATTACK_TARGET_ITEM :
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Attack %s",700),Ships[target_obj->instance].ship_name);
+			sprintf(temp_string,XSTR("Attack %s",700),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -477,7 +485,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// disable my target
 	case DISABLE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Disable %s",701),Ships[target_obj->instance].ship_name);
+			sprintf(temp_string,XSTR("Disable %s",701),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -487,7 +495,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// protect my target
 	case PROTECT_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Protect %s",702),Ships[target_obj->instance].ship_name);
+			sprintf(temp_string,XSTR("Protect %s",702),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -497,7 +505,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// ignore my target
 	case IGNORE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Ignore %s",703),Ships[target_obj->instance].ship_name);
+			sprintf(temp_string,XSTR("Ignore %s",703),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -507,7 +515,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// disarm my target
 	case DISARM_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
-			sprintf(temp_string,XSTR("Disarm %s",704),Ships[target_obj->instance].ship_name);
+			sprintf(temp_string,XSTR("Disarm %s",704),Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -517,7 +525,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	// disable subsystem on my target
 	case DISABLE_SUBSYSTEM_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP) && (subsys_type != -1) && (subsys_type != 0)){
-			sprintf(temp_string,XSTR("Disable subsystem %s on %s",705),Multi_msg_subsys_name[subsys_type],Ships[target_obj->instance].ship_name);
+			sprintf(temp_string,XSTR("Disable subsystem %s on %s",705),Multi_msg_subsys_name[subsys_type],Ships[target_obj->instance].get_display_name());
 			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
@@ -739,7 +747,7 @@ void multi_msg_process_squadmsg_packet(unsigned char *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// determine who the order is from
-	source_index = find_player_id(source_id);
+	source_index = find_player_index(source_id);
 	if(source_index == -1){
 		nprintf(("Network","Received squadmsg order packet from unknown player!!\n"));
 		return;

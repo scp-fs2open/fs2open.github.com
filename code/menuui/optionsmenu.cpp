@@ -25,9 +25,12 @@
 #include "menuui/optionsmenu.h"
 #include "menuui/optionsmenumulti.h"
 #include "mission/missionbriefcommon.h"
+#include "missionui/missiondebrief.h"
 #include "missionui/missionscreencommon.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
+#include "options/OptionsManager.h"
+#include "options/Option.h"
 #include "osapi/osregistry.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
@@ -235,23 +238,21 @@ static float Backup_sound_volume;
 static float Backup_music_volume;
 static float Backup_voice_volume;
 
-static int Backup_briefing_voice_enabled;
-static int Backup_use_mouse_to_fly;
+static bool Backup_briefing_voice_enabled;
+static bool Backup_use_mouse_to_fly;
 
 static int Sound_volume_int;
 static int Music_volume_int;
 static int Voice_volume_int;
 
-static int Voice_vol_handle = -1;
-int Options_notify_stamp = -1;
+static sound_handle Voice_vol_handle = sound_handle::invalid();
+UI_TIMESTAMP Options_notify_stamp;
 char Options_notify_string[200];
 
 // called whenever accept is hit
 // do any processing, etc in here.
 void options_accept();
 void options_force_button_frame(int n, int frame_num);
-
-extern float FreeSpace_gamma;
 
 void options_add_notify(const char *str);
 void options_notify_do_frame();
@@ -284,6 +285,17 @@ int Options_skills_text_coords[GR_NUM_RESOLUTIONS][4] = {
 		750, 169, 246, 21		// GR_1024
 	}
 };
+
+int Options_scp_string_coords[GR_NUM_RESOLUTIONS][2] = {
+	{
+		265, 18		// GR_640
+	},
+	{
+		465, 25		// GR_1024
+	}
+};
+
+std::pair<SCP_string, int> Options_scp_string_text = {"Press F3 to access additional options", 1831};
 
 
 // ---------------------------------------------------------------------------------------------------------
@@ -390,9 +402,9 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "Effects",			1370,	20,	130,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Music",				1371,	20,	165,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Voice",				1372,	20,	199,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Mouse",				1373,	14,	249,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Off",					1286,	20,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_OFF].button },
-		{ "On",					1285,	83,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_ON].button },
+		{ "Mouse Input Mode",	1665,	10,	249,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
+		{ "Mouse",				1373,	10,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_OFF].button },
+		{ "Joy-0",				1666,	70,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_ON].button },
 		{ "Sensitivity",		1529,	20,	297,	UI_XSTR_COLOR_GREEN,	-1, &Options_sliders[0][OPT_MOUSE_SENS_SLIDER].slider },
 		{ "Skill Level",		1509,	533,	58,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Brightness",		1375,	532,	133,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
@@ -446,9 +458,9 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "Effects",			1370,	33,	209,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Music",				1371,	33,	264,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Voice",				1372,	33,	319,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Mouse",				1373,	23,	399,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Off",					1286,	32,	437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_OFF].button },
-		{ "On",					1285,	134,	437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_ON].button },
+		{ "Mouse Input Mode",	1665,	22,		399,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
+		{ "Mouse",				1373,	22,		437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_OFF].button },
+		{ "Joy-0",				1666,	124,	437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_ON].button },
 		{ "Sensitivity",		1529,	34,	477,	UI_XSTR_COLOR_GREEN,	-1, &Options_sliders[1][OPT_MOUSE_SENS_SLIDER].slider },
 		{ "Skill Level",		1509,	854,	93,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Brightness",		1375,	852,	214,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
@@ -465,30 +477,31 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 
 void options_play_voice_clip()
 {
-	int snd_id;
-
 	if ( snd_is_playing(Voice_vol_handle) ) {
 		snd_stop(Voice_vol_handle);
-		Voice_vol_handle=-1;
+		Voice_vol_handle = sound_handle::invalid();
 	}
+	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
+	auto entry = gamesnd_choose_entry(gs);
 
-	snd_id = snd_load(&Snds_iface[SND_VOICE_SLIDER_CLIP], 0);
+	auto snd_id = snd_load(entry, &gs->flags, 0);
+
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
 
 void options_add_notify(const char *str)
 {
 	strcpy_s(Options_notify_string, str);
-	Options_notify_stamp = timestamp(OPTIONS_NOTIFY_TIME);
+	Options_notify_stamp = ui_timestamp(OPTIONS_NOTIFY_TIME);
 }
 
 void options_notify_do_frame()
 {
 	int w,h;
 
-	if (Options_notify_stamp != -1) {
-		if (timestamp_elapsed(Options_notify_stamp)) {
-			Options_notify_stamp = -1;
+	if (Options_notify_stamp.isValid()) {
+		if (ui_timestamp_elapsed(Options_notify_stamp)) {
+			Options_notify_stamp = UI_TIMESTAMP::invalid();
 
 		} else {
 			gr_get_string_size(&w, &h, Options_notify_string);
@@ -508,7 +521,7 @@ void options_set_bmaps(int btn, int bm_index)
 }
 */
 
-void options_tab_setup(int set_palette)
+void options_tab_setup(int  /*set_palette*/)
 {
 	// char *pal;
 	int i;
@@ -539,12 +552,17 @@ void options_tab_setup(int set_palette)
 
 	// maybe enable/disable controls based upon current tab
 	if (Tab == OPTIONS_TAB) {
-		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
+		for(i=0; i<NUM_OPTIONS_SLIDERS; i++) {
 			Options_sliders[gr_screen.res][i].slider.enable();
 			Options_sliders[gr_screen.res][i].slider.unhide();
 		}		
+		if (Cmdline_deadzone >= 0) {
+			//Deadzone is being set by the command line 
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+		}
 	} else {
-		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
+		for(i=0; i<NUM_OPTIONS_SLIDERS; i++) {
 			Options_sliders[gr_screen.res][i].slider.hide();
 			Options_sliders[gr_screen.res][i].slider.disable();
 		}		
@@ -554,6 +572,7 @@ void options_tab_setup(int set_palette)
 		Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.disable();
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 0;
 	}
+
 
 	// do other special processing
 	switch (Tab) {
@@ -587,11 +606,6 @@ void options_change_tab(int n)
 
 	switch (n) {
 		case MULTIPLAYER_TAB:
-			if ( Networking_disabled ) {
-				game_feature_disabled_popup();
-				return;
-			}
-
 			if ( !Options_multi_inited ) {
 				// init multiplayer
 				options_multi_init(&Ui_window);
@@ -620,6 +634,11 @@ void options_change_tab(int n)
 			Options_sliders[gr_screen.res][idx].slider.enable();
 			Options_sliders[gr_screen.res][idx].slider.unhide();
 		}
+		if (Cmdline_deadzone >= 0){
+			//Deadzone is being set by the command line 
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+		}
 	} else {
 		Options_bogus.hide();
 		Options_bogus.disable();
@@ -631,7 +650,7 @@ void options_change_tab(int n)
 
 	if (n != MULTIPLAYER_TAB) {
 		if (Backgrounds[gr_screen.res][n].mask < 0) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			return;
 		}
 	}
@@ -640,32 +659,14 @@ void options_change_tab(int n)
 
 	Tab = n;
 	options_tab_setup(1);
-	gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
-}
-
-void set_sound_volume()
-{
-	main_hall_reset_ambient_vol();
-}
-
-void set_music_volume()
-{
-	event_music_set_volume_all(Master_event_music_volume);
-}
-
-void set_voice_volume()
-{
-	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
+	gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 }
 
 void options_cancel_exit()
 {
-	Master_sound_volume = Backup_sound_volume;
-	set_sound_volume();
-	Master_event_music_volume = Backup_music_volume;
-	set_music_volume();
-	Master_voice_volume = Backup_voice_volume;
-	set_voice_volume();
+	snd_set_effects_volume(Backup_sound_volume);
+	event_music_set_volume(Backup_music_volume);
+	snd_set_voice_volume(Backup_voice_volume);
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Game_skill_level = Backup_skill_level;
@@ -678,6 +679,11 @@ void options_cancel_exit()
 		Detail = Detail_original;
 	}
 
+	// We have to discard in game options here
+	if (Using_in_game_options) {
+		options::OptionsManager::instance()->discardChanges();
+	}
+
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -685,23 +691,35 @@ void options_change_gamma(float delta)
 {
 	char tmp_gamma_string[32];
 
-	FreeSpace_gamma += delta;
-	if (FreeSpace_gamma < 0.1f) {
-		FreeSpace_gamma = 0.1f;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+	auto gamma = Gr_gamma + delta;
+	if (gamma < 0.1f) {
+		gamma = 0.1f;
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
-	} else if (FreeSpace_gamma > 5.0f) {
-		FreeSpace_gamma = 5.0f;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+	} else if (gamma > 5.0f) {
+		gamma = 5.0f;
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	} else {
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
-	gr_set_gamma(FreeSpace_gamma);
-	sprintf(tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma);
+	gr_set_gamma(gamma);
+	sprintf(tmp_gamma_string, NOX("%.2f"), gamma);
 
 	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
+
+	// The Gamma option sets its display value differently to the serialized value itself
+	// so we'll leave this here instead of trying to make a global method that works just
+	// for this one specific case
+	if (Using_in_game_options) {
+		const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey("Graphics.Gamma");
+		if (thisOpt != nullptr) {
+			auto val = thisOpt->getCurrentValueDescription();
+			SCP_string newVal = std::to_string(gamma);  // OptionsManager stores values as serialized strings
+			thisOpt->setValueDescription({val.display, newVal.c_str()});
+		}
+	}
 }
 
 void options_button_pressed(int n)
@@ -718,26 +736,31 @@ void options_button_pressed(int n)
 			break;
 
 		case ABORT_GAME_BUTTON:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 374));
-			if ( choice == 1 )
+			if ( choice == 1 ) {
+				if (gameseq_get_state(1) == GS_STATE_DEBRIEF && (Game_mode & GM_CAMPAIGN_MODE)) {
+					// auto-accept mission outcome before quitting
+					debrief_maybe_auto_accept();
+				}
 				gameseq_post_event(GS_EVENT_QUIT_GAME);
+			}
 			break;
 
 		case CONTROL_CONFIG_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CONTROL_CONFIG);
 			break;				
 
 		case HUD_CONFIG_BUTTON:
 			// can't go to the hud config screen when a multiplayer observer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				options_add_notify(XSTR( "Cannot use HUD config when an observer!", 375));
 				break;
 			}
 
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_HUD_CONFIG);
 			break;
 
@@ -747,88 +770,97 @@ void options_button_pressed(int n)
 
 			// BEGIN - detail level tab buttons
 
+			// Target View Rendering is currently not handled by in-game options, assumes "On"
 		case HUD_TARGETVIEW_RENDER_ON:
 			Detail.targetview_model = 1;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HUD_TARGETVIEW_RENDER_OFF:
 			Detail.targetview_model = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
+			// Planets is currently not handled by in-game options, assumes "On"
 		case PLANETS_ON:
 			Detail.planets_suns = 1;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case PLANETS_OFF:
 			Detail.planets_suns = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
+			// Weapon extras is currently not handled by in-game options, assumes "On"
 		case WEAPON_EXTRAS_ON:
 			Detail.weapon_extras = 1;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case WEAPON_EXTRAS_OFF:
 			Detail.weapon_extras = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;		
 
 		case LOW_DETAIL_N:
 			options_detail_set_level(0);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MEDIUM_DETAIL_N:
 			options_detail_set_level(1);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HIGH_DETAIL_N:
 			options_detail_set_level(2);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case VERY_HIGH_DETAIL_N:
 			options_detail_set_level(3);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case CUSTOM_DETAIL_N:
 			options_detail_set_level(-1);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 			// END - detail level tab buttons
 
 		case GAMMA_DOWN:
 			options_change_gamma(-0.05f);
+			// Gamma in-game change is handled in the above method
 			break;
 
 		case GAMMA_UP:
 			options_change_gamma(0.05f);
+			// Gamma in-game change is handled in the above method
 			break;
 
 		case BRIEF_VOICE_ON:
-			Briefing_voice_enabled = 1;
-			gamesnd_play_iface(SND_USER_SELECT);
+			Briefing_voice_enabled = true;
+			options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", true);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case BRIEF_VOICE_OFF:
-			Briefing_voice_enabled = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			Briefing_voice_enabled = false;
+			options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", false);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MOUSE_ON:
 			Use_mouse_to_fly = 1;
-			gamesnd_play_iface(SND_USER_SELECT);
+			options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", true);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MOUSE_OFF:
 			Use_mouse_to_fly = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", false);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 	}
 }
@@ -838,50 +870,63 @@ void options_sliders_update()
 	// sound slider
 	if (Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos != Sound_volume_int) {
 		Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos;
-		Master_sound_volume = ((float) (Sound_volume_int) / 9.0f);
-		set_sound_volume();
-		gamesnd_play_iface(SND_USER_SELECT);
+		snd_set_effects_volume((float) (Sound_volume_int) / 9.0f);
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume); // Volume options save the global float, not the range slider position
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	// music slider
 	if (Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos != Music_volume_int) {
 		Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos;
-		Master_event_music_volume = ((float) (Music_volume_int) / 9.0f);
-		if (Master_event_music_volume > 0.0f) {
-			event_music_enable();
-		}
-
-		set_music_volume();
-		gamesnd_play_iface(SND_USER_SELECT);
+		event_music_set_volume((float) (Music_volume_int) / 9.0f);
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume); // Volume options save the global float, not the range slider position
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	// voice slider
 	if (Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos != Voice_volume_int) {
 		Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos;
-		Master_voice_volume = ((float) (Voice_volume_int) / 9.0f);
-		set_voice_volume();
+		snd_set_voice_volume((float) (Voice_volume_int) / 9.0f);
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume); // Volume options save the global float, not the range slider position
 		options_play_voice_clip();
 	}
 
 	if (Mouse_sensitivity != Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos) {
 		Mouse_sensitivity = Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos;
-		gamesnd_play_iface(SND_USER_SELECT);
+		options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Joy_sensitivity != Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos) {
 		Joy_sensitivity = Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos;
-		gamesnd_play_iface(SND_USER_SELECT);
+		options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Joy_dead_zone_size != Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5) {
 		Joy_dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
-		gamesnd_play_iface(SND_USER_SELECT);
+		options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Game_skill_level != Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos) {
 		Game_skill_level = Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos;
-		gamesnd_play_iface(SND_USER_SELECT);
+		options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
+}
+
+void options_detail_sliders_in_game_update()
+{
+	// Save in-game options settings
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
 }
 
 void options_accept()
@@ -890,10 +935,19 @@ void options_accept()
 	if ( Options_multi_inited ) {
 		// if we've failed to provide a PXO password or username but have turned on PXO, we don't want to quit
 		if (!options_multi_accept()) {
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "PXO is selected but password or username is missing");
 			return;
 		}
+	}
+
+	// We have to save in game options here
+	if (Using_in_game_options) {
+		// detail sliders are updated every frame but it's silly to run OptionsManager every frame, too
+		// so just set them on Accept and then persist.
+		options_detail_sliders_in_game_update();
+
+		options::OptionsManager::instance()->persistChanges();
 	}
 
 	// If music is zero volume, disable
@@ -905,7 +959,7 @@ void options_accept()
 	// apply other options (display options, etc)
 	// note: return in here (and play failed sound) if they can't accept yet for some reason
 
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -925,10 +979,6 @@ void options_menu_init()
 	options_buttons *b;
 
 	Assert(!Options_menu_inited);
-
-	// pause all sounds, since we could get here through the game
-	weapon_pause_sounds();
-	//audiostream_pause_all();
 
 	Tab = 0;
 	Gamma_last_set = -1;
@@ -1012,9 +1062,9 @@ void options_menu_init()
 	
 	// setup slider values 
 	// note slider scale is 0-9, while Master_ values calc with 1-10 scale (hence the -1)
-	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = (int) (Master_sound_volume * 9.0f + 0.5f);
-	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = (int) (Master_event_music_volume * 9.0f + 0.5f);	
-	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = (int) (Master_voice_volume * 9.0f + 0.5f);
+	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = (int)std::lround(Master_sound_volume * 9.0f);
+	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = (int)std::lround(Master_event_music_volume * 9.0f);
+	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = (int)std::lround(Master_voice_volume * 9.0f);
 
 	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;	
 	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Joy_dead_zone_size / 5;
@@ -1022,6 +1072,12 @@ void options_menu_init()
 	Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos = Game_skill_level;
 
 	Gamma_colors_inited = 0;
+
+	if (Cmdline_deadzone >= 0){
+		//Deadzone is being set by the command line 
+		Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+		Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+	}
 
 	Options_menu_inited = 1;
 
@@ -1044,9 +1100,9 @@ void options_menu_close()
 		}
 	}
 
-	if ( Voice_vol_handle >= 0 ) {
+	if (Voice_vol_handle.isValid()) {
 		snd_stop(Voice_vol_handle);
-		Voice_vol_handle = -1;
+		Voice_vol_handle = sound_handle::invalid();
 	}
 
 	options_multi_close();
@@ -1057,15 +1113,9 @@ void options_menu_close()
 	Pilot.save_savefile();
 	game_flush();
 	
-	// unpause all sounds, since we could be headed back to the game
-	weapon_unpause_sounds();
-	//audiostream_unpause_all();
-	
 	Options_menu_inited = 0;
 	Options_multi_inited = 0;
 	Options_detail_inited = 0;
-
-
 }
 
 
@@ -1078,7 +1128,7 @@ void draw_gamma_box()
 //	ushort Gamma_data[Options_gamma_coords[gr_screen.res][OPTIONS_W_COORD]*Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD]*2];
 	ushort Gamma_data[MAX_GAMMA_BITMAP_SIZE];
 
-	v = fl2i( pow(0.5f, 1.0f / FreeSpace_gamma) * 255.0f );
+	v = fl2i( pow(0.5f, 1.0f / Gr_gamma) * 255.0f );
 	if (v > 255){
 		v = 255;
 	} else if (v < 0){
@@ -1134,7 +1184,7 @@ void draw_gamma_box()
 }
 
 
-void options_menu_do_frame(float frametime)
+void options_menu_do_frame(float  /*frametime*/)
 {
 	int i, k, x, y;	
 
@@ -1168,7 +1218,7 @@ void options_menu_do_frame(float frametime)
 
 		case KEY_C:
 			if (Tab == OPTIONS_TAB) {
-				gamesnd_play_iface(SND_SWITCH_SCREENS);
+				gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 				gameseq_post_event(GS_EVENT_CONTROL_CONFIG);
 			}
 
@@ -1176,7 +1226,7 @@ void options_menu_do_frame(float frametime)
 
 		case KEY_H:
 			if (Tab == OPTIONS_TAB) {
-				gamesnd_play_iface(SND_SWITCH_SCREENS);
+				gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 				gameseq_post_event(GS_EVENT_HUD_CONFIG);
 			}
 
@@ -1194,6 +1244,17 @@ void options_menu_do_frame(float frametime)
 			break;
 
 		case KEY_ENTER:			
+			break;
+
+		case KEY_F3: // SCP ingame options
+			if (Using_in_game_options) {
+				// Going into F3 Options needs to either discard or save the changes made here. 
+				// There's an argument to be made for both but I feel like saving is the better choice - Mjn
+				options::OptionsManager::instance()->persistChanges();
+
+				gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+				gameseq_post_event(GS_EVENT_INGAME_OPTIONS);
+			}
 			break;
 	}	
 
@@ -1284,13 +1345,22 @@ void options_menu_do_frame(float frametime)
 		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD];
 		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD];
 
-		gr_printf_menu(x, y, NOX("%.2f"), FreeSpace_gamma);
+		gr_printf_menu(x, y, NOX("%.2f"), Gr_gamma);
 	}
 	//==============================================================================
 
 	// maybe blit a waveform
 	if(Tab == MULTIPLAYER_TAB){
 		options_multi_vox_process_waveform();
+	}
+
+	// maybe blit the SCP Options string
+	if (Using_in_game_options) {
+		gr_set_color_fast(&Color_bright_blue);
+		gr_string(Options_scp_string_coords[gr_screen.res][OPTIONS_X_COORD],
+			Options_scp_string_coords[gr_screen.res][OPTIONS_Y_COORD],
+			XSTR(Options_scp_string_text.first.c_str(), Options_scp_string_text.second),
+			GR_RESIZE_MENU);
 	}
 	
 	gr_flip();
@@ -1353,14 +1423,38 @@ void options_detail_init()
 	options_detail_synch_sliders();
 }
 
+bool shader_compile_status = false;
+bool shader_compile_started = false;
+SCP_string recompile_state = "";
+void shader_recompile_callback(size_t current, size_t total) 
+{
+	recompile_state = "";
+	recompile_state += "Recompiling shader ";
+	recompile_state += std::to_string(current + 1);
+	recompile_state += "/";
+	recompile_state += std::to_string(total);
+
+	shader_compile_status = (current + 1) == total;
+}
+
+int recompile_shaders() 
+{
+	if (!shader_compile_started) {
+		gr_recompile_all_shaders(shader_recompile_callback);
+		shader_compile_started = true;
+	}
+	popup_change_text(recompile_state.c_str());
+	return shader_compile_status;
+}
+
 void options_detail_sliders_update()
 {
 	int i;
 
-	for ( i = 0; i < NUM_DETAIL_SLIDERS; i++ ) {
-		if ( Detail_sliders[gr_screen.res][i].slider.pos != Detail_slider_pos[i] ) {
+	for (i = 0; i < NUM_DETAIL_SLIDERS; i++) {
+		if (Detail_sliders[gr_screen.res][i].slider.pos != Detail_slider_pos[i]) {
 			Detail_slider_pos[i] = Detail_sliders[gr_screen.res][i].slider.pos;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	}
 
@@ -1369,14 +1463,22 @@ void options_detail_sliders_update()
 
 	// modify nebula stuff
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
-	neb2_set_detail_level(Detail.nebula_detail);
 
-	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;	
+	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;
 	Detail.shield_effects = Detail_sliders[gr_screen.res][SHIELD_DETAIL_SLIDER].slider.pos;
 	Detail.num_stars = Detail_sliders[gr_screen.res][NUM_STARS_SLIDER].slider.pos;
 	Detail.num_particles = Detail_sliders[gr_screen.res][NUM_PARTICLES_SLIDER].slider.pos;
-	Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
+
+	// If the new lighting setting is above 3 and the old one was below or the reverse,
+	// we need to recompile all shaders we have to account for the changed lighting model.
+	
+	if (Detail.lighting != Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos) {
+		Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
+		shader_compile_status = false;
+		shader_compile_started = false;
+		popup_till_condition(recompile_shaders, POPUP_CANCEL, "Recompiling shaders");
+	}
 }
 
 void options_detail_hide_stuff()

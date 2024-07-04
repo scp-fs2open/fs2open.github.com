@@ -15,6 +15,8 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
+#include "gamesnd/gamesnd.h"
+
 class object;
 class model_draw_list;
 
@@ -24,7 +26,6 @@ class model_draw_list;
 #define	SW_WEAPON_KILL		(1<<3)	// Shockwave created when weapon destroyed by another
 
 #define	MAX_SHOCKWAVES					16
-#define	SW_MAX_OBJS_HIT	64
 
 // -----------------------------------------------------------
 // Data structures
@@ -51,8 +52,7 @@ typedef struct shockwave {
 	shockwave	*next, *prev;
 	int			flags;
 	int			objnum;					// index into Objects[] for shockwave
-	int			num_objs_hit;
-	int			obj_sig_hitlist[SW_MAX_OBJS_HIT];
+	SCP_vector<std::pair<int, int>>			obj_sig_hitlist;
 	float		speed, radius;
 	float		inner_radius, outer_radius, damage;
 	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
@@ -67,6 +67,7 @@ typedef struct shockwave {
 	int			delay_stamp;			// for delayed shockwaves
 	angles		rot_angles;
 	int			model_id;
+	gamesnd_id  blast_sound_id;
 } shockwave;
 
 typedef struct shockwave_create_info {
@@ -74,17 +75,24 @@ typedef struct shockwave_create_info {
 	char name[MAX_FILENAME_LEN];
 	char pof_name[MAX_FILENAME_LEN];
 
-	float inner_rad;
-	float outer_rad;
+	float inner_rad;		// max damage out to this distance
+	float outer_rad;		// 0 damage at this distance or more, outer_rad / speed is total time
 	float damage;
 	float blast;
 	float speed;
+	int radius_curve_idx;   // curve for shockwave radius over time
 	angles rot_angles;
+	bool rot_defined;		// if the modder specified rot_angles
+	bool damage_overidden;  // did this have shockwave damage specifically set or not
 
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
 
+	gamesnd_id blast_sound_id;	// allow setting unique sounds for a ship or weapon shockwave --wookieejedi
+
 } shockwave_create_info;
+
+extern bool Use_3D_shockwaves;
 
 extern void shockwave_create_info_init(shockwave_create_info *sci);
 extern void shockwave_create_info_load(shockwave_create_info *sci);

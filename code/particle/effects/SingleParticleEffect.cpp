@@ -16,18 +16,23 @@ namespace effects {
 SingleParticleEffect::SingleParticleEffect(const SCP_string& name)
 	: ParticleEffect(name) {}
 
-bool SingleParticleEffect::processSource(const ParticleSource* source) {
+bool SingleParticleEffect::processSource(ParticleSource* source) {
 	if (!m_timing.continueProcessing(source)) {
 		return false;
 	}
 
-	particle_info info;
-	memset(&info, 0, sizeof(info));
+	// This uses the internal features of the timing class for determining if and how many effects should be triggered
+	// this frame
+	util::EffectTiming::TimingState time_state;
+	while (m_timing.shouldCreateEffect(source, time_state)) {
+		particle_info info;
 
-	source->getOrigin()->applyToParticleInfo(info);
-	info.vel = vmd_zero_vector;
+		source->getOrigin()->applyToParticleInfo(info);
 
-	m_particleProperties.createParticle(info);
+		info.vel *= m_vel_inherit.next();
+
+		m_particleProperties.createParticle(info);
+	}
 
 	// Continue processing this source
 	return true;
@@ -35,6 +40,10 @@ bool SingleParticleEffect::processSource(const ParticleSource* source) {
 
 void SingleParticleEffect::parseValues(bool nocreate) {
 	m_particleProperties.parse(nocreate);
+
+	if (optional_string("+Parent Velocity Factor:")) {
+		m_vel_inherit = ::util::parseUniformRange<float>();
+	}
 
 	m_timing = util::EffectTiming::parseTiming();
 }
@@ -53,13 +62,18 @@ SingleParticleEffect* SingleParticleEffect::createInstance(int effectID, float m
 	Assertion(minSize <= maxSize, "Maximum size %f is more than minimum size %f!", maxSize, minSize);
 	Assertion(minSize >= 0.0f, "Minimum size may not be less than zero, got %f!", minSize);
 
+	if (Is_standalone) {
+		return nullptr;
+	}
+
 	auto effectPtr = new SingleParticleEffect("");
-	effectPtr->m_particleProperties.m_bitmap = effectID;
-	effectPtr->m_particleProperties.m_radius = util::UniformFloatRange(minSize, maxSize);
+	effectPtr->m_particleProperties.m_bitmap_list.push_back(effectID);
+	effectPtr->m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0, effectPtr->m_particleProperties.m_bitmap_list.size() - 1);
+	effectPtr->m_particleProperties.m_radius = ::util::UniformFloatRange(minSize, maxSize);
 
 	if (lifetime > 0.0f) {
 		effectPtr->m_particleProperties.m_hasLifetime = true;
-		effectPtr->m_particleProperties.m_lifetime = util::UniformFloatRange(lifetime);
+		effectPtr->m_particleProperties.m_lifetime = ::util::UniformFloatRange(lifetime);
 	}
 
 	return effectPtr;

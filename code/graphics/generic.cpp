@@ -158,31 +158,25 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 {
 	CFILE *img_cfp = NULL;
 	int anim_fps = 0;
-	char full_path[MAX_PATH];
-	size_t size = 0, offset = 0;
-	const int NUM_TYPES = 3;
-	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG};
-	const char *ext_list[NUM_TYPES] = {".eff", ".ani", ".png"};
-	int rval = -1;
 	int bpp;
 
 	ga->type = BM_TYPE_NONE;
 
-	rval = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
+	auto res = cf_find_file_location_ext(ga->filename, BM_ANI_NUM_TYPES, bm_ani_ext_list, CF_TYPE_ANY);
 
 	// could not be found, or is invalid for some reason
-	if ( (rval < 0) || (rval >= NUM_TYPES) )
+	if ( !res.found )
 		return -1;
 
 	//make sure we can open it
-	img_cfp = cfopen_special(full_path, "rb", size, offset, CF_TYPE_ANY);
+	img_cfp = cfopen_special(res, "rb", CF_TYPE_ANY);
 
 	if (img_cfp == NULL) {
 		return -1;
 	}
 
-	strcat_s(ga->filename, ext_list[rval]);
-	ga->type = type_list[rval];
+	strcat_s(ga->filename, bm_ani_ext_list[res.extension_index]);
+	ga->type = bm_ani_type_list[res.extension_index];
 	//seek to the end
 	cfseek(img_cfp, 0, CF_SEEK_END);
 
@@ -223,7 +217,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 				ga->png.anim = new apng::apng_ani(ga->filename, cache);
 			}
 			catch (const apng::ApngException& e) {
-				mprintf(("Failed to load apng: %s\n", e.what() ));
+				nprintf(("apng","Failed to load apng: %s\n", e.what() ));
 				delete ga->png.anim;
 				ga->png.anim = nullptr;
 				ga->type = BM_TYPE_NONE;
@@ -251,13 +245,19 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		if ( p )
 			*p = 0;
 		char frame_name[MAX_FILENAME_LEN];
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
-			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
+			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s\n", ga->filename));
 			return -1;
 		}
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		ga->eff.next_frame = bm_load(frame_name);
 		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
 		ga->previous_frame = 0;
@@ -369,7 +369,10 @@ void generic_render_eff_stream(generic_anim *ga)
 		mprintf(("frame: %d\n", ga->current_frame));
 	#endif
 		char frame_name[MAX_FILENAME_LEN];
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
@@ -379,7 +382,10 @@ void generic_render_eff_stream(generic_anim *ga)
 			bm_unload(ga->eff.next_frame, 0, true);
 			if (ga->current_frame == ga->num_frames-1)
 			{
-				snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+				if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
+					// Make sure the string is null terminated
+					frame_name[MAX_FILENAME_LEN - 1] = '\0';
+				}
 				bm_reload(ga->eff.next_frame, frame_name);
 			}
 		}
@@ -407,7 +413,6 @@ void generic_render_ani_stream(generic_anim *ga)
 		mprintf(("frame: %d\n", ga->current_frame));
 	#endif
 
-	anim_check_for_palette_change(ga->ani.instance);
 	// if we're using bitmap polys
 	BM_SELECT_TEX_FORMAT();
 	if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
@@ -514,7 +519,7 @@ void generic_render_png_stream(generic_anim* ga)
  * @param [in] *ga  animation data
  * @param [in] frametime  how long this frame took
  */
-void generic_anim_render_fixed_frame_delay(generic_anim* ga, float frametime)
+void generic_anim_render_fixed_frame_delay(generic_anim* ga, float frametime, float alpha = 1.0f)
 {
 	float keytime = 0.0;
 
@@ -575,10 +580,19 @@ void generic_anim_render_fixed_frame_delay(generic_anim* ga, float frametime)
 			} else {
 				generic_render_eff_stream(ga);
 			}
-			gr_set_bitmap(ga->bitmap_id);
+
+			if (alpha == 1.0f) {
+				gr_set_bitmap(ga->bitmap_id);
+			} else {
+				gr_set_bitmap(ga->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+			}
 		}
 		else {
-			gr_set_bitmap(ga->first_frame + ga->current_frame);
+			if (alpha == 1.0f) {
+				gr_set_bitmap(ga->first_frame + ga->current_frame);
+			} else {
+				gr_set_bitmap(ga->first_frame + ga->current_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+			}
 		}
 	}
 }
@@ -624,7 +638,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		else {
 			// playing forwards
 			ga->anim_time += frametime;
-			if(ga->anim_time >= ga->total_time && ga->png.anim->current_frame >= ga->png.anim->nframes-1) {
+			if(ga->anim_time >= ga->total_time && ga->png.anim->current_frame >= ga->png.anim->nframes) {
 				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
 					ga->anim_time = ga->total_time;  // stop on last frame when playing
 				}
@@ -654,7 +668,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		}
 		else {
 			if (ga->anim_time >= ga->png.previous_frame_time + ga->png.anim->frame.delay &&
-					ga->png.anim->current_frame < ga->png.anim->nframes-1) {
+					ga->png.anim->current_frame < ga->png.anim->nframes) {
 				ga->png.previous_frame_time += ga->png.anim->frame.delay;
 				ga->current_frame++;
 			}
@@ -698,7 +712,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 		generic_anim_render_variable_frame_delay(ga, frametime, a);
 	}
 	else {
-		generic_anim_render_fixed_frame_delay(ga, frametime);
+		generic_anim_render_fixed_frame_delay(ga, frametime, a);
 	}
 
 	if(ga->num_frames > 0) {
@@ -714,8 +728,44 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 			else if (ge->draw == true) {
 				// currently only for lua streaminganim objects
 				// and don't draw them unless requested...
-				gr_bitmap_uv(x, y, ge->width, ge->height, ge->u0, ge->v0, ge->u1, ge->v1, GR_RESIZE_NONE);
+				gr_bitmap_uv(x, y, ge->width, ge->height, ge->u0, ge->v0, ge->u1, ge->v1, ge->resize_mode);
 			}
 		}
+	}
+}
+
+void generic_anim_bitmap_set(generic_anim* ga, float frametime, const generic_extras* ge)
+{
+	if ((ge != nullptr) && (ga->use_hud_color == true)) {
+		Warning(LOCATION, "Monochrome generic anims can't use extra info (yet)");
+		return;
+	}
+
+	float a = 1.0f;
+	if (ge != nullptr) {
+		a = ge->alpha;
+	}
+	if (ga->type == BM_TYPE_PNG) {
+		generic_anim_render_variable_frame_delay(ga, frametime, a);
+	}
+	else {
+		generic_anim_render_fixed_frame_delay(ga, frametime, a);
+	}
+
+	if (ga->num_frames > 0)
+		ga->previous_frame = ga->current_frame;
+}
+
+/*
+ * @brief reset an animation back to the start
+ *
+ * @param [in] *ga  animation data
+ */
+void generic_anim_reset(generic_anim *ga) {
+	ga->anim_time = 0.0f;
+	ga->current_frame = 0;
+	if (ga->type == BM_TYPE_PNG) {
+		ga->png.previous_frame_time = 0.0f;
+		ga->png.anim->goto_start();
 	}
 }

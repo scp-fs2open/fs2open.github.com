@@ -10,6 +10,7 @@
 
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "localization/localize.h"
 
 namespace font
 {
@@ -24,11 +25,21 @@ namespace font
 	{
 		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++)
 		{
-			if (!(*iter)->getName().compare(name))
+			if ((*iter)->getName() == name)
 				return iter->get();
 		}
 
 		return NULL;
+	}
+
+	FSFont* FontManager::getFontByFilename(const SCP_string& filename) 
+	{
+		for (auto & iter : fonts) 
+		{
+			if (iter->getFilename() == filename)
+				return iter.get();
+		}
+		return nullptr;
 	}
 
 	FSFont *FontManager::getCurrentFont()
@@ -50,7 +61,7 @@ namespace font
 
 		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++, index++)
 		{
-			if (!(*iter)->getName().compare(name))
+			if ((*iter)->getName() == name)
 				return index;
 		}
 
@@ -105,19 +116,30 @@ namespace font
 			return data;
 		}
 
-		bool localize = true;
+		// try localized version first
+		CFILE* fp = nullptr;
+		SCP_string typeface_lcl = typeface;
 
-		CFILE* fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY, localize);
+		lcl_add_dir_to_path_with_filename(typeface_lcl);
+
+		fp = cfopen(typeface_lcl.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+
+		// fallback if not found
+		if ( !fp )
+		{
+			fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+		}
+
 		if (fp == NULL)
 		{
-			mprintf(("Unable to find font file \"%s\".", typeface.c_str()));
+			mprintf(("Unable to find font file \"%s\"\n", typeface.c_str()));
 			return NULL;
 		}
 
 		std::unique_ptr<font> fnt(new font());
 		if (!fnt)
 		{
-			mprintf(("Unable to allocate memory for \"%s\"", typeface.c_str()));
+			mprintf(("Unable to allocate memory for \"%s\"\n", typeface.c_str()));
 			return NULL;
 		}
 
@@ -273,7 +295,7 @@ namespace font
 
 			if (fontFile == NULL)
 			{
-				mprintf(("Couldn't open font file \"%s\"", fileName.c_str()));
+				mprintf(("Couldn't open font file \"%s\"\n", fileName.c_str()));
 				return NULL;
 			}
 
@@ -283,14 +305,14 @@ namespace font
 
 			if (!fontData)
 			{
-				mprintf(("Couldn't allocate " SIZE_T_ARG " bytes for reading font file \"%s\"!", size, fileName.c_str()));
+				mprintf(("Couldn't allocate " SIZE_T_ARG " bytes for reading font file \"%s\"!\n", size, fileName.c_str()));
 				cfclose(fontFile);
 				return NULL;
 			}
 
 			if (!cfread(fontData.get(), (int)size, 1, fontFile))
 			{
-				mprintf(("Error while reading font data from \"%s\"", fileName.c_str()));
+				mprintf(("Error while reading font data from \"%s\"\n", fileName.c_str()));
 				cfclose(fontFile);
 				return NULL;
 			}
@@ -313,7 +335,7 @@ namespace font
 		
 		if (handle < 0)
 		{
-			mprintf(("Couldn't couldn't create font for file \"%s\"", fileName.c_str()));
+			mprintf(("Couldn't couldn't create font for file \"%s\"\n", fileName.c_str()));
 			return NULL;
 		}
 

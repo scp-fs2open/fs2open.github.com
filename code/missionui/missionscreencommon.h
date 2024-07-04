@@ -13,6 +13,7 @@
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
 
 #include "globalincs/globals.h"
+#include "gamesnd/gamesnd.h"
 #include "model/model.h"
 #include "ui/ui.h"
 
@@ -63,22 +64,39 @@ extern int Mouse_down_last_frame;
 extern int Wing_slot_empty_bitmap;
 extern int Wing_slot_disabled_bitmap;
 
-extern int Flash_timer;				//	timestamp used to start flashing
-extern int Flash_toggle;			// timestamp used to toggle flashing
+extern UI_TIMESTAMP Flash_timer;	// timestamp used to start flashing
+extern UI_TIMESTAMP Flash_toggle;	// timestamp used to toggle flashing
 extern int Flash_bright;			// state of button to flash
 
+extern int anim_timer_start;
+
 void common_button_do(int i);
+
+//If new enums are added here be sure to also update the description for the API version in scripting\api\libs\ui.cpp - Mjn
+enum class commit_pressed_status { 
+	SUCCESS, 
+	GENERAL_FAIL, 
+	PLAYER_NO_WEAPONS,  
+	NO_REQUIRED_WEAPON, 
+	NO_REQUIRED_WEAPON_MULTIPLE, 
+	BANK_GAP_ERROR, 
+	PLAYER_NO_SLOT, 
+	MULTI_PLAYERS_NO_SHIPS,
+	MULTI_NOT_ALL_ASSIGNED,
+	MULTI_NO_PRIMARY,
+	MULTI_NO_SECONDARY
+};
 
 // common_select_init() performs initialization common to the briefing/ship select/weapon select
 // screens.  This includes loading/setting the palette, loading the background animation, loading
 // the screen switching animations, loading the button animation frames
-void	common_select_init();	
+void common_select_init(bool API_Access = false);
 int	common_select_do(float frametime);
 void	common_select_close();
 void	common_draw_buttons();
 void	common_check_buttons();
 void	common_check_keys(int k);
-void	commit_pressed();
+commit_pressed_status commit_pressed(bool API_Access = false);
 void	common_render(float frametime);
 void	common_buttons_init(UI_WINDOW *ui_window);
 void	common_buttons_maybe_reload(UI_WINDOW *ui_window);
@@ -86,7 +104,8 @@ void 	common_render_selected_screen_button();
 void	common_reset_buttons();
 void	common_redraw_pressed_buttons();
 void  common_maybe_clear_focus();
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access = false);
+void common_setup_room_lights();
 
 int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);
 
@@ -99,20 +118,17 @@ void unload_wing_icons();
 void	common_flash_button_init();
 int	common_flash_bright();
 
-// functions for the multiplayer chat window
-void common_render_chat_window();
-void multi_chat_scroll_up();
-void multi_chat_scroll_down();
-
 void	set_active_ui(UI_WINDOW *ui_window);
 
 // music functions exported for multiplayer team selection screen to start briefing music
+const char *common_music_get_filename(int score_index);
 void common_music_init( int score_index );
 void common_music_do();
 void common_music_close();
 
 int common_num_cutscenes_valid(int movie_type);
 void common_maybe_play_cutscene(int movie_type, bool restart_music = false, int music = 0);
+void common_play_cutscene(const char* filename, bool restart_music = false, int music = 0);
 
 int common_scroll_down_pressed(int *start, int size, int max_show);
 int common_scroll_up_pressed(int *start, int size, int max_show);
@@ -201,8 +217,8 @@ void wss_maybe_restore_loadout();
 void wss_direct_restore_loadout();
 
 int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_ship_slot);
-int store_wss_data(ubyte *block, int max_size, int sound,int player_index);
-int restore_wss_data(ubyte *block);
+int store_wss_data(ubyte *data, const unsigned int max_size, interface_snd_id sound, int player_index);
+int restore_wss_data(ubyte *data);
 
 class ship_info;
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip = NULL, int resize_mode = GR_RESIZE_FULL, const vec3d *closeup_pos = &vmd_zero_vector);
@@ -210,6 +226,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();
+
+void common_fire_stage_script_hook(int old_stage, int new_stage);
 
 ///////////////////////////////////////////////////////////
 // NEWSTUFF END

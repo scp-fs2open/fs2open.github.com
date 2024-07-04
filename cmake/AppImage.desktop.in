@@ -1,4 +1,6 @@
 [Desktop Entry]
+Type=Application
 Name=FreeSpace Open
 Exec=$<TARGET_FILE_NAME:Freespace2>
-Icon=app_icon.png
+Icon=app_icon
+Categories=Game;

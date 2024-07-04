@@ -47,10 +47,13 @@ private:
 	int initialized;
 	int multi_edit;
 	int always_on_top;
+	int help_height;
 	int cue_height;
 	int mission_type;  // indicates if single player(1) or multiplayer(0)
 	CView*	m_pSEView;
 	CCriticalSection CS_update;
+	int combo_index_to_ship_class(int combo_index);
+	int ship_class_to_combo_index(int ship_class);
 
 // Construction
 public:
@@ -65,8 +68,10 @@ public:
 	int p_enable;  // used to enable(1)/disable(0) controls based on if a player ship
 
 	int tristate_set(int val, int cur_state);
-	void show_hide_sexp_help();
+	void calc_help_height();
 	void calc_cue_height();
+	void show_hide_sexp_help();
+	void show_hide_cues();
 	int verify();
 	void OnInitMenu(CMenu *m);
 	void OnOK();
@@ -88,17 +93,19 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CShipEditorDlg)
 	enum { IDD = IDD_SHIP_EDITOR };
-	CButton	m_no_departure_warp;
 	CButton	m_no_arrival_warp;
+	CButton	m_no_departure_warp;
+	CButton	m_same_arrival_warp_when_docked;
+	CButton	m_same_departure_warp_when_docked;
 	CButton	m_player_ship;
 	CSpinButtonCtrl	m_destroy_spin;
-	CSpinButtonCtrl	m_departure_delay_spin;
 	CSpinButtonCtrl	m_arrival_delay_spin;
-	sexp_tree	m_departure_tree;
+	CSpinButtonCtrl	m_departure_delay_spin;
 	sexp_tree	m_arrival_tree;
+	sexp_tree	m_departure_tree;
 	CString	m_ship_name;
 	CString	m_cargo1;
-	int		m_ship_class;
+	int		m_ship_class_combo_index;
 	int		m_team;
 	int		m_arrival_location;
 	int		m_departure_location;
@@ -156,6 +163,8 @@ protected:
 	afx_msg void OnPlayerShip();
 	afx_msg void OnNoArrivalWarp();
 	afx_msg void OnNoDepartureWarp();
+	afx_msg void OnSameArrivalWarpWhenDocked();
+	afx_msg void OnSameDepartureWarpWhenDocked();
 	afx_msg void OnSelchangeDepartureLocation();
 	afx_msg void OnSelchangeHotkey();
 	afx_msg void OnFlags();
@@ -167,6 +176,8 @@ protected:
 	afx_msg void OnSetAsPlayerShip();
 	afx_msg void OnRestrictArrival();
 	afx_msg void OnRestrictDeparture();
+	afx_msg void OnBnClickedCustomWarpinParams();
+	afx_msg void OnBnClickedCustomWarpoutParams();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

@@ -30,37 +30,40 @@ namespace particle
 		bool m_finished = false;
 
 	public:
-		ParticleSourceWrapper(const ParticleSourceWrapper&) SCP_DELETED_FUNCTION;
+		ParticleSourceWrapper(const ParticleSourceWrapper&) = delete;
+		ParticleSourceWrapper& operator=(const ParticleSourceWrapper&) = delete;
 
-		ParticleSourceWrapper& operator=(const ParticleSourceWrapper&) SCP_DELETED_FUNCTION;
-
-		ParticleSourceWrapper() {}
+		ParticleSourceWrapper() = default;
 		explicit ParticleSourceWrapper(SCP_vector<ParticleSource*>&& sources);
 		explicit ParticleSourceWrapper(ParticleSource* source);
 
 		~ParticleSourceWrapper();
 
-		ParticleSourceWrapper(ParticleSourceWrapper&& other);
+		ParticleSourceWrapper(ParticleSourceWrapper&& other) noexcept;
 
-		ParticleSourceWrapper& operator=(ParticleSourceWrapper&& other);
+		ParticleSourceWrapper& operator=(ParticleSourceWrapper&& other) noexcept;
 
 		void finish();
 
 		void setCreationTimestamp(int timestamp);
 
-		void moveToParticle(WeakParticlePtr ptr);
+		void moveToParticle(const WeakParticlePtr& ptr);
 
-		void moveToObject(object* obj, vec3d* localPos);
+		void moveToObject(const object* obj, const vec3d* localPos);
 
-		void moveTo(vec3d* pos);
+		void moveToBeam(const object* obj);
 
-		void setOrientationFromNormalizedVec(vec3d* normalizedDir);
+		void moveTo(const vec3d* pos);
 
-		void setOrientationFromVec(vec3d* dir);
+		void setVelocity(const vec3d* vel);
 
-		void setOrientationMatrix(matrix* mtx);
+		void setOrientationFromNormalizedVec(const vec3d* normalizedDir, bool relative = false);
 
-		void setOrientationNormal(vec3d* normal);
+		void setOrientationFromVec(const vec3d* dir, bool relative = false);
+
+		void setOrientationMatrix(const matrix* mtx, bool relative = false);
+
+		void setOrientationNormal(const vec3d* normal);
 
 		void setWeaponState(WeaponState state);
 	};

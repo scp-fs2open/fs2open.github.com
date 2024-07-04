@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "hud/hudconfig.h"
@@ -8,48 +10,107 @@
 #include "localization/localize.h"
 #include "menuui/techmenu.h"
 #include "network/multi.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "pilotfile/BinaryFileHandler.h"
 #include "pilotfile/JSONFileHandler.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
+#include "scripting/hook_api.h"
+#include "scripting/api/objs/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "stats/medals.h"
 #include "weapon/weapon.h"
 
+const auto OnPlayerLoadedHook = scripting::Hook<>::Factory(
+	"On Player Loaded", "Called when a player has been successfully loaded",
+	{
+		{ "Player", "object", "The player object" },
+	});
+
+namespace {
+void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
+	scoring->score = handler->readInt("score");
+	scoring->rank = handler->readInt("rank");
+	scoring->assists = handler->readInt("assists");
+	scoring->kill_count = handler->readInt("kill_count");
+	scoring->kill_count_ok = handler->readInt("kill_count_ok");
+	scoring->bonehead_kills = handler->readInt("bonehead_kills");
+
+	scoring->p_shots_fired = handler->readUInt("p_shots_fired");
+	scoring->p_shots_hit = handler->readUInt("p_shots_hit");
+	scoring->p_bonehead_hits = handler->readUInt("p_bonehead_hits");
+
+	scoring->s_shots_fired = handler->readUInt("s_shots_fired");
+	scoring->s_shots_hit = handler->readUInt("s_shots_hit");
+	scoring->s_bonehead_hits = handler->readUInt("s_bonehead_hits");
+
+	scoring->flight_time = handler->readUInt("flight_time");
+	scoring->missions_flown = handler->readUInt("missions_flown");
+	scoring->last_flown = (_fs_time_t)handler->readInt("last_flown");
+	scoring->last_backup = (_fs_time_t)handler->readInt("last_backup");
+
+	// ship kills (contains ships across all mods, not just current)
+	auto list_size = handler->startArrayRead("kills");
+	scoring->ship_kills.reserve(list_size);
+
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+		index_list_t ilist;
+		ilist.name = handler->readString("name");
+		ilist.index = ship_info_lookup(ilist.name.c_str());
+		ilist.val = handler->readInt("val");
+
+		scoring->ship_kills.push_back(ilist);
+	}
+	handler->endArrayRead();
+
+	// medals earned (contains medals across all mods, not just current)
+	list_size = handler->startArrayRead("medals");
+	scoring->medals_earned.reserve(list_size);
+
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+		index_list_t ilist;
+		ilist.name = handler->readString("name");
+		ilist.index = medals_info_lookup(ilist.name.c_str());
+		ilist.val = handler->readInt("val");
+
+		scoring->medals_earned.push_back(ilist);
+	}
+	handler->endArrayRead();
+}
+}
 
 void pilotfile::plr_read_flags()
 {
 	// tips?
-	p->tips = (int)cfread_ubyte(cfp);
+	p->tips = (int)handler->readUByte("tips");
 
 	// saved flags
-	p->save_flags = cfread_int(cfp);
+	p->save_flags = handler->readInt("save_flags");
 
 	// listing mode (single or campaign missions
-	p->readyroom_listing_mode = cfread_int(cfp);
+	p->readyroom_listing_mode = handler->readInt("readyroom_listing_mode");
 
 	// briefing auto-play
-	p->auto_advance = cfread_int(cfp);
+	p->auto_advance = handler->readInt("auto_advance");
 
 	// special rank setting (to avoid having to read all stats on verify)
 	// will be the multi rank
 	// if there's a valid CSG, this will be overwritten
-	p->stats.rank = cfread_int(cfp);
+	p->stats.rank = handler->readInt("multi_rank");
 
-	if (version > 0) 
-	{
-		p->player_was_multi = cfread_int(cfp);
-	} else 
-	{
+	if (plr_ver > 0) {
+		p->player_was_multi = handler->readInt("was_multi");
+	} else {
 		p->player_was_multi = 0; // Default to single player
 	}
 
 	// which language was this pilot created with
-	if (version > 1) {
-		cfread_string_len(p->language, sizeof(p->language), cfp);
+	if (plr_ver > 1) {
+		handler->readString("language", p->language, sizeof(p->language));
 	} else {
 		// if we don't know, default to the current language setting
 		lcl_get_language_name(p->language);
@@ -87,21 +148,17 @@ void pilotfile::plr_write_flags()
 
 void pilotfile::plr_read_info()
 {
-	if ( !m_have_flags ) {
-		throw "Info before Flags!";
-	}
-
 	// pilot image
-	cfread_string_len(p->image_filename, MAX_FILENAME_LEN, cfp);
+	handler->readString("image_filename", p->image_filename, MAX_FILENAME_LEN);
 
 	// multi squad name
-	cfread_string_len(p->m_squad_name, NAME_LENGTH, cfp);
+	handler->readString("squad_name", p->m_squad_name, NAME_LENGTH);
 
 	// squad image
-	cfread_string_len(p->m_squad_filename, MAX_FILENAME_LEN, cfp);
+	handler->readString("squad_filename", p->m_squad_filename, MAX_FILENAME_LEN);
 
 	// active campaign
-	cfread_string_len(p->current_campaign, MAX_FILENAME_LEN, cfp);
+	handler->readString("current_campaign", p->current_campaign, MAX_FILENAME_LEN);
 }
 
 void pilotfile::plr_write_info()
@@ -125,41 +182,54 @@ void pilotfile::plr_write_info()
 
 void pilotfile::plr_read_hud()
 {
-	int idx;
-
+	int strikes = 0;
 	// flags
-	HUD_config.show_flags = cfread_int(cfp);
-	HUD_config.show_flags2 = cfread_int(cfp);
+	HUD_config.show_flags = handler->readInt("show_flags");
+	HUD_config.show_flags2 = handler->readInt("show_flags2");
 
-	HUD_config.popup_flags = cfread_int(cfp);
-	HUD_config.popup_flags2 = cfread_int(cfp);
+	HUD_config.popup_flags = handler->readInt("popup_flags");
+	HUD_config.popup_flags2 = handler->readInt("popup_flags2");
 
 	// settings
-	HUD_config.num_msg_window_lines = cfread_ubyte(cfp);
+	HUD_config.num_msg_window_lines = handler->readUByte("num_msg_window_lines");
 
-	HUD_config.rp_flags = cfread_int(cfp);
-	HUD_config.rp_dist = cfread_int(cfp);
-	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES)
-		Error(LOCATION, "Player file has invalid radar range %d\n", HUD_config.rp_dist);
+	HUD_config.rp_flags = handler->readInt("rp_flags");
+	HUD_config.rp_dist = handler->readInt("rp_dist");
+	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
+		ReleaseWarning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		HUD_config.rp_dist = RR_INFINITY;
+		strikes++;
+	}
 
 	// basic colors
-	HUD_config.main_color = cfread_int(cfp);
-	HUD_color_alpha = cfread_int(cfp);
+	HUD_config.main_color = handler->readInt("main_color");
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+		ReleaseWarning(LOCATION, "Player file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+		strikes++;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = handler->readInt("color_alpha");
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		ReleaseWarning(LOCATION, "Player file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+		strikes++;
+	}
+
+	if (strikes == 3) {
+		ReleaseWarning(LOCATION, "Player file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_set_color(HUD_config.main_color);
 
 	// gauge-specific colors
-	int num_gauges = cfread_int(cfp);
+	auto num_gauges = handler->startArrayRead("hud_gauges");
+	for (size_t idx = 0; idx < num_gauges; idx++, handler->nextArraySection()) {
+		ubyte red = handler->readUByte("red");
+		ubyte green = handler->readUByte("green");
+		ubyte blue = handler->readUByte("blue");
+		ubyte alpha = handler->readUByte("alpha");
 
-	for (idx = 0; idx < num_gauges; idx++) {
-		ubyte red = cfread_ubyte(cfp);
-		ubyte green = cfread_ubyte(cfp);
-		ubyte blue = cfread_ubyte(cfp);
-		ubyte alpha = cfread_ubyte(cfp);
 
 		if (idx >= NUM_HUD_GAUGES) {
 			continue;
@@ -170,6 +240,7 @@ void pilotfile::plr_read_hud()
 		HUD_config.clr[idx].blue = blue;
 		HUD_config.clr[idx].alpha = alpha;
 	}
+	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_hud()
@@ -214,25 +285,18 @@ void pilotfile::plr_write_hud()
 
 void pilotfile::plr_read_variables()
 {
-	int list_size = 0;
-	int idx;
-	sexp_variable n_var;
-
-	list_size = cfread_int(cfp);
-
-	if (list_size <= 0) {
-		return;
-	}
+	auto list_size = handler->startArrayRead("variables");
 
 	p->variables.reserve(list_size);
-
-	for (idx = 0; idx < list_size; idx++) {
-		n_var.type = cfread_int(cfp);
-		cfread_string_len(n_var.text, TOKEN_LENGTH, cfp);
-		cfread_string_len(n_var.variable_name, TOKEN_LENGTH, cfp);
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+		sexp_variable n_var;
+		n_var.type = handler->readInt("type");
+		handler->readString("text", n_var.text, TOKEN_LENGTH);
+		handler->readString("variable_name", n_var.variable_name, TOKEN_LENGTH);
 
 		p->variables.push_back( n_var );
 	}
+	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_variables()
@@ -254,29 +318,114 @@ void pilotfile::plr_write_variables()
 	handler->endSectionWrite();
 }
 
+void pilotfile::plr_read_containers()
+{
+	const size_t list_size = handler->startArrayRead("containers");
+
+	p->containers.reserve(list_size);
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+		p->containers.emplace_back();
+		auto& container = p->containers.back();
+
+		container.container_name = handler->readString("container_name");
+
+		container.type = (ContainerType)handler->readInt("type");
+		container.opf_type = handler->readInt("opf_type");
+
+		const int size = handler->readInt("size");
+		Assert(size >= 0);
+
+		if (container.is_list()) {
+			for (int i = 0; i < size; ++i) {
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				container.list_data.emplace_back(handler->readString(data_idx_str.c_str()));
+			}
+		} else if (container.is_map()) {
+			for (int i = 0; i < size; ++i) {
+				SCP_string key_idx_str = SCP_string("key_") + std::to_string(i);
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				SCP_string key = handler->readString(key_idx_str.c_str());
+				SCP_string data = handler->readString(data_idx_str.c_str());
+				container.map_data.emplace(key, data);
+			}
+		} else {
+			UNREACHABLE("Unknown container type %d", (int)container.type);
+		}
+	}
+	handler->endArrayRead();
+}
+
+void pilotfile::plr_write_containers()
+{
+	handler->startSectionWrite(Section::Containers);
+
+	handler->startArrayWrite("containers", p->containers.size());
+	for (const auto& container : p->containers) {
+		handler->startSectionWrite(Section::Unnamed);
+
+		handler->writeString("container_name", container.container_name.c_str());
+
+		handler->writeInt("type", (int)container.type);
+		handler->writeInt("opf_type", container.opf_type);
+
+		handler->writeInt("size", container.size());
+
+		int i = 0;
+
+		if (container.is_list()) {
+			for (const auto& data : container.list_data) {
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				handler->writeString(data_idx_str.c_str(), data.c_str());
+				++i;
+			}
+		} else if (container.is_map()) {
+			for (const auto& key_data : container.map_data) {
+				SCP_string key_idx_str = SCP_string("key_") + std::to_string(i);
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				handler->writeString(key_idx_str.c_str(), key_data.first.c_str());
+				handler->writeString(data_idx_str.c_str(), key_data.second.c_str());
+				++i;
+			}
+		} else {
+			UNREACHABLE("Unknown container type %d", (int)container.type);
+		}
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+
+	handler->endSectionWrite();
+}
+
 void pilotfile::plr_read_multiplayer()
 {
 	// netgame options
-	p->m_server_options.squad_set = cfread_ubyte(cfp);
-	p->m_server_options.endgame_set = cfread_ubyte(cfp);
-	p->m_server_options.flags = cfread_int(cfp);
-	p->m_server_options.respawn = cfread_uint(cfp);
-	p->m_server_options.max_observers = cfread_ubyte(cfp);
-	p->m_server_options.skill_level = cfread_ubyte(cfp);
-	p->m_server_options.voice_qos = cfread_ubyte(cfp);
-	p->m_server_options.voice_token_wait = cfread_int(cfp);
-	p->m_server_options.voice_record_time = cfread_int(cfp);
-	p->m_server_options.mission_time_limit = (fix)cfread_int(cfp);
-	p->m_server_options.kill_limit = cfread_int(cfp);
+	p->m_server_options.squad_set = handler->readUByte("squad_set");
+	p->m_server_options.endgame_set = handler->readUByte("endgame_set");
+	p->m_server_options.flags = handler->readInt("server_flags");
+	p->m_server_options.respawn = handler->readUInt("respawn");
+	p->m_server_options.max_observers = handler->readUByte("max_observers");
+	p->m_server_options.skill_level = handler->readUByte("skill_level");
+	p->m_server_options.voice_qos = handler->readUByte("voice_qos");
+	p->m_server_options.voice_token_wait = handler->readInt("voice_token_wait");
+	p->m_server_options.voice_record_time = handler->readInt("voice_record_time");
+	p->m_server_options.mission_time_limit = (fix)handler->readInt("mission_time_limit");
+	p->m_server_options.kill_limit = handler->readInt("kill_limit");
 
 	// local options
-	p->m_local_options.flags = cfread_int(cfp);
-	p->m_local_options.obj_update_level = cfread_int(cfp);
+	p->m_local_options.flags = handler->readInt("local_flags");
+	p->m_local_options.obj_update_level = handler->readInt("obj_update_level");
+
+	//Make sure the local games multi option is reflected by the OptionsManager
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) != 0);
 
 	// netgame protocol
-	Multi_options_g.protocol = cfread_int(cfp);
+	Multi_options_g.protocol = handler->readInt("protocol");
 
-	if (Multi_options_g.protocol != NET_TCP) {
+	if (Multi_options_g.protocol == NET_VMT) {
+		Multi_options_g.protocol = NET_TCP;
+		Multi_options_g.pxo = true;
+	} else if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
 }
@@ -303,65 +452,20 @@ void pilotfile::plr_write_multiplayer()
 	handler->writeInt("obj_update_level", p->m_local_options.obj_update_level);
 
 	// netgame protocol
-	handler->writeInt("protocol", Multi_options_g.protocol);
+	if (Multi_options_g.pxo) {
+		const int protocol = NET_VMT;
+		handler->writeInt("protocol", protocol);
+	} else {
+		handler->writeInt("protocol", Multi_options_g.protocol);
+	}
 
 	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_stats()
 {
-	int idx, j, list_size = 0;
-	index_list_t ilist;
-	char t_string[NAME_LENGTH+1];
-
 	// global, all-time stats (used only until campaign stats are loaded)
-	all_time_stats.score = cfread_int(cfp);
-	all_time_stats.rank = cfread_int(cfp);
-	all_time_stats.assists = cfread_int(cfp);
-	all_time_stats.kill_count = cfread_int(cfp);
-	all_time_stats.kill_count_ok = cfread_int(cfp);
-	all_time_stats.bonehead_kills = cfread_int(cfp);
-
-	all_time_stats.p_shots_fired = cfread_uint(cfp);
-	all_time_stats.p_shots_hit = cfread_uint(cfp);
-	all_time_stats.p_bonehead_hits = cfread_uint(cfp);
-
-	all_time_stats.s_shots_fired = cfread_uint(cfp);
-	all_time_stats.s_shots_hit = cfread_uint(cfp);
-	all_time_stats.s_bonehead_hits = cfread_uint(cfp);
-
-	all_time_stats.flight_time = cfread_uint(cfp);
-	all_time_stats.missions_flown = cfread_uint(cfp);
-	all_time_stats.last_flown = (_fs_time_t)cfread_int(cfp);
-	all_time_stats.last_backup = (_fs_time_t)cfread_int(cfp);
-
-	// ship kills (contains ships across all mods, not just current)
-	list_size = cfread_int(cfp);
-	all_time_stats.ship_kills.reserve(list_size);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfread_string_len(t_string, NAME_LENGTH, cfp);
-
-		ilist.name = t_string;
-		ilist.index = ship_info_lookup(t_string);
-		ilist.val = cfread_int(cfp);
-
-		all_time_stats.ship_kills.push_back(ilist);
-	}
-
-	// medals earned (contains medals across all mods, not just current)
-	list_size = cfread_int(cfp);
-	all_time_stats.medals_earned.reserve(list_size);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfread_string_len(t_string, NAME_LENGTH,cfp);
-
-		ilist.name = t_string;
-		ilist.index = medals_info_lookup(t_string);
-		ilist.val = cfread_int(cfp);
-
-		all_time_stats.medals_earned.push_back(ilist);
-	}
+	read_multi_stats(handler.get(), &all_time_stats);
 
 	// if not in multiplayer mode then set these stats as the player stats
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -386,9 +490,9 @@ void pilotfile::plr_read_stats()
 		p->stats.last_backup = all_time_stats.last_backup;
 
 		// ship kills (have to find ones that match content)
-		list_size = (int)all_time_stats.ship_kills.size();
-		for (idx = 0; idx < list_size; idx++) {
-			j = all_time_stats.ship_kills[idx].index;
+		auto list_size = all_time_stats.ship_kills.size();
+		for (size_t idx = 0; idx < list_size; idx++) {
+			auto j = all_time_stats.ship_kills[idx].index;
 
 			if (j >= 0) {
 				p->stats.kills[j] = all_time_stats.ship_kills[idx].val;
@@ -396,9 +500,9 @@ void pilotfile::plr_read_stats()
 		}
 
 		// medals earned (have to find ones that match content)
-		list_size = (int)all_time_stats.medals_earned.size();
-		for (idx = 0; idx < list_size; idx++) {
-			j = all_time_stats.medals_earned[idx].index;
+		list_size = all_time_stats.medals_earned.size();
+		for (size_t idx = 0; idx < list_size; idx++) {
+			auto j = all_time_stats.medals_earned[idx].index;
 
 			if (j >= 0) {
 				p->stats.medal_counts[j] = all_time_stats.medals_earned[idx].val;
@@ -457,58 +561,8 @@ void pilotfile::plr_write_stats()
 
 void pilotfile::plr_read_stats_multi()
 {
-	int idx, j, list_size = 0;
-	index_list_t ilist;
-	char t_string[NAME_LENGTH+1];
-
 	// global, all-time stats (used only until campaign stats are loaded)
-	multi_stats.score = cfread_int(cfp);
-	multi_stats.rank = cfread_int(cfp);
-	multi_stats.assists = cfread_int(cfp);
-	multi_stats.kill_count = cfread_int(cfp);
-	multi_stats.kill_count_ok = cfread_int(cfp);
-	multi_stats.bonehead_kills = cfread_int(cfp);
-
-	multi_stats.p_shots_fired = cfread_uint(cfp);
-	multi_stats.p_shots_hit = cfread_uint(cfp);
-	multi_stats.p_bonehead_hits = cfread_uint(cfp);
-
-	multi_stats.s_shots_fired = cfread_uint(cfp);
-	multi_stats.s_shots_hit = cfread_uint(cfp);
-	multi_stats.s_bonehead_hits = cfread_uint(cfp);
-
-	multi_stats.flight_time = cfread_uint(cfp);
-	multi_stats.missions_flown = cfread_uint(cfp);
-	multi_stats.last_flown = (_fs_time_t)cfread_int(cfp);
-	multi_stats.last_backup = (_fs_time_t)cfread_int(cfp);
-
-	// ship kills (contains ships across all mods, not just current)
-	list_size = cfread_int(cfp);
-	multi_stats.ship_kills.reserve(list_size);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfread_string_len(t_string, NAME_LENGTH, cfp);
-
-		ilist.name = t_string;
-		ilist.index = ship_info_lookup(t_string);
-		ilist.val = cfread_int(cfp);
-
-		multi_stats.ship_kills.push_back(ilist);
-	}
-
-	// medals earned (contains medals across all mods, not just current)
-	list_size = cfread_int(cfp);
-	multi_stats.medals_earned.reserve(list_size);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfread_string_len(t_string, NAME_LENGTH,cfp);
-
-		ilist.name = t_string;
-		ilist.index = medals_info_lookup(t_string);
-		ilist.val = cfread_int(cfp);
-
-		multi_stats.medals_earned.push_back(ilist);
-	}
+	read_multi_stats(handler.get(), &multi_stats);
 
 	// if in multiplayer mode then set these stats as the player stats
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -533,9 +587,9 @@ void pilotfile::plr_read_stats_multi()
 		p->stats.last_backup = multi_stats.last_backup;
 
 		// ship kills (have to find ones that match content)
-		list_size = (int)multi_stats.ship_kills.size();
-		for (idx = 0; idx < list_size; idx++) {
-			j = multi_stats.ship_kills[idx].index;
+		auto list_size = multi_stats.ship_kills.size();
+		for (size_t idx = 0; idx < list_size; idx++) {
+			auto j = multi_stats.ship_kills[idx].index;
 
 			if (j >= 0) {
 				p->stats.kills[j] = multi_stats.ship_kills[idx].val;
@@ -544,8 +598,8 @@ void pilotfile::plr_read_stats_multi()
 
 		// medals earned (have to find ones that match content)
 		list_size = (int)multi_stats.medals_earned.size();
-		for (idx = 0; idx < list_size; idx++) {
-			j = multi_stats.medals_earned[idx].index;
+		for (size_t idx = 0; idx < list_size; idx++) {
+			auto j = multi_stats.medals_earned[idx].index;
 
 			if (j >= 0) {
 				p->stats.medal_counts[j] = multi_stats.medals_earned[idx].val;
@@ -592,8 +646,10 @@ void pilotfile::plr_write_stats_multi()
 	// medals earned (contains medals across all mods, not just current)
 	handler->startArrayWrite("medals", multi_stats.medals_earned.size());
 	for (auto& medal : multi_stats.medals_earned) {
+		handler->startSectionWrite(Section::Unnamed);
 		handler->writeString("name", medal.name.c_str());
 		handler->writeInt("val", medal.val);
+		handler->endSectionWrite();
 	}
 	handler->endArrayWrite();
 
@@ -602,106 +658,234 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	int idx, list_size, list_axis;
-	short id1, id2, id3 __UNUSED;
-	int axi, inv;
+	if (plr_ver < 4) {
+		// PLR < 4
+		short id1, id2;
+		int axi, inv;
 
-	list_size = (int)cfread_ushort(cfp);
-	for (idx = 0; idx < list_size; idx++) {
-		id1 = cfread_short(cfp);
-		id2 = cfread_short(cfp);
-		id3 = cfread_short(cfp);	// unused, at the moment
+		// Set up preset name, we'll populate the rest of the preset's data later
+		CC_preset preset;
+		preset.name = filename;
 
-		if (idx < CCFG_MAX) {
-			Control_config[idx].key_id = id1;
-			Control_config[idx].joy_id = id2;
+		// strip off extension
+		auto n = preset.name.find_last_of('.');
+		preset.name.resize(n);
+		
+		// Load in the bindings to Control_config
+		// ...First the digital controls
+		auto list_size = handler->startArrayRead("controls", true);
+		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+			id1 = handler->readShort("key");
+			id2 = handler->readShort("joystick");
+			handler->readShort("mouse");
+
+			if (idx < Control_config.size()) {
+				// Force the bindings into Control_config
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
-	}
+		handler->endArrayRead();
 
-	list_axis = cfread_int(cfp);
-	for (idx = 0; idx < list_axis; idx++) {
-		axi = cfread_int(cfp);
-		inv = cfread_int(cfp);
+		// ...Then the analog controls
+		auto list_axis = handler->startArrayRead("axes");
+		for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
+			axi = handler->readInt("axis_map");
+			inv = handler->readInt("invert_axis");
 
-		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = axi;
-			Invert_axis[idx] = inv;
+			if (idx < NUM_JOY_AXIS_ACTIONS) {
+				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, static_cast<short>(axi), CCF_AXIS), 0);
+				Control_config[idx + JOY_AXIS_BEGIN].first.invert(inv != 0);
+				Control_config[idx + JOY_AXIS_BEGIN].second.invert(inv != 0);
+			}
 		}
+		handler->endArrayRead();
+
+		// Check that these bindings are in a preset.  If it is not, create a new preset file
+		auto it = control_config_get_current_preset();
+		if (it == Control_config_presets.end()) {
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+
+			// Try to save the preset file
+			if (!save_preset_file(preset, false)) {
+				Warning(LOCATION, "Could not save controls preset file (%s)", preset.name.c_str());
+			}
+		}
+		return;
+
+	} else {
+		// read PLR >= 4
+		SCP_string buf = handler->readString("preset");
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							   [buf](const CC_preset& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");
+
+			// Couldn't find the preset, use defaults
+			ReleaseWarning(LOCATION, "Could not find preset %s, using defaults\n", buf.c_str());
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
 }
 
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
-
-	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", CCFG_MAX, true);
-	for (size_t idx = 0; idx < CCFG_MAX; idx++) {
+	
+	// Save the default bindings to prevent crash. See github issue 3902
+	auto& Control_config_default = Control_config_presets[0].bindings;
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	for (size_t i = 0; i < JOY_AXIS_BEGIN; i++) {
+		auto& item = Control_config_default[i];
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeShort("key", Control_config[idx].key_id);
-		handler->writeShort("joystick", Control_config[idx].joy_id);
-		// placeholder? for future mouse_id?
+		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", item.get_btn(CID_JOY0));
 		handler->writeShort("mouse", -1);
 
-		handler->endSectionWrite();
+		handler->endSectionWrite();	// Section::Unnamed
 	}
-	handler->endArrayWrite();
+	handler->endArrayWrite(); // Array::controls
 
 	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
+		auto& item = Control_config_default[idx];
+
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeInt("axis_map", Axis_map_to[idx]);
-		handler->writeInt("invert_axis", Invert_axis[idx]);
+		// Combine mouse and joy0 to joy0 axis.  Needed because controlsconfigdefaults.tbl may change the defaults.
+		int joy = static_cast<int>(item.get_btn(CID_JOY0));
+		int mouse = static_cast<int>(item.get_btn(CID_MOUSE));
+		if (joy >= 0) {
+			handler->writeInt("axis_map", joy);
 
-		handler->endSectionWrite();
+		} else if (mouse >= 0) {
+			handler->writeInt("axis_map", mouse);
+
+		} else {
+			handler->writeInt("axis_map", -1);
+		}
+		
+		handler->writeInt("invert_axis", (item.first.is_inverted() || item.second.is_inverted()) ? 1 : 0);
+
+		handler->endSectionWrite(); // Section::Unnamed
 	}
 	handler->endArrayWrite();
+	// End issue 3902
 
-	handler->endSectionWrite();
+
+	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
+	// Save the currently selected preset
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		// No current preset selected. what? Might be a new player...
+		Assertion(!Control_config_presets.empty(), "[PLR] Error saving controls! Control_config_presets empty! Get a coder!");
+
+		// Just bash it to defaults
+		it = Control_config_presets.begin();
+	}
+
+	handler->writeString("preset", it->name.c_str());
+
+	handler->endSectionWrite(); // Section::controls
 }
 
 void pilotfile::plr_read_settings()
 {
+	clamped_range_warnings.clear();
 	// sound/voice/music
-	Master_sound_volume = cfread_float(cfp);
-	Master_event_music_volume = cfread_float(cfp);
-	Master_voice_volume = cfread_float(cfp);
+	float temp_volume = handler->readFloat("master_sound_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+	snd_set_effects_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume);
 
-	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
-	audiostream_set_volume_all(Master_event_music_volume, ASF_EVENTMUSIC);
+	temp_volume = handler->readFloat("master_event_music_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+	event_music_set_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume);
 
-	if (Master_event_music_volume > 0.0f) {
-		Event_music_enabled = 1;
-	} else {
-		Event_music_enabled = 0;
-	}
+	temp_volume = handler->readFloat("aster_voice_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+	snd_set_voice_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume);
 
-	Briefing_voice_enabled = cfread_int(cfp);
+	Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", Briefing_voice_enabled);
 
 	// skill level
-	Game_skill_level = cfread_int(cfp);
+	Game_skill_level = handler->readInt("game_skill_level");
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Skill Level");
+	options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 
 	// input options
-	Use_mouse_to_fly = cfread_int(cfp);
-	Mouse_sensitivity = cfread_int(cfp);
-	Joy_sensitivity = cfread_int(cfp);
-	Joy_dead_zone_size = cfread_int(cfp);
+	Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", Use_mouse_to_fly);
+
+	Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
+
+	Joy_sensitivity    = handler->readInt("joy_sensitivity");
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
+
+	Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZome", Joy_dead_zone_size);
 
 	// detail
-	Detail.setting = cfread_int(cfp);
-	Detail.nebula_detail = cfread_int(cfp);
-	Detail.detail_distance = cfread_int(cfp);
-	Detail.hardware_textures = cfread_int(cfp);
-	Detail.num_small_debris = cfread_int(cfp);
-	Detail.num_particles = cfread_int(cfp);
-	Detail.num_stars = cfread_int(cfp);
-	Detail.shield_effects = cfread_int(cfp);
-	Detail.lighting = cfread_int(cfp);
-	Detail.targetview_model = cfread_int(cfp);
-	Detail.planets_suns = cfread_int(cfp);
-	Detail.weapon_extras = cfread_int(cfp);
+	//Preset not handled by OptionsManager
+	Detail.setting           = handler->readInt("setting");
+	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
+
+	Detail.nebula_detail     = handler->readInt("nebula_detail");
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
+
+	Detail.detail_distance   = handler->readInt("detail_distance");
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
+
+	Detail.hardware_textures = handler->readInt("hardware_textures");
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
+
+	Detail.num_small_debris  = handler->readInt("num_small_debris");
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
+
+	Detail.num_particles     = handler->readInt("num_particles");
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
+
+	Detail.num_stars         = handler->readInt("num_stars");
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
+
+	Detail.shield_effects    = handler->readInt("shield_effects");
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
+
+	Detail.lighting          = handler->readInt("lighting");
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
+
+	//Rest not handled by OptionsManager
+	Detail.targetview_model  = handler->readInt("targetview_model");
+	Detail.planets_suns      = handler->readInt("planets_suns");
+	Detail.weapon_extras     = handler->readInt("weapon_extras");
+
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 }
 
 void pilotfile::plr_write_settings()
@@ -709,45 +893,72 @@ void pilotfile::plr_write_settings()
 	handler->startSectionWrite(Section::Settings);
 
 	// sound/voice/music
+	clamp_value_with_warn(&Master_sound_volume, 0.f, 1.f, "Effects Volume");
 	handler->writeFloat("master_sound_volume", Master_sound_volume);
+	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	handler->writeFloat("master_event_music_volume", Master_event_music_volume);
+	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
 	handler->writeFloat("aster_voice_volume", Master_voice_volume);
 
-	handler->writeInt("briefing_voice_enabled", Briefing_voice_enabled);
+	handler->writeInt("briefing_voice_enabled", Briefing_voice_enabled ? 1 : 0);
 
 	// skill level
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Skill Level");
 	handler->writeInt("game_skill_level", Game_skill_level);
 
 	// input options
 	handler->writeInt("use_mouse_to_fly", Use_mouse_to_fly);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 	handler->writeInt("mouse_sensitivity", Mouse_sensitivity);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 	handler->writeInt("joy_sensitivity", Joy_sensitivity);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	handler->writeInt("joy_dead_zone_size", Joy_dead_zone_size);
 
 	// detail
+	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
 	handler->writeInt("setting", Detail.setting);
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
 	handler->writeInt("nebula_detail", Detail.nebula_detail);
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
 	handler->writeInt("detail_distance", Detail.detail_distance);
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
 	handler->writeInt("hardware_textures", Detail.hardware_textures);
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
 	handler->writeInt("num_small_debris", Detail.num_small_debris);
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
 	handler->writeInt("num_particles", Detail.num_particles);
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
 	handler->writeInt("num_stars", Detail.num_stars);
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
 	handler->writeInt("shield_effects", Detail.shield_effects);
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
 	handler->writeInt("lighting", Detail.lighting);
 	handler->writeInt("targetview_model", Detail.targetview_model);
 	handler->writeInt("planets_suns", Detail.planets_suns);
 	handler->writeInt("weapon_extras", Detail.weapon_extras);
 
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values were out of bounds when saving the Pilot file and were automatically reset.\n%s\nThis shouldn't be possible, please contact the FreeSpace 2 Open Source Code Project!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 	handler->endSectionWrite();
 }
 
-void pilotfile::plr_reset_data()
+void pilotfile::plr_reset_data(bool reset_all)
 {
 	// internals
 	m_have_flags = false;
 	m_have_info = false;
 
 	m_data_invalid = false;
+
+	// if we aren't reloading all data (such as just a verify) then skip the rest
+	if ( !reset_all ) {
+		return;
+	}
+
+	Assertion(p != nullptr, "player pointer is null during data reset!");
 
 	// set all the entries in the control config arrays to -1 (undefined)
 	control_config_clear();
@@ -756,14 +967,16 @@ void pilotfile::plr_reset_data()
 	p->stats.init();
 
 	// reset scoring lists
-	all_time_stats.ship_kills.clear();
-	all_time_stats.medals_earned.clear();
+	scoring_special_t blank_score;
 
-	multi_stats.ship_kills.clear();
-	multi_stats.medals_earned.clear();
+	all_time_stats = blank_score;
+	multi_stats = blank_score;
 
 	// clear variables
 	p->variables.clear();
+
+	// clear containers
+	p->containers.clear();
 
 	// reset techroom to defaults (CSG will override this, multi will use defaults)
 	tech_reset_to_default();
@@ -789,9 +1002,11 @@ void pilotfile::plr_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	plr_ver = PLR_VERSION_INVALID;
 }
 
-bool pilotfile::load_player(const char *callsign, player *_p)
+bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 {
 	// if we're a standalone server in multiplayer, just fill in some bogus values
 	// since we don't have a pilot file
@@ -812,21 +1027,38 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	}
 
 	filename = callsign;
-	filename += ".plr";
+	if (force_binary) {
+		// Caller want to read the binary file
+		filename += ".plr";
+	} else {
+		// The default is the JSON file
+		filename += ".json";
+	}
 
 	if ( filename.size() == 4 ) {
 		mprintf(("PLR => Invalid filename '%s'!\n", filename.c_str()));
 		return false;
 	}
 
-	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
-
-	if ( !cfp ) {
+	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for reading!\n", filename.c_str()));
 		return false;
 	}
 
-	unsigned int plr_id = cfread_uint(cfp);
+	if (force_binary) {
+		handler.reset(new pilot::BinaryFileHandler(fp));
+	} else {
+		try {
+			handler.reset(new pilot::JSONFileHandler(fp, true));
+		} catch (const std::exception& e) {
+			mprintf(("PLR => Failed to parse JSON: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	unsigned int plr_id = handler->readUInt("signature");
 
 	if (plr_id != PLR_FILE_ID) {
 		mprintf(("PLR => Invalid header id for '%s'!\n", filename.c_str()));
@@ -835,44 +1067,37 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	}
 
 	// version, now used
-	version = cfread_ubyte(cfp);
+	plr_ver = handler->readUByte("version");
 
-	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
+	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), plr_ver));
 
-	plr_reset_data();
+	//true resets everything, false sets up file verify.
+	plr_reset_data(true);
 
 	// the point of all this: read in the PLR contents
-	while ( !cfeof(cfp) ) {
-		Section section_id = static_cast<Section>(cfread_ushort(cfp));
-		uint section_size = cfread_uint(cfp);
-
-		size_t start_pos = cftell(cfp);
-
-		if (section_size == 0) {
-			mprintf(("PLR => 0 size section with id %d starting at %zu\n", (uint32_t)section_id, start_pos));
-			return false;
-		}
-
-		// safety, to help protect against long reads
-		cf_set_max_read_len(cfp, section_size);
-
+	handler->beginSectionRead();
+	while (handler->hasMoreSections()) {
+		auto section_id = handler->nextSection();
 		try {
 			switch (section_id) {
 				case Section::Flags:
 					mprintf(("PLR => Parsing:  Flags...\n"));
-					m_have_flags = true;
 					plr_read_flags();
 					break;
 
 				case Section::Info:
 					mprintf(("PLR => Parsing:  Info...\n"));
-					m_have_info = true;
 					plr_read_info();
 					break;
 
 				case Section::Variables:
 					mprintf(("PLR => Parsing:  Variables...\n"));
 					plr_read_variables();
+					break;
+
+				case Section::Containers:
+					mprintf(("PLR => Parsing:  Containers...\n"));
+					plr_read_containers();
 					break;
 
 				case Section::HUD:
@@ -905,11 +1130,15 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 					plr_read_settings();
 					break;
 
+				case Section::Invalid:
+					plr_close();
+					return false;
+
 				default:
 					mprintf(("PLR => Skipping unknown section 0x%04x!\n", (uint32_t)section_id));
 					break;
 			}
-		} catch (cfile::max_read_length &msg) {
+		} catch (const cfile::max_read_length &msg) {
 			// read to max section size, move to next section, discarding
 			// extra/unknown data
 			mprintf(("PLR => (0x%04x) %s\n", (uint32_t)section_id, msg.what()));
@@ -918,18 +1147,12 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 			plr_close();
 			return false;
 		}
-
-		// reset safety catch
-		cf_set_max_read_len(cfp, 0);
-
-		// skip to next section (if not already there)
-		size_t offset_pos = (start_pos + section_size) - cftell(cfp);
-
-		if (offset_pos) {
-			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
-			mprintf(("PLR => WARNING: Advancing to the next section. " SIZE_T_ARG " bytes were skipped!\n", offset_pos));
-		}
 	}
+	handler->endSectionRead();
+
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these player options set
+	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
+	//options::OptionsManager::instance()->persistChanges();
 
 	// restore the callsign into the Player structure
 	strcpy_s(p->callsign, callsign);
@@ -939,12 +1162,23 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 
 	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
-	hud_squadmsg_save_keys();
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+	}
 
-	// set last pilot
-	os_config_write_string(NULL, "LastPlayer", (char*)callsign);
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
+	}
 
 	mprintf(("PLR => Loading complete!\n"));
+	if (OnPlayerLoadedHook->isActive()) {
+		OnPlayerLoadedHook->run(scripting::hook_param_list(scripting::hook_param("Player", 'o', scripting::api::l_Player.Set(scripting::api::player_h(p)))));
+	}
 
 	// cleanup and return
 	plr_close();
@@ -977,24 +1211,23 @@ bool pilotfile::save_player(player *_p)
 		return false;
 	}
 
-	if (Cmdline_json_pilot) {
-		filename += ".json";
-	} else {
-		filename += ".plr";
-	}
+	// We always write the player file as JSON now
+	filename += ".json";
 
 	// open it, hopefully...
-	auto fp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	auto fp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for saving!\n", filename.c_str()));
 		return false;
 	}
 
-	if (Cmdline_json_pilot) {
-		handler.reset(new pilot::JSONFileHandler(fp));
-	} else {
-		handler.reset(new pilot::BinaryFileHandler(fp));
+	try {
+		handler.reset(new pilot::JSONFileHandler(fp, false));
+	} catch (const std::exception& e) {
+		mprintf(("PLR => Failed to parse JSON: %s\n", e.what()));
+		return false;
 	}
 
 	// header and version
@@ -1002,6 +1235,8 @@ bool pilotfile::save_player(player *_p)
 	handler->writeUByte("version", PLR_VERSION);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
+
+	handler->beginWritingSections();
 
 	// flags and info sections go first
 	mprintf(("PLR => Saving:  Flags...\n"));
@@ -1018,12 +1253,16 @@ bool pilotfile::save_player(player *_p)
 	plr_write_hud();
 	mprintf(("PLR => Saving:  Variables...\n"));
 	plr_write_variables();
+	mprintf(("PLR => Saving:  Containers...\n"));
+	plr_write_containers();
 	mprintf(("PLR => Saving:  Multiplayer...\n"));
 	plr_write_multiplayer();
 	mprintf(("PLR => Saving:  Controls...\n"));
 	plr_write_controls();
 	mprintf(("PLR => Saving:  Settings...\n"));
 	plr_write_settings();
+
+	handler->endWritingSections();
 
 	handler->flush();
 
@@ -1035,12 +1274,12 @@ bool pilotfile::save_player(player *_p)
 	return true;
 }
 
-bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
+bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* flags)
 {
 	player t_plr;
 
-	// set player ptr first thing
-	p = &t_plr;
+	t_plr.reset();	// Ensure t_plr is cleanly init
+	p = &t_plr;		// Set player* so the rest of the file handler can work
 
 	filename = fname;
 
@@ -1049,14 +1288,22 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		return false;
 	}
 
-	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
-	if ( !cfp ) {
+	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s'!\n", filename.c_str()));
 		return false;
 	}
 
-	unsigned int plr_id = cfread_uint(cfp);
+	try {
+		handler.reset(new pilot::JSONFileHandler(fp, true));
+	} catch (const std::exception& e) {
+		mprintf(("PLR => Failed to parse JSON: %s\n", e.what()));
+		return false;
+	}
+
+	unsigned int plr_id = handler->readUInt("signature");
 
 	if (plr_id != PLR_FILE_ID) {
 		mprintf(("PLR => Invalid header id for '%s'!\n", filename.c_str()));
@@ -1065,30 +1312,24 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	}
 
 	// version, now used
-	version = cfread_ubyte(cfp);
+	plr_ver = handler->readUByte("version");
 
-	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), (int)version));
+	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), plr_ver));
 
+	// true resets everything, false sets up file verify.
+	plr_reset_data(false);
+
+	bool have_flags = false;
+	bool have_info = false;
 	// the point of all this: read in the PLR contents
-	while ( !(m_have_flags && m_have_info) && !cfeof(cfp) ) {
-		Section section_id = static_cast<Section>(cfread_ushort(cfp));
-		uint section_size = cfread_uint(cfp);
-
-		size_t start_pos = cftell(cfp);
-
-		if (section_size == 0) {
-			mprintf(("PLR => 0 size section with id %d starting at %zu\n", (uint32_t)section_id, start_pos));
-			return false;
-		}
-
-		// safety, to help protect against long reads
-		cf_set_max_read_len(cfp, section_size);
-
+	handler->beginSectionRead();
+	while (!(have_flags && have_info) && handler->hasMoreSections()) {
+		auto section_id = handler->nextSection();
 		try {
 			switch (section_id) {
 				case Section::Flags:
 					mprintf(("PLR => Parsing:  Flags...\n"));
-					m_have_flags = true;
+					have_flags = true;
 					plr_read_flags();
 					break;
 
@@ -1096,9 +1337,13 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 				// and be able to lookup the campaign rank
 				case Section::Info:
 					mprintf(("PLR => Parsing:  Info...\n"));
-					m_have_info = true;
+					have_info = true;
 					plr_read_info();
 					break;
+
+				case Section::Invalid:
+					plr_close();
+					return false;
 
 				default:
 					break;
@@ -1112,25 +1357,33 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 			plr_close();
 			return false;
 		}
+	}
+	handler->endSectionRead();
 
-		// reset safety catch
-		cf_set_max_read_len(cfp, 0);
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		t_plr.save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+	}
 
-		// skip to next section (if not already there)
-		size_t offset_pos = (start_pos + section_size) - cftell(cfp);
+	if (plr_ver < PLR_VERSION) {
+		t_plr.flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
 
-		if (offset_pos) {
-			mprintf(("PLR => Warning: (0x%04x) Short read, information may have been lost!\n", (uint32_t)section_id));
-			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
-		}
+	} else if (plr_ver > PLR_VERSION) {
+		t_plr.flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
 	}
 
 	if (valid_language) {
-		strncpy(valid_language, p->language, sizeof(p->language));
+		strcpy(valid_language, t_plr.language);
 	}
 
 	// need to cleanup early to ensure everything is OK for use in the CSG next
-	// also means we can't use *p from now on, use t_plr instead for a few vars
+
+	// Save any player flags, if caller wants them
+	if (flags != nullptr) {
+		*flags = t_plr.flags;
+	}
+
 	plr_close();
 
 	if (rank) {

@@ -17,6 +17,8 @@
  * the detected toolchain.
  */
 
+#if defined(_MSC_VER)
+
 #include <sal.h>
 
 #define SCP_FORMAT_STRING            _Printf_format_string_
@@ -37,30 +39,14 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	if _MSC_VER >= 1400  /* MSVC 2005 or newer */
-#		define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (0)
-#	else
-#		define Assertion(expr, msg)  do {} while (0)
-#	endif
+#	define Assertion(expr, msg, ...)  do { ASSUME(expr); (void)sizeof(expr); } while (false)
 #else
-	/*
-	 * NOTE: Assertion() can only use its proper functionality in compilers
-	 * that support variadic macros.
-	 */
-#	if _MSC_VER >= 1400  /* MSVC 2005 or newer */
-#		define Assertion(expr, msg, ...)                                    \
-			do {                                                            \
-				if (!(expr)) {                                              \
-					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
-				}                                                           \
-			} while (0)
-#	else                 /* Older MSVC compilers */
-#		define Assertion(expr, msg)                        \
-			do {                                           \
-				if (!(expr)) {                             \
-					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__);  \
-			} while (0)
-#	endif
+#	define Assertion(expr, msg, ...)                                    \
+		do {                                                            \
+			if (!(expr)) {                                              \
+				os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
+			}                                                           \
+		} while (false)
 #endif
 
 /* C++11 Standard Detection */
@@ -71,17 +57,41 @@
 #	endif
 #endif
 
-#define PTRDIFF_T_ARG "%Iu"
-#define SIZE_T_ARG    "%Id"
+#define SIZE_T_ARG    "%Iu"
+#define PTRDIFF_T_ARG "%Id"
 
-/* The 'noexcept' keyword is not defined in versions before VS 2015. */
-#if _MSC_VER < 1900
-#	define NOEXCEPT
-#else
-#	define NOEXCEPT  noexcept
-#endif
-
-#define likely(x)
-#define unlikely(x)
+#define likely(x) (x)
+#define unlikely(x) (x)
 
 #define USED_VARIABLE
+
+#define FALLTHROUGH
+
+#define CLANG_ANALYZER_NORETURN
+
+
+#ifndef NDEBUG
+#define UNREACHABLE(msg, ...)                                                                                          \
+	do {                                                                                                               \
+		os::dialogs::Error(__FILE__, __LINE__, msg, ##__VA_ARGS__);                                                    \
+	} while (false)
+#else
+#define UNREACHABLE(msg, ...) __assume(false)
+#endif
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS \
+__pragma(warning( push )) \
+__pragma(warning( disable : 4244 )) \
+__pragma(warning( disable : 4505 )) \
+__pragma(warning( disable : 4189 ))
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS \
+__pragma(warning( pop ))
+
+#endif

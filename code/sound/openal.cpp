@@ -2,6 +2,9 @@
 #include "globalincs/pstypes.h"
 #include "sound/openal.h"
 #include "osapi/osregistry.h"
+#include "options/Option.h"
+#include "parse/parselo.h"
+#include "libs/jansson.h"
 
 #include <string>
 #include <algorithm>
@@ -52,6 +55,155 @@ static SCP_vector<OALdevice> CaptureDevices;
 #define ALC_ALL_DEVICES_SPECIFIER                0x1013
 #endif
 
+// List of audio device names for the in-game option
+SCP_vector<SCP_string> PlaybackDeviceList;
+
+static int playbackdevice_deserializer(const json_t* value)
+{
+	const char* device;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "s", &device) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = openal_find_playback_device_by_name(device);
+
+	if (SCP_vector_inbounds(PlaybackDeviceList, id)) {
+		return id;
+	}
+
+	return -1;
+}
+static json_t* playbackdevice_serializer(int value)
+{
+	if (!SCP_vector_inbounds(PlaybackDeviceList, value)) {
+		return json_pack("s", "");
+	}
+	
+	return json_pack("s", PlaybackDeviceList[value].c_str());
+}
+static SCP_vector<int> playbackdevice_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(PlaybackDeviceList.size()); ++i) {
+		vals.push_back(i);
+	}
+	return vals;
+}
+static SCP_string playbackdevice_display(int id)
+{
+	if (!SCP_vector_inbounds(PlaybackDeviceList, id)) {
+		return "";
+	}
+	
+	SCP_string out;
+	sprintf(out, "(%d) %s", id + 1, PlaybackDeviceList[id].c_str());
+	return out;
+}
+static bool playbackdevice_change(int /*device*/, bool initial)
+{
+	if (initial) {
+		return false; // On game boot always return false
+	}
+
+	// Looking at ds.cpp's ds_init(), it's probably possible to not require a restart for this
+	// but for now let's keep this simple and just restart. If/when this is implemented the device
+	// parameter will be required. Currently playing audio will need to be copied from the old device
+	// to the new as part of the initialization. This will require deeper changes to the audio code
+	// which can be handled later in a follow-up PR.
+
+	return false;
+}
+static auto PlaybackDeviceOption = options::OptionBuilder<int>("Audio.PlaybackDevice",
+                     std::pair<const char*, int>{"Playback Device", 1834},
+                     std::pair<const char*, int>{"The device used for audio playback", 1835})
+                     .category(std::make_pair("Audio", 1826))
+                     .level(options::ExpertLevel::Beginner)
+                     .deserializer(playbackdevice_deserializer)
+                     .serializer(playbackdevice_serializer)
+                     .enumerator(playbackdevice_enumerator)
+                     .display(playbackdevice_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_val(0)
+                     .change_listener(playbackdevice_change)
+                     .importance(99)
+                     .finish();
+
+// List of audio device names for the in-game option
+SCP_vector<SCP_string> CaptureDeviceList;
+
+static int capturedevice_deserializer(const json_t* value)
+{
+	const char* device;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "s", &device) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = openal_find_capture_device_by_name(device);
+
+	if (SCP_vector_inbounds(CaptureDeviceList, id)) {
+		return id;
+	}
+
+	return -1;
+}
+static json_t* capturedevice_serializer(int value)
+{
+	if (!SCP_vector_inbounds(CaptureDeviceList, value)) {
+		return json_pack("s", "");
+	}
+	
+	return json_pack("s", CaptureDeviceList[value].c_str());
+}
+static SCP_vector<int> capturedevice_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(CaptureDeviceList.size()); ++i) {
+		vals.push_back(i);
+	}
+	return vals;
+}
+static SCP_string capturedevice_display(int id)
+{
+	if (!SCP_vector_inbounds(CaptureDeviceList, id)) {
+		return "";
+	}
+	
+	SCP_string out;
+	sprintf(out, "(%d) %s", id + 1, CaptureDeviceList[id].c_str());
+	return out;
+}
+static bool capturedevice_change(int /*device*/, bool initial)
+{
+	if (initial) {
+		return false; // On game boot always return false
+	}
+
+	// Looking at ds.cpp's ds_init(), it's probably possible to not require a restart for this
+	// but for now let's keep this simple and just restart. If/when this is implemented the device
+	// parameter will be required. Currently playing audio will need to be copied from the old device
+	// to the new as part of the initialization. This will require deeper changes to the audio code
+	// which can be handled later in a follow-up PR.
+
+	return false;
+}
+static auto CaptureDeviceOption = options::OptionBuilder<int>("Audio.CaptureDevice",
+                     std::pair<const char*, int>{"Capture Device", 1836},
+                     std::pair<const char*, int>{"The device used for audio capture", 1837})
+                     .category(std::make_pair("Audio", 1826))
+                     .level(options::ExpertLevel::Beginner)
+                     .deserializer(capturedevice_deserializer)
+                     .serializer(capturedevice_serializer)
+                     .enumerator(capturedevice_enumerator)
+                     .display(capturedevice_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_val(0)
+                     .change_listener(capturedevice_change)
+                     .importance(99)
+                     .finish();
 
 //--------------------------------------------------------------------------
 // openal_error_string()
@@ -114,58 +266,39 @@ static bool openal_device_sort_func(const OALdevice &d1, const OALdevice &d2)
 	return false;
 }
 
-static void find_playback_device()
+static void find_playback_device(OpenALInformation* info)
 {
-	const char *user_device = os_config_read_string( "Sound", "PlaybackDevice", NULL );
-	const char *default_device = (const char*) alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
+	// First, build a list of device names for the in-game option to use and pull from
+	for (auto& device : info->playback_devices) {
+		OALdevice new_device(device.c_str());
+		PlaybackDeviceList.push_back(new_device.device_name);
+	}
+	
+	const char* user_device = os_config_read_string("Sound", "PlaybackDevice", nullptr);
+
+	if (Using_in_game_options) {
+		if (SCP_vector_inbounds(PlaybackDeviceList, PlaybackDeviceOption->getValue())) {
+			user_device = PlaybackDeviceList[PlaybackDeviceOption->getValue()].c_str();
+		}
+	}
+
+	const char *default_device = info->default_playback_device.c_str();
 
 	// in case they are the same, we only want to test it once
 	if ( (user_device && default_device) && !strcmp(user_device, default_device) ) {
 		user_device = NULL;
 	}
 
-    if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
-		const char *all_devices = NULL;
+	for (auto& device : info->playback_devices) {
+		OALdevice new_device(device.c_str());
 
-        if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATE_ALL_EXT") == AL_TRUE ) {
-			all_devices = (const char*) alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-		} else {
-			all_devices = (const char*) alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-		}
-
-		const char *str_list = all_devices;
-		size_t ext_length = 0;
-
-		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
-			while (ext_length) {
-				OALdevice new_device(str_list);
-
-				if (user_device && !strcmp(str_list, user_device)) {
-					new_device.type = OAL_DEVICE_USER;
-				} else if (default_device && !strcmp(str_list, default_device)) {
-					new_device.type = OAL_DEVICE_DEFAULT;
-				}
-
-				PlaybackDevices.push_back( new_device );
-
-				str_list += (ext_length + 1);
-				ext_length = strlen(str_list);
-			}
-		}
-	} else {
-		if (default_device) {
-			OALdevice new_device(default_device);
-			new_device.type = OAL_DEVICE_DEFAULT;
-
-			PlaybackDevices.push_back( new_device );
-		}
-
-		if (user_device) {
-			OALdevice new_device(user_device);
+		if (user_device && !strcmp(device.c_str(), user_device)) {
 			new_device.type = OAL_DEVICE_USER;
-
-			PlaybackDevices.push_back( new_device );
+		} else if (default_device && !strcmp(device.c_str(), default_device)) {
+			new_device.type = OAL_DEVICE_DEFAULT;
 		}
+
+		PlaybackDevices.push_back( new_device );
 	}
 
 	if ( PlaybackDevices.empty() ) {
@@ -245,52 +378,39 @@ static void find_playback_device()
 	}
 }
 
-static void find_capture_device()
+static void find_capture_device(OpenALInformation* info)
 {
-	const char *user_device = os_config_read_string( "Sound", "CaptureDevice", NULL );
-	const char *default_device = (const char*) alcGetString( NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER );
+	// First, build a list of device names for the in-game option to use and pull from
+	for (auto& device : info->capture_devices) {
+		OALdevice new_device(device.c_str());
+		CaptureDeviceList.push_back(new_device.device_name);
+	}
+	
+	const char* user_device = os_config_read_string("Sound", "CaptureDevice", nullptr);
+
+	if (Using_in_game_options) {
+		if (SCP_vector_inbounds(CaptureDevices, CaptureDeviceOption->getValue())) {
+			user_device = CaptureDevices[CaptureDeviceOption->getValue()].device_name.c_str();
+		}
+	}
+
+	const char *default_device = info->default_capture_device.c_str();
 
 	// in case they are the same, we only want to test it once
 	if ( (user_device && default_device) && !strcmp(user_device, default_device) ) {
 		user_device = NULL;
 	}
 
-    if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
-		const char *all_devices = (const char*) alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
+	for (auto& device : info->capture_devices) {
+		OALdevice new_device(device.c_str());
 
-		const char *str_list = all_devices;
-		size_t ext_length = 0;
-
-		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
-			while (ext_length) {
-				OALdevice new_device(str_list);
-
-				if (user_device && !strcmp(str_list, user_device)) {
-					new_device.type = OAL_DEVICE_USER;
-				} else if (default_device && !strcmp(str_list, default_device)) {
-					new_device.type = OAL_DEVICE_DEFAULT;
-				}
-
-				CaptureDevices.push_back( new_device );
-
-				str_list += (ext_length + 1);
-				ext_length = strlen(str_list);
-			}
-		}
-	} else {
-		if (default_device) {
-			OALdevice new_device(default_device);
-			new_device.type = OAL_DEVICE_DEFAULT;
-
-			CaptureDevices.push_back( new_device );
-		}
-
-		if (user_device) {
-			OALdevice new_device(user_device);
+		if (user_device && !strcmp(device.c_str(), user_device)) {
 			new_device.type = OAL_DEVICE_USER;
-
-			CaptureDevices.push_back( new_device );
+		} else if (default_device && !strcmp(device.c_str(), default_device)) {
+			new_device.type = OAL_DEVICE_DEFAULT;
 		}
+
+		CaptureDevices.push_back( new_device );
 	}
 
 	if ( CaptureDevices.empty() ) {
@@ -324,6 +444,30 @@ static void find_capture_device()
 	}
 }
 
+// find a playback device's vector index
+int openal_find_playback_device_by_name(const SCP_string& device)
+{
+	for (int i = 0; i < static_cast<int>(PlaybackDeviceList.size()); i++) {
+		if (!stricmp(PlaybackDeviceList[i].c_str(), device.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+// find a capture device's vector index
+int openal_find_capture_device_by_name(const SCP_string& device)
+{
+	for (int i = 0; i < static_cast<int>(CaptureDeviceList.size()); i++) {
+		if (!stricmp(CaptureDeviceList[i].c_str(), device.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 // initializes hardware device from perferred/default/enumerated list
 bool openal_init_device(SCP_string *playback, SCP_string *capture)
 {
@@ -347,49 +491,18 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 		capture->erase();
 	}
 
-	// initialize default setup first, for version check...
+	// This reuses the code for the launcher to make sure everything is consistent
+	auto platform_info = openal_get_platform_information();
 
-	ALCdevice *device = alcOpenDevice(NULL);
-
-	if (device == NULL) {
-		return false;
-	}
-
-	ALCcontext *context = alcCreateContext(device, NULL);
-
-	if (context == NULL) {
-		alcCloseDevice(device);
-		return false;
-	}
-
-	alcMakeContextCurrent(context);
-
-	// version check (for 1.0 or 1.1)
-	ALCint AL_minor_version = 0;
-	alcGetIntegerv(NULL, ALC_MINOR_VERSION, sizeof(ALCint), &AL_minor_version);
-
-	if (AL_minor_version < 1) {
+	if (platform_info.version_major <= 1 && platform_info.version_minor < 1) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR,
 			"OpenAL 1.1 or newer is required for proper operation. On Linux and Windows OpenAL Soft is recommended. If you are on Mac OS X you need to upgrade your OS.");
-
-		alcMakeContextCurrent(NULL);
-		alcDestroyContext(context);
-		alcCloseDevice(device);
-
 		return false;
 	}
 
-	alcGetError(device);
-
-	// close default device
-	alcMakeContextCurrent(NULL);
-	alcDestroyContext(context);
-	alcCloseDevice(device);
-
-
 	// go through and find out what devices we actually want to use ...
-	find_playback_device();
-	find_capture_device();
+	find_playback_device(&platform_info);
+	find_capture_device(&platform_info);
 
 	if ( Playback_device.empty() ) {
 		return false;
@@ -451,4 +564,133 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 	}
 
 	return true;
+}
+
+static void get_version_info(OpenALInformation* info) {
+	// initialize default setup first, for version check...
+	ALCdevice *device = alcOpenDevice(NULL);
+
+	if (device == NULL) {
+		return;
+	}
+
+	ALCcontext *context = alcCreateContext(device, NULL);
+
+	if (context == NULL) {
+		alcCloseDevice(device);
+		return;
+	}
+
+	alcMakeContextCurrent(context);
+
+	// version check (for 1.0 or 1.1)
+	ALCint AL_minor_version = 0;
+	ALCint AL_major_version = 0;
+	alcGetIntegerv(NULL, ALC_MAJOR_VERSION, sizeof(ALCint), &AL_major_version);
+	alcGetIntegerv(NULL, ALC_MINOR_VERSION, sizeof(ALCint), &AL_minor_version);
+
+	info->version_major = static_cast<uint32_t>(AL_major_version);
+	info->version_minor = static_cast<uint32_t>(AL_minor_version);
+
+	alcGetError(device);
+
+	// close default device
+	alcMakeContextCurrent(NULL);
+	alcDestroyContext(context);
+	alcCloseDevice(device);
+}
+
+static bool device_supports_efx(const char* device_name) {
+	ALCdevice *device = alcOpenDevice(device_name);
+
+	if (device == NULL) {
+		return false;
+	}
+
+	bool result = false;
+	if ( alcIsExtensionPresent(device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
+		result = true;
+	}
+
+	alcCloseDevice(device);
+	return result;
+}
+
+static void enumerate_playback_devices(OpenALInformation* info) {
+	info->playback_devices.clear();
+	info->default_playback_device.clear();
+
+	auto default_device = alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
+	if (default_device != nullptr) {
+		info->default_playback_device = default_device;
+		info->efx_support.push_back(std::make_pair(SCP_string(default_device), device_supports_efx(default_device)));
+	}
+
+	if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
+		const char *all_devices = NULL;
+
+		if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATE_ALL_EXT") == AL_TRUE ) {
+			all_devices = (const char*) alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+		} else {
+			all_devices = (const char*) alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+		}
+
+		const char *str_list = all_devices;
+		size_t ext_length = 0;
+
+		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
+			while (ext_length) {
+				info->playback_devices.push_back( SCP_string(str_list) );
+				info->efx_support.push_back(std::make_pair(SCP_string(str_list), device_supports_efx(str_list)));
+
+				str_list += (ext_length + 1);
+				ext_length = strlen(str_list);
+			}
+		}
+	} else {
+		if (default_device) {
+			info->playback_devices.push_back(SCP_string(default_device));
+		}
+	}
+}
+
+static void enumerate_capture_devices(OpenALInformation* info) {
+	info->capture_devices.clear();
+	info->default_capture_device.clear();
+
+	auto default_device = alcGetString( NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER );
+	if (default_device != nullptr) {
+		info->default_capture_device = default_device;
+	}
+
+	if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
+		const char *all_devices = (const char*) alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
+
+		const char *str_list = all_devices;
+		size_t ext_length = 0;
+
+		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
+			while (ext_length) {
+				info->capture_devices.push_back( SCP_string(str_list));
+
+				str_list += (ext_length + 1);
+				ext_length = strlen(str_list);
+			}
+		}
+	} else {
+		if (default_device) {
+			info->capture_devices.push_back(SCP_string(default_device));
+		}
+	}
+}
+
+OpenALInformation openal_get_platform_information() {
+	OpenALInformation info;
+
+	get_version_info(&info);
+
+	enumerate_playback_devices(&info);
+	enumerate_capture_devices(&info);
+
+	return info;
 }

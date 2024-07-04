@@ -10,12 +10,11 @@
 
 #include "math/staticrand.h"
 #include "network/multi.h"
-#include "object/object.h"
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 
-#include <limits.h>
+#include <climits>
 
 // Private variables
 static const float shield_scale_factor = static_cast<float>(1.0 / (log(50.0) - log(1.0)));	// Factor used in Goober5000's scale_quad
@@ -141,6 +140,40 @@ void shield_add_strength(object *objp, float delta) {
 			shield_add_quad(objp, weakest_idx, xfer_amount);
 			delta -= xfer_amount;
 		}
+	}
+}
+
+// strengthens the weakest quadrant first, then spreads it out equally
+void shield_apply_healing(object* objp, float healing) {
+	Assert(objp);
+	if (objp == nullptr)
+		return;
+
+	if (MULTIPLAYER_CLIENT)
+		return;
+
+	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
+		return;
+
+	// find the current strongest and weakest shield quads
+	float min_shield = objp->shield_quadrant[0];
+	int min_shield_index = 0;
+	float max_shield = objp->shield_quadrant[0];
+	for (int i = 0; i < objp->n_quadrants; i++) {
+		if (objp->shield_quadrant[i] < min_shield) {
+			min_shield = objp->shield_quadrant[i];
+			min_shield_index = i;
+		}
+		if (objp->shield_quadrant[i] > max_shield)
+			max_shield = objp->shield_quadrant[i];
+	}
+
+	// if the shields are approximately equal give to all quads equally
+	if (max_shield - min_shield < shield_get_max_strength(objp) * 0.1f) {
+		for (int i = 0; i < objp->n_quadrants; i++)
+			shield_add_quad(objp, i, healing / objp->n_quadrants);
+	} else { // else give to weakest
+		shield_add_quad(objp, min_shield_index, healing);
 	}
 }
 
@@ -302,7 +335,8 @@ float shield_get_quad(object *objp, int quadrant_num) {
 	// no shield generator, so behave as normal
 	else
 	*/
-		return objp->shield_quadrant[quadrant_num];
+
+	return objp->shield_quadrant[quadrant_num];
 }
 
 float shield_get_strength(object *objp)
@@ -320,26 +354,6 @@ float shield_get_strength(object *objp)
 		strength += shield_get_quad(objp, i);
 
 	return strength;
-}
-
-int shield_is_up(object *objp, int quadrant_num) {
-	Assert(objp);
-
-	if ((quadrant_num >= 0) && (quadrant_num < objp->n_quadrants)) {
-		// Just check one quadrant
-		float quad = shield_get_quad(objp, quadrant_num);
-
-		if (quad > MAX(2.0f, 0.1f * shield_get_max_quad(objp)))	// [z64555] Where the heck does this 2HP come from?
-			return 1;
-	} else {
-		// Check all quadrants
-		float strength = shield_get_strength(objp);
-
-		if (strength > MAX(2.0f * objp->n_quadrants, 0.1f * shield_get_max_strength(objp)))	// [z64555] Where the heck does this 2HP come from?
-			return 1;
-	}
-
-	return 0;	// no shield strength
 }
 
 void shield_set_max_strength(object *objp, float newmax) {
@@ -383,19 +397,6 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 	Assert(objp);
 	Assert(objp->type == OBJ_SHIP);
 
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
-
-	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		// Using model point shields, so map to the correct quadrant
-		quadrant = sip->shield_point_augment_ctrls[quadrant];
-
-		if (quadrant < 0) {
-			// This quadrant cannot be augmented, bail
-			return;
-		}
-	}
-
 	Assert(quadrant >= 0 && quadrant < objp->n_quadrants);
 	Assert((0.0f < rate) && (rate <= 1.0f));
 
@@ -415,7 +416,7 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 		return;
 	
 	} else if (objp == Player_obj) {
-		snd_play(&Snds[SND_SHIELD_XFER_OK]);
+		snd_play(gamesnd_get_game_sound(GameSounds::SHIELD_XFER_OK));
 	}
 
 	float energy_avail = 0.0f;	// Energy available from the other quadrants that we can transfer

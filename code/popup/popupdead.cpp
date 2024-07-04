@@ -24,12 +24,14 @@
 #include "hud/hudmessage.h"
 #include "io/key.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
 #include "mission/missioncampaign.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "scripting/global_hooks.h"
 #include "ui/ui.h"
 
 
@@ -122,7 +124,7 @@ int Popupdead_multi_type;			// what kind of popup is active for muliplayer
 int Popupdead_skip_active = 0;	// The skip-misison popup is active
 int Popupdead_skip_already_shown = 0;
 
-int Popupdead_timer;
+UI_TIMESTAMP Popupdead_timer;
 
 extern int Cmdline_mpnoreturn;
 // Initialize the dead popup data
@@ -138,16 +140,11 @@ void popupdead_start()
 	// increment number of deaths
 	Player->failures_this_session++;
 
-
-	// create base window
-	Popupdead_window.create(Popupdead_background_coords[gr_screen.res][0], Popupdead_background_coords[gr_screen.res][1], 1, 1, 0);
-	Popupdead_window.set_foreground_bmap(Popupdead_background_filename[gr_screen.res]);
-
 	Popupdead_num_choices = 0;
 	Popupdead_multi_type = -1;
 
 	if ((The_mission.max_respawn_delay >= 0) && ( Game_mode & GM_MULTIPLAYER )) {
-		Popupdead_timer = timestamp(The_mission.max_respawn_delay * 1000); 
+		Popupdead_timer = ui_timestamp(The_mission.max_respawn_delay * 1000); 
 		if (Game_mode & GM_MULTIPLAYER) {
 			if(!(Net_player->flags & NETINFO_FLAG_LIMBO)){
 				if (The_mission.max_respawn_delay) {
@@ -221,6 +218,40 @@ void popupdead_start()
 		}
 	}
 
+	io::mouse::CursorManager::get()->pushStatus();
+	io::mouse::CursorManager::get()->showCursor(true);
+
+	Popupdead_default_choice = 0;
+	Popupdead_choice = -1;
+	Popupdead_active = 1;
+
+	if (scripting::hooks::OnDialogInit->isActive())
+	{
+		luacpp::LuaTable buttons = luacpp::LuaTable::create(Script_system.GetLuaSession());
+		for (int cnt = 0; cnt < Popupdead_num_choices; cnt++) {
+			luacpp::LuaTable button = luacpp::LuaTable::create(Script_system.GetLuaSession());
+			button.addValue("Positivity", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), 0));
+			button.addValue("Text", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), Popupdead_button_text[cnt]));
+			buttons.addValue(cnt + 1, button);
+		}
+
+		auto paramList = scripting::hook_param_list(
+			scripting::hook_param("Choices", 't', buttons),
+			scripting::hook_param("IsTimeStopped", 'b', false),
+			scripting::hook_param("IsStateRunning", 'b', true),
+			scripting::hook_param("IsInputPopup", 'b', false),
+			scripting::hook_param("IsDeathPopup", 'b', true),
+			scripting::hook_param("DeathMessage", 's', Player->death_message.c_str()));
+
+		scripting::hooks::OnDialogInit->run(paramList);
+		if (scripting::hooks::OnDialogInit->isOverride(paramList))
+			return;
+	}
+
+	// create base window
+	Popupdead_window.create(Popupdead_background_coords[gr_screen.res][0], Popupdead_background_coords[gr_screen.res][1], 1, 1, 0);
+	Popupdead_window.set_foreground_bmap(Popupdead_background_filename[gr_screen.res]);
+
 	// create buttons
 	for (i=0; i < Popupdead_num_choices; i++) {
 		b = &Popupdead_buttons[i];
@@ -236,13 +267,6 @@ void popupdead_start()
 		b->create(&Popupdead_window, "", lx, Popupdead_region_coords[gr_screen.res][i][1], Popupdead_region_coords[gr_screen.res][i][2]-lx, Popupdead_region_coords[gr_screen.res][i][3]-Popupdead_region_coords[gr_screen.res][i][1], 0, 1);
 		b->hide();
 	}
-	
-	io::mouse::CursorManager::get()->pushStatus();
-	io::mouse::CursorManager::get()->showCursor(true);
-	
-	Popupdead_default_choice = 0;
-	Popupdead_choice = -1;
-	Popupdead_active = 1;
 }
 
 // maybe play a sound when key up/down is pressed to switch default choice
@@ -271,7 +295,7 @@ void popupdead_play_default_change_sound()
 	}
 
 	if (!mouse_over) {
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 }
 
@@ -409,10 +433,26 @@ void popupdead_draw_button_text()
 	}
 }
 
+static void popupdead_resolve_scripting(lua_State* L, int& choice, const luacpp::LuaValueList& arguments) {
+	if (arguments.empty() || !arguments[0].isValid()) {
+		LuaError(L, "Invalid type supplied to dialog submit function!");
+		return;
+	}
+
+	auto type = arguments[0].getValueType();
+
+	if (type == luacpp::ValueType::NUMBER) {
+		choice = arguments[0].getValue<int>();
+	}
+	else {
+		LuaError(L, "Invalid type supplied to dialog submit function!");
+	}
+}
+
 // Called once per frame to run the dead popup
-int popupdead_do_frame(float frametime)
+int popupdead_do_frame(float  /*frametime*/)
 {
-	int k, choice;
+	int k, choice = -1;
 
 	if ( !Popupdead_active ) {
 		return -1;
@@ -444,75 +484,71 @@ int popupdead_do_frame(float frametime)
 		Popupdead_skip_already_shown = 1;
 	}
 
-	
-	k = Popupdead_window.process();
+	bool isScriptingOverride = false;
+	if (scripting::hooks::OnDialogFrame->isActive()) {
+		auto paramList = scripting::hook_param_list(
+			scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&choice](lua_State* L, const luacpp::LuaValueList& resolveVals) {
+				popupdead_resolve_scripting(L, choice, resolveVals);
+				return luacpp::LuaValueList{};
+				})),
+			scripting::hook_param("IsDeathPopup", 'b', true),
+			scripting::hook_param("Freeze", 'b', static_cast<bool>(popup_active())));
 
-	choice = popupdead_process_keys(k);
-	if ( choice >= 0 ) {
-		// do something different for single/multiplayer
-		if ( Game_mode & GM_NORMAL ) {
-			Popupdead_choice=choice;
-		} else {
-			Assert( Popupdead_multi_type != -1 );
-			switch ( Popupdead_multi_type ) {
-				
-			case POPUPDEAD_OBS_ONLY:
-			case POPUPDEAD_OBS_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_OBSERVER;
-				if ( (Popupdead_multi_type == POPUPDEAD_OBS_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
+		scripting::hooks::OnDialogFrame->run(paramList);
+		isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+	}
 
-			case POPUPDEAD_RESPAWN_ONLY:
-			case POPUPDEAD_RESPAWN_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_RESPAWN;
-				if ( (Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
+	// don't process keys/buttons if another popup is active
+	if ( !popup_active() ) {
 
-			default:
-				Int3();
-				break;
+		if (!isScriptingOverride) {
+			k = Popupdead_window.process();
+
+			choice = popupdead_process_keys(k);
+
+			if (choice < 0) {
+				choice = popupdead_check_buttons();
+			}
+		}
+
+		if ( choice >= 0 ) {
+			// do something different for single/multiplayer
+			if ( Game_mode & GM_NORMAL ) {
+				Popupdead_choice=choice;
+			} else {
+				Assert( Popupdead_multi_type != -1 );
+				switch ( Popupdead_multi_type ) {
+
+				case POPUPDEAD_OBS_ONLY:
+				case POPUPDEAD_OBS_QUIT:
+					Popupdead_choice = POPUPDEAD_DO_OBSERVER;
+					if ( (Popupdead_multi_type == POPUPDEAD_OBS_QUIT) && (choice == 1) )
+						Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
+					break;
+
+				case POPUPDEAD_RESPAWN_ONLY:
+				case POPUPDEAD_RESPAWN_QUIT:
+					Popupdead_choice = POPUPDEAD_DO_RESPAWN;
+					if ( (Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT) && (choice == 1) )
+						Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
+					break;
+
+				default:
+					UNREACHABLE("Invalid or unknown popupdead multi type!");
+					break;
+				}
 			}
 		}
 	}
 
-	choice = popupdead_check_buttons();
-	if ( choice >= 0 ) {
-		// do something different for single/multiplayer
-		if ( Game_mode & GM_NORMAL ) {
-			Popupdead_choice=choice;
-		} else {
-			Assert( Popupdead_multi_type != -1 );
-			switch ( Popupdead_multi_type ) {
-				
-			case POPUPDEAD_OBS_ONLY:
-			case POPUPDEAD_OBS_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_OBSERVER;
-				if ( (Popupdead_multi_type == POPUPDEAD_OBS_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
-
-			case POPUPDEAD_RESPAWN_ONLY:
-			case POPUPDEAD_RESPAWN_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_RESPAWN;
-				if ( (Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
-
-			default:
-				Int3();
-				break;
-			}
-		}
+	if (!isScriptingOverride) {
+		Popupdead_window.draw();
+		popupdead_force_draw_buttons();
+		popupdead_draw_button_text();
 	}
-
-	Popupdead_window.draw();
-	popupdead_force_draw_buttons();
-	popupdead_draw_button_text();
 
 	// maybe force the player to respawn if they've taken too long to choose
-	if (( Game_mode & GM_MULTIPLAYER ) && (The_mission.max_respawn_delay >= 0) && (timestamp_elapsed(Popupdead_timer)) && (choice < 0)) {
+	if (( Game_mode & GM_MULTIPLAYER ) && (The_mission.max_respawn_delay >= 0) && (ui_timestamp_elapsed(Popupdead_timer)) && (choice < 0)) {
 		if (( Popupdead_multi_type == POPUPDEAD_RESPAWN_ONLY) || ( Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT)) {
 			Popupdead_choice = POPUPDEAD_DO_RESPAWN; 
 		}
@@ -522,13 +558,16 @@ int popupdead_do_frame(float frametime)
 }
 
 // Close down the dead popup
-void popupdead_close()
+void popupdead_close(bool play_sound)
 {
 	if ( !Popupdead_active ) {
 		return;
 	}
 
-	gamesnd_play_iface(SND_POPUP_DISAPPEAR);
+	if (play_sound) {
+		gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
+	}
+
 	Popupdead_window.destroy();
 	game_flush();
 	
@@ -537,6 +576,11 @@ void popupdead_close()
 	Popupdead_active = 0;
 	Popupdead_skip_active = 0;
 	Popupdead_skip_already_shown = 0;
+
+	if (scripting::hooks::OnDialogClose->isActive())
+		scripting::hooks::OnDialogClose->run(scripting::hook_param_list(
+			scripting::hook_param("IsDeathPopup", 'b', true))
+		);
 }
 
 // Is there a dead popup active?

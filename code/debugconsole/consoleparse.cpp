@@ -20,7 +20,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstring>
-#include <limits.h>
+#include <climits>
 
 
 // ========================= LOCALS =========================

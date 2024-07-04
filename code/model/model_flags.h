@@ -5,12 +5,31 @@
 
 namespace Model {
 
+	FLAG_LIST(Submodel_flags) {
+		Can_move,						// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
+		Is_live_debris,					// whether current submodel is a live debris model
+		Is_thruster,					// is an engine thruster submodel
+		Is_damaged,						// is a submodel that represents a damaged submodel (e.g. a -destroyed version of some other submodel)
+		Do_not_scale_detail_distances,	// if set should not scale boxes or spheres based on 'model detail' settings
+		Gun_rotation,					// for animated weapon models
+		Instant_rotate_accel,			// rotating submodels instantly reach their desired velocity
+		Instant_translate_accel,		// ditto for translating submodels
+		No_collisions,					// for $no_collisions property - kazan
+		Nocollide_this_only,			//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
+		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+		Use_render_box_offset,			// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
+		Use_render_sphere_offset,		// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
+
+		NUM_VALUES
+	};
+
 	FLAG_LIST(Subsystem_Flags) {
-		Rotates,			// This means the object rotates automatically with "turn_rate"
+		Rotates,			// This means the object rotates automatically
+		Translates,			// This means the object translates automatically
 		Stepped_rotate,		// This means that the rotation occurs in steps
+		Stepped_translate,	// Ditto for translation
 		Ai_rotate,			// This means that the rotation is controlled by ai
 		Crewpoint,			// If set, this is a crew point.
-		Turret_matrix,		// If set, this has it's turret matrix created correctly.
 		Awacs,				// If set, this subsystem has AWACS capability
 		Artillery,			// if this rotates when weapons are fired - Goober5000
 		Triggered,			// rotates when triggered by something
@@ -24,8 +43,9 @@ namespace Model {
 		Fire_on_target,		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
-		Turret_alt_math,	// tells the game to use additional calculations should turret have a defined y fov
-		Dum_rotates,		// Bobboau
+		Turret_barrel_fov_overridden,	// indicates the ships.tbl value should override the pof value
+		Turret_base_fov_overridden,	// ..
+		Turret_max_fov_overridden,	// ..
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on
 		Fov_edge_check,		// Tells the game to use better FOV edge checking with this turret
@@ -46,8 +66,13 @@ namespace Model {
         Turret_use_ammo,			// enables ammo consumption for turrets (DahBlount)
         Autorepair_if_disabled,		// Allows the subsystem to repair itself even if disabled (MageKing17)
         No_autorepair_if_disabled,	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
-        Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
-		
+        Share_fire_direction,		// (DahBlount) Whenever the turret fires a beam, make all beams fire in the same direction.
+        No_sparks,          // Subsystem does not generate sparks if hit - m!m
+		No_impact_debris,    // Don't spawn the small debris on impact - m!m
+		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
+		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
+		Override_submodel_impact,	// if a weapon impacted a submodel, but this subsystem is within range, the subsystem takes priority -- Goober5000
+
         NUM_VALUES
 	};
 
@@ -65,14 +90,14 @@ namespace Model {
 		No_texturing,			// Draw textures as flat-shaded polygons.
 		No_correct,				// Don't to correct texture mapping
 		No_smoothing,			// Don't perform smoothing on vertices.
-		Is_asteroid,			// When set, treat this as an asteroid.  
+		Is_asteroid,			// When set, treat this as an asteroid.
 		Is_missile,				// When set, treat this as a missilie.  No lighting, small thrusters.
-		Show_outline_preset,	// Draw the object in outline mode. Color assumed to be set already.	
+		Show_outline_preset,	// Draw the object in outline mode. Color assumed to be set already.
 		Show_invisible_faces,	// Show invisible faces as green...
 		Autocenter,				// Always use the center of the hull bounding box as the center, instead of the pivot point
 		Bay_paths,				// draw bay paths
 		All_xparent,			// render it fully transparent
-		No_zbuffer,				// switch z-buffering off completely 
+		No_zbuffer,				// switch z-buffering off completely
 		No_cull,				// don't cull backfacing poly's
 		Force_texture,			// force a given texture to always be used
 		Force_lower_detail,		// force the model to draw 1 LOD lower, if possible
@@ -84,7 +109,7 @@ namespace Model {
 		Full_detail,			// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 		Force_clamp,			// force clamp - Hery
 		Animated_shader,		// Use a animated Shader - Valathil
-		
+
 		NUM_VALUES
 	};
 }

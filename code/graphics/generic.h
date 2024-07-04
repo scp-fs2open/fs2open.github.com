@@ -43,7 +43,7 @@ typedef struct generic_anim {
 			float previous_frame_time;
 		} png;
 	};
-	ubyte type;
+	BM_TYPE type;
 	unsigned char streaming;
 	ubyte *buffer;
 	int height;
@@ -67,6 +67,7 @@ public:
 	float u0, v0, u1, v1;
 	float alpha;
 	bool draw;
+	int resize_mode;
 
 	generic_extras()
 		: width(0), height(0)
@@ -74,6 +75,7 @@ public:
 		, u1(1.0f), v1(1.0f)
 		, alpha(1.0f)
 		, draw(true)
+		, resize_mode(0)	// GR_RESIZE_NONE
 	{}
 };
 
@@ -89,5 +91,6 @@ int generic_anim_stream(generic_anim *ga, const bool cache = true);
 int generic_bitmap_load(generic_bitmap *gb);
 void generic_anim_unload(generic_anim *ga);
 void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu = false, const generic_extras *ge = nullptr);
-
+void generic_anim_bitmap_set(generic_anim* ga, float frametime, const generic_extras* ge = nullptr);
+void generic_anim_reset(generic_anim *ga);
 #endif

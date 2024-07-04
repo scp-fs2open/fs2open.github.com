@@ -24,7 +24,7 @@ TEST_F(LuaReferenceTest, Create) {
 		// Remove the two values again
 		lua_pop(L, 2);
 
-		ref->pushValue();
+		ref->pushValue(L);
 
 		ASSERT_TRUE(lua_isboolean(L, -1) == 1);
 		ASSERT_TRUE(lua_toboolean(L, -1) == 1);
@@ -81,7 +81,7 @@ TEST_F(LuaReferenceTest, PushValue) {
 
 	lua_pop(L, 1);
 
-	refPtr->pushValue();
+	refPtr->pushValue(L);
 
 	ASSERT_TRUE(lua_isboolean(L, -1) == 1);
 	ASSERT_EQ(1, lua_toboolean(L, -1));

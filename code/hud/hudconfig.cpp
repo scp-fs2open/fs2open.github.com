@@ -30,10 +30,8 @@
 // Game-wide Globals
 //////////////////////////////////////////////////////////////////////////////
 
-#define MAX_HCF_FILES			30
-int HC_num_files = -1;						// num known hcf files
 int HC_current_file = -1;					// current hcf file
-char *HC_filenames[MAX_HCF_FILES];
+SCP_vector<SCP_string> HC_preset_filenames;
 
 char HC_fname[MAX_FILENAME_LEN+1] = "";
 UI_INPUTBOX HC_fname_input;
@@ -47,48 +45,7 @@ int HC_fname_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 HUD_CONFIG_TYPE HUD_config;	// Player HUD configuration
- 
-char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH] = {
-	"lead indicator",
-	"target orientation",
-	"closest attacking hostile",
-	"current target direction",
-	"mission time",
-	"reticle",
-	"throttle",
-	"radar",
-	"target monitor",
-	"center of reticle",
-	"extra target info",
-	"target shield",
-	"player shield",
-	"power management",
-	"auto-target icon",
-	"auto-speed-match icon",
-	"weapons display",
-	"monitoring view",
-	"directives view",
-	"threat gauge",
-	"afterburner energy",
-	"weapons energy",
-	"weapon linking",
-	"target hull/shield icon",
-	"offscreen indicator",
-	"comm video",
-	"damage display",
-	"message output",
-	"locked missile direction",
-	"countermeasures",
-	"objective notify",
-	"wingmen status",
-	"offscreen range",
-	"kills gauge",
-	"attacking target count",
-	"warning flash",
-	"comm menu",
-	"support gauge",
-	"lag gauge"
-};
+
 
 // specify the max distance that the radar should detect objects
 // See RR_ #defines in HUDconfig.h.
@@ -223,9 +180,6 @@ int HUD_default_popup_mask2 =
 	0											// kills gauge
 };
 
-void hud_config_color_save(char *name);
-void hud_config_select_all_toggle(int toggle);
-
 int HC_select_all = 0;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -241,21 +195,6 @@ const char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
 const char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig-m",
 	"2_HUDConfig-m"
-};
-
-struct HC_gauge_region
-{
-	const char		*filename;
-	int			x,y;
-	int			hotspot;
-	int			use_iff;
-	int			can_popup;
-	int			bitmap;
-	int			nframes;
-	int			color;
-	UI_BUTTON	button;
-
-	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
 };
 
 // hud config gauges
@@ -348,6 +287,18 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 	//XSTR:ON
 	}
 };
+
+/**
+ * @brief x y coordinates of gauges for hud preview display
+ * 
+ * @note used for scaling the positions properly when the preview display is scaled
+ */
+struct gauge_coords {
+	int x; // x coordinate position
+	int y; // y coordinate position
+};
+
+SCP_vector<gauge_coords> HC_gauge_coords;
 
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
@@ -554,82 +505,20 @@ UI_XSTR HC_text[GR_NUM_RESOLUTIONS][NUM_HUD_TEXT] = {
 	}
 };
 
-void hud_config_set_rgb(int gauge, int r, int g, int b);
-void hud_config_set_alpha(int gauge, int a);
-
-/*
-#define NUM_HC_SPECIAL_BITMAPS	2
-#define HC_SPECIAL_RETICLE			0
-#define HC_SPECIAL_TEXT				1
-typedef struct HC_special_bitmap
-{
-	char *filename;
-	int x,y;
-	int bitmap;
-} HC_special_bitmap;
-
-HC_special_bitmap HC_special_bitmaps[NUM_HC_SPECIAL_BITMAPS] =
-{
-//XSTR:OFF
-	{"HG_00a", 272, 146, -1},
-	{"HG_04a", 132, 271, -1},
-//XSTR:ON
-};
-*/
-
 static int							HC_background_bitmap;
 static int							HC_background_bitmap_mask;
 static UI_WINDOW					HC_ui_window;
 
-static int							HC_gauge_hot;			// mouse is over this gauge
-static int							HC_gauge_selected;	// gauge is selected
-
-// slider controls
-/*
-#define HC_NUM_SLIDERS							1
-#define HC_BRIGHTNESS_SLIDER					0
-struct hc_sliders {
-	// base slider
-	char *filename;
-	int x, y, xt, yt;
-	int hotspot;
-	int dot_w;
-	int dots;
-
-	// left and right buttons
-	char *left_filename;
-	int left_mask, left_x, left_y;
-	char *right_filename;
-	int right_mask, right_x, right_y;
-
-	// slider control
-	UI_DOT_SLIDER_NEW slider;  // because we have a class inside this struct, we need the constructor below..
-
-	hc_sliders(char *name, int x1, int y1, int xt1, int yt1, int h, int _dot_w, int _dots, char *_left_filename, int _left_mask, int _left_x, int _left_y, char *_right_filename, int _right_mask, int _right_x, int _right_y) : 
-				 filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), dot_w(_dot_w), dots(_dots), left_filename(_left_filename), left_mask(_left_mask), left_x(_left_x), left_y(_left_y), right_filename(_right_filename), right_mask(_right_mask), right_x(_right_x), right_y(_right_y) {}
-};
-
-hc_sliders HC_sliders[GR_NUM_RESOLUTIONS][HC_NUM_SLIDERS] = {
-	{ // GR_640
-		hc_sliders(	"HCB_22",	419,	379,	-1,	-1,	22,	20,	10,							
-						"HCB_23",	23,	611,	379,
-						"HCB_21",	21,	391,	379)
-	},
-	{ // GR_1024
-		hc_sliders(	"2_HCB_22",	670,	606,	-1,	-1,	22,	32,	10,							
-						"2_HCB_23",	23,	698,	606,
-						"2_HCB_21",	21,	625,	606),
-	}	
-};
-*/
-
+int							HC_gauge_hot;			// mouse is over this gauge
+int							HC_gauge_selected;	// gauge is selected
+float						HC_gauge_scale; // scale used for drawing the hud gauges
 
 // HUD colors
 typedef struct hc_col {
 	ubyte	r, g, b;
 } hc_col;
 
-hc_col HC_colors[3] =
+hc_col HC_colors[HUD_COLOR_SIZE] =
 {
 	{0, 255, 0},		// Green - get RGB from Adam so it matches palette?-??.pcx
 	{67, 123, 203},	// Blue - get RGB from Adam so it matches palette?-??.pcx
@@ -647,8 +536,6 @@ void hud_config_alpha_slider_up();
 void hud_config_alpha_slider_down();
 void hud_config_recalc_alpha_slider();
 void hud_config_process_colors();
-void hud_config_color_init();
-void hud_config_color_close();
 #define NUM_HC_SLIDERS			4
 #define HCS_RED					0
 #define HCS_GREEN					1
@@ -687,116 +574,219 @@ void hud_config_synch_sliders(int i)
 	}
 }
 
-// reset some ui components based on HUD config data
-void hud_config_synch_ui()
+/*!
+ * @brief reset some ui components based on HUD config data
+ *
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ */
+void hud_config_synch_ui(bool API_Access)
 {
 	HUD_init_hud_color_array();
 	// HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha-3;		// convert to value from 0-10	
 
 	// sync sliders to currently selected gauge
-	hud_config_synch_sliders(HC_gauge_selected);
+	if (!API_Access) {
+		hud_config_synch_sliders(HC_gauge_selected);
+	}
 }
 
-// Init the UI components
-void hud_config_init_ui()
+/*!
+ * @brief init the UI components
+ *
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ * param[in] x				the x coord to render the preview display
+ * param[in] y				the y coord to render the preview display
+ * param[in] w				the width of the preview display
+ */
+void hud_config_init_ui(bool API_Access, int x, int y, int w)
 {
 	int i;
-	struct HC_gauge_region	*hg;
 	struct ui_button_info			*hb;
 
-	hud_config_synch_ui();
-	HC_background_bitmap = bm_load(Hud_config_fname[gr_screen.res]);
-	if (HC_background_bitmap < 0) {
-		Warning(LOCATION, "Error loading HUD config menu background %s", Hud_config_fname[gr_screen.res]);
+	HC_gauge_coords.clear();
+	HC_gauge_coords.resize(NUM_HUD_GAUGES);
+
+	if (w < 0) {
+		HC_gauge_scale = 1.0f;
+	} else {
+
+		float sw = 0; // will be highest w value
+
+		// this is probably not the most efficient way to do this, but I
+		// can't find a better one. Need to get the furthest right and bottom
+		// pixels to be rendered to calculate the percent change. That is then
+		// used to rescale each gauge correctly for the rendering size and position. - Mjn
+		for (const auto& gauge : HC_gauge_regions[gr_screen.res]) {
+			if (!stricmp(gauge.filename, NOX("none"))) {
+				continue;
+			}
+
+			int bm = bm_load(gauge.filename);
+
+			int bw;
+			bm_get_info(bm, &bw);
+			bm_release(bm);
+
+			bw += gauge.x;
+
+			if (bw > sw) {
+				sw = (float)bw;
+			}
+		}
+
+		// calculate the percent change
+		HC_gauge_scale = (float)w / sw;
+
+		// we don't work with negative scales here, so reverse if it is
+		if (HC_gauge_scale < 0) {
+			HC_gauge_scale *= -1;
+		}
 	}
 
-	HC_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
+	hud_config_synch_ui(API_Access);
 
-	HC_background_bitmap_mask = bm_load(Hud_config_mask_fname[gr_screen.res]);
-	if (HC_background_bitmap_mask < 0) {
-		Warning(LOCATION, "Error loading HUD config menu mask %s", Hud_config_mask_fname[gr_screen.res]);
-		return;
-	} else {
-		HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
+	if (!API_Access) {
+		HC_background_bitmap = bm_load(Hud_config_fname[gr_screen.res]);
+		if (HC_background_bitmap < 0) {
+			Warning(LOCATION, "Error loading HUD config menu background %s", Hud_config_fname[gr_screen.res]);
+		}
+
+		HC_ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+
+		HC_background_bitmap_mask = bm_load(Hud_config_mask_fname[gr_screen.res]);
+		if (HC_background_bitmap_mask < 0) {
+			Warning(LOCATION, "Error loading HUD config menu mask %s", Hud_config_mask_fname[gr_screen.res]);
+			return;
+		} else {
+			HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
+		}
+	}
+
+	// this is kinda dumb, but the retail gauge coords are hardcoded to
+	// to offset from the left and top of the screen. This exists
+	// for the api to render the gauge view at 0,0 without having to compensate
+	// for this dumb hardcoded way of doing things.
+	int x_offset = 0 + x;
+	int y_offset = 0 + y;
+	if (API_Access) {
+		int sx = HC_gauge_regions[gr_screen.res][0].x; // will be lowest x value
+		int sy = HC_gauge_regions[gr_screen.res][0].y; // will be lowest y value
+		for (auto gauge : HC_gauge_regions[gr_screen.res]) {
+			if (!stricmp(gauge.filename, NOX("none"))) {
+				continue;
+			}
+			if (gauge.x < sx) {
+				sx = gauge.x;
+			}
+			if (gauge.y < sy) {
+				sy = gauge.y;
+			}
+		}
+
+		// now add the offsets with the correct scaling
+		x_offset += ((int)(sx * HC_gauge_scale) * -1); // the furthest left gauge
+		y_offset += ((int)(sy * HC_gauge_scale) * -1); // the furthest top gauge
 	}
 
 	for (i=0; i<NUM_HUD_GAUGES; i++) {
+		struct HC_gauge_region* hg;
 		hg = &HC_gauge_regions[gr_screen.res][i];
-		if ( !stricmp(hg->filename, NOX("none")) ) {
+		if (!stricmp(hg->filename, NOX("none"))) {
 			continue;
 		}
-		hg->button.create(&HC_ui_window, "", hg->x, hg->y, 60, 30, 0, 1);
+
+		// scale the x/y coords
+		int gx = (int)(hg->x * HC_gauge_scale);
+		int gy = (int)(hg->y * HC_gauge_scale);
+
+		// apply the offset
+		gx += x_offset;
+		gy += y_offset;
+
+		// save the values and drop the decimals
+		HC_gauge_coords[i] = {gx, gy};
+
+		hg->button.create(&HC_ui_window, "", gx, gy, 60, 30, 0, 1);
 		// set up callback for when a mouse first goes over a button
-//		hg->button.set_highlight_action(common_play_highlight_sound);
+		//		hg->button.set_highlight_action(common_play_highlight_sound);
 		hg->button.hide();
 		hg->button.link_hotspot(hg->hotspot);
 
-		// if ( hg->use_iff ) {
-// 			hg->bitmap = bm_load_animation(hg->filename, &hg->nframes);
-	// 	} else {
-			hg->bitmap = bm_load(hg->filename);
-			hg->nframes = 1;
-		// }
+		hg->bitmap = bm_load(hg->filename);
+		hg->nframes = 1;
+
 	}
 
-	// add text
-	for(i=0; i<NUM_HUD_TEXT; i++){
-		HC_ui_window.add_XSTR(&HC_text[gr_screen.res][i]);
+	if (!API_Access){
+		// add text
+		for(i=0; i<NUM_HUD_TEXT; i++){
+			HC_ui_window.add_XSTR(&HC_text[gr_screen.res][i]);
+		}
+
+		// initialize sliders
+		HC_color_sliders[HCS_RED].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_RED][0], HC_slider_coords[gr_screen.res][HCS_RED][1], HC_slider_coords[gr_screen.res][HCS_RED][2], HC_slider_coords[gr_screen.res][HCS_RED][3],
+											255, HC_slider_fname[gr_screen.res], hud_config_red_slider, hud_config_red_slider, hud_config_red_slider);
+
+		HC_color_sliders[HCS_GREEN].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_GREEN][0], HC_slider_coords[gr_screen.res][HCS_GREEN][1], HC_slider_coords[gr_screen.res][HCS_GREEN][2], HC_slider_coords[gr_screen.res][HCS_GREEN][3],
+											255, HC_slider_fname[gr_screen.res], hud_config_green_slider, hud_config_green_slider, hud_config_green_slider);
+
+		HC_color_sliders[HCS_BLUE].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_BLUE][0], HC_slider_coords[gr_screen.res][HCS_BLUE][1], HC_slider_coords[gr_screen.res][HCS_BLUE][2], HC_slider_coords[gr_screen.res][HCS_BLUE][3],
+											255, HC_slider_fname[gr_screen.res], hud_config_blue_slider, hud_config_blue_slider, hud_config_blue_slider);
+
+		HC_color_sliders[HCS_ALPHA].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_ALPHA][0], HC_slider_coords[gr_screen.res][HCS_ALPHA][1], HC_slider_coords[gr_screen.res][HCS_ALPHA][2], HC_slider_coords[gr_screen.res][HCS_ALPHA][3],
+											255, HC_slider_fname[gr_screen.res], hud_config_alpha_slider_up, hud_config_alpha_slider_down, NULL);
 	}
-
-	// initialize sliders
-	HC_color_sliders[HCS_RED].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_RED][0], HC_slider_coords[gr_screen.res][HCS_RED][1], HC_slider_coords[gr_screen.res][HCS_RED][2], HC_slider_coords[gr_screen.res][HCS_RED][3],
-										255, HC_slider_fname[gr_screen.res], hud_config_red_slider, hud_config_red_slider, hud_config_red_slider);
-
-	HC_color_sliders[HCS_GREEN].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_GREEN][0], HC_slider_coords[gr_screen.res][HCS_GREEN][1], HC_slider_coords[gr_screen.res][HCS_GREEN][2], HC_slider_coords[gr_screen.res][HCS_GREEN][3],
-										255, HC_slider_fname[gr_screen.res], hud_config_green_slider, hud_config_green_slider, hud_config_green_slider);
-
-	HC_color_sliders[HCS_BLUE].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_BLUE][0], HC_slider_coords[gr_screen.res][HCS_BLUE][1], HC_slider_coords[gr_screen.res][HCS_BLUE][2], HC_slider_coords[gr_screen.res][HCS_BLUE][3],
-										255, HC_slider_fname[gr_screen.res], hud_config_blue_slider, hud_config_blue_slider, hud_config_blue_slider);
-
-	HC_color_sliders[HCS_ALPHA].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_ALPHA][0], HC_slider_coords[gr_screen.res][HCS_ALPHA][1], HC_slider_coords[gr_screen.res][HCS_ALPHA][2], HC_slider_coords[gr_screen.res][HCS_ALPHA][3],
-										255, HC_slider_fname[gr_screen.res], hud_config_alpha_slider_up, hud_config_alpha_slider_down, NULL);
 	
-	hud_config_color_init();
+	hud_config_preset_init();
 
-	for (i=0; i<NUM_HUD_BUTTONS; i++) {
-		hb = &HC_buttons[gr_screen.res][i];
-		hb->button.create(&HC_ui_window, "", hb->x, hb->y, 60, 30, 0, 1);
-		// set up callback for when a mouse first goes over a button
-		hb->button.set_bmaps(hb->filename);
-		hb->button.set_highlight_action(common_play_highlight_sound);
-		hb->button.link_hotspot(hb->hotspot);
+	if (!API_Access) {
+		for (i = 0; i < NUM_HUD_BUTTONS; i++) {
+			hb = &HC_buttons[gr_screen.res][i];
+			hb->button.create(&HC_ui_window, "", hb->x, hb->y, 60, 30, 0, 1);
+			// set up callback for when a mouse first goes over a button
+			hb->button.set_bmaps(hb->filename);
+			hb->button.set_highlight_action(common_play_highlight_sound);
+			hb->button.link_hotspot(hb->hotspot);
+		}
+
+		// config file input name
+		HC_fname_input.create(&HC_ui_window,
+			HC_fname_coords[gr_screen.res][0],
+			HC_fname_coords[gr_screen.res][1],
+			HC_fname_coords[gr_screen.res][2],
+			MAX_FILENAME_LEN,
+			"",
+			UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_FOC);
+		HC_fname_input.set_text("");
+
+		/*
+		for (i=0; i<NUM_HC_SPECIAL_BITMAPS; i++) {
+			HC_special_bitmaps[i].bitmap = bm_load(HC_special_bitmaps[i].filename);
+		}
+		*/
+
+		// create sliders
+		/*
+		for(i=0; i<HC_NUM_SLIDERS; i++){
+			HC_sliders[gr_screen.res][i].slider.create(&HC_ui_window, HC_sliders[gr_screen.res][i].x,
+		HC_sliders[gr_screen.res][i].y, HC_sliders[gr_screen.res][i].dots, HC_sliders[gr_screen.res][i].filename,
+																			HC_sliders[gr_screen.res][i].hotspot,
+		HC_sliders[gr_screen.res][i].right_filename, HC_sliders[gr_screen.res][i].right_mask,
+		HC_sliders[gr_screen.res][i].right_x, HC_sliders[gr_screen.res][i].right_y,
+																			HC_sliders[gr_screen.res][i].left_filename,
+		HC_sliders[gr_screen.res][i].left_mask, HC_sliders[gr_screen.res][i].left_x,
+		HC_sliders[gr_screen.res][i].left_y, HC_sliders[gr_screen.res][i].dot_w);
+		}
+		HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha - 3;
+		*/
+
+		HC_gauge_hot = -1;
+		HC_gauge_selected = -1;
+
+		HC_select_all = 0;
+
+		strcpy_s(HC_fname, "");
 	}
-
-	// config file input name	
-	HC_fname_input.create(&HC_ui_window, HC_fname_coords[gr_screen.res][0], HC_fname_coords[gr_screen.res][1], HC_fname_coords[gr_screen.res][2], MAX_FILENAME_LEN, "", UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_FOC);	
-	HC_fname_input.set_text("");
-
-	/*
-	for (i=0; i<NUM_HC_SPECIAL_BITMAPS; i++) {
-		HC_special_bitmaps[i].bitmap = bm_load(HC_special_bitmaps[i].filename);
-	}
-	*/
-
-	// create sliders
-	/*
-	for(i=0; i<HC_NUM_SLIDERS; i++){
-		HC_sliders[gr_screen.res][i].slider.create(&HC_ui_window, HC_sliders[gr_screen.res][i].x, HC_sliders[gr_screen.res][i].y,
-																		HC_sliders[gr_screen.res][i].dots, HC_sliders[gr_screen.res][i].filename,
-																		HC_sliders[gr_screen.res][i].hotspot, HC_sliders[gr_screen.res][i].right_filename, HC_sliders[gr_screen.res][i].right_mask, HC_sliders[gr_screen.res][i].right_x, HC_sliders[gr_screen.res][i].right_y,
-																		HC_sliders[gr_screen.res][i].left_filename, HC_sliders[gr_screen.res][i].left_mask, HC_sliders[gr_screen.res][i].left_x, HC_sliders[gr_screen.res][i].left_y,
-																		HC_sliders[gr_screen.res][i].dot_w);
-	}
-	HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha - 3;
-	*/
-	
-	
-	HC_gauge_hot = -1;
-	HC_gauge_selected = -1;
-
-	HC_select_all = 0;
-
-	strcpy_s(HC_fname, "");
 }
 
 int hud_config_show_flag_is_set(int i)
@@ -861,8 +851,12 @@ void hud_config_popup_flag_clear(int i)
 	}
 }
 
-// render all the hud config gauges
-void hud_config_render_gauges()
+/*!
+ * @brief render all the hud config gauges
+ *
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ */
+void hud_config_render_gauges(bool API_Access)
 {
 	int i;
 
@@ -900,7 +894,13 @@ void hud_config_render_gauges()
 		// draw
 		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
 			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
-			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y, GR_RESIZE_MENU);
+
+			int resize = GR_RESIZE_MENU;
+			if (API_Access) {
+				resize = GR_RESIZE_NONE;
+			}
+
+			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, HC_gauge_scale);
 		}
 		
 		/*
@@ -931,15 +931,17 @@ void hud_config_render_gauges()
 	}
 }
 
-// hud_config_init() is called when the game enters the state GS_STATE_HUD_CONFIG
-void hud_config_init()
+void hud_config_init(bool API_Access, int x, int y, int w)
 {
-	hud_config_init_ui();
+	hud_config_init_ui(API_Access, x, y, w);
 	hud_config_backup(); // save the HUD configuration in case the player decides to cancel changes
 	HUD_config_inited = 1;
 }
 
-// check for the mouse over gauge regions
+/*!
+ * @brief check mouse position against all ui buttons using the ui mask
+ *
+ */
 void hud_config_check_regions()
 {
 	int			i;
@@ -954,7 +956,7 @@ void hud_config_check_regions()
 		}
 
 		if ( b->pressed() ) {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_gauge_selected = i;
 
 			// turn off select all
@@ -990,6 +992,35 @@ void hud_config_check_regions()
 
 			// recalc alpha slider
 			hud_config_recalc_alpha_slider();
+		}
+	}
+}
+
+/*!
+ * @brief check mouse position against all hud gauge preview display using mouse coordinates instead of a mask
+ *
+ */
+void hud_config_check_regions_by_mouse(int mx, int my)
+{
+	for (int i = 0; i < NUM_HUD_GAUGES; i++) {
+		HC_gauge_region *bi = &HC_gauge_regions[gr_screen.res][i];
+		int iw = 0;
+		int ih = 0;
+		if (bi->bitmap > 0) {
+			bm_get_info(bi->bitmap, &iw, &ih, nullptr);
+			iw = (int)(iw * HC_gauge_scale);
+			ih = (int)(ih * HC_gauge_scale);
+			if (mx < HC_gauge_coords[i].x)
+				continue;
+			if (mx > (HC_gauge_coords[i].x + iw))
+				continue;
+			if (my < HC_gauge_coords[i].y)
+				continue;
+			if (my > (HC_gauge_coords[i].y + ih))
+				continue;
+			// if we've got here, must be a hit
+			HC_gauge_hot = i;
+			break;
 		}
 	}
 }
@@ -1043,17 +1074,18 @@ void hud_config_stuff_colors(int r, int g, int b)
 	}
 }
 
-// leave hud config without accepting changes
-void hud_config_cancel()
+void hud_config_cancel(bool change_state)
 {
 	hud_config_restore();
-	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+
+	if (change_state) {
+		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+	}
 }
 
-// leave hud config with accepting changes
 void hud_config_commit()
 {
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -1095,7 +1127,7 @@ void hud_config_handle_keypresses(int k)
 		hud_config_commit();
 		break;
 	case KEY_TAB:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_cycle_gauge_status();
 		break;
 	}
@@ -1110,42 +1142,42 @@ void hud_config_button_do(int n)
 	switch (n) {
 	case HCB_AMBER:
 		hud_config_set_color(HUD_COLOR_AMBER);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_BLUE:
 		hud_config_set_color(HUD_COLOR_BLUE);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_GREEN:
 		hud_config_set_color(HUD_COLOR_GREEN);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_ON:
 		if ( HC_gauge_selected < 0 ) {
 			break;
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_config_set_gauge_flags(HC_gauge_selected,1,0);
 		break;
 	case HCB_OFF:
 		if ( HC_gauge_selected < 0 ) {
 			break;
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_config_set_gauge_flags(HC_gauge_selected,0,0);
 		break;
 	case HCB_POPUP:
 		if ( HC_gauge_selected < 0 ) {
 			break;
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_config_set_gauge_flags(HC_gauge_selected,1,1);
 		break;
 	case HCB_RESET:
-		gamesnd_play_iface(SND_RESET_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::RESET_PRESSED);
 		hud_config_select_all_toggle(0);
 		hud_set_default_hud_config(Player);
-		hud_config_synch_ui();
+		hud_config_synch_ui(false);
 		break;
 	case HCB_ACCEPT:
 		hud_config_commit();
@@ -1154,9 +1186,9 @@ void hud_config_button_do(int n)
 	// new stuff
 	case HCB_RED_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) + 1)  );
 			hud_config_red_slider();			
 		}		
@@ -1164,9 +1196,9 @@ void hud_config_button_do(int n)
 
 	case HCB_GREEN_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) + 1) );
 			hud_config_green_slider();
 		}		
@@ -1174,9 +1206,9 @@ void hud_config_button_do(int n)
 
 	case HCB_BLUE_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) + 1) );
 			hud_config_blue_slider();
 		}		
@@ -1184,9 +1216,9 @@ void hud_config_button_do(int n)
 
 	case HCB_I_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) + 1) );
 			hud_config_alpha_slider_up();
 		}		
@@ -1194,9 +1226,9 @@ void hud_config_button_do(int n)
 
 	case HCB_RED_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) - 1) );
 			hud_config_red_slider();
 		}		
@@ -1204,9 +1236,9 @@ void hud_config_button_do(int n)
 
 	case HCB_GREEN_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) - 1) );
 			hud_config_green_slider();
 		}		
@@ -1214,9 +1246,9 @@ void hud_config_button_do(int n)
 
 	case HCB_BLUE_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) - 1) );
 			hud_config_blue_slider();
 		}		
@@ -1224,9 +1256,9 @@ void hud_config_button_do(int n)
 
 	case HCB_I_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) - 1) );
 			hud_config_alpha_slider_down();
 		}		
@@ -1234,15 +1266,15 @@ void hud_config_button_do(int n)
 
 	case HCB_SAVE_HCF:		
 		int exists;
-		char *out;
+		const char *out;
 
 		// get the text in the input control
 		exists = 0;
 		HC_fname_input.get_text(name);
 		if(name[0] != '\0'){
 			// if the filename in there already exists
-			for(idx=0; idx<HC_num_files; idx++){
-				if(!stricmp(HC_filenames[idx], name)){
+			for (idx = 0; idx < (int)HC_preset_filenames.size(); idx++) {
+				if (!stricmp(HC_preset_filenames[idx].c_str(), name)) {
 					exists = 1;
 				}
 			}
@@ -1256,58 +1288,50 @@ void hud_config_button_do(int n)
 			break;
 		}
 
-		// otherwise we have to create a new file
-		if(HC_num_files >= MAX_HCF_FILES){
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, "OK", "Max number of hud config files reached!");
-			break;
-		}
-
 		// save the file, maybe generating a new filename
 		if(strlen(name) <= 0){
-			sprintf(name, "hud_%d.hcf", HC_num_files + 1);
+			sprintf(name, "hud_%d.hcf", (int)HC_preset_filenames.size());
 			out = name;
 		} else {
 			out = cf_add_ext(name, ".hcf");
 		}
-		HC_filenames[HC_num_files++] = vm_strdup(out);
+		HC_preset_filenames.push_back(out);
 		hud_config_color_save(out);		
 
 		HC_fname_input.set_text(out);
 		break;
 
 	case HCB_PREV_HCF:
-		if(HC_num_files <= 0){
+		if (HC_preset_filenames.size() <= 0) {
 			break;
 		}
 
 		if(HC_current_file <= 0){
-			HC_current_file = HC_num_files - 1;
+			HC_current_file = (int)(HC_preset_filenames.size() - 1);
 		} else {
 			HC_current_file--;
 		}
 		// load em up
-		hud_config_color_load(HC_filenames[HC_current_file]);
-		hud_config_synch_ui();
+		hud_config_color_load(HC_preset_filenames[HC_current_file].c_str());
+		hud_config_synch_ui(false);
 
-		HC_fname_input.set_text(HC_filenames[HC_current_file]);
+		HC_fname_input.set_text(HC_preset_filenames[HC_current_file].c_str());
 		break;
 
 	case HCB_NEXT_HCF:
-		if(HC_num_files <= 0){
+		if (HC_preset_filenames.size() <= 0) {
 			break;
 		}
 
-		if(HC_current_file >= HC_num_files - 1){
+		if ((++HC_current_file) >= static_cast<int> (HC_preset_filenames.size())) {
 			HC_current_file = 0;
-		} else {
-			HC_current_file++;
 		}
 
 		// load em up		
-		hud_config_color_load(HC_filenames[HC_current_file]);
-		hud_config_synch_ui();
+		hud_config_color_load(HC_preset_filenames[HC_current_file].c_str());
+		hud_config_synch_ui(false);
 
-		HC_fname_input.set_text(HC_filenames[HC_current_file]);
+		HC_fname_input.set_text(HC_preset_filenames[HC_current_file].c_str());
 		break;
 
 	case HCB_SELECT_ALL:				
@@ -1472,10 +1496,7 @@ void hud_config_redraw_pressed_buttons()
 	}
 }
 
-// hud_config_do_frame() is called from the main freespace loop while the game is in the state
-// GS_STATE_HUD_CONFIG.
-//
-void hud_config_do_frame(float frametime) 
+void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 {
 	int k;
 
@@ -1484,7 +1505,7 @@ void hud_config_do_frame(float frametime)
 	}
 
 	// If we don't have a mask, we don't have enough data to do anything with this screen.
-	if (HC_background_bitmap_mask == -1) {
+	if (!API_Access && (HC_background_bitmap_mask == -1)) {
 		popup_game_feature_not_in_demo();
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		return;
@@ -1492,49 +1513,57 @@ void hud_config_do_frame(float frametime)
 
 	HC_gauge_hot = -1;
 
-	hud_config_set_button_state();
+	if (!API_Access) {
+		hud_config_set_button_state();
 
-	k = HC_ui_window.process();
+		k = HC_ui_window.process();
 
-	hud_config_handle_keypresses(k);
-	hud_config_check_regions();
-	hud_config_check_buttons();
-	hud_config_update_brightness();
+		hud_config_handle_keypresses(k);
+		hud_config_check_regions();
+		hud_config_check_buttons();
+		hud_config_update_brightness();
 
-	// set the background
-	GR_MAYBE_CLEAR_RES(HC_background_bitmap);
-	if ( HC_background_bitmap > 0 ) {
-		gr_set_bitmap(HC_background_bitmap);
-		gr_bitmap(0,0,GR_RESIZE_MENU);
+		// set the background
+		GR_MAYBE_CLEAR_RES(HC_background_bitmap);
+		if (HC_background_bitmap > 0) {
+			gr_set_bitmap(HC_background_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
+		}
+
+		// rgb slider/button stuff
+		hud_config_process_colors();
+
+		HC_ui_window.draw();
+		hud_config_redraw_pressed_buttons();
+
+		hud_config_draw_gauge_status();
+		hud_config_draw_color_status();
+
+		/*
+		if (HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap >= 0) {
+			hud_set_default_color();
+			gr_set_bitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap);
+			gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y,
+		GR_RESIZE_MENU);
+		}
+		*/
+
+		// maybe force draw the select all button
+		if (HC_select_all) {
+			HC_buttons[gr_screen.res][HCB_SELECT_ALL].button.draw_forced(2);
+		}
+	} else {
+		hud_config_check_regions_by_mouse(mx, my);
 	}
 
-	// rgb slider/button stuff
-	hud_config_process_colors();
+	hud_config_render_gauges(API_Access);
 
-	HC_ui_window.draw();
-	hud_config_redraw_pressed_buttons();
+	if (!API_Access) {
+		hud_config_render_special_bitmaps();
+		hud_config_render_description();
 
-	hud_config_draw_gauge_status();
-	hud_config_draw_color_status();
-
-	/*
-	if (HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap >= 0) {
-		hud_set_default_color();
-		gr_set_bitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap);
-		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y, GR_RESIZE_MENU);
+		gr_flip();
 	}
-	*/
-
-	// maybe force draw the select all button
-	if(HC_select_all){
-		HC_buttons[gr_screen.res][HCB_SELECT_ALL].button.draw_forced(2);
-	}
-
-	hud_config_render_gauges();
-	hud_config_render_special_bitmaps();
-	hud_config_render_description();	
-
-	gr_flip();
 }
 
 void hud_config_unload_gauges()
@@ -1556,26 +1585,30 @@ void hud_config_unload_gauges()
 
 // hud_config_close() is called when the player leaves the hud configuration screen
 //
-void hud_config_close()
+void hud_config_close(bool API_Access)
 {
 //	common_free_interface_palette();		// restore game palette
 	hud_config_unload_gauges();
 
-	hud_config_color_close();
+	HC_preset_filenames.clear();
 
-	if (HC_background_bitmap != -1) {
-		bm_release(HC_background_bitmap);
+	if (!API_Access) {
+		if (HC_background_bitmap != -1) {
+			bm_release(HC_background_bitmap);
+		}
+
+		HC_ui_window.destroy();
+
+		if (HC_background_bitmap_mask != -1) {
+			bm_release(HC_background_bitmap_mask);
+		}
 	}
 
-	HC_ui_window.destroy();
-
-	if (HC_background_bitmap_mask != -1) {
-		bm_release(HC_background_bitmap_mask);
-	}
+	HUD_config_inited = 0;
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
-void hud_set_default_hud_config(player *p)
+void hud_set_default_hud_config(player * /*p*/, const char* filename)
 {
 	int idx;
 
@@ -1599,7 +1632,7 @@ void hud_set_default_hud_config(player *p)
 	HUD_config.is_observer = 0;
 
 	// load up the default colors
-	hud_config_color_load("hud_3.hcf");
+	hud_config_color_load(filename);
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 
@@ -1620,12 +1653,8 @@ void hud_config_backup()
 
 void hud_config_as_observer(ship *shipp,ai_info *aif)
 {
-	// store the current hus
+	// store the current hud
 	hud_config_backup();
-
-	// bash these values so the HUD is not offset incorrectly
-	HUD_offset_x = 0.0f;
-	HUD_offset_y = 0.0f;
 
 	// initialize the observer HUD
 	hud_observer_init(shipp,aif);	
@@ -1633,16 +1662,20 @@ void hud_config_as_observer(ship *shipp,ai_info *aif)
 
 void hud_config_as_player()
 {
+	if (HUD_config.is_observer) {		// If he was observer before
+		hud_config_restore();
+	}
 } 
 
 // ---------------------------------------------------------------------------------------------------------------
 // RGB color stuff
 //
 
-void hud_config_color_save(char *name)
+void hud_config_color_save(const char *name)
 {
 	int idx;
-	CFILE *out = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	CFILE* out     = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	char vals[255] = "";
 
 	// bad
@@ -1669,9 +1702,9 @@ void hud_config_color_load(const char *name)
 {
 	int idx;
 	char str[1024];
-	char *fname;
+	ubyte r, g, b, a;
 
-	fname = cf_add_ext(name, ".hcf");
+	const char *fname = cf_add_ext(name, ".hcf");
 
 	try
 	{
@@ -1687,13 +1720,18 @@ void hud_config_color_load(const char *name)
 		while (optional_string("+Gauge:")) {
 			stuff_string(str, F_NAME, sizeof(str));
 
+			required_string("+RGBA:");
+			stuff_ubyte(&r);
+			stuff_ubyte(&g);
+			stuff_ubyte(&b);
+			stuff_ubyte(&a);
+
 			for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
-				if (!stricmp(str, Hud_Gauge_Names[idx])) {
-					required_string("+RGBA:");
-					stuff_ubyte(&HUD_config.clr[idx].red);
-					stuff_ubyte(&HUD_config.clr[idx].green);
-					stuff_ubyte(&HUD_config.clr[idx].blue);
-					stuff_ubyte(&HUD_config.clr[idx].alpha);
+				if (!stricmp(str, HC_gauge_descriptions(idx))) {
+					HUD_config.clr[idx].red = r;
+					HUD_config.clr[idx].green = g;
+					HUD_config.clr[idx].blue = b;
+					HUD_config.clr[idx].alpha = a;
 					break;
 				}
 			}
@@ -1709,7 +1747,7 @@ void hud_config_color_load(const char *name)
 void hud_config_alpha_slider_up()
 {	
 	int pos = HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem());
-	int max = MAX(MAX( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
+	int max = std::max({ HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) });
 
 	// if this would put the brightest element past its limit, skip
 	if(max >= 255){
@@ -1722,10 +1760,10 @@ void hud_config_alpha_slider_up()
 	HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) + 1) );
 	HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) + 1) );
 	
-	// apply
+	// apply -- Cyborg17 -- Unless you have nothing to apply it to!
 	if(HC_select_all){
 		hud_config_stuff_colors( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
-	} else {
+	} else if (HC_gauge_selected >= 0) {
 		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
 	}
 }
@@ -1746,10 +1784,10 @@ void hud_config_alpha_slider_down()
 	HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) - 1) );
 	HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) - 1) );	
 
-	// apply
+	// apply -- Cyborg17 -- Unless you have nothing to apply it to!
 	if(HC_select_all){
 		hud_config_stuff_colors( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
-	} else {
+	} else if (HC_gauge_selected >= 0) {
 		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
 	}
 }
@@ -1837,41 +1875,39 @@ void hud_config_process_colors()
 {	
 }
 
-void hud_config_color_init()
+void hud_config_preset_init()
 {
 	HC_current_file = -1;
-
-	// get a list of all hcf files
-	memset(HC_filenames, 0, sizeof(char*) * MAX_HCF_FILES);
-	HC_num_files = cf_get_file_list(MAX_HCF_FILES, HC_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME);
+	HC_preset_filenames.clear();
+	cf_get_file_list(HC_preset_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME, nullptr,
+						CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 }
 
-void hud_config_color_close()
+void hud_config_delete_preset(SCP_string filename)
 {
-	int idx;
+	filename += ".hcf"; //cfile strips the extension when adding to the list, so add it back here
+	cf_delete(filename.c_str(), CF_TYPE_PLAYERS,
+		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
-	// free all 
-	for(idx=0; idx<HC_num_files; idx++){
-		if(HC_filenames[idx] != NULL){
-			vm_free(HC_filenames[idx]);
-			HC_filenames[idx] = NULL;
-		}
-	}
+	// Reload the presets from file.
+	hud_config_preset_init();
 }
 
-void hud_config_select_all_toggle(int toggle)
+void hud_config_select_all_toggle(int toggle, bool API_Access)
 {	
 	int r, g, b, a;
 
 	// if we're turning off
 	if(!toggle){				
 		// determine if on/off/popup buttons should be shown
-		hud_config_set_button_state();
+		if (!API_Access) {
+			hud_config_set_button_state();
+		}
 
 		HC_select_all = 0;
 	} else {
 		// synch stuff up
-		hud_config_synch_ui();
+		hud_config_synch_ui(API_Access);
 		
 		// if we had a gauge previously selected, use its color everywhere
 		if(HC_gauge_selected < 0){
@@ -1891,26 +1927,28 @@ void hud_config_select_all_toggle(int toggle)
 		HC_gauge_selected = -1;		
 
 		// enable all sliders
-		HC_color_sliders[HCS_RED].enable();
-		HC_color_sliders[HCS_GREEN].enable();
-		HC_color_sliders[HCS_BLUE].enable();
-		HC_color_sliders[HCS_ALPHA].enable();
-		HC_color_sliders[HCS_RED].unhide();
-		HC_color_sliders[HCS_GREEN].unhide();
-		HC_color_sliders[HCS_BLUE].unhide();
-		HC_color_sliders[HCS_ALPHA].unhide();
-		HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV(r) );
-		HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(g) );
-		HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(b) );
-		HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV(a) );
+		if (!API_Access) {
+			HC_color_sliders[HCS_RED].enable();
+			HC_color_sliders[HCS_GREEN].enable();
+			HC_color_sliders[HCS_BLUE].enable();
+			HC_color_sliders[HCS_ALPHA].enable();
+			HC_color_sliders[HCS_RED].unhide();
+			HC_color_sliders[HCS_GREEN].unhide();
+			HC_color_sliders[HCS_BLUE].unhide();
+			HC_color_sliders[HCS_ALPHA].unhide();
+			HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(r));
+			HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(g));
+			HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(b));
+			HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(a));
 
-		// recalc alpha
-		hud_config_recalc_alpha_slider();
+			// recalc alpha
+			hud_config_recalc_alpha_slider();
 
-		// disable all three buttons
-		hud_config_button_disable(HCB_ON);
-		hud_config_button_disable(HCB_OFF);
-		hud_config_button_disable(HCB_POPUP);
+			// disable all three buttons
+			hud_config_button_disable(HCB_ON);
+			hud_config_button_disable(HCB_OFF);
+			hud_config_button_disable(HCB_POPUP);
+		}
 
 		HC_select_all = 1;
 	}

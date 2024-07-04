@@ -18,6 +18,7 @@ class wing_editor : public CDialog
 {
 // Construction
 public:
+	int help_height;
 	int cue_height;
 	int bypass_errors;
 	int modified;
@@ -25,8 +26,10 @@ public:
 
 	void initialize_data_safe(int full_update);
 	void update_data_safe();
-	void show_hide_sexp_help();
+	void calc_help_height();
 	void calc_cue_height();
+	void show_hide_sexp_help();
+	void show_hide_cues();
 	int verify();
 	wing_editor(CWnd* pParent = NULL);   // standard constructor
 	BOOL Create();
@@ -47,6 +50,8 @@ public:
 	int		m_special_ship;
 	int		m_waves;
 	int		m_threshold;
+	int		m_formation;
+	CString	m_formation_scale;
 	int		m_arrival_location;
 	int		m_departure_location;
 	int		m_arrival_delay;
@@ -61,8 +66,11 @@ public:
 	BOOL	m_no_arrival_music;
 	int		m_departure_target;
 	BOOL	m_no_arrival_message;
+	BOOL	m_no_first_wave_message;
 	BOOL	m_no_arrival_warp;
 	BOOL	m_no_departure_warp;
+	BOOL	m_same_arrival_warp_when_docked;
+	BOOL	m_same_departure_warp_when_docked;
 	BOOL	m_no_dynamic;
 	CString	m_wing_squad_filename;
 	//}}AFX_DATA
@@ -104,6 +112,9 @@ protected:
 	afx_msg void OnSquadLogo();
 	afx_msg void OnRestrictArrival();
 	afx_msg void OnRestrictDeparture();
+	afx_msg void OnBnClickedCustomWarpinParams();
+	afx_msg void OnBnClickedCustomWarpoutParams();
+	afx_msg void OnWingFormationAlign();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

@@ -27,36 +27,47 @@ struct button_info;
 struct header;
 struct beam_info;
 class ship_subsys;
+struct log_entry;
+struct beam_fire_info;
+namespace animation { enum class ModelAnimationDirection; }
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly
 // there are two flavors of sending orientation matrices, 16 bit and 32 bit. Just #define ORIENT_16 to use
 // 16 bits, otherwise 32 bits is the default
 
-#define BUILD_HEADER(t) do { data[0]=t; packet_size = HEADER_LENGTH; } while(0)
-#define ADD_DATA(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); memcpy(data+packet_size, &d, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_SHORT(d) do { static_assert(sizeof(d) == sizeof(std::int16_t), "Size of short is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); short swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_USHORT(d) do { static_assert(sizeof(d) == sizeof(std::uint16_t), "Size of unsigned short is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_INT(d) do { static_assert(sizeof(d) == sizeof(std::int32_t), "Size of int is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_UINT(d) do { static_assert(sizeof(d) == sizeof(std::uint32_t), "Size of unsigned int is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_ULONG(d) do { static_assert(sizeof(d) == sizeof(std::uint64_t), "Size of unsigned long is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); std::uint64_t swap = INTEL_LONG(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_FLOAT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); float swap = INTEL_FLOAT(&d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_STRING(s) do { Assert((packet_size + strlen(s) + 4) < MAX_PACKET_SIZE);int len = (int)strlen(s); int len_tmp = INTEL_INT(len); ADD_DATA(len_tmp); memcpy(data+packet_size, s, len ); packet_size += len; } while(0)
+#define BUILD_HEADER(t) do { data[0]=t; packet_size = HEADER_LENGTH; } while(false)
+#define ADD_DATA(d) do { Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); memcpy(data+packet_size, &d, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_DATA_BLOCK(d, len) do { static_assert(std::is_integral<decltype(len)>::value, "ADD_DATA_BLOCK() len is invalid type!"); Assert(len > 0); Assert((packet_size + len) < MAX_PACKET_SIZE); memcpy(data+packet_size, d, static_cast<size_t>(len)); packet_size += len; } while (false)
+#define ADD_SHORT(d) do { static_assert(sizeof(d) == sizeof(std::int16_t), "Size of short is not right!"); Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); short swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_USHORT(d) do { static_assert(sizeof(d) == sizeof(std::uint16_t), "Size of unsigned short is not right!"); Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_INT(d) do { static_assert(sizeof(d) == sizeof(std::int32_t), "Size of int is not right!"); Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_UINT(d) do { static_assert(sizeof(d) == sizeof(std::uint32_t), "Size of unsigned int is not right!"); Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_LONG(d) do { static_assert(sizeof(d) == sizeof(std::int64_t), "Size of long is not right!"); Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); std::int64_t swap = INTEL_LONG(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_ULONG(d) do { static_assert(sizeof(d) == sizeof(std::uint64_t), "Size of unsigned long is not right!"); Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); std::uint64_t swap = INTEL_LONG(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_FLOAT(d) do { Assert((static_cast<size_t>(packet_size) + sizeof(d)) < MAX_PACKET_SIZE); float swap = INTEL_FLOAT(&d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_STRING(s) do { Assert((static_cast<size_t>(packet_size) + strlen(s) + sizeof(uint8_t)) < MAX_PACKET_SIZE); Assert(strlen(s) <= UINT8_MAX); uint8_t len = static_cast<uint8_t>(strlen(s)); ADD_DATA(len); memcpy(data+packet_size, s, len); packet_size += len; } while (false)
+#define ADD_STRING_16(s) do { Assert((static_cast<size_t>(packet_size) + strlen(s) + sizeof(uint16_t)) < MAX_PACKET_SIZE); uint16_t len = static_cast<uint16_t>(strlen(s)); ADD_USHORT(len); memcpy(data+packet_size, s, static_cast<size_t>(len)); packet_size += len; } while (false)
+#define ADD_STRING_32(s) do { Assert((static_cast<size_t>(packet_size) + strlen(s) + sizeof(int32_t)) < MAX_PACKET_SIZE); int32_t len = static_cast<int32_t>(strlen(s)); ADD_INT(len); memcpy(data+packet_size, s, static_cast<size_t>(len)); packet_size += len; } while (false)
 #define ADD_ORIENT(d) { Assert((packet_size + 17) < MAX_PACKET_SIZE); ubyte dt[17]; multi_pack_orient_matrix(dt,&d); memcpy(data+packet_size,dt,17); packet_size += 17; }
-#define ADD_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; tmpvec.xyz.x = INTEL_FLOAT(&d.xyz.x); tmpvec.xyz.y = INTEL_FLOAT(&d.xyz.y); tmpvec.xyz.z = INTEL_FLOAT(&d.xyz.z); ADD_DATA(tmpvec); } while(0)
+#define ADD_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; tmpvec.xyz.x = INTEL_FLOAT(&d.xyz.x); tmpvec.xyz.y = INTEL_FLOAT(&d.xyz.y); tmpvec.xyz.z = INTEL_FLOAT(&d.xyz.z); ADD_DATA(tmpvec); } while(false)
 
-#define GET_DATA(d) do { memcpy(&d, data+offset, sizeof(d) ); offset += sizeof(d); } while(0)
-#define GET_SHORT(d) do { short swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(0)
-#define GET_USHORT(d) do { ushort swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(0)
-#define GET_INT(d) do { int swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(0)
-#define GET_UINT(d) do { uint swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(0)
-#define GET_ULONG(d) do { ulong swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_LONG(swap); offset += sizeof(d); } while(0)
-#define GET_FLOAT(d) do { float swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_FLOAT(&swap); offset += sizeof(d); } while(0)
-#define GET_STRING(s) do { int len;  memcpy(&len, data+offset, sizeof(len)); len = INTEL_INT(len); offset += sizeof(len); memcpy(s, data+offset, len); offset += len; s[len] = '\0'; } while(0)
+#define GET_DATA(d) do { memcpy(&d, data+offset, sizeof(d) ); offset += sizeof(d); } while(false)
+#define GET_DATA_BLOCK(d, len) do { static_assert(std::is_array<decltype(d)>::value, "GET_DATA_BLOCK() must point to an array!"); static_assert(std::is_integral<decltype(len)>::value, "GET_DATA_BLOCK() len is invalid type!"); Assert(len > 0); const auto d_len = std::min(static_cast<size_t>(len), sizeof(d)); memcpy(d, data+offset, d_len); offset += len; } while (false)
+#define GET_SHORT(d) do { std::int16_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
+#define GET_USHORT(d) do { std::uint16_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
+#define GET_INT(d) do { std::int32_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
+#define GET_UINT(d) do { std::uint32_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
+#define GET_LONG(d) do { std::int64_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_LONG(swap); offset += sizeof(d); } while(false)
+#define GET_ULONG(d) do { std::uint64_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_LONG(swap); offset += sizeof(d); } while(false)
+#define GET_FLOAT(d) do { float swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_FLOAT(&swap); offset += sizeof(d); } while(false)
+#define GET_STRING(s) do { static_assert(std::is_array<decltype(s)>::value, "GET_STRING() must point to an array!"); uint8_t len; memcpy(&len, data+offset, sizeof(len)); offset += sizeof(len); const auto s_len = std::min(static_cast<size_t>(len), sizeof(s)-1); memcpy(s, data+offset, s_len); offset += len; s[s_len] = '\0'; } while (false)
+#define GET_STRING_16(s) do { static_assert(std::is_array<decltype(s)>::value, "GET_STRING_16() must point to an array!"); uint16_t len; GET_USHORT(len); const auto s_len = std::min(static_cast<size_t>(len), sizeof(s)-1); memcpy(s, data+offset, s_len); offset += len; s[s_len] = '\0'; } while (false)
+#define GET_STRING_32(s) do { static_assert(std::is_array<decltype(s)>::value, "GET_STRING_32() must point to an array!"); int32_t len; GET_INT(len); const auto s_len = std::min(static_cast<size_t>(len), sizeof(s)-1); memcpy(s, data+offset, s_len); offset += len; s[s_len] = '\0'; } while (false)
 #define GET_ORIENT(d) { ubyte dt[17]; memcpy(dt,data+offset,17); offset+=17; multi_unpack_orient_matrix(dt,&d); }
-#define GET_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; GET_DATA(tmpvec); d.xyz.x = INTEL_FLOAT(&tmpvec.xyz.x); d.xyz.y = INTEL_FLOAT(&tmpvec.xyz.y); d.xyz.z = INTEL_FLOAT(&tmpvec.xyz.z); } while(0)
+#define GET_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; GET_DATA(tmpvec); d.xyz.x = INTEL_FLOAT(&tmpvec.xyz.x); d.xyz.y = INTEL_FLOAT(&tmpvec.xyz.y); d.xyz.z = INTEL_FLOAT(&tmpvec.xyz.z); } while(false)
 
-#define PACKET_SET_SIZE() do { hinfo->bytes_processed = offset; } while(0)
+#define PACKET_SET_SIZE() do { hinfo->bytes_processed = offset; } while(false)
 
 // defines for weapon status changes.
 #define MULTI_PRIMARY_CHANGED		1
@@ -250,7 +261,7 @@ void send_join_packet(net_addr* addr,join_request *jr);
 void send_accept_packet(int new_player_num, int code, int ingame_join_team = -1);
 
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
-void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to = NULL, const char *expr = NULL,int server_msg = 0);
+void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to = nullptr, const char *expr = nullptr, ubyte server_msg = 0);
 
 // send a game information update
 void send_game_info_packet( void );
@@ -268,7 +279,7 @@ void send_countermeasure_fired_packet( object *objp, int cmeasure_count, int ran
 
 // send_game_update_packet sends an updated Netgame structure to all players currently connected.  The update
 // is used to change the current mission, current state, etc.
-void send_netgame_update_packet(net_player *pl = NULL);
+void send_netgame_update_packet(net_player *pl = nullptr, const bool interval = false);
 
 // sends information about netplayers in the game. if called on the server, broadcasts information about _all_ players
 void send_netplayer_update_packet( net_player *pl = NULL );
@@ -287,20 +298,25 @@ void send_object_update_packet(int force_all = 0);
 // send a packet indicating a ship has been killed
 void send_ship_kill_packet( object *ship_obj, object *other_objp, float percent_killed, int self_destruct );
 
+// send a packet indicating that a missile died.
+void send_missile_kill_packet(object* objp);
+
+void process_weapon_kill_packet(ubyte* data, header* hinfo);
+
 // send a packet indicating a wing of ships should be created
 void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count );
 
 // send a packet indicating a ship should be created
-void send_ship_create_packet( object *objp, int is_support = 0 );
+void send_ship_create_packet(object *objp, bool is_support = false );
 
 // packet indicating a ship is departing
 void send_ship_depart_packet( object *objp, int method = -1 );
 
 // send a mission log item packet
-void send_mission_log_packet( int entry );
+void send_mission_log_packet( log_entry* entry );
 
 // send a mission message packet
-void send_mission_message_packet(int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0);
+void send_mission_message_packet(int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0, int event_num_to_cancel = -1);
 
 // broadcast a query for active games. TCP will either request from the MT or from the specified list
 void broadcast_game_query();
@@ -434,7 +450,7 @@ void send_wss_slots_data_packet(int team_num, int final, net_player *p = NULL, i
 
 void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
-void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL, short offset = 0);
+void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = nullptr, const int offset = 0, const int count = 0);
 
 void send_host_restr_packet(const char *callsign, int code, int mode);
 
@@ -450,7 +466,7 @@ void process_ai_info_update_packet(ubyte *data, header *hinfo);
 
 void send_asteroid_create(object *new_objp, object *parent_objp, int asteroid_type, vec3d *relvec);
 void send_asteroid_throw(object *objp);
-void send_asteroid_hit(object *objp, object *other_objp, vec3d *hitpos, float damage);
+void send_asteroid_hit(object *objp, object *other_objp, vec3d *hitpos, float damage, vec3d* force);
 void process_asteroid_info(ubyte *data, header *hinfo);
 
 void send_countermeasure_success_packet(int objnum);
@@ -476,16 +492,25 @@ void process_emp_effect(ubyte *data, header *hinfo);
 void send_reinforcement_avail( int rnum );
 void process_reinforcement_avail( ubyte *data, header *hinfo );
 
+// for basic server shots to clients
+void send_NEW_primary_fired_packet(ship* shipp, int banks_fired);
+void process_NEW_primary_fired_packet(ubyte* data, header* hinfo);
+
 // new primary fired info
-void send_NEW_primary_fired_packet(ship *shipp, int banks_fired);
-void process_NEW_primary_fired_packet(ubyte *data, header *hinfo);
+void send_non_homing_fired_packet(ship *shipp, int banks_fired, bool secondary = false);
+void process_non_homing_fired_packet(ubyte *data, header *hinfo);
+
+// animation triggered info
+void send_animation_triggered_packet(unsigned int animationId, object* parent_object, ushort special_mode, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/ = nullptr);
+void process_animation_triggered_packet(ubyte* data, header* hinfo);
 
 // new countermeasure fired info
 void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int rand_val);
 void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo);
 
 // beam weapon packet
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, int bfi_flags, int bank_point);
+void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *override);
+
 void process_beam_fired_packet(ubyte *data, header *hinfo);
 
 // sw std query packet
@@ -525,7 +550,7 @@ void send_bytes_recvd_packet(net_player *pl);
 void process_bytes_recvd_packet(ubyte *data, header *hinfo);
 
 // host transfer
-void send_host_captain_change_packet(short player_id, int captain_change);
+void send_host_captain_change_packet(short player_id, bool captain_change);
 void process_host_captain_change_packet(ubyte *data, header *hinfo);
 
 // self destruct
@@ -534,5 +559,9 @@ void process_self_destruct_packet(ubyte *data, header *hinfo);
 
 void send_sexp_packet(ubyte *sexp_packet, int num_ubytes);
 void process_sexp_packet(ubyte *data, header *hinfo);
+
+// Turret is tracking new object.
+void send_turret_tracking_packet(int ship_objnum, int subsys_index);
+void process_turret_tracking_packet(ubyte *data, header *hinfo);
 
 #endif

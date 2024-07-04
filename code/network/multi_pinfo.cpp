@@ -226,7 +226,7 @@ void multi_pinfo_popup(net_player *np)
 	Assert(np != NULL);	
 
 	// play the popup appear sound
-	gamesnd_play_iface(SND_POPUP_APPEAR);
+	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR);
 
 	// initialize the popup
 	multi_pinfo_popup_init(np);
@@ -241,7 +241,7 @@ void multi_pinfo_popup(net_player *np)
 	multi_pinfo_popup_close();
 
 	// play the popup disappear sound
-	gamesnd_play_iface(SND_POPUP_DISAPPEAR);
+	gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
 }
 
 // notify the popup that a player has left
@@ -352,7 +352,7 @@ void multi_pinfo_popup_init(net_player *np)
 	Multi_pinfo_stats_labels[5] = vm_strdup(XSTR("Primary Shots Fired", 1012));
 	Multi_pinfo_stats_labels[6] = vm_strdup(XSTR("Primary Hit %", 1013));
 	Multi_pinfo_stats_labels[7] = vm_strdup(XSTR("Secondary Shots Fired",	1014));
-	Multi_pinfo_stats_labels[8] = vm_strdup(XSTR("Secondary Hit %", 1015));				
+	Multi_pinfo_stats_labels[8] = vm_strdup(XSTR("Secondary Hit %", 1015));
 }
 
 // run the popup in a tight loop (no states)
@@ -603,32 +603,32 @@ void multi_pinfo_popup_button_pressed(int n)
 		break;
 
 	case MPI_MEDALS:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_pinfo_do_medals();
 		break;
 
 	case MPI_SCROLL_STATS_UP:
 		swap = multi_pinfo_get_prev_player(Multi_pinfo_popup_player);
 		if(swap != NULL){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			multi_pinfo_reset_player(swap);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	case MPI_SCROLL_STATS_DOWN:
 		swap = multi_pinfo_get_next_player(Multi_pinfo_popup_player);
 		if(swap != NULL){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			multi_pinfo_reset_player(swap);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	default :
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		break;
 	}
 }
@@ -683,7 +683,7 @@ void multi_pinfo_build_stats()
 	}	
 
 	// rank
-	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
+	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK], get_rank_display_name(&Ranks[verify_rank(sc->rank)]).c_str());
 
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);

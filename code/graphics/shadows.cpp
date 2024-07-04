@@ -1,30 +1,53 @@
 /*
  * Copyright (C) Freespace Open 2013.  All rights reserved.
  *
- * All source code herein is the property of Freespace Open. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Freespace Open. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
+#include "graphics/shadows.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "graphics/shadows.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
+#include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "model/modelrender.h"
+#include "options/Option.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
 extern vec3d check_offsets[8];
 
-matrix4 Shadow_view_matrix;
+matrix4 Shadow_view_matrix_light;
+matrix4 Shadow_view_matrix_render;
 matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
 light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
+
+ShadowQuality Shadow_quality = ShadowQuality::Disabled;
+
+bool Shadow_quality_uses_mod_option = false; 
+
+auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shadows",
+                     std::pair<const char*, int>{"Shadow Quality", 1750},
+                     std::pair<const char*, int>{"The quality of the shadows", 1751})
+                     .values({{ShadowQuality::Disabled, {"Disabled", 1779}},
+                              {ShadowQuality::Low, {"Low", 1160}},
+                              {ShadowQuality::Medium, {"Medium", 1161}},
+                              {ShadowQuality::High, {"High", 1162}},
+                              {ShadowQuality::Ultra, {"Ultra", 1721}}})
+                     .change_listener([](ShadowQuality val, bool initial) {if (initial) {Shadow_quality = val;}return initial;})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_val(ShadowQuality::Disabled)
+                     .importance(80)
+                     .finish();
 
 bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3d *max)
 {
@@ -195,14 +218,34 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
  	g3_render_line_3d(true, &far_bottom_left, &far_top_left);
 }
 
-void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
+void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d * /*pos*/, fov_t fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
-	float near_height = tanf(fov * 0.5f) * z_near;
-	float near_width = near_height * aspect;
+	float near_l, near_r, near_u, near_d;
+	float far_l, far_r, far_u, far_d;
+	if (mpark::holds_alternative<float>(fov)) {
+		near_d = tanf(mpark::get<float>(fov) * 0.5f) * z_near;
+		near_u = -near_d;
+		near_r = near_d * aspect;
+		near_l = -near_r;
 
-	float far_height = tanf(fov * 0.5f) * z_far;
-	float far_width = far_height * aspect;
+		far_d = tanf(mpark::get<float>(fov) * 0.5f) * z_far;
+		far_u = -far_d;
+		far_r = far_d * aspect;
+		far_l = -far_r;
+	}
+	else {
+		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		near_d = tanf(-afov.down) * z_near;
+		near_u = -tanf(afov.up) * z_near;
+		near_r = tanf(-afov.left) * z_near;
+		near_l = -tanf(afov.right) * z_near;
+
+		far_d = tanf(-afov.down) * z_far;
+		far_u = -tanf(afov.up) * z_far;
+		far_r = tanf(-afov.left) * z_far;
+		far_l = -tanf(afov.right) * z_far;
+	}
 
 	vec3d up_scale = ZERO_VECTOR;
 	vec3d right_scale = ZERO_VECTOR;
@@ -220,40 +263,40 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 
 	// near top left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -near_height);
+	vm_vec_scale(&up_scale, near_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -near_width);
+	vm_vec_scale(&right_scale, near_l);
 
 	vm_vec_add(&near_top_left, &up_scale, &right_scale);
 	vm_vec_add2(&near_top_left, &forward_scale_near);
 
 	// near top right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -near_height);
+	vm_vec_scale(&up_scale, near_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, near_width);
+	vm_vec_scale(&right_scale, near_r);
 
 	vm_vec_add(&near_top_right, &up_scale, &right_scale);
 	vm_vec_add2(&near_top_right, &forward_scale_near);
 
 	// near bottom left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, near_height);
+	vm_vec_scale(&up_scale, near_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -near_width);
+	vm_vec_scale(&right_scale, near_l);
 
 	vm_vec_add(&near_bottom_left, &up_scale, &right_scale);
 	vm_vec_add2(&near_bottom_left, &forward_scale_near);
 
 	// near bottom right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, near_height);
+	vm_vec_scale(&up_scale, near_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, near_width);
+	vm_vec_scale(&right_scale, near_r);
 
 	vm_vec_add(&near_bottom_right, &up_scale, &right_scale);
 	vm_vec_add2(&near_bottom_right, &forward_scale_near);
@@ -265,40 +308,40 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 
 	// far top left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -far_height);
+	vm_vec_scale(&up_scale, far_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -far_width);
+	vm_vec_scale(&right_scale, far_l);
 
 	vm_vec_add(&far_top_left, &up_scale, &right_scale);
 	vm_vec_add2(&far_top_left, &forward_scale_far);
 
 	// far top right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -far_height);
+	vm_vec_scale(&up_scale, far_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, far_width);
+	vm_vec_scale(&right_scale, far_r);
 
 	vm_vec_add(&far_top_right, &up_scale, &right_scale);
 	vm_vec_add2(&far_top_right, &forward_scale_far);
 
 	// far bottom left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, far_height);
+	vm_vec_scale(&up_scale, far_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -far_width);
+	vm_vec_scale(&right_scale, far_l);
 
 	vm_vec_add(&far_bottom_left, &up_scale, &right_scale);
 	vm_vec_add2(&far_bottom_left, &forward_scale_far);
 
 	// far bottom right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, far_height);
+	vm_vec_scale(&up_scale, far_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, far_width);
+	vm_vec_scale(&right_scale, far_r);
 
 	vm_vec_add(&far_bottom_right, &up_scale, &right_scale);
 	vm_vec_add2(&far_bottom_right, &forward_scale_far);
@@ -354,21 +397,17 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	shadows_construct_light_proj(shadow_data);
 }
 
-matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
+matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
 {	
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
 	
-	light *lp = *(Static_light.begin());
-
-	if ( lp == NULL ) {
-		return vmd_identity_matrix;
-	}
+	auto& lp = Static_light.front();
 
 	vec3d light_dir;
 	matrix light_matrix;
 
-	vm_vec_copy_normalize(&light_dir, &lp->vec);
+	vm_vec_copy_normalize(&light_dir, &lp.vec);
 	vm_vector_2_matrix(&light_matrix, &light_dir, &eye_orient->vec.uvec, NULL);
 
 	shadows_construct_light_frustum(&Shadow_frustums[0], &light_matrix, eye_orient, eye_pos, fov, aspect, 0.0f, veryneardist);
@@ -386,7 +425,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
 	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
 
-	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix);
+	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos);
 
 	return light_matrix;
 }
@@ -396,8 +435,12 @@ void shadows_end_render()
 	gr_shadow_map_end();
 }
 
-void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
+void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Render shadows");
 	TRACE_SCOPE(tracing::BuildShadowMap);
 
@@ -405,20 +448,20 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 		return;
 	}
 
-	light *lp = *(Static_light.begin());
-
-	if( !Cmdline_shadow_quality || !lp ) {
+	if (Shadow_quality == ShadowQuality::Disabled) {
 		return;
 	}
 
 	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
 
+	Shadow_view_matrix_render = gr_view_matrix;
+
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 
-	// these cascade distances are a result of some arbitrary tuning to give a good balance of quality and banding. 
+	// the default cascade distances are a result of some arbitrary tuning to give a good balance of quality and banding. 
 	// maybe we could use a more programmatic algorithim? 
-	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, 200.0f, 600.0f, 2500.0f, 8000.0f);
+	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances), std::get<1>(Shadow_distances), std::get<2>(Shadow_distances), std::get<3>(Shadow_distances));
 
 	model_draw_list scene;
 	object *objp = Objects;
@@ -451,8 +494,8 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 				render_info.set_object_number(OBJ_INDEX(objp));
 				render_info.set_flags(MR_IS_ASTEROID | MR_NO_TEXTURING | MR_NO_LIGHTING);
 				
-				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype]);
-				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype], &objp->orient, &objp->pos);
+				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number);
+				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number, &objp->orient, &objp->pos);
 			}
 			break;
 
@@ -461,17 +504,20 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 				debris *db;
 				db = &Debris[objp->instance];
 
-				if ( !(db->flags & DEBRIS_USED)){
+				if ( !(db->flags[Debris_Flags::Used])){
 					continue;
 				}
 								
+				auto pm = model_get(db->model_num);
+				auto pmi = db->model_instance_num < 0 ? nullptr : model_get_instance(db->model_instance_num);
+
 				objp = &Objects[db->objnum];
 
 				model_render_params render_info;
 
 				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
 
-				submodel_render_queue(&render_info, &scene, db->model_num, db->submodel_num, &objp->orient, &objp->pos);
+				submodel_render_queue(&render_info, &scene, pm, pmi, db->submodel_num, &objp->orient, &objp->pos);
 			}
 			break; 
 		}
@@ -490,4 +536,24 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+}
+
+static bool shadow_override_backup = false;
+static bool last_override = false;
+
+bool shadow_maybe_start_frame(const bool& override) {
+	last_override = override;
+	if (last_override) {
+		shadow_override_backup = Shadow_override;
+		Shadow_override = true;
+		return false;
+	}
+	return Shadow_quality != ShadowQuality::Disabled;
+}
+
+void shadow_end_frame() {
+	if (last_override) {
+		Shadow_override = shadow_override_backup;
+		last_override = false;
+	}
 }

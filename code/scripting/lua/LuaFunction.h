@@ -3,17 +3,18 @@
 #pragma once
 
 #include "LuaConvert.h"
-#include "LuaValue.h"
 #include "LuaTable.h"
+#include "LuaTypes.h"
+#include "LuaValue.h"
 
-#include <vector>
-#include <string>
 #include <functional>
-
+#include <string>
+#include <vector>
 
 namespace luacpp {
-typedef std::vector<LuaValue> LuaValueList;
 class LuaFunction;
+
+using LuaFunctionObject = std::function<LuaValueList(lua_State* L, const LuaValueList& params)>;
 
 /**
  * @brief A reference to lua code.
@@ -25,6 +26,7 @@ class LuaFunction;
  */
 class LuaFunction: public LuaValue {
  public:
+
 	/**
      * @brief Compile lua code and return the function.
      * The specified code is compiled into a lua functions which can then be called with the returned class.
@@ -48,6 +50,14 @@ class LuaFunction: public LuaValue {
 	static LuaFunction createFromCFunction(lua_State* L, lua_CFunction function, const LuaValueList& upvalues = LuaValueList());
 
 	/**
+	 * @brief Creates a lua function from a C++ function object
+	 * @param L The lua state to create the function in
+	 * @param function The function to wrap
+	 * @return A handle of a Lua function that can be used for calling that function
+	 */
+	static LuaFunction createFromStdFunction(lua_State* L, LuaFunctionObject function);
+
+	/**
      * @brief Default constructor
      */
 	LuaFunction();
@@ -60,11 +70,16 @@ class LuaFunction: public LuaValue {
      * @param other The other function.
      */
 	LuaFunction(const LuaFunction& other);
+	LuaFunction& operator=(const LuaFunction& other);
+
+	LuaFunction(LuaFunction&&) noexcept;
+	LuaFunction& operator=(LuaFunction&&) noexcept;
 
 	/**
      * @brief Frees the reference to the function if it exists.
      */
-	virtual ~LuaFunction();
+	~LuaFunction() override;
+
 
 	/**
      * @brief Sets the function environment.
@@ -91,7 +106,7 @@ class LuaFunction: public LuaValue {
      * @param ref The new reference
      * @return void
      */
-	void setReference(LuaReference ref) override;
+	void setReference(const LuaReference& ref) override;
 
 	/**
      * @brief Calls the function.
@@ -102,44 +117,27 @@ class LuaFunction: public LuaValue {
      * the arguments and then the function. After that the function is called with lua_pcall
      * and the return values are converted into a LuaValueList.
      *
+     * @param L The state in which the function should be executed
      * @param arguments The arguments passed to the functions. Defaults to none
      * @return luacpp::LuaValueList The values returned by the function call
      *
      * @exception LuaException If an error occurs while executing the function an exception is thrown
      * 	with the message of the error.
      */
-	LuaValueList call(const LuaValueList& arguments = LuaValueList());
+	LuaValueList call(lua_State* L, const LuaValueList& arguments = LuaValueList()) const;
 
 	/**
      * @brief Calls the function. See call().
      * @return Same as call().
      */
-	LuaValueList operator()(const LuaValueList& arguments = LuaValueList());
+	LuaValueList operator()(lua_State* L, const LuaValueList& arguments = LuaValueList()) const;
  private:
 	LuaReference _errorFunction;
 };
 
 namespace convert {
 
-template<>
-inline LuaFunction popValue<LuaFunction>(lua_State* luaState, int stackposition, bool remove) {
-	if (!isValidIndex(luaState, stackposition)) {
-		throw LuaException("Specified stack position is not valid!");
-	}
-
-	if (!lua_isfunction(luaState, stackposition)) {
-		throw LuaException("Specified index is no function!");
-	} else {
-		LuaFunction target;
-		target.setReference(UniqueLuaReference::create(luaState, stackposition));
-
-		if (remove) {
-			lua_remove(luaState, stackposition);
-		}
-
-		return target;
-	}
-}
+bool popValue(lua_State* luaState, LuaFunction& target, int stackposition = -1, bool remove = true);
 
 }
 }

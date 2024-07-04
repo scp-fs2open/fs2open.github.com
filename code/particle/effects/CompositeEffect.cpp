@@ -7,21 +7,20 @@ namespace particle {
 namespace effects {
 CompositeEffect::CompositeEffect(const SCP_string& name) : ParticleEffect(name) {}
 
-bool CompositeEffect::processSource(const ParticleSource*) {
-	Assertion(false,
-			  "Processing a composite source is not supported! This was caused by a coding error, get a coder!");
+bool CompositeEffect::processSource(ParticleSource*) {
+	UNREACHABLE("Processing a composite source is not supported! This was caused by a coding error, get a coder!");
 	return false;
 }
 
 void CompositeEffect::parseValues(bool) {
 	while (optional_string("+Child effect:")) {
 		auto effectId = internal::parseEffectElement();
-		if (effectId >= 0) {
+		if (effectId.isValid()) {
 			ParticleEffectPtr effect = ParticleManager::get()->getEffect(effectId);
 
 			if (effect->getType() == EffectType::Composite) {
 				error_display(0,
-							  "A composite effect cannot contain more composite effects! The effect as not been added.");
+							  "A composite effect cannot contain more composite effects! The effect has not been added.");
 			}
 			else {
 				addEffect(effect);

@@ -160,6 +160,8 @@ void ct_ship_process(ship *shipp)
 // if the object is below the limit for contrails
 int ct_below_limit(object *objp)
 {
+	if (Contrails_use_absolute_speed)
+		return objp->phys_info.speed < (float) The_mission.contrail_threshold;
 	return objp->phys_info.fspeed < (float) The_mission.contrail_threshold;
 }
 
@@ -208,7 +210,7 @@ void ct_update_contrails(ship *shipp)
 
 				// if the spew stamp has elapsed
 				if(trail_stamp_elapsed(shipp->trail_ptr[idx])){	
-					trail_add_segment(shipp->trail_ptr[idx], &v1);
+					trail_add_segment(shipp->trail_ptr[idx], &v1, &objp->orient);
 					trail_set_stamp(shipp->trail_ptr[idx]);
 				} else {
 					trail_set_segment(shipp->trail_ptr[idx], &v1);
@@ -252,8 +254,8 @@ void ct_create_contrails(ship *shipp)
 			// add the point		
 			vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
-			trail_add_segment(shipp->trail_ptr[idx], &v1);
-			trail_add_segment(shipp->trail_ptr[idx], &v1);
+			trail_add_segment(shipp->trail_ptr[idx], &v1, &objp->orient);
+			trail_add_segment(shipp->trail_ptr[idx], &v1, &objp->orient);
 		}
 	}
 
@@ -354,7 +356,7 @@ void ct_create_ABtrails(ship *shipp)
 				vm_vec_add2(&v1, &objp->pos);
 				// if the spew stamp has elapsed
 				if(trail_stamp_elapsed(shipp->ABtrail_ptr[idx])){	
-					trail_add_segment(shipp->ABtrail_ptr[idx], &v1);
+					trail_add_segment(shipp->ABtrail_ptr[idx], &v1, &objp->orient);
 					trail_set_stamp(shipp->ABtrail_ptr[idx]);
 				} else {
 					trail_set_segment(shipp->ABtrail_ptr[idx], &v1);
@@ -397,7 +399,7 @@ void ct_update_ABtrails(ship *shipp)
 
 				// if the spew stamp has elapsed
 				if(trail_stamp_elapsed(shipp->ABtrail_ptr[idx])){	
-					trail_add_segment(shipp->ABtrail_ptr[idx], &v1);
+					trail_add_segment(shipp->ABtrail_ptr[idx], &v1, &objp->orient);
 					trail_set_stamp(shipp->ABtrail_ptr[idx]);
 				} else {
 					trail_set_segment(shipp->ABtrail_ptr[idx], &v1);

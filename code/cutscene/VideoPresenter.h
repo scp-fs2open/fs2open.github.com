@@ -12,21 +12,13 @@ namespace cutscene {
 namespace player {
 
 class VideoPresenter {
-	int _vertexBuffer = -1;
-	vertex_layout _vertexLayout;
+	MovieProperties _properties;
 
-	bool _scaleVideo = false;
+	std::array<int, 3> _planeTextureHandles;
+	std::array<std::unique_ptr<uint8_t[]>, 3> _planeTextureBuffers;
 
-	int _ytex = -1;
-	std::unique_ptr<uint8_t[]> _yTexBuffer;
-
-	int _utex = -1;
-	std::unique_ptr<uint8_t[]> _uTexBuffer;
-
-	int _vtex = -1;
-	std::unique_ptr<uint8_t[]> _vTexBuffer;
-
-	movie_material _render_material;
+	movie_material _movie_material;
+	material _rgb_material; // Material used when a RGB/RGBA movie is played
  public:
 	explicit VideoPresenter(const MovieProperties& props);
 
@@ -38,7 +30,7 @@ class VideoPresenter {
 
 	void uploadVideoFrame(const VideoFramePtr& frame);
 
-	void displayFrame();
+	void displayFrame(float x1, float y1, float x2, float y2, float alpha = 1.0f);
 };
 }
 }

@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::ShipGoalsDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::ShipGoalsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>597</width>
+    <height>344</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Initial Orders</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout" columnstretch="0,2,2,2,2,1">
+     <item row="10" column="0">
+      <widget class="QLabel" name="labelOrder10">
+       <property name="text">
+        <string>Order 10</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelOrder2">
+       <property name="text">
+        <string>Order 2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="4">
+      <widget class="QLabel" name="dockeeLabel">
+       <property name="text">
+        <string>Dockee's Bay</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QLabel" name="subLabel">
+       <property name="text">
+        <string>Subsys/Docker's Bay</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="labelOrder8">
+       <property name="text">
+        <string>Order 8</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="objectLabel">
+       <property name="text">
+        <string>Object</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelOrder3">
+       <property name="text">
+        <string>Order 3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="labelOrder5">
+       <property name="text">
+        <string>Order 5</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="labelOrder9">
+       <property name="text">
+        <string>Order 9</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="labelOrder6">
+       <property name="text">
+        <string>Order 6</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="behaviorLabel">
+       <property name="text">
+        <string>Behavior</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelOrder1">
+       <property name="text">
+        <string>Order 1</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="labelOrder4">
+       <property name="text">
+        <string>Order 4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="labelOrder7">
+       <property name="text">
+        <string>Order 7</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="5">
+      <widget class="QLabel" name="priorityLabel">
+       <property name="text">
+        <string>Priority</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QComboBox" name="comBehavior1"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="comBehavior2"/>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="comBehavior3"/>
+     </item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="comBehavior4"/>
+     </item>
+     <item row="5" column="1">
+      <widget class="QComboBox" name="comBehavior5"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="QComboBox" name="comBehavior6"/>
+     </item>
+     <item row="7" column="1">
+      <widget class="QComboBox" name="comBehavior7"/>
+     </item>
+     <item row="8" column="1">
+      <widget class="QComboBox" name="comBehavior8"/>
+     </item>
+     <item row="9" column="1">
+      <widget class="QComboBox" name="comBehavior9"/>
+     </item>
+     <item row="10" column="1">
+      <widget class="QComboBox" name="comBehavior10"/>
+     </item>
+     <item row="1" column="2">
+      <widget class="QComboBox" name="comObject1"/>
+     </item>
+     <item row="2" column="2">
+      <widget class="QComboBox" name="comObject2"/>
+     </item>
+     <item row="3" column="2">
+      <widget class="QComboBox" name="comObject3"/>
+     </item>
+     <item row="4" column="2">
+      <widget class="QComboBox" name="comObject4"/>
+     </item>
+     <item row="5" column="2">
+      <widget class="QComboBox" name="comObject5"/>
+     </item>
+     <item row="6" column="2">
+      <widget class="QComboBox" name="comObject6"/>
+     </item>
+     <item row="7" column="2">
+      <widget class="QComboBox" name="comObject7"/>
+     </item>
+     <item row="8" column="2">
+      <widget class="QComboBox" name="comObject8"/>
+     </item>
+     <item row="9" column="2">
+      <widget class="QComboBox" name="comObject9"/>
+     </item>
+     <item row="10" column="2">
+      <widget class="QComboBox" name="comObject10"/>
+     </item>
+     <item row="1" column="3">
+      <widget class="QComboBox" name="comSub1"/>
+     </item>
+     <item row="2" column="3">
+      <widget class="QComboBox" name="comSub2"/>
+     </item>
+     <item row="3" column="3">
+      <widget class="QComboBox" name="comSub3"/>
+     </item>
+     <item row="4" column="3">
+      <widget class="QComboBox" name="comSub4"/>
+     </item>
+     <item row="5" column="3">
+      <widget class="QComboBox" name="comSub5"/>
+     </item>
+     <item row="6" column="3">
+      <widget class="QComboBox" name="comSub6"/>
+     </item>
+     <item row="7" column="3">
+      <widget class="QComboBox" name="comSub7"/>
+     </item>
+     <item row="8" column="3">
+      <widget class="QComboBox" name="comSub8"/>
+     </item>
+     <item row="9" column="3">
+      <widget class="QComboBox" name="comSub9"/>
+     </item>
+     <item row="10" column="3">
+      <widget class="QComboBox" name="comSub10"/>
+     </item>
+     <item row="1" column="4">
+      <widget class="QComboBox" name="comDock1"/>
+     </item>
+     <item row="2" column="4">
+      <widget class="QComboBox" name="comDock2"/>
+     </item>
+     <item row="3" column="4">
+      <widget class="QComboBox" name="comDock3"/>
+     </item>
+     <item row="4" column="4">
+      <widget class="QComboBox" name="comDock4"/>
+     </item>
+     <item row="5" column="4">
+      <widget class="QComboBox" name="comDock5"/>
+     </item>
+     <item row="6" column="4">
+      <widget class="QComboBox" name="comDock6"/>
+     </item>
+     <item row="7" column="4">
+      <widget class="QComboBox" name="comDock7"/>
+     </item>
+     <item row="8" column="4">
+      <widget class="QComboBox" name="comDock8"/>
+     </item>
+     <item row="9" column="4">
+      <widget class="QComboBox" name="comDock9"/>
+     </item>
+     <item row="10" column="4">
+      <widget class="QComboBox" name="comDock10"/>
+     </item>
+     <item row="1" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox1"/>
+     </item>
+     <item row="2" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox2"/>
+     </item>
+     <item row="3" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox3"/>
+     </item>
+     <item row="4" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox4"/>
+     </item>
+     <item row="5" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox5"/>
+     </item>
+     <item row="6" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox6"/>
+     </item>
+     <item row="7" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox7"/>
+     </item>
+     <item row="8" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox8"/>
+     </item>
+     <item row="9" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox9"/>
+     </item>
+     <item row="10" column="5">
+      <widget class="QSpinBox" name="prioritySpinBox10"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="warningLabel">
+     <property name="text">
+      <string>Warning: Orders with a priority above 89 may be higher priority than those given by the player.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="bottomLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="okButton">
+       <property name="text">
+        <string>Ok</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cancelButton">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+  <connections>
+  <connection>
+   <sender>okButton</sender>
+   <signal>clicked()</signal>
+   <receiver>fso::fred::dialogs::ShipGoalsDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>628</x>
+     <y>19</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>357</x>
+     <y>297</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cancelButton</sender>
+   <signal>clicked()</signal>
+   <receiver>fso::fred::dialogs::ShipGoalsDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>628</x>
+     <y>19</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>357</x>
+     <y>297</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

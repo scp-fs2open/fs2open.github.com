@@ -5,6 +5,9 @@
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool blending)
 {
 	if ( blending ) {
@@ -47,6 +50,26 @@ void material_set_unlit(material* mat_info, int texture, float alpha, bool blend
 	} else {
 		mat_info->set_color(1.0f, 1.0f, 1.0f, alpha);
 	}
+
+	if ( texture >= 0 && bm_has_alpha_channel(texture) ) {
+		mat_info->set_texture_type(material::TEX_TYPE_XPARENT);
+	}
+}
+
+void material_set_unlit_opaque(material* mat_info, int texture, bool depth_testing)
+{
+	mat_info->set_texture_map(TM_BASE_TYPE, texture);
+
+	gr_alpha_blend blend_mode = ALPHA_BLEND_NONE;
+	gr_zbuffer_type depth_mode = material_determine_depth_mode(depth_testing, false);
+
+	mat_info->set_blend_mode(blend_mode);
+	mat_info->set_depth_mode(depth_mode);
+	mat_info->set_cull_mode(false);
+
+	
+	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+	
 
 	if ( texture >= 0 && bm_has_alpha_channel(texture) ) {
 		mat_info->set_texture_type(material::TEX_TYPE_XPARENT);
@@ -123,13 +146,31 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 	mat_info->set_cull_mode(false);
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
 }
+void material_set_rocket_interface(interface_material* mat_info,
+	int texture,
+	const vec2d& offset,
+	float horizontal_swipe)
+{
+	mat_info->set_texture_map(TM_BASE_TYPE, texture);
+	mat_info->set_offset(offset);
+	mat_info->set_horizontal_swipe(horizontal_swipe);
 
-void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {
+	mat_info->set_cull_mode(false);
+	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+
+	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
+
+	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+
+	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
+}
+
+void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm, float alpha) {
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
 	mat_info->set_cull_mode(false);
-	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+	mat_info->set_color(1.0f, 1.0f, 1.0f, alpha);
 
 	mat_info->setYtex(y_bm);
 	mat_info->setUtex(u_bm);
@@ -142,6 +183,45 @@ void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex
 	material_set_unlit(mat_info, base_tex, alpha, true, true);
 
 	mat_info->set_color_scale(color_scale);
+}
+
+void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale) {
+	material_set_unlit_opaque(mat_info, base_tex, true);
+
+	mat_info->set_color_scale(color_scale);
+}
+
+void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
+	material_set_unlit(mat_info, base_tex, 1.0f, true, false);
+
+	mat_info->set_cull_mode(false);
+
+	mat_info->set_color_mask(true, true, true, true);
+
+	mat_info->set_blend_mode(ALPHA_BLEND_PREMULTIPLIED);
+
+	mat_info->set_stencil_mask(0xFFFFFFFF);
+	mat_info->set_stencil_func(ComparisionFunction::Always, 0, 0xFFFFFFFF);
+	mat_info->set_front_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+	mat_info->set_back_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+}
+
+void material_set_decal(material* mat_info, int diffuse_tex, int glow_tex, int normal_tex) {
+	mat_info->set_depth_mode(ZBUFFER_TYPE_READ);
+
+	mat_info->set_blend_mode(0, material_determine_blend_mode(diffuse_tex, true));
+	mat_info->set_blend_mode(1, ALPHA_BLEND_ADDITIVE); // Normal blending must always be additive
+	mat_info->set_blend_mode(2, material_determine_blend_mode(glow_tex, true));
+
+	mat_info->set_texture_map(TM_BASE_TYPE, diffuse_tex);
+	mat_info->set_texture_map(TM_GLOW_TYPE, glow_tex);
+	mat_info->set_texture_map(TM_NORMAL_TYPE, normal_tex);
+	mat_info->set_cull_mode(false);
+
+	// Done't write the alpha channel in any case since that will cause changes to other material properties
+	// TODO: If decals should be able to change more than just the material diffuse color then a solution with separate
+	// blending equations must be used
+	mat_info->set_color_mask(true, true, true, false);
 }
 
 material::material():
@@ -169,16 +249,14 @@ Depth_bias(0)
 	Texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 	Texture_maps[TM_AMBIENT_TYPE] = -1;
 
-	Fog_params.dist_near = -1.0f;
-	Fog_params.dist_far = -1.0f;
-	Fog_params.r = 0;
-	Fog_params.g = 0;
-	Fog_params.b = 0;
-	Fog_params.enabled = false;
-
 	Clip_params.enabled = false;
 
+	Color_mask.x = true;
+	Color_mask.y = true;
+	Color_mask.z = true;
+	Color_mask.w = true;
 
+	Buffer_blend_mode.fill(Blend_mode);
 };
 
 void material::set_shader_type(shader_type init_sdr_type)
@@ -186,12 +264,13 @@ void material::set_shader_type(shader_type init_sdr_type)
 	Sdr_type = init_sdr_type;
 }
 
-uint material::get_shader_flags()
+uint material::get_shader_flags() const
 {
 	return 0;
 }
 
-int material::get_shader_handle()
+
+int material::get_shader_handle() const
 {
 	return gr_maybe_create_shader(Sdr_type, get_shader_flags());
 }
@@ -203,14 +282,14 @@ void material::set_texture_map(int tex_type, int texture_num)
 	Texture_maps[tex_type] = texture_num;
 }
 
-int material::get_texture_map(int tex_type)
+int material::get_texture_map(int tex_type) const
 {
 	Assert(tex_type > -1 && tex_type < TM_NUM_TYPES);
 
 	return Texture_maps[tex_type];
 }
 
-bool material::is_textured()
+bool material::is_textured() const
 {
 	return 
 	Texture_maps[TM_BASE_TYPE]		> -1 ||
@@ -218,6 +297,7 @@ bool material::is_textured()
 	Texture_maps[TM_SPECULAR_TYPE]	> -1 ||
 	Texture_maps[TM_NORMAL_TYPE]	> -1 ||
 	Texture_maps[TM_HEIGHT_TYPE]	> -1 ||
+	Texture_maps[TM_AMBIENT_TYPE]	> -1 ||
 	Texture_maps[TM_MISC_TYPE]		> -1;
 }
 
@@ -226,7 +306,7 @@ void material::set_texture_type(texture_type t_type)
 	Tex_type = t_type;
 }
 
-int material::get_texture_type()
+int material::get_texture_type() const
 {
 	switch ( Tex_type ) {
 	default:
@@ -241,7 +321,7 @@ int material::get_texture_type()
 	}
 }
 
-bool material::is_clipped()
+bool material::is_clipped() const
 {
 	return Clip_params.enabled;
 }
@@ -258,7 +338,7 @@ void material::set_clip_plane()
 	Clip_params.enabled = false;
 }
 
-material::clip_plane& material::get_clip_plane()
+const material::clip_plane& material::get_clip_plane() const
 {
 	return Clip_params;
 }
@@ -268,34 +348,9 @@ void material::set_texture_addressing(int addressing)
 	Texture_addressing = addressing;
 }
 
-int material::get_texture_addressing()
+int material::get_texture_addressing() const
 {
 	return Texture_addressing;
-}
-
-void material::set_fog(int r, int g, int b, float _near, float _far)
-{
-	Fog_params.enabled = true;
-	Fog_params.r = r;
-	Fog_params.g = g;
-	Fog_params.b = b;
-	Fog_params.dist_near = _near;
-	Fog_params.dist_far = _far;
-}
-
-void material::set_fog()
-{
-	Fog_params.enabled = false;
-}
-
-bool material::is_fogged()
-{
-	return Fog_params.enabled;
-}
-
-material::fog& material::get_fog()
-{
-	return Fog_params; 
 }
 
 void material::set_depth_mode(gr_zbuffer_type mode)
@@ -303,7 +358,7 @@ void material::set_depth_mode(gr_zbuffer_type mode)
 	Depth_mode = mode;
 }
 
-gr_zbuffer_type material::get_depth_mode()
+gr_zbuffer_type material::get_depth_mode() const
 {
 	return Depth_mode;
 }
@@ -313,7 +368,7 @@ void material::set_cull_mode(bool mode)
 	Cull_mode = mode;
 }
 
-bool material::get_cull_mode()
+bool material::get_cull_mode() const
 {
 	return Cull_mode;
 }
@@ -323,7 +378,7 @@ void material::set_fill_mode(int mode)
 	Fill_mode = mode;
 }
 
-int material::get_fill_mode()
+int material::get_fill_mode() const
 {
 	return Fill_mode;
 }
@@ -331,11 +386,31 @@ int material::get_fill_mode()
 void material::set_blend_mode(gr_alpha_blend mode)
 {
 	Blend_mode = mode;
+	Has_buffer_blends = false;
+	Buffer_blend_mode.fill(mode);
 }
 
-gr_alpha_blend material::get_blend_mode()
+void material::set_blend_mode(int buffer, gr_alpha_blend mode)
 {
-	return Blend_mode;
+	Assertion(buffer >= 0 && buffer < (int) Buffer_blend_mode.size(), "Invalid buffer index %d found!", buffer);
+
+	Has_buffer_blends = true;
+	Buffer_blend_mode[buffer] = mode;
+}
+
+bool material::has_buffer_blend_modes() const {
+	return Has_buffer_blends;
+}
+
+gr_alpha_blend material::get_blend_mode(int buffer) const
+{
+	if (!Has_buffer_blends) {
+		return Blend_mode;
+	}
+
+	Assertion(buffer >= 0 && buffer < (int) Buffer_blend_mode.size(), "Invalid buffer index %d found!", buffer);
+
+	return Buffer_blend_mode[buffer];
 }
 
 void material::set_depth_bias(int bias)
@@ -343,7 +418,7 @@ void material::set_depth_bias(int bias)
 	Depth_bias = bias;
 }
 
-int material::get_depth_bias()
+int material::get_depth_bias() const
 {
 	return Depth_bias;
 }
@@ -369,7 +444,7 @@ void material::set_color(int r, int g, int b, int a)
 	Clr.xyzw.w = i2fl(a) / 255.0f;
 }
 
-void material::set_color(color &clr_in)
+void material::set_color(const color &clr_in)
 {
 	if ( clr_in.is_alphacolor ) {
 		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
@@ -384,7 +459,7 @@ void material::set_color(color &clr_in)
 	}
 }
 
-const vec4& material::get_color()
+const vec4& material::get_color() const
 {
 	return Clr;
 }
@@ -394,9 +469,64 @@ void material::set_color_scale(float scale)
 	Clr_scale = scale;
 }
 
-float material::get_color_scale()
+float material::get_color_scale() const
 {
 	return Clr_scale;
+}
+void material::set_stencil_test(bool stencil) {
+	Stencil_test = stencil;
+}
+bool material::is_stencil_enabled() const {
+	return Stencil_test;
+}
+void material::set_stencil_mask(uint32_t mask) {
+	Stencil_mask = mask;
+}
+uint32_t material::get_stencil_mask() const {
+	return Stencil_mask;
+}
+void material::set_stencil_func(ComparisionFunction compare, int ref, uint32_t mask) {
+	Stencil_func.compare = compare;
+	Stencil_func.ref = ref;
+	Stencil_func.mask = mask;
+}
+const material::StencilFunc& material::get_stencil_func() const {
+	return Stencil_func;
+}
+void material::set_stencil_op(StencilOperation stencilFailOperation,
+							  StencilOperation depthFailOperation,
+							  StencilOperation successOperation) {
+	set_front_stencil_op(stencilFailOperation, depthFailOperation, successOperation);
+	set_back_stencil_op(stencilFailOperation, depthFailOperation, successOperation);
+}
+void material::set_front_stencil_op(StencilOperation stencilFailOperation,
+									StencilOperation depthFailOperation,
+									StencilOperation successOperation) {
+	Front_stencil_op.stencilFailOperation = stencilFailOperation;
+	Front_stencil_op.depthFailOperation = depthFailOperation;
+	Front_stencil_op.successOperation = successOperation;
+}
+const material::StencilOp& material::get_front_stencil_op() const {
+	return Front_stencil_op;
+}
+void material::set_back_stencil_op(StencilOperation stencilFailOperation,
+								   StencilOperation depthFailOperation,
+								   StencilOperation successOperation) {
+	Back_stencil_op.stencilFailOperation = stencilFailOperation;
+	Back_stencil_op.depthFailOperation = depthFailOperation;
+	Back_stencil_op.successOperation = successOperation;
+}
+const material::StencilOp& material::get_back_stencil_op() const {
+	return Back_stencil_op;
+}
+void material::set_color_mask(bool red, bool green, bool blue, bool alpha) {
+	Color_mask.x = red;
+	Color_mask.y = green;
+	Color_mask.z = blue;
+	Color_mask.w = alpha;
+}
+const bvec4& material::get_color_mask() const {
+	return Color_mask;
 }
 
 model_material::model_material() : material() {
@@ -408,7 +538,7 @@ void model_material::set_desaturation(bool enabled)
 	Desaturate = enabled;
 }
 
-bool model_material::is_desaturated()
+bool model_material::is_desaturated() const
 {
 	return Desaturate;
 }
@@ -418,12 +548,24 @@ void model_material::set_shadow_casting(bool enabled)
 	Shadow_casting = enabled;
 }
 
+bool model_material::is_shadow_casting() const {
+	return Shadow_casting;
+}
+
+void model_material::set_shadow_receiving(bool enabled) {
+	Shadow_receiving = enabled;
+}
+
+bool model_material::is_shadow_receiving() const {
+	return Shadow_receiving && !Shadow_override;
+}
+
 void model_material::set_light_factor(float factor)
 {
 	Light_factor = factor;
 }
 
-float model_material::get_light_factor()
+float model_material::get_light_factor() const
 {
 	return Light_factor;
 }
@@ -433,7 +575,7 @@ void model_material::set_lighting(bool mode)
 	lighting = mode;
 } 
 
-bool model_material::is_lit()
+bool model_material::is_lit() const
 {
 	return lighting;
 }
@@ -443,17 +585,28 @@ void model_material::set_deferred_lighting(bool enabled)
 	Deferred = enabled;
 }
 
+bool model_material::is_deferred() const
+{
+	return Deferred;
+}
+
 void model_material::set_high_dynamic_range(bool enabled)
 {
 	HDR = enabled;
 }
+
+bool model_material::is_hdr() const
+{
+	return HDR;
+}
+
 
 void model_material::set_center_alpha(int c_alpha)
 {
 	Center_alpha = c_alpha;
 }
 
-int model_material::get_center_alpha()
+int model_material::get_center_alpha() const
 {
 	return Center_alpha;
 }
@@ -463,7 +616,7 @@ void model_material::set_thrust_scale(float scale)
 	Thrust_scale = scale;
 }
 
-float model_material::get_thrust_scale()
+float model_material::get_thrust_scale() const
 {
 	return Thrust_scale;
 }
@@ -479,7 +632,12 @@ void model_material::set_team_color()
 	Team_color_set = false;
 }
 
-team_color& model_material::get_team_color()
+bool model_material::is_team_color_set() const
+{
+	return Team_color_set;
+}
+
+const team_color& model_material::get_team_color() const
 {
 	return Tm_color;
 }
@@ -496,12 +654,12 @@ void model_material::set_animated_effect()
 	Animated_timer = 0.0f;
 }
 
-int model_material::get_animated_effect()
+int model_material::get_animated_effect() const
 {
 	return Animated_effect;
 }
 
-float model_material::get_animated_effect_time()
+float model_material::get_animated_effect_time() const
 {
 	return Animated_timer;
 }
@@ -511,151 +669,131 @@ void model_material::set_batching(bool enabled)
 	Batched = enabled;
 }
 
-bool model_material::is_batched()
+bool model_material::is_batched() const
 {
 	return Batched;
 }
 
-void model_material::set_normal_alpha(float min, float max)
+void model_material::set_fog(int r, int g, int b, float _near, float _far)
 {
-	Normal_alpha = true;
-	Normal_alpha_min = min;
-	Normal_alpha_max = max;
+	Fog_params.enabled = true;
+	Fog_params.r = r;
+	Fog_params.g = g;
+	Fog_params.b = b;
+	Fog_params.dist_near = _near;
+	Fog_params.dist_far = _far;
 }
 
-void model_material::set_normal_alpha()
+void model_material::set_fog()
 {
-	Normal_alpha = false;
+	Fog_params.enabled = false;
 }
 
-bool model_material::is_normal_alpha_active()
+bool model_material::is_fogged() const
 {
-	return Normal_alpha;
+	return Fog_params.enabled;
 }
 
-float model_material::get_normal_alpha_min()
+const model_material::fog& model_material::get_fog() const
 {
-	return Normal_alpha_min;
+	return Fog_params;
 }
 
-float model_material::get_normal_alpha_max()
-{
-	return Normal_alpha_max;
+void model_material::set_outline_thickness(float thickness) {
+	Outline_thickness = thickness;
+}
+float model_material::get_outline_thickness() const {
+	return Outline_thickness;
+}
+bool model_material::uses_thick_outlines() const {
+	return Outline_thickness > 0.0f;
 }
 
-void model_material::set_normal_extrude(float width)
-{
-	Normal_extrude = true;
-	Normal_extrude_width = width;
+float model_material::get_alpha_mult() const {
+	return Alpha_mult;
 }
 
-void model_material::set_normal_extrude()
-{
-	Normal_extrude = false;
+bool model_material::is_alpha_mult_active() const {
+	return Use_alpha_mult;
 }
 
-bool model_material::is_normal_extrude_active()
-{
-	return Normal_extrude;
+void model_material::set_alpha_mult(float alpha) {
+	Use_alpha_mult = true;
+	Alpha_mult = alpha;
 }
 
-float model_material::get_normal_extrude_width()
-{
-	return Normal_extrude_width;
+void model_material::reset_alpha_mult() {
+	Use_alpha_mult = false;
+	Alpha_mult = 1.0f;
 }
 
-uint model_material::get_shader_flags()
+uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
 
-	if ( is_clipped() ) {
-		Shader_flags |= SDR_FLAG_MODEL_CLIP;
-	}
+    if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {
+        Shader_flags |= get_shader_runtime_early_flags();
+    }
 
-	if ( is_batched() ) {
-		Shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-	}
-
-	if ( Shadow_casting ) {
+	if (Shadow_casting) {
 		// if we're building the shadow map, we likely only need the flags here and above so bail
-		Shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
+		Shader_flags |= MODEL_SDR_FLAG_SHADOW_MAP;
 
 		return Shader_flags;
 	}
-	
-	if ( is_fogged() ) {
-		Shader_flags |= SDR_FLAG_MODEL_FOG;
+
+	if (uses_thick_outlines() && gr_is_capable(gr_capability::CAPABILITY_THICK_OUTLINE)) {
+		Shader_flags |= MODEL_SDR_FLAG_THICK_OUTLINES;
 	}
 
-	if ( Animated_effect >= 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_ANIMATED;
-	}
-
-	if ( get_texture_map(TM_BASE_TYPE) > 0 && !Basemap_override ) {
-		Shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-	}
-
-	if ( get_texture_map(TM_GLOW_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	}
-
-	if ( (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) && !Specmap_override ) {
-		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-
-		if ( (ENVMAP > 0) && !Envmap_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-		}
-	}
-
-	if ( (get_texture_map(TM_NORMAL_TYPE) > 0) && !Normalmap_override ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	}
-
-	if ( (get_texture_map(TM_HEIGHT_TYPE) > 0) && !Heightmap_override ) {
-		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	}
-
-	if ( get_texture_map(TM_AMBIENT_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	}
-
-	if ( lighting ) {
-		Shader_flags |= SDR_FLAG_MODEL_LIGHT;
-		
-		if ( Cmdline_shadow_quality && !Shadow_casting && !Shadow_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;
-		}
-	}
-
-	if ( get_texture_map(TM_MISC_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-
-		if ( Team_color_set ) {
-			Shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
-		}
-	}
-
-	if ( Deferred ) {
-		Shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-	}
-
-	if ( HDR ) {
-		Shader_flags |= SDR_FLAG_MODEL_HDR;
-	}
-
-	if ( Thrust_scale > 0.0f ) {
-		Shader_flags |= SDR_FLAG_MODEL_THRUSTER;
-	}
-
-	if ( Normal_alpha ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_ALPHA;
-	}
-
-	if ( Normal_extrude ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_EXTRUDE;
-	}
+    if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {
+        Shader_flags |= get_shader_runtime_flags();
+    }
 
 	return Shader_flags;
+}
+
+int model_material::get_shader_runtime_early_flags() const {
+    int flags = 0;
+    if (is_batched())
+        flags |= MODEL_SDR_FLAG_TRANSFORM;
+    return flags;
+}
+
+int model_material::get_shader_runtime_flags() const {
+    int flags = 0;
+	if (is_lit())
+		flags |= MODEL_SDR_FLAG_LIGHT;
+	if (is_deferred())
+		flags |= MODEL_SDR_FLAG_DEFERRED;
+	if (is_hdr())
+		flags |= MODEL_SDR_FLAG_HDR;
+	if (get_texture_map(TM_BASE_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_DIFFUSE;
+	if (get_texture_map(TM_GLOW_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_GLOW;
+	if (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_SPEC;
+	if (ENVMAP > 0)
+		flags |= MODEL_SDR_FLAG_ENV;
+	if (get_texture_map(TM_NORMAL_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_NORMAL;
+	if (get_texture_map(TM_AMBIENT_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_AMBIENT;
+	if (get_texture_map(TM_MISC_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_MISC;
+	if (get_texture_map(TM_MISC_TYPE) > 0 && is_team_color_set())
+		flags |= MODEL_SDR_FLAG_TEAMCOLOR;
+	if (is_fogged())
+		flags |= MODEL_SDR_FLAG_FOG;
+	if (is_shadow_receiving())
+		flags |= MODEL_SDR_FLAG_SHADOWS;
+	if (get_thrust_scale() > 0.0f)
+		flags |= MODEL_SDR_FLAG_THRUSTER;
+	if (is_alpha_mult_active())
+		flags |= MODEL_SDR_FLAG_ALPHA_MULT;
+
+	return flags;
 }
 
 particle_material::particle_material(): 
@@ -674,7 +812,7 @@ bool particle_material::get_point_sprite_mode()
 	return Point_sprite;
 }
 
-uint particle_material::get_shader_flags()
+uint particle_material::get_shader_flags() const
 {
 	uint flags = 0;
 
@@ -766,3 +904,33 @@ void movie_material::setVtex(int _Vtex) {
 batched_bitmap_material::batched_bitmap_material() {
 	set_shader_type(SDR_TYPE_BATCHED_BITMAP);
 }
+
+nanovg_material::nanovg_material() {
+	set_shader_type(SDR_TYPE_NANOVG);
+}
+
+decal_material::decal_material() {
+	set_shader_type(SDR_TYPE_DECAL);
+}
+uint decal_material::get_shader_flags() const {
+	uint flags = 0;
+
+	if (get_texture_map(TM_NORMAL_TYPE) == -1) {
+		// If we don't write to the normal map then we can use the existing normal map for better normal accuracy
+		flags |= SDR_FLAG_DECAL_USE_NORMAL_MAP;
+	}
+
+	return flags;
+}
+
+interface_material::interface_material()
+{
+	set_shader_type(SDR_TYPE_ROCKET_UI);
+
+	offset.x = 0;
+	offset.y = 0;
+}
+void interface_material::set_offset(const vec2d& new_offset) { this->offset = new_offset; }
+vec2d interface_material::get_offset() const { return offset; }
+void interface_material::set_horizontal_swipe(float hor_offset) { this->horizontalSwipeOff = hor_offset; }
+float interface_material::get_horizontal_swipe() const { return this->horizontalSwipeOff; }

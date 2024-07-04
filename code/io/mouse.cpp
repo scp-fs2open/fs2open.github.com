@@ -14,9 +14,13 @@
 #include <windowsx.h>
 #endif
 
-#include "io/mouse.h"
+#include "controlconfig/controlsconfig.h"
 #include "graphics/2d.h"
+#include "io/mouse.h"
+#include "options/Option.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
+#include "scripting/hook_api.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -50,12 +54,46 @@ int Mouse_dx = 0;
 int Mouse_dy = 0;
 int Mouse_dz = 0;
 
-int Last_mouse_dx = 0;
-int Last_mouse_dy = 0;
-int Last_mouse_dz = 0;
-
 int Mouse_sensitivity = 4;
-int Use_mouse_to_fly = 0;
+
+static auto MouseSensitivityOption __UNUSED = options::OptionBuilder<int>("Input.MouseSensitivity",
+                     std::pair<const char*, int>{"Sensitivity", 1374},
+                     std::pair<const char*, int>{"The sensitivity of the mouse input", 1747})
+                     .category(std::make_pair("Input", 1827))
+                     .range(0, 9)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(4)
+                     .bind_to(&Mouse_sensitivity)
+                     .importance(0)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+bool Use_mouse_to_fly = false;
+
+static SCP_string mouse_mode_display(bool mode) { return mode ? XSTR("Joy-0", 1699) : XSTR("Mouse", 1774); }
+
+static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse",
+                     std::pair<const char*, int>{"Mouse", 1373},
+                     std::pair<const char*, int>{"Whether or not to use the mouse for flying", 1765})
+                     .category(std::make_pair("Input", 1827))
+                     .display(mouse_mode_display) 
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(false)
+                     .bind_to(&Use_mouse_to_fly)
+                     .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::Factory(
+	"On Mouse Wheel", "Called when the mouse wheel is moved in any direction.",
+	{
+		{"MouseWheelY", "number", "Positive if moved up, negative if moved down."},
+		{"MouseWheelX", "number", "Positive if moved right, negative if moved left."},
+	});
+
+#define SCALE_MOUSE_TO_WINDOW(x, y, op) \
+	static_cast<decltype(x)>(Cmdline_window_res ? static_cast<float>(x) op (static_cast<float>(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first)) : x), \
+	static_cast<decltype(y)>(Cmdline_window_res ? static_cast<float>(y) op (static_cast<float>(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second)) : y)
 
 namespace
 {
@@ -65,12 +103,26 @@ namespace
 			return false;
 		}
 
-		if (e.button.button == SDL_BUTTON_LEFT)
-			mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
-		else if (e.button.button == SDL_BUTTON_MIDDLE)
-			mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
-		else if (e.button.button == SDL_BUTTON_RIGHT)
-			mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+		switch (e.button.button) {
+			case SDL_BUTTON_LEFT:
+				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_RIGHT:
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_MIDDLE:
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_X1:
+				mouse_mark_button(MOUSE_X1_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_X2:
+				mouse_mark_button(MOUSE_X2_BUTTON, e.button.state);
+				break;
+			default:
+				// SDL gave us an unknown button. Just log it
+				mprintf(("Unknown SDL button %i\n", e.button.button));
+		}
 
 		return true;
 	}
@@ -81,7 +133,7 @@ namespace
 			return false;
 		}
 
-		mouse_event(e.motion.x, e.motion.y, e.motion.xrel, e.motion.yrel);
+		mouse_event(SCALE_MOUSE_TO_WINDOW(e.motion.x, e.motion.y, *), SCALE_MOUSE_TO_WINDOW(e.motion.xrel, e.motion.yrel, *));
 
 		return true;
 	}
@@ -111,24 +163,6 @@ void mouse_force_pos(int x, int y);
 void mousewheel_decay(int btn);
 
 static bool Mouse_in_focus = true;
-
-void mouse_got_focus()
-{
-    if ( !mouse_inited ) return;
-
-    Mouse_in_focus = true;
-
-    mouse_flush();
-}
-
-void mouse_lost_focus()
-{
-    if ( !mouse_inited ) return;
-
-    Mouse_in_focus = false;
-
-    mouse_flush();
-}
 
 void mouse_close()
 {
@@ -256,16 +290,15 @@ void mouse_mark_button( uint flags, int set)
 
 	SDL_UnlockMutex( mouse_lock );
 
-	Script_system.SetHookVar("MouseButton", 'i', &flags);
+	Script_system.SetHookVar("MouseButton", 'i', flags);
 
-	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if (set == 1)
-	{
-		Script_system.RunCondition(CHA_MOUSEPRESSED);
-	}
-	else if (set == 0)
-	{
-		Script_system.RunCondition(CHA_MOUSERELEASED);
+	if (scripting::hooks::OnMousePressed->isActive() || scripting::hooks::OnMouseReleased->isActive()) {
+		//WMC - On Mouse Pressed and On Mouse Released hooks
+		if (set == 1) {
+			scripting::hooks::OnMousePressed->run();
+		} else if (set == 0) {
+			scripting::hooks::OnMouseReleased->run();
+		}
 	}
 
 	Script_system.RemHookVar("MouseButton");
@@ -289,8 +322,34 @@ void mouse_flush()
 	SDL_UnlockMutex( mouse_lock );
 }
 
-int mouse_down_count(int n, int reset_count)
+int mouse_down_count(const CC_bind &bind, int reset_count)
 {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn > MOUSE_NUM_BUTTONS) {
+		return 0;
+	}
+
+	btn = 1 << btn;
+
+	return mouse_down_count(btn, reset_count);
+}
+
+int mouse_down_count(int n, int reset_count) {
 	int tmp = 0;
 	if ( !mouse_inited ) return 0;
 
@@ -345,8 +404,16 @@ int mouse_down_count(int n, int reset_count)
 //
 // parameters:  n - button of mouse (see #define's in mouse.h)
 //
-int mouse_up_count(int n)
+int mouse_up_count(const CC_bind &bind)
 {
+	if (bind.get_cid() != CID_MOUSE) {
+		return 0;
+	}
+	int n = 1 << bind.get_btn();
+	return mouse_up_count(n);
+}
+
+int mouse_up_count(int n) {
 	int tmp = 0;
 	if ( !mouse_inited ) return 0;
 
@@ -392,8 +459,34 @@ int mouse_up_count(int n)
 
 // returns 1 if mouse button btn is down, 0 otherwise
 
-int mouse_down(int btn)
+int mouse_down(const CC_bind &bind)
 {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn >= MOUSE_NUM_BUTTONS) {
+		return 0;
+	}
+
+	btn = 1 << btn;
+
+	return mouse_down(btn);
+}
+
+int mouse_down(int btn) {
 	int tmp;
 	if ( !mouse_inited ) return 0;
 
@@ -418,33 +511,6 @@ int mouse_down(int btn)
 	return tmp;
 }
 
-// returns the fraction of time btn has been down since last call
-// (currently returns 1 if buttons is down, 0 otherwise)
-//
-float mouse_down_time(int btn)
-{
-	float tmp;
-	if ( !mouse_inited ) return 0.0f;
-
-	// Bail if not a button or wheel direction
-	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0.0f;
-
-	SDL_LockMutex( mouse_lock );
-
-	if (mouse_flags & btn) {
-		tmp = 1.0f;
-		if ((btn >= LOWEST_MOUSE_WHEEL) && (btn <= HIGHEST_MOUSE_WHEEL)) {
-			mousewheel_decay(btn);
-		}
-	} else {
-		tmp = 0.0f;
-	}
-
-	SDL_UnlockMutex( mouse_lock );
-
-	return tmp;
-}
-
 void mouse_get_delta(int *dx, int *dy, int *dz)
 {
 	if (dx)
@@ -459,17 +525,13 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 void mouse_force_pos(int x, int y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
-		SDL_WarpMouseInWindow(os::getSDLMainWindow(), x, y);
+		SDL_WarpMouseInWindow(os::getSDLMainWindow(), SCALE_MOUSE_TO_WINDOW(x, y, /));
 	}
 }
 
 // Reset deltas so we don't have duplicate mouse deltas
 void mouse_reset_deltas()
 {
-	Last_mouse_dx = Mouse_dx;
-	Last_mouse_dy = Mouse_dy;
-	Last_mouse_dz = Mouse_dz;
-
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 }
 
@@ -483,9 +545,9 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_dx += dx;
 	Mouse_dy += dy;
 
-	if(Mouse_dx != 0 || Mouse_dy != 0)
+	if ((Mouse_dx != 0 || Mouse_dy != 0) && scripting::hooks::OnMouseMoved->isActive())
 	{
-		Script_system.RunCondition(CHA_MOUSEMOVED);
+		scripting::hooks::OnMouseMoved->run();
 	}
 }
 
@@ -550,6 +612,12 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 void mouse_get_real_pos(int *mx, int *my)
 {
 	SDL_GetMouseState(mx, my);
+	if (Cmdline_window_res) {
+		if (mx)
+			*mx *= gr_screen.max_w / Cmdline_window_res->first;
+		if (my)
+			*my *= gr_screen.max_h / Cmdline_window_res->second;
+	}
 }
 
 void mouse_set_pos(int xpos, int ypos)
@@ -591,22 +659,22 @@ void mousewheel_motion(int x, int y, bool reversed) {
 	} else {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
+
+	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', y), scripting::hook_param("MouseWheelX", 'i', x)));
 }
 
 void mousewheel_decay(int btn) {
-	switch (btn) {
-	case MOUSE_WHEEL_UP:
+	if (btn & MOUSE_WHEEL_UP) {
 		Mouse_wheel_y -= 1;
-		break;
-	case MOUSE_WHEEL_DOWN:
+	}
+	if (btn & MOUSE_WHEEL_DOWN) {
 		Mouse_wheel_y += 1;
-		break;
-	case MOUSE_WHEEL_LEFT:
+	}
+	if (btn & MOUSE_WHEEL_LEFT) {
 		Mouse_wheel_x -= 1;
-		break;
-	case MOUSE_WHEEL_RIGHT:
+	}
+	if (btn & MOUSE_WHEEL_RIGHT) {
 		Mouse_wheel_x += 1;
-		break;
 	}
 
 	if (Mouse_wheel_x == 0) {
@@ -615,4 +683,21 @@ void mousewheel_decay(int btn) {
 	if (Mouse_wheel_y == 0) {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
+}
+
+short bit_distance(short x) {
+	short i;
+	const short max_dist = sizeof(short) * 8;
+	
+	for (i = 0; i < max_dist; ++i, x >>= 1) {
+		if (x & 0x01) {
+			break;
+		}
+	}
+
+	if (i >= max_dist) {
+		return -1;
+	}
+
+	return i;
 }

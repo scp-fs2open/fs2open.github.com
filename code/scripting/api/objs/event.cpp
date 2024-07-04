@@ -13,70 +13,58 @@ ADE_OBJ(l_Event, int, "event", "Mission event handle");
 ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", NULL)
 {
 	int idx;
-	char *s = NULL;
+	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "s", "");
 
 	mission_event *mep = &Mission_events[idx];
 
-	if (ADE_SETTING_VAR) {
-		strncpy(mep->name, s, sizeof(mep->name) - sizeof(char));
+	if (ADE_SETTING_VAR && s != nullptr) {
+		mep->name = s;
 	}
 
-	return ade_set_args(L, "s", mep->name);
+	return ade_set_args(L, "s", mep->name.c_str());
 }
 
 ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", NULL)
 {
 	int idx;
-	char *s = NULL;
+	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "s", "");
 
 	mission_event *mep = &Mission_events[idx];
 
-	if (ADE_SETTING_VAR && s != NULL) {
-		if (mep->objective_text != NULL)
-			vm_free(mep->objective_text);
-
-		mep->objective_text = vm_strdup(s);
+	if (ADE_SETTING_VAR && s != nullptr) {
+		mep->objective_text = s;
 	}
 
-	if (mep->objective_text != NULL)
-		return ade_set_args(L, "s", mep->objective_text);
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", mep->objective_text.c_str());
 }
 
 ADE_VIRTVAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.", "string", NULL)
 {
 	int idx;
-	char *s = NULL;
+	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "s", "");
 
 	mission_event *mep = &Mission_events[idx];
 
-	if (ADE_SETTING_VAR && s != NULL) {
-		if (mep->objective_text != NULL)
-			vm_free(mep->objective_key_text);
-
-		mep->objective_key_text = vm_strdup(s);
+	if (ADE_SETTING_VAR && s != nullptr) {
+		mep->objective_key_text = s;
 	}
 
-	if (mep->objective_key_text != NULL)
-		return ade_set_args(L, "s", mep->objective_key_text);
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", mep->objective_key_text.c_str());
 }
 
 ADE_VIRTVAR(Interval, l_Event, "number", "Time for event to repeat (in seconds)", "number", "Repeat time, or 0 if invalid handle")
@@ -86,7 +74,7 @@ ADE_VIRTVAR(Interval, l_Event, "number", "Time for event to repeat (in seconds)"
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newinterval))
 		return ade_set_error(L, "i", 0);
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "i", 0);
 
 	mission_event *mep = &Mission_events[idx];
@@ -105,7 +93,7 @@ ADE_VIRTVAR(ObjectCount, l_Event, "number", "Number of objects left for event", 
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newobject))
 		return ade_set_error(L, "i", 0);
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "i", 0);
 
 	mission_event *mep = &Mission_events[idx];
@@ -124,7 +112,7 @@ ADE_VIRTVAR(RepeatCount, l_Event, "number", "Event repeat count", "number", "Rep
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newrepeat))
 		return ade_set_error(L, "i", 0);
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "i", 0);
 
 	mission_event *mep = &Mission_events[idx];
@@ -143,7 +131,7 @@ ADE_VIRTVAR(Score, l_Event, "number", "Event score", "number", "Event score, or 
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newscore))
 		return ade_set_error(L, "i", 0);
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ade_set_error(L, "i", 0);
 
 	mission_event *mep = &Mission_events[idx];
@@ -161,11 +149,12 @@ ADE_FUNC(isValid, l_Event, NULL, "Detects whether handle is valid", "boolean", "
 	if (!ade_get_args(L, "o", l_Event.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx >= Num_mission_events)
+	if (idx < 0 || idx >= (int)Mission_events.size())
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
 }
+
 
 }
 }

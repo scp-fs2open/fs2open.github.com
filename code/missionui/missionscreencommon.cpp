@@ -10,11 +10,10 @@
 
 
 
-#include <limits.h>		// this is need even when not building debug!!
+#include <climits>		// this is need even when not building debug!!
 #include <type_traits>
 
 #include "anim/animplay.h"
-#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamehelp/contexthelp.h"
@@ -22,7 +21,11 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
+#include "graphics/color.h"
+#include "graphics/light.h"
+#include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/key.h"
@@ -34,6 +37,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -43,6 +47,8 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/global_hooks.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
 #include "weapon/weapon.h"
@@ -61,8 +67,8 @@ int Mouse_down_last_frame = 0;
 // Timers used to flash buttons after timeouts
 #define MSC_FLASH_AFTER_TIME	60000		//	time before flashing a button
 #define MSC_FLASH_INTERVAL		200		// time between flashes
-int Flash_timer;								//	timestamp used to start flashing
-int Flash_toggle;								// timestamp used to toggle flashing
+UI_TIMESTAMP Flash_timer;						// timestamp used to start flashing
+UI_TIMESTAMP Flash_toggle;						// timestamp used to toggle flashing
 int Flash_bright;								// state of button to flash
 
 //////////////////////////////////////////////////////////////////
@@ -99,7 +105,6 @@ extern void ss_set_team_pointers(int team);
 extern void ss_reset_team_pointers();
 extern void wl_set_team_pointers(int team);
 extern void wl_reset_team_pointers();
-extern int anim_timer_start;
 extern void ss_reset_selected_ship();
 
 //////////////////////////////////////////////////////////////////
@@ -235,7 +240,7 @@ void common_redraw_pressed_buttons()
 	}
 }
 
-void common_buttons_maybe_reload(UI_WINDOW *ui_window)
+void common_buttons_maybe_reload(UI_WINDOW * /*ui_window*/)
 {
 	UI_BUTTON	*b;
 	int			i;
@@ -311,29 +316,39 @@ void set_active_ui(UI_WINDOW *ui_window)
 	Active_ui_window = ui_window;
 }
 
-void common_music_init(int score_index)
+const char *common_music_get_filename(int score_index)
 {
-	if ( Cmdline_freespace_no_music ) {
-		return;
+	if (Cmdline_freespace_no_music) {
+		return "";
 	}
 
-	if ( score_index >= NUM_SCORES ) {
-		Int3();
-		return;
-	}
+	Assertion(score_index >= 0 && score_index < NUM_SCORES, "Invalid score index %d.", score_index);
 
-	if ( Mission_music[score_index] < 0 ) {
-		if ( Num_music_files > 0 ) {
+	if (Mission_music[score_index] < 0) {
+		if (!Spooled_music.empty()) {
 			Mission_music[score_index] = 0;
-			nprintf(("Sound","No briefing music is selected, so play first briefing track: %s\n",Spooled_music[Mission_music[score_index]].name));
+			nprintf(("Sound",
+				"No briefing music is selected, so play first briefing track: %s\n",
+				Spooled_music[Mission_music[score_index]].name));
 		} else {
-			return;
+			return "";
 		}
 	}
 
-	briefing_load_music( Spooled_music[Mission_music[score_index]].filename );
+	return Spooled_music[Mission_music[score_index]].filename;
+}
+
+void common_music_init(int score_index)
+{
+	const auto file_name = common_music_get_filename(score_index);
+
+	if (file_name[0] == '\0') {
+		return;
+	}
+
+	briefing_load_music(file_name);
 	// Use this id to trigger the start of music playing on the briefing screen
-	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
+	Briefing_music_begin_timestamp = ui_timestamp(BRIEFING_MUSIC_DELAY);
 }
 
 void common_music_do()
@@ -343,8 +358,8 @@ void common_music_do()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	if ( timestamp_elapsed( Briefing_music_begin_timestamp) ) {
-		Briefing_music_begin_timestamp = 0;
+	if ( ui_timestamp_elapsed(Briefing_music_begin_timestamp) ) {
+		Briefing_music_begin_timestamp = UI_TIMESTAMP::invalid();
 		briefing_start_music();
 	}
 }
@@ -355,7 +370,7 @@ void common_music_close()
 		return;
 	}
 
-	if ( Num_music_files <= 0 )
+	if ( Spooled_music.empty() )
 		return;
 
 	briefing_stop_music(true);
@@ -402,6 +417,19 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 	}
 }
 
+void common_play_cutscene(const char* filename, bool restart_music, int music)
+{
+	bool music_off = false;
+
+	common_music_close();
+	music_off = true;
+	movie::play(filename); // Play the movie!
+
+	if (music_off && restart_music) {
+		common_music_init(music);
+	}
+};
+
 // function that sets the current palette to the interface palette.  This function
 // needs to be followed by common_free_interface_palette() to restore the game palette.
 void common_set_interface_palette(const char *filename)
@@ -445,17 +473,17 @@ void common_free_interface_palette()
 // Init timers used for flashing buttons
 void common_flash_button_init()
 {
-	Flash_timer = timestamp(MSC_FLASH_AFTER_TIME);
-	Flash_toggle = 1;
+	Flash_timer = ui_timestamp(MSC_FLASH_AFTER_TIME);
+	Flash_toggle = UI_TIMESTAMP::immediate();
 	Flash_bright = 0;
 }
 
 // determine if we should draw a button as bright
 int common_flash_bright()
 {
-	if ( timestamp_elapsed(Flash_timer) ) {
-		if ( timestamp_elapsed(Flash_toggle) ) {
-			Flash_toggle = timestamp(MSC_FLASH_INTERVAL);
+	if ( ui_timestamp_elapsed(Flash_timer) ) {
+		if ( ui_timestamp_elapsed(Flash_toggle) ) {
+			Flash_toggle = ui_timestamp(MSC_FLASH_INTERVAL);
 			Flash_bright ^= 1;
 		}
 	}
@@ -495,7 +523,7 @@ void common_reset_team_pointers()
 // is called.  This prevents multiple loadings of animations/bitmaps.
 //
 // This function also sets the palette based on the file palette01.pcx
-void common_select_init()
+void common_select_init(bool API_Access)
 {
 	if ( Common_select_inited ) {
 		nprintf(("Alan","common_select_init() returning without doing anything\n"));
@@ -533,9 +561,11 @@ void common_select_init()
 
 	common_set_team_pointers(Common_team);
 
-	ship_select_common_init();	
-	weapon_select_common_init();
-	common_flash_button_init();
+	ship_select_common_init(API_Access);	
+	weapon_select_common_init(API_Access);
+	if (!API_Access) {
+		common_flash_button_init();
+	}
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
@@ -550,19 +580,21 @@ void common_select_init()
 		}
 	}
 	
-	ss_reset_selected_ship();
+	if (!API_Access) {
+		ss_reset_selected_ship();
 
-	Drop_icon_mflag = 0;
-	Drop_on_wing_mflag = 0;
+		Drop_icon_mflag = 0;
+		Drop_on_wing_mflag = 0;
+	}
 
-	//init colors
+	// init colors
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
-	//init shaders
+	// init shaders
 	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
 	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
 	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
@@ -596,7 +628,7 @@ void common_reset_buttons()
 
 // common_select_do() is called once per loop in the interface screens and is used
 // for drawing and changing the common animations and blitting common bitmaps.
-int common_select_do(float frametime)
+int common_select_do(float  /*frametime*/)
 {
 	int	k, new_k;
 
@@ -751,7 +783,7 @@ void common_button_do(int i)
 
 	case COMMON_BRIEFING_BUTTON:
 		if ( Current_screen != ON_BRIEFING_SELECT ) {
-			gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			Next_screen = ON_BRIEFING_SELECT;
 		}
 		break;
@@ -759,7 +791,7 @@ void common_button_do(int i)
 	case COMMON_WEAPON_BUTTON:
 		if ( Current_screen != ON_WEAPON_SELECT ) {
 			if ( !wss_slots_all_empty() ) {
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 				Next_screen = ON_WEAPON_SELECT;
 			} else {
 				common_show_no_ship_error();
@@ -769,18 +801,18 @@ void common_button_do(int i)
 
 	case COMMON_SS_BUTTON:
 		if ( Current_screen != ON_SHIP_SELECT ) {
-			gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			Next_screen = ON_SHIP_SELECT;
 		}
 		break;
 
 	case COMMON_OPTIONS_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event( GS_EVENT_OPTIONS_MENU );
 		break;
 
 	case COMMON_HELP_BUTTON:
-		gamesnd_play_iface(SND_HELP_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 		launch_context_help();
 		break;
 
@@ -832,7 +864,7 @@ void common_check_keys(int k)
 
 		case KEY_W:
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -849,7 +881,7 @@ void common_check_keys(int k)
 		case KEY_S:
 
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -862,7 +894,7 @@ void common_check_keys(int k)
 		case KEY_SHIFTED+KEY_TAB:
 
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -894,7 +926,7 @@ void common_check_keys(int k)
 		case KEY_TAB:
 
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -1036,6 +1068,19 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 	return 0;
 }
 
+void common_fire_stage_script_hook(int old_stage, int new_stage)
+{
+	if (scripting::hooks::OnBriefStage->isActive()) {
+		// call a scripting hook for switching stages
+		// note that we add 1 because Lua arrays are 1-based
+		scripting::hooks::OnBriefStage->run(
+			scripting::hook_param_list(
+				scripting::hook_param("OldStage", 'i', old_stage + 1),
+				scripting::hook_param("NewStage", 'i', new_stage + 1)
+			));
+	}
+}
+
 // NEWSTUFF BEGIN
 
 // save ship selection loadout to the Player_loadout struct
@@ -1074,8 +1119,12 @@ void wss_maybe_restore_loadout()
 
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
+	if (Disable_internal_loadout_restoration_system) {
+		return;
+	}
+
 	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
 	}
 
@@ -1100,11 +1149,11 @@ void wss_maybe_restore_loadout()
 	// record the ship classes / weapons used last time
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
-		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((slot->wep[j] >= 0) && (slot->wep[j] < Num_weapon_types)) {
+				if ((slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
 					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
 				}
 			}
@@ -1113,11 +1162,11 @@ void wss_maybe_restore_loadout()
 
 	// record the ships classes / weapons used by the player and wingmen. We don't include the amount in the pools yet
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < static_cast<int>(Ship_info.size()))) {
+		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < ship_info_size())) {
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < Num_weapon_types)) {
+				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < weapon_info_size())) {
 					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
 				}
 			}
@@ -1126,7 +1175,7 @@ void wss_maybe_restore_loadout()
 
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
-	for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+	for (i = 0; i < ship_info_size(); i++) {
 		if (Ss_pool[i] >= 1) {
 			this_loadout_ships[i] += Ss_pool[i];
 		}
@@ -1135,7 +1184,7 @@ void wss_maybe_restore_loadout()
 		}
 	}
 	
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		if (Wl_pool[i] >= 1) {
 			this_loadout_weapons[i] += Wl_pool[i];
 		}
@@ -1148,7 +1197,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1157,7 +1206,7 @@ void wss_maybe_restore_loadout()
 		Wss_slots[i].ship_class = slot->ship_class;
 
 		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < Num_weapon_types)) {
+			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
 				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
 				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
 			}
@@ -1168,12 +1217,12 @@ void wss_maybe_restore_loadout()
 	}	
 
 	// restore the ship pool
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		Ss_pool[i] = this_loadout_ships[i]; 
 	}
 
 	// restore the weapons pool
-	for ( i = 0; i < Num_weapon_types; i++ ) {
+	for ( i = 0; i < weapon_info_size(); i++ ) {
 		Wl_pool[i] = this_loadout_weapons[i]; 
 	}
 }
@@ -1186,7 +1235,7 @@ void wss_direct_restore_loadout()
 	wss_unit			*slot;
 
 	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
 	}
 
@@ -1318,11 +1367,12 @@ int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_
 }
 
 // store all the unit data and pool data 
-int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
+int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_snd_id sound, int player_index)
 {
-	int j, i,offset=0;	
-	short player_id;	
-	short ishort;
+	int j, i, packet_size = 0;
+	ubyte val;
+	short player_id;
+	ushort pool_size;
 
 	// this function assumes that the data is going to be used over the network
 	// so make a non-network version of this function if needed
@@ -1332,72 +1382,64 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return 0;
 
-
-	// write the ship pool 
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
-		if ( Ss_pool[i] > 0 ) {	
-			block[offset++] = (ubyte)i;
-			Assert( Ss_pool[i] < UCHAR_MAX );
-			
-			// take care of sign issues
-			if(Ss_pool[i] == -1){
-				block[offset++] = 0xff;
-			} else {
-				block[offset++] = (ubyte)Ss_pool[i];
-			}
+	// write the ship pool
+	pool_size = 0;
+	for (i = 0; i < ship_info_size(); i++) {
+		if (Ss_pool[i] > 0) {
+			++pool_size;
 		}
 	}
 
-	block[offset++] = 0xff;	// signals start of weapons pool
+	ADD_USHORT(pool_size);
+
+	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of ship pool exceeds max data size!");
+
+	for (i = 0; i < ship_info_size(); i++) {
+		if (Ss_pool[i] > 0) {
+			ADD_SHORT(static_cast<short>(i));
+			ADD_SHORT(static_cast<short>(Ss_pool[i]));
+		}
+	}
 
 	// write the weapon pool
-	for ( i = 0; i < Num_weapon_types; i++ ) {
-		if ( Wl_pool[i] > 0 ) {
-			block[offset++] = (ubyte)i;
-			ishort = INTEL_SHORT( (short)Wl_pool[i] );
-			memcpy(block+offset, &ishort, sizeof(short));
-			offset += sizeof(short);
+	pool_size = 0;
+	for (i = 0; i < weapon_info_size(); i++) {
+		if (Wl_pool[i] > 0) {
+			++pool_size;
+		}
+	}
+
+	ADD_USHORT(pool_size);
+
+	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of weapon pool exceeds max data size!");
+
+	for (i = 0; i < weapon_info_size(); i++) {
+		if (Wl_pool[i] > 0) {
+			ADD_SHORT(static_cast<short>(i));
+			ADD_SHORT(static_cast<short>(Wl_pool[i]));
 		}
 	}
 
 	// write the unit data
+	val = MAX_WSS_SLOTS;
+	ADD_DATA(val);
+	val = MAX_SHIP_WEAPONS;
+	ADD_DATA(val);
 
-	block[offset++] = 0xff; // signals start of unit data
+	Assertion((((sizeof(short) + ((sizeof(short)+sizeof(short)) * MAX_SHIP_WEAPONS)) * MAX_WSS_SLOTS) + packet_size) < max_size, "Size of wss data exceeds max data size!");
 
-	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
-		Assert( Wss_slots[i].ship_class < UCHAR_MAX );
-		if(Wss_slots[i].ship_class == -1){
-			block[offset++] = 0xff;
-		} else {
-			block[offset++] = (ubyte)(Wss_slots[i].ship_class);
+	for (i = 0; i < MAX_WSS_SLOTS; i++) {
+		ADD_SHORT(static_cast<short>(Wss_slots[i].ship_class));
+
+		for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+			ADD_SHORT(static_cast<short>(Wss_slots[i].wep[j]));
+			Assert(Wss_slots[i].wep_count[j] < SHRT_MAX);
+			ADD_SHORT(static_cast<short>(Wss_slots[i].wep_count[j]));
 		}
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			// take care of sign issues
-			Assert( Wss_slots[i].wep[j] < UCHAR_MAX );			
-			if(Wss_slots[i].wep[j] == -1){
-				block[offset++] = 0xff;
-			} else {
-				block[offset++] = (ubyte)(Wss_slots[i].wep[j]);
-			}
-
-			Assert( Wss_slots[i].wep_count[j] < SHRT_MAX );
-			ishort = INTEL_SHORT( (short)Wss_slots[i].wep_count[j] );
-
-			memcpy(&(block[offset]), &(ishort), sizeof(short) );
-			offset += sizeof(short);
-		}
-
-		// mwa -- old way below -- too much space
-		//memcpy(block+offset, &Wss_slots[i], sizeof(wss_unit));
-		//offset += sizeof(wss_unit);
 	}
 
 	// any sound index
-	if(sound == -1){
-		block[offset++] = 0xff;
-	} else {
-		block[offset++] = (ubyte)sound;
-	}
+	ADD_SHORT(static_cast<short>(sound.value()));
 
 	// add a netplayer address to identify who should play the sound
 	player_id = -1;
@@ -1406,20 +1448,19 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 		player_id = Net_players[player_index].player_id;		
 	}
 
-	player_id = INTEL_SHORT( player_id );
-	memcpy(block+offset,&player_id,sizeof(player_id));
-	offset += sizeof(player_id);
+	ADD_SHORT(player_id);
 
-	Assert( offset < max_size );
-	return offset;
+	Assert( packet_size < static_cast<int>(max_size) );
+	return packet_size;
 }
 
-int restore_wss_data(ubyte *block)
+int restore_wss_data(ubyte *data)
 {
-	int	i, j, sanity, offset=0;
-	ubyte	b1, b2,sound;	
-	short ishort;
-	short player_id;	
+	int	i, j, offset = 0;
+	ubyte num_slots, num_weapons;
+	short b1, b2;
+	short player_id, sound;
+	ushort pool_size;
 
 	// this function assumes that the data is going to be used over the network
 	// so make a non-network version of this function if needed
@@ -1430,87 +1471,74 @@ int restore_wss_data(ubyte *block)
 		return 0;
 
 	// restore ship pool
-	sanity=0;
 	memset(Ss_pool, 0, MAX_SHIP_CLASSES*sizeof(int));
-	for (;;) {
-		if ( sanity++ > MAX_SHIP_CLASSES ) {
-			Int3();
-			break;
-		}
+	GET_USHORT(pool_size);
 
-		b1 = block[offset++];
-		if ( b1 == 0xff ) {
-			break;
-		}
-	
-		// take care of sign issues
-		b2 = block[offset++];
-		if(b2 == 0xff){
-			Ss_pool[b1] = -1;
-		} else {
+	for (i = 0; i < pool_size; i++) {
+		GET_SHORT(b1);
+		GET_SHORT(b2);
+
+		if (b1 < MAX_SHIP_CLASSES) {
 			Ss_pool[b1] = b2;
 		}
 	}
 
 	// restore weapons pool
-	sanity=0;
 	memset(Wl_pool, 0, MAX_WEAPON_TYPES*sizeof(int));
-	for (;;) {
-		if ( sanity++ > MAX_WEAPON_TYPES ) {
-			Int3();
-			break;
-		}
+	GET_USHORT(pool_size);
 
-		b1 = block[offset++];
-		if ( b1 == 0xff ) {
-			break;
+	for (i = 0; i < pool_size; i++) {
+		GET_SHORT(b1);
+		GET_SHORT(b2);
+
+		if (b1 < MAX_SHIP_CLASSES) {
+			Wl_pool[b1] = b2;
 		}
-	
-		memcpy(&ishort, block+offset, sizeof(short));
-		offset += sizeof(short);
-		Wl_pool[b1] = INTEL_SHORT( ishort );
 	}
 
-	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
-		if(block[offset] == 0xff){
-			Wss_slots[i].ship_class = -1;
-		} else {
-			Wss_slots[i].ship_class = block[offset];
+
+	// restore unit data
+	for (i = 0; i < MAX_WSS_SLOTS; i++) {
+		Wss_slots[i].ship_class = -1;
+
+		for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+			Wss_slots[i].wep[j] = -1;
+			Wss_slots[i].wep_count[j] = 0;
 		}
-		offset++;		
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			// take care of sign issues
-			if(block[offset] == 0xff){
-				Wss_slots[i].wep[j] = -1;
-				offset++;
-			} else {
-				Wss_slots[i].wep[j] = (int)(block[offset++]);
-			}
-		
-			memcpy( &ishort, &(block[offset]), sizeof(short) );
-			ishort = INTEL_SHORT( ishort );
-			Wss_slots[i].wep_count[j] = (int)ishort;
-			offset += sizeof(short);
+	}
+
+	GET_DATA(num_slots);
+	GET_DATA(num_weapons);
+
+	for (i = 0; i < num_slots; i++) {
+		GET_SHORT(b1);
+
+		if (i < MAX_WSS_SLOTS) {
+			Wss_slots[i].ship_class = b1;
 		}
 
-		// mwa -- old way below
-		//memcpy(&Wss_slots[i], block+offset, sizeof(wss_unit));
-		//offset += sizeof(wss_unit);
+		for (j = 0; j < num_weapons; j++) {
+			GET_SHORT(b1);
+			GET_SHORT(b2);
+
+			if ( (i < MAX_WSS_SLOTS) && (j < MAX_SHIP_WEAPONS) ) {
+				Wss_slots[i].wep[j] = b1;
+				Wss_slots[i].wep_count[j] = b2;
+			}
+		}
 	}
 
 	// read in the sound data
-	sound = block[offset++];					// the sound index
+	GET_SHORT(sound);
 
 	// read in the player address
-	memcpy(&player_id,block+offset,sizeof(player_id));
-	player_id = INTEL_SHORT( player_id );
-	offset += sizeof(short);
+	GET_SHORT(player_id);
 	
 	// determine if I'm the guy who should be playing the sound
 	if((Net_player != NULL) && (Net_player->player_id == player_id)){
 		// play the sound
-		if(sound != 0xff){
-			gamesnd_play_iface((int)sound);
+		if (sound >= 0) {
+			gamesnd_play_iface(static_cast<InterfaceSounds>(sound));
 		}
 	}
 
@@ -1524,7 +1552,7 @@ int restore_wss_data(ubyte *block)
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
-	angles rot_angles = {0.0f,0.0f,0.0f};
+	angles rot_angles = vmd_zero_angles;
 	float zoom = closeup_zoom * 2.5f;
 
 	if(sip == NULL)
@@ -1559,7 +1587,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
@@ -1567,7 +1595,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
 		{
-			if(!pm->submodel[i].is_thruster)
+			if(!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster])
 			{
 				bs = &pm->submodel[i];
 				break;
@@ -1600,7 +1628,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, 0.05f, 1000.0f);
 	}
 
 	model_render_params render_info;
@@ -1610,13 +1638,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 	if(!(flags & MR_NO_LIGHTING))
 	{
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.x = -0.5;
-		light_dir.xyz.y = 2.0f;
-		light_dir.xyz.z = -2.0f;	
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
+		//setup lights
+		common_setup_room_lights();
 	}
 
 	if (sip != NULL && sip->replacement_textures.size() > 0) 
@@ -1648,6 +1671,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
 	matrix model_orient;
+
+	const bool& shadow_disable_override = flags & MR_IS_MISSILE ? Shadow_disable_overrides.disable_mission_select_weapons : Shadow_disable_overrides.disable_mission_select_ships;
 
 	if (effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
 		// rotate the ship as much as required for this frame
@@ -1765,21 +1790,16 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 			g3_done_instance(true);
 
-			// lighting for techroom
-			light_reset();
-			vec3d light_dir = vmd_zero_vector;
-			light_dir.xyz.y = 1.0f;
-			light_dir.xyz.x = 0.0000001f;
-			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-			light_rotate_all();
-			// lighting for techroom
+			//setup lights
+			common_setup_room_lights();
 
 			// render the ships
 			model_clear_instance(model_id);
 			render_info->set_detail_level_lock(0);
 
 			gr_zbuffer_set(true);
-			if(Cmdline_shadow_quality)
+
+			if(shadow_maybe_start_frame(shadow_disable_override))
             {
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
@@ -1881,19 +1901,14 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		}
 
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.y = 1.0f;
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
-		// lighting for techroom
+		//setup lights
+		common_setup_room_lights();
 
 		model_clear_instance(model_id);
 
 		render_info->set_detail_level_lock(0);
 
-		if(Cmdline_shadow_quality)
+		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
@@ -1933,6 +1948,27 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		g3_end_frame();
 		gr_reset_clip();
 	}
+
+	shadow_end_frame();
+}
+
+/**
+ * @brief add and rotate lights for all the non-gameplay ship rendering instances
+ */
+void common_setup_room_lights()
+{
+	light_reset();
+	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
+	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);
+	light_add_directional(&tempv,-1,false,&tempc);
+	tempv.xyz={-0.4f,0.4f,1.1f};
+	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);
+	light_add_directional(&tempv,-1,false,&tempc);
+	tempv.xyz={0.4f,0.1f,0.4f};
+	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
+	light_add_directional(&tempv,-1,false,&tempc);
+	gr_set_ambient_light(53, 53, 53);
+	light_rotate_all();
 }
 
 // NEWSTUFF END

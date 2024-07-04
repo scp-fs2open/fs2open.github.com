@@ -19,12 +19,14 @@
 #include "model/model.h"
 #include "freespace.h"
 #include "mission/missionparse.h"
+#include "nebula/neb.h"
 #include "network/multi.h"
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 
 int	Show_shield_mesh = 0;
 
@@ -222,7 +224,7 @@ void create_low_detail_poly(int global_index, vec3d *tcp, vec3d *rightv, vec3d *
  * For small distances (relative to radius), coordinates can be computed using
  * distance. For larger values, should compute angle.
  */
-void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float radius, vec3d *rightv, vec3d *upv)
+void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float  /*radius*/, vec3d *rightv, vec3d *upv)
 {
 	int	i;
 	shield_vertex *sv;
@@ -390,7 +392,7 @@ void shield_render_triangle(int texture, float alpha, gshield_tri *trip, matrix 
 
 void shield_render_decal(polymodel *pm, matrix *orient, vec3d *pos, matrix* hit_orient, vec3d *hit_pos, float hit_radius, int bitmap_id, color *clr)
 {
-	if ( pm->shield.buffer_id < 0 || pm->shield.buffer_n_verts < 3 ) {
+	if (!pm->shield.buffer_id.isValid() || pm->shield.buffer_n_verts < 3) {
 		return;
 	}
 
@@ -489,19 +491,22 @@ void render_shield(int shield_num)
 		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;
-		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-			alpha *= 0.85f;
-		}
+		nebula_handle_alpha(alpha, centerp, Neb2_fog_visibility_shield);
+
+		ubyte r, g, b;
+		r = (ubyte)(Shield_hits[shield_num].rgb[0] * alpha);
+		g = (ubyte)(Shield_hits[shield_num].rgb[1] * alpha);
+		b = (ubyte)(Shield_hits[shield_num].rgb[2] * alpha);
 
 		if ( bitmap_id <= -1 ) {
 			return;
 		}
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
-			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, r, g, b);
 		} else if ( Detail.shield_effects < 4 ) {
 			for ( int i = 0; i < Shield_hits[shield_num].num_tris; i++ ) {
-				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, r, g, b);
 			}
 		} else {
 			float hit_radius = pm->core_radius;
@@ -510,7 +515,7 @@ void render_shield(int shield_num)
 			}
 
 			color clr;
-			gr_init_alphacolor(&clr, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2], fl2i(alpha * 255.0f));
+			gr_init_alphacolor(&clr, r, g, b, fl2i(alpha * 255.0f));
 			shield_render_decal(pm, orient, centerp, &Shield_hits[shield_num].hit_orient, &Shield_hits[shield_num].hit_pos, hit_radius, bitmap_id, &clr);
 		}
 	}
@@ -572,8 +577,6 @@ void visit_children(int trinum, int vertex_index, matrix *orient, shield_info *s
 			create_tris_containing(&sv->pos, orient, shieldp, tcp, centerp, radius, rvec, uvec);
 }
 
-int	Gi_max = 0;
-
 int get_free_global_shield_index()
 {
 	int	gi = 0;
@@ -599,7 +602,7 @@ int get_global_shield_tri()
 			break;
 
 	if (shnum == MAX_SHIELD_HITS) {
-		shnum = myrand() % MAX_SHIELD_HITS;
+		shnum = Random::next(MAX_SHIELD_HITS);
 	}
 
 	Assert((shnum >= 0) && (shnum < MAX_SHIELD_HITS));
@@ -657,7 +660,9 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 			Shield_hits[shnum].tri_list[count++] = gi;
 
 			if (count >= MAX_TRIS_PER_HIT) {
-				mprintf(("Warning: Too many triangles in shield hit.\n"));
+				if (Detail.shield_effects < 4) {
+					mprintf(("Warning: Too many triangles in shield hit.\n"));
+				}
 				break;
 			}
 		}
@@ -673,7 +678,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 	Shield_hits[shnum].rgb[1] = 255;
 	Shield_hits[shnum].rgb[2] = 255;
 
-	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < static_cast<int>(Ship_info.size()))){
+	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < ship_info_size())){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
@@ -689,7 +694,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
  *
  * At lower detail levels, shield hit effects are a single texture, applied to one enlarged triangle.
  */
-void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *centerp, vec3d *tcp, int tr0, shield_info *shieldp)
+void create_shield_low_detail(int objnum, int  /*model_num*/, matrix * /*orient*/, vec3d * /*centerp*/, vec3d *tcp, int tr0, shield_info *shieldp)
 {
 	matrix	tom;
 	int		gi;
@@ -712,7 +717,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 	Shield_hits[shnum].rgb[0] = 255;
 	Shield_hits[shnum].rgb[1] = 255;
 	Shield_hits[shnum].rgb[2] = 255;
-	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < static_cast<int>(Ship_info.size()))){
+	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < ship_info_size())){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
@@ -882,94 +887,6 @@ void create_shield_explosion_all(object *objp)
 		Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus!
 	}
 }
-
-int	Break_value = -1;
-
-/**
- * Draw the whole shield as a wireframe mesh, not looking at the current integrity.
- */
-#ifndef NDEBUG
-void ship_draw_shield( object *objp)
-{
-	int		model_num;
-	int		i;
-	vec3d	pnt;
-	polymodel * pm; 
-
-	if (objp->flags[Object::Object_Flags::No_shields])
-		return;
-
-	Assert(objp->instance >= 0);
-
-	model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-
-	if ( Fred_running ) return;
-
-	pm = model_get(model_num);
-
-	if (pm->shield.ntris<1) return;
-
-	//	Scan all the triangles in the mesh.
-	for (i=0; i<pm->shield.ntris; i++ )	{
-		int		j;
-		vec3d	gnorm, v2f, tri_point;
-		vertex prev_pnt, pnt0;
-		shield_tri *tri;
-
-		tri = &pm->shield.tris[i];
-
-		if (i == Break_value)
-			Int3();
-
-		//	Hack! Only works for object in identity orientation.
-		//	Need to rotate eye position into object's reference frame.
-		//	Only draw facing triangles.
-		vm_vec_rotate(&tri_point, &pm->shield.verts[tri->verts[0]].pos, &Eye_matrix);
-		vm_vec_add2(&tri_point, &objp->pos);
-
-		vm_vec_sub(&v2f, &tri_point, &Eye_position);
-		vm_vec_unrotate(&gnorm, &tri->norm, &objp->orient);
-
-		if (vm_vec_dot(&gnorm, &v2f) < 0.0f) {
-			int	intensity;
-
-			intensity = (int) (Ships[objp->instance].shield_integrity[i] * 255);
-
-			if (intensity < 0)
-				intensity = 0;
-			else if (intensity > 255)
-				intensity = 255;
-			
-			gr_set_color(0, 0, intensity);
-
-			//	Process the vertices.
-			//	Note this rotates each vertex each time it's needed, very dumb.
-			for (j=0; j<3; j++ )	{
-				vertex tmp;
-
-				// Rotate point into world coordinates
-				vm_vec_unrotate(&pnt, &pm->shield.verts[tri->verts[j]].pos, &objp->orient);
-				vm_vec_add2(&pnt, &objp->pos);
-
-				// Pnt is now the x,y,z world coordinates of this vert.
-				// For this example, I am just drawing a sphere at that
-				// point.
-				g3_rotate_vertex(&tmp, &pnt);
-
-				if (j) {
-					g3_draw_line(&prev_pnt, &tmp);
-				} else {
-					pnt0 = tmp;
-				}
-
-				prev_pnt = tmp;
-			}
-
-			g3_draw_line(&pnt0, &prev_pnt);
-		}
-	}
-}
-#endif
 
 /**
  * Returns true if the shield presents any opposition to something trying to force through it.

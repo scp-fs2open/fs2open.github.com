@@ -18,7 +18,7 @@
 #define POPUPDEAD_DO_MAIN_HALL	2
 
 void	popupdead_start();
-void	popupdead_close();
+void	popupdead_close(bool play_sound = false);
 int	popupdead_do_frame(float frametime);
 int	popupdead_is_active();
 

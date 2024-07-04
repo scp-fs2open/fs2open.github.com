@@ -17,6 +17,8 @@
  * the detected toolchain.
  */
 
+#if defined(__clang__)
+
 #define SCP_FORMAT_STRING
 #define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(printf, x, y)))
 
@@ -32,7 +34,7 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	define Assertion(expr, msg, ...)  do { } while (0)
+#	define Assertion(expr, msg, ...)  do { (void)sizeof(expr); } while (false)
 #else
 /*
  * NOTE: Assertion() can only use its proper functionality in compilers
@@ -43,7 +45,7 @@
 			if (!(expr)) {                                                \
 				os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
 			}                                                             \
-		} while (0)
+		} while (false)
 #endif
 
 /* C++11 Standard Detection */
@@ -61,9 +63,47 @@
 #define SIZE_T_ARG    "%zu"
 #define PTRDIFF_T_ARG "%zd"
 
-#define NOEXCEPT  noexcept
-
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
 
 #define USED_VARIABLE __attribute__((used))
+
+#if __has_cpp_attribute(fallthough)
+#define FALLTHROUGH [[fallthrough]]
+#elif __has_cpp_attribute(clang::fallthough)
+#define FALLTHROUGH [[clang::fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
+
+#ifndef CLANG_ANALYZER_NORETURN
+#if __has_feature(attribute_analyzer_noreturn)
+#define CLANG_ANALYZER_NORETURN __attribute__((analyzer_noreturn))
+#else
+#define CLANG_ANALYZER_NORETURN
+#endif
+#endif
+
+#ifndef NDEBUG
+#define UNREACHABLE(msg, ...)                                                                                          \
+	do {                                                                                                               \
+		os::dialogs::Error(__FILE__, __LINE__, msg, ##__VA_ARGS__);                                                    \
+	} while (false)
+#else
+#define UNREACHABLE(msg, ...) __builtin_unreachable()
+#endif
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Wattributes\"") \
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS \
+_Pragma("clang diagnostic pop")
+
+#endif

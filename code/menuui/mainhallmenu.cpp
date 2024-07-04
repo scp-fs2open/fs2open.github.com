@@ -7,18 +7,20 @@
  *
  */
 
-#include <stdlib.h>
-#include <limits.h>
+#include <cstdlib>
+#include <climits>
 
+#include "freespace.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cmdline/cmdline.h"
-#include "freespace.h"
+#include "debugconsole/console.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/version.h"
 #include "graphics/generic.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -33,10 +35,11 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/scripting.h"
 #include "sound/audiostr.h"
+#include "utils/Random.h"
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
@@ -46,6 +49,9 @@
 
 // A reference to io/keycontrol.cpp
 extern void game_process_cheats(int k);
+
+// forward declaration
+void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &res_idx);
 
 // ----------------------------------------------------------------------------
 // MAIN HALL DATA DEFINES
@@ -58,9 +64,11 @@ extern void game_process_cheats(int k);
 
 SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
-static main_hall_defines *Main_hall = NULL;
+static main_hall_defines *Main_hall = nullptr;
 
 static int Main_hall_music_index = -1;
+
+bool Main_hall_poll_key = true;
 
 int Vasudan_funny = 0;
 int Vasudan_funny_plate = -1;
@@ -105,7 +113,7 @@ int Main_hall_right_click;
 int Main_hall_last_clicked_region;
 
 // use this to determine how long the cursor has to linger on a region before it starts playing
-#define MAIN_HALL_REGION_LINGER		175		// in ms
+int Main_hallregion_linger_delay = 175; // in ms
 int Main_hall_region_linger_stamp = -1;
 
 // handle any right clicks which may have occured
@@ -123,7 +131,7 @@ int Main_hall_next_intercom_sound = 0;
 int Main_hall_next_intercom_sound_stamp = -1;
 
 // handle to any playing instance of a random intercom sound
-int Main_hall_intercom_sound_handle = -1;
+sound_handle Main_hall_intercom_sound_handle = sound_handle::invalid();
 
 // handle any details related to random intercom sounds
 void main_hall_handle_random_intercom_sounds();
@@ -190,7 +198,7 @@ main_hall_region_info Main_hall_region_map[] = {
 	{ SKILL_LEVEL_REGION, "Skilllevel" },
 	{ SCRIPT_REGION, "Script" },
 	{ START_REGION, "Start" },
-	{ -1, NULL }
+	{ -1, nullptr }
 };
 
 // all the menu regions in the main hall
@@ -225,16 +233,23 @@ void main_hall_mouse_grab_region(int region);
 #define ALLENDER_REGION		4
 
 // handles to the sound instances of the doors opening/closing
-SCP_vector<int> Main_hall_door_sound_handles;
+SCP_vector<std::pair<game_snd*, sound_handle>> Main_hall_door_sound_handles;
+
+// handles to the sound instances of the misc anims
+SCP_list<std::pair<game_snd*, sound_handle>> Main_hall_misc_sound_handles;
 
 // sound handle for looping ambient sound
-int Main_hall_ambient_loop = -1;
+sound_handle Main_hall_ambient_loop = sound_handle::invalid();
+
+// this generalizes the "don't cut off the glow sounds (requested by Dan)" comment
+SCP_vector<game_snd*> Main_hall_sounds_to_not_truncate;
+bool main_hall_can_truncate(const game_snd *snd)
+{
+	return std::find(Main_hall_sounds_to_not_truncate.begin(), Main_hall_sounds_to_not_truncate.end(), snd) == Main_hall_sounds_to_not_truncate.end();
+}
 
 // cull any door sounds that have finished playing
 void main_hall_cull_door_sounds();
-
-// handle starting, stopping and reversing "door" animations
-void main_hall_handle_region_anims();
 
 // to determine if we should continue playing sounds and random animations
 static int Main_hall_paused = 0;
@@ -246,7 +261,7 @@ static int Main_hall_paused = 0;
 #define MAIN_HALL_NOTIFY_TIME	3500
 
 // timestamp for the notification messages
-int Main_hall_notify_stamp = -1;
+UI_TIMESTAMP Main_hall_notify_stamp;
 
 // text to display as the current notification message
 char Main_hall_notify_text[300]="";
@@ -272,6 +287,9 @@ int Main_hall_overlay_id;
 // blit the freespace version #
 void main_hall_blit_version();
 
+// blit the mod title and version
+void main_hall_blit_mod();
+
 // blit any necessary tooltips
 void main_hall_maybe_blit_tooltips();
 
@@ -291,6 +309,8 @@ static int F1_text_done = 0;
 int Main_hall_help_stamp = -1;
 void main_hall_process_help_stuff();
 
+bool Main_hall_use_defaults = true;
+
 
 // ----------------------------------------------------------------------------
 // VOICE RECORDING STUFF
@@ -308,33 +328,36 @@ void main_hall_do_multi_ready()
 	int error;
 
 	error = psnet_get_network_status();
-	switch( error ) {
-	case NETWORK_ERROR_NO_TYPE:
-		popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have not defined your type of Internet connection.  Please run the Launcher, hit the setup button, and go to the Network tab and choose your connection type.", 360));
-		break;
-	case NETWORK_ERROR_NO_WINSOCK:
-		popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "Winsock is not installed.  You must have TCP/IP and Winsock installed to play multiplayer FreeSpace.", 361));
-		break;
-	case NETWORK_ERROR_NO_PROTOCOL:
-		if (Multi_options_g.protocol == NET_TCP) {
-			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", 1602));
-		}
-		break;
-	case NETWORK_ERROR_CONNECT_TO_ISP:
-		popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected Dial Up Networking as your type of connection to the Internet.  You are not currently connected.  You must connect to your ISP before continuing on past this point.", 363));
-		break;
-	case NETWORK_ERROR_LAN_AND_RAS:
-		popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have indicated that you use a LAN for networking.  You also appear to be dialed into your ISP.  Please disconnect from your service provider, or choose Dial Up Networking.", 364));
-		break;
 
-	case NETWORK_ERROR_NONE:
-	default:
-		break;
+	switch (error) {
+		case NETWORK_ERROR_NO_TYPE:
+			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have not defined your type of Internet connection.  Please run the Launcher, hit the setup button, and go to the Network tab and choose your connection type.", 360));
+			break;
+
+		case NETWORK_ERROR_NO_WINSOCK:
+			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "Winsock is not installed.  You must have TCP/IP and Winsock installed to play multiplayer FreeSpace.", 361));
+			break;
+
+		case NETWORK_ERROR_NO_PROTOCOL:
+			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", 1602));
+			break;
+
+		case NETWORK_ERROR_CONNECT_TO_ISP:
+			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected Dial Up Networking as your type of connection to the Internet.  You are not currently connected.  You must connect to your ISP before continuing on past this point.", 363));
+			break;
+
+		case NETWORK_ERROR_LAN_AND_RAS:
+			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have indicated that you use a LAN for networking.  You also appear to be dialed into your ISP.  Please disconnect from your service provider, or choose Dial Up Networking.", 364));
+			break;
+
+		case NETWORK_ERROR_NONE:
+		default:
+			break;
 	}
 
 	// if our selected protocol is not active
-	if ((Multi_options_g.protocol == NET_TCP) && !Tcp_active) {
-		if (Tcp_failure_code == WSAEADDRINUSE) {
+	if ( !psnet_is_active() ) {
+		if (Psnet_failure_code == WSAEADDRINUSE) {
 			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", 1604));
 		} else {
 			popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362));
@@ -353,17 +376,16 @@ void main_hall_do_multi_ready()
 		return;
 	}
 
+	// Switch to multi here once we're sure that a multi state will be set
+	Game_mode = GM_MULTIPLAYER;
+
 	// go to parallax online
-	if (Om_tracker_flag) {
-		Multi_options_g.protocol = NET_TCP;
+	if (Multi_options_g.pxo) {
 		gameseq_post_event(GS_EVENT_PXO);
 	} else {
 		// go to the regular join game screen 
 		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 	}
-
-	// select protocol
-	psnet_use_protocol(Multi_options_g.protocol);
 }
 
 
@@ -389,9 +411,52 @@ void main_hall_campaign_cheat()
 	char *ret = popup_input(0, XSTR("Enter mission name.\n\n* This will destroy all legitimate progress in this campaign. *", 1605));
 
 	// yay
-	if (ret != NULL) {
+	if (ret != nullptr) {
 		mission_campaign_jump_to_mission(ret);
 	}
+}
+
+DCF(mainhall, "Temporarily sets the player to be on any main hall.  Can be used in the main hall screen.")
+{
+	if (dc_optional_string_either("help", "--help"))
+	{
+		dc_printf("Usage: mainhall [index or name]\n");
+		dc_printf("       mainhall status | ?\n");
+		dc_printf("       mainhall --status | --?\n");
+		dc_printf("[index or name] -- optional main hall identifier; if not supplied, defaults to the first main hall\n");
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))
+	{
+		if (Main_hall_inited && Main_hall)
+		{
+			auto quote = can_construe_as_integer(Main_hall->name.c_str()) ? "" : "'";
+			dc_printf("Player is on main hall %s%s%s\n", quote, Main_hall->name.c_str(), quote);
+		}
+		else
+			dc_printf("Main hall not currently initialized!\n");
+		return;
+	}
+
+	SCP_string name;
+	dc_maybe_stuff_string(name);
+
+	if (!Main_hall_inited)
+	{
+		auto quote = can_construe_as_integer(name.c_str()) ? "" : "'";
+		dc_printf("Main hall not currently initialized.  Setting player select override main hall to %s%s%s.\n", quote, name.empty() ? "0" : name.c_str(), quote);
+
+		extern SCP_string Player_select_force_main_hall;
+		Player_select_force_main_hall = name;
+		return;
+	}
+
+	main_hall_close();
+	main_hall_init(name);
+
+	auto quote = can_construe_as_integer(Main_hall->name.c_str()) ? "" : "'";
+	dc_printf("Player is now on main hall %s%s%s\n", quote, Main_hall->name.c_str(), quote);
 }
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -410,6 +475,15 @@ void main_hall_init(const SCP_string &main_hall_name)
 		return;
 	}
 
+	extern bool Campaign_room_no_campaigns;
+
+	// Log if we don't have a campaign set yet.
+	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
+		mprintf(("No valid campaign is currently selected for the active player!\n"));
+	}
+
+	// gameseq_post_event(GS_EVENT_SCRIPTING);
+
 	int idx;
 	SCP_string main_hall_to_load;
 
@@ -424,11 +498,16 @@ void main_hall_init(const SCP_string &main_hall_name)
 	} else if (main_hall_name == "") {
 		// we were passed a blank main hall name, so load the first available main hall
 		main_hall_get_name(main_hall_to_load, 0);
-	} else if (main_hall_get_pointer(main_hall_name) == NULL) {
+	} else if (main_hall_get_pointer(main_hall_name) == nullptr) {
 		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available main hall.", main_hall_name.c_str());
 		main_hall_get_name(main_hall_to_load, 0);
 	} else {
 		main_hall_to_load = main_hall_name;
+	}
+
+	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)
+	if (Main_hall && Main_hall->name != main_hall_to_load) {
+		main_hall_stop_ambient();
 	}
 
 	// if we're switching to a different mainhall we may need to change music
@@ -441,7 +520,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	
 	// assign the proper main hall data
 	Main_hall = main_hall_get_pointer(main_hall_to_load);
-	Assertion(Main_hall != NULL, "Failed to obtain pointer to main hall '%s'; get a coder!\n", main_hall_to_load.c_str());
+	Assertion(Main_hall != nullptr, "Failed to obtain pointer to main hall '%s'; get a coder!\n", main_hall_to_load.c_str());
 
 	// check if we have to change the ready room's description
 	if(Main_hall->default_readyroom) {
@@ -455,7 +534,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// Read the menu regions from mainhall.tbl
 	SCP_vector<main_hall_region>::iterator it;
 	for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
-		snazzy_menu_add_region(&Main_hall_region[it - Main_hall->regions.begin()], it->description.c_str(), it->mask, it->key, -1);
+		snazzy_menu_add_region(&Main_hall_region[it - Main_hall->regions.begin()], it->description.c_str(), it->mask, it->key, interface_snd_id());
 	}
 
 	// init tooltip shader						// nearly black
@@ -464,8 +543,8 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// are we funny?
 	if (Vasudan_funny && main_hall_is_vasudan()) {
 		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
 			
 			// set head anim. hehe
 			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
@@ -473,8 +552,8 @@ void main_hall_init(const SCP_string &main_hall_name)
 			// set the background
 			Main_hall->bitmap = "vhallhead";
 		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
 			
 			// set head anim. hehe
 			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
@@ -510,7 +589,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 		}
 	} else {
 		// get a pointer to bitmap by using bm_lock(), so we can feed it to he snazzy menu system
-		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP);
+		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 		Main_hall_mask_data = (ubyte*)Main_hall_mask_bitmap->data;
 		bm_get_info(Main_hall_mask, &Main_hall_mask_w, &Main_hall_mask_h);
 	}
@@ -545,8 +624,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 				Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 		}
 
-		// null out the delay timestamps
-		Main_hall->misc_anim_delay.at(idx).at(0) = -1;
+		//If we have a defined initial delay for this misc anim, use it
+		if (Main_hall->misc_anim_initial_delay.at(idx) != -1)
+			Main_hall->misc_anim_delay.at(idx).at(0) = timestamp(Main_hall->misc_anim_initial_delay.at(idx));
+		else
+			Main_hall->misc_anim_delay.at(idx).at(0) = -1;
 
 		// start paused
 		Main_hall->misc_anim_paused.at(idx) = true;
@@ -592,7 +674,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// initialize door sound handles
 	Main_hall_door_sound_handles.clear();
 	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
-		Main_hall_door_sound_handles.push_back(-1);
+		Main_hall_door_sound_handles.emplace_back(nullptr, sound_handle::invalid());
 	}
 
 	// skip the first frame
@@ -602,12 +684,12 @@ void main_hall_init(const SCP_string &main_hall_name)
 	main_hall_start_music();
 
 	// initialize the main hall notify text
-	Main_hall_notify_stamp = 1;
+	Main_hall_notify_stamp = UI_TIMESTAMP::immediate();
 
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
 	Main_hall_next_intercom_sound_stamp = -1;
-	Main_hall_intercom_sound_handle = -1;
+	Main_hall_intercom_sound_handle     = sound_handle::invalid();
 
 	// set the placement of the mouse cursor (start at the ready room)
 	Main_hall_mouse_region = -1;
@@ -674,7 +756,7 @@ void main_hall_do(float frametime)
 
 	// process any keypresses/mouse events
 	snazzy_action = -1;
-	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, (int)Main_hall->regions.size(), Main_hall_region, &snazzy_action, 1, &key);
+	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, static_cast<int>(Main_hall->regions.size()), Main_hall_region, &snazzy_action, static_cast<int>(Main_hall_poll_key), &key);
 
 	if (key) {
 		game_process_cheats(key);
@@ -715,6 +797,7 @@ void main_hall_do(float frametime)
 								Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 						}
 
+						// TODO: generic_anim_skip_to(cur_frame, anim_time);
 						Main_hall_misc_anim.at(idx).current_frame = cur_frame;
 						Main_hall_misc_anim.at(idx).anim_time = anim_time;
 
@@ -743,6 +826,7 @@ void main_hall_do(float frametime)
 								Main_hall_door_anim.at(idx).direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
 							}
 
+							// TODO: generic_anim_skip_to(cur_frame, anim_time);
 							Main_hall_door_anim.at(idx).current_frame = cur_frame;
 							Main_hall_door_anim.at(idx).anim_time = anim_time;
 
@@ -771,23 +855,12 @@ void main_hall_do(float frametime)
 			snazzy_action = SNAZZY_CLICKED;
 			break;
 		case KEY_F3:
-			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+			gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 			gameseq_post_event(GS_EVENT_LAB);
 			break;
-	#ifndef NDEBUG
-		case KEY_1:
-			// no soup for you!
-			movie::play("endprt2b.mve");
-			break;
-		case KEY_2:
-			// no soup for you!
-			movie::play_two("endprt2a.mve", "endprt2b.mve");
-			break;
-		case KEY_3:
-			main_hall_campaign_cheat();
-			break;
-	#endif
 	}
+
+	extern bool Campaign_room_no_campaigns;
 
 	// do any processing based upon what happened to the snazzy menu
 	switch (snazzy_action) {
@@ -831,7 +904,7 @@ void main_hall_do(float frametime)
 			switch (region_action) {
 				// clicked on the exit region
 				case EXIT_REGION:
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					main_hall_exit_game();
 					break;
 
@@ -840,26 +913,54 @@ void main_hall_do(float frametime)
 					// Make sure we aren't in multi mode.
 					Player->flags &= ~PLAYER_FLAGS_IS_MULTI;
 					Game_mode = GM_NORMAL;
-					
-					gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+
+					// see if we have a missing campaign and force the player to select a new campaign if so
+					if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
+						int rc = popup(0,
+							3,
+							XSTR("Go to Campaign Room", 1607),
+							XSTR("Select another pilot", 1608),
+							XSTR("Cancel", 641),
+							XSTR("The currently active campaign cannot be found.  Please select another...", 1600));
+
+						switch (rc) {
+						case 0:
+							gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+							break;
+
+						case 1:
+							gameseq_post_event(GS_EVENT_BARRACKS_MENU);
+							break;
+
+						case 2:
+							// do nothing
+							break;
+
+						default:
+							// do nothing
+							break;
+						}
+					} else {
+						gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
+						gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+					}
 					break;
 
 				// clicked on the tech room region
 				case TECH_ROOM_REGION:
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					gameseq_post_event(GS_EVENT_TECH_MENU);
 					break;
 
 				// clicked on the options region
 				case OPTIONS_REGION:
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 					break;
 
 				// clicked on the campaign toom region
 				case CAMPAIGN_ROOM_REGION:
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 					break;
 
@@ -867,12 +968,9 @@ void main_hall_do(float frametime)
 				case MULTIPLAYER_REGION:
 					// Make sure we are in multi mode.
 					Player->flags |= PLAYER_FLAGS_IS_MULTI;
-					Game_mode = GM_MULTIPLAYER;
 					
+					// This function will post the correct state (or no state on error)
 					main_hall_do_multi_ready();
-					
-					// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
-					gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 					break;
 
 				// load mission key was pressed
@@ -897,7 +995,7 @@ void main_hall_do(float frametime)
 
 				// clicked on the barracks region
 				case BARRACKS_REGION:
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					gameseq_post_event(GS_EVENT_BARRACKS_MENU);
 					break;
 
@@ -913,8 +1011,20 @@ void main_hall_do(float frametime)
 				case ESC_PRESSED:
 					// if there is a help overlay active, then don't quit the game - just kill the overlay
 					if (!help_overlay_active(Main_hall_overlay_id)) {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						main_hall_exit_game();
+
+						// if there is no custom script action then exit
+						if (Main_hall->esc_action.empty()) {
+							gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+							main_hall_exit_game();
+						} else {
+							const char* lua = Main_hall->esc_action.c_str();
+							bool success = Script_system.EvalString(lua, lua);
+							if (!success)
+								Warning(LOCATION,
+									"mainhall '+Escape Key Action' script failed to evaluate \"%s\"; check your syntax",
+									lua);
+						}
+
 					} else { // kill the overlay
 						help_overlay_set_state(Main_hall_overlay_id,gr_screen.res,0);
 					}
@@ -923,9 +1033,10 @@ void main_hall_do(float frametime)
 				// custom action
 				case SCRIPT_REGION:
 					const char *lua = it->lua_action.c_str();
-					bool success = Script_system.EvalString(lua, NULL, NULL, lua);
-					if(!success)
-						Warning(LOCATION, "mainhall '+Door Action / $Script' failed to evaluate \"%s\"; check your syntax", lua);
+					bool success    = Script_system.EvalString(lua, lua);
+					if (!success)
+						Warning(LOCATION,
+						        "mainhall '+Door Action / $Script' failed to evaluate \"%s\"; check your syntax", lua);
 					break;
 			} // END switch (code)
 
@@ -981,6 +1092,9 @@ void main_hall_do(float frametime)
 	// blit the freespace version #
 	main_hall_blit_version();
 
+	// blit the mod title and version
+	main_hall_blit_mod();
+
 	// blit ship and weapon table status
 #ifndef NDEBUG
 	main_hall_blit_table_status();
@@ -989,32 +1103,13 @@ void main_hall_do(float frametime)
 	gr_flip();
 	gr_reset_screen_scale();
 
-	// see if we have a missing campaign and force the player to select a new campaign if so
-	extern bool Campaign_room_no_campaigns;
-	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
-		int rc = popup(0, 3, XSTR("Go to Campaign Room", 1607), XSTR("Select another pilot", 1608), XSTR("Exit Game", 1609), XSTR("The currently active campaign cannot be found.  Please select another...", 1600));
-
-		switch (rc) {
-			case 0:
-				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-				break;
-
-			case 1:
-				gameseq_post_event(GS_EVENT_INITIAL_PLAYER_SELECT);
-				break;
-
-			case 2:
-				main_hall_exit_game();
-				break;
-
-			default:
-				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-				break;
-		}
-	}
+	// Display a popup if playermenu loaded a player file with a different version than expected
+	bool popup_shown = player_tips_controls();
 
 	// maybe run the player tips popup
-	player_tips_popup();
+	if (!popup_shown) {
+		player_tips_popup();
+	}
 
 	// if we were supposed to skip a frame, then stop doing it after 1 frame
 	if (Main_hall_frame_skip) {
@@ -1027,8 +1122,6 @@ void main_hall_do(float frametime)
  */
 void main_hall_close()
 {
-	int idx, s_idx;
-
 	if (!Main_hall_inited) {
 		return;
 	}
@@ -1046,35 +1139,25 @@ void main_hall_close()
 	}
 
 	// free up any (possibly) playing misc animation handles
-	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
-		if (Main_hall_misc_anim.at(idx).num_frames > 0) {
-			generic_anim_unload(&Main_hall_misc_anim.at(idx));
+	for (auto &misc_anim : Main_hall_misc_anim) {
+		if (misc_anim.num_frames > 0) {
+			generic_anim_unload(&misc_anim);
 		}
 	}
 
 	// free up any (possibly) playing door animation handles
-	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
-		if (Main_hall_door_anim.at(idx).num_frames > 0) {
-			generic_anim_unload(&Main_hall_door_anim.at(idx));
+	for (auto &door_anim : Main_hall_door_anim) {
+		if (door_anim.num_frames > 0) {
+			generic_anim_unload(&door_anim);
 		}
 	}
 
 	// stop any playing door sounds
-	for (idx = 0; idx < Main_hall->num_door_animations-2; idx++) {
-		if ( (Main_hall_door_sound_handles.at(idx) != -1) && snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
-			snd_stop(Main_hall_door_sound_handles.at(idx));
-			Main_hall_door_sound_handles.at(idx) = -1;
-		}
-	}
-
-	// stop any playing misc animation sounds
-	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
-		// if this goes wrong, the int cast could overflow
-		Assert(Main_hall->misc_anim_special_sounds.at(idx).size() < INT_MAX);
-
-		for (s_idx = 0; s_idx < (int)Main_hall->misc_anim_special_sounds.at(idx).size(); s_idx++) {
-			if (snd_is_playing(Main_hall->misc_anim_special_sounds.at(idx).at(s_idx))) {
-				snd_stop(Main_hall->misc_anim_special_sounds.at(idx).at(s_idx));
+	for (auto &sound_pair : Main_hall_door_sound_handles) {
+		if ((sound_pair.second.isValid()) && snd_is_playing(sound_pair.second)) {
+			if (main_hall_can_truncate(sound_pair.first)) {        // don't cut off the glow sounds (requested by Dan)
+				snd_stop(sound_pair.second);
+				sound_pair.second = sound_handle::invalid();
 			}
 		}
 	}
@@ -1152,7 +1235,7 @@ void main_hall_start_music()
 	}
 
 	filename = Spooled_music[Main_hall_music_index].filename;
-	Assert(filename != NULL);
+	Assert(filename != nullptr);
 
 	// get handle
 	Main_hall_music_handle = audiostream_open(filename, ASF_MENUMUSIC);
@@ -1227,7 +1310,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 							// if the entire group is paused and off, pick a random one to regenerate
 							if (all_neg1) {
 								Assert(group_indexes.size() < INT_MAX);
-								regen_idx = group_indexes[rand() % (int)group_indexes.size()];
+								regen_idx = group_indexes[Random::next((int)group_indexes.size())];
 							}
 						}
 					} else { // not part of a group, so just handle this index
@@ -1244,8 +1327,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 				// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay.at(idx).at(0))) {
 					Main_hall->misc_anim_paused.at(idx) = false;
-					Main_hall_misc_anim.at(idx).current_frame = 0;
-					Main_hall_misc_anim.at(idx).anim_time = 0.0;
+					generic_anim_reset(&Main_hall_misc_anim.at(idx));
 
 					// kill the timestamp
 					Main_hall->misc_anim_delay.at(idx).at(0) = -1;
@@ -1264,20 +1346,15 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 							&& !Main_hall->misc_anim_sound_flag.at(idx).at(s_idx) ) {
 						Main_hall->misc_anim_sound_flag.at(idx).at(s_idx) = 1;
 
-						// if the sound is already playing, then kill it.
-						// This is a pretty safe thing to do since we can assume that by the time we get to this point again,
-						// the sound will have been long finished
-						if (snd_is_playing(Main_hall->misc_anim_special_sounds.at(idx).at(s_idx))) {
-							snd_stop(Main_hall->misc_anim_special_sounds.at(idx).at(s_idx));
-						}
-
-						int sound = Main_hall->misc_anim_special_sounds.at(idx).at(s_idx);
+						auto sound = Main_hall->misc_anim_special_sounds.at(idx).at(s_idx);
 
 						// Check if the sound is valid
-						if (sound >= 0)
+						if (sound.isValid())
 						{
 							// play the sound
-							snd_play(&Snds_iface[sound],Main_hall->misc_anim_sound_pan.at(idx));
+							auto snd = gamesnd_get_interface_sound(sound);
+							auto handle = snd_play(snd, Main_hall->misc_anim_sound_pan.at(idx));
+							Main_hall_misc_sound_handles.emplace_back(snd, handle);
 						}
 						break;
 					}
@@ -1367,7 +1444,7 @@ void main_hall_handle_mouse_location(int cur_region)
 			// set the linger time
 			if (Main_hall_region_linger_stamp == -1) {
 				Main_hall_mouse_region = cur_region;
-				Main_hall_region_linger_stamp = timestamp(MAIN_HALL_REGION_LINGER);
+				Main_hall_region_linger_stamp = timestamp(Main_hallregion_linger_delay);
 			}
 		}
 	} else { // if it was over a region but isn't anymore, release that region
@@ -1400,23 +1477,29 @@ void main_hall_mouse_release_region(int region)
 
 	// check for door sounds, ignoring the OPTIONS_REGION (which isn't a door)
 	if (Main_hall_door_anim.at(region).num_frames > 0) {
+		auto sound_pair = &Main_hall_door_sound_handles.at(region);
+
 		// don't stop the toaster oven or microwave regions from playing all the way through
-		if (Main_hall_door_sound_handles.at(region) != -1) {
-			snd_stop(Main_hall_door_sound_handles.at(region));
+		if (sound_pair->second.isValid()) {
+			snd_stop(sound_pair->second);
 		}
 
-		int sound = Main_hall->door_sounds.at(region).at(1);
+		auto sound = Main_hall->door_sounds.at(region).at(1);
 
-		if (sound >= 0)
+		if (sound.isValid())
 		{
-			Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[sound], Main_hall->door_sound_pan.at(region));
+			sound_pair->first = gamesnd_get_interface_sound(sound);
+			sound_pair->second = snd_play(sound_pair->first, Main_hall->door_sound_pan.at(region));
 		}
 
-		// TODO: track current frame
-		snd_set_pos(Main_hall_door_sound_handles.at(region), &Snds_iface[SND_MAIN_HALL_DOOR_CLOSE], 
-			(float)((Main_hall_door_anim.at(region).keyframe) ? Main_hall_door_anim.at(region).keyframe : 
-				Main_hall_door_anim.at(region).num_frames - Main_hall_door_anim.at(region).current_frame) / 
-					(float)Main_hall_door_anim.at(region).num_frames, 1);
+		// start the sound playing at the right spot relative to the completion of the animation
+		if ( Main_hall_door_anim.at(region).current_frame != -1 ) {
+			snd_set_pos(sound_pair->second,
+						(float) ((Main_hall_door_anim.at(region).keyframe) ? Main_hall_door_anim.at(region).keyframe :
+								 Main_hall_door_anim.at(region).num_frames - Main_hall_door_anim.at(region).current_frame)
+							/ (float) Main_hall_door_anim.at(region).num_frames,
+						1);
+		}
 	}
 }
 
@@ -1443,22 +1526,26 @@ void main_hall_mouse_grab_region(int region)
 
 	// check for opening/starting sounds
 	// kill the currently playing sounds if necessary
-	if (Main_hall_door_sound_handles.at(region) != -1) {
-		snd_stop(Main_hall_door_sound_handles.at(region));
+	auto sound_pair = &Main_hall_door_sound_handles.at(region);
+	if (sound_pair->second.isValid()) {
+		snd_stop(sound_pair->second);
 	}
 
 
-	int sound = Main_hall->door_sounds.at(region).at(0);
+	auto sound = Main_hall->door_sounds.at(region).at(0);
 
-	if (sound >= 0)
+	if (sound.isValid())
 	{
-		Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[sound],Main_hall->door_sound_pan.at(region));
+		sound_pair->first = gamesnd_get_interface_sound(sound);
+		sound_pair->second = snd_play(sound_pair->first, Main_hall->door_sound_pan.at(region));
 	}
 
 	// start the sound playing at the right spot relative to the completion of the animation
 	if ( (Main_hall_door_anim.at(region).num_frames > 0) && (Main_hall_door_anim.at(region).current_frame != -1) ) {
-		snd_set_pos(Main_hall_door_sound_handles.at(region),&Snds_iface[SND_MAIN_HALL_DOOR_OPEN], 
-			(float)Main_hall_door_anim.at(region).current_frame / (float)Main_hall_door_anim.at(region).num_frames,1);
+		snd_set_pos(sound_pair->second,
+					(float) Main_hall_door_anim.at(region).current_frame
+						/ (float) Main_hall_door_anim.at(region).num_frames,
+					1);
 	}
 }
 
@@ -1486,7 +1573,7 @@ void main_hall_handle_right_clicks()
 			// set the position of the mouse cursor and the newly clicked region
 			int mx = Main_hall->door_anim_coords.at(new_region).at(2);
 			int my = Main_hall->door_anim_coords.at(new_region).at(3);
-			gr_resize_screen_pos( &mx, &my, NULL, NULL, GR_RESIZE_MENU );
+			gr_resize_screen_pos( &mx, &my, nullptr, nullptr, GR_RESIZE_MENU );
 
 			if (mx < 0) {
 				mx = 0;
@@ -1520,14 +1607,17 @@ void main_hall_handle_right_clicks()
  */
 void main_hall_cull_door_sounds()
 {
-	int idx;
-	// basically just set the handle of any finished sound to be -1, so that we know its free any where else in the code we may need it
-	Assert(Main_hall_door_sound_handles.size() < INT_MAX);
-	for (idx = 0; idx < (int)Main_hall_door_sound_handles.size(); idx++) {
-		if ( (Main_hall_door_sound_handles.at(idx) != -1) && !snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
-			Main_hall_door_sound_handles.at(idx) = -1;
+	// basically just set the handle of any finished sound to be -1, so that we know its free anywhere else in the code we may need it
+	for (auto &sound_pair : Main_hall_door_sound_handles) {
+		if (sound_pair.second.isValid() && !snd_is_playing(sound_pair.second)) {
+			sound_pair.second = sound_handle::invalid();
 		}
 	}
+
+	// for misc sounds, we just remove the handle from the list if it's done
+	Main_hall_misc_sound_handles.remove_if([](const std::pair<game_snd*, sound_handle> &sound_pair)->bool {
+		return !snd_is_playing(sound_pair.second);
+	});
 }
 
 /**
@@ -1541,28 +1631,27 @@ void main_hall_handle_random_intercom_sounds()
 		return;
 	}
 
-	// if we have no timestamp for the next random sound, then set on
-	if ( (Main_hall_next_intercom_sound_stamp == -1) && (Main_hall_intercom_sound_handle == -1) ) {
-		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
-			(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
-				- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
+	// if we have no timestamp for the next random sound, then set one
+	if ((Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid())) {
+		int delta_ms = Random::next(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+		Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 	}
 
 	// if the there is no sound playing
-	if (Main_hall_intercom_sound_handle == -1) {
+	if (!Main_hall_intercom_sound_handle.isValid()) {
 		if (Main_hall_paused) {
 			return;
 		}
 
 		// if the timestamp has popped, play a sound
 		if ( (Main_hall_next_intercom_sound_stamp != -1) && (timestamp_elapsed(Main_hall_next_intercom_sound_stamp)) ) {
-			int sound = Main_hall->intercom_sounds.at(Main_hall_next_intercom_sound);
+			auto sound = Main_hall->intercom_sounds.at(Main_hall_next_intercom_sound);
 
 			// Check if the sound is valid
-			if (sound >= 0)
+			if (sound.isValid())
 			{
 				// play the sound
-				Main_hall_intercom_sound_handle = snd_play(&Snds_iface.at(sound));
+				Main_hall_intercom_sound_handle = snd_play(gamesnd_get_interface_sound(sound));
 
 				// unset the timestamp
 				Main_hall_next_intercom_sound_stamp = -1;
@@ -1582,12 +1671,11 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
-				(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
-					- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
+			int delta_ms = Random::next(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+			Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 
 			// release the sound handle
-			Main_hall_intercom_sound_handle = -1;
+			Main_hall_intercom_sound_handle = sound_handle::invalid();
 		}
 	}
 }
@@ -1599,7 +1687,7 @@ void main_hall_handle_random_intercom_sounds()
 void main_hall_set_notify_string(const char *str)
 {
 	strcpy_s(Main_hall_notify_text,str);
-	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
+	Main_hall_notify_stamp = ui_timestamp(MAIN_HALL_NOTIFY_TIME);
 }
 
 /**
@@ -1608,11 +1696,11 @@ void main_hall_set_notify_string(const char *str)
 void main_hall_notify_do()
 {
 	// check to see if we should try and do something
-	if (Main_hall_notify_stamp != -1) {
+	if (Main_hall_notify_stamp.isValid()) {
 		// if the text time has expired
-		if (timestamp_elapsed(Main_hall_notify_stamp)) {
-			strcpy_s(Main_hall_notify_text,"");
-			Main_hall_notify_stamp = -1;
+		if (ui_timestamp_elapsed(Main_hall_notify_stamp)) {
+			strcpy_s(Main_hall_notify_text, "");
+			Main_hall_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h;
 
@@ -1640,7 +1728,7 @@ void main_hall_start_ambient()
 		return;
 	}
 
-	if (Main_hall_ambient_loop == -1) {
+	if (!Main_hall_ambient_loop.isValid()) {
 		play_ambient_loop = 1;
 	} else {
 		if (!snd_is_playing(Main_hall_ambient_loop)) {
@@ -1649,8 +1737,10 @@ void main_hall_start_ambient()
 	}
 
 	if (play_ambient_loop) {
-		Main_hall_ambient_loop = snd_play_looping(&Snds_iface[SND_MAIN_HALL_AMBIENT]);
+		Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT));
 	}
+
+	// no need to restart the intercom, since the game will set the timestamp for a new one
 }
 
 /**
@@ -1658,9 +1748,35 @@ void main_hall_start_ambient()
  */
 void main_hall_stop_ambient()
 {
-	if (Main_hall_ambient_loop != -1) {
+	if (Main_hall_ambient_loop.isValid()) {
 		snd_stop(Main_hall_ambient_loop);
-		Main_hall_ambient_loop = -1;
+		Main_hall_ambient_loop = sound_handle::invalid();
+	}
+
+	// also stop any PA announcements
+	if (Main_hall_intercom_sound_handle.isValid()) {
+		snd_stop(Main_hall_intercom_sound_handle);
+		Main_hall_intercom_sound_handle = sound_handle::invalid();
+	}
+
+	// stop any playing door sounds
+	for (auto &sound_pair : Main_hall_door_sound_handles) {
+		if ((sound_pair.second.isValid()) && snd_is_playing(sound_pair.second)) {
+			if (main_hall_can_truncate(sound_pair.first)) {        // don't cut off the glow sounds (requested by Dan)
+				snd_stop(sound_pair.second);
+				sound_pair.second = sound_handle::invalid();
+			}
+		}
+	}
+
+	// also stop any misc sounds
+	for (auto &sound_pair : Main_hall_misc_sound_handles) {
+		if (sound_pair.second.isValid() && snd_is_playing(sound_pair.second)) {
+			if (main_hall_can_truncate(sound_pair.first)) {
+				snd_stop(sound_pair.second);
+				sound_pair.second = sound_handle::invalid();
+			}
+		}
 	}
 }
 
@@ -1671,8 +1787,8 @@ void main_hall_stop_ambient()
  */
 void main_hall_reset_ambient_vol()
 {
-	if (Main_hall_ambient_loop >= 0) {
-		snd_set_volume(Main_hall_ambient_loop, Snds_iface[SND_MAIN_HALL_AMBIENT].default_volume);
+	if (Main_hall_ambient_loop.isValid()) {
+		snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT)->volume_range.next());
 	}
 }
 
@@ -1682,22 +1798,48 @@ void main_hall_reset_ambient_vol()
 void main_hall_blit_version()
 {
 	int w, h;
-	char version_string[100];
 
 	// format the version string
-	get_version_string(version_string, sizeof(version_string));
+	auto version_string = gameversion::get_version_string();
 
 	int old_font = font::get_current_fontnum();
 	font::set_font(Main_hall->font);
 
 	// get the length of the string
-	gr_get_string_size(&w,&h,version_string);
+	gr_get_string_size(&w, &h, version_string.c_str());
 
 	// print the string near the lower left corner
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string, GR_RESIZE_MENU_ZOOMED);
+	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 	font::set_font(old_font);
+}
+
+/**
+ * Blit the mod title and version
+ */
+void main_hall_blit_mod()
+{
+	if ((!Mod_title.empty()) && (!Mod_version.empty())) {
+
+		int w, h;
+
+		// format the version string
+		auto mod_string = Mod_title + " " + Mod_version;
+
+		int old_font = font::get_current_fontnum();
+		font::set_font(Main_hall->font);
+
+		// get the length of the string
+		gr_get_string_size(&w, &h, mod_string.c_str());
+
+		// print the string near the lower left corner
+		gr_set_color_fast(&Color_bright_white);
+		gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 3 + 6), mod_string.c_str(), GR_RESIZE_MENU_ZOOMED);
+
+		font::set_font(old_font);
+
+	}
 }
 
 /**
@@ -1798,11 +1940,11 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find)
 	unsigned int i;
 
 	for (i = 0; i < Main_hall_defines.size(); i++) {
-		if (Main_hall_defines.at(i).at(0).name == name_to_find) {
+		if (!stricmp(Main_hall_defines.at(i).at(0).name.c_str(), name_to_find.c_str())) {
 			return &Main_hall_defines.at(i).at(main_hall_get_resolution_index(i));
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -1818,7 +1960,7 @@ int main_hall_get_index(const SCP_string &name_to_find)
 	unsigned int i;
 
 	for (i = 0; i < Main_hall_defines.size(); i++) {
-		if (Main_hall_defines.at(i).at(0).name == name_to_find) {
+		if (!stricmp(Main_hall_defines.at(i).at(0).name.c_str(), name_to_find.c_str())) {
 			return i;
 		}
 	}
@@ -1850,7 +1992,7 @@ void main_hall_get_name(SCP_string &name, unsigned int index)
 
 int main_hall_get_overlay_id()
 {
-	if (Main_hall==NULL) {
+	if (Main_hall==nullptr) {
 		return -1;
 	} else {
 		return Main_hall_overlay_id;
@@ -1859,7 +2001,7 @@ int main_hall_get_overlay_id()
 
 int main_hall_get_overlay_resolution_index()
 {
-	if (Main_hall==NULL) {
+	if (Main_hall==nullptr) {
 		return -1;
 	} else {
 		return Main_hall->help_overlay_resolution_index;
@@ -1869,7 +2011,7 @@ int main_hall_get_overlay_resolution_index()
 // what main hall we're on
 int main_hall_id()
 {
-	if (Main_hall==NULL) {
+	if (Main_hall==nullptr) {
 		return -1;
 	} else {
 		return main_hall_get_index(Main_hall->name);
@@ -1878,29 +2020,25 @@ int main_hall_id()
 
 // CommanderDJ - helper function for initialising intercom sounds vectors based on number of sounds
 // To be called after num_intercom_sounds has been parsed
-void intercom_sounds_init(main_hall_defines &m)
+void intercom_sounds_init(main_hall_defines &m, bool first_time, int base_num)
 {
-	int idx;
-
-	if (Cmdline_reparse_mainhall) {
+	if (Cmdline_reparse_mainhall && first_time) {
 		// we could be reparsing with a different number of intercom sounds, so clear these and reinitialise
 		m.intercom_delay.clear();
 		m.intercom_sounds.clear();
 		m.intercom_sound_pan.clear();
 	}
 
-	SCP_vector<int> temp;
-
-	for (idx = 0; idx < m.num_random_intercom_sounds; idx++) {
+	for (int idx = base_num; idx < m.num_random_intercom_sounds; idx++) {
 		// intercom_delay
-		m.intercom_delay.push_back(temp);
+		m.intercom_delay.emplace_back();
 
 		// each delay has a min and a max
-		m.intercom_delay.at(idx).push_back(0);
-		m.intercom_delay.at(idx).push_back(0);
+		m.intercom_delay.back().push_back(0);
+		m.intercom_delay.back().push_back(0);
 
 		// intercom_sounds
-		m.intercom_sounds.push_back(-1);
+		m.intercom_sounds.push_back(interface_snd_id());
 
 		// intercom_sound_pan
 		m.intercom_sound_pan.push_back(0);
@@ -1913,11 +2051,9 @@ void intercom_sounds_init(main_hall_defines &m)
  *
  * @param m Main hall defines
  */
-void misc_anim_init(main_hall_defines &m)
+void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 {
-	int idx;
-
-	if (Cmdline_reparse_mainhall) {
+	if (Cmdline_reparse_mainhall && first_time) {
 		// we could be reparsing with a different number of misc anims, so clear these and reinitialise
 		m.misc_anim_name.clear();
 		m.misc_anim_delay.clear();
@@ -1929,23 +2065,24 @@ void misc_anim_init(main_hall_defines &m)
 		m.misc_anim_special_sounds.clear();
 		m.misc_anim_special_trigger.clear();
 		m.misc_anim_sound_flag.clear();
+		m.misc_anim_initial_delay.clear();
 	}
 
-	SCP_vector<int> temp;
-	SCP_string temp_string;
-
-	for (idx = 0; idx < m.num_misc_animations; idx++) {
+	for (int idx = base_num; idx < m.num_misc_animations; idx++) {
 
 		// misc_anim_name
-		m.misc_anim_name.push_back(temp_string);
+		m.misc_anim_name.emplace_back();
 
 		// misc_anim_delay
-		m.misc_anim_delay.push_back(temp);
+		m.misc_anim_delay.emplace_back();
 
 		// -1 default for the first entry, 0 for the others
-		m.misc_anim_delay.at(idx).push_back(-1);
-		m.misc_anim_delay.at(idx).push_back(0);
-		m.misc_anim_delay.at(idx).push_back(0);
+		m.misc_anim_delay.back().push_back(-1);
+		m.misc_anim_delay.back().push_back(0);
+		m.misc_anim_delay.back().push_back(0);
+
+		// set the default initial delay to -1 
+		m.misc_anim_initial_delay.push_back(-1);
 
 		// misc_anim_paused
 		m.misc_anim_paused.push_back(1); // default is paused
@@ -1954,10 +2091,10 @@ void misc_anim_init(main_hall_defines &m)
 		m.misc_anim_group.push_back(-1);
 
 		// misc_anim_coords
-		m.misc_anim_coords.push_back(temp);
+		m.misc_anim_coords.emplace_back();
 
-		m.misc_anim_coords.at(idx).push_back(0);
-		m.misc_anim_coords.at(idx).push_back(0);
+		m.misc_anim_coords.back().push_back(0);
+		m.misc_anim_coords.back().push_back(0);
 
 		// misc_anim_modes
 		m.misc_anim_modes.push_back(MISC_ANIM_MODE_LOOP);
@@ -1967,15 +2104,15 @@ void misc_anim_init(main_hall_defines &m)
 
 		// misc_anim_special_sounds
 		// parse_sound_list deals with the rest of the initialisation for this one
-		m.misc_anim_special_sounds.push_back(temp);
+		m.misc_anim_special_sounds.push_back(SCP_vector<interface_snd_id>());
 
 		// misc_anim_special_trigger
-		m.misc_anim_special_trigger.push_back(temp);
+		m.misc_anim_special_trigger.emplace_back();
 
-		m.misc_anim_special_trigger.at(idx).push_back(0);
+		m.misc_anim_special_trigger.back().push_back(0);
 
 		// misc_anim_sound_flag
-		m.misc_anim_sound_flag.push_back(temp);
+		m.misc_anim_sound_flag.emplace_back();
 	}
 }
 
@@ -1985,11 +2122,9 @@ void misc_anim_init(main_hall_defines &m)
  *
  * @param m Main hall defines
  */
-void door_anim_init(main_hall_defines &m)
+void door_anim_init(main_hall_defines &m, bool first_time, int base_num)
 {
-	int idx;
-
-	if (Cmdline_reparse_mainhall) {
+	if (Cmdline_reparse_mainhall && first_time) {
 		/* since we could be reparsing with a different number of door
 		 anims, clear these and reinitialise. */
 		m.door_anim_name.clear();
@@ -1998,24 +2133,21 @@ void door_anim_init(main_hall_defines &m)
 		m.door_sound_pan.clear();
 	}
 
-	SCP_vector<int> temp;
-	SCP_string temp_string;
-
-	for (idx = 0; idx < m.num_door_animations; idx++) {
+	for (int idx = base_num; idx < m.num_door_animations; idx++) {
 		// door_anim_name
-		m.door_anim_name.push_back(temp_string);
+		m.door_anim_name.emplace_back();
 
 		// door_anim_coords
-		m.door_anim_coords.push_back(temp);
+		m.door_anim_coords.emplace_back();
 
 		// we want two pairs of coordinates for each animation
-		m.door_anim_coords.at(idx).push_back(0);
-		m.door_anim_coords.at(idx).push_back(0);
-		m.door_anim_coords.at(idx).push_back(0);
-		m.door_anim_coords.at(idx).push_back(0);
+		m.door_anim_coords.back().push_back(0);
+		m.door_anim_coords.back().push_back(0);
+		m.door_anim_coords.back().push_back(0);
+		m.door_anim_coords.back().push_back(0);
 
 		// door_sounds
-		m.door_sounds.push_back(temp);
+		m.door_sounds.emplace_back();
 
 		// door_sound_pan
 		m.door_sound_pan.push_back(0.0f);
@@ -2028,18 +2160,20 @@ void region_info_init(main_hall_defines &m)
 		m.regions.clear();
 	}
 	
-	main_hall_region defaults[] = {
-		main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
-		main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
-		main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
-		main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
-		main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
-		main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
-		main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
-	};
+	if (Main_hall_use_defaults) {
+		main_hall_region defaults[] = {
+			main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
+			main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
+			main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
+			main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
+			main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
+			main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
+			main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
+		};
 	
-	for (int idx = 0; idx < 7; idx++) {
-		m.regions.push_back(defaults[idx]);
+		for (int idx = 0; idx < 7; idx++) {
+			m.regions.push_back(defaults[idx]);
+		}
 	}
 	
 	// XSTR( "Multiplayer - Start or join a multiplayer game", 359)
@@ -2053,6 +2187,7 @@ void main_hall_table_init()
 {
 	// clear the main hall entries
 	Main_hall_defines.clear();
+	Main_hall_sounds_to_not_truncate.clear();
 
 	// if mainhall.tbl exists, parse it
 	if (cf_exists_full("mainhall.tbl", CF_TYPE_TABLES)) {
@@ -2061,18 +2196,23 @@ void main_hall_table_init()
 
 	// parse any modular tables
 	parse_modular_table("*-hall.tbm", parse_main_hall_table);
+
+	// these are the retail sounds, but in the future we may want to add
+	// main hall table configs for other sounds to not truncate
+	// (these indexes are the activate/deactivate sounds for the non-door hotspots in the door lists)
+	auto retail_indexes = { 32, 33, 34, 35, 43, 44, 56, 57, 54, 55, 51, 52, 25, 61 };
+	for (auto idx: retail_indexes) {
+		auto iface_entry = gamesnd_get_by_iface_tbl_index(idx);
+		if (iface_entry.isValid()) {
+			Main_hall_sounds_to_not_truncate.push_back(gamesnd_get_interface_sound(iface_entry));
+		}
+	}
 }
 
 // read in main hall table
 void parse_main_hall_table(const char* filename)
 {
-	SCP_vector<main_hall_defines> temp_vector;
-	main_hall_defines *m, temp;
-	int idx, s_idx, m_idx;
-	int num_resolutions = 2;
-	size_t count;
-	char temp_string[MAX_FILENAME_LEN];
-	SCP_string temp_scp_string;
+	int hall_idx, res_idx = 0, num_resolutions = 2;
 
 	try
 	{
@@ -2080,411 +2220,33 @@ void parse_main_hall_table(const char* filename)
 
 		reset_parse();
 
+		if (optional_string("$Base mainhalls on retail defaults:")) {
+			stuff_boolean(&Main_hall_use_defaults);
+		}
+
 		if (optional_string("$Num Resolutions:")) {
 			stuff_int(&num_resolutions);
-		}
-
-		if (num_resolutions < 1) {
-			Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
-		}
-
-		// go for it
-		count = Main_hall_defines.size();
-		while (!optional_string("#end")) {
-			Main_hall_defines.push_back(temp_vector);
-			// read in all resolutions
-			for (m_idx = 0; m_idx < num_resolutions; m_idx++) {
-				Main_hall_defines.at(count).push_back(temp);
-				m = &Main_hall_defines.at(count).at(m_idx);
-
-				// ready
-				required_string("$Main Hall");
-
-				// Parse the entry name for the first resolution, checking for duplicates and erroring if necessary
-				if (m_idx == 0) {
-					if (optional_string("+Name:")) {
-						stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
-
-						// we can't have two mainhalls with the same name
-						if (main_hall_get_pointer(temp_string) == NULL) {
-							m->name = temp_string;
-						}
-						else {
-							Error(LOCATION, "A mainhall with the name '%s' already exists. All mainhalls must have unique names.", temp_string);
-						}
-					}
-					else {
-						snprintf(temp_string, MAX_FILENAME_LEN, SIZE_T_ARG, count);
-						m->name = temp_string;
-					}
-				}
-				else {
-					if (optional_string("+Name:")) {
-						stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
-
-						/**
-						 * the reason that this is an error is that even if we were to change the names to match
-						 * it is very likely the user would get the wrong mainhall loaded since their campaign files
-						 * may still refer to the entry with the incorrect name
-						 */
-						if (strcmp(temp_string, Main_hall_defines.at(count).at(0).name.c_str()) != 0) {
-							Error(LOCATION, "The mainhall '%s' has different names for different resolutions. All resolutions must have the same name. Either remove the hi-res entries' names entirely or set them to match the first resolution entry's name.", Main_hall_defines.at(0).at(count).name.c_str());
-						}
-					}
-
-					m->name = Main_hall_defines.at(count).at(0).name;
-				}
-
-				// add cheats
-				while (optional_string("+Cheat String:")) {
-					stuff_string(temp_scp_string, F_RAW);
-					m->cheat.push_back(temp_scp_string);
-
-					if (temp_scp_string.size() > MAIN_HALL_MAX_CHEAT_LEN) {
-						// Since the value is longer than the cheat buffer it will never match.
-
-						Warning(LOCATION, "The value '%s' for '+Cheat String:' is too long! It can be at most %d characters long.", temp_scp_string.c_str(), MAIN_HALL_MAX_CHEAT_LEN);
-					}
-
-					required_string("+Anim To Change:");
-					stuff_string(temp_scp_string, F_NAME);
-					m->cheat_anim_from.push_back(temp_scp_string);
-
-					required_string("+Anim To Change To:");
-					stuff_string(temp_scp_string, F_NAME);
-					m->cheat_anim_to.push_back(temp_scp_string);
-				}
-
-				// minimum resolution
-				if (optional_string("+Min Resolution:")) {
-					stuff_int(&m->min_width);
-					stuff_int(&m->min_height);
-				}
-				else if (m_idx == 0) {
-					m->min_width = 0;
-					m->min_height = 0;
-				}
-				else {
-					m->min_width = GR_1024_THRESHOLD_WIDTH;
-					m->min_height = GR_1024_THRESHOLD_HEIGHT;
-				}
-
-				// minimum aspect ratio
-				if (optional_string("+Min Aspect Ratio:")) {
-					stuff_float(&m->min_aspect_ratio);
-				}
-				else {
-					m->min_aspect_ratio = 0.0f;
-				}
-
-				// bitmap and mask
-				required_string("+Bitmap:");
-				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-				m->bitmap = temp_string;
-
-				required_string("+Mask:");
-				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-				m->mask = temp_string;
-
-				if (optional_string("+Music:")) {	// Demo doesn't have these lines.
-					stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-					m->music_name = temp_string;
-				}
-
-				// Goober5000
-				if (optional_string("+Substitute Music:")) {
-					stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-					m->substitute_music_name = temp_string;
-				}
-
-				if (optional_string("+Help Overlay:")) {
-					stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-					m->help_overlay_name = temp_string;
-				}
-
-				if (optional_string("+Help Overlay Resolution Index:")) {
-					stuff_int(&m->help_overlay_resolution_index);
-				}
-				else {
-					m->help_overlay_resolution_index = m_idx;
-				}
-
-				// zoom area
-				if (optional_string("+Zoom To:")) {
-					stuff_int(&m->zoom_area_width);
-					stuff_int(&m->zoom_area_height);
-				}
-				else {
-					m->zoom_area_width = -1;
-					m->zoom_area_height = -1;
-				}
-
-				// intercom sounds
-				required_string("+Num Intercom Sounds:");
-				stuff_int(&m->num_random_intercom_sounds);
-
-				// initialise intercom sounds vectors
-				intercom_sounds_init(*m);
-
-				for (idx = 0; idx < m->num_random_intercom_sounds; idx++) {
-					// intercom delay
-					required_string("+Intercom delay:");
-					stuff_int(&m->intercom_delay.at(idx).at(0));
-					stuff_int(&m->intercom_delay.at(idx).at(1));
-				}
-
-				for (idx = 0; idx < m->num_random_intercom_sounds; idx++) {
-					// intercom sound id
-					parse_sound("+Intercom sound:", &m->intercom_sounds.at(idx), "+Intercom sound:", PARSE_SOUND_INTERFACE_SOUND);
-				}
-
-				for (idx = 0; idx < m->num_random_intercom_sounds; idx++) {
-					// intercom pan
-					required_string("+Intercom pan:");
-					stuff_float(&m->intercom_sound_pan.at(idx));
-				}
-
-				// misc animations
-				required_string("+Num Misc Animations:");
-				stuff_int(&m->num_misc_animations);
-
-				// initialise the misc anim vectors
-				misc_anim_init(*m);
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim names
-					required_string("+Misc anim:");
-					stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-					m->misc_anim_name.at(idx) = (SCP_string)temp_string;
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim groups, optionally
-					if (optional_string("+Misc anim group:")) {
-						stuff_int(&m->misc_anim_group.at(idx));
-					}
-					else {
-						m->misc_anim_group.at(idx) = -1;
-					}
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim delay
-					required_string("+Misc anim delay:");
-					stuff_int(&m->misc_anim_delay.at(idx).at(0));
-					stuff_int(&m->misc_anim_delay.at(idx).at(1));
-					stuff_int(&m->misc_anim_delay.at(idx).at(2));
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim coords
-					required_string("+Misc anim coords:");
-					stuff_int(&m->misc_anim_coords.at(idx).at(0));
-					stuff_int(&m->misc_anim_coords.at(idx).at(1));
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim mode
-					required_string("+Misc anim mode:");
-					stuff_int(&m->misc_anim_modes.at(idx));
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim pan
-					required_string("+Misc anim pan:");
-					stuff_float(&m->misc_anim_sound_pan.at(idx));
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim sound id
-					parse_sound_list("+Misc anim sounds:", m->misc_anim_special_sounds.at(idx), "+Misc anim sounds:", PARSE_SOUND_INTERFACE_SOUND);
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim sound triggers
-					required_string("+Misc anim trigger:");
-					int temp_int = 0;
-					stuff_int(&temp_int);
-					for (s_idx = 0; s_idx < temp_int; s_idx++) {
-						m->misc_anim_special_trigger.at(idx).push_back(0);
-						stuff_int(&m->misc_anim_special_trigger.at(idx).at(s_idx));
-					}
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim sound handles - deprecated, but deal with it just in case
-					if (optional_string("+Misc anim handles:")) {
-						advance_to_eoln(NULL);
-					}
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// anim sound flags - table flag deprecated, so ignore user input
-					if (optional_string("+Misc anim flags:")) {
-						advance_to_eoln(NULL);
-					}
-
-					// we need one flag for each sound
-					Assert(m->misc_anim_special_sounds.at(idx).size() < INT_MAX);
-					for (s_idx = 0; s_idx < (int)m->misc_anim_special_sounds.at(idx).size(); s_idx++) {
-						m->misc_anim_sound_flag.at(idx).push_back(0);
-					}
-				}
-
-				for (idx = 0; idx < m->num_misc_animations; idx++) {
-					// render over doors - default to false
-
-					if (optional_string("+Misc anim over doors:")) {
-						bool temp_b;
-						stuff_boolean(&temp_b);
-						m->misc_anim_over_doors.push_back(temp_b);
-					}
-					else {
-						m->misc_anim_over_doors.push_back(0);
-					}
-				}
-
-				region_info_init(*m);
-
-				// door animations
-				required_string("+Num Door Animations:");
-				stuff_int(&m->num_door_animations);
-
-				// initialise the door anim vectors
-				door_anim_init(*m);
-
-				for (idx = 0; idx < m->num_door_animations; idx++) {
-					// door name
-					required_string("+Door anim:");
-					stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-					m->door_anim_name.at(idx) = (SCP_string)temp_string;
-				}
-
-				for (idx = 0; idx < m->num_door_animations; idx++) {
-					// door coords
-					required_string("+Door coords:");
-					stuff_int(&m->door_anim_coords.at(idx).at(0));
-					stuff_int(&m->door_anim_coords.at(idx).at(1));
-					stuff_int(&m->door_anim_coords.at(idx).at(2));
-					stuff_int(&m->door_anim_coords.at(idx).at(3));
-				}
-
-				for (idx = 0; idx < m->num_door_animations; idx++) {
-					// door open and close sounds
-					parse_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", (parse_sound_flags)(PARSE_SOUND_INTERFACE_SOUND | PARSE_SOUND_SCP_SOUND_LIST));
-				}
-
-				for (idx = 0; idx < m->num_door_animations; idx++) {
-					// door pan value
-					required_string("+Door pan:");
-					stuff_float(&m->door_sound_pan[idx]);
-				}
-
-				int mask;
-				for (idx = 0; optional_string("+Door mask value:"); idx++) {
-					// door mask
-					stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
-
-					mask = (int)strtol(temp_string, NULL, 0);
-					mask = 255 - mask;
-
-					if (idx >= (int)m->regions.size()) {
-						m->regions.resize(idx + 1);
-					}
-					m->regions[idx].mask = mask;
-				}
-
-				for (idx = 0; optional_string("+Door action:"); idx++) {
-					// door action
-
-					if (idx >= (int)m->regions.size()) {
-						m->regions.resize(idx + 1);
-					}
-
-					if (optional_string("Script")) {
-						m->regions[idx].action = SCRIPT_REGION;
-						stuff_string(m->regions[idx].lua_action, F_RAW);
-					}
-					else {
-						stuff_string(temp_scp_string, F_RAW);
-
-						int action = -1;
-						for (int i = 0; Main_hall_region_map[i].name != NULL; i++) {
-							if (temp_scp_string == Main_hall_region_map[i].name) {
-								action = Main_hall_region_map[i].mask;
-								break;
-							}
-						}
-
-						if (action == -1) {
-							SCP_string err_msg = "";
-							for (int i = 0; Main_hall_region_map[i].name != NULL; i++) {
-								if (i != 0) {
-									err_msg += ", ";
-								}
-								err_msg += Main_hall_region_map[i].name;
-							}
-
-							Error(LOCATION, "Unkown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.c_str());
-						}
-
-						m->regions[idx].action = action;
-					}
-				}
-
-				for (idx = 0; optional_string("+Door key:"); idx++) {
-					// door key
-					stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
-
-					if ((int)m->regions.size() <= idx) {
-						m->regions.resize(idx + 1);
-					}
-					m->regions[idx].key = temp_string[0];
-				}
-
-				for (idx = 0; optional_string("+Door description:"); idx++) {
-					// region description (tooltip)
-					stuff_string(temp_scp_string, F_MESSAGE);
-
-					if (temp_scp_string != "default") {
-						if (idx >= (int)m->regions.size()) {
-							m->regions.resize(idx + 1);
-						}
-
-						m->regions[idx].description = temp_scp_string;
-
-						if (idx == 2) {
-							m->default_readyroom = false;
-						}
-					}
-				}
-
-				// font for tooltips and other text
-				if (optional_string("+Font:")) {
-					m->font = font::parse_font();
-				} else {
-					m->font = font::FONT1;
-				}
-
-				// tooltip padding
-				if (optional_string("+Tooltip Padding:")) {
-					stuff_int(&m->tooltip_padding);
-				}
-				else {
-					m->tooltip_padding = -1; // we'll get the default value later
-				}
-
-				// tooltip y location
-				if (optional_string("+Tooltip Y:")) {
-					stuff_int(&m->region_yval);
-				}
-				else {
-					m->region_yval = -1;
-				}
+			if (num_resolutions < 1) {
+				Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
 			}
-
-			count++;
 		}
+
+		if (optional_string("$Door animation delay on hover:")) {
+			int linger_temp;
+			stuff_int(&linger_temp);
+			if (linger_temp < 0) {
+				mprintf(("The value '%i' for '$Door animation delay on hover:' must be greater than 0, setting to 0!", linger_temp));
+				linger_temp = 0;
+			}
+			Main_hallregion_linger_delay = linger_temp;
+		}
+
+		// find out what hall we read next
+		hall_idx = (int)Main_hall_defines.size();
+
+		while (required_string_either("#End", "$Main Hall"))
+			parse_one_main_hall(Parsing_modular_table, num_resolutions, hall_idx, res_idx);
+		required_string("#End");
 
 		// free up memory from parsing the mainhall tbl
 		stop_parse();
@@ -2493,6 +2255,461 @@ void parse_main_hall_table(const char* filename)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
+	}
+}
+
+void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &res_idx)
+{
+	char temp_string[MAX_FILENAME_LEN];
+	SCP_string temp_scp_string;
+	bool first_time = false;
+	bool create_if_not_found = true;
+	main_hall_defines *m;
+
+	required_string("$Main Hall");
+
+	// default to the current index
+	sprintf(temp_string, "%d", hall_idx);
+
+	// see if we have a name
+	if (optional_string("+Name:"))
+	{
+		stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+
+		if (optional_string("+nocreate"))
+		{
+			if (!replace)
+				Warning(LOCATION, "+nocreate flag used for main hall in non-modular table");
+			create_if_not_found = false;
+		}
+
+		// we can only create or look up entries if this is the first resolution
+		if (res_idx == 0)
+		{
+			// see if main hall exists already
+			int temp_hall_idx = main_hall_get_index(temp_string);
+
+			// an entry exists
+			if (temp_hall_idx >= 0)
+			{
+				if (!replace)
+				{
+					error_display(0, "Main hall name '%s' already exists.  All main hall names must be unique; the second entry has been skipped", temp_string);
+					if (!skip_to_start_of_string_either("$Main Hall", "#End"))
+						error_display(1, "Missing [#End] or [$Main Hall] after duplicate main hall %s", temp_string);
+					return;
+				}
+
+				hall_idx = temp_hall_idx;
+			}
+			// an entry does not exist
+			else
+			{
+				// Don't create main hall if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && replace)
+				{
+					if (!skip_to_start_of_string_either("$Main Hall", "#End"))
+						error_display(1, "Missing [#End] or [$Main Hall] after main hall %s", temp_string);
+					return;
+				}
+
+				hall_idx = (int)Main_hall_defines.size();
+			}
+		}
+		// if this is not the first resolution, check consistent names
+		else
+		{
+			/**
+			 * the reason that this is an error is that even if we were to change the names to match
+			 * it is very likely the user would get the wrong mainhall loaded since their campaign files
+			 * may still refer to the entry with the incorrect name
+			 */
+			if (strcmp(temp_string, Main_hall_defines.at(hall_idx).at(0).name.c_str()) != 0)
+			{
+				error_display(0, "The main hall '%s' has different names for different resolutions. All resolutions must have the same name. Either remove the hi-res entries' names entirely or set them to match the first resolution entry's name.", Main_hall_defines.at(hall_idx).at(0).name.c_str());
+				strcpy_s(temp_string, Main_hall_defines.at(hall_idx).at(0).name.c_str());
+			}
+		}
+	}
+	// if we don't have a name, but this isn't the first resolution, use the name of the first resolution
+	else if (res_idx != 0)
+	{
+		strcpy_s(temp_string, Main_hall_defines.at(hall_idx).at(0).name.c_str());
+	}
+
+	// now that that's all (optionally) sorted, figure out which entry we're parsing
+	if (hall_idx >= (int)Main_hall_defines.size())
+	{
+		Main_hall_defines.emplace_back();
+	}
+	if (res_idx >= (int)Main_hall_defines.at(hall_idx).size())
+	{
+		Main_hall_defines.at(hall_idx).emplace_back();
+		first_time = true;
+	}
+	m = &Main_hall_defines.at(hall_idx).at(res_idx);
+	m->name = temp_string;
+
+	// ---------- now parse the main hall data ----------
+
+	// add cheats
+	while (optional_string("+Cheat String:")) {
+		stuff_string(temp_scp_string, F_RAW);
+		m->cheat.push_back(temp_scp_string);
+
+		if (temp_scp_string.size() > MAIN_HALL_MAX_CHEAT_LEN) {
+			// Since the value is longer than the cheat buffer it will never match.
+			Warning(LOCATION, "The value '%s' for '+Cheat String:' is too long! It can be at most %d characters long.", temp_scp_string.c_str(), MAIN_HALL_MAX_CHEAT_LEN);
+		}
+
+		required_string("+Anim To Change:");
+		stuff_string(temp_scp_string, F_NAME);
+		m->cheat_anim_from.push_back(temp_scp_string);
+
+		required_string("+Anim To Change To:");
+		stuff_string(temp_scp_string, F_NAME);
+		m->cheat_anim_to.push_back(temp_scp_string);
+	}
+
+	// minimum resolution
+	if (optional_string("+Min Resolution:")) {
+		stuff_int(&m->min_width);
+		stuff_int(&m->min_height);
+	}
+	else if (first_time && res_idx != 0) {
+		m->min_width = GR_1024_THRESHOLD_WIDTH;
+		m->min_height = GR_1024_THRESHOLD_HEIGHT;
+	}
+
+	// minimum aspect ratio
+	if (optional_string("+Min Aspect Ratio:")) {
+		stuff_float(&m->min_aspect_ratio);
+	}
+
+	// bitmap and mask
+	if (optional_string("+Bitmap:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->bitmap = temp_string;
+	}
+
+	if (optional_string("+Mask:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->mask = temp_string;
+	}
+
+	if (optional_string("+Music:")) {	// Demo doesn't have these lines.
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->music_name = temp_string;
+	}
+
+	// Goober5000
+	if (optional_string("+Substitute Music:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->substitute_music_name = temp_string;
+	}
+
+	if (optional_string("+Help Overlay:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->help_overlay_name = temp_string;
+	}
+
+	if (optional_string("+Help Overlay Resolution Index:")) {
+		stuff_int(&m->help_overlay_resolution_index);
+	}
+	else if (first_time) {
+		m->help_overlay_resolution_index = res_idx;
+	}
+
+	// zoom area
+	if (optional_string("+Zoom To:")) {
+		stuff_int(&m->zoom_area_width);
+		stuff_int(&m->zoom_area_height);
+	}
+
+	// intercom sounds
+	if (optional_string("+Num Intercom Sounds:")) {
+		int base_num = m->num_random_intercom_sounds;
+		int num;
+		stuff_int(&num);
+		m->num_random_intercom_sounds += num;
+
+		// initialise the intercom sounds vectors
+		intercom_sounds_init(*m, first_time, base_num);
+
+		for (int idx = base_num; idx < m->num_random_intercom_sounds; idx++) {
+			// intercom delay
+			required_string("+Intercom delay:");
+			stuff_int(&m->intercom_delay.at(idx).at(0));
+			stuff_int(&m->intercom_delay.at(idx).at(1));
+		}
+
+		for (int idx = base_num; idx < m->num_random_intercom_sounds; idx++) {
+			// intercom sound id
+			parse_iface_sound("+Intercom sound:", &m->intercom_sounds.at(idx));
+		}
+
+		for (int idx = base_num; idx < m->num_random_intercom_sounds; idx++) {
+			// intercom pan
+			required_string("+Intercom pan:");
+			stuff_float(&m->intercom_sound_pan.at(idx));
+		}
+	}
+
+	// misc animations
+	if (optional_string("+Num Misc Animations:")) {
+		int base_num = m->num_misc_animations;
+		int num;
+		stuff_int(&num);
+		m->num_misc_animations += num;
+
+		// initialise the misc anims vectors
+		misc_anim_init(*m, first_time, base_num);
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim names
+			required_string("+Misc anim:");
+			stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+			m->misc_anim_name.at(idx) = temp_string;
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim groups, optionally
+			if (optional_string("+Misc anim group:")) {
+				stuff_int(&m->misc_anim_group.at(idx));
+			}
+			else {
+				m->misc_anim_group.at(idx) = -1;
+			}
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim delay
+			required_string("+Misc anim delay:");
+			stuff_int(&m->misc_anim_initial_delay.at(idx));
+
+			// We set the first value here to -1; if the first delay parameter is set to something that isn't
+			// -1, we will replace it with a proper timestamp while loading up the mainhall for presentation.
+			m->misc_anim_delay.at(idx).at(0) = -1;
+			stuff_int(&m->misc_anim_delay.at(idx).at(1));
+			stuff_int(&m->misc_anim_delay.at(idx).at(2));
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim coords
+			required_string("+Misc anim coords:");
+			stuff_int(&m->misc_anim_coords.at(idx).at(0));
+			stuff_int(&m->misc_anim_coords.at(idx).at(1));
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim mode
+			required_string("+Misc anim mode:");
+			stuff_int(&m->misc_anim_modes.at(idx));
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim pan
+			required_string("+Misc anim pan:");
+			stuff_float(&m->misc_anim_sound_pan.at(idx));
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim sound id
+			parse_iface_sound_list("+Misc anim sounds:", m->misc_anim_special_sounds.at(idx), "+Misc anim sounds:");
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim sound triggers
+			required_string("+Misc anim trigger:");
+			int temp_int = 0;
+			stuff_int(&temp_int);
+			for (int s_idx = 0; s_idx < temp_int; s_idx++) {
+				m->misc_anim_special_trigger.at(idx).push_back(0);
+				stuff_int(&m->misc_anim_special_trigger.at(idx).at(s_idx));
+			}
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim sound handles - deprecated, but deal with it just in case
+			if (optional_string("+Misc anim handles:")) {
+				advance_to_eoln(nullptr);
+			}
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// anim sound flags - table flag deprecated, so ignore user input
+			if (optional_string("+Misc anim flags:")) {
+				advance_to_eoln(nullptr);
+			}
+
+			// we need one flag for each sound
+			Assert(m->misc_anim_special_sounds.at(idx).size() < INT_MAX);
+			for (int s_idx = 0; s_idx < (int)m->misc_anim_special_sounds.at(idx).size(); s_idx++) {
+				m->misc_anim_sound_flag.at(idx).push_back(0);
+			}
+		}
+
+		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
+			// render over doors - default to false
+			if (optional_string("+Misc anim over doors:")) {
+				bool temp_b;
+				stuff_boolean(&temp_b);
+				m->misc_anim_over_doors.push_back(temp_b);
+			}
+			else {
+				m->misc_anim_over_doors.push_back(false);
+			}
+		}
+	}
+
+	if (first_time)
+		region_info_init(*m);
+
+	// door animations
+	if (optional_string("+Num Door Animations:")) {
+		int base_num = m->num_door_animations;
+		int num;
+		stuff_int(&num);
+		m->num_door_animations += num;
+
+		// initialise the door anim vectors
+		door_anim_init(*m, first_time, base_num);
+
+		for (int idx = base_num; idx < m->num_door_animations; idx++) {
+			// door name
+			required_string("+Door anim:");
+			stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+			m->door_anim_name.at(idx) = temp_string;
+		}
+
+		for (int idx = base_num; idx < m->num_door_animations; idx++) {
+			// door coords
+			required_string("+Door coords:");
+			stuff_int(&m->door_anim_coords.at(idx).at(0));
+			stuff_int(&m->door_anim_coords.at(idx).at(1));
+			stuff_int(&m->door_anim_coords.at(idx).at(2));
+			stuff_int(&m->door_anim_coords.at(idx).at(3));
+		}
+
+		for (int idx = base_num; idx < m->num_door_animations; idx++) {
+			// door open and close sounds
+			parse_iface_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", true);
+		}
+
+		for (int idx = base_num; idx < m->num_door_animations; idx++) {
+			// door pan value
+			required_string("+Door pan:");
+			stuff_float(&m->door_sound_pan[idx]);
+		}
+	}
+
+	int mask;
+	for (int idx = 0; optional_string("+Door mask value:"); idx++) {
+		// door mask
+		stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+
+		mask = (int)strtol(temp_string, nullptr, 0);
+		mask = 255 - mask;
+
+		if (idx >= (int)m->regions.size()) {
+			m->regions.resize(idx + 1);
+		}
+		m->regions[idx].mask = mask;
+	}
+
+	for (int idx = 0; optional_string("+Door action:"); idx++) {
+		// door action
+
+		if (idx >= (int)m->regions.size()) {
+			m->regions.resize(idx + 1);
+		}
+
+		if (optional_string("Script")) {
+			m->regions[idx].action = SCRIPT_REGION;
+			stuff_string(m->regions[idx].lua_action, F_RAW);
+		}
+		else {
+			stuff_string(temp_scp_string, F_RAW);
+
+			int action = -1;
+			for (int i = 0; Main_hall_region_map[i].name != nullptr; i++) {
+				if (temp_scp_string == Main_hall_region_map[i].name) {
+					action = Main_hall_region_map[i].mask;
+					break;
+				}
+			}
+
+			if (action == -1) {
+				SCP_string err_msg;
+				for (int i = 0; Main_hall_region_map[i].name != nullptr; i++) {
+					if (i != 0) {
+						err_msg += ", ";
+					}
+					err_msg += Main_hall_region_map[i].name;
+				}
+
+				Error(LOCATION, "Unknown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.c_str());
+			}
+
+			m->regions[idx].action = action;
+		}
+	}
+
+	for (int idx = 0; optional_string("+Door key:"); idx++) {
+		// door key
+		stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+
+		if ((int)m->regions.size() <= idx) {
+			m->regions.resize(idx + 1);
+		}
+		m->regions[idx].key = temp_string[0];
+	}
+
+	for (int idx = 0; optional_string("+Door description:"); idx++) {
+		// region description (tooltip)
+		stuff_string(temp_scp_string, F_MESSAGE);
+
+		if (temp_scp_string != "default") {
+			if (idx >= (int)m->regions.size()) {
+				m->regions.resize(idx + 1);
+			}
+
+			m->regions[idx].description = temp_scp_string;
+
+			if (idx == 2) {
+				m->default_readyroom = false;
+			}
+		}
+	}
+
+	// font for tooltips and other text
+	if (optional_string("+Font:")) {
+		m->font = font::parse_font();
+	}
+
+	// tooltip padding
+	if (optional_string("+Tooltip Padding:")) {
+		stuff_int(&m->tooltip_padding);
+	}
+
+	// tooltip y location
+	if (optional_string("+Tooltip Y:")) {
+		stuff_int(&m->region_yval);
+	}
+
+	//ESC key action
+	if (optional_string("+Escape Key Script Action:")) {
+		stuff_string(m->esc_action, F_RAW);
+	}
+
+	// ---------- done parsing the main hall data ----------
+
+	// we're done, so move to the next entry
+	res_idx++;
+	if (res_idx >= num_resolutions)
+	{
+		res_idx = 0;
+		hall_idx = (int)Main_hall_defines.size();	// assume the next main hall is going to be a new one
 	}
 }
 
@@ -2505,13 +2722,11 @@ void main_hall_vasudan_funny()
 }
 
 /**
- * Lookup if Vasudan main hall, based upon music name
- * @return 1 if true, 0 if false
+ * Lookup if Vasudan main hall, based upon background graphics
  */
-int main_hall_is_vasudan()
+bool main_hall_is_vasudan()
 {
-	// kind of a hack for now
-	return (!stricmp(Main_hall->music_name.c_str(), "Psampik") || !stricmp(Main_hall->music_name.c_str(), "Psamtik"));
+	return !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
 }
 
 /**
@@ -2544,4 +2759,12 @@ void main_hall_unpause()
 	audiostream_unpause(Main_hall_music_handle);
 
 	main_hall_start_ambient();
+}
+
+/**
+* Toggle the help overlay
+*/
+void main_hall_toggle_help(bool enable)
+{
+	help_overlay_set_state(Main_hall_overlay_id, main_hall_get_overlay_resolution_index(), (int)enable);
 }

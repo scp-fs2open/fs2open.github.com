@@ -7,6 +7,8 @@ MESSAGE(STATUS "Doing configuration specific to clang...")
 option(CLANG_ENABLE_LEAK_CHECK "Enable -fsanitize=leak" OFF)
 option(CLANG_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 
+option(CLANG_USE_LIBCXX "Use libc++" OFF)
+
 # These are the default values
 set(C_BASE_FLAGS "-march=native -pipe")
 set(CXX_BASE_FLAGS "-march=native -pipe")
@@ -19,6 +21,11 @@ if(DEFINED ENV{CFLAGS})
 	set(C_BASE_FLAGS $ENV{CFLAGS})
 endif()
 
+if (CLANG_USE_LIBCXX)
+	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -stdlib=libc++")
+	target_link_libraries(compiler INTERFACE "c++" "c++abi")
+endif()
+
 # Initialize with an empty string to make sure we always get a clean start
 set(COMPILER_FLAGS "")
 
@@ -26,7 +33,7 @@ set(COMPILER_FLAGS "")
 _enable_extra_compiler_warnings_flags()
 set(COMPILER_FLAGS "${COMPILER_FLAGS} ${_flags}")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-pragmas")
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -fsigned-char -Wno-unknown-pragmas")
 
 # Omit "argument unused during compilation" when clang is used with ccache.
 if(${CMAKE_CXX_COMPILER} MATCHES "ccache")
@@ -66,36 +73,61 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} ${SANITIZE_FLAGS}")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wformat-security")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-function")
-
 # Dear Clang, please tell us if a function does not return a value since that part of the standard is stupid!
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-char-subscripts")
-
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
 
 check_cxx_compiler_flag(-Wshift-negative-value SUPPORTS_SHIFT_NEGATIVE_VALUE)
 if(SUPPORTS_SHIFT_NEGATIVE_VALUE)
 	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-shift-negative-value")
 endif()
 
-set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable")
+# Check if there is a user-set optimisation flag
+string(REGEX MATCH "-O[a-zA-Z|0-9]+" CXX_OPT_FLAG ${CXX_BASE_FLAGS})
+string(REGEX MATCH "-O[a-zA-Z|0-9]+" C_OPT_FLAG ${C_BASE_FLAGS})
 
-set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
+# If no user-set opt flag, set -O2 and -Og
+if ("${CXX_OPT_FLAG}" STREQUAL "")
+	set(CXX_OPT_FLAG_RELEASE "-O2")
+	set(CXX_OPT_FLAG_DEBUG "-Og")
+else()
+	set(CXX_OPT_FLAG_RELEASE "${CXX_OPT_FLAG}")
+	set(CXX_OPT_FLAG_DEBUG "${CXX_OPT_FLAG}")
+endif()
+if ("${C_OPT_FLAG}" STREQUAL "")
+	set(C_OPT_FLAG_RELEASE "-O2")
+	set(C_OPT_FLAG_DEBUG "-Og")
+else()
+	set(C_OPT_FLAG_RELEASE "${C_OPT_FLAG}")
+	set(C_OPT_FLAG_DEBUG "${C_OPT_FLAG}")
+endif()
 
-# Always use the base flags and add our compiler flags at the bacl
+set(CXX_FLAGS_RELEASE "${CXX_OPT_FLAG_RELEASE} -Wno-unused-variable -Wno-unused-parameter")
+set(C_FLAGS_RELEASE "${C_OPT_FLAG_RELEASE} -Wno-unused-variable -Wno-unused-parameter")
+
+set(CXX_FLAGS_DEBUG "${CXX_OPT_FLAG_DEBUG} -g -Wshadow")
+set(C_FLAGS_DEBUG "${C_OPT_FLAG_DEBUG} -g -Wshadow")
+
+# Always use the base flags and add our compiler flags at the back
 set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")
 set(CMAKE_C_FLAGS "${C_BASE_FLAGS} ${COMPILER_FLAGS}")
 
-set(CMAKE_CXX_FLAGS_RELEASE ${COMPILER_FLAGS_RELEASE})
-set(CMAKE_C_FLAGS_RELEASE ${COMPILER_FLAGS_RELEASE})
+set(CMAKE_CXX_FLAGS_RELEASE ${CXX_FLAGS_RELEASE})
+set(CMAKE_C_FLAGS_RELEASE ${C_FLAGS_RELEASE})
 
-set(CMAKE_CXX_FLAGS_DEBUG ${COMPILER_FLAGS_DEBUG})
-set(CMAKE_C_FLAGS_DEBUG ${COMPILER_FLAGS_DEBUG})
-
+set(CMAKE_CXX_FLAGS_DEBUG ${CXX_FLAGS_DEBUG})
+set(CMAKE_C_FLAGS_DEBUG ${C_FLAGS_DEBUG})
 
 set(CMAKE_EXE_LINKER_FLAGS "")
+
+if(DEFINED ENV{LDFLAGS})
+    set(CMAKE_EXE_LINKER_FLAGS $ENV{LDFLAGS})
+endif()
+
+if (CLANG_USE_LIBCXX)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc++abi")
+endif()
 
 if (SANITIZE_FLAGS)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}")
@@ -109,5 +141,16 @@ if (FSO_FATAL_WARNINGS)
 	target_compile_options(compiler INTERFACE "-Werror")
 endif()
 
-# Always define this to make sure that the fixed width format macros are available
+# Always define this to make sure that the fixed-width format macros are available
 target_compile_definitions(compiler INTERFACE __STDC_FORMAT_MACROS)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR MINGW)
+	# GNU ar: Create thin archive files.
+	# Requires binutils-2.19 or later.
+	set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> qcTP <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_C_ARCHIVE_APPEND   "<CMAKE_AR> qTP  <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcTP <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> qTP  <TARGET> <LINK_FLAGS> <OBJECTS>")
+endif()
+
+target_link_libraries(compiler INTERFACE m)

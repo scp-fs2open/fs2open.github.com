@@ -13,6 +13,7 @@
 extern int Num_custom_gauges;
 extern float Hud_unit_multiplier;
 extern float Hud_speed_multiplier;
+extern float Hud_global_scale;
 
 #define NUM_HUD_RETICLE_STYLES	2
 
@@ -23,12 +24,14 @@ extern int Hud_reticle_style;
 extern bool Scale_retail_gauges;
 extern int Force_scaling_above_res_global[2];
 extern int Hud_font;
+extern bool Chase_view_only_ex;
 
 typedef struct gauge_settings {
 	int base_res[2];
 	int font_num;
 	bool scale_gauge;
 	int force_scaling_above_res[2];
+	float aspect_quotient;
 	SCP_vector<int>* ship_idx;
 	color *use_clr;
 	float origin[2];
@@ -38,11 +41,17 @@ typedef struct gauge_settings {
 	bool set_position;
 	bool set_colour;
 	bool slew;
+	bool chase_view_only;
+	int cockpit_view_choice;
 
-	gauge_settings() : font_num(Hud_font), scale_gauge(Scale_retail_gauges), ship_idx(nullptr), use_clr(nullptr), use_coords(false), set_position(true), set_colour(true), slew(false) {
+	gauge_settings()
+		: font_num(Hud_font), scale_gauge(Scale_retail_gauges), ship_idx(nullptr), use_clr(nullptr), use_coords(false),
+		  set_position(true), set_colour(true), slew(false), chase_view_only(Chase_view_only_ex), cockpit_view_choice(0)
+	{
 		base_res[0] = -1;
 		base_res[1] = -1;
 		memcpy(force_scaling_above_res, Force_scaling_above_res_global, sizeof(force_scaling_above_res));
+		aspect_quotient = 1.0f;
 		origin[0] = 0.0f;
 		origin[1] = 0.0f;
 		offset[0] = 0;
@@ -53,14 +62,12 @@ typedef struct gauge_settings {
 } gauge_settings;
 
 //Functions
-int hud_get_gauge_index(char* name);
 void hud_positions_init();
 void set_current_hud();
 void init_hud();
 void load_missing_retail_gauges();
 void check_color(int *colorp);
 
-#define NUM_HUD_OBJECT_ENTRIES			56		// not used anywhere?
 int parse_gauge_type();
 void load_gauge(int gauge, gauge_settings* settings);
 
@@ -231,5 +238,8 @@ void load_gauge_primary_weapons(gauge_settings* settings);
 
 #define HUD_OBJECT_SECONDARY_WEAPONS	55
 void load_gauge_secondary_weapons(gauge_settings* settings);
+
+#define HUD_OBJECT_SCRIPTING 56
+void load_gauge_scripting(gauge_settings* settings);
 
 #endif // _HUDPARSE_H

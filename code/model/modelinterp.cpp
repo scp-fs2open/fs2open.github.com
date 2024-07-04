@@ -19,6 +19,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
+#include "graphics/util/GPUMemoryHeap.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "math/fvi.h"
@@ -32,11 +33,12 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
-#include "weapon/shockwave.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
+#include "weapon/shockwave.h"
 
-#include <limits.h>
+#include <climits>
 
 
 float model_radius = 0;
@@ -50,11 +52,8 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-extern fix game_get_overall_frametime();	// for texture animation
-
 typedef struct model_light {
 	ubyte r, g, b;
-	ubyte spec_r, spec_g, spec_b;
 } model_light;
 
 // a lighting object
@@ -101,7 +100,9 @@ class bsp_polygon_data
 	void process_bsp(int offset, ubyte* bsp_data);
 	void process_defpoints(int off, ubyte* bsp_data);
 	void process_sortnorm(int offset, ubyte* bsp_data);
+	void process_sortnorm2(int offset, ubyte* bsp_data);
 	void process_tmap(int offset, ubyte* bsp_data);
+	void process_tmap2(int offset, ubyte* bsp_data);
 	void process_flat(int offset, ubyte* bsp_data);
 public:
 	bsp_polygon_data(ubyte* bsp_data);
@@ -111,18 +112,32 @@ public:
 
 	void generate_triangles(int texture, vertex *vert_ptr, vec3d* norm_ptr);
 	void generate_lines(int texture, vertex *vert_ptr);
+
+	SCP_set<int> get_textures_used() const;
+	void replace_textures_used(const SCP_map<int, int>& replacementMap);
+};
+
+/**
+ * @brief Vertex structure for passing data to the GPU
+ */
+struct interp_vertex {
+	uv_pair uv;
+	vec3d normal;
+	vec4 tangent;
+	float modelId;
+	vec3d pos;
 };
 
 // -----------------------
 // Local variables
 //
 
-static int Num_interp_verts_allocated = 0;
+static uint Num_interp_verts_allocated = 0;
 vec3d **Interp_verts = NULL;
 static vertex *Interp_points = NULL;
 static vertex *Interp_splode_points = NULL;
 vec3d *Interp_splode_verts = NULL;
-static int Interp_num_verts = 0;
+static uint Interp_num_verts = 0;
 
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
 
@@ -139,10 +154,10 @@ int Interp_saved_lighting_full = 0;
 // -------------------------------------------------------------------
 
 
-static int Num_interp_norms_allocated = 0;
+static uint Num_interp_norms_allocated = 0;
 static vec3d **Interp_norms = NULL;
 static ubyte *Interp_light_applied = NULL;
-static int Interp_num_norms = 0;
+static uint Interp_num_norms = 0;
 static ubyte *Interp_lights;
 
 // Stuff to control rendering parameters
@@ -178,51 +193,55 @@ static bool Interp_draw_distortion = true;
 static float Interp_warp_scale_x = 1.0f;
 static float Interp_warp_scale_y = 1.0f;
 static float Interp_warp_scale_z = 1.0f;
-static int Interp_warp_bitmap = -1;
-static float Interp_warp_alpha = -1.0f;
 
 // if != -1, use this bitmap when rendering ship insignias
 static int Interp_insignia_bitmap = -1;
 
-// replacement - Goober5000
-// updated - WMC
-static int *Interp_new_replacement_textures = NULL;
-
 // if != -1, use this bitmap when rendering with a forced texture
 static int Interp_forced_bitmap = -1;
-
-// for rendering with the MR_ALL_XPARENT FLAG SET
-static float Interp_xparent_alpha = 1.0f;
 
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 void model_deallocate_interp_data()
 {
-	if (Interp_verts != NULL)
+	if (Interp_verts != nullptr) {
 		vm_free(Interp_verts);
+		Interp_verts = nullptr;
+	}
 
-	if (Interp_points != NULL)
+	if (Interp_points != nullptr) {
 		vm_free(Interp_points);
+		Interp_points = nullptr;
+	}
 
-	if (Interp_splode_points != NULL)
+	if (Interp_splode_points != nullptr) {
 		vm_free(Interp_splode_points);
+		Interp_splode_points = nullptr;
+	}
 
-	if (Interp_splode_verts != NULL)
+	if (Interp_splode_verts != nullptr) {
 		vm_free(Interp_splode_verts);
+		Interp_splode_verts = nullptr;
+	}
 
-	if (Interp_norms != NULL)
+	if (Interp_norms != nullptr) {
 		vm_free(Interp_norms);
+		Interp_norms = nullptr;
+	}
 
-	if (Interp_light_applied != NULL)
+	if (Interp_light_applied != nullptr) {
 		vm_free(Interp_light_applied);
+		Interp_light_applied = nullptr;
+	}
 
-	if (Interp_lighting_temp.lights != NULL)
+	if (Interp_lighting_temp.lights != nullptr) {
 		vm_free(Interp_lighting_temp.lights);
+		Interp_lighting_temp.lights = nullptr;
+	}
 
 	Num_interp_verts_allocated = 0;
 	Num_interp_norms_allocated = 0;
@@ -231,7 +250,7 @@ void model_deallocate_interp_data()
 extern void model_collide_allocate_point_list(int n_points);
 extern void model_collide_free_point_list();
 
-void model_allocate_interp_data(int n_verts, int n_norms)
+void model_allocate_interp_data(uint n_verts, uint n_norms)
 {
 	static ubyte dealloc = 0;
 
@@ -241,7 +260,6 @@ void model_allocate_interp_data(int n_verts, int n_norms)
 		dealloc = 1;
 	}
 
-	Assert( (n_verts >= 0) && (n_norms >= 0) );
 	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) );
 
 	if (n_verts > Num_interp_verts_allocated) {
@@ -338,7 +356,7 @@ void interp_clear_instance()
 /**
  * Scales the engines thrusters by this much
  */
-void model_set_thrust(int model_num, mst_info *mst)
+void model_set_thrust(int  /*model_num*/, mst_info *mst)
 {
 	if (mst == NULL) {
 		Int3();
@@ -386,7 +404,7 @@ float GEOMETRY_NOISE = 0.0f;
 // +16     int         offset from start of chunk to vertex data
 // +20     n_verts*char    norm_counts
 // +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
-void model_interp_splode_defpoints(ubyte * p, polymodel *pm, bsp_info *sm, float dist)
+void model_interp_splode_defpoints(ubyte * p, polymodel * /*pm*/, bsp_info * /*sm*/, float dist)
 {
 	if(dist==0.0f)return;
 
@@ -441,11 +459,11 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 {
 	if(splodeing)model_interp_splode_defpoints(p, pm, sm, splode_level*model_radius);
 
-	int i, n;
-	int nverts = w(p+8);	
-	int offset = w(p+16);
-	int next_norm = 0;
-	int nnorms = 0;
+	uint i, n;
+	uint nverts = uw(p+8);	
+	uint offset = uw(p+16);
+	uint next_norm = 0;
+	uint nnorms = 0;
 
 	ubyte * normcount = p+20;
 	vertex *dest = NULL;
@@ -593,7 +611,7 @@ ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
 
-void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags )
 {
 	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
@@ -641,82 +659,27 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
 	} else {
 		gr_set_color(0,255,0);
 
-		int j;
-		for (j=0; j<8; j++ )	{
+		vec3d	bounding_box[8];		// caclulated fron min/max
+		model_calc_bound_box(bounding_box, &pm->mins, &pm->maxs);
 
-			vec3d	bounding_box[8];		// caclulated fron min/max
-			model_calc_bound_box(bounding_box,&pm->octants[j].min,&pm->octants[j].max);
-
-			for (i=0; i<8; i++ )	{
-				g3_rotate_vertex( &pts[i], &bounding_box[i] );
-			}
-			gr_set_color(128,0,0);
-			g3_draw_line( &pts[0], &pts[1] );
-			g3_draw_line( &pts[1], &pts[2] );
-			g3_draw_line( &pts[2], &pts[3] );
-			g3_draw_line( &pts[3], &pts[0] );
-
-			g3_draw_line( &pts[4], &pts[5] );
-			g3_draw_line( &pts[5], &pts[6] );
-			g3_draw_line( &pts[6], &pts[7] );
-			g3_draw_line( &pts[7], &pts[4] );
-
-			g3_draw_line( &pts[0], &pts[4] );
-			g3_draw_line( &pts[1], &pts[5] );
-			g3_draw_line( &pts[2], &pts[6] );
-			g3_draw_line( &pts[3], &pts[7] );			
-		}		
-	}
-}
-
-/**
- * Debug code to show all the paths of a model
- */
-void model_draw_paths( int model_num, uint flags )
-{
-	int i,j;
-	vec3d pnt;
-	polymodel * pm;	
-
-	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
-		return;
-	}
-
-	pm = model_get(model_num);
-
-	if (pm->n_paths<1){
-		return;
-	}	
-
-	for (i=0; i<pm->n_paths; i++ )	{
-		vertex prev_pnt;
-
-		for (j=0; j<pm->paths[i].nverts; j++ )	{
-			// Rotate point into world coordinates			
-			pnt = pm->paths[i].verts[j].pos;
-
-			// Pnt is now the x,y,z world coordinates of this vert.
-			// For this example, I am just drawing a sphere at that
-			// point.
-			{
-				vertex tmp = vertex();
-				g3_rotate_vertex(&tmp,&pnt);
-
-				if ( pm->paths[i].verts[j].nturrets > 0 ){
-					gr_set_color( 0, 0, 255 );						// draw points covered by turrets in blue
-				} else {
-					gr_set_color( 255, 0, 0 );
-				}
-
-				g3_draw_sphere( &tmp, 0.5f );
-
-				if (j){
-					g3_draw_line(&prev_pnt, &tmp);
-				}
-
-				prev_pnt = tmp;
-			}
+		for (i=0; i<8; i++ )	{
+			g3_rotate_vertex( &pts[i], &bounding_box[i] );
 		}
+		gr_set_color(128,0,0);
+		g3_draw_line( &pts[0], &pts[1] );
+		g3_draw_line( &pts[1], &pts[2] );
+		g3_draw_line( &pts[2], &pts[3] );
+		g3_draw_line( &pts[3], &pts[0] );
+
+		g3_draw_line( &pts[4], &pts[5] );
+		g3_draw_line( &pts[5], &pts[6] );
+		g3_draw_line( &pts[6], &pts[7] );
+		g3_draw_line( &pts[7], &pts[4] );
+
+		g3_draw_line( &pts[0], &pts[4] );
+		g3_draw_line( &pts[1], &pts[5] );
+		g3_draw_line( &pts[2], &pts[6] );
+		g3_draw_line( &pts[3], &pts[7] );			
 	}
 }
 
@@ -822,62 +785,11 @@ void model_draw_bay_paths_htl(int model_num)
 	gr_set_cull(cull);
 }
 
-/**
- * Docking bay and fighter bay paths
- */
-void model_draw_bay_paths(int model_num)
-{
-	int idx, s_idx;
-	vec3d v1, v2;
-	vertex l1, l2;	
-
-	polymodel *pm = model_get(model_num);
-	if(pm == NULL){
-		return;
-	}
-
-	// render docking bay normals
-	gr_set_color(0, 255, 0);
-	for(idx=0; idx<pm->n_docks; idx++){
-		for(s_idx=0; s_idx<pm->docking_bays[idx].num_slots; s_idx++){
-			v1 = pm->docking_bays[idx].pnt[s_idx];
-			vm_vec_scale_add(&v2, &v1, &pm->docking_bays[idx].norm[s_idx], 10.0f);
-
-			// rotate the points
-			g3_rotate_vertex(&l1, &v1);
-			g3_rotate_vertex(&l2, &v2);
-
-			// draw the point and normal
-			g3_draw_sphere(&l1, 2.0);
-			g3_draw_line(&l1, &l2);
-		}
-	}
-
-	// render figher bay paths
-	gr_set_color(0, 255, 255);
-		
-	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for (idx = 0; idx<pm->n_paths; idx++) {
-		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {						
-			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
-				v1 = pm->paths[idx].verts[s_idx].pos;
-				v2 = pm->paths[idx].verts[s_idx+1].pos;
-
-				// rotate and draw
-				g3_rotate_vertex(&l1, &v1);
-				g3_rotate_vertex(&l2, &v2);
-				g3_draw_line(&l1, &l2);
-			}
-		}
-	}	
-}
-
-
 static const int MAX_ARC_SEGMENT_POINTS = 50;
 int Num_arc_segment_points = 0;
 vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
 
-void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
+void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth )
 {
 	float d = vm_vec_dist_quick( v1, v2 );
 	const float scaler = 0.30f;
@@ -912,7 +824,7 @@ DCF_BOOL( Arcs, Interp_lightning )
 
 int interp_box_offscreen( vec3d *min, vec3d *max )
 {
-	if ( keyd_pressed[KEY_LSHIFT] )	{
+	if ( key_is_pressed(KEY_LSHIFT) )	{
 		return IBOX_ALL_ON;
 	}
 
@@ -1103,25 +1015,25 @@ DCF(model_darkening,"Makes models darker with distance")
 
 
 /**
- * Find the distance from p0 to the closest point on a box.
- * The box's dimensions from 'min' to 'max'.
+ * Find the distance-squared from p0 to the closest point on a box.  Fills in closest_pt.
+ * The box's dimensions are from 'min' to 'max'.
  */
-float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *max )
+float interp_closest_dist_sq_to_box( vec3d *closest_pt, const vec3d *p0, const vec3d *min, const vec3d *max )
 {
-	float *origin = (float *)&p0->xyz.x;
-	float *minB = (float *)min;
-	float *maxB = (float *)max;
-	float *coord = (float *)&hitpt->xyz.x;
-	int inside = 1;
+	auto origin = p0->a1d;
+	auto minB = min->a1d;
+	auto maxB = max->a1d;
+	auto coord = closest_pt->a1d;
+	bool inside = true;
 	int i;
 
 	for (i=0; i<3; i++ )	{
 		if ( origin[i] < minB[i] )	{
 			coord[i] = minB[i];
-			inside = 0;
+			inside = false;
 		} else if (origin[i] > maxB[i] )	{
 			coord[i] = maxB[i];
-			inside = 0;
+			inside = false;
 		} else {
 			coord[i] = origin[i];
 		}
@@ -1131,7 +1043,7 @@ float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *ma
 		return 0.0f;
 	}
 
-	return vm_vec_dist(hitpt,p0);
+	return vm_vec_dist_squared(closest_pt, p0);
 }
 
 
@@ -1145,10 +1057,10 @@ float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *ma
 // Returns:
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
-//   Also fills in outpnt with the actual closest point.
-float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos )
+//   Also fills in outpnt with the actual closest point (in local coordinates).
+float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, const matrix *orient, const vec3d *pos, const vec3d *eye_pos )
 {
-	vec3d closest_pos, tempv, eye_rel_pos;
+	vec3d tempv, eye_rel_pos;
 	
 	polymodel *pm = model_get(model_num);
 
@@ -1157,10 +1069,57 @@ float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, 
 	}
 
 	// Rotate eye pos into object coordinates
-	vm_vec_sub(&tempv,pos,eye_pos );
-	vm_vec_rotate(&eye_rel_pos,&tempv,orient );
+	vm_vec_sub(&tempv, pos, eye_pos);
+	vm_vec_rotate(&eye_rel_pos, &tempv, orient);
 
-	return interp_closest_dist_to_box( &closest_pos, &eye_rel_pos, &pm->submodel[submodel_num].min, &pm->submodel[submodel_num].max );
+	return fl_sqrt( interp_closest_dist_sq_to_box( outpnt, &eye_rel_pos, &pm->submodel[submodel_num].min, &pm->submodel[submodel_num].max ) );
+}
+
+// Like the above, but finds the closest two points to each other.
+float model_find_closest_points(vec3d *outpnt1, int model_num1, int submodel_num1, const matrix *orient1, const vec3d *pos1, vec3d *outpnt2, int model_num2, int submodel_num2, const matrix *orient2, const vec3d *pos2)
+{
+	polymodel *pm1 = model_get(model_num1);
+	if (submodel_num1 < 0)
+		submodel_num1 = pm1->detail[0];
+
+	polymodel *pm2 = model_get(model_num2);
+	if (submodel_num2 < 0)
+		submodel_num2 = pm2->detail[0];
+
+	// determine obj2's bounding box
+	vec3d bounding_box[8];
+	model_calc_bound_box(bounding_box, &pm2->submodel[submodel_num2].min, &pm2->submodel[submodel_num2].max);
+
+	float closest_dist_sq = -1.0f;
+
+	// check each point on it
+	for (const auto &pt : bounding_box)
+	{
+		vec3d temp, rel_pt;
+
+		// find world coordinates of this point
+		vm_vec_unrotate(&temp, &pt, orient2);
+		vm_vec_add(&rel_pt, &temp, pos2);
+
+		// now find coordinates relative to obj1
+		vm_vec_sub(&temp, pos1, &rel_pt);
+		vm_vec_rotate(&rel_pt, &temp, orient1);
+
+		// test this point
+		float dist_sq = interp_closest_dist_sq_to_box(&temp, &rel_pt, &pm1->submodel[submodel_num1].min, &pm1->submodel[submodel_num1].max);
+		if (closest_dist_sq < 0.0f || dist_sq < closest_dist_sq)
+		{
+			closest_dist_sq = dist_sq;
+
+			// Note: As in the other function, both of these points are
+			// in local coordinates relative to each of their models.
+			*outpnt1 = temp;
+			*outpnt2 = pt;
+		}
+	}
+
+	// we have now found the closest point
+	return fl_sqrt(closest_dist_sq);
 }
 
 int tiling = 1;
@@ -1179,7 +1138,7 @@ DCF(tiling, "Toggles rendering of tiled textures (default is on)")
 	}
 }
 
-void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition )
+void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float  /*z_add*/, vec3d *Eyeposition )
 {
 	vec3d uvec, rvec;
 	vec3d temp;
@@ -1196,123 +1155,7 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
 }
 
-// Fills in an array with points from a model.
-// Only gets up to max_num verts;
-// Returns number of verts found;
-static int submodel_get_points_internal(int model_num, int submodel_num)
-{
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	if ( submodel_num < 0 )	{
-		submodel_num = pm->detail[0];
-	}
-
-	ubyte *p = pm->submodel[submodel_num].bsp_data;
-	int chunk_type, chunk_size;
-
-	chunk_type = w(p);
-	chunk_size = w(p+4);
-
-	while (chunk_type != OP_EOF)	{
-		switch (chunk_type) {
-		case OP_DEFPOINTS:	{
-				int n;
-				int nverts = w(p+8);				
-				int offset = w(p+16);
-				int nnorms = 0;			
-
-				ubyte * normcount = p+20;
-				vec3d *src = vp(p+offset);
-
-				for (n = 0; n < nverts; n++) {
-					nnorms += normcount[n];
-				}
-
-				model_allocate_interp_data(nverts, nnorms);
-
-				// this must happen only after the interp_data allocation call (since the address changes)
-				vec3d **verts = Interp_verts;
-				vec3d **norms = Interp_norms;
-
-				for (n=0; n<nverts; n++ )	{
-					*verts++ = src;
-					*norms++ = src + 1;		// first normal associated with the point
-
-					src += normcount[n]+1;
-				} 
-				return nverts;		// Read in 'n' points
-			}
-			break;
-		case OP_FLATPOLY:		break;
-		case OP_TMAPPOLY:		break;
-		case OP_SORTNORM:		break;
-		case OP_BOUNDBOX:		break;
-		default:
-			mprintf(( "Bad chunk type %d, len=%d in submodel_get_points\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
-			return 0;
-		}
-		p += chunk_size;
-		chunk_type = w(p);
-		chunk_size = w(p+4);
-	}
-	return 0;		// Couldn't find 'em
-}
-
-/**
- * Gets two random points on a model
- */
-void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1, vec3d *n2 )
-{
-	int nv = submodel_get_points_internal(model_num, submodel_num);
-
-	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
-	if (nv <= 0) {
-		polymodel *pm = model_get(model_num);
-		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
-
-		// in case people ignore the error...
-		vm_vec_zero(v1);
-		vm_vec_zero(v2);
-		if (n1 != NULL) {
-			vm_vec_zero(n1);
-		}
-		if (n2 != NULL) {
-			vm_vec_zero(n2);
-		}
-		return;
-	}
-
-#ifndef NDEBUG
-	if (RAND_MAX < nv)
-	{
-		static int submodel_get_two_random_points_warned = false;
-		if (!submodel_get_two_random_points_warned)
-		{
-			polymodel *pm = model_get(model_num);
-			Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
-			submodel_get_two_random_points_warned = true;
-		}
-	}
-#endif
-
-	int vn1 = myrand() % nv;
-	int vn2 = myrand() % nv;
-
-	*v1 = *Interp_verts[vn1];
-	*v2 = *Interp_verts[vn2];
-
-	if(n1 != NULL){
-		*n1 = *Interp_norms[vn1];
-	}
-	if(n2 != NULL){
-		*n2 = *Interp_norms[vn2];
-	}
-}
-
-void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2)
+vec3d submodel_get_random_point(int model_num, int submodel_num, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1327,32 +1170,102 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point in its collision tree!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
-			vm_vec_zero(v1);
-			vm_vec_zero(v2);
+			return vmd_zero_vector;
+		}
 
+		int seed_num = seed == -1 ? Random::next() : seed;
+		int vn1 = static_rand(seed_num) % nv;
+
+		return tree->point_list[vn1];
+	} else {
+		Assertion(false, "submodel_get_random_point called on an invalid model!");
+		return vmd_zero_vector;
+	}
+}
+
+void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos)
+{
+	polymodel* pm = model_get(model_num);
+
+	if (pm != nullptr) {
+		if (submodel_num < 0) {
+			submodel_num = pm->detail[0];
+		}
+
+		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_avg_pos!", model_num, (pm == nullptr) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(pos);
 			return;
 		}
 
-#ifndef NDEBUG
-		if (RAND_MAX < nv)
-		{
-			static int submodel_get_two_random_points_warned = false;
-			if (!submodel_get_two_random_points_warned)
-			{
-				Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
-				submodel_get_two_random_points_warned = true;
-			}
+		vm_vec_zero(pos);
+		// we take a regular average, add them all up, divide by the total number, but weighted by how close they are to the z slice
+		float accum_scale_factor = 0.0f;
+		for (int i = 0; i < tree->n_verts; i++) {
+			// this goes from 1 directly at our z pos, and quickly goes to 0 the further it gets
+			float scale_factor = 1 / ((fabs(tree->point_list[i].xyz.z - z_slice_pos) / (pm->rad / 10)) + 1);
+			vm_vec_scale_add(pos, pos, &tree->point_list[i], scale_factor);
+			// keep track of the scale factor we use because we need to divide by its total at the end
+			accum_scale_factor += scale_factor;
 		}
-#endif
 
-		int vn1 = myrand() % nv;
-		int vn2 = myrand() % nv;
+		*pos /= accum_scale_factor;
+	}
+}
 
-		*v1 = tree->point_list[vn1];
-		*v2 = tree->point_list[vn2];
+void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos)
+{
+	polymodel* pm = model_get(model_num);
+
+	if (pm != nullptr) {
+		if (submodel_num < 0) {
+			submodel_num = pm->detail[0];
+		}
+
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_cross_sectional_random_pos(), model %s does not have a collision tree!\n", pm->filename));
+			return;
+		}
+
+		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_random_pos!", model_num, (pm == nullptr) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(pos);
+			return;
+		}
+
+		vm_vec_zero(pos);
+		vec3d best1, best2;
+		// make random guesses a bunch of times, and average our two best guesses closest to the z pos, ez
+		// there are more accurate ways, but this is reasonably good and super cheap
+		vm_vec_make(&best1, 0, 0, 999999);
+		vm_vec_make(&best2, 0, 0, 999999);
+		for (int i = 0; i < 15; i++) {
+			vec3d rand_point = tree->point_list[Random::next(nv)];
+			if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best1.xyz.z - z_slice_pos))
+				best1 = rand_point;
+			else if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best2.xyz.z - z_slice_pos))
+				best2 = rand_point;
+		}
+
+		vm_vec_avg(pos, &best1, &best2);
 	}
 }
 
@@ -1364,56 +1277,11 @@ void model_set_outline_color(int r, int g, int b )
 
 }
 
-// If MR_FLAG_OUTLINE bit set this color will be used for outlines.
-// This defaults to black.
-void model_set_outline_color_fast(void *outline_color)
-{
-	Interp_outline_color = *((color*)(outline_color));
-}
-
 // IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
 // This defaults to 0. (0=highest, larger=lower)
 void model_set_detail_level(int n)
 {
 	Interp_detail_level_locked = n;
-}
-
-/**
- * Returns number of verts in a submodel;
- */
-int submodel_get_num_verts(int model_num, int submodel_num )
-{
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	ubyte *p = pm->submodel[submodel_num].bsp_data;
-	int chunk_type, chunk_size;
-
-	chunk_type = w(p);
-	chunk_size = w(p+4);
-
-	while (chunk_type != OP_EOF)	{
-		switch (chunk_type) {
-		case OP_DEFPOINTS:	{
-				int n=w(p+8);
-				return n;		// Read in 'n' points
-			}
-			break;
-		case OP_FLATPOLY:		break;
-		case OP_TMAPPOLY:		break;
-		case OP_SORTNORM:		break;
-		case OP_BOUNDBOX:	break;
-		default:
-			mprintf(( "Bad chunk type %d, len=%d in submodel_get_num_verts\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
-			return 0;
-		}
-		p += chunk_size;
-		chunk_type = w(p);
-		chunk_size = w(p+4);
-	}
-	return 0;		// Couldn't find 'em
 }
 
 /**
@@ -1425,7 +1293,8 @@ int submodel_get_num_polys_sub( ubyte *p )
 	int chunk_size = w(p+4);
 	int n = 0;
 	
-	while (chunk_type != OP_EOF)	{
+	bool end = chunk_type == OP_EOF;
+	while (!end)	{
 		switch (chunk_type) {
 		case OP_DEFPOINTS:	break;
 		case OP_FLATPOLY:		n++; break;
@@ -1443,7 +1312,20 @@ int submodel_get_num_polys_sub( ubyte *p )
 			n += submodel_get_num_polys_sub(p+onlist );
 			}
 			break;
+
+		case OP_SORTNORM2: {
+			int frontlist = w(p + 8);
+			int backlist = w(p + 12);
+			n += submodel_get_num_polys_sub(p + frontlist);
+			n += submodel_get_num_polys_sub(p + backlist);
+			}
+			end = true; // should not continue after this chunk
+			break;
 		case OP_BOUNDBOX:	break;
+		case OP_TMAP2POLY:		
+			n++; 
+			end = true; // should not continue after this chunk
+			break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in submodel_get_num_polys\n", chunk_type, chunk_size ));
 			Int3();		// Bad chunk type!
@@ -1452,6 +1334,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 		p += chunk_size;
 		chunk_type = w(p);
 		chunk_size = w(p+4);
+
+		if (chunk_type == OP_EOF)
+			end = true;
 	}
 	return n;		
 }
@@ -1466,70 +1351,6 @@ int submodel_get_num_polys(int model_num, int submodel_num )
 	pm = model_get(model_num);
 
 	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data );
-}
-
-// Sets the submodel instance data in a submodel
-// If show_damaged is true it shows only damaged submodels.
-// If it is false it shows only undamaged submodels.
-void model_show_damaged(int model_num, int show_damaged )
-{
-	polymodel * pm;
-	int i;
-
-	pm = model_get(model_num);
-
-	for (i=0; i<pm->n_models; i++ )	{
-		bsp_info *sm = &pm->submodel[i];
-
-		// Set the "blown out" flags	
-		sm->blown_off = 0;
-	}
-
-	for (i=0; i<pm->n_models; i++ )	{
-		bsp_info *sm = &pm->submodel[i];
-
-		// Set the "blown out" flags	
-		if ( show_damaged )	{
-			if ( sm->my_replacement > -1 )	{
-				pm->submodel[sm->my_replacement].blown_off = 0;
-				sm->blown_off = 1;
-			}
-		} else {
-			if ( sm->my_replacement > -1 )	{
-				pm->submodel[sm->my_replacement].blown_off = 1;
-				sm->blown_off = 0;
-			}
-		}
-	}
-}
-
-/**
- * Set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
- */
-void model_set_insignia_bitmap(int bmap)
-{
-	Interp_insignia_bitmap = bmap;
-}
-
-void model_set_replacement_textures(int *replacement_textures)
-{
-	Interp_new_replacement_textures = replacement_textures;
-}
-
-/**
- * Set the forces bitmap
- */
-void model_set_forced_texture(int bmap)
-{
-	Interp_forced_bitmap = bmap;
-}
-
-/**
- * Set model transparency for use with MR_ALL_XPARENT
- */
-void model_set_alpha(float alpha)
-{
-	Interp_xparent_alpha = alpha;
 }
 
 /**
@@ -1671,8 +1492,6 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 // "release" should only be set if called from model_unload()!!!
 void model_page_out_textures(int model_num, bool release)
 {
-	int i, j;
-
 	if (model_num < 0)
 		return;
 
@@ -1684,14 +1503,23 @@ void model_page_out_textures(int model_num, bool release)
 	if (release && (pm->used_this_mission > 0))
 		return;
 
+	model_page_out_textures(pm, release);
+}
 
+void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& skipTextures, const SCP_set<int>& skipGlowBanks)
+{
+	int i, j;
 	for (i = 0; i < pm->n_textures; i++) {
+		if (skipTextures.count(i) > 0)
+			continue;
 		pm->maps[i].PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
 	for (j = 0; j < pm->n_glow_point_banks; j++) {
-		glow_point_bank *bank = &pm->glow_point_banks[j];
+		if(skipGlowBanks.count(j) > 0)
+			continue;
+		glow_point_bank* bank = &pm->glow_point_banks[j];
 
 		if (bank->glow_bitmap >= 0) {
 		//	if (release) {
@@ -1720,10 +1548,10 @@ poly_list polygon_list[MAX_MODEL_TEXTURES];
 
 void parse_defpoint(int off, ubyte *bsp_data)
 {
-	int i, n;
-	int nverts = w(off+bsp_data+8);	
-	int offset = w(off+bsp_data+16);
-	int next_norm = 0;
+	uint i, n;
+	uint nverts = uw(off+bsp_data+8);	
+	uint offset = uw(off+bsp_data+16);
+	uint next_norm = 0;
 
 	ubyte *normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);
@@ -1766,13 +1594,10 @@ int Parse_normal_problem_count = 0;
 
 void parse_tmap(int offset, ubyte *bsp_data)
 {
-	int pof_tex = w(bsp_data+offset+40);
-	int n_vert = w(bsp_data+offset+36);
-	
-	ubyte *p = &bsp_data[offset+8];
-	model_tmap_vert *tverts;
-
-	tverts = (model_tmap_vert *)&bsp_data[offset+44];
+	int pof_tex = w(bsp_data+offset+TMAP_TEXNUM);
+	uint n_vert = uw(bsp_data+offset+TMAP_NVERTS);
+	ubyte *p = &bsp_data[offset+TMAP_NORMAL];
+	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
 
 	vertex *V;
 	vec3d *v;
@@ -1780,17 +1605,17 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 	int problem_count = 0;
 
-	for (int i = 1; i < (n_vert-1); i++) {
+	for (uint i = 1; i < (n_vert-1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
-		v = Interp_verts[(int)tverts[0].vertnum];
+		v = Interp_verts[tverts[0].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[0].u;
 		V->texture_position.v = tverts[0].v;
 
-		*N = *Interp_norms[(int)tverts[0].normnum];
+		*N = *Interp_norms[tverts[0].normnum];
 
 		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
@@ -1800,14 +1625,14 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
-		v = Interp_verts[(int)tverts[i].vertnum];
+		v = Interp_verts[tverts[i].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[i].u;
 		V->texture_position.v = tverts[i].v;
 
-		*N = *Interp_norms[(int)tverts[i].normnum];
+		*N = *Interp_norms[tverts[i].normnum];
 
 		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
@@ -1817,14 +1642,14 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
-		v = Interp_verts[(int)tverts[i+1].vertnum];
+		v = Interp_verts[tverts[i+1].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[i+1].u;
 		V->texture_position.v = tverts[i+1].v;
 
-		*N = *Interp_norms[(int)tverts[i+1].normnum];
+		*N = *Interp_norms[tverts[i+1].normnum];
 
 		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
@@ -1838,14 +1663,129 @@ void parse_tmap(int offset, ubyte *bsp_data)
 	Parse_normal_problem_count += problem_count;
 }
 
-void parse_sortnorm(int offset, ubyte *bsp_data);
+/**
+* @brief Parses a TMAP2POLY chunk into a list of polygons.
+* 
+* @param offset The byte offset to the current TMAP2POLY chunk within bsp_data.
+* @param[in] bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void parse_tmap2(int offset, ubyte* bsp_data)
+{
+	int pof_tex = w(bsp_data + offset + TMAP2_TEXNUM);
+	uint n_vert = uw(bsp_data + offset + TMAP2_NVERTS);
+
+	ubyte* p = &bsp_data[offset + TMAP2_NORMAL];
+	model_tmap_vert* tverts;
+
+	vertex* V;
+	vec3d* v;
+	vec3d* N;
+
+	int problem_count = 0;
+
+	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
+
+	for (uint i = 1; i < (n_vert - 1); i++) {
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
+		v = Interp_verts[tverts[0].vertnum];
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[0].u;
+		V->texture_position.v = tverts[0].v;
+
+		*N = *Interp_norms[tverts[0].normnum];
+
+		if (IS_VEC_NULL(N))
+			*N = *vp(p);
+
+		problem_count += check_values(N);
+		vm_vec_normalize_safe(N);
+
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 1];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 1];
+		v = Interp_verts[tverts[i].vertnum];
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i].u;
+		V->texture_position.v = tverts[i].v;
+
+		*N = *Interp_norms[tverts[i].normnum];
+
+		if (IS_VEC_NULL(N))
+			*N = *vp(p);
+
+		problem_count += check_values(N);
+		vm_vec_normalize_safe(N);
+
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 2];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 2];
+		v = Interp_verts[tverts[i + 1].vertnum];
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i + 1].u;
+		V->texture_position.v = tverts[i + 1].v;
+
+		*N = *Interp_norms[tverts[i + 1].normnum];
+
+		if (IS_VEC_NULL(N))
+			*N = *vp(p);
+
+		problem_count += check_values(N);
+		vm_vec_normalize_safe(N);
+
+		polygon_list[pof_tex].n_verts += 3;
+	}
+
+	Parse_normal_problem_count += problem_count;
+}
+
+void parse_bsp(int offset, ubyte* bsp_data);
+
+void parse_sortnorm(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data + offset + 36);
+	backlist = w(bsp_data + offset + 40);
+	prelist = w(bsp_data + offset + 44);
+	postlist = w(bsp_data + offset + 48);
+	onlist = w(bsp_data + offset + 52);
+
+	if (prelist) parse_bsp(offset + prelist, bsp_data);
+	if (backlist) parse_bsp(offset + backlist, bsp_data);
+	if (onlist) parse_bsp(offset + onlist, bsp_data);
+	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
+	if (postlist) parse_bsp(offset + postlist, bsp_data);
+}
+
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void parse_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) parse_bsp(offset + backlist, bsp_data);
+	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
+}
 
 void parse_bsp(int offset, ubyte *bsp_data)
 {
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 			case OP_DEFPOINTS:
@@ -1854,6 +1794,11 @@ void parse_bsp(int offset, ubyte *bsp_data)
 
 			case OP_SORTNORM:
 				parse_sortnorm(offset, bsp_data);
+				break;
+
+			case OP_SORTNORM2:
+				parse_sortnorm2(offset, bsp_data);
+				end = true; // should not continue after this chunk
 				break;
 
 			case OP_FLATPOLY:
@@ -1866,6 +1811,11 @@ void parse_bsp(int offset, ubyte *bsp_data)
 			case OP_BOUNDBOX:
 				break;
 
+			case OP_TMAP2POLY:
+				parse_tmap2(offset, bsp_data);
+				end = true; // should not continue after this chunk
+				break;
+
 			default:
 				return;
 		}
@@ -1874,40 +1824,23 @@ void parse_bsp(int offset, ubyte *bsp_data)
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
 }
 
-void parse_sortnorm(int offset, ubyte *bsp_data)
+void find_tmap(int offset, const ubyte *bsp_data, int id)
 {
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) parse_bsp(offset+prelist,bsp_data);
-	if (backlist) parse_bsp(offset+backlist, bsp_data);
-	if (onlist) parse_bsp(offset+onlist, bsp_data);
-	if (frontlist) parse_bsp(offset+frontlist, bsp_data);
-	if (postlist) parse_bsp(offset+postlist, bsp_data);
-}
-
-void find_tmap(int offset, ubyte *bsp_data)
-{
-	int pof_tex = w(bsp_data+offset+40);
-	int n_vert = w(bsp_data+offset+36);
+	int pof_tex = cw(bsp_data+offset+(id == OP_TMAP2POLY ? TMAP2_TEXNUM : TMAP_TEXNUM));
+	uint n_vert = cuw(bsp_data+offset+ (id == OP_TMAP2POLY ? TMAP2_NVERTS : TMAP_NVERTS));
 
 	tri_count[pof_tex] += n_vert-2;	
 }
 
 void find_defpoint(int off, ubyte *bsp_data)
 {
-	int n;
-	int nverts = w(off+bsp_data+8);	
+	uint n;
+	uint nverts = uw(off+bsp_data+8);	
 
 	ubyte * normcount = off+bsp_data+20;
 
@@ -1928,7 +1861,35 @@ void find_defpoint(int off, ubyte *bsp_data)
 	Interp_num_norms = norm_num;
 }
 
-void find_sortnorm(int offset, ubyte *bsp_data);
+void find_tri_counts(int offset, ubyte* bsp_data);
+
+void find_sortnorm(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data + offset + 36);
+	backlist = w(bsp_data + offset + 40);
+	prelist = w(bsp_data + offset + 44);
+	postlist = w(bsp_data + offset + 48);
+	onlist = w(bsp_data + offset + 52);
+
+	if (prelist) find_tri_counts(offset + prelist, bsp_data);
+	if (backlist) find_tri_counts(offset + backlist, bsp_data);
+	if (onlist) find_tri_counts(offset + onlist, bsp_data);
+	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
+	if (postlist) find_tri_counts(offset + postlist, bsp_data);
+}
+
+void find_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) find_tri_counts(offset + backlist, bsp_data);
+	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
+}
 
 // tri_count
 void find_tri_counts(int offset, ubyte *bsp_data)
@@ -1936,7 +1897,8 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 			case OP_DEFPOINTS:
@@ -1947,11 +1909,20 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 				find_sortnorm(offset, bsp_data);
 				break;
 
+			case OP_SORTNORM2:
+				find_sortnorm2(offset, bsp_data);
+				end = true; // should not continue after this chunk
+				break;
+
 			case OP_FLATPOLY:
 				break;
 
 			case OP_TMAPPOLY:
-				find_tmap(offset, bsp_data);
+				find_tmap(offset, bsp_data, id);
+				break;
+			case OP_TMAP2POLY:
+				find_tmap(offset, bsp_data, id);
+				end = true; // should not continue after this chunk
 				break;
 
 			case OP_BOUNDBOX:
@@ -1965,29 +1936,12 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
 }
 
-void find_sortnorm(int offset, ubyte *bsp_data)
-{
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) find_tri_counts(offset+prelist,bsp_data);
-	if (backlist) find_tri_counts(offset+backlist, bsp_data);
-	if (onlist) find_tri_counts(offset+onlist, bsp_data);
-	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
-	if (postlist) find_tri_counts(offset+postlist, bsp_data);
-}
-
-void model_interp_submit_buffers(indexed_vertex_source *vert_src)
+void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride)
 {
 	Assert(vert_src != NULL);
 
@@ -1995,20 +1949,22 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src)
 		return;
 	}
 
-	bool static_buffer = true;
-	vert_src->Vbuffer_handle = gr_create_vertex_buffer(static_buffer);
+	if ( vert_src->Vertex_list != NULL ) {
+		size_t offset;
+		gr_heap_allocate(GpuHeap::ModelVertex, vert_src->Vertex_list_size, vert_src->Vertex_list, offset, vert_src->Vbuffer_handle);
 
-	if ( vert_src->Vbuffer_handle > -1 && vert_src->Vertex_list != NULL ) {
-		gr_update_buffer_data(vert_src->Vbuffer_handle, vert_src->Vertex_list_size, vert_src->Vertex_list);
+		// If this happens then someone must have allocated something from the heap with a different stride than what we
+		// are using.
+		Assertion(offset % vertex_stride == 0, "Offset returned by GPU heap allocation does not match stride value!");
+		vert_src->Base_vertex_offset = offset / vertex_stride;
+		vert_src->Vertex_offset = offset;
 
 		vm_free(vert_src->Vertex_list);
 		vert_src->Vertex_list = NULL;
 	}
 
-	vert_src->Ibuffer_handle = gr_create_index_buffer(static_buffer);
-
-	if ( vert_src->Ibuffer_handle > -1 && vert_src->Index_list != NULL ) {
-		gr_update_buffer_data(vert_src->Ibuffer_handle, vert_src->Index_list_size, vert_src->Index_list);
+	if ( vert_src->Index_list != NULL ) {
+		gr_heap_allocate(GpuHeap::ModelIndex, vert_src->Index_list_size, vert_src->Index_list, vert_src->Index_offset, vert_src->Ibuffer_handle);
 
 		vm_free(vert_src->Index_list);
 		vert_src->Index_list = NULL;
@@ -2020,20 +1976,13 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	if ( vert_src == NULL ) {
 		return false;
 	}
-	
-	// NULL means that we are done with the buffer and can create the IBO/VBO
-	// returns false here only for some minor error prevention
-	if ( vb == NULL ) {
-		model_interp_submit_buffers(vert_src);
-		return false;
-	}
+
+	Assertion(vb != nullptr, "Invalid vertex buffer specified!");
 
 	int i, n_verts = 0;
 	size_t j;
-	uint arsize = 0;
-
 	if ( vert_src->Vertex_list == NULL ) {
-		vert_src->Vertex_list = (float*)vm_malloc(vert_src->Vertex_list_size);
+		vert_src->Vertex_list = vm_malloc(vert_src->Vertex_list_size);
 
 		// return invalid if we don't have the memory
 		if ( vert_src->Vertex_list == NULL ) {
@@ -2044,7 +1993,7 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	}
 
 	if ( vert_src->Index_list == NULL ) {
-		vert_src->Index_list = (ubyte*)vm_malloc(vert_src->Index_list_size);
+		vert_src->Index_list = vm_malloc(vert_src->Index_list_size);
 
 		// return invalid if we don't have the memory
 		if ( vert_src->Index_list == NULL ) {
@@ -2055,66 +2004,62 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	}
 
 	// bump to our index in the array
-	float *array = vert_src->Vertex_list + (vb->vertex_offset / sizeof(float));
+	auto array = reinterpret_cast<interp_vertex*>(static_cast<uint8_t*>(vert_src->Vertex_list) + (vb->vertex_offset));
 
 	// generate the vertex array
 	n_verts = vb->model_list->n_verts;
 	for ( i = 0; i < n_verts; i++ ) {
 		vertex *vl = &vb->model_list->vert[i];
+		auto outVert = &array[i];
 
 		// don't try to generate more data than what's available
-		Assert(((arsize * sizeof(float)) + vb->stride) <= (vert_src->Vertex_list_size - vb->vertex_offset));
+		Assert(((i * sizeof(interp_vertex)) + sizeof(interp_vertex)) <= (vert_src->Vertex_list_size - vb->vertex_offset));
 
 		// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
 
 		// tex coords
 		if ( vb->flags & VB_FLAG_UV1 ) {
-			array[arsize++] = vl->texture_position.u;
-			array[arsize++] = vl->texture_position.v;
+			outVert->uv = vl->texture_position;
 		} else {
-			array[arsize++] = 1.0f;
-			array[arsize++] = 1.0f;
+			outVert->uv.u = 1.0f;
+			outVert->uv.v = 1.0f;
 		}
 
 		// normals
 		if ( vb->flags & VB_FLAG_NORMAL ) {
 			Assert(vb->model_list->norm != NULL);
-			vec3d *nl = &vb->model_list->norm[i];
-			array[arsize++] = nl->xyz.x;
-			array[arsize++] = nl->xyz.y;
-			array[arsize++] = nl->xyz.z;
+			outVert->normal = vb->model_list->norm[i];
 		} else {
-			array[arsize++] = 0.0f;
-			array[arsize++] = 0.0f;
-			array[arsize++] = 1.0f;
+			outVert->normal.xyz.x = 0.0f;
+			outVert->normal.xyz.y = 0.0f;
+			outVert->normal.xyz.z = 1.0f;
 		}
 
 		// tangent space data
 		if ( vb->flags & VB_FLAG_TANGENT ) {
 			Assert(vb->model_list->tsb != NULL);
 			tsb_t *tsb = &vb->model_list->tsb[i];
-			array[arsize++] = tsb->tangent.xyz.x;
-			array[arsize++] = tsb->tangent.xyz.y;
-			array[arsize++] = tsb->tangent.xyz.z;
-			array[arsize++] = tsb->scaler;
+
+			outVert->tangent.xyzw.x = tsb->tangent.xyz.x;
+			outVert->tangent.xyzw.y = tsb->tangent.xyz.y;
+			outVert->tangent.xyzw.z = tsb->tangent.xyz.z;
+			outVert->tangent.xyzw.w = tsb->scaler;
 		} else {
-			array[arsize++] = 1.0f;
-			array[arsize++] = 0.0f;
-			array[arsize++] = 0.0f;
-			array[arsize++] = 0.0f;
+			outVert->tangent.xyzw.x = 1.0f;
+			outVert->tangent.xyzw.y = 0.0f;
+			outVert->tangent.xyzw.z = 0.0f;
+			outVert->tangent.xyzw.w = 0.0f;
 		}
 
 		if ( vb->flags & VB_FLAG_MODEL_ID ) {
 			Assert(vb->model_list->submodels != NULL);
-			array[arsize++] = (float)vb->model_list->submodels[i];
+			outVert->modelId = (float)vb->model_list->submodels[i];
 		} else {
-			array[arsize++] = 0.0f;
+			outVert->modelId = 0.0f;
 		}
 
 		// verts
-		array[arsize++] = vl->world.xyz.x;
-		array[arsize++] = vl->world.xyz.y;
-		array[arsize++] = vl->world.xyz.z;
+		outVert->pos = vl->world;
 	}
 
 	// generate the index array
@@ -2125,7 +2070,7 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
-		ubyte *ibuf = vert_src->Index_list + offset;
+		auto ibuf = static_cast<uint8_t*>(vert_src->Index_list) + offset;
 
 		if ( vb->tex_buf[j].flags & VB_FLAG_LARGE_INDEX ) {
 			memcpy(ibuf, index, n_verts * sizeof(uint));
@@ -2162,42 +2107,23 @@ void interp_pack_vertex_buffers(polymodel *pm, int mn)
 	}
 }
 
-void model_interp_set_buffer_layout(vertex_layout *layout, uint stride, int flags)
+void model_interp_set_buffer_layout(vertex_layout *layout)
 {
 	Assert(layout != NULL);
-	
-	uint offset = 0;
 
-	// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
+	// Similarly to model_interp_config_buffer, we add all vectex components even if they aren't used
+	// This reduces the amount of vertex format respecification and since the data contains valid data there is no risk
+	// of reading garbage data on the GPU
 
-	if ( flags & VB_FLAG_UV1 ) {
-		layout->add_vertex_component(vertex_format_data::TEX_COORD2, stride, offset);
-	}
+	layout->add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(interp_vertex), offsetof(interp_vertex, uv));
 
-	offset += (2 * sizeof(float));
+	layout->add_vertex_component(vertex_format_data::NORMAL, sizeof(interp_vertex), offsetof(interp_vertex, normal));
 
-	if ( flags & VB_FLAG_NORMAL ) {
-		layout->add_vertex_component(vertex_format_data::NORMAL, stride, offset);
-	}
+	layout->add_vertex_component(vertex_format_data::TANGENT, sizeof(interp_vertex), offsetof(interp_vertex, tangent));
 
-	offset += (3 * sizeof(float));
+	layout->add_vertex_component(vertex_format_data::MODEL_ID, sizeof(interp_vertex), offsetof(interp_vertex, modelId));
 
-	if ( flags & VB_FLAG_TANGENT ) {
-		layout->add_vertex_component(vertex_format_data::TANGENT, stride, offset);
-	}
-
-	offset += (4 * sizeof(float));
-
-	if ( flags & VB_FLAG_MODEL_ID ) {
-		layout->add_vertex_component(vertex_format_data::MODEL_ID, stride, offset);
-	}
-
-	offset += (1 * sizeof(float));
-
-	Assert(flags & VB_FLAG_POSITION);
-	layout->add_vertex_component(vertex_format_data::POSITION3, stride, offset);
-
-	offset += (3 * sizeof(float));
+	layout->add_vertex_component(vertex_format_data::POSITION3, sizeof(interp_vertex), offsetof(interp_vertex, pos));
 }
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only)
@@ -2211,27 +2137,11 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 		return false;
 	}
 
-	vb->stride = 0;
-
 	// pad out the vertex buffer even if it doesn't use certain attributes
 	// we require consistent stride across vertex buffers so we can use base vertex offsetting for performance reasons
+	vb->stride = sizeof(interp_vertex);
 
-	// uv coords
-	vb->stride += (2 * sizeof(float));
-
-	// normals
-	vb->stride += (3 * sizeof(float));
-
-	// tangent space data for normal maps (shaders only)
-	vb->stride += (4 * sizeof(float));
-
-	// model ID for batched submodel rendering (shaders only)
-	vb->stride += (1 * sizeof(float));
-
-	// position
-	vb->stride += (3 * sizeof(float));
-
-	model_interp_set_buffer_layout(&vb->layout, (uint) vb->stride, vb->flags);
+	model_interp_set_buffer_layout(&vb->layout);
 
 	// offsets for this chunk
 	if ( !update_ibuffer_only ) {
@@ -2253,7 +2163,7 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 	return true;
 }
 
-void interp_configure_vertex_buffers(polymodel *pm, int mn)
+void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_deferred_tasks& deferredTasks)
 {
 	TRACE_SCOPE(tracing::ModelConfigureVertexBuffers);
 
@@ -2273,6 +2183,10 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	int milliseconds = timer_get_milliseconds();
 
 	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
+
+	auto textureReplace = deferredTasks.texture_replacements.find(mn);
+	if (textureReplace != deferredTasks.texture_replacements.end())
+		bsp_polies->replace_textures_used(textureReplace->second.replacementIds);
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		int vert_count = bsp_polies->get_num_triangles(i) * 3;
@@ -2450,7 +2364,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
-		if ( pm->submodel[model_num].is_thruster ) {
+		if ( pm->submodel[model_num].flags[Model::Submodel_flags::Is_thruster] ) {
 			continue;
 		}
 
@@ -2486,7 +2400,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
-		if (pm->submodel[model_num].is_thruster) {
+		if (pm->submodel[model_num].flags[Model::Submodel_flags::Is_thruster]) {
 			continue;
 		}
 
@@ -2675,14 +2589,14 @@ void model_interp_process_shield_mesh(polymodel * pm)
 	}
 	
 	if ( !buffer.empty() ) {
-		pm->shield.buffer_id = gr_create_vertex_buffer(true);
+		pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
 		pm->shield.buffer_n_verts = n_verts;
 		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
 
 		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
 		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
 	} else {
-		pm->shield.buffer_id = -1;
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
 	}
 }
 
@@ -2732,10 +2646,10 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 // Goober5000
 // uses same algorithms as in ship_do_thruster_frame
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
+int model_interp_get_texture(const texture_info *tinfo, int elapsed_time)
 {
-	int texture, frame, num_frames;
-	float cur_time, total_time;
+	int texture, frame, cur_time, num_frames;
+	float total_time;
 
 	// get texture
 	num_frames = tinfo->GetNumFrames();
@@ -2747,11 +2661,12 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 	{
 		// sanity check total_time first thing
 		Assert(total_time > 0.0f);
+		total_time *= MILLISECONDS_PER_SECOND;
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(total_time));
+		cur_time = elapsed_time % fl2i(total_time);
 
 		// get animation frame
-		frame = fl2i((cur_time * num_frames) / total_time);
+		frame = fl2i((cur_time * num_frames) / total_time + 0.5f);
 		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
@@ -2760,16 +2675,6 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 
 	// done
 	return texture;
-}
-
-void model_set_warp_globals(float scale_x, float scale_y, float scale_z, int bitmap_id, float alpha)
-{
-	Interp_warp_scale_x = scale_x;
-	Interp_warp_scale_y = scale_y;
-	Interp_warp_scale_z = scale_z;
-
-	Interp_warp_bitmap = bitmap_id;
-	Interp_warp_alpha = alpha;
 }
 
 void model_mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float mix_factor)
@@ -2846,19 +2751,19 @@ void texture_info::clear()
 	num_frames = 0;
 	total_time = 1.0f;
 }
-int texture_info::GetNumFrames()
+int texture_info::GetNumFrames() const
 {
 	return num_frames;
 }
-int texture_info::GetOriginalTexture()
+int texture_info::GetOriginalTexture() const
 {
 	return original_texture;
 }
-int texture_info::GetTexture()
+int texture_info::GetTexture() const
 {
 	return texture;
 }
-float texture_info::GetTotalTime()
+float texture_info::GetTotalTime() const
 {
 	return total_time;
 }
@@ -2939,7 +2844,7 @@ int texture_map::FindTexture(int bm_handle)
 	}
 	return -1;
 }
-int texture_map::FindTexture(char *fname)
+int texture_map::FindTexture(const char* fname)
 {
 	if(fname == NULL || !strlen(fname))
 		return -1;
@@ -3003,7 +2908,8 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 	int id = w(bsp_data + offset);
 	int size = w(bsp_data + offset + 4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 		case OP_DEFPOINTS:
@@ -3012,6 +2918,11 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 
 		case OP_SORTNORM:
 			process_sortnorm(offset, bsp_data);
+			break;
+
+		case OP_SORTNORM2:
+			process_sortnorm2(offset, bsp_data);
+			end = true; // should not continue after this chunk
 			break;
 
 		case OP_FLATPOLY:
@@ -3025,6 +2936,11 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 		case OP_BOUNDBOX:
 			break;
 
+		case OP_TMAP2POLY:
+			process_tmap2(offset, bsp_data);
+			end = true; // should not continue after this chunk
+			break;
+
 		default:
 			return;
 		}
@@ -3033,16 +2949,16 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 		id = w(bsp_data + offset);
 		size = w(bsp_data + offset + 4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
 }
 
 void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 {
-	int i, n;
-	int nverts = w(off + bsp_data + 8);
-	int offset = w(off + bsp_data + 16);
+	uint i, n;
+	uint nverts = uw(off + bsp_data + 8);
+	uint offset = uw(off + bsp_data + 16);
 
 	ubyte *normcount = off + bsp_data + 20;
 	vec3d *src = vp(off + bsp_data + offset);
@@ -3068,6 +2984,23 @@ void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 	}
 }
 
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void bsp_polygon_data::process_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) process_bsp(offset + backlist, bsp_data);
+	if (frontlist) process_bsp(offset + frontlist, bsp_data);
+}
+
 void bsp_polygon_data::process_sortnorm(int offset, ubyte* bsp_data)
 {
 	int frontlist, backlist, prelist, postlist, onlist;
@@ -3087,18 +3020,21 @@ void bsp_polygon_data::process_sortnorm(int offset, ubyte* bsp_data)
 
 void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 40);
-	int n_vert = w(bsp_data + offset + 36);
+	int pof_tex = w(bsp_data + offset + TMAP_TEXNUM);
+	uint n_vert = uw(bsp_data + offset + TMAP_NVERTS);
+	ubyte* p;
 
 	if ( n_vert < 3 ) {
 		// don't parse degenerate polygons
 		return;
 	}
 
-	ubyte *p = &bsp_data[offset + 8];
-	model_tmap_vert *tverts;
+	p = &bsp_data[offset + TMAP_NORMAL];
 
-	tverts = (model_tmap_vert *)&bsp_data[offset + 44];
+	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
+
+	// Copy the verts manually since they aren't aligned with the struct
+	//unpack_tmap_verts(&bsp_data[offset + 44], tverts, n_vert);
 
 	int problem_count = 0;
 
@@ -3115,19 +3051,76 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 	Num_verts[pof_tex] += n_vert;
 
 	// stuff data making up the vertices of this polygon
-	for ( int i = 0; i < n_vert; ++i ) {
+	for ( uint i = 0; i < n_vert; ++i ) {
 		bsp_vertex vert;
 
-		vert.position = Vertex_list[(int)tverts[i].vertnum];
+		vert.position = Vertex_list[tverts[i].vertnum];
 		
 		vert.tex_coord.u = tverts[i].u;
 		vert.tex_coord.v = tverts[i].v;
 
-		vert.normal = Normal_list[(int)tverts[i].normnum];
+		vert.normal = Normal_list[tverts[i].normnum];
 
 		// see if this normal is okay
 		if (IS_VEC_NULL(&vert.normal))
 			vert.normal = *vp(p);
+
+		problem_count += check_values(&vert.normal);
+		vm_vec_normalize_safe(&vert.normal);
+
+		Polygon_vertices.push_back(vert);
+	}
+
+	Polygons.push_back(polygon);
+
+	Parse_normal_problem_count += problem_count;
+}
+
+/**
+* @brief Converts a TMAP2POLY chunk into a list of BSP_polygon.
+* 
+* @param offset The byte offset into bsp_data.
+* @param[in] The buffer containing the chunk data.
+*/
+void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
+{
+	int pof_tex = w(bsp_data + offset + TMAP2_TEXNUM);
+	uint n_vert = uw(bsp_data + offset + TMAP2_NVERTS);
+	model_tmap_vert* tverts;
+	int problem_count = 0;
+	bsp_polygon polygon;
+
+	if (n_vert < 3) {
+		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
+		return;
+	}
+
+	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
+
+	// make a polygon
+	polygon.Start_index = (uint)Polygon_vertices.size();
+	polygon.Num_verts = n_vert;
+	polygon.texture = pof_tex;
+
+	// this polygon will be broken up into a triangle fan. first three verts make up the first triangle
+	// additional verts are made into new tris
+	Num_polies[pof_tex]++;
+	Num_verts[pof_tex] += n_vert;
+
+	// stuff data making up the vertices of this polygon
+	for (uint i = 0; i < n_vert; ++i) {
+		bsp_vertex vert;
+
+		vert.position = Vertex_list[tverts[i].vertnum];
+
+		vert.tex_coord.u = tverts[i].u;
+		vert.tex_coord.v = tverts[i].v;
+
+		vert.normal = Normal_list[tverts[i].normnum];
+
+		// see if this normal is okay
+		if (IS_VEC_NULL(&vert.normal))
+			vert.normal = *vp(&bsp_data[offset + 32]);
 
 		problem_count += check_values(&vert.normal);
 		vm_vec_normalize_safe(&vert.normal);
@@ -3284,4 +3277,28 @@ void bsp_polygon_data::generate_lines(int texture, vertex *vert_ptr)
 			num_verts += 2;
 		}
 	}
+}
+
+SCP_set<int> bsp_polygon_data::get_textures_used() const {
+	SCP_set<int> textures;
+	for (const auto& poly : Polygons)
+		textures.emplace(poly.texture);
+	return textures;
+}
+
+void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacementMap) {
+	for (auto& poly : Polygons) {
+		auto it = replacementMap.find(poly.texture);
+		if (it != replacementMap.end()) {
+			poly.texture = it->second;
+			Num_verts[it->first] -= poly.Num_verts;
+			Num_verts[it->second] += poly.Num_verts;
+			--Num_polies[it->first];
+			++Num_polies[it->second];
+		}
+	}
+}
+
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
 }

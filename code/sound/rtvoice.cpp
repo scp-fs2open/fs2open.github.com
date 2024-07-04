@@ -28,7 +28,7 @@ typedef struct rtv_format
 	int frequency;
 } rtv_format;
 
-
+#define MAX_RTV_CHANNELS 15
 #define MAX_RTV_FORMATS	5
 static rtv_format Rtv_formats[MAX_RTV_FORMATS] = 
 {
@@ -85,7 +85,7 @@ static int Rtv_playback_uncompressed_buffer_size;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
-void CALLBACK TimeProc(unsigned int id, unsigned int msg, DWORD_PTR userdata, DWORD_PTR dw1, DWORD_PTR dw2)
+void CALLBACK TimeProc(unsigned int /*id*/, unsigned int /*msg*/, DWORD_PTR /*userdata*/, DWORD_PTR /*dw1*/, DWORD_PTR /*dw2*/)
 {
 	if ( !Rtv_callback ) {
 		return;
@@ -95,7 +95,7 @@ void CALLBACK TimeProc(unsigned int id, unsigned int msg, DWORD_PTR userdata, DW
 	Rtv_callback();
 }
 #else
-Uint32 TimeProc(Uint32 interval, void *param)
+Uint32 TimeProc(Uint32 interval, void * /*param*/)
 {
 	if ( !Rtv_callback ) {
 		SDL_RemoveTimer(Rtv_record_timer_id);
@@ -142,7 +142,7 @@ int rtvoice_pick_record_format()
 }
 
 // input:	qos => new quality of service (1..10)
-void rtvoice_set_qos(int qos)
+void rtvoice_set_qos(int  /*qos*/)
 {
 	// TODO:  Speex stuff
 }
@@ -151,7 +151,7 @@ void rtvoice_set_qos(int qos)
 // input:	qos	=> quality of service (1..10) 1 is highest compression, 10 is highest quality
 //	exit:	0	=>	success
 //			!0	=>	failure, recording not possible
-int rtvoice_init_recording(int qos)
+int rtvoice_init_recording(int  /*qos*/)
 {
 #if 0
 	if ( !Rtv_recording_inited ) {
@@ -280,7 +280,7 @@ int rtvoice_start_recording( void (*user_callback)(), int callback_time )
 //				outbuf_size_raw		=>		output optional parameter, size of the outbuf_raw buffer
 //
 // NOTE: function converts voice data into compressed format
-void rtvoice_get_data(unsigned char **outbuf, int *size, double *gain)
+void rtvoice_get_data(unsigned char **outbuf, int *size, double * /*gain*/)
 {
 	int max_size __UNUSED, raw_size;
 	max_size = dscap_max_buffersize();
@@ -301,7 +301,7 @@ void rtvoice_get_data(unsigned char **outbuf, int *size, double *gain)
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 // uncompress the data into PCM format
-void rtvoice_uncompress(unsigned char *data_in, int size_in, double gain, unsigned char *data_out, int size_out)
+void rtvoice_uncompress(unsigned char *data_in, int size_in, double  /*gain*/, unsigned char * /*data_out*/, int  /*size_out*/)
 {
 	if ( (data_in == NULL) || (size_in <= 0) ) {
 		return;
@@ -438,9 +438,9 @@ void rtvoice_free_playback_buffer(int index)
 // Play sound data
 // exit:	>=0	=>	handle to playing sound
 //			-1		=>	error, voice not played
-int rtvoice_play(int index, unsigned char *data, int size)
+sound_handle rtvoice_play(int index, unsigned char* data, int size)
 {
-	int ds_handle, rval;
+	int ds_handle;
 
 	ds_handle = Rtv_output_buffers[index].ds_handle;
 
@@ -451,12 +451,11 @@ int rtvoice_play(int index, unsigned char *data, int size)
 
 	// lock the data in
 	if ( ds_lock_data(ds_handle, data, size) ) {
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	// play the voice
-	EnhancedSoundData enhanced_sound_data(SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
-	rval = ds_play(ds_handle, -100, DS_MUST_PLAY, &enhanced_sound_data, Master_voice_volume, 0, 0);
-	return rval;
+	EnhancedSoundData enhanced_sound_data(SND_ENHANCED_PRIORITY_MUST_PLAY, MAX_RTV_CHANNELS);
+	return ds_play(ds_handle, -100, DS_MUST_PLAY, &enhanced_sound_data, Master_voice_volume, 0, 0);
 }
 

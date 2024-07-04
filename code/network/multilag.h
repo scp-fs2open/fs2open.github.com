@@ -33,6 +33,6 @@ void multi_lag_close();
 int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except_fds, timeval *timeout);
 
 // recvfrom for multilag
-int multi_lag_recvfrom(uint s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen);
+int multi_lag_recvfrom(SOCKET s, char *buf, int len, int flags, SOCKADDR *from, int *fromlen);
 
 #endif

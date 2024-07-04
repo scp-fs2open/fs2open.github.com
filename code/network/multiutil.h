@@ -27,12 +27,14 @@ class ship;
 struct server_item;
 class ship_info;
 class p_object;
+class ship_subsys;
 
-// two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000
+// two types of signatures that we can request,  permanent signatures are all below 5000.  non-permanent are above 5000
 #define MULTI_SIG_SHIP					1
 #define MULTI_SIG_ASTEROID				2
 #define MULTI_SIG_NON_PERMANENT		3
 #define MULTI_SIG_DEBRIS				4
+#define MULTI_SIG_WAYPOINT				5				// Added for dynamic waypoints in multiplayer missions
 
 extern ushort multi_assign_network_signature( int what_kind );
 extern ushort multi_get_next_network_signature( int what_kind );
@@ -41,7 +43,7 @@ extern void multi_set_network_signature( ushort signature, int what_kind );
 extern void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, player *pplayer );
 extern int find_player(net_addr* addr);
 extern int find_player_no_port(net_addr *addr);
-extern int find_player_id(short player_id);
+extern int find_player_index(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( object *obj );
 extern int multi_find_player_by_signature( int signature );
@@ -49,7 +51,7 @@ extern int multi_find_player_by_callsign(const char *callsign);
 extern int multi_find_player_by_net_signature(ushort net_signature);
 extern int multi_find_player_by_parse_object(p_object *p_objp );
 extern int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning = false);
-extern int multi_create_player(int player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id);
+extern void multi_create_player(int player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id);
 extern int multi_find_open_netplayer_slot();
 extern int multi_find_open_player_slot();
 extern void delete_player(int player_num, int kicked_reason = -1);
@@ -96,8 +98,6 @@ void multi_apply_ship_status(net_player *p,button_info *bi, int locally);
 
 void multiplayer_match_target_speed(net_player *p);
 
-void multi_subsys_update_all();
-
 void server_verify_filesig(short player_id, ushort sum_sig, int length_sig);
 int server_all_filesigs_ok();
 
@@ -126,7 +126,6 @@ int multi_message_should_broadcast(int type);
 // the active game list manager functions
 active_game *multi_new_active_game( void );
 active_game *multi_update_active_games(active_game *ag);
-void multi_free_active_games();
 
 server_item *multi_new_server_item( void );
 void multi_free_server_list();
@@ -187,33 +186,31 @@ void multi_get_mission_checksum(const char *filename);
 
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
-#define OO_POS_RET_SIZE							9
 int multi_pack_unpack_position(int write, ubyte *data, vec3d *pos);
 
 // Packs/unpacks an orientation matrix.
 // Returns number of bytes read or written.
-#define OO_ORIENT_RET_SIZE						6
-int multi_pack_unpack_orient(int write, ubyte *data, matrix *orient);
+int multi_pack_unpack_orient(int write, ubyte *data, angles *angles_out);
 
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
-#define OO_VEL_RET_SIZE							4
-int multi_pack_unpack_vel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi);
-
-// Packs/unpacks desired_velocity
-// Returns number of bytes read or written.
-#define OO_DESIRED_VEL_RET_SIZE				3
-int multi_pack_unpack_desired_vel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip);
+int multi_pack_unpack_vel(int write, ubyte *data, matrix *orient, physics_info *pi);
 
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
-#define OO_ROTVEL_RET_SIZE						4
-int multi_pack_unpack_rotvel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi);
+int multi_pack_unpack_rotvel(int write, ubyte *data, physics_info *pi);
 
-// Packs/unpacks desired rotvel
-// Returns number of bytes read or written.
-#define OO_DESIRED_ROTVEL_RET_SIZE			3
-int multi_pack_unpack_desired_rotvel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip);
+// Cyborg17 - Packs/unpacks desired velocity and rotational velocity.
+int multi_pack_unpack_desired_vel_and_desired_rotvel(int write, bool full_physics, ubyte* data, physics_info* pi, vec3d* local_desired_vel);
+
+// pack cur_angle data from turrets
+int multi_pack_turret_angles(ubyte* data, ship_subsys* ssp);
+
+// unpack cur_angle data from turrets
+int multi_unpack_turret_angles(ubyte* data, std::pair<bool, float>& angle1, std::pair<bool, float>& angle2);
+
+// Cyborg17 - Compresses the list of subsystems, so that we don't have to mark each one with a ubyte
+int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data);
 
 char multi_unit_to_char(float unit);
 float multi_char_to_unit(float val);

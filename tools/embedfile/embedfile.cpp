@@ -7,8 +7,7 @@
 // Correct the code so that the program will properly output text to a target .h file
 // Correct the code so that the program will properly read bytes in and output as hexidecimal string values.
 
-#include <string.h>
-
+#include <cstring>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -23,7 +22,7 @@ bool casecmp(const char* strA, const char* strB) {
 	}
 
 	for (size_t i = 0; i < lenA; i++) {
-		if (toupper(strA[i]) != toupper(strB[i])) {
+		if (toupper(static_cast<unsigned char>(strA[i])) != toupper(static_cast<unsigned char>(strB[i]))) {
 			return false;
 		}
 	}
@@ -64,7 +63,12 @@ void write_byte(std::ostream& stream, ubyte byte, size_t i) {
 
 void do_binary_content(std::ifstream& file_in, std::ofstream& file_out,
 					   const std::string& field_name, size_t input_size, bool wxWidgets_image) {
-	file_out << "#include <stddef.h>" << std::endl;
+	file_out << "#ifdef __cplusplus" << std::endl;
+	file_out << "\t#include <cstddef>" << std::endl;
+	file_out << "\tusing std::size_t;" << std::endl;
+	file_out << "#else" << std::endl;
+	file_out << "\t#include <stddef.h>" << std::endl;
+	file_out << "#endif" << std::endl;
 	if (wxWidgets_image) {
 		file_out << "#include <wx/mstream.h>" << std::endl;
 		file_out << "#include <wx/image.h>" << std::endl;
@@ -128,38 +132,37 @@ void do_text_content(std::ifstream& file_in, std::ofstream& file_out,
 	while (pos < file_content.length()) {
 		const char* found_ptr = strpbrk(str + pos, escapeCharacters);
 
-		if (!found_ptr) {
+		if (found_ptr == nullptr) {
 			file_out.write(str + pos, file_content.length() - pos);
 			break;
 		}
-		else {
-			size_t found_pos = (size_t) (found_ptr - str);
 
-			size_t delta = found_pos - pos;
+		size_t found_pos = (size_t) (found_ptr - str);
 
-			if (delta != 0) {
-				file_out.write(str + pos, delta);
-			}
+		size_t delta = found_pos - pos;
 
-			switch (str[found_pos]) {
-				case '\\':
-					file_out << "\\\\";
-					break;
-				case '\n':
-					file_out << "\\n\"" << std::endl << "\"";
-					break;
-				case '"':
-					file_out << "\\\"";
-					break;
-				case '\r':
-					// Discard this character, possibly breaks on mac but whatever...
-					break;
-				default:
-					std::cout << "ERROR: Invalid character encountered!" << std::endl;
-			}
-
-			pos = found_pos + 1;
+		if (delta != 0) {
+			file_out.write(str + pos, delta);
 		}
+
+		switch (str[found_pos]) {
+			case '\\':
+				file_out << "\\\\";
+				break;
+			case '\n':
+				file_out << "\\n\"" << std::endl << "\"";
+				break;
+			case '"':
+				file_out << "\\\"";
+				break;
+			case '\r':
+				// Discard this character, possibly breaks on mac but whatever...
+				break;
+			default:
+				std::cout << "ERROR: Invalid character encountered!" << std::endl;
+		}
+
+		pos = found_pos + 1;
 	}
 
 	file_out << "\";" << std::endl;
@@ -168,14 +171,20 @@ void do_text_content(std::ifstream& file_in, std::ofstream& file_out,
 void write_header(std::ostream& out, const std::string& fieldName, bool text_content, bool wxWidgets_image) {
 	std::string headerDefine(fieldName);
 
-	std::transform(fieldName.begin(), fieldName.end(), headerDefine.begin(), ::toupper);
+	std::transform(fieldName.begin(), fieldName.end(), headerDefine.begin(),
+	               [](char c) { return static_cast<char>(::toupper(static_cast<unsigned char>(c))); });
 
 	headerDefine = "SCP_" + headerDefine + "_H";
 
 	out << "#ifndef " << headerDefine << std::endl;
 	out << "#define " << headerDefine << std::endl;
 	out << "#pragma once" << std::endl;
-	out << "#include <stddef.h>" << std::endl;
+	out << "#ifdef __cplusplus" << std::endl;
+	out << "\t#include <cstddef>" << std::endl;
+	out << "\tusing std::size_t;" << std::endl;
+	out << "#else" << std::endl;
+	out << "\t#include <stddef.h>" << std::endl;
+	out << "#endif" << std::endl;
 	if (wxWidgets_image) {
 		out << "#include <wx/bitmap.h>" << std::endl;
 	}

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=qtFRED
+Comment=Qt port of the FreeSpace Mission Editor
+Exec=$<TARGET_FILE_NAME:qtfred>
+Icon=fred_icon
+Categories=Game;

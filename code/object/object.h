@@ -15,8 +15,14 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
-#include "physics/physics.h"
+#include "object/object.h"
 #include "object/object_flags.h"
+#include "physics/physics.h"
+#include "physics/physics_state.h"
+#include "io/timer.h"					// prevents some include issues with files in the actions folder
+#include "utils/event.h"
+
+#include <functional>
 
 /*
  *		CONSTANTS
@@ -103,11 +109,16 @@ extern const char	*Object_type_names[MAX_OBJECT_TYPES];
 typedef struct obj_flag_name {
 	Object::Object_Flags flag;
 	char flag_name[TOKEN_LENGTH];
-	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			10
+typedef struct obj_flag_description {
+	Object::Object_Flags flag;
+	SCP_string flag_desc;
+} obj_flag_description;
+
 extern obj_flag_name Object_flag_names[];
+extern obj_flag_description Object_flag_descriptions[];
+extern const int Num_object_flag_names;
 
 struct dock_instance;
 class model_draw_list;
@@ -117,11 +128,10 @@ class object
 public:
 	class object	*next, *prev;	// for linked lists of objects
 	int				signature;		// Every object ever has a unique signature...
-	char			type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
+	char			type;			// what type of object this is... ship, weapon, debris, asteroid, fireball, see OBJ_* defines above
 	int				parent;			// This object's parent.
 	int				parent_sig;		// This object's parent's signature
-	char			parent_type;	// This object's parent's type
-	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
+	int				instance;		// index into the corresponding type array, i.e. if type == OBJ_SHIP then instance indexes the Ships array
 	flagset<Object::Object_Flags> flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
 	matrix			orient;			// orientation of object in world
@@ -142,6 +152,9 @@ public:
 
 	int				collision_group_id; // This is a bitfield. Collision checks will be skipped if A->collision_group_id & B->collision_group_id returns nonzero
 
+	util::event<void, object*> pre_move_event;
+	util::event<void, object*> post_move_event;
+
 	object();
 	~object();
 	void clear();
@@ -152,13 +165,32 @@ private:
 	object& operator= (const object & other); // no implementation
 };
 
-struct object_h {
-	object *objp;
-	int sig;
+struct lua_State;
+namespace scripting {
+	class ade_table_entry;
+}
+namespace luacpp {
+	class LuaValue;
+}
 
-	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
-	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
-	object_h(){objp=NULL;sig=-1;}
+extern int Num_objects;
+extern object Objects[];
+
+struct object_h final	// prevent subclassing because classes which might use this should have their own isValid member function
+{
+	int objnum = -1;
+	int sig = -1;
+
+	object_h(const object* in_objp);
+	object_h(int in_objnum);
+	object_h();
+
+	bool isValid() const;
+	object* objp() const;
+	object* objp_or_null() const;
+
+	static void serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	static void deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);
 };
 
 // object backup struct used by Fred.
@@ -175,7 +207,6 @@ public:
 	int	signature;
 	flagset<Object::Object_Flags>	flags;
 	int	parent_sig;
-	int	parent_type;
 
     checkobject();
 };
@@ -188,13 +219,10 @@ public:
 extern int Object_inited;
 extern int Show_waypoints;
 
-// The next signature for the next newly created object. Zero is bogus
-extern int Object_next_signature;		
-extern int Num_objects;
-
-extern object Objects[];
+extern int Object_next_signature;		// The next signature for the next newly created object. Zero is bogus
 extern int Highest_object_index;		//highest objnum
 extern int Highest_ever_object_index;
+
 extern object obj_free_list;
 extern object obj_used_list;
 extern object obj_create_list;
@@ -209,7 +237,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) (int)(objp-Objects)
+#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
 
 /*
  *		FUNCTIONS
@@ -218,40 +246,37 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 //do whatever setup needs to be done
 void obj_init();
 
+void obj_shutdown();
+
 //initialize a new object.  adds to the list for the given segment.
 //returns the object number.  The object will be a non-rendering, non-physics
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags );
+int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient, const vec3d *pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential = true);
 
 void obj_render(object* obj);
 
 void obj_queue_render(object* obj, model_draw_list* scene);
 
 //Sorts and renders all the ojbects
-void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );
+void obj_render_all(const std::function<void(object*)>& render_function, bool* render_viewer_last );
 
 //move all objects for the current frame
 void obj_move_all(float frametime);		// moves all objects
 
-//move an object for the current frame
-void obj_move_one(object * obj, float frametime);
-
 // function to delete an object -- should probably only be called directly from editor code
 void obj_delete(int objnum);
+
+void obj_delete_all();
+
+void obj_delete_all_that_should_be_dead();
 
 // should only be used by the editor!
 void obj_merge_created_list(void);
 
 // recalculate object pairs for an object
-#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(0);
-
-// Removes any occurances of object 'a' from the pairs list.
-void obj_remove_pairs( object * a );
-
-// add an object to the pairs list
-void obj_add_pairs(int objnum);
+#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(false);
 
 //	Returns true if objects A and B are expected to collide in next duration seconds.
 //	For purposes of this check, the first object moves from current location to predicted
@@ -292,14 +317,6 @@ void obj_move_all_pre(object *objp, float frametime);
 void obj_move_all_post(object *objp, float frametime);
 
 void obj_move_call_physics(object *objp, float frametime);
-
-// multiplayer object update stuff begins -------------------------------------------
-
-// do client-side pre-interpolation object movement
-void obj_client_pre_interpolate();
-
-// do client-side post-interpolation object movement
-void obj_client_post_interpolate();
 
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);
@@ -342,8 +359,46 @@ void object_set_gliding(object *objp, bool enable=true, bool force = false);
 bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
-int object_get_model(object *objp);
+int object_get_model(const object *objp);
+int object_get_model_instance(const object *objp);
 
 void obj_render_queue_all();
+
+/**
+ * @brief Compares two object pointers and determines if they refer to the same object
+ *
+ * @note Two @c nullptr parameters are considered equal
+ *
+ * @param left The first object pointer, may be @c nullptr
+ * @param right The second object pointer, may be @c nullptr
+ * @return @c true if the two pointers refer to the same object
+ */
+bool obj_compare(object *left, object *right);
+
+////////////////////////////////////////////////////////////
+// physics_state api functions that require the object type
+
+/**
+ * @brief Populate a physics snapshot directly from the info in an object
+ *
+ * @param[in,out] snapshot Destination physics snapshot
+ * @param[in]     objp The object pointer that we are pulling information from
+ *
+ * @author J Fernandez
+ */
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp);
+
+/**
+ * @brief Change the object's physics info to match the info contained in a snapshot.
+ *
+ * @param[in,out] objp Destination object pointer
+ * @param[in]     source The physics snapshot we are pulling information from
+ *
+ * @details To be used when interpolating or restoring a game state.
+ * 
+ * @author J Fernandez
+ */
+void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source);
+
 
 #endif

@@ -27,8 +27,28 @@
 #include <cstdio>
 #pragma warning(pop)
 
+#define WIN32_LEAN_AND_MEAN
+
+// Since we define these ourself we need to undefine them for the sapi header
+#pragma push_macro("strcpy_s")
+#pragma push_macro("strncpy_s")
+#pragma push_macro("strcat_s")
+#pragma push_macro("memset")
+#pragma push_macro("memcpy")
+#undef strcpy_s
+#undef strncpy_s
+#undef strcat_s
+#undef memset
+#undef memcpy
 
 #include <sphelper.h>                           // Contains definitions of SAPI functions
+
+#pragma pushpop_macro("strcpy_s")
+#pragma pushpop_macro("strncpy_s")
+#pragma pushpop_macro("strcat_s")
+#pragma pushpop_macro("memset")
+#pragma pushpop_macro("memcpy")
+
 #include <stdio.h>
 
 #include "voicerec.h"
@@ -36,10 +56,13 @@
 
 // FreeSpace includes
 #include "cfile/cfile.h"
+#include "gamesequence/gamesequence.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
 #include "osapi/osapi.h"
 #include "playerman/player.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
 #include "ship/ship.h"
 
 #include <SDL_syswm.h>
@@ -55,7 +78,7 @@ extern int button_function(int n);
 extern void hud_squadmsg_msg_all_fighters();
 extern void hud_squadmsg_shortcut( int command );
 extern bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
-extern int hud_squadmsg_wing_valid(wing *wingp);
+extern bool hud_squadmsg_wing_valid(wing *wingp);
 
 extern int Msg_instance;;
 extern int Msg_shortcut_command;
@@ -68,7 +91,7 @@ namespace
 		switch (e.syswm.msg->msg.win.msg)
 		{
 		case WM_RECOEVENT:
-			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
+			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition && gameseq_get_state() != GS_STATE_GAME_PAUSED && !popup_active() && !popupdead_is_active())
 			{
 				VOICEREC_process_event(e.syswm.msg->msg.win.hwnd);
 				return true;

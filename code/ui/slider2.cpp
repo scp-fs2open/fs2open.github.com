@@ -80,7 +80,7 @@ void UI_SLIDER2::draw() {
 	}
 }
 
-void UI_SLIDER2::process(int focus)
+void UI_SLIDER2::process(int  /*focus*/)
 {
 	int OnMe, mouse_lock_move;	
 
@@ -221,13 +221,18 @@ void UI_SLIDER2::set_numberItems(int _numberItems, int _reset) {
 		currentItem = 0;
 		currentPosition = 0;
 	} else {
-		// recalcluate current position
-		currentPosition = fl2i((((float)currentItem/(float)numberItems) * (float)numberPositions)-.49);
-		if (currentPosition < 0){
+		// Cyborg, for coverity 1523313, double check that numberItems is not zero to avoid division by zero
+		if (numberItems == 0) {
 			currentPosition = 0;
-		}
-		if (currentPosition > numberPositions){
-			currentPosition = numberPositions;
+		} else {
+			// recalcluate current position
+			currentPosition = fl2i((((float)currentItem/(float)numberItems) * (float)numberPositions)-.49);
+			if (currentPosition < 0){
+				currentPosition = 0;
+			}
+			if (currentPosition > numberPositions){
+				currentPosition = numberPositions;
+			}
 		}
 	}
 	if (numberItems <= 0){

@@ -2,16 +2,30 @@
 //
 
 #include "scripting/ade.h"
-#include "ship/ship.h"
-#include "ade_api.h"
 
+#include "globalincs/version.h"
+
+#include "ade.h"
+
+#include "ade_api.h"
+#include "ade_args.h"
+#include "doc_parser.h"
+#include "scripting.h"
+#include "scripting_doc.h"
+
+#include "def_files/def_files.h"
+#include "mod_table/mod_table.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/ship.h"
-#include "scripting/api/objs/asteroid.h"
-#include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weapon.h"
-#include "scripting/api/objs/beam.h"
+#include "scripting/lua/LuaFunction.h"
+#include "ship/ship.h"
 
 namespace {
 using namespace scripting;
@@ -70,31 +84,7 @@ int ade_index_handler(lua_State* L) {
 		}
 		lua_pop(L, 1);
 
-		//*****STEP 2: Check for handle signature-specific values
-		if (lua_isuserdata(L, obj_ldx) && ade_id != UINT_MAX && !ADE_SETTING_VAR) {
-			//WMC - I assume char is one byte
-			static_assert(sizeof(char) == 1, "char needs to have size 1!");
-
-			//Get userdata sig
-			char* ud = (char*) lua_touserdata(L, obj_ldx);
-			ODATA_SIG_TYPE sig = *(ODATA_SIG_TYPE*) (ud + entry->Value.Object.size);
-
-			//Now use it to index the table with that #
-			lua_pushnumber(L, sig);
-			lua_rawget(L, mtb_ldx);
-			if (lua_istable(L, -1)) {
-				int hvt_ldx = lua_gettop(L);
-				lua_pushvalue(L, key_ldx);
-				lua_rawget(L, hvt_ldx);
-				if (!lua_isnil(L, -1)) {
-					return 1;
-				} else
-					lua_pop(L, 1);    //nil value
-			}
-			lua_pop(L, 1);    //sig table
-		}
-
-		//*****STEP 3: Check for __ademember objects (ie defaults)
+		//*****STEP 2: Check for __ademember objects (ie defaults)
 		lua_pushstring(L, "__ademembers");
 		lua_rawget(L, mtb_ldx);
 		if (lua_istable(L, -1)) {
@@ -108,7 +98,7 @@ int ade_index_handler(lua_State* L) {
 		}
 		lua_pop(L, 1);    //member table
 
-		//*****STEP 4: Check for virtual variables
+		//*****STEP 3: Check for virtual variables
 		lua_pushstring(L, "__virtvars");
 		lua_rawget(L, mtb_ldx);
 		if (lua_istable(L, -1)) {
@@ -142,7 +132,7 @@ int ade_index_handler(lua_State* L) {
 		}
 		lua_pop(L, 1);    //virtvar table
 
-		//*****STEP 5: Use the indexer
+		//*****STEP 4: Use the indexer
 		//NOTE: Requires metatable from step 1.5
 
 		//Get indexer
@@ -179,44 +169,9 @@ int ade_index_handler(lua_State* L) {
 		lua_rawget(L, obj_ldx);
 		return 1;
 	}
-		//*****STEP 7: Set sig thingie
-	else if (ADE_SETTING_VAR && ade_id != UINT_MAX && mtb_ldx != INT_MAX && lua_isuserdata(L, obj_ldx)) {
-		//WMC - I assume char is one byte
-		Assert(sizeof(char) == 1);
-
-		//Get userdata sig
-		char* ud = (char*) lua_touserdata(L, obj_ldx);
-		ODATA_SIG_TYPE sig = *(ODATA_SIG_TYPE*) (ud + entry->Value.Object.size);
-
-		//Now use it to index the table with that #
-		lua_pushnumber(L, sig);
-		lua_rawget(L, mtb_ldx);
-
-		//Create table, if necessary
-		if (!lua_istable(L, -1)) {
-			lua_pop(L, 1);
-			lua_newtable(L);
-			lua_pushnumber(L, sig);
-			lua_pushvalue(L, -2);
-			lua_rawset(L, mtb_ldx);
-		}
-
-		//Index the table
-		if (lua_istable(L, -1)) {
-			int hvt_ldx = lua_gettop(L);
-			lua_pushvalue(L, key_ldx);
-			lua_pushvalue(L, arg_ldx);
-			lua_rawset(L, hvt_ldx);
-
-			lua_pushvalue(L, key_ldx);
-			lua_rawget(L, hvt_ldx);
-			return 1;
-		}
-		lua_pop(L, 1);    //WMC - maybe-sig-table
-	}
 	lua_pop(L, 1);    //WMC - metatable
 
-	if (type_name != NULL) {
+	if (type_name != nullptr) {
 		LuaError(L, "Could not find index '%s' in type '%s'", lua_tostring(L, key_ldx), type_name);
 	} else {
 		LuaError(L, "Could not find index '%s'", lua_tostring(L, key_ldx));
@@ -227,12 +182,6 @@ int ade_index_handler(lua_State* L) {
 ade_table_entry& getTableEntry(size_t idx) {
 	return ade_manager::getInstance()->getEntry(idx);
 }
-
-//Struct for converting one string for another. whee!
-struct string_conv {
-	const char *src;
-	const char *dest;
-};
 
 //*************************Lua operators*************************
 //These are the various types of operators you can
@@ -263,17 +212,6 @@ string_conv ade_Operators[] = {
 	{"__indexer",	"[]"},			//obj[var]
 };
 
-int ade_get_operator(const char *tablename)
-{
-	for(auto iter = std::begin(ade_Operators); iter != std::end(ade_Operators); ++iter)
-	{
-		if(!strcmp(tablename, iter->src))
-			return (int)std::distance(std::begin(ade_Operators), iter);
-	}
-
-	return -1;
-}
-
 //WMC - Sometimes this gets out of sync between Lua versions
 static const char *Lua_type_names[] = {
 	"nil",
@@ -285,23 +223,12 @@ static const char *Lua_type_names[] = {
 	"function",
 	"userdata",
 	"thread",
+	"any", // Special type which means any possible type
+	"void",
 };
 
 const ptrdiff_t Lua_type_names_num = std::distance(std::begin(Lua_type_names), std::end(Lua_type_names));
 
-void ade_output_type_link(FILE *fp, const char *typestr)
-{
-	for(int i = 0; i < Lua_type_names_num; i++)
-	{
-		if(!stricmp(Lua_type_names[i], typestr))
-		{
-			fputs(typestr, fp);
-			return;
-		}
-	}
-
-	fprintf(fp, "<a href=\"#%s\">%s</a>", typestr, typestr);
-}
 }
 
 namespace scripting {
@@ -310,61 +237,94 @@ ade_manager* ade_manager::getInstance() {
 	static std::unique_ptr<ade_manager> manager(new ade_manager());
 	return manager.get();
 }
+ade_manager::ade_manager() {
+	_type_names.insert(_type_names.end(), std::begin(Lua_type_names), std::end(Lua_type_names));
+}
 size_t ade_manager::addTableEntry(const ade_table_entry& entry) {
 	_table_entries.push_back(entry);
 	_table_entries.back().Idx = _table_entries.size() - 1;
+
+	if (entry.Type == 'o' && !entry.Instanced) {
+		// Collect valid type names
+		_type_names.push_back(entry.Name);
+	}
+
 	return _table_entries.size() - 1;
 }
 ade_table_entry& ade_manager::getEntry(size_t idx) {
-	Assertion(idx < _table_entries.size(), "Invalid index "
-		SIZE_T_ARG
-		" specified!", idx);
+	Assertion(idx < _table_entries.size(), "Invalid index " SIZE_T_ARG " specified!", idx);
 	return _table_entries[idx];
 }
-const ade_table_entry& ade_manager::getEntry(size_t idx) const {
-	Assertion(idx < _table_entries.size(), "Invalid index "
-		SIZE_T_ARG
-		" specified!", idx);
+const ade_table_entry& ade_manager::getEntry(size_t idx) const
+{
+	Assertion(idx < _table_entries.size(), "Invalid index " SIZE_T_ARG " specified!", idx);
 	return _table_entries[idx];
+}
+const SCP_vector<SCP_string>& ade_manager::getTypeNames() const { return _type_names; }
+
+static int deprecatedFunctionHandler(lua_State* L)
+{
+	const char* functionName = lua_tostring(L, lua_upvalueindex(1));
+	LuaError(L,
+			 "Deprecated function '%s' has been called that is not available in the targeted engine version. Check "
+			 "the documentation for a possible replacement.",
+			 functionName);
+	return 0;
 }
 
-ade_table_entry::ade_table_entry()
-	: Name(NULL), ShortName(NULL), Idx(UINT_MAX), ParentIdx(UINT_MAX), DerivatorIdx(UINT_MAX), Instanced(false),
-	  Size(0), Arguments(NULL), Description(NULL), ReturnType(NULL), ReturnDescription(NULL), Num_subentries(0) {
-	Type = '\0';
-	memset(Subentries, 0, sizeof(Subentries));
-}
-//Think of n_mtb_ldx as the parent metatable
-int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
+ade_table_entry::ade_table_entry() { memset(Subentries, 0, sizeof(Subentries)); }
+// Think of n_mtb_ldx as the parent metatable
+int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
+{
 	uint i;
 	int cleanup_items = 0;
-	int mtb_ldx = INT_MAX;
-	int data_ldx = INT_MAX;
+	int mtb_ldx       = INT_MAX;
+	int data_ldx      = INT_MAX;
 	int desttable_ldx = INT_MAX;
-	int amt_ldx = INT_MAX;
+	int amt_ldx       = INT_MAX;
 
 	if (Instanced) {
 		//Set any actual data
 		int nset = 0;
 		switch (Type) {
-			//WMC - This hack by taylor is a necessary evil.
-			//64-bit function pointers do not get passed properly
-			//when using va_args for some reason.
-			case 'u':
-			case 'v':
+		case 'o': {
+			// Create an empty userdata value and use it as the value for this library
+			lua_newuserdata(L, 0);
+			// Create or get object metatable
+			luaL_getmetatable(L, Name);
+			// Set the metatable for the object
+			lua_setmetatable(L, -2);
+			nset++;
+			break;
+		}
+		case 'u':
+		case 'v': {
+			if (DeprecationVersion.isValid() &&
+				mod_supports_version(DeprecationVersion.major, DeprecationVersion.minor, DeprecationVersion.build)) {
+				// The deprecation mechanism. Set a function that always errors instead.
+				if (Name != nullptr) {
+					lua_pushstring(L, Name);
+				} else if (ShortName != nullptr) {
+					lua_pushstring(L, ShortName);
+				} else {
+					lua_pushliteral(L, "<UNNAMED FUNCTION>");
+				}
+				lua_pushcclosure(L, deprecatedFunctionHandler, 1);
+			} else {
+				// WMC - This hack by taylor is a necessary evil.
+				// 64-bit function pointers do not get passed properly
+				// when using va_args for some reason.
 				lua_pushstring(L, "<UNNAMED FUNCTION>");
 				lua_pushboolean(L, 0);
-				lua_pushcclosure(L, Value.Function, 2);
-				nset++;
-				break;
+				lua_pushcclosure(L, Function, 2);
+			}
+			nset++;
+			break;
+		}
 
-			default:
-				char typestr[2] = {
-					Type,
-					'\0'
-				};
-				nset = ade_set_args(L, typestr, Value);
-				break;
+		default:
+			UNREACHABLE("Unhandled value type '%c'!", Type);
+			break;
 		}
 
 		if (nset) {
@@ -374,10 +334,8 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 		}
 
 		if (data_ldx != INT_MAX) {
-			//WMC - Cannot delete libs and stuff off here.
-			if (p_amt_ldx != LUA_GLOBALSINDEX) {
-				cleanup_items++;
-			}
+			// Remove data once we are done
+			cleanup_items++;
 
 			//WMC - Handle virtual variables by getting their table
 			if (Type == 'v') {
@@ -395,7 +353,7 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 				}
 			} else {
 				//WMC - Member objects prefixed with __ are assumed to be metatable objects
-				if (strnicmp("__", GetName(), 2) && lua_istable(L, p_amt_ldx)) {
+				if (strnicmp("__", GetName(), 2) != 0 && lua_istable(L, p_amt_ldx)) {
 					desttable_ldx = p_amt_ldx;
 				} else if (lua_istable(L, p_mtb_ldx)) {
 					desttable_ldx = p_mtb_ldx;
@@ -467,6 +425,16 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 		lua_pushcclosure(L, ade_index_handler, 2);
 		lua_rawset(L, mtb_ldx);
 
+		if (Destructor != nullptr) {
+			// Set up the destructor of this type if it exists
+			lua_pushstring(L, "__gc");
+			lua_pushfstring(L, "%s Destructor", GetName()); // upvalue(1) = function name
+			lua_pushboolean(L, 0);                          // upvalue(2) = setting true/false
+			lua_pushlightuserdata(L, Destructor_upvalue);   // upvalue(3) = Reference to ade_obj
+			lua_pushcclosure(L, Destructor, 3);
+			lua_rawset(L, mtb_ldx);
+		}
+
 		//***Create virtvar storage facility
 		lua_pushstring(L, "__virtvars");
 		lua_newtable(L);
@@ -531,208 +499,203 @@ size_t ade_table_entry::AddSubentry(ade_table_entry& n_ate) {
 	return new_idx;
 }
 
-void ade_table_entry::OutputMeta(FILE *fp)
+std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
-	if(Name == NULL && ShortName == NULL) {
+	using namespace scripting;
+
+	if (Name == nullptr && ShortName == nullptr) {
 		Warning(LOCATION, "Data entry with no name or shortname");
-		return;
+		return std::unique_ptr<DocumentationElement>();
 	}
 
-	uint i;
-	bool skip_this = false;
-
-	//WMC - Hack
-	if(ParentIdx != UINT_MAX)
-	{
-		for(i = 0; i < Num_subentries; i++)
-		{
-			if(!stricmp(ade_manager::getInstance()->getEntry(Subentries[i]).Name, "__indexer"))
-			{
-				ade_manager::getInstance()->getEntry(Subentries[i]).OutputMeta(fp);
-				skip_this = true;
-				break;
-			}
-		}
-	}
-
+	std::unique_ptr<DocumentationElement> element;
 
 	//***Begin entry
-	if(!skip_this)
-	{
-		fputs("<dd><dl>", fp);
+	switch (Type) {
+	case 'o': {
+		if (!Instanced) {
+			// Classes
+			std::unique_ptr<DocumentationElementClass> obj(new DocumentationElementClass());
+			obj->type = ElementType::Class;
 
-		switch(Type)
-		{
-			case 'o':
-			{
-				//***Name (ShortName)
-				if(ParentIdx == UINT_MAX) {
-					fprintf(fp, "<dt id=\"%s\">", GetName());
-				}
-				if(Name == NULL)
-				{
-					if(DerivatorIdx == UINT_MAX)
-						fprintf(fp, "<h2>%s</h2>\n", ShortName);
-					else
-						fprintf(fp, "<h2>%s:<a href=\"#%s\">%s</a></h2>\n", getTableEntry(DerivatorIdx).GetName(), getTableEntry(DerivatorIdx).GetName(), getTableEntry(DerivatorIdx).GetName());
-				}
-				else
-				{
-					fprintf(fp, "<h2>%s", Name);
-
-					if(ShortName != NULL)
-						fprintf(fp, " (%s)", ShortName);
-					if(DerivatorIdx != UINT_MAX)
-						fprintf(fp, ":<a href=\"#%s\">%s</a>", getTableEntry(DerivatorIdx).GetName(), getTableEntry(DerivatorIdx).GetName());
-
-					fputs("</h2>\n", fp);
-				}
-				fputs("</dt>\n", fp);
-
-				//***Description
-				if(Description != NULL) {
-					fprintf(fp, "<dd>%s</dd>\n", this->Description);
-				}
-
-				//***Type: ReturnType
-				if(ReturnType != NULL) {
-					fprintf(fp, "<dd><b>Return Type: </b> %s<br>&nbsp;</dd>\n", ReturnType);
-				}
-
-				if(ReturnDescription != NULL) {
-					fprintf(fp, "<dd><b>Return Description: </b> %s<br>&nbsp;</dd>\n", ReturnDescription);
-				}
+			if (DerivatorIdx != UINT_MAX) {
+				obj->superClass = getTableEntry(DerivatorIdx).GetName();
 			}
-				break;
-			case 'u':
-			{
-				//***Name(ShortName)(Arguments)
-				fputs("<dt>", fp);
-				int ao = -1;
 
-				fputs("<i>", fp);
-				if(ReturnType != NULL)
-					ade_output_type_link(fp, ReturnType);
-				else
-					fputs("nil", fp);
-				fputs(" </i>", fp);
-				if(Name == NULL) {
-					fprintf(fp, "<b>%s", ShortName);
-				}
-				else
-				{
-					ao = ade_get_operator(Name);
+			element = std::move(obj);
+		} else {
+			// Libraries
+			std::unique_ptr<DocumentationElement> obj(new DocumentationElement());
+			obj->type = ElementType::Library;
 
-					//WMC - Do we have an operator?
-					if(ao < 0)
-					{
-						fprintf(fp, "<b>%s", Name);
-						if(ShortName != NULL)
-						{
-							int ao2 = ade_get_operator(ShortName);
-							if(ao2 < 0)
-								fprintf(fp, "(%s)", ShortName);
-							else
-								fprintf(fp, "(%s)", ade_Operators[ao2].dest);
-						}
-					}
-					else
-					{
-						//WMC - Hack
-						if(ParentIdx != UINT_MAX && getTableEntry(ParentIdx).ParentIdx != UINT_MAX && getTableEntry(ParentIdx).Name != NULL && !stricmp(Name, "__indexer"))
-						{
-							fprintf(fp, "<b>%s%s", getTableEntry(ParentIdx).Name, ade_Operators[ao].dest);
-						}
-						else
-							fprintf(fp, "<b>%s", ade_Operators[ao].dest);
-					}
-				}
-				if(ao < 0)
-				{
-					if(Arguments != NULL) {
-						fprintf(fp, "(</b><i>%s</i><b>)</b>\n", Arguments);
-					} else {
-						fprintf(fp, "()</b>\n");
-					}
-				}
-				else
-				{
-					fputs("</b>", fp);
-					if(Arguments != NULL) {
-						fprintf(fp, " <i>%s</i>\n", Arguments);
-					}
-				}
-				fputs("</dt>\n", fp);
+			element = std::move(obj);
+		}
+		break;
+	}
+	case 'u': {
+		// Functions
+		std::unique_ptr<DocumentationElementFunction> obj(new DocumentationElementFunction());
 
-				//***Description
-				if(Description != NULL) {
-					fprintf(fp, "<dd>%s</dd>\n", Description);
-				}
+		auto ao = ade_get_operator(Name);
+		if (ao != nullptr) {
+			obj->type = ElementType::Operator;
+		} else {
+			obj->type = ElementType::Function;
+		}
 
-				//***Result: ReturnDescription
-				if(ReturnDescription != NULL) {
-					fprintf(fp, "<dd><b>Returns:</b> %s<br>&nbsp;</dd>\n", ReturnDescription);
-				} else {
-					fputs("<dd><b>Returns:</b> Nothing<br>&nbsp;</dd>\n", fp);
+		const auto& typeNames = ade_manager::getInstance()->getTypeNames();
+
+		if (ReturnType != nullptr) {
+			type_parser type_parser(typeNames);
+			if (type_parser.parse(ReturnType)) {
+				obj->returnType = type_parser.getType();
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Return Type):\n" + type_parser.getErrorMessage());
 				}
+				obj->returnType = ade_type_info();
 			}
-				break;
-			default:
-				Warning(LOCATION, "Unknown type '%c' passed to ade_table_entry::OutputMeta", Type);
-			case 'b':
-			case 'd':
-			case 'f':
-			case 'i':
-			case 's':
-			case 'x':
-			case 'v':
-			{
-				//***Type Name(ShortName)
-				fputs("<dt>\n", fp);
-				if(ReturnType != NULL)
-				{
-					fputs("<i>", fp);
-					ade_output_type_link(fp, ReturnType);
-					fputs(" </i>", fp);
-				}
+		} else {
+			obj->returnType = ade_type_info();
+		}
 
-				if(Name == NULL) {
-					fprintf(fp, "<b>%s</b>\n", ShortName);
-				}
-				else
-				{
-					fprintf(fp, "<b>%s", Name);
-					if(ShortName != NULL)
-						fputs(ShortName, fp);
-					fputs("</b>\n", fp);
-				}
-				if(Arguments != NULL)
-					fprintf(fp, " = <i>%s</i>", Arguments);
-				fputs("</dt>\n", fp);
+		for (const auto& overload : Arguments.overloads()) {
+			DocumentationElementFunction::argument_list overloadArgList;
+			argument_list_parser arg_parser(typeNames);
+			if (arg_parser.parse(overload)) {
+				bool optional = false;
+				for (const auto& arg : arg_parser.getArgList()) {
+					if (!optional && (arg.optional || !arg.def_val.empty())) {
+						optional = true;
+					}
 
-				//***Description
-				if(Description != NULL)
-					fprintf(fp, "<dd>%s</dd>\n", Description);
+					auto argCopy     = arg;
+					argCopy.optional = optional;
 
-				//***Also settable with: Arguments
-				if(ReturnDescription != NULL)
-					fprintf(fp, "<dd><b>Value:</b> %s</b></dd>\n", ReturnDescription);
+					overloadArgList.arguments.push_back(std::move(argCopy));
+				}
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Arguments):\n" + arg_parser.getErrorMessage());
+				}
+				overloadArgList.simple.assign(overload);
 			}
-				break;
+
+			obj->overloads.push_back(overloadArgList);
+		}
+
+		if (ReturnDescription != nullptr) {
+			obj->returnDocumentation = ReturnDescription;
+		}
+
+		element = std::move(obj);
+		break;
+	}
+	case 'v': {
+		std::unique_ptr<DocumentationElementProperty> obj(new DocumentationElementProperty());
+		obj->type = ElementType::Property;
+
+		const auto& typeNames = ade_manager::getInstance()->getTypeNames();
+
+		//***Type Name(ShortName)
+		if (ReturnType != nullptr) {
+			type_parser type_parser(typeNames);
+			if (type_parser.parse(ReturnType)) {
+				obj->getterType = type_parser.getType();
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Getter Type):\n" + type_parser.getErrorMessage());
+				}
+				obj->getterType = ade_type_info();
+			}
+		} else {
+			obj->getterType = ade_type_info();
+		}
+
+		const SCP_string setterType = Arguments.overloads().front();
+		if (!setterType.empty()) {
+			type_parser type_parser(typeNames);
+			if (type_parser.parse(setterType)) {
+				obj->setterType = type_parser.getType();
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Setter Type):\n" + type_parser.getErrorMessage());
+				}
+				obj->setterType = ade_type_info();
+			}
+		} else {
+			obj->setterType = ade_type_info();
+		}
+
+		if (ReturnDescription != nullptr) {
+			obj->returnDocumentation = ReturnDescription;
+		}
+
+		element = std::move(obj);
+		break;
+	}
+	case 'b':
+	case 'd':
+	case 'f':
+	case 'i':
+	case 's':
+	case 'x':
+	default:
+		UNREACHABLE("Unknown Type %c was used used!", Type);
+		break;
+	}
+
+	if (Name != nullptr) {
+		element->name = Name;
+	}
+	if (ShortName != nullptr) {
+		element->shortName = ShortName;
+	}
+	if (Description != nullptr) {
+		element->description = Description;
+	}
+
+	if (DeprecationVersion.isValid()) {
+		element->deprecationVersion = DeprecationVersion;
+
+		if (DeprecationMessage != nullptr) {
+			element->deprecationMessage = DeprecationMessage;
 		}
 	}
 
-	fputs("<dd><dl>\n", fp);
-	for(i = 0; i < Num_subentries; i++)
-	{
-		auto entry = &getTableEntry(Subentries[i]);
-		if(ParentIdx == UINT_MAX || stricmp(entry->Name, "__indexer"))
-			entry->OutputMeta(fp);
+	for (uint32_t i = 0; i < Num_subentries; i++) {
+		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement(errorReporter));
 	}
-	fputs("</dl></dd>\n", fp);
 
-	if(!skip_this)
-		fputs("<br></dl></dd>\n", fp);
+	return element;
+}
+const char* ade_table_entry::GetName() const
+{
+	if (Name != nullptr) {
+		return Name;
+	} else {
+		return ShortName;
+	}
+}
+SCP_string ade_table_entry::GetFullPath() const
+{
+	SCP_string path(GetName());
+
+	size_t currentIdx = ParentIdx;
+	while (currentIdx != UINT_MAX) {
+		const auto& entry = ade_manager::getInstance()->getEntry(currentIdx);
+
+		SCP_string entryName(entry.GetName());
+
+		// Not very efficient but should not be used at runtime so this is fine
+		path.insert(path.begin(), '.');
+		path.insert(path.begin(), entryName.cbegin(), entryName.cend());
+
+		currentIdx = entry.ParentIdx;
+	}
+
+	return path;
 }
 
 ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
@@ -749,10 +712,6 @@ ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* 
 	//within the scripting environment, but I don't think
 	//there will be any catastrophic consequences.
 	ate.Type = 'o';
-	ate.Value.Object.idx = ade_manager::getInstance()->getNumEntries();
-	ate.Value.Object.sig = NULL;
-	ate.Value.Object.buf = &Num_reinforcements;	//WMC - I just chose Num_ship_classes randomly. MageKing17 - changed to Num_reinforcements, likewise at random, due to the removal of Num_ship_classes
-	ate.Value.Object.size = sizeof(Num_reinforcements);
 	ate.Description = in_desc;
 
 	if(parent != NULL)
@@ -770,66 +729,206 @@ const char *ade_lib::GetName() const
 }
 
 ade_func::ade_func(const char* name,
-				   lua_CFunction func,
-				   const ade_lib_handle& parent,
-				   const char* args,
-				   const char* desc,
-				   const char* ret_type,
-				   const char* ret_desc) {
+	lua_CFunction func,
+	const ade_lib_handle& parent,
+	ade_overload_list args,
+	const char* desc,
+	const char* ret_type,
+	const char* ret_desc,
+	const gameversion::version& deprecation_version,
+	const char* deprecation_message)
+{
+	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
+
 	ade_table_entry ate;
 
-	ate.Name = name;
-	ate.Instanced = true;
-	ate.Type = 'u';
-	ate.Value.Function = func;
-	ate.Arguments = args;
-	ate.Description = desc;
-	ate.ReturnType = ret_type;
-	ate.ReturnDescription = ret_desc;
+	ate.Name               = name;
+	ate.Instanced          = true;
+	ate.Type               = 'u';
+	ate.Function           = func;
+	ate.Arguments          = std::move(args);
+	ate.Description        = desc;
+	ate.ReturnType         = ret_type;
+	ate.ReturnDescription  = ret_desc;
+	ate.DeprecationVersion = deprecation_version;
+	ate.DeprecationMessage = deprecation_message;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
 ade_virtvar::ade_virtvar(const char* name,
-						 lua_CFunction func,
-						 const ade_lib_handle& parent,
-						 const char* args,
-						 const char* desc,
-						 const char* ret_type,
-						 const char* ret_desc) {
+	lua_CFunction func,
+	const ade_lib_handle& parent,
+	const char* args,
+	const char* desc,
+	const char* ret_type,
+	const char* ret_desc,
+	const gameversion::version& deprecation_version,
+	const char* deprecation_message)
+{
+	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
+
 	ade_table_entry ate;
 
-	ate.Name = name;
-	ate.Instanced = true;
-	ate.Type = 'v';
-	ate.Value.Function = func;
-	ate.Arguments = args;
-	ate.Description = desc;
-	ate.ReturnType = ret_type;
-	ate.ReturnDescription = ret_desc;
+	ate.Name               = name;
+	ate.Instanced          = true;
+	ate.Type               = 'v';
+	ate.Function           = func;
+	ate.Arguments          = args;
+	ate.Description        = desc;
+	ate.ReturnType         = ret_type;
+	ate.ReturnDescription  = ret_desc;
+	ate.DeprecationVersion = deprecation_version;
+	ate.DeprecationMessage = deprecation_message;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
 ade_indexer::ade_indexer(lua_CFunction func,
-						 const ade_lib_handle& parent,
-						 const char* args,
-						 const char* desc,
-						 const char* ret_type,
-						 const char* ret_desc) {
-	//Add function for meta
+	const ade_lib_handle& parent,
+	ade_overload_list overloads,
+	const char* desc,
+	const char* ret_type,
+	const char* ret_desc)
+{
+	// Add function for meta
 	ade_table_entry ate;
 
-	ate.Name = "__indexer";
-	ate.Instanced = true;
-	ate.Type = 'u';
-	ate.Value.Function = func;
-	ate.Arguments = args;
-	ate.Description = desc;
-	ate.ReturnType = ret_type;
+	ate.Name              = "__indexer";
+	ate.Instanced         = true;
+	ate.Type              = 'u';
+	ate.Function          = func;
+	ate.Arguments         = std::move(overloads);
+	ate.Description       = desc;
+	ate.ReturnType        = ret_type;
 	ate.ReturnDescription = ret_desc;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
+}
+
+SCP_string ade_tostring(lua_State *L, int argnum, bool add_typeinfo)
+{
+	SCP_string buf;
+
+	//Lua temps
+	double d;
+	int b;
+	const char *s;
+
+	int type = lua_type(L, argnum);
+	switch(type)
+	{
+		case LUA_TNIL:
+			buf = "nil";
+			break;
+
+		case LUA_TNUMBER:
+			d = lua_tonumber(L, argnum);
+			if (add_typeinfo)
+				sprintf(buf, "Number [%f]", d);
+			else
+				sprintf(buf, "%f", d);
+			break;
+
+		case LUA_TBOOLEAN:
+			b = lua_toboolean(L, argnum);
+			if (add_typeinfo)
+				sprintf(buf, "Boolean [%d]", b);
+			else
+				buf = b != 0 ? "true" : "false";
+			break;
+
+		case LUA_TSTRING:
+			s = lua_tostring(L, argnum);
+			if (add_typeinfo)
+				sprintf(buf, "String [%s]", s);
+			else
+				buf = s;
+			break;
+
+		case LUA_TTABLE:
+		{
+			if (lua_getmetatable(L, argnum))
+			{
+				lua_pushstring(L, "__adeid");
+				lua_rawget(L, -2);
+				if (lua_isnumber(L, -1))
+					sprintf(buf, "Table [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
+				else
+					buf = "non-default Table";
+				lua_pop(L, 2);	//metatable and nil/adeid
+			}
+			else
+				buf = "Table w/ no metatable";
+
+			if (add_typeinfo)
+			{
+				//Maybe get first key?
+				const char* firstkey = nullptr;
+				lua_pushnil(L);
+				if (lua_next(L, argnum))
+				{
+					firstkey = lua_tostring(L, -2);
+					if (firstkey != nullptr)
+					{
+						buf += ", First key: [";
+						buf += firstkey;
+						buf += "]";
+					}
+					lua_pop(L, 1);	//Key
+				}
+				lua_pop(L, 1);	//Nil
+			}
+			break;
+		}
+
+		case LUA_TFUNCTION:
+		{
+			buf = "Function";
+			auto upname = lua_getupvalue(L, argnum, ADE_FUNCNAME_UPVALUE_INDEX);
+			if (upname != nullptr)
+			{
+				buf += " ";
+				buf += lua_tostring(L, -1);
+				buf += "()";
+				lua_pop(L, 1);
+			}
+			break;
+		}
+
+		case LUA_TUSERDATA:
+			if (lua_getmetatable(L, argnum))
+			{
+				lua_pushstring(L, "__adeid");
+				lua_rawget(L, -2);
+				if (lua_isnumber(L, -1))
+					sprintf(buf, "Userdata [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
+				else
+					buf = "non-default Userdata";
+
+				lua_pop(L, 2);	//metatable and nil/adeid
+			}
+			else
+				buf = "Userdata w/ no metatable";
+			break;
+
+		case LUA_TTHREAD:
+			buf = "Thread";
+			break;
+
+		case LUA_TLIGHTUSERDATA:
+			buf = "Light userdata";
+			break;
+
+		default:
+			if (add_typeinfo)
+				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
+			else
+				buf = "Unknown Lua type";
+			break;
+	}
+
+	return buf;
 }
 
 //*************************Lua functions*************************
@@ -837,117 +936,14 @@ ade_indexer::ade_indexer(lua_CFunction func,
 //This includes variable values, but not names
 void ade_stackdump(lua_State *L, char *stackdump)
 {
-	char buf[512];
+	SCP_string buf;
 	int stacksize = lua_gettop(L);
 
-	//Lua temps
-	double d;
-	int b;
-	char *s;
 	for(int argnum = 1; argnum <= stacksize; argnum++)
 	{
-		int type = lua_type(L, argnum);
 		sprintf(buf, "\r\n%d: ", argnum);
-		strcat(stackdump, buf);
-		switch(type)
-		{
-			case LUA_TNIL:
-				strcat(stackdump, "NIL");
-				break;
-			case LUA_TNUMBER:
-				d = lua_tonumber(L, argnum);
-				sprintf(buf, "Number [%f]",d);
-				strcat(stackdump, buf);
-				break;
-			case LUA_TBOOLEAN:
-				b = lua_toboolean(L, argnum);
-				sprintf(buf, "Boolean [%d]",b);
-				strcat(stackdump, buf);
-				break;
-			case LUA_TSTRING:
-				s = (char *)lua_tostring(L, argnum);
-				sprintf(buf, "String [%s]",s);
-				strcat(stackdump, buf);
-				break;
-			case LUA_TTABLE:
-			{
-				if(lua_getmetatable(L, argnum))
-				{
-					lua_pushstring(L, "__adeid");
-					lua_rawget(L, -2);
-					if(lua_isnumber(L, -1))
-					{
-						sprintf(buf, "Table [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
-						strcat(stackdump, buf);
-					}
-					else
-						strcat(stackdump, "non-default Table");
-					lua_pop(L, 2);	//metatable and nil/adeid
-				}
-				else
-					strcat(stackdump, "Table w/ no metatable");
-
-				//Maybe get first key?
-				char *firstkey = NULL;
-				lua_pushnil(L);
-				if(lua_next(L, argnum))
-				{
-					firstkey = (char *)lua_tostring(L, -2);
-					if(firstkey != NULL)
-					{
-						strcat(stackdump, ", First key: [");
-						strcat(stackdump, firstkey);
-						strcat(stackdump, "]");
-					}
-					lua_pop(L, 1);	//Key
-				}
-				lua_pop(L, 1);	//Nil
-			}
-				break;
-			case LUA_TFUNCTION:
-				strcat(stackdump, "Function");
-				{
-					char *upname = (char*)lua_getupvalue(L, argnum, ADE_FUNCNAME_UPVALUE_INDEX);
-					if(upname != NULL)
-					{
-						strcat(stackdump, " ");
-						strcat(stackdump, lua_tostring(L, -1));
-						strcat(stackdump, "()");
-						lua_pop(L, 1);
-					}
-				}
-				break;
-			case LUA_TUSERDATA:
-				if(lua_getmetatable(L, argnum))
-				{
-					lua_pushstring(L, "__adeid");
-					lua_rawget(L, -2);
-					if(lua_isnumber(L, -1))
-					{
-						sprintf(buf, "Userdata [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
-					}
-					else
-						sprintf(buf, "non-default Userdata");
-
-					lua_pop(L, 2);	//metatable and nil/adeid
-				}
-				else
-					sprintf(buf, "Userdata w/ no metatable");
-				strcat(stackdump, buf);
-				break;
-			case LUA_TTHREAD:
-				sprintf(buf, "Thread");
-				strcat(stackdump, buf);
-				break;
-			case LUA_TLIGHTUSERDATA:
-				sprintf(buf, "Light userdata");
-				strcat(stackdump, buf);
-				break;
-			default:
-				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
-				strcat(stackdump, buf);
-				break;
-		}
+		strcat(stackdump, buf.c_str());
+		strcat(stackdump, ade_tostring(L, argnum, true).c_str());
 	}
 }
 
@@ -958,6 +954,16 @@ int ade_friendly_error(lua_State *L)
 	//WMC - According to documentation, this will always be the error
 	//if error handler is called
 	return LUA_ERRRUN;
+}
+
+bool ade_is_internal_type(const char* typeName) {
+	for (int i = 0; i < Lua_type_names_num; i++) {
+		if (!stricmp(Lua_type_names[i], typeName)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //WMC - Gets type of object
@@ -971,32 +977,129 @@ const char *ade_get_type_string(lua_State *L, int argnum)
 	return Lua_type_names[type];
 }
 
-int ade_set_object_with_breed(lua_State *L, int obj_idx)
+ade_odata_setter<object_h> ade_object_to_odata(int obj_idx)
 {
 	using namespace scripting::api;
 
 	if(obj_idx < 0 || obj_idx >= MAX_OBJECTS)
-		return ade_set_error(L, "o", l_Object.Set(object_h()));
+		return l_Object.Set(object_h());
 
 	object *objp = &Objects[obj_idx];
 
 	switch(objp->type)
 	{
-		case OBJ_SHIP:
-			return ade_set_args(L, "o", l_Ship.Set(object_h(objp)));
-		case OBJ_ASTEROID:
-			return ade_set_args(L, "o", l_Asteroid.Set(object_h(objp)));
-		case OBJ_DEBRIS:
-			return ade_set_args(L, "o", l_Debris.Set(object_h(objp)));
-		case OBJ_WAYPOINT:
-			return ade_set_args(L, "o", l_Waypoint.Set(object_h(objp)));
-		case OBJ_WEAPON:
-			return ade_set_args(L, "o", l_Weapon.Set(object_h(objp)));
-		case OBJ_BEAM:
-			return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
-		default:
-			return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
+	case OBJ_SHIP:
+		return l_Ship.Set(object_h(objp));
+	case OBJ_ASTEROID:
+		return l_Asteroid.Set(object_h(objp));
+	case OBJ_DEBRIS:
+		return l_Debris.Set(object_h(objp));
+	case OBJ_WAYPOINT:
+		return l_Waypoint.Set(object_h(objp));
+	case OBJ_WEAPON:
+		return l_Weapon.Set(object_h(objp));
+	case OBJ_BEAM:
+		return l_Beam.Set(object_h(objp));
+	default:
+		return l_Object.Set(object_h(objp));
 	}
 }
 
+int ade_set_object_with_breed(lua_State *L, int obj_idx)
+{
+	return ade_set_args(L, "o", ade_object_to_odata(obj_idx));
 }
+
+void load_default_script(lua_State* L, const char* name)
+{
+	using namespace luacpp;
+
+	SCP_string source;
+	SCP_string source_name;
+	if (Enable_external_default_scripts && cf_exists(name, CF_TYPE_SCRIPTS)) {
+		// Load from disk (or built-in file)
+		source_name = name;
+
+		auto cfp = cfopen(name, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS);
+		Assertion(cfp != nullptr, "Failed to open default file!");
+
+		auto length = cfilelength(cfp);
+
+		source.resize((size_t)length);
+		cfread(&source[0], 1, length, cfp);
+
+		cfclose(cfp);
+	} else {
+		// Load from default files
+		source_name = SCP_string("default ") + name;
+
+		auto def = defaults_get_file(name);
+
+		auto c = reinterpret_cast<const char*>(def.data);
+		source.assign(c, c + def.size);
+	}
+
+	try {
+		auto func = LuaFunction::createFromCode(L, source, source_name);
+		func.setErrorFunction(LuaFunction::createFromCFunction(L, ade_friendly_error));
+		try {
+			func(L);
+		} catch (const LuaException&) {
+			// The execution of the function may also throw an exception but that should have been handled by a LuaError
+			// before
+		}
+	} catch (const LuaException& e) {
+		LuaError(L, "Error while loading default script: %s", e.what());
+	}
+}
+
+const string_conv* ade_get_operator(const char *funcname)
+{
+	for(auto iter = std::begin(ade_Operators); iter != std::end(ade_Operators); ++iter)
+	{
+		if(!strcmp(funcname, iter->src))
+			return &(*iter);
+	}
+
+	return nullptr;
+}
+
+ade_table_entry& internal::getTableEntry(size_t idx) { return ade_manager::getInstance()->getEntry(idx); }
+
+namespace internal {
+
+#define DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(type, multi_accessor) \
+template<> \
+void ade_multi_deserialize_fundamental<type>(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { \
+	type temp; \
+	GET_##multi_accessor(temp); \
+	new(data_ptr) type(std::move(temp)); \
+} \
+template<> \
+void ade_multi_serialize_fundamental<type>(lua_State* L, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) { \
+	value.pushValue(L); \
+	type temp = *reinterpret_cast<type*>(lua_touserdata(L, -1)); \
+	lua_remove(L, -1); \
+	ADD_##multi_accessor(temp); \
+}
+
+//These are all fundamental data types supported by our multi code. If you get an unresolved function error
+//for ade_multi_(de)serialize_fundamental, you need to add an endinaness-safe multi GET_/ADD_ function and 
+//the corresponding DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL macro
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(int8_t, DATA)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(uint8_t, DATA)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(int16_t, SHORT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(uint16_t, USHORT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(int32_t, INT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(uint32_t, UINT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(int64_t, LONG)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(uint64_t, ULONG)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(float, FLOAT)
+
+#undef DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL
+
+}
+
+}
+
+lua_net_exception::lua_net_exception(const char* msg) : std::runtime_error(msg) { }

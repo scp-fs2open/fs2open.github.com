@@ -18,36 +18,7 @@ namespace
 {
 	SDL_Cursor* bitmapToCursor(int bitmapNum)
 	{
-		Assertion(bm_is_valid(bitmapNum), "%d is no valid bitmap handle!", bitmapNum);
-
-		int w;
-		int h;
-
-		bm_get_info(bitmapNum, &w, &h, nullptr, nullptr);
-		Uint32 rmask, gmask, bmask, amask;
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		rmask = 0x0000ff00;
-		gmask = 0x00ff0000;
-		bmask = 0xff000000;
-		amask = 0x000000ff;
-#else
-		rmask = 0x00ff0000;
-		gmask = 0x0000ff00;
-		bmask = 0x000000ff;
-		amask = 0xff000000;
-#endif
-
-		SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-		if (SDL_LockSurface(bitmapSurface) < 0) {
-			return nullptr;
-		}
-		bitmap* bmp = bm_lock(bitmapNum, 32, BMP_TEX_XPARENT);
-
-		memcpy(bitmapSurface->pixels, reinterpret_cast<void*>(bmp->data), w * h * 4);
-
-		bm_unlock(bitmapNum);
-		SDL_UnlockSurface(bitmapSurface);
+		auto bitmapSurface = bm_to_sdl_surface(bitmapNum);
 
 		// For now set the hot coordinates to the upper left corner
 		SDL_Cursor* cursorHandle = SDL_CreateColorCursor(bitmapSurface, 0, 0);
@@ -95,12 +66,12 @@ namespace io
 	namespace mouse
 	{
 
-		Cursor::Cursor(Cursor&& other)
+		Cursor::Cursor(Cursor&& other) noexcept
 		{
 			*this = std::move(other);
 		}
 		
-		Cursor& Cursor::operator=(Cursor&& other)
+		Cursor& Cursor::operator=(Cursor&& other) noexcept
 		{
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			
@@ -109,7 +80,7 @@ namespace io
 			this->mLastFrame = other.mLastFrame;
 			
 			other.mBitmapHandle = -1;
-			other.mBeginTimeStamp= -1;
+			other.mBeginTimeStamp = UI_TIMESTAMP::invalid();
 			other.mLastFrame = static_cast<size_t>(-1);
 			
 			return *this;
@@ -141,7 +112,7 @@ namespace io
 			if (mAnimationFrames.size() > 1)
 			{
 				// Animated, set the begin and do everything else in setCurrentFrame()
-				mBeginTimeStamp = timestamp();
+				mBeginTimeStamp = ui_timestamp();
 				mLastFrame = static_cast<size_t>(-1);
 			}
 			else
@@ -156,7 +127,7 @@ namespace io
 			if (mAnimationFrames.size() > 1)
 			{
 				// We are animated, compute the current frame
-				float diffSeconds = i2fl(timestamp() - mBeginTimeStamp) / TIMESTAMP_FREQUENCY;
+				float diffSeconds = i2fl(ui_timestamp_since(mBeginTimeStamp)) / TIMESTAMP_FREQUENCY;
 
 				// Use the bmpman function for this. That also ensures that APNG cursors work correctly 
 				auto frameIndex = static_cast<size_t>(bm_get_anim_frame(mBitmapHandle, diffSeconds, 0.0f, true));
@@ -169,6 +140,11 @@ namespace io
 					mLastFrame = frameIndex;
 				}
 			}
+		}
+
+		int Cursor::getBitmapHandle()
+		{
+			return mBitmapHandle;
 		}
 
 		CursorManager* CursorManager::mSingleton = nullptr;
@@ -197,7 +173,7 @@ namespace io
 
 			if (handle < 0)
 			{
-				mprintf(("Failed to load cursor bitmap %s!", fileName));
+				mprintf(("Failed to load cursor bitmap %s!\n", fileName));
 				return nullptr;
 			}
 

@@ -16,12 +16,12 @@
 #include "globalincs/pstypes.h"
 #include "graphics/grinternal.h"
 
-const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
-
+void gr_opengl_init_function_pointers();
 bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void gr_opengl_cleanup(bool closing, int minimize=1);
 int opengl_check_for_errors(const char *err_at = NULL);
 bool gr_opengl_is_capable(gr_capability capability);
+bool gr_opengl_get_property(gr_property prop, void* dest);
 void gr_opengl_push_debug_group(const char* name);
 void gr_opengl_pop_debug_group();
 
@@ -56,5 +56,8 @@ extern int Use_PBOs;
 extern GLuint GL_vao;
 
 extern float GL_alpha_threshold;
+
+extern SCP_string GL_implementation_id;
+extern SCP_vector<GLint> GL_binary_formats;
 
 #endif

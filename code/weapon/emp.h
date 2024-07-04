@@ -87,6 +87,7 @@ void emp_process_ship(ship *shipp);
 
 // start the emp effect for MYSELF (intensity == arbitrary intensity variable, time == time the effect will last)
 // NOTE : time should be in seconds
+void emp_start_local(float intensity, float time, const SCP_string &text);
 void emp_start_local(float intensity, float time);
 
 // stop the emp effect cold
@@ -103,9 +104,6 @@ int emp_should_blit_gauge();
 
 // emp hud string
 void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode);
-
-// emp hud printf
-void emp_hud_printf(int x, int y, int gauge_id, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
 
 // throw some jitter into HUD x and y coords
 void emp_hud_jitter(int *x, int *y);

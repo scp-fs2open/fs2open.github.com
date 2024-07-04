@@ -1,0 +1,22 @@
+
+layout (std140) uniform genericData {
+	vec2 smaa_rt_metrics;
+};
+
+#define SMAA_RT_METRICS vec4(1.0 / smaa_rt_metrics, smaa_rt_metrics)
+
+#define SMAA_INCLUDE_VS 0
+#define SMAA_INCLUDE_PS 1
+
+#include "SMAA.sdr"
+
+in vec2 fragTexCoord;
+in vec4 fragOffset[3];
+
+out vec4 fragOut0;
+
+uniform sampler2D colorTex;
+
+void main() {
+	fragOut0 = vec4(SMAALumaEdgeDetectionPS(fragTexCoord, fragOffset, colorTex), 0.0, 1.0);
+}

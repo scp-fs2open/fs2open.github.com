@@ -1,6 +1,21 @@
 
 #include "scripting/scripting.h"
 
+#include "scripting_doc.h"
+
+#include "scripting/lua/LuaUtil.h"
+
+extern "C" {
+#include "scripting/lua/lua_ext.h"
+
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#else
+#include <sys/stat.h>
+#endif
+}
+
 /**
  * IMPORTANT!
  *
@@ -8,105 +23,83 @@
  * do this is to declare the API elements in the header with the DECLARE_* macros and then include them here
  */
 
+#include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/background_element.h"
+#include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/camera.h"
+#include "scripting/api/objs/cockpit_display.h"
+#include "scripting/api/objs/control_info.h"
+#include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/event.h"
+#include "scripting/api/objs/eye.h"
 #include "scripting/api/objs/file.h"
 #include "scripting/api/objs/font.h"
 #include "scripting/api/objs/gameevent.h"
 #include "scripting/api/objs/gamestate.h"
 #include "scripting/api/objs/hudgauge.h"
-#include "scripting/api/objs/eye.h"
+#include "scripting/api/objs/mc_info.h"
+#include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/option.h"
+#include "scripting/api/objs/order.h"
+#include "scripting/api/objs/particle.h"
+#include "scripting/api/objs/model_path.h"
 #include "scripting/api/objs/physics_info.h"
+#include "scripting/api/objs/player.h"
+#include "scripting/api/objs/promise.h"
+#include "scripting/api/objs/rpc.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/shields.h"
+#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/ship_bank.h"
+#include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/shiptype.h"
+#include "scripting/api/objs/sound.h"
 #include "scripting/api/objs/species.h"
-#include "scripting/api/objs/team.h"
 #include "scripting/api/objs/streaminganim.h"
+#include "scripting/api/objs/subsystem.h"
+#include "scripting/api/objs/team.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/texturemap.h"
-#include "scripting/api/objs/weaponclass.h"
-#include "scripting/api/objs/mc_info.h"
-#include "scripting/api/objs/object.h"
-#include "scripting/api/objs/asteroid.h"
-#include "scripting/api/objs/cockpit_display.h"
-#include "scripting/api/objs/shipclass.h"
-#include "scripting/api/objs/debris.h"
+#include "scripting/api/objs/time_obj.h"
+#include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/waypoint.h"
-#include "scripting/api/objs/ship_bank.h"
-#include "scripting/api/objs/subsystem.h"
-#include "scripting/api/objs/order.h"
-#include "scripting/api/objs/ship.h"
-#include "scripting/api/objs/sound.h"
-#include "scripting/api/objs/message.h"
-#include "scripting/api/objs/wing.h"
-#include "scripting/api/objs/beam.h"
-#include "scripting/api/objs/player.h"
-#include "scripting/api/objs/camera.h"
-#include "scripting/api/objs/control_info.h"
-#include "scripting/api/objs/particle.h"
 #include "scripting/api/objs/weapon.h"
-#include "scripting/api/objs/controls.h"
-#include "scripting/api/objs/graphics.h"
+#include "scripting/api/objs/weaponclass.h"
+#include "scripting/api/objs/wing.h"
 
-#include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/audio.h"
+#include "scripting/api/libs/async.h"
 #include "scripting/api/libs/base.h"
+#include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
-#include "scripting/api/libs/hud.h"
+#include "scripting/api/libs/controls.h"
+#include "scripting/api/libs/engine.h"
+#include "scripting/api/libs/graphics.h"
 #include "scripting/api/libs/hookvars.h"
+#include "scripting/api/libs/hud.h"
 #include "scripting/api/libs/mission.h"
+#include "scripting/api/libs/multi.h"
+#include "scripting/api/libs/options.h"
+#include "scripting/api/libs/parse.h"
 #include "scripting/api/libs/tables.h"
 #include "scripting/api/libs/testing.h"
+#include "scripting/api/libs/time_lib.h"
+#include "scripting/api/libs/ui.h"
+#include "scripting/api/libs/utf8.h"
 
 // End of definitions includes
 
 using namespace scripting;
 using namespace scripting::api;
 
+namespace {
+const char* ScriptStateReferenceName = "SCP_ScriptState";
+}
+
 // *************************Housekeeping*************************
-//WMC - The miraculous lines of code that make Lua debugging worth something.
-lua_Debug Ade_debug_info;
-char debug_stack[4][32];
-
-void ade_debug_ret(lua_State *L, lua_Debug *ar)
-{
-	Assert(L != NULL);
-	Assert(ar != NULL);
-	lua_getstack(L, 1, ar);
-	lua_getinfo(L, "nSlu", ar);
-	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
-
-	int n;
-	for (n = 0; n < 4; n++) {
-		debug_stack[n][0] = '\0';
-	}
-
-	for (n = 0; n < 4; n++) {
-		if (lua_getstack(L,n+1, ar) == 0)
-			break;
-		lua_getinfo(L,"n", ar);
-		if (ar->name == NULL)
-			break;
-		strcpy_s(debug_stack[n],ar->name);
-	}
-}
-
-//WMC - because the behavior of the return keyword
-//was changed, I now have to use this in hooks.
-static int ade_return_hack(lua_State *L)
-{
-	int i = 0;
-	int num = lua_gettop(L);
-	for(i = 0; i < num; i++)
-	{
-		lua_pushvalue(L, i+1);
-	}
-
-	return num;
-}
 
 static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
 	if (nsize == 0)
@@ -118,6 +111,48 @@ static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
 	{
 		return vm_realloc(ptr, nsize);
 	}
+}
+
+//kind of fake, prevents true file access (only allows pipes and stuff) and also returns nil on fail instead of error handling string
+static int io_open_limited (lua_State *L) {
+	const char *filename = luaL_checkstring(L, 1);
+	const char *mode = luaL_optstring(L, 2, "r");
+
+	if (filename == nullptr)
+		return 0;
+
+	//We allow fifo-pipes, and direct character access. Neither should be too risky, and they allow for features such as communicating with speedrun tools or specialized hardware
+	//This explicitly blocks access to files, directories, and block devices
+#ifdef WIN32
+	auto handle = CreateFileA(filename, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+	bool file_allowed = false;
+	if (handle != INVALID_HANDLE_VALUE) {
+		auto file_type = GetFileType(handle);
+		CloseHandle(handle);
+		file_allowed = (file_type == FILE_TYPE_PIPE) || (file_type == FILE_TYPE_CHAR);
+	}
+#else
+	struct stat file_stat_buffer;
+	int query_stat = stat( filename, &file_stat_buffer );
+	bool file_allowed = (query_stat == 0) && (S_ISFIFO(file_stat_buffer.st_mode) || S_ISCHR(file_stat_buffer.st_mode));
+#endif
+
+	//Check that our requested file is nice and not evil
+	if (file_allowed) {
+		FILE **pf = (FILE **) lua_newuserdata(L, sizeof(FILE *));
+		*pf = nullptr;  /* file handle is currently `closed' */
+		luaL_getmetatable(L, LUA_FILEHANDLE);
+		lua_setmetatable(L, -2);
+		*pf = fopen(filename, mode);
+
+		if (*pf != nullptr) {
+			return 1;
+		}
+
+		lua_pop(L, 1);
+	}
+
+	return 0;
 }
 
 //Inits LUA
@@ -138,6 +173,18 @@ int script_state::CreateLuaState()
 	mprintf(("LUA: Initializing base Lua libraries...\n"));
 	luaL_openlibs(L);
 
+	//*****INITIALIZE EXTENSION LIBRARIES
+	mprintf(("LUA: Initializing extended Lua libraries...\n"));
+	luaL_openlibs_ext(L);
+
+	//*****INITIALIZE OUR SUPPORT LIBRARY
+	luacpp::util::initializeLuaSupportLib(L);
+
+	// Store our script state pointer in this Lua state so that it can be retrieved from the Lua API without depending
+	// on global state
+	lua_pushlightuserdata(L, this);
+	lua_setfield(L, LUA_REGISTRYINDEX, ScriptStateReferenceName);
+
 	//*****DISABLE DANGEROUS COMMANDS
 	lua_pushstring(L, "os");
 	lua_rawget(L, LUA_GLOBALSINDEX);
@@ -156,10 +203,26 @@ int script_state::CreateLuaState()
 	}
 	lua_pop(L, 1);	//os table
 
-	//*****SET DEBUG HOOKS
-#ifndef NDEBUG
-	lua_sethook(L, ade_debug_ret, LUA_MASKRET, 0);
-#endif
+	lua_pushstring(L, "io");
+	lua_rawget(L, LUA_GLOBALSINDEX);
+	int io_ldx = lua_gettop(L);
+	if(lua_istable(L, io_ldx))
+	{
+		lua_pushstring(L, "popen");
+		lua_pushnil(L);
+		lua_rawset(L, io_ldx);
+
+		//Instead of just removing open alltogether. Make sure to copy over the original fenv, as to allow lua to have the correct close already associated
+		lua_pushstring(L, "open"); // [io, "open"]
+		lua_pushstring(L, "open"); // [io, "open", "open"]
+		lua_rawget(L, io_ldx); // [io, "open", open()]
+		lua_pushcfunction(L, io_open_limited); // [io, "open", open(), open_limited()]
+		lua_getfenv(L, -2); // [io, "open", open(), open_limited(), open_fenv]
+		lua_setfenv(L, -2); // [io, "open", open(), open_limited()]
+		lua_remove(L, -2); // [io, "open", open_limited()]
+		lua_rawset(L, io_ldx); // [io]
+	}
+	lua_pop(L, 1);	//io table
 
 	//*****INITIALIZE ADE
 	uint i;
@@ -171,18 +234,13 @@ int script_state::CreateLuaState()
 			ade_manager::getInstance()->getEntry(i).SetTable(L, LUA_GLOBALSINDEX, LUA_GLOBALSINDEX);	//Oh the miracles of OOP.
 	}
 
-	//*****INITIALIZE RETURN HACK FUNCTION
-	lua_pushstring(L, "ade_return_hack");
-	lua_pushboolean(L, 0);
-	lua_pushcclosure(L, ade_return_hack, 2);
-	lua_setglobal(L, "ade_return_hack");
-
 	//*****INITIALIZE ENUMERATION CONSTANTS
 	mprintf(("ADE: Initializing enumeration constants...\n"));
 	enum_h eh;
 	for(i = 0; i < Num_enumerations; i++)
 	{
 		eh.index = Enumerations[i].def;
+		eh.value = Enumerations[i].value;
 		eh.is_constant = true;
 
 		ade_set_args(L, "o", l_Enum.Set(eh));
@@ -193,45 +251,12 @@ int script_state::CreateLuaState()
 	mprintf(("ADE: Assigning Lua session...\n"));
 	SetLuaSession(L);
 
-//	(void)l_BitOps.GetName();
+	//***** LOAD DEFAULT SCRIPTS
+	mprintf(("ADE: Loading default scripts...\n"));
+	load_default_script(L, "cfile_require.lua");
+	load_default_script(L, "dkjson.lua");
 
 	return 1;
-}
-
-void script_state::EndLuaFrame()
-{
-	scripting::api::graphics_on_frame();
-}
-
-void ade_output_toc(FILE *fp, ade_table_entry *ate)
-{
-	Assert(fp != NULL);
-	Assert(ate != NULL);
-
-	//WMC - sanity checking
-	if(ate->Name == NULL && ate->ShortName == NULL) {
-		Warning(LOCATION, "Found ade_table_entry with no name or shortname");
-		return;
-	}
-
-	fputs("<dd>", fp);
-
-	if(ate->Name == NULL)
-	{
-		fprintf(fp, "<a href=\"#%s\">%s", ate->ShortName, ate->ShortName);
-	}
-	else
-	{
-		fprintf(fp, "<a href=\"#%s\">%s", ate->Name, ate->Name);
-		if(ate->ShortName)
-			fprintf(fp, " (%s)", ate->ShortName);
-	}
-	fputs("</a>", fp);
-
-	if(ate->Description)
-		fprintf(fp, " - %s\n", ate->Description);
-
-	fputs("</dd>\n", fp);
 }
 
 static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {
@@ -245,13 +270,7 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 		return false;
 	}
 
-	SCP_string leftStr(leftCmp);
-	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr), ::tolower);
-
-	SCP_string rightStr(rightCmp);
-	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr), ::tolower);
-
-	return leftStr < rightStr;
+	return lcase_lessthan(leftCmp, rightCmp);
 }
 
 static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {
@@ -265,80 +284,39 @@ static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry*
 	return false;
 }
 
-void script_state::OutputLuaMeta(FILE *fp)
+void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
-	uint i;
-	ade_table_entry *ate;
-	fputs("<dl>\n", fp);
-
-	//***Version info
-	fprintf(fp, "<dd>Version: %s</dd>\n", LUA_RELEASE);
-
 	SCP_vector<ade_table_entry*> table_entries;
 
-	//***TOC: Libraries
-	fputs("<dt><b>Libraries</b></dt>\n", fp);
-	for(i = 0; i < ade_manager::getInstance()->getNumEntries(); i++)
-	{
-		ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
-			table_entries.push_back(ate);
-		}
-	}
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
-	for (auto entry : table_entries) {
-		ade_output_toc(fp, entry);
-	}
-	table_entries.clear();
-
-	//***TOC: Objects
-	fputs("<dt><b>Types</b></dt>\n", fp);
-	for(i = 0; i < ade_manager::getInstance()->getNumEntries(); i++)
-	{
-		ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
-			table_entries.push_back(ate);
-		}
-	}
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
-	for (auto entry : table_entries) {
-		ade_output_toc(fp, entry);
-	}
-	table_entries.clear();
-
-	//***TOC: Enumerations
-	fputs("<dt><b><a href=\"#Enumerations\">Enumerations</a></b></dt>", fp);
-
-	//***End TOC
-	fputs("</dl><br/><br/>", fp);
-
 	//***Everything
-	fputs("<dl>\n", fp);
-	for(i = 0; i < ade_manager::getInstance()->getNumEntries(); i++)
-	{
-		ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX)
+	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
+		auto ate = &ade_manager::getInstance()->getEntry(i);
+		if (ate->ParentIdx == UINT_MAX)
 			table_entries.push_back(ate);
 	}
 
 	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
 	for (auto entry : table_entries) {
-		entry->OutputMeta(fp);
+		doc.elements.emplace_back(entry->ToDocumentationElement(errorReporter));
 	}
-	table_entries.clear();
 
 	//***Enumerations
-	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
-	for(i = 0; i < Num_enumerations; i++)
-	{
-		//WMC - This is in case we ever want to add descriptions to enums.
-		//fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
+	for (uint32_t i = 0; i < Num_enumerations; i++) {
+		DocumentationEnum e;
+		e.name  = Enumerations[i].name;
+		e.value = Enumerations[i].def;
 
-		//WMC - Otherwise, just use this.
-		fprintf(fp, "<dd><b>%s</b></dd>", Enumerations[i].name);
+		doc.enumerations.push_back(e);
 	}
-	fputs("</dl>\n", fp);
+}
 
-	//***End LUA
-	fputs("</dl>\n", fp);
+script_state* script_state::GetScriptState(lua_State* L)
+{
+	lua_getfield(L, LUA_REGISTRYINDEX, ScriptStateReferenceName);
+	Assertion(lua_islightuserdata(L, -1), "Function called for Lua state that is not properly set up!");
+	auto scriptStatePtr = lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	return static_cast<script_state*>(scriptStatePtr);
 }

@@ -313,11 +313,8 @@ void Add_Symbol( int section, int offset, const char *name, char *module )
 
 }
 
-int Sym_compare( const void *arg1, const void *arg2 )
+int Sym_compare( const MemSymbol *sym1, const MemSymbol *sym2 )
 {
-	MemSymbol * sym1 = (MemSymbol *)arg1;
-	MemSymbol * sym2 = (MemSymbol *)arg2;
-
 	if ( sym1->section < sym2->section )	{
 		return -1;
 	} else if ( sym1->section > sym2->section ) {
@@ -331,11 +328,8 @@ int Sym_compare( const void *arg1, const void *arg2 )
 	}
 }
 
-int Sym_compare1( const void *arg1, const void *arg2 )
+int Sym_compare1( const MemSymbol *sym1, const MemSymbol *sym2 )
 {
-	MemSymbol * sym1 = (MemSymbol *)arg1;
-	MemSymbol * sym2 = (MemSymbol *)arg2;
-
 	if ( sym1->size < sym2->size )	{
 		return 1;
 	} else if ( sym1->size > sym2->size ) {
@@ -349,7 +343,7 @@ void DumpSymbols()
 {
 	int i;
 
-	insertion_sort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare );
+	insertion_sort( Symbols, Num_symbols, Sym_compare );
 
 	for (i=0;i<Num_symbols; i++ )	{
 		MemSymbol * sym1 = &Symbols[i];
@@ -361,7 +355,7 @@ void DumpSymbols()
 		}
 	}
 
-	insertion_sort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare1 );
+	insertion_sort( Symbols, Num_symbols, Sym_compare1 );
 
 
 	FILE *fp = fopen( "dump", "wt" );

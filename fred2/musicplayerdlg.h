@@ -1,0 +1,49 @@
+// MusicPlayerDlg.h : header file
+
+#ifndef _MUSICPLAYERDLG_H
+#define _MUSICPLAYERDLG_H
+
+class music_player_dlg : public CDialog {
+  public:
+	music_player_dlg(CWnd* pParent = nullptr);
+	BOOL Create();
+	void UpdateSelection();
+	void PlayMusic();
+	void StopMusic();
+	bool SelectNextTrack();
+	bool SelectPrevTrack();
+	bool IsPlayerActive();
+	void DoFrame();
+
+	enum {
+		IDD = IDD_MUSIC_PLAYER
+	};
+
+  protected:
+	CListBox m_music_list;
+	CString m_music_item;
+	int m_music_id;
+	int m_cursor_pos;
+	int m_autoplay;
+
+	CBitmap m_play_bm;
+	CBitmap m_stop_bm;
+	CBitmap m_next_bm;
+	CBitmap m_prev_bm;
+
+	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
+
+	virtual BOOL OnInitDialog();
+	afx_msg void OnSelMusicList();
+	afx_msg void OnPlay();
+	afx_msg void OnStop();
+	afx_msg void OnNextTrack();
+	afx_msg void OnPreviousTrack();
+	afx_msg void OnMusicTbl();
+	afx_msg void OnClose();
+	afx_msg void OnAutoplay();
+
+	DECLARE_MESSAGE_MAP()
+};
+
+#endif // _MUSICPLAYERDLG_H

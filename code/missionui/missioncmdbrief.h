@@ -16,6 +16,8 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+
+#include "graphics/2d.h"
 #include "graphics/generic.h"
 
 struct anim;

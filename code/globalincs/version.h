@@ -53,9 +53,13 @@ struct version {
 	int build = 0;
 	int revision = 0;
 
-	version() {}
+	version() = default;
 
-	version(int major, int minor, int build, int revision);
+	version(int major, int minor = 0, int build = 0, int revision = 0);
+
+	version(const SCP_string& semver, int missing = -1);
+	
+	bool isValid() const;
 
 	bool operator<(const version& other) const;
 	bool operator==(const version& other) const;
@@ -66,6 +70,7 @@ struct version {
 };
 
 version parse_version();
+version parse_version_inline();
 
 version get_executable_version();
 
@@ -80,11 +85,19 @@ bool check_at_least(const version& v);
 
 /**
  * @brief Returns the string representation of the passed version
- * @param major The version to format
+ * @param v The version to format
+ * @param exclude_build Whether to exclude the build and revision numbers (i.e. only print major and minor)
  * @returns A string representation of the version number
  */
-SCP_string format_version(const version& v);
+SCP_string format_version(const version& v, bool exclude_build = false);
+
+/**
+ * @brief
+ * @return
+ */
+SCP_string get_version_string();
 
 }
+
 
 #endif

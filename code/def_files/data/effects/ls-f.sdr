@@ -1,0 +1,39 @@
+
+in vec4 fragTexCoord;
+
+out vec4 fragOut0;
+
+uniform sampler2D scene;
+uniform sampler2D cockpit;
+
+layout (std140) uniform genericData {
+	vec2 sun_pos;
+	float density;
+	float weight;
+	float falloff;
+	float intensity;
+	float cp_intensity;
+};
+
+void main()
+{
+	vec2 step = vec2( fragTexCoord.st - sun_pos.xy );
+	vec2 pos = fragTexCoord.st;
+	step *= 1.0 / float(SAMPLE_NUM) * density;
+	float decay = 1.0;
+	vec4 sum = vec4(0.0);
+	vec4 mask = texture(cockpit, fragTexCoord.st);
+	if (mask.r < 1.0) {
+		fragOut0 = vec4(cp_intensity);
+		return;
+	}
+	for(int i=0; i < SAMPLE_NUM ; i++) {
+		pos.st -= step;
+		vec4 tex_sample = texture(scene, pos);
+		if (tex_sample.r == 1.0)
+			sum += decay * weight;
+		decay *= falloff;
+	}
+	fragOut0 = sum * intensity;
+	fragOut0.a = 1.0;
+}

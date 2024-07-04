@@ -11,14 +11,14 @@ font_h::font_h(font::FSFont* fontIn): font(fontIn) {
 font_h::font_h(): font(NULL) {
 }
 
-font::FSFont* font_h::Get() {
+font::FSFont* font_h::Get() const {
 	if (!isValid())
 		return NULL;
 
 	return font;
 }
 
-bool font_h::isValid() {
+bool font_h::isValid() const {
 	return font != NULL;
 }
 
@@ -36,10 +36,22 @@ ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or 
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
 }
 
+ADE_FUNC(__eq, l_Font, "font, font", "Checks if the two fonts are equal", "boolean", "true if equal, false otherwise")
+{
+	font_h *fh1, *fh2;
+	if (!ade_get_args(L, "oo", l_Font.GetPtr(&fh1), l_Font.GetPtr(&fh2)))
+		return ade_set_error(L, "b", false);
+
+	if (!fh1->isValid() || !fh2->isValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", fh1->Get()->getName() == fh2->Get()->getName());
+}
+
 ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><b>Important:</b>This variable is deprecated. Use <i>Name</i> instead.", "string", NULL)
 {
 	font_h *fh = NULL;
-	char *newname = NULL;
+	const char* newname = nullptr;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
@@ -57,7 +69,7 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><
 ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "string", NULL)
 {
 	font_h *fh = NULL;
-	char *newname = NULL;
+	const char* newname = nullptr;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
@@ -136,4 +148,4 @@ ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean",
 }
 
 }
-}
+} // namespace scripting

@@ -7,25 +7,19 @@
  *
 */
 
-
-
-
 #include "network/multi_team.h"
+
 #include "globalincs/linklist.h"
-#include "network/multimsgs.h"
-#include "network/multiutil.h"
+#include "iff_defs/iff_defs.h"
+#include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multi_pmsg.h"
-#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #include "object/object.h"
-#include "ship/ship.h"
-#include "iff_defs/iff_defs.h"
-#include "stats/scoring.h"
-
-#ifndef NDEBUG
 #include "playerman/player.h"
-#endif
-
+#include "ship/ship.h"
+#include "stats/scoring.h"
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER TEAMPLAY DEFINES/VARS
@@ -412,7 +406,7 @@ void multi_team_handle_drop()
 			int team_check = team0_cap ? 1 : 0;
 			for(idx=0; idx<MAX_PLAYERS; idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN) && (Net_players[idx].p_info.team == team_check)){			
-					send_host_captain_change_packet(Net_players[idx].player_id, 1);
+					send_host_captain_change_packet(Net_players[idx].player_id, true);
 				}
 			}
 			return;
@@ -468,10 +462,6 @@ void multi_team_handle_join(net_player *pl)
 			else if(Net_players[idx].p_info.team == 1){
 				team1_count++;
 			} 
-			// some other case - should never happen
-			else {
-				Int3();
-			}
 		}
 	}
 
@@ -488,22 +478,17 @@ void multi_team_handle_join(net_player *pl)
 
 	// send a team update
 	multi_team_send_update();
-
-	// verify that we have valid team stuff
-	multi_team_verify();
 }
 
 // set all ships in the mission to be marked as the proper team (TEAM_HOSTILE, TEAM_FRIENLY)
 void multi_team_mark_all_ships()
 {
-	ship_obj *moveup;	
-	
    // look through all ships in the mission
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup!=END_OF_LIST(&Ship_obj_list)){
-		multi_team_mark_ship(&Ships[Objects[moveup->objnum].instance]);		
+	for (auto moveup: list_range(&Ship_obj_list)){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		moveup = GET_NEXT(moveup);
+		multi_team_mark_ship(&Ships[Objects[moveup->objnum].instance]);		
 	}	
 
 	// verify that we have valid team stuff
@@ -568,7 +553,7 @@ void multi_team_get_player_counts(int *team0, int *team1)
 }
 
 // report on the winner/loser of the game via chat text
-#define SEND_AND_DISPLAY(mesg)		do { send_game_chat_packet(Net_player, mesg, MULTI_MSG_ALL, NULL, NULL, 1); multi_display_chat_msg(mesg, 0, 0); } while(0);
+#define SEND_AND_DISPLAY(mesg)		do { send_game_chat_packet(Net_player, mesg, MULTI_MSG_ALL, NULL, NULL, 1); multi_display_chat_msg(mesg, 0, 0); } while(false);
 void multi_team_report()
 {
 	int i;
@@ -632,7 +617,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;		
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);	
+	player_index = find_player_index(hinfo->id);	
 
 	// get the packet opcode
 	GET_DATA(code);
@@ -651,7 +636,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 		GET_INT(req_team);
 
 		// if i'm the host of the game, process here		
-		req_index = find_player_id(player_id);
+		req_index = find_player_index(player_id);
 		if( (req_index == -1) || (player_index == -1) ){
 			nprintf(("Network","Could not find player to process team change request !\n"));
 		} else {
@@ -770,7 +755,7 @@ int multi_team_process_team_update(ubyte *data)
 
 		// do a player lookup
 		if(!MULTIPLAYER_MASTER){
-			player_index = find_player_id(player_id);
+			player_index = find_player_index(player_id);
 			if(player_index != -1){
 				// set his team correctly
 				if(flags & (1<<0)){

@@ -91,7 +91,7 @@ void UI_ICON::draw()
 // -----------------------------------------------------------------------
 // process()
 //
-void UI_ICON::process(int focus)
+void UI_ICON::process(int  /*focus*/)
 {
 	int OnMe;
 

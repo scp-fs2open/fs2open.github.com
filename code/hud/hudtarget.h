@@ -26,6 +26,7 @@ struct weapon_info;
 #define MATCH_SPEED_THRESHOLD				0.1f		// minimum speed target must be moving for match speed to apply
 #define CARGO_RADIUS_DELTA					100		// distance added to radius required for cargo scanning
 #define CAPITAL_CARGO_RADIUS_DELTA		250		// distance added to radius required for cargo scanning
+const int CARGO_RADIUS_REAL_DELTA = 50;         // difference in distances used for cargo scanning of subsystems (which also uses object radius), vs whole-ship scanning
 #define CARGO_REVEAL_MIN_DIST				150		// minimum distance for reveal cargo (used if radius+CARGO_RADIUS_DELTA < CARGO_REVEAL_MIN_DIST)
 #define CAP_CARGO_REVEAL_MIN_DIST		300		// minimum distance for reveal cargo (used if radius+CARGO_RADIUS_DELTA < CARGO_REVEAL_MIN_DIST)
 #define CARGO_MIN_DOT_TO_REVEAL			0.95		// min dot to proceed to have cargo scanning take place
@@ -68,6 +69,12 @@ extern const char *Strafe_submode_text[];
 
 extern void hud_init_targeting_colors();
 
+enum class leadIndicatorBehavior {
+    DEFAULT = 0,
+    MULTIPLE,
+    AVERAGE
+};
+
 /// \brief An abbreviation for "Evaluate Ship as Closest Target", defines a 
 ///        data structure used to hold the required arguments for evaluating 
 ///        a prospective closest target to an attacked object.
@@ -94,7 +101,6 @@ void	hud_target_subsystem_in_reticle();
 void	hud_show_targeting_gauges(float frametime);
 void	hud_target_targets_target();
 void	hud_check_reticle_list();
-void	hud_target_closest_locked_missile(object *A);
 void	hud_target_missile(object *source_obj, int next_flag);
 void	hud_target_next_list(int hostile=1, int next_flag=1, int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
@@ -113,20 +119,32 @@ void hud_target_random_ship();
 
 void	hud_target_next_subobject();
 void	hud_target_prev_subobject();
-void	hud_cease_subsystem_targeting(int print_message=1);
-void	hud_cease_targeting();
+
+/**
+ * @brief Cease targeting subsystems
+ *
+ * @param[in] print_message  If true, provide feedback to the player
+ */
+void hud_cease_subsystem_targeting(bool print_message = true);
+
+/**
+ * @brief Cease targeting objects and their subsystems.
+ *
+ * @param[in] deliberate  If true, turn off auto-targeting and provide feedback to player
+ */
+void hud_cease_targeting(bool deliberate = false);
+
 void	hud_restore_subsystem_target(ship* shipp);
-int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* subsystem);
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 
 void hud_show_hostile_triangle();
-void hud_start_flash_weapon(int index);
+void hud_start_flash_weapon(int index, bool flash_energy);
 void hud_update_weapon_flash();
 void hud_process_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
-int hud_communications_state(ship *sp);
+int hud_communications_state(ship *sp, bool for_death_scream = false);
 
 int hud_get_best_primary_bank(float *range);
 void hud_target_toggle_hidden_from_sensors();
@@ -149,13 +167,19 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3);
 void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 
 float hud_find_target_distance( object *targetee, object *targeter );
+float hud_find_target_distance( object *targetee, const vec3d *targeter_pos );
 
-extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
-void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
+extern object* Player_obj;
 
-void hud_stuff_ship_name(char *ship_name_text, ship *shipp);
-void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp);
-void hud_stuff_ship_class(char *ship_class_text, ship *shipp);
+extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps, object *reference_obj = Player_obj);
+bool hud_calculate_lead_pos(vec3d* shooter_pos, vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
+
+void hud_stuff_ship_name(char *ship_name_text, const ship *shipp);
+void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp);
+void hud_stuff_ship_class(char *ship_class_text, const ship *shipp);
+SCP_string hud_get_ship_name(const ship *shipp);
+SCP_string hud_get_ship_callsign(const ship *shipp);
+SCP_string hud_get_ship_class(const ship *shipp);
 
 #define TARGET_DISPLAY_DIST		(1<<0)
 #define TARGET_DISPLAY_DOTS		(1<<1)
@@ -176,7 +200,7 @@ typedef struct target_display_info {
 
 extern SCP_vector<target_display_info> target_display_list;
 
-void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char *name, int flags);
+void hud_target_add_display_list(object *objp, const vertex *target_point, const vec3d *target_pos, int correction, const color *bracket_clr, const char *name, int flags);
 void hud_target_clear_display_list();
 
 class HudGaugeAutoTarget: public HudGauge
@@ -198,8 +222,8 @@ public:
 	void initBitmaps(char *fname);
 	void initOnColor(int r, int g, int b, int a);
 	void initOffColor(int r, int g, int b, int a);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeAutoSpeed: public HudGauge
@@ -221,8 +245,8 @@ public:
 	void initBitmaps(char *fname);
 	void initOnColor(int r, int g, int b, int a);
 	void initOffColor(int r, int g, int b, int a);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeCmeasures: public HudGauge
@@ -237,8 +261,8 @@ public:
 	void initBitmaps(char *fname);
 	void initCountTextOffsets(int x, int y);
 	void initCountValueOffsets(int x, int y);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeAfterburner: public HudGauge
@@ -251,8 +275,8 @@ public:
 	HudGaugeAfterburner();
 	void initEnergyHeight(int h);
 	void initBitmaps(char *fname);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeWeaponEnergy: public HudGauge
@@ -262,10 +286,10 @@ protected:
 
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
-	int Text_alignment;
+	HudAlignment Text_alignment;
 
 	int Armed_name_offsets[2];
-	int Armed_alignment;
+	HudAlignment Armed_alignment;
 	bool Show_armed;
 	int Armed_name_h;
 	
@@ -280,10 +304,10 @@ public:
 	void initAlwaysShowText(bool show_text);
 	void initMoveText(bool move_text);
 	void initShowBallistics(bool show_ballistics);
-	void initAlignments(int text_align, int armed_align);
+	void initAlignments(HudAlignment text_align, HudAlignment armed_align);
 	void initArmedOffsets(int x, int y, int h, bool show);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeWeapons: public HudGauge
@@ -342,8 +366,8 @@ public:
 	void initSecondaryHeights(int top_h, int text_h);
 	void initLinkIcon();
 
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void maybeFlashWeapon(int index);
 };
 
@@ -383,8 +407,8 @@ public:
 	void initEntryHeight(int h);
 	void initLinkIcon();
 
-	virtual void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void maybeFlashWeapon(int index);
 };
 
@@ -400,7 +424,7 @@ public:
 	void initPrimaryNameOffsetX(int x);
 	void initPrimaryAmmoOffsetX(int x);
 
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeSecondaryWeapons: public HudGaugeWeaponList
@@ -419,7 +443,7 @@ public:
 	void initSecondaryLinkedOffsetX(int x);
 	void initSecondaryUnlinkedOffsetX(int x);
 
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeHardpoints: public HudGauge
@@ -439,7 +463,7 @@ public:
 	void initDrawOptions(bool primary_models, bool secondary_models);
 
 	HudGaugeHardpoints();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeWarheadCount: public HudGauge
@@ -451,7 +475,7 @@ class HudGaugeWarheadCount: public HudGauge
 	int Warhead_count_size[2];
 
 	int Max_symbols;
-	int Text_align;
+	HudAlignment Text_align;
 	int Max_columns;
 public:
 	HudGaugeWarheadCount();
@@ -461,9 +485,9 @@ public:
 	void initCountSizes(int w, int h);
 	void initMaxSymbols(int count);
 	void initMaxColumns(int count);
-	void initTextAlign(int align);
-	void render(float frametime);
-	void pageIn();
+	void initTextAlign(HudAlignment align);
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeOrientationTee: public HudGauge
@@ -473,9 +497,9 @@ protected:
 public:
 	HudGaugeOrientationTee();
 	void initRadius(int length);
-	void render(float frametime);
+	void render(float frametime) override;
 	void renderOrientation(object *from_objp, object *to_objp, matrix *from_orientp);
-	void pageIn();
+	void pageIn() override;
 };
 
 class HudGaugeReticleTriangle: public HudGauge
@@ -490,7 +514,7 @@ public:
 	void initRadius(int length);
 	void initTriBase(float length);
 	void initTriHeight(float h);
-	virtual void render(float frametime);
+	void render(float frametime) override;
 	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri);
 	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
 };
@@ -500,7 +524,7 @@ class HudGaugeHostileTriangle: public HudGaugeReticleTriangle
 protected:
 public:
 	HudGaugeHostileTriangle();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeTargetTriangle: public HudGaugeReticleTriangle
@@ -508,7 +532,7 @@ class HudGaugeTargetTriangle: public HudGaugeReticleTriangle
 protected:
 public:
 	HudGaugeTargetTriangle();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeMissileTriangles: public HudGaugeReticleTriangle
@@ -516,10 +540,10 @@ class HudGaugeMissileTriangles: public HudGaugeReticleTriangle
 protected:
 public:
 	HudGaugeMissileTriangles();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
-class HudGaugeOffscreen: public HudGauge
+class HudGaugeOffscreen: public HudGauge3DAnchor
 {
 protected:
 	float Max_offscreen_tri_seperation;
@@ -532,13 +556,13 @@ public:
 	void initMaxFrontSeperation(float length);
 	void initTriBase(float length);
 	void initTriHeight(float length);
-	void render(float frametime);
+	void render(float frametime) override;
 	void calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep);
 	void renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid = true);
-	void pageIn();
+	void pageIn() override;
 };
 
-class HudGaugeLeadIndicator: public HudGauge
+class HudGaugeLeadIndicator: public HudGauge3DAnchor
 {
 protected:
 	hud_frames Lead_indicator_gauge;
@@ -547,12 +571,12 @@ public:
 	HudGaugeLeadIndicator();
 	void initHalfSize(float w, float h);
 	void initBitmaps(char *fname);
-	void render(float frametime);
+	void render(float frametime) override;
 	void renderIndicator(int frame_offset, object *targetp, vec3d *lead_target_pos);
 	void renderLeadCurrentTarget();
 	void renderLeadQuick(vec3d *target_pos, object *targetp);
 	int pickFrame(float prange, float srange, float dist_to_target);
-	void pageIn();
+	void pageIn() override;
 };
 
 class HudGaugeLeadSight: public HudGauge
@@ -563,9 +587,9 @@ protected:
 public:
 	HudGaugeLeadSight();
 	void initBitmaps(char *fname);
-	void render(float frametime);
+	void render(float frametime) override;
 	void renderSight(int indicator_frame, vec3d *target_pos, vec3d *lead_target_pos);
-	void pageIn();
+	void pageIn() override;
 };
 
 #endif

@@ -34,7 +34,7 @@ void flak_level_close()
 /**
  * Given a just fired flak shell, pick a detonating distance for it
  */
-void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength)
+void flak_pick_range(object *objp, const vec3d * /*firing_pos*/, const vec3d *predicted_target_pos, float weapon_subsys_strength)
 {
 	float final_range;
 	float det_range;
@@ -83,7 +83,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
  * Add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
  * assumes dir is normalized
  */
-void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength, weapon_info* wip)
+void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength, const weapon_info *wip)
 {			
 	vec3d rand_twist_pre, rand_twist_post;		
 	matrix temp;
@@ -112,28 +112,6 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 	vm_vec_scale(&final_aim, dist_to_target);
 	vm_vec_add(dir, &final_aim, &rand_twist_post);
 	vm_vec_normalize(dir);
-}
-
-/**
- * Create a muzzle flash from a flak gun based upon firing position and weapon type
- */
-void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class)
-{
-	// sanity
-	Assert((turret_weapon_class >= 0) && (turret_weapon_class < Num_weapon_types));
-	if((turret_weapon_class < 0) || (turret_weapon_class >= Num_weapon_types)){
-		return;
-	}
-	Assert(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak]);
-	if(!(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak])){
-		return;
-	}
-
-	if(Weapon_info[turret_weapon_class].muzzle_flash < 0){
-		return;
-	}
-
-	mflash_create(pos, dir, pip, Weapon_info[turret_weapon_class].muzzle_flash);
 }
 
 /**

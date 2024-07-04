@@ -1,0 +1,180 @@
+
+// NOTE: The technique and some of this code is based on this tutorial:
+// http://martindevans.me/game-development/2015/02/27/Drawing-Stuff-On-Other-Stuff-With-Deferred-Screenspace-Decals/
+
+#include "lighting.sdr"
+#include "normals.sdr"
+#include "gamma.sdr"
+
+out vec4 fragOut0; // Diffuse buffer
+out vec4 fragOut1; // Normal buffer
+out vec4 fragOut2; // Emissive buffer
+
+uniform sampler2D gDepthBuffer;
+uniform sampler2D gNormalBuffer;
+
+uniform sampler2DArray diffuseMap;
+uniform sampler2DArray glowMap;
+uniform sampler2DArray normalMap;
+
+layout (std140) uniform decalGlobalData {
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 invViewMatrix;
+	mat4 invProjMatrix;
+
+	vec3 ambientLight;
+
+	vec2 viewportSize;
+};
+layout (std140) uniform decalInfoData {
+	mat4 model_matrix;
+	mat4 inv_model_matrix;
+
+	vec3 decal_direction;
+	float normal_angle_cutoff;
+
+	int diffuse_index;
+	int glow_index;
+	int normal_index;
+	float angle_fade_start;
+
+	float alpha_scale;
+	int diffuse_blend_mode;
+	int glow_blend_mode;
+};
+
+vec3 computeViewPosition(vec2 textureCoord) {
+	vec4 clipSpaceLocation;
+	vec2 normalizedCoord = textureCoord / viewportSize;
+
+	clipSpaceLocation.xy = normalizedCoord * 2.0f - 1.0f;
+	clipSpaceLocation.z = texelFetch(gDepthBuffer, ivec2(textureCoord), 0).r * 2.0f - 1.0f;
+	clipSpaceLocation.w = 1.0f;
+
+	vec4 homogenousLocation = invProjMatrix * clipSpaceLocation;
+
+	return homogenousLocation.xyz / homogenousLocation.w;
+}
+
+vec3 getPixelNormal(vec3 frag_position, vec2 tex_coord, inout float alpha, out vec3 binormal, out vec3 tangent) {
+#ifdef USE_NORMAL_MAP
+	// If we can then we just use the existing normal buffer
+    vec3 normal = texelFetch(gNormalBuffer, ivec2(tex_coord), 0).xyz;
+
+	// If we use the normal map then we don't really need these values so we don't need to compute them here
+    binormal = vec3(0.0);
+    tangent = vec3(0.0);
+#else
+	// Use some fancy screen-space derivates to determine the normal of the current pixel by looking at the surrounding pixels
+	vec3 pos_dx = dFdx(frag_position);
+	vec3 pos_dy = dFdy(frag_position);
+
+    vec3 normal = normalize(cross(pos_dx, pos_dy));
+
+    binormal = normalize(pos_dx);
+    tangent = normalize(pos_dy);
+#endif
+
+	//Calculate angle between surface normal and decal direction
+	float angle = acos(dot(normal, decal_direction));
+
+	if (angle > normal_angle_cutoff) {
+		// The angle between surface normal and decal direction is too big
+		discard;
+	}
+
+	// Make a smooth alpha transition leading up to an edge
+	alpha = alpha * (1 - smoothstep(angle_fade_start, normal_angle_cutoff, angle));
+
+	return normal;
+}
+
+vec2 getDecalTexCoord(vec3 view_pos, inout float alpha) {
+	vec4 object_pos = inv_model_matrix * invViewMatrix * vec4(view_pos, 1.0);
+
+	bvec3 invalidComponents = greaterThan(abs(object_pos.xyz), vec3(0.5));
+	bvec4 nanComponents = isnan(object_pos); // nan can happen some times if we have an infinite depth value
+
+	if (any(invalidComponents) || any(nanComponents)) {
+		// Fragment is out of the box
+		discard;
+	}
+
+	// Fade out the texture when it gets close to the top or bottom of the decal box
+	alpha = alpha * (1.0 - smoothstep(0.4, 0.5, abs(object_pos.z)));
+
+	return object_pos.xy + 0.5;
+}
+
+void main() {
+	vec3 frag_position = computeViewPosition(gl_FragCoord.xy);
+
+	float alpha = alpha_scale;
+	vec2 tex_coord = getDecalTexCoord(frag_position, alpha);
+
+	vec3 binormal;
+	vec3 tangent;
+	vec3 normal = getPixelNormal(frag_position, gl_FragCoord.xy, alpha, binormal, tangent);
+
+	vec4 diffuse_out = vec4(0.0);
+	vec4 emissive_out = vec4(0.0);
+	vec3 normal_out = vec3(0.0);
+
+	if (diffuse_index >= 0) {
+		// We have a valid diffuse map
+		vec4 color = texture(diffuseMap, vec3(tex_coord, float(diffuse_index)));
+
+		color.rgb = srgb_to_linear(color.rgb);
+
+		if (diffuse_blend_mode == 0) {
+			// Normal alpha blending
+			diffuse_out = vec4(color.rgb, color.a * alpha);
+		} else {
+			// Additive blending
+			diffuse_out = vec4(color.rgb * alpha, 1.0);
+		}
+
+		// The main model shader applies ambient lighting by drawing the ambient part of the texture into the emissive
+		// texture. We do the same here to make sure the decal material is applied correctly
+		if (glow_blend_mode == 0) {
+			// Normal alpha blending
+			emissive_out = vec4(color.rgb * ambientLight, color.a * alpha);
+		} else {
+			// Additive blending
+			emissive_out = vec4(alpha * color.rgb * ambientLight, 1.0);
+		}
+	}
+
+	if (glow_index >= 0) {
+		// We have a valid glow map
+		vec4 color = texture(glowMap, vec3(tex_coord, float(glow_index)));
+
+		color.rgb = srgb_to_linear(color.rgb) * GLOW_MAP_SRGB_MULTIPLIER;
+
+		color.rgb *= GLOW_MAP_INTENSITY;
+
+		if (glow_blend_mode == 0) {
+			// Normal alpha blending
+			emissive_out = vec4(color.rgb + emissive_out.rgb * emissive_out.a, color.a * alpha);
+		} else {
+			// Additive blending
+			emissive_out.rgb += color.rgb * alpha;
+		}
+	}
+
+	if (normal_index >= 0) {
+		vec3 decalNormal = unpackNormal(texture(normalMap, vec3(tex_coord, float(normal_index))).ag);
+
+		mat3 tangentToView;
+		tangentToView[0] = tangent;
+		tangentToView[1] = binormal;
+		tangentToView[2] = normal;
+
+		normal_out = tangentToView * decalNormal * alpha;
+	}
+
+	fragOut0 = diffuse_out;
+	fragOut1 = vec4(normal_out, 0.0);
+	fragOut2 = emissive_out;
+}

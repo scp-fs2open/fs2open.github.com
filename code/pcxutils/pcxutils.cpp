@@ -108,7 +108,7 @@ int pcx_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 // int Pcx_load_offset = 0;
 // int Pcx_load_size = 0;
 /*
-// #define GET_BUF()			do { buffer = &Pcx_load[Pcx_load_offset]; if(Pcx_load_offset + buffer_size > Pcx_load_size) { buffer_size = Pcx_load_size - Pcx_load_offset; } } while(0);
+// #define GET_BUF()			do { buffer = &Pcx_load[Pcx_load_offset]; if(Pcx_load_offset + buffer_size > Pcx_load_size) { buffer_size = Pcx_load_size - Pcx_load_offset; } } while(false);
 int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette )
 {
 	PCXHeader header;
@@ -213,7 +213,7 @@ typedef struct { ubyte b, g, r, a; } COLOR32;
 #endif
 
 //int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data, ubyte bpp, int aabitmap, int nondark )
-int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap, int nondark, int cf_type )
+int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte * /*pal*/, int byte_size, int aabitmap, bool mask_bitmap, int cf_type )
 {
 	PCXHeader header;
 	CFILE * PCXfile;
@@ -310,7 +310,22 @@ int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte *pal, in
 			if ( col < xsize ) {
 				// 8-bit PCX reads
 				if ( byte_size == 1 ) {
-					*pixdata++ = data;
+					auto pixel_val = data;
+					if (!mask_bitmap) {
+						// 8 bit-per-pixel aa bitmaps are a bit special since they only use values in the range [0, 15] where 15 wraps
+						// around back to 0. Since the rest of the code expects the value to be in the range [0, 255] the pixel value
+						// needs to be adjusted here. By multiplying the value with 17 the original range [0, 15] is mapped to [0, 255]
+						// This only applies to bitmaps that are not used as masks since mask bitmaps use higher values
+						// to indicate their mask area
+						if (data > 15) {
+							pixel_val = 0;
+						} else if (data == 15) {
+							pixel_val = 17;
+						} else {
+							pixel_val = (ubyte) (data * 17);
+						}
+					}
+					*pixdata++ = pixel_val;
 				} else {
 					// 16-bit AABITMAP reads
 					if ( (byte_size == 2) && aabitmap ) {
@@ -508,34 +523,5 @@ int pcx_write_bitmap( const char * real_filename, int w, int h, ubyte ** row_ptr
 
 	fclose( PCXfile );
 	return PCX_ERROR_NONE;
-
-}
-
-//text for error messges
-char pcx_error_messages[] = {
-	"No error.\0"
-	"Error opening file.\0"
-	"Couldn't read PCX header.\0"
-	"Unsupported PCX version.\0"
-	"Error reading data.\0"
-	"Couldn't find palette information.\0"
-	"Error writing data.\0"
-};
-
-
-//function to return pointer to error message
-char *pcx_errormsg(int error_number)
-{
-	char *p = pcx_error_messages;
-
-	while (error_number--) {
-
-		if (!p) return NULL;
-
-		p += strlen(p)+1;
-
-	}
-
-	return p;
 
 }

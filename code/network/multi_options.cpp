@@ -23,12 +23,13 @@
 #include "network/multi_team.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "cfile/cfile.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 
-#include <limits.h>
+#include <climits>
 
 
 
@@ -48,13 +49,127 @@ multi_global_options Multi_options_g;
 
 char Multi_options_proxy[512] = "";
 ushort Multi_options_proxy_port = 0;
+bool Multi_cfg_missing = true;
+
+auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
+									std::pair<const char*, int>{"PXO", 1383},
+									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", 1809})
+									.category(std::make_pair("Multi", 1828))
+									.level(options::ExpertLevel::Beginner)
+									.default_val(true)
+									.bind_to(&Multi_options_g.pxo)
+									.importance(10)
+									.flags({options::OptionFlags::RetailBuiltinOption})
+									.finish();
+
+// These next few options are a little messy because the values are stored in the player file
+// rather than a global. The Change_Listener runs on game start and when the option is changed.
+// The "initial" paramter is used to skip setting the player flag on game start because Player
+// hasn't been initialized yet. On Player Load the static local globals are set based on the
+// player flags and the options will read/save those as necessary. When an option is changed
+// any time after startup the Change_Listener will set the player flags. We don't need to manually
+// save the player flags because the player file already does that. So after the local globals
+// and player flags are sync'd up at game start then we are good to go for the entire runtime.
+
+static bool BroadcastGamesLocally = false;
+
+static bool local_broadcast_change(bool val, bool initial)
+{
+	if (initial) {
+		return false;
+	} else {
+		if (!val) {
+			Player->m_local_options.flags &= ~(MLO_FLAG_LOCAL_BROADCAST);
+		} else {
+			Player->m_local_options.flags |= MLO_FLAG_LOCAL_BROADCAST;
+		}
+		BroadcastGamesLocally = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
+		return true;
+	}
+}
+
+auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBroadcast",
+									std::pair<const char*, int>{"Broadcast Locally", 1387},
+									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1808})
+									.category(std::make_pair("Multi", 1828))
+									.level(options::ExpertLevel::Beginner)
+									.default_val(false)
+                                    .bind_to(&BroadcastGamesLocally)
+									.change_listener(local_broadcast_change)
+									.importance(10)
+									.flags({options::OptionFlags::RetailBuiltinOption})
+									.finish();
+
+static bool AlwaysFlushCache = false;
+
+static bool flush_cache_change(bool val, bool initial)
+{
+	if (initial) {
+		return false;
+	} else {
+		if (!val) {
+			Player->m_local_options.flags &= ~(MLO_FLAG_FLUSH_CACHE);
+		} else {
+			Player->m_local_options.flags |= MLO_FLAG_FLUSH_CACHE;
+		}
+		AlwaysFlushCache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE) ? 1 : 0;
+		return true;
+	}
+}
+
+static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", 1400) : XSTR("Before Game", 1401); }
+
+auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache",
+									std::pair<const char*, int>{"Flush Cache", 1399},
+									std::pair<const char*, int>{"Whether or not flush the multidata cache before games", 1810})
+									.category(std::make_pair("Multi", 1828))
+									.level(options::ExpertLevel::Beginner)
+                                    .flags({options::OptionFlags::ForceMultiValueSelection, options::OptionFlags::RetailBuiltinOption})
+                                    .display(flush_cache_display) 
+									.default_val(false)
+                                    .bind_to(&AlwaysFlushCache)
+									.change_listener(flush_cache_change)
+									.importance(10)
+									.finish();
+
+static bool CacheMissionsToMultidata = false;
+
+static bool transfer_missions_change(bool val, bool initial)
+{
+	if (initial) {
+		return false;
+	} else {
+		if (!val) {
+			Player->m_local_options.flags &= ~(MLO_FLAG_XFER_MULTIDATA);
+		} else {
+			Player->m_local_options.flags |= MLO_FLAG_XFER_MULTIDATA;
+		}
+		CacheMissionsToMultidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA) ? 1 : 0;
+		return true;
+	}
+}
+
+static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/multidata", 1397) : XSTR("/missions", 1398); }
+
+auto TransferMissionsOption __UNUSED = options::OptionBuilder<bool>("Multi.TransferMissions",
+									std::pair<const char*, int>{"Transfer Missions", 1396},
+									std::pair<const char*, int>{"What appdata folder to save missions to", 1811})
+									.category(std::make_pair("Multi", 1828))
+									.level(options::ExpertLevel::Beginner)
+                                    .flags({options::OptionFlags::ForceMultiValueSelection, options::OptionFlags::RetailBuiltinOption})
+                                    .display(transfer_missions_display) 
+									.default_val(false)
+                                    .bind_to(&CacheMissionsToMultidata)
+									.change_listener(transfer_missions_change)
+									.importance(10)
+									.finish();
 
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS FUNCTIONS
 //
 
 // load in the config file
-#define NEXT_TOKEN()						do { tok = strtok(NULL, "\n"); if(tok != NULL){ drop_leading_white_space(tok); drop_trailing_white_space(tok); } } while(0);
+#define NEXT_TOKEN()						do { tok = strtok(NULL, "\n"); if(tok != NULL){ drop_leading_white_space(tok); drop_trailing_white_space(tok); } } while(false);
 #define SETTING(s)						( !stricmp(tok, s) )
 void multi_options_read_config()
 {
@@ -69,7 +184,6 @@ void multi_options_read_config()
 	Multi_options_g.port = (Cmdline_network_port >= 0) ? (ushort)Cmdline_network_port : forced_port == 0 ? (ushort)DEFAULT_GAME_PORT : forced_port;
 	Multi_options_g.log = (Cmdline_multi_log) ? 1 : 0;
 
-
 	// read in the config file
 	in = cfopen(MULTI_CFG_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
 	
@@ -77,6 +191,8 @@ void multi_options_read_config()
 	if (in == NULL) {
 		nprintf(("Network","Failed to open network config file, using default settings\n"));		
 	} else {
+		Multi_cfg_missing = false;
+
 		while ( !cfeof(in) ) {
 			// read in the game info
 			memset(str, 0, 512);
@@ -99,6 +215,9 @@ void multi_options_read_config()
 			if (Is_standalone) {
 				// setup PXO mode
 				if ( SETTING("+pxo") ) {
+					Multi_options_g.pxo = true;
+					// force protocol to TCP
+					Multi_options_g.protocol = NET_TCP;
 					NEXT_TOKEN();
 					if (tok != NULL) {
 						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH-1);
@@ -162,24 +281,6 @@ void multi_options_read_config()
 				if ( SETTING("+lan_update") ) {
 					Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
 				} else
-				// use pxo flag
-				if ( SETTING("+use_pxo") ) {
-					Om_tracker_flag = 1;
-				} else
-				// standalone pxo login user
-				if ( SETTING("+pxo_login") ) {
-					NEXT_TOKEN();
-					if (tok != NULL) {
-						strncpy(Multi_options_g.std_pxo_login, tok, MULTI_TRACKER_STRING_LEN);
-					}
-				} else
-				// standalone pxo login password
-				if ( SETTING("+pxo_password") ) {
-					NEXT_TOKEN();
-					if (tok != NULL) {
-						strncpy(Multi_options_g.std_pxo_password, tok, MULTI_TRACKER_STRING_LEN);
-					}
-				} else
 				if ( SETTING("+webui_root") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
@@ -230,13 +331,6 @@ void multi_options_read_config()
 				NEXT_TOKEN();
 				if (tok != NULL) {
 					strcpy_s(Multi_options_g.game_tracker_ip, tok);
-				}
-			} else
-			// port to use for the game/user tracker (FS2NetD)
-			if ( SETTING("+server_port") ) {
-				NEXT_TOKEN();
-				if (tok != NULL) {
-					strcpy_s(Multi_options_g.tracker_port, tok);
 				}
 			} else
 			// ip addr of pxo chat server
@@ -309,6 +403,9 @@ void multi_options_read_config()
 		in = NULL;
 	}
 
+	// sanitize config options for PXO
+	multi_fs_tracker_verify_options();
+
 #ifndef _WIN32
 	if (Is_standalone) {
 		std_configLoaded(&Multi_options_g);
@@ -349,6 +446,9 @@ void multi_options_set_netgame_defaults(multi_server_options *options)
 
 	// set the default max voice record time
 	options->voice_record_time = 5000;
+
+	// Set default skill level to medium
+	options->skill_level = NUM_SKILL_LEVELS / 2;
 }
 
 // set local netplayer defaults
@@ -363,7 +463,7 @@ void multi_options_set_local_defaults(multi_local_options *options)
 	if ( Psnet_connection == NETWORK_CONNECTION_DIALUP ) {
 		options->obj_update_level = OBJ_UPDATE_LOW;
 	} else {
-		options->obj_update_level = OBJ_UPDATE_HIGH;
+		options->obj_update_level = Default_multi_object_update_level;
 	}
 }
 
@@ -388,38 +488,54 @@ void multi_options_local_load(multi_local_options *options, net_player *pxo_pl)
 	}
 }
 
+// fill out the in-game options local globals using the player data
+void multi_options_init_globals()
+{
+	BroadcastGamesLocally = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
+	AlwaysFlushCache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE) ? 1 : 0;
+	CacheMissionsToMultidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA) ? 1 : 0;
+}
+
 // add data from a multi_server_options struct
-void add_server_options(ubyte *data, int *size, multi_server_options *mso)
+void add_server_options(ubyte *data, int *size, const multi_server_options *mso)
 {
 	int packet_size = *size;
-	multi_server_options mso_tmp;
 
-	memcpy(&mso_tmp, mso, sizeof(multi_server_options));
+	// misc settings and flags
+	ADD_DATA(mso->squad_set);
+	ADD_DATA(mso->endgame_set);
+	ADD_INT(mso->flags);
 
-	mso_tmp.flags = INTEL_INT(mso->flags);
-	mso_tmp.respawn = INTEL_INT(mso->respawn);
-	mso_tmp.voice_token_wait = INTEL_INT(mso->voice_token_wait);
-	mso_tmp.voice_record_time = INTEL_INT(mso->voice_record_time);
-//	mso_tmp.mission_time_limit = INTEL_INT(mso->mission_time_limit);
-	mso_tmp.kill_limit = INTEL_INT(mso->kill_limit);
+	// default respawn count
+	ADD_UINT(mso->respawn);
 
-	ADD_DATA(mso_tmp);
+	// default max # of observers
+	ADD_DATA(mso->max_observers);
+
+	// default skill level
+	ADD_DATA(mso->skill_level);
+
+	// voice settings
+	ADD_DATA(mso->voice_qos);
+	ADD_INT(mso->voice_token_wait);
+	ADD_INT(mso->voice_record_time);
+
+	// time limit
+	ADD_INT(mso->mission_time_limit);
+
+	// kill limit
+	ADD_INT(mso->kill_limit);
 
 	*size = packet_size;
 }
 
 // add data from a multi_local_options struct
-void add_local_options(ubyte *data, int *size, multi_local_options *mlo)
+void add_local_options(ubyte *data, int *size, const multi_local_options *mlo)
 {
 	int packet_size = *size;
-	multi_local_options mlo_tmp;
 
-	memcpy(&mlo_tmp, mlo, sizeof(multi_local_options));
-
-	mlo_tmp.flags = INTEL_INT(mlo->flags);
-	mlo_tmp.obj_update_level = INTEL_INT(mlo->obj_update_level);
-
-	ADD_DATA(mlo_tmp);
+	ADD_INT(mlo->flags);
+	ADD_INT(mlo->obj_update_level);
 
 	*size = packet_size;
 }
@@ -429,14 +545,30 @@ void get_server_options(ubyte *data, int *size, multi_server_options *mso)
 {
 	int offset = *size;
 
-	GET_DATA(*mso);
+	// misc settings and flags
+	GET_DATA(mso->squad_set);
+	GET_DATA(mso->endgame_set);
+	GET_INT(mso->flags);
 
-	mso->flags = INTEL_INT(mso->flags); //-V570
-	mso->respawn = INTEL_INT(mso->respawn); //-V570
-	mso->voice_token_wait = INTEL_INT(mso->voice_token_wait); //-V570
-	mso->voice_record_time = INTEL_INT(mso->voice_record_time); //-V570
-//	mso->mission_time_limit = INTEL_INT(mso->mission_time_limit);
-	mso->kill_limit = INTEL_INT(mso->kill_limit); //-V570
+	// default respawn count
+	GET_UINT(mso->respawn);
+
+	// default max # of observers
+	GET_DATA(mso->max_observers);
+
+	// default skill level
+	GET_DATA(mso->skill_level);
+
+	// voice settings
+	GET_DATA(mso->voice_qos);
+	GET_INT(mso->voice_token_wait);
+	GET_INT(mso->voice_record_time);
+
+	// time limit
+	GET_INT(mso->mission_time_limit);
+
+	// kill limit
+	GET_INT(mso->kill_limit);
 
 	*size = offset;
 }
@@ -446,10 +578,8 @@ void get_local_options(ubyte *data, int *size, multi_local_options *mlo)
 {
 	int offset = *size;
 
-	GET_DATA(*mlo);
-
-	mlo->flags = INTEL_INT(mlo->flags); //-V570
-	mlo->obj_update_level = INTEL_INT(mlo->obj_update_level); //-V570
+	GET_INT(mlo->flags);
+	GET_INT(mlo->obj_update_level);
 
 	*size = offset;
 }
@@ -583,7 +713,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 
 	if (player_index < 0) {
 		nprintf(("Network", "Received packet from unknown player!\n"));
@@ -623,12 +753,10 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		break;
 
 	// get mission choice options
-	case MULTI_OPTION_MISSION:
+	case MULTI_OPTION_MISSION: {
 		netgame_info ng;
 		char title[NAME_LENGTH+1];
 		int campaign_type,max_players;
-		
-		memset(&ng,0,sizeof(netgame_info));
 
 		Assert(Game_mode & GM_STANDALONE_SERVER);
 
@@ -655,7 +783,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			GET_STRING(ng.campaign_name);
 
 			// set the netgame max players here if the filename has changed
-			if(strcmp(Netgame.campaign_name,ng.campaign_name)){				
+			if(strcmp(Netgame.campaign_name,ng.campaign_name) != 0){				
 				memset(title,0,NAME_LENGTH+1);			
 				if(!mission_campaign_get_info(ng.campaign_name,title,&campaign_type,&max_players)){
 					Netgame.max_players = 0;
@@ -680,7 +808,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		else {
 			GET_STRING(ng.mission_name);
 
-			if(strcmp(Netgame.mission_name,ng.mission_name)){
+			if(strcmp(Netgame.mission_name,ng.mission_name) != 0){
 				if(strlen(ng.mission_name)){
 					Netgame.max_players = mission_parse_get_multi_mission_info( ng.mission_name );
 				} else {
@@ -699,13 +827,9 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			}
 		}
 
-		// update FS2NetD as well
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_update(true);
-		}
-
 		send_netgame_update_packet();	   
 		break;
+	}
 
 	// get the netgame options
 	case MULTI_OPTION_SERVER:		

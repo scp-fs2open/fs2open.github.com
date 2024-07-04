@@ -1,0 +1,12 @@
+#Fonts
+
+$TrueType: BankGothic BT Light.ttf
+	+Size: 12
+
+$TrueType: BankGothic BT Light.ttf
+	+Size: 20
+
+$TrueType: BankGothic BT Light.ttf
+	+Size: 35
+
+#End

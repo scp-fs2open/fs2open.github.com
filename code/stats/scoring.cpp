@@ -41,8 +41,14 @@
 float Kill_percentage = 0.30f;
 float Assist_percentage = 0.15f;
 
+// traitor stuff
+extern debriefing Traitor_debriefing;
+traitor_stuff Traitor;
+
+SCP_vector<traitor_override_t> Traitor_overrides;
+
 // these tables are overwritten with the values from rank.tbl
-rank_stuff Ranks[NUM_RANKS];
+SCP_vector<rank_stuff> Ranks;
 
 // scoring scale factors by skill level
 float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
@@ -53,62 +59,167 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.25f					// insane
 };
 
-void scoreing_close();
-
-void parse_rank_tbl()
+traitor_override_t* get_traitor_override_pointer(const SCP_string& name)
 {
-	atexit(scoreing_close);
-	char buf[MULTITEXT_LENGTH];
-	int idx, persona;
+	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
+		if (lcase_equal(name, Traitor_overrides[i].name)) {
+			return &Traitor_overrides[i];
+		}
+	}
 
+	return nullptr;
+}
+
+static rank_stuff* get_rank_pointer(const char* rank_name)
+{
+	for (int i = 0; i < (int)Ranks.size(); i++) {
+		if (!stricmp(rank_name, Ranks[i].name)) {
+			return &Ranks[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
+static void rank_stuff_init(rank_stuff* ranki)
+{
+	ranki->name[0] = '\0';
+	ranki->promotion_text = {};
+	ranki->points = -1;
+	ranki->bitmap[0] = '\0';
+	ranki->promotion_voice_base[0] = '\0';
+}
+
+void parse_rank_table(const char* filename)
+{
 	try
 	{
-		read_file_text("rank.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		// parse in all the rank names
-		idx = 0;
-		skip_to_string("[RANK NAMES]");
+
+		//Retail compatibility
+		if (check_for_string("[RANK NAMES]")) {
+			skip_to_string("[RANK NAMES]");
+		}
+		if (check_for_string("#Ranks")) {
+			skip_to_string("#Ranks");
+		}
+		
 		ignore_white_space();
-		while (required_string_either("#End", "$Name:")) {
-			Assert(idx < NUM_RANKS);
+		while (required_string_either("#End", "$Name:"))
+		{
+
+			rank_stuff rank_t;
+			rank_stuff_init(&rank_t);
+
+			rank_stuff* rank_p;
+			bool create_if_not_found = true;
+
 			required_string("$Name:");
-			stuff_string(Ranks[idx].name, F_NAME, NAME_LENGTH);
-			required_string("$Points:");
-			stuff_int(&Ranks[idx].points);
-			required_string("$Bitmap:");
-			stuff_string(Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN);
-			required_string("$Promotion Voice Base:");
-			stuff_string(Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
-			while (check_for_string("$Promotion Text:")) {
+			stuff_string(rank_t.name, F_NAME, NAME_LENGTH);
+
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for rank in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
+
+			// Does this rank exist already?
+			// If so, load this new info into it
+			rank_p = get_rank_pointer(rank_t.name);
+			if (rank_p != nullptr) {
+				if (!Parsing_modular_table) {
+					error_display(1,
+						"Error:  Rank %s already exists.  All rank names must be unique.",
+						rank_t.name);
+				}
+			} else {
+				// Don't create rank if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$Name:", "#end")) {
+						error_display(1, "Missing [#end] or [$Name] after rank %s", rank_t.name);
+					}
+					continue;
+				}
+				Ranks.push_back(rank_t);
+				rank_p = &Ranks.back();
+			}
+
+			if (optional_string("$Alt Name:")) {
+				stuff_string(rank_p->alt_name, F_NAME);
+			}
+
+			if (optional_string("$Title:")) {
+				stuff_string(rank_p->title, F_NAME);
+			}
+
+			if (optional_string("$Points:")) {
+				stuff_int(&rank_p->points);
+			} 
+			
+			// If points are not set then set it to index position + 1
+			if (rank_p->points == -1) {
+				rank_p->points = ((int)Ranks.size() + 1);
+			}
+
+			if (optional_string("$Bitmap:")) {
+				stuff_string(rank_p->bitmap, F_NAME, MAX_FILENAME_LEN);
+			}
+
+			// Check here that the rank has a bitmap. If not, then error out
+			if (!stricmp(rank_p->bitmap, "")) {
+				error_display(1, "Missing valid bitmap file for rank %s", rank_p->name);
+			}
+
+			if (optional_string("$Promotion Voice Base:")) {
+				stuff_string(rank_p->promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
+			} 
+
+			// If voice base is not set then set it to the rank name
+			if (rank_p->promotion_voice_base[0] == '\0') {
+				strcpy(rank_p->promotion_voice_base, rank_p->name);
+			}
+
+			while (check_for_string("$Promotion Text:"))
+			{
+				SCP_string buf;
+				int persona = -1;
+
 				required_string("$Promotion Text:");
-				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				stuff_string(buf, F_MULTITEXT);
 				drop_white_space(buf);
 				compact_multitext_string(buf);
-				persona = -1;
-				if (optional_string("+Persona:")) {
+
+				if (optional_string("+Persona:"))
+				{
 					stuff_int(&persona);
-					if (persona < 0) {
-						Warning(LOCATION, "Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or greater).\n", Ranks[idx].name, persona);
+					if (persona < 0)
+					{
+						Warning(LOCATION,
+							"Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or "
+							"greater).\n",
+							rank_p->name,
+							persona);
 						continue;
 					}
 				}
-				Ranks[idx].promotion_text[persona] = SCP_string(buf);
+				rank_p->promotion_text[persona] = buf;
 			}
-			if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
-				Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
-				Ranks[idx].promotion_text[-1] = "";
+
+			if (rank_p->promotion_text.find(-1) == rank_p->promotion_text.end())
+			{
+				Warning(LOCATION, "%s rank is missing default debriefing text.\n", rank_p->name);
+				rank_p->promotion_text[-1] = "";
 			}
-			idx++;
+
 		}
 
 		required_string("#End");
 
-		// be sure that all rank points are in order
-		for (idx = 0; idx < NUM_RANKS - 1; idx++) {
-			if (Ranks[idx].points >= Ranks[idx + 1].points)
-				Warning(LOCATION, "Rank #%d (%s) has a higher \"$Points:\" value (%d) than the following rank (%s, %d points). This shouldn't actually crash FSO, but it might result in unexpected or incorrect behavior.\n", idx + 1, Ranks[idx].name, Ranks[idx].points, Ranks[idx+1].name, Ranks[idx+1].points);
-		}
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -117,16 +228,195 @@ void parse_rank_tbl()
 	}
 }
 
+void sort_ranks()
+{
+	bool shouldSort = false;
+
+	// be sure no ranks have equal point values
+	for (int i = 0; i < (int)Ranks.size(); i++) {
+		for (int j = (i + 1); j < (int)Ranks.size(); j++) {
+			if (Ranks[i].points == Ranks[j].points) {
+				Error(LOCATION,
+					"Rank %s and %s have equal point values! This is not allowed.",
+					Ranks[i].name,
+					Ranks[j].name);
+			}
+		}
+	}
+
+	// be sure that all rank points are in order
+	for (int idx = 0; idx < (int)Ranks.size() - 1; idx++) {
+		if (Ranks[idx].points >= Ranks[idx + 1].points) {
+			shouldSort = true;
+		}
+	}
+
+	if (shouldSort) {
+		Warning(LOCATION,"Ranks were not ordered by points or had equal values adjusted. Sorting the ranks by point values!\n");
+
+		sort(Ranks.begin(), Ranks.end(), [](const rank_stuff& lhs, const rank_stuff& rhs) {
+			return lhs.points < rhs.points;
+		});
+
+		for (int i = 0; i < (int)Ranks.size(); i++) {
+			mprintf(("Rank %s is now in position %i\n", Ranks[i].name, i));
+		}
+	}
+}
+
+void rank_init()
+{
+	// first parse the default table
+	parse_rank_table("rank.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-rnk.tbm", parse_rank_table);
+
+	if ((int)Ranks.size() <= 0) {
+		error_display(1, "No ranks have been defined in ranks.tbl. Must define at least one rank!");
+	}
+
+	sort_ranks();
+}
+
+//Provided as a way to prevent crashes due to ranks differing across mods-Mjn
+//If player rank is > max rank, returns max rank index, returns 0 if player rank < 0
+//else it returns player rank index
+int verify_rank(int ranki)
+{
+	if (ranki > ((int)Ranks.size() - 1)) {
+		return ((int)Ranks.size() - 1);
+	} else if (ranki < 0) {
+		return 0;
+	}
+
+	return ranki;
+}
+
+SCP_string get_rank_display_name(rank_stuff* rank)
+{
+	if (!rank->alt_name.empty()) {
+		return rank->alt_name;
+	} else {
+		return rank->name;
+	}
+}
+
+void parse_traitor_tbl(const char* filename)
+{
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		if (optional_string("#Debriefing_info")) {
+
+			// no longer used
+			if (optional_string("$Num stages:")) {
+				int junk;
+				stuff_int(&junk); // consume the data and ignore it
+			}
+
+			// no longer used
+			if (optional_string("$Formula:")) {
+				bool junk[1];
+				stuff_bool_list(junk, 1); // consume the data and ignore it
+			}
+
+			while (check_for_string("$multi text")) {
+				SCP_string text;
+				int persona = -1;
+
+				required_string("$multi text");
+				stuff_string(text, F_MULTITEXT);
+
+				if (optional_string("+Persona:")) {
+					stuff_int(&persona);
+					if (persona < 0) {
+						Warning(LOCATION,
+							"Traitor information is assigned to an invalid persona: %i (must be 0 or greater).\n",
+							persona);
+						continue;
+					}
+				}
+				Traitor.debriefing_text[persona] = text;
+			}
+
+			if (optional_string("$Voice:"))
+				stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$Recommendation text:"))
+				stuff_string(Traitor.recommendation_text, F_MULTITEXT);
+		}
+
+		if (optional_string("#Traitor Overrides")) {
+			
+			while (optional_string("$Name:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				required_string("$Text:");
+				SCP_string text;
+				stuff_string(text, F_MULTITEXT);
+
+				required_string("$Voice Filename:");
+				char file[MAX_FILENAME_LEN];
+				stuff_string(file, F_FILESPEC, MAX_FILENAME_LEN);
+
+				required_string("$Recommendation text:");
+				SCP_string rec;
+				stuff_string(rec, F_MULTITEXT);
+
+				traitor_override_t traitor;
+				traitor.name = name;
+				traitor.text = text;
+				traitor.recommendation_text = rec;
+				strcpy_s(traitor.voice_filename, file);
+
+				Traitor_overrides.push_back(traitor);
+			}
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
+		return;
+	}
+}
+
+// initialize traitor stuff at game startup
+void traitor_init()
+{
+	// there is only ever one traitor debriefing stage
+	Traitor_debriefing.num_stages = 1;
+	Traitor_debriefing.stages[0].formula = 1;
+
+	// initialize this to an empty string so it can be optional
+	Traitor.recommendation_text = "";
+
+	// first parse the default table
+	parse_traitor_tbl("traitor.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-trtr.tbm", parse_traitor_tbl);
+
+	// check that we have the default traitor info
+	if (Traitor.debriefing_text.find(-1) == Traitor.debriefing_text.end()) {
+		Warning(LOCATION, "Traitor is missing default debriefing information.\n");
+		Traitor.debriefing_text[-1] = "";
+	}
+}
+
 // initialize a nice blank scoring element
 void scoring_struct::init()
 {
 	flags = 0;
 	score = 0;
-	rank = RANK_ENSIGN;
+	rank = 0;
 
-	medal_counts.assign(Num_medals, 0);
+	medal_counts.assign((int)Medals.size(), 0);
 
-	memset(kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(kills, 0, sizeof(kills));
 	assists = 0;
 	kill_count = 0;
 	kill_count_ok = 0;
@@ -150,8 +440,8 @@ void scoring_struct::init()
 	m_badge_earned.clear();
 
 	m_score = 0;
-	memset(m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
-	memset(m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(m_kills, 0, sizeof(m_kills));
+	memset(m_okKills, 0, sizeof(m_okKills));
 	m_kill_count = 0;
 	m_kill_count_ok = 0;
 	m_assists = 0;
@@ -164,7 +454,7 @@ void scoring_struct::init()
 	m_bonehead_kills = 0;
 	m_player_deaths = 0;
 
-	memset(m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
+	memset(m_dogfight_kills, 0, sizeof(m_dogfight_kills));
 }
 
 // clone someone else's scoring element
@@ -216,6 +506,43 @@ void scoring_struct::assign(const scoring_struct &s)
 
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
+template<typename T, size_t N>
+bool array_compare(const T (&left)[N], const T (&right)[N]) {
+	auto left_el = std::begin(left);
+	auto right_el = std::begin(right);
+
+	auto left_end = std::end(left);
+	auto right_end = std::end(right);
+
+	for (; left_el != left_end && right_el != right_end; ++left_el, ++right_el) {
+		if (!(*left_el == *right_el)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+bool scoring_struct::operator==(const scoring_struct& rhs) const {
+	return flags == rhs.flags && score == rhs.score && rank == rhs.rank && medal_counts == rhs.medal_counts
+		&& array_compare(kills, rhs.kills) && assists == rhs.assists && kill_count == rhs.kill_count
+		&& kill_count_ok == rhs.kill_count_ok && p_shots_fired == rhs.p_shots_fired
+		&& s_shots_fired == rhs.s_shots_fired && p_shots_hit == rhs.p_shots_hit && s_shots_hit == rhs.s_shots_hit
+		&& p_bonehead_hits == rhs.p_bonehead_hits && s_bonehead_hits == rhs.s_bonehead_hits
+		&& bonehead_kills == rhs.bonehead_kills && missions_flown == rhs.missions_flown
+		&& flight_time == rhs.flight_time && last_flown == rhs.last_flown && last_backup == rhs.last_backup
+		&& m_medal_earned == rhs.m_medal_earned && m_badge_earned == rhs.m_badge_earned
+		&& m_promotion_earned == rhs.m_promotion_earned && m_score == rhs.m_score
+		&& array_compare(m_kills, rhs.m_kills)
+		&& array_compare(m_okKills, rhs.m_okKills) && m_kill_count == rhs.m_kill_count
+		&& m_kill_count_ok == rhs.m_kill_count_ok && m_assists == rhs.m_assists && mp_shots_fired == rhs.mp_shots_fired
+		&& ms_shots_fired == rhs.ms_shots_fired && mp_shots_hit == rhs.mp_shots_hit && ms_shots_hit == rhs.ms_shots_hit
+		&& mp_bonehead_hits == rhs.mp_bonehead_hits && ms_bonehead_hits == rhs.ms_bonehead_hits
+		&& m_bonehead_kills == rhs.m_bonehead_kills && m_player_deaths == rhs.m_player_deaths
+		&& array_compare(m_dogfight_kills, rhs.m_dogfight_kills) ;
+}
+bool scoring_struct::operator!=(const scoring_struct& rhs) const {
+	return !(rhs == *this);
+}
 
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
@@ -265,7 +592,7 @@ void scoring_eval_rank( scoring_struct *sc )
 	
 		// if the player does indeed get promoted, we should change his mission score
 		// to reflect the difference between all time and new rank score
-		if ( old_rank < MAX_FREESPACE2_RANK ) {
+		if (old_rank < ((int)Ranks.size() -1)) {
 			new_rank++;
 			if ( (sc->m_score + sc->score) < Ranks[new_rank].points )
 				sc->m_score = (Ranks[new_rank].points - sc->score);
@@ -275,7 +602,7 @@ void scoring_eval_rank( scoring_struct *sc )
 		// it is possible to get a negative mission score but that will
 		// never result in a degradation
 		score = sc->m_score + sc->score;
-		for (i=old_rank + 1; i<NUM_RANKS; i++) {
+		for (i=old_rank + 1; i<(int)Ranks.size(); i++) {
 			if ( score >= Ranks[i].points )
 				new_rank = i;
 		}
@@ -308,16 +635,19 @@ void scoring_eval_badges(scoring_struct *sc)
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and award the appropriate badges as neccessary.
+	// Now properly awards all appropriate badges regardless of their position in the medals vector,
+	// but keeps the highest award to show to the player - Mjn
 	int last_badge_kills = 0;
-	for (auto i = 0; i < Num_medals; i++ ) {
+	for (auto i = 0; i < (int)Medals.size(); i++) {
 		if ( total_kills >= Medals[i].kills_needed
-			&& Medals[i].kills_needed > last_badge_kills
 			&& Medals[i].kills_needed > 0 )
 		{
-			last_badge_kills = Medals[i].kills_needed;
 			if (sc->medal_counts[i] < 1) {
 				sc->medal_counts[i] = 1;
-				sc->m_badge_earned.push_back(i);
+				if (Medals[i].kills_needed > last_badge_kills) {
+					last_badge_kills = Medals[i].kills_needed;
+					sc->m_badge_earned.push_back(i);
+				}
 			}
 		}
 	}
@@ -712,7 +1042,7 @@ int scoring_eval_kill(object *ship_objp)
 				strcpy_s(temp, Ship_info[si_index].name);
 				end_string_at_first_hash_symbol(temp);
 
-				// Goober5000 - previous error checking guarantees that this will be >= 0
+				// Goober5000 - previous error checking (for base ship in ship_parse_post_cleanup()) guarantees that this will be >= 0
 				si_index = ship_info_lookup(temp);	
 			}
 
@@ -1251,7 +1581,7 @@ float scoring_get_scale_factor()
 void scoring_bash_rank(player *pl,int rank)
 {	
 	// if this is an invalid rank, do nothing
-	if((rank < RANK_ENSIGN) || (rank > RANK_ADMIRAL)){
+	if((rank < 0) || (rank >= (int)Ranks.size())){
 		nprintf(("General","Could not bash player rank - invalid value!!!\n"));
 		return;
 	}
@@ -1299,10 +1629,12 @@ DCF(rank, "changes player rank")
 	}
 }
 
-void scoreing_close()
+void scoring_close()
 {
-	SCP_map<int, char*>::iterator it;
-	for(int i = 0; i<NUM_RANKS; i++) {
+	for (int i = 0; i < (int)Ranks.size(); i++) {
 		Ranks[i].promotion_text.clear();
 	}
+
+	Traitor.debriefing_text.clear();
+	Traitor.recommendation_text.clear();
 }

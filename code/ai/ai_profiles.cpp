@@ -7,11 +7,12 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "def_files/def_files.h"
 #include "ai/ai_profiles.h"
+#include "ai/aibig.h"
+#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -51,6 +52,26 @@ int ai_path_type_match(char *p)
 	for(i = 0; i < Num_ai_path_types; i++)
 	{
 		if(!stricmp(AI_path_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
+
+
+const char* AI_secondary_range_aware_select_modes[] = {
+	"retail",
+	"aware",
+};
+
+int Num_ai_secondary_range_aware_select_modes = sizeof(AI_secondary_range_aware_select_modes) / sizeof(char*);
+
+int ai_secondary_range_select_mode_match(char* p)
+{
+	int i;
+	for (i = 0; i < Num_ai_secondary_range_aware_select_modes; i++)
+	{
+		if (!stricmp(AI_secondary_range_aware_select_modes[i], p))
 			return i;
 	}
 
@@ -202,6 +223,9 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 					parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Player Damage Inflicted Factor:"))
+					parse_float_list(profile->player_damage_inflicted_scale, NUM_SKILL_LEVELS);
+
 				// represented in fractions of F1_0
 				if (optional_string("$Predict Position Delay:"))
 				{
@@ -234,7 +258,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Glide Attack Percent:")) {
 					parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
@@ -247,7 +271,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Circle Strafe Percent:")) {
 					parse_float_list(profile->circle_strafe_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
@@ -260,7 +284,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Glide Strafe Percent:")) {
 					parse_float_list(profile->glide_strafe_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
@@ -273,7 +297,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Random Sidethrust Percent:")) {
 					parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
-					//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+					//Percent is nice for modders, but here in the code we want it between 0 and 1.0
 					//While we're at it, verify the range
 					for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 						if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
@@ -357,6 +381,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$smart afterburner management:", AI::Profile_Flags::Smart_afterburner_management);
 
+				set_flag(profile, "$free afterburner use:", AI::Profile_Flags::Free_afterburner_use);
+
 				set_flag(profile, "$allow rapid secondary dumbfire:", AI::Profile_Flags::Allow_rapid_secondary_dumbfire);
 
 				set_flag(profile, "$huge turret weapons ignore bombs:", AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
@@ -369,9 +395,15 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$navigation subsystem governs warpout capability:", AI::Profile_Flags::Navigation_subsys_governs_warp);
 
+				set_flag(profile, "$check communications for non-player ships:", AI::Profile_Flags::Check_comms_for_non_player_ships);
+
 				set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AI::Profile_Flags::No_min_dock_speed_cap);
 
 				set_flag(profile, "$disable linked fire penalty:", AI::Profile_Flags::Disable_linked_fire_penalty);
+
+				set_flag(profile, "$disable player secondary doublefire:", AI::Profile_Flags::Disable_player_secondary_doublefire);
+
+				set_flag(profile, "$disable ai secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
 
 				set_flag(profile, "$disable weapon damage scaling:", AI::Profile_Flags::Disable_weapon_damage_scaling);
 
@@ -388,6 +420,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$allow event and goal scoring in multiplayer:", AI::Profile_Flags::Allow_multi_event_scoring);
 
 				set_flag(profile, "$fix linked primary weapon decision bug:", AI::Profile_Flags::Fix_linked_primary_bug);
+
+				set_flag(profile, "$fix ramming stationary targets bug:", AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
 
 				set_flag(profile, "$prevent turrets targeting too distant bombs:", AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
 
@@ -433,7 +467,18 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ai guards specific ship in wing:", AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
 
-				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
+				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
+
+				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
+
+				set_flag(profile, "$fighterbay arrivals use carrier orientation:", AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
+
+				set_flag(profile, "$fighterbay departures use carrier orientation:", AI::Profile_Flags::Fighterbay_departures_use_carrier_orient);
+
+				set_flag(profile, "$debris damage respects 'big damage' flag:", AI::Profile_Flags::Debris_respects_big_damage);
+
+				set_flag(profile, "$don't limit change in speed due to physics whack:", AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -450,7 +495,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix ai path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
 
-				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turred_tagged_only_targeting);
+				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turret_tagged_only_targeting);
 
 				set_flag(profile, "$aspect bomb invulnerability fix:", AI::Profile_Flags::Aspect_invulnerability_fix);
 
@@ -458,8 +503,20 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ai can slow down when attacking big ships:", AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships);
 
-				profile->bay_arrive_speed_mult = 1.0f;
-				profile->bay_depart_speed_mult = 1.0f;
+				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
+
+				if (optional_string("$override radius for subsystem path points:")) {
+					int path_radii;
+					stuff_int(&path_radii);
+					if (path_radii >= Minimum_subsystem_path_pt_dist) {
+						profile->subsystem_path_radii = path_radii;
+					} else {
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used.\n", Minimum_subsystem_path_pt_dist, path_radii));
+					}
+				}
+
+				set_flag(profile, "$use POF radius for subsystem path points:", AI::Profile_Flags::Use_subsystem_path_point_radii);
+
 				if (optional_string("$bay arrive speed multiplier:")) {
 					stuff_float(&profile->bay_arrive_speed_mult);
 				}
@@ -484,7 +541,105 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_boolean(&temp);
                     profile->flags.set(AI::Profile_Flags::Allow_primary_link_at_start, !temp);
 				}
+				if (optional_string("$lead indicator second-order prediction factor:")) {
+					stuff_float(&profile->second_order_lead_predict_factor);
+					if (profile->second_order_lead_predict_factor > 1 || profile->second_order_lead_predict_factor < 0) {
+						mprintf(("Warning: \"$lead indicator second-order prediction factor\" must be 0 - 1, resetting to 0.\"\n"));
+						profile->second_order_lead_predict_factor = 0;
+					}
+				}
+				if (optional_string("$ships with no shields can manage ETS:"))
+				{
+					mprintf(("Warning: \"$ships with no shields can manage ETS\" flag is deprecated in favor of \"$any ship with no shields can manage ETS\"\n"));
+					bool temp;
+					stuff_boolean(&temp);
+                    profile->flags.set(AI::Profile_Flags::All_nonshielded_ships_can_manage_ets, temp);
+				}
 
+				// ----------
+
+				set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
+
+				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
+
+				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::All_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$ships playing dead don't manage ETS:", AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
+
+				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
+
+				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
+
+				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
+
+				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
+
+				set_flag(profile, "$fixed ship-weapon collisions:", AI::Profile_Flags::Fixed_ship_weapon_collision);
+
+				//Intention is to expand this feature to include a preference for close or long range weapons
+				//hence using something besides a simple flag.
+				if (optional_string("$AI secondary range awareness:"))
+				{
+					stuff_string(buf, F_NAME, NAME_LENGTH);
+					int j = ai_secondary_range_select_mode_match(buf);
+					if (j >= 0) {
+						profile->ai_range_aware_secondary_select_mode = j;
+					}
+					else {
+						Warning(LOCATION, "Invalid ai secondary range awareness mode '%s' specified", buf);
+					}
+				}
+
+				set_flag(profile, "$no shield damage from ship collisions:", AI::Profile_Flags::No_shield_damage_from_ship_collisions);
+
+				set_flag(profile, "$reset last_hit_target_time for player hits:", AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
+
+				if (optional_string("$turret target recheck time:"))
+				{
+					stuff_float(&profile->turret_target_recheck_time);
+					if (profile->turret_target_recheck_time < 0) {
+						Warning(LOCATION, "Turret target recheck time must be positive.");
+						profile->turret_target_recheck_time = 2000.0f;
+					}
+				}
+
+				set_flag(profile, "$prevent negative turret ammo:", AI::Profile_Flags::Prevent_negative_turret_ammo);
+
+				set_flag(profile, "$fix keep-safe-distance:", AI::Profile_Flags::Fix_keep_safe_distance);
+
+				set_flag(profile, "$AI ignores aspect lock for leading:", AI::Profile_Flags::Ignore_aspect_when_leading);
+
+				set_flag(profile, "$fix good-rearm-time bug:", AI::Profile_Flags::Fix_good_rearm_time_bug);
+
+				set_flag(profile, "$no continuous turn on attack:", AI::Profile_Flags::No_continuous_turn_on_attack);
+
+				set_flag(profile, "$remove-goal properly removes play-dead order:", AI::Profile_Flags::Fixed_removing_play_dead_order);
+
+				set_flag(profile, "$bay arrivals not time limited:", AI::Profile_Flags::Disable_bay_emerge_timeout);
+
+				set_flag(profile, "$use adjusted AI class autoscale:", AI::Profile_Flags::Adjusted_AI_class_autoscale);
+
+				set_flag(profile, "$carry shield difficulty scaling bug:", AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
+
+				set_flag(profile, "$debris affected by physics whacks:", AI::Profile_Flags::Whackable_debris);
+
+				set_flag(profile, "$asteroids affected by physics whacks:", AI::Profile_Flags::Whackable_asteroids);
+
+				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
+
+				set_flag(profile, "$player orders afterburn hard:", AI::Profile_Flags::Player_orders_afterburn_hard);
+
+				set_flag(profile, "$hud squad messages use tactical disarm/disable:", AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
+
+				set_flag(profile, "$align to target when guarding stationary ship:", AI::Profile_Flags::Align_to_target_when_guarding_still);
+
+				if (optional_string("$rotation factor multiplier for player collisions:")) {
+					stuff_float(&profile->rot_fac_multiplier_ply_collisions);
+				}
+
+				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -492,13 +647,14 @@ void parse_ai_profiles_tbl(const char *filename)
 					char tmp[60];
 					memset(tmp, 0, 60);
 					strncpy(tmp, Mp, 59);
-					mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", tmp));
+					mprintf(("WARNING: Unrecognized parameter in %s: %s\n", filename, tmp));
 
 					Mp++;
 				}
 
 				// find next valid option
-				skip_to_start_of_string_either("$", "#");
+				if (!skip_to_start_of_string_either("$", "#"))
+					break;
 				saved_Mp = Mp;
 			}
 		}
@@ -510,10 +666,6 @@ void parse_ai_profiles_tbl(const char *filename)
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : "<default ai_profiles.tbl>", e.what()));
 		return;
 	}
-
-	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(const char *tblname);
-	fs2netd_add_table_validation(filename);
 }
 
 void ai_profiles_init()
@@ -530,12 +682,21 @@ void ai_profiles_init()
 	// init retail entry first
 	parse_ai_profiles_tbl(NULL);
 
+	// Allow mission_profiles.tbl to be a alias of ai_profiles.tbl, but only load one or the other.
+	// mission_profiles.tbl would be newer so assume intended, but print to the log to be sure - Mjn
+	char filename[MAX_FILENAME_LEN] = "ai_profiles.tbl";
+	if (cf_exists_full("mission_profiles.tbl", CF_TYPE_TABLES)) {
+		mprintf(("mission_profiles.tbl was found! Using that instead of ai_profiles.tbl...\n"));
+		strcpy_s(filename, "mission_profiles.tbl");
+	}
+
 	// now parse the supplied table (if any)
-	if (cf_exists_full("ai_profiles.tbl", CF_TYPE_TABLES))
-		parse_ai_profiles_tbl("ai_profiles.tbl");
+	if (cf_exists_full(filename, CF_TYPE_TABLES))
+		parse_ai_profiles_tbl(filename);
 
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
+	parse_modular_table("*-msp.tbm", parse_ai_profiles_tbl);
 
 	// set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
@@ -560,9 +721,14 @@ void ai_profile_t::reset()
 
     flags.reset();
 
-    ai_path_mode = 0;
-    bay_arrive_speed_mult = 0;
-    bay_depart_speed_mult = 0;
+    ai_path_mode = AI_PATH_MODE_NORMAL;
+	subsystem_path_radii = 0;
+    bay_arrive_speed_mult = 1.0f;
+    bay_depart_speed_mult = 1.0f;
+	second_order_lead_predict_factor = 0;
+	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
+	turret_target_recheck_time = 2000.0f;
+	rot_fac_multiplier_ply_collisions = 0.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -585,6 +751,7 @@ void ai_profile_t::reset()
         shield_energy_scale[i] = 0;
         afterburner_recharge_scale[i] = 0;
         player_damage_scale[i] = 0;
+		player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
         beam_friendly_damage_cap[i] = 0;
@@ -621,4 +788,54 @@ void ai_profile_t::reset()
     for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
         detail_distance_mult[i] = 0;
     }
+
+	// via Github #2332, enable bugfixes if we are targeting version 20 and up
+	if (mod_supports_version(20, 0, 0)) {
+		flags.set(AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
+		flags.set(AI::Profile_Flags::Fix_linked_primary_bug);
+		flags.set(AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
+		flags.set(AI::Profile_Flags::Fix_heat_seeker_stealth_bug);
+		flags.set(AI::Profile_Flags::Allow_vertical_dodge);
+		flags.set(AI::Profile_Flags::Fix_ai_class_bug);
+		flags.set(AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
+		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
+		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
+		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+		flags.set(AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets);
+	}
+	// this flag has been enabled ever since 3.7.2
+	if (mod_supports_version(3, 7, 2)) {
+		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
+	// and this flag has been enabled ever since 3.6.10
+	if (mod_supports_version(3, 6, 10)) {
+		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
+	}
+	// backwards compatible flag for a bug accidentally introduced during this time
+	if (mod_supports_version(3, 6, 14) && !mod_supports_version(23, 1, 0)) {
+		flags.set(AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
+	}
+	if (mod_supports_version(21, 4, 0)) {
+		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);
+	}
+	if (mod_supports_version(22, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
+		flags.set(AI::Profile_Flags::Prevent_negative_turret_ammo);
+		flags.set(AI::Profile_Flags::Fix_keep_safe_distance);
+	}
+	if (mod_supports_version(23, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fix_good_rearm_time_bug);
+		flags.set(AI::Profile_Flags::No_continuous_turn_on_attack);
+		flags.set(AI::Profile_Flags::Fixed_removing_play_dead_order);
+	}
+	if (mod_supports_version(23, 2, 0)) {
+		flags.set(AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
+	}
+	if (mod_supports_version(23, 4, 0)) {
+		flags.set(AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
+	}
+	if (mod_supports_version(24, 2, 0)) {
+		flags.set(AI::Profile_Flags::Debris_respects_big_damage);
+		flags.set(AI::Profile_Flags::Force_beam_turret_fov);
+	}
 }

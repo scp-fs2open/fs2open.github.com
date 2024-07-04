@@ -6,3 +6,7 @@ Changes to fontstash.h
   - Increased memory size for newer stb_truetype version
   - Removed pixel snapping from fons__getQuad
   - Include <malloc.h> as malloc and free weren't found for some reason
+
+Changes to stb_truetype.h
+  - Added extern function to print in log. Made Assert on missed glyph a bit more friendly
+  - Explicit fallthrough comment for gcc

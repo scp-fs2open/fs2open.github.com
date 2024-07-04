@@ -76,14 +76,6 @@ namespace
 		return filename;
 	}
 
-	char replaceNewline(char in)
-	{
-		if (in == '\n')
-			return ' ';
-
-		return in;
-	}
-
 	void set_clipboard_text(const char* text)
 	{
 		// Make sure video is enabled
@@ -97,12 +89,20 @@ namespace
 int Global_warning_count = 0;
 int Global_error_count = 0;
 
-extern lua_Debug Ade_debug_info;
-
 namespace os
 {
 	namespace dialogs
 	{
+		//This function is a helper function to determine if the dialogs should have a parent window
+		//Normally, this should always be FSO's window, but there is an issue with this in fullscreen
+		//where occasionally (when knossos is on the same screen as FSO in a multi-monitor setup on
+		//windows) this results in the dialog losing focus, unable to regain it, thus rendering the 
+		//buttons not clickable. So as a hotfix, the dialog has no blocking parent in that case and
+		//is instead rendered as it's own window
+		SDL_Window* getDialogParent() {
+			return !(gr_is_viewport_window()) ? NULL : os::getSDLMainWindow();
+		}
+
 		void AssertMessage(const char * text, const char * filename, int linenum, const char * format, ...)
 		{
 			// We only want to display the file name
@@ -175,17 +175,6 @@ namespace os
 			msgStream << "\n";
 
 			msgStream << Separator;
-			msgStream << "ADE Debug:";
-			msgStream << "\n";
-
-			msgStream << Separator;
-			LuaDebugPrint(msgStream, Ade_debug_info);
-			msgStream << Separator;
-
-			msgStream << "\n";
-			msgStream << "\n";
-
-			msgStream << Separator;
 
 			// Get the stack via the debug.traceback() function
 			lua_getglobal(L, LUA_DBLIBNAME);
@@ -214,15 +203,19 @@ namespace os
 			msgStream << "\n";
 			msgStream << Separator;
 
-			mprintf(("Lua Error: %s\n", msgStream.str().c_str()));
-
-			if (Cmdline_noninteractive) {
-				exit(1);
-				return;
-			}
+			nprintf(("scripting","Lua Error: %s\n", msgStream.str().c_str()));
 
 			if (running_unittests) {
 				throw LuaErrorException(msgStream.str());
+			}
+
+			if (Cmdline_lua_devmode) {
+				return;
+			}
+
+			if (Cmdline_noninteractive) {
+				throw LuaErrorException(msgStream.str());
+				return;
 			}
 
 			set_clipboard_text(msgStream.str().c_str());
@@ -251,7 +244,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = boxText.c_str();
 			boxData.title = "Error!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = getDialogParent();
 
 			gr_activate(0);
 
@@ -265,7 +258,7 @@ namespace os
 			switch (buttonId)
 			{
 			case 2:
-				exit(1);
+				abort();
 
 			case 0:
 				Int3();
@@ -300,13 +293,13 @@ namespace os
 		{
 			mprintf(("\n%s\n", text));
 
+			if (running_unittests) {
+				throw ErrorException(text);
+			}
+
 			if (Cmdline_noninteractive) {
 				abort();
 				return;
-			}
-
-			if (running_unittests) {
-				throw ErrorException(text);
 			}
 
 			SCP_stringstream messageStream;
@@ -335,7 +328,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = text;
 			boxData.title = "Error!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = getDialogParent();
 
 			gr_activate(0);
 
@@ -343,13 +336,13 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				exit(1);
+				abort();
 			}
 
 			switch (buttonId)
 			{
 			case 1:
-				exit(1);
+				abort();
 
 			default:
 				Int3();
@@ -364,19 +357,15 @@ namespace os
 			filename = clean_filename(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
+			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
 
-			SCP_string printfString = text;
-			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
-
-			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
+			if (running_unittests) {
+				throw WarningException(text);
+			}
 
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
 				return;
-			}
-
-			if (running_unittests) {
-				throw WarningException(printfString);
 			}
 
 			SCP_stringstream boxMsgStream;
@@ -407,7 +396,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_WARNING;
 			boxData.message = boxMessage.c_str();
 			boxData.title = "Warning!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = getDialogParent();
 
 			gr_activate(0);
 
@@ -415,13 +404,13 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				exit(1);
+				buttonId = 1; // No action
 			}
 
 			switch (buttonId)
 			{
 			case 2:
-				exit(1);
+				abort();
 
 			case 0:
 				Int3();
@@ -480,6 +469,44 @@ namespace os
 #endif
 		}
 
+		void Information(const char* filename, int line, const char* format, ...) {
+			SCP_string msg;
+			va_list args;
+
+			va_start(args, format);
+			vsprintf(msg, format, args);
+			va_end(args);
+
+			// Below is essentially a stripped down copy pasta of WarningImpl
+			filename = clean_filename(filename);
+
+			// output to the debug log before anything else (so that we have a complete record)
+			mprintf(("INFO: \"%s\" at %s:%d\n", msg.c_str(), filename, line));
+
+			// now go for the additional popup window, if we want it ...
+			if (Cmdline_noninteractive || running_unittests) {
+				return;
+			}
+
+			SCP_stringstream boxMsgStream;
+			boxMsgStream << "Information: " << msg << "\n";
+			boxMsgStream << "File: " << filename << "\n";
+			boxMsgStream << "Line: " << line << "\n";
+
+			set_clipboard_text(boxMsgStream.str().c_str());
+
+			boxMsgStream << "\n";
+
+			SCP_string boxMessage = truncateLines(boxMsgStream, Messagebox_lines);
+			boxMessage += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+
+			gr_activate(0);
+
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Information", boxMessage.c_str(), getDialogParent());
+
+			gr_activate(1);
+		}
+
 		void Message(MessageType type, const char* message, const char* title)
 		{
 			if (running_unittests) {
@@ -511,7 +538,7 @@ namespace os
 					break;
 			}
 
-			SDL_ShowSimpleMessageBox(flags, title, message, os::getSDLMainWindow());
+			SDL_ShowSimpleMessageBox(flags, title, message, getDialogParent());
 		}
 	}
 }

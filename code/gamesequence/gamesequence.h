@@ -89,6 +89,8 @@ enum GS_EVENT {
 	GS_EVENT_PXO_HELP,
 	GS_EVENT_FICTION_VIEWER,
 	GS_EVENT_SCRIPTING,
+	GS_EVENT_SCRIPTING_MISSION,
+	GS_EVENT_INGAME_OPTIONS,
 
 	GS_NUM_EVENTS    // Last one++
 };
@@ -159,6 +161,8 @@ enum GS_STATE {
 	GS_STATE_START_GAME,
 	GS_STATE_FICTION_VIEWER,
 	GS_STATE_SCRIPTING,
+	GS_STATE_SCRIPTING_MISSION,
+	GS_STATE_INGAME_OPTIONS,
 
 	GS_NUM_STATES    // Last one++
 };
@@ -181,11 +185,8 @@ int gameseq_get_event( void );
 void gameseq_set_state(int new_state, int override = 0);
 void gameseq_push_state( int new_state );
 void gameseq_pop_state( void );
-int gameseq_get_pushed_state();
 int gameseq_get_depth();
 int gameseq_get_previous_state();
-void gameseq_pop_and_discard_state(void);
-
 
 // Called by the sequencing code when things happen.
 void game_process_event(int current_state, int event);
@@ -196,11 +197,23 @@ void game_do_state(int current_state);
 // Kazan
 bool GameState_Stack_Valid();
 
-//WMC
-int gameseq_get_event_idx(char *s);
-int gameseq_get_state_idx(char *s);
+// WMC
+int gameseq_get_event_idx(const char* s);
+int gameseq_get_state_idx(const char* s);
 
-//zookeeper
+// zookeeper
 int gameseq_get_state_idx(int state);
+
+/**
+ * @brief Gets a state instance id of the specified depth.
+ *
+ * The instance ID is an integer associated with a specific instance of a state. Should the same state be entered later
+ * it will have a different instance id. This is meant to be used for keeping track of state changes without registering
+ * for the state change events.
+ *
+ * @param depth The depth in the stack to query the instance id
+ * @return The instance id
+ */
+int gameseq_get_state_instance_id(int depth = 0);
 
 #endif /* __GAMESEQUENCE_H__ */

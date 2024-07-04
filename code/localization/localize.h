@@ -19,24 +19,27 @@
 // LOCALIZE DEFINES/VARS
 //
 
-// language defines
+// language defines (English should always be index 0)
 #define LCL_ENGLISH						0
 #define LCL_GERMAN						1
 #define LCL_FRENCH						2
 #define LCL_POLISH						3
 
-#define FS2_OPEN_DEFAULT_LANGUAGE		0
+#define LCL_UNTRANSLATED				100		// this should be higher than the highest builtin or custom language index
+#define LCL_RETAIL_HYBRID				101		// ditto; this is the weird retail behavior where internal is translated but external isn't
+#define	LCL_DEFAULT						0
 
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
 
-#define LCL_MAX_FONTS					5
+#define LCL_MIN_FONTS					3
 
 // language info table
 typedef struct lang_info {
 	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
+	int xstr;											// the xstr id for the language name itself. Used for the built-in language selector
 	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
-	ubyte special_char_indexes[LCL_MAX_FONTS];			// where in the font do we have the special characters for this language
+	SCP_vector<ubyte> special_char_indexes;				// where in the font do we have the special characters for this language
 														// note: treats 0 as "none" since a zero offset in a font makes no sense
 														// i.e. all the normal chars start at zero
 	int checksum;										// used for language auto-detection
@@ -56,12 +59,25 @@ extern int Lcl_special_chars;
 extern int Lcl_fr;
 extern int Lcl_gr;
 extern int Lcl_pl;
-extern int Lcl_english;
+extern int Lcl_en;
+
+// The currently active language. Index into Lcl_languages.
+extern int Lcl_current_lang;
+
+// special check for misplaced mod data (see Mantis #2942)
+extern bool *Lcl_unexpected_tstring_check;
 
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
 //
+
+// get the index of a language in the array by name
+int lcl_find_lang_index_by_name(const SCP_string& lang);
+
+// get an index we can use to look into the array, since we now have three different ways of using English
+// (translated, untranslated, and hybrid: internal translated, external untranslated)
+int lcl_get_current_lang_index();
 
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang = -1);
@@ -74,9 +90,6 @@ void lcl_xstr_init();
 
 // free the xstr table
 void lcl_xstr_close();
-
-// determine what language we're running in, see LCL_* defines above
-int lcl_get_language();
 
 // returns the current language character string
 void lcl_get_language_name(char *lang_name);
@@ -92,15 +105,13 @@ ubyte lcl_get_font_index(int font_num);
 //        functions - ask first :)
 // externalization of table/mission files (only parse routines ever need to deal with these functions) ----------------------- 
 
-// maybe add on an appropriate subdirectory when opening a localized file
-void lcl_add_dir(char *current_path);
-
 // maybe add localized directory to full path with file name when opening a localized file
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
+int lcl_add_dir_to_path_with_filename(SCP_string &current_path);
 
 // Goober5000
-void lcl_replace_stuff(char *text, size_t max_len);
-void lcl_replace_stuff(SCP_string &text);
+void lcl_replace_stuff(char *text, size_t max_len, bool force = false);
+void lcl_replace_stuff(SCP_string &text, bool force = false);
 
 // Karajorma
 void lcl_fred_replace_stuff(char *text, size_t max_len);
@@ -110,14 +121,13 @@ void lcl_fred_replace_stuff(SCP_string &text);
 // valid input to this function includes :
 // "this is some text"
 // XSTR("wheeee", -1)
-// XSTR("whee", 20)
+// XSTR("whee", 2000)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = NULL);
-void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = NULL);
+void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = nullptr);
+void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = nullptr);
 
 // translate the specified string based upon the current language
-const char *XSTR(const char *str, int index);
 int lcl_get_xstr_offset(int index, int res);
 
 void lcl_translate_wep_name_gr(char *name);
@@ -128,5 +138,7 @@ void lcl_translate_targetbox_name_gr(char *name);
 void lcl_translate_targetbox_name_pl(char *name);
 void lcl_translate_medal_name_gr(char *name);
 void lcl_translate_medal_name_pl(char *name);
+
+void lcl_delayed_xstr(SCP_string& str, const char* name, int xstr);
 
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE

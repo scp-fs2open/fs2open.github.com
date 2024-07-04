@@ -28,6 +28,10 @@ TEST_F(BitOpsTest, checkBit) {
 	this->EvalTestScript();
 }
 
-TEST_F(BitOpsTest, addBit) {
+TEST_F(BitOpsTest, setBit) {
+	this->EvalTestScript();
+}
+
+TEST_F(BitOpsTest, unsetBit) {
 	this->EvalTestScript();
 }

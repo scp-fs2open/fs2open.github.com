@@ -12,10 +12,12 @@
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
 
-#include "anim/packunpack.h"
 #include "globalincs/globals.h"
+
+#include "anim/packunpack.h"
 #include "graphics/generic.h"
 #include "hud/hud.h"
+#include "utils/unicode.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -61,17 +63,21 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+#define BRIEF_ICON_TYPES					3
+
+//If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
 	hud_anim		highlight;
-} briefing_icon_type;
+} briefing_icon_info;
 
 extern SCP_vector<briefing_icon_info> Briefing_icon_info;
 
 struct brief_icon;
 extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
+extern bool brief_special_closeup(int briefing_icon_type);
 
 
 // Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
@@ -82,17 +88,17 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 // ------------------------------------------------------------------------
 
 #define	MAX_BRIEF_LINES		70
-#define	MAX_BRIEF_LINE_LEN	256		// max number of chars in a briefing line
+#define	MAX_BRIEF_LINE_LEN	512		// max number of chars in a briefing line. Increased to allow for multibyte characters to fill a briefing line
 #define	MAX_BRIEF_LINE_W_640		375		// max width of line in pixels in 640x480 mode
 #define	MAX_BRIEF_LINE_W_1024	600		// max width of line in pixels in 1024x768 mode
 
 #define	MAX_DEBRIEF_LINES		60
-#define	MAX_DEBRIEF_LINE_LEN	256		// max number of chars in a debriefing line
+#define	MAX_DEBRIEF_LINE_LEN	512		// max number of chars in a debriefing line
 #define	MAX_DEBRIEF_LINE_W	500		// max width of line in pixels
 
 #define	MAX_ICON_TEXT_LEN			1024		// max number of chars for icon info
 #define	MAX_ICON_TEXT_LINES		30
-#define	MAX_ICON_TEXT_LINE_LEN	256		// max number of chars in icon info line
+#define	MAX_ICON_TEXT_LINE_LEN	512	// max number of chars in icon info line
 #define	MAX_ICON_TEXT_LINE_W		170		// max width of line in pixels
 
 #define	MAX_STAGE_ICONS			20
@@ -109,9 +115,11 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 
 typedef struct brief_icon {
 	int		x,y,w,h;
+	float	scale_factor;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
+	int		model_instance_num;
 	float		radius;
 	int		type;					// ICON_* defines from MissionBriefCommon.h
 	int		bitmap_id;
@@ -120,9 +128,7 @@ typedef struct brief_icon {
 	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
-//	char		text[MAX_ICON_TEXT_LEN];
-	hud_anim	fadein_anim;
-	hud_anim	fadeout_anim;
+	hud_anim	fade_anim;
 	hud_anim	highlight_anim;
 	int		flags;				// BI_* flags defined above
 } brief_icon;
@@ -151,10 +157,11 @@ public:
 	brief_icon	*icons;
 	int			num_lines;
 	brief_line	*lines;
+	bool		draw_grid;
 
 	brief_stage( ) 
-		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
-		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
+		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(NULL), num_lines(0), lines(NULL),
+		  draw_grid( true )
 	{ 
 		voice[ 0 ] = 0;
 		camera_pos = vmd_zero_vector;
@@ -232,14 +239,14 @@ extern int Brief_text_max_lines[GR_NUM_RESOLUTIONS];
 extern const char *Brief_static_name[GR_NUM_RESOLUTIONS];
 extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
-// Needed for Fred
+/* Needed for Fred
 #define BRIEF_GRID3_X1						42
 #define BRIEF_GRID3_Y1						122
 #define BRIEF_GRID0_X2						585
 #define BRIEF_GRID0_Y2						371
 #define BRIEF_GRID_W							(BRIEF_GRID0_X2-BRIEF_GRID3_X1+1)
 #define BRIEF_GRID_H							(BRIEF_GRID0_Y2-BRIEF_GRID3_Y1+1)
-/*
+
 #define BRIEF_GRID0_X1						63
 #define BRIEF_GRID0_Y1						122
 #define BRIEF_GRID1_X1						575
@@ -259,7 +266,7 @@ extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
 typedef struct brief_screen
 {
-	int map_x1, map_x2, map_y1, map_y2;
+	int map_x1, map_x2, map_y1, map_y2, resize;
 /*	int btext_x1, btext_x2, btext_y1, btext_y2;
 	int cup_x1, cup_x2, cup_y1, cup_y2;
 	int cupinfo_x1, cupinfo_x2, cupinfo_y1, cupinfo_y2;*/
@@ -277,7 +284,7 @@ extern debriefing		*Debriefing;
 extern float			Brief_text_wipe_time_elapsed;
 
 extern int Cur_brief_id;
-extern int Briefing_voice_enabled;
+extern bool Briefing_voice_enabled;
 
 extern int Num_brief_text_lines[MAX_TEXT_STREAMS];
 extern int Top_brief_text_line;
@@ -292,10 +299,10 @@ void brief_init_screen(int multiplayer_flag);
 void brief_render_map(int stage_num, float frametime);
 void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num);
 void brief_camera_move(float frametime, int stage_num);
-void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
+void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
-void brief_parse_icon_tbl();
+void brief_icons_init();
 void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();
@@ -320,5 +327,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 void cmd_brief_reset();
 
 int brief_time_to_advance(int stage_num);
+
+bool brief_verify_color_tag(unicode::codepoint_t color_tag);
 
 #endif

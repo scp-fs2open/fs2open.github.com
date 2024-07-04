@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+#include "freddoc.h"
 #include "CmdBrief.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
@@ -92,11 +93,15 @@ void cmd_brief_dlg::update_data(int update)
 	if (last_cmd_brief && m_last_stage >= 0 && m_last_stage < last_cmd_brief->num_stages) {
 		cmd_brief_stage *last_stage = &last_cmd_brief->stage[m_last_stage];
 
-		deconvert_multiline_string(last_stage->text, m_text);
-		lcl_fred_replace_stuff(last_stage->text);
+		SCP_string text;
+		deconvert_multiline_string(text, m_text);
+		lcl_fred_replace_stuff(text);
+		if (last_stage->text != text)
+			set_modified();
+		last_stage->text = std::move(text);
 
-		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN);
-		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN);
+		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN - 1, true);
+		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN - 1, true);
 	}
 
 	// load data of new stage into dialog
@@ -313,7 +318,13 @@ BOOL cmd_brief_dlg::DestroyWindow()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
+	update_data();
 	m_play_bm.DeleteObject();
+
+	// the command briefing is updated whether we close it, click OK, or click Cancel,
+	// so autosave here instead of in the OK case
+	FREDDoc_ptr->autosave("command briefing editor");
+
 	return CDialog::DestroyWindow();
 }
 

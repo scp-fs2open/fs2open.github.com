@@ -12,15 +12,21 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "io/key.h"
+#include "localization/localize.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "mod_table/mod_table.h"
+#include "network/multi_endgame.h"
+#include "network/multiteamselect.h"
 #include "parse/parselo.h"
 #include "sound/audiostr.h"
-
+#include "utils/encoding.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -214,11 +220,11 @@ void fiction_viewer_scroll_up()
 	if (Top_fiction_viewer_text_line < 0)
 	{
 		Top_fiction_viewer_text_line = 0;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	else
 	{
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -228,11 +234,11 @@ void fiction_viewer_scroll_down()
 	if ((Num_brief_text_lines[0] - Top_fiction_viewer_text_line) < Fiction_viewer_text_max_lines)
 	{
 		Top_fiction_viewer_text_line--;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	else
 	{
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -248,7 +254,7 @@ void fiction_viewer_button_pressed(int button)
 	{
 		case FVW_BUTTON_ACCEPT:
 			fiction_viewer_exit();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			break;
 
 		case FVW_BUTTON_SCROLL_UP:
@@ -281,6 +287,11 @@ void fiction_viewer_init()
 	if (!mission_has_fiction())
 		return;
 
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+	}
+
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
 
@@ -289,10 +300,12 @@ void fiction_viewer_init()
 	if (*Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res] != '\0')
 	{
 		Fiction_viewer_bitmap = bm_load(Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]);
-		if (Fiction_viewer_bitmap < 0)
-			mprintf(("Failed to load custom background bitmap %s!\n", Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]));
-		else if (Fiction_viewer_ui < 0)
+		if (Fiction_viewer_bitmap < 0) {
+			mprintf(("Failed to load custom background bitmap %s!\n",
+					 Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]));
+		} else if (Fiction_viewer_ui < 0) {
 			Fiction_viewer_ui = 0;
+		}
 	}
 
 	// if special background failed to load, or if no special background was supplied, load the standard bitmap
@@ -371,7 +384,7 @@ void fiction_viewer_init()
 	{
 		audiostream_play(Fiction_viewer_voice, Master_voice_volume, 0);
 	}
-	
+
 	Fiction_viewer_inited = 1;
 }
 
@@ -422,8 +435,13 @@ void fiction_viewer_do_frame(float frametime)
 	switch (k)
 	{
 		case KEY_ESC:
-			common_music_close();
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			if (Game_mode & GM_MULTIPLAYER) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				multi_quit_game(PROMPT_ALL);
+			} else {
+				common_music_close();
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
+			}
 			return;
 	}
 
@@ -527,6 +545,26 @@ void fiction_viewer_reset()
 	}
 }
 
+SCP_string get_localized_fiction_filename(const char* filename)
+{
+	SCP_string this_filename = filename;
+	
+	// setup the localized filename string
+	int lang = lcl_get_current_lang_index();
+	if (lang > 0) {
+		size_t lastindex = this_filename.find_last_of(".");
+		this_filename = this_filename.substr(0, lastindex);
+		this_filename = this_filename + "-" + Lcl_languages[lang].lang_ext + ".txt";
+	}
+
+	// return the localized version only if it exists
+	if (cf_exists_full(this_filename.c_str(), CF_TYPE_FICTION))
+		return this_filename;
+
+	// if localized doesn't exist then return the base filename
+	return filename;
+}
+
 void fiction_viewer_load(int stage)
 {
 	Assertion(stage >= 0 && static_cast<size_t>(stage) < Fiction_viewer_stages.size(), "stage parameter must be in range of Fiction_viewer_stages!");
@@ -558,15 +596,18 @@ void fiction_viewer_load(int stage)
 	Fiction_viewer_voice = audiostream_open(stagep->voice_filename, ASF_VOICE);
 
 	// load up the text
-	CFILE *fp = cfopen(stagep->story_filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
+	SCP_string localized_filename = get_localized_fiction_filename(stagep->story_filename);
+
+	CFILE *fp = cfopen(localized_filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_FICTION);
 	if (fp == NULL)
 	{
-		Warning(LOCATION, "Unable to load story file '%s'.", stagep->story_filename);
+		Warning(LOCATION, "Unable to load story file '%s'.", localized_filename.c_str());
 	}
 	else
 	{
 		// allocate space for raw text
-		int file_length = cfilelength(fp);
+		int file_length = util::check_encoding_and_skip_bom(fp, localized_filename.c_str());
+
 		char *Fiction_viewer_text_raw = (char *) vm_malloc(file_length + 1);
 		Fiction_viewer_text_raw[file_length] = '\0';
 
@@ -576,12 +617,19 @@ void fiction_viewer_load(int stage)
 		// we're done with the file, close it out
 		cfclose(fp);
 
-		// allocate space for converted text, then perform the character conversion
-		auto length = get_converted_string_length(Fiction_viewer_text_raw) + 1;
-		Fiction_viewer_text = (char *) vm_malloc(length);
-		maybe_convert_foreign_characters(Fiction_viewer_text_raw, Fiction_viewer_text);
+		if (Unicode_text_mode) {
+			// Copy the pointer since we assume that we don't need to adjust the text anymore
+			Fiction_viewer_text = Fiction_viewer_text_raw;
+			Fiction_viewer_text_raw = nullptr; // Zero out the pointer so there are no accidental accesses anymore
+		} else {
+			// allocate space for converted text, then perform the character conversion
+			auto length = get_converted_string_length(Fiction_viewer_text_raw) + 1;
+			Fiction_viewer_text = (char *) vm_malloc(length);
 
-		// deallocate space for raw text
-		vm_free(Fiction_viewer_text_raw);
+			maybe_convert_foreign_characters(Fiction_viewer_text_raw, Fiction_viewer_text);
+
+			// deallocate space for raw text
+			vm_free(Fiction_viewer_text_raw);
+		}
 	}
 }

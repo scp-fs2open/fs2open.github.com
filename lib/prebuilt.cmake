@@ -1,5 +1,5 @@
 
-set(PREBUILT_VERSION_NAME "d08440c3a886e1cd24357ee42cfbc7d25f035336")
+set(PREBUILT_VERSION_NAME "f81df85")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt")
@@ -22,7 +22,9 @@ function(get_prebuilt_path OUT_VAR)
     set(PREBUILT_PATH)
     set(TAG_NAME "bin-${PREBUILT_VERSION_NAME}")
     if(PLATFORM_WINDOWS)
-        if (IS_64BIT)
+        if (IS_ARM64)
+            set(FILENAME "bin-winarm64.zip")
+        elseif (IS_64BIT)
             set(FILENAME "bin-win64.zip")
         else()
             set(FILENAME "bin-win32.zip")
@@ -31,21 +33,38 @@ function(get_prebuilt_path OUT_VAR)
         set(FILENAME "bin-mac.tar.gz")
     else()
         # Use Linux binaries...
-        set(FILENAME "bin-linux.tar.gz")
+        if (IS_ARM64)
+            set(FILENAME "bin-linux_arm64.tar.gz")
+        else()
+            set(FILENAME "bin-linux.tar.gz")
+        endif()
     endif()
     set(DOWNLOAD_URL "https://github.com/scp-fs2open/scp-prebuilt/releases/download/${TAG_NAME}/${FILENAME}")
     set(DOWNLOAD_FILE "${CURRENT_ROOT}/${FILENAME}")
-    
-    message(STATUS "Downloading prebuilt libraries from \"${DOWNLOAD_URL}\"")
-    file(DOWNLOAD "${DOWNLOAD_URL}" "${DOWNLOAD_FILE}" SHOW_PROGRESS TLS_VERIFY ON STATUS DOWNLOAD_STATUS_LIST)
-    
-    list(GET DOWNLOAD_STATUS_LIST 0 DOWNLOAD_STATUS)
-    list(GET DOWNLOAD_STATUS_LIST 1 DOWNLOAD_ERROR)
+
+    set(MAX_RETRIES 5)
+    foreach(i RANGE 1 ${MAX_RETRIES})
+        if (NOT (i EQUAL 1))
+            message(STATUS "Retry after 5 seconds (attempt #${i}) ...")
+            execute_process(COMMAND "${CMAKE_COMMAND}" -E sleep "5")
+        endif()
+
+        message(STATUS "Downloading prebuilt libraries from \"${DOWNLOAD_URL}\" (try ${i}/${MAX_RETRIES})")
+        file(DOWNLOAD "${DOWNLOAD_URL}" "${DOWNLOAD_FILE}" SHOW_PROGRESS TLS_VERIFY ON STATUS DOWNLOAD_STATUS_LIST)
+
+        list(GET DOWNLOAD_STATUS_LIST 0 DOWNLOAD_STATUS)
+        list(GET DOWNLOAD_STATUS_LIST 1 DOWNLOAD_ERROR)
+        if (DOWNLOAD_STATUS EQUAL 0)
+            break()
+        endif()
+        message(STATUS "Download of prebuilt binaries failed: ${DOWNLOAD_ERROR}!")
+    endforeach()
+
     if (NOT (DOWNLOAD_STATUS EQUAL 0))
-        message(FATAL_ERROR "Download of prebuilt binaries failed: ${DOWNLOAD_ERROR}!")
+        message(FATAL_ERROR "${MAX_RETRIES} download attempts failed!")
         return()
     endif()
-    
+
     if (IS_DIRECTORY "${PREBUILT_LIB_DIR}")
         # Remove previous files
         file(REMOVE_RECURSE "${PREBUILT_LIB_DIR}")
@@ -66,7 +85,7 @@ function(get_prebuilt_path OUT_VAR)
     )
     
     if (NOT (EXTRACT_RESULT EQUAL 0))
-        message(FATAL_ERROR "Extracing prebuilt libraries failed! Error message: ${ERROR_TEXT}")
+        message(FATAL_ERROR "Extracting prebuilt libraries failed! Error message: ${ERROR_TEXT}")
         return()
     endif()
     

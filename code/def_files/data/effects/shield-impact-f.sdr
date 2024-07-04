@@ -1,0 +1,34 @@
+
+#include "gamma.sdr"
+
+const float EMISSIVE_GAIN = 2.0;
+
+in vec4 fragImpactUV;
+in float fragNormOffset;
+
+out vec4 fragOut0;
+
+uniform sampler2DArray shieldMap;
+
+layout (std140) uniform genericData {
+	mat4 shieldModelViewMatrix;
+	mat4 shieldProjMatrix;
+
+	vec3 hitNormal;
+	int srgb;
+
+	vec4 color;
+
+	int shieldMapIndex;
+};
+
+void main()
+{
+	if(fragNormOffset < 0.0) discard;
+	if(fragImpactUV.x < 0.0 || fragImpactUV.x > 1.0 || fragImpactUV.y < 0.0 || fragImpactUV.y > 1.0) discard;
+	vec4 shieldColor = texture(shieldMap, vec3(fragImpactUV.xy, float(shieldMapIndex)));
+	shieldColor.rgb = (srgb == 1) ? srgb_to_linear(shieldColor.rgb) * EMISSIVE_GAIN : shieldColor.rgb;
+	vec4 blendColor = color;
+	blendColor.rgb = (srgb == 1) ? srgb_to_linear(blendColor.rgb) * EMISSIVE_GAIN : blendColor.rgb;
+	fragOut0 = shieldColor * blendColor;
+}

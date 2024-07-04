@@ -53,6 +53,9 @@ public:
 	CString			m_box_min_x;
 	CString			m_box_min_y;
 	CString			m_box_min_z;
+	int				m_field_target_index;
+	int             m_field_enhanced_checks;
+	SCP_vector<SCP_string> m_field_targets;
 	//}}AFX_DATA
 
 	int cur_field, last_field;
@@ -77,9 +80,17 @@ protected:
 	afx_msg void OnClose();
 	afx_msg void OnEnableInnerBox();
 	afx_msg void OnPassiveField();
-	afx_msg void OnFieldShip();
+	afx_msg void OnFieldDebris();
 	afx_msg void OnActiveField();
 	afx_msg void OnFieldAsteroid();
+	afx_msg void OnAddField();
+	afx_msg void OnRemoveField();
+	afx_msg void OnFieldTargetChange();
+	afx_msg void OnAddFieldTarget();
+	afx_msg void OnRemoveFieldTarget();
+	afx_msg void OnEnableRangeOverride();
+	afx_msg void OnBnClickedSelectDebris();
+	afx_msg void OnBnClickedSelectAsteroid();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

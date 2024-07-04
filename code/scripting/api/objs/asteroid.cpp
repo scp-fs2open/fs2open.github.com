@@ -20,14 +20,14 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 	if(!ade_get_args(L, "o|o", l_Asteroid.GetPtr(&oh), l_Object.GetPtr(&th)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	asteroid *asp = &Asteroids[oh->objp->instance];
+	asteroid *asp = &Asteroids[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR && th != NULL) {
-		if(th->IsValid())
-			asp->target_objnum = OBJ_INDEX(th->objp);
+		if(th->isValid())
+			asp->target_objnum = th->objnum;
 		else
 			asp->target_objnum = -1;
 	}
@@ -39,26 +39,26 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 
 }
 
-ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, wvector hitpos=nil]", "Kills the asteroid. Set \"killer\" to designate a specific ship as having been the killer, and \"hitpos\" to specify the world position of the hit location; if nil, the asteroid center is used.", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, vector hitpos=nil]", "Kills the asteroid. Set \"killer\" to designate a specific ship as having been the killer, and \"hitpos\" to specify the world position of the hit location; if nil, the asteroid center is used.", "boolean", "True if successful, false or nil otherwise")
 {
 	object_h *victim,*killer=NULL;
 	vec3d *hitpos=NULL;
 	if(!ade_get_args(L, "o|oo", l_Asteroid.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;
 
-	if(!victim->IsValid())
+	if(!victim->isValid())
 		return ADE_RETURN_NIL;
 
-	if(killer != NULL && !killer->IsValid())
+	if(killer != NULL && !killer->isValid())
 		return ADE_RETURN_NIL;
 
 	if (!hitpos)
-		hitpos = &victim->objp->pos;
+		hitpos = &victim->objp()->pos;
 
 	if (killer)
-		asteroid_hit(victim->objp, killer->objp, hitpos, victim->objp->hull_strength + 1);
+		asteroid_hit(victim->objp(), killer->objp(), hitpos, victim->objp()->hull_strength + 1, nullptr);
 	else
-		asteroid_hit(victim->objp, NULL,         hitpos, victim->objp->hull_strength + 1);
+		asteroid_hit(victim->objp(), NULL,           hitpos, victim->objp()->hull_strength + 1, nullptr);
 
 	return ADE_RETURN_TRUE;
 }

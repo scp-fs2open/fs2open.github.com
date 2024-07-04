@@ -11,6 +11,8 @@
 
 #include "resource.h"
 
+#include "../code/nebula/neb.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg dialog
 
@@ -55,13 +57,13 @@ public:
 	int		m_neb2_texture;
 	BOOL		m_subspace;
 	BOOL		m_fullneb;
-	int		m_poof_0;
-	int		m_poof_1;
-	int		m_poof_2;
-	int		m_poof_3;
-	int		m_poof_4;
-	int		m_poof_5;
-	BOOL	m_toggle_trails;
+	BOOL		m_fog_color_override;
+	BOOL		m_fullneb_background_bitmaps;
+	BOOL		m_toggle_trails;
+	BOOL		m_corrected_angles_in_mission_file;
+	int		m_fog_r;
+	int		m_fog_g;
+	int		m_fog_b;
 	CString	m_storm_name;
 	CString s_name;
 	int s_pitch;
@@ -91,6 +93,7 @@ public:
 	int m_skybox_heading;
 	float m_neb_near_multi;
 	float m_neb_far_multi;
+	int m_light_profile_index;
 	//}}AFX_DATA
 
 // Overrides
@@ -105,11 +108,18 @@ protected:
 	// clear and build the nebula filename list appropriately
 	void build_nebfile_list();
 
+	int get_previous_active_background();
 	int get_active_background();
 	int get_swap_background();
 	void reinitialize_lists();
+	void background_flags_init();
+	void background_flags_close();
 
 	void OnOrientationChange();
+
+	CToolTipCtrl* m_CorrectedAnglesToolTip;
+
+	virtual BOOL OnInitDialog();
 
 	// Generated message map functions
 	//{{AFX_MSG(bg_bitmap_dlg)
@@ -118,6 +128,11 @@ protected:
 	afx_msg void OnSelchangeNebcolor();
 	afx_msg void OnSelchangeNebpattern();
 	afx_msg void OnFullNeb();
+	afx_msg void OnNeb2PaletteOverride();
+	afx_msg void OnSelchangeNeb2Texture();
+	afx_msg void OnKillfocusNeb2FogR();
+	afx_msg void OnKillfocusNeb2FogG();
+	afx_msg void OnKillfocusNeb2FogB();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnSunChange();
 	afx_msg void OnAddSun();
@@ -144,6 +159,8 @@ protected:
 	afx_msg void OnKillfocusSun1H();
 	afx_msg void OnKillfocusSun1B();
 	afx_msg void OnKillfocusSun1Scale();
+	afx_msg void OnAddBackground();
+	afx_msg void OnRemoveBackground();
 	afx_msg void OnImportBackground();
 	afx_msg void OnSwapBackground();
 	afx_msg void OnBackgroundDropdownChange();

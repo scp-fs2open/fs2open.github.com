@@ -14,21 +14,40 @@
 
 #include "globalincs/pstypes.h"
 #include "math/floating.h"
+#include <limits>
 
 
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
+//VEC_NULL macros split into two functions in 2009 with commit 75a514b
 
-//macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
+// Null vector checks are performed on the following types of vectors:
+// * orientation component vectors
+// * positions
+// * velocities
+// * normals
+// In each of these cases, FLT_EPSILON or 1.192092896e-07F is a reasonable threshold.
 
-#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
+// macro to check if vector is close to zero or would be close to zero after squaring
+// (uses FLT_EPSILON; original threshold was 1e-16 which can be tightened up a bit)
+#define IS_VEC_NULL_SQ_SAFE(v) \
+		(fl_near_zero((v)->xyz.x) && \
+		fl_near_zero((v)->xyz.y) && \
+		fl_near_zero((v)->xyz.z))
 
+// macro to check if vector is close to zero
+// (original threshold was 1e-36 which was too small)
+#define IS_VEC_NULL(v) IS_VEC_NULL_SQ_SAFE(v)
+
+// macro to check if moment-of-inertia vector is close to zero
+// (uses the previous 1e-36 threshold since MOI values are really small)
+#define IS_MOI_VEC_NULL(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
+
+// currently only used to check orientations
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
@@ -36,8 +55,13 @@
 //Note: NO RETURN VALUE
 #define vm_vec_zero(v) (v)->xyz.x=(v)->xyz.y=(v)->xyz.z=0.0f
 
+//macro to set a vector to zero.  we could do this with an in-line assembly
+//macro, but it's probably better to let the compiler optimize it.
+//Note: NO RETURN VALUE
+#define vm_mat_zero(m) (vm_vec_zero(&(m)->vec.rvec), vm_vec_zero(&(m)->vec.uvec), vm_vec_zero(&(m)->vec.fvec))
+
 /*
-//macro set set a matrix to the identity. Note: NO RETURN VALUE
+//macro to set a matrix to the identity. Note: NO RETURN VALUE
 #define vm_set_identity(m) do {m->rvec.x = m->uvec.y = m->fvec.z = (float)1.0;	\
 										m->rvec.y = m->rvec.z = \
 										m->uvec.x = m->uvec.z = \
@@ -47,6 +71,12 @@ extern void vm_set_identity(matrix *m);
 
 #define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
 
+extern angles vm_angles_new(float p, float b, float h);
+extern vec3d vm_vec_new(float x, float y, float z);
+extern vec4 vm_vec4_new(float x, float y, float z, float w);
+extern matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8);
+extern matrix vm_matrix_new(vec3d rvec, vec3d uvec, vec3d fvec);
+
 //Global constants
 
 extern vec3d vmd_zero_vector;
@@ -54,22 +84,28 @@ extern vec3d vmd_scale_identity_vector;
 extern vec3d vmd_x_vector;
 extern vec3d vmd_y_vector;
 extern vec3d vmd_z_vector;
+extern matrix vmd_zero_matrix;
 extern matrix vmd_identity_matrix;
+extern matrix4 vmd_zero_matrix4;
+extern angles vmd_zero_angles;
 
 //Here's a handy constant
-
+#define ZERO_ANGLES { 0.0f, 0.0f, 0.0f }
 #define ZERO_VECTOR { { { 0.0f, 0.0f, 0.0f } } }
 #define SCALE_IDENTITY_VECTOR { { { 1.0f, 1.0f, 1.0f } } }
 //#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
 // first set of inside braces is for union, second set is for inside union, then for a2d[3][3] (some compiler warning messages just suck)
 //#define IDENTITY_MATRIX { { { {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} } } }
 #define IDENTITY_MATRIX { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f, 1.0f, 0.0f } } }, { { { 0.0f, 0.0f, 1.0f } } } } } }
+#define ZERO_MATRIX { { { ZERO_VECTOR, ZERO_VECTOR, ZERO_VECTOR } } }
+#define ZERO_VECTOR4 { { { 0.0f, 0.0f, 0.0f, 0.0f } } }
+#define ZERO_MATRIX4 { { { ZERO_VECTOR4, ZERO_VECTOR4, ZERO_VECTOR4, ZERO_VECTOR4 } } }
 
 //fills in fields of an angle vector
 #define vm_angvec_make(v,_p,_b,_h) (((v)->p=(_p), (v)->b=(_b), (v)->h=(_h)), (v))
 
 //negate a vector
-#define vm_vec_negate(v) do {(v)->xyz.x = - (v)->xyz.x; (v)->xyz.y = - (v)->xyz.y; (v)->xyz.z = - (v)->xyz.z;} while (0);
+#define vm_vec_negate(v) do {(v)->xyz.x = - (v)->xyz.x; (v)->xyz.y = - (v)->xyz.y; (v)->xyz.z = - (v)->xyz.z;} while (false);
 
 typedef struct plane {
 	float	A, B, C, D;
@@ -80,6 +116,14 @@ typedef struct plane {
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1);
+
+//Component-wise multiplication of two vectors
+void vm_vec_cmult(vec3d* dest, const vec3d* src0, const vec3d* src1);
+void vm_vec_cmult2(vec3d* dest, const vec3d* src);
+
+//Component-wise division of two vectors
+void vm_vec_cdiv(vec3d* dest, const vec3d* src0, const vec3d* src1);
+void vm_vec_cdiv2(vec3d* dest, const vec3d* src);
 
 //adds src onto dest vector, returns ptr to dest
 void vm_vec_add2(vec3d *dest, const vec3d *src);
@@ -135,6 +179,11 @@ void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k);
 //dest *= n/d
 void vm_vec_scale2(vec3d *dest, float n, float d);
 
+// interpolate between two vectors
+// dest = k * (src1 - src0)
+// Might be helpful to think of vec0 as the before, and vec1 as the after
+void vm_vec_linear_interpolate(vec3d* dest, const vec3d* src0, const vec3d* src1, float k);
+
 bool vm_vec_equal(const vec2d &self, const vec2d &other);
 
 bool vm_vec_equal(const vec3d &self, const vec3d &other);
@@ -164,14 +213,16 @@ float vm_vec_dist_squared(const vec3d *v0, const vec3d *v1);
 //computes the distance between two points. (does sub and mag)
 float vm_vec_dist(const vec3d *v0, const vec3d *v1);
 
-//computes an approximation of the magnitude of the vector
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_mag_quick(const vec3d *v);
+// these are now deprecated because experimental testing on Discord has found
+// that they are actually *slower* than their counterparts
+#define vm_vec_mag_quick				vm_vec_mag
+#define vm_vec_dist_quick				vm_vec_dist
+#define vm_vec_copy_normalize_quick		vm_vec_copy_normalize
+#define vm_vec_normalize_quick			vm_vec_normalize
+#define vm_vec_normalized_dir_quick		vm_vec_normalized_dir
+#define vm_vec_rand_vec_quick			vm_vec_rand_vec
 
-//computes an approximation of the distance between two points.
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1);
-
+bool vm_vec_is_normalized(const vec3d *v);
 
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
@@ -181,19 +232,11 @@ float vm_vec_normalize(vec3d *v);
 //	If it is detected, it generates a Warning() and returns the vector 1, 0, 0.
 float vm_vec_normalize_safe(vec3d *v);
 
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick(vec3d *dest, const vec3d *src);
-float vm_vec_normalize_quick(vec3d *v);
-
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src);
-
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
+// Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
 float vm_vec_normalized_dir(vec3d *dest,const vec3d *end, const vec3d *start);
-// Returns mag of direction vector
-float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
 ////returns dot product of two vectors
 float vm_vec_dot(const vec3d *v0, const vec3d *v1);
@@ -221,13 +264,15 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1, const vec3d *p
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec);
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *fvec);
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *uvec);
 
 //computes a matrix from a set of three angles.  returns ptr to matrix
 matrix *vm_angles_2_matrix(matrix *m, const angles *a);
@@ -254,7 +299,7 @@ matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a);
  *
  * @sa vm_vector_2_matrix_norm
  */
-matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec);
+matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nullptr, const vec3d *rvec = nullptr);
 
 
 /**
@@ -275,12 +320,10 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal either source
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
 
 //rotates a vector through the transpose of the given matrix. 
 //returns ptr to dest vector
-//dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
 //    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
@@ -300,7 +343,6 @@ matrix *vm_transpose(matrix *m);
 matrix *vm_copy_transpose(matrix *dest, const matrix *src);
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
-//dest CANNOT equal either source
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1);
 
 //extract angles from a matrix
@@ -344,6 +386,40 @@ void vm_trackball( int idx, int idy, matrix * RotMat );
 //	beyond *p1 by 2x.
 float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const vec3d *p1, const vec3d *int_pnt);
 
+/**
+ * @brief Find the intersection between two lines
+ *
+ * @param[out] s  If successful, s is the scalar of v0
+ * @param[in]  p0 Reference point for line 1
+ * @param[in]  p1 Reference point for line 2
+ * @param[in]  v0 Direction vector for line 1 (must be normalized)
+ * @param[in]  v1 Direction vector for line 2 (must be normalized)
+ *
+ * @returns  0 If successful, or
+ * @returns -1 If colinear, or
+ * @returns -2 If no intersection
+ *
+ * @note If you want the coords of the intersection, scale v0 by s, then add p0.
+ */
+int find_intersection(float *s, const vec3d* p0, const vec3d* p1, const vec3d* v0, const vec3d* v1);
+
+/**
+ * Finds the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space)
+ *
+ * @param[out] dest The closest point
+ * @param[in]  p1 Reference point for line 1
+ * @param[in]  d1 Direction vector for line 1 (must be normalized)
+ * @param[in]  p2 Reference point for line 2
+ * @param[in]  d2 Direction vector for line 2 (must be normalized)
+ *
+ * @note Algorithm from Wikipedia: https://en.wikipedia.org/wiki/Skew_lines#Formulas
+ */
+void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const vec3d *d1, const vec3d *p2, const vec3d *d2);
+
+// normalizes only if the vector's magnitude is above an optionally specified threshold, defaulting to 10 times machine epsilon
+// returns whether or not it normalized
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold = std::numeric_limits<float>::epsilon() * 10.f);
+
 float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2);
 
 void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p);
@@ -357,9 +433,8 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p);
 //						plane_point		=>		plane point
 void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec3d *plane_normal, const vec3d *plane_point);
 
-
-//	Returns fairly random vector, "quick" normalized
-void vm_vec_rand_vec_quick(vec3d *rvec);
+//	Returns fairly random vector, normalized
+void vm_vec_rand_vec(vec3d *rvec);
 
 // Given an point "in" rotate it by "angle" around an
 // arbritary line defined by a point on the line "line_point" 
@@ -391,19 +466,21 @@ int vm_vec_same(const vec3d *v1, const vec3d *v2);
 // see if two matrices are identical
 int vm_matrix_same(matrix *m1, matrix *m2);
 
-//	Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
+// Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next_orientation valid at time delta_t.
-void vm_matrix_interpolate(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, int no_overshoot=0);
+// called "vm_matrix_interpolate" in retail 
+void vm_angular_move_matrix(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, bool no_directional_bias, bool force_no_overshoot = false);
 
-//	Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
+// Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next forward vec valid at time delta_t.
-void vm_forward_interpolate(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot=0);
+// called "vm_forward_interpolate" in retail 
+void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, bool no_directional_bias);
 
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);
@@ -421,10 +498,13 @@ vec3d* vm_rotate_vec_to_world(vec3d *world_vec, const vec3d *body_vec, const mat
 void vm_estimate_next_orientation(const matrix *last_orient, const matrix *current_orient, matrix *next_orient);
 
 //	Return true if all elements of *vec are legal, that is, not a NAN.
-int is_valid_vec(const vec3d *vec);
+bool is_valid_vec(const vec3d *vec);
 
 //	Return true if all elements of *m are legal, that is, not a NAN.
-int is_valid_matrix(const matrix *m);
+bool is_valid_matrix(const matrix *m);
+
+// Converts quaterions to a respective rotation matrix
+void vm_quaternion_to_matrix(matrix* M, float a, float b, float c, float s);
 
 // Finds the rotation matrix corresponding to a rotation of theta about axis u
 void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
@@ -432,20 +512,32 @@ void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
 // Takes a rotation matrix and returns the axis and angle needed to generate it
 void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_axis);
 
-// interpolate between 2 vectors. t goes from 0.0 to 1.0. at
+// Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m. Returns the angle between the matrix orientation and the closest axis angle orientation
+// If the axis is equal or very close to the orientation of the matrix, returns a distance of Pi/2 and an angle of 0
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle);
+
+// interpolate between 2 vectors. t goes from 0.0 to 1.0
+// out, v1 and v2 may all safely alias
 void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float t);
 
 // randomly perturb a vector around a given (normalized vector) or optional orientation matrix
 void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matrix *orient = NULL);
 void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_angle, const matrix *orient = NULL);
 
-// given a start vector, an orientation and a radius, give a point on the plane of the circle
-// if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge);
+// given a start vector, an orientation, and a radius, generate a point on the plane of the circle
+// if on_edge is true, the point will be on the edge of the circle
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
-// given a start vector, an orientation, and a radius, give a point in a spherical volume
-// if on_edge is 1, the point is on the very edge of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge);
+
+// compute a point on the unit sphere from cylindrical coordinate scale factors
+// z_scale and phi_scale should be in [0.0, 1.0]
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale);
+
+// given a start vector and a radius, generate a point in a spherical volume
+// if on_surface is true, the point will be on the surface of the sphere
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center = false);
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
@@ -459,7 +551,17 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 //SUSHI: 2D vector "box" scaling
 void vm_vec_boxscale(vec2d *vec, float scale);
 
-bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut);
+void vm_matrix_add(matrix* dest, const matrix* src0, const matrix* src1);
+
+void vm_matrix_sub(matrix* dest, const matrix* src0, const matrix* src1);
+
+void vm_matrix_add2(matrix* dest, const matrix* src);
+
+void vm_matrix_sub2(matrix* dest, const matrix* src);
+
+bool vm_inverse_matrix(matrix* dest, const matrix* m);
+
+bool vm_inverse_matrix4(matrix4* dest, const matrix4* m);
 
 void vm_matrix4_set_orthographic(matrix4* out, vec3d *max, vec3d *min);
 
@@ -469,16 +571,209 @@ void vm_matrix4_set_identity(matrix4 *out);
 
 void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
 
-void vm_matrix4_get_orientation(matrix *out, matrix4 *m);
+void vm_matrix4_get_orientation(matrix *out, const matrix4 *m);
 
-void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
+void vm_matrix4_get_offset(vec3d *out, const matrix4 *m);
 
-void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m);
-void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos = true);
+void vm_vec_transform(vec4 *dest, const vec4 *src, const matrix4 *m);
+void vm_vec_transform(vec3d *dest, const vec3d *src, const matrix4 *m, bool pos = true);
 
 void vm_matrix4_x_matrix4(matrix4 *dest, const matrix4 *src0, const matrix4 *src1);
 
 float vm_vec4_dot4(float x, float y, float z, float w, const vec4 *v);
+
+/**
+ * @brief Converts a 4 component vector to a 3 component vector by discarding the w component
+ * @param vec The vector to convert
+ * @return The converted 3 component vector
+ */
+vec3d vm_vec4_to_vec3(const vec4& vec);
+
+/**
+ * @brief Converts a 3 component vector to a 4 component vector with the specified w value
+ * @param vec The first 3 components of the new vector
+ * @param w The w component of the new vector. Defaults to 1.0f which is correct for position vectors.
+ * @return The 4 component vector
+ */
+vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
+
+// calculates the best rvec to match another orient while maintaining a given fvec
+void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
+
+// Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,
+// as you could conceivably use these calculations to find a rotation that is outside 
+// the usual 0-100%.
+// derived by Asteroth from our AI code
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t);
+
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// if being used to fill a space, offset may be needed to properly 'glue together' generated
+// volumes in a well distrubtedness-preserving way
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset = nullptr);
+
+/** Compares two vec3ds */
+inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
+inline bool operator!=(const vec3d& left, const vec3d& right) { return !(left == right); }
+
+inline vec3d operator+(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_add(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator+=(vec3d& left, const vec3d& right)
+{
+	vm_vec_add2(&left, &right);
+	return left;
+}
+
+inline vec3d operator-(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_sub(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator-=(vec3d& left, const vec3d& right)
+{
+	vm_vec_sub2(&left, &right);
+	return left;
+}
+
+inline vec3d operator*(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_cmult(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator*=(vec3d& left, const vec3d& right)
+{
+	vm_vec_cmult2(&left, &right);
+	return left;
+}
+
+inline vec3d operator/(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_cdiv(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator/=(vec3d& left, const vec3d& right)
+{
+	vm_vec_cdiv2(&left, &right);
+	return left;
+}
+
+inline vec3d operator*(const vec3d& left, float right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &left, right);
+	return out;
+}
+inline vec3d operator*(float left, const vec3d& right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &right, left);
+	return out;
+}
+inline vec3d& operator*=(vec3d& left, float right)
+{
+	vm_vec_scale(&left, right);
+	return left;
+}
+
+inline vec3d operator/(const vec3d& left, float right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &left, 1.0f / right);
+	return out;
+}
+inline vec3d& operator/=(vec3d& left, float right)
+{
+	vm_vec_scale(&left, 1.0f / right);
+	return left;
+}
+
+inline matrix operator+(const matrix& left, const matrix& right)
+{
+	matrix res;
+	vm_matrix_add(&res, &left, &right);
+	return res;
+}
+
+inline matrix& operator+=(matrix& left, const matrix& right)
+{
+	vm_matrix_add2(&left, &right);
+	return left;
+}
+
+inline matrix operator-(const matrix& left, const matrix& right)
+{
+	matrix res;
+	vm_matrix_sub(&res, &left, &right);
+	return res;
+}
+
+inline matrix& operator-=(matrix& left, const matrix& right)
+{
+	vm_matrix_sub2(&left, &right);
+	return left;
+}
+
+inline angles& operator+=(angles& left, const angles& right)
+{
+	left.p += right.p;
+	left.b += right.b;
+	left.h += right.h;
+	return left;
+}
+
+/**
+ * @brief Implements matrix multiplication on 3D vectors
+ * @param left The matrix
+ * @param right The vector
+ * @return The multiplied result
+ */
+inline vec3d operator*(const matrix& A, const vec3d& v)
+{
+	vec3d out;
+
+	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
+	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
+	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
+
+	return out;
+}
+
+/**
+ * @brief Implements matrix multiplication on 3x3 matrices
+ * @param left The matrix
+ * @param right The matrix
+ * @return The multiplied result
+ */
+inline matrix operator*(const matrix& A, const matrix& B)
+{
+	matrix BT, out;
+
+	// we transpose B here for concision and also potential vectorisation opportunities
+	vm_copy_transpose(&BT, &B);
+
+	out.vec.rvec = BT * A.vec.rvec;
+	out.vec.uvec = BT * A.vec.uvec;
+	out.vec.fvec = BT * A.vec.fvec;
+
+	return out;
+}
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec);
+
+// Given a direction and a 'stretch amount', computes a matrix which can be used to
+// 'rotate' positional vectors as to stretch them in that direction by that amount
+// Positions in the opposite direction of the stretch_dir are stretched in the opposite direction
+// and position orthogonal to the stretch_dir are not moved at all
+// Essentially turns spheres into ellipsoids
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch);
 
 #endif
 

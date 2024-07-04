@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -30,8 +30,9 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "mod_table/mod_table.h"
 
-int Radar_static_looping = -1;
+sound_handle Radar_static_looping = sound_handle::invalid();
 
 rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS] =
 {
@@ -76,8 +77,10 @@ blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
 blip	Blips[MAX_BLIPS];								// blips pool
 int	N_blips;											// next blip index to take from pool
 
+SCP_map<int, TIMESTAMP> Blip_last_update;	// map of objnums to timestamps
+
 float	Radar_bright_range;					// range at which we start dimming the radar blips
-int		Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
+TIMESTAMP	Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
 
 extern int radar_iff_color[5][2][4];
 
@@ -94,7 +97,7 @@ void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int 
 		case OBJ_SHIP:
 			shipp = &Ships[objp->instance];
 
-			if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1])
+			if (shipp->is_arriving(ship::warpstage::STAGE1, false))
 			{
 				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
 				*blip_type = BLIP_TYPE_WARPING_SHIP;
@@ -153,6 +156,11 @@ void radar_plot_object( object *objp )
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
 	if( Game_mode & GM_STANDALONE_SERVER ){
+		return;
+	}
+
+	// if we are in the lab, do nothing here
+	if (Game_mode & GM_LAB) {
 		return;
 	}
 
@@ -258,7 +266,7 @@ void radar_plot_object( object *objp )
 	// determine the range within which the radar blip is bright
 	if (timestamp_elapsed(Radar_calc_bright_dist_timer))
 	{
-		Radar_calc_bright_dist_timer = timestamp(1000);
+		Radar_calc_bright_dist_timer = _timestamp(1000);
 		Radar_bright_range = player_farthest_weapon_range();
 		if (Radar_bright_range <= 0)
 			Radar_bright_range = 1500.0f;
@@ -273,14 +281,17 @@ void radar_plot_object( object *objp )
 		return;
 	}
 
+	int objnum = OBJ_INDEX(objp);
+
 	b = &Blips[N_blips];
+	b->rad = 0;
 	b->flags = 0;
 
 	// bright if within range
 	blip_bright = (dist <= Radar_bright_range);
 
 	// flag the blip as a current target if it is
-	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
+	if (objnum == Player_ai->target_objnum)
 	{
 		b->flags |= BLIP_CURRENT_TARGET;
 		blip_bright = 1;
@@ -294,12 +305,17 @@ void radar_plot_object( object *objp )
 		list_append(&Blip_dim_list[blip_type], b);
 
 	b->position = pos;
-	b->dist = dist;
-	b->objp = objp;
 	b->radar_image_2d = -1;
 	b->radar_color_image_2d = -1;
 	b->radar_image_size = -1;
 	b->radar_projection_size = 1.0f;
+	b->dist = dist;
+	b->objnum = objnum;
+
+	auto it = Blip_last_update.find(objnum);
+	if (it == Blip_last_update.end())
+		Blip_last_update.emplace(objnum, TIMESTAMP::never());
+
 
 	// see if blip should be drawn distorted
 	// also determine if alternate image was defined for this ship
@@ -337,6 +353,8 @@ void radar_plot_object( object *objp )
 
 void radar_mission_init()
 {
+	Blip_last_update.clear();
+
 	for (int i=0; i<MAX_RADAR_COLORS; i++ )	{
 		for (int j=0; j<MAX_RADAR_LEVELS; j++ )	{
 			if (radar_iff_color[i][j][0] >= 0) {
@@ -347,7 +365,7 @@ void radar_mission_init()
 		}
 	}
 
-	Radar_calc_bright_dist_timer = timestamp(0);
+	Radar_calc_bright_dist_timer = TIMESTAMP::immediate();
 }
 
 void radar_null_nblips()
@@ -419,7 +437,7 @@ void HudGaugeRadar::initDistanceInfinityOffsets(int x, int y)
 	Radar_dist_offsets[RR_INFINITY][1] = y;
 }
 
-void HudGaugeRadar::render(float frametime)
+void HudGaugeRadar::render(float  /*frametime*/)
 {
 }
 
@@ -431,35 +449,16 @@ void HudGaugeRadar::initialize()
 {
 	int i;
 
-	Radar_death_timer			= 0;
-	Radar_static_playing		= 0;
-	Radar_static_next			= 0;
-	Radar_avail_prev_frame	= 1;
-	Radar_calc_bright_dist_timer = timestamp(0);
+	Radar_death_timer			= TIMESTAMP::never();
+	Radar_static_playing		= false;
+	Radar_static_next			= TIMESTAMP::never();
+	Radar_avail_prev_frame		= true;
+	Radar_calc_bright_dist_timer = TIMESTAMP::immediate();
 
 	for ( i=0; i<NUM_FLICKER_TIMERS; i++ ) {
-		Radar_flicker_timer[i]=timestamp(0);
-		Radar_flicker_on[i]=0;
+		Radar_flicker_timer[i]=TIMESTAMP::immediate();
+		Radar_flicker_on[i]=false;
 	}
-
-	int w,h;
-	font::set_font(font::FONT1);
-	ubyte sc = lcl_get_font_index(font::FONT1);
-	if (sc == 0) {
-		Warning(LOCATION, "1st font doesn't have a special characters index, radar may not work");
-	}
-
-	Small_blip_string[0] = sc + 5;
-	Small_blip_string[1] = 0;
-	gr_get_string_size( &w, &h, Small_blip_string );
-	Small_blip_offset_x = -w/2;
-	Small_blip_offset_y = -h/2;
-
-	Large_blip_string[0] = sc + 6;
-	Large_blip_string[1] = 0;
-	gr_get_string_size( &w, &h, Large_blip_string );
-	Large_blip_offset_x = -w/2;
-	Large_blip_offset_y = -h/2;
 
 	HudGauge::initialize();
 }
@@ -480,7 +479,12 @@ void HudGaugeRadar::drawRange()
 		break;
 
 	case RR_INFINITY:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
+		if (Unicode_text_mode) {
+			// This escape sequence is the UTF-8 encoding of the infinity symbol. We can't use u8 yet since VS2013 doesn't support it
+			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "\xE2\x88\x9E");
+		} else {
+			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
+		}
 		break;
 
 	default:
@@ -497,12 +501,15 @@ void HudGaugeRadar::drawRange()
  */
 RadarVisibility radar_is_visible( object *objp )
 {
-	Assert( objp != NULL );
+	Assert( objp != nullptr );
 
 	if (objp->flags[Object::Object_Flags::Should_be_dead])
 	{
 		return NOT_VISIBLE;
 	}
+
+	if (Player_obj == nullptr)
+		return NOT_VISIBLE;
 
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
@@ -512,7 +519,7 @@ RadarVisibility radar_is_visible( object *objp )
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;
 	if (objp->type == OBJ_SHIP) {
-		if (Player_ship != NULL) {
+		if (Player_ship != nullptr) {
 			if (ship_is_visible_by_team(objp, Player_ship)) {
 				ship_is_visible = 1;
 			}
@@ -521,7 +528,7 @@ RadarVisibility radar_is_visible( object *objp )
 
 	// only check awacs level if ship is not visible by team
 	awacs_level = 1.5f;
-	if (Player_ship != NULL && !ship_is_visible) {
+	if (Player_ship != nullptr && !ship_is_visible) {
 		awacs_level = awacs_get_level(objp, Player_ship);
 	}
 
@@ -538,7 +545,7 @@ RadarVisibility radar_is_visible( object *objp )
 				return NOT_VISIBLE;
 
 			// Ships that are warp in in are not visible on the radar
-			if (Ships[objp->instance].flags[Ship::Ship_Flags::Arriving_stage_1])
+			if (Ships[objp->instance].is_arriving(ship::warpstage::STAGE1, false))
 				return NOT_VISIBLE;
 
 			break;

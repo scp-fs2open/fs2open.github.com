@@ -25,7 +25,6 @@ extern void fireballs_page_in();
 extern void shockwave_page_in();
 extern void shield_hit_page_in();
 extern void asteroid_page_in();
-extern void training_mission_page_in();
 extern void neb2_page_in();
 extern void message_pagein_mission_messages();
 extern void model_page_in_stop();

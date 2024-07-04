@@ -17,9 +17,6 @@ LuaTable LuaTable::create(lua_State* state) {
 LuaTable::LuaTable() : LuaValue() {
 }
 
-LuaTable::LuaTable(const LuaTable& other) : LuaValue(other) {
-}
-
 LuaTable::~LuaTable() {
 }
 
@@ -28,8 +25,8 @@ bool LuaTable::setMetatable(const LuaTable& table) {
 		throw LuaException("Meta table reference is not valid!");
 	}
 
-	this->pushValue();
-	table.pushValue();
+	this->pushValue(_luaState);
+	table.pushValue(_luaState);
 
 	lua_setmetatable(_luaState, -2);
 
@@ -38,22 +35,22 @@ bool LuaTable::setMetatable(const LuaTable& table) {
 	return true;
 }
 
-void LuaTable::setReference(luacpp::LuaReference ref) {
-	ref->pushValue();
-
+void LuaTable::setReference(const LuaReference& ref) {
 	lua_State* L = ref->getState();
+
+	ref->pushValue(L);
 
 	if (lua_type(L, -1) != LUA_TTABLE) {
 		lua_pop(L, 1);
-		throw LuaException("Reference does not refere to a table!");
+		throw LuaException("Reference does not refer to a table!");
 	} else {
 		lua_pop(L, 1);
 		LuaValue::setReference(ref);
 	}
 }
 
-size_t LuaTable::getLength() {
-	this->pushValue();
+size_t LuaTable::getLength() const {
+	this->pushValue(_luaState);
 
 	size_t length = lua_objlen(_luaState, -1);
 
@@ -64,6 +61,9 @@ size_t LuaTable::getLength() {
 
 LuaTable::iterator::iterator(const LuaTable& parent) {
 	_iter.reset(new LuaTableIterator(parent));
+
+	// Ensure that this value is correct if we try to iterate over an empty table
+	_atEnd = !_iter->hasElement();
 }
 LuaTable::iterator::iterator() : _iter(nullptr), _atEnd(true) {
 }
@@ -87,20 +87,20 @@ std::pair<LuaValue, LuaValue> LuaTable::iterator::operator*() {
 	return _iter->getElement();
 }
 
-LuaTable::iterator LuaTable::begin() {
+LuaTable::iterator LuaTable::begin() const {
 	iterator iter(*this);
 
 	// This will call lua_next and automatically handle the end of the table
 	return iter;
 }
-LuaTable::iterator LuaTable::end() {
+LuaTable::iterator LuaTable::end() const { // NOLINT(readability-convert-member-functions-to-static)
 	return iterator(); // Empty iterator
 }
 
 LuaTableIterator::LuaTableIterator(const LuaTable& t) : _luaState(t.getLuaState()) {
 	_stackTop = lua_gettop(_luaState);
 
-	t.pushValue();
+	t.pushValue(_luaState);
 	lua_pushnil(_luaState);
 
 	toNextElement();
@@ -132,4 +132,23 @@ void LuaTableIterator::toNextElement() {
 std::pair<LuaValue, LuaValue> LuaTableIterator::getElement() {
 	return _currentVal;
 }
+
+bool convert::popValue(lua_State* luaState, LuaTable& target, int stackposition, bool remove) {
+	if (!internal::isValidIndex(luaState, stackposition)) {
+		return false;
+	}
+
+	if (!lua_istable(luaState, stackposition)) {
+		return false;
+	} else {
+		target.setReference(UniqueLuaReference::create(luaState, stackposition));
+
+		if (remove) {
+			lua_remove(luaState, stackposition);
+		}
+
+		return true;
+	}
+}
+
 }

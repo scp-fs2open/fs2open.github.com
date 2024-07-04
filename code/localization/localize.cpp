@@ -10,16 +10,18 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
+
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "mod_table/mod_table.h"
+#include "options/Option.h"
 
-
-
+#include <tl/optional.hpp>
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -28,16 +30,16 @@
 // general language/localization data ---------------------
 
 // current language
-int Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+int Lcl_current_lang = LCL_RETAIL_HYBRID;
 SCP_vector<lang_info> Lcl_languages;
 
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",		"",		{127,0,176,0,0},	589986744},				// English
-	{ "German",			"gr",	{164,0,176,0,0},	-1132430286 },			// German
-	{ "French",			"fr",	{164,0,176,0,0},	0 },					// French
-	{ "Polish",			"pl",	{127,0,176,0,0},	-1131728960},			// Polish
+	{ "English",  -1, "",   {127,0,176,0,0}, 589986744},    // English ("" is correct; the game data files do not use a language extension for English)
+	{ "German",   -1, "gr", {164,0,176,0,0}, -1132430286 }, // German
+	{ "French",   -1, "fr", {164,0,176,0,0}, 0 },           // French
+	{ "Polish",   -1, "pl", {127,0,176,0,0}, -1131728960},  // Polish
 };
 
 int Lcl_special_chars;
@@ -47,7 +49,9 @@ int Lcl_special_chars;
 int Lcl_fr = 0;
 int Lcl_gr = 0;
 int Lcl_pl = 0;
-int Lcl_english = 1;
+int Lcl_en = 1;
+
+bool *Lcl_unexpected_tstring_check = nullptr;
 
 
 // executable string localization data --------------------
@@ -57,7 +61,10 @@ int Lcl_english = 1;
 // the english version (in the code) to a foreign version (in the table).  Thus, if you
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
-#define XSTR_SIZE	1638
+// NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
+// but internal strings should still increment XSTR_SIZE to avoid collisions.
+// retail XSTR_SIZE = 1570
+// #define XSTR_SIZE	1855 // This is the next available ID
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -68,53 +75,123 @@ typedef struct {
 	int  offset_x_hi;			// string offset in 1024
 } lcl_xstr;
 
-//char *Xstr_table[XSTR_SIZE];
-lcl_xstr Xstr_table[XSTR_SIZE];
-int Xstr_inited = 0;
+SCP_unordered_map<int, lcl_xstr> Xstr_table_map;
+bool Xstr_inited = false;
 
 
 // table/mission externalization stuff --------------------
 #define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
-#define PARSE_ID_BUF_SIZE			5
-#define LCL_MAX_STRINGS					4500
-char *Lcl_ext_str[LCL_MAX_STRINGS];
+#define PARSE_ID_BUF_SIZE			8	// 7 digits and a \0
+
+SCP_unordered_map<int, char*> Lcl_ext_str;
+
+// Lcl_ext_str will only keep translations for the active language, so if we're not running in English,
+// keep the English strings so that we can compare untranslated to English-translated.  But to save space,
+// we only need to keep the NAME_LENGTH strings, since we only need to test mission names.
+SCP_unordered_map<int, char*> Lcl_ext_str_explicit_default;
 
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FORWARD DECLARATIONS
 //
 
-// given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
-int lcl_ext_get_text(const char *xstr, char *out);
-int lcl_ext_get_text(const SCP_string &xstr, SCP_string &out);
-
-// given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
-int lcl_ext_get_id(const char *xstr, int *out);
-int lcl_ext_get_id(const SCP_string &xstr, int *out);
-
-// if the char is a valid char for a signed integer value string
-int lcl_is_valid_numeric_char(char c);
-
 // parses the string.tbl and reports back only on the languages it found
 void parse_stringstbl_quick(const char *filename);
+
+int language_deserializer(const json_t* value)
+{
+	const char* lang;
+	const char* ext;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "{s:s, s:s}", "name", &lang, "ext", &ext) != 0) {
+		throw json_exception(err);
+	}
+
+	int id = lcl_find_lang_index_by_name(lang);
+
+	//does the extension also match? If not then we probably have a new language, so use default instead
+	if (SCP_vector_inbounds(Lcl_languages, id) && !stricmp(Lcl_languages[id].lang_ext, ext)) {
+		return id;
+	}
+
+	return -1;
+}
+
+/**
+ * Converts/serializes language reference data into a json line
+ */
+json_t* language_serializer(int lang)
+{
+	return json_pack("{ssss}", "name", Lcl_languages[lang].lang_name, "ext", Lcl_languages[lang].lang_ext);
+}
+
+static SCP_vector<int> language_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < static_cast<int>(Lcl_languages.size()); i++) {
+		vals.push_back(i);
+	}
+
+	return vals;
+}
+
+static SCP_string language_display(int value)
+{
+	return XSTR(Lcl_languages[value].lang_name, Lcl_languages[value].xstr);
+}
+
+auto LanguageOption = options::OptionBuilder<int>("Game.Language",
+							   std::pair<const char*, int>{"Select Language", 1143},
+							   std::pair<const char*, int>{"The language to display", 1807})
+							   .deserializer(language_deserializer)
+							   .serializer(language_serializer)
+							   .enumerator(language_enumerator)
+							   .display(language_display)
+							   .change_listener([](int, bool){
+							       return false; //This makes it so that changing the language requires a game restart
+							   })
+							   .flags({options::OptionFlags::ForceMultiValueSelection})
+							   .category(std::make_pair("Game", 1824))
+							   .default_val(0)
+							   .finish();
 
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
 //
 
+// find a language's index
+int lcl_find_lang_index_by_name(const SCP_string& lang)
+{
+	for (int i = 0; i < static_cast<int>(Lcl_languages.size()); i++) {
+		if (!stricmp(Lcl_languages[i].lang_name, lang.c_str())) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+// get an index we can use to look into the array
+int lcl_get_current_lang_index()
+{
+	Assertion(Lcl_current_lang >= 0, "Lcl_current_lang should never be negative!");
+
+	if (Lcl_current_lang < static_cast<int>(Lcl_languages.size()))
+		return Lcl_current_lang;
+
+	return LCL_DEFAULT;
+}
+
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang_init)
 {
-	char lang_string[128];
-	const char *ret;
-	int lang, idx, i;
-
 	// initialize encryption
 	encrypt_init();
 
-	// setup English
-	Lcl_languages.push_back(Lcl_builtin_languages[FS2_OPEN_DEFAULT_LANGUAGE]);
+	// set up the first language (which should be English)
+	Lcl_languages.push_back(Lcl_builtin_languages[0]);
 
 	// check string.tbl to see which languages we support
 	try
@@ -128,42 +205,58 @@ void lcl_init(int lang_init)
 
 	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl_quick);
 
-	// if the only language we have at this point is English, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
-	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added English above.
-	if ((int)Lcl_languages.size() == 1) {
-		for (i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
+	// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
+	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
+	if (!No_built_in_languages && (static_cast<int>(Lcl_languages.size()) == 1)) {
+		for (int i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
 			Lcl_languages.push_back(Lcl_builtin_languages[i]);
 		}
 	}
 
-	// read the language from the registry
-	if(lang_init < 0){
-		memset(lang_string, 0, 128);
-		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text 
-		// in tstrings in the #default section)
-		ret = os_config_read_string(NULL, "Language", Lcl_languages[FS2_OPEN_DEFAULT_LANGUAGE].lang_name);
+	// read the language from the commandline and then registry
+	int lang = -1;
+	if (lang_init < 0) {
 
-		if(ret == NULL){
-			Error(LOCATION, "Default language not found."); 
-		}
+		// first we start with any persisted in-game option choice
+		if (Using_in_game_options) {
+			lang = LanguageOption->getValue();
 
-		strcpy_s(lang_string, ret);
-		
-
-		// look it up
-		lang = -1;
-		for(idx = 0; idx < (int)Lcl_languages.size(); idx++){
-			if(!stricmp(Lcl_languages[idx].lang_name, lang_string)){
-				lang = idx;
-				break;
+			// make sure the language index is valid for the current mod
+			if (!SCP_vector_inbounds(Lcl_languages, lang)) {
+				lang = -1;
 			}
 		}
-		if(lang < 0){
-			lang = 0;
-		}	
+
+		// now try the the commandline
+		if (lang < 0) {
+			if (!Cmdline_lang.empty()) {
+				lang = lcl_find_lang_index_by_name(Cmdline_lang);
+			}
+		}
+
+		// still nothing, so go to the ini file
+		if (lang < 0) {
+			char lang_string[128];
+			memset(lang_string, 0, 128);
+			// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
+			// in tstrings in the #default section)
+			const char* ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+			strcpy_s(lang_string, ret);
+
+			// look it up
+			lang = lcl_find_lang_index_by_name(lang_string);
+			if (lang < 0) {
+				lang = LCL_DEFAULT;
+			}
+		}
 	} else {
-		Assert((lang_init >= 0) && (lang_init < (int)Lcl_languages.size()));
+		Assert(lang_init == LCL_UNTRANSLATED || lang_init == LCL_RETAIL_HYBRID || (lang_init >= 0 && lang_init < (int)Lcl_languages.size()));
 		lang = lang_init;
+	}
+
+	// and after all that... the default language reverts to hybrid unless we are specifically translating it
+	if (lang == LCL_DEFAULT && !Use_tabled_strings_for_default_language) {
+		lang = LCL_RETAIL_HYBRID;
 	}
 
 	// set the language (this function takes care of setting up file pointers)
@@ -172,12 +265,6 @@ void lcl_init(int lang_init)
 
 void lcl_close() {
 	lcl_xstr_close();
-}
-
-// determine what language we're running in, see LCL_* defines above
-int lcl_get_language()
-{
-	return Lcl_current_lang;
 }
 
 // parses the string.tbl to see which languages are supported. Doesn't read in any strings.
@@ -195,17 +282,56 @@ void parse_stringstbl_quick(const char *filename)
 			while (required_string_either("#End","$Language:")) {
 				required_string("$Language:");
 				stuff_string(language.lang_name, F_RAW, LCL_LANG_NAME_LEN + 1);
+				if (optional_string("+XSTR:")) {
+					stuff_int(&language.xstr);
+				} else {
+					language.xstr = -1;
+				}
 				required_string("+Extension:");
 				stuff_string(language.lang_ext, F_RAW, LCL_LANG_NAME_LEN + 1);
-				required_string("+Special Character Index:");
-				stuff_ubyte(&language.special_char_indexes[0]);
-				for (i = 1; i < LCL_MAX_FONTS; ++i) {
-					// default to "none"/0 except for font03 which defaults to 176
-					// NOTE: fonts.tbl may override these values
-					if (i == font::FONT3) {
-						language.special_char_indexes[i] = 176;
-					} else {
-						language.special_char_indexes[i] = 0;
+
+				if (!Unicode_text_mode) {
+					required_string("+Special Character Index:");
+					ubyte special_char;
+					stuff_ubyte(&special_char);
+
+					if (language.special_char_indexes.empty()){
+						language.special_char_indexes.push_back(special_char);
+					}
+					else {
+						language.special_char_indexes[0] = special_char;
+					}
+
+					for (i = 1; i < LCL_MIN_FONTS; ++i) {
+						// default to "none"/0 except for font03 which defaults to 176
+						// NOTE: fonts.tbl may override these values
+						if (i == font::FONT3) {
+							special_char = 176;
+						} else {
+							special_char = 0;
+						}
+
+						// if more than one language is defined, the vector may not be increased to this size already.
+						if (i < (int)language.special_char_indexes.size()) {
+							language.special_char_indexes[i] = special_char;
+						} else {
+							language.special_char_indexes.push_back(special_char);
+						}
+
+					}
+				} else {
+					if (optional_string("+Special Character Index:")) {
+						ubyte temp_index;
+						stuff_ubyte(&temp_index);
+					}
+
+					// Set all indices to valid values
+					for (i = 0; i < LCL_MIN_FONTS; ++i) {
+						if (i >= (int)language.special_char_indexes.size()) {
+							language.special_char_indexes.push_back(0);
+						} else {
+							language.special_char_indexes[i] = 0;
+						}
 					}
 				}
 
@@ -224,6 +350,10 @@ void parse_stringstbl_quick(const char *filename)
 				// if we have a new language, add it.
 				if (lang_idx == -1) {
 					Lcl_languages.push_back(language);
+
+					if (Lcl_languages.size() > LCL_UNTRANSLATED) {
+						Warning(LOCATION, "Too many custom languages; this will conflict with certain special-case language definitions and cause unexpected behavior");
+					}
 				}
 			}
 		}
@@ -242,8 +372,9 @@ void parse_stringstbl_common(const char *filename, const bool external)
 	char chr, buf[4096];
 	char language_tag[512];
 	int z, index;
-	char *p_offset = NULL;
+	char *p_offset = nullptr;
 	int offset_lo = 0, offset_hi = 0;
+	int lcl_index = lcl_get_current_lang_index();
 
 	try {
 		read_file_text(filename, CF_TYPE_TABLES);
@@ -252,14 +383,14 @@ void parse_stringstbl_common(const char *filename, const bool external)
 		// move down to the proper section
 		memset(language_tag, 0, sizeof(language_tag));
 		strcpy_s(language_tag, "#");
-		if (external && Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE){
+		if (external && (lcl_index == LCL_DEFAULT)) {
 			strcat_s(language_tag, "default");
 		} else {
-			strcat_s(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
+			strcat_s(language_tag, Lcl_languages[lcl_index].lang_name);
 		}
 
 		if ( skip_to_string(language_tag) != 1 ) {
-			mprintf(("Current language not found in %s\n", filename));
+			mprintf(("Language tag %s not found in %s\n", language_tag, filename));
 			return;
 		}
 
@@ -271,19 +402,19 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			if (external) {
 				ignore_white_space();
 				get_string(buf, sizeof(buf));
-				drop_trailing_white_space(buf);
 			} else {
 				stuff_string(buf, F_RAW, sizeof(buf));
 			}
 
-			if (external && (index < 0 || index >= LCL_MAX_STRINGS)) {
-				error_display(0, "Invalid tstrings table index specified (%i). Please increment LCL_MAX_STRINGS in localize.cpp.", index);
+			if (external && index < 0) {
+				error_display(0, "Invalid tstrings table index specified (%i). The index must be positive.", index);
 				return;
-			} else if (!external && (index < 0 || index >= XSTR_SIZE)) {
+			} else if (!external && index < 0) {
 				Error(LOCATION, "Invalid strings table index specified (%i)", index);
 			}
 
 			if (!external) {
+
 				size_t i = strlen(buf);
 
 				while (i--) {
@@ -325,7 +456,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 					p_offset = &buf[i+1];			// get ptr to string section with offset in it
 
 					if (buf[i] != '"')
-						Error(LOCATION, "%s is corrupt", filename);		// now its an error
+						error_display(1, "%s is corrupt", filename);		// now its an error
 				}
 
 				buf[i] = 0;
@@ -353,25 +484,31 @@ void parse_stringstbl_common(const char *filename, const bool external)
 
 			// write into Xstr_table (for strings.tbl) or Lcl_ext_str (for tstrings.tbl)
 			if (Parsing_modular_table) {
-				if ( external && (Lcl_ext_str[index] != NULL) ) {
-					vm_free((void *) Lcl_ext_str[index]);
-					Lcl_ext_str[index] = NULL;
-				} else if ( !external && (Xstr_table[index].str != NULL) ) {
-					vm_free((void *) Xstr_table[index].str);
-					Xstr_table[index].str = NULL;
+				if (external) {
+					auto entry = Lcl_ext_str.find(index);
+					if (entry != Lcl_ext_str.end()) {
+						vm_free((void*)entry->second);
+						Lcl_ext_str.erase(entry);
+					}
+				} else {
+					auto entry = Xstr_table_map.find(index);
+					if (entry != Xstr_table_map.end()) {
+						vm_free((void*)entry->second.str);
+						Xstr_table_map.erase(entry);
+					}
 				}
 			}
 
-			if (external && (Lcl_ext_str[index] != NULL)) {
+			if (external && (Lcl_ext_str.find(index) != Lcl_ext_str.end())) {
 				Warning(LOCATION, "Tstrings table index %d used more than once", index);
-			} else if (!external && (Xstr_table[index].str != NULL)) {
+			} else if (!external && (Xstr_table_map.find(index) != Xstr_table_map.end())) {
 				Warning(LOCATION, "Strings table index %d used more than once", index);
 			}
 
 			if (external) {
-				Lcl_ext_str[index] = vm_strdup(buf);
+				Lcl_ext_str.insert(std::make_pair(index, vm_strdup(buf)));
 			} else {
-				Xstr_table[index].str = vm_strdup(buf);
+				Xstr_table_map.insert(std::make_pair(index, lcl_xstr{ vm_strdup(buf), 0, 0 }));
 			}
 
 			// the rest of this loop applies only to strings.tbl,
@@ -381,22 +518,23 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			}
 
 			// read offset information, assume 0 if nonexistant
-			if (p_offset != NULL) {
+			if (p_offset != nullptr) {
 				if (sscanf(p_offset, "%d%d", &offset_lo, &offset_hi) < num_offsets_on_this_line) {
 					// whatever is in the file ain't a proper offset
 					Error(LOCATION, "%s is corrupt", filename);
 				}
 			}
 
-			Xstr_table[index].offset_x = offset_lo;
+			Xstr_table_map[index].offset_x = offset_lo;
 
-			if (num_offsets_on_this_line == 2)
-				Xstr_table[index].offset_x_hi = offset_hi;
-			else
-				Xstr_table[index].offset_x_hi = offset_lo;
+			if (num_offsets_on_this_line == 2) {
+				Xstr_table_map[index].offset_x_hi = offset_hi;
+			} else {
+				Xstr_table_map[index].offset_x_hi = offset_lo;
+			}
 
 			// clear out our vars
-			p_offset = NULL;
+			p_offset = nullptr;
 			offset_lo = 0;
 			offset_hi = 0;
 		}
@@ -418,17 +556,43 @@ void parse_tstringstbl(const char *filename)
 	parse_stringstbl_common(filename, true);
 }
 
+struct xstr_delayed_order {
+	SCP_string& toFill;
+	const char* name;
+	int xstr;
+};
+
+static void lcl_delayed_xstr_internal(tl::optional<xstr_delayed_order> to_init) {
+	static SCP_vector<xstr_delayed_order> delayed_init;
+
+	if (to_init) {
+		if (Xstr_inited)
+			to_init->toFill = XSTR(to_init->name, to_init->xstr);
+		else
+			delayed_init.emplace_back(std::move(*to_init));
+	}
+	else {
+		Assertion(Xstr_inited, "Tried to resolve delayed XSTR before XSTR init!");
+
+		for (const auto& delayed : delayed_init)
+			delayed.toFill = XSTR(delayed.name, delayed.xstr);
+
+		delayed_init.clear();
+	}
+}
+
+void lcl_delayed_xstr(SCP_string& str, const char* name, int xstr) {
+	lcl_delayed_xstr_internal(xstr_delayed_order{ str, name, xstr });
+}
+
 // initialize the xstr table
 void lcl_xstr_init()
 {
-	int i;
+	Xstr_table_map.clear();
 
-
-	for (i = 0; i < XSTR_SIZE; i++)
-		Xstr_table[i].str = NULL;
-
-	for (i = 0; i < LCL_MAX_STRINGS; i++)
-		Lcl_ext_str[i] = NULL;
+	Assertion(Lcl_ext_str.empty() && Lcl_ext_str_explicit_default.empty(), "Localize system was not shut down properly!");
+	Lcl_ext_str.clear();
+	Lcl_ext_str_explicit_default.clear();
 
 
 	try
@@ -439,8 +603,42 @@ void lcl_xstr_init()
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "strings.tbl", e.what()));
 	}
-
 	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl);
+
+
+	// If this is a non-English language, parse English and keep a copy of the table that's just the NAME_LENGTH strings
+	if (lcl_get_current_lang_index() != LCL_DEFAULT)
+	{
+		auto saved_language = Lcl_current_lang;
+		Lcl_current_lang = LCL_DEFAULT;
+
+		// same parsing as below
+		try
+		{
+			parse_tstringstbl("tstrings.tbl");
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tstrings.tbl", e.what()));
+		}
+		parse_modular_table(NOX("*-tlc.tbm"), parse_tstringstbl);
+
+		// copy entries containing short strings and free the rest
+		for (const auto& entry : Lcl_ext_str)
+		{
+			if (entry.second != nullptr)
+			{
+				if (strlen(entry.second) < NAME_LENGTH)
+					Lcl_ext_str_explicit_default.insert(entry);
+				else
+					vm_free(entry.second);
+			}
+		}
+
+		// reset things so that we can parse the language properly
+		Lcl_ext_str.clear();
+		Lcl_current_lang = saved_language;
+	}
 
 
 	try
@@ -451,32 +649,38 @@ void lcl_xstr_init()
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tstrings.tbl", e.what()));
 	}
-
 	parse_modular_table(NOX("*-tlc.tbm"), parse_tstringstbl);
 
 
-	Xstr_inited = 1;
+	Xstr_inited = true;
+
+	lcl_delayed_xstr_internal(tl::nullopt);
 }
 
 
 // free Xstr table
 void lcl_xstr_close()
 {
-	int i;
-
-	for (i=0; i<XSTR_SIZE; i++){
-		if (Xstr_table[i].str != NULL) {
-			vm_free((void *) Xstr_table[i].str);
-			Xstr_table[i].str = NULL;
+	for (const auto& entry : Xstr_table_map) {
+		if (entry.second.str != nullptr) {
+			vm_free((void*)entry.second.str);
 		}
 	}
+	Xstr_table_map.clear();
 
-	for (i=0; i<LCL_MAX_STRINGS; i++){
-		if (Lcl_ext_str[i] != NULL) {
-			vm_free((void *) Lcl_ext_str[i]);
-			Lcl_ext_str[i] = NULL;
+	for (const auto& entry : Lcl_ext_str) {
+		if (entry.second != nullptr) {
+			vm_free(entry.second);
 		}
 	}
+	Lcl_ext_str.clear();
+
+	for (const auto& entry : Lcl_ext_str_explicit_default) {
+		if (entry.second != nullptr) {
+			vm_free(entry.second);
+		}
+	}
+	Lcl_ext_str_explicit_default.clear();
 }
 
 
@@ -485,72 +689,60 @@ void lcl_set_language(int lang)
 {
 	Lcl_current_lang = lang;
 
-	nprintf(("General", "Setting language to %s\n", Lcl_languages[lang].lang_name));
+	if (lang == LCL_UNTRANSLATED) {
+		nprintf(("General", "Setting language to UNTRANSLATED\n"));
+		// but for the purposes of array access, we use the default
+		lang = LCL_DEFAULT;
+	} else if (lang == LCL_RETAIL_HYBRID) {
+		nprintf(("General", "Setting language to RETAIL HYBRID\n"));
+		// but for the purposes of array access, we use the default
+		lang = LCL_DEFAULT;
+	} else {
+		nprintf(("General", "Setting language to %s\n", Lcl_languages[lang].lang_name));
+	}
 
-	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Attempt to set language to an invalid language");
+	Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Attempt to set language to an invalid language");
 
 	// flag the proper language as being active
-	Lcl_special_chars = Lcl_languages[Lcl_current_lang].special_char_indexes[0];
+	Lcl_special_chars = Lcl_languages[lang].special_char_indexes[0];
 	Lcl_fr = 0;
 	Lcl_gr = 0;
 	Lcl_pl = 0;
-	Lcl_english = 0;
-	if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_ENGLISH].lang_name)) {
-		Lcl_english = 1;
-	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_FRENCH].lang_name)) {
+	Lcl_en = 0;
+	if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_ENGLISH].lang_name)) {
+		Lcl_en = 1;
+	} else if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_FRENCH].lang_name)) {
 		Lcl_fr = 1;
-	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_GERMAN].lang_name)) {
+	} else if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_GERMAN].lang_name)) {
 		Lcl_gr = 1;
-	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_POLISH].lang_name)) {
+	} else if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_POLISH].lang_name)) {
 		Lcl_pl = 1;
 	}
 }
 
 ubyte lcl_get_font_index(int font_num)
 {
-	Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
-	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+	int lang = lcl_get_current_lang_index();
 
-	return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
-}
+	if (Unicode_text_mode) {
+		// In Unicode mode there are no special characters. Some of the code still uses this function in that mode so
+		// we just return 0 to signify that there are no special characters in this font
+		return 0;
+	} else {
+		Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Current language %d is not valid, can't get font indexes. This is a coder error, please report.", lang);
+		Assertion((font_num >= 0) && (font_num < (int)Lcl_languages[lang].special_char_indexes.size()), "Passed an invalid font index, %d. This is a coder error, please report.", font_num);
 
-// maybe add on an appropriate subdirectory when opening a localized file
-void lcl_add_dir(char *current_path)
-{
-	char last_char;
-	size_t path_len;
-
-	// if the disk extension is 0 length, don't add enything
-	if (strlen(Lcl_languages[Lcl_current_lang].lang_ext) <= 0) {
-		return;
-	}
-
-	// get the length of the string so far
-	path_len = strlen(current_path);
-	if (path_len <= 0) {
-		return;
-	}
-	
-	// get the current last char
-	last_char = current_path[path_len - 1];
-
-	// if the last char is a slash, just copy in the disk extension
-	if (last_char == DIR_SEPARATOR_CHAR) {
-		strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
-		strcat(current_path, DIR_SEPARATOR_STR);
-	} 
-	// otherwise add a slash, then copy in the disk extension
-	else {
-		strcat(current_path, DIR_SEPARATOR_STR);
-		strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
+		return Lcl_languages[lang].special_char_indexes[font_num];
 	}
 }
 
 // maybe add localized directory to full path with file name when opening a localized file
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 {
+	int lang = lcl_get_current_lang_index();
+
 	// if the disk extension is 0 length, don't add anything
-	if (strlen(Lcl_languages[Lcl_current_lang].lang_ext) <= 0) {
+	if (strlen(Lcl_languages[lang].lang_ext) <= 0) {
 		return 1;
 	}
 
@@ -571,7 +763,7 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 	}
 
 	// add extension
-	strcat_s(current_path, path_max, Lcl_languages[Lcl_current_lang].lang_ext);
+	strcat_s(current_path, path_max, Lcl_languages[lang].lang_ext);
 	strcat_s(current_path, path_max, DIR_SEPARATOR_STR );
 
 	// copy rest of filename from temp
@@ -581,12 +773,43 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 	return 1;
 }
 
+int lcl_add_dir_to_path_with_filename(SCP_string &current_path)
+{
+	int lang = lcl_get_current_lang_index();
+
+	// if the disk extension is 0 length, don't add anything
+	if (strlen(Lcl_languages[lang].lang_ext) <= 0) {
+		return 1;
+	}
+
+	SCP_string filename;
+
+	auto sep = current_path.find_last_of(DIR_SEPARATOR_CHAR);
+
+	if (sep == SCP_string::npos) {
+		filename = current_path;
+		current_path.clear();
+	} else {
+		filename = current_path.substr(sep+1);
+		current_path.erase(sep+1);
+	}
+
+	// add extension
+	current_path += Lcl_languages[lang].lang_ext;
+	current_path += DIR_SEPARATOR_STR;
+
+	// copy rest of filename
+	current_path += filename;
+
+	return 1;
+}
+
 
 // externalization of table/mission files ----------------------- 
 
-void lcl_replace_stuff(char *text, size_t max_len)
+void lcl_replace_stuff(char *text, size_t max_len, bool force)
 {
-	if (Fred_running)
+	if (Fred_running && !force)
 		return;
 
 	Assert(text);	// Goober5000
@@ -605,16 +828,18 @@ void lcl_replace_stuff(char *text, size_t max_len)
 // now will also replace $quote with double quotation marks
 // now will also replace $semicolon with semicolon mark
 // now will also replace $slash and $backslash
-void lcl_replace_stuff(SCP_string &text)
+void lcl_replace_stuff(SCP_string &text, bool force)
 {
-	if (Fred_running)
+	if (Fred_running && !force)
 		return;
 
-	if (Player != NULL)
+	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
-		replace_all(text, "$rank", Ranks[Player->stats.rank].name);
+		replace_all(text, "$rank", get_rank_display_name(&Ranks[verify_rank(Player->stats.rank)]).c_str());
+		replace_all(text, "$rtitle", Ranks[verify_rank(Player->stats.rank)].title.c_str());
 	}
+
 	replace_all(text, "$quote", "\"");
 	replace_all(text, "$semicolon", ";");
 	replace_all(text, "$slash", "/");
@@ -642,6 +867,7 @@ void lcl_fred_replace_stuff(SCP_string &text)
 	if (!Fred_running)
 		return;
 
+	// this should be kept in sync with the FRED functions in management.cpp and Editor.cpp
 	replace_all(text, "\"", "$quote");
 	replace_all(text, ";", "$semicolon");
 	replace_all(text, "/", "$slash");
@@ -652,200 +878,373 @@ void lcl_fred_replace_stuff(SCP_string &text)
 // valid input to this function includes :
 // "this is some text"
 // XSTR("wheeee", -1)
-// XSTR("whee", 20)
+// XSTR("whee", 2000)
 // and these should cover all the externalized string cases
+// NOTE: max_len is the maximum string length, not buffer length
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
+// returns true if we were able to extract the XSTR elements (text_str and maybe id are populated)
+bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_len, int *id, bool use_default_translation = false)
 {
-	char text_str[PARSE_BUF_SIZE]="";
-	int str_id;
-	size_t str_len;
-
 	Assert(in);
 	Assert(out);
 
-	// default (non-external string) value
-	if (id != NULL) {
-		*id = -2;
-	}
+	// NOTE: "Token too long" warnings are disabled when Lcl_unexpected_tstring_check is active,
+	// because in such cases we actually anticipate that the length might be exceeded.
 
-	str_len = strlen(in);
+	// set up return values
+	auto xstr_str = in;
+	int xstr_id = -2;			// default (non-external string) value
+	bool xstr_valid = false;
 
-	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
-	if (str_len < 9) {
-		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
+	auto ch = in;
+	bool attempted_xstr = false;
 
-		strncpy(out, in, max_len);
+	// this is a pseudo-goto block, not a loop
+	do {
+		// check to see if this is an XSTR() tag
+		if (strnicmp(ch, "XSTR", 4) != 0)
+			break;
+		ch += 4;
 
-		if (id != NULL)
-			*id = -2;
+		// the next non-whitespace char should be a (
+		ignore_white_space(&ch);
+		if (*ch != '(')
+			break;
+		ch++;
 
-		return;
-	}
+		// by not setting the flag until after the parenthesis, XSTR by itself can be plain text, but XSTR( starts a tag
+		attempted_xstr = true;
 
-	// otherwise, check to see if it's an XSTR() tag
-	if (strnicmp(in, "XSTR", 4)) {
-		// NOT an XSTR() tag
-		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
+		// the next should be a quote
+		ignore_white_space(&ch);
+		if (*ch != '\"')
+			break;
+		ch++;
 
-		strncpy(out, in, max_len);
+		// now we have the start of the string
+		auto str_start = ch;
 
-		if (id != NULL)
-			*id = -2;
+		// find the end of the string
+		ch = strchr(ch, '"');
+		if (ch == nullptr)
+			break;
 
-		return;
-	}
+		// now we have the end of the string (past the last character in it)
+		auto str_end = ch;
+		ch++;	// skip the quote
 
-	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections
-	if (!lcl_ext_get_text(in, text_str)) {
-		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
+		// the next non-whitespace char should be a ,
+		ignore_white_space(&ch);
+		if (*ch != ',')
+			break;
+		ch++;
 
-		strncpy(out, in, max_len);
+		// check for number, being mindful of negative
+		ignore_white_space(&ch);
+		bool is_negative = false;
+		if (*ch == '-')
+		{
+			is_negative = true;
+			ch++;
+		}
+		if (!isdigit(*ch))
+			break;
 
-		if (id != NULL)
-			*id = -1;
+		// now we have the start of the id
+		auto id_start = ch;
 
-		return;
-	}
-	if (!lcl_ext_get_id(in, &str_id)) {
-		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
+		// find all the digits
+		while (isdigit(*ch))
+			ch++;
 
-		strncpy(out, in, max_len);
+		// now we have the end of the id (past the last character in it)
+		auto id_end = ch;
 
-		if (id != NULL)
-			*id = -1;
+		// the next non-whitespace char should be a )
+		ignore_white_space(&ch);
+		if (*ch != ')')
+			break;
 
-		return;
-	}
-	
-	// if the localization file is not open, or we're running in the default language, return the original string
-	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
-		if ( strlen(text_str) > max_len )
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
+		// if we got this far, we know we have a parseable XSTR of some sort
+		xstr_id = -1;
 
-		strncpy(out, text_str, max_len);
+		//
+		// split off the strings and id sections
+		//
 
-		if (id != NULL)
-			*id = str_id;
+		// check bounds
+		auto str_length = str_end - str_start;
+		if (str_length > PARSE_BUF_SIZE - 1)
+		{
+			error_display(0, "String cannot fit within XSTR buffer!\n\n%s\n", str_start);
+			break;
+		}
 
-		return;
-	}
+		// now that we know the boundaries of the actual string in the XSTR() tag, copy it
+		strncpy(text_str, str_start, str_length);
+		text_str[str_length] = '\0';
 
-	// get the string if it exists
-	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
-		// copy to the outgoing string
-		if ( strlen(Lcl_ext_str[str_id]) > max_len )
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
+		// bounds for id too
+		auto id_length = id_end - id_start;
+		if (id_length > PARSE_ID_BUF_SIZE - 1)
+		{
+			error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
+			break;
+		}
 
-		strncpy(out, Lcl_ext_str[str_id], max_len);
-	}
-	// otherwise use what we have - probably should Int3() or assert here
-	else {
-		if ( strlen(text_str) > max_len )
-			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
+		// copy id
+		char xstr_id_buf[PARSE_ID_BUF_SIZE];
+		strncpy(xstr_id_buf, id_start, id_length);
+		xstr_id_buf[id_length] = '\0';
 
-		if (str_id >= LCL_MAX_STRINGS)
-			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
+		//
+		// now we have the information we want
+		//
 
-		strncpy(out, text_str, max_len);
-	}
+		xstr_str = text_str;
+		xstr_id = atoi(xstr_id_buf);
+		if (is_negative)
+			xstr_id *= -1;
+		xstr_valid = true;
 
-	// set the id #
-	if (id != NULL) {
-		*id = str_id;
-	}
+		// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+		if (!Xstr_inited || (xstr_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))))
+			break;
+
+		//
+		// we are translating
+		//
+
+		auto lookup_map = &Lcl_ext_str;
+		if (use_default_translation && lcl_get_current_lang_index() != LCL_DEFAULT)
+		{
+			// if we're not already using the default, then switch to our explicit default
+			lookup_map = &Lcl_ext_str_explicit_default;
+		}
+
+		// get the string if it exists
+		auto entry = lookup_map->find(xstr_id);
+		if (entry != lookup_map->end())
+		{
+			xstr_str = entry->second;
+		}
+		// otherwise use what we have, but complain about it
+		else
+		{
+			mprintf(("Could not find entry %d in the external string table!\n", xstr_id));
+		}
+	} while (false);
+
+
+	// set whatever id we have
+	if (id != nullptr)
+		*id = xstr_id;
+
+	// if we made an attempt but failed, let the modder know
+	if (xstr_id == -2 && attempted_xstr)
+		error_display(0, "Malformed XSTR detected:\n\n%s\n", in);
+
+	// copy the entire string (or as much as we can)
+	auto str_len = strlen(xstr_str);
+	strncpy(out, xstr_str, max_len);
+	if (str_len > max_len)
+		out[max_len] = '\0';
+	else
+		out[str_len] = '\0';
+
+	// maybe warn about length
+	if (str_len > max_len && !Lcl_unexpected_tstring_check)
+		error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", xstr_str, str_len, max_len);
+
+	return xstr_valid;
 }
 
 // ditto for SCP_string
-void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
+bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string &out, int *id, bool use_default_translation = false)
 {
-	SCP_string text_str = "";
-	int str_id;
+	// set up return values
+	auto xstr_str = in.c_str();
+	int xstr_id = -2;			// default (non-external string) value
+	bool xstr_valid = false;
 
-	// default (non-external string) value
-	if (id != NULL) {
-		*id = -2;
-	}	
+	auto ch = in.c_str();
+	bool attempted_xstr = false;
 
-	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
-	if (in.length() < 9) {
-		out = in;
+	// this is a pseudo-goto block, not a loop
+	do {
+		// check to see if this is an XSTR() tag
+		if (strnicmp(ch, "XSTR", 4) != 0)
+			break;
+		ch += 4;
 
-		if (id != NULL)
-			*id = -2;
+		// the next non-whitespace char should be a (
+		ignore_white_space(&ch);
+		if (*ch != '(')
+			break;
+		ch++;
 
-		return;
-	}
+		// by not setting the flag until after the parenthesis, XSTR by itself can be plain text, but XSTR( starts a tag
+		attempted_xstr = true;
 
-	// otherwise, check to see if it's an XSTR() tag
-	if (in.compare(0, 4, "XSTR")) {
-		// NOT an XSTR() tag
-		out = in;
+		// the next should be a quote
+		ignore_white_space(&ch);
+		if (*ch != '\"')
+			break;
+		ch++;
 
-		if (id != NULL)
-			*id = -2;
+		// now we have the start of the string
+		auto str_start = ch;
 
-		return;
-	}
+		// find the end of the string
+		ch = strchr(ch, '"');
+		if (ch == nullptr)
+			break;
 
-	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections		
-	if (!lcl_ext_get_text(in, text_str)) {
-		out = in;
+		// now we have the end of the string (past the last character in it)
+		auto str_end = ch;
+		ch++;	// skip the quote
 
-		if (id != NULL)
-			*id = -1;
+		// the next non-whitespace char should be a ,
+		ignore_white_space(&ch);
+		if (*ch != ',')
+			break;
+		ch++;
 
-		return;
-	}
-	if (!lcl_ext_get_id(in, &str_id)) {
-		out = in;
+		// check for number, being mindful of negative
+		ignore_white_space(&ch);
+		bool is_negative = false;
+		if (*ch == '-')
+		{
+			is_negative = true;
+			ch++;
+		}
+		if (!isdigit(*ch))
+			break;
 
-		if (id != NULL)
-			*id = -1;
+		// now we have the start of the id
+		auto id_start = ch;
 
-		return;
-	}
-	
-	// if the localization file is not open, or we're running in the default language, return the original string
-	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
-		out = text_str;
+		// find all the digits
+		while (isdigit(*ch))
+			ch++;
 
-		if (id != NULL)
-			*id = str_id;
+		// now we have the end of the id (past the last character in it)
+		auto id_end = ch;
 
-		return;
-	}
+		// the next non-whitespace char should be a )
+		ignore_white_space(&ch);
+		if (*ch != ')')
+			break;
 
-	// get the string if it exists
-	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
-		// copy to the outgoing string
-		out = Lcl_ext_str[str_id];
-	}
-	// otherwise use what we have - probably should Int3() or assert here
-	else {
-		if (str_id >= LCL_MAX_STRINGS)
-			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
+		// if we got this far, we know we have a parseable XSTR of some sort
+		xstr_id = -1;
 
-		out = text_str;
-	}
+		//
+		// split off the strings and id sections
+		//
 
-	// set the id #
-	if (id != NULL){
-		*id = str_id;
-	}
+		// now that we know the boundaries of the actual string in the XSTR() tag, copy it
+		text_str.assign(str_start, str_end);
+
+		// bounds for id too
+		auto id_length = id_end - id_start;
+		if (id_length > PARSE_ID_BUF_SIZE - 1)
+		{
+			error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
+			break;
+		}
+
+		// copy id
+		char xstr_id_buf[PARSE_ID_BUF_SIZE];
+		strncpy(xstr_id_buf, id_start, id_length);
+		xstr_id_buf[id_length] = '\0';
+
+		//
+		// now we have the information we want
+		//
+
+		xstr_str = text_str.c_str();
+		xstr_id = atoi(xstr_id_buf);
+		if (is_negative)
+			xstr_id *= -1;
+		xstr_valid = true;
+
+		// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+		if (!Xstr_inited || (xstr_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))))
+			break;
+
+		//
+		// we are translating
+		//
+
+		auto lookup_map = &Lcl_ext_str;
+		if (use_default_translation && lcl_get_current_lang_index() != LCL_DEFAULT)
+		{
+			// if we're not already using the default, then switch to our explicit default
+			lookup_map = &Lcl_ext_str_explicit_default;
+		}
+
+		// get the string if it exists
+		auto entry = lookup_map->find(xstr_id);
+		if (entry != lookup_map->end())
+		{
+			xstr_str = entry->second;
+		}
+		// otherwise use what we have, but complain about it
+		else
+		{
+			mprintf(("Could not find entry %d in the external string table!\n", xstr_id));
+		}
+	} while (false);
+
+
+	// set whatever id we have
+	if (id != nullptr)
+		*id = xstr_id;
+
+	// if we made an attempt but failed, let the modder know
+	if (xstr_id == -2 && attempted_xstr)
+		error_display(0, "Malformed XSTR detected:\n\n%s\n", in.c_str());
+
+	// copy the entire string
+	out = xstr_str;
+
+	return xstr_valid;
 }
 
 // Goober5000 - wrapper for lcl_ext_localize_sub; used because lcl_replace_stuff has to
 // be called *after* the translation is done, and the original function returned in so
 // many places that it would be messy to call lcl_replace_stuff everywhere
+// Addendum: Now, of course, it provides a handy way to encapsulate the unexpected tstring check.
 void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 {
-	// do XSTR translation
-	lcl_ext_localize_sub(in, out, max_len, id);
+	// buffer for the untranslated string inside the XSTR tag
+	char text_str[PARSE_BUF_SIZE] = "";
+
+	// if we're doing this extra check, then we have to compare the untranslated string with the default language string and see if they're different
+	if (Lcl_unexpected_tstring_check)
+	{
+		// explicitly use the default table for the translation lookup
+		bool extracted = lcl_ext_localize_sub(in, text_str, out, max_len, id, true);
+
+		// only check short strings, since those are the only ones we keep in the explicit default table
+		if (strlen(text_str) < NAME_LENGTH)
+		{
+			// the untranslated and default-translated strings should always be identical, so if they're different, it might mean we have some data from a different mod
+			if (extracted && strcmp(text_str, out) != 0)
+				*Lcl_unexpected_tstring_check = true;
+		}
+
+		// at this point, we can go back to our usual language and do the translation for real
+		if (lcl_get_current_lang_index() != LCL_DEFAULT)
+			lcl_ext_localize_sub(in, text_str, out, max_len, id);
+	}
+	// most of the time we're not going to do the check, so localize as normal
+	else
+	{
+		// do XSTR translation
+		lcl_ext_localize_sub(in, text_str, out, max_len, id);
+	}
 
 	// do translation of $callsign, $rank, etc.
 	lcl_replace_stuff(out, max_len);
@@ -854,41 +1253,93 @@ void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 // ditto for SCP_string
 void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id)
 {
-	// do XSTR translation
-	lcl_ext_localize_sub(in, out, id);
+	// buffer for the untranslated string inside the XSTR tag
+	SCP_string text_str = "";
+
+	// if we're doing this extra check, then we have to compare the untranslated string with the default language string and see if they're different
+	if (Lcl_unexpected_tstring_check)
+	{
+		// explicitly use the default table for the translation lookup
+		bool extracted = lcl_ext_localize_sub(in, text_str, out, id, true);
+
+		// only check short strings, since those are the only ones we keep in the explicit default table
+		if (text_str.length() < NAME_LENGTH)
+		{
+			// the untranslated and default-translated strings should always be identical, so if they're different, it might mean we have some data from a different mod
+			if (extracted && text_str != out)
+				*Lcl_unexpected_tstring_check = true;
+		}
+
+		// at this point, we can go back to our usual language and do the translation for real
+		if (lcl_get_current_lang_index() != LCL_DEFAULT)
+			lcl_ext_localize_sub(in, text_str, out, id);
+	}
+	// most of the time we're not going to do the check, so localize as normal
+	else
+	{
+		// do XSTR translation
+		lcl_ext_localize_sub(in, text_str, out, id);
+	}
 
 	// do translation of $callsign, $rank, etc.
 	lcl_replace_stuff(out);
 }
 
 // translate the specified string based upon the current language
-const char *XSTR(const char *str, int index)
+const char *XSTR(const char *str, int index, bool force_lookup)
 {
 	if(!Xstr_inited)
 	{
+		//If you're here then you should use lcl_delayed_xstr instead!
 		Int3();
 		return str;
 	}
 
-	// perform a lookup
-	if (index >= 0 && index < XSTR_SIZE)
+#ifndef NDEBUG
+	nprintf(("XSTR", "Localizing String: %i, \"%s\"\n", index, str));
+#endif
+
+	// for some internal strings, such as the ones we loaded using $Has XStr:,
+	// we want to force a lookup even if we're normally untranslated
+	if (Lcl_current_lang != LCL_UNTRANSLATED || force_lookup)
 	{
-		// return translation of string
-		if (Xstr_table[index].str)
-			return Xstr_table[index].str;
+		// perform a lookup
+		if (index >= 0)
+		{
+			// return translation of string
+			auto entry = Xstr_table_map.find(index);
+			if (entry != Xstr_table_map.end())
+				return entry->second.str;
+#ifndef NDEBUG
+			else
+			{
+				// make sure missing strings are only logged once
+				static SCP_unordered_set<int> Warned_xstr_indexes;
+				if (Warned_xstr_indexes.count(index) == 0)
+				{
+					Warned_xstr_indexes.insert(index);
+					mprintf(("No XSTR entry in strings.tbl for index %d\n", index));
+				}
+			}
+#endif
+		}
 	}
 
-	// can't translate; return original english string
+	// can't translate; return original English string
 	return str;
 }
 
 // retrieve the offset for a localized string
 int lcl_get_xstr_offset(int index, int res)
 {
+	auto entry = Xstr_table_map.find(index);
+	if (entry == Xstr_table_map.end())
+		return 0;
+
 	if (res == GR_640) {
-		return Xstr_table[index].offset_x;
+		return entry->second.offset_x;
 	} else {
-		return Xstr_table[index].offset_x_hi;
+		return entry->second.offset_x_hi;
 	}
 }
 
@@ -897,246 +1348,12 @@ int lcl_get_xstr_offset(int index, int res)
 // LOCALIZE FORWARD DEFINITIONS
 //
 
-// given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
-int lcl_ext_get_text(const char *xstr, char *out)
-{
-	size_t str_start, str_end;
-	size_t str_len;
-	const char *p, *p2;
-
-	Assert(xstr != NULL);
-	Assert(out != NULL);
-	str_len = strlen(xstr);
-	
-	// this is some crazy wack-ass code.
-	// look for the open quote
-	str_start = str_end = 0;
-	p = strstr(xstr, "\"");
-	if(p == NULL){
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr);
-		return 0;
-	} else {
-		str_start = p - xstr + 1;		
-	}
-	// make sure we're not about to walk past the end of the string
-	if(static_cast<size_t>(p - xstr) >= str_len){
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr);
-		return 0;
-	}
-
-	// look for the close quote
-	p2 = strstr(p+1, "\"");
-	if(p2 == NULL){
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr);
-		return 0;
-	} else {
-		str_end = p2 - xstr;
-	}
-
-	// check bounds
-	if (str_end - str_start > PARSE_BUF_SIZE - 1) {
-		error_display(0, "String cannot fit within XSTR buffer!\n\n%s\n", xstr);
-		return 0;
-	}
-
-	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
-	memcpy(out, xstr + str_start, str_end - str_start);	
-
-	// success
-	return 1;
-}
-
-// given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
-int lcl_ext_get_text(const SCP_string &xstr, SCP_string &out)
-{
-	size_t open_quote_pos, close_quote_pos;
-
-	// this is some crazy wack-ass code.
-	// look for the open quote
-	open_quote_pos = xstr.find('\"');
-	if (open_quote_pos == SCP_string::npos) {
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-
-	// look for the close quote
-	close_quote_pos = xstr.find('\"', open_quote_pos+1);
-	if (close_quote_pos == SCP_string::npos) {
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-
-	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
-	out.assign(xstr, open_quote_pos + 1, close_quote_pos - open_quote_pos - 1);
-
-	// success
-	return 1;
-}
-
-// given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
-int lcl_ext_get_id(const char *xstr, int *out)
-{
-	const char *p, *pnext;
-	size_t str_len;
-
-	Assert(xstr != NULL);
-	Assert(out != NULL);
-	
-	str_len = strlen(xstr);
-
-	// find the first quote
-	p = strchr(xstr, '"');
-	if(p == NULL){
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
-		return 0;
-	}
-	// make sure we're not about to walk off the end of the string
-	if(static_cast<size_t>(p - xstr) >= str_len){
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
-		return 0;
-	}
-	p++;
-
-	// continue searching until we find the close quote
-	while(true){
-		pnext = strchr(p, '"');
-		if(pnext == NULL){
-			error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
-			return 0;
-		}
-
-		// if the previous char is a \, we know its not the "end-of-string" quote
-		if(*(pnext - 1) != '\\'){
-			p = pnext;
-			break;
-		}
-
-		// continue
-		p = pnext;
-	}
-
-	// search until we find a ,	
-	pnext = strchr(p, ',');
-	if(pnext == NULL){
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
-		return 0;
-	}
-	// make sure we're not about to walk off the end of the string
-	if(static_cast<size_t>(pnext - xstr) >= str_len){
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
-		return 0;
-	}
-	
-	// now get the id string
-	p = pnext+1;
-	while (is_gray_space(*p))
-		p++;
-	pnext = strchr(p+1, ')');
-	if(pnext == NULL){
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
-		return 0;
-	}
-	if(pnext - p >= PARSE_ID_BUF_SIZE){
-		error_display(0, "XSTR() id# is too long in %s\n", xstr);
-		return 0;
-	}
-	char buf[PARSE_ID_BUF_SIZE];
-	strncpy(buf, p, pnext - p);
-	buf[pnext - p] = 0;
-
-	// get the value and we're done
-	*out = atoi(buf);
-
-	// success
-	return 1;
-}
-
-// given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
-int lcl_ext_get_id(const SCP_string &xstr, int *out)
-{
-	char id_buf[10];
-	size_t p, pnext;
-
-	// find the first quote
-	p = xstr.find('\"');
-	if (p == SCP_string::npos) {
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-	p++;
-
-	// continue searching until we find the close quote
-	while(1) {
-		pnext = xstr.find('\"', p);
-		if (pnext == SCP_string::npos) {
-			error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
-			return 0;
-		}
-
-		// if the previous char is a \, we know its not the "end-of-string" quote
-		if (xstr[pnext - 1] != '\\') {
-			p = pnext;
-			break;
-		}
-
-		// continue
-		p = pnext;
-	}
-
-	// search until we find a ,	
-	pnext = xstr.find(',', p);
-	if (pnext == SCP_string::npos) {
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-	pnext++;
-
-	// find the close parenthesis
-	p = pnext;
-	pnext = xstr.find(')', p);
-	if (pnext == SCP_string::npos) {
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-	pnext--;
-
-	// get only the number
-	while (is_white_space(xstr[p]) && p <= pnext)
-		p++;
-	while (is_white_space(xstr[pnext]) && p <= pnext)
-		pnext--;
-	if (p > pnext) {
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-
-	// now get the id string
-	if ((pnext - p + 1) > 9) {
-		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
-		return 0;
-	}
-	memset(id_buf, 0, 10);
-	xstr.copy(id_buf, pnext - p + 1, p);
-
-	// get the value and we're done
-	*out = atoi(id_buf);
-
-	// success
-	return 1;
-}
-
-// if the char is a valid char for a signed integer value
-int lcl_is_valid_numeric_char(char c)
-{
-	return ( (c == '-') || (c == '0') || (c == '1') || (c == '2') || (c == '3') || (c == '4') ||
-				(c == '5') || (c == '6') || (c == '7') || (c == '8') || (c == '9') ) ? 1 : 0;
-}
-
 void lcl_get_language_name(char *lang_name)
 {
-	Assert(Lcl_current_lang < (int)Lcl_languages.size());
+	int lang = lcl_get_current_lang_index();
 
-	strcpy(lang_name, Lcl_languages[Lcl_current_lang].lang_name);
+	Assert(lang >= 0 && lang < (int)Lcl_languages.size());
+	strcpy(lang_name, Lcl_languages[lang].lang_name);
 }
 
 // ------------------------------------------------------------------

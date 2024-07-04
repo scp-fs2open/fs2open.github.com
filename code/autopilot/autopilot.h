@@ -29,21 +29,31 @@
 class NavPoint 
 {
 public:
-	char m_NavName[32];
-	int flags;
+	char m_NavName[32] = { 0 };
+	int flags = 0;
+	ubyte normal_color[3] = { 0x80, 0x80, 0xFF };
+	ubyte visited_color[3] = { 0xFF, 0xFF, 0x00 };
 
-	void *target_obj;
-	int waypoint_num; //only used when flags & NP_WAYPOINT
+	const void *target_obj = nullptr;
+	int waypoint_num = -1; //only used when flags & NP_WAYPOINT
 
-	vec3d *GetPosition();
-	char* GetInternalName();
+	const vec3d *GetPosition();
 
+	// these assignments should match the initialization
 	void clear()
 	{
 		m_NavName[0] = 0;
 		flags = 0;
 
-		target_obj = NULL;
+		normal_color[0] = 0x80;
+		normal_color[1] = 0x80;
+		normal_color[2] = 0xFF;
+
+		visited_color[0] = 0xFF;
+		visited_color[1] = 0xFF;
+		visited_color[2] = 0x00;
+
+		target_obj = nullptr;
 		waypoint_num = -1;
 	}
 };
@@ -69,7 +79,7 @@ extern bool AutoPilotEngaged;
 extern int CurrentNav;
 extern NavPoint Navs[MAX_NAVPOINTS];
 extern NavMessage NavMsgs[NP_NUM_MESSAGES];
-extern int LockAPConv;
+extern TIMESTAMP LockAPConv;
 extern SCP_map<int,int> autopilot_wings;
 
 // Cycles through the NavPoint List
@@ -83,11 +93,11 @@ bool Sel_NextNav();
 //        * No asteroids within AutopilotMinAsteroidDistance meters
 //        * Destination > 1,000 meters away
 //        * Support ship not present or is actively leaving
-bool CanAutopilot(vec3d targetPos, bool send_msg=false);
+bool CanAutopilot(const vec3d *targetPos, bool send_msg=false);
 
 // Check if autopilot is allowed at player's current position
 // See CanAutopilot(vec3d, bool) for more information
-inline bool CanAutopilot(bool send_msg=false) { return CanAutopilot(Player_obj->pos, send_msg); }
+inline bool CanAutopilot(bool send_msg=false) { return CanAutopilot(&Player_obj->pos, send_msg); }
 
 // Engages autopilot
 // This does:
@@ -121,48 +131,44 @@ void NavSystem_Init();
 void parse_autopilot_table(const char *filename);
 
 // Finds a Nav point by name
-int FindNav(char *Nav);
+int FindNav(const char *Nav);
 
 // Selects a Nav point by name
-void SelectNav(char *Nav);
+void SelectNav(const char *Nav);
 
 // Deselects any navpoint selected.
 void DeselectNav();
 
-// Set A Nav point to "ZERO"
-void ZeroNav(int i);
-
 // Removes a Nav
-bool DelNavPoint(char *Nav);
+bool DelNavPoint(const char *Nav);
 bool DelNavPoint(int nav);
 
 // adds a Nav
-bool AddNav_Ship(char *Nav, char *TargetName, int flags); 
-bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags);
-
-//Change Flags
-bool Nav_Alt_Flags(char *Nav, int flags);
+bool AddNav_Ship(const char *Nav, const char *TargetName, int flags);
+bool AddNav_Waypoint(const char *Nav, const char *WP_Path, int node, int flags);
 
 // Sexp Accessors
-bool Nav_Set_Flag(char *Nav, int flag);
-bool Nav_UnSet_Flag(char *Nav, int flag);
+bool Nav_Set_Flag(const char *Nav, int flag);
+bool Nav_UnSet_Flag(const char *Nav, int flag);
 
-bool Nav_Set_Hidden(char *Nav);
-bool Nav_Set_NoAccess(char *Nav);
-bool Nav_Set_Visited(char *Nav);
+bool Nav_Set_Hidden(const char *Nav);
+bool Nav_Set_NoAccess(const char *Nav);
+bool Nav_Set_Visited(const char *Nav);
 
-bool Nav_UnSet_Hidden(char *Nav);
-bool Nav_UnSet_NoAccess(char *Nav);
-bool Nav_UnSet_Visited(char *Nav);
+bool Nav_UnSet_Hidden(const char *Nav);
+bool Nav_UnSet_NoAccess(const char *Nav);
+bool Nav_UnSet_Visited(const char *Nav);
 
 // Useful functions
-unsigned int DistanceTo(char *nav);
+unsigned int DistanceTo(const char *nav);
 unsigned int DistanceTo(int nav);
 
-bool IsVisited(char *nav);
+bool IsVisited(const char *nav);
 bool IsVisited(int nav);
 
-void send_autopilot_msg(char *msg, char *snd=NULL);
+void Nav_SetColor(const char *nav, bool visited, ubyte r, ubyte g, ubyte b);
+
+void send_autopilot_msg(const char *msg, const char *snd=nullptr);
 void send_autopilot_msgID(int msgid);
 #endif
 

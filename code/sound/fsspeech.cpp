@@ -6,17 +6,6 @@
  *
 */ 
 
-
-
-
-
-#ifdef FS2_SPEECH
-
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
 #include "sound/fsspeech.h"
@@ -30,7 +19,7 @@ const size_t MAX_SPEECH_BUFFER_LEN = 4096;
 static int speech_inited = 0;
 
 bool FSSpeech_play_from[FSSPEECH_FROM_MAX];
-char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
+const char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 {
 	"SpeechTechroom",
 	"SpeechBriefings",
@@ -168,5 +157,3 @@ bool fsspeech_playing()
 
 	return speech_is_speaking();
 }
-
-#endif	// FS2_SPEECH defined

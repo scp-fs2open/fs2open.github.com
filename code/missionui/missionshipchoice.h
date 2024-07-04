@@ -12,6 +12,10 @@
 #ifndef __MISSIONSHIPCHOICE_H__
 #define __MISSIONSHIPCHOICE_H__
 
+#include "gamesnd/gamesnd.h"
+#include "missionui/missionscreencommon.h"
+#include "mission/missionparse.h"
+
 class p_object;
 
 ///////////////////////////////////////////////////////
@@ -61,14 +65,33 @@ extern int	 ShipSelectModelNum;
 
 extern int Ship_select_overlay_id;
 
+typedef struct ss_slot_info {
+	int status;   // slot status (WING_SLOT_DISABLED, etc)
+	int sa_index; // index into ship arrival list, -1 if ship is created
+	int original_ship_class;
+	bool in_mission = false;
+} ss_slot_info;
+
+typedef struct ss_wing_info {
+	int num_slots;
+	int wingnum;
+	int is_late;
+	ss_slot_info ss_slots[MAX_WING_SLOTS];
+} ss_wing_info;
+
+extern ss_wing_info Ss_wings_teams[MAX_TVT_TEAMS][MAX_WING_BLOCKS];
+extern ss_wing_info* Ss_wings;
+
 void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection = true);
 void ship_select_init();
 void ship_select_do(float frametime);
 void ship_select_close();
-void ship_select_common_init();
 void ship_select_common_close();
 int ss_get_ship_class(int ship_entry_index);
 int ss_get_selected_ship();
+
+void ss_init_pool(team_data *pteam);
+void ss_init_units();
 
 void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num);
 
@@ -93,10 +116,10 @@ void ss_synch_interface();
 void ss_make_slot_empty(int slot_index);
 void ss_make_slot_full(int slot_index);
 
-int ss_dump_to_list(int from_slot, int to_list, int *sound);
-int ss_swap_slot_slot(int from_slot, int to_slot, int *sound);
-int ss_grab_from_list(int from_list, int to_slot, int *sound);
-int ss_swap_list_slot(int from_list, int to_slot, int *sound);
+int ss_dump_to_list(int from_slot, int to_list, interface_snd_id *sound);
+int ss_swap_slot_slot(int from_slot, int to_slot, interface_snd_id *sound);
+int ss_grab_from_list(int from_list, int to_slot, interface_snd_id *sound);
+int ss_swap_list_slot(int from_list, int to_slot, interface_snd_id *sound);
 
 void ss_apply(int mode, int from_slot,int from_index,int to_slot,int to_index,int player_index = -1);
 void ss_drop(int from_slot,int from_index,int to_slot,int to_index,int player_index = -1);

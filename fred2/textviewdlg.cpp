@@ -21,41 +21,67 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-// text_view_dlg dialog
+// TextViewDlg dialog
 
-text_view_dlg::text_view_dlg(CWnd* pParent /*=NULL*/)
-	: CDialog(text_view_dlg::IDD, pParent)
+TextViewDlg::TextViewDlg(CWnd* pParent /*=NULL*/)
+	: CDialog(TextViewDlg::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(text_view_dlg)
+	//{{AFX_DATA_INIT(TextViewDlg)
 	m_edit = _T("");
 	//}}AFX_DATA_INIT
+
+	m_original_text = _T("");
+	m_caption = _T("");
+	m_editable = false;
 }
 
-void text_view_dlg::DoDataExchange(CDataExchange* pDX)
+void TextViewDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(text_view_dlg)
+	//{{AFX_DATA_MAP(TextViewDlg)
 	DDX_Text(pDX, IDC_EDIT1, m_edit);
 	//}}AFX_DATA_MAP
 }
 
-BEGIN_MESSAGE_MAP(text_view_dlg, CDialog)
-	//{{AFX_MSG_MAP(text_view_dlg)
+BEGIN_MESSAGE_MAP(TextViewDlg, CDialog)
+	//{{AFX_MSG_MAP(TextViewDlg)
+	ON_WM_CLOSE()
 	ON_EN_SETFOCUS(IDC_EDIT1, OnSetfocusEdit1)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
-// text_view_dlg message handlers
+// TextViewDlg message handlers
 
-void text_view_dlg::set(int ship_class)
+BOOL TextViewDlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	m_original_text = m_edit;
+
+	if (!m_caption.IsEmpty())
+		SetCaption(m_caption);
+	SetEditable(m_editable);
+
+	return TRUE;
+}
+
+void TextViewDlg::OnClose()
+{
+	UpdateData(TRUE);
+	CDialog::OnClose();
+}
+
+void TextViewDlg::LoadShipsTblText(const ship_info *sip)
 {
 	char line[256], line2[256], file_text[82];
 	int i, j, n, found = 0, comment = 0, num_files = 0;
 	SCP_vector<SCP_string> tbl_file_names;
 	CFILE *fp;
 
-	if (ship_class < 0)
+	SetCaption("Ship Table Data");
+
+	if (!sip)
 		return;
 
 	fp = cfopen("ships.tbl", "r");
@@ -95,7 +121,7 @@ void text_view_dlg::set(int ship_class)
 			while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
 				i++;
 
-			if (!stricmp(line2 + i, Ship_info[ship_class].name)) {
+			if (!stricmp(line2 + i, sip->name)) {
 				m_edit += "-- ships.tbl  -------------------------------\r\n";
 				found = 1;
 			}
@@ -157,7 +183,7 @@ void text_view_dlg::set(int ship_class)
 				while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
 					i++;
 
-				if (!stricmp(line2 + i, Ship_info[ship_class].name)) {
+				if (!stricmp(line2 + i, sip->name)) {
 					memset( file_text, 0, sizeof(file_text) );
 					snprintf(file_text, sizeof(file_text)-1, "--  %s  -------------------------------\r\n", tbl_file_names[n].c_str());
 					m_edit += file_text;
@@ -175,7 +201,95 @@ void text_view_dlg::set(int ship_class)
 	}
 }
 
-void text_view_dlg::OnSetfocusEdit1() 
+void TextViewDlg::LoadMusicTblText()
 {
-	((CEdit *) GetDlgItem(IDC_EDIT1)) -> SetSel(-1, -1);
+	char line[256];
+	CFILE* fp;
+
+	SetCaption("Music Table Data");
+
+	fp = cfopen("music.tbl", "r");
+	Assert(fp);
+
+	// print the header
+	m_edit += "-- music.tbl  -------------------------------\r\n";
+
+	// now get the file content
+	while (cfgets(line, 255, fp)) {
+		m_edit += line;
+		m_edit += "\r\n";
+	}
+
+	cfclose(fp);
+
+	SCP_vector<SCP_string> tbl_file_names;
+
+	// done with music.tbl, so now check all modular music tables...
+	int num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-mus.tbm"), CF_SORT_REVERSE);
+
+	for (int n = 0; n < num_files; n++) {
+		tbl_file_names[n] += ".tbm";
+
+		fp = cfopen(tbl_file_names[n].c_str(), "r");
+		Assert(fp);
+
+		memset(line, 0, sizeof(line));
+
+		// get the name of the current file and print it
+		char file_text[82];
+		memset(file_text, 0, sizeof(file_text));
+		snprintf(file_text, sizeof(file_text) - 1, "--  %s  -------------------------------\r\n", tbl_file_names[n].c_str());
+		m_edit += file_text;
+
+		// now get the file content
+		while (cfgets(line, 255, fp)) {
+			m_edit += line;
+			m_edit += "\r\n";
+		}
+
+		cfclose(fp);
+	}
+}
+
+void TextViewDlg::OnSetfocusEdit1()
+{
+	// when the dialog is first displayed, prevent it from selecting all the text
+	((CEdit *)GetDlgItem(IDC_EDIT1))->SetSel(-1, -1);
+}
+
+void TextViewDlg::SetText(const CString &text)
+{
+	m_edit = text;
+
+	// accommodate MFC newlines
+	m_edit.Replace("\n", "\r\n");
+	m_edit.Replace("\r\r", "\r");
+
+	if (IsWindow(m_hWnd))
+		UpdateData(FALSE);
+}
+
+void TextViewDlg::GetText(CString &text)
+{
+	if (IsWindow(m_hWnd))
+		UpdateData(TRUE);
+
+	text = m_edit;
+
+	// accommodate MFC newlines
+	text.Replace("\r\n", "\n");
+}
+
+void TextViewDlg::SetCaption(const CString &caption)
+{
+	m_caption = caption;
+	if (IsWindow(m_hWnd))
+		SetWindowText(m_caption);
+}
+
+void TextViewDlg::SetEditable(bool editable)
+{
+	m_editable = editable;
+	if (IsWindow(m_hWnd))
+		((CEdit *)GetDlgItem(IDC_EDIT1))->SetReadOnly(editable ? FALSE : TRUE);
 }

@@ -36,6 +36,10 @@
 // set if running under MsDev - done after os_init(...) has returned
 extern int Os_debugger_running;
 
+#ifdef SCP_UNIX
+const char* os_get_legacy_user_dir();
+#endif
+
 // --------------------------------------------------------------------------------------------------
 // OSAPI FUNCTIONS
 //
@@ -44,7 +48,7 @@ extern int Os_debugger_running;
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
-void os_init(const char * wclass, const char * title, const char *app_name=NULL, const char *version_string=NULL );
+void os_init(const char * wclass, const char * title, const char * app_name = nullptr);
 
 // set the main window title
 void os_set_title( const char * title );
@@ -54,15 +58,18 @@ void os_cleanup();
 
 // window management ---------------------------------------------------------------
 
-// Returns 1 if app is not the foreground app.
-int os_foreground();
+// Returns false if app is not the foreground app.
+bool os_foreground();
 
 // process management --------------------------------------------------------------
 
 /**
- * @brief Removes all pending events and ignores them
+ * @brief Defers all pending events to be handled later
  */
-void os_ignore_events();
+void os_defer_events_on_load_screen();
+
+// removes key events that may unintentionally skip the cutscene
+void os_remove_deferred_cutscene_key_events();
 
 // call to process windows messages. only does something in non THREADED mode
 void os_poll();
@@ -167,7 +174,7 @@ namespace os
 		/**
 		 * @brief Sets the swap interval
 		 */
-		virtual void setSwapInterval(int status) = 0;
+		virtual bool setSwapInterval(int status) = 0;
 	};
 
 	/**
@@ -179,6 +186,7 @@ namespace os
 		Fullscreen = 0,
 		Borderless,
 		Resizeable,
+		Capture_Mouse,
 
 		NUM_VALUES
 	};
@@ -189,8 +197,10 @@ namespace os
 	 */
 	struct ViewPortProperties
 	{
-		bool enable_opengl; //!< Set to true if the viewport should support OpenGL rendering
+		bool enable_opengl = false; //!< Set to true if the viewport should support OpenGL rendering
 		OpenGLContextAttributes gl_attributes;
+
+		bool enable_vulkan = false; //!< Set to true if the viewport should support Vulkan rendering
 
 		ViewportPixelFormat pixel_format;
 
@@ -209,9 +219,9 @@ namespace os
 	 * @ingroup os_graphics_api
 	 */
 	enum class ViewportState {
-		Windowed,
-		Borderless,
-		Fullscreen
+		Windowed = 0,
+		Borderless = 1,
+		Fullscreen = 2
 	};
 
 	/**
@@ -359,6 +369,8 @@ namespace os
 	 * @ingroup os_graphics_api
 	 */
 	SDL_Window* getSDLMainWindow();
+
+	void closeAllViewports();
 
 	/**
 	 * @defgroup eventhandling API for consuming OS events

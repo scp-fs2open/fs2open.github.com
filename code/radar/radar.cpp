@@ -16,6 +16,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
+#include "graphics/matrix.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
@@ -56,8 +57,8 @@ void HudGaugeRadarStd::blipDrawDistorted(blip *b, int x, int y)
 {
 	int xdiff, ydiff;
 	float scale;
-	xdiff = -10 + rand()%20;
-	ydiff = -10 + rand()%20;
+	xdiff =  Random::next(-10, 9);
+	ydiff =  Random::next(-10, 9);
 
 	// maybe scale the effect if EMP is active
 	if(emp_active_local()){
@@ -80,24 +81,25 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 	}
 
 	if ( timestamp_elapsed(Radar_flicker_timer[flicker_index]) ) {
-		Radar_flicker_timer[flicker_index] = timestamp_rand(50,1000);
-		Radar_flicker_on[flicker_index] ^= 1;
+		Radar_flicker_timer[flicker_index] = _timestamp_rand(50,1000);
+		Radar_flicker_on[flicker_index] = !Radar_flicker_on[flicker_index];
 	}
 
 	if ( !Radar_flicker_on[flicker_index] ) {
 		return;
 	}
 
-	if ( rand() & 1 ) {
-		xdiff = -2 + rand()%4;
-		ydiff = -2 + rand()%4;
+	if (Random::flip_coin()) {
+		xdiff = Random::next(-2, 1);
+		ydiff = Random::next(-2, 1);
 	}
 
 	drawContactCircle(x + xdiff, y + ydiff, b->rad);
 }
 void HudGaugeRadarStd::blitGauge()
 {
-	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+	if (Radar_gauge.first_frame + 1 >= 0)
+		renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
 }
 void HudGaugeRadarStd::drawBlips(int blip_type, int bright, int distort)
 {
@@ -181,10 +183,10 @@ void HudGaugeRadarStd::drawContactCircle( int x, int y, int rad )
 			if (Missiontime & 8192)
 				return;
 		}
-		renderString( Large_blip_offset_x+x, Large_blip_offset_y+y, Large_blip_string );
+		renderCircle(x, y, 6);
 	} else {
 		// rad = RADAR_BLIP_RADIUS_NORMAL;
-		renderString( Small_blip_offset_x+x, Small_blip_offset_y+y, Small_blip_string );
+		renderCircle(x, y, 4);
 	}
 }
 void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int clr_idx, int size )
@@ -277,7 +279,7 @@ void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int clr
 	gr_screen.clip_right_unscaled = old_right_unscaled;
 }
 
-void HudGaugeRadarStd::render(float frametime)
+void HudGaugeRadarStd::render(float  /*frametime*/)
 {
 	//WMC - This strikes me as a bit hackish
 	bool g3_yourself = !g3_in_frame();
@@ -296,21 +298,21 @@ void HudGaugeRadarStd::render(float frametime)
 	}
 
 	// note that on lowest skill level, there is no radar effects due to sensors damage
-	if ( (Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS) ) {
-		Radar_static_playing = 0;
-		Radar_static_next = 0;
-		Radar_death_timer = 0;
-		Radar_avail_prev_frame = 1;
+	if ( ((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced ) {
+		Radar_static_playing = false;
+		Radar_static_next = TIMESTAMP::never();
+		Radar_death_timer = TIMESTAMP::never();
+		Radar_avail_prev_frame = true;
 	} else if ( sensors_str < MIN_SENSOR_STR_TO_RADAR ) {
 		if ( Radar_avail_prev_frame ) {
-			Radar_death_timer = timestamp(2000);
-			Radar_static_next = 1;
+			Radar_death_timer = _timestamp(2000);
+			Radar_static_next = TIMESTAMP::immediate();
 		}
-		Radar_avail_prev_frame = 0;
+		Radar_avail_prev_frame = false;
 	} else {
-		Radar_death_timer = 0;
-		if ( Radar_static_next == 0 )
-			Radar_static_next = 1;
+		Radar_death_timer = TIMESTAMP::never();
+		if ( Radar_static_next.isNever() )
+			Radar_static_next = TIMESTAMP::immediate();
 	}
 
 	if ( timestamp_elapsed(Radar_death_timer) ) {
@@ -322,32 +324,32 @@ void HudGaugeRadarStd::render(float frametime)
 	drawRange();
 
 	if ( timestamp_elapsed(Radar_static_next) ) {
-		Radar_static_playing ^= 1;
-		Radar_static_next = timestamp_rand(50, 750);
+		Radar_static_playing = !Radar_static_playing;
+		Radar_static_next = _timestamp_rand(50, 750);
 	}
 
 	// if the emp effect is active, always draw the radar wackily
 	if(emp_active_local()){
-		Radar_static_playing = 1;
+		Radar_static_playing = true;
 	}
 
 	if ( ok_to_blit_radar ) {
 		if ( Radar_static_playing ) {
 			drawBlipsSorted(1);	// passing 1 means to draw distorted
-			if ( Radar_static_looping == -1 ) {
-				Radar_static_looping = snd_play_looping(&Snds[SND_STATIC]);
+			if (!Radar_static_looping.isValid()) {
+				Radar_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 			}
 		} else {
 			drawBlipsSorted(0);
-			if ( Radar_static_looping != -1 ) {
+			if (Radar_static_looping.isValid()) {
 				snd_stop(Radar_static_looping);
-				Radar_static_looping = -1;
+				Radar_static_looping = sound_handle::invalid();
 			}
 		}
 	} else {
-		if ( Radar_static_looping != -1 ) {
+		if (Radar_static_looping.isValid()) {
 			snd_stop(Radar_static_looping);
-			Radar_static_looping = -1;
+			Radar_static_looping = sound_handle::invalid();
 		}
 	}
 
@@ -359,6 +361,27 @@ void HudGaugeRadarStd::pageIn()
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
 }
 
+void HudGaugeRadarStd::clampBlip(vec3d* b)
+{
+	float max_radius;
+	float hypotenuse;
+
+	max_radius = i2fl(Radar_radius[0] - 5);
+
+	// Scale blip to radar size
+	vm_vec_scale(b, i2fl(Radar_radius[0])/2.0f);
+
+	hypotenuse = hypotf(b->xyz.x, b->xyz.y);
+
+	// Clamp to inside of plot area, if needed
+	if (hypotenuse > max_radius) {
+		vm_vec_scale2(b, max_radius, hypotenuse);
+	}
+
+	// Scale Y to respect aspect ratio
+	b->xyz.y *= (i2fl(Radar_radius[1]) / i2fl(Radar_radius[0]));
+}
+
 void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 {
 	float zdist, rscale;
@@ -367,43 +390,23 @@ void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 	if (b->dist < pos->xyz.z) {
 		rscale = 0.0f;
 	} else {
-		rscale = (float) acosf(pos->xyz.z / b->dist) / PI;		//2.0f;	 
+		rscale = (float) acosf_safe(pos->xyz.z / b->dist) / PI;
 	}
 
-	zdist = fl_sqrt((pos->xyz.x * pos->xyz.x) + (pos->xyz.y * pos->xyz.y));
+	zdist = hypotf(pos->xyz.x, pos->xyz.y);
 
-	float new_x_dist, clipped_x_dist;
-	float new_y_dist, clipped_y_dist;
+	vec3d new_pos = {};
 
-	if (zdist < 0.01f)
+	if (zdist >= 0.01f)
 	{
-		new_x_dist = 0.0f;
-		new_y_dist = 0.0f;
-	}
-	else
-	{
-		new_x_dist = (pos->xyz.x / zdist) * rscale * (Radar_radius[0]/2.0f);
-		new_y_dist = (pos->xyz.y / zdist) * rscale * (Radar_radius[1]/2.0f);
-
-		// force new_x_dist and new_y_dist to be inside the radar
-
-		float hypotenuse;
-		float max_radius;
-
-		hypotenuse = (float) _hypot(new_x_dist, new_y_dist);
-		max_radius = i2fl(Radar_radius[0] - 5);
-
-		if (hypotenuse >= max_radius)
-		{
-			clipped_x_dist = max_radius * (new_x_dist / hypotenuse);
-			clipped_y_dist = max_radius * (new_y_dist / hypotenuse);
-			new_x_dist = clipped_x_dist;
-			new_y_dist = clipped_y_dist;
-		}
+		new_pos = *pos;
+		new_pos.xyz.z = 0.0f;
+		vm_vec_scale(&new_pos, rscale / zdist);		// Values are within +/- 1.0f
+		clampBlip(&new_pos);
 	}
 
-	*x = fl2i(position[0] + Radar_center_offsets[0] + new_x_dist);
-	*y = fl2i(position[1] + Radar_center_offsets[1] - new_y_dist);
+	*x = fl2i(position[0] + Radar_center_offsets[0] + new_pos.xyz.x);
+	*y = fl2i(position[1] + Radar_center_offsets[1] - new_pos.xyz.y);
 }
 
 void HudGaugeRadarStd::drawCrosshairs(int x, int y)

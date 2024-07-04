@@ -34,10 +34,14 @@
 //
 
 // create a _permanent_ observer player 
-int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
+void multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 {	
+	Assertion(name != nullptr, "A nullptr callsign was passed to multi_obs_create_player(). This is a code error, please report.");
+	Assertion(addr != nullptr, "A nullptr net_addr was passed to multi_obs_create_player(). This is a code error, please report.");
+	Assertion(pl != nullptr, "A nullptr player was passed to multi_obs_create_player(). This is a code error, please report.");
+
 	// blast the player struct
-	memset(&Net_players[player_num],0,sizeof(net_player));
+	Net_players[player_num].init();
 	
 	// Net_players[player_num].flags |= (NETINFO_FLAG_CONNECTED | NETINFO_FLAG_OBSERVER);	
 	// DOH!!! The lack of this caused many bugs. 
@@ -53,9 +57,10 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 
 	stuff_netplayer_info( &Net_players[player_num], addr, 0, pl );
 	Net_players[player_num].last_heard_time = timer_get_fixed_seconds();
-	Net_players[player_num].reliable_socket = INVALID_SOCKET;
-	Net_players[player_num].s_info.kick_timestamp = -1;
-	Net_players[player_num].s_info.voice_token_timestamp = -1;
+	Net_players[player_num].reliable_socket = PSNET_INVALID_SOCKET;
+	Net_players[player_num].s_info.kick_timestamp = UI_TIMESTAMP::invalid();
+	Net_players[player_num].s_info.voice_token_timestamp = UI_TIMESTAMP::invalid();
+	Net_players[player_num].s_info.player_collision_timestamp = TIMESTAMP::immediate();
 	Net_players[player_num].s_info.tracker_security_last = -1;
 	Net_players[player_num].s_info.target_objnum = -1;
 	Net_players[player_num].s_info.accum_buttons = 0;
@@ -64,7 +69,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	multi_ping_reset(&Net_players[player_num].s_info.ping);
 
 	// timestamp his last_full_update_time
-	Net_players[player_num].s_info.last_full_update_time = timestamp(0);			
+	Net_players[player_num].s_info.last_full_update_time = UI_TIMESTAMP::immediate();
 	Net_players[player_num].m_player->objnum = -1;	
 
 	// nil his file xfer handle
@@ -73,9 +78,6 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	// zero out his object update and control info sequencing data
 	Net_players[player_num].client_cinfo_seq = 0;
 	Net_players[player_num].client_server_seq = 0;		
-
-	// his kick timestamp
-	Net_players[player_num].s_info.kick_timestamp = -1;
 
 	// nil his data rate timestamp stuff
 	Net_players[player_num].s_info.rate_stamp = -1;
@@ -94,8 +96,6 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	Net_players[player_num].sv_last_pl = -1;	
 	Net_players[player_num].cl_bytes_recvd = 0;	
 	Net_players[player_num].cl_last_pl = -1;
-	
-	return 1;
 }
 
 // create an explicit observer object and assign it to the passed player

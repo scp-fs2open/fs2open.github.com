@@ -29,7 +29,6 @@ static char THIS_FILE[] = __FILE__;
 
 int Mission_filename_cb_format;
 int Campaign_modified = 0;
-int Bypass_clear_mission;
 campaign_tree_wnd *Campaign_wnd = NULL;
 
 IMPLEMENT_DYNCREATE(campaign_tree_wnd, CFrameWnd)
@@ -38,8 +37,8 @@ IMPLEMENT_DYNCREATE(campaign_tree_wnd, CFrameWnd)
 // campaign_tree_wnd
 
 campaign_tree_wnd::campaign_tree_wnd()
+	: g_err(0)
 {
-	Bypass_clear_mission = 0;
 }
 
 campaign_tree_wnd::~campaign_tree_wnd()
@@ -72,7 +71,7 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	LoadAccelTable("IDR_ACC_CAMPAIGN");
 	Mission_filename_cb_format = RegisterClipboardFormat("Mission Filename");
 	Campaign_modified = 0;
-	clear_mission();
+	clear_mission(true);
 
 	// create a splitter with 1 row, 2 columns
 	if (!m_splitter.CreateStatic(this, 1, 2))
@@ -105,7 +104,6 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	// activate the input view
 	SetActiveView(Campaign_tree_formp);
 	OnCpgnFileNew();
-//	Campaign_tree_formp->load_campaign();
 	Fred_main_wnd->EnableWindow(FALSE);
 	return TRUE;
 }
@@ -117,7 +115,7 @@ void campaign_tree_wnd::OnUpdateCpgnFileOpen(CCmdUI* pCmdUI)
 
 void campaign_tree_wnd::OnCpgnFileOpen() 
 {
-	CString name;
+	CString name, full_path;
 
 	if (Campaign_modified)
 		if (save_modified())
@@ -135,8 +133,9 @@ void campaign_tree_wnd::OnCpgnFileOpen()
 		if (!strlen(name))
 			return;
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN);
-		Campaign_tree_formp->load_campaign();
+		full_path = dlg.GetPathName();
+
+		Campaign_tree_formp->load_campaign((LPCTSTR)name, (LPCTSTR)full_path);
 	}
 }
 
@@ -146,8 +145,7 @@ void campaign_tree_wnd::OnDestroy()
 
 	OnCpgnFileNew();
 	Fred_main_wnd->EnableWindow(TRUE);
-//	if (!Bypass_clear_mission)
-//		create_new_mission();
+
 	str = FREDDoc_ptr->GetPathName();
 	if (str.IsEmpty())
 		create_new_mission();
@@ -191,7 +189,8 @@ void campaign_tree_wnd::OnCpgnFileSave()
 	}
 	*/	
 
-	if (save.save_campaign_file(Campaign.filename))
+	auto full_path = (LPCSTR)Campaign_tree_formp->GetCurrentCampaignPath();
+	if (save.save_campaign_file(full_path))
 	{
 		MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return;
@@ -203,9 +202,7 @@ void campaign_tree_wnd::OnCpgnFileSave()
 
 void campaign_tree_wnd::OnCpgnFileSaveAs() 
 {
-	char *old_name = NULL;
-	char campaign_path[256];
-	CString name;
+	const char *old_name = nullptr;
 	CFred_mission_save save;
 
 	Campaign_tree_formp->update();
@@ -213,26 +210,30 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		old_name = Campaign.filename;
 
 	CFileDialog dlg(FALSE, "fc2", old_name, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, "FreeSpace Campaign files (*.fc2)|*.fc2||", this);
+	auto campaign_path = Campaign_tree_formp->GetCurrentCampaignPath();
+	if (!campaign_path.IsEmpty())
+		dlg.m_ofn.lpstrInitialDir = (LPCSTR)campaign_path;
+
 	if (dlg.DoModal() == IDOK)
 	{
-		name = dlg.GetFileName();
+		auto name = dlg.GetFileName();
 		if (strlen(name) > MAX_FILENAME_LEN - 1) {
 			MessageBox("Filename is too long", "Error");
 			return;
 		}
 
 		if (!strlen(name)){
-			return;		
+			return;
 		}
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN);
-		string_copy(campaign_path, dlg.GetPathName(), 256);
-		if (save.save_campaign_file(campaign_path))
+		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
+		if (save.save_campaign_file((LPCSTR)dlg.GetPathName()))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 			return;
 		}
 
+		Campaign_tree_formp->SetCurrentCampaignPath(dlg.GetPathName());
 		Campaign_modified = 0;
 	}
 }
@@ -249,7 +250,7 @@ void campaign_tree_wnd::OnCpgnFileNew()
 	strcpy_s(Campaign.name, "Unnamed");
 	Campaign.desc = NULL;
 	Campaign_tree_viewp->free_links();
-	Campaign_tree_formp->initialize();
+	Campaign_tree_formp->initialize(true, true);
 	Campaign_modified = 0;
 	Campaign.flags = CF_DEFAULT_VALUE;
 	((CButton *) (Campaign_tree_formp->GetDlgItem(IDC_CUSTOM_TECH_DB)))->SetCheck(0);
@@ -314,20 +315,39 @@ int campaign_tree_wnd::error_checker()
 
 	g_err = 0;
 	for (i=0; i<Total_links; i++) {
+		// #1 check: illegal source mission
 		if ( (Links[i].from < 0) || (Links[i].from >= Campaign.num_missions) )
 			return internal_error("Branch #%d has illegal source mission", i);
+		// #2 check: illegal target mission
 		if ( (Links[i].to < -1) || (Links[i].to >= Campaign.num_missions) )
 			return internal_error("Branch #%d has illegal target mission", i);
+		// #3 check: formula syntax
 		Sexp_useful_number = Links[i].from;
 		if (fred_check_sexp(Links[i].sexp, OPR_BOOL, "formula of branch #%d", i))
 			return -1;
 
 		z = Links[i].from;
+
+		// #4 check: always true loop
+		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
+			if (Links[i].sexp == Locked_sexp_true) {
+				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name))
+					return 1;
+			}
+			// no further checking for loop links - in particular, a loop link isn't a regular link
+			continue;
+		}
+
+		// total number of regular links
 		mcount[z]++;
-		if (Links[i].sexp == Locked_sexp_false)
+
+		// #5 check: always false branch
+		if (Links[i].sexp == Locked_sexp_false) {
 			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name, mcount[z]))
 				return 1;
+		}
 
+		// #6 check: true middle branch
 		if (Links[i].sexp == Locked_sexp_true) {
 			if (true_at[z] >= 0)
 				if (error("Mission \"%s\" branch %d is true but is not last branch", Campaign.missions[z].name, true_at[z]))
@@ -337,6 +357,32 @@ int campaign_tree_wnd::error_checker()
 		}
 	}
 
+	// #7 check: not always true last branch
+	for (i=0; i<Campaign.num_missions; i++)
+		if (mcount[i] && true_at[i] < mcount[i])
+			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name))
+				return 1;
+
+	// #8 check: duplicate mission
+	for (i=z=0; i<Campaign.num_missions; i++) {
+		for (j=0; j<Campaign.num_missions; j++)
+			if ((i != j) && !stricmp(Campaign.missions[i].name, Campaign.missions[j].name))
+				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name);
+
+		if (!Campaign.missions[i].level)
+			z++;
+	}
+
+	// #9 check: no first mission
+	if (!z)
+		if (error("No top level mission present in tree"))
+			return 1;
+
+	// #10 check: duplicate first mission
+	if (z > 1)
+		return internal_error("More than one top level mission present in tree");
+
+	// #11 check: Multi player number
 	// check that all missions in a multiplayer game have the same number of players
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
 		for (i = 0; i < Campaign.num_missions; i++ ) {
@@ -349,27 +395,6 @@ int campaign_tree_wnd::error_checker()
 			}
 		}
 	}
-
-	for (i=0; i<Campaign.num_missions; i++)
-		if (mcount[i] && true_at[i] < mcount[i])
-			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name))
-				return 1;
-
-	for (i=z=0; i<Campaign.num_missions; i++) {
-		for (j=0; j<Campaign.num_missions; j++)
-			if ((i != j) && !stricmp(Campaign.missions[i].name, Campaign.missions[j].name))
-				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name);
-
-		if (!Campaign.missions[i].level)
-			z++;
-	}
-
-	if (!z)
-		if (error("No top level mission present in tree"))
-			return 1;
-
-	if (z > 1)
-		return internal_error("More than one top level mission present in tree");
 
 	return 0;
 }
@@ -413,7 +438,7 @@ int campaign_tree_wnd::internal_error(const char *msg, ...)
 
 int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string buf, sexp_buf, error_buf, bad_node_str;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -424,21 +449,27 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (sexp == -1)
 		return 0;
 
-	z = check_sexp_syntax(sexp, type, 1, &faulty_node, SEXP_MODE_CAMPAIGN);
+	z = check_sexp_syntax(sexp, type, 1, &faulty_node, sexp_mode::CAMPAIGN);
 	if (!z)
 		return 0;
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+
+	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+		bad_node_str.pop_back();
+	}
+
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
 
 	if (z < 0 && z > -100)
 		err = 1;
 
 	if (err)
-		return internal_error(error_buf.c_str());
+		return internal_error("%s", error_buf.c_str());
 
-	if (error(error_buf.c_str()))
+	if (error("%s", error_buf.c_str()))
 		return 1;
 
 	return 0;

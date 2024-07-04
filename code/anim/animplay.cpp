@@ -274,9 +274,9 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 	percent_through = instance->time_elapsed / time;
 
 	if(instance->direction == ANIM_DIRECT_FORWARD)
-		new_frame_num = instance->start_at - 1 + fl2i(percent_through * n_frames + 0.5f);
+		new_frame_num = instance->start_at - 1 + (int) lround(percent_through * n_frames);
 	else
-		new_frame_num = instance->start_at - 1 - fl2i(percent_through * n_frames + 0.5f);
+		new_frame_num = instance->start_at - 1 - (int) lround(percent_through * n_frames);
 
 	frame_save = instance->frame_num;
 
@@ -397,8 +397,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 
 		t1 = timer_get_fixed_seconds();
 		for ( i = 0; i < frame_diff; i++ ) {
-			anim_check_for_palette_change(instance);			
-
 			// if we're playing backwards, every frame must be a keyframe and we set the data ptr here
 			if(instance->direction == ANIM_DIRECT_REVERSE){
 				if ( anim_instance_is_streamed(instance) ) {
@@ -516,19 +514,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 
 	t2 = timer_get_fixed_seconds();
 
-	return 0;
-}
-
-/**
- * @brief Stop an anim instance that is on the anim_render_list from playing
- */
-int anim_stop_playing(anim_instance* instance)
-{
-	Assert(instance != NULL);
-
-	if ( anim_playing(instance) ) {
-		anim_release_render_instance(instance);
-	}
 	return 0;
 }
 
@@ -656,7 +641,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 
 	if (diff != 0) {
 		if (ptr->height > 16) {
-			mprintf(("ANI %s with size %dx%d (%.1f%% wasted)\n", ptr->name, ptr->width, ptr->height, waste));
+			nprintf(("ANI","ANI %s with size %dx%d (%.1f%% wasted)\n", ptr->name, ptr->width, ptr->height, waste));
 		}
 	}
 #endif
@@ -685,7 +670,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
  * @param file_mapped Whether to use memory-mapped file or not.
  * 
  * @details Memory-mapped files will page in the animation from disk as it is needed, but performance is not as good.
- * @return Pointer to anim that is loaded if sucess, NULL if failure.
+ * @return Pointer to anim that is loaded if success, NULL if failure.
  */
 anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 {
@@ -803,9 +788,6 @@ anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 
 		cfclose(fp);
 
-		// store screen signature, so we can tell if palette changes
-		ptr->screen_sig = gr_screen.signature;
-
 		anim_set_palette(ptr);
 	}
 
@@ -866,20 +848,6 @@ int anim_free(anim *ptr)
 	return 0;
 }
 
-
-/**
- * @brief Return if an anim is playing or not.  
- */
-int anim_playing(anim_instance *ai)
-{
-	Assert(ai != NULL);
-	if ( ai->frame == NULL )
-		return 0;
-	else 
-		return 1;
-}
-
-
 /**
  * @brief Called at the beginning of a mission to initialize any mission dependent anim data.
  * @todo Redundant?
@@ -894,138 +862,6 @@ void anim_level_init()
 void anim_level_close()
 {
 	anim_release_all_instances();
-}
-
-/**
- * @brief Write the frames of a .ani file out to disk as .pcx files.
- * @details Use naming convention: filename0000.pcx, filename0001.pcx etc.
- *
- * @return If success 0, or if failed -1
- */
-int anim_write_frames_out(char *filename)
-{
-	anim				*source_anim;
-	anim_instance	*ai;
-	char				root_name[256], pcxname[256];
-	char				buf[64];
-	int				i,j;
-	ubyte				**row_data;
-
-	strcpy_s(root_name, filename);
-	root_name[strlen(filename)-4] = 0;
-
-	source_anim = anim_load(filename);
-	if ( source_anim == NULL ) 
-		return -1;
-
-	ai = init_anim_instance(source_anim, 16);
-
-	row_data = (ubyte**)vm_malloc((source_anim->height+1) * 4);
-
-	for ( i = 0; i < source_anim->total_frames; i++ ) {
-		anim_get_next_raw_buffer(ai, 0, 0, 16);
-		strcpy_s(pcxname, root_name);
-		sprintf(buf,"%04d",i);
-		strcat_s(pcxname, buf);
-
-		for ( j = 0; j < source_anim->height; j++ ) {
-			row_data[j] = &ai->frame[j*source_anim->width];
-		}
-
-
-		pcx_write_bitmap( pcxname,
-								source_anim->width,
-								source_anim->height,
-								row_data,
-								source_anim->palette);
-
-		printf(".");
-
-	}
-	printf("\n");
-	vm_free(row_data);
-	return 0;
-}
-
-/**
- * @brief Display information and statistics about a .ani file.
- * @details This is called when -i switch is on when running ac.exe
- */
-void anim_display_info(char *real_filename)
-{
-	CFILE				*fp;
-	anim				A;
-	float				percent;
-	int				i, uncompressed, compressed, *key_frame_nums=NULL, tmp;
-	char filename[MAX_FILENAME_LEN];
-
-	strcpy_s( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) {
-		*p = 0;
-	}
-	strcat_s( filename, ".ani" );
-
-	fp = cfopen(filename, "rb");
-	if ( !fp ) {
-		printf("Fatal error opening %s", filename);
-		return;
-	}
-
-	anim_read_header(&A, fp);
-
-	if (A.width < 0 || A.height < 0) {
-		Error(LOCATION, "Ani file %s has a faulty header and cannot be loaded.", filename);
-	}
-
-	// read the keyframe frame nums and offsets
-	key_frame_nums = (int*)vm_malloc(sizeof(int)*A.num_keys);
-	Assert(key_frame_nums != NULL);
-	if (key_frame_nums == NULL)
-		return;
-
-	for ( i = 0; i < A.num_keys; i++ ) {
-		key_frame_nums[i] = 0;
-		cfread(&key_frame_nums[i], 2, 1, fp);
-		cfread(&tmp, 4, 1, fp);
-	}
-
-	cfread(&compressed, 4, 1, fp);
-
-	uncompressed = A.width * A.height * A.total_frames;	// 8 bits per pixel
-	percent = i2fl(compressed) / uncompressed * 100.0f;
-
-	printf("%% of uncompressed size:    %.0f%%\n", percent);
-	printf("Width:                     %d\n", A.width);
-	printf("Height:                    %d\n", A.height);
-	printf("Total Frames:              %d\n", A.total_frames);
-
-#ifndef NDEBUG
-	printf("Key Frames:                %d\n", A.num_keys);
-	if ( A.num_keys > 1 && (A.total_frames != A.num_keys) ) {
-		printf("key list: (");
-		for ( i = 0; i < A.num_keys; i++ ) {
-			if ( i < A.num_keys-1 ) 
-				printf("%d, ", key_frame_nums[i]);
-			else
-				printf("%d)\n", key_frame_nums[i]);
-		}
-	}
-#endif
-
-	printf("FPS:                       %d\n", A.fps);
-
-#ifndef NDEBUG
-	printf("Transparent RGB:           (%u,%u,%u)\n", A.xparent_r, A.xparent_g, A.xparent_b); 
-#endif
-
-	printf("ac version:                %d\n", A.version);
-
-	if ( key_frame_nums != NULL ) {
-		vm_free(key_frame_nums);
-	}
-
-	cfclose(fp);
 }
 
 void anim_reverse_direction(anim_instance *ai)
@@ -1059,16 +895,6 @@ void anim_reverse_direction(anim_instance *ai)
 	} else if(ai->direction == ANIM_DIRECT_REVERSE) {
 		ai->time_elapsed = ((float)ai->start_at - (float)ai->frame_num - 1.0f) / (float)ai->parent->fps;	
 	}	
-}
-
-void anim_pause(anim_instance *ai)
-{
-	ai->paused = 1;
-}
-
-void anim_unpause(anim_instance *ai)
-{
-	ai->paused = 0;
 }
 
 void anim_ignore_next_frametime()

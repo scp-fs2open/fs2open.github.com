@@ -12,8 +12,6 @@
 #include "globalincs/pstypes.h"
 #include "radar/radarsetup.h"
 
-extern int Radar_static_looping;
-
 class object;
 struct blip;
 struct color;
@@ -27,8 +25,8 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	int target_brackets;
 	int unknown_contact_icon;
 
-	float sweep_duration; // in seconds
-	float sweep_percent;
+	int sweep_duration; // in milliseconds
+	float sweep_angle;
 
 	matrix view_perturb;
 	vec3d Orb_eye_position;
@@ -50,48 +48,43 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 
 	bool sub_y_clip;
 
-	int loop_sound_handle;
-	int m_loop_snd;
+	sound_handle loop_sound_handle;
+	gamesnd_id m_loop_snd;
 	float loop_sound_volume;
 
-	int arrival_beep_snd;
-	int departure_beep_snd;
+	gamesnd_id arrival_beep_snd;
+	gamesnd_id departure_beep_snd;
 
-	int m_stealth_arrival_snd;
-	int stealth_departure_snd;
+	gamesnd_id stealth_arrival_snd;
+	gamesnd_id stealth_departure_snd;
 
 	int arrival_beep_delay;
 	int departure_beep_delay;
 
-	int arrival_beep_next_check;
-	int departure_beep_next_check;
+	TIMESTAMP arrival_beep_next_check;
+	TIMESTAMP departure_beep_next_check;
 protected:
 	bool shouldDoSounds();
 public:
 	HudGaugeRadarDradis();
 	void initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown);
-	void initSound(int loop_snd, float _loop_sound_volume,  int arrival_snd, int departue_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay);
+	void initSound(gamesnd_id loop_snd, float _loop_sound_volume,  gamesnd_id arrival_snd, gamesnd_id departure_snd, gamesnd_id _stealth_arrival_snd, gamesnd_id _stealth_departure_snd, float arrival_delay, float departure_delay);
 
 	void blipDrawDistorted(blip *b, vec3d *pos, float alpha);
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
 	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale_factor);
-	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawSweeps();
-	void drawCrosshairs( vec3d pnt );
-	void doneDrawing();
 	void doneDrawingHtl();
-	void drawOutlines();
 	void drawOutlinesHtl();
 	void setupViewHtl();
-	int calcAlpha(vec3d* pt);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void plotBlip(blip* b, vec3d *pos, float *alpha);
 
-	virtual void onFrame(float frametime);
-	virtual void initialize();
+	void onFrame(float frametime) override;
+	void initialize() override;
 
 	// Sound specific functions
 	void doLoopSnd();

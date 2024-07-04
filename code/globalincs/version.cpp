@@ -7,8 +7,9 @@
  *
 */
 
-#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 
 #include "parse/parselo.h"
 
@@ -18,13 +19,17 @@ bool check_at_least(const version& v) {
 	return get_executable_version() >= v;
 }
 
-SCP_string format_version(const version& v) {
+SCP_string format_version(const version& v, bool exclude_build) {
 	SCP_stringstream ss;
 
-	ss << v.major << "." << v.minor << "." << v.build;
+	ss << v.major << "." << v.minor;
 
-	if (v.revision != 0) {
-		ss << "." << v.revision;
+	if (!exclude_build) {
+		ss << "." << v.build;
+
+		if (v.revision != 0) {
+			ss << "." << v.revision;
+		}
 	}
 
 	return ss.str();
@@ -47,6 +52,12 @@ version parse_version() {
 
 	return v;
 }
+version parse_version_inline() {
+	SCP_string input;
+	stuff_string(input, F_RAW);
+
+	return version(std::move(input), 0);
+}
 version get_executable_version() {
 	version v;
 	v.major = FS_VERSION_MAJOR;
@@ -60,6 +71,54 @@ version get_executable_version() {
 version::version(int major_in, int minor_in, int build_in, int revision_in) :
 	major(major_in), minor(minor_in), build(build_in), revision(revision_in) {
 }
+
+version::version(const SCP_string& semver, int missing) : major(missing), minor(missing), build(missing), revision(missing) {
+	int i = 0;
+	auto str = semver;
+	int has_fields = 0;
+	while (i <= 4) {
+		size_t pos = str.find_first_of('.');
+		SCP_string ver;
+		if (pos != SCP_string::npos) {
+			ver = str.substr(0, pos);
+			str.erase(0, pos + 1);
+		}
+		else {
+			ver = str;
+			str.clear();
+		}
+
+		if (!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()) {
+			switch (has_fields) {
+			case 0:
+				major = std::stoi(ver.c_str());
+				++has_fields;
+				break;
+			case 1:
+				minor = std::stoi(ver.c_str());
+				++has_fields;
+				break;
+			case 2:
+				build = std::stoi(ver.c_str());
+				++has_fields;
+				break;
+			case 3:
+				revision = std::stoi(ver.c_str());
+			++has_fields;
+				break;
+			default:
+				UNREACHABLE("Version parsing broken, get a coder!");
+				break;
+			}
+		}
+		else 
+			break; //Break out of the loop if the first string is not a digit.
+		
+		i++;
+	}
+}
+
+bool version::isValid() const { return major != 0 || minor != 0 || build != 0 || revision != 0; }
 bool version::operator<(const version& v) const {
 
 	if (major < v.major) {
@@ -130,5 +189,27 @@ bool version::operator!=(const version& other) const {
 	return !(*this == other);
 }
 
+SCP_string get_version_string()
+{
+	SCP_string str;
+
+	sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
+
+#ifndef NDEBUG
+	str += " Debug";
+#endif
+
+	// Lets get some more info in here
+	switch (gr_screen.mode) {
+	case GR_OPENGL:
+		str += " OpenGL";
+		break;
+	case GR_VULKAN:
+		str += " Vulkan";
+		break;
+	}
+
+	return str;
+}
 }
 

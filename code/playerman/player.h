@@ -13,15 +13,15 @@
 #define _PLAYER_H
 
 #include "globalincs/globals.h"
-#include "hud/hudtarget.h"				// for targeting hotkey lists
-#include "io/keycontrol.h"				// for button_info
+#include "hud/hudtarget.h" // for targeting hotkey lists
+#include "io/keycontrol.h" // for button_info
 #include "localization/localize.h"
 #include "network/multi_options.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "physics/physics.h"
-#include "stats/scoring.h"             // for scoring/stats
-
-struct campaign_info;
+#include "sound/sound.h"
+#include "stats/scoring.h" // for scoring/stats
 
 #define MAX_KEYED_TARGETS			8		// number of hot keys available to assign targets to
 
@@ -52,8 +52,11 @@ struct campaign_info;
 #define PLAYER_FLAGS_KILLED_SELF_UNKNOWN			(1<<16)		// player died by his own hand
 #define PLAYER_FLAGS_KILLED_SELF_MISSILES			(1<<17)		// player died by his own missile
 #define PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE		(1<<18)		// player died by his own shockwave
+#define PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5		(1<<19)		// loaded PLR file's plr_ver is a pre-controls5 version
+#define PLAYER_FLAGS_PLR_VER_IS_LOWER			(1<<20)		// loaded PLR file's plr_ver is lower than PLR_VERSION
+#define PLAYER_FLAGS_PLR_VER_IS_HIGHER			(1<<21)		// loaded PLR file's plr_ver is higher than PLR_VERSION
 
-#define PLAYER_KILLED_SELF						( PLAYER_FLAGS_KILLED_SELF_MISSILES | PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE )
+#define PLAYER_KILLED_SELF						( PLAYER_FLAGS_KILLED_SELF_UNKNOWN | PLAYER_FLAGS_KILLED_SELF_MISSILES | PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE )
 
 #define PCM_NORMAL				0	// normal flying mode
 #define PCM_WARPOUT_STAGE1		1	// speed up to 40 km/s
@@ -76,17 +79,13 @@ struct campaign_info;
 // having the opportunity to skip it
 #define PLAYER_MISSION_FAILURE_LIMIT		5
 
-
-typedef struct campaign_stats {
-	char campaign_name[MAX_FILENAME_LEN+1];	// insurance
-	scoring_struct stats;
-} campaign_stats;
-
 class player
 {
 public:
 	void reset();
 	void assign(const player *pl);
+	friend bool operator==(const player& lhs, const player& rhs);
+	friend bool operator!=(const player& lhs, const player& rhs);
 
 	char				callsign[CALLSIGN_LEN + 1];
 	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels
@@ -145,9 +144,9 @@ public:
 	int				warn_count;									// number of attack warnings player has received this mission
 	float				damage_this_burst;						// amount of damage done this frame to friendly craft
 
-	int				repair_sound_loop;						// Sound id for ship repair looping sound, this is in the player 
-																		// file since the repair sound only plays when Player ship is getting repaired
-	int				cargo_scan_loop;							// Sound id for scanning cargo looping sound
+	sound_handle repair_sound_loop; // Sound id for ship repair looping sound, this is in the player
+	                                // file since the repair sound only plays when Player ship is getting repaired
+	sound_handle cargo_scan_loop;   // Sound id for scanning cargo looping sound
 
 	int				praise_count;								// number of praises received this mission
 	int				allow_praise_timestamp;					// timestamp marking time until next praise is allowed
@@ -180,7 +179,7 @@ public:
 	int				killer_objtype;							// type of object that killed player
 	int				killer_species;							// Species which killed player
 	int				killer_weapon_index;						// weapon used to kill player (if applicable)
-	char			killer_parent_name[NAME_LENGTH];		// name of parent object that killed the player
+	char			killer_parent_name[NAME_LENGTH];		// name of parent object that killed the player.  Will be either a callsign, an actual ship name (not display name), or blank
 
 	int				check_for_all_alone_msg;				// timestamp to check for playing of 'all alone' msg
 
@@ -205,6 +204,9 @@ public:
 	// player-persistent variables - Goober5000
 	SCP_vector<sexp_variable>	variables;
 
+	// player-persistent containers - jg18
+	SCP_vector<sexp_container>	containers;
+
 	SCP_string		death_message;								// Goober5000
 
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
@@ -220,11 +222,23 @@ extern player Players[MAX_PLAYERS];
 
 extern int Player_num;								// player num of person playing on this machine
 extern player *Player;								// pointer to my information
-//extern control_info PlayerControls;
 
 extern int Player_use_ai;
-extern int view_centering;
-extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to. 				
+extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to.
+
+extern angles Player_flight_cursor;
+
+enum class FlightMode {
+	ShipLocked = 0,
+	FlightCursor = 1,
+};
+
+extern FlightMode Player_flight_mode;
+extern float Flight_cursor_extent;
+extern float Flight_cursor_deadzone;
+
+extern bool Perspective_locked;
+extern bool Slew_locked;
 
 extern void player_init();							// initialization per level
 extern void player_level_init();
@@ -254,7 +268,7 @@ void player_set_squad_bitmap(player *p, const char *fnamem, bool ismulti);
 // set squadron
 void player_set_squad(player *p, char *squad_name);
 
-int player_inspect_cargo(float frametime, char *outstr);
+bool player_inspect_cargo(float frametime, char *outstr);
 
 extern int use_descent;						// player is using descent-style physics
 extern void toggle_player_object();		// toggles between descent-style ship and player ship
@@ -264,11 +278,9 @@ extern void player_control_reset_ci( control_info *ci );
 
 void player_generate_death_message(player *player_p);
 void player_show_death_message();
-void player_maybe_fire_turret(object *objp);
 void player_maybe_play_all_alone_msg();
 void player_set_next_all_alone_msg_timestamp();
 
-void player_get_padlock_orient(matrix *eye_orient);
 void player_display_padlock_view();
 
 // get the player's eye position and orient
@@ -276,9 +288,9 @@ camid player_get_cam();
 
 //=============================================================
 //===================== PLAYER WARPOUT STUFF ==================
-#define PLAYER_WARPOUT_SPEED 40.0f		// speed you need to be going to warpout
-#define TARGET_WARPOUT_MATCH_PERCENT 0.05f	// how close to TARGET_WARPOUT_SPEED you need to be
-#define MINIMUM_PLAYER_WARPOUT_TIME	3.0f		// How long before you can press 'ESC' to abort warpout
+extern float Player_warpout_speed;	// speed you need to be going to warpout
+extern float Target_warpout_match_percent;	// how close to TARGET_WARPOUT_SPEED you need to be
+extern float Minimum_player_warpout_time;		// How long before you can press 'ESC' to abort warpout
 
 extern float Warpout_time;							// Declared in freespace.cpp
 extern int Warpout_forced;							// If non-zero, bash the player to speed and go through effect

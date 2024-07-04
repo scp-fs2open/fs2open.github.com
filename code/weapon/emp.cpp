@@ -9,7 +9,7 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 
 
 #include "debugconsole/console.h"
@@ -115,6 +115,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 	// all machines check to see if the blast hit a bomb. if so, shut it down (can't move anymore)	
 	for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		target = &Objects[mo->objnum];
+		if (target->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if(target->type != OBJ_WEAPON){
 			continue;
 		}
@@ -151,6 +154,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		target = &Objects[so->objnum];
 		if(target->type != OBJ_SHIP){
 			continue;
@@ -167,7 +173,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 
 		// if the ship is a cruiser or cap ship, only apply the EMP effect to turrets
 		if(Ship_info[Ships[target->instance].ship_info_index].is_big_or_huge()) {
-			float capship_emp_time = use_emp_time_for_capship_turrets ? emp_time : MAX_TURRET_DISRUPT_TIME;
+			float capship_emp_time = use_emp_time_for_capship_turrets ? (emp_time * 1000.0f) : MAX_TURRET_DISRUPT_TIME;
 			
 			moveup = &Ships[target->instance].subsys_list;
 			if(moveup->next != NULL){
@@ -363,16 +369,21 @@ void emp_process_ship(ship *shipp)
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected])){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected]) && (SHIP_INDEX(shipp) != ship_lookup)){
 			// attack the object
-			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
+			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum]);
 		}
 	}
 }
 
+void emp_start_local(float intensity, float time)
+{
+	emp_start_local(intensity, time, "");
+}
+
 // start the emp effect for MYSELF (intensity == arbitrary intensity variable, time == time the effect will last)
 // NOTE : time should be in seconds
-void emp_start_local(float intensity, float time)
+void emp_start_local(float intensity, float time, const SCP_string &text)
 {
 	int idx;
 	float start_intensity;
@@ -406,14 +417,25 @@ void emp_start_local(float intensity, float time)
 		Emp_wacky_text[idx].stamp = -1;
 	}
 
-	// start the emp icon flashing
-	hud_start_text_flash(NOX("Emp"), 5000);
+	SCP_string display = XSTR("Emp", 1670);
+
+	// if text is set then use that instead
+	if (text.length() > 0)
+		display = text;
+
+	// start the emp icon flashing if display text is not "none"
+	if (stricmp(display.c_str(), "none") != 0)
+		hud_start_text_flash(display.c_str(), 5000);
 
 	// determine how much we have to decrement the effect per second
 	Emp_decr = Emp_intensity / time;
 
 	// play a flash
-	game_flash( 1.0f, 1.0f, 0.5f );
+	game_flash(
+		std::get<0>(Emp_pain_flash_color) * Emp_pain_flash_factor,
+		std::get<1>(Emp_pain_flash_color) * Emp_pain_flash_factor,
+		std::get<2>(Emp_pain_flash_color) * Emp_pain_flash_factor
+	);
 }
 
 // stop the emp effect cold
@@ -488,32 +510,8 @@ void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode
 	gr_string(x, y, tmp, resize_mode);
 }
 
-// emp hud printf
-void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
-{
-	char tmp[256];
-	va_list args;	
-	
-	// format the text
-	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
-	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
-	
-	// if the emp effect is not active, don't even bother messing with the text
-	if(emp_active_local()){
-		emp_maybe_reformat_text(tmp, 256, gauge_id);
-
-		// jitter the coords
-		emp_hud_jitter(&x, &y);
-	}
-
-	// print the string out
-	gr_string(x, y, tmp);
-}
-
 // maybe reformat a string 
-void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
+void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 {
 	wacky_text *wt;
 
@@ -541,21 +539,25 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 		// reformat specific gauges differently
 		switch(gauge_id){	
 		//	weapons
-		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:			
-			int wep_index;
-			wep_index = (int)frand_range(0.0f, (float)(MAX_WEAPON_TYPES - 1));
-			strcpy_s(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].name);			
-			break;		
+		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:
+		{
+			int wep_index = weapon_get_random_player_usable_weapon();
+			if (wep_index >= 0) {
+				strcpy_s(wt->str, Weapon_info[wep_index].get_display_name());
+			}
+			break;
+		}
 
 		// escort list
 		case EG_ESCORT1: case EG_ESCORT2: case EG_ESCORT3:
+		{
 			// choose a random ship
-			int shipnum;
-			shipnum = ship_get_random_targetable_ship();
-			if(shipnum >= 0){
-				strcpy_s(wt->str, Ships[shipnum].ship_name);
+			int shipnum = ship_get_random_targetable_ship();
+			if (shipnum >= 0) {
+				strcpy_s(wt->str, Ships[shipnum].get_display_name());
 			}
 			break;
+		}
 
 		// directives title
 		case EG_OBJ_TITLE:
@@ -597,9 +599,6 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 	else {
 		strcpy(text, wt->str);
 	}
-
-	// watch out for '#' - Goober5000
-	end_string_at_first_hash_symbol(text);
 }
 
 // randomize the chars in a string
@@ -611,7 +610,7 @@ void emp_randomize_chars(char *str)
 	// shuffle chars around
 	for(idx=0; idx<(int)(strlen(str)-1); idx++){
 		if(frand_range(0.0f, 1.0f) < Emp_intensity){
-			char_index = (int)frand_range(0.0f, (float)(NUM_RANDOM_CHARS - 1));
+			char_index = Random::next(NUM_RANDOM_CHARS);
 			str[idx] = Emp_random_char[char_index];
 		}
 	}

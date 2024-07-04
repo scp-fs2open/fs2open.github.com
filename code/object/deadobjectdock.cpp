@@ -147,7 +147,7 @@ void dead_dock_remove_instance(object *objp, object *other_objp)
 	else
 	{
 		// Trigger assertion. We can recover from this, thankfully
-		Assertion(false, "Tried to undock an object that isn't dead docked!\n");
+		UNREACHABLE("Tried to undock an object that isn't dead docked!\n");
 	}
 }
 

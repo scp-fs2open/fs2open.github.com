@@ -14,19 +14,17 @@ namespace scripting {
 namespace api {
 
 
-order_h::order_h() {
-	objh = object_h();
-	odx = -1;
-	sig = -1;
-	aigp = NULL;
-}
-order_h::order_h(object* objp, int n_odx) {
+order_h::order_h()
+	: objh(), odx(-1), sig(-1), aigp(nullptr)
+{}
+order_h::order_h(object* objp, int n_odx)
+{
 	objh = object_h(objp);
-	if(objh.IsValid() && objh.objp->type == OBJ_SHIP && n_odx > -1 && n_odx < MAX_AI_GOALS)
+	if(objh.isValid() && objh.objp()->type == OBJ_SHIP && n_odx > -1 && n_odx < MAX_AI_GOALS)
 	{
 		odx = n_odx;
-		sig = Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
-		aigp = &Ai_info[Ships[objh.objp->instance].ai_index].goals[odx];
+		sig = Ai_info[Ships[objh.objp()->instance].ai_index].goals[odx].signature;
+		aigp = &Ai_info[Ships[objh.objp()->instance].ai_index].goals[odx];
 	}
 	else
 	{
@@ -35,11 +33,12 @@ order_h::order_h(object* objp, int n_odx) {
 		aigp = NULL;
 	}
 }
-bool order_h::IsValid() {
-	if (objh.objp == NULL || aigp == NULL)
+bool order_h::isValid() const
+{
+	if (!objh.isValid() || aigp == NULL)
 		return false;
 
-	return objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
+	return objh.objp()->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp()->instance].ai_index].goals[odx].signature;
 }
 
 //**********HANDLE: order
@@ -53,7 +52,7 @@ ADE_VIRTVAR(Priority, l_Order, "number", "Priority of the given order", "number"
 	if(!ade_get_args(L, "o|i", l_Order.GetPtr(&ohp), &priority))
 		return ade_set_error(L, "i", 0);
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR) {
@@ -69,10 +68,10 @@ ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priorit
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ADE_RETURN_NIL;
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ADE_RETURN_FALSE;
 
-	ai_info *aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
+	ai_info *aip = &Ai_info[Ships[ohp->objh.objp()->instance].ai_index];
 
 	ai_remove_ship_goal(aip, ohp->odx);
 
@@ -82,11 +81,11 @@ ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priorit
 ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "The type of the order as one of the ORDER_* enumerations.")
 {
 	order_h *ohp = NULL;
-	int eh_idx = -1;
+	lua_enum eh_idx = ENUM_INVALID;
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	switch(ohp->aigp->ai_mode){
@@ -119,15 +118,23 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_DISABLE_SHIP:
 			eh_idx = LE_ORDER_DISABLE;
 			break;
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
+			eh_idx = LE_ORDER_DISABLE_TACTICAL;
+			break;
 		case AI_GOAL_DISARM_SHIP:
 			eh_idx = LE_ORDER_DISARM;
+			break;
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
+			eh_idx = LE_ORDER_DISARM_TACTICAL;
 			break;
 		case AI_GOAL_CHASE_ANY:
 			eh_idx = LE_ORDER_ATTACK_ANY;
 			break;
-		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
 			eh_idx = LE_ORDER_IGNORE;
+			break;
+		case AI_GOAL_IGNORE_NEW:
+			eh_idx = LE_ORDER_IGNORE_NEW;
 			break;
 		case AI_GOAL_EVADE_SHIP:
 			eh_idx = LE_ORDER_EVADE;
@@ -146,6 +153,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 			break;
 		case AI_GOAL_PLAY_DEAD:
 			eh_idx = LE_ORDER_PLAY_DEAD;
+			break;
+		case AI_GOAL_PLAY_DEAD_PERSISTENT:
+			eh_idx = LE_ORDER_PLAY_DEAD_PERSISTENT;
 			break;
 		case AI_GOAL_FLY_TO_SHIP:
 			eh_idx = LE_ORDER_FLY_TO;
@@ -174,20 +184,22 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
+	aip = &Ai_info[Ships[ohp->objh.objp()->instance].ai_index];
 
 	if(ADE_SETTING_VAR){
-		if(newh && newh->IsValid()){
+		if(newh && newh->isValid()){
 			switch(ohp->aigp->ai_mode){
 				case AI_GOAL_DESTROY_SUBSYSTEM:
 				case AI_GOAL_CHASE:
 				case AI_GOAL_FORM_ON_WING:
 				case AI_GOAL_GUARD:
 				case AI_GOAL_DISABLE_SHIP:
+				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
+				case AI_GOAL_DISARM_SHIP_TACTICAL:
 				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_IGNORE:
 				case AI_GOAL_EVADE_SHIP:
@@ -195,23 +207,23 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_KEEP_SAFE_DISTANCE:
 				case AI_GOAL_FLY_TO_SHIP:
 				case AI_GOAL_STAY_STILL:
-					if ((newh->objp->type == OBJ_SHIP) && !stricmp(Ships[newh->objp->instance].ship_name, ohp->aigp->target_name)){
-						ohp->aigp->target_name = Ships[newh->objp->instance].ship_name;
+					if ((newh->objp()->type == OBJ_SHIP) && !stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)){
+						ohp->aigp->target_name = Ships[newh->objp()->instance].ship_name;
 						ohp->aigp->time = Missiontime;
 						if(ohp->odx == 0) {
 							aip->ok_to_target_timestamp = timestamp(0);
-							set_target_objnum(aip, OBJ_INDEX(newh->objp));
+							set_target_objnum(aip, newh->objnum);
 						}
 					}
 					break;
 				case AI_GOAL_CHASE_WEAPON:
-					if ((newh->objp->type == OBJ_WEAPON) && (ohp->aigp->target_signature != newh->sig)){
-						ohp->aigp->target_instance = newh->objp->instance;
-						ohp->aigp->target_signature = Weapons[newh->objp->instance].objnum;
+					if ((newh->objp()->type == OBJ_WEAPON) && (ohp->aigp->target_signature != newh->sig)){
+						ohp->aigp->target_instance = newh->objp()->instance;
+						ohp->aigp->target_signature = Weapons[newh->objp()->instance].objnum;
 						ohp->aigp->time = Missiontime;
 						if(ohp->odx == 0) {
 							aip->ok_to_target_timestamp = timestamp(0);
-							set_target_objnum(aip, OBJ_INDEX(newh->objp));
+							set_target_objnum(aip, newh->objnum);
 						}
 					}
 					break;
@@ -220,40 +232,42 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 					return ade_set_error(L, "o", l_Object.Set(object_h()));
 				case AI_GOAL_WAYPOINTS:
 				case AI_GOAL_WAYPOINTS_ONCE:
-					if (newh->objp->type == OBJ_WAYPOINT){
-						wpl = find_waypoint_list_with_instance(newh->objp->instance);
+					if (newh->objp()->type == OBJ_WAYPOINT){
+						wpl = find_waypoint_list_with_instance(newh->objp()->instance);
 						if (!stricmp(wpl->get_name(),ohp->aigp->target_name)){
 							ohp->aigp->target_name = wpl->get_name();
 							ohp->aigp->time = Missiontime;
 							if(ohp->odx == 0) {
 								int flags = 0;
-								if ( ohp->aigp->ai_mode == AI_GOAL_WAYPOINTS)
+								if (ohp->aigp->ai_mode == AI_GOAL_WAYPOINTS)
 									flags |= WPF_REPEAT;
-								ai_start_waypoints(ohp->objh.objp, wpl, flags);
+								if (ohp->aigp->flags[AI::Goal_Flags::Waypoints_in_reverse])
+									flags |= WPF_BACKTRACK;
+								ai_start_waypoints(ohp->objh.objp(), wpl, flags, ohp->aigp->int_data);
 							}
 						}
 					}
 					break;
 				case AI_GOAL_CHASE_WING:
-					if((newh->objp->type == OBJ_SHIP) && !stricmp(Ships[newh->objp->instance].ship_name, ohp->aigp->target_name)){
-						ship *shipp = &Ships[newh->objp->instance];
+					if((newh->objp()->type == OBJ_SHIP) && !stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)){
+						ship *shipp = &Ships[newh->objp()->instance];
 						if (shipp->wingnum != -1){
 							ohp->aigp->target_name = Wings[shipp->wingnum].name;
 							if(ohp->odx == 0) {
 								aip->ok_to_target_timestamp = timestamp(0);
-								ai_attack_wing(ohp->objh.objp,shipp->wingnum);
+								ai_attack_wing(ohp->objh.objp(),shipp->wingnum);
 							}
 						}
 					}
 					break;
 				case AI_GOAL_GUARD_WING:
-					if((newh->objp->type == OBJ_SHIP) && !stricmp(Ships[newh->objp->instance].ship_name, ohp->aigp->target_name)){
-						ship *shipp = &Ships[newh->objp->instance];
+					if((newh->objp()->type == OBJ_SHIP) && !stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)){
+						ship *shipp = &Ships[newh->objp()->instance];
 						if (shipp->wingnum != -1){
 							ohp->aigp->target_name = Wings[shipp->wingnum].name;
 							if(ohp->odx == 0) {
 								aip->ok_to_target_timestamp = timestamp(0);
-								ai_set_guard_wing(ohp->objh.objp,shipp->wingnum);
+								ai_set_guard_wing(ohp->objh.objp(),shipp->wingnum);
 							}
 						}
 					}
@@ -269,7 +283,9 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_EVADE_SHIP:
@@ -286,11 +302,15 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 			break;
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
-			wpl = find_matching_waypoint_list(ohp->aigp->target_name);
-			if(ohp->odx == 0) {
+			// check if waypoint order is the current goal (ohp->odx == 0) and if it is valid
+			if ( (ohp->odx == 0) && (aip->wp_index != INVALID_WAYPOINT_POSITION) &&
+				(aip->wp_index >= 0 && aip->wp_index < static_cast<int>(aip->wp_list->get_waypoints().size())) ) {
 				objnum = aip->wp_list->get_waypoints()[aip->wp_index].get_objnum();
 			} else {
-				objnum = wpl->get_waypoints().front().get_objnum();
+				wpl = find_matching_waypoint_list(ohp->aigp->target_name);
+				if (wpl != nullptr) {
+					objnum = wpl->get_waypoints().front().get_objnum();
+				}
 			}
 			break;
 		case AI_GOAL_STAY_STILL:
@@ -299,6 +319,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				objnum = Ships[shipnum].objnum;
 				break;
 			}
+			break;
 		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_GUARD_WING:
 			int wingnum = wing_name_lookup(ohp->aigp->target_name);
@@ -322,14 +343,14 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!ohp->IsValid())
+	if(!ohp->isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
+	aip = &Ai_info[Ships[ohp->objh.objp()->instance].ai_index];
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
+		if(newh && newh->isValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 		{
 			objp = &Objects[newh->ss->parent_objnum];
 			if(!stricmp(Ships[objp->instance].ship_name, ohp->aigp->target_name)) {
@@ -340,7 +361,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 					set_target_objnum(aip, OBJ_INDEX(objp));
 				}
 			}
-			ohp->aigp->ai_submode = ship_get_subsys_index( &Ships[objp->instance], newh->ss->system_info->subobj_name );
+			ohp->aigp->ai_submode = ship_find_subsys( &Ships[objp->instance], newh->ss->system_info->subobj_name );
 			if(ohp->odx == 0) {
 				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(objp));
 			}
@@ -363,7 +384,7 @@ ADE_FUNC(isValid, l_Order, NULL, "Detects whether handle is valid", "boolean", "
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", ohp->IsValid());
+	return ade_set_args(L, "b", ohp->isValid());
 }
 
 //**********HANDLE: shiporders
@@ -375,10 +396,10 @@ ADE_FUNC(__len, l_ShipOrders, NULL, "Number of ship orders", "number", "Number o
 	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid() || objh->objp->type != OBJ_SHIP || Ships[objh->objp->instance].ai_index < 0)
+	if(!objh->isValid() || objh->objp()->type != OBJ_SHIP || Ships[objh->objp()->instance].ai_index < 0)
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", ai_goal_num(&Ai_info[Ships[objh->objp->instance].ai_index].goals[0]));
+	return ade_set_args(L, "i", ai_goal_num(&Ai_info[Ships[objh->objp()->instance].ai_index].goals[0]));
 }
 
 ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Order, or invalid order handle on failure")
@@ -391,13 +412,13 @@ ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Orde
 
 	i--; //Lua->FS2
 
-	if (!objh->IsValid() || i < 0 || i >= MAX_AI_GOALS)
+	if (!objh->isValid() || i < 0 || i >= MAX_AI_GOALS)
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
-	ai_info *aip = &Ai_info[Ships[objh->objp->instance].ai_index];
+	ai_info *aip = &Ai_info[Ships[objh->objp()->instance].ai_index];
 
 	if (aip->goals[i].ai_mode != AI_GOAL_NONE)
-		return ade_set_args(L, "o", l_Order.Set(order_h(objh->objp, i)));
+		return ade_set_args(L, "o", l_Order.Set(order_h(objh->objp(), i)));
 	else
 		return ade_set_args(L, "o", l_Order.Set(order_h()));
 }
@@ -408,7 +429,7 @@ ADE_FUNC(isValid, l_ShipOrders, NULL, "Detects whether handle is valid", "boolea
 	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", oh->IsValid());
+	return ade_set_args(L, "b", oh->isValid());
 }
 
 

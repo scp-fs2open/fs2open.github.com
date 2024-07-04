@@ -7,19 +7,20 @@
  *
 */
 
-
-
+#include "weapon/shockwave.h"
 #include "asteroid/asteroid.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
+#include "math/curve.h"
 #include "model/modelrender.h"
+#include "nebula/neb.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
-#include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
 // -----------------------------------------------------------
@@ -46,9 +47,25 @@ int Shockwave_inited = 0;
 // Externals
 // -----------------------------------------------------------
 extern int Show_area_effect;
-extern int Cmdline_enable_3d_shockwave;
-extern bool Cmdline_fb_explosions;
 
+static SCP_string shockwave_mode_display(bool mode) { return mode ? XSTR("3D", 1691) : XSTR("2D", 1692); }
+
+bool Use_3D_shockwaves = true;
+
+static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwaves",
+                     std::pair<const char*, int>{"Shockwaves", 1722},
+                     std::pair<const char*, int>{"The way shockwaves are displayed. Changes will be reflected in the next loaded mission.", 1723})
+                     .category(std::make_pair("Graphics", 1825))
+                     .display(shockwave_mode_display)
+                     .default_val(true)
+                     .bind_to(&Use_3D_shockwaves)
+                     .change_listener([](float, bool) {
+                         Default_shockwave_loaded = 0; // If we change then we have to force shockwave reload
+                         return true;
+                     })
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(66)
+                     .finish();
 
 /**
  * Call to create a shockwave
@@ -62,7 +79,7 @@ extern bool Cmdline_fb_explosions;
  * @return success		object number of shockwave
  * @return failure		-1
  */
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay)
+int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, int flag, int delay)
 {
 	int				i, objnum, real_parent;
 	int				info_index = -1, model_id = -1;
@@ -79,10 +96,10 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 
 	// try 2D shockwave first, then fall back to 3D, then fall back to default of either
 	// this should be pretty fool-proof and allow quick change between 2D and 3D effects
-	if ( strlen(sci->name) )
+	if ( VALID_FNAME(sci->name) )
 		info_index = shockwave_load(sci->name, false);
 
-	if ( (info_index < 0) && strlen(sci->pof_name) )
+	if ( (info_index < 0) && VALID_FNAME(sci->pof_name) )
 		info_index = shockwave_load(sci->pof_name, true);
 
 	if (info_index < 0) {
@@ -117,14 +134,22 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
-	sw->num_objs_hit = 0;
+	sw->obj_sig_hitlist.clear();
 	sw->shockwave_info_index = info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap = -1;
+
+	sw->blast_sound_id = sci->blast_sound_id;
 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
-	sw->rot_angles = sci->rot_angles;
+	if (!sci->rot_defined) {
+		sw->rot_angles.p = frand_range(0.0f, PI2);
+		sw->rot_angles.b = frand_range(0.0f, PI2);
+		sw->rot_angles.h = frand_range(0.0f, PI2);
+	} else 
+		sw->rot_angles = sci->rot_angles; // should just be 0,0,0
+
 	sw->damage_type_idx = sci->damage_type_idx;
 
 	sw->total_time = sw->outer_radius / sw->speed;
@@ -139,7 +164,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
     flagset<Object::Object_Flags> tmp_flags;
-	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders);
+	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders, false );
 
 	if ( objnum == -1 ){
 		Int3();
@@ -235,7 +260,6 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	shockwave	*sw;
 	object		*objp;
 	float			blast,damage;
-	int			i;
 
 	Assertion(shockwave_objp->type == OBJ_SHOCKWAVE, "shockwave_move() called on an object of type %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", shockwave_objp->type, OBJ_SHOCKWAVE);
 	Assertion(shockwave_objp->instance  >= 0 && shockwave_objp->instance < MAX_SHOCKWAVES, "shockwave_move() called on an object with an instance of %d (should be 0-%d); get a coder!\n", shockwave_objp->instance, MAX_SHOCKWAVES - 1);
@@ -253,10 +277,22 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	sw->time_elapsed += frametime;
 
 	shockwave_set_framenum(shockwave_objp->instance);
-		
-	sw->radius += (frametime * sw->speed);
-	if ( sw->radius > sw->outer_radius ) {
-		sw->radius = sw->outer_radius;
+
+	weapon_info* wip = nullptr;
+	if (sw->weapon_info_index >= 0)
+		wip = &Weapon_info[sw->weapon_info_index];
+	
+	if (wip && wip->shockwave.radius_curve_idx >= 0) {
+		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
+		sw->radius = val * sw->outer_radius;
+		if (sw->radius < 0.0f)
+			sw->radius = 0.0f;
+	} else {
+		sw->radius += (frametime * sw->speed);
+		CLAMP(sw->radius, 0.0f, sw->outer_radius);
+	}
+
+	if ( sw->time_elapsed > sw->total_time ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
@@ -264,72 +300,73 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	// blast ships and asteroids
 	// And (some) weapons
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_WEAPON)) {
 			continue;
 		}
 
 		if(objp->type == OBJ_WEAPON) {
 			// only apply to missiles with hitpoints
-			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->weapon_hitpoints <= 0)
+			weapon_info* target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (target_wip->weapon_hitpoints <= 0)
 				continue;
 
-			if (!(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
+			if (!Shockwaves_always_damage_bombs && !(target_wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
 				continue;
 		}
 
 	
-		if ( objp->type == OBJ_SHIP ) {
-			// don't blast navbuoys
-			if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
-				continue;
-			}
+		// don't blast no-collide or navbuoys
+		if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) ) {
+			continue;
 		}
 
-		// only apply damage to a ship once from a shockwave
-		for ( i = 0; i < sw->num_objs_hit; i++ ) {
-			if ( objp->signature == sw->obj_sig_hitlist[i] ){
+		bool found_in_list = false;
+
+		// only apply damage to an object once from a shockwave
+		for (auto & comparison : sw->obj_sig_hitlist) {
+			if ( (objp->signature == comparison.first) && (objp->type == comparison.second) ){
+				found_in_list = true;
 				break;
 			}
 		}
 
-		if ( i < sw->num_objs_hit ){
+		if (found_in_list) {
 			continue;
 		}
 
 		if ( weapon_area_calc_damage(objp, &sw->pos, sw->inner_radius, sw->outer_radius, sw->blast, sw->damage, &blast, &damage, sw->radius) == -1 ){
 			continue;
 		}
-
-		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage
-		Assert(sw->num_objs_hit < SW_MAX_OBJS_HIT);
-		if ( sw->num_objs_hit >= SW_MAX_OBJS_HIT) {
-			sw->num_objs_hit--;
+		
+		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage 
+		// but only add non-ships to the list if the Game_settings flag is set
+		if (objp->type == OBJ_SHIP || Shockwaves_damage_all_obj_types_once) {
+			sw->obj_sig_hitlist.emplace_back(objp->signature, objp->type);
 		}
-
-		weapon_info* wip = NULL;
 
 		switch(objp->type) {
 		case OBJ_SHIP:
-			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
-			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
+			if ( wip && (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
-			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
-			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
+			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
+			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			break;
 		case OBJ_ASTEROID:
-			asteroid_hit(objp, NULL, NULL, damage);
+			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
+			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
 		case OBJ_WEAPON:
-			wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->armor_type_idx >= 0)
-				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance),1.0f);
+			if (wip && wip->armor_type_idx >= 0)
+				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance), 1.0f, false);
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
-				Weapons[objp->instance].lifeleft = 0.01f;
+				Weapons[objp->instance].lifeleft = 0.001f;
+				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
@@ -351,7 +388,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			} else {
 				vol_scale = 1.0f;
 			}
-			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, vol_scale );
+			if (sw->blast_sound_id.isValid()) {
+				snd_play(gamesnd_get_game_sound(sw->blast_sound_id), 0.0f, vol_scale);
+			}
 		}
 
 	}	// end for
@@ -380,6 +419,11 @@ void shockwave_render(object *objp, model_draw_list *scene)
 	if ( (sw->current_bitmap < 0) && (sw->model_id < 0) )
 		return;
 
+
+	float alpha = 1.0f;
+	if (Neb_affects_weapons)
+		nebula_handle_alpha(alpha, &objp->pos, Neb2_fog_visibility_shockwave);
+
 	if (sw->model_id > -1) {
 		vec3d scale;
 		scale.xyz.x = scale.xyz.y = scale.xyz.z = sw->radius / 50.0f;
@@ -396,7 +440,7 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		model_render_queue( &render_info, scene, sw->model_id, &Objects[sw->objnum].orient, &sw->pos);
 
-		if ( Cmdline_fb_explosions && Default_2D_shockwave_index > -1) {
+		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] && Default_2D_shockwave_index > -1) {
 			g3_transfer_vertex(&p, &sw->pos);
 
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time))*10.0f : 1.0f;
@@ -405,12 +449,12 @@ void shockwave_render(object *objp, model_draw_list *scene)
 	} else {
 		g3_transfer_vertex(&p, &sw->pos);
 
-		if ( Cmdline_fb_explosions ) {
+		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] ) {
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, intensity);
 		}
 
-		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, alpha);
 	}
 }
 
@@ -475,7 +519,9 @@ int shockwave_load(const char *s_name, bool shock_3D)
  */
 void shockwave_level_init()
 {
-	int i;	
+	int i;
+
+	bool shockwaveStyle3d = Shockwave3DMode->getValue();
 
 	if ( !Default_shockwave_loaded ) {
 		i = -1;
@@ -485,7 +531,7 @@ void shockwave_level_init()
 		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check 
 		// 	to use the static name instead, and added a check to override the command line if a 2d default filename is not found
 		//  Note - The 3d shockwave flag is forced on by TBP's flag as of rev 4983
-		if ( Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+		if (shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS)) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );
@@ -499,7 +545,7 @@ void shockwave_level_init()
 
 		// next, try the 2d shockwave effect, unless the 3d effect was loaded
 		// chief1983 - added some messages similar to those for the 3d shockwave
-		if (i < 0 || Cmdline_fb_explosions) {
+		if (i < 0 || Gr_framebuffer_effects[FramebufferEffects::Shockwaves]) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave animation... \n"));
 
 			i = shockwave_load( Default_shockwave_2D_filename );
@@ -515,7 +561,7 @@ void shockwave_level_init()
 		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
 		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to 
 		// spit out a more meaningful message.  Might as well not bother trying again if the command line option was checked as it should have tried the first time through
-		if ( i < 0 && !Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+		if (i < 0 && !shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS)) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model as last resort... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );
@@ -689,8 +735,14 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 
 	sci->inner_rad = sci->outer_rad = sci->damage = sci->blast = sci->speed = 0.0f;
 
+	sci->radius_curve_idx = -1;
+
 	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
+	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
+	sci->damage_overidden = false;
+
+	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }
 
 /**
@@ -700,13 +752,13 @@ void shockwave_create_info_load(shockwave_create_info *sci)
 {
 	int i = -1;
 
-	// shockwave_load() will return -1 if the filename is "none" or "<none>"
+	// shockwave_load() will return -1 if the filename is "" or "none" or "<none>"
 	// checking for that case lets us handle a situation where a 2D shockwave
 	// of "none" was specified and a valid 3D shockwave was specified
 
-	if ( strlen(sci->name) )
+	if ( VALID_FNAME(sci->name) )
 		i = shockwave_load(sci->name, false);
 
-	if ( (i < 0) && strlen(sci->pof_name) )
+	if ( (i < 0) && VALID_FNAME(sci->pof_name) )
 		shockwave_load(sci->pof_name, true);
 }

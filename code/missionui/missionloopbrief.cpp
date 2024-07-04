@@ -106,7 +106,7 @@ void loop_brief_button_pressed(int i)
 	switch(i){
 	case LOOP_BRIEF_DECLINE:		
 		gameseq_post_event(GS_EVENT_START_GAME);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	case LOOP_BRIEF_ACCEPT:
@@ -116,7 +116,7 @@ void loop_brief_button_pressed(int i)
 		Campaign.next_mission = Campaign.loop_mission;		
 
 		gameseq_post_event(GS_EVENT_START_GAME);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	}
 }

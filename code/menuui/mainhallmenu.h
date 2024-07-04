@@ -12,6 +12,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "gamesnd/gamesnd.h"
 
 // CommanderDJ - this is now dynamic
 // #define MAIN_HALLS_MAX			10
@@ -45,9 +46,9 @@ public:
 	SCP_vector<SCP_string> cheat_anim_to;
 
 	// minimum resolution and aspect ratio needed to display this main hall
-	int min_width;
-	int min_height;
-	float min_aspect_ratio;
+	int min_width = 0;
+	int min_height = 0;
+	float min_aspect_ratio = 0.0f;
 
 	// bitmap and mask
 	SCP_string bitmap;
@@ -59,22 +60,22 @@ public:
 
 	// help overlay
 	SCP_string help_overlay_name;
-	int help_overlay_resolution_index;
+	int help_overlay_resolution_index = 0;
 
 	// zoom area
-	int zoom_area_width;
-	int zoom_area_height;
+	int zoom_area_width = -1;
+	int zoom_area_height = -1;
 
 	// intercom defines -------------------
 
 	// # of intercom sounds
-	int num_random_intercom_sounds;
+	int num_random_intercom_sounds = 0;
 
 	// random (min/max) delays between playing intercom sounds
 	SCP_vector<SCP_vector<int> > intercom_delay;
 
 	// intercom sounds themselves
-	SCP_vector<int> intercom_sounds;
+	SCP_vector<interface_snd_id> intercom_sounds;
 
 	// intercom sound pan values
 	SCP_vector<float> intercom_sound_pan;
@@ -83,13 +84,16 @@ public:
 	// misc animations --------------------
 
 	// # of misc animations
-	int num_misc_animations;
+	int num_misc_animations = 0;
 
 	// filenames of the misc animations
 	SCP_vector<SCP_string> misc_anim_name;
 
 	// Time until we will next play a given misc animation, min delay, and max delay
 	SCP_vector<SCP_vector<int> > misc_anim_delay;
+
+	// Initial offset values for anim delay, these should not be altered after parsing
+	SCP_vector<int> misc_anim_initial_delay;
 
 	// Goober5000, used in preference to the flag in generic_anim
 	SCP_vector<int> misc_anim_paused;
@@ -107,7 +111,7 @@ public:
 	SCP_vector<float> misc_anim_sound_pan;
 
 	//sounds for each of the misc anims
-	SCP_vector<SCP_vector<int> > misc_anim_special_sounds;
+	SCP_vector<SCP_vector<interface_snd_id> > misc_anim_special_sounds;
 
 	//frame number triggers for each of the misc anims
 	SCP_vector<SCP_vector<int> > misc_anim_special_trigger;
@@ -122,7 +126,7 @@ public:
 	// door animations --------------------
 
 	// # of door animations
-	int num_door_animations;
+	int num_door_animations = 0;
 
 	// filenames of the door animations
 	SCP_vector<SCP_string> door_anim_name;
@@ -132,7 +136,7 @@ public:
 	SCP_vector<SCP_vector<int> > door_anim_coords;
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<int> > door_sounds;
+	SCP_vector<SCP_vector<interface_snd_id> > door_sounds;
 
 	// pan values for the door sounds
 	SCP_vector<float> door_sound_pan;
@@ -140,22 +144,26 @@ public:
 	// region descriptions ----------------
 
 	// font used for the tooltips, version number, etc.
-	int font;
+	int font = font::FONT1;
 
 	// action
 	SCP_vector<main_hall_region> regions;
+
+	SCP_string esc_action;
 	
-	bool default_readyroom;
+	bool default_readyroom = true;
 
 	// num pixels shader is above/below tooltip text
-	int tooltip_padding;
+	int tooltip_padding = -1;
 
 	// y coord of where to draw tooltip text
-	int region_yval;
+	int region_yval = -1;
 
 };
 
 extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
+
+extern bool Main_hall_poll_key;
 
 
 // initialize the main hall proper 
@@ -197,7 +205,7 @@ int main_hall_get_overlay_resolution_index();
 int main_hall_id();
 
 // Vasudan?
-int main_hall_is_vasudan();
+bool main_hall_is_vasudan();
 
 // start the ambient sounds playing in the main hall
 void main_hall_start_ambient();
@@ -211,5 +219,7 @@ void main_hall_vasudan_funny();
 
 void main_hall_pause();
 void main_hall_unpause();
+
+void main_hall_toggle_help(bool enable);
 
 #endif

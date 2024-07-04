@@ -13,7 +13,9 @@
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 #pragma warning(disable: 4786)
 
+#include "OperatorComboBox.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "parse/parselo.h"
 
 // Goober5000 - it's dynamic now
@@ -27,13 +29,16 @@
 #define SEXPT_UNKNOWN	0x0002
 
 #define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0x00ff
+#define SEXPT_TYPE_MASK	0x07ff
 #define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR	0x0010
 #define SEXPT_NUMBER	0x0020
 #define SEXPT_STRING	0x0040
 #define SEXPT_VARIABLE	0x0080
+#define SEXPT_CONTAINER_NAME	0x0100
+#define SEXPT_CONTAINER_DATA	0x0200
+#define SEXPT_MODIFIER	0x0400
 
 // tree_node flag
 #define NOT_EDITABLE	0x00
@@ -53,9 +58,11 @@
 #define BITMAP_BLACK_DOT		8
 #define BITMAP_BLUE_DOT			BITMAP_ROOT
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
-#define BITMAP_NUMBERED_DATA		9
-//Therefore NEXT DEFINE should be 9+12 or 21
-
+#define BITMAP_NUMBERED_DATA	9
+// There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
+#define BITMAP_COMMENT			29
+#define BITMAP_CONTAINER_NAME	30
+#define BITMAP_CONTAINER_DATA	31
 
 
 // tree behavior modes (or tree subtype)
@@ -66,12 +73,11 @@
 #define MODE_GOALS		(1 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 #define MODE_EVENTS		(2 | ST_LABELED_ROOT | ST_ROOT_DELETABLE | ST_ROOT_EDITABLE)
 #define MODE_CAMPAIGN	(3 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
+#define MODE_CUTSCENES	(4 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED	1
 #define ROOT_RENAMED	2
-
-#define SEXP_ITEM_F_DUP	(1<<0)
 
 /*
  * Notes: An sexp_tree_item is basically a node in a tree.  The sexp_tree is an array of
@@ -97,19 +103,16 @@ class sexp_list_item
 public:
 	int type;
 	int op;
-	const char *text;
-	int flags;
+	SCP_string text;
 	sexp_list_item *next;
 
-	sexp_list_item() : flags(0), next(NULL) {}
+	sexp_list_item() : next(nullptr) {}
 
 	void set_op(int op_num);
 	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void set_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 
 	void add_op(int op_num);
 	void add_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_list(sexp_list_item *list);
 
 	void shallow_copy(const sexp_list_item *src);
@@ -126,7 +129,7 @@ public:
 	void verify_and_fix_arguments(int node);
 	void post_load();
 	void update_help(HTREEITEM h);
-	const char *help(int code);
+	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
 	int get_type(HTREEITEM h);
@@ -136,7 +139,7 @@ public:
 	int get_default_value(sexp_list_item *item, char *text_buf, int op, int i);
 	int query_default_argument_available(int op);
 	int query_default_argument_available(int op, int i);
-	void swap_roots(HTREEITEM one, HTREEITEM two);
+	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
 	void move_branch(int source, int parent = -1);
 	HTREEITEM move_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
@@ -146,6 +149,13 @@ public:
 	void replace_operator(const char *op);
 	void replace_data(const char *data, int type);
 	void replace_variable_data(int var_idx, int type);
+	void replace_container_name(const sexp_container &container);
+	void replace_container_data(const sexp_container &container,
+		int type,
+		bool test_child_nodes,
+		bool delete_child_nodes,
+		bool set_default_modifier);
+	void add_default_modifier(const sexp_container &container);
 	void link_modified(int *ptr);
 	void ensure_visible(int node);
 	int node_error(int node, const char *msg, int *bypass);
@@ -153,7 +163,9 @@ public:
 	void expand_operator(int node);
 	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
-	int edit_label(HTREEITEM h);
+	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
+	virtual void edit_comment(HTREEITEM h);
+	virtual void edit_bg_color(HTREEITEM h);
 	int identify_arg_type(int node);
 	int count_args(int node);
 	void right_clicked(int mode = 0);
@@ -168,14 +180,15 @@ public:
 	void reset_handles();
 	int save_tree(int node = -1);
 	void load_tree(int index, const char *deflt = "true");
-	void add_one_arg_operator(const char *op, const char *data, int type);
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
 	int add_data(const char *data, int type);
 	int add_variable_data(const char *data, int type);
+	int add_container_name(const char *container_name);
+	void add_container_data(const char *container_name);
 	void add_sub_tree(int node, HTREEITEM root);
 	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
-	const char *match_closest_operator(const char *str, int node);
+	const SCP_string &match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char *var_name);
 	void modify_sexp_tree_variable(const char *old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -184,10 +197,17 @@ public:
 	int get_variable_count(const char *var_name);
 	int get_loadout_variable_count(int var_index);
 
+	// Karajorma/jg18
+	int get_container_usage_count(const SCP_string &container_name) const;
+	bool rename_container_nodes(const SCP_string &old_name, const SCP_string &new_name);
+	bool is_matching_container_node(int node, const SCP_string &container_name) const;
+	bool is_container_name_argument(int node) const;
+	static bool is_container_name_opf_type(int op_type);
+
 	// Goober5000
-	int find_argument_number(int parent_node, int child_node);
-	int find_ancestral_argument_number(int parent_op, int child_node);
-	int query_node_argument_type(int node);
+	int find_argument_number(int parent_node, int child_node) const;
+	int find_ancestral_argument_number(int parent_op, int child_node) const;
+	int query_node_argument_type(int node) const;
 
 	//WMC
 	int get_sibling_place(int node);
@@ -206,7 +226,7 @@ public:
 	sexp_list_item *get_listing_opf_point();
 	sexp_list_item *get_listing_opf_iff();
 	sexp_list_item *get_listing_opf_ai_goal(int parent_node);
-	sexp_list_item *get_listing_opf_docker_point(int parent_node);
+	sexp_list_item *get_listing_opf_docker_point(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_dockee_point(int parent_node);
 	sexp_list_item *get_listing_opf_message();
 	sexp_list_item *get_listing_opf_who_from();
@@ -229,12 +249,10 @@ public:
 	sexp_list_item *get_listing_opf_medal_name();
 	sexp_list_item *get_listing_opf_weapon_name();
 	sexp_list_item *get_listing_opf_ship_class_name();
-	sexp_list_item *get_listing_opf_hud_gauge_name();
 	sexp_list_item *get_listing_opf_huge_weapon();
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();
 	sexp_list_item *get_listing_opf_variable_names();
-	sexp_list_item *get_listing_opf_variable_type();
 	sexp_list_item *get_listing_opf_skybox_model();
 	sexp_list_item *get_listing_opf_skybox_flags();
 	sexp_list_item *get_listing_opf_background_bitmap();
@@ -257,6 +275,7 @@ public:
 	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
+	sexp_list_item* get_listing_opf_turret_types();
 	sexp_list_item *get_listing_opf_armor_type();
 	sexp_list_item *get_listing_opf_damage_type();
 	sexp_list_item *get_listing_opf_turret_target_priorities();
@@ -269,14 +288,41 @@ public:
 	sexp_list_item *get_listing_opf_explosion_option();
 	sexp_list_item *get_listing_opf_adjust_audio_volume();
 	sexp_list_item *get_listing_opf_weapon_banks();
-	sexp_list_item *get_listing_opf_hud_gauge();
+	sexp_list_item *get_listing_opf_builtin_hud_gauge();
+	sexp_list_item *get_listing_opf_custom_hud_gauge();
+	sexp_list_item *get_listing_opf_any_hud_gauge();
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
 	sexp_list_item *get_listing_opf_ship_flags();
+	sexp_list_item *get_listing_opf_wing_flags();
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
+	sexp_list_item *get_listing_opf_asteroid_debris();
+	sexp_list_item *get_listing_opf_motion_debris();
 	sexp_list_item *get_listing_opf_game_snds();
+	sexp_list_item *get_listing_opf_fireball();
+	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_language();
+	sexp_list_item *get_listing_opf_functional_when_eval_type();
+	sexp_list_item *get_listing_opf_animation_name(int parent_node);
+	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	sexp_list_item *get_listing_opf_wing_formation();
+	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
+	sexp_list_item *get_listing_opf_bolt_types();
+	sexp_list_item *get_listing_opf_traitor_overrides();
+	sexp_list_item *get_listing_opf_message_types();
+	sexp_list_item *get_listing_opf_lua_general_orders();
+	sexp_list_item *get_listing_opf_lua_enum(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_mission_custom_strings();
+
+	// container modifier options for container data nodes
+	sexp_list_item *get_container_modifiers(int con_data_node) const;
+	sexp_list_item *get_list_container_modifiers() const;
+	sexp_list_item *get_map_container_modifiers(int con_data_node) const;
+	sexp_list_item *get_container_multidim_modifiers(int con_data_node) const;
+
+	bool is_node_eligible_for_special_argument(int parent_node) const;
 
 	int m_mode;
 	int item_index;
@@ -288,6 +334,10 @@ public:
 	CEdit *help_box;
 	CEdit *mini_help_box;
 	CPoint m_pt;
+	OperatorComboBox m_operator_box;
+
+	void start_operator_edit(HTREEITEM h);
+	void end_operator_edit(bool confirm);
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(sexp_tree)
@@ -303,8 +353,17 @@ protected:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnDestroy();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-	afx_msg void OnKeydown(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult);
 	//}}AFX_MSG
+
+	virtual void NodeCut();
+	virtual void NodeDelete();
+	virtual void NodeCopy();
+	virtual void NodeReplacePaste();
+	virtual void NodeAddPaste();
+
+	void update_item(HTREEITEM handle);
 
 	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);
@@ -312,6 +371,10 @@ protected:
 
 	int flag;
 	int *modified;
+	bool m_operator_popup_active;
+	bool m_operator_popup_created;
+	int m_font_height;
+	int m_font_max_width;
 
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;

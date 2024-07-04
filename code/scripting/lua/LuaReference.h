@@ -24,6 +24,10 @@ typedef std::shared_ptr<UniqueLuaReference> LuaReference;
  */
 class UniqueLuaReference {
  private:
+	lua_State* _luaState;
+	int _reference;
+
+ public:
 	/**
     * @brief Initializes a lua reference.
     *
@@ -31,13 +35,11 @@ class UniqueLuaReference {
     *
     * @param state The lua_State where the reference points to a value.
     * @param reference The reference value, should be >= 0.
+    *
+    * @warning Do not call this directly. Use UniqueLuaReference::create instead.
     */
 	UniqueLuaReference(lua_State* state, int reference);
 
-	lua_State* _luaState;
-	int _reference;
-
- public:
 	/**
     * @brief Creates a lua-reference.
     *
@@ -72,8 +74,8 @@ class UniqueLuaReference {
 	UniqueLuaReference(const UniqueLuaReference&) = delete;
 	UniqueLuaReference& operator=(const UniqueLuaReference&) = delete;
 
-	UniqueLuaReference(UniqueLuaReference&& other);
-	UniqueLuaReference& operator=(UniqueLuaReference&& other);
+	UniqueLuaReference(UniqueLuaReference&& other) noexcept;
+	UniqueLuaReference& operator=(UniqueLuaReference&& other) noexcept;
 
 	lua_State* getState() { return _luaState; }
 
@@ -97,8 +99,10 @@ class UniqueLuaReference {
 
 	/**
     * @brief Pushes the referenced value onto the stack.
+    * @param thread A specific thread state to push the value to. nullptr for the default state of this reference
+	* @param manualStackAllocation Set to true if you manually allocate sufficient stack size before calling this function. Keep false unless you know what you are doing.
     */
-	void pushValue() const;
+	void pushValue(lua_State* thread, bool manualStackAllocation = false) const;
 };
 }
 

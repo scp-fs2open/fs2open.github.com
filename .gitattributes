@@ -1,0 +1,7 @@
+# Default for everything
+# * text=auto
+
+# For the test data and built-in files to make them consistent on all platforms
+*.tbl text eol=lf
+*.tbm text eol=lf
+*.sdr text eol=lf

@@ -3,20 +3,14 @@
 #define SCP_DEFINES_H
 #pragma once
 
-#include "scp_compiler_detection.h"
-#include "platformChecks.h"
-
 #define SCP_TOKEN_CONCAT1(x, y) x ## y
 #define SCP_TOKEN_CONCAT(x, y) SCP_TOKEN_CONCAT1(x, y)
 
-/**
- * Define for a function that should be constexpr but if the compiler doesn't support it then it uses inline
- */
+// these are useful for embedding numbers in strings
+// see https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
+#define SCP_TOKEN_TO_STR1(x) #x
+#define SCP_TOKEN_TO_STR(x) SCP_TOKEN_TO_STR1(x)
 
-#if SCP_COMPILER_CXX_CONSTEXPR
-#define SCP_CONSTEXPR_FUNC constexpr
-#else
-#define SCP_CONSTEXPR_FUNC inline
-#endif
+#define SCP_UNUSED(x) (void)(x)
 
 #endif // SCP_DEFINES_H

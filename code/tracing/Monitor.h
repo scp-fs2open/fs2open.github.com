@@ -58,12 +58,29 @@ class Monitor: public MonitorBase {
 	}
 };
 
-}
+/**
+ * @brief Class that keeps track of how many operations are currently running
+ */
+class RunningCounter {
+	Monitor<int>& _monitor;
+
+  public:
+	explicit RunningCounter(Monitor<int>& monitor);
+	~RunningCounter();
+
+	RunningCounter(const RunningCounter&);
+	RunningCounter& operator=(const RunningCounter&);
+
+	RunningCounter(RunningCounter&&) noexcept;
+	RunningCounter& operator=(RunningCounter&&) noexcept;
+};
+
+} // namespace tracing
 
 // Creates a monitor variable
 #define MONITOR(function_name)				static ::tracing::Monitor<int> mon_##function_name(#function_name, 0);
 
 // Increments a monitor variable
-#define MONITOR_INC(function_name, inc)		do { mon_##function_name += (inc); } while(0)
+#define MONITOR_INC(function_name, inc)		do { mon_##function_name += (inc); } while(false)
 
 

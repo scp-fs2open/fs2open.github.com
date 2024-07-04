@@ -19,7 +19,9 @@
 #include "menuui/optionsmenu.h"
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
+#include "network/multiui.h"
 #include "network/multi_voice.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -58,6 +60,8 @@ int Om_mask_0		  = -1;
 int Om_background_1 = -1;
 int Om_mask_1       = -1;
 
+#define OM_NOTIFICATION_LINE_LEN 255
+
 // screen modes
 #define OM_MODE_NONE									-1		// no mode (unintialized)
 #define OM_MODE_GENERAL								0		// general tab
@@ -68,7 +72,7 @@ int Om_mode = OM_MODE_NONE;
 #define OM_NOTIFY_TIME								8000
 #define OM_NOTIFY_Y									430
 #define OM_NOTIFY_Y2									440
-int Om_notify_stamp = -1;
+UI_TIMESTAMP Om_notify_stamp;
 char Om_notify_string[255];
 
 // load all background bitmaps
@@ -201,10 +205,6 @@ UI_INPUTBOX Om_tracker_squad_name;
 #define TRACKER_FOCUS_SQUADRON	3
 static int Om_tracker_focus = 0;
 
-// ip address list vars
-#define IP_STRING_LEN								255
-#define MAX_IP_ADDRS									100
-
 #define IP_CONFIG_FNAME								NOX("Tcp.cfg")
 
 #define IP_EMPTY_STRING								""
@@ -244,7 +244,7 @@ UI_INPUTBOX Om_ip_input;									// input box for adding new ip addresses
 
 // setting vars
 int Om_local_broadcast;										// whether the player has local broadcast selected or not
-int Om_tracker_flag;											// if the guy has the tracker selected
+bool Om_tracker_flag;											// if the guy has the tracker selected
 int Om_protocol;												// protocol in use
 
 // load all the controls for the protocol section
@@ -506,7 +506,7 @@ int Om_vox_voice_buffer_size = -1;
 unsigned char Om_vox_comp_buffer[OM_VOX_COMP_SIZE];
 int Om_vox_voice_comp_size = -1;
 
-int Om_vox_playback_handle;
+sound_handle Om_vox_playback_handle;
 
 // status of any test voice recording
 #define OM_VOX_TEST_NONE					-1
@@ -628,7 +628,7 @@ void options_multi_add_notify(const char *str)
 	} 		
 
 	// set the timestamp
-	Om_notify_stamp = timestamp(OM_NOTIFY_TIME);
+	Om_notify_stamp = ui_timestamp(OM_NOTIFY_TIME);
 }
 
 // process and blit any notification messages
@@ -637,30 +637,30 @@ void options_multi_notify_process()
 	int w;
 	const char *p_str[3];
 	int n_chars[3];
-	char line[255];
+	char line[OM_NOTIFICATION_LINE_LEN];
 	int line_count;
 	int y_start;
 	int idx;
 	int line_height;
 	
 	// if there is no timestamp, do nothing
-	if(Om_notify_stamp == -1){
+	if (!Om_notify_stamp.isValid()){
 		return;
 	}
 
 	// otherwise, if it has elapsed, unset it
-	if(timestamp_elapsed(Om_notify_stamp)){
-		Om_notify_stamp = -1;
+	if (ui_timestamp_elapsed(Om_notify_stamp)){
+		Om_notify_stamp = UI_TIMESTAMP::invalid();
 		return;
 	}
 
 	// otherwise display the string
 	line_height = gr_get_font_height() + 1;
-	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);	
+	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3, OM_NOTIFICATION_LINE_LEN);
 	y_start = OM_NOTIFY_Y;
 	gr_set_color_fast(&Color_bright);
 	for(idx=0;idx<line_count;idx++){
-		memset(line, 0, 255);
+		memset(line, 0, OM_NOTIFICATION_LINE_LEN);
 		strncpy(line, p_str[idx], n_chars[idx]);
 				
 		gr_get_string_size(&w,NULL,line);
@@ -797,9 +797,7 @@ void options_multi_init_protocol_vars()
 	Om_local_broadcast = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
 
 	// whether or not we're playing on the tracker
-	// ------------------- made to read the registry by Kazan -------------------
-	Om_tracker_flag = os_config_read_uint( "PXO", "FS2OpenPXO" , 0 );
-		 // (Multi_options_g.protocol == NET_TCP) && Multi_options_g.pxo ? 1 : 0;	
+	Om_tracker_flag = Multi_options_g.pxo;
 
 	// load the ip address list	
 	Om_ip_disp_count = 0;
@@ -841,17 +839,17 @@ void options_multi_protocol_do(int key)
 		// if the tracker login inputbox has focus, lose it
 		if(Om_tracker_login.has_focus()){
 			Om_tracker_login.clear_focus();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		// if the tracker password inputbox has focus, lose it
 		if(Om_tracker_passwd.has_focus()){
 			Om_tracker_passwd.clear_focus();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		// if the tracker squad name inputbox has focus, lose it
 		if(Om_tracker_squad_name.has_focus()){
 			Om_tracker_squad_name.clear_focus();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		break;
 
@@ -906,17 +904,17 @@ void options_multi_protocol_do(int key)
 	if (Om_tracker_login.has_focus()) {
 		if (Om_tracker_focus != TRACKER_FOCUS_LOGIN) {
 			Om_tracker_focus = TRACKER_FOCUS_LOGIN;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	} else if (Om_tracker_passwd.has_focus()) {
 		if (Om_tracker_focus != TRACKER_FOCUS_PASSWORD) {
 			Om_tracker_focus = TRACKER_FOCUS_PASSWORD;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	} else if (Om_tracker_squad_name.has_focus()) {
 		if (Om_tracker_focus != TRACKER_FOCUS_SQUADRON) {
 			Om_tracker_focus = TRACKER_FOCUS_SQUADRON;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	} else {
 		Om_tracker_focus = TRACKER_FOCUS_NONE;
@@ -935,13 +933,13 @@ void options_multi_protocol_accept()
 	// active protocol
 	Multi_options_g.protocol = Om_protocol;
 
+	// VMT status
+	Multi_options_g.pxo = Om_tracker_flag;
+
 	// copy the VMT login and password data
 	Om_tracker_login.get_text(Multi_tracker_login);
 	Om_tracker_passwd.get_text(Multi_tracker_passwd);
 	Om_tracker_squad_name.get_text(Multi_tracker_squad_name);
-
-	// #KAZAN# --- Save FS2OpenPXO flag
-	os_config_write_uint( "PXO", "FS2OpenPXO" , Om_tracker_flag );
 
 	// write out the tracker login and passwd values to the registry
 	os_config_write_string( "PXO", "Login", Multi_tracker_login );
@@ -985,7 +983,7 @@ void options_multi_protocol_button_pressed(int n)
 		Om_ip_input.unhide();
 		Om_ip_input.set_text(IP_EMPTY_STRING);
 		Om_ip_input.set_focus();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// delete the currently selected ip
@@ -996,7 +994,7 @@ void options_multi_protocol_button_pressed(int n)
 		}
 
 		options_multi_protocol_delete_ip();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// the "local" broadcast button - toggle
@@ -1008,11 +1006,13 @@ void options_multi_protocol_button_pressed(int n)
 
 		if(!Om_local_broadcast){			
 			Om_local_broadcast = 1;
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", true);
 		} else {
 			Om_local_broadcast = 0;
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", false);
 		}
 
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// scroll ips down
@@ -1051,14 +1051,16 @@ void options_multi_protocol_button_pressed(int n)
 			Om_tracker_login.enable();
 			Om_tracker_passwd.enable();
 			Om_tracker_squad_name.enable();
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", true);
 		} else {
 			Om_tracker_login.disable();
 			Om_tracker_passwd.disable();
 			Om_tracker_squad_name.disable();
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", false);
 		}
 
 		// play a sound
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// general tab button 
@@ -1079,7 +1081,7 @@ void options_multi_protocol_button_pressed(int n)
 		}
 
 		// play a sound
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 		break;
 
@@ -1100,19 +1102,19 @@ void options_multi_protocol_button_pressed(int n)
 			Om_window->set_mask_bmap(Om_mask_1, Om_background_1_mask_fname[gr_screen.res]);
 		}
 		// play a sound
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 		break;
 
 	// tcp mode
 	case OM_PRO_TCP:
 		Om_protocol = NET_TCP;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// ipx mode, no longer supported
 	case OM_PRO_IPX:
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "The old IPX protocol is no longer supported.");
 		break;
 	}
@@ -1121,74 +1123,31 @@ void options_multi_protocol_button_pressed(int n)
 // load the ip address file
 void options_multi_protocol_load_ip_file()
 {
-	char line[IP_STRING_LEN];
-	CFILE *file = NULL;
-
 	// reset the ip address count
 	Om_num_ips = 0;
 
-	// attempt to open the ip list file
-	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file!\n"));
-		return;
-	}
+	SCP_list<SCP_string> list;
+	multi_join_read_ip_address_file(list);
 
-	// read in all the strings in the file
-	while(!cfeof(file)){
-		line[0] = '\0';
-		cfgets(line,IP_STRING_LEN,file);
-
-		// strip off any newline character
-		if(line[strlen(line) - 1] == '\n'){
-			line[strlen(line) - 1] = '\0';
-		}
-
-		// 0 length lines don't get processed
-		if((line[0] == '\0') || (line[0] == '\n') )
-			continue;
-
-		if ( !psnet_is_valid_ip_string(line) ) {
-			nprintf(("Network","Invalid ip string (%s)\n",line));
-		} else {
-			if(Om_num_ips < MAX_IP_ADDRS-1){
-				strcpy_s(Om_ip_addrs[Om_num_ips++],line);
-			}
+	for (auto const &ip : list)
+	{
+		if (Om_num_ips < MAX_IP_ADDRS - 1) {
+			strcpy_s(Om_ip_addrs[Om_num_ips++], ip.c_str());
 		}
 	}
-
-	cfclose(file);
 }
 
 // save the ip address file
 void options_multi_protocol_save_ip_file()
 {
-	int idx;
-	CFILE *file = NULL;
+	SCP_list<SCP_string> list;
 
-	// attempt to open the ip list file for writing
-	file = cfopen(IP_CONFIG_FNAME,"wt",CFILE_NORMAL,CF_TYPE_DATA );
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file\n"));
-		return;
+	// make a quick list
+	for(int idx=0;idx<Om_num_ips;idx++){
+		list.push_back(Om_ip_addrs[idx]);
 	}
 
-	// write out all the string we have
-	for(idx=0;idx<Om_num_ips;idx++){
-		// make _absolutely_ sure its a valid address
-		// MWA -- commented out next line because name resolution might fail when
-		// it was added.  We'll only grab games that we can actually get to.
-		//Assert(psnet_is_valid_ip_string(Multi_ip_addrs[idx]));
-
-		cfputs(Om_ip_addrs[idx],file);
-				
-	   // make sure to tack on a newline if necessary
-		if(Om_ip_addrs[idx][strlen(&Om_ip_addrs[idx][0]) - 1] != '\n'){
-			cfputs(NOX("\n"),file);
-		}
-	}
-
-	cfclose(file);
+	multi_join_write_ip_address_file(list);
 }
 
 // draw the list of ip addresses
@@ -1222,10 +1181,10 @@ void options_multi_protocol_display_ips()
 void options_multi_protocol_scroll_ip_down()
 {
 	if(Om_ip_start >= Ip_list_max_display[gr_screen.res]){
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Om_ip_start--;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -1233,10 +1192,10 @@ void options_multi_protocol_scroll_ip_down()
 void options_multi_protocol_scroll_ip_up()
 {
 	if(Om_ip_start < Om_num_ips-1){
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Om_ip_start++;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1291,7 +1250,7 @@ char Ip_str[IP_STRING_LEN+1];
 int Ip_validated_already = 0;
 int options_multi_verify_ip()
 {
-	int result;
+	bool result;
 
 	if(!Ip_validated_already){
 		// see if its a valid ip address
@@ -1523,100 +1482,104 @@ void options_multi_gen_button_pressed(int n)
 	// low object update level
 	case OM_GEN_OBJ_LOW:
 		if(Om_gen_obj_update != OBJ_UPDATE_LOW){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_LOW;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// medium object update level
 	case OM_GEN_OBJ_MED:
 		if(Om_gen_obj_update != OBJ_UPDATE_MEDIUM){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_MEDIUM;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// high object update level
 	case OM_GEN_OBJ_HIGH:
 		if(Om_gen_obj_update != OBJ_UPDATE_HIGH){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_HIGH;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	// lan object update level
 	case OM_GEN_OBJ_LAN:
 		if(Om_gen_obj_update != OBJ_UPDATE_LAN){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_LAN;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// accept pix
 	case OM_GEN_PIX_YES:
 		if(!Om_gen_pix){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_pix = 1;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't accept pix
 	case OM_GEN_PIX_NO:
 		if(Om_gen_pix){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_pix = 0;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// put missions in the multidate directory
 	case OM_GEN_XFER_MULTIDATA_YES:
 		if(!Om_gen_xfer_multidata){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_xfer_multidata = 1;
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", true);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't put missions in the multidata directory
 	case OM_GEN_XFER_MULTIDATA_NO:
 		if(Om_gen_xfer_multidata){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_xfer_multidata = 0;
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", false);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// flush the cache before each mission
 	case OM_GEN_FLUSH_YES:
 		if(!Om_gen_flush_cache){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_flush_cache = 1;
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", true);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't flush the cache before each mission
 	case OM_GEN_FLUSH_NO:
 		if(Om_gen_flush_cache){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_flush_cache = 0;
+			options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", false);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;	
 	}
@@ -1710,7 +1673,7 @@ void options_multi_disable_vox_controls()
 	// unset the sound buffer size so we don't display any waveforms
 	Om_vox_voice_buffer_size = -1;
 	Om_vox_voice_comp_size = -1;
-	Om_vox_playback_handle = -1;
+	Om_vox_playback_handle   = sound_handle::invalid();
 	Om_vox_test_status = OM_VOX_TEST_NONE;	
 
 	// disable the player list select button
@@ -1739,7 +1702,7 @@ void options_multi_enable_vox_controls()
 	// unset the sound buffer size so we don't display any waveforms
 	Om_vox_voice_buffer_size = -1;
 	Om_vox_voice_comp_size = -1;
-	Om_vox_playback_handle = -1;
+	Om_vox_playback_handle   = sound_handle::invalid();
 	Om_vox_test_status = OM_VOX_TEST_NONE;	
 
 	// select the first player on the list
@@ -1804,7 +1767,7 @@ void options_multi_vox_do()
 	}
 
 	// if the currently selected player is muted
-	if((Om_vox_player_select != NULL) && !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)]){
+	if((Om_vox_player_select != NULL) && options_multi_vox_plist_get(Om_vox_player_select) > -1 && !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)]){
 		Om_vox_buttons[gr_screen.res][OM_VOX_VOICE_MUTE].button.draw_forced(2);
 	}
 
@@ -1851,12 +1814,12 @@ void options_multi_vox_do()
 	
 	case OM_VOX_TEST_PLAYBACK:			
 		// if we were playing a sound back, but now the sound is done
-		if ( (Om_vox_playback_handle != -1) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle)) ) {
+		if ((Om_vox_playback_handle.isValid()) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle))) {
 			// flush all playing sounds safely
 			rtvoice_stop_playback_all();
 
 			// null the sound handle
-			Om_vox_playback_handle = -1;
+			Om_vox_playback_handle = sound_handle::invalid();
 
 			// set this so we know not to display any more waveforms
 			Om_vox_voice_buffer_size = -1;
@@ -1890,30 +1853,38 @@ void options_multi_vox_button_pressed(int n)
 	// accept voice button
 	case OM_VOX_VOICE_YES:
 		if(!Om_vox_accept_voice){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_vox_accept_voice = 1;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't accept voice button
 	case OM_VOX_VOICE_NO:
 		if(Om_vox_accept_voice){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_vox_accept_voice = 0;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	// mute/unmute button
 	case OM_VOX_VOICE_MUTE:
 		if(Om_vox_player_select != NULL){
-			Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)] = !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)];
-			gamesnd_play_iface(SND_USER_SELECT);
+			int index = options_multi_vox_plist_get(Om_vox_player_select);
+
+			// there's already an assertion for this in options_multi_vox_plist_get, just ignore in release
+			if (index < 0){
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+				break;
+			}
+				
+			Om_vox_player_flags[index] = !Om_vox_player_flags[index];
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -2105,28 +2076,32 @@ int options_multi_vox_plist_get(net_player *pl)
 
 	for(idx=0;idx<Om_vox_num_players;idx++){
 		if(pl == Om_vox_players[idx]){
-			return idx;
+			break;
 		}
 	}
 
-	// should neve get here. hmmm.
-	Int3();
-	return -1;
+	// Should never get a bad value here, but the places where this is called can now handle the negative return value, as it's not catastrophic.
+	// Still Assert to assist with bug tracking in debug.
+	Assertion(idx < Om_vox_num_players, "options_multi_vox_plist_get() could not find the correct net player.  Please report to an SCP member!");
+	if (idx >= Om_vox_num_players)
+		return -1;
+	else
+		return idx;
 }
 
 // scroll the player list down
 void options_multi_vox_plist_scroll_down()
 {
 	if(Om_vox_num_players < Om_vox_plist_max_display[gr_screen.res]){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	if((Om_vox_num_players - Om_vox_plist_start) >= Om_vox_plist_max_display[gr_screen.res]){
 		Om_vox_plist_start++;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -2135,9 +2110,9 @@ void options_multi_vox_plist_scroll_up()
 {
 	if(Om_vox_plist_start > 0){
 		Om_vox_plist_start--;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -2233,7 +2208,7 @@ void options_multi_close()
 bool options_multi_ok_to_accept()
 {
 	// if PXO is turned on, do we have a username and password?
-	if (Om_tracker_flag) {
+	if (Multi_options_g.pxo) {
 		if (strlen(Multi_tracker_login) == 0) {
 			return false;
 		}
@@ -2291,7 +2266,7 @@ void options_multi_select()
 	Om_mode = OM_MODE_GENERAL;
 
 	// clear any notification messages
-	Om_notify_stamp = -1;	
+	Om_notify_stamp = UI_TIMESTAMP::invalid();
 
 	// enable all the protocol controls
 	options_multi_enable_protocol_controls();	
@@ -2336,7 +2311,7 @@ void options_multi_unselect()
 }
 
 // set voice sound buffer for display 
-void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double gain)
+void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double  /*gain*/)
 {
 	if ( (sound_buf == NULL) || (buf_size <= 0) ) {
 		return;

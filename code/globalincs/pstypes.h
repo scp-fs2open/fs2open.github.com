@@ -17,14 +17,16 @@
 #include "windows_stub/config.h"
 #include "globalincs/scp_defines.h"
 #include "globalincs/toolchain.h"
+#include "globalincs/vmallocator.h"
 #include "utils/strings.h"
 
-#include <stdio.h>	// For NULL, etc
-#include <stdlib.h>
+#include <cstdio>    // For NULL, etc
+#include <cstdlib>
 #include <memory.h>
-#include <string.h>
+#include <cstring>
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
@@ -43,6 +45,12 @@
 #else
 #define DIR_SEPARATOR_CHAR '/'
 #define DIR_SEPARATOR_STR  "/"
+#endif
+
+#ifndef NDEBUG
+constexpr bool FSO_DEBUG = true;
+#else
+constexpr bool FSO_DEBUG = false;
 #endif
 
 typedef std::int32_t _fs_time_t;  // time_t here is 64-bit and we need 32-bit
@@ -75,10 +83,37 @@ typedef struct vec4 {
 	};
 } vec4;
 
+struct bvec4 {
+	bool x;
+	bool y;
+	bool z;
+	bool w;
+};
+
 // sometimes, you just need some integers
 typedef struct ivec3 {
 	int x, y, z;
 } ivec3;
+
+struct ivec2 {
+	int x, y;
+};
+
+inline bool operator<(const ivec3& l, const ivec3& r){
+	return l.x < r.x || (l.x == r.x && (l.y < r.y || (l.y == r.y && l.z < r.z)));
+}
+
+inline bool operator<(const ivec2& l, const ivec2& r){
+	return l.x < r.x || (l.x == r.x && l.y < r.y);
+}
+
+namespace scripting {
+	class ade_table_entry;
+}
+namespace luacpp {
+	class LuaValue;
+}
+struct lua_State;
 
 /** Represents a point in 3d space.
 
@@ -90,25 +125,23 @@ typedef struct vec3d {
 		} xyz;
 		float a1d[3];
 	};
-} vec3d;
 
-/** Compares two vec3ds */
-inline bool operator==(const vec3d &self, const vec3d &other)
-{
-	return (self.xyz.x == other.xyz.x
-		&& self.xyz.y == other.xyz.y
-		&& self.xyz.z == other.xyz.z
-	);
-}
+	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
+} vec3d;
 
 typedef struct vec2d {
 	float x, y;
 } vec2d;
 
+// Euler angles for a rotation: h=heading, b=bank and p=pitch; angles are around the y, z and x axes
+// respectively and are performed in that order.  (Strictly speaking these are Tait-Bryan angles,
+// not classic Euler angles.)
 typedef struct angles {
 	float	p, b, h;
 } angles_t;
 
+// For the avoidance of doubt, this is a row-major order matrix.
 typedef struct matrix {
 	union {
 		struct {
@@ -119,6 +152,7 @@ typedef struct matrix {
 	};
 } matrix;
 
+// You might think this is also row-major. You fool! It is actually column-major.
 typedef struct matrix4 {
 	union {
 		struct {
@@ -196,12 +230,24 @@ struct flag_def_list {
 	ubyte var;
 };
 
+//A list of parse names for a flag enum
 template<class T>
 struct flag_def_list_new {
     const char* name;			// The parseable representation of this flag
     T def;				// The flag definition for this flag
     bool in_use;		// Whether or not this flag is currently in use or obsolete
     bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
+};
+
+//A list of parse names for a flag enum. Instead of specifying whether an argument needs special handling,
+//a functor can passed that is called to handle an argument proceeding the flag. If used with parse_string_flag_list_special,
+//these will automatically be called when a special argument is encountered
+template<class T, typename... additional_args>
+struct special_flag_def_list_new : public flag_def_list_new<T> {
+	std::function<void(const SCP_string&, additional_args...)> parse_special;
+
+	special_flag_def_list_new(const char* name, T flag, bool in_use) : flag_def_list_new<T>{ name, flag, in_use, false } {}
+	special_flag_def_list_new(const char* name, T flag, bool in_use, const decltype(parse_special)& parseSpecial) : flag_def_list_new<T>{ name, flag, in_use, true }, parse_special(parseSpecial) { }
 };
 
 // weapon count list (mainly for pilot files)
@@ -224,12 +270,17 @@ extern int Global_error_count;
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
 #ifndef NDEBUG
-#define mprintf(args) outwnd_printf2 args
-#define nprintf(args) outwnd_printf args
+constexpr bool LoggingEnabled = true;
 #else
-#define mprintf(args)
-#define nprintf(args)
+#ifdef SCP_RELEASE_LOGGING
+constexpr bool LoggingEnabled = true;
+#else
+constexpr bool LoggingEnabled = false;
 #endif
+#endif
+
+#define mprintf(args) do { if (LoggingEnabled) { outwnd_printf2 args; } } while (false)
+#define nprintf(args) do { if (LoggingEnabled) { outwnd_printf args; } } while (false)
 
 #define LOCATION __FILE__,__LINE__
 
@@ -238,41 +289,37 @@ extern int Global_error_count;
 // or,
 // Error( LOCATION, "Error opening %s", filename );
 
-/*******************NEVER UNCOMMENT Assert ************************************************/
-// Please never uncomment the functionality of Assert in debug
+/*******************NEVER COMMENT Assert ************************************************/
+// Please never comment the functionality of Assert in debug
 // The code, as with all development like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
-// Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
+// Disabling this functionality is dangerous, crazy values can run rampant unchecked, and the longer it's disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
-#	define Assert(expr) do { ASSUME(expr); } while (0)
+#	define Assert(expr) do { ASSUME(expr); (void)sizeof(expr); } while (false)
 #else
 #	define Assert(expr) do {\
 		if (!(expr)) {\
 			os::dialogs::AssertMessage(#expr,__FILE__,__LINE__);\
 		}\
 		ASSUME( expr );\
-	} while (0)
+	} while (false)
 #endif
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
-#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(0)
+#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(false)
 
-// VerifyEx
+// Verification (like Assertion)
 #ifndef _MSC_VER   // non MS compilers
-#	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(0)
+#	define Verification(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(false)
 #else
-#	if _MSC_VER >= 1400	// VC 2005 or greater
-#		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(0)
-#	else // everything else
-#		define VerifyEx(x, y) Verify(x)
-#	endif
+#	define Verification(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(false)
 #endif
 
 #if defined(NDEBUG)
 	// No debug version of Int3
-	#define Int3() do { } while (0)
+	#define Int3() do { } while (false)
 #else
 	void debug_int3(const char *file, int line);
 
@@ -293,8 +340,7 @@ extern int Global_error_count;
 const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
-const int RAND_MAX_2	= (RAND_MAX/2);
-const float RAND_MAX_1f	= (1.0f / RAND_MAX);
+const float PI_4		= (PI/4.0f);
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
@@ -340,9 +386,6 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define TRUE	1
 #define FALSE	0
 
-int myrand();
-int rand32(); // returns a random number between 0 and 0x7fffffff
-
 
 // lod checker for (modular) table parsing
 typedef struct lod_checker {
@@ -350,15 +393,6 @@ typedef struct lod_checker {
 	int num_lods;
 	int override;
 } lod_checker;
-
-
-// check to see that a passed sting is valid, ie:
-//  - has >0 length
-//  - is not "none"
-//  - is not "<none>"
-inline bool VALID_FNAME(const char* x) {
-	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
-}
 
 
 // Callback Loading function.
@@ -383,7 +417,7 @@ extern void game_busy(const char *filename = NULL);
 
 #define NOX(s) s
 
-const char *XSTR(const char *str, int index);
+const char *XSTR(const char *str, int index, bool force_lookup = false);
 
 // Caps V between MN and MX.
 template <class T> void CAP( T& v, T mn, T mx )
@@ -396,7 +430,7 @@ template <class T> void CAP( T& v, T mn, T mx )
 }
 
 // faster version of CAP()
-#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
+#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(false)
 
 //=========================================================
 // Memory management functions
@@ -416,20 +450,47 @@ public:
 	class camera *getCamera();
 	size_t getIndex();
 	int getSignature();
-	bool isValid();
+	bool isValid() const;
 };
 
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+// check to see that a passed sting is valid, ie:
+//  - has >0 length
+//  - is not "none"
+//  - is not "<none>"
+inline bool VALID_FNAME(const char* x) {
+	return (x[0] != '\0') && stricmp(x, "none") != 0 && stricmp(x, "<none>") != 0;
+}
+/**
+ * @brief Checks if the specified string may be a valid file name
+ *
+ * @warning This only does a quick check against an empty string and a few known invalid names. It does not check if the
+ * file actually exists.
+ *
+ * @param x The file name to check
+ * @return @c true if the name is valid, @c false otherwise
+ */
+inline bool VALID_FNAME(const SCP_string& x) {
+	if (x.empty()) {
+		return false;
+	}
+	if (!stricmp(x.c_str(), "none")) {
+		return false;
+	}
+	if (!stricmp(x.c_str(), "<none>")) {
+		return false;
+	}
+	return true;
+}
+
 // Function to generate a stacktrace
 SCP_string dump_stacktrace();
 
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
-// would prefer std::is_trivially_copyable but it's not supported by gcc yet
-// ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
-#ifndef NDEBUG
-	#if SCP_COMPILER_CXX_STATIC_ASSERT && SCP_COMPILER_CXX_AUTO_TYPE
+// This is disabled for VS2013 and lower since that doesn't support the necessary features
+#if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
@@ -441,22 +502,37 @@ SCP_string dump_stacktrace();
 	const auto ptr_memset = std::memset;
 	#define memset memset_if_trivial_else_error
 
+// Forward declarations from libraries
+struct ImDrawListSplitter;
+
 // Put into std to be compatible with code that uses std::mem*
 namespace std
 {
-	template<typename T>
-	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
-	{
-		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
-		return ptr_memset(memset_data, ch, count);
-	}
+template <typename T>
+using trivial_check = std::is_trivially_copyable<T>;
 
-	// assume memset on a void* is "safe"
-	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
-	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
-	{
-		return ptr_memset(memset_data, ch, count);
-	}
+template <typename T>
+void* memset_if_trivial_else_error(
+	typename std::enable_if<!std::is_same<T, ImDrawListSplitter>::value, T>::type* memset_data,
+	int ch,
+	size_t count)
+{
+	static_assert(trivial_check<T>::value, "memset on non-trivial object");
+	return ptr_memset(memset_data, ch, count);
+}
+
+// assume memset on a void* is "safe"
+// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
+inline void* memset_if_trivial_else_error(void* memset_data, int ch, size_t count)
+{
+	return ptr_memset(memset_data, ch, count);
+}
+
+// Dear ImGui triggers these as well, so we need to let them pass
+inline void* memset_if_trivial_else_error(ImDrawListSplitter* memset_data, int ch, size_t count)
+{
+	return ptr_memset(memset_data, ch, count);
+}
 
 	// MEMCPY!
 	const auto ptr_memcpy = std::memcpy;
@@ -465,8 +541,8 @@ namespace std
 	template<typename T, typename U>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<U>::value, "memcpy on non-trivial object U");
 		return ptr_memcpy(memcpy_dest, src, count);
 	}
 
@@ -481,20 +557,20 @@ namespace std
 	template<typename U>
 	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		static_assert(trivial_check<U>::value, "memcpy on non-trivial object U");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
 	template<typename T>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 	template<typename T>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
@@ -508,10 +584,16 @@ namespace std
 	#define memmove memmove_if_trivial_else_error
 
 	template<typename T, typename U>
-	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
+	inline void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
-		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		static_assert(trivial_check<T>::value, "memmove on non-trivial object T");
+		static_assert(trivial_check<U>::value, "memmove on non-trivial object U");
+		return ptr_memmove(memmove_dest, memmove_src, count);
+	}
+
+	// Not really needed but else clang thinks ptr_memmove isn't used
+	inline void *memmove_if_trivial_else_error(void *memmove_dest, void *memmove_src, size_t count)
+	{
 		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
 }
@@ -520,7 +602,6 @@ using std::memcpy_if_trivial_else_error;
 using std::memmove_if_trivial_else_error;
 using std::memset_if_trivial_else_error;
 
-	#endif // HAVE_CXX11
 #endif // NDEBUG
 
-#endif		// PS_TYPES_H
+#endif		// _PSTYPES_H

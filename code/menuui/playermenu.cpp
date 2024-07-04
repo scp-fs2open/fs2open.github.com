@@ -8,22 +8,24 @@
 */ 
 
 
-#include <limits.h>
-#include <ctype.h>
+#include <climits>
+#include <cctype>
 
-
+#include "freespace.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/version.h"
 #include "io/key.h"
 #include "localization/localize.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/playermenu.h"
 #include "mission/missioncampaign.h"
+#include "mission/missiontraining.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "osapi/osregistry.h"
 #include "parse/parselo.h"
@@ -33,6 +35,7 @@
 #include "popup/popup.h"
 #include "ui/ui.h"
 
+#include "playermenu.h"
 #include "graphics/paths/PathRenderer.h"
 
 // --------------------------------------------------------------------------------------------------------
@@ -147,13 +150,13 @@ char Player_select_very_first_pilot_callsign[CALLSIGN_LEN + 2];
 
 extern int Main_hall_bitmap;						// bitmap handle to the main hall bitmap
 
-int Player_select_mode;								// single or multiplayer - never set directly. use player_select_init_player_stuff()
+int Player_select_mode = PLAYER_SELECT_UNINITED;								// single or multiplayer - never set directly. use player_select_init_player_stuff()
 int Player_select_num_pilots;						// # of pilots on the list
 int Player_select_list_start;						// index of first list item to start displaying in the box
 int Player_select_pilot;							// index into the Pilot array of which is selected as the active pilot
 int Player_select_input_mode;						// 0 if the player _isn't_ typing a callsign, 1 if he is
-char Pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
-char *Pilots[MAX_PILOTS];
+char Pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];		// Filename of associated Pilot. Same idx as Pilots[]
+char *Pilots[MAX_PILOTS];							// Pilot callsigns
 int Player_select_clone_flag;						// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];	// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
@@ -202,28 +205,75 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 
-extern int delete_pilot_file(char *pilot_name);
 
-/*
- * validate that a pilot/player was created with the same language FSO is currently using
- *
- * @param pilots callsign
- * @note not longer needed if intel entry "primary keys" change to a non-translated value
- */
-bool valid_pilot_lang(char *callsign)
-{
-	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
+bool valid_pilot(const char* callsign, bool no_popup) {
+	char pilot_lang[LCL_LANG_NAME_LEN + 1];
+	char current_lang[LCL_LANG_NAME_LEN + 1];
+	int player_flags = 0;
+
 	SCP_string filename = callsign;
+	filename += ".json";
+	
+	if (!Pilot.verify(filename.c_str(), nullptr, pilot_lang, &player_flags)) {
+		if (!no_popup) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Unable to open pilot file %s!", 1662), filename.c_str());
+		}
 
-	filename += ".plr";
+		return false;
+	};
+
+	// verify pilot language = current FSO language
 	lcl_get_language_name(current_lang);
+	if (strcmp(current_lang, pilot_lang) != 0) {
+		// error: Different language
+		if (!no_popup) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR(
+				"Selected pilot was created with a different language\n"
+				"to the currently active language.\n\n"
+				"Please select a different pilot or change the language.", 1637));
+		}
+		return false;
+	}
 
-	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
-		if (!strcmp(current_lang, pilot_lang)) {
-			return true;
+	// verify pilot flags raised by Pilot::verify()
+	// if no_popup == true, assume sel = 0
+	if ((player_flags & (PLAYER_FLAGS_PLR_VER_IS_LOWER | PLAYER_FLAGS_PLR_VER_IS_HIGHER)) && (!no_popup)) {
+		// warning: Selected player version is different than the expected version
+		int sel = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_YES, POPUP_NO, XSTR(
+			"Warning!\n\n"
+			"This pilot was created with a different version of FreeSpace.  If you continue, it will be converted to version %i.\n\n"
+			"Please consider cloning the pilot instead, so that the original pilot will remain compatible with the other version.  Visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
+			"Do you wish to continue?", 1663),
+			PLR_VERSION);
+
+		if (sel != 0) {
+			// Player either hit No or the popup was aborted, so bail
+			return false;
 		}
 	}
-	return false;
+
+	// All validation checks passed
+	return true;
+}
+
+/**
+ * @brief Handler for button Accept
+ */
+void player_select_on_accept() {
+	// make sure he has a valid pilot selected
+	if (Player_select_pilot < 0) {
+		// error: invalid selection
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You must select a valid pilot first", 378));
+		return;
+	}
+
+	if (!valid_pilot(Pilots[Player_select_pilot])) {
+		// not a valid pilot, bail
+		return;
+	}
+
+	// If we got here, then everything checks out!
+	player_select_commit();
 }
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
@@ -327,7 +377,7 @@ void player_select_init()
 
 // if we found a pilot
 	if ( player_select_get_last_pilot_info() ) {
-		if (Player_select_last_is_multi && !Networking_disabled) {
+		if (Player_select_last_is_multi) {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 		} else {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
@@ -344,6 +394,7 @@ void player_select_init()
 
 // no need to reset this to false because we only ever see player_select once per game run
 static bool Startup_warning_dialog_displayed = false;
+static bool Save_file_warning_displayed = false;
 
 void player_select_do()
 {
@@ -352,9 +403,14 @@ void player_select_do()
 	// Goober5000 - display a popup warning about problems in the mod
 	if ((Global_warning_count > 10 || Global_error_count > 0) && !Startup_warning_dialog_displayed) {
 		char text[512];
-		sprintf(text, "Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formated table files to corrupt models.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mod's data files, not FreeSpace Open's source code.", Global_warning_count + Global_error_count);
+		sprintf(text, XSTR ("Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formatted table files to corrupt models.\n\nWhile FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.\n\nPlease contact the authors of the mod for assistance.", 1640), Global_warning_count + Global_error_count);
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, text);
 		Startup_warning_dialog_displayed = true;
+	}
+
+	if (!Ingame_options_save_found && Using_in_game_options && !Save_file_warning_displayed) {
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("In-game Options are enabled but a save file could not be found. You may need to update your settings in the Options menu.", 1854));
+		Save_file_warning_displayed = true;
 	}
 		
 	// set the input box at the "virtual" line 0 to be active so the player can enter a callsign
@@ -374,12 +430,12 @@ void player_select_do()
 		// switch between single and multiplayer modes
 		case KEY_TAB: {
 			if (Player_select_input_mode) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
 			// play a little sound
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
@@ -412,6 +468,12 @@ void player_select_do()
 	GR_MAYBE_CLEAR_RES(Player_select_background_bitmap);
 	gr_set_bitmap(Player_select_background_bitmap);
 	gr_bitmap(0,0,GR_RESIZE_MENU);
+
+	//skip this if pilot is given through cmdline, assuming single-player
+	if (Cmdline_pilot) {
+		player_finish_select(Cmdline_pilot, false);
+		return;
+	}
 
 	// press the accept button
 	if (Player_select_autoaccept) {
@@ -475,7 +537,7 @@ void player_select_close()
 	} 
 	// if(Player_select_palette >= 0){
 	// 	bm_release(Player_select_palette);
-		//Player_select_palette = -1;
+		//Player_select_palette = -1;GS_EVENT_MAIN_MENU
 	// }
 
 	// setup the player  struct
@@ -499,11 +561,30 @@ void player_select_close()
 	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
 		Error(LOCATION,"Couldn't load pilot file, bailing");
 		Player = NULL;
-	} else {
-		// NOTE: this may fail if there is no current campaign, it's not fatal
-		Pilot.load_savefile(Player->current_campaign);
+		return;
 	}
 
+	// set the local multi options from the player flags
+	multi_options_init_globals();
+	
+	// read in the current campaign
+	// NOTE: this may fail if there is no current campaign, it's not fatal
+	Pilot.load_savefile(Player, Player->current_campaign);
+
+	// Set singleplayer/multiplayer mode in Player
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->player_was_multi = 1;
+	} else {
+		Player->player_was_multi = 0;
+	}
+
+	// save the pilot file to a version that we work with
+	Pilot.save_player(Player);
+
+	// Update the LastPlayer key in the registry
+	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
+
+	// Maybe use a different main hall (debug console)
 	if (Player_select_force_main_hall != "") {
 		main_hall_init(Player_select_force_main_hall);
 	}
@@ -558,19 +639,7 @@ void player_select_button_pressed(int n)
 		break;
 
 	case ACCEPT_BUTTON:
-		// make sure he has a valid pilot selected
-		if (Player_select_pilot < 0) {
-			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must select a valid pilot first", 378));
-		} else {
-			if (valid_pilot_lang(Pilots[Player_select_pilot])) {
-				player_select_commit();
-			} else {
-				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
-					"Selected pilot was created with a different language\n"
-					"to the currently active language.\n\n"
-					"Please select a different pilot or change the language", 1637));
-			}
-		}
+		player_select_on_accept();
 		break;
 
 	case CLONE_BUTTON:
@@ -578,7 +647,7 @@ void player_select_button_pressed(int n)
 		if (Player_select_num_pilots >= MAX_PILOTS) {
 			player_select_set_bottom_text(XSTR( "You already have the maximum # of pilots!", 379));
 
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			break;
 		}
 
@@ -621,7 +690,7 @@ void player_select_button_pressed(int n)
 		if(Player_select_num_pilots >= MAX_PILOTS) {
 			player_select_set_bottom_text(XSTR( "You already have the maximum # of pilots!", 379));
 
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			break;
 		}
 
@@ -647,7 +716,7 @@ void player_select_button_pressed(int n)
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 							"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
-							"deleted from the single-player menu.", 1610));
+							"deleted from the single-player menu.", 1598));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
@@ -661,43 +730,41 @@ void player_select_button_pressed(int n)
 		break;
 
 	case SINGLE_BUTTON:
-		player_select_set_bottom_text("");
-
 		Player_select_autoaccept = 0;
 		// switch to single player mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_SINGLE) {
 			// play a little sound
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
-			player_select_set_bottom_text(XSTR( "Single Player Mode", 376));
+			//  Only do this when changing modes, keeps bottom text from being empty by accident
+			player_select_set_bottom_text("");
+
+			player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
 
 			// reinitialize as single player mode
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	case MULTI_BUTTON:
-		player_select_set_bottom_text("");
-
 		Player_select_autoaccept = 0;
-		if ( Networking_disabled ) {
-			game_feature_disabled_popup();
-			break;
-		}
 
 		// switch to multiplayer mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_MULTI) {
 			// play a little sound
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
+			//  Only do this when changing modes, keeps bottom text from being empty by accident
+			player_select_set_bottom_text("");
+			
 			player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
 
 			// reinitialize as multiplayer mode
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	}
@@ -709,14 +776,14 @@ int player_select_create_new_pilot()
 
 	// make sure we haven't reached the max
 	if (Player_select_num_pilots >= MAX_PILOTS) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return 0;
 	}
 
 	int play_scroll_sound = 1;
 
 	if ( play_scroll_sound ) {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 
 	idx = Player_select_num_pilots;	
@@ -749,14 +816,14 @@ int player_select_create_new_pilot()
 void player_select_delete_pilot()
 {
 	char filename[MAX_PATH_LEN + 1];
-	int i, del_rval;
+	int i;
 
 	// tack on the full path and the pilot file extension
 	// build up the path name length
 	// make sure we do this based upon whether we're in single or multiplayer mode
 	strcpy_s( filename, Pilots[Player_select_pilot] );
 
-	del_rval = delete_pilot_file(filename);
+	auto del_rval = delete_pilot_file(filename);
 
 	if ( !del_rval ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", 1599));
@@ -786,9 +853,9 @@ void player_select_scroll_list_up()
 	// change the pilot selected index and play the appropriate sound
 	if (Player_select_pilot) {
 		Player_select_pilot--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 
 	if (Player_select_pilot < Player_select_list_start) {
@@ -802,9 +869,9 @@ void player_select_scroll_list_down()
 	// change the pilot selected index and play the appropriate sound
 	if ( Player_select_pilot < Player_select_num_pilots - 1 ) {
 		Player_select_pilot++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 
 	if ( Player_select_pilot >= (Player_select_list_start + Max_lines) ) {
@@ -815,8 +882,6 @@ void player_select_scroll_list_down()
 // fill in the data on the last played pilot (callsign and is_multi or not)
 int player_select_get_last_pilot_info()
 {
-	// TODO: Replace this with a function that does this properly for the new pilot code.
-
 	const char *last_player = os_config_read_string( NULL, "LastPlayer", NULL);
 
 	if (last_player == NULL) {
@@ -849,9 +914,15 @@ int player_select_get_last_pilot()
 			return 0;
 		}
 
-		Get_file_list_filter = player_select_pilot_file_filter;
-
-		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+		auto pilots = player_select_enumerate_pilots();
+		// Copy the enumerated pilots into the appropriate local variables
+		Player_select_num_pilots = static_cast<int>(pilots.size());
+		for (auto i = 0; i < MAX_PILOTS; ++i) {
+			if (i < static_cast<int>(pilots.size())) {
+				strcpy_s(Pilots_arr[i], pilots[i].c_str());
+			}
+			Pilots[i] = Pilots_arr[i];
+		}
 
 		Player_select_pilot = -1;
 		idx = 0;
@@ -872,6 +943,12 @@ int player_select_get_last_pilot()
 			Player = &Players[0];
 			Pilot.load_player(Pilots_arr[idx], Player);
 			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
+
+			// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
+			if (Player->player_was_multi) {
+				Player->flags |= PLAYER_FLAGS_IS_MULTI;
+			}
+
 			return 1;
 		}
 	}
@@ -881,47 +958,57 @@ int player_select_get_last_pilot()
 
 void player_select_init_player_stuff(int mode)
 {
-	Player_select_list_start = 0;
+	// If we did not change mode, then we need to initialize the data.
+	bool initializing = Player_select_mode == PLAYER_SELECT_UNINITED;
 
 	// set the select mode to single player for default
 	Player_select_mode = mode;
 
-	// load up the list of players based upon the Player_select_mode (single or multiplayer)
-	Get_file_list_filter = player_select_pilot_file_filter;
+	if (initializing){
+		Player_select_list_start = 0;
 
-	Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+		auto pilots = player_select_enumerate_pilots();
+		// Copy the enumerated pilots into the appropriate local variables
+		Player_select_num_pilots = static_cast<int>(pilots.size());
+		for (auto i = 0; i < MAX_PILOTS; ++i) {
+			if (i < static_cast<int>(pilots.size())) {
+				strcpy_s(Pilots_arr[i], pilots[i].c_str());
+			}
+			Pilots[i] = Pilots_arr[i];
+		}
 
-	// if we have a "last_player", and they're in the list, bash them to the top of the list
-	if (Player_select_last_pilot[0] != '\0') {
-		int i,j;
-		for (i = 0; i < Player_select_num_pilots; ++i) {
-			if (!stricmp(Player_select_last_pilot,Pilots[i])) {
-				break;
+		// if we have a "last_player", and they're in the list, bash them to the top of the list
+		if (Player_select_last_pilot[0] != '\0') {
+			int i,j;
+			for (i = 0; i < Player_select_num_pilots; ++i) {
+				if (!stricmp(Player_select_last_pilot,Pilots[i])) {
+					break;
+				}
+			}
+			if (i != Player_select_num_pilots) {
+				for (j = i; j > 0; --j) {
+					strncpy(Pilots[j], Pilots[j-1], strlen(Pilots[j-1])+1);
+				}
+				strncpy(Pilots[0], Player_select_last_pilot, strlen(Player_select_last_pilot)+1);
 			}
 		}
-		if (i != Player_select_num_pilots) {
-			for (j = i; j > 0; --j) {
-				strncpy(Pilots[j], Pilots[j-1], strlen(Pilots[j-1])+1);
-			}
-			strncpy(Pilots[0], Player_select_last_pilot, strlen(Player_select_last_pilot)+1);
+
+		Player = NULL;
+
+		// if this value is -1, it means we should set it to the num pilots count
+		if (Player_select_initial_count == -1) {
+			Player_select_initial_count = Player_select_num_pilots;
 		}
-	}
 
-	Player = NULL;
-
-	// if this value is -1, it means we should set it to the num pilots count
-	if (Player_select_initial_count == -1) {
-		Player_select_initial_count = Player_select_num_pilots;
-	}
-
-	// select the first pilot if any exist, otherwise set to -1
-	if (Player_select_num_pilots == 0) {
-		Player_select_pilot = -1;
-		player_select_set_middle_text(XSTR( "Type Callsign and Press Enter", 381));
-		player_select_set_controls(1);		// gray out the controls
-		player_select_create_new_pilot();
-	} else {
-		Player_select_pilot = 0;
+		// select the first pilot if any exist, otherwise set to -1
+		if (Player_select_num_pilots == 0) {
+			Player_select_pilot = -1;
+			player_select_set_middle_text(XSTR( "Type Callsign and Press Enter", 381));
+			player_select_set_controls(1);		// gray out the controls
+			player_select_create_new_pilot();
+		} else {
+			Player_select_pilot = 0;
+		}
 	}
 }
 
@@ -1058,7 +1145,7 @@ void player_select_process_input(int k)
 		}
 
 		if (z) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			break;
 		}
 
@@ -1079,6 +1166,9 @@ void player_select_process_input(int k)
 		if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 			Player->flags |= PLAYER_FLAGS_IS_MULTI;
 			Player->stats.flags |= STATS_FLAG_MULTIPLAYER;
+			Player->player_was_multi = 1;
+		} else {
+			Player->player_was_multi = 0;
 		}
 
 		// create his pilot file
@@ -1121,22 +1211,27 @@ void player_select_process_input(int k)
 void player_select_display_copyright()
 {
 	int	sx, sy, w;
-	char	Copyright_msg1[256], Copyright_msg2[256];
+	char Copyright_msg2[256];
 	
 //	strcpy_s(Copyright_msg1, XSTR("Descent: FreeSpace - The Great War, Copyright c 1998, Volition, Inc.", -1));
 	gr_set_color_fast(&Color_white);
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
-	get_version_string(Copyright_msg1, sizeof(Copyright_msg1));
-	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), Lcl_special_chars + 4);
+	auto Copyright_msg1 = gameversion::get_version_string();
+	if (Unicode_text_mode) {
+		// Use a Unicode character if we are in unicode mode instead of using special characters
+		strcpy_s(Copyright_msg2, XSTR("Copyright \xC2\xA9 1999, Volition, Inc.  All rights reserved.", 385));
+	} else {
+		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), lcl_get_font_index(font::get_current_fontnum()) + 4);
+	}
 
-	gr_get_string_size(&w, NULL, Copyright_msg1);
-	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
+	gr_get_string_size(&w, nullptr, Copyright_msg1.c_str());
+	sx = (int)std::lround((gr_screen.max_w_unscaled / 2) - w/2.0f);
 	sy = (gr_screen.max_h_unscaled - 2) - 2*gr_get_font_height();
-	gr_string(sx, sy, Copyright_msg1, GR_RESIZE_MENU);
+	gr_string(sx, sy, Copyright_msg1.c_str(), GR_RESIZE_MENU);
 
 	gr_get_string_size(&w, NULL, Copyright_msg2);
-	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
+	sx = (int)std::lround((gr_screen.max_w_unscaled / 2) - w/2.0f);
 	sy = (gr_screen.max_h_unscaled - 2) - gr_get_font_height();
 
 	gr_string(sx, sy, Copyright_msg2, GR_RESIZE_MENU);
@@ -1192,7 +1287,7 @@ void player_select_eval_very_first_pilot()
 	// if we already have this flag set, check to see if our callsigns match
 	if(Player_select_very_first_pilot) {
 		// if the callsign has changed, unset the flag
-		if(strcmp(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot])){
+		if(strcmp(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot]) != 0){
 			Player_select_very_first_pilot = 0;
 		}
 	} else { // otherwise check to see if there is only 1 pilot
@@ -1210,7 +1305,7 @@ void player_select_commit()
 	Assert(Player_select_num_pilots > 0);
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
 	// evaluate if this is the _very_ first pilot
 	player_select_eval_very_first_pilot();
@@ -1248,18 +1343,22 @@ void player_select_cancel_create()
 	Player_select_autoaccept = 0;
 }
 
-DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
+// See also the mainhall command in mainhallmenu.cpp
+DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other main hall)")
 {
 	int idx;
 	
 	if(gameseq_get_state() != GS_STATE_INITIAL_PLAYER_SELECT) {
-		dc_printf("This command can only be run while in the initial player select screen.\n");
+		dc_printf("This command can only be run while in the initial player select screen.  Try using the 'mainhall' command.\n");
 		return;
 	}
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: bastion [index]\n");
-		dc_printf("    [index] -- optional main hall index; if not supplied, defaults to 1\n");
+		dc_printf("       bastion status | ?\n");
+		dc_printf("       bastion --status | --?\n");
+		dc_printf("[index] -- optional main hall index; if not supplied, defaults to 1\n\n");
+		dc_printf("Note: 'mainhall' is an updated version of 'bastion'\n");
 		return;
 	}
 
@@ -1285,29 +1384,25 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 	}
 }
 
-#define MAX_PLAYER_TIPS			40
-
-char *Player_tips[MAX_PLAYER_TIPS];
-int Num_player_tips;
+SCP_vector<SCP_string> Player_tips;
 int Player_tips_shown = 0;
 
 // tooltips
-void player_tips_init()
+void parse_tips_table(const char* filename)
 {
-	Num_player_tips = 0;
-	
 	try
 	{
-		read_file_text("tips.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
 
-			if (Num_player_tips >= MAX_PLAYER_TIPS) {
-				break;
-			}
-			Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
+			SCP_string buf;
+			stuff_string(buf, F_MESSAGE);
+			
+			Player_tips.push_back(message_translate_tokens(buf.c_str()));
+
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -1317,27 +1412,29 @@ void player_tips_init()
 	}
 }
 
-// close out player tips - *only call from game_shutdown()*
-void player_tips_close()
+void player_tips_init()
 {
-	int i;
+	// first parse the default table
+	parse_tips_table("tips.tbl");
 
-	for (i=0; i<MAX_PLAYER_TIPS; i++) {
-		if (Player_tips[i] != NULL) {
-			vm_free(Player_tips[i]);
-			Player_tips[i] = NULL;
-		}
-	}
+	// parse any modular tables
+	parse_modular_table("*-tip.tbm", parse_tips_table);
 }
 
 void player_tips_popup()
 {
 	int tip, ret;
 
-	// player has disabled tips
-	if ( (Player != NULL) && !Player->tips ) {
+	// no player, or player has disabled tips
+	if ( (Player == nullptr) || !Player->tips ) {
 		return;
 	}
+
+	// no tips to show
+	if (Player_tips.empty()) {
+		return;
+	}
+
 	// only show tips once per instance of FreeSpace
 	if(Player_tips_shown == 1) {
 		return;
@@ -1345,19 +1442,19 @@ void player_tips_popup()
 	Player_tips_shown = 1;
 
 	// randomly pick one
-	tip = (int)frand_range(0.0f, (float)Num_player_tips - 1.0f);
+	tip = Random::next((int)Player_tips.size());
 
-	char all_txt[2048];
+	SCP_string all_txt;
 
 	do {
-		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip]);
-		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt);
+		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip].c_str());
+		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt.c_str());
 	
 		// now what?
 		switch(ret){
 		// next
 		case 1:
-			if(tip >= Num_player_tips - 1) {
+			if (tip >= (int)Player_tips.size() - 1) {
 				tip = 0;
 			} else {
 				tip++;
@@ -1373,4 +1470,150 @@ void player_tips_popup()
 			break;
 		}
 	} while(ret > 0);
+}
+
+/**
+ * Displays a popup notification if the pilot was converted from pre-22.0 which might disrupt control settings.  Returns true if the popup was shown.
+ */
+bool player_tips_controls() {
+	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5) {
+		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
+		// of changes regarding their bindings
+
+		Player->save_flags &= ~PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;	// Clear the flag, since we're notifying the user right now
+
+		int sel = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE_BIG | PF_TITLE_GREEN, 2, POPUP_OK, XSTR("Don't show me this again", 1443),
+			XSTR("Notice!\n\n"
+			"The currently selected pilot was converted from a version older than FSO 22.0.\n\n"
+			"It is strongly recommended that you verify your control bindings within the Options -> Control Config screen, as well as verify your Mouse Input Mode (formerly Mouse Off/On) within the Options screen.", 1664));
+
+		if (sel == 1) {
+			// Don't show me this again!
+			Pilot.save_player(Player);
+			Pilot.save_savefile();
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+SCP_vector<SCP_string> player_select_enumerate_pilots() {
+	// load up the list of players based upon the Player_select_mode (single or multiplayer)
+	Get_file_list_filter = player_select_pilot_file_filter;
+
+	SCP_vector<SCP_string> pilots;
+	cf_get_file_list(pilots, CF_TYPE_PLAYERS, "*.json", CF_SORT_TIME, nullptr, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+
+	return pilots;
+}
+
+SCP_string player_get_last_player()
+{
+	const char* last_player = os_config_read_string(nullptr, "LastPlayer", nullptr);
+
+	if (last_player == nullptr) {
+		// No last player stored
+		return SCP_string();
+	}
+	return SCP_string(last_player);
+}
+
+void player_finish_select(const char* callsign, bool is_multi) {
+	Player_num = 0;
+	Player = &Players[0];
+	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
+
+	// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
+	if (is_multi) {
+		Player->flags |= PLAYER_FLAGS_IS_MULTI;
+	}
+
+	// WMC - Set appropriate game mode
+	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
+		Game_mode = GM_MULTIPLAYER;
+	} else {
+		Game_mode = GM_NORMAL;
+	}
+
+	// now read in a the pilot data
+	if ( !Pilot.load_player(callsign, Player) ) {
+		Error(LOCATION,"Couldn't load pilot file for pilot \"%s\", bailing", callsign);
+		Player = nullptr;
+	} else {
+		// NOTE: this may fail if there is no current campaign, it's not fatal
+		Pilot.load_savefile(Player, Player->current_campaign);
+	}
+
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->player_was_multi = 1;
+	} else {
+		Player->player_was_multi = 0;
+	}
+
+	// set the local multi options from the player flags
+	multi_options_init_globals();
+
+	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
+
+	gameseq_post_event(GS_EVENT_MAIN_MENU);
+}
+bool player_create_new_pilot(const char* callsign, bool is_multi, const char* copy_from_callsign) {
+	SCP_string buf = callsign;
+
+	drop_white_space(buf);
+	auto invalid_name = false;
+	if (!isalpha(buf[0])) {
+		invalid_name = true;
+	} else {
+		for (auto idx=1; buf[idx]; idx++) {
+			if (!isalpha(buf[idx]) && !isdigit(buf[idx]) && !strchr(VALID_PILOT_CHARS, buf[idx])) {
+				invalid_name = true;
+				break;
+			}
+		}
+	}
+
+	if (buf.empty()) {
+		invalid_name = true;
+	}
+
+	if (invalid_name) {
+		return false;
+	}
+
+	// Create the new pilot, and write out his file
+	// if this is the first guy, we should set the Player struct
+	if (Player == nullptr) {
+		Player = &Players[0];
+		Player->reset();
+		Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
+	}
+
+	if (copy_from_callsign != nullptr) {
+		// attempt to read in the pilot file of the guy to be cloned
+		if (!Pilot.load_player(copy_from_callsign, Player)) {
+			Error(LOCATION, "Couldn't load pilot file, bailing");
+			return false;
+		}
+	}
+
+	strcpy_s(Player->callsign, buf.c_str());
+	init_new_pilot(Player, copy_from_callsign == nullptr);
+
+	// set him as being a multiplayer pilot if we're in the correct mode
+	if (is_multi) {
+		Player->flags |= PLAYER_FLAGS_IS_MULTI;
+		Player->stats.flags |= STATS_FLAG_MULTIPLAYER;
+	}
+
+	// create his pilot file
+	Pilot.save_player(Player);
+
+	// unset the player
+	Player->reset();
+	Player = nullptr;
+
+	return true;
 }

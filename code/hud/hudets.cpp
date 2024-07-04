@@ -14,6 +14,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/systemvars.h"
 #include "hud/hudets.h"
+#include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "object/object.h"
@@ -22,9 +23,10 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "globalincs/alphacolors.h"
 
 float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  0.0833f, 0.167f, 0.25f, 0.333f, 0.417f, 0.5f, 0.583f, 0.667f, 0.75f, 0.833f, 0.9167f, 1.0f};
-int Weapon_energy_cheat = 0;
+bool Weapon_energy_cheat = false;
 
 // -------------------------------------------------------------------------------------------------
 // ets_init_ship() is called by a ship when it is created (effectively, for every ship at the start
@@ -53,9 +55,10 @@ void ets_init_ship(object* obj)
 }
 
 // -------------------------------------------------------------------------------------------------
-// update_ets() is called once per frame for every OBJ_SHIP in the game.  The amount of energy
-// to send to the weapons and shields is calculated, and the top ship speed is calculated.  The
-// amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
+// update_ets() is called once per frame for every OBJ_SHIP in the game.  
+// The amount of energy to send to the weapons and shields is calculated.
+// The max speed is also updated if there is a change in aggregate engine health.
+// The amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
 //
 // parameters:   obj          ==> object that is updating their energy system
 //               fl_frametime ==> game frametime (in seconds)
@@ -80,10 +83,10 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
-//	new_energy = fl_frametime * sinfo_p->power_output;
+	//	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
-	max_new_weapon_energy = fl_frametime * sinfo_p->max_weapon_regen_per_second * max_g;
+	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
@@ -95,12 +98,15 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * sinfo_p->max_shield_regen_per_second * shield_get_max_strength(objp, true); // recharge rate is unaffected by $Max Shield Recharge
+	max_new_shield_energy = fl_frametime * ship_p->max_shield_regen_per_second * shield_get_max_strength(objp, true); // recharge rate is unaffected by $Max Shield Recharge
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
 	}
+
+	if (Missiontime - Ai_info[ship_p->ai_index].last_hit_time < fl2f(sinfo_p->shield_regen_hit_delay))
+		shield_delta = 0.0f;
 
 	shield_add_strength(objp, shield_delta);
 
@@ -112,23 +118,40 @@ void update_ets(object* objp, float fl_frametime)
 		}
 	}
 
-	// calculate the top speed of the ship based on the energy flow to engines
-	float y = Energy_levels[ship_p->engine_recharge_index];
-
-	ship_p->current_max_speed = ets_get_max_speed(objp, y);
-
 	// AL 11-15-97: Rules for engine strength affecting max speed:
-	//						1. if strength >= 0.5 no affect 
+	//						1. if strength >= 0.5 no affect
 	//						2. if strength < 0.5 then max_speed = sqrt(strength)
-	//					 
+	//
 	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
 	//
-	float strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
 
-	// don't let engine strength affect max speed when playing on lowest skill level
-	if ( (objp != Player_obj) || (Game_skill_level > 0) ) {
-		if ( strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED ) {
-			ship_p->current_max_speed *= fl_sqrt(strength);
+	float effective_engine_strength;
+	float actual_engine_strength;
+	if (ship_p->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
+		// Pretend our strength is 100% when this flag is active
+		effective_engine_strength = 1.0f;
+		actual_engine_strength = 1.0f;
+	} else {
+		effective_engine_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+
+		// very annoying, but ship_get_subsystem_strength will typically cap at no lower than 15% strength reported
+		// causing the condition below to possibly erroneously believe the engine strength isn't changing while being
+		// repaired below that threshold. use the ACTUAL strength for this check
+		actual_engine_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE, false, true);
+	}
+
+	// only update max speed if engine_aggregate_strength has changed
+	// which helps minimize amount of overrides to max speed
+	if (actual_engine_strength != ship_p->prev_engine_strength) {
+		ets_update_max_speed(objp);
+		ship_p->prev_engine_strength = actual_engine_strength;
+
+		// check if newly updated max speed should be reduced due to engine damage
+		// don't let engine strength affect max speed when playing on lowest skill level
+		if ((objp != Player_obj) || (Game_skill_level > 0)) {
+			if (effective_engine_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
+				objp->phys_info.max_vel.xyz.z *= fl_sqrt(effective_engine_strength);
+			}
 		}
 	}
 
@@ -174,6 +197,16 @@ float ets_get_max_speed(object* objp, float engine_energy)
 	}
 }
 
+void ets_update_max_speed(object* ship_objp)
+{
+	Assertion(ship_objp != nullptr, "Invalid object pointer passed!");
+	Assertion(ship_objp->type == OBJ_SHIP, "Object needs to be a ship object!");
+
+	// calculate the top speed of the ship based on the energy flow to engines
+	float x = Energy_levels[Ships[ship_objp->instance].engine_recharge_index];
+	ship_objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_objp, x);
+}
+
 
 // -------------------------------------------------------------------------------------------------
 // ai_manage_ets() will determine if a ship should modify it's energy transfer percentages, or 
@@ -202,6 +235,7 @@ void ai_manage_ets(object* obj)
 {
 	ship* ship_p = &Ships[obj->instance];
 	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
+	ai_info* aip = &Ai_info[Ships[obj->instance].ai_index];
 
 	if ( ship_info_p->power_output == 0 )
 		return;
@@ -209,30 +243,43 @@ void ai_manage_ets(object* obj)
 	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
-	// check if any of the three systems are not being used.  If so, don't allow energy management.
-	if ( !ship_p->ship_max_shield_strength || !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve)
+	// check if weapons or engines are not being used. If so, don't allow energy management.
+	if (!ship_info_p->max_speed || !ship_info_p->max_weapon_reserve) {
+		return;
+	}
+
+	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
+	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::All_nonshielded_ships_can_manage_ets]) || 
+		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
+		return;
+	}
+
+	// also check if the ship is playing dead --Goober5000
+	if (aip->mode == AIM_PLAY_DEAD && aip->ai_profile_flags[AI::Profile_Flags::Ships_playing_dead_dont_manage_ets])
 		return;
 
-	float shield_left_percent = get_shield_pct(obj);
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
-	// maximum level check
+	// maximum level check for weapons
 	//	MK, changed these, might as well let them go up to 100% if nothing else needs the recharge ability.
 	if ( weapon_left_percent == 1.0f) {
 		decrease_recharge_rate(obj, WEAPONS);
 	}
 
-	if (!(obj->flags[Object::Object_Flags::No_shields]) && (shield_left_percent == 1.0f)) {
-		decrease_recharge_rate(obj, SHIELDS);
+	if (!(obj->flags[Object::Object_Flags::No_shields])) {
+		float shield_left_percent = get_shield_pct(obj);
+		// maximum level check for shields
+		if (shield_left_percent == 1.0f) {
+			decrease_recharge_rate(obj, SHIELDS);
+		}
+		// minimum check for shields
+		if (shield_left_percent < SHIELDS_MIN_LEVEL_PERCENT) {
+			if (weapon_left_percent > WEAPONS_MIN_LEVEL_PERCENT)
+				increase_recharge_rate(obj, SHIELDS);
+		}
 	}
 
-	// minimum check
-
-	if (!(obj->flags[Object::Object_Flags::No_shields]) && (shield_left_percent < SHIELDS_MIN_LEVEL_PERCENT)) {
-		if ( weapon_left_percent > WEAPONS_MIN_LEVEL_PERCENT )
-			increase_recharge_rate(obj, SHIELDS);
-	}
-
+	// minimum check for weapons and engines
 	if ( weapon_left_percent < WEAPONS_MIN_LEVEL_PERCENT ) {
 		increase_recharge_rate(obj, WEAPONS);
 	}
@@ -241,8 +288,9 @@ void ai_manage_ets(object* obj)
 		increase_recharge_rate(obj, ENGINES);
 	}
 
-	// emergency check
+	// emergency check for ships with shields
 	if (!(obj->flags[Object::Object_Flags::No_shields])) {
+		float shield_left_percent = get_shield_pct(obj);
 		if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
 			if (ship_p->target_shields_delta == 0.0f)
 				transfer_energy_to_shields(obj);
@@ -250,7 +298,6 @@ void ai_manage_ets(object* obj)
 			if ( shield_left_percent > SHIELDS_MIN_LEVEL_PERCENT || weapon_left_percent <= 0.01 )	// dampen ai enthusiasm for sucking energy to weapons
 				transfer_energy_to_weapons(obj);
 		}
-
 	
 		// check for return to normal values
 		if ( fl_abs( shield_left_percent - 0.5f ) < NORMAL_TOLERANCE_PERCENT ) {
@@ -261,13 +308,24 @@ void ai_manage_ets(object* obj)
 		}
 	}
 
-
 	if ( fl_abs( weapon_left_percent - 0.5f ) < NORMAL_TOLERANCE_PERCENT ) {
 		if ( ship_p->weapon_recharge_index > DEFAULT_CHARGE_INDEX )
 			decrease_recharge_rate(obj, WEAPONS);
 		else if ( ship_p->weapon_recharge_index < DEFAULT_CHARGE_INDEX )
 			increase_recharge_rate(obj, WEAPONS);
 	}
+}
+
+void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
+	Assertion(obj->type == OBJ_SHIP, "Can't set ets values on a non-ship");
+	if (obj->type != OBJ_SHIP)
+		return;
+
+	Ships[obj->instance].shield_recharge_index = shields;
+	Ships[obj->instance].weapon_recharge_index = weapons;
+	Ships[obj->instance].engine_recharge_index = engines;
+
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -296,45 +354,31 @@ void set_default_recharge_rates(object* obj)
 	// the default charge rate depends on what systems are on each ship
 	switch ( ship_properties ) {
 		case HAS_ENGINES | HAS_WEAPONS | HAS_SHIELDS:
-			ship_p->shield_recharge_index = INTIAL_SHIELD_RECHARGE_INDEX;
-			ship_p->weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
-			ship_p->engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
+			set_recharge_rates(obj, INTIAL_SHIELD_RECHARGE_INDEX, INTIAL_WEAPON_RECHARGE_INDEX, INTIAL_ENGINE_RECHARGE_INDEX);
 			break;
 
 		case HAS_ENGINES | HAS_SHIELDS:
-			ship_p->shield_recharge_index = ONE_HALF_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			set_recharge_rates(obj, ONE_HALF_INDEX, ZERO_INDEX, ONE_HALF_INDEX);
 			break;
 
 		case HAS_WEAPONS | HAS_SHIELDS:
-			ship_p->shield_recharge_index = ONE_HALF_INDEX;
-			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ONE_HALF_INDEX, ONE_HALF_INDEX, ZERO_INDEX);
 			break;
 
 		case HAS_ENGINES | HAS_WEAPONS:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
-			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ONE_HALF_INDEX, ONE_HALF_INDEX);
 			break;
 
 		case HAS_SHIELDS:
-			ship_p->shield_recharge_index = ALL_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ALL_INDEX, ZERO_INDEX, ZERO_INDEX);
 			break;
 
 		case HAS_ENGINES:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ALL_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ZERO_INDEX, ALL_INDEX);
 			break;
 
 		case HAS_WEAPONS:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ALL_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ALL_INDEX, ZERO_INDEX);
 			break;
 
 		default:
@@ -426,7 +470,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	{
 		if ( obj == Player_obj )
 		{
-			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
 		}
 		return;
 	}
@@ -464,7 +508,9 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	}
 
 	if ( obj == Player_obj )
-		snd_play( &Snds[SND_ENERGY_TRANS], 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
+
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -545,7 +591,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	count = MIN(2, *lose_index);
 	if ( count <= 0 ) {
 		if ( obj == Player_obj ) {
-			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
 		}
 		return;
 	}
@@ -583,56 +629,40 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	}
 
 	if ( obj == Player_obj )
-		snd_play( &Snds[SND_ENERGY_TRANS], 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
+
+	ets_update_max_speed(obj);
 }
 
-void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float max, float scale)
+void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float from_max, float to_max, float scale, float eff)
 {
 	float	delta;
 
-	delta = from_field * ENERGY_DIVERT_DELTA * scale;
+	delta = from_max * scale;
 
-	if (to_field + *to_delta + delta > max)
-		delta = max - to_field - *to_delta;
+	if (to_field + *to_delta + eff * delta > to_max && eff > 0)
+		delta = (to_max - to_field - *to_delta) / eff;
 
 	if ( delta > 0 ) {
 		if ( objp == Player_obj )
-			snd_play( &Snds[SND_ENERGY_TRANS], 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 
 		if (delta > from_field)
 			delta = from_field;
 
-		*to_delta += delta;
+		*to_delta += eff * delta;
 		*from_delta -= delta;
 	} else
 		if ( objp == Player_obj )
-			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
 }
 
 // -------------------------------------------------------------------------------------------------
-// transfer_energy_to_shields() will transfer ENERGY_DIVERT_DELTA percent of weapon energy
+// transfer_energy_to_shields() will transfer a tabled percentage of max weapon energy
 // to shield energy.
 void transfer_energy_to_shields(object* obj)
 {
-	ship*			ship_p = &Ships[obj->instance];
-
-	if (ship_p->flags[Ship::Ship_Flags::Dying])
-		return;
-
-	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
-	{
-		return;
-	}
-
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, shield_get_max_strength(obj), 0.5f);
-}
-
-// -------------------------------------------------------------------------------------------------
-// transfer_energy_to_weapons() will transfer ENERGY_DIVERT_DELTA percent of shield energy
-// to weapon energy.
-void transfer_energy_to_weapons(object* obj)
-{
-	ship*			ship_p = &Ships[obj->instance];
+	ship*		ship_p = &Ships[obj->instance];
 	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
 
 	if (ship_p->flags[Ship::Ship_Flags::Dying])
@@ -643,7 +673,38 @@ void transfer_energy_to_weapons(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, sinfo_p->max_weapon_reserve, 1.0f);
+	if (sinfo_p->weap_shield_amount == 0 && obj == Player_obj) {
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Ship does not support weapon->shield transfer.", -1));
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
+		return;
+	}
+
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, sinfo_p->max_weapon_reserve, shield_get_max_strength(obj), sinfo_p->weap_shield_amount, sinfo_p->weap_shield_efficiency);
+}
+
+// -------------------------------------------------------------------------------------------------
+// transfer_energy_to_weapons() will transfer a tabled percentage of max shield energy
+// to weapon energy.
+void transfer_energy_to_weapons(object* obj)
+{
+	ship*		ship_p = &Ships[obj->instance];
+	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
+
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
+		return;
+
+	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
+	{
+		return;
+	}
+
+	if (sinfo_p->shield_weap_amount == 0 && obj == Player_obj) {
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Ship does not support shield->weapon transfer.", -1));
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
+		return;
+	}
+
+	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, shield_get_max_strength(obj), sinfo_p->max_weapon_reserve, sinfo_p->shield_weap_amount, sinfo_p->shield_weap_efficiency);
 }
 
 /**
@@ -826,7 +887,7 @@ void HudGaugeEts::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeEts::render(float frametime)
+void HudGaugeEts::render(float  /*frametime*/)
 {
 }
 
@@ -840,11 +901,33 @@ void HudGaugeEts::pageIn()
  */
 void HudGaugeEts::blitGauge(int index)
 {
+	if (Ets_bar.first_frame < 0) {
+		return;
+	}
+
 	int y_start, y_end, clip_h, w, h, x, y;
 
 	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
 
 	bm_get_info(Ets_bar.first_frame,&w,&h);
+
+	if (HUD_shadows) {
+		// These act more as a backing black layer.
+
+		gr_set_color_fast(&Color_black);
+		// draw the top portion
+		x = position[0] + Top_offsets[0];
+		y = position[1] + Top_offsets[1];
+		
+		renderBitmapEx(Ets_bar.first_frame,x,y,w,ETS_bar_h,0,0);
+
+		// draw the bottom portion
+		x = position[0] + Bottom_offsets[0];
+		y = position[1] + Bottom_offsets[1];
+
+		renderBitmapEx(Ets_bar.first_frame, x, y, w, y + ETS_bar_h, 0, 0);
+		gr_set_color_fast(&gauge_color);
+	}
 
 	if ( index < NUM_ENERGY_LEVELS-1 ) {
 		// some portion of dark needs to be drawn
@@ -906,7 +989,7 @@ HudGaugeEts(HUD_OBJECT_ETS_RETAIL, 0)
 /**
  * Render the ETS retail gauge to the screen (weapon+shield+engine)
  */
-void HudGaugeEtsRetail::render(float frametime)
+void HudGaugeEtsRetail::render(float  /*frametime*/)
 {
 	int i;
 	int initial_position;
@@ -990,7 +1073,7 @@ HudGaugeEts(HUD_OBJECT_ETS_WEAPONS, (int)WEAPONS)
 {
 }
 
-void HudGaugeEtsWeapons::render(float frametime)
+void HudGaugeEtsWeapons::render(float  /*frametime*/)
 {
 	int i;
 
@@ -1027,7 +1110,7 @@ HudGaugeEts(HUD_OBJECT_ETS_SHIELDS, (int)SHIELDS)
 {
 }
 
-void HudGaugeEtsShields::render(float frametime)
+void HudGaugeEtsShields::render(float  /*frametime*/)
 {
 	int i;
 
@@ -1063,7 +1146,7 @@ HudGaugeEts(HUD_OBJECT_ETS_ENGINES, (int)ENGINES)
 {
 }
 
-void HudGaugeEtsEngines::render(float frametime)
+void HudGaugeEtsEngines::render(float  /*frametime*/)
 {
 	int i;
 

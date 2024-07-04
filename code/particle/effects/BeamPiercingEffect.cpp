@@ -8,9 +8,8 @@
 
 namespace particle {
 namespace effects {
-bool BeamPiercingEffect::processSource(const ParticleSource* source) {
+bool BeamPiercingEffect::processSource(ParticleSource* source) {
 	particle_info info;
-	memset(&info, 0, sizeof(info));
 
 	source->getOrigin()->applyToParticleInfo(info);
 
@@ -24,7 +23,7 @@ bool BeamPiercingEffect::processSource(const ParticleSource* source) {
 
 	info.rad = m_radius * frand_range(0.5f, 2.0f);
 
-	vec3d fvec = source->getOrientation()->getDirectionVector();
+	vec3d fvec = source->getOrientation()->getDirectionVector(source->getOrigin());
 
 	float base_v, back_v;
 	vec3d rnd_vec;

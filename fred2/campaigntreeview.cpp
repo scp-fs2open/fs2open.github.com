@@ -118,7 +118,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 	Assert(r);
 
 	pDC->SelectObject(&black_pen);
-	// draw level seperators
+	// draw level separators
 	for (i=1; i<total_levels; i++) {
 		pDC->MoveTo(0, i * LEVEL_HEIGHT - 1);
 		pDC->LineTo(total_width * CELL_WIDTH, i * LEVEL_HEIGHT - 1);
@@ -273,7 +273,7 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 				} else
 					Int3();			// bogus operator in campaign file
 
-				free_sexp(CDR(node2));
+				free_sexp(Sexp_nodes[node2].rest, node2);
 				free_one_sexp(node);
 				node = CDR(node);
 			}
@@ -567,8 +567,11 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 				Dragging_rect = Elements[i].box;
 				Rect_offset = Dragging_rect.TopLeft() - point;
 				Last_draw_size = CSize(4, 4);
-				if (Campaign.missions[Cur_campaign_mission].num_goals < 0)  // haven't loaded goal names yet (or notes)
+				if (Campaign.missions[Cur_campaign_mission].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet (or notes)
+				{
 					read_mission_goal_list(Cur_campaign_mission);
+					Campaign.missions[Cur_campaign_mission].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+				}
 
 				if (Campaign.missions[Cur_campaign_mission].notes) {
 					convert_multiline_string(str, Campaign.missions[Cur_campaign_mission].notes);
@@ -961,7 +964,7 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 	cm = &(Campaign.missions[Campaign.num_missions++]);
 	cm->name = strdup(pData);
 	cm->formula = Locked_sexp_true;
-	cm->num_goals = -1;
+	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 	cm->notes = NULL;
 	cm->briefing_cutscene[0] = 0;
 	for (i=0; i<Campaign.num_missions - 1; i++)
@@ -1059,7 +1062,7 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	cm = &(Campaign.missions[Campaign.num_missions++]);
 	cm->name = strdup(name);
 	cm->formula = Locked_sexp_true;
-	cm->num_goals = -1;
+	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 	cm->notes = NULL;
 	cm->briefing_cutscene[0] = 0;
 	for (i=0; i<Campaign.num_missions - 1; i++)
@@ -1078,7 +1081,7 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	// update and reinitialize dialog items
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
 		Campaign_tree_formp->update();
-		Campaign_tree_formp->initialize(0);
+		Campaign_tree_formp->initialize(false, false);
 	}
 
 	listbox->DeleteString(item);
@@ -1242,7 +1245,7 @@ void campaign_tree_view::OnRemoveMission()
 	// in the mission might have changed because of deletion of the first mission
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
 		Campaign_tree_formp->update();
-		Campaign_tree_formp->initialize();
+		Campaign_tree_formp->initialize(true, false);
 	}
 }
 

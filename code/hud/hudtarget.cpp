@@ -17,6 +17,8 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "globalincs/utility.h"
+#include "graphics/matrix.h"
 #include "hud/hudartillery.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudlock.h"
@@ -36,6 +38,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/object.h"
+#include "libs/renderdoc/renderdoc.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3dinternal.h"
@@ -429,6 +432,7 @@ typedef struct weapon_flash
 {
 	int flash_duration[MAX_WEAPON_FLASH_LINES];
 	int flash_next[MAX_WEAPON_FLASH_LINES];
+	bool flash_energy[MAX_WEAPON_FLASH_LINES];
 	int is_bright;
 } weapon_flash;
 weapon_flash Weapon_flash_info;
@@ -436,7 +440,7 @@ weapon_flash Weapon_flash_info;
 // Data used for the proximity warning
 typedef struct homing_beep_info
 {
-	int	snd_handle;				// sound handle for last played beep
+	sound_handle snd_handle;    // sound handle for last played beep
 	fix	last_time_played;		//	time beep was last played
 	int	min_cycle_time;		// time (in ms) for fastest cycling of the sound
 	int	max_cycle_time;		// time (in ms) for slowest cycling of the sound
@@ -445,7 +449,7 @@ typedef struct homing_beep_info
 	float	precalced_interp;		// a precalculated value used in a linear interpretation
 } homing_beep_info;
 
-homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f, 1.729412f };
+homing_beep_info Homing_beep = {sound_handle::invalid(), 0, 150, 1000, 30.0f, 1500.0f, 1.729412f};
 
 // Set at the start of a mission, used to decide how to draw the separation for the warning missile indicators
 float Min_warning_missile_dist;
@@ -466,7 +470,7 @@ int hud_target_invalid_awacs(object *objp)
 	}
 
 	// check for invalid status
-	if((Player_ship != NULL) && (awacs_get_level(objp, Player_ship) < 1.0f)){
+	if((Player_ship != nullptr) && (awacs_get_level(objp, Player_ship) < 1.0f)){
 		return 1;
 	}
 
@@ -486,10 +490,17 @@ ship_subsys *advance_subsys(ship_subsys *cur, int next_flag)
 // select a sorted turret subsystem on a ship if no other subsys has been selected
 void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 {
+	// this targeting behavior was introduced in FS2, so mods may not want to use it
+	// (the FS2 behavior makes FSPort's Playing Judas harder than it was designed to be)
+	if (Dont_automatically_select_turret_when_targeting_ship) {
+		return;
+	}
+
 	Assert((Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS));
 	if (!((Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS))) {
 		return;
 	}
+
 	Assert(Objects[Player_ai->target_objnum].type == OBJ_SHIP);
 	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
 		return;
@@ -500,7 +511,6 @@ void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 			hud_target_live_turret(1, 1);
 		}
 	}
-
 }
 
 // -----------------------------------------------------------------------
@@ -862,7 +872,7 @@ void hud_target_hotkey_select( int k )
 
 	// a simple walk of the list to get the count
 	for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ){
-		if (awacs_get_level(hitem->objp, Player_ship, 1) > 1) {
+		if (awacs_get_level(hitem->objp, Player_ship, true) > 1.0f) {
 			visible_count++;
 		}
 	}
@@ -884,7 +894,7 @@ void hud_target_hotkey_select( int k )
 	first_target = NULL;
 	for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
 
-		if (awacs_get_level(hitem->objp, Player_ship, 1) > 1) {
+		if (awacs_get_level(hitem->objp, Player_ship, true) > 1.0f) {
 			// get the first valid target
 			if (first_target == NULL) {
 				first_target = hitem;
@@ -929,7 +939,7 @@ void hud_target_hotkey_select( int k )
 
 		// next is before current target, so search from start of list
 			for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
-				if (awacs_get_level(hitem->objp, Player_ship, 1) > 1) {
+				if (awacs_get_level(hitem->objp, Player_ship, true) > 1.0f) {
 					target = hitem;
 					break;
 				}
@@ -953,7 +963,7 @@ void hud_target_hotkey_select( int k )
 
 color HUD_color_homing_indicator;
 
-void hud_make_shader(shader *sh, ubyte r, ubyte g, ubyte b, float dimmer = 1000.0f)
+void hud_make_shader(shader *sh, ubyte r, ubyte  /*g*/, ubyte  /*b*/, float dimmer = 1000.0f)
 {
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
@@ -999,6 +1009,7 @@ void hud_weapons_init()
 	for ( int i = 0; i < MAX_WEAPON_FLASH_LINES; i++ ) {
 		Weapon_flash_info.flash_duration[i] = 1;
 		Weapon_flash_info.flash_next[i] = 1;
+		Weapon_flash_info.flash_energy[i] = false;
 	}
 
 	// The E: There used to be a number of checks here. They are no longer needed, as the new HUD code handles it on its own.
@@ -1008,7 +1019,7 @@ void hud_weapons_init()
 // init data used to play the homing "proximity warning" sound
 void hud_init_homing_beep()
 {
-	Homing_beep.snd_handle = -1;
+	Homing_beep.snd_handle        = sound_handle::invalid();
 	Homing_beep.last_time_played  = 0;
 	Homing_beep.precalced_interp = (Homing_beep.max_cycle_dist-Homing_beep.min_cycle_dist) / (Homing_beep.max_cycle_time - Homing_beep.min_cycle_time );
 }
@@ -1074,12 +1085,12 @@ void hud_target_subobject_common(int next_flag)
 {
 	if (Player_ai->target_objnum == -1) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No target selected.", 322));
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 		return;
 	}
 
 	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		return;
 	}
 
@@ -1118,7 +1129,7 @@ void hud_target_subobject_common(int next_flag)
 	} // end for
 
 	if ( subsys_to_target == NULL ) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	} else {
 		set_targeted_subsys(Player_ai, subsys_to_target, Player_ai->target_objnum);
 		target_shipp->last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
@@ -1167,6 +1178,9 @@ void hud_target_common(int team_mask, int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		is_ship = 0;
 
 		if (A == &obj_used_list)
@@ -1225,7 +1239,7 @@ void hud_target_common(int team_mask, int next_flag)
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
 				hud_shield_hit_reset(A);
-				// if ship is BIG|HUGE and last subsys is NULL, get turret
+
 				hud_maybe_set_sorted_turret_subsys(shipp);
 				hud_restore_subsystem_target(shipp);
 			}
@@ -1239,7 +1253,7 @@ void hud_target_common(int team_mask, int next_flag)
 	}
 
 	if ( target_found == FALSE ) {
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 	}
 }
 
@@ -1320,7 +1334,10 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
     object   *prospective_victim_ptr;
     ship     *prospective_victim_ship_ptr;
     for (ship_object_ptr = GET_FIRST(&Ship_obj_list); ship_object_ptr != END_OF_LIST(&Ship_obj_list); ship_object_ptr = GET_NEXT(ship_object_ptr)) {
-        prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
+		if (Objects[ship_object_ptr->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+	
+		prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
         // get a pointer to the ship information
         prospective_victim_ship_ptr = &Ships[prospective_victim_ptr->instance];
 
@@ -1465,6 +1482,8 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		Assert(A->type == OBJ_WEAPON);
 		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
@@ -1513,12 +1532,17 @@ void hud_target_missile(object *source_obj, int next_flag)
 		}
 
 		for (so=advance_ship(startShip, next_flag); so!=startShip; so=advance_ship(so, next_flag)) {
-			A = &Objects[so->objnum];
 
 			// don't look at header
 			if (so == &Ship_obj_list) {
 				continue;
 			}
+
+			A = &Objects[so->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			Assertion(A->type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", A->type);
 
 			// only allow targeting of hostile bombs
 			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
@@ -1548,7 +1572,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 	}
 
 	if ( !target_found ) {
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -1563,13 +1587,14 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 	if (shipp->flags[Ship::Ship_Flags::Cargo_revealed])
 		return 0;
 
-	// allow ships with scannable flag set
-	if (shipp->flags[Ship::Ship_Flags::Scannable])
+	// The old behavior treats some ship types as always scannable. The new behavior only checks the ship's Scannable flag.
+	if (shipp->flags[Ship::Ship_Flags::Scannable]) {
 		return 1;
-
-	// ignore ships that don't carry cargo
-	if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable]))
+	} else if (Use_new_scanning_behavior) {
 		return 0;
+	} else if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable])) {
+		return 0;
+	}
 
 	return 1;
 }
@@ -1590,6 +1615,9 @@ void hud_target_uninspected_cargo(int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( A == &obj_used_list ) {
 			continue;
 		}
@@ -1622,7 +1650,7 @@ void hud_target_uninspected_cargo(int next_flag)
 	}
 
 	if ( target_found == FALSE ) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	}
 }
 
@@ -1653,6 +1681,8 @@ void hud_target_newest_ship()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) )
@@ -1680,12 +1710,12 @@ void hud_target_newest_ship()
 	if (newest_obj) {
 		set_target_objnum( Player_ai, OBJ_INDEX(newest_obj) );
 		hud_shield_hit_reset(newest_obj);
-		// if BIG|HUGE and no selected subsystem, get sorted turret
+
 		hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	}
 }
 
@@ -1706,11 +1736,8 @@ typedef struct eval_next_turret {
 	float dist;
 } eval_next_turret;
 
-int turret_compare_func(const void *e1, const void *e2)
+int turret_compare_func(const eval_next_turret *p1, const eval_next_turret *p2)
 {
-	eval_next_turret *p1 = (eval_next_turret*)e1;
-	eval_next_turret *p2 = (eval_next_turret*)e2;
-
 	Assert(p1->type != TYPE_NONE);
 	Assert(p2->type != TYPE_NONE);
 
@@ -1728,8 +1755,9 @@ int turret_compare_func(const void *e1, const void *e2)
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags);
-extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
+extern bool turret_weapon_has_flags(const ship_weapon *swp, Weapon::Info_Flags flags);
+extern bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype);
+
 // target the next/prev live turret on the current target
 // auto_advance from hud_update_closest_turret
 void hud_target_live_turret(int next_flag, int auto_advance, int only_player_target)
@@ -1742,14 +1770,18 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	int num_live_turrets = 0;
 
 	// make sure we're targeting a ship
-	if (Player_ai->target_objnum == -1 && !auto_advance) {
-		snd_play(&Snds[SND_TARGET_FAIL]);
+	if (Player_ai->target_objnum == -1) {
+		if (!auto_advance) {
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
 	}
 
 	// only targeting subsystems on ship
-	if ((Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (!auto_advance)) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
+		if (!auto_advance) {
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
 	}
 
@@ -1799,7 +1831,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					distance = vm_vec_normalized_dir(&vec_to_subsys, &gsubpos, &View_position);
 
 					// check if facing and in view
-					int facing = ship_subsystem_in_sight(objp, A, &View_position, &gsubpos, 0);
+					bool facing = ship_subsystem_in_sight(objp, A, &View_position, &gsubpos, false);
 
 					if (!auto_advance && get_closest_turret && !only_player_target) {
 						// if within 3 degrees and not previous subsys, use subsys in front
@@ -1840,7 +1872,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 
 	// sort the list if we're not using turret straight ahead of us
 	if (!use_straight_ahead_turret) {
-		insertion_sort(ent, num_live_turrets, sizeof(eval_next_turret), turret_compare_func);
+		insertion_sort(ent, num_live_turrets, turret_compare_func);
 	}
 
 	if (use_straight_ahead_turret) {
@@ -1902,79 +1934,8 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		target_shipp->last_targeted_subobject[Player_num] = Player_ai->targeted_subsys;
 	} else {
 		if (!auto_advance) {
-			snd_play( &Snds[SND_TARGET_FAIL]);
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
-	}
-}
-
-
-// -------------------------------------------------------------------
-// hud_target_closest_locked_missile()
-//
-// Target the closest locked missile that is locked on locked_obj
-//
-//	input:	locked_obj	=>		pointer to object that you want to find
-//										closest missile to
-//
-void hud_target_closest_locked_missile(object *locked_obj)
-{
-	object		*A, *nearest_obj=NULL;
-	weapon		*wp;
-	weapon_info	*wip;
-	float			nearest_dist, dist;
-	int			target_found = FALSE;
-	missile_obj	*mo;
-
-	nearest_dist = 10000.0f;
-
-	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
-		A = &Objects[mo->objnum];
-
-		if (A->type != OBJ_WEAPON){
-			continue;
-		}
-
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
-		wp = &Weapons[A->instance];
-		wip = &Weapon_info[wp->weapon_info_index];
-
-		if ( wip->subtype != WP_MISSILE ){
-			continue;
-		}
-
-		if ( !(wip->is_homing() ) ){
-			continue;
-		}
-
-		if (wp->lssm_stage==3){
-			continue;
-		}
-
-		if(hud_target_invalid_awacs(A)){
-			continue;
-		}
-
-
-		if (wp->homing_object == locked_obj) {
-			dist = vm_vec_dist_quick(&A->pos, &locked_obj->pos);		// Find distance!
-
-			if (dist < nearest_dist) {
-				nearest_obj = A;
-				nearest_dist = dist;
-			}
-		}
-	}	// end for
-
-	if (nearest_dist < 10000.0f) {
-		Assert(nearest_obj);
-		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
-		hud_shield_hit_reset(nearest_obj);
-		target_found = TRUE;
-	}
-
-	if ( !target_found ){
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
 	}
 }
 
@@ -2017,7 +1978,7 @@ void hud_target_auto_target_next()
 // how far are they?   This uses the point closest to the targeter
 // object on the targetee's bounding box.  So if targeter is inside
 // targtee's bounding box, the distance is 0.
-float hud_find_target_distance( object *targetee, object *targeter )
+float hud_find_target_distance( object *targetee, const vec3d *targeter_pos )
 {
 	vec3d tmp_pnt;
 
@@ -2049,15 +2010,20 @@ float hud_find_target_distance( object *targetee, object *targeter )
 
 	// New way, that uses bounding box.
 	if ( model_num > -1 )	{
-		dist = model_find_closest_point( &tmp_pnt, model_num, -1, &targetee->orient, &targetee->pos, &targeter->pos );
+		dist = model_find_closest_point( &tmp_pnt, model_num, -1, &targetee->orient, &targetee->pos, targeter_pos );
 	}  else {
 		// Old way, that uses radius.
-		dist = vm_vec_dist_quick(&targetee->pos, &targeter->pos) - targetee->radius;
+		dist = vm_vec_dist_quick(&targetee->pos, targeter_pos) - targetee->radius;
 		if ( dist < 0.0f )	{
 			dist = 0.0f;
 		}
 	}
 	return dist;
+}
+
+float hud_find_target_distance( object *targetee, object *targeter )
+{
+	return hud_find_target_distance(targetee, &targeter->pos);
 }
 
 //
@@ -2109,7 +2075,7 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 	}
 
 	// bail if harmless
-	if ( Ship_info[esct_p->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
+	if ( Ship_info[esct_p->shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
 		return false;
 	}
 
@@ -2180,6 +2146,8 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 
 	// consider the ship alone if there are no attacking turrets
 	if ( !turret_is_attacking ) {
+		// Volition switched distance evaluation methods here... presumably this is to prioritize small fighters when dogfighting next to large ships...
+		// Since this is used specifically for finding an ordering of targets and does not involve any visual displays, distance-to-center is reasonable.
 		//new_distance = hud_find_target_distance(objp, Player_obj);
 		new_distance = vm_vec_dist_quick(&objp->pos, &Player_obj->pos);
 
@@ -2267,8 +2235,9 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	eval_ship_as_closest_target_args.turret_attacking_target = get_closest_turret_attacking_player;
 
 	for ( so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// fill in rest of eval_ship_as_closest_target_args
@@ -2321,7 +2290,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	} else {
 		// no target found, maybe play fail sound
 		if (play_fail_snd == TRUE) {
-			snd_play(&Snds[SND_TARGET_FAIL]);
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 	}
 
@@ -2366,7 +2335,7 @@ void hud_update_closest_turret()
 				}
 
 				// check if facing and in view
-				int facing = ship_subsystem_in_sight(objp, ss, &View_position, &gsubpos, 0);
+				bool facing = ship_subsystem_in_sight(objp, ss, &View_position, &gsubpos, false);
 
 				if (facing) {
 					new_distance *= 0.5f;
@@ -2437,14 +2406,13 @@ void hud_target_targets_target()
 	// if we've reached here, found player target's target
 	set_target_objnum( Player_ai, tt_objnum );
 	hud_shield_hit_reset(&Objects[tt_objnum]);
-	if (Objects[tt_objnum].type == OBJ_SHIP) {
-		hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
-	}
+
+	hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
 	hud_restore_subsystem_target(&Ships[Objects[tt_objnum].instance]);
 	return;
 
 	ttt_fail:
-	snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+	snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 }
 
 // Return !0 if target_objp is a valid object type for targeting in reticle, otherwise return 0
@@ -2505,10 +2473,12 @@ void hud_target_in_reticle_new()
 	//	Get 3d vector through center of reticle
 	vm_vec_scale_add(&terminus, &Eye_position, &Player_obj->orient.vec.fvec, TARGET_IN_RETICLE_DISTANCE);
 
-	mc_info_init(&mc);
 	mc.model_instance_num = -1;
 	mc.model_num = 0;
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
@@ -2549,7 +2519,7 @@ void hud_target_in_reticle_new()
 			{
 				int pof = 0;
 				pof = Asteroids[A->instance].asteroid_subtype;
-				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].model_num[pof];
+				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].subtypes[pof].model_number;
 			}
 			break;
 		case OBJ_JUMP_NODE:
@@ -2577,8 +2547,6 @@ void hud_target_in_reticle_new()
 			}
 
 		} else {
-
-			model_clear_instance( mc.model_num );
 			mc.orient = &A->orient;										// The object's orient
 			mc.pos = &A->pos;												// The object's position
 			mc.p0 = &Eye_position;										// Point 1 of ray to check
@@ -2617,6 +2585,9 @@ void hud_target_in_reticle_old()
 	vec3d	vec_to_target;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
@@ -2657,16 +2628,28 @@ void hud_target_in_reticle_old()
 
 	target_obj = hud_reticle_pick_target();
 	if ( target_obj != NULL ) {
+		int oldTargetNum = Player_ai->target_objnum; 
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
 		hud_shield_hit_reset(target_obj);
+
 		if ( target_obj->type == OBJ_SHIP ) {
-			// if BIG|HUGE, maybe set subsys to turret
-			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
-			hud_restore_subsystem_target(&Ships[target_obj->instance]);
+			ship* shipp = &Ships[target_obj->instance];
+
+			// if the player is attempting to target the same ship under their reticule again
+			// then lets select the nearest subsystem for them.
+			if (Automatically_select_subsystem_under_reticle_when_targeting_same_ship &&
+				Ship_info[shipp->ship_info_index].is_big_or_huge() &&
+				oldTargetNum == Player_ai->target_objnum) {
+				hud_target_subsystem_in_reticle();
+			}
+			else {
+				hud_maybe_set_sorted_turret_subsys(shipp);
+				hud_restore_subsystem_target(shipp);
+			}
 		}
 	}
 	else {
-			snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -2697,7 +2680,7 @@ void hud_target_subsystem_in_reticle()
 	}
 
 	if ( Player_ai->target_objnum == -1) { //-V581
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		return;
 	}
 
@@ -2746,7 +2729,7 @@ void hud_target_subsystem_in_reticle()
 		Ships[shipnum].last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	}
 }
 
@@ -2789,17 +2772,11 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	y1 += position[1];
 	x1 += position[0];
 
-	x1 += HUD_offset_x;
-	y1 += HUD_offset_y;
-
 	y2 = sinf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 	x2 = cosf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 
 	y2 += position[1];
 	x2 += position[0];
-
-	x2 += HUD_offset_x;
-	y2 += HUD_offset_y;
 
 	x3 = x1 - T_BASE_LENGTH * sinf(dot_product);
 	y3 = y1 + T_BASE_LENGTH * cosf(dot_product);
@@ -2932,7 +2909,7 @@ void HudGaugeReticleTriangle::initTriHeight(float h)
 	Target_triangle_height = h;
 }
 
-void HudGaugeReticleTriangle::render(float frametime)
+void HudGaugeReticleTriangle::render(float  /*frametime*/)
 {
 }
 
@@ -3014,6 +2991,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	float		ang;
 	float		xpos,ypos,cur_dist,sin_ang,cos_ang;
 	int		draw_inside=0;
+	int tablePosX, tablePosY;
 
 	// determine if the given object is within the targeting reticle
 	// (which means the triangle is not drawn)
@@ -3022,6 +3000,24 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 	g3_rotate_vertex(&hostile_vertex, hostile_pos);
 	g3_project_vertex(&hostile_vertex);
+
+	if (reticle_follow) {
+		int nx = HUD_nose_x;
+		int ny = HUD_nose_y;
+
+		gr_resize_screen_pos(&nx, &ny);
+		gr_set_screen_scale(base_w, base_h);
+		gr_unsize_screen_pos(&nx, &ny);
+		gr_reset_screen_scale();
+
+		tablePosX = position[0] + nx;
+		tablePosY = position[1] + ny;
+	}
+	else {
+		//Technically not non-slewing, but keeps old behaviour
+		tablePosX = position[0] + fl2i(HUD_nose_x);
+		tablePosY = position[1] + fl2i(HUD_nose_y);
+	}								   
 
 	if (hostile_vertex.codes == 0)  { // on screen
 		int		projected_x, projected_y;
@@ -3034,8 +3030,8 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 			unsize(&projected_x, &projected_y);
 
-			mag_squared = (projected_x - position[0]) * (projected_x - position[0]) +
-							  (projected_y - position[1]) * (projected_y - position[1]);
+			mag_squared = (projected_x - tablePosX) * (projected_x - tablePosX) +
+							  (projected_y - tablePosY) * (projected_y - tablePosY);
 
 			if ( mag_squared < Radius*Radius ) {
 				if ( show_interior ) {
@@ -3047,27 +3043,20 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 		}
 	}
 
-	int HUD_nose_scaled_x = HUD_nose_x;
-	int HUD_nose_scaled_y = HUD_nose_y;
+	// even if the screen position overflowed, it will still be pointing in the correct direction
+	unsize( &hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y );
 
-	gr_resize_screen_pos(&HUD_nose_scaled_x, &HUD_nose_scaled_y);
-
-	unsize( &hostile_vertex.world.xyz.x, &hostile_vertex.world.xyz.y );
-
-	ang = atan2_safe(hostile_vertex.world.xyz.y,hostile_vertex.world.xyz.x);
+	ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	sin_ang=sinf(ang);
 	cos_ang=cosf(ang);
 
 	if ( draw_inside ) {
-		xpos = position[0] + cos_ang*(Radius-7);
-		ypos = position[1] - sin_ang*(Radius-7);
+		xpos = tablePosX + cos_ang*(Radius-7);
+		ypos = tablePosY - sin_ang*(Radius-7);
 	} else {
-		xpos = position[0] + cos_ang*(Radius+4);
-		ypos = position[1] - sin_ang*(Radius+4);
+		xpos = tablePosX + cos_ang*(Radius+4);
+		ypos = tablePosY - sin_ang*(Radius+4);
 	}
-
-	xpos += HUD_offset_x + HUD_nose_x;
-	ypos += HUD_offset_y + HUD_nose_y;
 
 	if ( split_tri ) {
 		// renderTriangleMissileSplit(ang, xpos, ypos, cur_dist, aspect_flag, draw_inside);
@@ -3122,8 +3111,10 @@ void hud_process_homing_missiles()
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		A = &Objects[mo->objnum];
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
+		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
@@ -3158,9 +3149,9 @@ void hud_process_homing_missiles()
 			}
 
 			if ( closest_is_aspect ) {
-				Homing_beep.snd_handle = snd_play(&Snds[ship_get_sound(Player_obj, SND_PROXIMITY_ASPECT_WARNING)]);
+				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::PROXIMITY_ASPECT_WARNING)));
 			} else {
-				Homing_beep.snd_handle = snd_play(&Snds[ship_get_sound(Player_obj, SND_PROXIMITY_WARNING)]);
+				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::PROXIMITY_WARNING)));
 			}
 		}
 	}
@@ -3171,7 +3162,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_MISSILE_TRI, HUD_MISSILE_WARNING_ARROW)
 {
 }
 
-void HudGaugeMissileTriangles::render(float frametime)
+void HudGaugeMissileTriangles::render(float  /*frametime*/)
 {
 	object		*A;
 	missile_obj	*mo;
@@ -3186,8 +3177,10 @@ void HudGaugeMissileTriangles::render(float frametime)
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		A = &Objects[mo->objnum];
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
+		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
@@ -3218,7 +3211,7 @@ void HudGaugeOrientationTee::pageIn()
 // outer reticle ring.  If the T is at 12 o'clock, the target is facing the player, if the T
 // is at 6 o'clock the target is facing away from the player.  If the T is at 3 or 9 o'clock
 // the target is facing 90 away from the player.
-void HudGaugeOrientationTee::render(float frametime)
+void HudGaugeOrientationTee::render(float  /*frametime*/)
 {
 	object* targetp;
 
@@ -3248,6 +3241,8 @@ void hud_process_remote_detonate_missile()
 	for ( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		mobjp = &Objects[mo->objnum];
+		if (mobjp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ((Player_obj != NULL) && (mobjp->parent_sig == Player_obj->parent_sig)) {
 			if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
@@ -3267,9 +3262,6 @@ void hud_process_remote_detonate_missile()
 						Int3();	// should never happen
 						return;
 					}
-
-					// do only for the first remote detonate missile
-					break;
 				}
 			}
 		}
@@ -3447,7 +3439,7 @@ void hud_show_selection_set()
 		// Goober5000 - don't draw indicators for non-visible ships, per Mantis #1972
 		// (the only way we could get here is if the hotkey set contained a mix of visible
 		// and invisible ships)
-		if (awacs_get_level(targetp, Player_ship, 1) < 1) {
+		if (awacs_get_level(targetp, Player_ship, true) < 1.0f) {
 			continue;
 		}
 
@@ -3469,7 +3461,7 @@ void hud_show_selection_set()
 			if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
 				HUD_drew_selection_bracket_on_target = 1;
-			} else if ( Cmdline_targetinfo ) {		//Backslash -- show the distance and a lead indicator
+			} else if ( Extra_target_info ) {		//Backslash -- show the distance and a lead indicator
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
 			} else {
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
@@ -3500,6 +3492,7 @@ void hud_show_targeting_gauges(float frametime)
 	vec3d target_pos;
 
 	hud_show_hostile_triangle();
+	hud_do_lock_indicators(frametime);
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -3531,7 +3524,7 @@ void hud_show_targeting_gauges(float frametime)
 		if (target_point.codes == 0) { // target center is not on screen
 			int target_display_flags;
 
-			if(Cmdline_targetinfo) {
+			if(Extra_target_info) {
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS | TARGET_DISPLAY_NAME | TARGET_DISPLAY_CLASS;
 			} else {
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS;
@@ -3549,8 +3542,6 @@ void hud_show_targeting_gauges(float frametime)
 
 	// display the lock indicator
 	if (!Player->target_is_dying) {
-		hud_do_lock_indicator(frametime);
-
 		// update and render artillery
 		hud_artillery_update();
 		hud_artillery_render();
@@ -3589,8 +3580,9 @@ void hud_show_hostile_triangle()
 	hostile_obj = NULL;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list);  so = GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		sp = &Ships[A->instance];
 
 		// only look at ships who attack us
@@ -3605,13 +3597,13 @@ void hud_show_hostile_triangle()
 			continue;
 		}
 
-		// always ignore cargo containers and navbuoys
-		if ( Ship_info[sp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
+		// always ignore cargo containers, navbouys, etc, and non-ships
+		if ( Ship_info[sp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
 			continue;
 		}
 
 		// check if ship is stealthy
-		if (awacs_get_level(&Objects[sp->objnum], Player_ship, 1) < 1) {
+		if (awacs_get_level(&Objects[sp->objnum], Player_ship, true) < 1.0f) {
 			continue;
 		}
 
@@ -3682,7 +3674,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_HOSTILE_TRI, HUD_HOSTILE_TRIANGLE)
 {
 }
 
-void HudGaugeHostileTriangle::render(float frametime)
+void HudGaugeHostileTriangle::render(float  /*frametime*/)
 {
 	if (hostile_obj && maybeFlashSexp() != 1) {
 		bool in_frame = g3_in_frame() > 0;
@@ -3698,11 +3690,12 @@ void HudGaugeHostileTriangle::render(float frametime)
 	}
 }
 
-void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos)
+bool hud_calculate_lead_pos(vec3d* shooter_pos, vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos)
 {
-	vec3d target_moving_direction;
+	vec3d target_speed;
 	vec3d last_delta_vector;
 	float time_to_target, target_moved_dist;
+	bool valid_lead_pos = true;
 
 	if(wip->max_speed != 0) {
 		time_to_target = dist_to_target / wip->max_speed;
@@ -3712,24 +3705,36 @@ void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *t
 
 	target_moved_dist = targetp->phys_info.speed * time_to_target;
 
-	target_moving_direction = targetp->phys_info.vel;
+	target_speed = targetp->phys_info.vel;
+
+	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
+		if (physics_lead_ballistic_trajectory(shooter_pos, target_pos, &targetp->phys_info.vel, wip->max_speed, &The_mission.gravity, lead_target_pos)) {
+			*lead_target_pos = *shooter_pos + *lead_target_pos * 1000.0f;
+			return true;
+		} else {
+			valid_lead_pos = false;
+			// continue, in case the caller wants to get a lead pos either way
+		}
+	}
 
 	if(The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
-		vm_vec_scale_sub2(&target_moving_direction, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
+		vm_vec_scale_sub2(&target_speed, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&target_moving_direction) < 0.1f ) { // Find distance!
+	if ( vm_vec_mag_quick(&target_speed) < 0.1f ) { // Find distance!
 		*lead_target_pos =  *target_pos;
 	} else {
-		vm_vec_normalize(&target_moving_direction);
-		vm_vec_scale(&target_moving_direction, target_moved_dist);
-		vm_vec_add(lead_target_pos, target_pos, &target_moving_direction );
+		vm_vec_normalize(&target_speed);
+		vm_vec_scale(&target_speed, target_moved_dist);
+		vm_vec_add(lead_target_pos, target_pos, &target_speed);
 		polish_predicted_target_pos(wip, targetp, target_pos, lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 
 		if(rel_pos) { // needed for quick lead indicators, not needed for normal lead indicators.
 			vm_vec_add2(lead_target_pos, rel_pos);
 		}
 	}
+
+	return valid_lead_pos;
 }
 
 // Return the bank number for the primary weapon that can fire the farthest, from
@@ -3760,7 +3765,7 @@ int hud_get_best_primary_bank(float *range)
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
-		Assert(swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+		Assert(swp->primary_bank_weapons[bank_to_fire] < weapon_info_size());
 
 		if (swp->primary_bank_weapons[bank_to_fire] < 0)
 			continue;
@@ -3793,10 +3798,12 @@ int hud_get_best_primary_bank(float *range)
 //
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps)
+void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps, object *reference_object)
 {
+	Assertion(reference_object != nullptr, "polish_predicted_target_pos received a nullptr for its reference ship, this is a coder mistake, please report!");
+
 	int	iteration;
-	vec3d	player_pos = Player_obj->pos;
+	vec3d	reference_pos = reference_object->pos;
 	float		time_to_enemy;
 	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
 
@@ -3804,24 +3811,34 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 
 	vm_vec_zero(last_delta_vec);
 
+	
+	vec3d enemy_vel = targetp->phys_info.vel;
+	vec3d enemy_acc;
+	if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
+		vec3d world_rotvel;
+		vm_vec_unrotate(&world_rotvel, &targetp->phys_info.rotvel, &targetp->orient);
+		vm_vec_cross(&enemy_acc, &world_rotvel, &enemy_vel);
+	}
 	// additive velocity stuff
 	// not just the player's main target
-	vec3d enemy_vel = targetp->phys_info.vel;
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
-		vm_vec_scale_sub2( &enemy_vel, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
+		vm_vec_scale_sub2( &enemy_vel, &reference_object->phys_info.vel, wip->vel_inherit_amount);
 	}
 
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
-		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
+		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &reference_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
+		if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
+			vm_vec_scale_add(predicted_enemy_pos, predicted_enemy_pos, &enemy_acc, (time_to_enemy * time_to_enemy / 2) * The_mission.ai_profile->second_order_lead_predict_factor);
+		}
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;
 	}
 }
 
 HudGaugeLeadIndicator::HudGaugeLeadIndicator():
-HudGauge(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
@@ -3882,7 +3899,7 @@ int HudGaugeLeadIndicator::pickFrame(float prange, float srange, float dist_to_t
 	return frame_offset;
 }
 
-void HudGaugeLeadIndicator::render(float frametime)
+void HudGaugeLeadIndicator::render(float  /*frametime*/)
 {
 	if(Player->target_is_dying) {
 		return;
@@ -3948,16 +3965,14 @@ void HudGaugeLeadIndicator::renderIndicator(int frame_offset, object *targetp, v
 void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 {
 	vec3d		target_pos;
-	vec3d		source_pos;
-	vec3d		*rel_pos;
 	vec3d		lead_target_pos;
 	object		*targetp;
-	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
 	weapon_info	*tmp=NULL;
-	float			dist_to_target, prange, srange;
-	int			bank_to_fire, frame_offset;
+	float		dist_to_target, prange, srange;
+	int			bank_to_fire;
+	int			frame_offset = -1;
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -3989,7 +4004,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		target_pos = targetp->pos;
 	}
 
-	pm = model_get(Ship_info[Player_ship->ship_info_index].model_num);
 	swp = &Player_ship->weapons;
 
 	// Added to take care of situation where there are no primary banks on the player ship
@@ -3997,27 +4011,17 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	if ( swp->num_primary_banks == 0 )
 		return;
 
-	bank_to_fire = hud_get_best_primary_bank(&prange);
+	srange = ship_get_secondary_weapon_range(Player_ship);
 
-	if ( bank_to_fire < 0 )
-		return;
-
-	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
-
-	if (pm->n_guns && bank_to_fire != -1 ) {
-		rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
-	} else {
-		rel_pos = NULL;
-	}
-
-	// source_pos will contain the world coordinate of where to base the lead indicator prediction
-	// from.  Normally, this will be the world pos of the gun turret of the currently selected primary
-	// weapon.
-	source_pos = Player_obj->pos;
-	if (rel_pos != NULL) {
-		vec3d	gun_point;
-		vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
-		vm_vec_add2(&source_pos, &gun_point);
+	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) )
+	{
+		int bank = swp->current_secondary_bank;
+		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
+		if ( tmp->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] 
+		|| (!(tmp->is_homing()) && !(tmp->is_locked_homing() && Player->target_in_lock_cone) )) {
+			//The secondary lead indicator is handled farther below if it is a non-locking type, or if the Dont_merge_indicators flag is set for it.
+			srange = -1.0f;
+		}
 	}
 
 	// Determine "accurate" distance to target.
@@ -4031,25 +4035,70 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		dist_to_target = hud_find_target_distance(targetp, Player_obj);
 	}
 
-	srange = ship_get_secondary_weapon_range(Player_ship);
+	//Moved here to avoid potentially leaving wip undefined. These values will be
+	//overwritten if using non-default leadIndicatorBehaviors, this is desired.
+	bank_to_fire = hud_get_best_primary_bank(&prange);
+	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 
-	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) )
-	{
-		int bank = swp->current_secondary_bank;
-		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( !(tmp->is_homing()) && !(tmp->is_locked_homing() && Player->target_in_lock_cone) ) {
-			//The secondary lead indicator is handled farther below if it is a non-locking type
-			srange = -1.0f;
+	if (Lead_indicator_behavior != leadIndicatorBehavior::DEFAULT && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) {
+		vec3d averaged_lead_pos;
+		vm_vec_zero(&averaged_lead_pos);
+		int average_instances = 0;
+		for (int i = 0; i < swp->num_primary_banks; i++) {
+			auto bank = i;
+			// calculate the range of the weapon, and only display the lead target indicator
+			// if the weapon can actually hit the target
+			Assert(bank >= 0 && bank < swp->num_primary_banks);
+			Assert(swp->primary_bank_weapons[bank] < weapon_info_size());
+
+			if (swp->primary_bank_weapons[bank] < 0)
+				continue;
+
+			wip = &Weapon_info[swp->primary_bank_weapons[bank]];
+
+			if (wip->wi_flags[Weapon::Info_Flags::Nolink] ||  (wip->wi_flags[Weapon::Info_Flags::Ballistic] && swp->primary_bank_ammo[bank] <= 0))
+				continue;
+
+			auto weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
+			if (weapon_range < dist_to_target)
+				continue;
+
+			if (!hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target)) {
+				continue;
+			}
+
+			frame_offset = pickFrame(weapon_range, srange, dist_to_target);
+
+			if (frame_offset >= 0) {
+				if (Lead_indicator_behavior == leadIndicatorBehavior::MULTIPLE) {
+					renderIndicator(frame_offset, targetp, &lead_target_pos);
+				}
+				else if (Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
+					vm_vec_add2(&averaged_lead_pos, &lead_target_pos);
+					average_instances++;
+				}
+			}
+		}
+		if (average_instances > 0 && Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
+			averaged_lead_pos = averaged_lead_pos/i2fl(average_instances);
+			renderIndicator(frame_offset, targetp, &averaged_lead_pos);
 		}
 	}
+	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
+		if (!hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target)) {
+			prange = 0.0f; // no ballistic trajectory, primary is 'always out of range'
+		}
 
-	frame_offset = pickFrame(prange, srange, dist_to_target);
-	if ( frame_offset < 0 ) {
-		return;
+		frame_offset = pickFrame(prange, srange, dist_to_target);
+		if ( frame_offset < 0 && srange != -1.0f ) {
+			return;
+		}
+
+		if (frame_offset >= 0) {
+			renderIndicator(frame_offset, targetp, &lead_target_pos);
+		}
 	}
-
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderIndicator(frame_offset, targetp, &lead_target_pos);
+	else return;
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
@@ -4058,17 +4107,17 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->is_homing() )
+		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
 
 		if (dist_to_target > max_dist)
 			return;
-	}
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderIndicator(0, targetp, &lead_target_pos);
+		if (hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target))
+			renderIndicator(0, targetp, &lead_target_pos);
+	}
 }
 
 //Backslash
@@ -4149,7 +4198,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 		return;
 	}
 
-	hud_calculate_lead_pos(&lead_target_pos, target_world_pos, targetp, wip, dist_to_target, rel_pos);
+	hud_calculate_lead_pos(&source_pos , &lead_target_pos, target_world_pos, targetp, wip, dist_to_target, rel_pos);
 	renderIndicator(frame_offset, targetp, &lead_target_pos);
 }
 
@@ -4220,11 +4269,32 @@ void HudGaugeLeadSight::renderSight(int frame_offset, vec3d *target_pos, vec3d *
 		float reticle_target_sx = target_sx - Lead_sight_half[0] - target_lead_sx;
 		float reticle_target_sy = target_sy - Lead_sight_half[1] - target_lead_sy;
 
-		reticle_target_sx += position[0] + 0.5f;
-		reticle_target_sy += position[1] + 0.5f;
+		int tablePosX = position[0];
+		int tablePosY = position[1];
+
+		bool do_slew = reticle_follow;
+		if (do_slew) {
+			int nx = HUD_nose_x;
+			int ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+			gr_reset_screen_scale();
+
+			tablePosX += nx;
+			tablePosY += ny;
+		}
+
+		reticle_target_sx += tablePosX + 0.5f;
+		reticle_target_sy += tablePosY + 0.5f;
 
 		setGaugeColor();
-		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx) + fl2i(HUD_offset_x), fl2i(reticle_target_sy) + fl2i(HUD_offset_y));
+
+		//We need to do slewing manually only on the non-3D-dependant part of the hud, so make the rendering function believe that we don't slew
+		reticle_follow = false;
+		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx), fl2i(reticle_target_sy));
+		reticle_follow = do_slew;
 	}
 }
 
@@ -4233,7 +4303,7 @@ void HudGaugeLeadSight::pageIn()
 	bm_page_in_aabitmap(Lead_sight.first_frame, Lead_sight.num_frames);
 }
 
-void HudGaugeLeadSight::render(float frametime)
+void HudGaugeLeadSight::render(float  /*frametime*/)
 {
 	vec3d		target_pos;
 	vec3d		source_pos;
@@ -4315,7 +4385,7 @@ void HudGaugeLeadSight::render(float frametime)
 			g3_start_frame(0);
 		}
 
-		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		hud_calculate_lead_pos(&source_pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 		renderSight(1, &target_pos, &lead_target_pos); // render the primary weapon lead sight
 
 		if(!in_frame) {
@@ -4352,7 +4422,7 @@ void HudGaugeLeadSight::render(float frametime)
 
 	//give it the "in secondary range frame
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+	hud_calculate_lead_pos(&source_pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 	renderSight(0, &target_pos, &lead_target_pos); // now render the secondary weapon lead sight
 
 	if(!in_frame) {
@@ -4360,19 +4430,38 @@ void HudGaugeLeadSight::render(float frametime)
 	}
 }
 
-// hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
-//
-void hud_cease_subsystem_targeting(int print_message)
+void hud_cease_subsystem_targeting(bool print_message)
 {
 	int ship_index;
 
-	ship_index = Objects[Player_ai->target_objnum].instance;
-	if ( ship_index < 0 )
+	Assertion(Player_ai->target_objnum < MAX_OBJECTS, "Invalid player target objnum");
+
+	if (Player_ai->target_objnum < 0) {
+		// Nothing selected
+		if (print_message) {
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("No target selected.", 322));
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
+	}
+
+	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
+		// Object isn't a ship, so it doesn't have any subsystems
+		if (print_message) {
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
+		return;
+	}
+
+	ship_index = Objects[Player_ai->target_objnum].instance;
+
+	Assertion(ship_index >= 0 && ship_index < MAX_SHIPS, "Invalid ship index");
+	Assertion(Player_num >= 0 && Player_num < MAX_PLAYERS, "Invalid player number");
 
 	Ships[ship_index].last_targeted_subobject[Player_num] = NULL;
 	Player_ai->targeted_subsys = NULL;
 	Player_ai->targeted_subsys_parent = -1;
+
 	if ( print_message ) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating sub-system targeting", 324));
 	}
@@ -4381,15 +4470,17 @@ void hud_cease_subsystem_targeting(int print_message)
 	hud_lock_reset();
 }
 
-// hud_cease_targeting() will cease all targeting (main target and subsystem)
-//
-void hud_cease_targeting()
+void hud_cease_targeting(bool deliberate)
 {
-	set_target_objnum( Player_ai, -1 );
-	Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
-	hud_cease_subsystem_targeting(0);
-	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating targeting system", 325));
-	hud_lock_reset();
+	// Turn off subsys targeting before we invalidate the player target_objnum...
+	hud_cease_subsystem_targeting(false);
+	set_target_objnum(Player_ai, -1);
+
+	if (deliberate) {
+		// Player wants to stop targeting, so turn off auto-target so we don't immediately aquire another target
+		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Deactivating targeting system", 325));
+	}
 }
 
 // hud_restore_subsystem_target() will remember the last targeted subsystem
@@ -4435,8 +4526,15 @@ void hud_target_change_check()
 	// check if the main target has changed
 	if (Player_ai->last_target != Player_ai->target_objnum) {
 
+		// acquired target
 		if ( Player_ai->target_objnum != -1){
-			snd_play( &Snds[ship_get_sound(Player_obj, SND_TARGET_ACQUIRE)], 0.0f );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::TARGET_ACQUIRE)), 0.0f );
+		}
+		// cleared target
+		else {
+			if (Target_static_looping.isValid()) {
+				snd_stop(Target_static_looping);
+			}
 		}
 
 		// if we have a hotkey set active, see if new target is in set.  If not in
@@ -4486,6 +4584,12 @@ void hud_target_change_check()
 				hud_restore_subsystem_target(&Ships[Objects[Player_ai->target_objnum].instance]);
 			}
 		}
+
+		// reset external cam distance
+		if (Viewer_mode & VM_EXTERNAL) {
+			if (Viewer_mode & VM_OTHER_SHIP)
+				Viewer_external_info.preferred_distance = 2 * Objects[Player_ai->target_objnum].radius;
+		}
 	}
 	else {
 		if (Player_ai->current_target_distance < Player_ai->last_dist-0.01){
@@ -4527,7 +4631,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_TARGET_TRI, HUD_TARGET_TRIANGLE)
 {
 }
 
-void HudGaugeTargetTriangle::render(float frametime)
+void HudGaugeTargetTriangle::render(float  /*frametime*/)
 {
 	if ( Player_ai->target_objnum == -1)
 		return;
@@ -4539,6 +4643,7 @@ void HudGaugeTargetTriangle::render(float frametime)
 	object *targetp = &Objects[Player_ai->target_objnum];
 
 	// draw the targeting triangle that orbits the outside of the outer circle of the reticle
+	// checking !target_is_dying is correct here, since you do not want -1 (no target) or 1(is actually dying)
 	if (!Player->target_is_dying && maybeFlashSexp() != 1) {
 
 		hud_set_iff_color(targetp, 1);
@@ -4550,7 +4655,7 @@ void HudGaugeTargetTriangle::render(float frametime)
 }
 
 // start the weapon line (on the HUD) flashing
-void hud_start_flash_weapon(int index)
+void hud_start_flash_weapon(int index, bool flash_energy)
 {
 	if ( index >= MAX_WEAPON_FLASH_LINES ) {
 		Int3();	// Get Alan
@@ -4563,6 +4668,7 @@ void hud_start_flash_weapon(int index)
 	}
 
 	Weapon_flash_info.flash_duration[index] = timestamp(TBOX_FLASH_DURATION);
+	Weapon_flash_info.flash_energy[index] = flash_energy;
 }
 
 // maybe change the text color for the weapon line indicated by index
@@ -4615,7 +4721,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	if ( (sensors_str < MIN_SENSOR_STR_TO_TARGET) || (ship_subsys_disrupted(sp, SUBSYSTEM_SENSORS)) ) {
 		if ( show_msg ) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Targeting is disabled due to sensors damage", 330));
-			snd_play(&Snds[SND_TARGET_FAIL]);
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 		return 0;
 	} else {
@@ -4623,7 +4729,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-int hud_communications_state(ship *sp)
+int hud_communications_state(ship *sp, bool for_death_scream)
 {
 	float str;
 
@@ -4637,17 +4743,17 @@ int hud_communications_state(ship *sp)
 	if ((sp == Player_ship) && (sp->flags[Ship::Ship_Flags::Dying]))
 		return COMM_OK;
 
-	// Goober5000 - check for scrambled communications
-	if ( emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages] )
-		return COMM_SCRAMBLED;
-
-	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
+	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION, for_death_scream );
 
 	if ( (str <= 0.01) || ship_subsys_disrupted(sp, SUBSYSTEM_COMMUNICATION) ) {
 		return COMM_DESTROYED;
 	} else if ( str < MIN_COMM_STR_TO_MESSAGE ) {
 		return COMM_DAMAGED;
 	}
+
+	// Goober5000 - check for scrambled communications
+	if ((emp_active_local() && !sp->flags[Ship::Ship_Flags::EMP_doesnt_scramble_messages]) || sp->flags[Ship::Ship_Flags::Scramble_messages])
+		return COMM_SCRAMBLED;
 
 	return COMM_OK;
 }
@@ -4668,7 +4774,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	} else {
 		// everyone hates a traitor including other traitors so the friendly target option shouldn't work for them
 		if (Player_ship->team == Iff_traitor) {
-			snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 			return;
 		}
 
@@ -4686,16 +4792,14 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	object *nearest_object = select_next_target_by_distance((next_flag != 0), valid_team_mask, attacked_objnum);
 
 	if (nearest_object != NULL) {
-		// set new target
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_object) );
 		hud_shield_hit_reset(nearest_object);
 
-		// maybe set new turret subsystem
 		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_object->instance]);
 		hud_restore_subsystem_target(&Ships[nearest_object->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -4748,7 +4852,7 @@ void HudGaugeAutoTarget::initOffColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&Off_color, r, g, b, a);
 }
 
-void HudGaugeAutoTarget::render(float frametime)
+void HudGaugeAutoTarget::render(float  /*frametime*/)
 {
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
@@ -4763,7 +4867,8 @@ void HudGaugeAutoTarget::render(float frametime)
 
 	// draw the box background
 	setGaugeColor();
-	renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
+	if (Toggle_frame.first_frame + frame_offset >= 0)
+		renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
 
 	// draw the text on top
 	if (frame_offset == 1) {
@@ -4834,7 +4939,7 @@ void HudGaugeAutoSpeed::initOffColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&Off_color, r, g, b, a);
 }
 
-void HudGaugeAutoSpeed::render(float frametime)
+void HudGaugeAutoSpeed::render(float  /*frametime*/)
 {
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
@@ -4849,7 +4954,8 @@ void HudGaugeAutoSpeed::render(float frametime)
 
 	setGaugeColor();
 
-	renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
+	if (Toggle_frame.first_frame + frame_offset >= 0)
+		renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
 
 	// draw the text on top
 	if (frame_offset == 3) {
@@ -4886,6 +4992,8 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// ignore all ships that aren't repair ships
@@ -4957,8 +5065,9 @@ void hud_target_closest_uninspected_object()
 	float		new_distance = 0.0f;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) ){
@@ -4988,7 +5097,7 @@ void hud_target_closest_uninspected_object()
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 	}
 }
 
@@ -5022,6 +5131,8 @@ void hud_target_uninspected_object(int next_flag)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) )
@@ -5091,7 +5202,7 @@ void hud_target_uninspected_object(int next_flag)
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 	}
 }
 
@@ -5188,7 +5299,7 @@ void hud_target_last_transmit()
 
 	if ( i == MAX_TRANSMIT_TARGETS ) {
 		if ( play_fail_sound ) {
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 		}
 		Transmit_target_current_slot = -1;
 		return;
@@ -5274,39 +5385,50 @@ void hudtarget_page_in()
 	}
 	bm_page_in_aabitmap( New_weapon.first_frame, New_weapon.num_frames );
 
-	weapon_info* wip;
-	for(i = 0; i < Num_weapon_types; i++)
+	for (auto &wi : Weapon_info)
 	{
-		wip = &Weapon_info[i];
-		if(strlen(wip->hud_filename))
+		if (strlen(wi.hud_filename))
 		{
-			wip->hud_image_index = bm_load(wip->hud_filename);
+			wi.hud_image_index = bm_load(wi.hud_filename);
 		}
 	}
 }
 
-void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
+void hud_stuff_ship_name(char *ship_name_text, const ship *shipp)
+{
+	strcpy(ship_name_text, hud_get_ship_name(shipp).c_str());
+}
+
+SCP_string hud_get_ship_name(const ship *shipp)
 {
 	// print ship name
 	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
-		*ship_name_text = 0;
-	} else {
-		strcpy(ship_name_text, shipp->ship_name);
-
-		// handle hash symbol
-		end_string_at_first_hash_symbol(ship_name_text);
-
+		return "";
+	} else if (!Disable_built_in_translations) {
 		// handle translation
 		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_name_text);
+			char buf[128];
+			strcpy(buf, shipp->get_display_name());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
 		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_name_text);
+			char buf[128];
+			strcpy(buf, shipp->get_display_name());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
 		}
 	}
+
+	return shipp->get_display_name();
+}
+
+void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp)
+{
+	strcpy(ship_callsign_text, hud_get_ship_callsign(shipp).c_str());
 }
 
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
-void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
+SCP_string hud_get_ship_callsign(const ship *shipp)
 {
 	// handle multiplayer callsign
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -5314,59 +5436,80 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 		int pn = multi_find_player_by_object( &Objects[shipp->objnum] );
 
 		if (pn >= 0) {
-			strcpy(ship_callsign_text, Net_players[pn].m_player->short_callsign);
-			return;
+			return Net_players[pn].m_player->short_callsign;
 		}
 	}
+
+	SCP_string ship_callsign_text;
 
 	// try to get callsign
 	if (Fred_running) {
-		strcpy(ship_callsign_text, Fred_callsigns[shipp-Ships]);
+		ship_callsign_text = Fred_callsigns[shipp-Ships];
 	} else {
-		*ship_callsign_text = 0;
 		if (shipp->callsign_index >= 0) {
-			mission_parse_lookup_callsign_index(shipp->callsign_index, ship_callsign_text);
+			ship_callsign_text = mission_parse_lookup_callsign_index(shipp->callsign_index);
 		}
 	}
 
-	// handle hash symbol
-	end_string_at_first_hash_symbol(ship_callsign_text);
-
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name_gr(ship_callsign_text);
-	} else if (Lcl_pl) {
-		lcl_translate_targetbox_name_pl(ship_callsign_text);
+	if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			char buf[128];
+			strcpy(buf, ship_callsign_text.c_str());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
+		} else if (Lcl_pl) {
+			char buf[128];
+			strcpy(buf, ship_callsign_text.c_str());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
+		}
 	}
+
+	return ship_callsign_text;
 }
 
-extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
-void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
+void hud_stuff_ship_class(char *ship_class_text, const ship *shipp)
 {
+	strcpy(ship_class_text, hud_get_ship_class(shipp).c_str());
+}
+
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
+SCP_string hud_get_ship_class(const ship *shipp)
+{
+	SCP_string ship_class_text;
+
 	// try to get alt name
 	if (Fred_running) {
-		strcpy(ship_class_text, Fred_alt_names[shipp-Ships]);
+		ship_class_text = Fred_alt_names[shipp-Ships];
+
+		if (ship_class_text.empty()) {
+			ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
+		}
 	} else {
-		*ship_class_text = 0;
 		if (shipp->alt_type_index >= 0) {
-			mission_parse_lookup_alt_index(shipp->alt_type_index, ship_class_text);
+			ship_class_text = mission_parse_lookup_alt_index(shipp->alt_type_index);
+		} else {
+			ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
 		}
 	}
 
-	// maybe get ship class
-	if (!*ship_class_text) {
-		strcpy(ship_class_text, (Ship_info[shipp->ship_info_index].alt_name[0]) ? Ship_info[shipp->ship_info_index].alt_name : Ship_info[shipp->ship_info_index].name);
+	if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			char buf[128];
+			strcpy(buf, ship_class_text.c_str());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
+		} else if (Lcl_pl) {
+			char buf[128];
+			strcpy(buf, ship_class_text.c_str());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
+		}
 	}
 
-	// handle hash symbol
-	end_string_at_first_hash_symbol(ship_class_text);
-
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name_gr(ship_class_text);
-	} else if (Lcl_pl) {
-		lcl_translate_targetbox_name_pl(ship_class_text);
-	}
+	return ship_class_text;
 }
 
 HudGaugeCmeasures::HudGaugeCmeasures():
@@ -5399,11 +5542,10 @@ void HudGaugeCmeasures::pageIn()
 	bm_page_in_aabitmap(Cmeasure_gauge.first_frame, Cmeasure_gauge.num_frames);
 }
 
-void HudGaugeCmeasures::render(float frametime)
+void HudGaugeCmeasures::render(float  /*frametime*/)
 {
-	if ( Cmeasure_gauge.first_frame == -1) {
-		Int3();	// failed to load coutermeasure gauge background
-		return;
+	if ( Cmeasure_gauge.first_frame < 0) {
+		return;	// failed to load coutermeasure gauge background
 	}
 
 	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
@@ -5446,12 +5588,12 @@ void HudGaugeAfterburner::initBitmaps(char *fname)
 }
 
 //	Render the HUD afterburner energy gauge
-void HudGaugeAfterburner::render(float frametime)
+void HudGaugeAfterburner::render(float  /*frametime*/)
 {
 	float percent_left;
 	int	clip_h,w,h;
 
-	if ( Energy_bar.first_frame == -1 ){
+	if ( Energy_bar.first_frame < 0 ){
 		return;
 	}
 
@@ -5467,7 +5609,7 @@ void HudGaugeAfterburner::render(float frametime)
 		percent_left = 1.0f;
 	}
 
-	clip_h = fl2i( (1.0f - percent_left) * Energy_h + 0.5f );
+	clip_h = (int)std::lround((1.0f - percent_left) * Energy_h);
 
 	bm_get_info(Energy_bar.first_frame,&w,&h);
 
@@ -5503,7 +5645,7 @@ void HudGaugeWeaponEnergy::initEnergyHeight(int h)
 	Wenergy_h = h;
 }
 
-void HudGaugeWeaponEnergy::initAlignments(int text_align, int armed_align)
+void HudGaugeWeaponEnergy::initAlignments(HudAlignment text_align, HudAlignment armed_align)
 {
 	Text_alignment = text_align;
 	Armed_alignment = armed_align;
@@ -5555,7 +5697,7 @@ void HudGaugeWeaponEnergy::pageIn()
 	bm_page_in_aabitmap( Energy_bar.first_frame, Energy_bar.num_frames);
 }
 
-void HudGaugeWeaponEnergy::render(float frametime)
+void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 {
 	int x;
 	bool use_new_gauge = false;
@@ -5591,7 +5733,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			setGaugeColor(HUD_C_BRIGHT);
 
 		//Draw name
-		renderString(currentx, currenty, "Energy");
+		renderString(currentx, currenty, XSTR("Energy", 1616));
 		currenty += line_height;
 
 		//Draw background
@@ -5625,10 +5767,11 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				setGaugeColor(HUD_C_NORMAL);
 			}
 			if(gr_screen.max_w_unscaled == 640) {
+				strcpy_s(shortened_name, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].get_display_name());
 				font::force_fit_string(shortened_name, NAME_LENGTH, 55);
 				renderString(currentx, currenty, shortened_name);
 			} else {
-				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].get_display_name());
 			}
 
 			//Next 'line'
@@ -5658,9 +5801,8 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		int	clip_h, w, h, i;
 		weapon_info *wip;
 		ship_weapon *sw;
-		char buf[40] = "";
 
-		if ( Energy_bar.first_frame == -1 ) {
+		if ( Energy_bar.first_frame < 0 ) {
 			return;
 		}
 
@@ -5707,9 +5849,10 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			}
 		}
 
-		clip_h = fl2i( (1.0f - percent_left) * Wenergy_h + 0.5f );
+		clip_h = (int)std::lround((1.0f - percent_left) * Wenergy_h);
 
 		if ( percent_left <= 0.3 || Show_ballistic || Always_show_text ) {
+			char buf[10];
 			int delta_y = 0, delta_x = 0;
 
 			if ( percent_left < 0.1 ) {
@@ -5721,7 +5864,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			if ( Show_ballistic ) {
 				sprintf(buf, "%d", ballistic_ammo);
 			} else {
-				sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
+				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround(percent_left*100));
 			}
 
 			if ( Moving_text ) {
@@ -5730,7 +5873,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 
 			hud_num_make_mono(buf, font_num);
 
-			if ( Text_alignment ) {
+			if ( Text_alignment == HudAlignment::RIGHT ) {
 				gr_get_string_size(&w, &h, buf);
 				delta_x = -w;
 			}
@@ -5746,35 +5889,36 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				// show all primary banks
 				for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
 					wip = &Weapon_info[sw->primary_bank_weapons[i]];
-					strcpy_s(buf, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+					auto weapon_name = wip->get_display_name();
 
-					if ( Armed_alignment ) {
-						gr_get_string_size(&w, &h, buf);
+					if ( Armed_alignment == HudAlignment::RIGHT ) {
+						gr_get_string_size(&w, &h, weapon_name);
 					} else {
 						w = 0;
 					}
 
-					renderString(position[0] + Armed_name_offsets[0] - w, position[1] + Armed_name_offsets[1] + Armed_name_h * i, buf);
+					renderString(position[0] + Armed_name_offsets[0] - w, position[1] + Armed_name_offsets[1] + Armed_name_h * i, weapon_name);
 				}
 			} else {
 				// just show the current armed bank
 				i = Player_ship->weapons.current_primary_bank;
 				wip = &Weapon_info[sw->primary_bank_weapons[i]];
-				strcpy_s(buf, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+				auto weapon_name = wip->get_display_name();
 
-				if ( Armed_alignment ) {
-					gr_get_string_size(&w, &h, buf);
+				if ( Armed_alignment == HudAlignment::RIGHT ) {
+					gr_get_string_size(&w, &h, weapon_name);
 				} else {
 					w = 0;
 				}
 
-				renderString(position[0] + Armed_name_offsets[0] - w, position[1] + Armed_name_offsets[1], buf);
+				renderString(position[0] + Armed_name_offsets[0] - w, position[1] + Armed_name_offsets[1], weapon_name);
 			}
 		}
 
-		for ( i = 0; i < sw->num_primary_banks; i++ )
+		// maybe flash the energy bar
+		for ( i = 0; i < sw->num_primary_banks + sw->num_secondary_banks; i++ )
 		{
-			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) )
+			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) && Weapon_flash_info.flash_energy[i])
 			{
 				if ( Weapon_flash_info.is_bright & (1<<i) )
 				{
@@ -6005,11 +6149,10 @@ void HudGaugeWeapons::pageIn()
 	}
 }
 
-void HudGaugeWeapons::render(float frametime)
+void HudGaugeWeapons::render(float  /*frametime*/)
 {
 	ship_weapon	*sw;
 	int			np, ns;		// np == num primary, ns == num secondary
-	char			name[NAME_LENGTH];
 
 	if(Player_obj->type == OBJ_OBSERVER)
 		return;
@@ -6024,11 +6167,13 @@ void HudGaugeWeapons::render(float frametime)
 	setGaugeColor();
 
 	// draw top of primary display
-	renderBitmap(primary_top[ballistic_hud_index].first_frame, position[0] + top_offset_x[ballistic_hud_index], position[1]);
+	if (primary_top[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(primary_top[ballistic_hud_index].first_frame, position[0] + top_offset_x[ballistic_hud_index], position[1]);
 
 	// render the header of this gauge
 	renderString(position[0] + Weapon_header_offsets[ballistic_hud_index][0], position[1] + Weapon_header_offsets[ballistic_hud_index][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));
 
+	const char *weapon_name;
 	char	ammo_str[32];
 	int		i, w, h;
 	int y = position[1] + top_primary_h;
@@ -6043,17 +6188,15 @@ void HudGaugeWeapons::render(float frametime)
 		// It is assumed that the top primary wep frame already has this rendered.
 		if(i == 1) {
 			// used to draw the second primary weapon background
-			renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+			if (primary_middle[ballistic_hud_index].first_frame >= 0)
+				renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		} else if(i != 0) {
 			// used to draw the the third, fourth, fifth, etc...
-			if(primary_last[ballistic_hud_index].first_frame != -1)
+			if(primary_last[ballistic_hud_index].first_frame >= 0)
 				renderBitmap(primary_last[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
-		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
-		if (Lcl_gr) {
-			lcl_translate_wep_name_gr(name);
-		}
+		weapon_name = Weapon_info[sw->primary_bank_weapons[i]].get_display_name();
 
 		// maybe modify name here to fit
 
@@ -6073,16 +6216,13 @@ void HudGaugeWeapons::render(float frametime)
 		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1) {
 			renderBitmap(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, position[0] + Weapon_pname_offset_x, name_y);
 		} else {
-			renderPrintf(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_P2, "%s", name);
+			renderPrintf(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_P2, "%s", weapon_name);
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
 		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
-
-			// get rid of #
-			end_string_at_first_hash_symbol(ammo_str);
 
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
@@ -6097,13 +6237,13 @@ void HudGaugeWeapons::render(float frametime)
 	}
 
 	weapon_info	*wip;
-	char	weapon_name[NAME_LENGTH + 10];
 
 	if ( HudGauge::maybeFlashSexp() == i ) {
 		setGaugeColor(HUD_C_BRIGHT);
 	}
 
-	renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+	if (secondary_top[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 	name_y = y + sname_start_offset_y;
 	y += top_secondary_h;
 
@@ -6112,28 +6252,33 @@ void HudGaugeWeapons::render(float frametime)
 		setGaugeColor();
 		wip = &Weapon_info[sw->secondary_bank_weapons[i]];
 
-		if(i!=0) {
+		if(i!=0 && secondary_middle[ballistic_hud_index].first_frame >= 0) {
 			renderBitmap(secondary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
 		maybeFlashWeapon(np+i);
 
-		// HACK - make Cluster Bomb fit on the HUD.
-		if(!stricmp(wip->name,"cluster bomb")){
-			strcpy_s(weapon_name, NOX("Cluster"));
+		if (wip->has_display_name()) {
+			// Do not apply the cluster bomb hack if we have an alternate name to make translating that name possible
+			weapon_name = wip->get_display_name();
 		} else {
-			strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+			// HACK - make Cluster Bomb fit on the HUD.
+			if(!stricmp(wip->name,"cluster bomb")){
+				weapon_name = NOX("Cluster");
+			} else {
+				weapon_name = wip->get_display_name();
+			}
 		}
-
-		// get rid of #
-		end_string_at_first_hash_symbol(weapon_name);
 
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
 			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
+			// don't draw the link indicator if the fire can't be fired link.
+			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
+					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
 				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 			}
 
@@ -6145,10 +6290,10 @@ void HudGaugeWeapons::render(float frametime)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
@@ -6156,14 +6301,16 @@ void HudGaugeWeapons::render(float frametime)
 			renderString(position[0] + Weapon_sname_offset_x, name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo=sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo=sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+			renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+		}
 
 		if(i != 0) {
 			y += secondary_text_h;
@@ -6179,7 +6326,8 @@ void HudGaugeWeapons::render(float frametime)
 
 	y -= 0;
 	// finish drawing the background
-	renderBitmap(secondary_bottom[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+	if (secondary_bottom[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(secondary_bottom[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 }
 
 void hud_update_weapon_flash()
@@ -6225,7 +6373,7 @@ void HudGaugeWeapons::maybeFlashWeapon(int index)
 	}
 }
 
-void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char* name, int flags)
+void hud_target_add_display_list(object *objp, const vertex *target_point, const vec3d *target_pos, int correction, const color *bracket_clr, const char* name, int flags)
 {
 	target_display_info element;
 
@@ -6257,7 +6405,7 @@ void hud_target_clear_display_list()
 }
 
 HudGaugeOffscreen::HudGaugeOffscreen():
-HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -6285,7 +6433,7 @@ void HudGaugeOffscreen::pageIn()
 {
 }
 
-void HudGaugeOffscreen::render(float frametime)
+void HudGaugeOffscreen::render(float  /*frametime*/)
 {
 	// don't show offscreen indicator if we're warping out.
 	if ( Player->control_mode != PCM_NORMAL ) {
@@ -6300,7 +6448,11 @@ void HudGaugeOffscreen::render(float frametime)
 			int dir;
 
 			if(target_display_list[i].objp) {
-				dist = hud_find_target_distance( target_display_list[i].objp, Player_obj );
+				if (OBJ_INDEX(target_display_list[i].objp) == Player_ai->target_objnum) {
+					dist = Player_ai->current_target_distance;
+				} else {
+					dist = hud_find_target_distance( target_display_list[i].objp, Player_obj );
+				}
 			} else {
 				// if we don't have a corresponding object, use given position to figure out distance
 				dist = vm_vec_dist_quick(&Player_obj->pos, &target_display_list[i].target_pos);
@@ -6384,15 +6536,15 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	codes_or = (ubyte)(target_point->codes | eye_vertex->codes);
 	clip_line(&target_point,&eye_vertex,codes_or,0);
 
-	if (!(target_point->flags&PF_PROJECTED))
-		g3_project_vertex(target_point);
+	g3_project_vertex(target_point);
 
-	if (!(eye_vertex->flags&PF_PROJECTED))
-		g3_project_vertex(eye_vertex);
+	g3_project_vertex(eye_vertex);
 
 	if (eye_vertex->flags&PF_OVERFLOW) {
 		Int3();			//	This is unlikely to happen, but can if a clip goes through the player's eye.
 		Player_ai->target_objnum = -1;
+		if (!in_frame)
+			g3_end_frame();
 		return;
 	}
 
@@ -6453,6 +6605,8 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 
 	} else {
 		Int3();
+		if (!in_frame)
+			g3_end_frame();
 		return;
 	}
 
@@ -6519,7 +6673,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 	gr_set_screen_scale(base_w, base_h);
 
 	if (displayed_distance > 0.0f) {
-		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
+		sprintf(buf, "%d", (int)std::lround(displayed_distance));
 		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 	} else {
@@ -6540,7 +6694,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		y6 = y5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string( fl2i(xpos - w - 10), fl2i(ypos - h/2.0f+0.5f), buf);
+			gr_string( fl2i(xpos - w - 10), (int)std::lround(ypos - h/2.0f), buf);
 		}
 	} else if (dir == 1) {
 		x1 = x4 = (xpos-1);
@@ -6553,7 +6707,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		y6 = y5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos + 10), fl2i(ypos - h/2.0f+0.5f), buf);
+			gr_string(fl2i(xpos + 10), (int)std::lround(ypos - h/2.0f), buf);
 		}
 	} else if (dir == 2) {
 		y1 = y4 = (ypos-1);
@@ -6566,7 +6720,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		x6 = x5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos+10), buf);
+			gr_string((int)std::lround(xpos - w/2.0f), fl2i(ypos+10), buf);
 		}
 	} else if (dir == 3) {
 		y1 = y4 = (ypos+2);
@@ -6579,7 +6733,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		x6 = x5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos-h-10), buf);
+			gr_string((int)std::lround(xpos - w/2.0f), fl2i(ypos-h-10), buf);
 		}
 	}
 
@@ -6647,7 +6801,7 @@ void HudGaugeWarheadCount::initMaxColumns(int count)
 	Max_columns = count;
 }
 
-void HudGaugeWarheadCount::initTextAlign(int align)
+void HudGaugeWarheadCount::initTextAlign(HudAlignment align)
 {
 	Text_align = align;
 }
@@ -6657,7 +6811,7 @@ void HudGaugeWarheadCount::pageIn()
 	bm_page_in_aabitmap(Warhead.first_frame, Warhead.num_frames);
 }
 
-void HudGaugeWarheadCount::render(float frametime)
+void HudGaugeWarheadCount::render(float  /*frametime*/)
 {
 	if(Player_obj->type == OBJ_OBSERVER) {
 		return;
@@ -6682,19 +6836,17 @@ void HudGaugeWarheadCount::render(float frametime)
 		return;
 	}
 
-	char weapon_name[NAME_LENGTH + 10];
-	strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
-	end_string_at_first_hash_symbol(weapon_name);
+	auto weapon_name = wip->get_display_name();
 
 	setGaugeColor();
 
 	// display the weapon name
-	if ( Text_align ) {
+	if ( Text_align == HudAlignment::RIGHT ) {
 		int w, h;
 
 		gr_get_string_size(&w, &h, weapon_name);
 		renderString(position[0] + Warhead_name_offsets[0] - w, position[1] + Warhead_name_offsets[1], weapon_name);
-	} else {
+	} else if ( Text_align == HudAlignment::LEFT ) {
 		renderString(position[0] + Warhead_name_offsets[0], position[1] + Warhead_name_offsets[1], weapon_name);
 	}
 
@@ -6707,12 +6859,12 @@ void HudGaugeWarheadCount::render(float frametime)
 		sprintf(ammo_str, "%d", ammo);
 		hud_num_make_mono(ammo_str, font_num);
 
-		if ( Text_align ) {
+		if ( Text_align == HudAlignment::RIGHT ) {
 			int w, h;
 
 			gr_get_string_size(&w, &h, ammo_str);
 			renderString(position[0] + Warhead_count_offsets[0] - w, position[1] + Warhead_count_offsets[1], ammo_str);
-		} else {
+		} else if ( Text_align == HudAlignment::LEFT ) {
 			renderString(position[0] + Warhead_count_offsets[0], position[1] + Warhead_count_offsets[1], ammo_str);
 		}
 
@@ -6720,9 +6872,9 @@ void HudGaugeWarheadCount::render(float frametime)
 	}
 
 	int delta_x = 0, delta_y = 0;
-	if ( Text_align ) {
+	if ( Text_align == HudAlignment::RIGHT ) {
 		delta_x = -Warhead_count_size[0];
-	} else {
+	} else if ( Text_align == HudAlignment::LEFT ) {
 		delta_x = Warhead_count_size[0];
 	}
 
@@ -6735,7 +6887,8 @@ void HudGaugeWarheadCount::render(float frametime)
 			column = i;
 		}
 
-		renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
+		if (Warhead.first_frame >= 0)
+			renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
 	}
 }
 
@@ -6860,7 +7013,7 @@ void HudGaugeWeaponList::maybeFlashWeapon(int index)
 	}
 }
 
-void HudGaugeWeaponList::render(float frametime)
+void HudGaugeWeaponList::render(float  /*frametime*/)
 {
 
 }
@@ -6886,12 +7039,11 @@ void HudGaugePrimaryWeapons::initPrimaryAmmoOffsetX(int x)
 	_pammo_offset_x = x;
 }
 
-void HudGaugePrimaryWeapons::render(float frametime)
+void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 {
 	ship_weapon	*sw;
 
 	int		num_primaries;		// np == num primary
-	char	name[NAME_LENGTH];
 
 	if(Player_obj->type == OBJ_OBSERVER)
 		return;
@@ -6905,7 +7057,8 @@ void HudGaugePrimaryWeapons::render(float frametime)
 
 	setGaugeColor();
 
-	renderBitmap(_background_first.first_frame, position[0], position[1]);
+	if (_background_first.first_frame >= 0)
+		renderBitmap(_background_first.first_frame, position[0], position[1]);
 
 	// render the header of this gauge
 	renderString(position[0] + _header_offsets[0], position[1] + _header_offsets[1], EG_WEAPON_TITLE, header_text);
@@ -6918,13 +7071,10 @@ void HudGaugePrimaryWeapons::render(float frametime)
 	for ( i = 0; i < num_primaries; ++i ) {
 		setGaugeColor();
 
-		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
+		if (_background_entry.first_frame >= 0)
+			renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 
-		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
-
-		if (Lcl_gr) {
-			lcl_translate_wep_name_gr(name);
-		}
+		auto weapon_name = Weapon_info[sw->primary_bank_weapons[i]].get_display_name();
 
 		if (HudGauge::maybeFlashSexp() == i ) {
 			setGaugeColor(HUD_C_BRIGHT);
@@ -6941,16 +7091,13 @@ void HudGaugePrimaryWeapons::render(float frametime)
 		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1) {
 			renderBitmap(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, position[0] + _pname_offset_x, text_y_offset);
 		} else {
-			renderPrintf(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P2, "%s", name);
+			renderPrintf(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P2, "%s", weapon_name);
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
 		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
-
-			// get rid of #
-			end_string_at_first_hash_symbol(ammo_str);
 
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
@@ -6963,13 +7110,15 @@ void HudGaugePrimaryWeapons::render(float frametime)
 	}
 
 	if ( num_primaries == 0 ) {
-		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
+		if (_background_entry.first_frame >= 0)
+			renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 		renderString(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P1, XSTR( "<none>", 329));
 
 		bg_y_offset += _background_entry_h;
 	}
 
-	renderBitmap(_background_last.first_frame, position[0], position[1] + bg_y_offset + _bg_last_offset_y);
+	if (_background_last.first_frame >= 0)
+		renderBitmap(_background_last.first_frame, position[0], position[1] + bg_y_offset + _bg_last_offset_y);
 }
 
 HudGaugeSecondaryWeapons::HudGaugeSecondaryWeapons():
@@ -7003,7 +7152,7 @@ void HudGaugeSecondaryWeapons::initSecondaryUnlinkedOffsetX(int x)
 	_sunlinked_offset_x = x;
 }
 
-void HudGaugeSecondaryWeapons::render(float frametime)
+void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 {
 	ship_weapon	*sw;
 
@@ -7025,7 +7174,6 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 	renderString(position[0] + _header_offsets[0], position[1] + _header_offsets[1], EG_WEAPON_TITLE, header_text);
 
 	weapon_info	*wip;
-	char weapon_name[NAME_LENGTH + 10];
 	char ammo_str[32];
 	int i, w, h;
 	int bg_y_offset = _background_first_h;
@@ -7039,15 +7187,17 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 
 		maybeFlashWeapon(num_primaries+i);
 
-		strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
-		end_string_at_first_hash_symbol(weapon_name);
+		auto weapon_name = wip->get_display_name();
 
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
 			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
+			// don't draw the link indicator if the fire can't be fired link.
+			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
+					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
 				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 			}
 
@@ -7059,24 +7209,26 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
 			renderString(position[0] + _sname_offset_x, position[1] + text_y_offset, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo = sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo = sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+			renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+		}
 
 		bg_y_offset += _background_entry_h;
 		text_y_offset += _entry_h;
@@ -7121,7 +7273,7 @@ void HudGaugeHardpoints::initDrawOptions(bool primary_models, bool secondary_mod
 	draw_secondary_models = secondary_models;
 }
 
-void HudGaugeHardpoints::render(float frametime)
+void HudGaugeHardpoints::render(float  /*frametime*/)
 {
 	int			sx, sy;
 	ship			*sp;
@@ -7167,26 +7319,22 @@ void HudGaugeHardpoints::render(float frametime)
 	//We're ready to show stuff
 	model_render_params render_info;
 
-	int detail_level_lock = 1;
-	int cull = gr_set_cull(0);
 	gr_stencil_clear();
-	gr_stencil_set(GR_STENCIL_WRITE);
-	int zbuffer = gr_zbuffer_set(GR_ZBUFF_NONE);
-	gr_set_color_buffer(0);
 
-	render_info.set_color(gauge_color);
+	const int detail_level_lock = 1;
+
 	render_info.set_detail_level_lock(detail_level_lock);
-	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL);
+	render_info.set_flags(
+		MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL | MR_NO_ZBUFFER | MR_STENCIL_WRITE
+			| MR_NO_COLOR_WRITES);
 	render_info.set_object_number(OBJ_INDEX(objp));
 
 	model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector);
 
-	gr_set_color_buffer(1);
-	gr_stencil_set(GR_STENCIL_READ);
-	gr_set_cull(cull);
-
-	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL);
-	render_info.set_normal_extrude_width(_line_width * 0.01f);
+	render_info.set_color(gauge_color);
+	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL | MR_STENCIL_READ);
+	// Factor was chosen pretty arbitrarily to make outline feature work with existing data
+	render_info.set_outline_thickness(15.f * _line_width);
 
 	model_render_immediate(
 		&render_info,
@@ -7196,14 +7344,12 @@ void HudGaugeHardpoints::render(float frametime)
 	);
 
 	gr_stencil_set(GR_STENCIL_NONE);
-	gr_zbuffer_set(zbuffer);
 
 	// draw weapon models
 	int i, k;
 	ship_weapon *swp = &sp->weapons;
 	vertex draw_point;
 	vec3d subobj_pos;
-	g3_start_instance_matrix(&vmd_zero_vector, &object_orient, true);
 
 	int render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
 
@@ -7212,36 +7358,46 @@ void HudGaugeHardpoints::render(float frametime)
 
 	//secondary weapons
 	int num_secondaries_rendered = 0;
-	vec3d secondary_weapon_pos;
-	w_bank* bank;
-
 	if ( draw_secondary_models ) {
+		auto ship_pm = model_get(sip->model_num);
+
 		for (i = 0; i < swp->num_secondary_banks; i++) {
-			if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
+			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+
+			if (wip->external_model_num == -1 || !sip->draw_secondary_models[i])
 				continue;
 
-			bank = &(model_get(sip->model_num))->missile_banks[i];
+			auto bank = &ship_pm->missile_banks[i];
 
-			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
+			if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 				for(k = 0; k < bank->num_slots; k++) {
 					model_render_params weapon_render_info;
 
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+
+					// "Bank" the external model by the angle offset
+					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+					matrix model_orient = object_orient;
+					vm_rotate_matrix_by_angles(&model_orient, &angs);
+
+					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &bank->pnt[k]);
 				}
 			} else {
 				num_secondaries_rendered = 0;
 
 				for(k = 0; k < bank->num_slots; k++)
 				{
-					secondary_weapon_pos = bank->pnt[k];
+					auto secondary_weapon_pos = bank->pnt[k];
 
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
 
-					if(sp->secondary_point_reload_pct[i][k] <= 0.0)
+					if(sp->secondary_point_reload_pct.get(i, k) <= 0.0)
 						continue;
 
 					model_render_params weapon_render_info;
@@ -7254,28 +7410,40 @@ void HudGaugeHardpoints::render(float frametime)
 
 					num_secondaries_rendered++;
 
-					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
 
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &secondary_weapon_pos, &object_orient);
+
+					// "Bank" the external model by the angle offset
+					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+					matrix model_orient = object_orient;
+					vm_rotate_matrix_by_angles(&model_orient, &angs);
+
+					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &world_position);
 				}
 			}
 		}
 	}
-	g3_done_instance(true);
+
 	resetClip();
 
 	setGaugeColor(HUD_C_BRIGHT);
 
 	//primary weapons
 	if ( draw_primary_models ) {
+		auto ship_pm = model_get(sip->model_num);
+
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			bank = &model_get(sip->model_num)->gun_banks[i];
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			auto bank = &ship_pm->gun_banks[i];
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
-				if ( ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) ) {
+				if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 					vm_vec_unrotate(&subobj_pos, &bank->pnt[k], &object_orient);
 					//vm_vec_sub(&subobj_pos, &Eye_position, &subobj_pos);
 					//g3_rotate_vertex(&draw_point, &bank->pnt[k]);
@@ -7287,21 +7455,25 @@ void HudGaugeHardpoints::render(float frametime)
 
 					//unsize(&xc, &yc);
 					//unsize(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y);
-
-					renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
+					if (!(draw_point.flags & PF_OVERFLOW))
+						renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 					//renderCircle(xc, yc, 25);
 				} else {
-					polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
-
-
 					model_render_params weapon_render_info;
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 					weapon_render_info.set_alpha(alpha);
 
-					pm->gun_submodel_rotation = sp->primary_rotate_ang[i];
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
-					pm->gun_submodel_rotation = 0.0f;
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+
+					// "Bank" the external model by the angle offset
+					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+					matrix model_orient = object_orient;
+					vm_rotate_matrix_by_angles(&model_orient, &angs);
+
+					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &world_position);
 				}
 			}
 		}

@@ -22,14 +22,14 @@ void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function
 void dock_move_docked_children_tree(object *objp, object *parent_objp);
 void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop);
 void dock_check_find_docked_object_helper(object *objp, dock_function_info *infop);
-void dock_calc_docked_center_helper(object *objp, dock_function_info *infop);
+void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop);
 void dock_calc_docked_center_of_mass_helper(object *objp, dock_function_info *infop);
 void dock_calc_total_docked_mass_helper(object *objp, dock_function_info *infop);
 void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop);
 void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object *objp, dock_function_info *infop);
 void dock_find_max_speed_helper(object *objp, dock_function_info *infop);
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop);
-
+void dock_calc_total_moi_helper(object* objp, dock_function_info* infop);
 
 // management prototypes
 
@@ -105,8 +105,16 @@ bool dock_check_find_direct_docked_object(object *objp, object *other_objp)
 
 bool dock_check_find_docked_object(object *objp, object *other_objp)
 {
-	Assert(objp != NULL);
-	Assert(other_objp != NULL);
+	Assert(objp != nullptr);
+	Assert(objp->signature > 0);
+	Assert(other_objp != nullptr);
+	Assert(other_objp->signature > 0);
+
+
+	if (!(objp != nullptr && objp->signature > 0))
+		return false;
+	if (!(other_objp != nullptr && other_objp->signature > 0))
+		return false;
 
 	dock_function_info dfi;
 	dfi.parameter_variables.objp_value = other_objp;
@@ -141,26 +149,55 @@ int dock_find_dockpoint_used_by_object(object *objp, object *other_objp)
 		return result->dockpoint_used;
 }
 
-void dock_calc_docked_center(vec3d *dest, object *objp)
+/**
+ * Get the offset of the actual center of the docked ship models for the purposes of warping (which may not be the specified center).
+ * Note, these are LOCAL coordinates in relation to objp, not world coordinates.
+ * See also ship_class_get_actual_center() in ship.cpp
+ */
+void dock_calc_docked_actual_center(vec3d *dest, object *objp)
 {
-	Assert(dest != NULL);
-	Assert(objp != NULL);
+	Assert(dest != nullptr);
+	Assert(objp != nullptr);
 
-	vm_vec_zero(dest);
+	vec3d overall_mins, overall_maxs;
+	dock_calc_docked_extents(&overall_mins, &overall_maxs, objp);
 
-	dock_function_info dfi;
-	dfi.maintained_variables.vecp_value = dest;
-
-	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_center_helper);
-	
-	// overall center = sum of centers divided by sum of objects
-	vm_vec_scale(dest, (1.0f / (float) dfi.maintained_variables.int_value));
+	// c.f. ship_class_get_actual_center() in ship.cpp
+	dest->xyz.x = (overall_maxs.xyz.x + overall_mins.xyz.x) * 0.5f;
+	dest->xyz.y = (overall_maxs.xyz.y + overall_mins.xyz.y) * 0.5f;
+	dest->xyz.z = (overall_maxs.xyz.z + overall_mins.xyz.z) * 0.5f;
 }
 
-void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
+/**
+* Get the mins and maxs of the entire assembly of docked ship models.
+* Note, these are LOCAL coordinates in relation to objp, not world coordinates.
+*/
+void dock_calc_docked_extents(vec3d *mins, vec3d *maxs, object *objp)
 {
-	Assert(dest != NULL);
-	Assert(objp != NULL);
+	Assert(mins != nullptr);
+	Assert(maxs != nullptr);
+	Assert(objp != nullptr);
+
+	*mins = vmd_zero_vector;
+	*maxs = vmd_zero_vector;
+
+	// Let's calculate all mins/maxes in relation to the orientation of the main object
+	// (which is expected to be the dock leader, but this technically isn't required).
+	// Since the vast majority of dockpoints are aligned with an axis, this should
+	// yield a much better fit of our docked bounding box.
+
+	dock_function_info dfi;
+	dfi.parameter_variables.objp_value = objp;		// the reference object for our bounding box orientation
+	dfi.maintained_variables.vecp_value = mins;		// mins
+	dfi.maintained_variables.vecp_value2 = maxs;	// maxs
+
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_mins_maxs_helper);
+}
+
+float dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
+{
+	Assertion(dest != nullptr, "dock_calc_docked_center_of_mass, invalid dest");
+	Assertion(objp != nullptr, "dock_calc_docked_center_of_mass, invalid objp");
 
 	vm_vec_zero(dest);
 
@@ -170,12 +207,14 @@ void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_center_of_mass_helper);
 
 	// overall center of mass = weighted sum of centers of mass divided by total mass
-	vm_vec_scale(dest, (1.0f / dfi.maintained_variables.float_value));
+	float total_mass = dfi.maintained_variables.float_value;
+	vm_vec_scale(dest, (1.0f / total_mass));
+	return total_mass;
 }
 
 float dock_calc_total_docked_mass(object *objp)
 {
-	Assert(objp != NULL);
+	Assertion(objp != nullptr, "dock_calc_total_docked_mass, invalid argument");
 
 	dock_function_info dfi;
 	
@@ -218,8 +257,8 @@ float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, a
 			return 0.0f;
 	}
 
-	// rotate and move the endpoint to go through the axis of the actual object
-	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	// move the endpoint to go through the axis of the actual object
+	vm_vec_unrotate(&world_line_end, &local_line_end, &objp->orient);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
 	// now we have a unit vector starting at the object's position and pointing along the chosen axis
@@ -270,8 +309,8 @@ float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type ax
 			return 0.0f;
 	}
 
-	// rotate and move the endpoint to go through the axis of the actual object
-	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	// move the endpoint to go through the axis of the actual object
+	vm_vec_unrotate(&world_line_end, &local_line_end, &objp->orient);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
 	// now we have a unit vector starting at the object's position and pointing along the chosen axis
@@ -308,6 +347,112 @@ float dock_calc_docked_speed(object *objp)
 	return dfi.maintained_variables.float_value;
 }
 
+// Calculates the total moi (NOT INVERTED) of a docked assembly
+//		dest		=>		output matrix
+//		objp		=>		one of the objects in the assembly
+//		center 		=>		center of mass of the assembly in world coords ( use dock_calc_docked_center_of_mass to find it )
+// Returns whether or not was successful (in case some or all of the matrices were uninvertable or too close to it)
+// If not successful, dest will have NaN or infinity, use at your own risk!
+bool dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
+{
+	Assertion((dest != nullptr) && (objp != nullptr) && (center != nullptr), "dock_calc_total_moi invalid argument(s)");
+
+	*dest = vmd_zero_matrix;
+
+	dock_function_info dfi;
+	dfi.parameter_variables.vecp_value = center;
+	dfi.maintained_variables.matrix_value = dest;
+
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_moi_helper);
+
+	return is_valid_matrix(dest);
+}
+
+// This ship is the only ship NOT moved by docking AI to keep everyone together
+// All the other ships in the tree will update based on this one
+// Since this is based on current speed don't expect it to remain consistent between frames
+object* dock_find_dock_root(object *objp)
+{
+	Assertion(objp != nullptr, "dock_find_dock_root invalid argument");
+
+	dock_function_info dfi;
+	object* fastest_objp;
+
+	dfi.maintained_variables.objp_value = nullptr;
+
+	// find the object with the highest speed
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
+	fastest_objp = dfi.maintained_variables.objp_value;
+
+	// if we have no max speed, just use the given one
+	if (fastest_objp == nullptr)
+		fastest_objp = objp;
+
+	return fastest_objp;
+}
+
+void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* world_hit_pos, object* objp)
+{
+	Assertion((objp != nullptr) && (impulse != nullptr) && (world_hit_pos != nullptr),
+		"dock_whack_docked_object invalid argument(s)");
+
+	//	Detect null vector.
+	if (whack_below_limit(impulse))
+		return;
+
+	// calc overall world center-of-mass of all ships
+	vec3d world_center_of_mass;
+	float total_mass = dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
+
+	vec3d hit_pos;
+	// the new hitpos is the vector from world center-of-mass to world hitpos
+	vm_vec_sub(&hit_pos, world_hit_pos, &world_center_of_mass);
+
+	matrix moi, inv_moi;
+	// calculate the effective inverse MOI for the docked composite object about its center of mass
+	if (dock_calc_total_moi(&moi, objp, &world_center_of_mass)) {
+		vm_inverse_matrix(&inv_moi, &moi);
+	}
+	else { // Just in case anything funky happened (usually due to some of the input matrices being non-invertable or too close to it)
+		inv_moi = vmd_zero_matrix;
+	}
+
+	// calculate the angular_impulse about the center of mass in world coords
+	vec3d angular_impulse;
+	vm_vec_cross(&angular_impulse, &hit_pos, impulse);
+
+	// calculate the change in rotvel caused by the whack in world coords
+	vec3d delta_rotvel;
+	vm_vec_rotate(&delta_rotvel, &angular_impulse, &inv_moi);
+
+	// get the total change in vel for the entire docked assembly
+	vec3d center_mass_delta_vel = *impulse * (1.0f / total_mass);
+
+	// get the root of the dock tree, so that updating this velocity will update the rest of the tree
+	object* root_objp;
+	root_objp = dock_find_dock_root(objp);
+
+	vec3d local_delta_rotvel;
+
+	// translate the rotvel change into the root's frame
+	vm_vec_rotate(&local_delta_rotvel, &delta_rotvel, &root_objp->orient);
+
+	// compute the root's linear vel as vel = center mass vel + world frame rotvel x relative pos
+	vec3d root_delta_vel;
+	vec3d rel_pos;
+	vm_vec_sub(&rel_pos, &root_objp->pos, &world_center_of_mass);
+	vm_vec_cross(&root_delta_vel, &delta_rotvel, &rel_pos);
+	vm_vec_add2(&root_delta_vel, &center_mass_delta_vel);
+
+	// whack it
+	physics_apply_whack(vm_vec_mag(impulse),
+		&root_objp->phys_info,
+		&local_delta_rotvel,
+		&root_delta_vel,
+		&root_objp->orient);
+
+}
+
 
 // functions to deal with all docked ships anywhere
 // ---------------------------------------------------------------------------------------------------------------
@@ -316,9 +461,11 @@ float dock_calc_docked_speed(object *objp)
 // -----------------------
 
 // evaluate a certain function for all docked objects
+// The_Force:: If changed please change in QtFred's ShipInitialStatusDialogModel also
 void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *))
 {
-	Assert((objp != NULL) && (infop != NULL) && (function != NULL));
+	Assertion((objp != nullptr) && (infop != nullptr) && (function != nullptr),
+		"dock_evaluate_all_docked_objects, invalid argument(s)");
 
 	// not docked?
 	if (!object_is_docked(objp))
@@ -428,16 +575,10 @@ void dock_move_docked_objects(object *objp)
 	}
 	else
 	{
-		// find the object with the highest max speed
-		dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
-		fastest_objp = dfi.maintained_variables.objp_value;
-
-		// if we have no max speed, just use the first one
-		if (fastest_objp == NULL)
-			fastest_objp = objp;
+		fastest_objp = dock_find_dock_root(objp);;
 	}
-	
-	// start a tree with that object as the parent... do NOT use the überfunction for this,
+
+	// start a tree with that object as the parent... do NOT use the Ã¼berfunction for this,
 	// because we must use a tree for the parent ancestry to work correctly
 
 	// we don't need a bit array because OF_DOCKED_ALREADY_HANDLED takes care of it
@@ -475,7 +616,7 @@ void dock_move_docked_children_tree(object *objp, object *parent_objp)
 // helper functions
 // ----------------
 
-void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop)
+void dock_count_total_docked_objects_helper(object * /*objp*/, dock_function_info *infop)
 {
 	// increment count
 	infop->maintained_variables.int_value++;
@@ -491,11 +632,59 @@ void dock_check_find_docked_object_helper(object *objp, dock_function_info *info
 	}
 }
 
-void dock_calc_docked_center_helper(object *objp, dock_function_info *infop)
+void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop)
 {
-	// add object position and increment count
-	vm_vec_add2(infop->maintained_variables.vecp_value, &objp->pos);
-	infop->maintained_variables.int_value++;
+	polymodel *pm;
+	vec3d parent_relative_mins, parent_relative_maxs;
+
+	// find the model used by this object
+	int modelnum = object_get_model(objp);
+	Assert(modelnum >= 0);
+	pm = model_get(modelnum);
+
+	// special case: we are already in the correct frame of reference
+	if (objp == infop->parameter_variables.objp_value)
+	{
+		parent_relative_mins = pm->mins;
+		parent_relative_maxs = pm->maxs;
+	}
+	// we are not the parent object and need to do some gymnastics
+	else
+	{
+		// get mins and maxs in world coordinates
+		vec3d world_mins, world_maxs;
+		vm_vec_unrotate(&world_mins, &pm->mins, &objp->orient);
+		vm_vec_add2(&world_mins, &objp->pos);
+		vm_vec_unrotate(&world_maxs, &pm->maxs, &objp->orient);
+		vm_vec_add2(&world_maxs, &objp->pos);
+
+		// now adjust them to be local to the parent
+		vec3d temp_mins, temp_maxs;
+		vm_vec_sub(&temp_mins, &world_mins, &infop->parameter_variables.objp_value->pos);
+		vm_vec_rotate(&parent_relative_mins, &temp_mins, &infop->parameter_variables.objp_value->orient);
+		vm_vec_sub(&temp_maxs, &world_maxs, &infop->parameter_variables.objp_value->pos);
+		vm_vec_rotate(&parent_relative_maxs, &temp_maxs, &infop->parameter_variables.objp_value->orient);
+	}
+
+	// We test both points for both cases because they may have been flipped around.  However, X is still comparable to X, Y to Y, Z to Z.
+
+	// test for overall min
+	for (int i = 0; i < 3; ++i)
+	{
+		if (parent_relative_mins.a1d[i] < infop->maintained_variables.vecp_value->a1d[i])
+			infop->maintained_variables.vecp_value->a1d[i] = parent_relative_mins.a1d[i];
+		if (parent_relative_maxs.a1d[i] < infop->maintained_variables.vecp_value->a1d[i])
+			infop->maintained_variables.vecp_value->a1d[i] = parent_relative_maxs.a1d[i];
+	}
+
+	// test for overall max
+	for (int i = 0; i < 3; ++i)
+	{
+		if (parent_relative_mins.a1d[i] > infop->maintained_variables.vecp_value2->a1d[i])
+			infop->maintained_variables.vecp_value2->a1d[i] = parent_relative_mins.a1d[i];
+		if (parent_relative_maxs.a1d[i] > infop->maintained_variables.vecp_value2->a1d[i])
+			infop->maintained_variables.vecp_value2->a1d[i] = parent_relative_maxs.a1d[i];
+	}
 }
 
 void dock_calc_docked_center_of_mass_helper(object *objp, dock_function_info *infop)
@@ -548,7 +737,7 @@ void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(o
 	for (i = 0; i < 6; i++)
 	{
 		// calculate position of point
-		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_unrotate(&world_point, &local_point[i], &objp->orient);
 		vm_vec_add2(&world_point, &objp->pos);
 
 		// calculate square of distance to line
@@ -597,7 +786,7 @@ void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object 
 	for (i = 0; i < 6; i++)
 	{
 		// calculate position of point
-		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_unrotate(&world_point, &local_point[i], &objp->orient);
 		vm_vec_add2(&world_point, &objp->pos);
 
 		// find the nearest point along the line
@@ -631,8 +820,68 @@ void dock_find_max_speed_helper(object *objp, dock_function_info *infop)
 		infop->maintained_variables.objp_value = objp;
 	}
 }
+
+void object_set_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.set(Ship::Ship_Flags::Arriving_stage_1_dock_follower);
+}
+
+void object_remove_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_1_dock_follower);
+}
+
+void object_set_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.set(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
+}
+
+void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
+}
+
+void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
+{
+	matrix local_moi, unorient, temp, world_moi;
+	// The MOI for a compound object is simply the sum of the MOI's of the parts, but
+	// they all have to be with respect to the same point (the center of mass, in this case).
+	// So for each part:
+
+	// We invert the inverse MOI to get an MOI in the local frame
+	if (!vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv)) {
+		// This is done on purpose to indicate a zero inv_moi
+		infop->maintained_variables.matrix_value->a1d[0] = NAN;
+		return;
+	}
+
+	// We calculate the inverse of the orientation matrix (which is also the transpose)
+	vm_copy_transpose(&unorient, &objp->orient);
+
+	// We calculate the world space MOI using (world MOI) = O^-1 * (local MOI) * O
+	// where O is the orientation matrix (which translates between local space and world space).
+	// Note that because FS stores orientation matrices transposed, objp->orient is O^-1 in this formula.
+	vm_matrix_x_matrix(&temp, &objp->orient, &local_moi);
+	vm_matrix_x_matrix(&world_moi, &temp, &unorient);
+
+	// The world space MOI just calculated is about the center of mass of the part,
+	// so we need to translate it to the center of mass of the whole assembly.
+	// To do this we add a term corresponding to the MOI of a point mass whose position
+	// is the position of the part relative to the center of mass
+	vec3d* center = infop->parameter_variables.vecp_value;
+	vec3d pos = objp->pos - *center;
+	physics_add_point_mass_moi(&world_moi, objp->phys_info.mass, &pos);
+
+	// Finally we add the translated world space MOI for the part to the accumulated sum
+	*infop->maintained_variables.matrix_value += world_moi;
+}
+
 // ---------------------------------------------------------------------------------------------------------------
-// end of über code block ----------------------------------------------------------------------------------------
+// end of Ã¼ber code block ----------------------------------------------------------------------------------------
 
 // dock management functions -------------------------------------------------------------------------------------
 void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2)
@@ -692,8 +941,9 @@ bool dock_check_assume_hub()
 	// is not needed.  So this function is provided to allow the code to optimize itself for level 2, should level 1
 	// evaluation fail.
 
-	// Assume level 2 optimization unless the mission specifies level 3.
-	return !(The_mission.flags[Mission::Mission_Flags::Allow_dock_trees]);
+	// Determining this with a mission flag is a rather brittle design, and in any case this is not likely to be a large
+	// resource sink.  Until a general-purpose tree detection routine is written, this function will always return false.
+	return false;
 }
 
 object *dock_get_hub(object *objp)
@@ -769,7 +1019,7 @@ void dock_remove_instance(object *objp, object *other_objp)
 	else
 	{
 		// Trigger an assertion, we can recover from this one, thankfully.
-		Assertion(false, "Tried to undock an object that isn't docked!\n");
+		UNREACHABLE("Tried to undock an object that isn't docked!\n");
 	}
 }
 

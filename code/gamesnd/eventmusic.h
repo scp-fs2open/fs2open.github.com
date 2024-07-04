@@ -41,6 +41,7 @@
 
 extern int Event_Music_battle_started;	// flag that will tell us if we've started a battle in the current mission
 extern int Event_music_enabled;
+extern float Default_music_volume;				// range is 0->1
 extern float Master_event_music_volume;			// range is 0->1
 
 
@@ -49,9 +50,9 @@ extern float Master_event_music_volume;			// range is 0->1
 /////////////////////////////////////////////////////////////////////////////
 #define NUM_SCORES						5
 #define SCORE_BRIEFING					0
-#define SCORE_DEBRIEF_SUCCESS			1
-#define SCORE_DEBRIEF_AVERAGE			2
-#define SCORE_DEBRIEF_FAIL				3
+#define SCORE_DEBRIEFING_SUCCESS		1
+#define SCORE_DEBRIEFING_AVERAGE		2
+#define SCORE_DEBRIEFING_FAILURE		3
 #define SCORE_FICTION_VIEWER			4
 extern int Mission_music[NUM_SCORES];		// indicies into Spooled_music[]
 /////////////////////////////////////////////////////////////////////////////
@@ -66,48 +67,46 @@ typedef struct menu_music {
 	char filename[MAX_FILENAME_LEN];	// name music is stored on disk as
 } menu_music;
 
-#define MAX_SPOOLED_MUSIC	50			// max number of briefing/mainhall/credits tracks
-
 // Goober5000 - spooled music flags
 #define SMF_VALID						(1 << 0)
 
-extern menu_music Spooled_music[MAX_SPOOLED_MUSIC];
-extern int Num_music_files;
+extern SCP_vector<menu_music> Spooled_music;
 
 
 // event music soundtrack storage
+typedef struct tagSOUNDTRACK_PATTERN_INFO {
+	char fname[MAX_FILENAME_LEN];
+	float num_measures;
+	int samples_per_measure;
+} SOUNDTRACK_PATTERN_INFO;
 typedef struct tagSOUNDTRACK_INFO {
 	int flags;
 	int	num_patterns;
-	char	name[NAME_LENGTH];
-	char	pattern_fnames[MAX_PATTERNS][MAX_FILENAME_LEN];
+	char name[NAME_LENGTH];
+	SOUNDTRACK_PATTERN_INFO patterns[MAX_PATTERNS];
 } SOUNDTRACK_INFO;
-
-#define MAX_SOUNDTRACKS		30			// max number of battle tracks
 
 // Goober5000 - event music flags
 #define EMF_VALID						(1 << 0)
 #define EMF_ALLIED_ARRIVAL_OVERLAY		(1 << 1)
 #define EMF_CYCLE_FS1					(1 << 2)
 
-extern SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
-extern int Num_soundtracks;
+extern SCP_vector<SOUNDTRACK_INFO> Soundtracks;
 
 
 void	event_music_init();
 void	event_music_close();
-void	event_music_level_init(int force_soundtrack = -1);
+void	event_music_level_start(int force_soundtrack = -1);
 void	event_music_level_close();
 void	event_music_do_frame();
 void	event_music_disable();
 void	event_music_enable();
-void	event_music_pause();
-void	event_music_unpause();
 void	event_music_set_volume_all(float volume);
 void	event_music_parse_musictbl(const char *filename);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();
+void event_music_set_start_delay();
 int	event_music_battle_start();
 int	event_music_enemy_arrival();
 int	event_music_friendly_arrival();
@@ -119,8 +118,8 @@ void	event_music_start_default();
 void	event_music_get_info(char *outbuf);
 void	event_music_get_soundtrack_name(char *outbuf);
 int	event_music_next_soundtrack(int delta);
-void event_sexp_change_soundtrack(char *name);
-void	event_music_set_soundtrack(char *name);
+void event_sexp_change_soundtrack(const char *name);
+void	event_music_set_soundtrack(const char *name);
 void	event_music_set_score(int score_index, const char *name);
 int event_music_get_soundtrack_index(const char *name);
 int	event_music_get_spooled_music_index(const char *name);
@@ -129,5 +128,11 @@ void	event_music_reset_choices();
 int	event_music_player_respawn();
 int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
+
+/**
+ * @brief Sets the master music volume to the specified value
+ * @param volume The new music volume value. Must be in the range [0, 1].
+ */
+void event_music_set_volume(float volume);
 
 #endif /* __EVENT_MUSIC_H__  */

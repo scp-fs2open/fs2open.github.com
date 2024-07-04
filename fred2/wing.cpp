@@ -33,27 +33,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 #define MULTI_WING	999999
 
-/**
- * @brief 8 Vectors per formation. Possible to have more than 8 ships.
- *
- * @details  A vector is where a ship is located relative to the leader.  Other ships can be located at the same
- * vector relative to another member.  So wing formation size is not limited by this constant.
- */
-#define MAX_WING_VECTORS    8
-
-/**
- * @brief 8 different kinds of wing formations
- */
-#define MAX_WING_FORMATIONS 8
-
-typedef struct formation
-{
-	int		num_vectors;
-	vec3d	offsets[MAX_WING_VECTORS];
-} formation;
-
-formation Wing_formations[MAX_WING_FORMATIONS];
-
 int already_deleting_wing = 0;
 int Wings_initialized = 0;
 
@@ -79,13 +58,6 @@ int check_wing_dependencies(int wing_num);
 void initialize_wings(void);
 
 /**
- * @brief Doesn't seem to do anything useful
- *
- * @TODO verify
- */
-void create_wings_from_objects(void);
-
-/**
  * @brief Gets the index of the first available object slot
  *
  *
@@ -107,7 +79,7 @@ int check_wing_dependencies(int wing_num) {
 	char *name;
 
 	name = Wings[wing_num].name;
-	return reference_handler(name, REF_TYPE_WING, -1);
+	return reference_handler(name, sexp_ref_type::WING, -1);
 }
 
 int create_wing() {
@@ -195,24 +167,9 @@ int create_wing() {
 			return -1;
 		}
 
-		Wings[wing].num_waves = 1;
-		Wings[wing].threshold = 0;
-		Wings[wing].arrival_location = Wings[wing].departure_location = 0;
-		Wings[wing].arrival_distance = 0;
-		Wings[wing].arrival_anchor = -1;
-		Wings[wing].arrival_delay = 0;
+		Wings[wing].clear();
 		Wings[wing].arrival_cue = Locked_sexp_true;
-		Wings[wing].departure_delay = 0;
 		Wings[wing].departure_cue = Locked_sexp_false;
-		Wings[wing].hotkey = -1;
-        Wings[wing].flags.reset();
-		Wings[wing].wave_delay_min = 0;
-		Wings[wing].wave_delay_max = 0;
-
-		for (i = 0; i<MAX_AI_GOALS; i++) {
-			Wings[wing].ai_goals[i].ai_mode = AI_GOAL_NONE;
-			Wings[wing].ai_goals[i].priority = -1;				// this sets up the priority field to be like ships
-		}
 
 		if (dlg.DoModal() == IDCANCEL)
 			return -1;
@@ -335,24 +292,6 @@ int create_wing() {
 	return 0;
 }
 
-void create_wings_from_objects(void) {
-	int	i;
-
-	for (i = 0; i<MAX_WINGS; i++)
-		Wings[i].wave_count = 0;
-
-	for (i = 0; i<MAX_OBJECTS; i++)
-		if (Objects[i].type != OBJ_NONE)
-			if (get_wingnum(i) != -1) {
-				int	wingnum = get_wingnum(i);
-
-				Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
-				Assert(Wings[wingnum].wave_count < MAX_SHIPS_PER_WING);
-				// JEH			strcpy_s(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
-			}
-
-}
-
 int delete_wing(int wing_num, int bypass) {
 	int i, r, total;
 
@@ -370,7 +309,7 @@ int delete_wing(int wing_num, int bypass) {
 			break;
 		}
 
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {
 		total = Wings[wing_num].wave_count;
 		for (i = 0; i<total; i++)
@@ -422,16 +361,6 @@ void initialize_wings(void) {
 		return;
 
 	Wings_initialized = 1;
-
-	Wing_formations[0].num_vectors = 2;
-
-	Wing_formations[0].offsets[0].xyz.x = -5.0f;
-	Wing_formations[0].offsets[0].xyz.y = +1.0f;
-	Wing_formations[0].offsets[0].xyz.z = -5.0f;
-
-	Wing_formations[0].offsets[1].xyz.x = +5.0f;
-	Wing_formations[0].offsets[1].xyz.y = +1.0f;
-	Wing_formations[0].offsets[1].xyz.z = -5.0f;
 }
 
 void mark_wing(int wing)

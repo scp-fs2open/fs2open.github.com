@@ -18,28 +18,37 @@ class orient_editor : public CDialog
 {
 // Construction
 public:
-	int query_modified();
+	bool query_modified();
 	void OnCancel();
 	void OnOK();
 	orient_editor(CWnd* pParent = NULL);   // standard constructor
 
+	static float to_degrees(float radians);
+	static float normalize_degrees(float degrees);
+
 // Dialog Data
 	//{{AFX_DATA(orient_editor)
 	enum { IDD = IDD_ORIENT_EDITOR };
-	CSpinButtonCtrl	m_spin6;
-	CSpinButtonCtrl	m_spin5;
-	CSpinButtonCtrl	m_spin4;
-	CSpinButtonCtrl	m_spin3;
-	CSpinButtonCtrl	m_spin2;
 	CSpinButtonCtrl	m_spin1;
+	CSpinButtonCtrl	m_spin2;
+	CSpinButtonCtrl	m_spin3;
+	CSpinButtonCtrl	m_spin4;
+	CSpinButtonCtrl	m_spin5;
+	CSpinButtonCtrl	m_spin6;
+	CSpinButtonCtrl	m_spin11;
+	CSpinButtonCtrl	m_spin12;
+	CSpinButtonCtrl	m_spin13;
 	int	m_object_index;
 	BOOL	m_point_to;
-	CString	m_position_z;
-	CString	m_position_y;
 	CString	m_position_x;
+	CString	m_position_y;
+	CString	m_position_z;
 	CString	m_location_x;
 	CString	m_location_y;
 	CString	m_location_z;
+	CString	m_orientation_p;
+	CString	m_orientation_b;
+	CString	m_orientation_h;
 	//}}AFX_DATA
 
 // Overrides
@@ -55,12 +64,22 @@ protected:
 	// Generated message map functions
 	//{{AFX_MSG(orient_editor)
 	virtual BOOL OnInitDialog();
+	afx_msg void OnObjectSelected();
+	afx_msg void OnPointTo();
+	afx_msg void OnPointToObject();
+	afx_msg void OnPointToLocation();
 	afx_msg void OnClose();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
 private:
-	float convert(CString &str);
+	float convert(const CString &str) const;
+	float perform_input_rounding(float val) const;
+
+	bool is_close(float val, const CString &input_str) const;
+	bool is_angle_close(float rad, const CString &input_str) const;
+
 	int total;
 	int index[MAX_OBJECTS];
-	void update_object(object *ptr);
+	void actually_point_object(object *ptr);
 };

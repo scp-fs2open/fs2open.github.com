@@ -9,19 +9,17 @@
 *
 */
 
-/**
- * @file bm_internal.h
- * These are functions and types used by bmpman and a few others.
- *
- * @details It is a "protected" header that requires BMPMAN_INTERNAL to be defined before it can be included. This is to
- * provide a small measure of safety since this functions can cause problems if not used correctly
- */
-
-#ifndef BMPMAN_INTERNAL
-#error The file header "bmpman/bm_internal.h" is protected. Make sure you know what you are doing!
-#endif
-
 #include "bmpman/bmpman.h"
+
+#include <array>
+
+/**
+ * @brief Container class for graphics API specific bitmap data
+ */
+class gr_bitmap_info {
+ public:
+	virtual ~gr_bitmap_info() = 0;
+};
 
 union bm_extra_info {
 	struct {
@@ -48,7 +46,7 @@ union bm_extra_info {
 		// Stuff needed for user bitmaps
 		void* data;         //!< For user bitmaps, this is where the data comes from
 		ubyte bpp;          //!< For user bitmaps, this is what format the data is
-		ubyte flags;        //!< For user bitmaps, Flags passed to bm_create
+		ushort flags;        //!< For user bitmaps, Flags passed to bm_create
 	} user;
 };
 
@@ -57,9 +55,7 @@ struct bitmap_entry {
 	char filename[MAX_FILENAME_LEN];    //!< filename for this bitmap
 
 	uint signature;         //!< a unique signature identifying the data
-	uint palette_checksum;  //!< checksum used to be sure bitmap is in current palette
 	int  handle;            //!< Handle = id*MAX_BITMAPS + bitmapnum
-	int  last_used;         //!< When this bitmap was last used
 
 	BM_TYPE type;             //!< PCX, USER, ANI, etc
 	BM_TYPE comp_type;        //!< What sort of compressed type, BM_TYPE_NONE if not compressed
@@ -74,7 +70,7 @@ struct bitmap_entry {
 	// Stuff to keep track of usage
 	ubyte preloaded;        //!< If set, then this was loaded from the lst file
 	int   preload_count;    //!< how many times this gets used in game, for unlocking
-	ubyte used_flags;       //!< What flags it was accessed thru
+	ushort used_flags;       //!< What flags it was accessed thru
 	int   load_count;
 
 	bitmap bm;              //!< Bitmap info
@@ -90,17 +86,35 @@ struct bitmap_entry {
 #endif
 };
 
-extern bitmap_entry bm_bitmaps[MAX_BITMAPS];
+struct bitmap_slot {
+	bitmap_entry entry;
+
+	gr_bitmap_info* gr_info = nullptr;
+};
 
 // image specific lock functions
-void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_apng( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_ani( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_dds( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_png( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_apng( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_jpg( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_pcx( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_tga( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_user( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags, bool convert = true );
 
+const size_t BM_BLOCK_SIZE = 4096;
+
+extern SCP_vector<std::array<bitmap_slot, BM_BLOCK_SIZE>> bm_blocks;
+
+bitmap_slot* bm_get_slot(int handle, bool separate_ani_frames = true);
+
+inline bitmap_entry* bm_get_entry(int handle, bool separate_ani_frames = true) {
+	return &bm_get_slot(handle, separate_ani_frames)->entry;
+}
+
+template<typename T>
+T* bm_get_gr_info(int handle, bool separate_ani_frames = true) {
+	return static_cast<T*>(bm_get_slot(handle, separate_ani_frames)->gr_info);
+}
 
 #endif // __BM_INTERNAL_H__

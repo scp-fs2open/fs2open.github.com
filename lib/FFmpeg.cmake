@@ -48,7 +48,11 @@ IF(PLATFORM_WINDOWS)
     target_link_libraries(ffmpeg INTERFACE swscale)
     target_link_libraries(ffmpeg INTERFACE swresample)
 ELSE(WIN32)
-    option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." OFF)
+    if (PLATFORM_MAC)
+        option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." ON)
+    else()
+        option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." OFF)
+    endif()
 
     # CMake can't check for ffmpeg so we'll just use PkgConfig
     INCLUDE(FindPkgConfig REQUIRED)

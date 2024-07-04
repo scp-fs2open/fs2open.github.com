@@ -17,8 +17,11 @@
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
 #define	AI_PATH_MODE_ALT1	1
+
+#define	AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL 0
+#define	AI_RANGE_AWARE_SEC_SEL_MODE_AWARE 1
 	
-#define MAX_AI_PROFILES	5
+#define MAX_AI_PROFILES	8
 
 class ai_profile_t {
 public:
@@ -50,6 +53,7 @@ public:
 	float shield_energy_scale[NUM_SKILL_LEVELS];			// shield energy available
 	float afterburner_recharge_scale[NUM_SKILL_LEVELS];		// speed of afterburner recharge
 	float player_damage_scale[NUM_SKILL_LEVELS];			// damage applied to the player
+	float player_damage_inflicted_scale[NUM_SKILL_LEVELS];	// damage applied by the player
 	
 	float subsys_damage_scale[NUM_SKILL_LEVELS];			// damage applied to a player subsystem
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS];		// damage cap values for friendly beam fire
@@ -97,10 +101,25 @@ public:
 
 	int ai_path_mode;
 
+	// radii to use for the radius for subsystem path points and default value --wookieejedi
+	int subsystem_path_radii;
+
 	// Ships flying bay paths will gradually accelerate/decelerate instead of
 	// flying the whole path at max speed
 	float bay_arrive_speed_mult;
 	float bay_depart_speed_mult;
+
+	// How much 0-1 of a second-order lead prediction factor to add to lead indicators. Affects only the HUD indicator, and autoaim.
+	float second_order_lead_predict_factor;
+	
+	//Controls if the AI is dumb enough to keep trying to use out-of-range secondaries. 
+	int ai_range_aware_secondary_select_mode;
+
+	// how often turrets shoulds check for new targets, milliseconds
+	float turret_target_recheck_time;
+
+	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
+	float rot_fac_multiplier_ply_collisions; 
 
     void reset();
 };

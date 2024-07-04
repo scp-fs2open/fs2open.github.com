@@ -1,12 +1,16 @@
 #ifndef GENERIC_SHAPE_EFFECT_H
 #define GENERIC_SHAPE_EFFECT_H
+#include "osapi/dialogs.h"
+#include "parse/parselo.h"
 #pragma once
 
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
-#include "particle/util/RandomRange.h"
 #include "particle/util/ParticleProperties.h"
+#include "particle/util/EffectTiming.h"
+#include "utils/RandomRange.h"
+#include "weapon/beam.h"
 
 namespace particle {
 namespace effects {
@@ -29,28 +33,33 @@ class GenericShapeEffect : public ParticleEffect {
 	util::ParticleProperties m_particleProperties;
 
 	ConeDirection m_direction = ConeDirection::Incoming;
-	util::UniformFloatRange m_velocity;
-	util::UniformUIntRange m_particleNum;
+	::util::UniformFloatRange m_velocity;
+	::util::UniformUIntRange m_particleNum;
+	float m_particleChance;
+	::util::UniformFloatRange m_particleRoll;
+	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
-	ParticleEffectIndex m_particleTrail = -1;
+	util::EffectTiming m_timing;
+
+	::util::UniformFloatRange m_vel_inherit;
 
 	TShape m_shape;
 
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ConeDirection::Incoming:
-				return source->getOrientation()->getDirectionVector();
+				return source->getOrientation()->getDirectionVector(source->getOrigin());
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return source->getOrientation()->getDirectionVector();
+					return source->getOrientation()->getDirectionVector(source->getOrigin());
 				}
 
 				return normal;
 			}
 			case ConeDirection::Reflected: {
-				vec3d out = source->getOrientation()->getDirectionVector();
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
@@ -68,7 +77,7 @@ class GenericShapeEffect : public ParticleEffect {
 				return out;
 			}
 			case ConeDirection::Reverse: {
-				vec3d out = source->getOrientation()->getDirectionVector();
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
 				vm_vec_scale(&out, -1.0f);
 				return out;
 			}
@@ -82,57 +91,114 @@ class GenericShapeEffect : public ParticleEffect {
 	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
 	}
 
-	virtual bool processSource(const ParticleSource* source) override {
-		auto num = m_particleNum.next();
+	bool processSource(ParticleSource* source) override {
+		if (!m_timing.continueProcessing(source)) {
+			return false;
+		}
 
-		vec3d dir = getNewDirection(source);
-		matrix dirMatrix;
-		vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
-		for (uint i = 0; i < num; ++i) {
-			matrix velRotation = m_shape.getDisplacementMatrix();
+		// This uses the internal features of the timing class for determining if and how many effects should be
+		// triggered this frame
+		util::EffectTiming::TimingState time_state;
+		while (m_timing.shouldCreateEffect(source, time_state)) {
+			auto num = m_particleNum.next();
 
-			matrix rotatedVel;
-			vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
-
-			particle_info info;
-
-			memset(&info, 0, sizeof(info));
-			source->getOrigin()->applyToParticleInfo(info);
-
-			info.vel = rotatedVel.vec.fvec;
-			if (TShape::scale_velocity_deviation()) {
-				// Scale the vector with a random velocity sample and also multiply that with cos(angle between info.vel and sourceDir)
-				// That should produce good looking directions where the maximum velocity is only achieved when the particle travels directly
-				// on the normal/reflect vector
-				vm_vec_scale(&info.vel, vm_vec_dot(&info.vel, &dir));
+			if (source->getOrigin()->getType() == SourceOriginType::BEAM) {
+				// beam particle numbers are per km
+				object* b_obj = source->getOrigin()->getObjectHost();
+				float dist = vm_vec_dist(&Beams[b_obj->instance].last_start, &Beams[b_obj->instance].last_shot) / 1000.0f;
+				float km;
+				float remainder = modff(dist, &km);
+				uint old_num = num;
+				num = (uint)(old_num * km); // multiply by the number of kilometers
+				num += (uint)(old_num * remainder); // try to add any remainders if we have more than 1 per kilometer
+				// if we still have nothing let's give it one last shot
+				if (num < 1 && frand() < remainder * old_num)
+					num += 1;
 			}
-			vm_vec_scale(&info.vel, m_velocity.next());
 
-			auto part = m_particleProperties.createParticle(info);
+			vec3d dir = getNewDirection(source);
+			matrix dirMatrix;
+			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
+			for (uint i = 0; i < num; ++i) {
+				if (m_particleChance < 1.0f) {
+					auto roll = m_particleRoll.next();
+					if (roll <= 0.0f)
+						continue;
+				}
 
-			if (m_particleTrail >= 0) {
-				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-				trailSource.moveToParticle(part);
+				matrix velRotation = m_shape.getDisplacementMatrix();
 
-				trailSource.finish();
+				matrix rotatedVel;
+				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
+
+				particle_info info;
+
+				source->getOrigin()->applyToParticleInfo(info);
+
+				vec3d velocity = rotatedVel.vec.fvec;
+				if (TShape::scale_velocity_deviation()) {
+					// Scale the vector with a random velocity sample and also multiply that with cos(angle between
+					// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
+					// only achieved when the particle travels directly on the normal/reflect vector
+					vm_vec_scale(&velocity, vm_vec_dot(&velocity, &dir));
+				}
+				vm_vec_scale(&velocity, m_velocity.next());
+
+				info.vel *= m_vel_inherit.next();
+				info.vel += velocity;
+
+				if (m_particleTrail.isValid()) {
+					auto part = m_particleProperties.createPersistentParticle(info);
+
+					// There are some possibilities where we can get a null pointer back. Those are very rare but we
+					// still shouldn't crash in those circumstances.
+					if (!part.expired()) {
+						auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
+						trailSource.moveToParticle(part);
+
+						trailSource.finish();
+					}
+				} else {
+					// We don't have a trail so we don't need a persistent particle
+					m_particleProperties.createParticle(info);
+				}
 			}
 		}
 
-		return false;
+		return true;
 	}
 
-	virtual void parseValues(bool nocreate) override {
+	void parseValues(bool nocreate) override {
 		m_particleProperties.parse(nocreate);
 
 		m_shape.parse(nocreate);
 
 		if (internal::required_string_if_new("+Velocity:", nocreate)) {
-			m_velocity = util::parseUniformRange<float>();
+			m_velocity = ::util::parseUniformRange<float>();
 		}
 
 		if (internal::required_string_if_new("+Number:", nocreate)) {
-			m_particleNum = util::parseUniformRange<uint>();
+			m_particleNum = ::util::parseUniformRange<uint>();
 		}
+		if (!nocreate) {
+			m_particleChance = 1.0f;
+		}
+		if (optional_string("+Chance:")) {
+			float chance;
+			stuff_float(&chance);
+			if (chance <= 0.0f) {
+				Warning(LOCATION,
+					"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
+					m_name.c_str(), chance);
+			} else if (chance > 1.0f) {
+				Warning(LOCATION,
+					"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: (min,max) "
+					"to spawn multiple particles.", m_name.c_str(), chance);
+				chance = 1.0f;
+			}
+			m_particleChance = chance;
+		}
+		m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
 
 		if (optional_string("+Direction:")) {
 			SCP_string dirStr;
@@ -155,14 +221,37 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 		}
 
+		bool saw_deprecated_effect_location = false;
 		if (optional_string("+Trail effect:")) {
+			// This is the deprecated location since this introduces ambiguities in the parsing process
+			m_particleTrail = internal::parseEffectElement();
+			saw_deprecated_effect_location = true;
+		}
+
+		if (optional_string("+Parent Velocity Factor:")) {
+			m_vel_inherit = ::util::parseUniformRange<float>();
+		}
+
+		m_timing = util::EffectTiming::parseTiming();
+
+		if (optional_string("+Trail effect:")) {
+			// This is the new and correct location. This might create duplicate effects but the warning should be clear
+			// enough to avoid that
+			if (saw_deprecated_effect_location) {
+				error_display(0, "Found two trail effect options! Specifying '+Trail effect:' before '+Duration:' is "
+				                 "deprecated since that can cause issues with conflicting effect options.");
+			}
 			m_particleTrail = internal::parseEffectElement();
 		}
 	}
 
-	virtual EffectType getType() const override { return m_shape.getType(); }
+	void initializeSource(ParticleSource& source) override {
+		m_timing.applyToSource(&source);
+	}
 
-	virtual void pageIn() override {
+	EffectType getType() const override { return m_shape.getType(); }
+
+	void pageIn() override {
 		m_particleProperties.pageIn();
 	}
 

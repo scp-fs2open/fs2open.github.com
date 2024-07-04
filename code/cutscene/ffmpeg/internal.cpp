@@ -30,6 +30,18 @@ DecoderStatus::~DecoderStatus() {
 #endif
 		audioCodecCtx = nullptr;
 	}
+
+	subtitleStreamIndex = -1;
+	subtitleStream = nullptr;
+	subtitleCodec = nullptr;
+
+	if (subtitleCodecCtx != nullptr) {
+		avcodec_close(subtitleCodecCtx);
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
+		avcodec_free_context(&subtitleCodecCtx);
+#endif
+		subtitleCodecCtx = nullptr;
+	}
 }
 
 } // namespace ffmpeg

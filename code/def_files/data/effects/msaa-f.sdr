@@ -1,0 +1,198 @@
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+out vec4 fragOut1;
+out vec4 fragOut2;
+out vec4 fragOut3;
+out vec4 fragOut4;
+out vec4 fragOut5;
+
+uniform sampler2DMS texColor;
+uniform sampler2DMS texPos;
+uniform sampler2DMS texNormal;
+uniform sampler2DMS texSpecular;
+uniform sampler2DMS texEmissive;
+uniform sampler2DMS texDepth;
+
+layout (std140) uniform genericData {
+	int samples;
+	float fov;
+};
+
+const float voxelDepth = 2.5f;
+const float voxelDepthFalloff = 2.5f;
+
+#define SORT(a, b) if (a > b) { float t = dists[a]; dists[a] = dists[b]; dists[b] = t; }
+
+//The following sorting networks for median calculation are NOT complete. Calculations that don't affect the
+//median entry are removed, and thus, while the median element is correct, the rest of the array is NOT fully sorted
+
+#ifdef SAMPLES_4
+
+float getMedianDist(ivec2 texel) {
+	float dists[4];
+
+	for(int i = 0; i < 4; i++) {
+		dists[i] = texelFetch(texPos, texel, i).z;
+	}
+
+	SORT(0, 2)
+	SORT(1, 3)
+	SORT(0, 1)
+	SORT(2, 3)
+	SORT(1, 2)
+
+	return dists[1];
+}
+
+#else
+#ifdef SAMPLES_8
+
+float getMedianDist(ivec2 texel) {
+	float dists[8];
+
+	for(int i = 0; i < 8; i++) {
+		dists[i] = texelFetch(texPos, texel, i).z;
+	}
+
+	SORT(0, 4)
+	SORT(1, 5)
+	SORT(2, 6)
+	SORT(3, 7)
+	SORT(0, 2)
+	SORT(1, 3)
+	SORT(4, 6)
+	SORT(5, 7)
+	SORT(2, 4)
+	SORT(3, 5)
+	SORT(0, 1)
+	SORT(2, 3)
+	SORT(4, 5)
+	SORT(6, 7)
+	SORT(1, 4)
+	SORT(3, 6)
+	SORT(3, 4)
+
+	return dists[3];
+}
+
+#else
+#ifdef SAMPLES_16
+
+float getMedianDist(ivec2 texel) {
+	float dists[16];
+
+	for(int i = 0; i < 16; i++) {
+		dists[i] = texelFetch(texPos, texel, i).z;
+	}
+
+	SORT(0, 1)
+	SORT(2, 3)
+	SORT(4, 5)
+	SORT(6, 7)
+	SORT(8, 9)
+	SORT(10, 11)
+	SORT(12, 13)
+	SORT(14, 15)
+	SORT(0, 2)
+	SORT(4, 6)
+	SORT(8, 10)
+	SORT(12, 14)
+	SORT(1, 3)
+	SORT(5, 7)
+	SORT(9, 11)
+	SORT(13, 15)
+	SORT(0, 4)
+	SORT(1, 5)
+	SORT(2, 6)
+	SORT(3, 7)
+	SORT(8, 12)
+	SORT(9, 13)
+	SORT(10, 14)
+	SORT(11, 15)
+	SORT(0, 8)
+	SORT(1, 9)
+	SORT(2, 10)
+	SORT(3, 11)
+	SORT(4, 12)
+	SORT(5, 13)
+	SORT(6, 14)
+	SORT(7, 15)
+	SORT(5, 10)
+	SORT(6, 9)
+	SORT(3, 12)
+	SORT(13, 14)
+	SORT(7, 11)
+	SORT(1, 2)
+	SORT(4, 8)
+	SORT(7, 13)
+	SORT(2, 8)
+	SORT(5, 6)
+	SORT(9, 10)
+	SORT(3, 8)
+	SORT(6, 8)
+	SORT(3, 5)
+	SORT(7, 9)
+	SORT(5, 6)
+	SORT(7, 8)
+	SORT(6, 7)
+
+	return dists[7];
+}
+
+#else
+
+//Fallback, do front first
+float getMedianDist(ivec2 texel) {
+	float minDist = -1000000;
+	for(int i = 0; i < samples; i++) {
+		minDist = max(minDist, texelFetch(texPos, texel, i).z);
+	}
+	return minDist;
+}
+
+#endif //SAMPLES_16
+#endif //SAMPLES_8
+#endif //SAMPLES_4
+
+
+void main()
+{
+	vec2 texSize = textureSize(texColor);
+	ivec2 texel = ivec2(texSize * fragTexCoord.xy);
+
+	float texelWidthFactor = tan(fov / texSize.y);
+	float dist = getMedianDist(texel);
+
+	float weight = 0.0f;
+	vec4 color = vec4(0);
+	vec4 pos = vec4(0);
+	vec4 normal = vec4(0);
+	vec4 specular = vec4(0);
+	vec4 emissive = vec4(0);
+	float depth = 0;
+
+	for(int i = 0; i < samples; i++) {
+		vec4 localPos = texelFetch(texPos, texel, i);
+		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive
+		//However, if the median distance is 0, only deal with current texel if it's local distance is 0 as well
+		float localWeight = max(step(-0.001, dist) * step(-0.001, localPos.z),
+			smoothstep(dist + dist * texelWidthFactor * (voxelDepth + voxelDepthFalloff), dist + dist * texelWidthFactor * voxelDepth, localPos.z) *
+			smoothstep(dist - dist * texelWidthFactor * voxelDepth, dist + dist * texelWidthFactor * (voxelDepth + voxelDepthFalloff), localPos.z)
+			);
+		
+		pos += localPos * localWeight;
+		color += texelFetch(texColor, texel, i) * localWeight;
+		normal += texelFetch(texNormal, texel, i) * localWeight;
+		specular += texelFetch(texSpecular, texel, i) * localWeight;
+		emissive += texelFetch(texEmissive, texel, i) * localWeight;
+		depth += texelFetch(texDepth, texel, i).x * localWeight;
+		weight += localWeight;
+	}
+
+	fragOut0 = color / weight;
+	fragOut1 = pos / weight;
+	fragOut2 = vec4(normalize(normal.xyz), normal.a / weight);
+	fragOut3 = specular / weight;
+	fragOut4 = emissive / weight;
+	gl_FragDepth = depth / weight;
+}

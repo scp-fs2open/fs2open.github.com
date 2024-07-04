@@ -25,6 +25,8 @@
 
 extern int Cmdline_nomovies;
 
+bool Movie_active = false;
+
 
 const char* Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 		"ViewFootage",
@@ -48,62 +50,149 @@ void cutscene_close()
 		}
 }
 
-// initialization stuff for cutscenes
-void cutscene_init()
+static cutscene_info *get_cutscene_pointer(char *cutscene_filename)
 {
-	atexit(cutscene_close);
+	for (int i = 0; i < (int)Cutscenes.size(); i++) {
+		if (!stricmp(cutscene_filename, Cutscenes[i].filename)) {
+			return &Cutscenes[i];
+		}
+	}
+
+	// Didn't find anything.
+	return NULL;
+}
+
+int get_cutscene_index_by_name(const char* name)
+{
+	for (int i = 0; i < static_cast<int>(Cutscenes.size()); i++) {
+		if (!stricmp(name, Cutscenes[i].name)) {
+			return i;
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
+}
+
+static void cutscene_info_init(cutscene_info *csni)
+{
+	csni->filename[0] = '\0';
+	csni->name[0] = '\0';
+	csni->description = NULL;
+	csni->flags = {};
+}
+
+// initialization stuff for cutscenes
+void parse_cutscene_table(const char* filename)
+{
+
 	char buf[MULTITEXT_LENGTH];
-	cutscene_info cutinfo;
+	cutscene_info csnt;
+	cutscene_info_init(&csnt);
+
+	cutscene_info *csnp;
+	bool create_if_not_found = true;
 
 	try
 	{
-		read_file_text("cutscenes.tbl", CF_TYPE_TABLES);
+		
+		read_file_text(filename, CF_TYPE_TABLES);
+
 		reset_parse();
 
 		// parse in all the cutscenes
-		Cutscenes.clear();
 		skip_to_string("#Cutscenes");
 		ignore_white_space();
 
-		bool isFirstCutscene = true;
-
 		while (required_string_either("#End", "$Filename:"))
 		{
+			bool csn_new = false;
+			
 			required_string("$Filename:");
-			stuff_string(cutinfo.filename, F_PATHNAME, MAX_FILENAME_LEN);
+			stuff_string(csnt.filename, F_PATHNAME, MAX_FILENAME_LEN);
 
-			required_string("$Name:");
-			stuff_string(cutinfo.name, F_NAME, NAME_LENGTH);
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for cutscene in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
 
-			required_string("$Description:");
-			stuff_string(buf, F_MULTITEXT, sizeof(buf));
-			drop_white_space(buf);
-			compact_multitext_string(buf);
-			cutinfo.description = vm_strdup(buf);
+			// Does this cutscene exist already?
+			// If so, load this new info into it
+			csnp = get_cutscene_pointer(csnt.filename);
+			if (csnp != NULL) {
+				if (!Parsing_modular_table) {
+					error_display(1,
+						"Error:  Cutscene %s already exists.  All cutscene names must be unique.",
+						csnt.filename);
+				}
+			} else {
+				// Don't create cutscene if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$Filename:", "#End")) {
+						error_display(1, "Missing [#End] or [$Filename] after cutscene %s", csnt.filename);
+					}
+					continue;
+				}
+				Cutscenes.push_back(csnt);
+				csn_new = true;
+				csnp = &Cutscenes[Cutscenes.size() -1];
+			}
+
+			//If $Name is not found use the $Filename instead because this field needs data
+			//but only do this if if we're parsing the tbl and not a tbm
+			if (optional_string("$Name:")) {
+				stuff_string(csnp->name, F_NAME, NAME_LENGTH);
+				mprintf(("Adding cutscene %s\n", csnp->name));
+			} else if (strlen(csnp->name) == 0) {
+				strcpy_s(csnp->name, csnt.filename);
+				mprintf(("Missing $Name: in cutscene.tbl. Using filename %s instead.\n", csnt.filename));
+			}
+
+			//If $Description is not found we can leave it blank
+			if (optional_string("$Description:")) {
+				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				drop_white_space(buf);
+				compact_multitext_string(buf);
+				csnp->description = vm_strdup(buf);
+			}
 
 			if (optional_string("$cd:"))
 			{
-				// Option isn't needed anymore. Consume the token and ignore it
-
+				// CD option isn't needed anymore. Consume the token and ignore it
 				int junk;
 				stuff_int(&junk);
 			}
 
-			cutinfo.viewable = false;
+			if (csn_new) {
+				csnp->flags.reset();
+			}
 
-			if (isFirstCutscene)
+			if (Cutscenes.empty())
 			{
-				isFirstCutscene = false;
-				// The original code assumes the first movie is the intro, so always viewable
-				cutinfo.viewable = true;
+				// The original code assumes the first movie is the intro, so make it viewable
+				csnp->flags.set(Cutscene::Cutscene_Flags::Viewable);
 			}
 
 			if (optional_string("$Always Viewable:"))
 			{
-				stuff_boolean(&cutinfo.viewable);
+				bool flag;
+				stuff_boolean(&flag);
+				if (flag)
+					csnp->flags.set(Cutscene::Cutscene_Flags::Always_viewable);
+			}
+			if (optional_string("$Never Viewable:"))
+			{
+				bool flag;
+				stuff_boolean(&flag);
+				if (flag)
+					csnp->flags.set(Cutscene::Cutscene_Flags::Never_viewable);
+			}
+			if (optional_string("$Custom data:")) {
+				parse_string_map(csnp->custom_data, "$end_custom_data", "+Val:");
 			}
 
-			Cutscenes.push_back(cutinfo);
 		}
 
 		required_string("#End");
@@ -113,6 +202,20 @@ void cutscene_init()
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "cutscenes.tbl", e.what()));
 		return;
 	}
+}
+
+void cutscene_init()
+{
+	
+	atexit(cutscene_close);
+
+	Cutscenes.clear();
+
+	// first parse the default table
+	parse_cutscene_table("cutscenes.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-csn.tbm", parse_cutscene_table);
 }
 
 // marks a cutscene as viewable
@@ -133,7 +236,6 @@ void cutscene_mark_viewable(const char* filename)
 
 	// change to lower case
 	strlwr(file);
-	int i = 0;
 	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
 	{
 		// change the cutscene file name to lower case
@@ -143,10 +245,9 @@ void cutscene_mark_viewable(const char* filename)
 		// see if the stripped filename matches the cutscene filename
 		if (strstr(cut_file, file) != NULL)
 		{
-			cut->viewable = true;
+			cut->flags.set(Cutscene::Cutscene_Flags::Viewable);
 			return;
 		}
-		i++;
 	}
 
 	Warning(LOCATION, "Could not find cutscene '%s' in listing; cannot mark it viewable...", filename);
@@ -286,10 +387,10 @@ void cutscenes_screen_scroll_line_up()
 	if (Selected_line)
 	{
 		Selected_line--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	if (Selected_line < Scroll_offset)
 		Scroll_offset = Selected_line;
@@ -302,10 +403,10 @@ void cutscenes_screen_scroll_line_down()
 	if (Selected_line < (int) Cutscene_list.size() - 1)
 	{
 		Selected_line++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	h = Cutscene_list_coords[gr_screen.res][3] / gr_get_font_height();
 	if (Selected_line >= Scroll_offset + h)
@@ -328,11 +429,11 @@ void cutscenes_screen_scroll_screen_up()
 			Selected_line--;
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
 	{
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -349,10 +450,10 @@ void cutscenes_screen_scroll_screen_down()
 			Selected_line = Scroll_offset;
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else
 	{
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -361,17 +462,17 @@ int cutscenes_screen_button_pressed(int n)
 	switch (n)
 	{
 		case TECH_DATABASE_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_TECH_MENU);
 			return 1;
 
 		case SIMULATOR_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
 			return 1;
 
 		case CREDITS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
 			return 1;
 
@@ -388,7 +489,7 @@ int cutscenes_screen_button_pressed(int n)
 			break;
 
 		case EXIT_BUTTON:
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 			game_flush();
 			break;
@@ -441,9 +542,9 @@ void cutscenes_screen_init()
 	Cutscene_list.clear();
 
 	int u = 0;
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, u++)
+	for (auto cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, ++u)
 	{
-		if ((*cut).viewable)
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] && !cut->flags[Cutscene::Cutscene_Flags::Never_viewable])
 		{
 			Cutscene_list.push_back(u);
 		}
@@ -604,7 +705,7 @@ void cutscenes_screen_do_frame()
 			if (src)
 			{
 				Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines,
-									  Cutscene_max_text_lines[gr_screen.res]);
+									  Cutscene_max_text_lines[gr_screen.res], MAX_TEXT_LINE_LEN);
 				Assert(Text_size >= 0 && Text_size < Cutscene_max_text_lines[gr_screen.res]);
 			}
 		}

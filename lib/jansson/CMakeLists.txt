@@ -312,7 +312,7 @@ IF(FSO_BUILD_INCLUDED_LIBS OR NOT JANSSON_FOUND)
 
     set_target_properties(jansson PROPERTIES FOLDER "3rdparty")
 
-    target_include_directories(jansson PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
+    target_include_directories(jansson SYSTEM PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
     target_include_directories(jansson PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/private_include)
 	target_link_libraries(jansson PUBLIC compiler)
 endif()

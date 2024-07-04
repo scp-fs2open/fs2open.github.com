@@ -10,7 +10,7 @@ FUNCTION(ADD_IMPORTED_LIB NAME INCLUDES LIBS)
 
 	target_link_libraries(${NAME} INTERFACE "${LIBS}")
 
-	target_include_directories(${NAME} INTERFACE "${INCLUDES}")
+	target_include_directories(${NAME} SYSTEM INTERFACE "${INCLUDES}")
 ENDFUNCTION(ADD_IMPORTED_LIB)
 
 MACRO(PKG_CONFIG_LIB_RESOLVE NAME OUTVAR)
@@ -67,30 +67,43 @@ ENDIF(EXISTS \"${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${FILE}\")
 ENDFUNCTION(EP_CHECK_FILE_EXISTS)
 
 MACRO(COPY_FILE_TO_TARGET _target _file)
-	if(UNIX)
-		ADD_CUSTOM_COMMAND(
-			TARGET ${_target} POST_BUILD
-			COMMAND cp -a "${_file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-			COMMENT "copying '${_file}'..."
-		)
+	if (IS_DIRECTORY "${_file}")
+		get_filename_component(_dirName "${_file}" NAME)
+		if (PLATFORM_MAC AND ("${_file}" MATCHES ".framework$"))
+			# This is stupid, but it preserves symlinks, unlike copy_directory_if_different.
+			# Otherwise we end up creating duplicate files in the copied framework.
+			ADD_CUSTOM_COMMAND(
+					TARGET ${_target} POST_BUILD
+					COMMAND rsync -rlq "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}"
+					COMMENT "copying '${_file}'..."
+					VERBATIM
+			)
+		else()
+			ADD_CUSTOM_COMMAND(
+					TARGET ${_target} POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/${_dirName}"
+					COMMENT "copying '${_file}'..."
+					VERBATIM
+			)
+		endif()
 	else()
 		ADD_CUSTOM_COMMAND(
-			TARGET ${_target} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-			COMMENT "copying '${_file}'..."
+				TARGET ${_target} POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+				COMMENT "copying '${_file}'..."
+				VERBATIM
 		)
 	endif()
 endmacro(COPY_FILE_TO_TARGET)
 
 MACRO(COPY_FILES_TO_TARGET _target)
-	if(UNIX)
-		ADD_CUSTOM_COMMAND(
-			TARGET ${_target} POST_BUILD
-			COMMAND mkdir -p "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-			COMMENT "Creating '$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/'..."
-		)
-	endif()
-	
+	ADD_CUSTOM_COMMAND(
+		TARGET ${_target} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+		COMMENT "Creating '$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/'..."
+		VERBATIM
+	)
+
 	FOREACH(file IN LISTS TARGET_COPY_FILES)
 		COPY_FILE_TO_TARGET("${_target}" "${file}")
 	ENDFOREACH(file)
@@ -140,12 +153,34 @@ macro(set_if_not_defined VAR VALUE)
     endif()
 endmacro(set_if_not_defined)
 
-macro(configure_cotire target)
-	# Disable unity build as it doesn't work well for us
-	set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+function(set_precompiled_header _target _headerPath)
+	if (COMMAND target_precompile_headers)
+		target_compile_definitions(${_target} PRIVATE CMAKE_PCH)
+		target_precompile_headers(${_target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${_headerPath}>")
+	else()
+		if (ENABLE_COTIRE)
+			message("${_headerPath}")
+			set_target_properties(${_target} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "${_headerPath}")
 
-	cotire(${target})
-endmacro(configure_cotire)
+			# Disable unity build as it doesn't work well for us
+			set_target_properties(${_target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+
+			cotire(${_target})
+		else()
+			if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+				target_compile_options(${_target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include${_headerPath}>")
+			elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+				target_compile_options(${_target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:/FI ${_headerPath}>")
+			elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+				target_compile_options(${_target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include${_headerPath}>")
+			elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+				target_compile_options(${_target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include${_headerPath}>")
+			ELSE()
+				MESSAGE("Unknown compiler for global includes. This will probably break the build.")
+			ENDIF()
+		endif()
+	endif()
+endfunction()
 
 macro(add_target_copy_files)
 	foreach(file ${ARGN})
@@ -182,7 +217,7 @@ function(detect_simd_instructions _out_var)
 endfunction()
 
 function (check_linker_flag _flag _out_var)
-	SET(CMAKE_REQUIRED_FLAGS "${_flag}")
+	SET(CMAKE_REQUIRED_LINK_OPTIONS "${_flag}")
 	CHECK_C_COMPILER_FLAG("" ${_out_var})
 endfunction(check_linker_flag)
 
@@ -195,3 +230,57 @@ function(suppress_warnings _target)
 		target_compile_options(${_target} PRIVATE "-w")
     endif()
 endfunction(suppress_warnings)
+
+# Suppresses warnings for the specified files
+function(suppress_file_warnings)
+	if (MSVC)
+		set_source_files_properties(
+				${ARGN}
+			PROPERTIES
+				COMPILE_FLAGS "/W0")
+	else()
+		# Assume everything else uses GCC style options
+		set_source_files_properties(
+				${ARGN}
+			PROPERTIES
+				COMPILE_FLAGS "-w")
+	endif()
+endfunction(suppress_file_warnings)
+
+
+function(list_target_dependencies _target _out_var)
+	set(out_list)
+	set(work_libs ${_target})
+	list(LENGTH work_libs libs_length)
+
+	while(libs_length GREATER 0)
+		list(GET work_libs 0 current)
+		list(REMOVE_AT work_libs 0)
+		list(APPEND out_list ${current})
+
+		get_target_property(current_libs ${current} INTERFACE_LINK_LIBRARIES)
+
+		if(current_libs)
+			foreach(lib ${current_libs})
+				if (TARGET ${lib})
+					list(APPEND work_libs ${lib})
+				endif (TARGET ${lib})
+			endforeach(lib)
+		endif(current_libs)
+
+		list(LENGTH work_libs libs_length)
+	endwhile(libs_length GREATER 0)
+
+	list(REMOVE_DUPLICATES out_list)
+	set(${_out_var} ${out_list} PARENT_SCOPE)
+endfunction(list_target_dependencies)
+
+macro(add_file_folder FOLDER_NAME)
+	string(MAKE_C_IDENTIFIER "${FOLDER_NAME}" VARIABLE_NAME)
+	set(files_${VARIABLE_NAME} ${files_${VARIABLE_NAME}} ${ARGN})
+
+	string(REPLACE "/" "\\" FIXED_FOLDER_FILE "${FOLDER_NAME}")
+
+	source_group("${FIXED_FOLDER_FILE}" FILES ${ARGN})
+	set(source_files ${source_files} ${ARGN})
+endmacro(add_file_folder)

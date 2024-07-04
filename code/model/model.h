@@ -12,14 +12,20 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-#include "globalincs/globals.h"	// for NAME_LENGTH
+#include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
+#include <array>
+ 
+#include "actions/Program.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
+#include "io/timer.h"
+#include "model/model_flags.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
-#include "model/model_flags.h"
 
 class object;
+class ship_info;
 class model_render_params;
 
 extern flag_def_list model_render_flags[];
@@ -31,20 +37,21 @@ extern int model_render_flags_size;
 #define MAX_NAME_LEN			32
 #define MAX_ARC_EFFECTS		8
 
-#define MOVEMENT_TYPE_NONE				-1
-#define MOVEMENT_TYPE_POS				0
-#define MOVEMENT_TYPE_ROT				1
-#define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
-#define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
-#define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
-#define MOVEMENT_TYPE_LOOK_AT			5	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
-
+// For POF compatibility reasons, the first four of these should not be renumbered.
+#define MOVEMENT_TYPE_NONE			-1
+#define MOVEMENT_TYPE_UNUSED		0	// previously MOVEMENT_TYPE_POS
+#define MOVEMENT_TYPE_REGULAR		1	// previously MOVEMENT_TYPE_ROT
+#define MOVEMENT_TYPE_TURRET		2	// for turrets only
+#define MOVEMENT_TYPE_TRIGGERED		3
+#define MOVEMENT_TYPE_INTRINSIC		4	// intrinsic (non-subsystem-based)
 
 // DA 11/13/98 Reordered to account for difference between max and game
-#define MOVEMENT_AXIS_NONE	-1
-#define MOVEMENT_AXIS_X		0
-#define MOVEMENT_AXIS_Y		2
-#define MOVEMENT_AXIS_Z		1
+#define MOVEMENT_AXIS_NONE		-1
+#define MOVEMENT_AXIS_X			0
+#define MOVEMENT_AXIS_Y			2
+#define MOVEMENT_AXIS_Z			1
+#define MOVEMENT_AXIS_OTHER		3
+
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -65,6 +72,10 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_UNKNOWN			11
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
+enum class modelread_status { FAIL, SUCCESS_REAL, SUCCESS_VIRTUAL };
+
+enum model_objnum_special : int { OBJNUM_NONE = -1, OBJNUM_COCKPIT = -2, OBJNUM_SPECIAL_MIN = -3};
+
 // Goober5000
 extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
@@ -72,48 +83,124 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
-// Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
-// the model_clear_instance, model_set_instance, model_get_instance functions.
-typedef struct submodel_instance_info {
-	int		blown_off;								// If set, this subobject is blown off
-	angles	angs;										// The current angle this thing is turned to.
-	angles	prev_angs;
-	vec3d	pt_on_axis;								// in ship RF
-	float		cur_turn_rate;
-	float		desired_turn_rate;
-	float		turn_accel;
-	int		axis_set;
-	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
-} submodel_instance_info;
+// Data specific to a particular instance of a submodel.
+struct submodel_instance
+{
+	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
+	float	prev_angle = 0.0f;
+	float	turret_idle_angle = 0.0f;				// If this is a turret, this is the expected idling angle of the submodel
 
-typedef struct submodel_instance {
-	angles angs;
-	angles prev_angs;
-	vec3d mc_base;
-	matrix mc_orient;
-	bool collision_checked;
-	bool blown_off;
-	submodel_instance_info *sii;
-} submodel_instance;
+	float	current_turn_rate = 0.0f;
+	float	desired_turn_rate = 0.0f;
+	float	turn_accel = 0.0f;
+	TIMESTAMP stepped_rotation_started;
+
+	float	cur_offset = 0.0f;
+	float	prev_offset = 0.0f;
+
+	float	current_shift_rate = 0.0f;
+	float	desired_shift_rate = 0.0f;
+	float	shift_accel = 0.0f;
+	TIMESTAMP stepped_translation_started;
+
+	bool	blown_off = false;						// If set, this subobject is blown off
+	bool	collision_checked = false;
+
+	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
+	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
+	matrix	canonical_orient = vmd_identity_matrix;
+	matrix	canonical_prev_orient = vmd_identity_matrix;
+	// similarly for translation
+	vec3d	canonical_offset = vmd_zero_vector;
+	vec3d	canonical_prev_offset = vmd_zero_vector;
+
+	// --- these fields used to be in bsp_info ---
+
+	// Electrical Arc Effect Info
+	// Sets a spark for this submodel between vertex v1 and v2	
+	int		num_arcs = 0;											// See model_add_arc for more info	
+	color   arc_primary_color_1[MAX_ARC_EFFECTS];
+	color   arc_primary_color_2[MAX_ARC_EFFECTS];
+	color	arc_secondary_color[MAX_ARC_EFFECTS];
+	float	arc_width[MAX_ARC_EFFECTS];								// only used for MARC_TYPE_SHIP and MARC_TYPE_SCRIPTED
+	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
+	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
+
+	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
+	vec3d	rotation_axis;
+	vec3d	translation_axis;
+
+	submodel_instance()
+	{
+		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_primary_color_1, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_primary_color_2, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_secondary_color, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+		memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
+	}
+};
+
+#define TM_BASE_TYPE		0		// the standard base map
+#define TM_GLOW_TYPE		1		// optional glow map
+#define TM_SPECULAR_TYPE	2		// optional specular map
+#define TM_NORMAL_TYPE		3		// optional normal map
+#define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
+#define TM_MISC_TYPE		5		// optional utility map
+#define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
+#define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
+#define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
+									//Used by scripting - if you change this, do a search
+									//to update switch() statement in lua.cpp
+
+#define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
+
+// Goober5000 - since we need something < 0
+#define REPLACE_WITH_INVISIBLE	-47
+
+class model_texture_replace : public std::array<int, MAX_REPLACEMENT_TEXTURES> {
+public:
+	model_texture_replace() : std::array<int, MAX_REPLACEMENT_TEXTURES>() {
+		for (int& tex : *this)
+			tex = -1;
+	}
+};
 
 // Data specific to a particular instance of a model.
-typedef struct polymodel_instance {
-	int model_num;					// global model num index, same as polymodel->id
-	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
-} polymodel_instance;
+struct polymodel_instance
+{
+	int id = -1;							// global model_instance num index
+	int model_num = -1;						// global model num index, same as polymodel->id
+	submodel_instance *submodel = nullptr;	// array of submodel instances; mirrors the polymodel->submodel array
+
+	std::shared_ptr<model_texture_replace> texture_replace = nullptr;
+
+	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox) 
+};
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
-// definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
 	float fraction;			// fraction of time in step spent in accel
 	float t_transit;			// time spent moving from one step to next
 	float t_pause;				// time at rest between steps
-	float max_turn_rate;		// max turn rate going betweens steps
+	float max_turn_rate;		// max turn rate going between steps
 	float max_turn_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
 } stepped_rotation_t;
+
+typedef struct stepped_translation {
+	bool reverse_after_step;	// for back-and-forth motion
+	float step_distance;	// linear displacement of one step
+	float fraction;			// fraction of time in step spent in accel
+	float t_transit;			// time spent moving from one step to next
+	float t_pause;				// time at rest between steps
+	float max_shift_rate;		// max shift rate going between steps
+	float max_shift_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
+} stepped_translation_t;
 
 struct queued_animation;
 
@@ -136,46 +223,44 @@ public:
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
     char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
-	vec3d	turret_norm;						//	direction this turret faces
-	matrix	turret_matrix;						// turret_norm converted to a matrix.
+	vec3d	turret_norm;						//	direction this turret faces (i.e. the normal to the turret base, or the center of the field of view)
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
-	float	turret_y_fov;						//  turret's base's fov
+	float	turret_base_fov;					//  turret's base's fov, -1 means no restriction
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	gamesnd_id	turret_base_rotation_snd;				// Sound to make when the turret moves
 	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
-	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	gamesnd_id		turret_gun_rotation_snd;				// Sound to make when the turret moves
 	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
 
 
 	//Sound stuff
-	int		alive_snd;		//Sound to make while the subsystem is not-dead
-	int		dead_snd;		//Sound to make when the subsystem is dead.
-	int		rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
+	gamesnd_id	alive_snd;		//Sound to make while the subsystem is not-dead
+	gamesnd_id	dead_snd;		//Sound to make when the subsystem is dead.
+	gamesnd_id	rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
 
 	// engine wash info
 	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
 
-	// rotation specific info
-	float		turn_rate;							// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
+	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
-	stepped_rotation_t	*stepped_rotation;			// turn rotation struct
+	std::shared_ptr<stepped_rotation_t>		stepped_rotation;		// turn rotation struct
+	std::shared_ptr<stepped_translation_t>	stepped_translation;	// shift translation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
 	float		awacs_radius;							// radius of effect of the AWACS
+
+	int		scan_time;							// overrides ship class scan time if >0
 
 	int		primary_banks[MAX_SHIP_PRIMARY_BANKS];					// default primary weapons -hoffoss
 	int		primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// capacity of a bank - Goober5000
 	int		secondary_banks[MAX_SHIP_SECONDARY_BANKS];				// default secondary weapons -hoffoss
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
-
-	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations associated with this object
 
 	int		turret_reset_delay;
 
@@ -190,13 +275,15 @@ public:
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
-	int turret_max_target_ownage; 
+	int turret_max_target_ownage;
+
+	actions::ProgramSet beam_warmdown_program;
+
+	float density;
 
     void reset();
 
-    model_subsystem() {
-        reset();
-    }
+    model_subsystem();
 };
 
 typedef struct model_special {
@@ -208,15 +295,67 @@ typedef struct model_special {
 } model_special;
 
 // model arc types
-#define MARC_TYPE_NORMAL					0		// standard freespace 1 blue lightning arcs
+#define MARC_TYPE_DAMAGED					0		// blue lightning arcs for when the ship is damaged
 #define MARC_TYPE_EMP						1		// EMP blast type arcs
+#define MARC_TYPE_SHIP						2		// arcing lightning thats intrinsically part of the ship
+#define MARC_TYPE_SCRIPTED					3		// an arc created via script
 
 #define MAX_LIVE_DEBRIS	7
 
+// Byte offsets for TMAPPOLY/TMAP2POLY
+// An offset of +0 corresponds to the ID of the chunk
+#define TMAP_SIZE			4
+#define TMAP_NORMAL			8
+#define TMAP_CENTER			20
+#define TMAP_RADIUS			32
+#define TMAP_NVERTS			36
+#define TMAP_TEXNUM			40
+#define TMAP_VERTS			44
+
+#define TMAP2_BBOX_MIN		8
+#define TMAP2_BBOX_MAX		20
+#define TMAP2_NORMAL		32
+#define TMAP2_TEXNUM		44
+#define TMAP2_NVERTS		48
+#define TMAP2_VERTS			52
+
+/**
+ * @struct model_tmap_vert_old
+ * @brief Struct to hold vertex information for a polygon (TMAPPOLY)
+ *
+ */
+typedef struct model_tmap_vert_old {
+	ushort vertnum; //!< Vertex index into a subobject vertex buffer.
+	ushort normnum; //!< Normal index into a subobject normal buffer.
+	float u;      //!< Horizontal texture coordinate for the vertex.
+	float v;      //!< Vertical texture coordinate for the vertex.
+} model_tmap_vert_old;
+
+/**
+* @struct model_tmap_vert
+* @brief Struct to hold vertex information for a polygon (TMAP2POLY)
+* 
+*/
 typedef struct model_tmap_vert {
-	ushort vertnum;
-	ushort normnum;
-	float u,v;
+	uint vertnum;	//!< Vertex index into a subobject vertex buffer.
+	uint normnum;	//!< Normal index into a subobject normal buffer.
+	float u;        //!< Horizontal texture coordinate for the vertex.
+	float v;		//!< Vertical texture coordinate for the vertex.
+
+	/**
+	 * @brief Default constructor for model_tmap_vert
+	 *
+	 */
+	model_tmap_vert() : vertnum(0), normnum(0), u(0.0f), v(0.0f) {}
+
+	/**
+	 * @brief Initializes a model_tmap_vert from a model_tmap_vert_old.
+	 *
+	 * @param tmap_vert A TMAPPOLY vertex object.
+	 */
+	model_tmap_vert(const model_tmap_vert_old& tmap_vert)
+		: vertnum(tmap_vert.vertnum), normnum(tmap_vert.normnum), u(tmap_vert.u), v(tmap_vert.v)
+	{}
 } model_tmap_vert;
 
 struct bsp_collision_node {
@@ -230,9 +369,7 @@ struct bsp_collision_node {
 };
 
 struct bsp_collision_leaf {
-	vec3d plane_pnt;
 	vec3d plane_norm;
-	float face_rad;
 	int vert_start;
 	ubyte num_verts;
 	ubyte tmap_num;
@@ -249,6 +386,7 @@ struct bsp_collision_tree {
 
 	model_tmap_vert *vert_list;
 	vec3d *point_list;
+	SCP_vector<vec3d> poly_centers;
 
 	int n_verts;
 	bool used;
@@ -258,36 +396,44 @@ class bsp_info
 {
 public:
 	bsp_info()
-		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
-		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0),
-		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
-		num_arcs(0), outline_buffer(NULL), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
-		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
-		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
-		look_at_num(-1)
+		: bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
+		rad(0.0f), my_replacement(-1), i_replace(-1), num_live_debris(0),
+		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
+		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0),	use_render_sphere(0)
 	{
 		name[0] = 0;
 		lod_name[0] = 0;
-		look_at[0] = 0;
 
 		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
-		orientation = vmd_identity_matrix;
+		frame_of_reference = vmd_identity_matrix;
 
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
-		memset(&angs, 0, sizeof(angles));
 		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
 		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
-		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
-		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
 	}
 
-	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
-	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
-	int		movement_axis;			// which axis this subobject moves or rotates on.
-	bool	can_move;				// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
+	char	name[MAX_NAME_LEN];						// name of the subsystem.  Probably displayed on HUD
+
+	int		rotation_type = MOVEMENT_TYPE_NONE;
+	vec3d	rotation_axis = vmd_zero_vector;			// which axis this subobject rotates on.
+	int		rotation_axis_id = MOVEMENT_AXIS_NONE;		// for optimization
+
+	int		translation_type = MOVEMENT_TYPE_NONE;
+	vec3d	translation_axis = vmd_zero_vector;
+	int		translation_axis_id = MOVEMENT_AXIS_NONE;
+
+	float	default_turn_rate = 0.0f;
+	float	default_turn_accel = 0.0f;
+
+	float	default_shift_rate = 0.0f;
+	float	default_shift_accel = 0.0f;
+
+	flagset<Model::Submodel_flags> flags;
+
+	int subsys_num = -1;			// subsystem number; index to ship_info->subsystems; the counterpart of model_subsystem->subobj_num
 
 	vec3d	offset;					// 3d offset from parent object
-	matrix	orientation;			// 3d orientation relative to parent object
+	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
 	int		bsp_data_size;
 	ubyte		*bsp_data;
@@ -302,33 +448,22 @@ public:
 	vec3d	max;						// The max point of this object's geometry
 	vec3d	bounding_box[8];		// calculated fron min/max
 
-	int		blown_off;				// If set, this subobject is blown off. Stuffed by model_set_instance
 	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
 	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
-	angles	angs;					// The rotation angles of this subobject (Within its own orientation, NOT relative to parent - KeldorKatarn)
 
-	int		is_live_debris;		// whether current submodel is a live debris model
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
-
-	int		is_thruster;
-	int		is_damaged;
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
 	int		num_children;			// How many children this model has
 	int		first_child;			// The first_child of this model, -1 if none
 	int		next_sibling;			// This submodel's next sibling, -1 if none
+	int		depth;					// How many levels deep this subobject sits
 
 	int		num_details;			// How many submodels are lower detail "mirrors" of this submodel
 	int		details[MAX_MODEL_DETAIL_LEVELS];		// A list of all the lower detail "mirrors" of this submodel
 
-	// Electrical Arc Effect Info
-	// Sets a spark for this submodel between vertex v1 and v2	
-	int		num_arcs;												// See model_add_arc for more info	
-	vec3d	arc_pts[MAX_ARC_EFFECTS][2];	
-	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
-	
 	// buffers used by HT&L
 	vertex_buffer buffer;
 	vertex_buffer trans_buffer;
@@ -342,23 +477,13 @@ public:
 	float	render_sphere_radius;
 	vec3d	render_sphere_offset;
 	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if you're outside
-	bool	use_render_box_offset;		// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
-	bool 	use_render_sphere_offset;// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
-	bool	gun_rotation;			// for animated weapon models
-	bool	no_collisions;			// for $no_collisions property - kazan
-	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
-	bool	collide_invisible;		//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
-	bool	force_turret_normal;	//Wanderer: Sets the turret uvec to override any input of for turret normal.
-	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
-	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
-	float	dumb_turn_rate;			//Bobboau
-	//int	look_at;				//Bobboau
-	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
-	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
-};
 
-void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
+	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
+
+	int		look_at_submodel = -1;		//VA - number of the submodel to be looked at by this submodel (-1 if none)
+	float	look_at_offset = -1.0f;		//angle in radians that the submodel should be turned from its initial orientation to be considered "looking at" something (-1 if set on first eval)
+};
 
 #define MP_TYPE_UNUSED 0
 #define MP_TYPE_SUBSYS 1
@@ -371,7 +496,7 @@ typedef struct mp_vert {
 } mp_vert;
 
 typedef struct model_path {
-	char			name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
+	char			name[MAX_NAME_LEN];					// name of the path.  Should be unique
 	char			parent_name[MAX_NAME_LEN];			// parent name of submodel that path is linked to in POF
 	int			parent_submodel;
 	int			nverts;
@@ -386,14 +511,36 @@ typedef struct model_path {
 // info for gun and missile banks.  Also used for docking points.  There should always
 // only be two slots for each docking bay
 
-#define MAX_SLOTS		25
+struct w_bank
+{
+	int		num_slots = 0;
+	vec3d	*pnt = nullptr;
+	vec3d	*norm = nullptr;
+	float   *external_model_angle_offset = nullptr;
 
-typedef struct w_bank {
-	int		num_slots;
-	vec3d	pnt[MAX_SLOTS];
-	vec3d	norm[MAX_SLOTS];
-	float		radius[MAX_SLOTS];
-} w_bank;
+	w_bank() { }
+
+	~w_bank()
+	{
+		delete[] pnt;
+		delete[] norm;
+		delete[] external_model_angle_offset;
+	}
+
+	w_bank& operator=(w_bank&& other) {
+		this->~w_bank();
+		num_slots = other.num_slots;
+		pnt = other.pnt;
+		norm = other.norm;
+		external_model_angle_offset = other.external_model_angle_offset;
+		other.pnt = nullptr;
+		other.norm = nullptr;
+		other.external_model_angle_offset = nullptr;
+		return *this;
+	}
+	w_bank(const w_bank& other) = default;
+	w_bank& operator=(const w_bank& other) = delete;
+};
 
 struct glow_point{
 	vec3d	pnt;
@@ -440,6 +587,7 @@ typedef struct glow_point_bank_override {
 	int			glow_bitmap; 
 	int			glow_neb_bitmap;
 	bool		is_on;
+	bool		default_off;
 
 	bool		type_override;
 	bool		on_time_override; 
@@ -464,6 +612,7 @@ typedef struct glow_point_bank_override {
 	bool		rotating;
 	vec3d		rotation_axis;
 	float		rotation_speed;
+	float		intensity;
 
 	bool		pulse_period_override;
 } glow_point_bank_override;
@@ -485,6 +634,7 @@ typedef struct dock_bay {
 	int		type_flags;					// indicates what this docking bay can be used for (i.e. cargo/rearm, etc)
 	int		num_spline_paths;			// number of spline paths which lead to this docking bay
 	int		*splines;					// array of indices into the Spline_path array
+	int		parent_submodel;			// if this dockpoint should be relative to a submodel instead of the main model
 	char		name[MAX_NAME_LEN];		// name of this docking location
 	vec3d	pnt[MAX_DOCK_SLOTS];
 	vec3d	norm[MAX_DOCK_SLOTS];
@@ -528,7 +678,7 @@ struct shield_info {
 	shield_vertex	*verts;
 	shield_tri		*tris;
 
-	int buffer_id;
+	gr_buffer_handle buffer_id;
 	int buffer_n_verts;
 	vertex_layout layout;
 
@@ -541,18 +691,7 @@ struct shield_info {
 typedef struct bsp_light {
 	vec3d			pos;
 	int				type;		// See BSP_LIGHT_TYPE_?? for values
-	float				value;	// How much to light up this light.  0-1.
 } bsp_light;
-
-// model_octant - There are 8 of these per model.  They are a handy way to categorize
-// a lot of model properties to get some easy 8x optimizations for model stuff.
-typedef struct model_octant {
-	vec3d		min, max;				// The bounding box that makes up this octant defined as 2 points.
-	int			nverts;					// how many vertices are in this octant
-	vec3d		**verts;					// The vertices in this octant in the high-res hull.  A vertex can only be in one octant.
-	int			nshield_tris;			// how many shield triangles are in the octant
-	shield_tri	**shield_tris;			// the shield triangles that make up this octant. A tri could be in multiple octants.
-} model_octant;
 
 #define MAX_EYES	10
 
@@ -586,7 +725,7 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN					(1<<1)					// contains autocentering info	
 #define PM_FLAG_TRANS_BUFFER			(1<<2)					// render transparency buffer
 #define PM_FLAG_BATCHED					(1<<3)					// this model can be batch rendered
-#define PM_FLAG_HAS_INTRINSIC_ROTATE	(1<<4)					// whether this model has an intrinsic rotation submodel somewhere
+#define PM_FLAG_HAS_INTRINSIC_MOTION	(1<<4)					// whether this model has an intrinsic rotation or translation submodel somewhere
 
 // Goober5000
 class texture_info
@@ -605,10 +744,10 @@ public:
 	texture_info(int bm_handle);
 	void clear();
 
-	int GetNumFrames();
-	int GetOriginalTexture();
-	int GetTexture();
-	float GetTotalTime();
+	int GetNumFrames() const;
+	int GetOriginalTexture() const;
+	int GetTexture() const;
+	float GetTotalTime() const;
 
 	int LoadTexture(const char *filename, const char *dbg_name = "<UNKNOWN>");
 
@@ -619,17 +758,6 @@ public:
 	int SetTexture(int n_tex);
 };
 
-#define TM_BASE_TYPE		0		// the standard base map
-#define TM_GLOW_TYPE		1		// optional glow map
-#define TM_SPECULAR_TYPE	2		// optional specular map
-#define TM_NORMAL_TYPE		3		// optional normal map
-#define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
-#define TM_MISC_TYPE		5		// optional utility map
-#define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
-#define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
-#define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
-									//Used by scripting - if you change this, do a search
-									//to update switch() statement in lua.cpp
 // taylor
 //WMC - OOPified
 class texture_map
@@ -641,7 +769,7 @@ public:
 	bool is_transparent;
 
 	int FindTexture(int bm_handle);
-	int FindTexture(char *name);
+	int FindTexture(const char* name);
 
 	void PageIn();
 	void PageOut(bool release);
@@ -653,11 +781,6 @@ public:
 		: is_ambient(false), is_transparent(false)
 	{}
 };
-
-#define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
-
-// Goober5000 - since we need something < 0
-#define REPLACE_WITH_INVISIBLE	-47
 
 //used to describe a polygon model
 // NOTE: Because WMC OOPified the textures, this must now be treated as a class, rather than a struct.
@@ -671,7 +794,7 @@ public:
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
-		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
+		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(nullptr),
 		vert_source()
 	{
 		filename[0] = 0;
@@ -683,7 +806,6 @@ public:
 		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
-		memset(&octants, 0, 8 * sizeof(model_octant));
 		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
 		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
 
@@ -752,9 +874,7 @@ public:
 	// physics info
 	float			mass;
 	vec3d		center_of_mass;
-	matrix		moment_of_inertia;
-	
-	model_octant	octants[8];
+	matrix		moment_of_inertia;	
 
 	int num_xc;				// number of cross sections
 	cross_section* xc;	// pointer to array of cross sections (used in big ship explosions)
@@ -776,45 +896,118 @@ public:
 	int n_glow_point_banks;						// number of glow points on this ship. -Bobboau
 	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
 
-	float gun_submodel_rotation;
-	
 	indexed_vertex_source vert_source;
 	
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
+
+struct model_read_deferred_tasks {
+	struct model_subsystem_parse {
+		int subobj_nr;
+		float rad;
+		vec3d pnt;
+		SCP_string props;
+	};
+
+	struct engine_subsystem_parse {
+		SCP_string subsystem_name;
+	};
+
+	struct weapon_subsystem_parse {
+		int turret_nr;
+		int gun_subobj_nr;
+		vec3d turretNorm;
+		int n_slots;
+		SCP_vector<vec3d> firingpoints;
+	};
+
+	struct texture_idx_replace {
+		SCP_map<int, int> replacementIds;
+	};
+
+	//Key: Subsystem Name
+	SCP_unordered_map<SCP_string, model_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> model_subsystems;
+	using model_subsystem_pair = decltype(model_subsystems)::value_type;
+	//Key: Engine Nr
+	SCP_unordered_map<int, engine_subsystem_parse> engine_subsystems;
+	using engine_subsystem_pair = decltype(engine_subsystems)::value_type;
+	//Key: Parent Subobject Nr
+	SCP_unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
+	using weapon_subsystem_pair = decltype(weapons_subsystems)::value_type;
+	//Key: Subobject Nr
+	SCP_unordered_map<int, texture_idx_replace> texture_replacements;
+	using texture_replacement_pair = decltype(texture_replacements)::value_type;
+};
+
+using model_parse_depth = SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
+
+// Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
+//
+// void func(int submodel, int level, bool isLeaf);
+//
+// The "level" parameter indicates how deep the nesting level is, and the "isLeaf" parameter indicates whether the submodel is a leaf node.
+// To find the model's detail0 root node, use pm->submodel[pm->detail[0]].
+template <typename pm_t, typename Func, typename... AdditionalParams>
+void model_iterate_submodel_tree(pm_t* pm, int submodel, Func func, int level, AdditionalParams... params)
+{
+	Assertion(pm != nullptr, "pm must not be null!");
+	Assertion(submodel >= 0 && submodel < pm->n_models, "submodel must be in range!");
+
+	auto child = pm->submodel[submodel].first_child;
+
+	func(submodel, level, child < 0, params...);
+
+	while (child >= 0)
+	{
+		model_iterate_submodel_tree(pm, child, func, level + 1, params...);
+		child = pm->submodel[child].next_sibling;
+	}
+}
+
+//This wrapper function is needed due to a bug in clang versions before 11 which breaks default parameters before parameter packs
+template <typename pm_t, typename Func>
+inline void model_iterate_submodel_tree(pm_t* pm, int submodel, Func func)
+{
+	model_iterate_submodel_tree(pm, submodel, func, 0);
+}
 
 // Call once to initialize the model system
 void model_init();
 
 // call to unload a model (works like bm_unload()), "force" SHOULD NEVER BE SET outside of modelread.cpp!!!!
 void model_unload(int modelnum, int force = 0);
+// Directly frees polymodel data, regardless of state and usage in ship classes. Use with caution. Will not clear textures
+void model_free(polymodel* pm);
 
 // Call to free all existing models
 void model_free_all();
 void model_instance_free_all();
 
+// Alias to model_load, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
+int model_load(ship_info* sip, bool prefer_tech_model);
+
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
-int model_create_instance(bool is_ship, int model_num);
+int model_create_instance(int objnum, int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
+
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
 
 polymodel_instance* model_get_instance(int model_instance_num);
 
-// routine to copy susbsystems.  Must be called when subsystems sets are the same -- see ship.cpp
+// routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
 
 // If MR_FLAG_OUTLINE bit set this color will be used for outlines.
 // This defaults to black.
 void model_set_outline_color(int r, int g, int b);
-
-void model_set_outline_color_fast(void *outline_color);
 
 // IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
 // This defaults to 0. (0=highest, larger=lower)
@@ -825,10 +1018,10 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
 #define MR_SKYBOX					(1<<1)		// Draw as a skybox
 #define MR_DESATURATED				(1<<2)		// Draw model in monochrome using outline color
-#define MR_EMPTY_SLOT0				(1<<3)		// Show the radius around the object
-#define MR_EMPTY_SLOT1				(1<<4)		// Show the shield mesh
+#define MR_STENCIL_WRITE			(1<<3)		// Write stencil buffere where the model was rendered
+#define MR_STENCIL_READ				(1<<4)		// Only draw pixels of the model where the stencil buffer has the right value (see MR_STENCIL_WRITE)
 #define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
-#define MR_EMPTY_SLOT2				(1<<6)		// Only draw the detail level defined in model_set_detail_level
+#define MR_NO_COLOR_WRITES			(1<<6)		// Don't write anything to the color buffers (used when setting the stencil buffer)
 #define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
 #define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
 #define MR_NO_TEXTURING				(1<<9)		// Draw textures as flat-shaded polygons.
@@ -860,6 +1053,15 @@ void model_set_detail_level(int n);
 #define MR_DEBUG_RADIUS				(1<<2)		// Show the radius around the object
 #define MR_DEBUG_SHIELDS			(1<<3)		// Show the shield mesh
 #define MR_DEBUG_BAY_PATHS			(1<<4)		// draw bay paths
+#define MR_DEBUG_NO_DIFFUSE			(1<<5)
+#define MR_DEBUG_NO_SPEC			(1<<6)
+#define MR_DEBUG_NO_NORMAL			(1<<7)
+#define MR_DEBUG_NO_ENV				(1<<8)
+#define MR_DEBUG_NO_GLOW			(1<<9)
+#define MR_DEBUG_NO_HEIGHT			(1<<10)
+#define MR_DEBUG_NO_AMBIENT			(1<<11)
+#define MR_DEBUG_NO_MISC			(1<<12)
+#define MR_DEBUG_NO_REFLECT			(1<<13)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1
@@ -872,13 +1074,6 @@ float submodel_get_radius(int modelnum, int submodelnum);
 
 // Returns the core radius (smallest dimension of hull's bounding box, used for collision detection with big ships only)
 float model_get_core_radius(int modelnum);
-
-// Returns zero is x1,y1,x2,y2 are valid
-// returns 1 for invalid model, 2 for point offscreen.
-// note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
-// This function just looks at the radius, and not the orientation, so the
-// bounding box won't change depending on the obj's orient.
-extern int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
@@ -913,90 +1108,125 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-// turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
-
-// Gets and sets turret rotation matrix
-extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
+extern bool model_rotate_gun(const object *objp, const polymodel *pm, const polymodel_instance *pmi, ship_subsys *ss, const vec3d *dst);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii);
-extern void submodel_rotate(bsp_info *sm, submodel_instance_info *sii);
+extern void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp);
+extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
+extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
-void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii);
+void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi);
+
+// Similar to above
+extern void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi);
+extern void submodel_translate(model_subsystem *psub, submodel_instance *smi);
+extern void submodel_translate(bsp_info *sm, submodel_instance *smi);
+
+void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi);
+
+// ------- submodel transformations -------
 
 // Goober5000
 // For a submodel, return its overall offset from the main model.
-extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num);
+extern void model_find_submodel_offset(vec3d *outpnt, const polymodel *pm, int sub_model_num);
 
-// Given a point (pnt) that is in sub_model_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-extern void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos);
-extern void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos);
+// Given a point in a submodel's local frame of reference, transform it to a global frame of reference.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+// Given a point in a submodel's local frame of reference, transform it to a global frame of reference.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
 
-// Given a point in the world RF, find the corresponding point in the model RF.
-// This is special purpose code, specific for model collision.
-// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos);
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos);
+// Given a point in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr, bool use_last_frame = false);
+// Given a point in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr, bool use_last_frame = false);
 
-extern void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num);
-extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm);
-extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient);
-extern void find_submodel_instance_world_point(vec3d *outpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos);
+// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient = nullptr);
+// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient = nullptr);
 
-// Given a polygon model index, find a list of rotating submodels to be used for collision
-void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
+// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, bool use_submodel_parent = false);
+// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
+extern void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr);
+
+// Combines model_instance_local_to_global_point and model_instance_local_to_global_dir into one function.
+extern void model_instance_local_to_global_point_dir(vec3d *outpnt, vec3d *outnorm, const vec3d *submodel_pnt, const vec3d *submodel_norm, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+
+// Combines model_instance_local_to_global_point and the matrix equivalent of model_instance_local_to_global_dir into one function.
+extern void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorient, const vec3d *submodel_pnt, const matrix *submodel_orient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+
+
+// Given a point in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr, bool use_last_frame = false);
+// Given a point in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr, bool use_last_frame = false);
+
+// Given a direction (or normal) in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, bool use_submodel_parent = false, bool use_last_frame = false);
+// Given a direction (or normal) in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, bool use_last_frame = false);
+
+// Combines model_instance_local_to_global_point and the matrix equivalent of model_instance_local_to_global_dir into one function.
+extern void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorient, const vec3d* submodel_pnt, const matrix* submodel_orient, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient = nullptr, const vec3d* objpos = nullptr);
+
+
+// ------- end of submodel transformations -------
+
+// Given a polygon model index, find a list of moving submodels to be used for collision
+void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const object *objp);
 
 // Given a polygon model index, get a list of a model tree starting from that index
-void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn);
-
-// For a rotating submodel, find a point on the axis
-void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num);
-
-// Given a direction (pnt) that is in sub_model_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-extern void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient);
-extern void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient);
+void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
 
-void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm );
-void model_clear_submodel_instances( int model_instance_num );
-
 // Sets rotating submodel turn info to that stored in model
-void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel);
-
-// Clears all the values in a particular instance to their defaults.
-extern void model_clear_instance_info(submodel_instance_info * sii);
+extern void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags = NULL);
-extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
+extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_num);
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
+void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
-void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
-
-// Fills in an array with points from a model.  Only gets up to max_num verts.
-// Returns number of verts found
-extern int submodel_get_points(int model_num, int submodel_num, int max_num, vec3d **nts);
+void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr, float width = 0.0f);
 
 // Gets two random points on the surface of a submodel
-extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
-extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2);
+extern vec3d submodel_get_random_point(int model_num, int submodel_num, int seed = -1);
+
+// gets the average position of the mesh at a particular z slice, approximately
+void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
+// generates a random position more or less inside-ish a mesh at a particular z slice
+void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
+  
+extern int model_find_submodel_index(int modelnum, const char *name);
+extern int model_find_submodel_index(const polymodel* pm, const char* name);
+
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
 extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
-extern int model_find_dock_name_index(int modelnum, char *name);
+extern int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start_at = 0);
+extern int model_find_dock_name_index(int modelnum, const char* name);
+extern int model_find_dock_name_index(const polymodel* pm, const char* name);
 
 // returns the actual name of a docking point on a model, needed by Fred.
 char *model_get_dock_name(int modelnum, int index);
@@ -1012,17 +1242,8 @@ int model_get_dock_types(int modelnum);
 // returns index in [0, MAX_SHIP_BAY_PATHS)
 int model_find_bay_path(int modelnum, char *bay_path_name);
 
-// Returns number of verts in a submodel;
-int submodel_get_num_verts(int model_num, int submodel_num);
-
 // Returns number of polygons in a submodel;
 int submodel_get_num_polys(int model_num, int submodel_num);
-
-// Given a vector that is in sub_model_num's frame of
-// reference, and given the object's orient and position,
-// return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient);
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient);
 
 
 // This is the interface to model_check_collision.  Rather than passing all these
@@ -1030,61 +1251,39 @@ void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_
 // the input values and call model_check_collision
 typedef struct mc_info {
 	// Input values
-	int		model_instance_num;
-	int		model_num;			// What model to check
-	int		submodel_num;		// What submodel to check if MC_SUBMODEL is set
-	matrix	*orient;				// The orient of the model
-	vec3d	*pos;					// The pos of the model in world coordinates
-	vec3d	*p0;					// The starting point of the ray (sphere) to check
-	vec3d	*p1;					// The ending point of the ray (sphere) to check
-	int		flags;				// Flags that the model_collide code looks at.  See MC_??? defines
-	float		radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
-	int		lod;				// Which detail level of the submodel to check instead
-	
+	int     model_instance_num = -1;
+	int     model_num = -1;             // What model to check
+	int     submodel_num = -1;          // What submodel to check if MC_SUBMODEL is set
+	const matrix  *orient = nullptr;        // The orient of the model
+	const vec3d   *pos = nullptr;           // The pos of the model in world coordinates
+	const vec3d   *p0 = nullptr;            // The starting point of the ray (sphere) to check
+	const vec3d   *p1 = nullptr;            // The ending point of the ray (sphere) to check
+	int     flags = 0;                  // Flags that the model_collide code looks at.  See MC_??? defines
+	float   radius = 0;                 // If MC_CHECK_THICK is set, checks a sphere moving with the radius.
+	int     lod = 0;                    // Which detail level of the submodel to check instead
+
 	// Return values
-	int		num_hits;			// How many collisions were found
-	float		hit_dist;			// The distance from p0 to hitpoint
-	vec3d	hit_point;			// Where the collision occurred at in hit_submodel's coordinate system
-	vec3d	hit_point_world;	// Where the collision occurred at in world coordinates
-	int		hit_submodel;		// Which submodel got hit.
-	int		hit_bitmap;			// Which texture got hit.  -1 if not a textured poly
-	float		hit_u, hit_v;		// Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
-	int		shield_hit_tri;	// Which triangle on the shield got hit or -1 if none
-	vec3d	hit_normal;			//	Vector normal of polygon of collision.  (This is in submodel RF)
-	int		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
-	ubyte		*f_poly;				// pointer to flat poly where we intersected
-	ubyte		*t_poly;				// pointer to tmap poly where we intersected
-	bsp_collision_leaf *bsp_leaf;
+	int     num_hits = 0;               // How many collisions were found
+	float   hit_dist = 0.0f;            // The distance from p0 to hitpoint
+	vec3d   hit_point = vmd_zero_vector;        // Where the collision occurred at in hit_submodel's coordinate system
+	vec3d   hit_point_world = vmd_zero_vector;  // Where the collision occurred at in world coordinates
+	int     hit_submodel = -1;          // Which submodel got hit.
+	int     hit_bitmap = -1;            // Which texture got hit.  -1 if not a textured poly
+	float   hit_u = 0.0f;               // Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
+	float   hit_v = 0.0f;               // ditto
+	int     shield_hit_tri = -1;        // Which triangle on the shield got hit or -1 if none
+	vec3d   hit_normal = vmd_zero_vector;       //	Vector normal of polygon of collision (This is in submodel RF). CAN BE ZERO, if edge_hit is true
+	bool    edge_hit = false;           // Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.
+	ubyte   *f_poly = nullptr;          // pointer to flat poly where we intersected
+	ubyte   *t_poly = nullptr;          // pointer to tmap poly where we intersected
+	bsp_collision_leaf* bsp_leaf = nullptr;
 
-										// flags can be changed for the case of sphere check finds an edge hit
+	SCP_vector<vec3d> hit_points_all;   // used only with MC_COLLIDE_ALL, contains all collision points, in world space, 
+	                                    //     including those against backfacing polies, in arbitrary order
+	SCP_vector<int> hit_submodels_all;  // the corresponding hit submodels of the above points
+
+	                                    // NOTE: flags can be changed for the case of sphere check finds an edge hit
 } mc_info;
-
-inline void mc_info_init(mc_info *mc)
-{
-	mc->model_instance_num = -1;
-	mc->model_num = -1;
-	mc->submodel_num = -1;
-	mc->orient = nullptr;
-	mc->pos = nullptr;
-	mc->p0 = nullptr;
-	mc->p1 = nullptr;
-	mc->flags = 0;
-	mc->lod = 0;
-	mc->radius = 0;
-	mc->num_hits = 0; 
-	mc->hit_dist = 0;
-	mc->hit_point = vmd_zero_vector;
-	mc->hit_point_world = vmd_zero_vector;
-	mc->hit_submodel = -1;
-	mc->hit_bitmap = -1;
-	mc->hit_u = 0; mc->hit_v = 0;
-	mc->shield_hit_tri = -1;
-	mc->hit_normal = vmd_zero_vector;
-	mc->edge_hit = 0;
-	mc->f_poly = nullptr;
-	mc->t_poly = nullptr;
-	mc->bsp_leaf = nullptr;
-}
 
 
 //======== MODEL_COLLIDE ============
@@ -1102,6 +1301,7 @@ inline void mc_info_init(mc_info *mc)
 #define MC_SUBMODEL				(1<<6)			// If this is set, only check the submodel specified in mc->submodel_num. Use with MC_CHECK_MODEL
 #define MC_SUBMODEL_INSTANCE	(1<<7)			// Check submodel and its children (of a rotating submodel)
 #define MC_CHECK_INVISIBLE_FACES (1<<8)		// Check the invisible faces.
+#define MC_COLLIDE_ALL (1<<9)				// Returns ALL hits via hit_points_all, including backfacing polies hits
 
 
 /*
@@ -1158,58 +1358,6 @@ bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
 
-void model_collide_preprocess(matrix *orient, int model_instance_num, int detail = 0);
-
-// Sets the submodel instance data in a submodel
-// If show_damaged is true it shows only damaged submodels.
-// If it is false it shows only undamaged submodels.
-void model_show_damaged(int model_num, int show_damaged);
-
-
-//=========================== MODEL OCTANT STUFF ================================
-
-//  Models are now divided into 8 octants.    Shields too.
-//  This made the collision code faster.   Shield is 4x and ship faces
-//  are about 2x faster.
-
-//  Before, calling model_collide with flags=0 didn't check the shield
-//  but did check the model itself.   Setting the shield flags caused
-//  the shield to get check along with the ship.
-//  Now, you need to explicitly tell the model_collide code to check
-//  the model, so you can check the model or shield or both.
-
-//  If you need to check them both, do it in one call; this saves some
-//  time.    If checking the shield is sufficient for determining 
-//  something   (like if it is under the hud) then use just shield 
-//  check, it is at least 5x faster than checking the model itself.
-
-
-// Model octant ordering - this is a made up ordering, but it makes sense.
-// X Y Z  index description
-// - - -  0     left bottom rear
-// - - +  1     left bottom front
-// - + -  2     left top rear
-// - + +  3     left top front
-// + - -  4     right bottom rear
-// + - +  5     right bottom front
-// + + -  6     right top rear
-// + + +  7     right top front
-
-// Returns which octant point 'pnt' is closet to. This will always return 
-// a valid octant (0-7) since the point doesn't have to be in an octant.
-// If model_orient and/or model_pos are NULL, pnt is assumed to already 
-// be rotated into the model's local coordinates.  
-// If oct is not null, it will be filled in with a pointer to the octant
-// data.
-int model_which_octant_distant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
-
-// Returns which octant point 'pnt' is in. This might return
-// -1 if the point isn't in any octant.
-// If model_orient and/or model_pos are NULL, pnt is assumed to already 
-// be rotated into the model's local coordinates.
-// If oct is not null, it will be filled in with a pointer to the octant
-// data.  Or NULL if the pnt isn't in the octant.
-int model_which_octant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
 
 typedef struct mst_info {
 	int primary_bitmap;
@@ -1256,16 +1404,10 @@ void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
 //   Also fills in outpnt with the actual closest point.
-float model_find_closest_point(vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos);
+float model_find_closest_point(vec3d *outpnt, int model_num, int submodel_num, const matrix *orient, const vec3d *pos, const vec3d *eye_pos);
 
-// set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
-void model_set_insignia_bitmap(int bmap);
-
-// set model transparency for use with MR_ALL_XPARENT
-void model_set_alpha(float alpha);
-
-// set the forces bitmap
-void model_set_forced_texture(int bmap);
+// Like the above, but finds the closest two points to each other.
+float model_find_closest_points(vec3d *outpnt1, int model_num1, int submodel_num1, const matrix *orient1, const vec3d *pos1, vec3d *outpnt2, int model_num2, int submodel_num2, const matrix *orient2, const vec3d *pos2);
 
 // see if the given texture is used by the passed model. 0 if not used, 1 if used, -1 on error
 int model_find_texture(int model_num, int bitmap);
@@ -1282,14 +1424,12 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
+// given a model, without respect to usage state of the polymodel
+void model_page_out_textures(polymodel* pm, bool release = false, const SCP_set<int>& skipTextures = {}, const SCP_set<int>& skipGlowBanks = {});
 
-void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = -1.0f);
+void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name);
 
-void model_set_replacement_textures(int *replacement_textures);
-
-void model_do_look_at(int model_num); //Bobboau
-
-void model_do_intrinsic_rotations(int model_instance_num = -1);
+void model_do_intrinsic_motions(object *objp);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
@@ -1297,23 +1437,18 @@ bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_str
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
 
-void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num);
-
-void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags);
 
 void model_render_shields( polymodel * pm, uint flags );
 
-void model_draw_paths( int model_num, uint flags );
-
 void model_draw_paths_htl( int model_num, uint flags );
-
-void model_draw_bay_paths(int model_num);
 
 void model_draw_bay_paths_htl(int model_num);
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
-void model_allocate_interp_data(int n_verts = 0, int n_norms = 0);
+void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride);
+void model_allocate_interp_data(uint n_verts = 0, uint n_norms = 0);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);

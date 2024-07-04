@@ -31,6 +31,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "wing.h"
 #include "ship_select.h"
 #include "PlayerStartEditor.h"
@@ -57,6 +58,11 @@
 #include "species_defs/species_defs.h"
 #include "sound/audiostr.h"
 #include "mission/missiongrid.h"
+#include "calcrelativecoordsdlg.h"
+#include "musicplayerdlg.h"
+#include "volumetricsdlg.h"
+#include "customdatadlg.h"
+#include "customstringsdlg.h"
 
 #include "osapi/osapi.h"
 
@@ -97,26 +103,27 @@ int physics_rot = 20;
 int box_marking = 0;
 int last_mouse_x, last_mouse_y, mouse_dx, mouse_dy;
 int Cur_bitmap = -1;
-int Id_select_type_jump_node;
-int Id_select_type_start = 0;
-int Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_jump_node = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
+int Move_ships_when_undocking = 1;			// true by default
+int Highlight_selectable_subsys = 0;
+int Point_using_uvec = 0;
+
 vec3d original_pos, saved_cam_pos;
 matrix bitmap_matrix_backup, saved_cam_orient = { 0.0f };
 Marking_box	marking_box;
 object_orient_pos	rotation_backup[MAX_OBJECTS];
 
 // Goober5000 (currently, FS1 retail not implemented)
-int Format_fs2_open = FSO_FORMAT_STANDARD;
-int Format_fs2_retail = 0;
-int Format_fs1_retail = 0;
+int Mission_save_format = FSO_FORMAT_STANDARD;
 
 // used by error checker, but needed in more than just one function.
 char *names[MAX_OBJECTS], flags[MAX_OBJECTS];
 int obj_count = 0;
 int g_err = 0;
 
-int ID_SHOW_IFF[MAX_IFFS];
+SCP_vector<int> ID_SHOW_IFF;
 
 void view_universe(int just_marked = 0);
 void select_objects();
@@ -162,6 +169,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
+	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
 	ON_COMMAND(ID_SPEED2, OnSpeed2)
 	ON_COMMAND(ID_SPEED5, OnSpeed5)
@@ -196,6 +204,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SPEED50, OnUpdateSpeed50)
 	ON_COMMAND(ID_SPEED100, OnSpeed100)
 	ON_UPDATE_COMMAND_UI(ID_SPEED100, OnUpdateSpeed100)
+	ON_COMMAND(ID_SPEED500, OnSpeed500)
+	ON_UPDATE_COMMAND_UI(ID_SPEED500, OnUpdateSpeed500)
+	ON_COMMAND(ID_SPEED1000, OnSpeed1000)
+	ON_UPDATE_COMMAND_UI(ID_SPEED1000, OnUpdateSpeed1000)
 	ON_COMMAND(ID_SELECT, OnSelect)
 	ON_UPDATE_COMMAND_UI(ID_SELECT, OnUpdateSelect)
 	ON_COMMAND(ID_SELECT_AND_MOVE, OnSelectAndMove)
@@ -245,11 +257,19 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_MESSAGE, OnEditorsMessage)
 	ON_COMMAND(ID_EDITORS_STARFIELD, OnEditorsStarfield)
 	ON_COMMAND(ID_EDITORS_BG_BITMAPS, OnEditorsBgBitmaps)
+	ON_COMMAND(ID_EDITORS_VOLUMETRICS, OnEditorsVolumetrics)
 	ON_COMMAND(ID_EDITORS_REINFORCEMENT, OnEditorsReinforcement)
 	ON_COMMAND(ID_ERROR_CHECKER, OnErrorChecker)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
+	ON_COMMAND(ID_EDITORS_JUMPNODE, OnEditorsJumpnode)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
+	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
+	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
+	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
+	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -298,12 +318,15 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_LOOKAT_OBJ, OnLookatObj)
 	ON_UPDATE_COMMAND_UI(ID_LOOKAT_OBJ, OnUpdateLookatObj)
 	ON_COMMAND(ID_EDITORS_ADJUST_GRID, OnEditorsAdjustGrid)
+	ON_COMMAND(ID_CALC_RELATIVE_COORDS, OnCalcRelativeCoords)
+	ON_COMMAND(ID_MUSIC_PLAYER, OnMusicPlayer)
 	ON_COMMAND(ID_EDITORS_SHIELD_SYS, OnEditorsShieldSys)
 	ON_COMMAND(ID_LEVEL_OBJ, OnLevelObj)
 	ON_COMMAND(ID_ALIGN_OBJ, OnAlignObj)
 	ON_COMMAND(ID_CONTROL_OBJ, OnControlObj)
 	ON_COMMAND(ID_NEXT_OBJ, OnNextObj)
 	ON_COMMAND(ID_PREV_OBJ, OnPrevObj)
+	ON_COMMAND(ID_EDIT_CLONEMARKEDOBJECTS, OnEditCloneMarkedObjects)
 	ON_COMMAND(ID_EDIT_DELETE_WING, OnEditDeleteWing)
 	ON_COMMAND(ID_MARK_WING, OnMarkWing)
 	ON_UPDATE_COMMAND_UI(ID_CONTROL_OBJ, OnUpdateControlObj)
@@ -330,6 +353,12 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_RETAIL, OnUpdateFormatFs2Retail)
 	ON_COMMAND(ID_FORMAT_FS1_RETAIL, OnFormatFs1Retail)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
+	ON_COMMAND(ID_MISC_MOVESHIPSWHENUNDOCKING, OnMoveShipsWhenUndocking)
+	ON_UPDATE_COMMAND_UI(ID_MISC_MOVESHIPSWHENUNDOCKING, OnUpdateMoveShipsWhenUndocking)
+	ON_COMMAND(ID_MISC_POINTUSINGUVEC, OnPointUsingUvec)
+	ON_UPDATE_COMMAND_UI(ID_MISC_POINTUSINGUVEC, OnUpdatePointUsingUvec)
+	ON_COMMAND(ID_HIGHLIGHT_SUBSYS, OnHighlightSubsys)
+	ON_UPDATE_COMMAND_UI(ID_HIGHLIGHT_SUBSYS, OnUpdateHighlightSubsys)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
 	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
 	ON_COMMAND(ID_EDITORS_FICTION, OnEditorsFiction)
@@ -363,16 +392,16 @@ CFREDView::CFREDView()
 	//m_ShowWaypoints = TRUE;
 
 	// this is stupid
-	ID_SHOW_IFF[0] = ID_SHOW_IFF_0;
-	ID_SHOW_IFF[1] = ID_SHOW_IFF_1;
-	ID_SHOW_IFF[2] = ID_SHOW_IFF_2;
-	ID_SHOW_IFF[3] = ID_SHOW_IFF_3;
-	ID_SHOW_IFF[4] = ID_SHOW_IFF_4;
-	ID_SHOW_IFF[5] = ID_SHOW_IFF_5;
-	ID_SHOW_IFF[6] = ID_SHOW_IFF_6;
-	ID_SHOW_IFF[7] = ID_SHOW_IFF_7;
-	ID_SHOW_IFF[8] = ID_SHOW_IFF_8;
-	ID_SHOW_IFF[9] = ID_SHOW_IFF_9;
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_0);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_1);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_2);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_3);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_4);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_5);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_6);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_7);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_8);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_9);
 	
 	m_pGDlg = new CGrid(this);
 
@@ -482,6 +511,88 @@ void CFREDView::OnUpdateViewWaypoints(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Show_waypoints);
 }
 
+int duplicate_marked_objects()
+{
+	int z, cobj, flag;
+	object *objp, *ptr;
+
+	cobj = Duped_wing = -1;
+	flag = 0;
+
+	int duping_waypoint_list = -1;
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))	{
+		Assert(objp->type != OBJ_NONE);
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				z = Ships[objp->instance].wingnum;
+				if (!flag)
+					Duped_wing = z;
+				else if (Duped_wing != z)
+					Duped_wing = -1;
+
+			} else {
+				Duped_wing = -1;
+			}
+
+			// make sure we dup as many waypoint lists as we have
+			if (objp->type == OBJ_WAYPOINT) {
+				int this_list = calc_waypoint_list_index(objp->instance);
+				if (duping_waypoint_list != this_list) {
+					dup_object(nullptr);  // reset waypoint list
+					duping_waypoint_list = this_list;
+				}
+			}
+
+			flag = 1;
+			z = dup_object(objp);
+			if (z == -1) {
+				cobj = -1;
+				break;
+			}
+
+			if (cur_object_index == OBJ_INDEX(objp) )
+				cobj = z;
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	obj_merge_created_list();
+
+	// I think this code is to catch the case where an object wasn't created for whatever reason;
+	// in this case just delete the remaining objects we just created
+	if (cobj == -1) {
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list))	{
+			ptr = GET_NEXT(objp);
+			if (objp->flags [Object::Object_Flags::Temp_marked])
+				delete_object(objp);
+
+			objp = ptr;
+		}
+
+		button_down = 0;
+		return -1;
+	}
+
+	unmark_all();
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))	{
+		if (objp->flags [Object::Object_Flags::Temp_marked]) {
+            objp->flags.remove(Object::Object_Flags::Temp_marked);
+			mark_object(OBJ_INDEX(objp));
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	set_cur_object_index(cobj);
+	return 0;
+}
+
 #define MAX_MOVE_DISTANCE 25.0f
 
 //	If cur_object_index references a valid object, drag it from its current
@@ -490,14 +601,14 @@ void CFREDView::OnUpdateViewWaypoints(CCmdUI* pCmdUI)
 //	Return value: 0/1 = didn't/did move object all the way to goal.
 int drag_objects()
 {
-	int z, cobj, flag, rval = 1;
+	int rval = 1;
 	float r;
 	float	distance_moved = 0.0f;
 	vec3d cursor_dir, int_pnt;
 	vec3d movement_vector;
 	vec3d obj;
 	vec3d vec1, vec2;
-	object *objp, *ptr;
+	object *objp;
 	// starfield_bitmaps *bmp;
 
 	/*
@@ -519,72 +630,17 @@ int drag_objects()
 	}
 	*/
 
-	if (!query_valid_object())
+	// Do not move ships that we are currently centered around (Lookat_mode). The vector math will start going haywire and return NAN
+	if (!query_valid_object() || Lookat_mode)
 		return -1;
 
 	if ((Dup_drag == 1) && (Briefing_dialog))
 		Dup_drag = 0;
 
 	if (Dup_drag == 1) {
-		dup_object(NULL);  // reset waypoint list
-		cobj = Duped_wing = -1;
-		flag = 0;
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list))	{
-			Assert(objp->type != OBJ_NONE);
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-					z = Ships[objp->instance].wingnum;
-					if (!flag)
-						Duped_wing = z;
-					else if (Duped_wing != z)
-						Duped_wing = -1;
-
-				} else
-					Duped_wing = -1;
-
-				flag = 1;
-				z = dup_object(objp);
-				if (z == -1) {
-					cobj = -1;
-					break;
-				}
-
-				if (cur_object_index == OBJ_INDEX(objp) )
-					cobj = z;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		obj_merge_created_list();
-		if (cobj == -1) {
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list))	{
-				ptr = GET_NEXT(objp);
-				if (objp->flags [Object::Object_Flags::Temp_marked])
-					delete_object(objp);
-
-				objp = ptr;
-			}
-
-			button_down = 0;
+		if (duplicate_marked_objects() < 0)
 			return -1;
-		}
 
-		unmark_all();
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list))	{
-			if (objp->flags [Object::Object_Flags::Temp_marked]) {
-                objp->flags.remove(Object::Object_Flags::Temp_marked);
-				mark_object(OBJ_INDEX(objp));
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		set_cur_object_index(cobj);
 		if (Duped_wing != -1)
 			Dup_drag = DUP_DRAG_OF_WING;  // indication for later that we duped objects in a wing
 		else
@@ -1115,13 +1171,9 @@ LRESULT CFREDView::OnGoodbye(WPARAM wParam, LPARAM lParam)
 
 void CFREDView::OnEditorsShips() 
 {
-	int adjust = 0;
-
 	Assert(Ship_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
-	if (!theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, adjust))
+	if (!theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0))
 		return;
 
 	Ship_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
@@ -1399,7 +1451,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
 				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
-					id = ID_EDITORS_WAYPOINT;
+					id = ID_EDITORS_JUMPNODE;
 					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 						if(jnp->GetSCPObject() == &Objects[objnum])
 							break;
@@ -1430,26 +1482,33 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 	} else {
 		if (menu.LoadMenu(IDR_MENU_EDIT_POPUP)) {
-			int i;
+			size_t i;
 			CMenu* pPopup = menu.GetSubMenu(0);
 			CMenu shipPopup, player_submenu;
 			CMenu *species_submenu = new CMenu[Species_info.size()];
 			ASSERT(pPopup != NULL);
 
 			// create a popup menu based on the ship models read in ship.cpp.
+			// note: the offsets from SHIP_TYPES must correspond to the indexes in the ship type dropdown
+
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
-			for (i=0; i<(int)Species_info.size(); i++) {
+
+			for (i=0; i<Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 					(UINT) species_submenu[i].m_hMenu, Species_info[i].species_name);
 			}
 
-			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+			i = 0;
+			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+				if (it->flags[Ship::Info_Flags::No_fred])
+					continue;	// because the dropdown skips "no_fred", we need to skip it here too
 				species_submenu[it->species].AppendMenu(MF_STRING |
 					MF_ENABLED, SHIP_TYPES + i, it->name);
+				i++;
+			}
 
 			pPopup->AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 				(UINT) shipPopup.m_hMenu, "New Object Type");
@@ -1515,79 +1574,6 @@ CFREDView *CFREDView::GetView()
   return (CFREDView *) pView;
 }
 
-/*void CFREDView::OnShipType0() 
-{
-	cur_model_index = 1;
-}
-
-void CFREDView::OnShipType1() 
-{
-	cur_model_index = 2;
-}
-
-void CFREDView::OnShipType2() 
-{
-	cur_model_index = 3;
-}
-
-void CFREDView::OnShipType3() 
-{
-	cur_model_index = 4;
-}
-
-void CFREDView::OnShipType4() 
-{
-	cur_model_index = 5;
-}
-
-void CFREDView::OnShipType5() 
-{
-	cur_model_index = 6;
-}
-
-void CFREDView::OnUpdateShipType1(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 2);
-}
-
-void CFREDView::OnUpdateShipType2(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 3);
-}
-
-void CFREDView::OnUpdateShipType3(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 4);
-}
-
-void CFREDView::OnUpdateShipType4(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 5);
-}
-
-void CFREDView::OnUpdateShipType5(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 6);
-}
-
-
-void CFREDView::OnUpdateShipType0(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 1);
-	
-}
-
-void CFREDView::OnEditShipType6() 
-{
-	cur_model_index = 7;
-	
-}
-
-void CFREDView::OnUpdateEditShipType6(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 7);
-} */
-
 
 // following code added by MWA 09/04/96
 // Implements messages for popup menu built on the fly.
@@ -1596,17 +1582,22 @@ void CFREDView::OnUpdateEditShipType6(CCmdUI* pCmdUI)
 // the ships.  Shouldn't conflict with any other ID_* thingys.
 BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo) 
 {
-	int id = (int) nID;
-
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + static_cast<int>(Ship_info.size()) + 3)) {
+		if ((nID >= SHIP_TYPES) && (nID < SHIP_TYPES + ship_type_combo_box_size + 2)) {	// the 2 are waypoint and jump node
+			int idx = static_cast<int>(nID - SHIP_TYPES);
 			if (nCode == CN_COMMAND) {
-				cur_model_index = id - SHIP_TYPES;
-				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+				cur_ship_type_combo_index = idx;
+				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
+
+				// now that we've updated the combo box, try to actually create something
+				// see also CFREDView::OnLButtonDown
+				int waypoint_instance = cur_waypoint ? Objects[cur_waypoint->get_objnum()].instance : -1;
+				Selection_lock = 0;
+				on_object = create_object_on_grid(waypoint_instance);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_model_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index == idx);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -1660,6 +1651,13 @@ void CFREDView::OnEditorsGoals()
 	dlg.DoModal();
 }
 
+void CFREDView::OnEditorsCutscenes()
+{
+	CMissionCutscenesDlg dlg;
+
+	dlg.DoModal();
+}
+
 void CFREDView::OnSpeed1() 
 {
 	physics_speed = 1;
@@ -1708,7 +1706,19 @@ void CFREDView::OnSpeed100()
 	set_physics_controls();
 }
 
-void CFREDView::OnRot1() 
+void CFREDView::OnSpeed500()
+{
+	physics_speed = 500;
+	set_physics_controls();
+}
+
+void CFREDView::OnSpeed1000()
+{
+	physics_speed = 1000;
+	set_physics_controls();
+}
+
+void CFREDView::OnRot1()
 {
 	physics_rot = 2;
 	set_physics_controls();
@@ -1778,7 +1788,17 @@ void CFREDView::OnUpdateSpeed100(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(physics_speed == 100);
 }
 
-void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI) 
+void CFREDView::OnUpdateSpeed500(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 500);
+}
+
+void CFREDView::OnUpdateSpeed1000(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 1000);
+}
+
+void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(physics_rot == 2);
 }
@@ -1970,8 +1990,11 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 				break;
 
 			case OBJ_WAYPOINT:
-			case OBJ_JUMP_NODE:
 				OnEditorsWaypoint();
+				break;
+
+			case OBJ_JUMP_NODE:
+				OnEditorsJumpnode();
 				break;
 		}
 
@@ -2294,13 +2317,9 @@ void CFREDView::OnUpdateShowHorizon(CCmdUI* pCmdUI)
 
 void CFREDView::OnEditorsWing() 
 {
-	int adjust = 0;
-
 	Assert(Wing_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
-	if (!theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, adjust))
+	if (!theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0))
 		return;
 
 	Wing_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
@@ -2382,6 +2401,13 @@ void CFREDView::OnEditorsBgBitmaps()
 	Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
 }
 
+void CFREDView::OnEditorsVolumetrics()
+{
+	volumetrics_dlg dlg;
+
+	dlg.DoModal();
+}
+
 void CFREDView::OnEditorsReinforcement()
 {
 	reinforcement_editor_dlg dlg;
@@ -2410,7 +2436,6 @@ int CFREDView::global_error_check()
 	int bs, i, j, n, s, t, z, ai, count, ship, wing, obj, team, point, multi;
 	object *ptr;
 	brief_stage *sp;
-	int starting_orders;
 
 	g_err = multi = 0;
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
@@ -2433,7 +2458,7 @@ int CFREDView::global_error_check()
 			}
 
 			z = Ships[i].ship_info_index;
-			if ((z < 0) || (z >= static_cast<int>(Ship_info.size()))){
+			if ((z < 0) || (z >= ship_info_size())){
 				return internal_error("A ship has an illegal class");
 			}
 
@@ -2603,7 +2628,7 @@ int CFREDView::global_error_check()
 				return -1;
 			}
 
-			if (Ships[i].arrival_location != ARRIVE_AT_LOCATION) {
+			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION) {
 				if (Ships[i].arrival_anchor < 0){
 					if (error("Ship \"%s\" requires a valid arrival target", Ships[i].ship_name)){
 						return 1;
@@ -2611,7 +2636,7 @@ int CFREDView::global_error_check()
 				}
 			}
 
-			if (Ships[i].departure_location != DEPART_AT_LOCATION) {
+			if (Ships[i].departure_location != DepartureLocation::AT_LOCATION) {
 				if (Ships[i].departure_anchor < 0){
 					if (error("Ship \"%s\" requires a valid departure target", Ships[i].ship_name)){
 						return 1;
@@ -2808,13 +2833,13 @@ int CFREDView::global_error_check()
 				return -1;
 			}
 
-			if (Wings[i].arrival_location != ARRIVE_AT_LOCATION) {
+			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION) {
 				if (Wings[i].arrival_anchor < 0)
 					if (error("Wing \"%s\" requires a valid arrival target", Wings[i].name))
 						return 1;
 			}
 
-			if (Wings[i].departure_location != DEPART_AT_LOCATION) {
+			if (Wings[i].departure_location != DepartureLocation::AT_LOCATION) {
 				if (Wings[i].departure_anchor < 0)
 					if (error("Wing \"%s\" requires a valid departure target", Wings[i].name))
 						return 1;
@@ -2836,18 +2861,17 @@ int CFREDView::global_error_check()
 		return internal_error("Num_wings is incorrect");
 	}
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+	for (const auto &ii: Waypoint_lists) {
 		for (z=0; z<obj_count; z++){
 			if (names[z]){
-				if (!stricmp(names[z], ii->get_name())){
+				if (!stricmp(names[z], ii.get_name())){
 					return internal_error("Waypoint path name is also used by an object (%s)", names[z]);
 				}
 			}
 		}
 
-		for (j = 0; (uint) j < ii->get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
+		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
+			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
 			for (z=0; z<obj_count; z++){
 				if (names[z]){
 					if (!stricmp(names[z], buf)){
@@ -2919,14 +2943,14 @@ int CFREDView::global_error_check()
 		return i;
 	}
 
-	for (i=0; i<Num_mission_events; i++){
-		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name)){
+	for (i=0; i<(int)Mission_events.size(); i++){
+		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name.c_str())){
 			return -1;
 		}
 	}
 
-	for (i=0; i<Num_goals; i++){
-		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name)){
+	for (i=0; i<(int)Mission_goals.size(); i++){
+		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name.c_str())){
 			return -1;
 		}
 	}
@@ -2957,9 +2981,11 @@ int CFREDView::global_error_check()
 
 	// for all wings, be sure that the orders accepted for all ships are the same for all ships
 	// in the wing
-	starting_orders = -1;
+	//std::set<size_t> starting_orders { std::numeric_limits<size_t>::max() };
 	for (i=0; i<MAX_WINGS; i++) {
-		int default_orders, starting_wing;
+		int starting_wing;
+		std::set<size_t> default_orders;
+		int default_orders_idx = -1;
 
 		if ( !Wings[i].wave_count ){
 			continue;
@@ -2971,19 +2997,26 @@ int CFREDView::global_error_check()
 		// first, be sure this isn't a reinforcement wing.
 		if ( starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) ) {
 			if ( error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.", Wings[i].name) ){
-// Goober5000				return 1;
+				return 1;
 			}
 		}
-
-		default_orders = 0;
+		
 		for ( j = 0; j < Wings[i].wave_count; j++ ) {
-			int orders;
+			std::set<size_t> orders;
+
+			// exclude players from the check
+			if (Objects[Ships[Wings[i].ship_index[j]].objnum].type == OBJ_START) {
+				continue;
+			}
 
 			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
-			if ( j == 0 ) {
+
+			if ( default_orders_idx < 0 ) {
+				default_orders_idx = j;
 				default_orders = orders;
+
 			} else if ( default_orders != orders ) {
-				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[0]].ship_name ) ){
+				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[default_orders_idx]].ship_name)) {
 					return 1;
 				}
 			}
@@ -2997,7 +3030,7 @@ int CFREDView::global_error_check()
 			} else {
 				if ( starting_orders != default_orders ) {
 					if ( error("Player starting wing %s has orders which don't match other starting wings\n", Wings[i].name) ){
-// Goober5000						return 1;
+						return 1;
 					}
 				}
 			}
@@ -3010,6 +3043,15 @@ int CFREDView::global_error_check()
 	if (Num_jump_nodes < 0){
 		return internal_error("Jump node count is illegal");
 	}*/
+
+	// do error checking for asteroid targets
+	for (const auto& name : Asteroid_field.target_names) {
+		if (ship_name_lookup(name.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", name.c_str())) {
+				return 1;
+			}
+		}
+	}
 
 	fred_check_message_personas();
 
@@ -3250,12 +3292,12 @@ int CFREDView::global_error_check_player_wings(int multi)
 			{
 				if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) 
 				{
-					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, tvt_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, static_cast<LPCTSTR>(tvt_wing_list)))
 						return 1;
 				}
 				else
 				{
-					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, starting_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, static_cast<LPCTSTR>(starting_wing_list)))
 						return 1;
 				}
 			}
@@ -3325,46 +3367,64 @@ int CFREDView::internal_error(const char *msg, ...)
 	return -1;
 }
 
-int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
+int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string location_buf, sexp_buf, error_buf, bad_node_str, issue_msg;
 	int err = 0, z, faulty_node;
 	va_list args;
 
-	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	va_start(args, location);
+	vsprintf(location_buf, location, args);
 	va_end(args);
 
 	if (sexp == -1)
 		return 0;
 
 	z = check_sexp_syntax(sexp, type, 1, &faulty_node);
-	if (!z)
-		return 0;
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
-	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	if (z < 0 && z > -100)
-		err = 1;
+		sprintf(error_buf, "Error in %s: %s\n\n%s\n\n(Bad node appears to be: %s)", location_buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
 
-	if (err)
-		return internal_error(error_buf.c_str());
+		if (z < 0 && z > -100)
+			err = 1;
 
-	if (error(error_buf.c_str()))
-		return 1;
+		if (err)
+			return internal_error("%s", error_buf.c_str());
+
+		if (error("%s", error_buf.c_str()))
+			return 1;
+	}
+
+	if (Error_checker_checks_potential_issues)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
+
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
+
+		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
+
+		if (Fred_main_wnd->MessageBox(error_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+			return 1;
+	}
 
 	return 0;
 }
 
 void CFREDView::OnEditorsWaypoint() 
 {
-	int adjust = 0;
-
 	Assert(Waypoint_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
 	if (!theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog))
 		return;
@@ -3372,6 +3432,17 @@ void CFREDView::OnEditorsWaypoint()
 	Waypoint_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
 		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	Waypoint_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
+void CFREDView::OnEditorsJumpnode()
+{
+	Assert(Jumpnode_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Jumpnode_wnd_data, &Jumpnode_editor_dialog))
+		return;
+
+	Jumpnode_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Jumpnode_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
 char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
@@ -3411,6 +3482,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_UNDOCK:
 			case AI_GOAL_KEEP_SAFE_DISTANCE:
 			case AI_GOAL_PLAY_DEAD:
+			case AI_GOAL_PLAY_DEAD_PERSISTENT:
 			case AI_GOAL_WARP:
 				flag = 0;
 				break;
@@ -3429,7 +3501,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_IGNORE:
@@ -3542,7 +3616,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 		switch (goals[i].ai_mode) {
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 				Assert(flag == 2 && inst >= 0);
-				if (ship_get_subsys_index(&Ships[inst], goals[i].docker.name, 1) < 0)
+				if (ship_find_subsys(&Ships[inst], goals[i].docker.name) < 0)
 					return "Unknown subsystem type";
 
 				break;
@@ -3605,7 +3679,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE_WING:
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				if (team == team2) {
 					if (ship >= 0)
 						return "Ship assigned to attack same team";
@@ -3648,7 +3724,7 @@ void fred_check_message_personas()
 			continue;
 
 		// now look for the send-message opeator
-		op = get_operator_const( Sexp_nodes[i].text );
+		op = get_operator_const( i );
 		if ( op != OP_SEND_MESSAGE )
 			continue;
 
@@ -3726,16 +3802,52 @@ void CFREDView::OnUpdateViewOutlines(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Show_outlines);
 }
 
+void CFREDView::OnViewOutlinesOnSelected() 
+{
+	Draw_outlines_on_selected_ships = !Draw_outlines_on_selected_ships;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
+}
+
+void CFREDView::OnViewOutlineAtWarpin()
+{
+	Draw_outline_at_warpin_position = !Draw_outline_at_warpin_position;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
+}
+
+void CFREDView::OnErrorCheckerChecksPotentialIssues()
+{
+	Error_checker_checks_potential_issues = !Error_checker_checks_potential_issues;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
+}
+
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
 {
 	int z;
 	CWnd *bar;
 
-	z = m_new_ship_type_combo_box.GetCurSelNEW();
+	z = m_new_ship_type_combo_box.GetCurSel();
 	if (z == CB_ERR)
-		m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+		m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 	else
-		cur_model_index = z;
+		cur_ship_type_combo_index = z;
 
 	bar = GetDlgItem(pCmdUI->m_nID);
 	if (!bar) {
@@ -3776,12 +3888,12 @@ void CFREDView::OnRunFreeSpace()
 		return;
 
 	si.cb = sizeof(si);
-	si.lpReserved = NULL;
-	si.lpDesktop = NULL;
-	si.lpTitle = NULL;
+	si.lpReserved = nullptr;
+	si.lpDesktop = nullptr;
+	si.lpTitle = nullptr;
 	si.dwFlags = 0;
 	si.cbReserved2 = 0;
-	si.lpReserved2 = NULL;
+	si.lpReserved2 = nullptr;
 
 	// get the filename of the app and replace FRED2_Open with FS2_Open
 	std::string processed_name(AfxGetApp()->m_pszExeName); 
@@ -3798,20 +3910,20 @@ void CFREDView::OnRunFreeSpace()
 		processed_name.append(".exe");
 
 		//try to start FS2_open
-		r = CreateProcess(processed_name.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess(processed_name.c_str(), nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 		if (r) {
 			return;
 		}
 	}
 
-	r = CreateProcess("start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+	r = CreateProcess("start_fs2.bat", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 
 	if (!r) {
-		r = CreateProcess("fs2_open.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess("fs2_open.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 	}
 
 	if (!r) {
-		r = CreateProcess("fs2_open_r.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess("fs2_open_r.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 	}
 
 	if (!r) {
@@ -4017,16 +4129,6 @@ void CFREDView::OnShowSexpHelp()
 	Show_sexp_help = !Show_sexp_help;
 	Ship_editor_dialog.show_hide_sexp_help();
 	Wing_editor_dialog.show_hide_sexp_help();
-
-	if (Event_editor_dlg) {
-		Event_editor_dlg->GetWindowRect(rect);
-		if (Show_sexp_help)
-			rect.bottom += SEXP_HELP_BOX_SIZE;
-		else
-			rect.bottom -= SEXP_HELP_BOX_SIZE;
-
-		Event_editor_dlg->MoveWindow(rect);
-	}
 }
 
 void CFREDView::OnUpdateShowSexpHelp(CCmdUI* pCmdUI) 
@@ -4109,6 +4211,24 @@ void CFREDView::OnEditorsAdjustGrid()
 
 	dlg.DoModal();
 	Update_window = 1;
+}
+
+void CFREDView::OnCalcRelativeCoords()
+{
+	calc_relative_coords_dlg dlg;
+
+	dlg.DoModal();
+}
+
+void CFREDView::OnMusicPlayer()
+{
+	Assertion(Music_player_dialog.GetSafeHwnd(), "Unable to create music player window!");
+
+	if (!theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog))
+		return;
+
+	Music_player_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Music_player_dialog.ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnEditorsShieldSys() 
@@ -4262,6 +4382,16 @@ void CFREDView::OnEditDelete()
 	Update_window = 2;  // For some strange reason, need to redraw twice for it to take.
 }
 
+void CFREDView::OnEditCloneMarkedObjects()
+{
+	if (!button_down && Marked) {
+		duplicate_marked_objects();
+		FREDDoc_ptr->autosave("clone marked");
+	}
+
+	Update_window = 1;
+}
+
 void CFREDView::OnEditDeleteWing() 
 {
 	if (!button_down && (cur_wing >= 0)) {
@@ -4328,7 +4458,7 @@ void CFREDView::OnUpdateDisableUndo(CCmdUI* pCmdUI)
 
 void CFREDView::OnUpdateCmdBrief(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(!(The_mission.game_type & MISSION_TYPE_MULTI));
+	pCmdUI->Enable(true);
 }
 
 int get_visible_sub_system_count(ship *shipp)
@@ -4502,6 +4632,40 @@ void CFREDView::OnUpdateShowDockPoints(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Show_dock_points);
 }
 
+void CFREDView::OnMoveShipsWhenUndocking()
+{
+	Move_ships_when_undocking = !Move_ships_when_undocking;
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Move_ships_when_undocking);
+}
+
+void CFREDView::OnPointUsingUvec()
+{
+	Point_using_uvec = !Point_using_uvec;
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdatePointUsingUvec(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Point_using_uvec);
+}
+
+void CFREDView::OnHighlightSubsys()
+{
+	Highlight_selectable_subsys = !Highlight_selectable_subsys;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateHighlightSubsys(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Highlight_selectable_subsys);
+}
+
 void CFREDView::OnDumpStats()
 {
 	DumpStats dlg;
@@ -4511,9 +4675,7 @@ void CFREDView::OnDumpStats()
 
 void CFREDView::OnFormatFs2Open() 
 {
-	Format_fs2_open = FSO_FORMAT_STANDARD;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_STANDARD;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4521,14 +4683,12 @@ void CFREDView::OnFormatFs2Open()
 
 void CFREDView::OnUpdateFormatFs2Open(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_STANDARD);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_STANDARD);
 }
 
 void CFREDView::OnFormatFs2OpenComp() 
 {
-	Format_fs2_open = FSO_FORMAT_COMPATIBILITY_MODE;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_COMPATIBILITY_MODE;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4536,14 +4696,12 @@ void CFREDView::OnFormatFs2OpenComp()
 
 void CFREDView::OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE);
 }
 
 void CFREDView::OnFormatFs2Retail() 
 {
-	Format_fs2_open = FSO_FORMAT_RETAIL;
-	Format_fs2_retail = 1;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_RETAIL;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4551,14 +4709,12 @@ void CFREDView::OnFormatFs2Retail()
 
 void CFREDView::OnUpdateFormatFs2Retail(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_retail);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_RETAIL);
 }
 
 void CFREDView::OnFormatFs1Retail() 
 {
-	Format_fs2_open = FSO_FORMAT_RETAIL;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 1;
+	Mission_save_format = FSO_FORMAT_RETAIL;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4566,7 +4722,7 @@ void CFREDView::OnFormatFs1Retail()
 
 void CFREDView::OnUpdateFormatFs1Retail(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs1_retail);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_RETAIL);
 }
 
 void CFREDView::OnEditorsSetGlobalShipFlags() 
@@ -4594,7 +4750,6 @@ void CFREDView::OnDestroy()
 {
 	audiostream_close();
 	snd_close();
- 	gr_close();
 
 	CView::OnDestroy();
 }

@@ -91,7 +91,7 @@ void cscrew_maybe_fire_missile(int shipnum)
 	}
 
 	weapon_info_index = swp->secondary_bank_weapons[sp->corkscrew_missile_bank];
-	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
+	Assert( weapon_info_index >= 0 && weapon_info_index < weapon_info_size());
 
 	// if current secondary bank is not a corkscrew missile, return
 	if ( !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) ) {
@@ -145,6 +145,13 @@ int cscrew_create(object *obj)
 	// get the "center" pointing vector
 	vec3d neg;
 	neg = obj->orient.vec.uvec;
+
+	if (wip->cs_random_angle) {
+		vm_rot_point_around_line(&neg, &neg, frand_range(0.0f, PI2), &vmd_zero_vector, &obj->orient.vec.fvec);
+	} else {
+		vm_rot_point_around_line(&neg, &neg, wip->cs_angle, &vmd_zero_vector, &obj->orient.vec.fvec);
+	}
+
 	if(Corkscrew_down_first){
 		vm_vec_negate(&neg);
 	}
@@ -246,9 +253,9 @@ void cscrew_process_post(object *objp)
 	vm_vec_sub(&ci->cen_p, &cen, &objp->pos);
 
 	// do trail stuff here
-	if ( wp->trail_ptr != NULL )	{
+	if ( wp->trail_ptr != nullptr && wp->lssm_stage != 3)	{
 		if (trail_stamp_elapsed(wp->trail_ptr)) {
-			trail_add_segment( wp->trail_ptr, &objp->pos );
+			trail_add_segment( wp->trail_ptr, &objp->pos, &ci->real_orient);
 			trail_set_stamp(wp->trail_ptr);
 		} else {
 			trail_set_segment( wp->trail_ptr, &objp->pos );

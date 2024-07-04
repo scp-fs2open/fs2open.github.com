@@ -17,11 +17,12 @@
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 
 #include <string>
 #include <stdio.h>
 
-#define BACKUP_DEPTH	9
+struct sexp_container;
 
 /**
  * @class CFred_mission_save
@@ -37,7 +38,7 @@ public:
 	/**
 	 * @brief Default constructor
 	 */
-	CFred_mission_save() : err(0), raw_ptr(Mission_text_raw) {}
+	CFred_mission_save() : err(0), raw_ptr(nullptr), fp(nullptr) {}
 
 	/**
 	 * @brief Move past the comment without copying it to the output file. Used for special FSO comment tags
@@ -147,7 +148,7 @@ public:
 	 *
 	 * @see save_mission_internal()
 	 */
-	int save_campaign_file(char *pathname);
+	int save_campaign_file(const char *pathname);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname
@@ -161,7 +162,7 @@ public:
 	 *
 	 * @see save_mission_internal()
 	 */
-	int save_mission_file(char *pathname);
+	int save_mission_file(const char *pathname);
 
 	/**
 	 * @brief Save the reinforcements to file
@@ -383,6 +384,21 @@ private:
 	int save_music();
 
 	/**
+	 * @brief Saves custom entries to file
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 */
+	int save_custom_data();
+
+	/**
+	 * Helper function for save_objects().
+	 */
+	int save_warp_params(WarpDirection direction, ship *shipp);
+
+	/**
 	 * @brief Saves object entries to a file
 	 *
 	 * @details Returns the value of CFred_mission_save::err, which is:
@@ -434,6 +450,18 @@ private:
 	int save_variables();
 
 	/**
+	* @brief Saves sexp containers to a file
+	*
+	* @details Returns the value of CFred_mission_save::err, which is:
+	*
+	* @returns 0 for no error, or
+	* @returns A negative value if an error occurred
+	*/
+	int save_containers();
+	// helper function for non-type options, called only by save_containers()
+	void save_container_options(const sexp_container &container);
+
+	/**
 	 * @brief Saves the given vector to file
 	 *
 	 * @param[in] v Vector to save
@@ -443,7 +471,7 @@ private:
 	 * @returns 0 for no error, or
 	 * @returns A negative value if an error occurred
 	 */
-	int save_vector(vec3d &v);
+	int save_vector(const vec3d &v);
 
 	/**
 	 * @brief Saves waypoints to file
@@ -465,7 +493,7 @@ private:
 	 * @returns 0 for no error, or
 	 * @returns A negative value if an error occurred
 	 */
-	int save_waypoint_list(waypoint_list *w);
+	int save_waypoint_list(const waypoint_list *wp_list);
 
 	/**
 	 * @brief Saves the wing entries to file

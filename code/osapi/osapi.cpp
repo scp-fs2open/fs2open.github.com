@@ -5,22 +5,27 @@
  * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/
+ */
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <algorithm>
-
-#include "globalincs/pstypes.h"
-#include "gamesequence/gamesequence.h"
 #include "freespace.h"
-#include "osapi/osregistry.h"
-#include "cmdline/cmdline.h"
-#include "osapi/osapi.h"
 
-#include <fstream>
-#include <algorithm>
+#include "gamesequence/gamesequence.h"
+#include "globalincs/pstypes.h"
+#include "parse/parselo.h"
+#include "graphics/openxr.h"
+
+#include <fcntl.h>
+#include <utf8.h>
+
+#include "imgui.h"
+#include "backends/imgui_impl_sdl.h"
+
+#ifdef SCP_UNIX
+#include <sys/stat.h>
+#elif defined(WIN32)
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 namespace
 {
@@ -40,13 +45,55 @@ namespace
 	{
 		// Lazily initialize the preferences path
 		if (!preferencesPath) {
-			preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-			if (!preferencesPath) {
-				mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
-			}
-		}
+		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+			
+			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
+			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
+		    if (preferencesPath == nullptr) {
+				static bool sdl_is_borked_warning = false;
+				if (!sdl_is_borked_warning) {
+					ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
+						"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
+						"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
+						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
+					sdl_is_borked_warning = true;
+				}
+				// No preferences path, try current directory.
+				Cmdline_portable_mode = true;
+				return "." DIR_SEPARATOR_STR;
+		    }
+#ifdef WIN32
+		    try {
+			    auto current           = preferencesPath;
+			    const auto prefPathEnd = preferencesPath + strlen(preferencesPath);
+			    while (current != prefPathEnd) {
+				    const auto cp = utf8::next(current, prefPathEnd);
+				    if (cp > 127) {
+					    // On Windows, we currently do not support Unicode paths so force portable mode let the user
+					    // know
+					    const auto invalid_end = current;
+						static bool force_portable_warning = false;
+						if (!force_portable_warning) {
+							utf8::prior(current, preferencesPath);
+							ReleaseWarning(LOCATION,
+								"Determined the preferences path as \"%s\". That path is not supported since it "
+								"contains a Unicode character (%s). Using portable mode. Set -portable_mode in "
+								"the commandline to avoid this message in the future.",
+								preferencesPath, std::string(current, invalid_end).c_str());
+							force_portable_warning = true;
+						}
+						Cmdline_portable_mode = true;
+						return "." DIR_SEPARATOR_STR;
+				    }
+			    }
+		    } catch (const std::exception& e) {
+			    Error(LOCATION, "UTF-8 error while checking the preferences path \"%s\": %s", preferencesPath,
+			          e.what());
+		    }
+#endif
+	    }
 
-		if (preferencesPath) {
+	    if (preferencesPath) {
 			return preferencesPath;
 		}
 		else {
@@ -66,9 +113,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_LOST:
 			{
 				if (fAppActive) {
-					if (!Cmdline_no_unfocus_pause) {
-						game_pause();
-					}
+					game_pause();
 
 					fAppActive = false;
 				}
@@ -79,9 +124,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
 			{
 				if (!fAppActive) {
-					if (!Cmdline_no_unfocus_pause) {
-						game_unpause();
-					}
+					game_unpause();
 
 					fAppActive = true;
 				}
@@ -100,9 +143,65 @@ namespace
 		return false;
 	}
 	
-	bool quit_handler(const SDL_Event& e) {
+	bool quit_handler(const SDL_Event&  /*e*/) {
+		mprintf(("Received quit signal\n"));
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
+	}
+
+	const char* mapCategory(int category) {
+		switch (category) {
+			case SDL_LOG_CATEGORY_APPLICATION:
+				return "APPLICATION";
+			case SDL_LOG_CATEGORY_ERROR:
+				return "ERROR";
+			case SDL_LOG_CATEGORY_ASSERT:
+				return "ASSERT";
+			case SDL_LOG_CATEGORY_SYSTEM:
+				return "SYSTEM";
+			case SDL_LOG_CATEGORY_AUDIO:
+				return "AUDIO";
+			case SDL_LOG_CATEGORY_VIDEO:
+				return "VIDEO";
+			case SDL_LOG_CATEGORY_RENDER:
+				return "RENDER";
+			case SDL_LOG_CATEGORY_INPUT:
+				return "INPUT";
+			case SDL_LOG_CATEGORY_TEST:
+				return "TEST";
+
+			default:
+				return "UNKNOWN";
+		}
+	}
+
+	const char* mapPriority(SDL_LogPriority prio)
+	{
+		switch (prio) {
+		case SDL_LOG_PRIORITY_VERBOSE:
+			return "VRB";
+		case SDL_LOG_PRIORITY_DEBUG:
+			return "DBG";
+		case SDL_LOG_PRIORITY_INFO:
+			return "INF";
+		case SDL_LOG_PRIORITY_WARN:
+			return "WRN";
+		case SDL_LOG_PRIORITY_ERROR:
+			return "ERR";
+		case SDL_LOG_PRIORITY_CRITICAL:
+			return "CRI";
+
+		default:
+			return "UNK";
+		}
+	}
+
+	void SDLCALL logHandler(void*, int category, SDL_LogPriority priority, const char* message) {
+		if (priority >= SDL_LOG_PRIORITY_INFO) {
+			mprintf(("SDL [%s][%s]: %s\n", mapPriority(priority), mapCategory(category), message));
+		} else {
+			nprintf(("SDL", "SDL [%s][%s]: %s\n", mapPriority(priority), mapCategory(category), message));
+		}
 	}
 }
 
@@ -116,6 +215,7 @@ namespace
 // Windows specific includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <backends/imgui_impl_sdl.h>
 
 // go through all windows and try and find the one that matches the search string
 BOOL __stdcall os_enum_windows( HWND hwnd, LPARAM param )
@@ -201,9 +301,27 @@ static char			szWinTitle[128];
 static char			szWinClass[128];
 static int			Os_inited = 0;
 
-static SCP_vector<SDL_Event> buffered_events;
+static SCP_vector<SDL_Event> deferred_events;
 
 int Os_debugger_running = 0;
+
+#ifdef SCP_UNIX
+const char* os_get_legacy_user_dir()
+{
+	static bool user_dir_initialized = false;
+	static SCP_string Os_user_dir_legacy;
+
+	if (user_dir_initialized) {
+		return Os_user_dir_legacy.c_str();
+	}
+
+	extern const char* Osreg_user_dir_legacy;
+	sprintf(Os_user_dir_legacy, "%s/%s", getenv("HOME"), Osreg_user_dir_legacy);
+	user_dir_initialized = true;
+
+	return Os_user_dir_legacy.c_str();
+}
+#endif
 
 // ----------------------------------------------------------------------------------------------------
 // OSAPI FORWARD DECLARATIONS
@@ -218,19 +336,38 @@ void os_deinit();
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
-void os_init(const char * wclass, const char * title, const char *app_name, const char *version_string )
+void os_init(const char * wclass, const char * title, const char * app_name)
 {
-	os_init_registry_stuff(Osreg_company_name, title, version_string);
+	if (app_name == nullptr || !app_name[0])
+	{
+		os_init_registry_stuff(Osreg_company_name, title);
+	}
+	else
+	{
+		os_init_registry_stuff(Osreg_company_name, app_name);
+	}
 
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );
 
-	mprintf(("  Initializing SDL...\n"));
+	SDL_version compiled;
+	SDL_version linked;
+
+	SDL_VERSION(&compiled);
+	SDL_GetVersion(&linked);
+
+	mprintf(("  Initializing SDL %d.%d.%d (compiled with %d.%d.%d)...\n", linked.major, linked.minor, linked.patch,
+	         compiled.major, compiled.minor, compiled.patch));
+
+	if (LoggingEnabled) {
+		SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+		SDL_LogSetOutputFunction(&logHandler, nullptr);
+	}
 
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 	{
 		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
-		mprintf(("Couldn't init SDL: %s", SDL_GetError()));
+		mprintf(("Couldn't init SDL: %s\n", SDL_GetError()));
 
 		exit(1);
 		return;
@@ -270,9 +407,11 @@ void os_set_title( const char * title )
 // call at program end
 void os_cleanup()
 {
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	os_deinit_registry_stuff();
+
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 
 	os_deinit();
 }
@@ -280,7 +419,7 @@ void os_cleanup()
 // window management -----------------------------------------------------------------
 
 // Returns 1 if app is not the foreground app.
-int os_foreground()
+bool os_foreground()
 {
 	return fAppActive;
 }
@@ -307,6 +446,27 @@ static bool file_exists(const SCP_string& path) {
 	return str.good();
 }
 
+static time_t get_file_modification_time(const SCP_string& path) {
+#ifdef SCP_UNIX
+	struct stat file_stats{};
+	if(stat(path.c_str(), &file_stats) < 0) {
+		return 0;
+	}
+
+	return file_stats.st_mtime;
+#elif defined(WIN32)
+	struct _stat buf{};
+	if (_stat(path.c_str(), &buf) != 0) {
+		return 0;
+	}
+	return buf.st_mtime;
+#else
+#error Unsupported platform!
+#endif
+}
+
+const char* Osapi_legacy_mode_reason = nullptr;
+
 bool os_is_legacy_mode()
 {
 	// Make this check a little faster by caching the result
@@ -319,34 +479,75 @@ bool os_is_legacy_mode()
 		// When the portable mode option is given, non-legacy is implied
 		legacyMode = false;
 		checkedLegacyMode = true;
+
+		Osapi_legacy_mode_reason = "Legacy mode disabled since portable mode was enabled.";
 	}
 	else {
-		bool old_config_exists = false;
-		bool new_config_exists = false;
-
 		SCP_stringstream path_stream;
-		path_stream << getPreferencesPath() << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
+		path_stream << getPreferencesPath() << Osreg_config_file_name;
 
-		new_config_exists = file_exists(path_stream.str());
+		auto new_config_exists = file_exists(path_stream.str());
+		time_t new_config_time = 0;
+		if (new_config_exists) {
+			new_config_time = get_file_modification_time(path_stream.str());
+		}
+
+		// Also check the modification times of the command line files in case the launcher did not change the settings
+		// file
+		path_stream.str("");
+		path_stream << getPreferencesPath() << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+		new_config_time = std::max(new_config_time, get_file_modification_time(path_stream.str()));
 #ifdef SCP_UNIX
         path_stream.str("");
-		path_stream << Cfile_user_dir_legacy << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
+		path_stream << os_get_legacy_user_dir() << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
 
-		old_config_exists = file_exists(path_stream.str());
+		auto old_config_exists = file_exists(path_stream.str());
+		time_t old_config_time = 0;
+		if (old_config_exists) {
+			old_config_time = get_file_modification_time(path_stream.str());
+		}
+
+		path_stream.str("");
+		path_stream << os_get_legacy_user_dir() << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR
+					<< "cmdline_fso.cfg";
+		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
 		// At this point we can't determine if the old config exists so just assume that it does
-		old_config_exists = true;
+		auto old_config_exists = true;
+		time_t old_config_time = os_registry_get_last_modification_time();
+
+		// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
+		path_stream.str("");
+		path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #endif
 
-		if (new_config_exists) {
-			// If the new config exists then we never use the lagacy mode
+		if (new_config_exists && old_config_exists) {
+			// Both config files exists so we need to decide which to use based on their last modification times
+			// if the old config was modified more recently than the new config then we use the legacy mode since the
+			// user probably used an outdated launcher after using a more recent one
+			legacyMode = old_config_time > new_config_time;
+
+			if (legacyMode) {
+				Osapi_legacy_mode_reason = "Legacy mode enabled since the old config location was used more recently than the new location.";
+			} else {
+				Osapi_legacy_mode_reason = "Legacy mode disabled since the new config location was used more recently than the old location.";
+			}
+		} else if (new_config_exists) {
+			// If the new config exists and the old one doesn't then we can safely disable the legacy mode
 			legacyMode = false;
+
+			Osapi_legacy_mode_reason = "Legacy mode disabled since the old config does not exist while the new config exists.";
 		} else if (old_config_exists) {
 			// Old config exists but new doesn't -> use legacy mode
 			legacyMode = true;
+
+			Osapi_legacy_mode_reason = "Legacy mode enabled since the old config exists while the new config does not exist.";
 		} else {
 			// Neither old nor new config exists -> this is a new install
 			legacyMode = false;
+
+			Osapi_legacy_mode_reason = "Legacy mode disabled since no existing config was detected.";
 		}
 	}
 
@@ -368,7 +569,7 @@ bool os_is_legacy_mode()
 void os_deinit()
 {
 	// Free the view ports 
-	viewports.clear();
+	os::closeAllViewports();
 
 	if (preferencesPath) {
 		SDL_free(preferencesPath);
@@ -409,6 +610,9 @@ namespace os
 	}
 	Viewport* getMainViewport() {
 		return mainViewPort;
+	}
+	void closeAllViewports() {
+		viewports.clear();
 	}
 
 	namespace events
@@ -511,52 +715,74 @@ namespace os
 	}
 }
 	
-void os_ignore_events() {
+void os_defer_events_on_load_screen() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		// Add event to buffer
-		buffered_events.push_back(event);
+		// Add event to be handled later
+		deferred_events.push_back(event);
 	}
 }
 
 static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
-	
-	EventListenerData data;
-	data.type = event.type;
-		
-	auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
 
-	if (iter != eventListeners.end())
-	{
-		// The vector contains all event listeners, the listeners are sorted for type and weight
-		// -> iterating through all listeners will yield them in increasing weight order
-		// but we can only do this until we have reached the end of the vector or the type has changed
-		for(; iter != eventListeners.end() && iter->type == event.type; ++iter)
-		{
-			if (iter->listener(event))
-			{
-				// Listener has handled the event
-				break;
+	bool imgui_processed_this = false;
+	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
+		if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
+					imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
+		}
+	}
+
+	if (!imgui_processed_this) {
+		EventListenerData data;
+		data.type = event.type;
+
+		auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
+
+		if (iter != eventListeners.end()) {
+			// The vector contains all event listeners, the listeners are sorted for type and weight
+			// -> iterating through all listeners will yield them in increasing weight order
+			// but we can only do this until we have reached the end of the vector or the type has changed
+			for (; iter != eventListeners.end() && iter->type == event.type; ++iter) {
+				if (iter->listener(event)) {
+					// Listener has handled the event
+					break;
+				}
 			}
 		}
 	}
 }
 
+void os_remove_deferred_cutscene_key_events() {
+	deferred_events.erase(
+		std::remove_if(deferred_events.begin(), deferred_events.end(), [](const SDL_Event &event)
+		{
+			return (event.type == SDL_KEYUP) && (
+				event.key.keysym.sym == SDLK_KP_ENTER ||
+				event.key.keysym.sym == SDLK_RETURN ||
+				event.key.keysym.sym == SDLK_SPACE
+			);
+		}),
+		deferred_events.end()
+	);
+}
+
 void os_poll()
 {
-	// Replay the buffered events
-	auto end = buffered_events.end();
-	for (auto it = buffered_events.begin(); it != end; ++it) {
+	// Replay the deferred events
+	auto end = deferred_events.end();
+	for (auto it = deferred_events.begin(); it != end; ++it) {
 		handle_sdl_event(*it);
 	}
-	buffered_events.clear();
+	deferred_events.clear();
 
 	SDL_Event event;
 
 	while (SDL_PollEvent(&event)) {
 		handle_sdl_event(event);
 	}
+
+	openxr_poll();
 }
 
 SCP_string os_get_config_path(const SCP_string& subpath)

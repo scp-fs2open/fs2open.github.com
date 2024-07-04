@@ -1,10 +1,73 @@
+
+set(source_files)
+
 # top-level files
-set (file_root
+add_file_folder(""
 	prefix_header.h
 )
 
+add_file_folder("Actions"
+	actions/Action.cpp
+	actions/Action.h
+	actions/ActionDefinition.cpp
+	actions/ActionDefinition.h
+	actions/ActionDefinitionManager.cpp
+	actions/ActionDefinitionManager.h
+	actions/BuiltinActionDefinition.h
+	actions/common.cpp
+	actions/common.h
+	actions/Program.cpp
+	actions/Program.h
+)
+
+add_file_folder("Actions\\\\Expression"
+	actions/expression/ActionExpression.cpp
+	actions/expression/ActionExpression.h
+	actions/expression/ExpressionParser.cpp
+	actions/expression/ExpressionParser.h
+	actions/expression/FunctionManager.cpp
+	actions/expression/FunctionManager.h
+	actions/expression/ParseContext.h
+	actions/expression/ProgramVariables.cpp
+	actions/expression/ProgramVariables.h
+	actions/expression/TypeDefinition.cpp
+	actions/expression/TypeDefinition.h
+	actions/expression/Value.cpp
+	actions/expression/Value.h
+)
+
+add_file_folder("Actions\\\\Expression\\\\Nodes"
+	actions/expression/nodes/AbstractExpression.cpp
+	actions/expression/nodes/AbstractExpression.h
+	actions/expression/nodes/FunctionCallExpression.cpp
+	actions/expression/nodes/FunctionCallExpression.h
+	actions/expression/nodes/LiteralExpression.cpp
+	actions/expression/nodes/LiteralExpression.h
+	actions/expression/nodes/RandomRangeExpression.cpp
+	actions/expression/nodes/RandomRangeExpression.h
+	actions/expression/nodes/VariableReferenceExpression.cpp
+	actions/expression/nodes/VariableReferenceExpression.h
+	actions/expression/nodes/VectorConstructorExpression.cpp
+	actions/expression/nodes/VectorConstructorExpression.h
+)
+
+add_file_folder("Actions\\\\Types"
+	actions/types/MoveToSubmodel.cpp
+	actions/types/MoveToSubmodel.h
+	actions/types/ParticleEffectAction.cpp
+	actions/types/ParticleEffectAction.h
+	actions/types/PlaySoundAction.cpp
+	actions/types/PlaySoundAction.h
+	actions/types/SetDirectionAction.cpp
+	actions/types/SetDirectionAction.h
+	actions/types/SetPositionAction.cpp
+	actions/types/SetPositionAction.h
+	actions/types/WaitAction.cpp
+	actions/types/WaitAction.h
+)
+
 # AI files
-set (file_root_ai
+add_file_folder("AI"
 	ai/ai.cpp
 	ai/ai.h
 	ai/ai_flags.h
@@ -16,11 +79,13 @@ set (file_root_ai
 	ai/aigoals.cpp
 	ai/aigoals.h
 	ai/aiinternal.h
+	ai/ailua.cpp
+	ai/ailua.h
 	ai/aiturret.cpp
 )
 
 # Anim files
-set (file_root_anim
+add_file_folder("Anim"
 	anim/animplay.cpp
 	anim/animplay.h
 	anim/packunpack.cpp
@@ -28,32 +93,37 @@ set (file_root_anim
 )
 
 # Asteroid files
-set (file_root_asteroid
+add_file_folder("Asteroid"
 	asteroid/asteroid.cpp
 	asteroid/asteroid.h
 )
 
 # Autopilot files
-set (file_root_autopilot
+add_file_folder("Autopilot"
 	autopilot/autopilot.cpp
 	autopilot/autopilot.h
 )
 
 # Bmpman files
-set (file_root_bmpman
+add_file_folder("Bmpman"
 	bmpman/bm_internal.h
 	bmpman/bmpman.cpp
 	bmpman/bmpman.h
 )
 
 # Camera files
-set (file_root_camera
+add_file_folder("Camera"
 	camera/camera.cpp
 	camera/camera.h
 )
 
+add_file_folder("Cheats Table"
+	cheats_table/cheats_table.cpp
+	cheats_table/cheats_table.h
+)
+
 # CFile files
-set (file_root_cfile
+add_file_folder("CFile"
 	cfile/cfile.cpp
 	cfile/cfile.h
 	cfile/cfilearchive.cpp
@@ -61,29 +131,33 @@ set (file_root_cfile
 	cfile/cfilelist.cpp
 	cfile/cfilesystem.cpp
 	cfile/cfilesystem.h
+	cfile/cfilecompression.cpp
+	cfile/cfilecompression.h
 )
 
 # Cmdline files
-set (file_root_cmdline
+add_file_folder("Cmdline"
 	cmdline/cmdline.cpp
 	cmdline/cmdline.h
 )
 
 # CMeasure files
-set (file_root_cmeasure
+add_file_folder("CMeasure"
 	cmeasure/cmeasure.cpp
 	cmeasure/cmeasure.h
 )
 
 # ControlConfig files
-set (file_root_controlconfig
+add_file_folder("ControlConfig"
 	controlconfig/controlsconfig.cpp
 	controlconfig/controlsconfig.h
 	controlconfig/controlsconfigcommon.cpp
+	controlconfig/presets.cpp
+	controlconfig/presets.h
 )
 
 # Cutscene files
-set (file_root_cutscene
+add_file_folder("Cutscene"
 	cutscene/Decoder.cpp
 	cutscene/Decoder.h
 	cutscene/cutscenes.cpp
@@ -96,32 +170,36 @@ set (file_root_cutscene
 	cutscene/VideoPresenter.h
 )
 
-# Cutscene\ffmpeg files
-set (file_root_cutscene_ffmpeg
-	cutscene/ffmpeg/AudioDecoder.cpp
-	cutscene/ffmpeg/AudioDecoder.h
-	cutscene/ffmpeg/FFMPEGDecoder.cpp
-	cutscene/ffmpeg/FFMPEGDecoder.h
-	cutscene/ffmpeg/internal.cpp
-	cutscene/ffmpeg/internal.h
-	cutscene/ffmpeg/VideoDecoder.cpp
-	cutscene/ffmpeg/VideoDecoder.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	# Cutscene\ffmpeg files
+	add_file_folder("Cutscene\\\\ffmpeg"
+		cutscene/ffmpeg/AudioDecoder.cpp
+		cutscene/ffmpeg/AudioDecoder.h
+		cutscene/ffmpeg/FFMPEGDecoder.cpp
+		cutscene/ffmpeg/FFMPEGDecoder.h
+		cutscene/ffmpeg/internal.cpp
+		cutscene/ffmpeg/internal.h
+		cutscene/ffmpeg/SubtitleDecoder.cpp
+		cutscene/ffmpeg/SubtitleDecoder.h
+		cutscene/ffmpeg/VideoDecoder.cpp
+		cutscene/ffmpeg/VideoDecoder.h
+	)
+endif()
 
 # ddsutils files
-set (file_root_ddsutils
+add_file_folder("ddsutils"
 	ddsutils/ddsutils.cpp
 	ddsutils/ddsutils.h
 )
 
 # Debris files
-set (file_root_debris
+add_file_folder("Debris"
 	debris/debris.cpp
 	debris/debris.h
 )
 
 # DebugConsole files
-set (file_root_debugconsole
+add_file_folder("DebugConsole"
 	debugconsole/console.cpp
 	debugconsole/console.h
 	debugconsole/consolecmds.cpp
@@ -129,128 +207,190 @@ set (file_root_debugconsole
 	debugconsole/consoleparse.h
 )
 
-
-SET(file_root_def_files
-	def_files/def_files.h
+add_file_folder("Decals"
+	decals/decals.cpp
+	decals/decals.h
 )
-if(MSVC)
-	SET(file_root_def_files
-		${file_root_def_files}
-		def_files/def_files-win32.cpp
-	)
-else()
-	SET(file_root_def_files
-		${file_root_def_files}
-		def_files/def_files-generic.cpp
-	)
-endif()
 
-SET(file_root_def_files_files
+add_file_folder("Default files"
+	def_files/def_files.h
+	def_files/def_files.cpp
+	${file_root_def_files}
+)
+
+add_file_folder("Default files\\\\data"
+)
+
+add_file_folder("Default files\\\\data\\\\effects"
+	def_files/data/effects/batched-f.sdr
+	def_files/data/effects/batched-v.sdr
+	def_files/data/effects/bloom-comp-f.sdr
+	def_files/data/effects/blur-f.sdr
+	def_files/data/effects/brightpass-f.sdr
+	def_files/data/effects/copy-f.sdr
+	def_files/data/effects/decal-f.sdr
+	def_files/data/effects/decal-v.sdr
+	def_files/data/effects/deferred-clear-f.sdr
+	def_files/data/effects/deferred-clear-v.sdr
+	def_files/data/effects/deferred-f.sdr
+	def_files/data/effects/deferred-v.sdr
+	def_files/data/effects/effect-distort-f.sdr
+	def_files/data/effects/effect-distort-v.sdr
+	def_files/data/effects/effect-f.sdr
+	def_files/data/effects/effect-g.sdr
+	def_files/data/effects/effect-v.sdr
+	def_files/data/effects/envmap-sphere-warp-f.sdr
+	def_files/data/effects/fog-f.sdr
+	def_files/data/effects/fxaa-f.sdr
+	def_files/data/effects/fxaa-v.sdr
+	def_files/data/effects/fxaapre-f.sdr
+	def_files/data/effects/gamma.sdr
+	def_files/data/effects/irrmap-f.sdr
+	def_files/data/effects/lighting.sdr
+	def_files/data/effects/ls-f.sdr
+	def_files/data/effects/main-f.sdr
+	def_files/data/effects/main-g.sdr
+	def_files/data/effects/main-v.sdr
+	def_files/data/effects/main_large.sdr
+	def_files/data/effects/main_small.sdr
+	def_files/data/effects/model_shader_flags.h
+	def_files/data/effects/msaa-f.sdr
+	def_files/data/effects/nanovg-f.sdr
+	def_files/data/effects/nanovg-v.sdr
+	def_files/data/effects/normals.sdr
+	def_files/data/effects/passthrough-f.sdr
+	def_files/data/effects/passthrough-v.sdr
+	def_files/data/effects/post-f.sdr
+	def_files/data/effects/post-v.sdr
+	def_files/data/effects/rocketui-f.sdr
+	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadows.sdr
+	def_files/data/effects/shield-impact-v.sdr
+	def_files/data/effects/shield-impact-f.sdr
+	def_files/data/effects/SMAA.sdr
+	def_files/data/effects/smaa-blend-v.sdr
+	def_files/data/effects/smaa-blend-f.sdr
+	def_files/data/effects/smaa-edge-v.sdr
+	def_files/data/effects/smaa-edge-f.sdr
+	def_files/data/effects/smaa-neighbour-v.sdr
+	def_files/data/effects/smaa-neighbour-f.sdr
+	def_files/data/effects/tonemapping-f.sdr
+	def_files/data/effects/video-f.sdr
+	def_files/data/effects/video-v.sdr
+	def_files/data/effects/volumetric-f.sdr
+)
+
+add_file_folder("Default files\\\\data\\\\maps"
+	def_files/data/maps/app_icon.png
+	def_files/data/maps/app_icon_d.png
+	def_files/data/maps/app_icon_sse.png
+	def_files/data/maps/app_icon_sse_d.png
+)
+
+add_file_folder("Default files\\\\data\\\\scripts"
+	def_files/data/scripts/cfile_require.lua
+	def_files/data/scripts/dkjson.lua
+)
+
+add_file_folder("Default files\\\\data\\\\tables"
+	def_files/data/tables/autopilot.tbl
+	def_files/data/tables/controlconfigdefaults.tbl
+	def_files/data/tables/fonts.tbl
+	def_files/data/tables/game_settings.tbl
+	def_files/data/tables/iff_defs.tbl
+	def_files/data/tables/objecttypes.tbl
+	def_files/data/tables/post_processing.tbl
+	def_files/data/tables/species_defs.tbl
+	def_files/data/tables/cheats.tbl
+)
+
+# These files will be included in the executable but not in CFile
+add_file_folder("Default files\\\\builtin"
 	def_files/ai_profiles.tbl
-	def_files/autopilot.tbl
-	def_files/batched-f.sdr
-	def_files/batched-v.sdr
-	def_files/bloom-comp-f.sdr
-	def_files/blur-f.sdr
-	def_files/brightpass-f.sdr
-	def_files/controlconfigdefaults.tbl
-	def_files/default-material-f.sdr
-	def_files/deferred-clear-f.sdr
-	def_files/deferred-clear-v.sdr
-	def_files/deferred-f.sdr
-	def_files/deferred-v.sdr
-	def_files/effect-distort-f.sdr
-	def_files/effect-distort-v.sdr
-	def_files/effect-particle-f.sdr
-	def_files/effect-screen-g.sdr
-	def_files/effect-v.sdr
-	def_files/fonts.tbl
-	def_files/fxaa-f.sdr
-	def_files/fxaa-v.sdr
-	def_files/fxaapre-f.sdr
-	def_files/game_settings.tbl
-	def_files/iff_defs.tbl
-	def_files/ls-f.sdr
-	def_files/main-f.sdr
-	def_files/main-g.sdr
-	def_files/main-v.sdr
-	def_files/objecttypes.tbl
-	def_files/passthrough-f.sdr
-	def_files/passthrough-v.sdr
-	def_files/post-f.sdr
-	def_files/post-v.sdr
-	def_files/post_processing.tbl
-	def_files/shadowdebug-f.sdr
-	def_files/shadowdebug-v.sdr
-	def_files/species_defs.tbl
-	def_files/tonemapping-f.sdr
-	def_files/video-f.sdr
-	def_files/video-v.sdr
-	def_files/shield-impact-v.sdr
-	def_files/shield-impact-f.sdr
+)
+
+# Variable for all embedded files
+set(default_files_files
+	${files_Default_files_data}
+	${files_Default_files_data_effects}
+	${files_Default_files_data_maps}
+	${files_Default_files_data_scripts}
+	${files_Default_files_data_tables}
+	${files_Default_files_builtin}
+)
+
+add_file_folder("Events"
+	events/events.cpp
+	events/events.h
 )
 
 # ExceptionHandler files
-set (file_root_exceptionhandler
+add_file_folder("ExceptionHandler"
 	exceptionhandler/exceptionhandler.cpp
 	exceptionhandler/exceptionhandler.h
 )
 
+# Executor files
+add_file_folder("Executor"
+	executor/CombinedExecutionContext.cpp
+	executor/CombinedExecutionContext.h
+	executor/Executor.cpp
+	executor/Executor.h
+	executor/GameStateExecutionContext.cpp
+	executor/GameStateExecutionContext.h
+	executor/global_executors.cpp
+	executor/global_executors.h
+	executor/IExecutionContext.cpp
+	executor/IExecutionContext.h
+)
+
 # ExternalDLL files
-set (file_root_externaldll
+add_file_folder("ExternalDLL"
 	external_dll/externalcode.h
 )
 
 # Fireball files
-set (file_root_fireball
+add_file_folder("Fireball"
 	fireball/fireballs.cpp
 	fireball/fireballs.h
 	fireball/warpineffect.cpp
 )
 
 # GameHelp files
-set (file_root_gamehelp
+add_file_folder("GameHelp"
 	gamehelp/contexthelp.cpp
 	gamehelp/contexthelp.h
 	gamehelp/gameplayhelp.cpp
 	gamehelp/gameplayhelp.h
 )
 
-# GameHelp -> fs2netd files
-set (file_root_gamehelp_fs2netd
-	fs2netd/fs2netd_client.cpp
-	fs2netd/fs2netd_client.h
-	fs2netd/protocol.h
-	fs2netd/tcp_client.cpp
-	fs2netd/tcp_client.h
-	fs2netd/tcp_socket.cpp
-	fs2netd/tcp_socket.h
-)
-
 # GameSequence files
-set (file_root_gamesequence
+add_file_folder("GameSequence"
 	gamesequence/gamesequence.cpp
 	gamesequence/gamesequence.h
 )
 
 # GameSnd files
-set (file_root_gamesnd
+add_file_folder("GameSnd"
 	gamesnd/eventmusic.cpp
 	gamesnd/eventmusic.h
 	gamesnd/gamesnd.cpp
 	gamesnd/gamesnd.h
 )
 
-set(file_root_generated
+add_file_folder("Generated Files"
 	${GENERATED_SOURCE_DIR}/project.h
-	${GENERATED_SOURCE_DIR}/scp_compiler_detection.h
 	${PLATFORM_CHECK_HEADER}
 )
 
 # GlobalIncs files
-set (file_root_globalincs
+add_file_folder("GlobalIncs"
+	globalincs/adjustment.cpp
+	globalincs/adjustment.h
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
+	globalincs/crashdump.cpp
+	globalincs/crashdump.h
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
@@ -260,6 +400,9 @@ set (file_root_globalincs
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/undosys.cpp
+	globalincs/undosys.h
+	globalincs/utility.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h
@@ -268,7 +411,7 @@ set (file_root_globalincs
 )
 
 IF (WIN32)
-	set (file_root_globalincs
+	add_file_folder("GlobalIncs"
 		${file_root_globalincs}
 		globalincs/mspdb_callstack.cpp
 		globalincs/mspdb_callstack.h
@@ -276,13 +419,13 @@ IF (WIN32)
 	)
 ENDIF(WIN32)
 
-set(file_root_globalincs_memory
+add_file_folder("GlobalIncs\\\\Memory"
 	globalincs/memory/memory.h
 	globalincs/memory/memory.cpp
 	globalincs/memory/utils.h
 )
 
-set(file_root_globalincs_toolchain
+add_file_folder("GlobalIncs\\\\Toolchain"
 	globalincs/toolchain/clang.h
 	globalincs/toolchain/doxygen.h
 	globalincs/toolchain/gcc.h
@@ -291,77 +434,102 @@ set(file_root_globalincs_toolchain
 )
 
 # Graphics files
-set (file_root_graphics
+add_file_folder("Graphics"
 	graphics/2d.cpp
 	graphics/2d.h
+	graphics/decal_draw_list.cpp
+	graphics/decal_draw_list.h
+	graphics/debug_sphere.cpp
+	graphics/debug_sphere.h
+	graphics/color.cpp
+	graphics/color.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
+	graphics/grinternal.cpp
 	graphics/grinternal.h
+	graphics/light.cpp
+	graphics/light.h
+	graphics/line_draw_list.cpp
+	graphics/line_draw_list.h
 	graphics/material.cpp
 	graphics/material.h
+	graphics/matrix.cpp
+	graphics/matrix.h
+	graphics/openxr.cpp
+	graphics/openxr.h
+	graphics/openxr_internal.h
+	graphics/post_processing.cpp
+	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
+	graphics/uniforms.cpp
+	graphics/uniforms.h
 )
 
-# Graphics -> OpenGLGr files
-set (file_root_graphics_openglgr
-)
+if (FSO_BUILD_WITH_OPENGL)
+	# Graphics -> OpenGLGr files
+	add_file_folder("Graphics\\\\OpenGLGr"
+	)
 
-# Graphics -> OpenGLGr -> OpenGL CPPs files
-set (file_root_graphics_openglgr_opengl_cpps
-	graphics/opengl/gropengl.cpp
-	graphics/opengl/gropenglbmpman.cpp
-	graphics/opengl/gropengldraw.cpp
-	graphics/opengl/gropengllight.cpp
-	graphics/opengl/gropenglpostprocessing.cpp
-	graphics/opengl/gropenglquery.cpp
-	graphics/opengl/gropenglshader.cpp
-	graphics/opengl/gropenglstate.cpp
-	graphics/opengl/gropengltexture.cpp
-	graphics/opengl/gropengltnl.cpp
-	graphics/opengl/ShaderProgram.cpp
-)
+	# Graphics -> OpenGLGr -> OpenGL CPPs files
+	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
+		graphics/opengl/gropengl.cpp
+		graphics/opengl/gropenglbmpman.cpp
+		graphics/opengl/gropengldeferred.cpp
+		graphics/opengl/gropengldraw.cpp
+		graphics/opengl/gropenglopenxr.cpp
+		graphics/opengl/gropenglpostprocessing.cpp
+		graphics/opengl/gropenglquery.cpp
+		graphics/opengl/gropenglshader.cpp
+		graphics/opengl/gropenglstate.cpp
+		graphics/opengl/gropenglsync.cpp
+		graphics/opengl/gropengltexture.cpp
+		graphics/opengl/gropengltnl.cpp
+		graphics/opengl/ShaderProgram.cpp
+	)
 
-# Graphics -> OpenGLGr -> OpenGL Headers files
-set (file_root_graphics_openglgr_opengl_headers
-	graphics/opengl/gropengl.h
-	graphics/opengl/gropenglbmpman.h
-	graphics/opengl/gropengldraw.h
-	graphics/opengl/gropengllight.h
-	graphics/opengl/gropenglpostprocessing.h
-	graphics/opengl/gropenglquery.h
-	graphics/opengl/gropenglshader.h
-	graphics/opengl/gropenglstate.h
-	graphics/opengl/gropengltexture.h
-	graphics/opengl/gropengltnl.h
-	graphics/opengl/ShaderProgram.h
-)
+	# Graphics -> OpenGLGr -> OpenGL Headers files
+	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
+		graphics/opengl/gropengl.h
+		graphics/opengl/gropenglbmpman.h
+		graphics/opengl/gropengldeferred.h
+		graphics/opengl/gropengldraw.h
+		graphics/opengl/gropenglopenxr.h
+		graphics/opengl/gropenglpostprocessing.h
+		graphics/opengl/gropenglquery.h
+		graphics/opengl/gropenglshader.h
+		graphics/opengl/gropenglstate.h
+		graphics/opengl/gropenglsync.h
+		graphics/opengl/gropengltexture.h
+		graphics/opengl/gropengltnl.h
+		graphics/opengl/ShaderProgram.h
+		graphics/opengl/SmaaAreaTex.h
+		graphics/opengl/SmaaSearchTex.h
+	)
+endif()
 
 # Graphics -> Paths
-set (file_root_graphics_paths
-	graphics/paths/NVGRenderer.cpp
-	graphics/paths/NVGRenderer.h
+add_file_folder("Graphics\\\\Paths"
+	graphics/paths/NanoVGRenderer.cpp
+	graphics/paths/NanoVGRenderer.h
 	graphics/paths/PathRenderer.cpp
 	graphics/paths/PathRenderer.h
-	graphics/paths/StubRenderer.h
 )
 
 # Graphics -> Paths
-set (file_root_graphics_paths_nanovg
+add_file_folder("Graphics\\\\Paths\\\\nanovg"
 	graphics/paths/nanovg/fontstash.h
 	graphics/paths/nanovg/nanovg.c
 	graphics/paths/nanovg/nanovg.h
-	graphics/paths/nanovg/nanovg_gl.h
-	graphics/paths/nanovg/nanovg_gl_utils.h
 	graphics/paths/nanovg/stb_image.h
 	graphics/paths/nanovg/stb_truetype.h
 )
 
 # Graphics -> SoftwareGr files
-set (file_root_graphics_softwaregr
+add_file_folder("Graphics\\\\SoftwareGr"
 	graphics/generic.cpp
 	graphics/generic.h
 	graphics/grstub.cpp
@@ -371,7 +539,7 @@ set (file_root_graphics_softwaregr
 )
 
 
-set (file_root_graphics_softwaregr_font
+add_file_folder("Graphics\\\\SoftwareGr\\\\Font"
 	graphics/software/font.h
 	graphics/software/font.cpp
 	graphics/software/font_internal.h
@@ -385,14 +553,39 @@ set (file_root_graphics_softwaregr_font
 	graphics/software/VFNTFont.cpp
 )
 
+add_file_folder("Graphics\\\\Util"
+	graphics/util/GPUMemoryHeap.cpp
+	graphics/util/GPUMemoryHeap.h
+	graphics/util/uniform_structs.h
+	graphics/util/UniformAligner.h
+	graphics/util/UniformAligner.cpp
+	graphics/util/UniformBuffer.h
+	graphics/util/UniformBuffer.cpp
+	graphics/util/UniformBufferManager.h
+	graphics/util/UniformBufferManager.cpp
+)
+
+if (FSO_BUILD_WITH_VULKAN)
+	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/gr_vulkan.cpp
+		graphics/vulkan/gr_vulkan.h
+		graphics/vulkan/RenderFrame.cpp
+		graphics/vulkan/RenderFrame.h
+		graphics/vulkan/vulkan_stubs.cpp
+		graphics/vulkan/vulkan_stubs.h
+		graphics/vulkan/VulkanRenderer.cpp
+		graphics/vulkan/VulkanRenderer.h
+	)
+endif()
+
 # HeadTracking files
-set (file_root_headtracking
+add_file_folder("HeadTracking"
 	headtracking/headtracking_internal.h
 	headtracking/headtracking.h
 	headtracking/headtracking.cpp
 )
 if(WIN32)
-	set(file_root_headtracking
+	add_file_folder("HeadTracking"
 		${file_root_headtracking}
 
 		headtracking/freetrack.h
@@ -406,7 +599,7 @@ if(WIN32)
 endif()
 
 # Hud files
-set (file_root_hud
+add_file_folder("Hud"
 	hud/hud.cpp
 	hud/hud.h
 	hud/hudartillery.cpp
@@ -432,6 +625,8 @@ set (file_root_hud
 	hud/hudparse.h
 	hud/hudreticle.cpp
 	hud/hudreticle.h
+	hud/hudscripting.cpp
+	hud/hudscripting.h
 	hud/hudshield.cpp
 	hud/hudshield.h
 	hud/hudsquadmsg.cpp
@@ -445,13 +640,13 @@ set (file_root_hud
 )
 
 # iff_defs files
-set (file_root_iff_defs
+add_file_folder("iff_defs"
 	iff_defs/iff_defs.cpp
 	iff_defs/iff_defs.h
 )
 
 # InetFile files
-set (file_root_inetfile
+add_file_folder("InetFile"
 	inetfile/cftp.cpp
 	inetfile/cftp.h
 	inetfile/chttpget.cpp
@@ -461,7 +656,7 @@ set (file_root_inetfile
 )
 
 # Io files
-set (file_root_io
+add_file_folder("Io"
 	io/cursor.cpp
 	io/cursor.h
 	io/key.cpp
@@ -476,47 +671,89 @@ set (file_root_io
 	io/joy-sdl.cpp
 	io/joy_ff.h
 	io/joy_ff-sdl.cpp
+	io/spacemouse.cpp
+	io/spacemouse.h
 )
 
 # jpgutils files
-set (file_root_jpgutils
+add_file_folder("jpgutils"
 	jpgutils/jpgutils.cpp
 	jpgutils/jpgutils.h
 )
 
 # JumpNode files
-set (file_root_jumpnode
+add_file_folder("JumpNode"
 	jumpnode/jumpnode.cpp
 	jumpnode/jumpnode.h
 )
 
 # Lab files
-set (file_root_lab
-	lab/lab.cpp
-	lab/lab.h
-	lab/wmcgui.cpp
-	lab/wmcgui.h
+add_file_folder("Lab"
+	lab/labv2.h
+	lab/labv2_internal.h
+	lab/labv2.cpp
 )
 
-set(file_root_libs
+add_file_folder("Lab\\\\Dialogs"
+	lab/dialogs/lab_ui.h
+	lab/dialogs/lab_ui.cpp
+	lab/dialogs/lab_ui_helpers.h
+	lab/dialogs/lab_ui_helpers.cpp
 )
 
-set(file_root_libs_ffmpeg
-	libs/ffmpeg/FFmpeg.cpp
-	libs/ffmpeg/FFmpeg.h
-	libs/ffmpeg/FFmpegContext.cpp
-	libs/ffmpeg/FFmpegContext.h
-	libs/ffmpeg/FFmpegHeaders.h
+add_file_folder("Lab\\\\Manager"
+	lab/manager/lab_manager.h
+	lab/manager/lab_manager.cpp
+)
+
+add_file_folder("Lab\\\\Renderer"
+	lab/renderer/lab_renderer.h
+	lab/renderer/lab_renderer.cpp
+	lab/renderer/lab_cameras.h
+	lab/renderer/lab_cameras.cpp
+)
+
+add_file_folder("Libs"
+	libs/jansson.cpp
+	libs/jansson.h
+)
+
+add_file_folder("Libs\\\\AntLR"
+	libs/antlr/ErrorListener.cpp
+	libs/antlr/ErrorListener.h
+	)
+
+add_file_folder("Libs\\\\Discord"
+	libs/discord/discord.cpp
+	libs/discord/discord.h
+)
+
+if (FSO_BUILD_WITH_FFMPEG)
+	add_file_folder("Libs\\\\FFmpeg"
+		libs/ffmpeg/FFmpeg.cpp
+		libs/ffmpeg/FFmpeg.h
+		libs/ffmpeg/FFmpegContext.cpp
+		libs/ffmpeg/FFmpegContext.h
+		libs/ffmpeg/FFmpegHeaders.h
+	)
+endif()
+
+add_file_folder("Libs\\\\RenderDoc"
+	libs/renderdoc/renderdoc.cpp
+	libs/renderdoc/renderdoc.h
+	libs/renderdoc/renderdoc_app.h
 )
 
 # Lighting files
-set (file_root_lighting
+add_file_folder("Lighting"
 	lighting/lighting.cpp
 	lighting/lighting.h
+	lighting/lighting_profiles.cpp
+	lighting/lighting_profiles.h
 )
 
 # Localization files
-set (file_root_localization
+add_file_folder("Localization"
 	localization/fhash.cpp
 	localization/fhash.h
 	localization/localize.cpp
@@ -524,7 +761,9 @@ set (file_root_localization
 )
 
 # Math files
-set (file_root_math
+add_file_folder("Math"
+	math/curve.cpp
+	math/curve.h
 	math/bitarray.h
 	math/fix.cpp
 	math/fix.h
@@ -532,6 +771,8 @@ set (file_root_math
 	math/floating.h
 	math/fvi.cpp
 	math/fvi.h
+	math/ik_solver.cpp
+	math/ik_solver.h
 	math/spline.cpp
 	math/spline.h
 	math/staticrand.cpp
@@ -541,7 +782,7 @@ set (file_root_math
 )
 
 # MenuUI files
-set (file_root_menuui
+add_file_folder("MenuUI"
 	menuui/barracks.cpp
 	menuui/barracks.h
 	menuui/credits.cpp
@@ -550,8 +791,6 @@ set (file_root_menuui
 	menuui/fishtank.h
 	menuui/mainhallmenu.cpp
 	menuui/mainhallmenu.h
-	menuui/mainhalltemp.cpp
-	menuui/mainhalltemp.h
 	menuui/optionsmenu.cpp
 	menuui/optionsmenu.h
 	menuui/optionsmenumulti.cpp
@@ -569,7 +808,7 @@ set (file_root_menuui
 )
 
 # Mission files
-set (file_root_mission
+add_file_folder("Mission"
 	mission/missionbriefcommon.cpp
 	mission/missionbriefcommon.h
 	mission/missioncampaign.cpp
@@ -594,7 +833,7 @@ set (file_root_mission
 )
 
 # MissionUI files
-set (file_root_missionui
+add_file_folder("MissionUI"
 	missionui/chatbox.cpp
 	missionui/chatbox.h
 	missionui/fictionviewer.cpp
@@ -620,38 +859,53 @@ set (file_root_missionui
 )
 
 # mod_table files
-set (file_root_mod_table
+add_file_folder("mod_table"
 	mod_table/mod_table.cpp
 	mod_table/mod_table.h
 )
 
 # Model files
-set (file_root_model
+add_file_folder("Model"
 	model/model.h
-	model/modelanim.cpp
-	model/modelanim.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
-	model/modeloctant.cpp
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
+	model/modelreplace.h
+	model/modelreplace.cpp
 	model/modelsinc.h
 	model/model_flags.h
 )
 
+# Model Animation files
+add_file_folder("Model Animation"
+	model/animation/modelanimation.cpp
+	model/animation/modelanimation.h
+	model/animation/modelanimation_driver.cpp
+	model/animation/modelanimation_driver.h
+	model/animation/modelanimation_moveables.cpp
+	model/animation/modelanimation_moveables.h
+	model/animation/modelanimation_segments.cpp
+	model/animation/modelanimation_segments.h
+)
+
 # Nebula files
-set (file_root_nebula
+add_file_folder("Nebula"
 	nebula/neb.cpp
 	nebula/neb.h
 	nebula/neblightning.cpp
 	nebula/neblightning.h
+	nebula/volumetrics.cpp
+	nebula/volumetrics.h
 )
 
 # Network files
-set (file_root_network
+add_file_folder("Network"
 	network/chat_api.cpp
 	network/chat_api.h
+	network/gtrack.cpp
+	network/gtrack.h
 	network/multi.cpp
 	network/multi.h
 	network/multi_campaign.cpp
@@ -662,12 +916,20 @@ set (file_root_network
 	network/multi_dogfight.h
 	network/multi_endgame.cpp
 	network/multi_endgame.h
+	network/multi_fstracker.cpp
+	network/multi_fstracker.h
+	network/multi_interpolate.cpp
+	network/multi_interpolate.h
 	network/multi_ingame.cpp
 	network/multi_ingame.h
 	network/multi_kick.cpp
 	network/multi_kick.h
 	network/multi_log.cpp
 	network/multi_log.h
+	network/multi_lua.cpp
+	network/multi_lua.h
+	network/multi_mdns.cpp
+	network/multi_mdns.h
 	network/multi_obj.cpp
 	network/multi_obj.h
 	network/multi_observer.cpp
@@ -682,6 +944,8 @@ set (file_root_network
 	network/multi_ping.h
 	network/multi_pmsg.cpp
 	network/multi_pmsg.h
+	network/multi_portfwd.cpp
+	network/multi_portfwd.h
 	network/multi_pxo.cpp
 	network/multi_pxo.h
 	network/multi_rate.cpp
@@ -690,8 +954,14 @@ set (file_root_network
 	network/multi_respawn.h
 	network/multi_sexp.cpp
 	network/multi_sexp.h
+	network/multi_sw.cpp
+	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
+	network/multi_turret_manager.cpp
+	network/multi_turret_manager.h
+	network/multi_time_manager.cpp
+	network/multi_time_manager.h
 	network/multi_update.cpp
 	network/multi_update.h
 	network/multi_voice.cpp
@@ -710,24 +980,27 @@ set (file_root_network
 	network/multiutil.h
 	network/psnet2.cpp
 	network/psnet2.h
-	network/stand_gui.cpp
+	network/ptrack.cpp
+	network/ptrack.h
 	network/stand_gui.h
+	network/valid.cpp
+	network/valid.h
 )
 
 IF(WIN32)
-set (file_root_network
+add_file_folder("Network"
 	${file_root_network}
 	network/stand_gui.cpp
 )
 ELSE(WIN32)
-set (file_root_network
+add_file_folder("Network"
 	${file_root_network}
 	network/stand_gui-unix.cpp
 )
 ENDIF(WIN32)
 
 # Object files
-set (file_root_object
+add_file_folder("Object"
 	object/collidedebrisship.cpp
 	object/collidedebrisweapon.cpp
 	object/collideshipship.cpp
@@ -754,13 +1027,33 @@ set (file_root_object
 )
 
 # Observer files
-set (file_root_observer
+add_file_folder("Observer"
 	observer/observer.cpp
 	observer/observer.h
 )
 
+add_file_folder("Options"
+	options/Ingame_Options.cpp
+	options/Ingame_Options.h
+	options/Ingame_Options_internal.h
+	options/Option.cpp
+	options/Option.h
+	options/OptionsManager.cpp
+	options/OptionsManager.h
+)
+
+add_file_folder("Options\\\\Dialogs"
+	options/dialogs/ingame_options_ui.h
+	options/dialogs/ingame_options_ui.cpp
+)
+
+add_file_folder("Options\\\\Manager"
+	options/manager/ingame_options_manager.h
+	options/manager/ingame_options_manager.cpp
+)
+
 # OsApi files
-set (file_root_osapi
+add_file_folder("OsApi"
 	osapi/DebugWindow.h
 	osapi/DebugWindow.cpp
 	osapi/osapi.h
@@ -774,19 +1067,38 @@ set (file_root_osapi
 )
 
 # Parse files
-set (file_root_parse
+add_file_folder("Parse"
 	parse/encrypt.cpp
 	parse/encrypt.h
 	parse/generic_log.cpp
 	parse/generic_log.h
+	parse/parsehi.cpp
+	parse/parsehi.h
 	parse/parselo.cpp
 	parse/parselo.h
 	parse/sexp.cpp
 	parse/sexp.h
+	parse/sexp_container.cpp
+	parse/sexp_container.h
+)
+
+add_file_folder("Parse\\\\SEXP"
+	parse/sexp/DynamicSEXP.cpp
+	parse/sexp/DynamicSEXP.h
+	parse/sexp/EngineSEXP.cpp
+	parse/sexp/EngineSEXP.h
+	parse/sexp/LuaSEXP.cpp
+	parse/sexp/LuaSEXP.h
+	parse/sexp/LuaAISEXP.cpp
+	parse/sexp/LuaAISEXP.h
+	parse/sexp/sexp_lookup.cpp
+	parse/sexp/sexp_lookup.h
+	parse/sexp/SEXPParameterExtractor.cpp
+	parse/sexp/SEXPParameterExtractor.h
 )
 
 # Particle files
-set (file_root_particle
+add_file_folder("Particle"
 	particle/particle.cpp
 	particle/particle.h
 	particle/ParticleEffect.h
@@ -798,7 +1110,7 @@ set (file_root_particle
 	particle/ParticleSourceWrapper.h
 )
 
-set(file_root_particle_effects
+add_file_folder("Particle\\\\Effects"
 	particle/effects/BeamPiercingEffect.cpp
 	particle/effects/BeamPiercingEffect.h
 	particle/effects/CompositeEffect.cpp
@@ -810,30 +1122,33 @@ set(file_root_particle_effects
 	particle/effects/SingleParticleEffect.cpp
 	particle/effects/SingleParticleEffect.h
 	particle/effects/SphereShape.h
+	particle/effects/VolumeEffect.cpp
+	particle/effects/VolumeEffect.h
 )
 
-set(file_root_particle_util
+add_file_folder("Particle\\\\Util"
 	particle/util/EffectTiming.cpp
 	particle/util/EffectTiming.h
-	particle/util/RandomRange.h
 	particle/util/ParticleProperties.cpp
 	particle/util/ParticleProperties.h
 )
 
 # PcxUtils files
-set (file_root_pcxutils
+add_file_folder("PcxUtils"
 	pcxutils/pcxutils.cpp
 	pcxutils/pcxutils.h
 )
 
 # Physics files
-set (file_root_physics
+add_file_folder("Physics"
 	physics/physics.cpp
 	physics/physics.h
+	physics/physics_state.cpp
+	physics/physics_state.h
 )
 
 # PilotFile files
-set (file_root_pilotfile
+add_file_folder("PilotFile"
 	pilotfile/BinaryFileHandler.cpp
 	pilotfile/BinaryFileHandler.h
 	pilotfile/csg.cpp
@@ -850,7 +1165,7 @@ set (file_root_pilotfile
 )
 
 # Playerman files
-set (file_root_playerman
+add_file_folder("Playerman"
 	playerman/managepilot.cpp
 	playerman/managepilot.h
 	playerman/player.h
@@ -858,13 +1173,13 @@ set (file_root_playerman
 )
 
 # pngutils files
-set (file_root_pngutils
+add_file_folder("pngutils"
 	pngutils/pngutils.cpp
 	pngutils/pngutils.h
 )
 
 # Popup files
-set (file_root_popup
+add_file_folder("Popup"
 	popup/popup.cpp
 	popup/popup.h
 	popup/popupdead.cpp
@@ -872,11 +1187,13 @@ set (file_root_popup
 )
 
 # Radar files
-set (file_root_radar
+add_file_folder("Radar"
 	radar/radar.cpp
 	radar/radar.h
 	radar/radardradis.cpp
 	radar/radardradis.h
+	radar/radarngon.cpp
+	radar/radarngon.h
 	radar/radarorb.cpp
 	radar/radarorb.h
 	radar/radarsetup.cpp
@@ -884,7 +1201,7 @@ set (file_root_radar
 )
 
 # Render files
-set (file_root_render
+add_file_folder("Render"
 	render/3d.h
 	render/3dclipper.cpp
 	render/3ddraw.cpp
@@ -896,18 +1213,77 @@ set (file_root_render
 	render/batching.h
 )
 
-set(file_root_scripting
+add_file_folder("ScpUi"
+	scpui/IncludeNodeHandler.cpp
+	scpui/IncludeNodeHandler.h
+	scpui/rocket_ui.cpp
+	scpui/rocket_ui.h
+	scpui/RocketFileInterface.cpp
+	scpui/RocketFileInterface.h
+	scpui/RocketLuaSystemInterface.cpp
+	scpui/RocketLuaSystemInterface.h
+	scpui/RocketRenderingInterface.cpp
+	scpui/RocketRenderingInterface.h
+	scpui/RocketSystemInterface.cpp
+	scpui/RocketSystemInterface.h
+	scpui/SoundPlugin.cpp
+	scpui/SoundPlugin.h
+)
+
+add_file_folder("ScpUi\\\\Elements"
+	scpui/elements/AnimationElement.cpp
+	scpui/elements/AnimationElement.h
+	scpui/elements/ScrollingTextElement.cpp
+	scpui/elements/ScrollingTextElement.h
+)
+
+add_file_folder("Scripting"
 	scripting/ade.cpp
 	scripting/ade.h
 	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
+	scripting/ade_doc.cpp
+	scripting/ade_doc.h
+	scripting/doc_html.cpp
+	scripting/doc_html.h
+	scripting/doc_json.cpp
+	scripting/doc_json.h
+	scripting/doc_parser.cpp
+	scripting/doc_parser.h
+	scripting/global_hooks.cpp
+	scripting/global_hooks.h
+	scripting/hook_api.cpp
+	scripting/hook_api.h
+	scripting/hook_conditions.cpp
+	scripting/hook_conditions.h
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h
+	scripting/scripting_doc.h
 )
 
-set(file_root_scripting_api_libs
+add_file_folder("Scripting\\\\Util"
+	scripting/util/LuaValueDeserializer.cpp
+	scripting/util/LuaValueDeserializer.h
+	scripting/util/LuaValueSerializer.cpp
+	scripting/util/LuaValueSerializer.h
+)
+
+add_file_folder("Scripting\\\\Api"
+	scripting/api/LuaCoroutineRunner.cpp
+	scripting/api/LuaCoroutineRunner.h
+	scripting/api/LuaEventCallback.cpp
+	scripting/api/LuaEventCallback.h
+	scripting/api/LuaExecutionContext.cpp
+	scripting/api/LuaExecutionContext.h
+	scripting/api/LuaPromise.cpp
+	scripting/api/LuaPromise.h
+)
+
+add_file_folder("Scripting\\\\Api\\\\Libs"
+	scripting/api/libs/async.cpp
+	scripting/api/libs/async.h
 	scripting/api/libs/audio.cpp
 	scripting/api/libs/audio.h
 	scripting/api/libs/base.cpp
@@ -916,67 +1292,157 @@ set(file_root_scripting_api_libs
 	scripting/api/libs/bitops.h
 	scripting/api/libs/cfile.cpp
 	scripting/api/libs/cfile.h
+	scripting/api/libs/controls.cpp
+	scripting/api/libs/controls.h
+	scripting/api/libs/engine.cpp
+	scripting/api/libs/engine.h
+	scripting/api/libs/graphics.cpp
+	scripting/api/libs/graphics.h
 	scripting/api/libs/hookvars.cpp
 	scripting/api/libs/hookvars.h
 	scripting/api/libs/hud.cpp
 	scripting/api/libs/hud.h
 	scripting/api/libs/mission.cpp
 	scripting/api/libs/mission.h
+	scripting/api/libs/multi.cpp
+	scripting/api/libs/multi.h
+	scripting/api/libs/options.cpp
+	scripting/api/libs/options.h
+	scripting/api/libs/parse.cpp
+	scripting/api/libs/parse.h
 	scripting/api/libs/tables.cpp
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
 	scripting/api/libs/testing.h
+    scripting/api/libs/time_lib.cpp
+    scripting/api/libs/time_lib.h
+	scripting/api/libs/utf8.cpp
+	scripting/api/libs/utf8.h
+	scripting/api/libs/ui.cpp
+	scripting/api/libs/ui.h
 )
 
-set(file_root_scripting_api_objs
+add_file_folder("Scripting\\\\Api\\\\Objs"
+	scripting/api/objs/ai_helper.cpp
+	scripting/api/objs/ai_helper.h
+	scripting/api/objs/animation_handle.cpp
+	scripting/api/objs/animation_handle.h
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
+	scripting/api/objs/audio_stream.cpp
+	scripting/api/objs/audio_stream.h
+	scripting/api/objs/background_element.cpp
+	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
+	scripting/api/objs/briefing.cpp
+	scripting/api/objs/briefing.h
+	scripting/api/objs/bytearray.cpp
+	scripting/api/objs/bytearray.h
 	scripting/api/objs/camera.cpp
 	scripting/api/objs/camera.h
+	scripting/api/objs/cmd_brief.cpp
+	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/control_binding.cpp
+	scripting/api/objs/control_binding.h
+	scripting/api/objs/control_config.cpp
+	scripting/api/objs/control_config.h
+	scripting/api/objs/color.cpp
+	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
-	scripting/api/objs/controls.cpp
-	scripting/api/objs/controls.h
+	scripting/api/objs/debriefing.cpp
+	scripting/api/objs/debriefing.h
 	scripting/api/objs/debris.cpp
 	scripting/api/objs/debris.h
+	scripting/api/objs/decaldefinition.cpp
+	scripting/api/objs/decaldefinition.h
 	scripting/api/objs/enums.cpp
 	scripting/api/objs/enums.h
 	scripting/api/objs/event.cpp
 	scripting/api/objs/event.h
+	scripting/api/objs/execution_context.cpp
+	scripting/api/objs/execution_context.h
+	scripting/api/objs/executor.cpp
+	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
 	scripting/api/objs/eye.h
+	scripting/api/objs/fictionviewer.cpp
+	scripting/api/objs/fictionviewer.h
 	scripting/api/objs/file.cpp
 	scripting/api/objs/file.h
+	scripting/api/objs/fireballclass.cpp
+	scripting/api/objs/fireballclass.h
+	scripting/api/objs/fireball.cpp
+	scripting/api/objs/fireball.h
 	scripting/api/objs/font.cpp
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp
 	scripting/api/objs/gameevent.h
+	scripting/api/objs/gamehelp.cpp
+	scripting/api/objs/gamehelp.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
-	scripting/api/objs/graphics.cpp
-	scripting/api/objs/graphics.h
+	scripting/api/objs/hudconfig.cpp
+	scripting/api/objs/hudconfig.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
+	scripting/api/objs/intelentry.cpp
+	scripting/api/objs/intelentry.h
+	scripting/api/objs/loop_brief.cpp
+	scripting/api/objs/loop_brief.h
+	scripting/api/objs/LuaEnum.cpp
+	scripting/api/objs/LuaEnum.h
+	scripting/api/objs/LuaSEXP.cpp
+	scripting/api/objs/LuaSEXP.h
+	scripting/api/objs/luaaisexp.cpp
+	scripting/api/objs/luaaisexp.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
+	scripting/api/objs/medals.cpp
+	scripting/api/objs/medals.h
 	scripting/api/objs/message.cpp
 	scripting/api/objs/message.h
+	scripting/api/objs/missionhotkey.cpp
+	scripting/api/objs/missionhotkey.h
+	scripting/api/objs/missionlog.cpp
+	scripting/api/objs/missionlog.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/modelinstance.cpp
+	scripting/api/objs/modelinstance.h
+	scripting/api/objs/model_path.cpp
+	scripting/api/objs/model_path.h
+	scripting/api/objs/movie_player.cpp
+	scripting/api/objs/movie_player.h
+	scripting/api/objs/multi_objects.cpp
+	scripting/api/objs/multi_objects.h
 	scripting/api/objs/object.cpp
 	scripting/api/objs/object.h
+	scripting/api/objs/option.cpp
+	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/oswpt.cpp
+	scripting/api/objs/oswpt.h
+	scripting/api/objs/parse_object.cpp
+	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp
 	scripting/api/objs/particle.h
 	scripting/api/objs/physics_info.cpp
 	scripting/api/objs/physics_info.h
 	scripting/api/objs/player.cpp
 	scripting/api/objs/player.h
+	scripting/api/objs/promise.cpp
+	scripting/api/objs/promise.h
+	scripting/api/objs/rank.cpp
+	scripting/api/objs/rank.h
+	scripting/api/objs/redalert.cpp
+	scripting/api/objs/redalert.h
+	scripting/api/objs/rpc.cpp
+	scripting/api/objs/rpc.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp
@@ -989,6 +1455,10 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/ship.h
 	scripting/api/objs/shiptype.cpp
 	scripting/api/objs/shiptype.h
+	scripting/api/objs/ship_registry_entry.cpp
+	scripting/api/objs/ship_registry_entry.h
+	scripting/api/objs/shipwepselect.cpp
+	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
 	scripting/api/objs/sound.h
 	scripting/api/objs/species.cpp
@@ -999,10 +1469,16 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/subsystem.h
 	scripting/api/objs/team.cpp
 	scripting/api/objs/team.h
+	scripting/api/objs/techroom.cpp
+	scripting/api/objs/techroom.h
 	scripting/api/objs/texture.cpp
 	scripting/api/objs/texture.h
 	scripting/api/objs/texturemap.cpp
 	scripting/api/objs/texturemap.h
+    scripting/api/objs/time_obj.cpp
+    scripting/api/objs/time_obj.h
+	scripting/api/objs/tracing_category.cpp
+	scripting/api/objs/tracing_category.h
 	scripting/api/objs/vecmath.cpp
 	scripting/api/objs/vecmath.h
 	scripting/api/objs/waypoint.cpp
@@ -1013,11 +1489,16 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/weapon.h
 	scripting/api/objs/wing.cpp
 	scripting/api/objs/wing.h
+	scripting/api/objs/wingformation.cpp
+	scripting/api/objs/wingformation.h
 )
 
-set(file_root_scripting_lua
+add_file_folder("Scripting\\\\Lua"
+	scripting/lua/lua_ext.c
+	scripting/lua/lua_ext.h
 	scripting/lua/LuaArgs.cpp
 	scripting/lua/LuaArgs.h
+	scripting/lua/LuaConvert.cpp
 	scripting/lua/LuaConvert.h
 	scripting/lua/LuaException.h
 	scripting/lua/LuaFunction.cpp
@@ -1027,14 +1508,21 @@ set(file_root_scripting_lua
 	scripting/lua/LuaReference.h
 	scripting/lua/LuaTable.cpp
 	scripting/lua/LuaTable.h
+	scripting/lua/LuaThread.cpp
+	scripting/lua/LuaThread.h
+	scripting/lua/LuaTypes.h
 	scripting/lua/LuaUtil.cpp
 	scripting/lua/LuaUtil.h
 	scripting/lua/LuaValue.cpp
 	scripting/lua/LuaValue.h
 )
 
+add_file_folder("Scripting\\\\Lua\\\\BitOp"
+	scripting/lua/bitop/bit.c
+)
+
 # Ship files
-set (file_root_ship
+add_file_folder("Ship"
 	ship/afterburner.cpp
 	ship/afterburner.h
 	ship/awacs.cpp
@@ -1053,8 +1541,8 @@ set (file_root_ship
 )
 
 # Sound files
-set (file_root_sound
-		sound/audiostr.cpp
+add_file_folder("Sound"
+	sound/audiostr.cpp
 	sound/audiostr.h
 	sound/channel.h
 	sound/ds.cpp
@@ -1065,6 +1553,7 @@ set (file_root_sound
 	sound/dscap.h
 	sound/fsspeech.cpp
 	sound/fsspeech.h
+	sound/IAudioFile.h
 	sound/openal.cpp
 	sound/openal.h
 	sound/phrases.xml
@@ -1078,32 +1567,42 @@ set (file_root_sound
 	sound/voicerec.h
 )
 
-# Sound -> ffmpeg files
-set (file_root_sound_ffmpeg
-	sound/ffmpeg/FFmpegAudioReader.cpp
-	sound/ffmpeg/FFmpegAudioReader.h
-	sound/ffmpeg/WaveFile.cpp
-	sound/ffmpeg/WaveFile.h
-)
+if (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech.mm
+	)
+endif()
+
+if (FSO_BUILD_WITH_FFMPEG)
+	# Sound -> ffmpeg files
+	add_file_folder("Sound\\\\FFmpeg"
+		sound/ffmpeg/FFmpegAudioReader.cpp
+		sound/ffmpeg/FFmpegAudioReader.h
+		sound/ffmpeg/FFmpegWaveFile.cpp
+		sound/ffmpeg/FFmpegWaveFile.h
+	)
+endif()
 
 # Species_Defs files
-set (file_root_species_defs
+add_file_folder("Species_Defs"
 	species_defs/species_defs.cpp
 	species_defs/species_defs.h
 )
 
 # Starfield files
-set (file_root_starfield
+add_file_folder("Starfield"
 	starfield/nebula.cpp
 	starfield/nebula.h
 	starfield/starfield.cpp
 	starfield/starfield.h
 	starfield/supernova.cpp
 	starfield/supernova.h
+	starfield/starfield_flags.h
 )
 
 # Stats files
-set (file_root_stats
+add_file_folder("Stats"
 	stats/medals.cpp
 	stats/medals.h
 	stats/scoring.cpp
@@ -1113,13 +1612,13 @@ set (file_root_stats
 )
 
 # TgaUtils files
-set (file_root_tgautils
+add_file_folder("TgaUtils"
 	tgautils/tgautils.cpp
 	tgautils/tgautils.h
 )
 
 # Tracing files
-set (file_root_tracing
+add_file_folder("Tracing"
 	tracing/categories.cpp
 	tracing/categories.h
 	tracing/FrameProfiler.h
@@ -1138,7 +1637,7 @@ set (file_root_tracing
 )
 
 # Ui files
-set (file_root_ui
+add_file_folder("Ui"
 	ui/button.cpp
 	ui/checkbox.cpp
 	ui/gadget.cpp
@@ -1157,17 +1656,36 @@ set (file_root_ui
 	ui/window.cpp
 )
 
-set(file_root_utils
+add_file_folder("Utils"
+	utils/base64.cpp
+	utils/base64.h
+	utils/encoding.cpp
+	utils/encoding.h
+	utils/event.h
+	utils/finally.h
+	utils/HeapAllocator.cpp
+	utils/HeapAllocator.h
+	utils/id.h
+	utils/join_string.h
+	utils/Random.cpp
+	utils/Random.h
+	utils/RandomRange.h
+	utils/string_utils.cpp
+	utils/string_utils.h
 	utils/strings.h
+	utils/tuples.h
+	utils/unicode.cpp
+	utils/unicode.h
 )
 
 # Utils files
-set (file_root_utils_boost
+add_file_folder("Utils\\\\boost"
+	utils/boost/hash_combine.h
 	utils/boost/syncboundedqueue.h
 )
 
 # Weapon files
-set (file_root_weapon
+add_file_folder("Weapon"
 	weapon/beam.cpp
 	weapon/beam.h
 	weapon/corkscrew.cpp
@@ -1190,199 +1708,7 @@ set (file_root_weapon
 )
 
 # Windows stubs files
-set(file_root_windows_stubs
+add_file_folder("Windows Stubs"
 	windows_stub/config.h
-)
-
-IF(UNIX)
-	SET(file_root_windows_stubs
-		${file_root_windows_stubs}
-		windows_stub/stubs.cpp
-	)
-ENDIF(UNIX)
-
-# the source groups
-source_group(""                                   FILES ${file_root})
-source_group("AI"                                 FILES ${file_root_ai})
-source_group("Anim"                               FILES ${file_root_anim})
-source_group("Asteroid"                           FILES ${file_root_asteroid})
-source_group("Autopilot"                          FILES ${file_root_autopilot})
-source_group("Bmpman"                             FILES ${file_root_bmpman})
-source_group("Camera"                             FILES ${file_root_camera})
-source_group("CFile"                              FILES ${file_root_cfile})
-source_group("Cmdline"                            FILES ${file_root_cmdline})
-source_group("CMeasure"                           FILES ${file_root_cmeasure})
-source_group("ControlConfig"                      FILES ${file_root_controlconfig})
-source_group("Cutscene"                           FILES ${file_root_cutscene})
-source_group("Cutscene\\ffmpeg"                   FILES ${file_root_cutscene_ffmpeg})
-source_group("Cutscene\\Player"                   FILES ${file_root_cutscene_player})
-source_group("ddsutils"                           FILES ${file_root_ddsutils})
-source_group("Debris"                             FILES ${file_root_debris})
-source_group("DebugConsole"                       FILES ${file_root_debugconsole})
-source_group("Default files"                      FILES ${file_root_def_files})
-source_group("Default files\\Files"               FILES ${file_root_def_files_files})
-source_group("ExceptionHandler"                   FILES ${file_root_exceptionhandler})
-source_group("ExternalDLL"                        FILES ${file_root_externaldll})
-source_group("Fireball"                           FILES ${file_root_fireball})
-source_group("GameHelp"                           FILES ${file_root_gamehelp})
-source_group("GameHelp\\fs2netd"                  FILES ${file_root_gamehelp_fs2netd})
-source_group("GameSequence"                       FILES ${file_root_gamesequence})
-source_group("GameSnd"                            FILES ${file_root_gamesnd})
-source_group("Generated Files"                    FILES ${file_root_generated})
-source_group("GlobalIncs"                         FILES ${file_root_globalincs})
-source_group("GlobalIncs\\Memory"                 FILES ${file_root_globalincs_memory})
-source_group("GlobalIncs\\Toolchain"              FILES ${file_root_globalincs_toolchain})
-source_group("Graphics"                           FILES ${file_root_graphics})
-source_group("Graphics\\OpenGLGr"                 FILES ${file_root_graphics_openglgr})
-source_group("Graphics\\OpenGLGr\\OpenGL CPPs"    FILES ${file_root_graphics_openglgr_opengl_cpps})
-source_group("Graphics\\OpenGLGr\\OpenGL Headers" FILES ${file_root_graphics_openglgr_opengl_headers})
-source_group("Graphics\\Paths"                    FILES ${file_root_graphics_paths})
-source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
-source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
-source_group("Graphics\\SoftwareGr\\Font"         FILES ${file_root_graphics_softwaregr_font})
-source_group("HeadTracking"                       FILES ${file_root_headtracking})
-source_group("Hud"                                FILES ${file_root_hud})
-source_group("iff_defs"                           FILES ${file_root_iff_defs})
-source_group("InetFile"                           FILES ${file_root_inetfile})
-source_group("Io"                                 FILES ${file_root_io})
-source_group("jpgutils"                           FILES ${file_root_jpgutils})
-source_group("JumpNode"                           FILES ${file_root_jumpnode})
-source_group("Lab"                                FILES ${file_root_lab})
-source_group("Libs"                               FILES ${file_root_libs})
-source_group("Libs\\FFmpeg"                       FILES ${file_root_libs_ffmpeg})
-source_group("Lighting"                           FILES ${file_root_lighting})
-source_group("Localization"                       FILES ${file_root_localization})
-source_group("Math"                               FILES ${file_root_math})
-source_group("MenuUI"                             FILES ${file_root_menuui})
-source_group("Mission"                            FILES ${file_root_mission})
-source_group("MissionUI"                          FILES ${file_root_missionui})
-source_group("mod_table"                          FILES ${file_root_mod_table})
-source_group("Model"                              FILES ${file_root_model})
-source_group("Nebula"                             FILES ${file_root_nebula})
-source_group("Network"                            FILES ${file_root_network})
-source_group("Object"                             FILES ${file_root_object})
-source_group("Observer"                           FILES ${file_root_observer})
-source_group("OsApi"                              FILES ${file_root_osapi})
-source_group("Parse"                              FILES ${file_root_parse})
-source_group("Particle"                           FILES ${file_root_particle})
-source_group("Particle\\Effects"                  FILES ${file_root_particle_effects})
-source_group("Particle\\Util"                     FILES ${file_root_particle_util})
-source_group("PcxUtils"                           FILES ${file_root_pcxutils})
-source_group("Physics"                            FILES ${file_root_physics})
-source_group("PilotFile"                          FILES ${file_root_pilotfile})
-source_group("Playerman"                          FILES ${file_root_playerman})
-source_group("pngutils"                           FILES ${file_root_pngutils})
-source_group("Popup"                              FILES ${file_root_popup})
-source_group("Radar"                              FILES ${file_root_radar})
-source_group("Render"                             FILES ${file_root_render})
-source_group("Scripting"                          FILES ${file_root_scripting})
-source_group("Scripting\\Api\\Libs"               FILES ${file_root_scripting_api_libs})
-source_group("Scripting\\Api\\Objs"               FILES ${file_root_scripting_api_objs})
-source_group("Scripting\\Lua"                     FILES ${file_root_scripting_lua})
-source_group("Ship"                               FILES ${file_root_ship})
-source_group("Sound"                              FILES ${file_root_sound})
-source_group("Sound\\FFmpeg"                      FILES ${file_root_sound_ffmpeg})
-source_group("Species_Defs"                       FILES ${file_root_species_defs})
-source_group("Starfield"                          FILES ${file_root_starfield})
-source_group("Stats"                              FILES ${file_root_stats})
-source_group("TgaUtils"                           FILES ${file_root_tgautils})
-source_group("Tracing"                            FILES ${file_root_tracing})
-source_group("Ui"                                 FILES ${file_root_ui})
-source_group("Utils"                              FILES ${file_root_utils})
-source_group("Utils\\boost"                       FILES ${file_root_utils_boost})
-source_group("Weapon"                             FILES ${file_root_weapon})
-source_group("Windows Stubs"                      FILES ${file_root_windows_stubs})
-
-# append all files to the file_root
-set (file_root
-	${file_root}
-	${file_root_ai}
-	${file_root_anim}
-	${file_root_asteroid}
-	${file_root_autopilot}
-	${file_root_bmpman}
-	${file_root_camera}
-	${file_root_cfile}
-	${file_root_cmdline}
-	${file_root_cmeasure}
-	${file_root_controlconfig}
-	${file_root_cutscene}
-	${file_root_cutscene_ffmpeg}
-	${file_root_cutscene_player}
-	${file_root_ddsutils}
-	${file_root_debris}
-	${file_root_debugconsole}
-	${file_root_def_files}
-	${file_root_def_files_files}
-	${file_root_exceptionhandler}
-	${file_root_externaldll}
-	${file_root_fireball}
-	${file_root_gamehelp}
-	${file_root_gamehelp_fs2netd}
-	${file_root_gamesequence}
-	${file_root_gamesnd}
-	${file_root_generated}
-	${file_root_globalincs}
-	${file_root_globalincs_memory}
-	${file_root_globalincs_toolchain}
-	${file_root_graphics}
-	${file_root_graphics_openglgr}
-	${file_root_graphics_openglgr_opengl_cpps}
-	${file_root_graphics_openglgr_opengl_headers}
-	${file_root_graphics_paths}
-	${file_root_graphics_paths_nanovg}
-	${file_root_graphics_softwaregr}
-	${file_root_graphics_softwaregr_font}
-	${file_root_headtracking}
-	${file_root_hud}
-	${file_root_iff_defs}
-	${file_root_inetfile}
-	${file_root_io}
-	${file_root_jpgutils}
-	${file_root_jumpnode}
-	${file_root_lab}
-	${file_root_libs}
-	${file_root_libs_ffmpeg}
-	${file_root_lighting}
-	${file_root_localization}
-	${file_root_math}
-	${file_root_menuui}
-	${file_root_mission}
-	${file_root_missionui}
-	${file_root_mod_table}
-	${file_root_model}
-	${file_root_nebula}
-	${file_root_network}
-	${file_root_object}
-	${file_root_observer}
-	${file_root_osapi}
-	${file_root_parse}
-	${file_root_particle}
-	${file_root_particle_effects}
-	${file_root_particle_util}
-	${file_root_pcxutils}
-	${file_root_physics}
-	${file_root_pilotfile}
-	${file_root_playerman}
-	${file_root_pngutils}
-	${file_root_popup}
-	${file_root_radar}
-	${file_root_render}
-	${file_root_scripting}
-	${file_root_scripting_api_libs}
-	${file_root_scripting_api_objs}
-	${file_root_scripting_lua}
-	${file_root_ship}
-	${file_root_sound}
-	${file_root_sound_ffmpeg}
-	${file_root_species_defs}
-	${file_root_starfield}
-	${file_root_stats}
-	${file_root_tgautils}
-	${file_root_tracing}
-	${file_root_ui}
-	${file_root_utils}
-	${file_root_utils_boost}
-	${file_root_weapon}
-	${file_root_windows_stubs}
+	windows_stub/stubs.cpp
 )

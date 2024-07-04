@@ -12,10 +12,14 @@
 #ifndef __FREESPACE_CHATBOX_H__
 #define __FREESPACE_CHATBOX_H__
 
+#include "globalincs/globals.h"
+
 // prototype
 struct net_player;
 
 #define CHATBOX_MAX_LEN						125			// max length of the actual text string
+#define CHATBOX_STRING_LEN (CALLSIGN_LEN + CHATBOX_MAX_LEN + 32)
+#define MAX_BRIEF_CHAT_LINES 60 // how many lines we can store in the scrollback buffer
 
 // chatbox flags for creation/switching between modes
 #define CHATBOX_FLAG_SMALL					 (1<<0)		// small chatbox
@@ -24,6 +28,15 @@ struct net_player;
 #define CHATBOX_FLAG_DRAW_BOX				 (1<<3)		// should be drawn by the chatbox code
 #define CHATBOX_FLAG_BUTTONS				 (1<<4)		// the chatbox should be drawing/checking its own buttons
 // NOTE : CHATBOX_FLAG_BUTTONS requires that CHATBOX_FLAG_DRAW_BOX is also set!
+
+typedef struct brief_chat {
+	int player_id;                        // the net player id
+	bool indent;                          // true if the line should be indented
+	char text[CHATBOX_MAX_LEN];           // the text of the message
+	char callsign[CALLSIGN_LEN];          // the player's callsign
+} brief_chat;
+
+extern SCP_list<brief_chat> Brief_chat;
 
 // initialize all chatbox details with the given mode flags
 int chatbox_create(int mode_flags = (CHATBOX_FLAG_SMALL | CHATBOX_FLAG_DRAW_BOX | CHATBOX_FLAG_BUTTONS));
@@ -45,6 +58,9 @@ int chatbox_scroll_down();
 
 // clear the contents of the chatbox
 void chatbox_clear();
+
+// send a message to the chatbox
+void chatbox_send_msg(char* msg);
 
 // add a line of text (from the player identified by pid) to the chatbox
 void chatbox_add_line(const char *msg, int pid, int add_id = 1);

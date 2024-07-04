@@ -29,8 +29,8 @@ class object;
 #define TBOX_FLASH_STATUS			3
 #define TBOX_FLASH_SUBSYS			4
 
-extern int Target_static_looping;
-extern int Target_display_cargo;
+extern sound_handle Target_static_looping;
+extern bool Target_display_cargo;
 extern char Cargo_string[256];
 
 extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];
@@ -38,7 +38,11 @@ extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];
 //used to track if the player has wireframe hud target box turned on
 extern int Targetbox_wire;
 extern int Targetbox_shader_effect;
+extern bool Targetbox_color_override;
+extern color Targetbox_color;
 extern bool Lock_targetbox_mode;
+
+enum class CargoScanType { DEFAULT, DUAL_SCAN_LINES, DISCO_SCAN_LINES };
 
 class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 {
@@ -66,6 +70,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 	// remember, these coords describe the rightmost position of this element, not the leftmost like it usually does.
 	int Hull_offsets[2];
 
+	CargoScanType Cargo_scan_type;
 	int Cargo_scan_start_offsets[2];
 	int Cargo_scan_h;
 	int Cargo_scan_w;
@@ -80,6 +85,10 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 	bool Use_disabled_status_offsets;
 
 	bool Desaturated;
+
+	int GaugeWireframe;
+	color GaugeWirecolor;
+	bool GaugeWirecolorOverride;
 
 	// first element is time flashing expires, second element is time of next flash
 	int Next_flash_timers[NUM_TBOX_FLASH_TIMERS];
@@ -100,28 +109,32 @@ public:
 	void initSpeedOffsets(int x, int y);
 	void initCargoStringOffsets(int x, int y);
 	void initHullOffsets(int x, int y);
+	void initCargoScanType(CargoScanType scantype);
 	void initCargoScanStartOffsets(int x, int y);
 	void initCargoScanSize(int w, int h);
 	void initSubsysNameOffsets(int x, int y, bool activate);
 	void initSubsysIntegrityOffsets(int x, int y, bool activate);
 	void initDisabledStatusOffsets(int x, int y, bool activate);
 	void initDesaturate(bool desaturate);
+	void initGaugeWireframe(int wireframe);
+	void initGaugeWirecolor(color wirecolor);
+	void initGaugeWirecolorOverride(bool wirecoloroverride);
 
-	void initialize();
-	void pageIn();
-	void render(float frametime);
+	void initialize() override;
+	void pageIn() override;
+	void render(float frametime) override;
 	void renderTargetShip(object *target_objp);
 	void renderTargetWeapon(object *target_objp);
 	void renderTargetDebris(object *target_objp);
 	void renderTargetAsteroid(object *target_objp);
 	void renderTargetJumpNode(object *target_objp);
-	void renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, float zoom);
+	void renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom);
 	void renderTargetClose();
 	void renderTargetForeground();
 	void renderTargetIntegrity(int disabled, int force_obj_num = -1);
 	int maybeFlashElement(int index, int flash_fast=0);
 	void renderTargetShipInfo(object *target_objp);
-	void maybeRenderCargoScan(ship_info *target_sip);
+	void maybeRenderCargoScan(ship_info *target_sip, ship_subsys *target_subsys);
 	void initFlashTimer(int index);
 	void showTargetData(float frametime);
 };
@@ -148,17 +161,15 @@ public:
 	void initTimeOffsets(int x, int y);
 	void initOrderOffsets(int x, int y);
 	void initOrderMaxWidth(int width);
-	void updateFrame();
-	void render(float frametime);
-	void initialize();
+	void render(float frametime) override;
+	void initialize() override;
 	void initDockFlashTimer();
 	void startFlashDock(int duration=TBOX_FLASH_DURATION);
 	int maybeFlashDock(int flash_fast=0);
 	void endFlashDock();
-	void pageIn();
+	void pageIn() override;
 };
 
-void	hud_targetbox_init();
 void	hud_targetbox_init_flash();
 void	hud_get_target_strength(object *objp, float *shields, float *integrity);
 

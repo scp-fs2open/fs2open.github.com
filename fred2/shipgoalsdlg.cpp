@@ -446,6 +446,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_UNDOCK:
 			case AI_GOAL_KEEP_SAFE_DISTANCE:
 			case AI_GOAL_PLAY_DEAD:
+			case AI_GOAL_PLAY_DEAD_PERSISTENT:
 			case AI_GOAL_WARP:
 				continue;
 
@@ -460,7 +461,9 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
 			case AI_GOAL_EVADE_SHIP:
@@ -475,7 +478,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 				num = ship_name_lookup(goalp[item].target_name, 1);
 				if (num != -1)
-					m_subsys[item] = ship_get_subsys_index(&Ships[num], goalp[item].docker.name, 1);
+					m_subsys[item] = ship_find_subsys(&Ships[num], goalp[item].docker.name);
 
 				break;
 
@@ -537,7 +540,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		}
 
 		if (flag & 0x4) {  // data is a waypoint path name
-			SCP_list<waypoint_list>::iterator ii;
+			SCP_vector<waypoint_list>::iterator ii;
 			for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
 				if (!stricmp(goalp[item].target_name, ii->get_name())) {
 					m_data[item] = i | TYPE_PATH;
@@ -553,7 +556,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		}
 
 		if (flag & 0x10) {  // data is a ship class
-			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+			for (i = 0; i < ship_info_size(); i++) {
 				if (!stricmp(goalp[item].target_name, Ship_info[i].name)) {
 					m_data[item] = i | TYPE_SHIP_CLASS;
 					break;
@@ -586,7 +589,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 
 void ShipGoalsDlg::set_item(int item, int init)
 {
-	SCP_list<waypoint_list>::iterator ii;
+	SCP_vector<waypoint_list>::iterator ii;
 	int i, t, z, num, inst;
 	object *ptr;
 
@@ -610,7 +613,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 	auto mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
 	m_priority_box[item] -> EnableWindow(TRUE);
-	if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_WARP) ) {
+	if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_PLAY_DEAD_PERSISTENT) || (mode == AI_GOAL_WARP) ) {
 		m_object_box[item] -> EnableWindow(FALSE);
 		m_subsys_box[item] -> EnableWindow(FALSE);
 		m_dock2_box[item] -> EnableWindow(FALSE);
@@ -652,7 +655,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 	// for goals that deal with ship classes
 	switch (mode) {
 		case AI_GOAL_CHASE_SHIP_CLASS:
-			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+			for (i = 0; i < ship_info_size(); i++) {
 				z = m_object_box[item] -> AddString(Ship_info[i].name);
 				m_object_box[item] -> SetItemData(z, i | TYPE_SHIP_CLASS);
 				if (init && (m_data[item] == (i | TYPE_SHIP_CLASS)))
@@ -668,7 +671,9 @@ void ShipGoalsDlg::set_item(int item, int init)
 		case AI_GOAL_DOCK:
 		case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
@@ -930,6 +935,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_UNDOCK:
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
 		case AI_GOAL_PLAY_DEAD:
+		case AI_GOAL_PLAY_DEAD_PERSISTENT:
 		case AI_GOAL_WARP:
 			// these goals do not have a target in the dialog box, so let's set the goal and return immediately
 			// so that we don't run afoul of the "doesn't have a valid target" code at the bottom of the function
@@ -939,7 +945,9 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
@@ -1099,7 +1107,7 @@ void ShipGoalsDlg::OnOK()
 
 	for (i=0; i<ED_MAX_GOALS; i++) {
 		auto mode = m_behavior_box[i] -> GetItemData(m_behavior[i]);
-		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_WARP) ) {
+		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_PLAY_DEAD_PERSISTENT) && (mode != AI_GOAL_WARP) ) {
 			if (!m_object_box[i] -> GetCount())  // no valid objects?
 				m_behavior[i] = 0;
 			else
@@ -1193,8 +1201,7 @@ void ShipGoalsDlg::OnSelchangeObject10()
 
 void ShipGoalsDlg::set_object(int item)
 {
-	char *str;
-	int i = 0, z, num, not_used;
+	int i = 0, z, num;
 	ship_subsys *subsys;
 
 	if (m_behavior[item] > 0) {
@@ -1211,8 +1218,7 @@ void ShipGoalsDlg::set_object(int item)
 			for (i=0; i<num; i++) {
 				Assert(Docking_bay_list[i]);
 				z = m_dock2_box[item] -> AddString(Docking_bay_list[i]);
-				str = ai_get_goal_target_name(Docking_bay_list[i], &not_used);
-				m_dock2_box[item] -> SetItemDataPtr(z, str);
+				m_dock2_box[item] -> SetItemDataPtr(z, Docking_bay_list[i]);
 			}
 
 		} else if ((mode == AI_GOAL_DESTROY_SUBSYSTEM) && (m_data[item] >= 0)) {

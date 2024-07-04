@@ -29,7 +29,7 @@
 class InetGetFile
 {
 public:
-	InetGetFile(char *URL,char *localfile);
+	InetGetFile(const char *URL, const char *filename, int cf_type = 1 /* CF_TYPE_ROOT */);
 	~InetGetFile();
 	bool IsFileReceived();
 	bool IsFileError();

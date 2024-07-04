@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::MissionGoalsDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::MissionGoalsDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>578</width>
+    <height>579</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Mission Objectives</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QSplitter" name="splitter_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="childrenCollapsible">
+      <bool>false</bool>
+     </property>
+     <widget class="QWidget" name="widget" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="fso::fred::sexp_tree" name="goalEventTree"/>
+       </item>
+       <item alignment="Qt::AlignTop">
+        <widget class="QWidget" name="widget_2" native="true">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetFixedSize</enum>
+          </property>
+          <item row="1" column="0" colspan="2">
+           <widget class="QGroupBox" name="groupBox">
+            <property name="title">
+             <string>Current Objective</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout">
+             <property name="sizeConstraint">
+              <enum>QLayout::SetMinAndMaxSize</enum>
+             </property>
+             <property name="fieldGrowthPolicy">
+              <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+             </property>
+             <property name="labelAlignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="formAlignment">
+              <set>Qt::AlignJustify|Qt::AlignTop</set>
+             </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>T&amp;ype</string>
+               </property>
+               <property name="buddy">
+                <cstring>goalTypeCombo</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="goalTypeCombo">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <item>
+                <property name="text">
+                 <string>Primary Goal</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Secondary Goal</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Bonus Goal</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="goalScore"/>
+             </item>
+             <item row="4" column="1">
+              <widget class="QComboBox" name="goalTeamCombo">
+               <item>
+                <property name="text">
+                 <string>Team 1</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Team 2</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>None</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="5" column="0" colspan="2">
+              <widget class="QCheckBox" name="objectiveInvalidCheck">
+               <property name="text">
+                <string>Objective Invalid</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0" colspan="2">
+              <widget class="QCheckBox" name="noCompletionMusicCheck">
+               <property name="text">
+                <string>Don't Play Completion Music</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Name</string>
+               </property>
+               <property name="buddy">
+                <cstring>goalName</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Score</string>
+               </property>
+               <property name="buddy">
+                <cstring>goalScore</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Team</string>
+               </property>
+               <property name="buddy">
+                <cstring>goalTeamCombo</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="goalName"/>
+             </item>
+             <item row="2" column="0" colspan="2">
+              <widget class="QLineEdit" name="goalDescription">
+               <property name="placeholderText">
+                <string>Mission goal text</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDialogButtonBox" name="buttonBox">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="standardButtons">
+             <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="newObjectiveBtn">
+            <property name="text">
+             <string>New Obj.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="displayTypeCombo">
+            <item>
+             <property name="text">
+              <string>Primary Goals</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Secondary Goals</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Bonus Goals</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Display &amp;Types</string>
+            </property>
+            <property name="buddy">
+             <cstring>displayTypeCombo</cstring>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QPlainTextEdit" name="helpTextBox">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::MissionGoalsDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>506</x>
+     <y>119</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::MissionGoalsDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>506</x>
+     <y>113</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

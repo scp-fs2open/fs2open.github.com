@@ -28,7 +28,7 @@ enum class ValueType {
 	TABLE,
 	FUNCTION,
 	USERDATA,
-	THREAD
+	THREAD,
 };
 
 /**
@@ -47,10 +47,10 @@ class LuaValue {
      * @return luacpp::LuaValue A new LuaValue instance which references the specified value
      */
 	template<class ValueType>
-	static LuaValue createValue(lua_State* state, const ValueType& value) {
+	static LuaValue createValue(lua_State* state, ValueType&& value) {
 		LuaValue retVal(state);
 
-		convert::pushValue(state, value);
+		convert::pushValue(state, std::forward<ValueType>(value));
 
 		retVal.setReference(UniqueLuaReference::create(state));
 
@@ -63,37 +63,45 @@ class LuaValue {
 	static LuaValue createNil(lua_State* L);
 
 	/**
-     * @brief Default constructor, creates an invalid LuaValue
-     */
-	LuaValue() : _luaState(nullptr), _luaType(ValueType::NONE) {}
+	 * @brief Default constructor, creates an invalid LuaValue
+	 */
+	LuaValue();
 
 	/**
-     * @brief Initializes the lua value
-     *
-     * The instance does not point to a lua-value after the constructor has finished. To reference
-     * a value use #setReference(LuaReferencePtr)
-     *
-     * @param state The lua state
-     */
+	 * @brief Initializes the lua value
+	 *
+	 * The instance does not point to a lua-value after the constructor has finished. To reference
+	 * a value use #setReference(LuaReferencePtr)
+	 *
+	 * @param state The lua state
+	 */
 	LuaValue(lua_State* state);
 
 	/**
-     * @brief Copy-constructor
-     * @param other The other LuaValue.
-     */
+	 * @brief Copy-constructor
+	 * @param other The other LuaValue.
+	 */
 	LuaValue(const LuaValue& other);
+	LuaValue& operator=(const LuaValue& other);
 
 	/**
-     * @brief Releases the reference
-     */
+	 * @brief Move-constructor
+	 * @param other The other LuaValue.
+	 */
+	LuaValue(LuaValue&& other) noexcept;
+	LuaValue& operator=(LuaValue&& other) noexcept;
+
+	/**
+	 * @brief Releases the reference
+	 */
 	virtual ~LuaValue();
 
 	/**
-     * @brief Sets a new LuaReference.
-     *
-     * @param ref The new lua reference.
-     */
-	virtual void setReference(LuaReference ref);
+	 * @brief Sets a new LuaReference.
+	 *
+	 * @param ref The new lua reference.
+	 */
+	virtual void setReference(const LuaReference& ref);
 
 	/**
      * @brief Gets the LuaReference.
@@ -140,14 +148,29 @@ class LuaValue {
      */
 	template<class Type>
 	Type getValue() const {
-		_reference->pushValue();
+		_reference->pushValue(_luaState);
 
-		try {
-			return convert::popValue<Type>(_luaState);
-		}
-		catch (...) {
+		Type target;
+		if (!convert::popValue(_luaState, target)) {
 			lua_pop(_luaState, 1);
-			throw;
+			throw LuaException("Failed to pop value");
+		} else {
+			return target;
+		}
+	}
+
+	/**
+	 * @brief Same as above but allows passing a reference to a value where to store the lua value
+	 *
+	 * @exception LuaException Thrown when the conversion failed.
+	 */
+	template<typename Type>
+	void getValue(Type&& od) const {
+		_reference->pushValue(_luaState);
+
+		if (!convert::popValue(_luaState, std::forward<Type>(od))) {
+			lua_pop(_luaState, 1);
+			throw LuaException("Failed to pop value");
 		}
 	}
 
@@ -159,17 +182,21 @@ class LuaValue {
 	bool isValid() const;
 
 	/**
-     * @brief Pushes this lua value onto the stack.
-     */
-	virtual bool pushValue() const;
+	 * @brief Pushes this lua value onto the stack.
+	 * @param thread The thread stack onto which this value should be pushed. May be nullptr for the default state of
+	 * this value
+	 * @param manualStackAllocation Set to true if you manually allocate sufficient stack size before calling this function. Keep false unless you know what you are doing.
+	 */
+	bool pushValue(lua_State* thread, bool manualStackAllocation = false) const;
 
 	lua_State* getLuaState() const;
- protected:
-	lua_State* _luaState; //!< The lua state of this value.
+
+  protected:
+	lua_State* _luaState{nullptr}; //!< The lua state of this value.
 
 	LuaReference _reference;
 
-	ValueType _luaType;
+	ValueType _luaType = ValueType::NONE;
 };
 
 /**
@@ -180,7 +207,7 @@ class LuaValue {
 */
 template<typename Type>
 bool operator==(const LuaValue& lhs, const Type& rhs) {
-	lhs.pushValue();
+	lhs.pushValue(lhs.getLuaState());
 	convert::pushValue(lhs.getLuaState(), rhs);
 
 	bool result = lua_equal(lhs.getLuaState(), -2, -1) != 0;
@@ -199,7 +226,7 @@ bool operator==(const LuaValue& lhs, const Type& rhs) {
 */
 template<typename Type>
 bool operator<(const LuaValue& lhs, const Type& rhs) {
-	lhs.pushValue();
+	lhs.pushValue(lhs.getLuaState());
 	convert::pushValue(lhs.getLuaState(), rhs);
 
 	bool result = lua_lessthan(lhs.getLuaState(), -2, -1) != 0;
@@ -231,30 +258,9 @@ bool operator>=(const LuaValue& lhs, const Type& rhs) {
 
 namespace convert {
 
-template<>
-inline void pushValue<LuaValue>(lua_State* luaState, const LuaValue& value) {
-	if (luaState != value.getLuaState()) {
-		throw LuaException("Lua state mismatch!");
-	}
+void pushValue(lua_State* luaState, const LuaValue& value);
 
-	value.pushValue();
-}
-
-template<>
-inline LuaValue popValue<LuaValue>(lua_State* luaState, int stackposition, bool remove) {
-	if (!isValidIndex(luaState, stackposition)) {
-		throw LuaException("Specified stack position is not valid!");
-	}
-
-	LuaValue target;
-	target.setReference(UniqueLuaReference::create(luaState, stackposition));
-
-	if (remove) {
-		lua_remove(luaState, stackposition);
-	}
-
-	return target;
-}
+bool popValue(lua_State* luaState, LuaValue& target, int stackposition = -1, bool remove = true);
 
 }
 }

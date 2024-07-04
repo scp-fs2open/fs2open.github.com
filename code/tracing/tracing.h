@@ -19,7 +19,7 @@
 namespace tracing {
 
 /**
- * @brief Process if used for GPU events
+ * @brief Process id used for GPU events
  */
 const std::int64_t GPU_PID = std::numeric_limits<std::int64_t>::min();
 

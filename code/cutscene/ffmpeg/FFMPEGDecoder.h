@@ -8,26 +8,38 @@ struct InputStream;
 
 struct DecoderStatus;
 
+class SubtitleDecoder;
+
 class FFMPEGDecoder: public Decoder {
  private:
 	std::unique_ptr<InputStream> m_input;
 
+	std::unique_ptr<InputStream> m_subtitleInput;
+
 	std::unique_ptr<DecoderStatus> m_status;
 
- public:
+	PlaybackProperties m_properties;
+
+	bool hasExternalSubtitle() const;
+
+	void runSubtitleDecoder(SubtitleDecoder* decoder);
+
+  public:
 	FFMPEGDecoder();
 
-	virtual ~FFMPEGDecoder();
+	~FFMPEGDecoder() override;
 
-	bool initialize(const SCP_string& fileName) SCP_OVERRIDE;
+	bool initialize(const SCP_string& fileName, const PlaybackProperties& properties) override;
 
-	MovieProperties getProperties() SCP_OVERRIDE;
+	MovieProperties getProperties() const override;
 
-	void startDecoding() SCP_OVERRIDE;
+	void startDecoding() override;
 
-	bool hasAudio() SCP_OVERRIDE;
+	bool hasAudio() const override;
 
-	void close() SCP_OVERRIDE;
+	bool hasSubtitles() const override;
+
+	void close() override;
 };
 }
 }

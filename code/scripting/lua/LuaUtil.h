@@ -16,6 +16,18 @@ class LuaTable;
 namespace util {
 
 /**
+ * @brief Initializes this sublibrary in the specified lua state
+ * @param L The lua state to initialize with. Must be the main thread.
+ */
+void initializeLuaSupportLib(lua_State* L);
+
+/**
+ * @brief From the specified state gets the main thread.
+ * @param L The state to query
+ */
+lua_State* getMainThread(lua_State* L);
+
+/**
  * @brief Fills the given container with all key-value pairs.
  * Each key-value pair is converted into the type given to the Container and then push_back is used to add it.
  *
@@ -35,11 +47,18 @@ void tableListPairs(LuaTable& table, Container& keyValueList) {
 	lua_State* L = table.getLuaState();
 
 	for (auto val : table) {
-		val.first.pushValue();
-		key_type key = convert::popValue<key_type>(L);
+		val.first.pushValue(L);
+		key_type key;
+		if (!convert::popValue(L, key)) {
+			throw LuaException("Failed to pop key!");
+		}
 
-		val.second.pushValue();
-		value_type value = convert::popValue<value_type>(L);
+		val.second.pushValue(L);
+		value_type value;
+
+		if (!convert::popValue(L, value)) {
+			throw LuaException("Failed to pop value!");
+		}
 
 		keyValueList.push_back(std::make_pair(key, value));
 	}

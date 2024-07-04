@@ -6,12 +6,19 @@
 
 #include "globalincs/pstypes.h"
 #include "network/psnet2.h"
+#include "network/multi.h"
 #include "network/multimsgs.h"
 #include "ship/ship.h"
 
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+// This suppresses a GCC bug where it thinks that some of the enum fields below shadow global declarations even though
+// the enum class names are not visible in the global namespace
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
 
 enum class packet_data_type {
     NOT_DATA			= 255,
@@ -27,23 +34,37 @@ enum class packet_data_type {
     SHORT				= 9,
     USHORT				= 10,
     OBJECT				= 11,
+	WING				= 12,
 };
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+// Minimum size that a valid sexp packet can be
+//  4 bytes - OP
+//  2 bytes - COUNT
+//  1 byte  - TERMINATOR
+#define MIN_SEXP_PACKET_SIZE	7
 
 class sexp_network_packet {
 private:
-    ubyte data[MAX_PACKET_SIZE];
+	#define SEXP_MAX_PACKET_SIZE	(MAX_PACKET_SIZE - HEADER_LENGTH - static_cast<int>(sizeof(ushort)))
+
+	ubyte data[SEXP_MAX_PACKET_SIZE];
     int packet_size = 0;
     int offset = 0;
 
     // the type array holds information on the type of date held at the same index of the data array
     // types are not sent to the client and the entire array could be replaced with a couple of variables indexing the end of 
     // the previous SEXP. However it is much more helpful when debugging to have the array
-    packet_data_type type[MAX_PACKET_SIZE];
+	packet_data_type type[SEXP_MAX_PACKET_SIZE];
     int argument_count_index = -1;			// index in the type and data arrays for the argument count
-    int current_argument_count = 0;			// number of bytes the data for this SEXP currently takes up
+	int current_argument_count = 0;			// number of bytes the data for this SEXP currently takes up
     bool packet_flagged_invalid = false;
     bool callback_started = false;
     int op_num = 0;
+    int op_index = 0;
 
     /**
     * Checks if there is enough space in the packet currently being stuffed for the data that is about to be written into it
@@ -62,6 +83,12 @@ private:
     * Checks that the previous SEXP in the packet has correctly removed all its data from the packet. Attempts to fix it if it hasn't.
     */
     bool argument_count_is_valid();
+
+    /**
+     * Gets text name of operator for debugging purposes
+     */
+    const char *get_operator_name();
+
 public:
     int sexp_bytes_left = 0;
 
@@ -111,9 +138,13 @@ public:
     * Adds a ship's net sig to the SEXP packet.
     */
     void send_ship(ship *shipp);
-    void send_ship(int shipnum);
     
-    /**
+	/**
+	* Adds a wing's net sig to the SEXP packet.
+	*/
+	void send_wing(wing *wingp);
+
+	/**
     * Add the net sig of an object to the SEXP packet.
     */
     void send_object(object *objp);
@@ -139,7 +170,17 @@ public:
     */
     void send_float(float value);
 
-    /**
+	/**
+	 * Add three floats in a row.
+	 */
+	void send_vec3d(vec3d *value);
+
+	/**
+	 * Add nine floats in a row.
+	 */
+	void send_matrix(matrix *value);
+
+	/**
     * Add a short to the SEXP packet.
     */
     void send_short(short value);
@@ -178,19 +219,25 @@ public:
     */   
     bool get_int(int &value);
 
-    /**
-    * Attempts to get an index for the Ships array based on the net sig it removes from the SEXP packet. Returns it as the value
-    * parameter. Returns false if unable to do so.
-    */
-    bool get_ship(int &value);
+	/**
+	* Attempts to get an index for the Ships array based on the net sig it removes from the SEXP packet. Returns it as the value
+	* parameter. Returns false if unable to do so.
+	*/
+	bool get_ship(int &value);
 
-    /**
+	/**
     * Attempts to get a ship pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter.
     * Returns false if unable to do so.
     */
     bool get_ship(ship*& shipp);
     
-    /**
+	/**
+	* Attempts to get a wing pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter.
+	* Returns false if unable to do so.
+	*/
+	bool get_wing(wing*& wingp);
+
+	/**
     * Attempts to get an object pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter.
     * Returns false if unable to do so.
     */
@@ -205,8 +252,12 @@ public:
     /**
     * Attempts to remove a string from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
     */
-    bool get_string(char *buffer);
+	bool get_string(char *buffer, const size_t buf_len);
     bool get_string(SCP_string &buffer);
+	template<size_t size>
+	inline bool get_string(char (&buffer)[size]) {
+		return get_string(buffer, size);
+	}
 
     /**
     * Attempts to remove a boolean from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
@@ -218,7 +269,17 @@ public:
     */
     bool get_float(float &value);
 
-    /**
+	/**
+	* Attempts to remove a vec3d from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
+	*/
+	bool get_vec3d(vec3d *value);
+
+	/**
+	* Attempts to remove a matrix from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
+	*/
+	bool get_matrix(matrix *value);
+
+	/**
     * Attempts to remove a short from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
     */
     bool get_short(short &value);

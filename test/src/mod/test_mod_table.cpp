@@ -12,11 +12,11 @@ class ModTableTest : public test::FSTestFixture {
 	}
 };
 
-TEST_F(ModTableTest, future_targetted_version) {
+TEST_F(ModTableTest, future_targeted_version) {
 	ASSERT_THROW(mod_table_init(), os::dialogs::ErrorException);
 }
 
-TEST_F(ModTableTest, correct_targetted_version) {
+TEST_F(ModTableTest, correct_targeted_version) {
 	mod_table_init();
 }
 

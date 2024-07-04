@@ -14,33 +14,31 @@
 #include "math/fix.h"
 #include "io/timer.h"
 #include "localization/localize.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "cmdline/cmdline.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
 
-
-#define KEY_BUFFER_SIZE 16
-
 //-------- Variable accessed by outside functions ---------
-ubyte				keyd_buffer_type;		// 0=No buffer, 1=buffer ASCII, 2=buffer scans
-ubyte				keyd_repeat;
-uint				keyd_last_pressed;
-uint				keyd_last_released;
-ubyte				keyd_pressed[NUM_KEYS];
-int				keyd_time_when_last_pressed;
+bool				key_allow_repeat;
 
 typedef struct keyboard	{
-	ushort			keybuffer[KEY_BUFFER_SIZE];
-	uint				time_pressed[KEY_BUFFER_SIZE];
-	uint				TimeKeyWentDown[NUM_KEYS];
-	uint				TimeKeyHeldDown[NUM_KEYS];
-	uint				TimeKeyDownChecked[NUM_KEYS];
-	uint				NumDowns[NUM_KEYS];
-	uint				NumUps[NUM_KEYS];
-	int				down_check[NUM_KEYS];  // nonzero if has been pressed yet this mission
-	uint				keyhead, keytail;
+	enum class key_state : uint8_t { RELEASED, PRESSED, PRESSED_OVERRIDDEN };
+	std::array<key_state, NUM_KEYS> state;
+	SCP_queue<uint> key_queue;
+
+	//The time that the key was pressed. Tracks actual presses, even those overridden
+	uint TimeKeyWentDown[NUM_KEYS];
+
+	//The cumulative time that the key has been held down.
+	//This explicitly excludes any time the button has been down in the current press if the button is pressed.
+	uint TimeKeyHeldDown[NUM_KEYS];
+	uint TimeKeyDownChecked[NUM_KEYS];
+	uint NumDowns[NUM_KEYS];
+	uint NumUps[NUM_KEYS];
+	int down_check[NUM_KEYS];  // nonzero if has been pressed yet this mission
 } keyboard;
 
 keyboard key_data;
@@ -54,9 +52,9 @@ SDL_mutex* key_lock;
 								// when typing in your pilots callsign.  This global flag is checked before execution
 								// is stopped.
 
-SCP_map<int, int> SDLtoFS2;
+SCP_map<SDL_Scancode, int> SDLtoFS2;
 
-int ascii_table[128] = 
+int ascii_table[SIZE_OF_ASCII_TABLE] =
 { 255, 255, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',255,255,
   'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 255, 255,
   'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', 39, '`',
@@ -67,7 +65,7 @@ int ascii_table[128] =
   255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
   255,255,255,255,255,255,255,255 };
 
-int shifted_ascii_table[128] = 
+int shifted_ascii_table[SIZE_OF_ASCII_TABLE] =
 { 255, 255, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+',255,255,
   'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 255, 255,
   'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', 
@@ -81,6 +79,7 @@ int shifted_ascii_table[128] =
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
 
 
+SCP_string CheatUsed = "";
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
@@ -239,6 +238,15 @@ void FillSDLArray ()
 	//	SDLtoFS2[SDL_SCANCODE_BREAK] = KEY_BREAK;
 }
 
+SDL_Scancode fs2_to_sdl(int scancode) {
+	for (const auto& code : SDLtoFS2) {
+		if (code.second == scancode)
+			return code.first;
+	}
+
+	return SDL_SCANCODE_UNKNOWN;
+}
+
 int key_numlock_is_on()
 {
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
@@ -288,21 +296,15 @@ void key_flush()
 
 	SDL_LockMutex( key_lock );	
 
-	key_data.keyhead = key_data.keytail = 0;
-
 	//Clear the keyboard buffer
-	for (i=0; i<KEY_BUFFER_SIZE; i++ )	{
-		key_data.keybuffer[i] = 0;
-		key_data.time_pressed[i] = 0;
-	}
+	key_data.key_queue = {};
 	
 	//Clear the keyboard array
 
 	CurTime = timer_get_milliseconds();
 
-
 	for (i=0; i<NUM_KEYS; i++ )	{
-		keyd_pressed[i] = 0;
+		key_data.state[i] = keyboard::key_state::RELEASED;
 		key_data.TimeKeyDownChecked[i] = CurTime;
 		key_data.TimeKeyWentDown[i] = CurTime;
 		key_data.TimeKeyHeldDown[i] = 0;
@@ -313,28 +315,14 @@ void key_flush()
 	SDL_UnlockMutex( key_lock );	
 }
 
-//	A nifty function which performs the function:
-//		n = (n+1) % KEY_BUFFER_SIZE
-//	(assuming positive values of n).
-int add_one( int n )
-{
-	n++;
-	if ( n >= KEY_BUFFER_SIZE ) n=0;
-	return n;
-}
-
 // Returns 1 if character waiting... 0 otherwise
-int key_checkch()
+bool key_checkch()
 {
-	int is_one_waiting = 0;
-
 	if ( !key_inited ) return 0;
 
-	SDL_LockMutex( key_lock );	
+	SDL_LockMutex( key_lock );
 
-	if (key_data.keytail != key_data.keyhead){
-		is_one_waiting = 1;
-	}
+	bool is_one_waiting = !key_data.key_queue.empty();
 
 	SDL_UnlockMutex( key_lock );		
 
@@ -355,99 +343,33 @@ int key_inkey()
 
 	SDL_LockMutex( key_lock );	
 
-	if (key_data.keytail!=key_data.keyhead)	{
-		key = key_data.keybuffer[key_data.keyhead];
-		key_data.keyhead = add_one(key_data.keyhead);
+	if (!key_data.key_queue.empty())	{
+		key = key_data.key_queue.front();
+		key_data.key_queue.pop();
 	}
 
-	SDL_UnlockMutex( key_lock );	
+	SDL_UnlockMutex( key_lock );
 
 	Current_key_down = key;
 
 	return key;
 }
 
-//	Unget a key.  Puts it back in the input queue.
-void key_outkey(int key)
-{
-	int	bufp;
-
-	if ( !key_inited ) return;
-
-	SDL_LockMutex( key_lock );		
-
-	bufp = key_data.keytail+1;
-
-	if (bufp >= KEY_BUFFER_SIZE){
-		bufp = 0;
-	}
-
-	key_data.keybuffer[key_data.keytail] = (unsigned short)key;
-
-	key_data.keytail = bufp;
-
-	SDL_UnlockMutex( key_lock );		
-}
-
-
-
-//	Return amount of time last key was held down.
-//	This is currently (July 17, 1996) bogus because our timing is
-//	not accurate.
-int key_inkey_time(uint * time)
-{
-	int key = 0;
-
-	if ( !key_inited ) {
-		*time = 0;
-		return 0;
-	}
-	
-	SDL_LockMutex( key_lock );		
-
-	if (key_data.keytail!=key_data.keyhead)	{
-		key = key_data.keybuffer[key_data.keyhead];
-		*time = key_data.time_pressed[key_data.keyhead];
-		key_data.keyhead = add_one(key_data.keyhead);
-	}
-
-	SDL_UnlockMutex( key_lock );		
-
-	return key;
-}
-
-
-//	Returns scancode of last key pressed, if any (returns 0 if no key pressed)
-//	but does not update keyhead pointer.
-int key_peekkey()
-{
-	int key = 0;
-
-	if ( !key_inited ) return 0;
-
-	SDL_LockMutex( key_lock );		
-
-	if (key_data.keytail!=key_data.keyhead)	{
-		key = key_data.keybuffer[key_data.keyhead];
-	}
-	SDL_UnlockMutex( key_lock );		
-
-	return key;
+bool key_is_pressed(int keycode, bool include_since_last_count) {
+	Assertion(keycode >= 0 && keycode < NUM_KEYS, "Checked status for invalid keycode!");
+	return key_data.state[keycode] == keyboard::key_state::PRESSED || (include_since_last_count && key_down_count(keycode) > 0);
 }
 
 // If not installed, uses BIOS and returns getch();
 //	Else returns pending key (or waits for one if none waiting).
 int key_getch()
 {
-	int dummy=0;
 	int in;
 
 	if ( !key_inited ) return 0;
 	
 	while (!key_checkch()){
 		os_poll();
-
-		dummy++;
 	}
 	in = key_inkey();
 
@@ -463,20 +385,20 @@ uint key_get_shift_status()
 
 	SDL_LockMutex( key_lock );		
 
-	if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+	if ( key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT) )
 		shift_status |= KEY_SHIFTED;
 
-	if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+	if ( key_is_pressed(KEY_LALT) || key_is_pressed(KEY_RALT) )
 		shift_status |= KEY_ALTED;
 
-	if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+	if ( key_is_pressed(KEY_LCTRL) || key_is_pressed(KEY_RCTRL) )
 		shift_status |= KEY_CTRLED;
 
 #ifndef NDEBUG
-	if (keyd_pressed[KEY_DEBUG_KEY])
+	if (key_is_pressed(KEY_DEBUG_KEY))
 		shift_status |= KEY_DEBUGGED;
 #else
-	if (keyd_pressed[KEY_DEBUG_KEY]) {
+	if (key_is_pressed(KEY_DEBUG_KEY)) {
 		mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
 		if ((Cheats_enabled) && Key_normal_game) {
 			mprintf(("Debug key\n"));
@@ -491,11 +413,8 @@ uint key_get_shift_status()
 
 //	Returns amount of time key (specified by "code") has been down since last call.
 //	Returns float, unlike key_down_time() which returns a fix.
-float key_down_timef(uint scancode)	
+float key_down_timef(uint scancode)
 {
-	uint time_down, time;
-	uint delta_time;
-
 	if ( !key_inited ) {
 		return 0.0f;
 	}
@@ -506,13 +425,14 @@ float key_down_timef(uint scancode)
 
 	SDL_LockMutex( key_lock );		
 
-	time = timer_get_milliseconds();
-	delta_time = time - key_data.TimeKeyDownChecked[scancode];
+	uint time = timer_get_milliseconds();
+	uint last_check_time = key_data.TimeKeyDownChecked[scancode];
+	uint delta_time = time - last_check_time;
 	key_data.TimeKeyDownChecked[scancode] = time;
 
 	if ( delta_time <= 1 ) {
-		key_data.TimeKeyWentDown[scancode] = time;
-		if (keyd_pressed[scancode])	{
+		key_data.TimeKeyHeldDown[scancode] = 0;
+		if (key_is_pressed(scancode))	{
 			SDL_UnlockMutex( key_lock );		
 			return 1.0f;
 		} else	{
@@ -521,13 +441,13 @@ float key_down_timef(uint scancode)
 		}
 	}
 
-	if ( !keyd_pressed[scancode] )	{
-		time_down = key_data.TimeKeyHeldDown[scancode];
-		key_data.TimeKeyHeldDown[scancode] = 0;
-	} else	{
-		time_down =  time - key_data.TimeKeyWentDown[scancode];
-		key_data.TimeKeyWentDown[scancode] = time;
+	uint time_down = key_data.TimeKeyHeldDown[scancode];
+	if ( key_is_pressed(scancode) ) {
+		//Since the stored time only updates on button release and reset on this check,
+		//the time the button has been held down this time needs to be added
+		time_down += time - MAX(key_data.TimeKeyWentDown[scancode], last_check_time);
 	}
+	key_data.TimeKeyHeldDown[scancode] = 0;
 
 	SDL_UnlockMutex( key_lock );		
 
@@ -552,36 +472,12 @@ int key_down_count(int scancode)
 	return n;
 }
 
-
-// Returns number of times key has went from down to up since last call.
-int key_up_count(int scancode)	
-{
-	int n;
-
-	if ( !key_inited ) return 0;
-	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0;
-
-	SDL_LockMutex( key_lock );		
-
-	n = key_data.NumUps[scancode];
-	key_data.NumUps[scancode] = 0;
-
-	SDL_UnlockMutex( key_lock );		
-
-	return n;
-}
-
-int key_check(int key)
-{
-	return key_data.down_check[key];
-}
-
 //	Add a key up or down code to the key buffer.  state=1 -> down, state=0 -> up
 // latency => time difference in ms between when key was actually pressed and now
 //void key_mark( uint code, int state )
 void key_mark( uint code, int state, uint latency )
 {
-	uint scancode, breakbit, temp, event_time;
+	uint scancode, breakbit, event_time;
 	ushort keycode;	
 
 	if ( !key_inited ) return;
@@ -604,69 +500,116 @@ void key_mark( uint code, int state, uint latency )
 	
 	if (breakbit) {
 		// Key going up
-		keyd_last_released = scancode;
-		keyd_pressed[scancode] = 0;
-		key_data.NumUps[scancode]++;
 
-		// What is the point of this code?  "temp" is never used!
-		temp = 0;
-		temp |= keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT];
-		temp |= keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT];
-		temp |= keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL];
-		temp |= keyd_pressed[KEY_DEBUG_KEY];
-	
-		if (event_time < key_data.TimeKeyWentDown[scancode]) {
-			key_data.TimeKeyHeldDown[scancode] = 0;
-		} else {
-			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
+		int time_held = 0;
+		if (event_time >= key_data.TimeKeyWentDown[scancode]) {
+			//If the suspected key lift is "before" the key was pressed (i.e. fluctuating latency) we don't add any time to the pressed time since last poll
+			time_held = event_time - key_data.TimeKeyWentDown[scancode];
 		}
 
 		Current_key_down = scancode;
-		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
+		if ( key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT) ) {
 			Current_key_down |= KEY_SHIFTED;
 		}
 
-		if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
+		if ( key_is_pressed(KEY_LALT) || key_is_pressed(KEY_RALT) ) {
 			Current_key_down |= KEY_ALTED;
 		}
 
-		if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
+		if ( key_is_pressed(KEY_LCTRL) || key_is_pressed(KEY_RCTRL) ) {
 			Current_key_down |= KEY_CTRLED;
 		}
 
-		Script_system.SetHookVar("Key", 's', textify_scancode_universal(Current_key_down));
-		Script_system.RunCondition(CHA_KEYRELEASED);
-		Script_system.RemHookVar("Key");
+#ifndef NDEBUG
+		if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+			Current_key_down |= KEY_DEBUGGED;
+		}
+#else
+		if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
+				if (Cheats_enabled && Key_normal_game) {
+					Current_key_down |= KEY_DEBUGGED1;
+				}
+			}
+
+#endif
+
+		if (scripting::hooks::OnKeyReleased->isActive()) {
+			scripting::hooks::OnKeyReleased->run(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
+				scripting::hook_param_list(
+					scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down)),
+					scripting::hook_param("RawKey", 's', textify_scancode_universal(scancode)),
+					scripting::hook_param("TimeHeld", 'i', time_held),
+					scripting::hook_param("WasOverridden", 'b', key_data.state[scancode] == keyboard::key_state::PRESSED_OVERRIDDEN)
+				));
+		}
+
+		// Don't increment counters if was overridden
+		if (key_data.state[scancode] == keyboard::key_state::PRESSED) {
+			key_data.NumUps[scancode]++;
+			key_data.TimeKeyHeldDown[scancode] += time_held;
+		}
+
+		key_data.state[scancode] = keyboard::key_state::RELEASED;
 	} else {
 		// Key going down
-		keyd_last_pressed = scancode;
-		keyd_time_when_last_pressed = event_time;
-		if (!keyd_pressed[scancode]) {
+		if (!key_is_pressed(scancode)) {
 			// First time down
 			key_data.TimeKeyWentDown[scancode] = event_time;
-			keyd_pressed[scancode] = 1;
-			key_data.NumDowns[scancode]++;
-			key_data.down_check[scancode]++;
 
 			//WMC - For scripting
 			Current_key_down = scancode;
-			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
+			if ( key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT) ) {
 				Current_key_down |= KEY_SHIFTED;
 			}
 
-			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
+			if ( key_is_pressed(KEY_LALT) || key_is_pressed(KEY_RALT) ) {
 				Current_key_down |= KEY_ALTED;
 			}
 
-			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
+			if ( key_is_pressed(KEY_LCTRL) || key_is_pressed(KEY_RCTRL) ) {
 				Current_key_down |= KEY_CTRLED;
 			}
 
-			// We use the universal value here to keep the scripting interface consistent regardless of the current language
-			Script_system.SetHookVar("Key", 's', textify_scancode_universal(Current_key_down));
-			Script_system.RunCondition(CHA_KEYPRESSED);
-			Script_system.RemHookVar("Key");
-		} else if (!keyd_repeat) {
+#ifndef NDEBUG
+			if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+				Current_key_down |= KEY_DEBUGGED;
+			}
+#else
+			if ( key_is_pressed(KEY_DEBUG_KEY) ) {
+				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
+				if (Cheats_enabled && Key_normal_game) {
+					Current_key_down |= KEY_DEBUGGED1;
+				}
+			}
+
+#endif
+
+			bool overrideKey = false;
+			if (scripting::hooks::OnKeyPressed->isActive()) {
+				scripting::hooks::OnKeyPressed->run(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
+					scripting::hook_param_list(
+						scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down)),
+						scripting::hook_param("RawKey", 's', textify_scancode_universal(scancode))
+					));
+
+				overrideKey = scripting::hooks::OnKeyPressed->isOverride(scripting::hooks::KeyPressConditions{ static_cast<int>(scancode) },
+					scripting::hook_param_list(
+						scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down)),
+						scripting::hook_param("RawKey", 's', textify_scancode_universal(scancode))
+					));
+			}
+
+			if (overrideKey) {
+				key_data.state[scancode] = keyboard::key_state::PRESSED_OVERRIDDEN;
+				scancode = 0xAA; //Skip queueing this key
+			}
+			else {
+				key_data.state[scancode] = keyboard::key_state::PRESSED;
+				key_data.NumDowns[scancode]++;
+				key_data.down_check[scancode]++;
+			}
+		} else if (!key_allow_repeat) {
 			// Don't buffer repeating key if repeat mode is off
 			scancode = 0xAA;		
 		} 
@@ -674,24 +617,24 @@ void key_mark( uint code, int state, uint latency )
 		if ( scancode!=0xAA ) {
 			keycode = (unsigned short)scancode;
 
-			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
+			if ( key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT) ) {
 				keycode |= KEY_SHIFTED;
 			}
 
-			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
+			if ( key_is_pressed(KEY_LALT) || key_is_pressed(KEY_RALT) ) {
 				keycode |= KEY_ALTED;
 			}
 
-			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
+			if ( key_is_pressed(KEY_LCTRL) || key_is_pressed(KEY_RCTRL) ) {
 				keycode |= KEY_CTRLED;
 			}
 
 #ifndef NDEBUG
-			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
+			if ( key_is_pressed(KEY_DEBUG_KEY) ) {
 				keycode |= KEY_DEBUGGED;
 			}
 #else
-			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
+			if ( key_is_pressed(KEY_DEBUG_KEY) ) {
 				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
 				if (Cheats_enabled && Key_normal_game) {
 					keycode |= KEY_DEBUGGED1;
@@ -701,14 +644,7 @@ void key_mark( uint code, int state, uint latency )
 #endif
 
 			if ( keycode ) {
-				temp = key_data.keytail+1;
-				if ( temp >= KEY_BUFFER_SIZE ) temp=0;
-
-				if (temp!=key_data.keyhead) {
-					key_data.keybuffer[key_data.keytail] = keycode;
-					key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
-					key_data.keytail = temp;
-				}
+				key_data.key_queue.push(keycode);
 			}
 		}
 	}
@@ -742,9 +678,7 @@ void key_init()
 
 	FillSDLArray();
 
-	keyd_time_when_last_pressed = timer_get_milliseconds();
-	keyd_buffer_type = 1;
-	keyd_repeat = 1;
+	key_allow_repeat = true;
 
 	// Clear the keyboard array
 	key_flush();

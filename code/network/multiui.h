@@ -22,6 +22,7 @@ struct net_addr;
 
 void multi_common_add_text(const char *txt,int auto_scroll = 0);
 void multi_common_set_text(const char *str,int auto_scroll = 0);
+void multi_mission_desciption_set(const char* str_in, int index);
 
 // time between sending refresh packets to known servers
 #define MULTI_JOIN_REFRESH_TIME			45000			
@@ -64,6 +65,12 @@ typedef struct multi_create_info {
 #define MICON_VALID						10
 #define MICON_CD							11
 
+// text related defines
+#define MULTI_COMMON_TEXT_META_CHAR '$'
+#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH 200
+#define MULTI_COMMON_TEXT_MAX_LINES 20
+#define MULTI_COMMON_MAX_TEXT (MULTI_COMMON_TEXT_MAX_LINES * MULTI_COMMON_TEXT_MAX_LINE_LENGTH)
+
 // common icon stuff
 extern int Multi_common_icons[MULTI_NUM_COMMON_ICONS];
 extern int Multi_common_icon_dims[MULTI_NUM_COMMON_ICONS][2];
@@ -80,9 +87,6 @@ void multi_common_load_palette();
 void multi_common_set_palette();
 void multi_common_unload_palette();
 
-// call this to verify if we have a CD in the drive or not
-void multi_common_verify_cd();
-
 // variables to hold the mission and campaign lists
 extern SCP_vector<multi_create_info> Multi_create_mission_list;
 extern SCP_vector<multi_create_info> Multi_create_campaign_list;
@@ -92,6 +96,9 @@ extern int Multi_create_overlay_id;
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();
 
+// check if a mission is built-in from volition
+bool multi_is_item_builtin_volition(const char*);
+
 // returns an index into Multi_create_mission_list
 int multi_create_lookup_mission(char *fname);
 
@@ -100,26 +107,44 @@ int multi_create_lookup_campaign(char *fname);
 
 extern int Multi_sg_overlay_id;
 
-void multi_sg_rank_build_name(char *in,char *out);
+void multi_sg_rank_build_name(const char *in,char *out);
 
 extern int Multi_join_overlay_id;
 
-void multi_join_game_init();
-void multi_join_game_close();
-void multi_join_game_do_frame();
+extern char Multi_common_notify_text[200];
+extern char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
+extern UI_TIMESTAMP Multi_join_sent_stamp;
+extern int Multi_join_should_send;
+extern active_game* Multi_join_selected_item;
+
+void multi_join_game_init(bool API_Access = false);
+void multi_join_game_close(bool API_Access = false);
+void multi_join_game_do_frame(bool API_Access = false);
 void multi_join_eval_pong(net_addr *addr, fix pong_time);
 void multi_join_reset_join_stamp();
 void multi_join_clear_game_list();
 void multi_join_notify_new_game();
+void multi_join_send_join_request(int as_observer);
+void multi_join_create_game();
+void multi_join_maybe_update_selected(active_game* game);
+void multi_join_game_set_status_text(active_game* game, SCP_string& status_text);
+void multi_join_game_set_speed_text(active_game* game, int& con_type, SCP_string& speed_text);
 
-void multi_start_game_init();
-void multi_start_game_do();
-void multi_start_game_close();
+int multi_join_warn_pxo();
 
-void multi_create_game_init();
-void multi_create_game_do();
+extern netgame_info* Multi_sg_netgame;
+
+void multi_start_game_init(bool API_Access = false);
+void multi_start_game_do(bool API_Access = false);
+void multi_start_game_close(bool API_Access = false);
+
+void multi_create_game_init(bool API_Access = false);
+void multi_create_game_do(bool API_Access = false);
 void multi_create_game_close();
 void multi_create_game_add_mission(char *fname,char *name, int flags);
+void multi_create_list_set_item(int abs_index, int mode);
+void multi_create_accept_hit(int mode, int select_index);
+int multi_create_ok_to_commit(int select_index);
 
 #define MULTI_CREATE_SHOW_MISSIONS			0
 #define MULTI_CREATE_SHOW_CAMPAIGNS			1
@@ -129,12 +154,21 @@ void multi_create_handle_join(net_player *pl);
 
 void multi_jw_handle_join(net_player *pl);
 
+// maximum values for various input boxes (to notify user of overruns)
+#define MULTI_HO_MAX_TIME_LIMIT 500
+#define MULTI_HO_MAX_TOKEN_WAIT 5
+#define MULTI_HO_MAX_KILL_LIMIT 9999
+#define MULTI_HO_MAX_OBS 4
+
 void multi_host_options_init();
 void multi_host_options_do();
 void multi_host_options_close();
+void multi_ho_set_skill_level(int skill);
+int multi_ho_get_skill_level();
+void multi_ho_apply_options();
 
-void multi_game_client_setup_init();
-void multi_game_client_setup_do_frame();
+void multi_game_client_setup_init(bool API_Access = false);
+void multi_game_client_setup_do_frame(bool API_Access = false);
 void multi_game_client_setup_close();
 
 #define MULTI_SYNC_PRE_BRIEFING		0		// moving from the join to the briefing stage
@@ -142,10 +176,11 @@ void multi_game_client_setup_close();
 #define MULTI_SYNC_INGAME				2		// ingame joiners data sync
 extern int Multi_sync_mode;					// should always set this var before calling GS_EVENT_MULTI_MISSION_SYNC
 extern int Multi_sync_countdown;				// time in seconds until the mission is going to be launched
-void multi_sync_init();
-void multi_sync_do();
-void multi_sync_close();
+void multi_sync_init(bool API_Access = false);
+void multi_sync_do(bool API_Access = false);
+void multi_sync_close(bool API_Access = false);
 void multi_sync_start_countdown();			// start the countdown to launch when the launch button is pressed
+SCP_string multi_sync_get_state_string(net_player* player);
 
 // note : these functions are called from within missiondebrief.cpp - NOT from freespace.cpp
 void multi_debrief_init();
@@ -165,6 +200,12 @@ void multi_common_add_notify(const char *str);
 
 // bring up the password string popup, fill in passwd (return 1 if accept was pressed, 0 if cancel was pressed)
 int multi_passwd_popup(char *passwd);
+
+// read the list of IPs from the ip file
+void multi_join_read_ip_address_file(SCP_list<SCP_string> &list);
+
+// write the list of IPs to the ip file
+bool multi_join_write_ip_address_file(SCP_list<SCP_string>& list);
 
 
 #endif

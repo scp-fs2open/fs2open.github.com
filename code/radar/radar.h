@@ -14,8 +14,6 @@
 
 #include "radar/radarsetup.h"
 
-extern int Radar_static_looping;
-
 class object;
 struct blip;
 struct color;
@@ -46,6 +44,13 @@ class HudGaugeRadarStd: public HudGaugeRadar
 
 	// formerly parts of Current_radar_global
 	float Radar_center_offsets[2];
+
+protected:
+	/**
+	 * @brief Clamps and scales the blip to be within the plot area
+	 * @param[in] b The blip coordinates (only x and y are nonzero)
+	 */
+	virtual void clampBlip(vec3d* b);
 public:
 	HudGaugeRadarStd();
 	void initCenterOffsets(float x, float y);
@@ -59,8 +64,8 @@ public:
 	void drawContactCircle( int x, int y, int rad );
 	void drawContactImage( int x, int y, int rad, int idx, int clr_idx, int size );
 	void drawCrosshairs(int x, int y);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void plotBlip(blip *b, int *x, int *y);
 	void plotObject( object *objp );
 };

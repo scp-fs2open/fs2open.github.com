@@ -79,7 +79,7 @@ MFCOpenGLContext::~MFCOpenGLContext()
 {
 	if (!wglDeleteContext(_render_context))
 	{
-		mprintf(("Failed to delete render context!"));
+		mprintf(("Failed to delete render context!\n"));
 	}
 
 	--_oglDllReferenceCount;
@@ -106,12 +106,13 @@ os::OpenGLLoadProc MFCOpenGLContext::getLoaderFunction()
 	return wglLoader;
 }
 
-void MFCOpenGLContext::setSwapInterval(int status)
+bool MFCOpenGLContext::setSwapInterval(int status)
 {
 	if (GLAD_WGL_EXT_swap_control)
 	{
 		wglSwapIntervalEXT(status);
 	}
+	return true;
 }
 
 HGLRC MFCOpenGLContext::getHandle()
@@ -213,7 +214,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		mprintf(("Unable to make current thread for OpenGL W32!\n"));
 		if (!wglDeleteContext(temp_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}
@@ -224,7 +225,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		wglMakeCurrent(nullptr, nullptr);
 		if (!wglDeleteContext(temp_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}
@@ -238,7 +239,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 			wglMakeCurrent(nullptr, nullptr);
 			if (!wglDeleteContext(temp_ctx))
 			{
-				mprintf(("Failed to delete fake context!"));
+				mprintf(("Failed to delete fake context!\n"));
 			}
 			return nullptr;
 		}
@@ -283,7 +284,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 	wglMakeCurrent(nullptr, nullptr);
 	if (!wglDeleteContext(temp_ctx))
 	{
-		mprintf(("Failed to delete fakse context!"));
+		mprintf(("Failed to delete fake context!\n"));
 	}
 	
 	if (attrib_ctx == nullptr)
@@ -296,7 +297,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		mprintf(("Unable to make current thread for OpenGL W32!\n"));
 		if (!wglDeleteContext(attrib_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}
@@ -307,7 +308,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		wglMakeCurrent(nullptr, nullptr);
 		if (!wglDeleteContext(temp_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}

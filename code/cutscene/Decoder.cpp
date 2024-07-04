@@ -3,6 +3,12 @@
 #include <memory>
 
 namespace cutscene {
+FrameSize::FrameSize(size_t in_width, size_t in_height, size_t in_stride)
+		: width(in_width), height(in_height), stride(in_stride)
+{
+}
+FrameSize::FrameSize() = default;
+
 Decoder::Decoder() : m_decoding(true) {
 }
 
@@ -11,6 +17,11 @@ Decoder::~Decoder() {
 
 bool Decoder::tryPopAudioData(AudioFramePtr& out) {
 	auto res = m_audioQueue->try_pull_front(out);
+	return res == queue_op_status::success;
+}
+
+bool Decoder::tryPopSubtitleData(SubtitleFramePtr& out) {
+	auto res = m_subtitleQueue->try_pull_front(out);
 	return res == queue_op_status::success;
 }
 
@@ -24,6 +35,7 @@ void Decoder::initializeQueues(size_t queueSize) {
 
 	m_videoQueue.reset(new sync_bounded_queue<VideoFramePtr>(m_queueSize));
 	m_audioQueue.reset(new sync_bounded_queue<AudioFramePtr>(m_queueSize));
+	m_subtitleQueue.reset(new sync_bounded_queue<SubtitleFramePtr>(m_queueSize));
 }
 
 void Decoder::stopDecoder() {
@@ -31,10 +43,7 @@ void Decoder::stopDecoder() {
 
 	m_videoQueue->close();
 	m_audioQueue->close();
-}
-
-bool Decoder::canPushAudioData() {
-	return !isAudioQueueFull();
+	m_subtitleQueue->close();
 }
 
 void Decoder::pushAudioData(AudioFramePtr&& data) {
@@ -48,8 +57,15 @@ void Decoder::pushAudioData(AudioFramePtr&& data) {
 	}
 }
 
-bool Decoder::canPushVideoData() {
-	return !isVideoQueueFull();
+void Decoder::pushSubtitleData(SubtitleFramePtr&& data) {
+	Assertion(data, "Invalid audio data passed!");
+
+	try {
+		m_subtitleQueue->push_back(std::move(data));
+	}
+	catch (sync_queue_is_closed&) {
+		// Ignore
+	}
 }
 
 void Decoder::pushFrameData(VideoFramePtr&& frame) {

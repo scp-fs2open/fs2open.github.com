@@ -10,7 +10,8 @@
  */
 #include "MissionSave.h"
 
-#define MISSION_BACKUP_NAME "Backup"
+#define MISSION_BACKUP_NAME     "Backup"
+#define MISSION_BACKUP_DEPTH    9
 
 #define US_WORLD_CHANGED    0x01
 #define US_VIEW_CHANGED     0x02
@@ -38,7 +39,7 @@ public:
 	 *
 	 * @returns The file index of the loaded Undo item
 	 */
-	int autoload();
+	bool autoload();
 
 	/**
 	 * @brief Read in a new mission file from disk
@@ -46,10 +47,9 @@ public:
 	 * @param[in] pathname The full filepath name of the file to open
 	 * @param[in] flags
 	 *
-	 * @returns File index of the loaded file, or
-	 * @returns 0 if unable to load
+	 * @returns true on success, false on failure
 	 */
-	int load_mission(char *pathname, int flags = 0);
+	bool load_mission(const char *pathname, int flags = 0);
 
 	/**
 	 * @brief Pushes an Undo item onto the stack
@@ -146,9 +146,7 @@ public:
 	virtual void Dump(CDumpContext &dc) const;
 #endif
 
-	char mission_pathname[256];             //!< Full pathname to the opened mission
-
-	CString undo_desc[BACKUP_DEPTH + 1];    //!< String array of the undo descriptions
+	CString undo_desc[MISSION_BACKUP_DEPTH + 1];    //!< String array of the undo descriptions
 
 protected:
 	/**
@@ -158,55 +156,6 @@ protected:
 	DECLARE_DYNCREATE(CFREDDoc)
 
 	//{{AFX_MSG(CFREDDoc)
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditDelete();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnDuplicate();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditCopy();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditCut();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditHold();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditFetch();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditPaste();
-
 	/**
 	 * @brief Unused.
 	 *

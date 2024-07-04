@@ -3,13 +3,13 @@
 #define _AL_H
 
 
-#if !(defined(__APPLE__) || defined(_WIN32))
-	#include <AL/al.h>
-	#include <AL/alc.h>
+#if defined(__APPLE__)
+#include "al.h"
+#include "alc.h"
 #else
-	#include "al.h"
-	#include "alc.h"
-#endif // !__APPLE__ && !_WIN32
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif // defined(__APPLE__)
 
 #include <string>
 
@@ -19,6 +19,23 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture);
 
 ALenum openal_get_format(ALint bits, ALint n_channels);
 
+struct OpenALInformation {
+	uint32_t version_major = 0;
+	uint32_t version_minor = 0;
+
+	SCP_string default_playback_device{};
+	SCP_string default_capture_device{};
+
+	SCP_vector<SCP_string> playback_devices;
+	SCP_vector<SCP_string> capture_devices;
+
+	SCP_vector<std::pair<SCP_string, bool>> efx_support;
+};
+
+OpenALInformation openal_get_platform_information();
+
+int openal_find_playback_device_by_name(const SCP_string& device);
+int openal_find_capture_device_by_name(const SCP_string& device);
 
 // if an error occurs after executing 'x' then do 'y'
 #define OpenAL_ErrorCheck( x, y )	do {	\
@@ -28,7 +45,7 @@ ALenum openal_get_format(ALint bits, ALint n_channels);
 		nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
 		y;	\
 	}	\
-} while (0);
+} while (false);
 
 // like OpenAL_ErrorCheck() except that it gives the error message from x but does nothing about it
 #define OpenAL_ErrorPrint( x )	do {	\

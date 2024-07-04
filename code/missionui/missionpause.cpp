@@ -18,6 +18,7 @@
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "io/key.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionpause.h"
 #include "network/multi_pause.h"
 #include "object/object.h"
@@ -61,7 +62,7 @@ UI_BUTTON Pause_continue;
 int Pause_type = PAUSE_TYPE_NORMAL;
 
 // if we're already paused
-int Paused = 0;
+bool Paused = false;
 
 // background screen (for the chatbox)
 int Pause_background_bitmap = -1;
@@ -114,6 +115,9 @@ void pause_init()
 	// pause all game music
 	audiostream_pause_all();
 
+	// pause voices
+	message_pause_all();
+
 	Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
 	Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);
@@ -121,7 +125,7 @@ void pause_init()
 	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(true);
 
-	Paused = 1;
+	Paused = true;
 }
 
 extern int button_function_demo_valid(int n);
@@ -250,6 +254,9 @@ void pause_close()
 	// unpause all weapon sounds
 	weapon_unpause_sounds();
 
+	// unpause voices
+	message_resume_all();
+
 	// deinit stuff
 	if(Pause_saved_screen != -1) {
 		gr_free_screen(Pause_saved_screen);
@@ -269,7 +276,7 @@ void pause_close()
 	// unpause all the music
 	audiostream_unpause_all();		
 
-	Paused = 0;
+	Paused = false;
 }
 
 // debug pause init

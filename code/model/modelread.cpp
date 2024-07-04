@@ -9,8 +9,8 @@
 
 
 
-#include <string.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
@@ -31,14 +31,22 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
+#include "starfield/starfield.h"
+#include "graphics/shadows.h"
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 #include <algorithm>
+#include <stack>
+#include <map>
 
 flag_def_list model_render_flags[] =
 {
@@ -52,7 +60,8 @@ flag_def_list model_render_flags[] =
   	 
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 
-#define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
+#define MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY		(PI / 6.0f)		// max 30 degrees per frame
+#define MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY		100.0f			// max 100 meters per frame
 
 // info for special polygon lists
 
@@ -67,22 +76,44 @@ static int model_initted = 0;
 CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
-int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
+static bool ss_warning_shown_null = false;		// have we shown the warning dialog concerning the subsystems?
+static bool ss_warning_shown_mismatch = false;	// ditto but for a different warning
 #endif
-
-static uint Global_checksum = 0;
 
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
+
+// This begins the FS2 version history
+#define PM_FIRST_FREESPACE2_VERSION 2100
 
 // Anything greater than or equal to PM_COMPATIBLE_VERSION and 
 // whose major version is less than or equal to this is considered
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
+// 23.01 adds support for submodel translation
+// 23.00 adds support for increased subobject vertex limit via TMAP2POLY
+// 
+// 22.01 adds support for external weapon model angle offsets
+// 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
+//
+// 21.18 adds support for external weapon model angle offsets
+// 21.17 adds support for engine thruster banks linked to specific engine subsystems
+// FreeSpace 2 shipped at POF version 21.17
+// Descent: FreeSpace shipped at POF version 20.14
+// See also https://wiki.hard-light.net/index.php/POF_data_structure
+#define PM_LATEST_VERTLIM_VERSION	2301
+#define PM_FIRST_VERTLIM_VERSION	2300
+
+#define PM_LATEST_ALIGNED_VERSION	2201
+#define PM_FIRST_ALIGNED_VERSION	2200
+
+#define PM_LATEST_LEGACY_VERSION	2118
+
+
 static int Model_signature = 0;
 
-void interp_configure_vertex_buffers(polymodel*, int);
+void interp_configure_vertex_buffers(polymodel*, int, const model_read_deferred_tasks& deferredTasks);
 void interp_pack_vertex_buffers(polymodel* pm, int mn);
 void interp_create_detail_index_buffer(polymodel *pm, int detail);
 void interp_create_transparency_index_buffer(polymodel *pm, int detail_num);
@@ -90,6 +121,9 @@ void model_interp_process_shield_mesh(polymodel * pm);
 
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
 void model_set_bay_path_nums(polymodel *pm);
+
+uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
+uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size);
 
 
 // Goober5000 - see SUBSYSTEM_X in model.h
@@ -126,44 +160,180 @@ int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
 SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 
 
-// Goober5000 - reimplementation of Bobboau's $dumb_rotation feature in a way that works with the rest of the model instance system
+// Goober5000 - reimplementation of Bobboau's $dumb_rotation and $look_at features in a way that works with the rest of the model instance system
 // note: since these data types are only ever used in this file, they don't need to be in model.h
 
-class submodel_intrinsic_rotation
+class intrinsic_motion
 {
 public:
-	int submodel_num;
-	submodel_instance_info submodel_info_1;
+	bool is_object;
+	int model_instance_num;
+	SCP_vector<int> submodel_list;
 
-	submodel_intrinsic_rotation(int _submodel_num, float _turn_rate)
-		: submodel_num(_submodel_num)
+	intrinsic_motion(bool _is_object, int _model_instance_num)
+		: is_object(_is_object), model_instance_num(_model_instance_num)
+	{}
+
+	void add_submodel(int _submodel_num, submodel_instance *_submodel_instance_1, float _turn_rate)
 	{
-		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
-		submodel_info_1.cur_turn_rate = _turn_rate;
-		submodel_info_1.desired_turn_rate = _turn_rate;
+		submodel_list.push_back(_submodel_num);
+		_submodel_instance_1->current_turn_rate = _turn_rate;
+		_submodel_instance_1->desired_turn_rate = _turn_rate;
 	}
 };
 
-class intrinsic_rotation
+SCP_unordered_map<int, intrinsic_motion> Intrinsic_motions;
+
+
+void model_free(polymodel* pm)
 {
-public:
-	bool is_ship;
-	int model_instance_num;
-	SCP_vector<submodel_intrinsic_rotation> list;
+	int i, j;
+	safe_kill(pm->ship_bay);
 
-	intrinsic_rotation(bool _is_ship, int _model_instance_num)
-		: is_ship(_is_ship), model_instance_num(_model_instance_num), list()
-	{}
-};
+	if (pm->paths) {
+		for (i = 0; i < pm->n_paths; i++) {
+			for (j = 0; j < pm->paths[i].nverts; j++) {
+				if (pm->paths[i].verts[j].turret_ids) {
+					vm_free(pm->paths[i].verts[j].turret_ids);
+				}
+			}
+			if (pm->paths[i].verts) {
+				vm_free(pm->paths[i].verts);
+			}
+		}
+		vm_free(pm->paths);
+	}
 
-SCP_vector<intrinsic_rotation> Intrinsic_rotations;
+	if (pm->shield.verts) {
+		vm_free(pm->shield.verts);
+	}
 
+	if (pm->shield.tris) {
+		vm_free(pm->shield.tris);
+	}
+
+	if (pm->gun_banks) {	// NOLINT
+		delete[] pm->gun_banks;
+	}
+
+	if (pm->missile_banks) {	// NOLINT
+		delete[] pm->missile_banks;
+	}
+
+	if (pm->docking_bays) {
+		for (i = 0; i < pm->n_docks; i++) {
+			if (pm->docking_bays[i].splines) {
+				vm_free(pm->docking_bays[i].splines);
+			}
+		}
+		vm_free(pm->docking_bays);
+	}
+
+
+	if (pm->thrusters) {
+		for (i = 0; i < pm->n_thrusters; i++) {
+			if (pm->thrusters[i].points)
+				vm_free(pm->thrusters[i].points);
+		}
+
+		vm_free(pm->thrusters);
+	}
+
+	if (pm->glow_point_banks) { // free the glows!!! -Bobboau
+		for (i = 0; i < pm->n_glow_point_banks; i++) {
+			if (pm->glow_point_banks[i].points)
+				vm_free(pm->glow_point_banks[i].points);
+		}
+
+		vm_free(pm->glow_point_banks);
+	}
+
+#ifndef NDEBUG
+	if (pm->debug_info) {
+		vm_free(pm->debug_info);
+	}
+#endif
+
+	if (pm->submodel) {
+		for (i = 0; i < pm->n_models; i++) {
+			pm->submodel[i].buffer.clear();
+
+			if (pm->submodel[i].bsp_data) {
+				vm_free(pm->submodel[i].bsp_data);
+			}
+
+			if (pm->submodel[i].collision_tree_index >= 0) {
+				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+			}
+
+			if (pm->submodel[i].outline_buffer != nullptr) {
+				vm_free(pm->submodel[i].outline_buffer);
+				pm->submodel[i].outline_buffer = nullptr;
+			}
+		}
+
+		delete[] pm->submodel;
+	}
+
+	if (pm->xc) {
+		vm_free(pm->xc);
+	}
+
+	if (pm->lights) {
+		vm_free(pm->lights);
+	}
+
+	if (pm->shield_collision_tree) {
+		vm_free(pm->shield_collision_tree);
+	}
+
+	if (pm->shield.buffer_id.isValid()) {
+		gr_delete_buffer(pm->shield.buffer_id);
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
+		pm->shield.buffer_n_verts = 0;
+	}
+
+	if (pm->vert_source.Vbuffer_handle.isValid()) {
+		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
+		pm->vert_source.Vbuffer_handle = gr_buffer_handle::invalid();
+
+		pm->vert_source.Vertex_offset = 0;
+		pm->vert_source.Base_vertex_offset = 0;
+	}
+
+	if (pm->vert_source.Vertex_list != NULL) {
+		vm_free(pm->vert_source.Vertex_list);
+		pm->vert_source.Vertex_list = NULL;
+	}
+
+	if (pm->vert_source.Ibuffer_handle.isValid()) {
+		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
+
+		pm->vert_source.Ibuffer_handle = gr_buffer_handle::invalid();
+		pm->vert_source.Index_offset = 0;
+	}
+
+	if (pm->vert_source.Index_list != NULL) {
+		vm_free(pm->vert_source.Index_list);
+		pm->vert_source.Index_list = NULL;
+	}
+
+	pm->vert_source.Vertex_list_size = 0;
+	pm->vert_source.Index_list_size = 0;
+
+	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
+		pm->detail_buffers[i].clear();
+	}
+
+	pm->id = 0;
+	delete pm;
+}
 
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
 void model_unload(int modelnum, int force)
 {
-	int i, j, num;
+	int num;
 
 	if ( modelnum >= MAX_POLYGON_MODELS ) {
 		num = modelnum % MAX_POLYGON_MODELS;
@@ -195,167 +365,32 @@ void model_unload(int modelnum, int force)
 	// to get the slots back so we set "release" to true.
 	model_page_out_textures(pm->id, true);
 
-	safe_kill(pm->ship_bay);
-	
-	if (pm->paths)	{
-		for (i=0; i<pm->n_paths; i++ )	{
-			for (j=0; j<pm->paths[i].nverts; j++ )	{
-				if ( pm->paths[i].verts[j].turret_ids )	{
-					vm_free(pm->paths[i].verts[j].turret_ids);
-				}
-			}
-			if (pm->paths[i].verts)	{
-				vm_free(pm->paths[i].verts);
-			}
-		}
-		vm_free(pm->paths);
-	}
-
-	if ( pm->shield.verts )	{
-		vm_free( pm->shield.verts );
-	}
-
-	if ( pm->shield.tris )	{
-		vm_free(pm->shield.tris);
-	}
-
-	if ( pm->missile_banks )	{
-		vm_free(pm->missile_banks);
-	}
-
-	if ( pm->docking_bays )	{
-		for (i=0; i<pm->n_docks; i++ )	{
-			if ( pm->docking_bays[i].splines )	{
-				vm_free( pm->docking_bays[i].splines );
-			}
-		}
-		vm_free(pm->docking_bays);
-	}
-
-
-	if ( pm->thrusters ) {
-		for (i = 0; i < pm->n_thrusters; i++) {
-			if (pm->thrusters[i].points)
-				vm_free(pm->thrusters[i].points);
-		}
-
-		vm_free(pm->thrusters);
-	}
-
-	if ( pm->glow_point_banks )	{ // free the glows!!! -Bobboau
-		for (i = 0; i < pm->n_glow_point_banks; i++) {
-			if (pm->glow_point_banks[i].points)
-				vm_free(pm->glow_point_banks[i].points);
-		}
-
-		vm_free(pm->glow_point_banks);
-	}
-
-#ifndef NDEBUG
-	if ( pm->debug_info )	{
-		vm_free(pm->debug_info);
-	}
-#endif
-
-	model_octant_free( pm );
-
-	if (pm->submodel) {
-		for (i = 0; i < pm->n_models; i++) {
-			pm->submodel[i].buffer.clear();
-
-			if ( pm->submodel[i].bsp_data )	{
-				vm_free(pm->submodel[i].bsp_data);
-			}
-
-			if ( pm->submodel[i].collision_tree_index >= 0 ) {
-				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-			}
-
-			if ( pm->submodel[i].outline_buffer != nullptr ) {
-				vm_free(pm->submodel[i].outline_buffer);
-				pm->submodel[i].outline_buffer = nullptr;
-			}
-		}
-
-		delete[] pm->submodel;
-	}
-	
-	if ( pm->xc ) {
-		vm_free(pm->xc);
-	}
-
-	if ( pm->lights )	{
-		vm_free(pm->lights);
-	}
-
-	if ( pm->gun_banks )	{
-		vm_free(pm->gun_banks);
-	}
-
-	if ( pm->shield_collision_tree ) {
-		vm_free(pm->shield_collision_tree);
-	}
-
-	if ( pm->shield.buffer_id > -1 ) {
-		gr_delete_buffer(pm->shield.buffer_id);
-		pm->shield.buffer_id = -1;
-		pm->shield.buffer_n_verts = 0;
-	}
-
-	if ( pm->vert_source.Vbuffer_handle > -1 ) {
-		gr_delete_buffer(pm->vert_source.Vbuffer_handle);
-		pm->vert_source.Vbuffer_handle = -1;
-	}
-
-	if ( pm->vert_source.Vertex_list != NULL ) {
-		vm_free(pm->vert_source.Vertex_list);
-		pm->vert_source.Vertex_list = NULL;
-	}
-
-	if ( pm->vert_source.Ibuffer_handle > -1 ) {
-		gr_delete_buffer(pm->vert_source.Ibuffer_handle);
-		pm->vert_source.Ibuffer_handle = -1;
-	}
-
-	if ( pm->vert_source.Index_list != NULL ) {
-		vm_free(pm->vert_source.Index_list);
-		pm->vert_source.Index_list = NULL;
-	}
-
-	pm->vert_source.Vertex_list_size = 0;
-	pm->vert_source.Index_list_size = 0;
-
-	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
-		pm->detail_buffers[i].clear();
-	}
-
 	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
-		if ( pm->id == it->model_num ) {
-			it->model_num = -1;
+	for (auto& si : Ship_info) {
+		if (pm->id == si.model_num) {
+			si.model_num = -1;
 		}
 
-		if ( pm->id == it->cockpit_model_num ) {
-			it->cockpit_model_num = -1;
+		if (pm->id == si.cockpit_model_num) {
+			si.cockpit_model_num = -1;
 		}
 
-		if ( pm->id == it->model_num_hud ) {
-			it->model_num_hud = -1;
+		if (pm->id == si.model_num_hud) {
+			si.model_num_hud = -1;
 		}
 	}
 
 	// need to reset weapon models as well
-	for (int k = 0; k < MAX_WEAPON_TYPES; ++k) {
-		if ( pm->id == Weapon_info[k].model_num ) {
-			Weapon_info[k].model_num = -1;
+	for (auto& wi : Weapon_info) {
+		if (pm->id == wi.model_num) {
+			wi.model_num = -1;
 		}
-		if ( pm->id == Weapon_info[k].external_model_num ) {
-			Weapon_info[k].external_model_num = -1;
+		if (pm->id == wi.external_model_num) {
+			wi.external_model_num = -1;
 		}
 	}
 
-	pm->id = 0;
-	delete pm;
+	model_free(pm);
 
 	Polygon_models[num] = NULL;	
 }
@@ -390,7 +425,6 @@ void model_instance_free_all()
 	}
 
 	// clear skybox model instance if we have one; it is not an object and therefore has no <object>_delete function which would remove the instance
-	extern int Nmodel_instance_num;
 	Nmodel_instance_num = -1;
 
 	Polygon_model_instances.clear();
@@ -465,6 +499,79 @@ void get_user_prop_value(char *buf, char *value)
 	*p1 = c;
 }
 
+// routine to parse out a vec3d from a user property field of an object
+bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const char *submodel_name, const char *filename)
+{
+	float f1, f2, f3;
+	char closing_bracket = '\0';
+	bool success = false;
+
+	pause_parse();
+	Mp = buf;
+	snprintf(Current_filename, sizeof(Current_filename), "submodel %s on %s", submodel_name, filename);
+
+	// Check if there's a missing line break before the next "$".
+	char end_separator = '\0';
+	char* end_pos = buf;
+	while (!iscntrl(*end_pos) && *end_pos != '$')
+		end_pos++;
+
+	// We found a $ before the next line break, remember it and replace it with a line break.
+	if (*end_pos == '$') {
+		end_separator = *end_pos;
+		*end_pos = '\n';
+	}
+
+	// Note that we can't simply return from within this block
+	// because we always need to call unpause_parse before we
+	// leave the function.  A one-iteration loop with break
+	// statements allows the code to jump to the end.  Alternatively,
+	// goto could have been used.
+	do {
+		// skip white space and equal sign or colon
+		while (isspace(*Mp) || (*Mp == '=') || (*Mp == ':'))
+			Mp++;
+
+		if (require_brackets)
+		{
+			// look for vector bracket
+			if (*Mp == '{')
+				closing_bracket = '}';
+			else if (*Mp == '[')
+				closing_bracket = ']';
+			else
+				break;
+		}
+
+		// get comma-separated floats
+		if (stuff_float(&f1, true) != 2)
+			break;
+		if (stuff_float(&f2, true) != 2)
+			break;
+		if (stuff_float(&f3, true) != 2)
+			break;
+
+		if (require_brackets)
+		{
+			ignore_white_space();
+
+			if (*Mp != closing_bracket)
+				break;
+		}
+
+		value->xyz = { f1, f2, f3 };
+		success = true;
+	} while (false);
+
+	if (end_separator != '\0') {
+		// Revert the character replacement we did at the start
+		*end_pos = end_separator;
+	}
+
+	unpause_parse();
+	return success;
+}
+
 // routine to look for one of the specified user properties
 // if p is not null, sets p to the next character AFTER the string and a space/equals/colon (not the beginning of the string, as strstr would)
 // returns the index of the property found, or -1 if not found
@@ -519,8 +626,19 @@ int prop_string(char *props, char **p, const char *option0, const char *option1,
 	return prop_string(props, p, 3, option0, option1, option2);
 }
 
-const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate };
-// funciton to copy model data from one subsystem set to another subsystem set.  This function
+bool in(const char *str, const char *substr)
+{
+	return stristr(str, substr) != nullptr;
+}
+
+bool in(char *&p, char *str, const char *substr)
+{
+	p = stristr(str, substr);
+	return p != nullptr;
+}
+
+const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Translates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate, Model::Subsystem_Flags::Stepped_translate };
+// Function to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
 // this situation by copying stuff from the source subsystem set to the dest subsystem set.
@@ -544,7 +662,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->pnt = source->pnt;
 				dest->radius = source->radius;
 				dest->type = source->type;
-				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
                 strcpy_s(dest->name, source->name);
@@ -555,7 +672,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 					dest->turret_fov = source->turret_fov;
 					dest->turret_num_firing_points = source->turret_num_firing_points;
 					dest->turret_norm = source->turret_norm;
-					dest->turret_matrix = source->turret_matrix;
 
 					for (nfp = 0; nfp < dest->turret_num_firing_points; nfp++ )
 						dest->turret_firing_point[nfp] = source->turret_firing_point[nfp];
@@ -573,14 +689,14 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 }
 
 // routine to get/set subsystem information
-static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
+void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, const char *dname)
 {
 	char *p;
 	char buf[64];
 	char	lcdname[256];
 	int		idx;
 
-	if ( (p = strstr(props, "$name")) != NULL)
+	if (in(p, props, "$name"))
 		get_user_prop_value(p+5, subsystemp->name);
 	else
 		strcpy_s(subsystemp->name, dname);
@@ -588,25 +704,59 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
 
+	auto modelp = model_get(model_num);
+	bsp_info* submodelp = nullptr;
+	if (subsystemp->subobj_num >= 0) {
+		submodelp = &modelp->submodel[subsystemp->subobj_num];
+	}
+
 	// check the name for its specific type
 	if ( strstr(lcdname, "engine") ) {
 		subsystemp->type = SUBSYSTEM_ENGINE;
 	} else if ( strstr(lcdname, "radar") ) {
 		subsystemp->type = SUBSYSTEM_RADAR;
 	} else if ( strstr(lcdname, "turret") ) {
-		float angle;
 
 		subsystemp->type = SUBSYSTEM_TURRET;
-		if ( (p = strstr(props, "$fov")) != NULL )
-			get_user_prop_value(p+4, buf);			// get the value of the fov
-		else
-			strcpy_s(buf,"180");
-		angle = fl_radians(atoi(buf))/2.0f;
-		subsystemp->turret_fov = cosf(angle);
+
+		// don't set the turret FOV values if they have already been set (e.g. through ships.tbl)
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden]) {
+			if (in(p, props, "$fov")) {
+				get_user_prop_value(p + 4, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_fov = cosf(angle);
+			} else
+				subsystemp->turret_fov = 0.0f;
+		}		
+
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden]) {
+			if (in(p, props, "$base_fov")) {
+				get_user_prop_value(p + 9, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_base_fov = cosf(angle);
+			} else
+				subsystemp->turret_base_fov = -1.0f;
+		}
+
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden]) {
+			if (in(p, props, "$max_fov")) {
+				get_user_prop_value(p + 8, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 90.0f);
+				float angle = PI_2 - fl_radians(value);
+				subsystemp->turret_max_fov = cosf(angle);
+			} else
+				subsystemp->turret_max_fov = 1.0f;
+		}
+
 		subsystemp->turret_num_firing_points = 0;
 
-		if ( (p = strstr(props, "$crewspot")) != NULL) {
-            subsystemp->flags.set(Model::Subsystem_Flags::Crewpoint);
+		if (in(p, props, "$crewspot")) {
+			subsystemp->flags.set(Model::Subsystem_Flags::Crewpoint);
 			get_user_prop_value(p+9, subsystemp->crewspot);
 		}
 
@@ -626,19 +776,27 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
 	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
-		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, model_get(model_num)->filename));
+		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, modelp->filename));
 	}
 
-	if ( (strstr(props, "$triggered")) != NULL ) {
-        subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
-        subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
+	if (in(props, "$triggered")) {
+		subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
+		subsystemp->flags.set(Model::Subsystem_Flags::Translates);
+		subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
 	}
 
 	// Dumb-Rotating subsystem
 	if (prop_string(props, nullptr, "$dumb_rotate") >= 0) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
 		if (prop_string(props, nullptr, "$rotate") >= 0) {
-			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, modelp->filename);
+		}
+	}
+	// Look-At subsystem
+	else if (in(p, props, "$look_at")) {
+		// no special subsystem handling needed here, but make sure we didn't specify both methods
+		if (prop_string(props, nullptr, "$rotate") >= 0) {
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and look-at!", dname, modelp->filename);
 		}
 	}
 	// Rotating subsystem
@@ -652,8 +810,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		float turn_rate;
 		if (idx == 0 || idx == 2) {
 			float turn_time = static_cast<float>(atof(buf));
-			if (turn_time == 0.0f) {
-				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, model_get(model_num)->filename);
+			if (fl_near_zero(turn_time, 0.01f)) {
+				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, modelp->filename);
 				turn_rate = 1.0f;
 			} else {
 				turn_rate = PI2 / turn_time;
@@ -663,8 +821,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		}
 
 		// CASE OF WEAPON ROTATION (primary only)
-		if ( (p = strstr(props, "$pbank")) != NULL)	{
-            subsystemp->flags.set(Model::Subsystem_Flags::Artillery);
+		if (in(p, props, "$pbank")) {
+			subsystemp->flags.set(Model::Subsystem_Flags::Artillery);
 
 			// get which pbank should trigger rotation
 			get_user_prop_value(p+6, buf);
@@ -675,67 +833,223 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		// *** determine how the subsys rotates ***
 
 		// CASE OF STEPPED ROTATION
-		if ( (strstr(props, "$stepped")) != NULL) {
+		if (in(props, "$stepped")) {
 
-			subsystemp->stepped_rotation = new stepped_rotation;
+			subsystemp->stepped_rotation.reset(new stepped_rotation);
             subsystemp->flags.set(Model::Subsystem_Flags::Stepped_rotate);
 
 			// get number of steps
-			if ( (p = strstr(props, "$steps")) != NULL) {
+			if (in(p, props, "$steps")) {
 				get_user_prop_value(p+6, buf);
-			   subsystemp->stepped_rotation->num_steps = atoi(buf);
-			 } else {
-			    subsystemp->stepped_rotation->num_steps = 8;
-			 }
+				int num_steps = atoi(buf);
+				if (num_steps <= 0) {
+					Warning(LOCATION, "In model %s, subsystem %s, $steps must be greater than 0!", modelp->filename, submodelp->name);
+					num_steps = 8;
+				}
+				subsystemp->stepped_rotation->num_steps = num_steps;
+			} else {
+				subsystemp->stepped_rotation->num_steps = 8;
+			}
 
 			// get pause time
-			if ( (p = strstr(props, "$t_paused")) != NULL) {
+			if (in(p, props, "$t_paused")) {
 				get_user_prop_value(p+9, buf);
-			   subsystemp->stepped_rotation->t_pause = (float)atof(buf);
-			 } else {
-			    subsystemp->stepped_rotation->t_pause = 2.0f;
-			 }
-
-			// get transition time - time to go between steps
-			if ( (p = strstr(props, "$t_transit")) != NULL) {
-				get_user_prop_value(p+10, buf);
-			    subsystemp->stepped_rotation->t_transit = (float)atof(buf);
+				float t_pause = (float)atof(buf);
+				if (t_pause < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $t_paused must not be negative!", modelp->filename, submodelp->name);
+					t_pause = 2.0f;
+				}
+				subsystemp->stepped_rotation->t_pause = t_pause;
 			} else {
-			    subsystemp->stepped_rotation->t_transit = 2.0f;
+				subsystemp->stepped_rotation->t_pause = 2.0f;
+			}
+
+			// get transition time - time to make a complete movement
+			if (in(p, props, "$t_transit")) {
+				get_user_prop_value(p+10, buf);
+				float t_transit = (float)atof(buf);
+				if (t_transit < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $t_transit must not be negative!", modelp->filename, submodelp->name);
+					t_transit = 2.0f;
+				}
+				subsystemp->stepped_rotation->t_transit = t_transit;
+			} else {
+				subsystemp->stepped_rotation->t_transit = 2.0f;
 			}
 
 			// get fraction of time spent in accel
-			if ( (p = strstr(props, "$fraction_accel")) != NULL) {
+			if (in(p, props, "$fraction_accel")) {
 				get_user_prop_value(p+15, buf);
-			    subsystemp->stepped_rotation->fraction = (float)atof(buf);
-			   Assert(subsystemp->stepped_rotation->fraction > 0 && subsystemp->stepped_rotation->fraction < 0.5);
+				float fraction = (float)atof(buf);
+				if (fraction < 0.0f || fraction > 0.5f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $fraction_accel must not be negative and must be less than or equal to 0.5!", modelp->filename, submodelp->name);
+					fraction = 0.3f;
+				}
+				subsystemp->stepped_rotation->fraction = fraction;
 			} else {
-			    subsystemp->stepped_rotation->fraction = 0.3f;
+				subsystemp->stepped_rotation->fraction = 0.3f;
 			}
 
-			int num_steps = subsystemp->stepped_rotation->num_steps;
+			float step_distance = PI2 / subsystemp->stepped_rotation->num_steps;
 			float t_trans = subsystemp->stepped_rotation->t_transit;
 			float fraction = subsystemp->stepped_rotation->fraction;
 
-			subsystemp->stepped_rotation->max_turn_accel = PI2 / (fraction*(1.0f - fraction) * num_steps * t_trans*t_trans);
-			subsystemp->stepped_rotation->max_turn_rate =  PI2 / ((1.0f - fraction) * num_steps *t_trans);
+			// reverse the direction if we start out with reverse velocity
+			if (turn_rate < 0.0f) {
+				subsystemp->stepped_rotation->backwards = true;
+			}
+
+			subsystemp->stepped_rotation->max_turn_accel = fl_near_zero(fraction) ? 0.0f : step_distance / (fraction * (1.0f - fraction) * t_trans * t_trans);
+			subsystemp->stepped_rotation->max_turn_rate = step_distance / ((1.0f - fraction) * t_trans);
 		}
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			subsystemp->turn_rate = turn_rate;
+			if (submodelp) {
+				submodelp->default_turn_rate = turn_rate;
+			}
+		}
+
+		float turn_accel = 0.5f;
+		if (in(p, props, "$rotate_accel")) {
+			get_user_prop_value(p + 13, buf);
+
+			if (!stricmp(buf, "instant")) {
+				if (submodelp) {
+					submodelp->flags.set(Model::Submodel_flags::Instant_rotate_accel);
+				}
+				turn_accel = 0.0f;
+			} else {
+				turn_accel = static_cast<float>(atof(buf));
+				if (turn_accel < 0.0f) {
+					Warning(LOCATION, "Model %s, submodel %s, $rotate_accel %f cannot be negative!", modelp->filename, dname, turn_accel);
+					turn_accel *= -1;
+				}
+			}
+		}
+		if (submodelp) {
+			submodelp->default_turn_accel = turn_accel;
+		}
+	}
+	// Translating subsystem
+	else if ((idx = prop_string(props, &p, "$translate_rate", "$translate")) >= 0) {
+        subsystemp->flags.set(Model::Subsystem_Flags::Translates);
+
+		// get value for continuous or stepped translation
+		get_user_prop_value(p, buf);	// note: p points to the value since we used prop_string
+
+		// $translate means $translate_rate; there is no $translate_time
+		float shift_rate = static_cast<float>(atof(buf));
+
+		// *** determine how the subsys translates ***
+
+		// CASE OF STEPPED TRANSLATION
+		if (in(props, "$stepped")) {
+
+			subsystemp->stepped_translation.reset(new stepped_translation);
+            subsystemp->flags.set(Model::Subsystem_Flags::Stepped_translate);
+
+			// get whether to reverse after the step
+			// (always reverse unless the props say explicitly not to)
+			if (in(p, props, "$reverse_after_step")) {
+				get_user_prop_value(p+19, buf);
+				if (stricmp(buf, "false")) {
+					subsystemp->stepped_translation->reverse_after_step = true;
+				}
+			} else {
+				subsystemp->stepped_translation->reverse_after_step = true;
+			}
+
+			// get step distance
+			if (in(p, props, "$step_distance")) {
+				get_user_prop_value(p+14, buf);
+				float step_dist = (float)atof(buf);
+				if (step_dist < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $step_distance must not be negative!", modelp->filename, submodelp->name);
+					step_dist = 25.0f;
+				}
+				subsystemp->stepped_translation->step_distance = step_dist;
+			} else {
+				subsystemp->stepped_translation->step_distance = 25.0f;
+			}
+
+			// get pause time
+			if (in(p, props, "$t_paused")) {
+				get_user_prop_value(p+9, buf);
+				float t_pause = (float)atof(buf);
+				if (t_pause < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $t_paused must not be negative!", modelp->filename, submodelp->name);
+					t_pause = 2.0f;
+				}
+				subsystemp->stepped_translation->t_pause = t_pause;
+			} else {
+				subsystemp->stepped_translation->t_pause = 2.0f;
+			}
+
+			// get transition time - time to make a complete movement
+			subsystemp->stepped_translation->t_transit = fl_abs(subsystemp->stepped_translation->step_distance / shift_rate);
+
+			// get fraction of time spent in accel
+			if (in(p, props, "$fraction_accel")) {
+				get_user_prop_value(p+15, buf);
+				float fraction = (float)atof(buf);
+				if (fraction < 0.0f || fraction > 0.5f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $fraction_accel must not be negative and must be less than or equal to 0.5!", modelp->filename, submodelp->name);
+					fraction = 0.3f;
+				}
+				subsystemp->stepped_translation->fraction = fraction;
+			} else {
+				subsystemp->stepped_translation->fraction = 0.3f;
+			}
+
+			float step_distance = subsystemp->stepped_translation->step_distance;
+			float t_trans = subsystemp->stepped_translation->t_transit;
+			float fraction = subsystemp->stepped_translation->fraction;
+
+			// reverse the direction if we start out with reverse velocity
+			if (shift_rate < 0.0f) {
+				subsystemp->stepped_translation->backwards = true;
+			}
+
+			subsystemp->stepped_translation->max_shift_accel = fl_near_zero(fraction) ? 0.0f : step_distance / (fraction * (1.0f - fraction) * t_trans * t_trans);
+			subsystemp->stepped_translation->max_shift_rate = step_distance / ((1.0f - fraction) * t_trans);
+		}
+
+		// CASE OF NORMAL CONTINUOUS TRANSLATION
+		else {
+			if (submodelp) {
+				submodelp->default_shift_rate = shift_rate;
+			}
+		}
+
+		float shift_accel = 0.5f;
+		if (in(p, props, "$translate_accel")) {
+			get_user_prop_value(p + 16, buf);
+
+			if (!stricmp(buf, "instant")) {
+				if (submodelp) {
+					submodelp->flags.set(Model::Submodel_flags::Instant_translate_accel);
+				}
+				shift_accel = 0.0f;
+			} else {
+				shift_accel = static_cast<float>(atof(buf));
+				if (shift_accel < 0.0f) {
+					Warning(LOCATION, "Model %s, submodel %s, $translate_accel %f cannot be negative!", modelp->filename, dname, shift_accel);
+					shift_accel *= -1;
+				}
+			}
+		}
+		if (submodelp) {
+			submodelp->default_shift_accel = shift_accel;
 		}
 	}
 }
 
-// used in collision code to check if submode rotates too far
-float get_submodel_delta_angle(submodel_instance_info *sii)
+// used in collision code to check if submodel rotates too far
+float get_submodel_delta_angle(const submodel_instance *smi)
 {
-	vec3d diff;
-	vm_vec_sub(&diff, (vec3d*)&sii->angs, (vec3d*)&sii->prev_angs);
-
 	// find the angle
-	float delta_angle = vm_vec_mag(&diff);
+	float delta_angle = smi->cur_angle - smi->prev_angle;
 
 	// make sure we get the short way around
 	if (delta_angle > PI) {
@@ -745,16 +1059,22 @@ float get_submodel_delta_angle(submodel_instance_info *sii)
 	return delta_angle;
 }
 
-void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, vec3d *pnt, char *props, char *subobj_name, int model_num )
+float get_submodel_delta_shift(const submodel_instance *smi)
+{
+	// this is a bit simpler
+	return abs(smi->cur_offset - smi->prev_offset);
+}
+
+void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, const vec3d *pnt, char *props, const char *subobj_name, int model_num )
 {
 	int i;
 	model_subsystem *subsystemp;
 
 	if ( slist==NULL ) {
 #ifndef NDEBUG
-		if (!ss_warning_shown) {
+		if (!ss_warning_shown_null) {
 			mprintf(("No subsystems found for model \"%s\".\n", model_get(model_num)->filename));
-			ss_warning_shown = 1;
+			ss_warning_shown_null = true;
 		}
 #endif
 		return;			// For TestCode, POFView, etc don't bother
@@ -768,7 +1088,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 #ifndef NDEBUG
 		// Goober5000 - notify if there's a mismatch
-		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
+		if ( stricmp(subobj_name, subsystemp->subobj_name) != 0 && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
 			nprintf(("Model", "NOTE: Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  This works fine in FSO v3.6 and up, "
 				"but is not compatible with FS2 retail.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name));
@@ -778,14 +1098,15 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 		if (!subsystem_stricmp(subobj_name, subsystemp->subobj_name))
 		{
-			//commented by Goober5000 because this is also set when the table is parsed
-			//subsystemp->flags = 0;
+			if (subobj_num >= 0)
+				model_get(model_num)->submodel[subobj_num].subsys_num = i;
 
 			subsystemp->subobj_num = subobj_num;
 			subsystemp->turret_gun_sobj = -1;
 			subsystemp->model_num = model_num;
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
+
 			set_subsystem_info(model_num, subsystemp, props, subobj_name);
 			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
@@ -794,12 +1115,12 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 #ifndef NDEBUG
 	char bname[_MAX_FNAME];
 
-	if ( !ss_warning_shown) {
+	if ( !ss_warning_shown_mismatch) {
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
-		ss_warning_shown = 1;
+		ss_warning_shown_mismatch = true;
 	} else
 #endif
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
@@ -816,40 +1137,19 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 }
 
-void print_family_tree( polymodel *obj, int modelnum, const char * ident, int islast )
+void print_family_tree(polymodel *obj)
 {
-	char temp[50];
+	mprintf(("PRINTING POLYMODEL TREE\n"));
+	mprintf(("%s\n", obj->filename));
 
-	if ( modelnum < 0 ) return;
-	if (obj==NULL) return;
+	model_iterate_submodel_tree(obj, obj->detail[0], [&](int submodel, int level, bool /*isLeaf*/)
+		{
+			mprintf(("  "));
+			for (int i = 0; i < level; i++)
+				mprintf(("  "));
 
-	if (ident[0] == '\0')	{
-		mprintf(( " %s", obj->submodel[modelnum].name ));
-		sprintf( temp, " " );
-	} else if ( islast ) 	{
-		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s  ", ident );
-	} else {
-		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s ", ident );
-	}
-
-	mprintf(( "\n" ));
-
-	int child = obj->submodel[modelnum].first_child;
-	while( child > -1 )	{
-		if ( obj->submodel[child].next_sibling < 0 )
-			print_family_tree( obj, child, temp,1 );
-		else
-			print_family_tree( obj, child, temp,0 );
-		child = obj->submodel[child].next_sibling;
-	}
-}
-
-void dump_object_tree(polymodel *obj)
-{
-	print_family_tree( obj, 0, "", 0 );
-	key_getch();
+			mprintf(("%s\n", obj->submodel[submodel].name));
+		});
 }
 
 void create_family_tree(polymodel *obj)
@@ -873,7 +1173,7 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
-void create_vertex_buffer(polymodel *pm)
+void create_vertex_buffer(polymodel *pm, const model_read_deferred_tasks& deferredTasks)
 {
 	if (Is_standalone) {
 		return;
@@ -885,41 +1185,34 @@ void create_vertex_buffer(polymodel *pm)
 
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {
-		interp_configure_vertex_buffers(pm, i);
+		interp_configure_vertex_buffers(pm, i, deferredTasks);
 	}
 
 	// figure out which vertices are transparent
 	for ( i = 0; i < pm->n_models; i++ ) {
-		if ( !pm->submodel[i].is_thruster ) {
+		if ( !pm->submodel[i].flags[Model::Submodel_flags::Is_thruster] ) {
 			interp_create_transparency_index_buffer(pm, i);
 		}
 	}
+	clear_bm_lookup_cache();
 
-	bool use_batched_rendering = true;
+	size_t stride = 0;
+	// Determine the global stride of this model (should be the same for every submodel)
+	for ( i = 0; i < pm->n_models; ++i ) {
+		if (pm->submodel[i].buffer.model_list != nullptr && pm->submodel[i].buffer.stride != stride) {
+			Assertion(stride == 0, "Submodel %d of model %s has a stride of "
+				SIZE_T_ARG
+				" while the rest of the model has a vertex stride of "
+				SIZE_T_ARG
+				"!", i, pm->filename, pm->submodel[i].buffer.stride, stride);
 
-	if ( !Cmdline_no_batching ) {
-		size_t stride = 0;
-
-		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model
-		for ( i = 0; i < pm->n_models; ++i ) {
-			if ( pm->submodel[i].buffer.model_list != NULL && pm->submodel[i].buffer.stride != stride) {
-				if ( stride == 0 ) {
-					stride = pm->submodel[i].buffer.stride;
-				} else {
-					use_batched_rendering = false;
-					break;
-				}
-			}
+			stride = pm->submodel[i].buffer.stride;
 		}
-	} else {
-		use_batched_rendering = false;
 	}
 
 	// create another set of indexes for the detail buffers
-	if ( use_batched_rendering ) {
-		for ( i = 0; i < pm->n_detail_levels; i++ )	{
-			interp_create_detail_index_buffer(pm, i);
-		}
+	for ( i = 0; i < pm->n_detail_levels; i++ )	{
+		interp_create_detail_index_buffer(pm, i);
 	}
 
 	// now actually fill the buffer with our info ...
@@ -931,22 +1224,20 @@ void create_vertex_buffer(polymodel *pm)
 		pm->submodel[i].trans_buffer.release();
 	}
 
-	if ( use_batched_rendering ) {
-		// pack the merged index buffers to the vbo.
-		for ( i = 0; i < pm->n_detail_levels; ++i ) {
-			if ( pm->detail_buffers[i].model_list == NULL ) {
-				continue;
-			}
-
-			model_interp_pack_buffer(&pm->vert_source, &pm->detail_buffers[i]);
-			pm->detail_buffers[i].release();
+	// pack the merged index buffers to the vbo.
+	for ( i = 0; i < pm->n_detail_levels; ++i ) {
+		if ( pm->detail_buffers[i].model_list == NULL ) {
+			continue;
 		}
 
-		pm->flags |= PM_FLAG_BATCHED;
+		model_interp_pack_buffer(&pm->vert_source, &pm->detail_buffers[i]);
+		pm->detail_buffers[i].release();
 	}
 
+	pm->flags |= PM_FLAG_BATCHED;
+
 	// ... and then finalize buffer
-	model_interp_pack_buffer(&pm->vert_source, NULL);
+	model_interp_submit_buffers(&pm->vert_source, stride);
 
 	model_interp_process_shield_mesh(pm);
 }
@@ -1028,7 +1319,7 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 	return swap_was_necessary;
 }
 
-void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
+void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx)
 {
 	box[0].xyz.x = big_mn->xyz.x; box[0].xyz.y = big_mn->xyz.y; box[0].xyz.z = big_mn->xyz.z;
 	box[1].xyz.x = big_mx->xyz.x; box[1].xyz.y = big_mn->xyz.y; box[1].xyz.z = big_mn->xyz.z;
@@ -1042,12 +1333,249 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 	box[7].xyz.x = big_mn->xyz.x; box[7].xyz.y = big_mx->xyz.y; box[7].xyz.z = big_mx->xyz.z;
 }
 
+void extract_movement_info(bsp_info *sm, bool is_rotation, int *&movement_axis_id, vec3d *&movement_axis, int *&movement_type)
+{
+	if (is_rotation)
+	{
+		movement_axis_id = &sm->rotation_axis_id;
+		movement_axis = &sm->rotation_axis;
+		movement_type = &sm->rotation_type;
+	}
+	else
+	{
+		movement_axis_id = &sm->translation_axis_id;
+		movement_axis = &sm->translation_axis;
+		movement_type = &sm->translation_type;
+	}
+}
 
-void parse_triggers(int &n_trig, queued_animation **triggers, char *props);
+void determine_submodel_movement(bool is_rotation, const char *filename, bsp_info *sm, char *props, SCP_vector<SCP_string> &look_at_submodel_names)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+	char *p;
 
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
-//reads a binary file containing a 3d model
-int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
+	// determine movement axis
+	// (the axis is a vector from 0,0,0 to the point specified)
+	// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
+	if (*movement_axis_id == MOVEMENT_AXIS_X)
+		*movement_axis = vmd_x_vector;
+	else if (*movement_axis_id == MOVEMENT_AXIS_Y)
+		*movement_axis = vmd_y_vector;
+	else if (*movement_axis_id == MOVEMENT_AXIS_Z)
+		*movement_axis = vmd_z_vector;
+	else if (*movement_axis_id == MOVEMENT_AXIS_OTHER)
+	{
+		auto axis_string = is_rotation ? "$rotation_axis" : "$translation_axis";
+
+		if (in(p, props, axis_string))
+		{
+			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
+				vm_vec_normalize(movement_axis);
+			else
+			{
+				Warning(LOCATION, "Failed to parse %s on subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+				*movement_type = MOVEMENT_TYPE_NONE;
+			}
+		}
+		else
+		{
+			Warning(LOCATION, "A %s was not specified for subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+			*movement_type = MOVEMENT_TYPE_NONE;
+		}
+	}
+
+	if (is_rotation)
+	{
+		// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
+		if (in(p, props, "$look_at"))
+		{
+			sm->rotation_type = MOVEMENT_TYPE_INTRINSIC;
+
+			// we need to work out the correct subobject number later, after all subobjects have been processed
+			sm->look_at_submodel = static_cast<int>(look_at_submodel_names.size());
+
+			char submodel_name[MAX_NAME_LEN];
+			get_user_prop_value(p + 9, submodel_name);
+			look_at_submodel_names.push_back(submodel_name);
+		}
+		else
+			sm->look_at_submodel = -1; // No look_at
+
+		// optional extra property for look_at
+		if (in(p, props, "$look_at_offset"))
+		{
+			auto offset = (float)atof(p + 16);
+
+			// model property is specified in degrees, so convert it
+			offset = fl_radians(offset);
+
+			// check range (the angle is now in radians)
+			if (offset < -PI2 || offset > PI2)
+			{
+				Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", sm->name, filename);
+				offset = -1.0f;
+			}
+			// make the angle positive, since negative angles will be set at first look_at call
+			else if (offset < 0.0f)
+				offset += PI2;
+
+			sm->look_at_offset = offset;
+		}
+		else
+			sm->look_at_offset = -1.0f;
+	}
+
+	if (is_rotation)
+	{
+		// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
+		int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
+		if (idx >= 0)
+		{
+			sm->rotation_type = MOVEMENT_TYPE_INTRINSIC;
+
+			// do this the same way as regular $rotate
+			char buf[64];
+			get_user_prop_value(p, buf);
+
+			// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
+			float turn_rate;
+			if (idx == 0)
+			{
+				auto turn_time = static_cast<float>(atof(buf));
+				if (fl_near_zero(turn_time, 0.01f))
+				{
+					Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", sm->name, filename);
+					turn_rate = 1.0f;
+				}
+				else
+					turn_rate = PI2 / turn_time;
+			}
+			else
+				turn_rate = static_cast<float>(atof(buf));
+
+			sm->default_turn_rate = turn_rate;
+			sm->flags.set(Model::Submodel_flags::Instant_rotate_accel);
+		}
+	}
+}
+
+void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
+
+	// if we have a frame of reference, we need to transform the movement axis and make it a non-standard one
+	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && (*movement_type != MOVEMENT_TYPE_NONE) && (*movement_axis_id != MOVEMENT_AXIS_NONE))
+	{
+		vec3d new_axis;
+		vm_vec_unrotate(&new_axis, movement_axis, &sm->frame_of_reference);
+		*movement_axis = new_axis;
+		*movement_axis_id = MOVEMENT_AXIS_OTHER;
+	}
+}
+
+void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *filename, bool is_rotation, bool is_turret)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
+
+	// make sure this is a validly normalized axis
+	if (vm_vec_mag(movement_axis) < 0.999f || vm_vec_mag(movement_axis) > 1.001f)
+		*movement_type = MOVEMENT_TYPE_NONE;
+
+	// maybe use the FOR to manipulate the axes
+	// (do this before the compatibility check below to prevent doing it twice)
+	maybe_adjust_movement_axis(is_rotation, sm);
+
+	if (is_rotation && is_turret)
+	{
+		// important compatibility check: if there are multipart turrets without rotation axes defined, define them
+		// also, some of the retail models got the axes wrong, so fix those :-/
+		// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
+		//     and also for turrets which don't have their axes set to "other"
+		auto base = parent_sm;
+		auto gun = sm;
+
+		if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
+			|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+		{
+			base->rotation_axis_id = MOVEMENT_AXIS_Y;
+			base->rotation_axis = vmd_y_vector;
+			base->rotation_type = MOVEMENT_TYPE_TURRET;
+			maybe_adjust_movement_axis(true, base);
+		}
+
+		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
+			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+		{
+			gun->rotation_axis_id = MOVEMENT_AXIS_X;
+			gun->rotation_axis = vmd_x_vector;
+			gun->rotation_type = MOVEMENT_TYPE_TURRET;
+			maybe_adjust_movement_axis(true, gun);
+		}
+	}
+
+	// add a warning if movement is specified without movement axis.
+	if (*movement_axis_id == MOVEMENT_AXIS_NONE)
+	{
+		auto str = is_rotation ? "rotation" : "translation";
+
+		if (*movement_type == MOVEMENT_TYPE_REGULAR)
+			Warning(LOCATION, "%s without %s axis defined on submodel '%s' of model '%s'!", str, str, sm->name, filename);
+		else if (*movement_type == MOVEMENT_TYPE_INTRINSIC)
+			Warning(LOCATION, "Intrinsic %s (e.g. dumb-rotate or look-at) without %s axis defined on submodel '%s' of model '%s'!", str, str, sm->name, filename);
+
+		*movement_type = MOVEMENT_TYPE_NONE;
+	}
+
+	// clear the axis if the submodel doesn't move
+	// (don't clear can_move because of gun_rotation)
+	if (*movement_type == MOVEMENT_TYPE_NONE)
+	{
+		*movement_axis_id = MOVEMENT_AXIS_NONE;
+		*movement_axis = vmd_zero_vector;
+	}
+
+	// Set the can_move field on submodels which are of a moving type or which have such a parent somewhere down the hierarchy
+	if (*movement_type != MOVEMENT_TYPE_NONE)
+		sm->flags.set(Model::Submodel_flags::Can_move);
+	else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move])
+		sm->flags.set(Model::Submodel_flags::Can_move);
+}
+
+void resolve_submodel_index(const polymodel *pm, const char *requester, const char *field, int &submodel_index, const SCP_vector<SCP_string> &submodel_list)
+{
+	auto submodel_name = submodel_list[submodel_index].c_str();
+
+	// search for this submodel name among all submodels
+	for (int j = 0; j < pm->n_models; j++) {
+		if (!stricmp(submodel_name, pm->submodel[j].name)) {
+			nprintf(("Model", "NOTE: Matched %s %s %s %s with subobject id %d\n", pm->filename, requester, field, submodel_name, j));
+
+			// set the correct submodel reference, and we're done
+			submodel_index = j;
+			return;
+		}
+	}
+
+	// models could specify the submodel number, so let's maintain compatibilty
+	if (can_construe_as_integer(submodel_name)) {
+		submodel_index = atoi(submodel_name);
+		return;
+	}
+
+	Warning(LOCATION, "Unable to match %s %s %s %s with a submodel!\n", pm->filename, requester, field, submodel_name);
+	submodel_index = -1;
+}
+
+modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1064,16 +1592,12 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
-		return -1;
+		return modelread_status::FAIL;
 	}
 
 	TRACE_SCOPE(tracing::ReadModelFile);
 
-	// generate checksum for the POF
-	cfseek(fp, 0, SEEK_SET);	
-	cf_chksum_long(fp, &Global_checksum);
 	cfseek(fp, 0, SEEK_SET);
-
 
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
@@ -1089,7 +1613,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {
 			strcpy_s(model_filename, filename);
-			ss_warning_shown = 0;
+			ss_warning_shown_null = false;
+			ss_warning_shown_mismatch = false;
 		}
 	}
 #endif
@@ -1108,11 +1633,18 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	
 	if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
-		return 0;
+		return modelread_status::FAIL;
+	}
+	if (version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_LEGACY_VERSION);
+	} else if (version > PM_LATEST_ALIGNED_VERSION && version < PM_FIRST_VERTLIM_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_ALIGNED_VERSION);
+	} else if (version > PM_LATEST_VERTLIM_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_VERTLIM_VERSION);
 	}
 
 	pm->version = version;
-	Assert( strlen(filename) < FILESPEC_LENGTH );
+	Assert(strlen(filename) < FILESPEC_LENGTH );
 	strcpy_s(pm->filename, filename);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
@@ -1131,6 +1663,10 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	len = cfread_int(fp);
 	next_chunk = cftell(fp) + len;
 
+	// keep track of any submodels we might notice
+	SCP_vector<SCP_string> look_at_submodel_names;
+	SCP_vector<SCP_string> dock_parent_submodel_names;
+
 	while (!cfeof(fp)) {
 
 //		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
@@ -1138,22 +1674,25 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 		switch (id) {
 
+			case ID_HDR2:
 			case ID_OHDR: {		//Object header
 				//vector v;
 
 				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
-#if defined( FREESPACE1_FORMAT )
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-#elif defined( FREESPACE2_FORMAT )
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-#endif
+				if (id == ID_OHDR) {
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+				}
+				if (id == ID_HDR2) {
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+				}
+                Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
 				if ( pm->rad <= 0.1f )
@@ -1183,7 +1722,12 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 
 				pm->num_debris_objects = cfread_int(fp);
-				Assert( pm->num_debris_objects <= MAX_DEBRIS_OBJECTS );
+			    if (pm->num_debris_objects > MAX_DEBRIS_OBJECTS) {
+				    Error(LOCATION,
+				          "Model %s specified that it contains %d debris objects but only %d are supported by the "
+				          "engine.",
+				          filename, pm->num_debris_objects, MAX_DEBRIS_OBJECTS);
+			    }
 				// mprintf(( "There are %d debris objects\n", pm->num_debris_objects ));
 				for (i=0; i<pm->num_debris_objects;i++ )	{
 					pm->debris_objects[i] = cfread_int(fp);
@@ -1232,9 +1776,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 
 					// a custom MOI is only used for ships, but we should probably log it anyway
-					if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
-						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
-						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
+					if ( IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
+						&& IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
+						&& IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
 					{
 						mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)\n", filename));
 					}
@@ -1272,7 +1816,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						for (i=0; i<pm->num_lights; i++ )	{			
 							cfread_vector(&pm->lights[i].pos,fp);
 							pm->lights[i].type = cfread_int(fp);
-							pm->lights[i].value = 0.0f;
 						}
 					}
 				} else {
@@ -1283,405 +1826,273 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				break;
 			}
 			
+			case ID_OBJ2:
 			case ID_SOBJ: {		//Subobject header
-				int n;
+				int n, parent;
 				char *p, props[MAX_PROP_LEN];
 //				float d;
 
 				//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
 
 				n = cfread_int(fp);
-				//mprintf(("SOBJ IDed itself as %d", n));
-
+				//mprintf(("SOBJ IDed itself as %d\n", n));
 				Assert(n < pm->n_models );
+				auto sm = &pm->submodel[n];
 
-#if defined( FREESPACE2_FORMAT )	
-				pm->submodel[n].rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_OBJ2) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
-				pm->submodel[n].parent = cfread_int(fp);
+				parent = cfread_int(fp);
+				sm->parent = parent;
+				auto parent_sm = parent < 0 ? nullptr : &pm->submodel[parent];
+				sm->depth = 1;
+				{
+					int parent_sm_id = parent;
+					while (parent_sm_id >= 0) {
+						sm->depth++;
+						parent_sm_id = pm->submodel[parent_sm_id].parent;
+					}
+				}
 
-//				cfread_vector(&pm->submodel[n].norm,fp);
+
+
+//				cfread_vector(&sm->norm,fp);
 //				d = cfread_float(fp);				
-//				cfread_vector(&pm->submodel[n].pnt,fp);
-				cfread_vector(&pm->submodel[n].offset,fp);
+//				cfread_vector(&sm->pnt,fp);
+				cfread_vector(&sm->offset,fp);
 
-//			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, pm->submodel[n].offset.xyz.x, pm->submodel[n].offset.xyz.y, pm->submodel[n].offset.xyz.z ));
+//			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, sm->offset.xyz.x, sm->offset.xyz.y, sm->offset.xyz.z ));
 	
-#if defined ( FREESPACE1_FORMAT )
-				pm->submodel[n].rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_SOBJ) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
-//				pm->submodel[n].tree_offset = cfread_int(fp);	//offset
-//				pm->submodel[n].data_offset = cfread_int(fp);	//offset
+//				sm->tree_offset = cfread_int(fp);	//offset
+//				sm->data_offset = cfread_int(fp);	//offset
 
-				cfread_vector(&pm->submodel[n].geometric_center,fp);
+				cfread_vector(&sm->geometric_center,fp);
 
-				cfread_vector(&pm->submodel[n].min,fp);
-				cfread_vector(&pm->submodel[n].max,fp);
+				cfread_vector(&sm->min,fp);
+				cfread_vector(&sm->max,fp);
 
-				pm->submodel[n].name[0] = '\0';
+				sm->name[0] = '\0';
 
-				cfread_string_len(pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
+				cfread_string_len(sm->name, MAX_NAME_LEN, fp);		// get the name
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
 				// Check for unrealistic radii
-				if ( pm->submodel[n].rad <= 0.1f )
-				{
-					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
+				if ( sm->rad <= 0.1f ) {
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", sm->name, filename);
 				}
 				
 				// sanity first!
-				if (maybe_swap_mins_maxs(&pm->submodel[n].min, &pm->submodel[n].max)) {
-					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", pm->submodel[n].name, pm->filename);
+				if (maybe_swap_mins_maxs(&sm->min, &sm->max)) {
+					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", sm->name, pm->filename);
 				}
-				model_calc_bound_box(pm->submodel[n].bounding_box, &pm->submodel[n].min, &pm->submodel[n].max);
+				model_calc_bound_box(sm->bounding_box, &sm->min, &sm->max);
 
-				pm->submodel[n].movement_type = cfread_int(fp);
-				pm->submodel[n].movement_axis = cfread_int(fp);
+				// ---------- submodel movement ----------
 
-				// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
-				if ( strstr(pm->submodel[n].name, "turret") || strstr(pm->submodel[n].name, "gun") || strstr(pm->submodel[n].name, "cannon")) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-					pm->submodel[n].can_move = true;
-				} else
+				sm->rotation_type = cfread_int(fp);
+				sm->rotation_axis_id = cfread_int(fp);
 
-				if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-					if (strstr(pm->submodel[n].name, "thruster")) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
-					} else if(strstr(props, "$triggered")) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
+				// change turret rotation type to MOVEMENT_TYPE_TURRET
+				if ( in(sm->name, "turret") || (parent_sm && (parent_sm->rotation_type == MOVEMENT_TYPE_TURRET)) ) {
+					sm->rotation_type = MOVEMENT_TYPE_TURRET;
+				} else if (sm->rotation_type == MOVEMENT_TYPE_REGULAR) {
+					if (in(sm->name, "thruster")) {
+						sm->rotation_type = MOVEMENT_TYPE_NONE;
+					} else if (in(props, "$triggered")) {
+						sm->rotation_type = MOVEMENT_TYPE_TRIGGERED;
 					}
 				}
 
-				if ( ( p = strstr(props, "$look_at")) != NULL ) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
-					get_user_prop_value(p+9, pm->submodel[n].look_at);
-					pm->submodel[n].look_at_num = -2; // Set this to -2 to mark it as something we need to work out the correct subobject number for later, after all subobjects have been processed
-					
-				} else {
-					pm->submodel[n].look_at_num = -1; // No look_at
-				}
+				determine_submodel_movement(true, pm->filename, sm, props, look_at_submodel_names);
 
-				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
-				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
-				if (idx >= 0) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+				// submodel translation is a new POF feature
+				if (pm->version >= 2301)
+				{
+					sm->translation_type = cfread_int(fp);
+					sm->translation_axis_id = cfread_int(fp);
 
-					// do this the same way as regular $rotate
-					char buf[64];
-					get_user_prop_value(p, buf);
-
-					// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
-					float turn_rate;
-					if (idx == 0) {
-						float turn_time = static_cast<float>(atof(buf));
-						if (turn_time == 0.0f) {
-							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
-							turn_rate = 1.0f;
-						} else {
-							turn_rate = PI2 / turn_time;
+					if (sm->translation_type == MOVEMENT_TYPE_REGULAR) {
+						if (in(props, "$triggered")) {
+							sm->translation_type = MOVEMENT_TYPE_TRIGGERED;
 						}
-					} else {
-						turn_rate = static_cast<float>(atof(buf));
 					}
 
-					pm->submodel[n].dumb_turn_rate = turn_rate;
+					determine_submodel_movement(false, pm->filename, sm, props, look_at_submodel_names);
 				} else {
-					pm->submodel[n].dumb_turn_rate = 0.0f;
+					sm->translation_type = MOVEMENT_TYPE_NONE;
+					sm->translation_axis_id = -1;
 				}
 
-				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
-					|| strstr(props, "$triggered") || strstr(props, "$rotate") || strstr(props, "$gun_rotation")) {
-					pm->submodel[n].can_move = true;
-				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
-					pm->submodel[n].can_move = true;
+				if ( sm->name[0] == '\0' ) {
+					strcpy_s(sm->name, "unknown object name");
 				}
 
-				if ( pm->submodel[n].name[0] == '\0' ) {
-					strcpy_s(pm->submodel[n].name, "unknown object name");
-				}
-
-				bool rotating_submodel_has_subsystem = !(pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT);
-				if ( ( p = strstr(props, "$special"))!= NULL ) {
+				if (in(p, props, "$special")) {
 					char type[64];
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						do_new_subsystem( n_subsystems, subsystems, n, pm->submodel[n].rad, &pm->submodel[n].offset, props, pm->submodel[n].name, pm->id );
-						rotating_submodel_has_subsystem = true;
-					} else if ( !stricmp(type, "no_rotate") ) {
-						// mark those submodels which should not rotate - ie, those with no subsystem
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
+						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
-						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
-						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
+						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
+							// mark those submodels which should not move - i.e., those with no subsystem
+							sm->rotation_type = MOVEMENT_TYPE_NONE;
+						} else {
+							// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
+							Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
+						}
+						if ( !stricmp(type, "no_translate") || !stricmp(type, "no_movement") ) {
+							// mark those submodels which should not move - i.e., those with no subsystem
+							sm->translation_type = MOVEMENT_TYPE_NONE;
+						} else {
+							// if submodel translates (via bspgen), then there is either a subsys or special=no_translate
+							Assert( sm->translation_type != MOVEMENT_TYPE_REGULAR );
+						}
 					}
 				}
 
-				// adding a warning if rotation is specified without movement axis.
-				if (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE) {
-					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
-					}
-					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
-					}
+				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
+
+				sm->flags.set(Model::Submodel_flags::No_collisions, in(props, "$no_collisions"));
+
+				sm->flags.set(Model::Submodel_flags::Nocollide_this_only, in(props, "$nocollide_this_only"));
+
+				sm->flags.set(Model::Submodel_flags::Collide_invisible, in(props, "$collide_invisible"));
+
+				if (in(props, "$gun_rotation")) {
+					sm->flags.set(Model::Submodel_flags::Gun_rotation);
+					sm->flags.set(Model::Submodel_flags::Can_move);		// this is something of a special case because it's rotating without "rotating"
 				}
 
-/*				if ( strstr(props, "$nontargetable")!= NULL ) {
-					pm->submodel[n].targetable = 0;
-				}else{
-					pm->submodel[n].targetable = 1;
-				}
-*/
-//				pm->submodel[n].n_triggers = 0;
-//				pm->submodel[n].triggers = NULL;
+				if (in(p, props, "$lod0_name"))
+					get_user_prop_value(p+10, sm->lod_name);
 
-				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
-
-				if (strstr(props, "$no_collisions") != NULL )
-					pm->submodel[n].no_collisions = true;
-				else
-					pm->submodel[n].no_collisions = false;
-
-				if (strstr(props, "$nocollide_this_only") != NULL )
-					pm->submodel[n].nocollide_this_only = true;
-				else
-					pm->submodel[n].nocollide_this_only = false;
-
-				if (strstr(props, "$collide_invisible") != NULL )
-					pm->submodel[n].collide_invisible = true;
-				else
-					pm->submodel[n].collide_invisible = false;
-
-				if (strstr(props, "$gun_rotation") != NULL)
-					pm->submodel[n].gun_rotation = true;
-				else
-					pm->submodel[n].gun_rotation = false;
-
-				if ( (p = strstr(props, "$lod0_name")) != NULL)
-					get_user_prop_value(p+10, pm->submodel[n].lod_name);
-
-				if (strstr(props, "$attach_thrusters") != NULL )
-					pm->submodel[n].attach_thrusters = true;
-				else
-					pm->submodel[n].attach_thrusters = false;
-
-				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
+				if (in(p, props, "$detail_box:")) {
 					p += 12;
 					while (*p == ' ') p++;
-					pm->submodel[n].use_render_box = atoi(p);
+					sm->use_render_box = atoi(p);
 
-					if ( (p = strstr(props, "$box_offset:")) != NULL ) {
+					if (in(p, props, "$box_offset:")) {
 						p += 12;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_offset.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_offset.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
-						pm->submodel[n].use_render_box_offset = true;
+						sm->flags.set(Model::Submodel_flags::Use_render_box_offset);
 					}
 
-					if ( (p = strstr(props, "$box_min:")) != NULL ) {
+					if (in(p, props, "$box_min:")) {
 						p += 9;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_min.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_min.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_min.xyz.z = (float)strtod(++p, (char **)nullptr);
 					} else {
-						pm->submodel[n].render_box_min = pm->submodel[n].min;
+						sm->render_box_min = sm->min;
 					}
 
-					if ( (p = strstr(props, "$box_max:")) != NULL ) {
+					if (in(p, props, "$box_max:")) {
 						p += 9;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_max.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_max.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_max.xyz.z = (float)strtod(++p, (char **)nullptr);
 					} else {
-						pm->submodel[n].render_box_max = pm->submodel[n].max;
+						sm->render_box_max = sm->max;
+					}
+
+					if (in(p, props, "$do_not_scale_distances")) {
+						p += 23;
+						sm->flags.set(Model::Submodel_flags::Do_not_scale_detail_distances);
 					}
 				}
 
-				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
+				if (in(p, props, "$detail_sphere:")) {
 					p += 15;
 					while (*p == ' ') p++;
-					pm->submodel[n].use_render_sphere = atoi(p);
+					sm->use_render_sphere = atoi(p);
 
-					if ( (p = strstr(props, "$radius:")) != NULL ) {
+					if (in(p, props, "$radius:")) {
 						p += 8;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_sphere_radius = (float)strtod(p, (char **)NULL);
+						sm->render_sphere_radius = (float)strtod(p, (char **)nullptr);
 					} else {
-						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
+						sm->render_sphere_radius = sm->rad;
 					}
 
-					if ( (p = strstr(props, "$offset:")) != NULL ) {
+					if (in(p, props, "$offset:")) {
 						p += 8;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_sphere_offset.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_sphere_offset.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
-						pm->submodel[n].use_render_sphere_offset = true;
+						sm->flags.set(Model::Submodel_flags::Use_render_sphere_offset);
 					} else {
-						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
+						sm->render_sphere_offset = vmd_zero_vector;
+					}
+
+					if (in(p, props, "$do_not_scale_distances")) {
+						p += 23;
+						sm->flags.set(Model::Submodel_flags::Do_not_scale_detail_distances);
 					}
 				}
 
-				// Added for new handling of turret orientation - KeldorKatarn
-				matrix	*orient = &pm->submodel[n].orientation;
+				// KeldorKatarn, with modifications
+				if (in(p, props, "$uvec")) {
+					matrix submodel_orient;
 
-				if ( (p = strstr(props, "$uvec:")) != NULL ) {
-					p += 6;
+					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, sm->name, pm->filename)) {
 
-					char *parsed_string = p;
+						if (in(p, props, "$fvec")) {
 
-					while (*parsed_string == ' ') {
-						parsed_string++; // Skip spaces
-					}
+							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, sm->name, pm->filename)) {
 
-					orient->vec.uvec.xyz.x = (float)(strtod(parsed_string, (char **)NULL));
+								vm_vec_normalize(&submodel_orient.vec.uvec);
+								vm_vec_normalize(&submodel_orient.vec.fvec);
 
-					// Find end of number
-					parsed_string = strchr(parsed_string, ',');
-					if (parsed_string == NULL) {
-						Error( LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
-							"\n\n$uvec: should be followed by 3 numbers separated with commas."
-							"\n\nCouldn't find first comma (,)!",
-							 pm->submodel[n].name, filename);
-					}
-					parsed_string++;
+								vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
+								vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
 
-					while (*parsed_string == ' ') {
-						parsed_string++; // Skip spaces
-					}
+								vm_vec_normalize(&submodel_orient.vec.fvec);
+								vm_vec_normalize(&submodel_orient.vec.rvec);
 
-					orient->vec.uvec.xyz.y = (float)(strtod(parsed_string, (char **)NULL));
+								vm_orthogonalize_matrix(&submodel_orient);
 
-					// Find end of number
-					parsed_string = strchr(parsed_string, ',');
-					if (parsed_string == NULL) {
-						Error( LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
-							"\n\n$uvec: should be followed by 3 numbers separated with commas."
-							"\n\nCouldn't find second comma (,)!",
-							 pm->submodel[n].name, filename);
-					}
-					parsed_string++;
+								sm->frame_of_reference = submodel_orient;
 
-					while (*parsed_string == ' ') {
-						parsed_string++; // Skip spaces
-					}
-
-					orient->vec.uvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
-
-					if ( (p = strstr(props, "$fvec:")) != NULL ) {
-						parsed_string = p + 6;
-
-						while (*parsed_string == ' ') {
-							parsed_string++; // Skip spaces
-						}
-
-						orient->vec.fvec.xyz.x = (float)(strtod(parsed_string, (char **)NULL));
-
-						// Find end of number
-						parsed_string = strchr(parsed_string, ',');
-						if (parsed_string == NULL) {
-							Error( LOCATION,
-								"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
-								"\n\n$fvec: should be followed by 3 numbers separated with commas."
-								"\n\nCouldn't find first comma (,)!",
-								 pm->submodel[n].name, filename);
-						}
-						parsed_string++;
-
-						while (*parsed_string == ' ') {
-							parsed_string++; // Skip spaces
-						}
-
-						orient->vec.fvec.xyz.y = (float)(strtod(parsed_string, (char **)NULL));
-
-						// Find end of number
-						parsed_string = strchr(parsed_string, ',');
-						if (parsed_string == NULL) {
-							Error( LOCATION,
-								"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
-								"\n\n$fvec: should be followed by 3 numbers separated with commas."
-								"\n\nCouldn't find second comma (,)!",
-								 pm->submodel[n].name, filename);
-						}
-						parsed_string++;
-
-						while (*parsed_string == ' ') {
-							parsed_string++; // Skip spaces
-						}
-
-						orient->vec.fvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
-
-						pm->submodel[n].force_turret_normal = true;
-
-						vm_vec_normalize(&orient->vec.uvec);
-						vm_vec_normalize(&orient->vec.fvec);
-
-						vm_vec_cross(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
-						vm_vec_cross(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
-
-						vm_vec_normalize(&orient->vec.fvec);
-						vm_vec_normalize(&orient->vec.rvec);
-
-						vm_orthogonalize_matrix(orient);
-					} else {
-						int parent_num = pm->submodel[n].parent;
-
-						if (parent_num > -1) {
-							*orient = pm->submodel[parent_num].orientation;
+							} else {
+								Warning(LOCATION,
+									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
+									"\n\n$fvec should be followed by 3 numbers separated with commas.",
+									sm->name, filename);
+							}
 						} else {
-							*orient = vmd_identity_matrix;
+							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", sm->name);
 						}
-
-						Warning( LOCATION, "Improper custom orientation matrix for subsystem %s, you must define a up vector, then a forward vector", pm->submodel[n].name);
+					} else {
+						Warning(LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
+							"\n\n$uvec should be followed by 3 numbers separated with commas.",
+							sm->name, filename);
 					}
 				} else {
-					int parent_num = pm->submodel[n].parent;
-
-					if (parent_num > -1) {
-						*orient = pm->submodel[parent_num].orientation;
-					} else {
-						*orient = vmd_identity_matrix;
-					}
-
-					if (strstr(props, "$fvec:") != NULL) {
-						Warning( LOCATION, "Improper custom orientation matrix for subsystem %s, you must define a up vector, then a forward vector", pm->submodel[n].name);
-					}
+					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
 				}
-
-				if ( !rotating_submodel_has_subsystem ) {
-					nprintf(("Model", "Model %s: Rotating Submodel without subsystem: %s\n", pm->filename, pm->submodel[n].name));
-
-					// mark those submodels which should not rotate - ie, those with no subsystem
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-					pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
-				}
-
-
-				pm->submodel[n].angs.p = 0.0f;
-				pm->submodel[n].angs.b = 0.0f;
-				pm->submodel[n].angs.h = 0.0f;
 
 				{
 					int nchunks = cfread_int( fp );		// Throw away nchunks
@@ -1689,52 +2100,108 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						Error( LOCATION, "Model '%s' is chunked.  See John or Adam!\n", pm->filename );
 					}
 				}
-				pm->submodel[n].bsp_data_size = cfread_int(fp);
-				if ( pm->submodel[n].bsp_data_size > 0 )	{
-					pm->submodel[n].bsp_data = (ubyte *)vm_malloc(pm->submodel[n].bsp_data_size);
-					cfread(pm->submodel[n].bsp_data,1,pm->submodel[n].bsp_data_size,fp);
-					swap_bsp_data( pm, pm->submodel[n].bsp_data );
-				} else {
-					pm->submodel[n].bsp_data = NULL;
+
+				//ShivanSpS - if pof version is 2200 or higher load bsp_data as it is, otherwise, align it
+				if (pm->version >= 2200)
+				{
+					sm->bsp_data_size = cfread_int(fp);
+					if (sm->bsp_data_size > 0) {
+						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
+						cfread(sm->bsp_data, 1, sm->bsp_data_size, fp);
+						swap_bsp_data(pm, sm->bsp_data);
+					}
+					else {
+						sm->bsp_data = nullptr;
+					}
+				}
+				else
+				{
+					sm->bsp_data_size = cfread_int(fp);
+
+					if (sm->bsp_data_size > 0) {
+						auto bsp_data = reinterpret_cast<ubyte *>(vm_malloc(sm->bsp_data_size));
+
+						cfread(bsp_data, 1, sm->bsp_data_size, fp);
+
+						// byte swap first thing
+						swap_bsp_data(pm, bsp_data);
+
+						extern bool Cmdline_no_bsp_align;
+						if (Cmdline_no_bsp_align) {
+							sm->bsp_data = bsp_data;
+						}
+						else {
+							auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
+
+							if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
+								auto bsp_data_aligned = reinterpret_cast<ubyte*>(vm_malloc(bsp_data_size_aligned));
+
+								align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
+
+								// release unaligned data
+								vm_free(bsp_data);
+								bsp_data = nullptr;
+
+								nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned - sm->bsp_data_size, bsp_data_size_aligned));
+
+								sm->bsp_data = bsp_data_aligned;
+								sm->bsp_data_size = bsp_data_size_aligned;
+							}
+							else {
+								sm->bsp_data = bsp_data;
+							}
+						}
+					}
+					else {
+						sm->bsp_data = nullptr;
+					}
 				}
 
-				if ( strstr( pm->submodel[n].name, "thruster") )	
-					pm->submodel[n].is_thruster=1;
-				else
-					pm->submodel[n].is_thruster=0;
+				sm->flags.set(Model::Submodel_flags::Is_thruster, in(sm->name, "thruster"));
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
-				if (pm->submodel[n].is_thruster && !(pm->submodel[n].no_collisions) && !(pm->submodel[n].nocollide_this_only) && !(pm->submodel[n].collide_invisible) )
+				if (sm->flags[Model::Submodel_flags::Is_thruster] && !(sm->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::Collide_invisible]) )
 				{
-					pm->submodel[n].nocollide_this_only = true;
+					sm->flags.set(Model::Submodel_flags::Nocollide_this_only);
 				}
 
-				if ( strstr( pm->submodel[n].name, "-destroyed") )	
-					pm->submodel[n].is_damaged=1;
-				else
-					pm->submodel[n].is_damaged=0;
-
-				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
-				//key_getch();
-
-		//mprintf(( "Submodel %d, tree offset %d\n", n, pm->submodel[n].tree_offset ));
-		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
-		//key_getch();
+				sm->flags.set(Model::Submodel_flags::Is_damaged, in(sm->name, "-destroyed"));
 
 				break;
-
 			}
 
 			case ID_SLDC: // kazan - Shield Collision tree
-				{
+			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
+				if (pm->version < 2200) {
+					//mprintf(("SLDC data is being converted to SLC2.\n"));
 					pm->sldc_size = cfread_int(fp);
-					pm->shield_collision_tree = (ubyte *)vm_malloc(pm->sldc_size);
-					cfread(pm->shield_collision_tree,1,pm->sldc_size,fp);
+
+					std::unique_ptr<ubyte[]> sldc_tree(new ubyte[pm->sldc_size]);
+					std::unique_ptr<ubyte[]> slc2_tree(new ubyte[pm->sldc_size * 2]);
+
+					cfread(sldc_tree.get(), 1, pm->sldc_size, fp);
+					//mprintf(("SLDC Shield Collision Tree was %d bytes in size\n", pm->sldc_size));
+					pm->sldc_size = convert_sldc_to_slc2(sldc_tree.get(), slc2_tree.get(), pm->sldc_size);
+					//mprintf(("SLC2 Shield Collision Tree is %d bytes in size\n", pm->sldc_size));
+					pm->shield_collision_tree = (ubyte*)vm_malloc(pm->sldc_size); //sldc_size is slc2 size, reused variable
+					memcpy(pm->shield_collision_tree, slc2_tree.get(), pm->sldc_size);
 					swap_sldc_data(pm->shield_collision_tree);
-					//mprintf(( "Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
 				}
-				break;
+			}
+			break;
+
+			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
+			{
+				if (pm->version >= 2200) {
+					pm->sldc_size = cfread_int(fp);
+					pm->shield_collision_tree = (ubyte*)vm_malloc(pm->sldc_size);
+					cfread(pm->shield_collision_tree, 1, pm->sldc_size, fp);
+					swap_sldc_data(pm->shield_collision_tree);
+					//mprintf(( "SLC2 Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
+				}
+			}
+			break;
 
 			case ID_SHLD:
 				{
@@ -1779,49 +2246,57 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 				break;
 
+			// guns and missiles use almost exactly the same code
 			case ID_GPNT:
-				pm->n_guns = cfread_int(fp);
-
-				if (pm->n_guns > 0) {
-					pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
-					Assert( pm->gun_banks != NULL );
-
-					for (i = 0; i < pm->n_guns; i++ ) {
-						w_bank *bank = &pm->gun_banks[i];
-
-						bank->num_slots = cfread_int(fp);
-						Assert ( bank->num_slots < MAX_SLOTS );
-						for (j = 0; j < bank->num_slots; j++) {
-							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
-							bank->norm[j] = temp_vec;
-						}
-					}
-				}
-				break;
-			
 			case ID_MPNT:
-				pm->n_missiles = cfread_int(fp);
+			{
+				int n_weps = cfread_int(fp);
+				w_bank *wep_banks = nullptr;
 
-				if (pm->n_missiles > 0) {
-					pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
-					Assert( pm->missile_banks != NULL );
-
-					for (i = 0; i < pm->n_missiles; i++ ) {
-						w_bank *bank = &pm->missile_banks[i];
+				if (n_weps > 0)
+				{
+					wep_banks = new w_bank[n_weps];
+					for (i = 0; i < n_weps; ++i)
+					{
+						w_bank *bank = &wep_banks[i];
 
 						bank->num_slots = cfread_int(fp);
-						Assert ( bank->num_slots < MAX_SLOTS );
-						for (j = 0; j < bank->num_slots; j++) {
-							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
-							bank->norm[j] = temp_vec;
+						if (bank->num_slots > 0)
+						{
+							bank->pnt = new vec3d[bank->num_slots];
+							bank->norm = new vec3d[bank->num_slots];
+							bank->external_model_angle_offset = new float[bank->num_slots];
+
+							for (j = 0; j < bank->num_slots; ++j)
+							{
+								cfread_vector(&(bank->pnt[j]), fp);
+								cfread_vector(&temp_vec, fp);
+								vm_vec_normalize_safe(&temp_vec);
+								bank->norm[j] = temp_vec;
+
+								// angle offsets are a new POF feature
+								// (note that any version >= 2201 supports them, including all vertlim versions)
+								if ((pm->version >= 2118 && pm->version < PM_FIRST_ALIGNED_VERSION) || (pm->version >= 2201))
+									bank->external_model_angle_offset[j] = fl_radians(cfread_float(fp));
+								else
+									bank->external_model_angle_offset[j] = 0.0f;
+							}
 						}
 					}
 				}
+
+				if (id == ID_GPNT)
+				{
+					pm->n_guns = n_weps;
+					pm->gun_banks = wep_banks;
+				}
+				else
+				{
+					pm->n_missiles = n_weps;
+					pm->missile_banks = wep_banks;
+				}
 				break;
+			}
 
 			case ID_DOCK: {
 				char props[MAX_PROP_LEN];
@@ -1837,7 +2312,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						dock_bay *bay = &pm->docking_bays[i];
 
 						cfread_string_len( props, MAX_PROP_LEN, fp );
-						if ( (p = strstr(props, "$name"))!= NULL ) {
+						if (in(p, props, "$name")) {
 							get_user_prop_value(p+5, bay->name);
 
 							auto length = strlen(bay->name);
@@ -1853,6 +2328,16 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 							sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
 						}
 
+#ifndef NDEBUG
+						// check for duplicates
+						// (we just warn here and take no action, because even some retail models have duplicate dockpoints)
+						for (j = 0; j < i; j++) {
+							if (stricmp(bay->name, pm->docking_bays[j].name) == 0) {
+								Warning(LOCATION, "Duplicate docking bay name '%s' found on model '%s'!", bay->name, pm->filename);
+							}
+						}
+#endif
+
 						bay->num_spline_paths = cfread_int( fp );
 						if ( bay->num_spline_paths > 0 ) {
 							bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
@@ -1860,6 +2345,18 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 								bay->splines[j] = cfread_int(fp);
 						} else {
 							bay->splines = NULL;
+						}
+
+						// see if this dockpoint should be anchored to a submodel
+						if (in(p, props, "$parent_submodel")) {
+							// we need to work out the correct subobject number later, after all subobjects have been processed
+							bay->parent_submodel = static_cast<int>(dock_parent_submodel_names.size());
+
+							char submodel_name[MAX_NAME_LEN];
+							get_user_prop_value(p + 16, submodel_name);
+							dock_parent_submodel_names.push_back(submodel_name);
+						} else {
+							bay->parent_submodel = -1; // No submodel
 						}
 
 						// determine what this docking bay can be used for
@@ -1938,6 +2435,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					bank->type = cfread_int(fp);
 					bank->num_points = cfread_int(fp);
 					bank->points = NULL;
+					bank->glow_bitmap = -1;
+					bank->glow_neb_bitmap = -1;
 
 					if (bank->num_points > 0)
 						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
@@ -1952,44 +2451,44 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (length > 0)
 					{
 						auto base_length = strlen("$glow_texture=");
-						Assert(strstr( (const char *)&props, "$glow_texture=") != NULL);
-						Assert(length > base_length);
-						char *glow_texture_name = props + base_length;
-						
-						if (glow_texture_name[0] == '$')
-							glow_texture_name++;
+						char *glow_texture_start = strstr(props, "$glow_texture=");
+						if ( (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
+							char *glow_texture_name = glow_texture_start + base_length;
+							
+							if (glow_texture_name[0] == '$')
+								glow_texture_name++;
 
-						bank->glow_bitmap = bm_load(glow_texture_name);
+							bank->glow_bitmap = bm_load(glow_texture_name);
 
-						if (bank->glow_bitmap < 0)
-						{
-							Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
-						}
-						else
-						{
-							nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
-						}
+							if (bank->glow_bitmap < 0)
+							{
+								Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
+							}
 
-						strcat(glow_texture_name, "-neb");
-						bank->glow_neb_bitmap = bm_load(glow_texture_name);
+							strcat(glow_texture_name, "-neb");
+							bank->glow_neb_bitmap = bm_load(glow_texture_name);
 
-						if (bank->glow_neb_bitmap < 0)
-						{
-							bank->glow_neb_bitmap = bank->glow_bitmap;
-							nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
-						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						}
-						else
-						{
-							nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							if (bank->glow_neb_bitmap < 0)
+							{
+								bank->glow_neb_bitmap = bank->glow_bitmap;
+								nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
+							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							}
+						} else {
+							Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 						}
 					} 
 					else 
 					{
-						// niffiwan: no "props" string found - ensure we don't have a random texture assigned!
-						bank->glow_bitmap = -1;
-						bank->glow_neb_bitmap = -1;
-						Warning( LOCATION, "No Glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
+						Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 					}
 
 					for (j = 0; j < bank->num_points; j++)
@@ -2028,53 +2527,25 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						bank->obj_num = -1;
 						bank->submodel_num = -1;
+						bank->wash_info_pointer = nullptr;
 
-						if (pm->version < 2117) {
-							bank->wash_info_pointer = NULL;
-						} else {
+						if (pm->version >= 2117) {
 							cfread_string_len( props, MAX_PROP_LEN, fp );
 							// look for $engine_subsystem=xxx
 							auto length = strlen(props);
 							if (length > 0) {
 								auto base_length = strlen("$engine_subsystem=");
-								Assert( strstr( (const char *)&props, "$engine_subsystem=") != NULL );
-								Assert( length > base_length );
-								char *engine_subsys_name = props + base_length;
-								if (engine_subsys_name[0] == '$') {
-									engine_subsys_name++;
-								}
-
-								nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
-
-								// set wash_info_index to invalid
-								int table_error = 1;
-								bank->wash_info_pointer = NULL;
-								for (int k=0; k<n_subsystems; k++) {
-									if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-										bank->submodel_num = subsystems[k].subobj_num;
-
-										bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-										if (bank->wash_info_pointer != NULL) {
-											table_error = 0;
-										}
-										// also set what subsystem this is attached to but not if we only have one thruster bank
-										// do this so that original :V: models still work like they used to
-										if (pm->n_thrusters > 1) {
-											bank->obj_num = k;
-										}
-										break;
+								char *engine_subsys_start;
+								if (in(engine_subsys_start, props, "$engine_subsystem=") && (strlen(engine_subsys_start + base_length) > 0)) {
+									char *engine_subsys_name = engine_subsys_start + base_length;
+									if (engine_subsys_name[0] == '$') {
+										engine_subsys_name++;
 									}
-								}
 
-								if ( (bank->wash_info_pointer == NULL) && (n_subsystems > 0) ) {
-									if (table_error) {
-									//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-									} else {
-										Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-									}
+									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
+
+									subsystemParseList.engine_subsystems.emplace(i, model_read_deferred_tasks::engine_subsystem_parse{ engine_subsys_name });
 								}
-							} else {
-								bank->wash_info_pointer = NULL;
 							}
 						}
 
@@ -2103,58 +2574,35 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				int n_banks = cfread_int(fp);			// Number of turrets
 
 				for ( i = 0; i < n_banks; i++ ) {
-					int parent;							// The parent subobj of the turret (the gun base)
-					int physical_parent;				// The subobj that the firepoints are physically attached to (the gun barrel)
 					int n_slots;						// How many firepoints the turret has
-					model_subsystem *subsystemp;		// The actual turret subsystem
 
-					parent = cfread_int( fp );
-					physical_parent = cfread_int(fp);
+					int base_obj = cfread_int(fp);		// The parent subobj of the turret (the gun base)
+					int gun_obj = cfread_int(fp);       // The subobj that the firepoints are physically attached to (the gun barrel)
+					
+					if (base_obj != gun_obj && pm->submodel[gun_obj].parent != base_obj) {
+						Warning(LOCATION, "Model %s turret %s has a gun submodel that is not an immediate child object of the base", pm->filename, pm->submodel[base_obj].name);
+						gun_obj = base_obj; // fall back to singlepart handling
+					}
 
-					int snum=-1;
-					if ( subsystems ) {
-						for ( snum = 0; snum < n_subsystems; snum++ ) {
-							subsystemp = &subsystems[snum];
-
-							if ( parent == subsystemp->subobj_num ) {
-								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
-								subsystemp->turret_norm = temp_vec;
-								vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
-
-								n_slots = cfread_int( fp );
-								subsystemp->turret_gun_sobj = physical_parent;
-								if(n_slots > MAX_TFP) {
-									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
-								}
-
-								for (j = 0; j < n_slots; j++ )	{
-									if(j < MAX_TFP)
-										cfread_vector( &subsystemp->turret_firing_point[j], fp );
-									else
-									{
-										vec3d bogus;
-										cfread_vector(&bogus, fp);
-									}
-								}
-								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
-
-								subsystemp->turret_num_firing_points = n_slots;
-
-								break;
-							}
+					cfread_vector(&temp_vec, fp);
+					vm_vec_normalize_safe(&temp_vec);
+					n_slots = cfread_int(fp);
+					SCP_vector<vec3d> firingpoints;
+					for (j = 0; j < n_slots; j++) {
+						if (j < MAX_TFP) {
+							vec3d firepoint;
+							cfread_vector(&firepoint, fp);
+							firingpoints.emplace_back(std::move(firepoint));
+						}
+						else
+						{
+							vec3d bogus;
+							cfread_vector(&bogus, fp);
 						}
 					}
+					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", pm->submodel[gun_obj].name, pm->filename);
 
-					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
-						vec3d bogus;
-
-						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", parent, i, pm->filename));
-						cfread_vector( &bogus, fp );
-						n_slots = cfread_int( fp );
-						for (j = 0; j < n_slots; j++ )
-							cfread_vector( &bogus, fp );
-					}
+					subsystemParseList.weapons_subsystems.emplace(base_obj, model_read_deferred_tasks::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
 				}
 				break;
 			}
@@ -2177,22 +2625,22 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					radius = cfread_float( fp );
 
 					// check if $Split
-					p = strstr(name, "$split");
-					if (p != NULL) {
+					if (in(name, "$split")) {
 						pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
 						pm->num_split_plane++;
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
-					} else if ( ( p = strstr(props_spcl, "$special"))!= NULL ) {
+					} else if (in(p, props_spcl, "$special")) {
 						char type[64];
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
-					} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
-						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) 
+					{
+						subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					
@@ -2263,10 +2711,18 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
-					cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
+					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN, fp);
+
+					// check for reused path names... not fatal, but maybe problematic
+					for (j = 0; j < i; j++) {
+						if (!stricmp(pm->paths[i].name, pm->paths[j].name)) {
+							Warning(LOCATION, "Path '%s' in model %s has a name that is not unique!", pm->paths[i].name, pm->filename);
+						}
+					}
+
 					if ( pm->version >= 2002 ) {
 						// store the sub_model name number of the parent
-						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
+						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN, fp);
 						// get rid of leading '$' char in name
 						if ( pm->paths[i].parent_name[0] == '$' ) {
 							char tmpbuf[MAX_NAME_LEN];
@@ -2407,7 +2863,133 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		id = cfread_int(fp);
 		len = cfread_int(fp);
 		next_chunk = cftell(fp) + len;
+	}
 
+	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
+
+	// first do some sanity checking to detect model errors
+	for (i = 0; i < pm->n_detail_levels; i++) {
+		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->num_debris_objects; i++) {
+		if (pm->debris_objects[i] < 0 || pm->debris_objects[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s debris object %d is %d which is not a valid submodel!", pm->filename, i, pm->debris_objects[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < -1 || pm->submodel[i].parent >= pm->n_models) {
+			Warning(LOCATION, "Model %s submodel %d parent is %d which is not a valid submodel!", pm->filename, i, pm->submodel[i].parent);
+			return modelread_status::FAIL;
+		}
+	}
+
+	create_family_tree(pm);
+
+	// Now do submodel movement post-processing.  This should come before all other error checking.
+
+	// ---------- submodel movement sanity checks ----------
+
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < 0) {
+			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
+				{
+					auto sm = &pm->submodel[submodel];
+					auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
+
+					bool is_turret = false;
+					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+						if (submodel == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
+							is_turret = true;
+							break;
+						}
+					}
+
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+				});
+		}
+	}
+
+	// ---------- done submodel movement sanity checks ----------
+
+	// handle look_at
+	for (i = 0; i < pm->n_models; i++) {
+		auto sm = &pm->submodel[i];
+
+		if (sm->look_at_submodel >= 0) {
+			resolve_submodel_index(pm, sm->name, "$look_at target", sm->look_at_submodel, look_at_submodel_names);
+
+			// if we couldn't find it, we shouldn't move
+			if (sm->look_at_submodel < 0) {
+				sm->rotation_type = MOVEMENT_TYPE_NONE;
+			}
+			// are we navel-gazing?
+			else if (sm->look_at_submodel == i) {
+				Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, sm->name);
+				sm->look_at_submodel = -1;
+				sm->rotation_type = MOVEMENT_TYPE_NONE;
+			}
+		}
+	}
+
+	// And now look through all the submodels and set the model flag if any are intrinsic-moving
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[i].translation_type == MOVEMENT_TYPE_INTRINSIC) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
+			break;
+		}
+	}
+
+	// -------------------- Now do any other error checking that validates data in the POF --------------------
+
+	// some dockpoint checks
+	for (i = 0; i < pm->n_docks; i++) {
+		auto dock = &pm->docking_bays[i];
+
+		// handle dockpoint parent_submodels
+		if (dock->parent_submodel >= 0) {
+			resolve_submodel_index(pm, dock->name, "$parent_submodel", dock->parent_submodel, dock_parent_submodel_names);
+		}
+
+		// reconcile paths
+		for (j = 0; j < dock->num_spline_paths; j++) {
+			auto path_num = dock->splines[j];
+
+			if (path_num < 0) {
+				continue;
+			} else if (path_num >= pm->n_paths) {
+				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d (the index should be between 0 and %d).", pm->filename, j, dock->name, path_num, pm->n_paths, pm->n_paths - 1);
+				dock->splines[j] = -1;
+				continue;
+			}
+
+			auto path = &pm->paths[path_num];
+
+			// most dockpoint paths will have a parent_name like $dock01-01 which does not resolve to a submodel
+			if (path->parent_submodel < 0) {
+				continue;
+			}
+			// for paths that have a parent, it had better match
+			if (path->parent_submodel != dock->parent_submodel) {
+				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!  This could be due to an incorrect dockpoint path, an incorrect dockpoint parent submodel, or an incorrect path parent submodel.  Be sure to check all three.", pm->filename, dock->name);
+				continue;
+			}
+		}
+	}
+
+	// For several revisions, Pof Tools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
+	// but should at least head off potential crashes before they happen
+	for (i = 0; i < pm->n_view_positions; ++i) {
+		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent >= pm->n_models) {
+			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of Pof Tools to fix the model.\n", pm->filename, i));
+			pm->view_positions[i].parent = 0;
+			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].pnt = ZERO_VECTOR;
+		}
 	}
 
 #ifndef NDEBUG
@@ -2429,8 +3011,114 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	cfclose(fp);
 
 	// mprintf(("Done processing chunks\n"));
-	return 1;
+	return modelread_status::SUCCESS_REAL;
 }
+
+modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
+{
+	modelread_status status;
+
+	//See if this is a modular, virtual pof, and if so, parse it from there
+	if (read_virtual_model_file(pm, filename, std::move(depth), ferror, deferredTasks)) {
+		status = modelread_status::SUCCESS_VIRTUAL;
+	}
+	else {
+		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
+	}
+
+	return status;
+}
+
+//reads a binary file containing a 3d model
+modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
+{
+	modelread_status status = read_model_file(pm, filename, ferror, deferredTasks);
+
+	//By now, we have finished reading this model. If it was virtual, we might have accumulated cache.
+	//This is now a tradeoff between speed and memory usage. To further accelerate loading, the cache can be kept until all models are loaded, but there is a risk that this cache will be very big.
+	//For safety, also clear if the load failed, who knows when it did so...
+	if (status != modelread_status::SUCCESS_REAL) {
+		virtual_pof_purge_cache();
+	}
+
+	for (const auto& subsystem : deferredTasks.model_subsystems) {
+		auto propBuffer = make_unique<char[]>(subsystem.second.props.size() + 1);
+		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
+
+		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);		
+	}
+
+	for (const auto& subsystem : deferredTasks.engine_subsystems) {
+		// start off assuming the subsys is invalid
+		int table_error = 1;
+		auto bank = &pm->thrusters[subsystem.first];
+
+		for (int k = 0; k < n_subsystems; k++) {
+			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.second.subsystem_name.c_str())) {
+				bank->submodel_num = subsystems[k].subobj_num;
+
+				bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+				if (bank->wash_info_pointer != nullptr) {
+					table_error = 0;
+				}
+				// also set what subsystem this is attached to but not if we only have one thruster bank
+				// do this so that original :V: models still work like they used to
+				if (pm->n_thrusters > 1) {
+					bank->obj_num = k;
+				}
+				break;
+			}
+		}
+
+		if ((bank->wash_info_pointer == nullptr) && (n_subsystems > 0)) {
+			if (table_error) {
+				//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+			}
+			else {
+				Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
+			}
+		}
+	}
+
+	for (const auto& subsystem : deferredTasks.weapons_subsystems) {
+		model_subsystem* subsystemp;
+		if (subsystems) {
+			int snum = 0;
+			for (snum = 0; snum < n_subsystems; snum++) {
+				subsystemp = &subsystems[snum];
+
+				if (subsystem.first == subsystemp->subobj_num) {
+					subsystemp->turret_norm = subsystem.second.turretNorm;
+					subsystemp->turret_gun_sobj = subsystem.second.gun_subobj_nr;
+
+					if (subsystem.second.n_slots > MAX_TFP) {
+						Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, subsystem.second.n_slots, subsystemp->name, MAX_TFP);
+					}
+
+					for (int j = 0; j < subsystem.second.n_slots; j++) {
+						if (j < MAX_TFP)
+							subsystemp->turret_firing_point[j] = subsystem.second.firingpoints[j];
+					}
+					Assertion(subsystem.second.n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
+
+					subsystemp->turret_num_firing_points = subsystem.second.n_slots;
+
+					// copy the subsystem index that the gun base submodel should have at this point
+					Assertion(pm->submodel[subsystem.first].subsys_num >= 0, "Turret gun base should have a subsystem index!");
+					pm->submodel[subsystem.second.gun_subobj_nr].subsys_num = pm->submodel[subsystem.first].subsys_num;
+
+					break;
+				}
+			}
+			if (snum == n_subsystems) {
+				nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", subsystem.first, subsystem.second.turret_nr, pm->filename));
+			}
+		}
+	}
+
+	return status;
+}
+
 
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
@@ -2564,61 +3252,29 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	int shader_flags = 0;
+	if (Shadow_quality != ShadowQuality::Disabled)
+		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
 
-	if (tbase->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-	if (tglow->GetTexture() > 0 && Cmdline_glow)
-		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
-		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	if (theight->GetTexture() > 0 && Cmdline_height)
-		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_env && Cmdline_spec) // No env maps without spec map
-		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	if (tmisc->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-	if (tambient->GetTexture() >0)
-		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	
-	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
-	shader_flags |= SDR_FLAG_MODEL_CLIP;
+}
 
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-	
-	if( !Cmdline_no_batching ) {
-		shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
-		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
+//returns the number of the pof tech model if specified, otherwise number of pof model
+int model_load(ship_info* sip, bool prefer_tech_model)
+{
+	if (prefer_tech_model && VALID_FNAME(sip->pof_file_tech)) {
+		// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
+		// techroom model, which is decidedly wrong for the mission itself.
+		return model_load(sip->pof_file_tech, 0, nullptr);
+	} else {
+		return model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 	}
 }
 
 //returns the number of this model
-int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
+int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate)
 {
-	int i, num, arc_idx;
+	int i, num;
 	polymodel *pm = NULL;
 
 	if ( !model_initted )
@@ -2628,7 +3284,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename, Polygon_models[i]->filename) && !duplicate)		{
+			if (!stricmp(filename , Polygon_models[i]->filename) && !duplicate) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -2642,6 +3298,11 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	// No empty slot
 	if ( num == -1 )	{
 		Error( LOCATION, "Too many models" );
+		return -1;
+	}
+
+	// Valid file
+	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
 
@@ -2680,7 +3341,9 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	game_busy(busy_text);
 #endif
 
-	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
+	model_read_deferred_tasks deferredTasks;
+
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) == modelread_status::FAIL)	{
 		if (pm != NULL) {
 			delete pm;
 		}
@@ -2738,16 +3401,17 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				mprintf(( "Found live debris model for '%s'\n", pm->submodel[i].name ));
 				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
-				pm->submodel[j].is_live_debris = 1;
+				pm->submodel[j].flags.set(Model::Submodel_flags::Is_live_debris);
+
+				// make sure live debris doesn't have a parent
+				pm->submodel[j].parent = -1;
 			}
 		}
 
 	}
 
-	create_family_tree(pm);
-
 	// maybe generate vertex buffers
-	create_vertex_buffer(pm);
+	create_vertex_buffer(pm, deferredTasks);
 
 	//==============================
 	// Find all the lower detail versions of the hires model
@@ -2755,11 +3419,6 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 		int j;
 		size_t l1;
 		bsp_info * sm1 = &pm->submodel[i];
-
-		// set all arc types to be default 		
-		for(arc_idx=0; arc_idx < MAX_ARC_EFFECTS; arc_idx++){
-			sm1->arc_type[arc_idx] = MARC_TYPE_NORMAL;
-		}
 
 		sm1->num_details = 0;
 		// If a backward compatibility LOD name is declared use it
@@ -2773,7 +3432,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
-				sm1->is_damaged = 1;
+				sm1->flags.set(Model::Submodel_flags::Is_damaged);
 			} 
 		}
 
@@ -2787,11 +3446,6 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 			if ( i==j ) continue;
 			
-			// set all arc types to be default 		
-			for(arc_idx=0; arc_idx < MAX_ARC_EFFECTS; arc_idx++){
-				sm2->arc_type[arc_idx] = MARC_TYPE_NORMAL;
-			}
-
 			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
 			if (strlen(sm2->name)!=l1) continue; 
 	
@@ -2817,16 +3471,16 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				int dl1, dl2;
 				// If a backward compatibility LOD name is declared use it
 				if (sm1->lod_name[0] != '\0') {
-					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
+					dl1 = SCP_tolower(sm1->lod_name[first_diff]) - 'a';
 				}
 				// otherwise do the standard LOD comparision
 				else {
-					dl1 = tolower(sm1->name[first_diff]) - 'a';
+					dl1 = SCP_tolower(sm1->name[first_diff]) - 'a';
 				}
-				dl2 = tolower(sm2->name[first_diff]) - 'a';
+				dl2 = SCP_tolower(sm2->name[first_diff]) - 'a';
 
 				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
-				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->is_damaged && !sm2->is_damaged && !sm1->is_live_debris && !sm2->is_live_debris) {
+				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris] && !sm2->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris]) {
 					dl2 = dl2 - dl1;
 					dl1 = 0;
 				}
@@ -2850,18 +3504,12 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 	}
 
+	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
-	model_octant_create( pm );
-
-	if ( !Cmdline_old_collision_sys ) {
-		TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
-
-		for ( i = 0; i < pm->n_models; ++i ) {
-			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-			bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-
-			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
-		}
+	for (i = 0; i < pm->n_models; ++i) {
+		pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+		bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
 	}
 
 	// Find the core_radius... the minimum of 
@@ -2891,21 +3539,24 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	return pm->id;
 }
 
-int model_create_instance(bool is_ship, int model_num)
+int model_create_instance(int objnum, int model_num)
 {
-	int i = 0;
-	int open_slot = -1;
+	Assertion(objnum > OBJNUM_SPECIAL_MIN && objnum < MAX_OBJECTS, "objnum must be -1 (none), -2 (player cockpit) or a valid object index!");
+
+	// this will also run a bunch of Assertions
+	auto pm = model_get(model_num);
 
 	// go through model instances and find an empty slot
-	for ( i = 0; i < (int)Polygon_model_instances.size(); i++) {
+	int open_slot = -1;
+	for (int i = 0; i < (int)Polygon_model_instances.size(); i++) {
 		if ( !Polygon_model_instances[i] ) {
 			open_slot = i;
 		}
 	}
 
-	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
-	memset(pmi, 0, sizeof(polymodel_instance));
+	auto pmi = new polymodel_instance;
 	pmi->model_num = model_num;
+	pmi->objnum = objnum;
 
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
@@ -2914,29 +3565,26 @@ int model_create_instance(bool is_ship, int model_num)
 	} else {
 		Polygon_model_instances[open_slot] = pmi;
 	}
+	pmi->id = open_slot;
 
-	polymodel *pm = model_get(model_num);
+	if (pm->n_models > 0)
+		pmi->submodel = new submodel_instance[pm->n_models];
 
-	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
+	// add intrinsic_motion instances if this model is intrinsic-moving
+	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+		intrinsic_motion motion(objnum >= 0, open_slot);
 
-	for ( i = 0; i < pm->n_models; i++ ) {
-		model_clear_submodel_instance( &pmi->submodel[i], &pm->submodel[i] );
-	}
-
-	// add intrinsic_rotation instances if this model is intrinsic-rotating
-	if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-		intrinsic_rotation intrinsic_rotate(is_ship, open_slot);
-
-		for (i = 0; i < pm->n_models; i++) {
-			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-				intrinsic_rotate.list.push_back(submodel_intrinsic_rotation(i, pm->submodel[i].dumb_turn_rate));
+		for (int i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC) {
+				// note: dumb_turn_rate will be 0.0f for look_at
+				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].default_turn_rate);
 			}
 		}
 
-		if (intrinsic_rotate.list.empty()) {
-			Assertion(!intrinsic_rotate.list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_ROTATE flag; why doesn't it have an intrinsic-rotating submodel?");
+		if (motion.submodel_list.empty()) {
+			Assertion(!motion.submodel_list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_MOTION flag; why doesn't it have an intrinsic-moving submodel?");
 		} else {
-			Intrinsic_rotations.push_back(intrinsic_rotate);
+			Intrinsic_motions.insert(std::make_pair(pmi->id, std::move(motion)));
 		}
 	}
 
@@ -2947,25 +3595,23 @@ void model_delete_instance(int model_instance_num)
 {
 	Assert(model_instance_num >= 0);
 	Assert(model_instance_num < (int)Polygon_model_instances.size());
-	Assert(Polygon_model_instances[model_instance_num] != NULL);
+	Assert(Polygon_model_instances[model_instance_num] != nullptr);
 
 	polymodel_instance *pmi = Polygon_model_instances[model_instance_num];
 
+	animation::ModelAnimationSet::stopAnimations(pmi);
+
 	if ( pmi->submodel ) {
-		vm_free(pmi->submodel);
+		delete[] pmi->submodel;
+		pmi->submodel = nullptr;
 	}
 
-	vm_free(pmi);
+	delete pmi;
 
-	Polygon_model_instances[model_instance_num] = NULL;
+	Polygon_model_instances[model_instance_num] = nullptr;
 
-	// delete intrinsic rotations associated with this instance
-	for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it) {
-		if (intrinsic_it->model_instance_num == model_instance_num) {
-			Intrinsic_rotations.erase(intrinsic_it);
-			break;
-		}
-	}
+	// delete intrinsic motions associated with this instance
+	Intrinsic_motions.erase(model_instance_num);
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
@@ -3066,6 +3712,8 @@ void model_set_bay_path_nums(polymodel *pm)
 	pm->ship_bay->arrive_flags = 0;	// bitfield, set to 1 when that path number is reserved for an arrival
 	pm->ship_bay->depart_flags = 0;	// bitfield, set to 1 when that path number is reserved for a departure
 
+	// sanity part 1
+	memset(pm->ship_bay->path_indexes, -1, MAX_SHIP_BAY_PATHS * sizeof(int));
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
 	bool too_many_paths = false;
@@ -3101,6 +3749,16 @@ void model_set_bay_path_nums(polymodel *pm)
 	{
 		Warning(LOCATION, "Model '%s' has too many bay paths - max is %d", pm->filename, MAX_SHIP_BAY_PATHS);
 	}
+
+	// sanity part 2
+	for (i = 0; i < pm->ship_bay->num_paths; i++)
+	{
+		if (pm->ship_bay->path_indexes[i] < 0)
+		{
+			Warning(LOCATION, "Model '%s' does not have a '$bay%.2d' path specified!  A total of %d bay paths were counted.  Either there is a gap in the path sequence, or a path has a duplicate name.", pm->filename, i + 1, pm->ship_bay->num_paths);
+			pm->ship_bay->path_indexes[i] = 0;	// avoid crashes
+		}
+	}
 }
 
 // Get "parent" submodel for live debris submodel
@@ -3108,7 +3766,7 @@ int model_get_parent_submodel_for_live_debris( int model_num, int live_debris_mo
 {
 	polymodel *pm = model_get(model_num);
 
-	Assert(pm->submodel[live_debris_model_num].is_live_debris == 1);
+	Assert(pm->submodel[live_debris_model_num].flags[Model::Submodel_flags::Is_live_debris]);
 
 	int mn;
 	bsp_info *child;
@@ -3184,7 +3842,7 @@ polymodel * model_get(int model_num)
 	Assertion( Polygon_models[num], "No model with id %d found. Please backtrace and investigate.\n", num );
 	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
 
-	if (num < 0 || num > MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
+	if (num < 0 || num >= MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
 		return NULL;
 
 	return Polygon_models[num];
@@ -3206,18 +3864,15 @@ polymodel_instance* model_get_instance(int model_instance_num)
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	polymodel * po;
 	int n_valid_pts;
 	int i, x,y,min_x, min_y, max_x, max_y;
 	int rval = 0;
 
-	po = model_get(model_num);
+	polymodel* pm = model_get(model_num);
 
 	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
-
-	int hull = po->detail[0];
 
 	min_x = min_y = max_x = max_y = 0;
 
@@ -3225,7 +3880,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 		vertex pt;
 		ubyte flags;
 
-		flags = g3_rotate_vertex(&pt,&po->submodel[hull].bounding_box[i]);
+		flags = g3_rotate_vertex(&pt,&pm->bounding_box[i]);
 		if ( !(flags&CC_BEHIND) ) {
 			g3_project_vertex(&pt);
 
@@ -3328,66 +3983,21 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 	return 0;
 }
 
-
-/**
- * Find 2D bound for model
- *
- * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
- *
- * @return zero if x1,y1,x2,y2 are valid
- * @return 2 for point offscreen
- */
-int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
-{
-	float t,w,h;
-	vertex pnt;
-	polymodel * po;
-
-	po = model_get(model_num);
-	float width = po->rad;
-	float height = po->rad;
-
-	g3_rotate_vertex(&pnt,pos);
-
-	if ( pnt.flags & CC_BEHIND ) 
-		return 2;
-
-	if (!(pnt.flags&PF_PROJECTED))
-		g3_project_vertex(&pnt);
-
-	if (pnt.flags & PF_OVERFLOW)
-		return 2;
-
-	t = (width * Canv_w2)/pnt.world.xyz.z;
-	w = t*Matrix_scale.xyz.x;
-
-	t = (height*Canv_h2)/pnt.world.xyz.z;
-	h = t*Matrix_scale.xyz.y;
-
-	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
-	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
-
-	if (x2) *x2 = fl2i(pnt.screen.xyw.x + w);
-	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
-
-	return 0;
-}
-
 /**
  * Find 2D bound for sub object
  *
  * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
  *
+ * Calculates the focal length of the camera, and uses the law of similar
+ * triangles to project the subsystem's radius to the screen.
+ *
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
-int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
+int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	float t,w,h;
+	float w,h,focal_length;
 	vertex pnt;
-
-	float width = radius;
-	float height = radius;
 
 	g3_rotate_vertex(&pnt,pos);
 
@@ -3400,11 +4010,10 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int 
 	if (pnt.flags & PF_OVERFLOW)
 		return 2;
 
-	t = (width * Canv_w2)/pnt.world.xyz.z;
-	w = t*Matrix_scale.xyz.x;
+	focal_length = Canv_h2 * Matrix_scale.xyz.y;
+	h = radius * focal_length / pnt.world.xyz.z;
 
-	t = (height*Canv_h2)/pnt.world.xyz.z;
-	h = t*Matrix_scale.xyz.y;
+	w = h;
 
 	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
 	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
@@ -3416,101 +4025,94 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int 
 }
 
 
-// Given a vector that is in sub_model_num's frame of
-// reference, and given the object's orient and position,
-// return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_num, int submodel_num, matrix *objorient)
+// Given a rotating submodel, find the local and world axes of rotation.
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
 {
-	vec3d tvec, vec;
-	matrix m;
-	int mn;
-
-	polymodel *pm = model_get(model_num);
-	vec = *m_vec;
-	mn = submodel_num;
-
-	// instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tvec, &vec, &m);
-		vec = tvec;
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, objorient);
-}
-
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient)
-{
-	vec3d tvec, vec;
-	matrix m;
-	int mn;
-
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
-	vec = *m_vec;
-	mn = submodel_num;
-
-	// instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tvec, &vec, &m);
-		vec = tvec;
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, objorient);
-}
-
-
-// Given a rotating submodel, find the ship and world axes of rotation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int model_instance_num, int submodel_num, matrix *objorient)
-{
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
-
+	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
+	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC || sm->rotation_type == MOVEMENT_TYPE_TRIGGERED);
 
-	if (sm->movement_axis == MOVEMENT_AXIS_X) {
-		vm_vec_make(model_axis, 1.0f, 0.0f, 0.0f);
-	} else if (sm->movement_axis == MOVEMENT_AXIS_Y) {
-		vm_vec_make(model_axis, 0.0f, 1.0f, 0.0f);
-	} else {
-		Assert(sm->movement_axis == MOVEMENT_AXIS_Z);
-		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
-	}
-
-	model_instance_find_obj_dir(world_axis, model_axis, model_instance_num, submodel_num, objorient);
+	*model_axis = sm->rotation_type == MOVEMENT_TYPE_TRIGGERED ? pmi->submodel[submodel_num].rotation_axis : sm->rotation_axis;
+	model_instance_local_to_global_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
+// Normalize the submodel angle and convert float angle to angles struct
+void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp)
+{
+	smi->canonical_prev_orient = smi->canonical_orient;
+
+	if (clamp)
+	{
+		// normalize the angle so that we are within a valid range:
+		//  greater than or equal to 0
+		//  less than PI2
+		while (smi->cur_angle > PI2)
+			smi->cur_angle -= PI2;
+		while (smi->cur_angle < 0.0f)
+			smi->cur_angle += PI2;
+	}
+
+	// get the matrix and the angles
+	switch (sm->rotation_axis_id)
+	{
+		case MOVEMENT_AXIS_X:
+		{
+			angles angs = vmd_zero_angles;
+			angs.p = smi->cur_angle;
+			vm_angles_2_matrix(&smi->canonical_orient, &angs);
+			break;
+		}
+
+		case MOVEMENT_AXIS_Y:
+		{
+			angles angs = vmd_zero_angles;
+			angs.h = smi->cur_angle;
+			vm_angles_2_matrix(&smi->canonical_orient, &angs);
+			break;
+		}
+
+		case MOVEMENT_AXIS_Z:
+		{
+			angles angs = vmd_zero_angles;
+			angs.b = smi->cur_angle;
+			vm_angles_2_matrix(&smi->canonical_orient, &angs);
+			break;
+		}
+
+		default:
+			vm_quaternion_rotate(&smi->canonical_orient, smi->cur_angle, &sm->rotation_axis);
+			break;
+	}
+}
+
+// Convert float displacement to vector, but no normalization (clamping) is needed
+void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
+{
+	smi->canonical_prev_offset = smi->canonical_offset;
+
+	// get the vector
+	switch (sm->rotation_axis_id)
+	{
+		case MOVEMENT_AXIS_X:
+			vm_vec_copy_scale(&smi->canonical_offset, &vmd_x_vector, smi->cur_offset);
+			break;
+
+		case MOVEMENT_AXIS_Y:
+			vm_vec_copy_scale(&smi->canonical_offset, &vmd_y_vector, smi->cur_offset);
+			break;
+
+		case MOVEMENT_AXIS_Z:
+			vm_vec_copy_scale(&smi->canonical_offset, &vmd_z_vector, smi->cur_offset);
+			break;
+
+		default:
+			vm_vec_copy_scale(&smi->canonical_offset, &sm->translation_axis, smi->cur_offset);
+			break;
+	}
+}
 
 // Does stepped rotation of a submodel
-void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
+void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 {
 	Assert(psub->flags[Model::Subsystem_Flags::Stepped_rotate]);
 
@@ -3519,46 +4121,15 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	polymodel *pm = model_get(psub->model_num);
 	bsp_info *sm = &pm->submodel[psub->subobj_num];
 
-	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
+	if ( sm->rotation_type != MOVEMENT_TYPE_REGULAR ) return;
 
-	// get active rotation time this frame
-	int end_stamp = timestamp();
-	// just to make sure this issue wont pop up again... might cause odd jerking in some extremely odd situations
-	// but given that those issues would require the timer to be reseted in any case it probably wont hurt
-	float rotation_time;
-	if ((end_stamp - sii->step_zero_timestamp) < 0) {
-		sii->step_zero_timestamp = end_stamp;
-		rotation_time = 0.0f;
-	} else {
-		rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
-	}
-	//Assert(rotation_time >= 0);
+	if (!smi->stepped_rotation_started.isValid())
+		smi->stepped_rotation_started = _timestamp();
+
+	float elapsed_time = timestamp_since(smi->stepped_rotation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
 
 	// save last angles
-	sii->prev_angs = sii->angs;
-
-	// float pointer into struct to get angle (either p,b,h)
-	float *ang_prev = NULL, *ang_next = NULL;
-	switch( sm->movement_axis ) {
-	case MOVEMENT_AXIS_X:
-		ang_prev = &sii->prev_angs.p;
-		ang_next = &sii->angs.p;
-		break;
-
-	case MOVEMENT_AXIS_Y:	
-		ang_prev = &sii->prev_angs.h;
-		ang_next = &sii->angs.h;
-		break;
-
-	case MOVEMENT_AXIS_Z:	
-		ang_prev = &sii->prev_angs.b;
-		ang_next = &sii->angs.b;
-		break;
-	}
-
-	// just in case we got through that switch statement in error
-	if ( (ang_prev == NULL) && (ang_next == NULL) )
-		return;
+	smi->prev_angle = smi->cur_angle;
 
 	// angular displacement of one step
 	float step_size = (PI2 / psub->stepped_rotation->num_steps);
@@ -3566,24 +4137,14 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	// get time to complete one step, including pause
 	float step_time = psub->stepped_rotation->t_transit + psub->stepped_rotation->t_pause;
 
-	// cur_step is step number relative to zero (0 - num_steps)
 	// step_offset_time is TIME into current step
-	float step_offset_time = (float)fmod(rotation_time, step_time);
-	// subtract off fractional step part, round up  (ie, 1.999999 -> 2)
-	int cur_step = int( ((rotation_time - step_offset_time) / step_time) + 0.5f);
-	// mprintf(("cur step %d\n", cur_step));
-	// Assert(step_offset_time >= 0);
+	float step_offset_time = static_cast<float>(fmod(elapsed_time, step_time));
 
-	if (cur_step >= psub->stepped_rotation->num_steps) {
-		// I don;t know why, but removing this line makes it all good.
-		// sii->step_zero_timestamp += int(1000.0f * (psub->stepped_rotation->num_steps * step_time) + 0.5f);
-
-		// reset cur_step (use mod to handle physics/ai pause)
-		cur_step = cur_step % psub->stepped_rotation->num_steps;
-	}
+	// get step we are on (round down)
+	int cur_step = static_cast<int>(elapsed_time / step_time);
 
 	// get base angle
-	*ang_next = cur_step * step_size;
+	smi->cur_angle = (cur_step % psub->stepped_rotation->num_steps) * step_size;
 
 	// determine which phase of rotation we're in
 	float coast_start_time = psub->stepped_rotation->fraction * psub->stepped_rotation->t_transit;
@@ -3595,136 +4156,171 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	if (step_offset_time < coast_start_time) {
 		// do accel
 		float accel_time = step_offset_time;
-		*ang_next += 0.5f * psub->stepped_rotation->max_turn_accel * accel_time * accel_time;
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_accel * accel_time;
+		smi->cur_angle += 0.5f * psub->stepped_rotation->max_turn_accel * accel_time * accel_time;
+		smi->current_turn_rate = psub->stepped_rotation->max_turn_accel * accel_time;
 	} else if (step_offset_time < decel_start_time) {
 		// do coast
 		float coast_time = step_offset_time - coast_start_time;
-		*ang_next += start_coast_angle + psub->stepped_rotation->max_turn_rate * coast_time;
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_rate;
+		smi->cur_angle += start_coast_angle + psub->stepped_rotation->max_turn_rate * coast_time;
+		smi->current_turn_rate = psub->stepped_rotation->max_turn_rate;
 	} else if (step_offset_time < pause_start_time) {
 		// do decel
 		float time_to_pause = psub->stepped_rotation->t_transit - step_offset_time;
-		*ang_next += (step_size - 0.5f * psub->stepped_rotation->max_turn_accel * time_to_pause * time_to_pause);
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_rate * time_to_pause;
+		smi->cur_angle += (step_size - 0.5f * psub->stepped_rotation->max_turn_accel * time_to_pause * time_to_pause);
+		smi->current_turn_rate = psub->stepped_rotation->max_turn_rate * time_to_pause;
 	} else {
 		// do pause
-		*ang_next += step_size;
-		sii->cur_turn_rate = 0.0f;
+		smi->cur_angle += step_size;
+		smi->current_turn_rate = 0.0f;
 	}
+
+	// if we're going backwards, flip the whole thing
+	if (psub->stepped_rotation->backwards) {
+		smi->cur_angle *= -1.0f;
+	}
+
+	submodel_canonicalize_rotation(sm, smi, true);
 }
 
-void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
-
-void submodel_look_at(polymodel *pm, int mn)
+// Does stepped translation of a submodel
+void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi)
 {
-	bsp_info * sm;
+	Assert(psub->flags[Model::Subsystem_Flags::Stepped_translate]);
 
-	if ( mn < 0 ) {
-		return;
+	if ( psub->subobj_num < 0 ) return;
+
+	polymodel *pm = model_get(psub->model_num);
+	bsp_info *sm = &pm->submodel[psub->subobj_num];
+
+	if ( sm->translation_type != MOVEMENT_TYPE_REGULAR ) return;
+
+	if (!smi->stepped_translation_started.isValid())
+		smi->stepped_translation_started = _timestamp();
+
+	float elapsed_time = timestamp_since(smi->stepped_translation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
+
+	// save last offset
+	smi->prev_offset = smi->cur_offset;
+
+	// linear displacement of one step
+	float step_size = psub->stepped_translation->step_distance;
+
+	// get time to complete one step, including pause
+	float step_time = psub->stepped_translation->t_transit + psub->stepped_translation->t_pause;
+
+	// step_offset_time is TIME into current step
+	float step_offset_time = static_cast<float>(fmod(elapsed_time, step_time));
+
+	// get step we are on (round down)
+	int cur_step = static_cast<int>(elapsed_time / step_time);
+
+	// set base displacement to 0 for now
+	smi->cur_offset = 0.0f;
+
+	// determine which phase of translation we're in
+	float coast_start_time = psub->stepped_translation->fraction * psub->stepped_translation->t_transit;
+	float decel_start_time = psub->stepped_translation->t_transit * (1.0f - psub->stepped_translation->fraction);
+	float pause_start_time = psub->stepped_translation->t_transit;
+
+	float start_coast_dist = 0.5f * psub->stepped_translation->max_shift_accel * coast_start_time * coast_start_time;
+
+	if (step_offset_time < coast_start_time) {
+		// do accel
+		float accel_time = step_offset_time;
+		smi->cur_offset += 0.5f * psub->stepped_translation->max_shift_accel * accel_time * accel_time;
+		smi->current_shift_rate = psub->stepped_translation->max_shift_accel * accel_time;
+	} else if (step_offset_time < decel_start_time) {
+		// do coast
+		float coast_time = step_offset_time - coast_start_time;
+		smi->cur_offset += start_coast_dist + psub->stepped_translation->max_shift_rate * coast_time;
+		smi->current_shift_rate = psub->stepped_translation->max_shift_rate;
+	} else if (step_offset_time < pause_start_time) {
+		// do decel
+		float time_to_pause = psub->stepped_translation->t_transit - step_offset_time;
+		smi->cur_offset += (step_size - 0.5f * psub->stepped_translation->max_shift_accel * time_to_pause * time_to_pause);
+		smi->current_shift_rate = psub->stepped_translation->max_shift_rate * time_to_pause;
+	} else {
+		// do pause
+		smi->cur_offset += step_size;
+		smi->current_shift_rate = 0.0f;
 	}
 
-	sm = &pm->submodel[mn];
-	angles *angs = &pm->submodel[mn].angs;
-
-	if ( sm->movement_type != MOVEMENT_TYPE_LOOK_AT ) {
-		return;
-	}
-
-	vec3d other, mp;
-
-	int pmn = pm->id;
-
-	// VA - Run this bit only once for each look_at enabled submodel, to correctly associate the name given in the $look_at: property with the number of that named subobject
-	if (sm->look_at_num == -2) {
-		// Search through submodels for the look_at target name
-		for (int i = 0; i < pm->n_models; i++) {
-			if (!strcmp(sm->look_at, pm->submodel[i].name))  {
-				sm->look_at_num = i; // Found it
-				nprintf(("Model", "NOTE: Matched $look_at: target <%s> with subobject id %d\n", sm->look_at, i));
-				break; 
-			}
+	// set correct displacement depending on whether we are alternating or moving continuously
+	if (psub->stepped_translation->reverse_after_step) {
+		if (cur_step % 2 == 1) {
+			smi->cur_offset = step_size - smi->cur_offset;
 		}
-
-		if (sm->look_at_num == -2) {
-			Warning( LOCATION, "Invalid submodel name given in $look_at: property in model file <%s>. (%s looking for %s)\n", pm->filename, pm->submodel->name, sm->look_at );
-			sm->look_at_num = -1; // Set to -1 to not break stuff
-		}
-	}
-
-	model_find_world_point(&mp, &vmd_zero_vector, pmn, sm->look_at_num, &vmd_identity_matrix, &vmd_zero_vector);
-	world_find_real_model_point(&other, &mp, pm, mn, &vmd_identity_matrix, &vmd_zero_vector);
-
-	if (!IS_MAT_NULL(&pm->submodel[mn].orientation)) {
-		vm_vec_rotate(&mp, &other, &pm->submodel[mn].orientation);
 	} else {
-		mp = other;
+		smi->cur_offset += cur_step * step_size;
 	}
 
-	vec3d	d, l;
-	model_find_submodel_offset(&d, pmn, mn);
-	model_find_submodel_offset(&l, pmn, sm->look_at_num);
-	vm_vec_sub(&other, &l, &d);
-
-	if (!IS_MAT_NULL(&pm->submodel[mn].orientation)) {
-		vm_vec_rotate(&l, &other, &pm->submodel[mn].orientation);
-	} else {
-		l = other;
+	// if we're going backwards, flip the whole thing
+	if (psub->stepped_translation->backwards) {
+		smi->cur_offset *= -1.0f;
 	}
 
-	float *a;
-	int axis;
+	submodel_canonicalize_translation(sm, smi);
+}
 
-	switch( sm->movement_axis ) {
-		default:
-		case MOVEMENT_AXIS_X:
-			l.xyz.x = 0;
-			mp.xyz.x = 0;
-			a = &angs->p;
-			axis = 0;
-			break;
+// Instantly rotate a submodel (around its axis of rotation) so that it is oriented toward its look_at_submodel.
+// Uses the same pointing logic as in model_rotate_gun
+void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
+{
+	vec3d world_axis, world_pos, dst, planar_dst, dir, rotated_vec;
 
-		case MOVEMENT_AXIS_Y:
-			l.xyz.y = 0;
-			mp.xyz.y = 0;
-			a = &angs->h;
-			axis = 1;
-			break;
+	auto sm = &pm->submodel[submodel_num];
+	auto smi = &pmi->submodel[submodel_num];
 
-		case MOVEMENT_AXIS_Z:
-			l.xyz.z = 0;
-			mp.xyz.z = 0;
-			a = &angs->b;
-			axis = 2;
-			break;
+	Assert(sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
+	Assert(sm->look_at_submodel >= 0);
+
+	// save last angles
+	smi->prev_angle = smi->cur_angle;
+	smi->canonical_prev_orient = smi->canonical_orient;
+
+	//------------
+	// Calculate the destination point in world coordinates
+	model_instance_local_to_global_point(&dst, &vmd_zero_vector, pm, pmi, sm->look_at_submodel, &vmd_identity_matrix, &vmd_zero_vector);
+
+	//------------
+	// Project the destination point onto the submodel base plane
+	model_instance_local_to_global_dir(&world_axis, &sm->rotation_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+
+	vm_project_point_onto_plane(&planar_dst, &dst, &world_axis, &world_pos);
+
+	//------------
+	// Calculate angle to rotate towards projected point
+	model_instance_local_to_global_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
+	vm_vec_sub(&dir, &planar_dst, &world_pos);
+	vm_vec_normalize(&dir);
+	smi->cur_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
+
+	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
+	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
+	if (sm->look_at_offset < 0.0f)
+	{
+		sm->look_at_offset = -(smi->cur_angle);
+
+		// ensure the offset is in the proper range (see submodel_canonicalize_rotation)
+		while (sm->look_at_offset > PI2)
+			sm->look_at_offset -= PI2;
+		while (sm->look_at_offset < 0.0f)
+			sm->look_at_offset += PI2;
 	}
+	smi->cur_angle += sm->look_at_offset;
 
-	vm_vec_normalize(&mp);
-	vm_vec_normalize(&l);
+	// calculate turn rate
+	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
+	if (abs(smi->cur_angle - smi->prev_angle) < PI)
+		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - smi->prev_angle) / flFrametime;
 
-	vec3d c;
-	vm_vec_cross(&c, &l, &mp);
-	float dot=vm_vec_dot(&l,&mp);
-	if (dot>=0.0f) {
-		*a = asinf(c.a1d[axis]);
-	} else {
-		*a = PI-asinf(c.a1d[axis]);
-	}
-
-	if (*a > PI2 ) {
-		*a -= PI2;
-	} else { if (*a < 0.0f )
-		*a += PI2;
-	}
-
-	for (int k=0; k<sm->num_details; k++ ) {
-		pm->submodel[sm->details[k]].angs = *angs;
-	}
-
+	// and now set the other submodel fields
+	submodel_canonicalize_rotation(sm, smi, true);
 }
 
 // Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
-void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
+void submodel_rotate(model_subsystem *psub, submodel_instance *smi)
 {
 	bsp_info * sm;
 
@@ -3733,312 +4329,194 @@ void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	polymodel *pm = model_get(psub->model_num);
 	sm = &pm->submodel[psub->subobj_num];
 
-	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
+	if ( sm->rotation_type != MOVEMENT_TYPE_REGULAR ) return;
 
-	submodel_rotate(sm, sii);
+	submodel_rotate(sm, smi);
 }
 
-// Rotates the angle of a submodel.  If the submodel has a subsystem, the execution flow should first go through the other
-// submodel_rotate function before this one.  (This function is called directly in the case of dumb_rotation.)
-void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
-{
-	// save last angles
-	sii->prev_angs = sii->angs;
-
-	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
-
-	float final_turn_rate;
-	if (diff > 0) {
-		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
-		if (final_turn_rate > sii->desired_turn_rate) {
-			final_turn_rate = sii->desired_turn_rate;
-		}
-	} else if (diff < 0) {
-		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
-		if (final_turn_rate < sii->desired_turn_rate) {
-			final_turn_rate = sii->desired_turn_rate;
-		}
-	} else {
-		final_turn_rate = sii->desired_turn_rate;
-	}
-
-	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->cur_turn_rate = final_turn_rate;
-
-	// Apply rotation in the axis of movement
-	// then normalize the angle angle so that we are within a valid range:
-	//  greater than or equal to 0
-	//  less than PI2
-	switch( sm->movement_axis )	{
-	case MOVEMENT_AXIS_X:
-		sii->angs.p += delta;
-
-		while (sii->angs.p > PI2)
-			sii->angs.p -= PI2;
-		while (sii->angs.p < 0.0f)
-			sii->angs.p += PI2;
-
-		break;
-	case MOVEMENT_AXIS_Y:
-		sii->angs.h += delta;
-
-		while (sii->angs.h > PI2)
-			sii->angs.h -= PI2;
-		while (sii->angs.h < 0.0f)
-			sii->angs.h += PI2;
-
-		break;
-	case MOVEMENT_AXIS_Z:
-		sii->angs.b += delta;
-
-		while (sii->angs.b > PI2)
-			sii->angs.b -= PI2;
-		while (sii->angs.b < 0.0f)
-			sii->angs.b += PI2;
-
-		break;
-	}
-}
-/*
-void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
+// Translates the offset of a submodel, when the submodel has a subsystem
+void submodel_translate(model_subsystem *psub, submodel_instance *smi)
 {
 	bsp_info * sm;
 
 	if ( psub->subobj_num < 0 ) return;
-	if(psub->ai_rotation.type = 0) return;
 
 	polymodel *pm = model_get(psub->model_num);
 	sm = &pm->submodel[psub->subobj_num];
 
-	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
+	if ( sm->translation_type != MOVEMENT_TYPE_REGULAR ) return;
 
-	
-	// save last angles
-	sii->prev_angs = sii->angs;
-
-	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
-
-	float final_turn_rate;
-	if (diff > 0) {
-		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
-		if (final_turn_rate > sii->desired_turn_rate) {
-			final_turn_rate = sii->desired_turn_rate;
-		}
-	} else if (diff < 0) {
-		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
-		if (final_turn_rate < sii->desired_turn_rate) {
-			final_turn_rate = sii->desired_turn_rate;
-		}
-	} else {
-		final_turn_rate = sii->desired_turn_rate;
-	}
-
-	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->cur_turn_rate = final_turn_rate;
-
-	
-	//float delta = psub->turn_rate * flFrametime;
-
-	switch( sm->movement_axis )	{
-	case MOVEMENT_AXIS_X:
-		if (sii->angs.p + delta > psub->ai_rotation.max ){//if it will or has gone past it's max then set it to the max/min
-			sii->angs.p = psub->ai_rotation.max;
-			return;
-		} else if(sii->angs.p + delta < psub->ai_rotation.min){
-			sii->angs.p = psub->ai_rotation.min;
-			return;
-		}
-		sii->angs.p += delta;
-		if (sii->angs.p > PI2 )
-			sii->angs.p -= PI2;
-		else if (sii->angs.p < 0.0f )
-			sii->angs.p += PI2;
-		break;
-	case MOVEMENT_AXIS_Y:	
-		sii->angs.h += delta;
-		if (sii->angs.h > PI2 )
-			sii->angs.h -= PI2;
-		else if (sii->angs.h < 0.0f )
-			sii->angs.h += PI2;
-		break;
-	case MOVEMENT_AXIS_Z:	
-		sii->angs.b += delta;
-		if (sii->angs.b > PI2 )
-			sii->angs.b -= PI2;
-		else if (sii->angs.b < 0.0f )
-			sii->angs.b += PI2;
-		break;
-	}
+	submodel_translate(sm, smi);
 }
-*/
 
-
-//=========================================================================
-// Make a turret's correct orientation matrix.   This should be done when 
-// the model is read, but I wasn't sure at what point all the data that I
-// needed was read, so I just check a flag and call this routine when
-// I determine I need the correct matrix.   In this code, you can't use
-// vm_vec_2_matrix or anything, since these turrets could be either 
-// right handed or left handed.
-void model_make_turret_matrix(int model_num, model_subsystem * turret )
+// Helper function for both rotation and translation
+void submodel_movement_calc(float &prev_value, float &cur_value, float &current_rate, float desired_rate, float accel, bool instant_accel)
 {
-	polymodel * pm;
-	vec3d fvec, uvec, rvec;
+	// save last value
+	prev_value = cur_value;
 
-	pm = model_get(model_num);
-	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
-	bsp_info * base = &pm->submodel[turret->subobj_num];
-	float offset_base_h = 0.0f;
-	float offset_barrel_h = 0.0f;
-#ifdef WMC_SIDE_TURRETS
-	offset_base_h = -PI_2;
-	offset_barrel_h = -PI_2;
-#endif
+	float delta;
 
-	if (base->force_turret_normal == true)
-		turret->turret_norm = base->orientation.vec.uvec;
+	if (instant_accel) {
+		delta = desired_rate * flFrametime;
+		current_rate = desired_rate;
+	} else {
+		// probably send in a calculated desired rate
+		float diff = desired_rate - current_rate;
 
-	model_clear_instance(model_num);
-	base->angs.h = offset_base_h;
-	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
+		float final_rate;
+		if (diff > 0) {
+			final_rate = current_rate + accel * flFrametime;
+			if (final_rate > desired_rate) {
+				final_rate = desired_rate;
+			}
+		} else if (diff < 0) {
+			final_rate = current_rate - accel * flFrametime;
+			if (final_rate < desired_rate) {
+				final_rate = desired_rate;
+			}
+		} else {
+			final_rate = desired_rate;
+		}
 
-	base->angs.h = -PI_2 + offset_base_h;
-	gun->angs.p = -PI_2;
-	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
+		delta = (current_rate + final_rate) * 0.5f * flFrametime;
+		current_rate = final_rate;
+	}
 
-	base->angs.h = 0.0f + offset_base_h;
-	gun->angs.p = -PI_2;
-	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
-									
-	vm_vec_normalize(&fvec);
-	vm_vec_normalize(&rvec);
-	vm_vec_normalize(&uvec);
-
-	turret->turret_matrix.vec.fvec = fvec;
-	turret->turret_matrix.vec.rvec = rvec;
-	turret->turret_matrix.vec.uvec = uvec;
-
-//	vm_vector_2_matrix(&turret->turret_matrix,&turret->turret_norm,NULL,NULL);
-
-	// HACK!! WARNING!!!
-	// I'm doing nothing to verify that this matrix is orthogonal!!
-	// In other words, there's no guarantee that the vectors are 90 degrees
-	// from each other.
-	// I'm not doing this because I don't know how to do it without ruining
-	// the handedness of the matrix... however, I'm not too worried about	
-	// this because I am creating these 3 vectors by making them 90 degrees
-	// apart, so this should be close enough.  I think this will start 
-	// causing weird errors when we view from turrets. -John
-    turret->flags.set(Model::Subsystem_Flags::Turret_matrix);
+	// Apply movement
+	cur_value += delta;
+}
+void submodel_rotate(bsp_info *sm, submodel_instance *smi)
+{
+	submodel_movement_calc(smi->prev_angle, smi->cur_angle, smi->current_turn_rate, smi->desired_turn_rate, smi->turn_accel, sm->flags[Model::Submodel_flags::Instant_rotate_accel]);
+	submodel_canonicalize_rotation(sm, smi, true);
 }
 
-// Tries to move joints so that the turret points to the point dst.
+void submodel_translate(bsp_info *sm, submodel_instance *smi)
+{
+	submodel_movement_calc(smi->prev_offset, smi->cur_offset, smi->current_shift_rate, smi->desired_shift_rate, smi->shift_accel, sm->flags[Model::Submodel_flags::Instant_translate_accel]);
+	submodel_canonicalize_translation(sm, smi);
+}
+
+// Tries to move joints so that the turret points to the point dst.  If dst is nullptr, the turret's joints are reset.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-//	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset)
+//	Returns true if rotated gun, false if no gun to rotate (rotation handled by AI)
+bool model_rotate_gun(const object *objp, const polymodel *pm, const polymodel_instance *pmi, ship_subsys *ss, const vec3d *dst)
 {
-	polymodel * pm;
-	object *objp = &Objects[obj_idx];
-	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
+	model_subsystem *turret = ss->system_info;
 
-	pm = model_get(model_num);
-	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
-	bsp_info * base = &pm->submodel[turret->subobj_num];
-	bool limited_base_rotation = false;
+	// This should not happen
+	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {
+		return false;
+	}
+
+	auto base_sm = &pm->submodel[turret->subobj_num];
+	auto gun_sm = &pm->submodel[turret->turret_gun_sobj];
+
+	auto base_smi = &pmi->submodel[turret->subobj_num];
+	auto gun_smi = &pmi->submodel[turret->turret_gun_sobj];
 
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
 	// Check for a valid subsystem
 	Assert( ss != NULL );
 
-	//This should not happen
-	if ( base == gun ) {
-		return 0;
-	}
-
-	// Build the correct turret matrix if there isn't already one
-	if ( !(turret->flags[Model::Subsystem_Flags::Turret_matrix]) )
-		model_make_turret_matrix(model_num, turret );
-
-	Assert( turret->flags[Model::Subsystem_Flags::Turret_matrix]);
-//	Assert( gun->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
-//	Assert( base->movement_axis == MOVEMENT_AXIS_Z );	// Parent must be able to change heading
-
-	//------------	
-	// rotate the dest point into the turret gun normal's frame of
-	// reference, but not using the turret's angles.
-	// Call this vector of_dst
-	vec3d of_dst;							
-	matrix world_to_turret_matrix;		// converts world coordinates to turret's FOR
-	vec3d world_to_turret_translate;	// converts world coordinates to turret's FOR
-	vec3d tempv;
-
-	vm_vec_unrotate( &tempv, &base->offset, orient);
-	vm_vec_add( &world_to_turret_translate, pos, &tempv );
-
-	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
-		world_to_turret_matrix = ss->world_to_turret_matrix;
-	else
-		vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
-
-	vm_vec_sub( &tempv, dst, &world_to_turret_translate );
-	vm_vec_rotate( &of_dst, &tempv, &world_to_turret_matrix );
-
-	vm_vec_normalize(&of_dst);
-
-	//------------	
 	// Find the heading and pitch that the gun needs to turn to
-	// by extracting them from the of_dst vector.
-	// Call this the desired_angles
-	angles desired_angles;
-//	vm_extract_angles_vector(&desired_angles, &of_dst);
-	
-	if (reset == false) {
-		desired_angles.p = acosf(of_dst.xyz.z);
-		desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
-		desired_angles.b = 0.0f;
+	float desired_base_angle, desired_gun_angle;
+
+	if (dst) {
+		vec3d world_axis, world_pos, planar_dst, dir, rotated_vec;
+		matrix save_base_orient;
+
+		// NOTE: this code assumes that the turret's fvec is where the base should point and the uvec is where the gun should point
+
+		//------------
+		// Project the destination point onto the turret base plane
+		model_instance_local_to_global_dir(&world_axis, &base_sm->rotation_axis, pm, pmi, base_sm->parent, &objp->orient);
+		model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->subobj_num, &objp->orient, &objp->pos);
+
+		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
+
+		//------------
+		// Calculate base angle to rotate towards projected point
+		model_instance_local_to_global_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
+		vm_vec_sub(&dir, &planar_dst, &world_pos);
+		vm_vec_normalize(&dir);
+		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
+
+		//------------
+		// Pretend the base is pointing directly at the target
+		save_base_orient = base_smi->canonical_orient;
+		vm_quaternion_rotate(&base_smi->canonical_orient, desired_base_angle, &base_sm->rotation_axis);
+
+		//------------
+		// Project the destination point onto the turret gun plane with the base in the desired orientation
+		// NOTE: the rotation axis is given in the model's reference frame, so it needs to be rotated when the base is rotated
+		model_instance_local_to_global_dir(&world_axis, &gun_sm->rotation_axis, pm, pmi, gun_sm->parent, &objp->orient);
+		model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->turret_gun_sobj, &objp->orient, &objp->pos);
+
+		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
+
+		//------------
+		// Calculate gun angle to rotate towards projected point
+		model_instance_local_to_global_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
+		vm_vec_sub(&dir, &planar_dst, &world_pos);
+		vm_vec_normalize(&dir);
+		desired_gun_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
+		// for ventral turrets without custom matrixes
+		if (vm_vec_dot(&gun_sm->frame_of_reference.vec.uvec, &turret->turret_norm) < 0.0f) {
+			desired_gun_angle = PI + desired_gun_angle;
+		}
+
+		//------------
+		// Restore the base
+		base_smi->canonical_orient = save_base_orient;
+
 	} else {
-		desired_angles.p = 0.0f;
-		desired_angles.h = 0.0f;
-		desired_angles.b = 0.0f;
-		if (turret->n_triggers > 0) {
-			int i;
-			for (i = 0; i<turret->n_triggers; i++) {
-				desired_angles.p = turret->triggers[i].angle.xyz.x;
-				desired_angles.h = turret->triggers[i].angle.xyz.y;
-			}
+		desired_base_angle = base_smi->turret_idle_angle;
+		desired_gun_angle = 0.0f;
+
+		if ((turret->subobj_num != turret->turret_gun_sobj)) {
+			desired_gun_angle = gun_smi->turret_idle_angle;
 		}
 	}
 
-	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
-		limited_base_rotation = true;
+	// figure out how much time we need to account for.  This only varies in mulitplayer
+	// in singleplayer or multiplayer servers info_from_server_stamp will always be Timestamp::never()
+	float calc_time;
 
-	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
+	if ((Game_mode & GM_MULTIPLAYER) && !ss->info_from_server_stamp.isNever()){
+		calc_time = static_cast<float>(ss->info_from_server_stamp.value()) / MILLISECONDS_PER_SECOND;
 
-	//------------	
+		// this timestamp will only be used once, so discard it.
+		ss->info_from_server_stamp = TIMESTAMP::never();
+	} else {
+		calc_time = flFrametime;
+	}
+
+	//------------
 	// Gradually turn the turret towards the desired angles
-	float step_size = turret->turret_turning_rate * flFrametime;
+	float step_size = turret->turret_turning_rate * calc_time;
 	float base_delta, gun_delta;
 
-	if (reset == true)
-		step_size /= 3.0f;
-	else
+	if (dst)
 		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
+	else
+		step_size /= 3.0f;
 
-	// reset these two
+	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, turret->turret_base_fov > -1.0f);
+	gun_delta = vm_interp_angle(&gun_smi->cur_angle, desired_gun_angle, step_size);
+
+	submodel_canonicalize_rotation(base_sm, base_smi, true);
+	submodel_canonicalize_rotation(gun_sm, gun_smi, true);
+
+	//------------
+	// Set fields for turret rotation sounds
+
 	ss->base_rotation_rate_pct = 0.0f;
 	ss->gun_rotation_rate_pct = 0.0f;
 
-	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size, limited_base_rotation);
-	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
-
-	if (turret->turret_base_rotation_snd != -1)	
+	if (turret->turret_base_rotation_snd.isValid())
 	{
 		if (step_size > 0)
 		{
@@ -4049,7 +4527,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 		}
 	}
 
-	if (turret->turret_gun_rotation_snd != -1)
+	if (turret->turret_gun_rotation_snd.isValid())
 	{
 		if (step_size > 0)
 		{
@@ -4065,446 +4543,307 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 
 	if (turret->flags[Model::Subsystem_Flags::Fire_on_target])
 	{
-		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
-		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
-		ss->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
+		base_delta = vm_delta_from_interp_angle(base_smi->cur_angle, desired_base_angle);
+		gun_delta = vm_delta_from_interp_angle(gun_smi->cur_angle, desired_gun_angle);
+		ss->points_to_target = sqrt((base_delta*base_delta) + (gun_delta*gun_delta));
 	}
 
-	return 1;
-
+	return true;
 }
 
 
 // Goober5000
 // For a submodel, return its overall offset from the main model.
-void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num)
+void model_find_submodel_offset(vec3d *outpnt, const polymodel *pm, int submodel_num)
 {
-	int mn;
-	polymodel *pm = model_get(model_num);
-
-	vm_vec_zero(outpnt);
-	mn = sub_model_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vm_vec_add2(outpnt, &pm->submodel[mn].offset);
-
-		mn = pm->submodel[mn].parent;
-	}
+	model_local_to_global_point(outpnt, &vmd_zero_vector, pm, submodel_num);
 }
 
-void make_submodel_world_matrix(polymodel *pm, int sn, vec3d*v){
-	if (pm->submodel[sn].parent != -1) {
-		make_submodel_world_matrix(pm,pm->submodel[sn].parent,v);
-	}
-
-	vm_vec_sub2(v, &pm->submodel[sn].offset);
-	vec3d t = *v;
-
-	matrix a;
-	vm_angles_2_matrix(&a, &pm->submodel[sn].angs);
-	if (!IS_MAT_NULL(&pm->submodel[sn].orientation)) {
-		matrix inv, f;
-		vm_copy_transpose(&inv, &pm->submodel[sn].orientation);
-		vm_matrix_x_matrix(&f, &a, &inv);
-		vm_matrix_x_matrix(&a, &pm->submodel[sn].orientation, &f);
-	}
-	vm_vec_rotate(v, &t, &a);
-}
-
-// just like below, exept it actualy does what it says it does
-void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos)
+void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
-	vec3d tempv1, tempv2;
-
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
-
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
-	}
-
-	//vec3d os = ZERO_VECTOR;
-	// put into submodel RF
-	make_submodel_world_matrix(pm,submodel_num, &tempv2);
-	*out = tempv2;
+	return model_local_to_global_point(outpnt, mpnt, model_get(model_num), submodel_num, objorient, objpos);
 }
 
-// Given a point (pnt) that is in submodel_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
-	vec3d tpnt;
-	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 
 	pnt = *mpnt;
 	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+		// the angles in non-instanced models are always zero, so no need to rotate
+		// and no need to translate, for the same reason
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
 
 	//now instance for the entire object
-	vm_vec_unrotate(outpnt,&pnt,objorient);
-	vm_vec_add2(outpnt,objpos);
+	if (objorient && objpos) {
+		vm_vec_unrotate(outpnt, &pnt, objorient);
+		vm_vec_add2(outpnt, objpos);
+	} else {
+		*outpnt = pnt;
+	}
 }
 
-void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos, bool use_last_frame)
+{
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	return model_instance_local_to_global_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos, use_last_frame);
+}
+
+void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos, bool use_last_frame)
 {
 	vec3d pnt;
 	vec3d tpnt;
-	matrix m;
 	int mn;
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 
 	pnt = *mpnt;
 	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+		vm_vec_unrotate(&tpnt, &pnt, use_last_frame ? &pmi->submodel[mn].canonical_prev_orient : &pmi->submodel[mn].canonical_orient);
+		vm_vec_add(&pnt, &tpnt, use_last_frame ? &pmi->submodel[mn].canonical_prev_offset : &pmi->submodel[mn].canonical_offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
 
 	//now instance for the entire object
-	vm_vec_unrotate(outpnt,&pnt,objorient);
-	vm_vec_add2(outpnt,objpos);
+	if (objorient && objpos) {
+		vm_vec_unrotate(outpnt, &pnt, objorient);
+		vm_vec_add2(outpnt, objpos);
+	} else {
+		*outpnt = pnt;
+	}
 }
 
-// Given a point in the world RF, find the corresponding point in the model RF.
-// This is special purpose code, specific for model collision.
-// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-//
-// out - point in model RF
-// world_pt - point in world RF
-// pm - polygon model
-// submodel_num - submodel in whose RF we're trying to find the corresponding world point
-// orient - orient matrix of ship
-// pos - pos vector of ship
-void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos)
+void model_instance_local_to_global_point_dir(vec3d *out_pnt, vec3d *out_dir, const vec3d *in_pnt, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
-	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
+	vec3d pnt, tpnt, dir, tdir;
+	int mn;
+	Assert(pm->id == pmi->model_num);
 
-	vec3d tempv1, tempv2;
-	matrix m;
+	pnt = *in_pnt;
+	dir = *in_dir;
+	mn = submodel_num;
 
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
+	// instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
+		vm_vec_add(&pnt, &tpnt, &pmi->submodel[mn].canonical_offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
+		vm_vec_unrotate(&tdir, &dir, &pmi->submodel[mn].canonical_orient);
+		dir = tdir;
+
+		mn = pm->submodel[mn].parent;
 	}
 
-	// put into submodel RF
-	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
+	// now instance for the entire object
+	if (objorient && objpos) {
+		vm_vec_unrotate(out_pnt, &pnt, objorient);
+		vm_vec_add2(out_pnt, objpos);
 
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent - KeldorKatarn
-	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[submodel_num].angs);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-	vm_vec_rotate(out, &tempv2, &m);
+		vm_vec_unrotate(out_dir, &dir, objorient);
+	} else {
+		*out_pnt = pnt;
+		*out_dir = dir;
+	}
 }
 
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
+void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorient, const vec3d *submodel_pnt, const matrix *submodel_orient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
-	polymodel *pm = model_get(pmi->model_num);
+	vec3d pnt, tpnt;
+	matrix orient;
+	int mn;
+	Assert(pm->id == pmi->model_num);
 
-	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
+	pnt = *submodel_pnt;
+	orient = *submodel_orient;
+	mn = submodel_num;
 
-	vec3d tempv1, tempv2;
-	matrix m;
+	// instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
+		vm_vec_add(&pnt, &tpnt, &pmi->submodel[mn].canonical_offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
+		orient = orient * pmi->submodel[mn].canonical_orient;
 
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
+		mn = pm->submodel[mn].parent;
 	}
 
-	// put into submodel RF
-	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
+	// now instance for the entire object
+	if (objorient && objpos) {
+		vm_vec_unrotate(outpnt, &pnt, objorient);
+		vm_vec_add2(outpnt, objpos);
 
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent - KeldorKatarn
-	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-	vm_vec_rotate(out, &tempv2, &m);
+		*outorient = orient * *objorient;
+	} else {
+		*outpnt = pnt;
+		*outorient = orient;
+	}
 }
 
-/**
- * Finds the current location of a submodel (in the ship's frame of reference),
- * taking into account the rotations of any parent submodels it might have.
- *  
- * @param *outpnt Output point
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- */
-void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num)
-{
-	vm_vec_zero(outpnt);
-	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, int model_instance_num, int submodel_num, const matrix* objorient, const vec3d* objpos, bool use_last_frame) {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	return model_instance_global_to_local_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos, use_last_frame);
+}
 
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos, bool use_last_frame) {
+	Assert(pm->id == pmi->model_num);
+
+	constexpr int preallocatedStackDepth = 5;
+	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
 
 	int mn = submodel_num;
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vec3d offset = pm->submodel[mn].offset;
 
-		int parent_mn = pm->submodel[mn].parent;
-
-		if (pm->submodel[parent_mn].can_move) {
-			rotation_matrix = pm->submodel[parent_mn].orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_mn].angs);
-
-			vm_copy_transpose(&inv_orientation, &pm->submodel[parent_mn].orientation);
-
-			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
-
-			vec3d tvec = offset;
-			vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		if(use_last_frame) {
+			std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_prev_orient;
+			std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_prev_offset;
+		} else {
+			std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_orient;
+			std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_offset;
 		}
-
-		vm_vec_add2(outpnt, &offset);
-
-		mn = parent_mn;
+		std::get<2>(submodelStack[stackCounter++]) = &pm->submodel[mn].offset;
+		mn = pm->submodel[mn].parent;
 	}
+
+	if (objorient != nullptr && objpos != nullptr) {
+		std::get<0>(submodelStack[stackCounter]) = objorient;
+		std::get<1>(submodelStack[stackCounter]) = &vmd_zero_vector;
+		std::get<2>(submodelStack[stackCounter++]) = objpos;
+	}
+	stackCounter--;
+		
+	vec3d resultPnt = *mpnt;
+
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
+
+		vm_vec_sub2(&resultPnt, std::get<2>(transform));
+		vm_vec_sub2(&resultPnt, std::get<1>(transform));
+		vm_vec_rotate(&resultPnt, &resultPnt, std::get<0>(transform));
+	}
+
+	*outpnt = resultPnt;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
 }
 
-/**
- * Finds the current location and rotation (in the ship's frame of reference) of
- * a submodel point, taking into account the rotations of the submodel and any
- * parent submodels it might have.
- *  
- * @param *outpnt Output point
- * @param *outnorm Output normal
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
- * @param *submodel_norm The normal which's current direction we want, in the ship's frame of reference
- */
-void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm)
-{
-	*outnorm = *submodel_norm;
-	vm_vec_zero(outpnt);
-	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int model_instance_num, int submodel_num, const matrix* objorient, bool use_submodel_parent, bool use_last_frame) {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	model_instance_global_to_local_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient, use_last_frame);
+}
 
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, bool use_last_frame) {
+	Assert(pm->id == pmi->model_num);
+
+	constexpr int preallocatedStackDepth = 5;
+	const matrix* preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
 
 	int mn = submodel_num;
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vec3d offset = pm->submodel[mn].offset;
 
-		if ( mn == submodel_num) {
-			vec3d submodel_pnt_offset = *submodel_pnt;
-
-			rotation_matrix = pm->submodel[submodel_num].orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
-
-			vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
-
-			vec3d tvec = submodel_pnt_offset;
-			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &submodel_instance_matrix);
-
-			vec3d tnorm = *outnorm;
-			vm_vec_unrotate(outnorm, &tnorm, &submodel_instance_matrix);
-
-			vm_vec_add2(&offset, &submodel_pnt_offset);
-		}
-
-		int parent_model_num = pm->submodel[mn].parent;
-
-		rotation_matrix = pm->submodel[parent_model_num].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
-
-		vm_copy_transpose(&inv_orientation, &pm->submodel[parent_model_num].orientation);
-
-		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
-
-		vec3d tvec = offset;
-		vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
-
-		vec3d tnorm = *outnorm;
-		vm_vec_unrotate(outnorm, &tnorm, &submodel_instance_matrix);
-
-		vm_vec_add2(outpnt, &offset);
-
-		mn = parent_model_num;
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		if (use_last_frame)
+			submodelStack[stackCounter++] = &pmi->submodel[mn].canonical_prev_orient;
+		else
+			submodelStack[stackCounter++] = &pmi->submodel[mn].canonical_orient;
+		mn = pm->submodel[mn].parent;
 	}
+
+	if (objorient != nullptr)
+		submodelStack[stackCounter++] = objorient;
+
+	stackCounter--;
+
+	vec3d resultDir = *in_dir;
+
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
+
+		vm_vec_rotate(&resultDir, &resultDir, transform);
+	}
+
+	*out_dir = resultDir;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
 }
 
-/**
- * Same as find_submodel_instance_point_normal, except that this takes and
- * returns matrices instead of normals.
- *  
- * Finds the current location and rotation (in the ship's frame of reference) of
- * a submodel point, taking into account the rotations of the submodel and any
- * parent submodels it might have.
- *
- * @param *outpnt Output point
- * @param *outorient Output matrix
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
- * @param *submodel_orient The local matrix which's current orientation in the ship's frame of reference we want
- */
-void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient)
-{
-	*outorient = *submodel_orient;
-	vm_vec_zero(outpnt);
-	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorient, const vec3d* submodel_pnt, const matrix* submodel_orient, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+	Assert(pm->id == pmi->model_num);
 
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+	constexpr int preallocatedStackDepth = 5;
+	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
 
 	int mn = submodel_num;
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vec3d offset = pm->submodel[mn].offset;
 
-		if ( mn == submodel_num) {
-			vec3d submodel_pnt_offset = *submodel_pnt;
-
-			rotation_matrix = pm->submodel[submodel_num].orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
-
-			vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
-
-			vec3d tvec = submodel_pnt_offset;
-			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &submodel_instance_matrix);
-
-			matrix tnorm = *outorient;
-			vm_matrix_x_matrix(outorient, &tnorm, &submodel_instance_matrix);
-
-			vm_vec_add2(&offset, &submodel_pnt_offset);
-		}
-
-		int parent_model_num = pm->submodel[mn].parent;
-
-		rotation_matrix = pm->submodel[parent_model_num].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
-
-		vm_copy_transpose(&inv_orientation, &pm->submodel[parent_model_num].orientation);
-
-		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
-
-		vec3d tvec = offset;
-		vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
-
-		matrix tnorm = *outorient;
-		vm_matrix_x_matrix(outorient, &tnorm, &submodel_instance_matrix);
-
-		vm_vec_add2(outpnt, &offset);
-
-		mn = parent_model_num;
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_orient;
+		std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_offset;
+		std::get<2>(submodelStack[stackCounter++]) = &pm->submodel[mn].offset;
+		mn = pm->submodel[mn].parent;
 	}
-}
 
-/**
- * Finds the current world location of a submodel, taking into account the
- * rotations of any parent submodels it might have.
- *  
- * @param *outpnt Output point
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- */
-void find_submodel_instance_world_point(vec3d *outpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
-{
-	vec3d loc_pnt;
-
-	find_submodel_instance_point(&loc_pnt, model_instance_num, submodel_num);
-
-	vm_vec_unrotate(outpnt, &loc_pnt, objorient);
-	vm_vec_add2(outpnt, objpos);
-}
-
-// Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
-int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
-{
-	model_subsystem	*psub;
-	ship_subsys			*pss;
-
-	int found = 0;
-
-	// Go through all subsystems and look for submodel
-	// the subsystems that need it.
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-		if (psub->subobj_num == submodel) {
-			found = 1;
-			break;
-		}
+	if (objorient != nullptr && objpos != nullptr) {
+		std::get<0>(submodelStack[stackCounter]) = objorient;
+		std::get<1>(submodelStack[stackCounter]) = &vmd_zero_vector;
+		std::get<2>(submodelStack[stackCounter++]) = objpos;
 	}
-	
-	return found;
+	stackCounter--;
+
+	vec3d resultPnt = *submodel_pnt;
+	matrix resultMat = *submodel_orient;
+
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
+
+		vm_vec_sub2(&resultPnt, std::get<2>(transform));
+		vm_vec_sub2(&resultPnt, std::get<1>(transform));
+		vm_vec_rotate(&resultPnt, &resultPnt, std::get<0>(transform));
+		resultMat = *std::get<0>(transform) * resultMat;
+	}
+
+	*outpnt = resultPnt;
+	*outorient = resultMat;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
 }
 
 /*
  * Get all submodel indexes that satisfy the following:
  * 1) Have the rotating or intrinsic-rotating movement type
  * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
- * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ROT_ANGLE)
+ * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY)
+ * And check the translating equivalent as well
  */
-void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp)
+void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const object *objp)
 {
 	Assert(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON || objp->type == OBJ_ASTEROID);
 	
@@ -4526,50 +4865,45 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		if (model_instance_num < 0) {
 			return;
 		}
-		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 	}
 	else {
 		return;
 	}
 
 	polymodel *pm = model_get(model_num);
-	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
-	
-	if(child_submodel->no_collisions) { // if detail0 has $no_collision set dont check childs
-		return;
-	}
-
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	
+	
+	model_iterate_submodel_tree(pm, pm->detail[0], [pm, pmi, &submodel_vector](int submodel, int /*currentLevel*/, bool /*isLeaf*/, bool& isMoving, bool& skipChildren) {
+		if (skipChildren)
+			return;
 
-	int i = child_submodel->first_child;
-	while ( i >= 0 )	{
-		child_submodel = &pm->submodel[i];
+		const auto& child_submodel = pm->submodel[submodel];
+		const auto& child_submodel_instance = pmi->submodel[submodel];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
-
-			// Only look for submodels that rotate or intrinsic-rotate
-			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-
-				// check submodel rotation is less than max allowed.
-				submodel_instance_info *sii = pmi->submodel[i].sii;
-
-				// If there is no instance info yet then ignore this submodel
-				if (sii != nullptr) {
-
-					// found the correct submodel instance - now check delta rotation angle not too large
-					float delta_angle = get_submodel_delta_angle(sii);
-					if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-						submodel_vector->push_back(i);
-					}
-				}
-			}
+		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.i_replace != -1) {
+			skipChildren = true;
+			return;
 		}
-		i = child_submodel->next_sibling;
-	}
+
+		if (child_submodel.rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel.rotation_type == MOVEMENT_TYPE_INTRINSIC) {
+			float delta_angle = get_submodel_delta_angle(&child_submodel_instance);
+			isMoving |= delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY;
+		} else if (child_submodel.translation_type == MOVEMENT_TYPE_REGULAR || child_submodel.translation_type == MOVEMENT_TYPE_INTRINSIC) {
+			float delta_shift = get_submodel_delta_shift(&child_submodel_instance);
+			isMoving |= delta_shift < MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY;
+		} else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
+			isMoving = true;
+		}
+
+		if (isMoving && !child_submodel.flags[Model::Submodel_flags::Nocollide_this_only])
+			submodel_vector.push_back(submodel);
+	}, 0, false, false);
 }
 
-void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn)
+void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn)
 {
 	if ( pm->submodel[mn].buffer.model_list != NULL ) {
 		submodel_vector.push_back(mn);
@@ -4584,473 +4918,249 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* p
 	}
 }
 
-// Given a direction (pnt) that is in submodel_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
+void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
 {
-	vec3d pnt;
-	vec3d tpnt;
-	matrix m;
-	int mn;
-	polymodel *pm = model_get(model_num);
-
-	pnt = *in_dir;
-	mn = submodel_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-		pnt = tpnt;
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	//now instance for the entire object
-	vm_vec_unrotate(out_dir,&pnt,objorient);
+	model_local_to_global_dir(out_dir, in_dir, model_get(model_num), submodel_num, objorient);
 }
 
-// the same as above - just taking model instance data into account
-// model_find_world_dir
-void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
+void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
+{
+	SCP_UNUSED(pm);
+	SCP_UNUSED(submodel_num);
+
+	//now instance for the entire object
+	if (objorient) {
+		vm_vec_unrotate(out_dir, in_dir, objorient);
+	} else {
+		*out_dir = *in_dir;
+	}
+}
+
+void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
+{
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	model_instance_local_to_global_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
+}
+
+void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
-	matrix m;
 	int mn;
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 
 	pnt = *in_dir;
 	mn = submodel_num;
 
-	//instance up the tree for this point
+	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
+		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
 		pnt = tpnt;
 
 		mn = pm->submodel[mn].parent;
 	}
 
-	//now instance for the entire object
-	vm_vec_unrotate(out_dir,&pnt,objorient);
+	// now instance for the entire object
+	if (objorient) {
+		vm_vec_unrotate(out_dir, &pnt, objorient);
+	} else {
+		*out_dir = pnt;
+	}
 }
 
 
 // Clears all the submodel instances stored in a model to their defaults.
 void model_clear_instance(int model_num)
 {
-	polymodel * pm;
+	// ---- stuff that should be moved into model instances at some point
 	int i;
+	auto pm = model_get(model_num);
 
-	pm = model_get(model_num);
-
-	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
 		pm->maps[i].ResetToOriginal();
 	}
-	
-	for (i=0; i<pm->n_models; i++ )	{
-		bsp_info *sm = &pm->submodel[i];
-		
-		if ( pm->submodel[i].is_damaged )	{
-			sm->blown_off = 1;
-		} else {
-			sm->blown_off = 0;
-		}
-		sm->angs.p = 0.0f;
-		sm->angs.b = 0.0f;
-		sm->angs.h = 0.0f;
-
-		sm->num_arcs = 0;		// Turn off any electric arcing effects
-	}
-
-	for (i=0; i<pm->num_lights; i++ )	{
-		pm->lights[i].value = 0.0f;
-	}
+	// ---- end of stuff that should be moved into model instances at some point
 
 	interp_clear_instance();
-
-//	if ( keyd_pressed[KEY_1] ) pm->lights[0].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_2] ) pm->lights[1].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_3] ) pm->lights[2].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_4] ) pm->lights[3].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_5] ) pm->lights[4].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_6] ) pm->lights[5].value = 1.0f/255.0f;
-
-
 }
 
-// initialization during ship set
-void model_clear_instance_info( submodel_instance_info * sii )
+void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)
 {
-	sii->blown_off = 0;
-	sii->angs.p = 0.0f;
-	sii->angs.b = 0.0f;
-	sii->angs.h = 0.0f;
-	sii->prev_angs.p = 0.0f;
-	sii->prev_angs.b = 0.0f;
-	sii->prev_angs.h = 0.0f;
+	smi->current_turn_rate = 0.0f;
+	smi->desired_turn_rate = sm->default_turn_rate;
+	smi->turn_accel = sm->default_turn_accel;
 
-	sii->cur_turn_rate = 0.0f;
-	sii->desired_turn_rate = 0.0f;
-	sii->turn_accel = 0.0f;
+	smi->current_shift_rate = 0.0f;
+	smi->desired_shift_rate = sm->default_shift_rate;
+	smi->shift_accel = sm->default_shift_accel;
 }
 
-void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm )
+// Sets the submodel instance data when a tech room model instance is created.
+// This only needs to be done at creation, not every frame.
+void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 {
-	sm_instance->angs.p = 0.0f;
-	sm_instance->angs.b = 0.0f;
-	sm_instance->angs.h = 0.0f;
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	flagset<Ship::Subsystem_Flags> empty;
 
-	sm_instance->blown_off = sm->is_damaged ? true : false;
+	sip->animations.clearShipData(pmi);
+	sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(animation::ModelAnimationDirection::FWD, true, true);
 
-	sm_instance->collision_checked = false;
-	sm_instance->sii = NULL;
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
+		{
+			model_replicate_submodel_instance(pm, pmi, submodel, empty);
+		});
 }
 
-void model_clear_submodel_instances( int model_instance_num )
+/*
+ * This function handles copying submodel instance information to other submodel instances as appropriate.  The copy_from parameter is used for
+ * copying data to other LODs, and is only specified from within this function itself.  The "public" function header omits this parameter.
+ */
+void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pmi, const submodel_instance *copy_from, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
 {
-	int i;
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
-
-	for ( i = 0; i < pm->n_models; i++ ) {
-		model_clear_submodel_instance(&pmi->submodel[i], &pm->submodel[i]);
-	}
-}
-
-// initialization during ship set
-void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
-{
-	sii->blown_off = 0;
-	sii->angs.p = 0.0f;
-	sii->angs.b = 0.0f;
-	sii->angs.h = 0.0f;
-	sii->prev_angs.p = 0.0f;
-	sii->prev_angs.b = 0.0f;
-	sii->prev_angs.h = 0.0f;
-
-	sii->cur_turn_rate = turn_rate * 0.0f;
-	sii->desired_turn_rate = turn_rate;
-	sii->turn_accel = turn_accel;
-	sii->axis_set = 0;
-	sii->step_zero_timestamp = timestamp();
-}
-
-// Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags)
-{
-	int i;
-	polymodel * pm;
-
-    flagset<Ship::Subsystem_Flags> instance_flags;
-
-    if (flags != NULL) {
-		instance_flags = *flags;
-	}
-
-	pm = model_get(model_num);
-
-	Assert( sub_model_num >= 0 );
-	Assert( sub_model_num < pm->n_models );
-
-	if ( sub_model_num < 0 ) return;
-	if ( sub_model_num >= pm->n_models ) return;
-	bsp_info *sm = &pm->submodel[sub_model_num];
-
-	if (instance_flags[Ship::Subsystem_Flags::No_disappear]) {
-		sm->blown_off = 0;
-	} else {
-		// Set the "blown out" flags
-		sm->blown_off = sii->blown_off;
-	}
-
-	if ( (sm->blown_off) && (!(instance_flags[Ship::Subsystem_Flags::No_replace])) )	{
-		if ( sm->my_replacement > -1 )	{
-			pm->submodel[sm->my_replacement].blown_off = 0;
-			pm->submodel[sm->my_replacement].angs = sii->angs;
-		}
-	} else {
-		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
-		// the replacement model from being drawn by marking it as having been blown off
-		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-			pm->submodel[sm->my_replacement].blown_off = 1;
-		}
-	}
-
-	// Set the angles
-	sm->angs = sii->angs;
-
-	// For all the detail levels of this submodel, set them also.
-	for (i=0; i<sm->num_details; i++ )	{
-		model_set_instance(model_num, sm->details[i], sii, &instance_flags);
-	}
-}
-
-// Sets the submodel instance data in a submodel (for all detail levels)
-// Techroom version uses two floats of setting rotation angles (for turrets)
-// instead of using larger but largely unused structures for storing the same data
-void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2)
-{
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	Assert( sub_model_num >= 0 );
-	Assert( sub_model_num < pm->n_models );
-
-	if ( sub_model_num < 0 ) return;
-	if ( sub_model_num >= pm->n_models ) return;
-	bsp_info *sm = &pm->submodel[sub_model_num];
-
-	// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
-	// the replacement model from being drawn by marking it as having been blown off
-	if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-		pm->submodel[sm->my_replacement].blown_off = 1;
-	}
-
-	// Set the angles
-	sm->angs.p = angle_1;
-	sm->angs.h = angle_2;
-}
-
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags)
-{
-	int i;
-	polymodel *pm;
-	polymodel_instance *pmi;
-
-	pmi = model_get_instance(model_instance_num);
-	pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 	
-	Assertion(sub_model_num >= 0 && sub_model_num < pm->n_models,
-		"Sub model number (%d) which should be updated is out of range! Must be between 0 and %d. This happend on model %s.",
-		sub_model_num, pm->n_models - 1, pm->filename);
+	Assertion(submodel_num >= 0 && submodel_num < pm->n_models,
+		"Submodel number (%d) which should be updated is out of range! Must be between 0 and %d. This happened on model %s.",
+		submodel_num, pm->n_models - 1, pm->filename);
 
-	if ( sub_model_num < 0 ) return;
-	if ( sub_model_num >= pm->n_models ) return;
+	if ( submodel_num < 0 ) return;
+	if ( submodel_num >= pm->n_models ) return;
 
-	submodel_instance *smi = &pmi->submodel[sub_model_num];
-	bsp_info *sm = &pm->submodel[sub_model_num];
+	submodel_instance *smi = &pmi->submodel[submodel_num];
+	bsp_info *sm = &pm->submodel[submodel_num];
 	
-	// Set the "blown out" flags
+	// Set the "blown out" flags.
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
-	} else {
-		smi->blown_off = sii->blown_off ? true : false;
+	} else if ( copy_from ) {
+		smi->blown_off = copy_from->blown_off;
 	}
 
-	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
-		if ( sm->my_replacement > -1 )	{
-			pmi->submodel[sm->my_replacement].blown_off = false;
-			pmi->submodel[sm->my_replacement].angs = sii->angs;
-			pmi->submodel[sm->my_replacement].prev_angs = sii->prev_angs;
+	if ( smi->blown_off )	{
+		if ( sm->my_replacement >= 0 && !(flags[Ship::Subsystem_Flags::No_replace]) ) {
+			auto r_smi = &pmi->submodel[sm->my_replacement];
+			r_smi->blown_off = false;
+			if ( copy_from ) {
+				r_smi->cur_angle = copy_from->cur_angle;
+				r_smi->canonical_orient = copy_from->canonical_orient;
+				r_smi->canonical_prev_orient = copy_from->canonical_prev_orient;
+
+				r_smi->cur_offset = copy_from->cur_offset;
+				r_smi->canonical_offset = copy_from->canonical_offset;
+				r_smi->canonical_prev_offset = copy_from->canonical_prev_offset;
+			} else {
+				r_smi->cur_angle = smi->cur_angle;
+				r_smi->canonical_orient = smi->canonical_orient;
+				r_smi->canonical_prev_orient = smi->canonical_prev_orient;
+
+				r_smi->cur_offset = smi->cur_offset;
+				r_smi->canonical_offset = smi->canonical_offset;
+				r_smi->canonical_prev_offset = smi->canonical_prev_offset;
+			}
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
-		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-			pmi->submodel[sm->my_replacement].blown_off = true;
+		if ( sm->my_replacement >= 0 && sm->my_replacement != submodel_num)	{
+			auto r_smi = &pmi->submodel[sm->my_replacement];
+			r_smi->blown_off = true;
 		}
 	}
 
-	// Set the angles
-	smi->angs = sii->angs;
-	smi->prev_angs = sii->prev_angs;
-	smi->sii = sii;
+	// Set the angles and offset.
+	if ( copy_from ) {
+		smi->cur_angle = copy_from->cur_angle;
+		smi->canonical_orient = copy_from->canonical_orient;
+		smi->canonical_prev_orient = copy_from->canonical_prev_orient;
+
+		smi->cur_offset = copy_from->cur_offset;
+		smi->canonical_offset = copy_from->canonical_offset;
+		smi->canonical_prev_offset = copy_from->canonical_prev_offset;
+	}
 
 	// For all the detail levels of this submodel, set them also.
-	for (i=0; i<sm->num_details; i++ )	{
-		model_update_instance(model_instance_num, sm->details[i], sii, flags );
+	for ( int i=0; i<sm->num_details; i++ )	{
+		model_replicate_submodel_instance_sub( pm, pmi, smi, sm->details[i], flags );
 	}
 }
 
-void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
+void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
 {
-	polymodel_instance *pmi = model_get_instance(ir->model_instance_num);
+	model_replicate_submodel_instance_sub(pm, pmi, nullptr, submodel_num, flags);
+}
+
+void model_do_intrinsic_motions_sub(intrinsic_motion *im)
+{
+	polymodel_instance *pmi = model_get_instance(im->model_instance_num);
 	Assert(pmi != nullptr);
+	polymodel *pm = model_get(pmi->model_num);
+	Assert(pm != nullptr);
+	flagset<Ship::Subsystem_Flags> empty;
 
-	// Handle all submodels which have $dumb_rotate
-	for (auto submodel_it = ir->list.begin(); submodel_it != ir->list.end(); ++submodel_it)
+	// Handle all submodels which have intrinsic motion
+	for (auto submodel_num: im->submodel_list)
 	{
-		polymodel *pm = model_get(pmi->model_num);
-		Assert(pm != nullptr);
-		bsp_info *sm = &pm->submodel[submodel_it->submodel_num];
-
-		// First, calculate the angles for the rotation
-		submodel_rotate(sm, &submodel_it->submodel_info_1);
-
-		// Now actually rotate the submodel instance
-		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
-        flagset<Ship::Subsystem_Flags> empty;
-		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, empty);
+		if (pm->submodel[submodel_num].look_at_submodel >= 0)
+			submodel_look_at(pm, pmi, submodel_num);
+		else
+			submodel_rotate(&pm->submodel[submodel_num], &pmi->submodel[submodel_num]);
 	}
 }
 
-// Handle the intrinsic rotations for either a) a single ship model; or b) all non-ship models.  The reason for the two cases is that ship_model_update_instance will
-// be called for each ship via obj_move_all_post, but we also need to handle non-ship models once obj_move_all_post exits.  Since the two processes are almost identical,
-// they are both handled here.
+// Handle the intrinsic motions for either a) a single object model; or b) all non-object models.
 //
-// This function is quite a bit different than Bobboau's old model_do_dumb_rotation function.  Whereas Bobboau used the brute-force technique of navigating through
-// each model hierarchy as it was rendered, this function should be seen as a version of obj_move_all_post, but for models rather than objects.  In fact, the only reason
-// for the special ship case is that the ship intrinsic rotations kind of need to be handled where all the other ship rotations are.  (Unless you want inconsistent collisions
-// or damage sparks that aren't attached to models.)
+// This function called as part of object movement.  All types of object movement, including intrinsic rotations and translations,
+// should be handled at the same time - unless you want inconsistent collisions or damage sparks that aren't attached to models.
 //
 // -- Goober5000
-void model_do_intrinsic_rotations(int model_instance_num)
+void model_do_intrinsic_motions(object *objp)
 {
-	// we are handling a specific ship
-	if (model_instance_num >= 0)
+	// we are handling a specific object
+	if (objp)
 	{
-		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
+		int model_instance_num = object_get_model_instance(objp);
+		if (model_instance_num >= 0)
 		{
-			if (intrinsic_it->model_instance_num == model_instance_num)
+			auto obj_it = Intrinsic_motions.find(model_instance_num);
+			if (obj_it != Intrinsic_motions.end())
 			{
-				Assertion(intrinsic_it->is_ship, "This code path is only for ship rotations!  See the comments associated with the model_do_intrinsic_rotations function!");
+				Assertion(obj_it->second.is_object, "Inconsistent intrinsic motion: an object's motion is not flagged as belonging to an object!");
 
-				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
-
-				// Now update the angles in the submodels
-				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
-
-				// once we've handled this one ship, we're done
-				break;
+				// update the submodels
+				model_do_intrinsic_motions_sub(&obj_it->second);
 			}
 		}
 	}
-	// we are handling all non-ships
+	// we are handling all non-objects (so basically just skyboxes)
 	else
 	{
-		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
+		for (auto &pair: Intrinsic_motions)
 		{
-			if (!intrinsic_it->is_ship)
+			if (!pair.second.is_object)
 			{
-				// Just as in ship_model_update_instance: first clear all the angles in the model to zero
-				model_clear_submodel_instances(intrinsic_it->model_instance_num);
-
-				// Now update the angles in the submodels
-				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
+				// update the submodels
+				model_do_intrinsic_motions_sub(&pair.second);
 			}
 		}
 	}
 }
 
-void model_do_children_look_at(polymodel * pm, int mn)
+void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 {
-	while ( mn >= 0 ) {
-		submodel_look_at(pm, mn);
-		if (pm->submodel[mn].first_child >-1) { 
-			model_do_children_look_at(pm, pm->submodel[mn].first_child);
-		}
-		mn = pm->submodel[mn].next_sibling;
+	Assert(pm->id == pmi->model_num);
+
+	for (int i = 0; i < pm->n_models; ++i) {
+		pmi->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
 	}
 }
-
-void model_do_look_at(int pn)
-{
-	polymodel * pm;
-	pm = model_get(pn);
-	int mn = pm->detail[0];
-	model_do_children_look_at(pm,mn);
-}
-
-// Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity
-void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num)
-{
-	vec3d axis;
-	vec3d *mpoint1, *mpoint2;
-	vec3d p1, v1, p2, v2, int1;
-
-	polymodel *pm = model_get(model_num);
-	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
-	Assert(sii);
-
-	mpoint1 = NULL;
-	mpoint2 = NULL;
-
-	// find 2 fixed points in submodel RF
-	// these will be rotated to about the axis an angle of 0 and PI and we'll find the intersection of the
-	// two lines to find a point on the axis
-	if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_X) {
-		axis = vmd_x_vector;
-		mpoint1 = &vmd_y_vector;
-		mpoint2 = &vmd_z_vector;
-	} else if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_Y) {
-		mpoint1 = &vmd_x_vector;
-		axis = vmd_z_vector;		// rotation about y is a change in heading (p,b,h), so we need z
-		mpoint2 = &vmd_z_vector;
-	} else if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_Z) {
-		mpoint1 = &vmd_x_vector;
-		mpoint2 = &vmd_y_vector;
-		axis = vmd_y_vector;		// rotation about z is a change in bank (p,b,h), so we need y
-	} else {
-		// must be one of these axes or submodel_rot_hit is incorrectly set
-		Int3();
-	}
-
-	// copy submodel angs
-	angles copy_angs = pm->submodel[submodel_num].angs;
-
-	// find two points rotated into model RF when angs set to 0
-	vm_vec_copy_scale((vec3d*)&pm->submodel[submodel_num].angs, &axis, 0.0f);
-	model_find_world_point(&p1, mpoint1, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_find_world_point(&p2, mpoint2, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-
-	// find two points rotated into model RF when angs set to PI
-	vm_vec_copy_scale((vec3d*)&pm->submodel[submodel_num].angs, &axis, PI);
-	model_find_world_point(&v1, mpoint1, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_find_world_point(&v2, mpoint2, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-
-	// reset submodel angs
-	pm->submodel[submodel_num].angs = copy_angs;
-
-	// find direction vectors of the two lines
-	vm_vec_sub2(&v1, &p1);
-	vm_vec_sub2(&v2, &p2);
-
-	// find the intersection of the two lines
-	float s, t;
-	fvi_two_lines_in_3space(&p1, &v1, &p2, &v2, &s, &t);
-
-	// find the actual intersection points
-	vm_vec_scale_add(&int1, &p1, &v1, s);
-
-	// set flag to init
-	sii->pt_on_axis = int1;
-	sii->axis_set = 1;
-}
-
 
 // Adds an electrical arcing effect to a submodel
-void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color, float width )
 {
-	polymodel * pm;
-
-	pm = model_get(model_num);
+	Assert(pm->id == pmi->model_num);
 
 	if ( sub_model_num == -1 )	{
 		sub_model_num = pm->detail[0];
@@ -5061,14 +5171,39 @@ void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int a
 
 	if ( sub_model_num < 0 ) return;
 	if ( sub_model_num >= pm->n_models ) return;
-	bsp_info *sm = &pm->submodel[sub_model_num];
+	auto smi = &pmi->submodel[sub_model_num];
 
-	if ( sm->num_arcs < MAX_ARC_EFFECTS )	{
-		sm->arc_type[sm->num_arcs] = (ubyte)arc_type;
-		sm->arc_pts[sm->num_arcs][0] = *v1;
-		sm->arc_pts[sm->num_arcs][1] = *v2;
-		sm->num_arcs++;
+	if ( smi->num_arcs < MAX_ARC_EFFECTS )	{
+		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
+		smi->arc_pts[smi->num_arcs][0] = *v1;
+		smi->arc_pts[smi->num_arcs][1] = *v2;
+
+		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
+			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
+			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
+			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+			smi->arc_width[smi->num_arcs] = width;
+		}
+
+		smi->num_arcs++;
 	}
+}
+
+int model_find_submodel_index(const polymodel* pm, const char* name) {
+	for (int i = 0; i < pm->n_models; i++)
+	{
+		if (!stricmp(pm->submodel[i].name, name))
+			return i;
+	}
+
+	return -1;
+}
+
+int model_find_submodel_index(int modelnum, const char *name)
+{
+	auto pm = model_get(modelnum);
+
+	return model_find_submodel_index(pm, name);
 }
 
 // function to return an index into the docking_bays array which matches the criteria passed
@@ -5076,11 +5211,18 @@ void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int a
 // Goober5000 - now finds more than one dockpoint of this type
 int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
-	int i;
-	polymodel *pm;
+	polymodel* pm;
 
-	// get model and make sure it has dockpoints
 	pm = model_get(modelnum);
+
+	return model_find_dock_index(pm, dock_type, index_to_start_at);
+}
+
+int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start_at)
+{
+	int i;
+
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5098,13 +5240,20 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 // function to return an index into the docking_bays array which matches the string passed
 // Fred uses strings to identify docking positions.  This function also accepts generic strings
 // so that a desginer doesn't have to know exact names if building a mission from hand.
-int model_find_dock_name_index( int modelnum, char *name )
+int model_find_dock_name_index(int modelnum, const char* name)
+{
+	polymodel* pm;
+	
+	pm = model_get(modelnum);
+
+	return model_find_dock_name_index(pm, name);
+}
+
+int model_find_dock_name_index(const polymodel* pm, const char* name)
 {
 	int i;
-	polymodel *pm;
 
-	// get model and make sure it has dockpoints
-	pm = model_get(modelnum);
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5113,7 +5262,7 @@ int model_find_dock_name_index( int modelnum, char *name )
 	for(i = 0; i < Num_dock_type_names; i++)
 	{
 		if(!stricmp(name, Dock_type_names[i].name)) {
-			return model_find_dock_index(modelnum, Dock_type_names[i].def);
+			return model_find_dock_index(pm, Dock_type_names[i].def);
 		}
 	}
 	/*
@@ -5299,8 +5448,7 @@ void swap_bsp_defpoints(ubyte * p)
 
 void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 {
-	int i, nv;
-	model_tmap_vert *verts;
+	uint i, nv;
 	vec3d * normal = vp(p+8);	//tigital
 	vec3d * center = vp(p+20);
 	float radius = INTEL_FLOAT( &fl(p+32) );
@@ -5314,52 +5462,44 @@ void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
 	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
 
-	nv = INTEL_INT( w(p+36));		//tigital
-		w(p+36) = nv;
+	nv = INTEL_INT( uw(p+36));		//tigital
+		uw(p+36) = nv;
 
 	int tmap_num = INTEL_INT( w(p+40) );	//tigital
 		w(p+40) = tmap_num;
 
-	if ( nv < 0 ) return;
-
-	verts = (model_tmap_vert *)(p+44);
-	for (i=0;i<nv;i++){
-		verts[i].vertnum = INTEL_SHORT( verts[i].vertnum );
-		verts[i].normnum = INTEL_SHORT( verts[i].normnum );
-		verts[i].u = INTEL_FLOAT( &verts[i].u );
-		verts[i].v = INTEL_FLOAT( &verts[i].v );
+	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
+	for (i = 0; i < nv; i++) {
+		verts[i].vertnum = INTEL_SHORT(verts[i].vertnum);	//tigital
+		verts[i].normnum = INTEL_SHORT(verts[i].normnum);	
+		verts[i].u = INTEL_FLOAT(&verts[i].u);
+		verts[i].v = INTEL_FLOAT(&verts[i].v);
 	}
+}
 
-	if ( pm->version < 2003 )	{
-		// Set the "normal_point" part of field to be the center of the polygon
-		vec3d center_point;
-		vm_vec_zero( &center_point );
+void swap_bsp_tmap2poly(polymodel* pm, ubyte* p)
+{
+	uint i, nv;
+	model_tmap_vert* verts;
 
-		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
-		}
+	nv = INTEL_INT(uw(p + TMAP2_NVERTS)); // tigital
+	uw(p + TMAP2_NVERTS) = nv;
 
-		center_point.xyz.x /= nv;
-		center_point.xyz.y /= nv;
-		center_point.xyz.z /= nv;
+	int tmap_num = INTEL_INT(w(p + TMAP2_TEXNUM)); // tigital
+	w(p + TMAP2_TEXNUM) = tmap_num;
 
-		*vp(p+20) = center_point;
-
-		float rad = 0.0f;
-
-		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i].vertnum] );
-			if ( dist > rad )	{
-				rad = dist;
-			}
-		}
-		fl(p+32) = rad;
+	verts = (model_tmap_vert*)(p + TMAP2_VERTS);
+	for (i = 0; i < nv; i++) {
+		verts[i].vertnum = INTEL_INT(verts[i].vertnum);
+		verts[i].normnum = INTEL_INT(verts[i].normnum);
+		verts[i].u = INTEL_FLOAT(&verts[i].u);
+		verts[i].v = INTEL_FLOAT(&verts[i].v);
 	}
 }
 
 void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 {
-	int i, nv;
+	uint i, nv;
 	short *verts;
 	vec3d * normal = vp(p+8);	//tigital
 	vec3d * center = vp(p+20);
@@ -5375,8 +5515,8 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
 	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
 
-	nv = INTEL_INT( w(p+36));		//tigital
-		w(p+36) = nv;
+	nv = INTEL_INT( uw(p+36));		//tigital
+		uw(p+36) = nv;
         
 	if ( nv < 0 ) return;
 
@@ -5412,7 +5552,29 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	}
 }
 
-void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
+void swap_bsp_sortnorm2(polymodel* pm, ubyte* p)
+{
+	int frontlist = INTEL_INT(w(p + 8));	//tigital
+	int backlist = INTEL_INT(w(p + 12));
+
+	w(p + 8) = frontlist;
+	w(p + 12) = backlist;
+
+	vec3d* bmin = vp(p + 8);	//tigital
+	vec3d* bmax = vp(p + 20);
+
+	bmin->xyz.x = INTEL_FLOAT(&bmin->xyz.x);
+	bmin->xyz.y = INTEL_FLOAT(&bmin->xyz.y);
+	bmin->xyz.z = INTEL_FLOAT(&bmin->xyz.z);
+	bmax->xyz.x = INTEL_FLOAT(&bmax->xyz.x);
+	bmax->xyz.y = INTEL_FLOAT(&bmax->xyz.y);
+	bmax->xyz.z = INTEL_FLOAT(&bmax->xyz.z);
+
+	if (backlist) swap_bsp_data(pm, p + backlist);
+	if (frontlist) swap_bsp_data(pm, p + frontlist);
+}
+
+void swap_bsp_sortnorm( polymodel * pm, ubyte * p )
 {
 	int frontlist = INTEL_INT( w(p+36) );	//tigital
 	int backlist = INTEL_INT( w(p+40) );
@@ -5457,7 +5619,7 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 }
 #endif // BIG_ENDIAN
 
-void swap_bsp_data( polymodel * pm, void *model_ptr )
+void swap_bsp_data( polymodel * pm, void * model_ptr )
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	ubyte *p = (ubyte *)model_ptr;
@@ -5470,7 +5632,8 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 	w(p) = chunk_type;
 	w(p+4) = chunk_size;
 
-	while (chunk_type != OP_EOF) {
+	bool end = chunk_type == OP_EOF;
+	while (!end) {
 		switch (chunk_type) {
 			case OP_EOF:
 				return;
@@ -5484,7 +5647,11 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 				swap_bsp_tmappoly(pm, p);
 				break;
 			case OP_SORTNORM:	
-				swap_bsp_sortnorms(pm, p);
+				swap_bsp_sortnorm(pm, p);
+				break;
+			case OP_SORTNORM2:
+				swap_bsp_sortnorm2(pm, p);
+				end = true; // should not continue after this chunk
 				break;
 			case OP_BOUNDBOX:
 				min = vp(p+8);
@@ -5495,6 +5662,10 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 				max->xyz.x = INTEL_FLOAT( &max->xyz.x );
 				max->xyz.y = INTEL_FLOAT( &max->xyz.y );
 				max->xyz.z = INTEL_FLOAT( &max->xyz.z );
+				break;
+			case OP_TMAP2POLY:
+				swap_bsp_tmap2poly(pm, p);
+				end = true; // should not continue after this chunk
 				break;
 			default:
 				mprintf(( "Bad chunk type %d, len=%d in modelread:swap_bsp_data\n", chunk_type, chunk_size ));
@@ -5507,22 +5678,30 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 		chunk_size = INTEL_INT( w(p+4) );
 		w(p) = chunk_type;
 		w(p+4) = chunk_size;
+
+		if (chunk_type == OP_EOF)
+			end = true;
 	}
 
 	return;
+#else
+(void)pm;
+(void)model_ptr;
 #endif
 }
 
-void swap_sldc_data(ubyte *buffer)
+void swap_sldc_data(ubyte* buffer)
 {
+	//ShivanSpS - Changed type char for a type int for SLC2
 #if BYTE_ORDER == BIG_ENDIAN
-	char *type_p = (char *)(buffer);
-	int *size_p = (int *)(buffer+1);
+	int* type_p = (int*)(buffer);
+	int* size_p = (int*)(buffer + 4);
 	*size_p = INTEL_INT(*size_p);
+	*type_p = INTEL_INT(*type_p);
 
 	// split and polygons
-	vec3d *minbox_p = (vec3d*)(buffer+5);
-	vec3d *maxbox_p = (vec3d*)(buffer+17);
+	vec3d* minbox_p = (vec3d*)(buffer + 8);
+	vec3d* maxbox_p = (vec3d*)(buffer + 20);
 
 	minbox_p->xyz.x = INTEL_FLOAT(&minbox_p->xyz.x);
 	minbox_p->xyz.y = INTEL_FLOAT(&minbox_p->xyz.y);
@@ -5534,18 +5713,18 @@ void swap_sldc_data(ubyte *buffer)
 
 
 	// split
-	unsigned int *front_offset_p = (unsigned int*)(buffer+29);
-	unsigned int *back_offset_p = (unsigned int*)(buffer+33);
+	unsigned int* front_offset_p = (unsigned int*)(buffer + 32);
+	unsigned int* back_offset_p = (unsigned int*)(buffer + 36);
 
 	// polygons
-	unsigned int *num_polygons_p = (unsigned int*)(buffer+29);
+	unsigned int* num_polygons_p = (unsigned int*)(buffer + 32);
 
-	unsigned int *shld_polys = (unsigned int*)(buffer+33);
+	unsigned int* shld_polys = (unsigned int*)(buffer + 36);
 
 	if (*type_p == 0) // SPLIT
 	{
-			*front_offset_p = INTEL_INT(*front_offset_p);
-			*back_offset_p = INTEL_INT(*back_offset_p);
+		*front_offset_p = INTEL_INT(*front_offset_p);
+		*back_offset_p = INTEL_INT(*back_offset_p);
 	}
 	else
 	{
@@ -5553,8 +5732,10 @@ void swap_sldc_data(ubyte *buffer)
 		for (unsigned int i = 0; i < *num_polygons_p; i++)
 		{
 			shld_polys[i] = INTEL_INT(shld_polys[i]);
-		}			
+		}
 	}
+#else
+	(void)buffer;
 #endif
 }
 
@@ -5568,6 +5749,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->glow_bitmap = -1;
 	gpo->glow_neb_bitmap = -1;
 	gpo->is_on = true;
+	gpo->default_off = false;
 	gpo->type_override = false;
 	gpo->on_time_override = false;
 	gpo->off_time_override = false;
@@ -5590,6 +5772,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->rotating = false;
 	gpo->rotation_axis = vmd_zero_vector;
 	gpo->rotation_speed = 0.0f;
+	gpo->intensity = 1.0f;
 }
 
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name)
@@ -5640,6 +5823,10 @@ void parse_glowpoint_table(const char *filename)
 				stuff_boolean(&gpo.is_on);
 			}
 
+			if (optional_string("$Default Off:")) {
+				stuff_boolean(&gpo.default_off);
+			}
+
 			if (optional_string("$Displacement time:")) {
 				stuff_int(&gpo.disp_time);
 				gpo.disp_time_override = true;
@@ -5661,12 +5848,12 @@ void parse_glowpoint_table(const char *filename)
 
 				gpo.glow_bitmap_override = true;
 
-				if (stricmp(glow_texture_name, "none")) {
+				if (stricmp(glow_texture_name, "none") != 0) {
 					gpo.glow_bitmap = bm_load(glow_texture_name);
 
 					if (gpo.glow_bitmap < 0)
 					{
-						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint present '%s'\n", glow_texture_name, gpo.name);
+						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint preset '%s'\n", glow_texture_name, gpo.name);
 					}
 					else
 					{
@@ -5734,6 +5921,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("+light")) {
 				gpo.is_lightsource = true;
+
+				if (optional_string("$Light intensity:")) {
+					stuff_float(&gpo.intensity);
+				}
 
 				if (optional_string("$Light radius multiplier:")) {
 					stuff_float(&gpo.radius_multi);
@@ -5847,33 +6038,32 @@ void model_subsystem::reset()
     memset(crewspot, 0, sizeof(crewspot));
     turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
     
-    for (auto it = std::begin(turret_matrix.a1d); it != std::end(turret_matrix.a1d); ++it)
-        *it = 0.0f;
-
     turret_fov = 0;
-    turret_max_fov = 0;
-    turret_y_fov = 0;
+    turret_max_fov = 1;
+    turret_base_fov = -1;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
     turret_gun_sobj = 0;
     turret_turning_rate = 0;
-    turret_base_rotation_snd = 0;
+    turret_base_rotation_snd = gamesnd_id();
     turret_base_rotation_snd_mult = 0;
-    turret_gun_rotation_snd = 0;
+    turret_gun_rotation_snd = gamesnd_id();
     turret_gun_rotation_snd_mult = 0;
 
-    alive_snd = 0;
-    dead_snd = 0;
-    rotation_snd = 0;
+    alive_snd = gamesnd_id();
+    dead_snd = gamesnd_id();
+    rotation_snd = gamesnd_id();
 
     engine_wash_pointer = NULL;
-    turn_rate = 0; 
+
     weapon_rotation_pbank = 0;
-    stepped_rotation = NULL;
+    stepped_rotation.reset();
+    stepped_translation.reset();
 
     awacs_intensity = 0.0f;
     awacs_radius = 0.0f;
+    scan_time = -1;
 
     for (auto it = std::begin(primary_banks); it != std::end(primary_banks); ++it)
         *it = 0;
@@ -5885,9 +6075,6 @@ void model_subsystem::reset()
         *it = 0;
 
     path_num = 0;
-
-    n_triggers = 0;
-    triggers = NULL;
 
     turret_reset_delay = 0;
 
@@ -5903,4 +6090,167 @@ void model_subsystem::reset()
 
     turret_max_bomb_ownage = 0;
     turret_max_target_ownage = 0;
+
+	beam_warmdown_program = actions::ProgramSet();
+}
+
+model_subsystem::model_subsystem() {
+	reset();
+}
+
+uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
+{
+	//ShivanSpS SLDC must be converted to SLC2 in order to be used by shield collision system
+	//Convert SLDC to SLC2
+	uint node_size, node_type_int, new_tree_size = 0, count = 0;
+	char node_type_char;
+
+	//Process the SLDC tree to the end
+	while (count < tree_size) {
+		//Save Node type and size
+		memcpy(&node_type_char, sldc, 1);
+		memcpy(&node_size, sldc + 1, 4);
+
+		//Convert Node type to int
+		node_type_int = (int)node_type_char;
+
+		//Copy the node type and new node size, move pointers
+		memcpy(slc2, &node_type_int, 4);
+		node_size += 3;
+		memcpy(slc2 + 4, &node_size, 4);
+		node_size -= 3;
+		slc2 += 8;
+		sldc += 5;
+
+
+		//Copy Vectors
+		memcpy(slc2, sldc, 24);
+		slc2 += 24;
+		sldc += 24;
+
+		if (node_type_char == 0) {
+			//Front and back offsets must be adjusted
+			uint front, back, newback = 0;
+			ubyte* p;
+
+			p = sldc - 29;
+			memcpy(&back, p + 33, 4);
+
+			//I need to find the new distance to back.
+			while (p < sldc + back - 29) {
+				uint ns;
+				memcpy(&ns, p + 1, 4);
+				p += ns;
+				newback += ns + 3;
+
+			}
+			//Copy offsets
+			front = node_size + 3;
+			memcpy(slc2, &front, 4); //Front is always this node size+3;
+			memcpy(slc2 + 4, &newback, 4);
+
+			slc2 += 8;
+			sldc += 8;
+		}
+		else {
+			//Copy the remaining data on the node
+			memcpy(slc2, sldc, node_size - 29);
+
+			//Move pointers
+			slc2 += node_size - 29;
+			sldc += node_size - 29;
+		}
+		//Count the new tree size and move the counter
+		count += node_size;
+		new_tree_size += node_size + 3;
+	}
+
+	//return the SLC2 tree size
+	return new_tree_size;
+}
+
+// if bsp_out is NULL then we just calculate new size
+uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
+{
+	//ShivanSpS 
+	ubyte* end;
+	uint copied = 0;
+	end = bsp_in + bsp_size;
+
+	uint bsp_chunk_type, bsp_chunk_size;
+	do {
+		//Read Chunk type and size
+		memcpy(&bsp_chunk_type, bsp_in, 4);
+
+		//Chunk type 0 is EOF, but the size is read as 0, it needs to be adjusted
+		if (bsp_chunk_type == 0) {
+			bsp_chunk_size = 4;
+		}
+		else {
+			memcpy(&bsp_chunk_size, bsp_in + 4, 4);
+		}
+
+		//Chunk size validation, if fails change it to copy the remaining data in chain
+		auto max_size = end - bsp_in;
+		if (bsp_chunk_size > max_size) {
+			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<uint>(max_size));
+			bsp_chunk_size = static_cast<uint>(max_size);
+		}
+
+		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));
+
+		//DEFPOINTS is the only bsp data chunk that could be unaligned
+		if (bsp_chunk_type == 1) {
+			//if the size is not divisible by 4 align it, otherwise copy it.
+			if ((bsp_chunk_size % 4) != 0) {
+				//mprintf(("BSP DEFPOINTS DATA ALIGNED.\n"));
+				//Get the new size
+				uint newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
+
+				if (bsp_out) {
+					//Copy the entire chunk to dest
+					memcpy(bsp_out, bsp_in, bsp_chunk_size);
+					//Write the new chunk size on dest
+					memcpy(bsp_out + 4, &newsize, 4);
+					//The the position of vertex data
+					uint vertex_offset;
+					memcpy(&vertex_offset, bsp_in + 16, 4);
+					//Move vertex data to the back of the chunk
+					memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
+					vertex_offset += (newsize - bsp_chunk_size);
+					//Write new vertex offset
+					memcpy(bsp_out + 16, &vertex_offset, 4);
+					//Move pointers
+					bsp_out += newsize;
+				}
+
+				//Move pointers
+				bsp_in += bsp_chunk_size;
+				copied += newsize;
+			}
+			else {
+				//if aligned just copy it
+				if (bsp_out) {
+					memcpy(bsp_out, bsp_in, bsp_chunk_size);
+					bsp_out += bsp_chunk_size;
+				}
+
+				bsp_in += bsp_chunk_size;
+				copied += bsp_chunk_size;
+			}
+		}
+		else {
+			//If the chunk is not a defpoint just copy it
+			if (bsp_out) {
+				memcpy(bsp_out, bsp_in, bsp_chunk_size);
+				bsp_out += bsp_chunk_size;
+			}
+
+			bsp_in += bsp_chunk_size;
+			copied += bsp_chunk_size;
+		}
+	} while (bsp_in < end);
+
+	//Returns the size of the aligned bsp_data
+	return copied;
 }

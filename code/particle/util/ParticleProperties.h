@@ -1,10 +1,13 @@
 #pragma once
 
 #include "particle/particle.h"
-#include "particle/util/RandomRange.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace util {
+
+enum class RotationType { DEFAULT, RANDOM, SCREEN_ALIGNED };
+
 /**
  * @brief The creation properties of a particle
  *
@@ -13,12 +16,25 @@ namespace util {
  * @ingroup particleUtils
  */
 class ParticleProperties {
- public:
-	int m_bitmap = -1;
-	UniformFloatRange m_radius;
+private:
+	/**
+	 * @brief Choose particle from bitmap list
+	 */
+	int chooseBitmap();
 
+ public:
+
+	SCP_vector<int> m_bitmap_list;
+	::util::UniformRange<size_t> m_bitmap_range;
+	::util::UniformFloatRange m_radius;
+	bool m_parentLifetime = false;
+	bool m_parentScale = false;
 	bool m_hasLifetime = false;
-	UniformFloatRange m_lifetime;
+	::util::UniformFloatRange m_lifetime;
+	::util::UniformFloatRange m_length;
+	int m_size_lifetime_curve;
+	int m_vel_lifetime_curve;
+	RotationType m_rotation_type;
 
 	ParticleProperties();
 
@@ -33,7 +49,14 @@ class ParticleProperties {
 	 * @param info The base values of the particle. Some values will be overwritten by this function
 	 * @return The created particle
 	 */
-	WeakParticlePtr createParticle(particle_info& info);
+	void createParticle(particle_info& info);
+
+	/**
+	 * @brief Creates a particle with the stored values
+	 * @param info The base values of the particle. Some values will be overwritten by this function
+	 * @return The created particle
+	 */
+	WeakParticlePtr createPersistentParticle(particle_info& info);
 
 	void pageIn();
 };

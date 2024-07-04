@@ -22,7 +22,10 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_portfwd.h"
+#include "hud/hudconfig.h"
+#include "network/multi_fstracker.h"
+#include "network/multi_mdns.h"
 
 
 // ----------------------------------------------------------------------------------------------------------
@@ -161,7 +164,7 @@ int Multi_quit_game = 0;
 // general quit function, with optional notification, error, and winsock error codes
 int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 {
-	int ret_val,quit_already;
+	int ret_val;
 
 	// check for reentrancy
 	if(Multi_quit_game){
@@ -175,8 +178,6 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 
 	// reentrancy
 	Multi_quit_game = 1;
-
-	quit_already = 0;
 
 	// reset my control info so that I don't continually do whacky stuff.  This is ugly
 	//player_control_reset_ci( &Player->ci );
@@ -201,36 +202,25 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 			return 0;
 		}
 
-		// see if we should be prompting the host for confirmation
-		if((prompt==PROMPT_HOST || prompt==PROMPT_ALL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){
-			int p_flags;
+		// see if we should be prompting for confirmation
+		if (prompt != PROMPT_NONE) {
+			int p_flags = PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_BODY_BIG;
 
-			p_flags = PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_BODY_BIG;
-			if ( Game_mode & GM_IN_MISSION )
+			if ( (Game_mode & GM_IN_MISSION) && ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || popupdead_is_active()) ) {
 				p_flags |= PF_RUN_STATE;
+			}
 
-			ret_val = popup(p_flags,2,POPUP_CANCEL,POPUP_OK,XSTR("Warning - quitting will end the game for all players!",647));
+			if (prompt == PROMPT_HOST) {
+				ret_val = popup(p_flags, 2, POPUP_CANCEL, POPUP_OK, XSTR("Warning - quitting will end the game for all players!", 647));
+			} else {
+				ret_val = popup(p_flags, 2, POPUP_NO, POPUP_YES, XSTR("Are you sure you want to quit?", 648));
+			}
 
-			// check for host cancel
-			if((ret_val == 0) || (ret_val == -1)){
+			// check for cancel
+			if ( (ret_val == 0) || (ret_val == -1) ) {
 				Multi_quit_game = 0;
 				return 0;
 			}
-
-			// set this so that under certain circumstances, we don't call the popup below us as well
-			quit_already = 1;
-		}
-
-		// see if we should be prompting the client for confirmation
-		if((prompt==PROMPT_CLIENT || prompt==PROMPT_ALL) && !quit_already){
-			ret_val = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_BODY_BIG,2,POPUP_NO,POPUP_YES,XSTR("Are you sure you want to quit?",648));
-
-			// check for host cancel
-			if((ret_val == 0) || (ret_val == -1)){
-				Multi_quit_game = 0;
-				return 0;
-			}
-			quit_already = 1;
 		}
 
 		// if i'm the server of the game, tell all clients that i'm leaving, then wait
@@ -287,10 +277,10 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 				multi_display_chat_msg(XSTR("<The server has ended the game>",650),0,0);
 
 				// shut our reliable socket to the server down
-				psnet_rel_close_socket(&Net_player->reliable_socket);
-				Net_player->reliable_socket = INVALID_SOCKET;
+				psnet_rel_close_socket(Net_player->reliable_socket);
+				Net_player->reliable_socket = PSNET_INVALID_SOCKET;
 
-				// remove our do-notworking flag
+				// remove our do-networking flag
 				Net_player->flags &= ~(NETINFO_FLAG_DO_NETWORKING);
 				
 				Multi_quit_game = 0;
@@ -322,6 +312,8 @@ void multi_endgame_cleanup()
 {
 	int idx;
 
+	hud_config_as_player();
+
 	send_leave_game_packet();			
 
 	// flush all outgoing io, force all packets through
@@ -348,8 +340,8 @@ void multi_endgame_cleanup()
 
 	// 11/18/98 - DB, changed the above to kill all sockets. Its the safest thing to do
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
-		Net_players[idx].reliable_socket = INVALID_SOCKET;
+		psnet_rel_close_socket(Net_players[idx].reliable_socket);
+		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 	}
 
 	// set the game quitting flag in our local netgame info - this will _insure_ that even if we miss a packet or
@@ -373,19 +365,30 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
-	// handle game disconnect from FS2NetD (NOTE: must be done *before* standalone is reset!!)
-	if ( MULTI_IS_TRACKER_GAME && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
-		fs2netd_gameserver_disconnect();
-	}
-
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
 	} else {		
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;		
 
+		// log game out of tracker
+		if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
+			multi_fs_tracker_logout();
+		}
+
+		// stop port forwarding
+		multi_port_forward_close();
+
+		// stop mdns
+		multi_mdns_service_close();
+
 		// if we're in Parallax Online mode, log back in there	
-		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);		
+		if (Multi_options_g.pxo) {
+			Assert(Multi_options_g.protocol == NET_TCP);
+			gameseq_post_event(GS_EVENT_PXO);
+		} else {
+			gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
+		}
 
 		// if we have an error code, bring up the discon popup						
 		if ( ((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1)) && !(Game_mode & GM_STANDALONE_SERVER) ) {
@@ -476,7 +479,7 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 				strcat_s(err_msg,XSTR("Unable to create ingame join player ship",659));
 				break;
 			case MULTI_END_ERROR_INGAME_BOGUS :
-				strcat_s(err_msg,XSTR("Recevied bogus packet data while ingame joining",660));
+				strcat_s(err_msg,XSTR("Received bogus packet data while ingame joining",660));
 				break;
 			case MULTI_END_ERROR_STRANS_FAIL :
 				strcat_s(err_msg,XSTR("Server transfer failed (obsolete)",661));
@@ -493,12 +496,11 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 			case MULTI_END_ERROR_WAVE_COUNT:
 				strcat_s(err_msg,XSTR("The player wings Alpha, Beta, Gamma, and Zeta must have only 1 wave.  One of these wings currently has more than 1 wave.", 987));
 				break;
-			// Karajorma - both of these should really be replaced with new strings in strings.tbl but for now this one has much the same meaning
 			case MULTI_END_ERROR_TEAM0_EMPTY:
-				strcat_s(err_msg,XSTR("All players from team 1 have left the game", 664));
+				strcat_s(err_msg,XSTR("All players from team 1 have left the game", 1645));
 				break;
 			case MULTI_END_ERROR_TEAM1_EMPTY:
-				strcat_s(err_msg,XSTR("All players from team 2 have left the game", 664));
+				strcat_s(err_msg,XSTR("All players from team 2 have left the game", 1646));
 				break;
 			case MULTI_END_ERROR_CAPTAIN_LEFT:
 				strcat_s(err_msg,XSTR("Team captain(s) have left the game, aborting...",664));

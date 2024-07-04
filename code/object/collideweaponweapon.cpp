@@ -10,10 +10,13 @@
 
 
 #include "freespace.h"
+#include "math/curve.h"
 #include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/vecmath.h"
 #include "ship/ship.h"
 #include "stats/scoring.h"
 #include "weapon/weapon.h"
@@ -54,57 +57,79 @@ int collide_weapon_weapon( obj_pair * pair )
 	A_radius = A->radius;
 	B_radius = B->radius;
 
+	float A_time_alive = f2fl(Missiontime - wpA->creation_time);
+	float B_time_alive = f2fl(Missiontime - wpB->creation_time);
+
 	if (wipA->weapon_hitpoints > 0) {
-		if (!(wipA->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
+		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
-			if ( (wipA->max_lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if ( (wipA->lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
 	if (wipB->weapon_hitpoints > 0) {
-		if (!(wipB->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
+		if (!(wipB->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
+
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
-			if ( (wipB->max_lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if ( (wipB->lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
 	//	Rats, do collision detection.
 	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
-		Script_system.SetHookObjects(4, "Weapon", A, "WeaponB", B, "Self",A, "Object", B);
-		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
-		
-		//Should be reversed
-		Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
-		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
+		bool a_override = false, b_override = false;
 
-		if(!a_override && !b_override)
+		if (scripting::hooks::OnWeaponCollision->isActive()) {
+			a_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+					scripting::hook_param("Object", 'o', B),
+					scripting::hook_param("Weapon", 'o', A),
+					scripting::hook_param("WeaponB", 'o', B),
+					scripting::hook_param("Hitpos", 'o', B->pos)));
+			//Yes, this should be reversed
+			b_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+					scripting::hook_param("Object", 'o', A),
+					scripting::hook_param("Weapon", 'o', B),
+					scripting::hook_param("WeaponB", 'o', A),
+					scripting::hook_param("Hitpos", 'o', A->pos)));
+		}
+
+		// damage calculation should not be done on clients, the server will tell the client version of the bomb when to die
+		if(!a_override && !b_override && !MULTIPLAYER_CLIENT)
 		{
 			float aDamage = wipA->damage;
+			if (wipA->damage_curve_idx >= 0)
+				aDamage *= Curves[wipA->damage_curve_idx].GetValue(A_time_alive / wipA->lifetime);
 			if (wipB->armor_type_idx >= 0)
-				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f);
+				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f, false);
 
 			float bDamage = wipB->damage;
+			if (wipB->damage_curve_idx >= 0)
+				bDamage *= Curves[wipB->damage_curve_idx].GetValue(B_time_alive / wipB->lifetime);
 			if (wipA->armor_type_idx >= 0)
-				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f);
+				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f, false);
 
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
-						wpA->lifeleft = 0.01f;
-						wpB->lifeleft = 0.01f;
+						wpA->lifeleft = 0.001f;
+						wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+						wpB->lifeleft = 0.001f;
+						wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					} else {
 						A->hull_strength -= bDamage;
@@ -120,29 +145,35 @@ int collide_weapon_weapon( obj_pair * pair )
 						}
 						
 						if (A->hull_strength < 0.0f) {
-							wpA->lifeleft = 0.01f;
+							wpA->lifeleft = 0.001f;
+							wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 							wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 						if (B->hull_strength < 0.0f) {
-							wpB->lifeleft = 0.01f;
+							wpB->lifeleft = 0.001f;
+							wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 					}
 				} else {
 					A->hull_strength -= bDamage;
-					wpB->lifeleft = 0.01f;
+					wpB->lifeleft = 0.001f;
+					wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					if (A->hull_strength < 0.0f) {
-						wpA->lifeleft = 0.01f;
+						wpA->lifeleft = 0.001f;
+						wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
-				wpA->lifeleft = 0.01f;
+				wpA->lifeleft = 0.001f;
+				wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				if (B->hull_strength < 0.0f) {
-					wpB->lifeleft = 0.01f;
+					wpB->lifeleft = 0.001f;
+					wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				}
 			}
@@ -168,19 +199,30 @@ int collide_weapon_weapon( obj_pair * pair )
 			}
 		}
 
+		if (!scripting::hooks::OnWeaponCollision->isActive()) {
+			return 1;
+		}
+
 		if(!(b_override && !a_override))
 		{
-			Script_system.SetHookObjects(4, "Weapon", A, "WeaponB", B, "Self",A, "Object", B);
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, A, wpA->weapon_info_index);
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+					scripting::hook_param("Object", 'o', B),
+					scripting::hook_param("Weapon", 'o', A),
+					scripting::hook_param("WeaponB", 'o', B),
+					scripting::hook_param("Hitpos", 'o', B->pos)));
 		}
 		else
 		{
-			//Should be reversed
-			Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B, wpB->weapon_info_index);
+			// Yes, this should be reversed.
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+					scripting::hook_param("Object", 'o', A),
+					scripting::hook_param("Weapon", 'o', B),
+					scripting::hook_param("WeaponB", 'o', A),
+					scripting::hook_param("Hitpos", 'o', A->pos)));
 		}
 
-		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self", "Object");
 		return 1;
 	}
 

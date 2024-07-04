@@ -1,0 +1,34 @@
+
+in vec4 vertPosition;
+in vec3 vertNormal;
+
+out vec4 fragImpactUV;
+out float fragNormOffset;
+
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+
+layout (std140) uniform genericData {
+	mat4 shieldModelViewMatrix;
+	mat4 shieldProjMatrix;
+
+	vec3 hitNormal;
+	int srgb;
+
+	vec4 color;
+
+	int shieldMapIndex;
+};
+
+void main()
+{
+	gl_Position = projMatrix * modelViewMatrix * vertPosition;
+	//vec3 normal = normalize(mat3(modelViewMatrix) * vertNormal);
+	fragNormOffset = dot(hitNormal, vertNormal);
+	fragImpactUV = shieldProjMatrix * shieldModelViewMatrix * vertPosition;
+	fragImpactUV += 1.0f;
+	fragImpactUV *= 0.5f;
+}

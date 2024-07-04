@@ -9,17 +9,20 @@ class VideoDecoder: public FFMPEGStreamDecoder<VideoFrame> {
  private:
 	int m_frameId;
 	SwsContext* m_swsCtx;
+	AVPixelFormat m_destinationFormat;
 
 	void convertAndPushPicture(const AVFrame* frame);
 
  public:
-	explicit VideoDecoder(DecoderStatus* status);
+	explicit VideoDecoder(DecoderStatus* status, AVPixelFormat destination_fmt);
 
-	virtual ~VideoDecoder();
+	~VideoDecoder() override;
 
-	virtual void decodePacket(AVPacket* packet) SCP_OVERRIDE;
+	void decodePacket(AVPacket* packet) override;
 
-	virtual void finishDecoding() SCP_OVERRIDE;
+	void finishDecoding() override;
+
+	void flushBuffers() override;
 };
 }
 }

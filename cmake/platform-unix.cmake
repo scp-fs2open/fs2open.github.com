@@ -3,7 +3,7 @@ INCLUDE(util)
 
 MESSAGE(STATUS "Configuring UNIX specific things and stuff...")
 
-target_compile_definitions(platform INTERFACE SCP_UNIX USE_OPENAL)
+target_compile_definitions(platform INTERFACE SCP_UNIX USE_OPENAL _REENTRANT)
 
 # Set RPATH
 set(CMAKE_SKIP_BUILD_RPATH TRUE)

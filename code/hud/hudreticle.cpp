@@ -225,17 +225,20 @@ int Reticle_launch_coords[GR_NUM_RESOLUTIONS][2] = {
 static int Threat_lock_timer;				// timestamp for when to show next flashing frame for lock threat
 static int Threat_lock_frame;				// frame offset of current lock flashing warning
 
+static vertex Player_flight_cursor_offset;
+
 
 HudGaugeReticle::HudGaugeReticle():
 HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_TOPDOWN | VM_OTHER_SHIP), 255, 255, 255)
 {
+	has_autoaim_lock = false;
 }
 
 void HudGaugeReticle::initBitmaps(char *fname)
 {
 	crosshair.first_frame = bm_load_animation(fname, &crosshair.num_frames);
 	if (crosshair.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
 	}
 }
 
@@ -246,21 +249,104 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 	firepoint_size = size;
 }
 
-void HudGaugeReticle::render(float frametime)
+void HudGaugeReticle::render(float  /*frametime*/)
 {
+	if (crosshair.first_frame < 0) {
+		return;
+	}
+
+	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	int bitmap_size_x, bitmap_size_y;
+	bm_get_info(crosshair.first_frame, &bitmap_size_x, &bitmap_size_y);
+
+	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid()) {
+		ship *shipp = &Ships[Objects[Player->objnum].instance];
+		ship_weapon *swp = &shipp->weapons;
+		ai_info *aip = &Ai_info[shipp->ai_index];
+
+		if (aip->target_objnum != -1) {
+			bool autoaiming = false;
+
+			autoaiming = in_autoaim_fov(shipp, swp->current_primary_bank, &Objects[aip->target_objnum]);
+
+			if (autoaiming) {
+				if (!has_autoaim_lock && sip->autoaim_lock_snd.isValid()) {
+					snd_play(gamesnd_get_game_sound(sip->autoaim_lock_snd));
+					//snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::THREAT_FLASH)));
+				}
+				has_autoaim_lock = true;
+			}
+			else {
+				if (has_autoaim_lock && sip->autoaim_lost_snd.isValid()) {
+					snd_play(gamesnd_get_game_sound(sip->autoaim_lost_snd));
+				}
+				has_autoaim_lock = false;
+			}
+		}
+	}
+
 	setGaugeColor(HUD_C_BRIGHT);
 
-	renderBitmap(crosshair.first_frame, position[0], position[1]);
+	// the typical reticle indicating the direction of shooting
+	int shoot_reticle = 0;
+	if (has_autoaim_lock)
+		shoot_reticle = crosshair.first_frame + autoaim_frame_offset;
+	else
+		shoot_reticle = crosshair.first_frame;
+
+	// a secondary 'reticle' for distinguishing the flight cursor from the above
+	int flight_reticle = flight_cursor_frame_offset >= 0 ? crosshair.first_frame + flight_cursor_frame_offset : -1;
+
+	int mobile_reticle = flight_reticle;
+	int fixed_reticle = shoot_reticle;
+	// depending on the parameters of the ship the 'mobile' reticle may be the one indicating the shoot direction
+	if (sip->aims_at_flight_cursor) {
+		mobile_reticle = shoot_reticle;
+		fixed_reticle = flight_reticle;
+	}
+
+
+	if (fixed_reticle == shoot_reticle)
+		setGaugeColor(HUD_C_BRIGHT);
+	else
+		setGaugeColor(HUD_C_NORMAL);
+
+	if (fixed_reticle >= 0) {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+
+			// Render the shadow twice to increase visibility
+			renderBitmap(fixed_reticle, position[0] + 1, position[1] + 1);
+			renderBitmap(fixed_reticle, position[0] + 1, position[1] + 1);
+			gr_set_color_fast(&gauge_color);
+		}
+
+		renderBitmap(fixed_reticle, position[0], position[1]);
+	} else {
+		renderCircle(fl2i(base_w * 0.5f), fl2i(base_h * 0.5f), fl2i(base_h * 0.03f), false);
+	}
+
+	if (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor) {
+		if (mobile_reticle == shoot_reticle)
+			setGaugeColor(HUD_C_BRIGHT);
+		else
+			setGaugeColor(HUD_C_NORMAL);
+
+		int x = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
+		int y = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
+		unsize(&x, &y);
+		if (mobile_reticle >= 0)
+			renderBitmap(mobile_reticle, fl2i(x - base_w * 0.5f) + position[0], fl2i(y - base_h * 0.5f) + position[1]);
+		else {
+			renderCircle(x, y, fl2i(base_h * 0.03f), false);
+		}
+	}
 
 	if (firepoint_display) {
 		fp.clear();
 		getFirepointStatus();
 		
 		if (!fp.empty()) {
-			int ax, ay;
-			bm_get_info(crosshair.first_frame, &ax, &ay);
-			int centerX = position[0] + (ax / 2);
-			int centerY = position[1] + (ay / 2);
 
 			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
 				if (fpi->active == 2)
@@ -269,7 +355,9 @@ void HudGaugeReticle::render(float frametime)
 					setGaugeColor(HUD_C_NORMAL);
 				else
 					setGaugeColor(HUD_C_DIM);
-			
+
+				int centerX = position[0] + (bitmap_size_x / 2);
+				int centerY = position[1] + (bitmap_size_y / 2);
 				renderCircle((int) (centerX + (fpi->xy.x * firepoint_scale_x)), (int) (centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size);
 			}
 		}
@@ -277,12 +365,21 @@ void HudGaugeReticle::render(float frametime)
 }
 
 void HudGaugeReticle::getFirepointStatus() {
+
+	// allow the firepoint status to be empty when a multiplayer observer
+	// this is not a bug, the observer will simply *not* have any firepoints.
+	if (Objects[Player->objnum].type == OBJ_OBSERVER) {
+		// only multiplayer instances should be getting here!
+		Assertion((Game_mode & GM_MULTIPLAYER), "Somehow FSO thinks its player object is an observer even though it's not in Multiplayer. Please report!");
+		return; 
+	}
+
 	//First, get the player ship
 	ship_info* sip;
 	ship* shipp;
 	polymodel* pm;
 
-	Assert(Objects[Player->objnum].type == OBJ_SHIP);
+	Assertion(Objects[Player->objnum].type == OBJ_SHIP, "HudGaugeReticle::getFirepointStatus was passed an invalid object type of %d. Please report!", Objects[Player->objnum].type);
 
 	if (Objects[Player->objnum].type == OBJ_SHIP) {
 		shipp = &Ships[Objects[Player->objnum].instance];
@@ -302,12 +399,22 @@ void HudGaugeReticle::getFirepointStatus() {
 					int bankactive = 0;
 					ship_weapon *swp = &shipp->weapons;
 
-					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
-						bankactive = 1;
-					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-						bankactive = 1;
-					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked])
+					// If this firepoint doesn't actually have a weapon mounted, skip all of this
+					if (swp->primary_bank_weapons[i] < 0) {
+						continue;
+					}
+
+					// bank is firing
+					// (make sure we haven't cycled banks recently, since that will also reset the timestamp)
+					if (   (!Control_config[CYCLE_NEXT_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_NEXT_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!Control_config[CYCLE_PREV_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_PREV_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) || !timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))) {
 						bankactive = 2;
+					}
+					// bank is selected
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked]) {
+						bankactive = 1;
+					}
 
 					int num_slots = pm->gun_banks[i].num_slots;
 					for (int j = 0; j < num_slots; j++) {
@@ -340,6 +447,20 @@ void HudGaugeReticle::getFirepointStatus() {
 			}
 		}
 	}
+}
+
+void HudGaugeReticle::setFlightCursorFrame(int framenum) {
+	if (framenum < 0 || framenum > crosshair.num_frames - 1)
+		flight_cursor_frame_offset = -1;
+	else
+		flight_cursor_frame_offset = framenum;
+}
+
+void HudGaugeReticle::setAutoaimFrame(int framenum) {
+	if (framenum < 0 || framenum > crosshair.num_frames - 1)
+		autoaim_frame_offset = 0;
+	else
+		autoaim_frame_offset = framenum;
 }
 
 void HudGaugeReticle::pageIn()
@@ -420,8 +541,9 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	Match_speed_offsets[1] = y;
 	Use_custom_match_speed = custom;
 
-	font::FSFont* fsFont = font::get_font(font_num);
+	auto match_speed_str = XSTR("m", 1667);
 
+	font::FSFont* fsFont = font::get_font(font_num);
 	if (fsFont->getType() == font::VFNT_FONT)
 	{
 		ubyte sc = lcl_get_font_index(font_num);
@@ -429,7 +551,7 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 		// a) the german font has no special m (its an a)
 		// b) the font has no special characters
 		if (sc == 0 || Lcl_gr) {
-			Match_speed_icon = 'm';
+			Match_speed_icon = match_speed_str[0];
 		}
 		else {
 			Match_speed_icon = sc + 3;
@@ -439,13 +561,12 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	else
 	{
 		// Default version for other fonts, draw a black character on a rectangle
-		Match_speed_icon = 'm';
+		Match_speed_icon = match_speed_str[0];
 		Match_speed_draw_background = true;
 	}
-	SCP_stringstream stream;
 
+	SCP_stringstream stream;
 	stream << static_cast<char>(Match_speed_icon);
-	
 	const SCP_string& iconStr = stream.str();
 
 	gr_get_string_size(&Match_speed_icon_width, nullptr, iconStr.c_str());
@@ -456,7 +577,7 @@ void HudGaugeThrottle::initBitmaps(char *fname)
 	throttle_frames.first_frame = bm_load_animation(fname, &throttle_frames.num_frames);
 
 	if (throttle_frames.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
 	}
 }
 
@@ -465,8 +586,12 @@ void HudGaugeThrottle::pageIn()
 	bm_page_in_aabitmap( throttle_frames.first_frame, throttle_frames.num_frames);
 }
 
-void HudGaugeThrottle::render(float frametime)
+void HudGaugeThrottle::render(float  /*frametime*/)
 {
+	if (throttle_frames.first_frame < 0) {
+		return;
+	}
+
 	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
 	int	desired_y_pos, y_end;
 
@@ -478,7 +603,7 @@ void HudGaugeThrottle::render(float frametime)
 		current_speed = 0.0f;
 	}
 
-	max_speed = Ships[Player_obj->instance].current_max_speed;
+	max_speed = Player_obj->phys_info.max_vel.xyz.z;
 	if ( max_speed <= 0 ) {
 		max_speed = sip->max_vel.xyz.z;
 	}
@@ -494,7 +619,7 @@ void HudGaugeThrottle::render(float frametime)
 		desired_speed = 0.0f;
 	}
 
-	desired_y_pos = position[1] + Bottom_offset_y - fl2i(throttle_h*desired_speed/max_speed+0.5f) - 1;
+	desired_y_pos = position[1] + Bottom_offset_y - (int)std::lround(throttle_h*desired_speed/max_speed) - 1;
 
 	if (max_speed <= 0) {
 		percent_max = 0.0f;
@@ -505,7 +630,7 @@ void HudGaugeThrottle::render(float frametime)
 	percent_aburn_max = 0.0f;
 	if ( percent_max > 1 ) {
 		percent_max = 1.0f;
-		percent_aburn_max = (current_speed - max_speed) / (sip->afterburner_max_vel.xyz.z - max_speed);
+		percent_aburn_max = (current_speed - max_speed) / (Player_obj->phys_info.afterburner_max_vel.xyz.z - max_speed);
 		if ( percent_aburn_max > 1.0f ) {
 			percent_aburn_max = 1.0f;
 		}
@@ -514,9 +639,9 @@ void HudGaugeThrottle::render(float frametime)
 		}
 	}
 
-	y_end = position[1] + Bottom_offset_y - fl2i(throttle_h*percent_max+0.5f);
+	y_end = position[1] + Bottom_offset_y - (int)std::lround(throttle_h*percent_max);
 	if ( percent_aburn_max > 0 ) {
-		y_end -= fl2i(percent_aburn_max * throttle_aburn_h + 0.5f);
+		y_end -= (int)std::lround(percent_aburn_max * throttle_aburn_h);
 	}
 
 	if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
@@ -545,12 +670,12 @@ void HudGaugeThrottle::render(float frametime)
 
 		if ( Show_percent ) {
 			if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
-				strcpy_s(buf, "A/B");
+				strcpy_s(buf, XSTR( "A/B", 1669 ));
 			} else {
-				sprintf(buf, XSTR( "%d%%", 326), fl2i( (desired_speed/max_speed)*100 + 0.5f ));
+				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround( (desired_speed/max_speed)*100 ));
 			}
 		} else {
-			sprintf(buf, "%d", fl2i(desired_speed * Hud_speed_multiplier + 0.5f));
+			sprintf(buf, "%d", (int)std::lround(desired_speed * Hud_speed_multiplier));
 		}
 
 		hud_num_make_mono(buf, font_num);
@@ -566,7 +691,7 @@ void HudGaugeThrottle::render(float frametime)
 	renderThrottleForeground(y_end);
 
 	if ( Show_max_speed ) {
-		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d",fl2i(max_displayed_speed+0.5f));
+		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d", (int)std::lround(max_displayed_speed));
 	}
 	
 	if ( Show_min_speed ) {
@@ -580,7 +705,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 	int sx, sy, x_pos, y_pos, w, h;
 
 	//setGaugeColor();
-	sprintf(buf, "%d", fl2i(current_speed+0.5f));
+	sprintf(buf, "%d", (int)std::lround(current_speed));
 	hud_num_make_mono(buf, font_num);
 	gr_get_string_size(&w, &h, buf);
 
@@ -602,8 +727,10 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 	renderPrintf(sx, sy, "%s", buf);
 
 	if ( object_get_gliding(Player_obj) ) { 
+		auto glide_str = XSTR("GLIDE", 1668);
+
 		if ( Use_custom_glide ) {
-			renderString(position[0] + Glide_offsets[0], position[1] + Glide_offsets[1], "GLIDE");
+			renderString(position[0] + Glide_offsets[0], position[1] + Glide_offsets[1], glide_str);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -614,7 +741,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = -13;
 			}
 
-			renderString(sx+offset, sy + h, "GLIDE");
+			renderString(sx+offset, sy + h, glide_str);
 		}
 	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		if ( Use_custom_match_speed ) {
@@ -709,17 +836,17 @@ void HudGaugeThreatIndicator::initBitmaps(char *fname_arc, char *fname_laser, ch
 {
 	threat_arc.first_frame = bm_load_animation(fname_arc, &threat_arc.num_frames);
 	if (threat_arc.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname_arc));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname_arc);
 	}
 	
 	laser_warn.first_frame = bm_load_animation(fname_laser, &laser_warn.num_frames);
 	if (laser_warn.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname_laser));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname_laser);
 	}
 
 	lock_warn.first_frame = bm_load_animation(fname_lock, &lock_warn.num_frames);
 	if (lock_warn.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname_lock));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname_lock);
 	}
 }
 
@@ -741,10 +868,12 @@ void HudGaugeThreatIndicator::pageIn()
 	bm_page_in_aabitmap(lock_warn.first_frame, lock_warn.num_frames);
 }
 
-void HudGaugeThreatIndicator::render(float frametime)
+void HudGaugeThreatIndicator::render(float  /*frametime*/)
 {
 	setGaugeColor();
-	renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
+
+	if (threat_arc.first_frame >= 0)
+		renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
 
 	renderLaserThreat();
 	renderLockThreat();
@@ -752,6 +881,9 @@ void HudGaugeThreatIndicator::render(float frametime)
 
 void HudGaugeThreatIndicator::renderLaserThreat()
 {
+	if (laser_warn.first_frame < 0)
+		return;
+
 	int frame_offset, num_frames;
 
 	//Check how many frames the ani actually has
@@ -777,6 +909,9 @@ void HudGaugeThreatIndicator::renderLaserThreat()
 
 void HudGaugeThreatIndicator::renderLockThreat()
 {
+	if (lock_warn.first_frame < 0)
+		return;
+
 	int frame_offset, num_frames;
 
 	//Let's find out how many frames our ani has, and adjust accordingly
@@ -887,7 +1022,7 @@ void HudGaugeWeaponLinking::pageIn()
 	}
 }
 
-void HudGaugeWeaponLinking::render(float frametime)
+void HudGaugeWeaponLinking::render(float  /*frametime*/)
 {
 	int			gauge_index=0, frame_offset=0;
 	ship_weapon	*swp;
@@ -1041,8 +1176,19 @@ void hud_update_reticle( player *pp )
 				Threat_lock_frame = 1;
 			}
 			if ( (Threat_lock_frame == 2) && (Player->threat_flags & THREAT_ATTEMPT_LOCK ) ) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_THREAT_FLASH)]);
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::THREAT_FLASH)));
 			}
 		}
 	} 
+}
+
+// calculates what the screen position of the flight cursor should be
+void hud_reticle_set_flight_cursor_offset() {
+	matrix view_mat;
+	vm_angles_2_matrix(&view_mat, &Player_flight_cursor);
+	view_mat = view_mat * Eye_matrix;
+
+	vec3d view_pos = Eye_position + view_mat.vec.fvec * 10000.0f;
+	g3_rotate_vertex(&Player_flight_cursor_offset, &view_pos);
+	g3_project_vertex(&Player_flight_cursor_offset);
 }

@@ -22,18 +22,8 @@
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"
 
-#if defined(__GNUC__) && __GNUC__ > 5
-#pragma GCC diagnostic push
-// stb image uses shifts of negative values and GCC warns about that
-#pragma GCC diagnostic ignored "-Wshift-negative-value"
-#endif
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
-#if defined(__GNUC__) && __GNUC__ > 5
-#pragma GCC diagnostic pop
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
@@ -2326,12 +2316,12 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		float c[4*2];
 		if (iter.prevGlyphIndex == -1) { // can not retrieve glyph?
-			if (!nvg__allocTextAtlas(ctx))
-				break; // no memory :(
 			if (nverts != 0) {
 				nvg__renderText(ctx, verts, nverts);
 				nverts = 0;
 			}
+			if (!nvg__allocTextAtlas(ctx))
+				break; // no memory :(
 			iter = prevIter;
 			fonsTextIterNext(ctx->fs, &iter, &q); // try again
 			if (iter.prevGlyphIndex == -1) // still can not find glyph?

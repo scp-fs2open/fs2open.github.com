@@ -48,7 +48,7 @@ public:
 
 	os::OpenGLLoadProc getLoaderFunction() override;
 
-	void setSwapInterval(int status) override;
+	bool setSwapInterval(int status) override;
 
 	HGLRC getHandle();
 };

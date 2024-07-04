@@ -15,6 +15,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
+#include "graphics/matrix.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
@@ -208,15 +209,15 @@ void HudGaugeRadarOrb::blipDrawFlicker(blip *b, vec3d *pos)
 	}
 
 	if ( timestamp_elapsed(Radar_flicker_timer[flicker_index]) ) {
-		Radar_flicker_timer[flicker_index] = timestamp_rand(50,1000);
-		Radar_flicker_on[flicker_index] ^= 1;
+		Radar_flicker_timer[flicker_index] = _timestamp_rand(50,1000);
+		Radar_flicker_on[flicker_index] = !Radar_flicker_on[flicker_index];
 	}
 
 	if ( !Radar_flicker_on[flicker_index] ) {
 		return;
 	}
 
-	if ( rand() & 1 ) {
+	if (Random::flip_coin()) {
 
 		distortion_angle *= frand_range(0.1f,2.0f);
 		dist *= frand_range(0.75f, 1.25f);
@@ -315,71 +316,12 @@ void HudGaugeRadarOrb::drawBlipsSorted(int distort)
 	g3_done_instance(false);
 }
 
-void HudGaugeRadarOrb::doneDrawing()
-{
-	g3_done_instance(false);
-	g3_end_frame();
-	g3_start_frame(0);
-	hud_save_restore_camera_data(0);
-	resetClip();
-}
-
 void HudGaugeRadarOrb::doneDrawingHtl()
 {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 	resetClip();
     gr_zbuffer_set(GR_ZBUFF_FULL);
-}
-
-void HudGaugeRadarOrb::drawOutlines()
-{
-	int i;
-	vertex center;
-//	vertex extents[6];
-	vertex proj_orb_lines_xy[NUM_ORB_RING_SLICES];
-	vertex proj_orb_lines_xz[NUM_ORB_RING_SLICES];
-	vertex proj_orb_lines_yz[NUM_ORB_RING_SLICES];
-
-	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
-	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, false);
-
-	g3_rotate_vertex(&center, &vmd_zero_vector);
-	g3_rotate_vertex(&proj_orb_lines_xy[0], &orb_ring_xy[0]);
-	g3_rotate_vertex(&proj_orb_lines_yz[0], &orb_ring_yz[0]);
-	g3_rotate_vertex(&proj_orb_lines_xz[0], &orb_ring_xz[0]);
-
-	g3_project_vertex(&center);
-	gr_set_color(255,255,255);
-	g3_draw_sphere(&center, .05f);
-
-	g3_project_vertex(&proj_orb_lines_xy[0]);
-	g3_project_vertex(&proj_orb_lines_yz[0]);
-	g3_project_vertex(&proj_orb_lines_xz[0]);
-
-	for (i=1; i < NUM_ORB_RING_SLICES; i++)
-	{
-		g3_rotate_vertex(&proj_orb_lines_xy[i], &orb_ring_xy[i]);
-		g3_rotate_vertex(&proj_orb_lines_yz[i], &orb_ring_yz[i]);
-		g3_rotate_vertex(&proj_orb_lines_xz[i], &orb_ring_xz[i]);
-
-		g3_project_vertex(&proj_orb_lines_xy[i]);
-		g3_project_vertex(&proj_orb_lines_yz[i]);
-		g3_project_vertex(&proj_orb_lines_xz[i]);
-		
-		gr_set_color(192,96,32);
-		g3_draw_sphere(&proj_orb_lines_xy[i-1], .01f);
-		g3_draw_sphere(&proj_orb_lines_xz[i-1], .01f);
-		g3_draw_line(&proj_orb_lines_xy[i-1],&proj_orb_lines_xy[i]);
-		g3_draw_line(&proj_orb_lines_xz[i-1],&proj_orb_lines_xz[i]);
-
-		gr_set_color(112,16,192);
-
-		g3_draw_sphere(&proj_orb_lines_yz[i-1], .01f);
-		g3_draw_line(&proj_orb_lines_yz[i-1],&proj_orb_lines_yz[i]);
-	}
-
-	g3_done_instance(false);
 }
 
 int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
@@ -394,7 +336,7 @@ int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
     vm_vec_normalize(&new_pt);
 
     float dot = vm_vec_dot(&fvec, &new_pt);
-    float angle = fabs(acosf(dot));
+    float angle = fabs(acosf_safe(dot));
     int alpha = int(angle*192.0f/PI);
     
     return alpha;
@@ -438,7 +380,7 @@ void HudGaugeRadarOrb::drawOutlinesHtl()
     g3_done_instance(true);
 }
 
-void HudGaugeRadarOrb::render(float frametime)
+void HudGaugeRadarOrb::render(float  /*frametime*/)
 {
 	float	sensors_str;
 	int ok_to_blit_radar;
@@ -457,21 +399,21 @@ void HudGaugeRadarOrb::render(float frametime)
 	}
 
 	// note that on lowest skill level, there is no radar effects due to sensors damage
-	if ( (Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS) ) {
-		Radar_static_playing = 0;
-		Radar_static_next = 0;
-		Radar_death_timer = 0;
-		Radar_avail_prev_frame = 1;
+	if (((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced) {
+		Radar_static_playing = false;
+		Radar_static_next = TIMESTAMP::never();
+		Radar_death_timer = TIMESTAMP::never();
+		Radar_avail_prev_frame = true;
 	} else if ( sensors_str < MIN_SENSOR_STR_TO_RADAR ) {
 		if ( Radar_avail_prev_frame ) {
-			Radar_death_timer = timestamp(2000);
-			Radar_static_next = 1;
+			Radar_death_timer = _timestamp(2000);
+			Radar_static_next = TIMESTAMP::immediate();
 		}
-		Radar_avail_prev_frame = 0;
+		Radar_avail_prev_frame = false;
 	} else {
-		Radar_death_timer = 0;
-		if ( Radar_static_next == 0 )
-			Radar_static_next = 1;
+		Radar_death_timer = TIMESTAMP::never();
+		if ( Radar_static_next.isNever() )
+			Radar_static_next = TIMESTAMP::immediate();
 	}
 
 	if ( timestamp_elapsed(Radar_death_timer) ) {
@@ -486,32 +428,32 @@ void HudGaugeRadarOrb::render(float frametime)
     drawOutlinesHtl();
 
 	if ( timestamp_elapsed(Radar_static_next) ) {
-		Radar_static_playing ^= 1;
-		Radar_static_next = timestamp_rand(50, 750);
+		Radar_static_playing = !Radar_static_playing;
+		Radar_static_next = _timestamp_rand(50, 750);
 	}
 
 	// if the emp effect is active, always draw the radar wackily
 	if(emp_active_local()){
-		Radar_static_playing = 1;
+		Radar_static_playing = true;
 	}
 
 	if ( ok_to_blit_radar ) {
 		if ( Radar_static_playing ) {
 			drawBlipsSorted(1);	// passing 1 means to draw distorted
-			if ( Radar_static_looping == -1 ) {
-				Radar_static_looping = snd_play_looping(&Snds[SND_STATIC]);
+			if (!Radar_static_looping.isValid()) {
+				Radar_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 			}
 		} else {
 			drawBlipsSorted(0);
-			if ( Radar_static_looping != -1 ) {
+			if (Radar_static_looping.isValid()) {
 				snd_stop(Radar_static_looping);
-				Radar_static_looping = -1;
+				Radar_static_looping = sound_handle::invalid();
 			}
 		}
 	} else {
-		if ( Radar_static_looping != -1 ) {
+		if (Radar_static_looping.isValid()) {
 			snd_stop(Radar_static_looping);
-			Radar_static_looping = -1;
+			Radar_static_looping = sound_handle::invalid();
 		}
 	}
 	
@@ -523,10 +465,8 @@ void HudGaugeRadarOrb::render(float frametime)
 
 void HudGaugeRadarOrb::blitGauge()
 {
-	SPECMAP = -1;
-	GLOWMAP = -1;
-
-	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+	if (Radar_gauge.first_frame + 1 >= 0)
+		renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
 }
 
 void HudGaugeRadarOrb::pageIn()
@@ -623,30 +563,12 @@ void HudGaugeRadarOrb::drawCrosshairs( vec3d pnt )
 }
 
 extern void hud_save_restore_camera_data(int);
-extern float View_zoom;
-
-void HudGaugeRadarOrb::setupView()
-{
-	hud_save_restore_camera_data(1);
-
-	g3_end_frame();
-
-	int w,h;
-	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
-	
-	setClip(position[0], position[1],w, h);
-	g3_start_frame(1);
-	
-	float old_zoom=View_zoom;
-	View_zoom=.75;
-
-	g3_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix, View_zoom);
-
-	View_zoom=old_zoom;
-}
 
 void HudGaugeRadarOrb::setupViewHtl()
 {
+	if (Radar_gauge.first_frame < 0)
+		return;
+
     int w,h;
 	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
     

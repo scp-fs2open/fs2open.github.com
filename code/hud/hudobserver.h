@@ -22,6 +22,4 @@ extern ai_info Hud_obs_ai;
 
 void hud_observer_init(ship *shipp,ai_info *aip);
 
-void hud_render_observer();
-
 #endif

@@ -12,6 +12,8 @@
 #ifndef _BARRACKS_H
 #define _BARRACKS_H
 
+#include "playerman/player.h"
+
 extern int Barracks_overlay_id;
 
 // initialize the barracks 
@@ -22,5 +24,7 @@ void barracks_do_frame(float frametime);
 
 // close the barracks
 void barracks_close();
+
+void barracks_accept_pilot(player* plr);
 
 #endif // _BARRACKS_H

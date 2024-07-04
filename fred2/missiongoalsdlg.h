@@ -15,7 +15,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // CMissionGoalsDlg dialog
 
-#define MAX_GOAL_ELEMENTS 300
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
@@ -27,7 +26,7 @@ class CMissionGoalsDlg : public CDialog
 {
 // Construction
 public:
-	void swap_handler(int node1, int node2);
+	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
 	void OnOK();
@@ -77,7 +76,7 @@ protected:
 	afx_msg void OnChangeGoalRating();
 	afx_msg void OnSelchangeGoalTypeDrop();
 	afx_msg void OnChangeGoalName();
-	afx_msg void OnOk();
+	afx_msg void OnButtonOk();
 	afx_msg void OnClose();
 	afx_msg void OnGoalInvalid();
 	afx_msg void OnChangeGoalScore();
@@ -87,9 +86,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 	int cur_goal;
-	int m_num_goals;
-	int m_sig[MAX_GOALS];
-	mission_goal m_goals[MAX_GOALS];
+	SCP_vector<int> m_sig;
+	SCP_vector<mission_goal> m_goals;
 	int modified;
 };
 

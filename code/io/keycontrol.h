@@ -19,11 +19,8 @@
 
 extern int Dead_key_set[];
 extern int Dead_key_set_size;
-extern bool Perspective_locked;
 
-extern int Ignored_keys[];
-
-extern bool quit_mission_popup_shown;
+extern int Ignored_keys[];	//!< Ignored_keys[CCFG_MAX]; Set by sexp. If >0; value is number of times the key will be temporarily. If <0, key is permamently ignored.
 
 typedef struct button_info
 {

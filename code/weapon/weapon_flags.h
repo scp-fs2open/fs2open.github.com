@@ -23,9 +23,11 @@ namespace Weapon {
 		Bomb,								// Bomb-type missile, can be targeted
 		Huge,								// Huge damage (generally 500+), probably only fired at huge ships.
 		No_dumbfire,						// Missile cannot be fired dumbfire (ie requires aspect lock)
+		No_doublefire,						// Disables linked firing for secondaries - EatThePath
 		Thruster,							// Has thruster cone and/or glow
 		In_tech_database,
 		Player_allowed,						// allowed to be on starting wing ships/in weaponry pool
+		Default_player_weapon,				// added to the weapons pool by default
 		Bomber_plus,						// Fire this missile only at a bomber or big ship.  But not a fighter.
 		Corkscrew,							// corkscrew style missile
 		Particle_spew,						// spews particles as it travels
@@ -37,10 +39,9 @@ namespace Weapon {
 		Shudder,							// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
 		Mflash,								// has muzzle flash
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
-		Stream,								// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 		Ballistic,							// ballistic primaries - Goober5000
 		Pierce_shields,						// shield pierceing -Bobboau
-		Default_in_tech_database,			// default in tech database - Goober5000
+		Default_in_tech_database,			// this entry's default tech database status, as specified in weapons.tbl; used when the tech db is "reset to default" - Goober5000
 		Local_ssm,							// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 		Tagged_only,						// can only fire if target is tagged
 		Cycle,								// will only fire from (shots (defalts to 1)) points at a time
@@ -54,7 +55,7 @@ namespace Weapon {
 		No_emp_kill,						// though weapon has hitpoints it can not be disabled by EMP
 		Variable_lead_homing,				// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
 		Untargeted_heat_seeker,				// forces heat seeker to lose target immeadiately (and acquire a random new one)
-		Hard_target_bomb,					// removes the radius doubling effect bombs have for collisions
+		No_radius_doubling,					// removes the radius doubling effect bombs have for collisions
 		Non_subsys_homing,					// spreads fired missiles around the target ships hull
 		No_life_lost_if_missed,				// prevents game from shortening the lifeleft of the missed but still homing missiles
 		Custom_seeker_str,					// sets the game to use custom seeker strengths instead of default values
@@ -78,11 +79,24 @@ namespace Weapon {
 		Turret_Interceptable,				// These two flags mark a weapon as being interceptable by the AI
 		Fighter_Interceptable,				// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 		Aoe_Electronics,					// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
-		Apply_Recoil,						// Apply Recoil
+		Apply_Recoil,						// Apply Recoil using weapon and ship info
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
-        Apply_recoil,                       // Apply recoil using weapon and ship info
-		
+		Has_display_name,					// Goober5000
+		No_impact_spew,						// Goober5000
+		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
+		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
+		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		Vampiric,						    // damage applied also brings back health to the shooter - Strygon
+		SecondaryNoAmmo,					// Secondaries that only use energy
+		No_collide,
+		Multilock_target_dead_subsys,
+		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
+		Dont_merge_indicators,				// This secondary lead indicator won't be merged with the primary lead indicator even if this is a homing weapon.
+		No_fred,							// not available in fred
+		Detonate_on_expiration,				// Secondary weapons always detonate when their lifetime runs out, but now primary weapons can too
+		Ignores_countermeasures,			// The weapon will never be affected by countermeasures
+
         NUM_VALUES
 	};
 
@@ -95,15 +109,28 @@ namespace Weapon {
 		Locked_when_fired,			// fired with a lock
 		Destroyed_by_weapon,		// destroyed by damage from other weapon
 		Spawned,					//Spawned from a spawning type weapon
-		Homing_update_needed,       // this is a newly spawned homing weapon which needs to update client machines
         No_homing,                  // this weapon should ignore any homing behavior it'd usually have
+		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
+		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
+		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
+		Begun_detonation,			// The engine has set this weapon to detonate momentarily
 
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Burst_Flags) { 
+	FLAG_LIST(Burst_Flags) {
 		Fast_firing,
 		Random_length,
+		Resets,
+		Num_firepoints_burst_shots, // Burst shots is set to however many firepoints the firer has
+		Burst_only_loop_sounds, // start/loop/end sounds trigger on the start and end of bursts in addition to the trigger state
+
+		NUM_VALUES
+	};
+
+	FLAG_LIST(Beam_Info_Flags) {
+		Burst_share_random,
+		Track_own_texture_tiling,
 
 		NUM_VALUES
 	};

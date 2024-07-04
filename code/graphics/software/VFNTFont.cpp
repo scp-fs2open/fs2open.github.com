@@ -41,7 +41,7 @@ namespace font
 		int w, h;
 
 		w = 0;
-		h = 0;
+		h = text == nullptr ? 0 : fl2i(this->getHeight());
 		longest_width = 0;
 
 		// Maintain old behavior where textLen was an int
@@ -49,8 +49,8 @@ namespace font
 
 		bool checkLength = textLen >= 0;
 
-		if (text != NULL) {
-			h += fl2i(this->getHeight());
+		if (text != nullptr && textLen != 0)
+		{
 			while (*text)
 			{
 				// Process one or more 
@@ -60,10 +60,9 @@ namespace font
 
 					if (checkLength)
 					{
-						if (textLen < 0)
-							break;
-
 						textLen--;
+						if (textLen <= 0)
+							break;
 					}
 
 					if (*text)
@@ -88,10 +87,9 @@ namespace font
 
 				if (checkLength)
 				{
-					if (textLen < 0)
-						break;
-
 					textLen--;
+					if (textLen <= 0)
+						break;
 				}
 			}
 		}

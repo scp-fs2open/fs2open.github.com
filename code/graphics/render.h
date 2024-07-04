@@ -25,8 +25,9 @@ void gr_flash_alpha(int r, int g, int b, int a);
  * @param y The y-coordinate of the draw call
  * @param resize_mode The resize mode for translating the coordinated
  * @param mirror @c true to mirror the image
+ * @param scale_factor a multiplier for the width and height of the bitmap
  */
-void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false);
+void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 /**
  * @brief Draws a grey-scale bitmap multiplied with the current color
  * @param x The x-coordinate of the draw call
@@ -59,7 +60,7 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = 
  * @param resize_mode The mode for translating the screen positions
  * @param length The number of bytes in the string to render. -1 will render the whole string.
  */
-void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1);
+void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, size_t length = std::string::npos);
 /**
  * @brief Renders the specified string to the screen using the current font and color
  * @param x The x-coordinate
@@ -68,7 +69,7 @@ void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE
  * @param resize_mode The mode for translating the screen positions
  * @param length The number of bytes in the string to render. -1 will render the whole string.
  */
-inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
+inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, size_t length = std::string::npos)
 {
 	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
 }
@@ -114,8 +115,9 @@ void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL);
  * @param w The width of the rectangle
  * @param h The height of the rectangle
  * @param resize_mode The mode for translating the screen positions
+ * @param angle The angle (in radians) for rotating the rectangle around its center.
  */
-void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
+void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL, float angle = 0);
 /**
  * @brief Draws a filled rectangle with the current shading color
  * @param x The x-coordinate
@@ -165,3 +167,68 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
  * @param resize_mode The mode for translating the screen positions
  */
 void gr_curve(int x, int y, int r, int direction, int resize_mode);
+
+/**
+ * @brief Start buffering 2D rendering operations
+ *
+ * This will defer rendering 2D interface elements until gr_2d_stop_buffer is called. This can improve performance when
+ * doing a lot of 2D operations since the actual drawing will only be done once.
+ *
+ * @warning This will only affect a few rendering operations and might change the drawing order if incompatible rendering
+ * commands are executed while the buffering mechanism is active.
+ */
+void gr_2d_start_buffer();
+
+/**
+ * @brief Stop buffering 2D rendering operations
+ *
+ * This will stop the 2D buffering mechanism and also flush all previous render commands.
+ */
+void gr_2d_stop_buffer();
+
+/**
+ * @brief The buffer object holding the data for immediate draws
+ */
+extern gr_buffer_handle gr_immediate_buffer_handle;
+
+/**
+ * @brief Adds data to the immediate buffer for use by draw operations
+ *
+ * @warning The data is only available in the buffer for one frame.
+ *
+ * @param size The size of the data buffer
+ * @param data The pointer to the data
+ * @return The offset into the immediate buffer where this data starts at
+ */
+size_t gr_add_to_immediate_buffer(size_t size, void *data);
+
+/**
+ * @brief Resets the immediate buffer for reuse
+ */
+void gr_reset_immediate_buffer();
+
+/**
+ * @brief Renders some vertex data from an immediate memory buffer
+ * @param material_info The material information for rendering the data
+ * @param prim_type The primitive type of the data
+ * @param layout The vertex layout of the data
+ * @param n_verts How many vertices are in the data
+ * @param data The pointer to the data to render
+ * @param size The size of the data
+ */
+void gr_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, size_t size);
+
+/**
+ * @brief Renders some vertex data from an immediate memory buffer with a 2D projection matrix
+ * @param material_info The material information for rendering the data
+ * @param prim_type The primitive type of the data
+ * @param layout The vertex layout of the data
+ * @param n_verts How many vertices are in the data
+ * @param data The pointer to the data to render
+ * @param size The size of the data
+ */
+void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, size_t size);
+
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle = 0.f);
+
+void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle = 0.f);

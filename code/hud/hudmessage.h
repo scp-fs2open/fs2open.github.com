@@ -18,6 +18,7 @@
 
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
 
+// If these are changed, the lua 'addMessageToScrollback' method in mission.cpp should be updated.
 #define HUD_SOURCE_COMPUTER		0
 #define HUD_SOURCE_TRAINING		1
 #define HUD_SOURCE_HIDDEN		2
@@ -36,17 +37,16 @@ typedef struct HUD_message_data {
 } HUD_message_data;
 
 typedef struct line_node {
-	line_node* next;
-	line_node* prev;
 	fix time;  // timestamp when message was added
+	int timer_padding; // the mission timer padding, in seconds, at the time the message was added
 	int source;  // who/what the source of the message was (for color coding)
 	int x;
 	int y;
 	int underline_width;
-	char *text;
+	SCP_string text;
 } line_node;
 
-extern line_node Msg_scrollback_used_list;
+extern SCP_vector<line_node> Msg_scrollback_vec;
 
 typedef struct Hud_display_info {
 	HUD_message_data msg;
@@ -68,14 +68,12 @@ int HUD_source_get_team(int team);
 void HUD_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 void hud_sourced_print(int source, const char *msg);
 void HUD_sourced_printf(int source, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from specified source
-void HUD_ship_sent_printf(int sh, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from a specific ship
 void HUD_fixed_printf(float duration, color col, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
 void HUD_add_to_scrollback(const char *text, int source);
 void hud_add_line_to_scrollback(const char *text, int source, int t, int x, int y, int w);
 void hud_add_msg_to_scrollback(const char *text, int source, int t);
-void hud_free_scrollback_list();
 
 class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES
 {
@@ -113,10 +111,10 @@ public:
 	void processMessageBuffer();
 	void addPending(const char *text, int source, int x = 0);
 	void scrollMessages();
-	void preprocess();
-	void render(float frametime);
-	void initialize();
-	void pageIn();
+	void preprocess() override;
+	void render(float frametime) override;
+	void initialize() override;
+	void pageIn() override;
 };
 
 class HudGaugeTalkingHead: public HudGauge // HUD_TALKING_HEAD
@@ -136,11 +134,10 @@ public:
 	void initHeaderOffsets(int x, int y);
 	void initAnimOffsets(int x, int y);
 	void initAnimSizes(int w, int h);
-	void pageIn();
-	void render(float frametime);
-	void initialize();
-	bool canRender();
-	anim_instance* createAnim(int anim_start_frame, anim* anim_data);
+	void pageIn() override;
+	void render(float frametime) override;
+	void initialize() override;
+	bool canRender() const override;
 };
 
 class HudGaugeFixedMessages: public HudGauge
@@ -149,8 +146,8 @@ class HudGaugeFixedMessages: public HudGauge
 public:
 	HudGaugeFixedMessages();
 	void initCenterText(bool center);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 #endif

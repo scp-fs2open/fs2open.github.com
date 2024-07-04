@@ -21,7 +21,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-int Shield_sys_teams[MAX_IFFS] = {0};
+SCP_vector<int> Shield_sys_teams;
 int Shield_sys_types[MAX_SHIP_CLASSES] = {0};
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,11 +58,11 @@ END_MESSAGE_MAP()
 BOOL shield_sys_dlg::OnInitDialog() 
 {
 	int i, z;
-	int teams[MAX_IFFS];
+	int* teams = new int[Iff_info.size()]();
 	int types[MAX_SHIP_CLASSES];
 	CComboBox *box;
 
-	for (i=0; i<MAX_IFFS; i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		teams[i] = 0;
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++)
@@ -85,6 +85,8 @@ BOOL shield_sys_dlg::OnInitDialog()
 			types[Ships[i].ship_info_index]++;
 		}
 
+	delete[] teams;
+
 	box = (CComboBox *) GetDlgItem(IDC_TYPE);
 	box->ResetContent();
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
@@ -92,7 +94,7 @@ BOOL shield_sys_dlg::OnInitDialog()
 
 	box = (CComboBox *) GetDlgItem(IDC_TEAM);
 	box->ResetContent();
-	for (i=0; i<Num_iffs; i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		box->AddString(Iff_info[i].iff_name);
 
 	CDialog::OnInitDialog();

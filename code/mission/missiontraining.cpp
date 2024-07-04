@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/utility.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "mission/missiongoals.h"
@@ -23,10 +24,12 @@
 #include "network/multi.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
 
@@ -37,8 +40,6 @@
 #define TRAINING_LINE_WIDTH			250  // width in pixels of actual text
 #define TRAINING_TIMING					150  // milliseconds per character to display messages
 #define TRAINING_TIMING_BASE			1000  // Minimum milliseconds to display any message
-#define TRAINING_OBJ_WND_WIDTH		170	// number of pixels wide window is.
-#define TRAINING_OBJ_LINE_WIDTH		150	// number of pixels wide text can be
 #define TRAINING_OBJ_LINES				50		// number of lines to track in objective list
 #define TRAINING_OBJ_DISPLAY_LINES	5		// only display this many lines on screen max
 #define MAX_TRAINING_MESSAGE_MODS			20
@@ -55,35 +56,53 @@
 #define TMMOD_BOLD	1
 
 typedef struct {
-	char *pos;
+	size_t pos;
 	int mode;  // what function to perform at given position (TMMOD_*)
 } training_message_mods;  // training message modifiers
 
 typedef struct {
 	int num;
-	int timestamp;
+	TIMESTAMP timestamp;
 	int length;
 	char *special_message;
 } training_message_queue;
 
-char Training_buf[TRAINING_MESSAGE_LENGTH];
+SCP_string Training_buf;
 const char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
 int Training_line_lengths[MAX_TRAINING_MESSAGE_LINES];
 
 char Training_voice_filename[NAME_LENGTH];
 int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
-int Training_message_timestamp;
+TIMESTAMP Training_message_timestamp;
 int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
 int Training_voice_type;
-int Training_voice_handle;
+int Training_voice_soundstream;
+sound_handle Training_voice_snd_handle;
 int Training_flag = 0;
 int Training_failure = 0;
 int Training_message_queue_count = 0;
 int Training_bind_warning = -1;  // Missiontime at which we last gave warning
 int Training_message_visible;
 training_message_queue Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX];
+
+int	Training_context = 0;
+int	Training_context_speed_set;
+int	Training_context_speed_min;
+int	Training_context_speed_max;
+TIMESTAMP	Training_context_speed_timestamp;
+waypoint_list *Training_context_path;
+int Training_context_goal_waypoint;
+int Training_context_at_waypoint;
+float	Training_context_distance;
+
+int Players_target = UNINITIALIZED;
+int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
+ship_subsys *Players_targeted_subsys;
+TIMESTAMP Players_target_timestamp;
+TIMESTAMP Players_mlocked_timestamp;
+
 
 // coordinates for training messages
 int Training_message_window_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -99,25 +118,14 @@ int Training_obj_window_coords[GR_NUM_RESOLUTIONS][2] = {
 
 
 // training objectives global vars.
-int Training_obj_num_lines;
+int Training_obj_num_lines = 0;
+int Training_obj_num_display_lines = 0;
 int Training_obj_lines[TRAINING_OBJ_LINES];
 training_message_mods Training_message_mods[MAX_TRAINING_MESSAGE_MODS];
 
 // local module prototypes
-void training_process_message(char *message);
-void message_translate_tokens(char *buf, const char *text);
+void training_process_message();
 
-
-#define NUM_DIRECTIVE_GAUGES			3
-static hud_frames Directive_gauge[NUM_DIRECTIVE_GAUGES];
-static int Directive_frames_loaded = 0;
-
-#define DIRECTIVE_H						9
-#define DIRECTIVE_X						5
-#define NUM_DIRECTIVE_COORDS			3
-#define DIRECTIVE_COORDS_TOP			0
-#define DIRECTIVE_COORDS_MIDDLE		1
-#define DIRECTIVE_COORDS_TITLE		2
 
 HudGaugeDirectives::HudGaugeDirectives():
 HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
@@ -151,6 +159,11 @@ void HudGaugeDirectives::initMaxLineWidth(int w)
 	max_line_width = w;
 }
 
+void HudGaugeDirectives::initKeyLineXOffset(int offset)
+{
+	key_line_x_offset = offset;
+}
+
 void HudGaugeDirectives::initBottomBgOffset(int offset)
 {
 	bottom_bg_offset = offset;
@@ -174,7 +187,7 @@ void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *
 	}
 }
 
-bool HudGaugeDirectives::canRender()
+bool HudGaugeDirectives::canRender() const
 {
 	if (sexp_override) {
 		return false;
@@ -222,11 +235,14 @@ void HudGaugeDirectives::pageIn()
 	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
 }
 
-void HudGaugeDirectives::render(float frametime)
+void HudGaugeDirectives::render(float  /*frametime*/)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, end, offset, bx, by, y_count;
+	int i, x, y, z, end, offset, bx, by;
+	TIMESTAMP t;
 	color *c;
+
+	Training_obj_num_display_lines = 0;
 
 	if (!Training_obj_num_lines){
 		return;
@@ -242,7 +258,8 @@ void HudGaugeDirectives::render(float frametime)
 	// draw top of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_top.first_frame, position[0], position[1]);
+	if (directives_top.first_frame >= 0)
+		renderBitmap(directives_top.first_frame, position[0], position[1]);
 
 	// print out title
 	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, "%s", XSTR( "directives", 422));
@@ -250,18 +267,21 @@ void HudGaugeDirectives::render(float frametime)
 	bx = position[0];
 	by = position[1] + middle_frame_offset_y;
 
-	y_count = 0;
 	for (i=0; i<end; i++) {
 		x = position[0] + text_start_offsets[0];
-		y = position[1] + text_start_offsets[1] + y_count * text_h;
+		y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
+
+		int line_x_offset = 0;
 
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			message_translate_tokens(buf, Mission_events[z].objective_key_text);  // remap keys
+			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str());  // remap keys
+			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
+			line_x_offset = key_line_x_offset;
 		} else {
-			strcpy_s(buf, Mission_events[z].objective_text);
+			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
@@ -274,17 +294,18 @@ void HudGaugeDirectives::render(float frametime)
 			}
 
 			switch (mission_get_event_status(z)) {
-			case EVENT_CURRENT:
+			case EventStatus::CURRENT:
 				c = &Color_bright_white;
 				break;
 
-			case EVENT_FAILED:
+			case EventStatus::FAILED:
 				c = &Color_bright_red;
 				break;
 
-			case EVENT_SATISFIED:
+			case EventStatus::SATISFIED:
 				t = Mission_events[z].satisfied_time;
-				if (t + i2f(2) > Missiontime) {
+				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name.c_str());
+				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
 					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
 						c = &Color_bright_blue;
 					} else {
@@ -294,22 +315,33 @@ void HudGaugeDirectives::render(float frametime)
 					c = &Color_bright_blue;
 				}
 				break;
+
+			default:
+				// stick with Color_normal
+				break;
 			}
 		}
 
 		// maybe split the directives line
 		second_line = split_str_once(buf, max_line_width);
-		Assert( second_line != buf );
+
+		// if we are unable to split the line, just print it once
+		if (second_line == buf) {
+			second_line = nullptr;
+		}
 
 		// blit the background frames
 		setGaugeColor();
 
-		renderBitmap(directives_middle.first_frame, bx, by);
+		if (directives_middle.first_frame >= 0)
+			renderBitmap(directives_middle.first_frame, bx, by);
 		
 		by += text_h;
 
 		if ( second_line ) {
-			renderBitmap(directives_middle.first_frame, bx, by);
+
+			if (directives_top.first_frame >= 0)
+				renderBitmap(directives_middle.first_frame, bx, by);
 			
 			by += text_h;
 		}
@@ -317,23 +349,24 @@ void HudGaugeDirectives::render(float frametime)
 		// blit the text
 		gr_set_color_fast(c);
 		
-		renderString(x, y, EG_OBJ1 + i, buf);
+		renderString(x + line_x_offset, y, EG_OBJ1 + i, buf);
 		
-		y_count++;
+		Training_obj_num_display_lines++;
 
 		if ( second_line ) {
-			y = position[1] + text_start_offsets[1] + y_count * text_h;
+			y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 			
 			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
 			
-			y_count++;
+			Training_obj_num_display_lines++;
 		}
 	}
 
 	// draw the bottom of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
+	if (directives_bottom.first_frame >= 0)
+		renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
 }
 
 /**
@@ -357,31 +390,26 @@ void training_mission_init()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 		Training_message_queue[i].special_message = NULL;
 
-	// The E: This is now handled by the new HUD code. No need to check here.
-	Directive_frames_loaded = 1;
-	
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
 	}
+
+	Training_context = 0;
+	Training_context_speed_set = 0;
+	Training_context_speed_timestamp = TIMESTAMP::invalid();
+	Training_context_path = nullptr;
+
+	Players_target = UNINITIALIZED;
+	Players_mlocked = UNINITIALIZED;
+	Players_targeted_subsys = nullptr;
+	Players_target_timestamp = TIMESTAMP::invalid();
+	Players_mlocked_timestamp = TIMESTAMP::invalid();
 }
 
-void training_mission_page_in()
+int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
 {
-	int i;
-	for ( i = 0; i < NUM_DIRECTIVE_GAUGES; i++ ) {
-		bm_page_in_aabitmap( Directive_gauge[i].first_frame, Directive_gauge[i].num_frames );
-	}
-}
-
-
-int comp_training_lines_by_born_on_date(const void *m1, const void *m2)
-{
-	int *e1, *e2;
-	e1 = (int*) m1;
-	e2 = (int*) m2;
-
-	return (Mission_events[*e1 & 0xffff].born_on_date - Mission_events[*e2 & 0xffff].born_on_date);
+	return timestamp_compare(Mission_events[*e1 & 0xffff].born_on_date, Mission_events[*e2 & 0xffff].born_on_date);
 }
 
 
@@ -394,10 +422,10 @@ int comp_training_lines_by_born_on_date(const void *m1, const void *m2)
 #define MIN_FAILED_TIME			7
 void sort_training_objectives()
 {
-	int i, event_status, offset;
+	int i, offset;
 
 	// start by sorting on born on date
-	insertion_sort(Training_obj_lines, Training_obj_num_lines, sizeof(int), comp_training_lines_by_born_on_date);
+	insertion_sort(Training_obj_lines, Training_obj_num_lines, comp_training_lines_by_born_on_date);
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines
@@ -410,27 +438,30 @@ void sort_training_objectives()
 	// go through lines 0 to offset-1 and check if there are any CURRENT or	RECENTLY_KNOWN events that should be shown
 	int num_offset_events = 0;
 	for (i=0; i<offset; i++) {
-		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		int event_num = TRAINING_OBJ_LINES_MASK(i);
+		auto event_status = mission_get_event_status(event_num);
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
 		if(MULTI_TEAM && (Net_player != NULL)){
-			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+			if((Mission_events[event_num].team != -1) &&  (Net_player->p_info.team != Mission_events[event_num].team)){
 				continue ;
 			}
 		}
 
-		if (event_status == EVENT_CURRENT)  {
+		if (event_status == EventStatus::CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			num_offset_events++;
-		} else if (event_status ==	EVENT_SATISFIED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_SATISFIED_TIME) {
+		} else if (event_status == EventStatus::SATISFIED) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
-		} else if (event_status ==	EVENT_FAILED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
+		} else if (event_status == EventStatus::FAILED) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
 			} else {
@@ -446,26 +477,29 @@ void sort_training_objectives()
 
 	// go through lines offset to Training_obj_num_lines to check which should be shown, since some will need to be bumped
 	for (i=offset; i<Training_obj_num_lines; i++) {
-		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		int event_num = TRAINING_OBJ_LINES_MASK(i);
+		auto event_status = mission_get_event_status(event_num);
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
 		if(MULTI_TEAM && (Net_player != NULL)){
-			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+			if((Mission_events[event_num].team != -1) &&  (Net_player->p_info.team != Mission_events[event_num].team)){
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 				continue ;
 			}
 		}
 
-		if (event_status == EVENT_CURRENT)  {
+		if (event_status == EventStatus::CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
-		} else if (event_status ==	EVENT_SATISFIED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_SATISFIED_TIME) {
+		} else if (event_status == EventStatus::SATISFIED) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
-		} else if (event_status ==	EVENT_FAILED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
+		} else if (event_status == EventStatus::FAILED) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
@@ -519,13 +553,13 @@ void sort_training_objectives()
  */
 void training_check_objectives()
 {
-	int i, event_idx, event_status;
+	int i, event_idx;
 
 	Training_obj_num_lines = 0;
-	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
-		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + Directive_wait_time) ) {
-			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
+	for (event_idx=0; event_idx<(int)Mission_events.size(); event_idx++) {
+		auto event_status = mission_get_event_status(event_idx);
+		if ( (event_status != EventStatus::UNBORN) && !Mission_events[event_idx].objective_text.empty() && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
+			if (!Training_failure || !strnicmp(Mission_events[event_idx].name.c_str(), XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
 				for (i=0; i<Training_obj_num_lines; i++) {
@@ -556,8 +590,8 @@ void training_check_objectives()
 				}
 
 				// if there is a keypress message with directive, process that too.
-				if (Mission_events[event_idx].objective_key_text) {
-					if (event_status == EVENT_CURRENT) {
+				if (!Mission_events[event_idx].objective_key_text.empty()) {
+					if (event_status == EventStatus::CURRENT) {
 
 						// not in objective list, need to add it
 						if (i == Training_obj_num_lines) {
@@ -590,6 +624,14 @@ void training_check_objectives()
 	// now sort list of events
 	// sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
 	sort_training_objectives();
+
+	// Cyborg - Multiplayer clients will not run the other directive functions, so just run this quick check to see
+	// if the directive success sound should be played.
+	if (MULTIPLAYER_CLIENT) {
+		if ( !hud_disabled() && hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
+			mission_maybe_play_directive_success_sound();
+		}
+	}
 }
 
 /**
@@ -601,10 +643,10 @@ void training_mission_shutdown()
 
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
-			audiostream_close_file(Training_voice_handle, 0);
+			audiostream_close_file(Training_voice_soundstream, false);
 
 		} else {
-			snd_stop(Training_voice_handle);
+			snd_stop(Training_voice_snd_handle);
 		}
 	}
 
@@ -621,7 +663,7 @@ void training_mission_shutdown()
 	Training_voice = -1;
 	Training_num_lines = Training_obj_num_lines = 0;
 
-	*Training_buf = 0;
+	Training_buf.clear();
 }
 
 /**
@@ -640,19 +682,18 @@ char *translate_message_token(char *str)
 /**
  * Translates all special tokens in a message, producing the new finalized message to be displayed
  */
-void message_translate_tokens(char *buf, const char *text)
+SCP_string message_translate_tokens(const char *text)
 {
-	char temp[40], *ptr;
-	const char *toke1, *toke2;
+	char temp[40];
+	const char *ptr, *toke1, *toke2;
 	int r;
+	SCP_string buf;
 
-	*buf = 0;
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
 	while (toke1 || toke2) {  // is either token types present?
 		if (!toke2 || (toke1 && (toke1 < toke2))) {  // found $ before #
-			strncpy(buf, text, toke1 - text + 1);  // copy text up to token
-			buf += toke1 - text + 1;
+			buf.append(text, toke1 - text + 1);  // copy text up to token
 			text = toke1 + 1;  // advance pointers past processed data
 
 			toke2 = strchr(text, '$');
@@ -660,37 +701,34 @@ void message_translate_tokens(char *buf, const char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke2 - text) < 0) || ((toke2 - text) >= (ptr_s)sizeof(temp)) ) {
-				Int3();
-			} else {
+			if ( (toke2 > text) && ((toke2 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
 				ptr = translate_key(temp);  // try and translate key
-				if (ptr) {  // was key translated properly?
+				if (ptr != nullptr) {  // was key translated properly?
 					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
-						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
+						// check if a warning message should be displayed if the key is unbound
+						if ( (The_mission.game_type & MISSION_TYPE_TRAINING) || (Always_warn_player_about_unbound_keys && (The_mission.game_type & MISSION_TYPE_SINGLE)) ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
 								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
-								XSTR(Control_config[Failed_key_index].text, CONTROL_CONFIG_XSTR + Failed_key_index));
+								XSTR(Control_config[Failed_key_index].text.c_str(), CONTROL_CONFIG_XSTR + Failed_key_index));
 
 							if (r) {  // do they want to abort the mission?
 								gameseq_post_event(GS_EVENT_END_GAME);
-								return;
+								return buf;
 							}
 
 							gameseq_post_event(GS_EVENT_CONTROL_CONFIG);  // goto control config screen to bind the control
 						}
 					}
 
-					buf--;  // erase the $
-					strcpy(buf, ptr);  // put translated key in place of token
-					buf += strlen(buf);
+					buf.pop_back();	// erase the $
+					buf += ptr;		// put translated key in place of token
 					text = toke2 + 1;
 				}
 			}
 		} else {
-			strncpy(buf, text, toke2 - text + 1);  // copy text up to token
-			buf += toke2 - text + 1;
+			buf.append(text, toke2 - text + 1);  // copy text up to token
 			text = toke2 + 1;  // advance pointers past processed data
 
 			toke1 = strchr(text, '#');
@@ -698,16 +736,13 @@ void message_translate_tokens(char *buf, const char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke1 - text) < 0) || ((toke1 - text) >= (ptr_s)sizeof(temp)) ) {
-				Int3();
-			} else {
+			if ( (toke1 > text) && ((toke1 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
 				temp[toke1 - text] = 0;  // null terminate string
 				ptr = translate_message_token(temp);  // try and translate key
 				if (ptr) {  // was key translated properly?
-					buf--;  // erase the #
-					strcpy(buf, ptr);  // put translated key in place of token
-					buf += strlen(buf);
+					buf.pop_back();	// erase the #
+					buf += ptr;		// put translated key in place of token
 					text = toke1 + 1;
 				}
 			}
@@ -717,8 +752,8 @@ void message_translate_tokens(char *buf, const char *text)
 		toke2 = strchr(text, '#');
 	}
 
-	strcpy(buf, text);
-	return;
+	buf += text;
+	return buf;
 }
 
 /**
@@ -735,10 +770,10 @@ int message_play_training_voice(int index)
 	if (index < 0) {
 		if (Training_voice >= 0) {
 			if (Training_voice_type) {
-				audiostream_close_file(Training_voice_handle, 0);
+				audiostream_close_file(Training_voice_soundstream, false);
 
 			} else {
-				snd_stop(Training_voice_handle);
+				snd_stop(Training_voice_snd_handle);
 			}
 		}
 
@@ -746,7 +781,7 @@ int message_play_training_voice(int index)
 		return -1;
 	}
 
-	if (Message_waves[index].num < 0) {
+	if (!Message_waves[index].num.isValid()) {
 		fp = cfopen(Message_waves[index].name, "rb");
 		if (!fp)
 			return -1;
@@ -758,35 +793,35 @@ int message_play_training_voice(int index)
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
 						if (Training_voice == index)
-							audiostream_stop(Training_voice_handle, 1, 0);
+							audiostream_stop(Training_voice_soundstream, 1, 0);
 						else
-							audiostream_close_file(Training_voice_handle, 0);
+							audiostream_close_file(Training_voice_soundstream, false);
 
 					} else {
-						snd_stop(Training_voice_handle);
+						snd_stop(Training_voice_snd_handle);
 					}
 				}
 
-				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4)) {
-					Training_voice_handle = audiostream_open(Message_waves[index].name, ASF_VOICE);
-					if (Training_voice_handle < 0) {
+				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4) != 0) {
+					Training_voice_soundstream = audiostream_open(Message_waves[index].name, ASF_VOICE);
+					if (Training_voice_soundstream < 0) {
 						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));
 					}
 				}
 			}  // Training_voice should be valid and loaded now
 
 			Training_voice_type = 1;
-			if (Training_voice_handle >= 0)
-				audiostream_play(Training_voice_handle, (Master_voice_volume * aav_voice_volume), 0);
+			if (Training_voice_soundstream >= 0)
+				audiostream_play(Training_voice_soundstream, (Master_voice_volume * aav_voice_volume), 0);
 
 			Training_voice = index;
 			return Training_voice;
 
 		} else {
-			game_snd tmp_gs;
-			strcpy_s(tmp_gs.filename, Message_waves[index].name);
-			Message_waves[index].num = snd_load(&tmp_gs, 0);
-			if (Message_waves[index].num < 0) {
+			game_snd_entry tmp_gse;
+			strcpy_s(tmp_gse.filename, Message_waves[index].name);
+			Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
+			if (!Message_waves[index].num.isValid()) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;
 			}
@@ -795,18 +830,18 @@ int message_play_training_voice(int index)
 
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
-			audiostream_close_file(Training_voice_handle, 0);
+			audiostream_close_file(Training_voice_soundstream, false);
 
 		} else {
-			snd_stop(Training_voice_handle);
+			snd_stop(Training_voice_snd_handle);
 		}
 	}
 
 	Training_voice = index;
-	if (Message_waves[index].num >= 0)
-		Training_voice_handle = snd_play_raw(Message_waves[index].num, 0.0f);
+	if (Message_waves[index].num.isValid())
+		Training_voice_snd_handle = snd_play_raw(Message_waves[index].num, 0.0f);
 	else
-		Training_voice_handle = -1;
+		Training_voice_snd_handle = sound_handle::invalid();
 
 	Training_voice_type = 0;
 	return Training_voice;
@@ -826,37 +861,34 @@ void message_training_setup(int m, int length, char *special_message)
 	}
 
 	// translate tokens in message to the real things
-	if (special_message == NULL)
-		message_translate_tokens(Training_buf, Messages[m].message);
-	else
-		message_translate_tokens(Training_buf, special_message);
+	Training_buf = message_translate_tokens(special_message ? special_message : Messages[m].message);
 
-	HUD_add_to_scrollback(Training_buf, HUD_SOURCE_TRAINING);
+	HUD_add_to_scrollback(Training_buf.c_str(), HUD_SOURCE_TRAINING);
 
 	// moved from message_training_display() because we got rid of an extra buffer and we have to determine
 	// the number of lines earlier to avoid inadvertant modification of Training_buf.  - taylor
-	training_process_message(Training_buf);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_lengths, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+	training_process_message();
+	Training_num_lines = split_str(Training_buf.c_str(), TRAINING_LINE_WIDTH, Training_line_lengths, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 
-	Assert( Training_num_lines >= 0 );
+	Assert(Training_num_lines >= 0);
 
-	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
+	if ((message_play_training_voice(Messages[m].wave_info.index) < 0) || (Master_voice_volume <= 0)) {
 		if (length > 0)
-			Training_message_timestamp = timestamp(length * 1000);
+			Training_message_timestamp = _timestamp(length * MILLISECONDS_PER_SECOND);
 		else
-			Training_message_timestamp = timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
+			Training_message_timestamp = _timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
 
 	} else
-		Training_message_timestamp = 0;
+		Training_message_timestamp = TIMESTAMP::invalid();
 }
 
 /**
  * Add a message to the queue to be sent later
  */
-void message_training_queue(const char *text, int timestamp, int length)
+void message_training_queue(const char *text, TIMESTAMP timestamp, int length)
 {
 	int m;
-	char temp_buf[TRAINING_MESSAGE_LENGTH];
+	SCP_string temp_buf;
 
 	Assert(Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX);
 	if (Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX) {
@@ -885,9 +917,12 @@ void message_training_queue(const char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
-		strcpy_s(temp_buf, Messages[m].message);
-		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
-			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf);
+		// karajorma/jg18 - replace container references if necessary
+		temp_buf = Messages[m].message;
+		const bool replace_var = sexp_replace_variable_names_with_values(temp_buf);
+		const bool replace_con = sexp_container_replace_refs_with_values(temp_buf);
+		if (replace_var || replace_con)
+			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf.c_str());
 
 		Training_message_queue_count++;
 	}
@@ -914,7 +949,7 @@ void message_training_remove_from_queue(int idx)
 	Training_message_queue_count--;
 	Training_message_queue[Training_message_queue_count].length = -1;
 	Training_message_queue[Training_message_queue_count].num = -1;
-	Training_message_queue[Training_message_queue_count].timestamp = -1;
+	Training_message_queue[Training_message_queue_count].timestamp = TIMESTAMP::invalid();
 	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
 }
 
@@ -923,20 +958,38 @@ void message_training_remove_from_queue(int idx)
  */
 void message_training_queue_check()
 {
-	int i, iship_num;
-
 	// get the instructor's ship.
-	iship_num = ship_name_lookup(NOX("instructor"));
-
-	// if the instructor is dying or departing, do nothing
-	if ( iship_num != -1 )	// added by Goober5000
-		if (Ships[iship_num].is_dying_or_departing())
+	auto ship_entry = ship_registry_get(NOX("instructor"));
+	if (ship_entry != nullptr)
+	{
+		if (ship_entry->has_shipp())
+		{
+			// if the instructor is dying or departing, do nothing
+			if (ship_entry->shipp()->is_dying_or_departing())
+				return;
+		}
+		else
+		{
+			// if the instructor has left the mission, or hasn't arrived yet, do nothing
 			return;
+		}
+	}
 
 	if (Training_failure)
 		return;
 
-	for (i=0; i<Training_message_queue_count; i++) {
+	if (Dont_preempt_training_voice) {
+		// don't pre-empt any voice files that are playing
+		if (Training_voice >= 0) {
+			auto z = (Training_voice_type) ? audiostream_is_playing(Training_voice_soundstream) : snd_is_playing(Training_voice_snd_handle);
+			if (z)
+				return;
+		}
+		if (fsspeech_playing())
+			return;
+	}
+
+	for (int i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
 			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
 
@@ -966,7 +1019,7 @@ void message_training_update_frame()
 		return;
 	}
 
-	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
+	if (timestamp_elapsed(Training_message_timestamp) || Training_buf.empty()){
 		return;
 	}
 
@@ -979,14 +1032,14 @@ void message_training_update_frame()
 
 	Training_message_visible = 1;
 
-	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
+	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp.isValid())) {
 		if (Training_voice_type)
-			z = audiostream_is_playing(Training_voice_handle);
+			z = audiostream_is_playing(Training_voice_soundstream);
 		else
-			z = snd_is_playing(Training_voice_handle);
+			z = snd_is_playing(Training_voice_snd_handle);
 
 		if (!z)
-			Training_message_timestamp = timestamp(2000);  // 2 second delay
+			Training_message_timestamp = _timestamp(2 * MILLISECONDS_PER_SECOND);  // 2 second delay
  	}
 
 	Training_message_method = 0;
@@ -997,7 +1050,7 @@ HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, false, true, VM_EXTE
 {
 }
 
-bool HudGaugeTrainingMessages::canRender()
+bool HudGaugeTrainingMessages::canRender() const
 {
 	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;
@@ -1027,7 +1080,7 @@ void HudGaugeTrainingMessages::pageIn()
 /**
  * Displays (renders) the training message to the screen
  */
-void HudGaugeTrainingMessages::render(float frametime)
+void HudGaugeTrainingMessages::render(float  /*frametime*/)
 {
 	const char *str;
 	char buf[256];
@@ -1037,7 +1090,7 @@ void HudGaugeTrainingMessages::render(float frametime)
 		return;
 	}
 
-	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
+	if (timestamp_elapsed(Training_message_timestamp) || Training_buf.empty()){
 		return;
 	}
 
@@ -1048,7 +1101,21 @@ void HudGaugeTrainingMessages::render(float frametime)
 	gr_set_screen_scale(base_w, base_h);
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(position[0], position[1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
+
+	int nx = 0;
+	int ny = 0;
+
+	if (reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+
+		gr_reset_screen_scale();
+		gr_resize_screen_pos(&nx, &ny);
+		gr_set_screen_scale(base_w, base_h);
+		gr_unsize_screen_pos(&nx, &ny);
+	}
+
+	gr_shade(position[0] + nx, position[1] + ny, TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
 	gr_reset_screen_scale();
 
 	gr_set_color_fast(&Color_bright_blue);
@@ -1060,7 +1127,7 @@ void HudGaugeTrainingMessages::render(float frametime)
 		y = position[1] + i * height + height / 2 + 1;
 
 		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
-			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
+			if ((count < MAX_TRAINING_MESSAGE_MODS) && (static_cast<size_t>(str - Training_lines[i]) == Training_message_mods[count].pos)) {
 				buf[z] = 0;
 				renderPrintf(x, y, "%s", buf);
 				gr_get_string_size(&z, NULL, buf);
@@ -1092,20 +1159,20 @@ void HudGaugeTrainingMessages::render(float frametime)
 /**
  * Processes a new training message to get hilighting information and store it in internal structures.
  */
-void training_process_message(char *message)
+void training_process_message()
 {
-	int count;
-	char *src, *dest, buf[TRAINING_MESSAGE_LENGTH];
+	int count = 0;
+	SCP_string orig = Training_buf;
+	Training_buf.clear();
+	auto src = orig.c_str();
 
-	message_translate_tokens(buf, message);
-	count = 0;
-	src = buf;
-	dest = Training_buf;
+	// basically what this is doing is re-copying the training message, marking out the points where it is bolded or un-bolded
+	// (it does the re-copying in case it has to skip over the bold tags)
 	while (*src) {
 		if (!strnicmp(src, NOX("<b>"), 3)) {
 			Assert(count < MAX_TRAINING_MESSAGE_MODS);
 			src += 3;
-			Training_message_mods[count].pos = dest;
+			Training_message_mods[count].pos = Training_buf.size();
 			Training_message_mods[count].mode = TMMOD_BOLD;
 			count++;
 		}
@@ -1113,17 +1180,16 @@ void training_process_message(char *message)
 		if (!strnicmp(src, NOX("</b>"), 4)) {
 			Assert(count < MAX_TRAINING_MESSAGE_MODS);
 			src += 4;
-			Training_message_mods[count].pos = dest;
+			Training_message_mods[count].pos = Training_buf.size();
 			Training_message_mods[count].mode = TMMOD_NORMAL;
 			count++;
 		}
 
-		*dest++ = *src++;
+		Training_buf += *src++;
 	}
 
-	*dest = 0;
 	if (count < MAX_TRAINING_MESSAGE_MODS)
-		Training_message_mods[count].pos = NULL;
+		Training_message_mods[count].pos = 0;
 }
 
 void training_fail()

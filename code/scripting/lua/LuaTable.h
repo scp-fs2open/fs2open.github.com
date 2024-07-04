@@ -100,15 +100,9 @@ class LuaTable: public LuaValue {
 	LuaTable();
 
 	/**
-     * @brief Copy-constructor
-     * @param other The other table.
-     */
-	LuaTable(const LuaTable& other);
-
-	/**
      * Dereferences the stored reference to the table if it exists.
      */
-	virtual ~LuaTable();
+	~LuaTable() override;
 
 	/**
      * @brief Sets the metatable.
@@ -127,7 +121,7 @@ class LuaTable: public LuaValue {
      * @param ref The new reference
      * @return void
      */
-	void setReference(LuaReference ref) override;
+	void setReference(const LuaReference& ref) override;
 
 	/**
      * @brief Adds a value to this lua table.
@@ -136,13 +130,13 @@ class LuaTable: public LuaValue {
      * @param value The value to set at the index.
      */
 	template<class IndexType, class ValueType>
-	void addValue(const IndexType& index, const ValueType& value) {
+	void addValue(IndexType&& index, ValueType&& value) {
 		// Push the table onto the stack by using the reference
-		this->pushValue();
+		this->pushValue(_luaState);
 
 		// Push the index and value onto the stac by using the template functions
-		convert::pushValue(_luaState, index);
-		convert::pushValue(_luaState, value);
+		convert::pushValue(_luaState, std::forward<IndexType>(index));
+		convert::pushValue(_luaState, std::forward<ValueType>(value));
 
 		// Set the value in the table
 		lua_settable(_luaState, -3);
@@ -159,8 +153,8 @@ class LuaTable: public LuaValue {
      * @return @c true when the value could be successfully converted, @c false otherwise
      */
 	template<class IndexType, class ValueType>
-	bool getValue(const IndexType& index, ValueType& target) {
-		this->pushValue();
+	bool getValue(const IndexType& index, ValueType& target) const {
+		this->pushValue(_luaState);
 
 		convert::pushValue(_luaState, index);
 
@@ -189,7 +183,7 @@ class LuaTable: public LuaValue {
      */
 	template<class ValueType, class IndexType>
 	// IndexType is last so the compiler can deduce it from the argument
-	ValueType getValue(const IndexType& index) {
+	ValueType getValue(const IndexType& index) const {
 		ValueType target;
 
 		if (!getValue(index, target)) {
@@ -206,7 +200,7 @@ class LuaTable: public LuaValue {
      *
      * @return The size value.
      */
-	size_t getLength();
+	size_t getLength() const;
 
 	/**
 	 * @brief Returns an iterator to the begin of this table
@@ -217,7 +211,7 @@ class LuaTable: public LuaValue {
 	 *
 	 * @return The iterator to the begin of the table
 	 */
-	iterator begin();
+	iterator begin() const;
 
 	/**
 	 * @brief Returns an iterator to the end of this table
@@ -226,31 +220,13 @@ class LuaTable: public LuaValue {
 	 *
 	 * @return The iterator to the end of the table
 	 */
-	iterator end();
+	iterator end() const;
 
 };
 
 namespace convert {
 
-template<>
-inline LuaTable popValue<LuaTable>(lua_State* luaState, int stackposition, bool remove) {
-	if (!isValidIndex(luaState, stackposition)) {
-		throw LuaException("Specified stack position is not valid!");
-	}
-
-	if (!lua_istable(luaState, stackposition)) {
-		throw LuaException("Specified index is no table!");
-	} else {
-		LuaTable target;
-		target.setReference(UniqueLuaReference::create(luaState, stackposition));
-
-		if (remove) {
-			lua_remove(luaState, stackposition);
-		}
-
-		return target;
-	}
-}
+bool popValue(lua_State* luaState, LuaTable& target, int stackposition = -1, bool remove = true);
 
 }
 }

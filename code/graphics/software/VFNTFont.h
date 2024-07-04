@@ -25,12 +25,12 @@ namespace font
 		*
 		* @param [in]	fnt	A pointer to the font data. Has to be non-null
 		*/
-		VFNTFont(font *fnt);
+		explicit VFNTFont(font *fnt);
 
 		/**
 		* @brief	Destroys the allocated font pointer
 		*/
-		~VFNTFont();
+		~VFNTFont() override;
 
 		/**
 		* @brief	Gets the font data struct.
@@ -44,7 +44,7 @@ namespace font
 		*
 		* @return	The type.
 		*/
-		virtual FontType getType() const SCP_OVERRIDE;
+		FontType getType() const override;
 
 		/**
 		* @brief	Gets the height of this font
@@ -53,7 +53,7 @@ namespace font
 		*
 		* @return	The height.
 		*/
-		virtual float getTextHeight() const SCP_OVERRIDE;
+		float getTextHeight() const override;
 
 		/**
 		* @brief	Gets the size of the specified string in pixels.
@@ -64,7 +64,7 @@ namespace font
 		* @param [out]	width 	If non-null, the width.
 		* @param [out]	height	If non-null, the height.
 		*/
-		virtual void getStringSize(const char *text, size_t textLen,
-			int resize_mode, float *width, float *height) const SCP_OVERRIDE;
+		void
+		getStringSize(const char* text, size_t textLen, int resize_mode, float* width, float* height) const override;
 	};
 }

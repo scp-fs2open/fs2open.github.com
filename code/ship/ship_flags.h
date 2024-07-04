@@ -8,7 +8,9 @@ namespace Ship {
 	FLAG_LIST(Weapon_Flags){
 		Beam_Free = 0,	// if this is a beam weapon, its free to fire
 		Turret_Lock,	// is this turret is free to fire or locked
-		Tagged_Only,	// only fire if target is tagged
+		Tagged_Only,	// only fire if target is tagged		
+		Secondary_trigger_down,	// indicates that the trigger is held down, used for multilock hold-to-lock type missiles
+		Primary_trigger_down,	// indicates that the trigger is held down
 
 		NUM_VALUES
 	};
@@ -25,12 +27,15 @@ namespace Ship {
 		Vanished,					// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
 		Missiles_ignore_if_dead,	// forces homing missiles to target hull if subsystem is dead before missile hits it.
 		Rotates,
+		Translates,
 		Damage_as_hull,				// Applies armor damage instead of subsystem damge. - FUBAR
 		No_aggregate,				// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
 		Play_sound_for_player,		// If this subsystem is a turret on a player ship, play firing sounds - The E 
 		No_disappear,				// prevents submodel from disappearing when subsys destroyed
         Autorepair_if_disabled,     // Allows the subsystem to repair itself even when disabled - MageKing17
         No_autorepair_if_disabled,  // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
+		Forced_target,				// The turrets current target is being forced by SEXP, and won't let it go until it dies or is cleared by SEXP
+		Forced_subsys_target,		// The turrets current subsystem target is being forced by SEXP, implies Forced_target
 
 		NUM_VALUES
 	};
@@ -57,7 +62,9 @@ namespace Ship {
 		Depart_warp,				// ship is departing via warp-out
 		Depart_dockbay,				// ship is departing via docking bay
 		Arriving_stage_1,			// ship is arriving. In other words, doing warp in effect, stage 1
+		Arriving_stage_1_dock_follower,		// "Arriving but Not the Dock Leader"; these guys need some warp stuff done but not all
 		Arriving_stage_2,			// ship is arriving. In other words, doing warp in effect, stage 2             
+		Arriving_stage_2_dock_follower,		// "Arriving but Not the Dock Leader"; these guys need some warp stuff done but not all
 		Engines_on,					// engines sound should play if set
 		Dock_leader,				// Goober5000 - this guy is in charge of everybody he's docked to
 		Cargo_revealed,				// ship's cargo is revealed to all friendly ships
@@ -66,7 +73,7 @@ namespace Ship {
 		Secondary_dual_fire,		// ship is firing two missiles from the current secondary bank
 		Warp_broken,				// set when warp drive is not working, but is repairable
 		Warp_never,					// set when ship can never warp
-		Trigger_down,				// ship has its "trigger" held down
+		Trigger_down,				// ship has its "trigger" held down, PLAYER ONLY
 		Ammo_count_recorded,		// we've recorded the initial secondary weapon count (which is used to limit support ship rearming)
 		Hidden_from_sensors,		// ship doesn't show up on sensors, blinks in/out on radar
 		Scannable,					// ship is "scannable".  Play scan effect and report as "Scanned" or "not scanned".
@@ -101,10 +108,39 @@ namespace Ship {
 		No_thrusters,				// The E - Thrusters on this ship are not rendered.
 		Ship_locked,				// Karajorma - Prevents the player from changing the ship class on loadout screen
 		Weapons_locked,				// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
-		Ship_selective_linking,		// RSAXVC - Allow pilot to pick firing configuration
-		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
+		Scramble_messages,			// Goober5000 - all messages sent from or received by this ship appear scrambled
+		EMP_doesnt_scramble_messages,	// Goober5000 - when EMP is active, messages will not have the scramble effect
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
+		Subsystem_movement_locked,	// The_E -- Rotating subsystems are locked in place.
+		Draw_as_wireframe,			// The_E -- Ship will be rendered in wireframe mode
+		Render_without_diffuse,		// The_E -- Ship will be rendered without diffuse map (needed for the lab)
+		Render_without_glowmap,
+		Render_without_specmap,
+		Render_without_normalmap,
+		Render_without_heightmap,
+		Render_without_ambientmap,
+		Render_without_miscmap,
+		Render_without_reflectmap,
+		Render_full_detail, 
+		Render_without_light,
+		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Render_with_alpha_mult,
+		Has_display_name,			// Goober5000
+		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
+		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
+		No_passive_lightning,		// Asteroth - disables ship passive lightning
+		Same_arrival_warp_when_docked,		// Goober5000
+		Same_departure_warp_when_docked,	// Goober5000
+		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
+		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
+		Cannot_perform_scan,		// Goober5000 - ship cannot scan other ships
+		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
+		Maneuver_despite_engines,	// Goober5000 - ship can move even when engines are disabled or disrupted
+		Force_primary_unlinking,	// plieblang - turned on when the ship is under good-primary-time
+		No_scanned_cargo,                 //MjnMixael -- The cargo will never be revealed, instead always returning "Scanned" or "Not Scanned"
 
 		NUM_VALUES
 
@@ -117,6 +153,7 @@ namespace Ship {
 		Player_deleted,
 		Been_tagged,
 		Red_alert_carry,
+		From_player_wing,
 
 		NUM_VALUES
 	};
@@ -154,8 +191,8 @@ namespace Ship {
 		Awacs,							// ditto
 		Knossos_device,					// this is the knossos device
 		No_fred,						// not available in fred
-		Default_in_tech_database,		// default in tech database - Goober5000
-		Default_in_tech_database_m,		// ditto - Goober5000
+		Default_in_tech_database,		// this entry's default tech database status, as specified in ships.tbl; used when the tech db is "reset to default" - Goober5000
+		Default_in_tech_database_m,		// ditto for multiplayer - Goober5000
 		Flash,							// makes a flash when it explodes
 		Show_ship_model,				// Show ship model even in first person view
 		Surface_shields,				// _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
@@ -174,6 +211,12 @@ namespace Ship {
 		Draw_weapon_models,				// the ship draws weapon models of any sort (used to be a boolean)
 		Model_point_shields,			// zookeeper - uses model-defined shield points instead of quadrants
         Subsys_repair_when_disabled,    // MageKing17 - Subsystems auto-repair themselves even when disabled.
+		Dont_bank_when_turning,			// Goober5000
+		Dont_clamp_max_velocity,		// Goober5000
+		Instantaneous_acceleration,		// Goober5000
+		Has_display_name,				// Goober5000
+		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
+		No_impact_debris,				// wookieejedi - Don't spawn the small debris on impact
 
 		NUM_VALUES
 	};
@@ -208,6 +251,7 @@ namespace Ship {
         AI_turrets_attack,
         AI_can_form_wing,
         AI_protected_on_cripple,
+		Targeted_by_huge_Ignored_by_small_only,
 
         NUM_VALUES
     };
@@ -217,8 +261,8 @@ namespace Ship {
 		Bank_left,
 		Pitch_up,
 		Pitch_down,
-		Roll_right,
-		Roll_left,
+		Yaw_right,
+		Yaw_left,
 		Slide_right,
 		Slide_left,
 		Slide_up,
@@ -231,9 +275,10 @@ namespace Ship {
 
 
     // Not all wing flags are parseable or saveable in mission files. Right now, the only ones which can be set by mission designers are:
-    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp, no_dynamic and nav_carry_status
+    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_first_wave_message, no_arrival_warp, no_departure_warp,
+	// same_arrival_warp_when_docked, same_departure_warp_when_docked, no_dynamic, and nav_carry_status
     // Should that change, bump this variable and make sure to make the necessary changes to parse_wing (in missionparse)
-#define PARSEABLE_WING_FLAGS 8
+#define PARSEABLE_WING_FLAGS 11
 	
     FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed
@@ -250,6 +295,10 @@ namespace Ship {
 		Departure_ordered,		// departure of this wing was ordered by player
 		Never_existed,			// this wing never existed because something prevented it from being created (like its mother ship being destroyed)
 		Nav_carry,				// Kazan - Wing has nav-carry-status
+		Same_arrival_warp_when_docked,		// Goober5000
+		Same_departure_warp_when_docked,	// Goober5000
+		No_first_wave_message,		// don't play arrival message for the first wave
+		Waypoints_no_formation, // wing will not try to form up when running a waypoint together
 
 		NUM_VALUES
 	};

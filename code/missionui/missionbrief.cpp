@@ -20,10 +20,13 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
+#include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "hud/hud.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "menuui/snazzyui.h"
 #include "mission/missionbriefcommon.h"
@@ -41,6 +44,7 @@
 #include "network/multiui.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -72,7 +76,7 @@ static int	Brief_playing_fade_sound;
 hud_anim		Fade_anim;
 
 int	Briefing_music_handle = -1;
-int	Briefing_music_begin_timestamp = 0;
+UI_TIMESTAMP Briefing_music_begin_timestamp;
 
 int Briefing_overlay_id = -1;
 
@@ -191,6 +195,7 @@ matrix Closeup_orient;
 vec3d Closeup_pos;
 int Closeup_font_height;
 int Closeup_x1, Closeup_y1;
+char Closeup_type_name[NAME_LENGTH];
 
 // used for the 3d view of a closeup ship
 float Closeup_zoom;
@@ -303,7 +308,7 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 // --------------------------------------------------------------------------------------
 // Forward declarations
 // --------------------------------------------------------------------------------------
-int brief_setup_closeup(brief_icon *bi);
+int brief_setup_closeup(brief_icon *bi, bool api_access = false);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
 
@@ -333,9 +338,6 @@ void brief_skip_training_pressed()
 		return;
 	}
 
-	// page out mission messages
-	message_mission_shutdown();
-
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ){
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	}
@@ -348,7 +350,7 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	if ( The_mission.flags[Mission::Mission_Flags::End_to_mainhall] ) {
+	if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	} else {
 		gameseq_post_event( GS_EVENT_START_GAME );
@@ -361,8 +363,7 @@ void brief_skip_training_pressed()
 //
 void brief_do_next_pressed(int play_sound)
 {
-	int now;
-	now = timer_get_milliseconds();
+	int now = timer_get_milliseconds();
 
 	if ( (now - Brief_last_auto_advance) < 500 ) {
 		return;
@@ -371,15 +372,14 @@ void brief_do_next_pressed(int play_sound)
 	Current_brief_stage++;
 	if ( Current_brief_stage >= Num_brief_stages ) {
 		Current_brief_stage = Num_brief_stages - 1;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		if ( Quick_transition_stage != -1 )
 			brief_transition_reset();
 	} else {
 		if ( play_sound ) {
-			gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		}
 	}
-
 	Assert(Current_brief_stage >= 0);
 }
 
@@ -396,12 +396,12 @@ void brief_do_prev_pressed()
 			common_maybe_play_cutscene(MOVIE_PRE_BRIEF, true, SCORE_BRIEFING);
 		}
 		else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			if ( Quick_transition_stage != -1 )
 				brief_transition_reset();
 		}
 	} else {
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 	}
 	Assert(Current_brief_stage >= 0);
 }
@@ -418,12 +418,12 @@ void brief_do_start_pressed()
 		Current_brief_stage = 0;
 	}
 	else if ( Current_brief_stage != 0 ) {
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		Current_brief_stage = 0;
 		if ( Quick_transition_stage != -1 )
 			brief_transition_reset();
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	Assert(Current_brief_stage >= 0);
 }
@@ -435,13 +435,13 @@ void brief_do_start_pressed()
 void brief_do_end_pressed()
 {
 	if ( Current_brief_stage != Num_brief_stages - 1 ) {
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		Current_brief_stage = Num_brief_stages - 1;
 		if ( Quick_transition_stage != -1 )
 			brief_transition_reset();
 
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	Assert(Current_brief_stage >= 0);
 }
@@ -452,9 +452,9 @@ void brief_scroll_up_text()
 	Top_brief_text_line--;
 	if ( Top_brief_text_line < 0 ) {
 		Top_brief_text_line = 0;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	} else {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -463,9 +463,9 @@ void brief_scroll_down_text()
 	Top_brief_text_line++;
 	if ( (Num_brief_text_lines[0] - Top_brief_text_line) < Max_brief_Lines) {
 		Top_brief_text_line--;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	} else {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -517,7 +517,7 @@ void brief_button_do(int i)
 			break;
 
 		case BRIEF_BUTTON_PAUSE:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			fsspeech_pause(Player->auto_advance != 0);
 			Player->auto_advance ^= 1;
 			break;
@@ -703,12 +703,20 @@ brief_icon *brief_get_closeup_icon()
 }
 
 // stop showing the closeup view of an icon
-void brief_turn_off_closeup_icon()
+void brief_turn_off_closeup_icon(bool api_access)
 {
-	// turn off closup
+	// turn off closeup
 	if ( Closeup_icon != NULL ) {
-		gamesnd_play_iface(SND_BRIEF_ICON_SELECT);
-		Closeup_icon = NULL;
+		if (Closeup_icon->model_instance_num >= 0) {
+			model_delete_instance(Closeup_icon->model_instance_num);
+			Closeup_icon->model_instance_num = -1;
+		}
+
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+		}
+		Closeup_icon = nullptr;
+		Closeup_type_name[0] = '\0';
 		Closeup_close_button.disable();
 		Closeup_close_button.hide();
 	}
@@ -785,14 +793,19 @@ void brief_set_default_closeup()
  */
 void brief_compact_stages()
 {
-	int num, before, result, i;
+	int num, before, i;
 
 	before = Briefing->num_stages;
 
 	num = 0;
 	while ( num < Briefing->num_stages ) {
-		result = eval_sexp( Briefing->stages[num].formula );
-		if ( !result ) {
+		if ( eval_sexp(Briefing->stages[num].formula) ) {
+			// Goober5000 - replace any variables (probably persistent variables) with their values
+			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+			// karajorma/jg18 - replace container references as well
+			sexp_container_replace_refs_with_values(Briefing->stages[num].text);
+		} else {
+			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
 
 			if ( Briefing->stages[num].icons != NULL ) {
@@ -831,8 +844,6 @@ void brief_compact_stages()
 //
 void brief_init()
 {
-	int i;
-
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){
@@ -852,10 +863,6 @@ void brief_init()
 	} else {
 		Briefing = &Briefings[0];			
 	}
-
-	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Briefing->num_stages; i++)
-		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
 
 	Brief_last_auto_advance = 0;
 
@@ -880,10 +887,12 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.flags[Mission::Mission_Flags::Always_show_goals] || !(The_mission.game_type & MISSION_TYPE_TRAINING))
+	// Show the goals slide iff we're in a training mission with the "toggle goals" flag, or a normal mission without it.
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] == !!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
 		Num_brief_stages = Briefing->num_stages + 1;
-	else
+	} else {
 		Num_brief_stages = Briefing->num_stages;
+	}
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;
@@ -962,11 +971,68 @@ void brief_init()
 		brief_reset_icons(Current_brief_stage);
 	}
 
+	// fire the script hook, since when we first start the briefing there isn't a "new stage" function like there is for cbriefs
+	common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
+
 	Brief_playing_fade_sound = 0;
 	Brief_mouse_up_flag	= 0;
 	Closeup_font_height = gr_get_font_height();
 	Closeup_icon = NULL;
    Brief_inited = TRUE;
+}
+
+// --------------------------------------------------------------------------------------
+// brief_api_init()
+//
+// A pared down version of brief_init() for use with the Scpui API. Removes initialization of
+// elements not used by the API but still allows drawing of the briefing map - Mjn
+//
+void brief_api_init()
+{
+	// get a pointer to the appropriate briefing structure
+	if (MULTI_TEAM) {
+		Briefing = &Briefings[Net_player->p_info.team];
+	} else {
+		Briefing = &Briefings[0];
+	}
+
+	Brief_last_auto_advance = 0;
+
+	brief_compact_stages(); // compact the briefing array to eliminate unused stages
+
+	// The API handles mission goals on it's own, but we still need to count the stages and add one
+	// if appropriate -Mjn
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] ==
+		!!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
+		Num_brief_stages = Briefing->num_stages + 1;
+	} else {
+		Num_brief_stages = Briefing->num_stages;
+	}
+
+	Current_brief_stage = 0;
+	Last_brief_stage = 0;
+
+	// init the scene-cut data
+	brief_transition_reset();
+
+	common_select_init(true);
+
+	// init the briefing map
+	brief_init_map();
+
+	// set the camera target
+	if (Briefing->num_stages > 0) {
+		brief_set_new_stage(&Briefing->stages[0].camera_pos,
+			&Briefing->stages[0].camera_orient,
+			0,
+			Current_brief_stage);
+		brief_reset_icons(Current_brief_stage);
+	}
+
+	Brief_mouse_up_flag = 0;
+	Closeup_font_height = gr_get_font_height();
+	Closeup_icon = nullptr;
+	Brief_inited = TRUE;
 }
 
 // -------------------------------------------------------------------------------------
@@ -1042,18 +1108,9 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_start_frame(1);
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
+	//setup lights
+	common_setup_room_lights();
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	
-	// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
-	// lighting for techroom
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
-	// lighting for techroom
 	Glowpoint_use_depth_buffer = false;
 
 	model_clear_instance( Closeup_icon->modelnum );
@@ -1066,19 +1123,44 @@ void brief_render_closeup(int ship_class, float frametime)
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
 
-	if ( Closeup_icon->type == ICON_JUMP_NODE) {
+	if (Closeup_icon->type == ICON_JUMP_NODE)
+	{
 		render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING);
-	} else {
+	}
+	else
+	{
+		if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_ships))
+		{
+			auto pm = model_get(Closeup_icon->modelnum);
+
+			gr_reset_clip();
+			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
+			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+			model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);
+			shadows_end_render();
+			gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
+		}
+
+		auto sip = &Ship_info[ship_class];
+		if (!sip->replacement_textures.empty())
+			render_info.set_replacement_textures(Closeup_icon->modelnum, sip->replacement_textures);
+
 		render_info.set_flags(MR_AUTOCENTER);
 	}
 
-	model_render_immediate( &render_info, Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos );
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	model_render_immediate( &render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos );
 
     The_mission.flags.set(Mission::Mission_Flags::Fullneb, neb_restore);
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
+
+	shadow_end_frame();
 
 	g3_end_frame();
 
@@ -1156,9 +1238,7 @@ void brief_render(float frametime)
 		}
 	}
 
-	if (Fade_anim.first_frame != -1) {
-		brief_maybe_blit_scene_cut(frametime);
-	}
+	brief_maybe_blit_scene_cut(frametime);
 
 #if !defined(NDEBUG)
 	gr_set_color_fast(&Color_normal);
@@ -1186,52 +1266,60 @@ void brief_render(float frametime)
 }
 
 // -------------------------------------------------------------------------------------
+// brief_api_render()
+//
+// A pared down version of brief_render() for use with the Scpui API. Removes rendering of
+// elements not used by the API but still allows drawing of the briefing map - Mjn
+//
+//	frametime is in seconds
+void brief_api_render(float frametime)
+{
+
+	gr_set_bitmap(Brief_grid_bitmap);
+
+	brief_render_map(Current_brief_stage, frametime);
+
+	//Used to set the time when highlight animations should start
+	Brief_text_wipe_time_elapsed += frametime;
+
+	//We don't play the static anim from the API, but we still need to quick transition between stages -Mjn
+	if (Start_fade_up_anim) {
+		Current_brief_stage = Quick_transition_stage;
+
+		if (Current_brief_stage < 0) {
+			brief_transition_reset();
+			Current_brief_stage = Last_brief_stage;
+		}
+
+		Assert(Current_brief_stage >= 0);
+	}
+}
+
+// -------------------------------------------------------------------------------------
 // brief_set_closeup_pos()
 //
 //
 #define CLOSEUP_OFFSET 20
-void brief_set_closeup_pos(brief_icon *bi)
+void brief_set_closeup_pos(brief_icon * /*bi*/)
 {
 	Closeup_y1 = 10;
-	Closeup_x1 = fl2i(320 - Closeup_coords[gr_screen.res][BRIEF_W_COORD]/2.0f + 0.5f);
-}
-
-void brief_get_closeup_ship_modelnum(brief_icon *ci)
-{
-	object	*objp;
-	ship		*sp;
-
-	// find the model number for the ship to display
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-
-		if ( objp == &obj_used_list || objp->type != OBJ_SHIP ) {
-			continue;
-		}
-		
-		sp = &Ships[objp->instance];
-		if ( sp->ship_info_index == ci->ship_class ) {
-			ci->ship_class = sp->ship_info_index;
-			ci->modelnum = Ship_info[sp->ship_info_index].model_num;
-			ci->radius = objp->radius;
-			break;
-		}
-	}
+	Closeup_x1 = (int)std::lround(320 - Closeup_coords[gr_screen.res][BRIEF_W_COORD]/2.0f);
 }
 
 // -------------------------------------------------------------------------------------
 // brief_setup_closeup()
 //
-// exit: 0	=>		set-up icon sucessfully
+// exit: 0	=>		set-up icon successfully
 //			-1	=>		could not setup closeup icon
-int brief_setup_closeup(brief_icon *bi)
+int brief_setup_closeup(brief_icon *bi, bool api_access)
 {
 	char				pof_filename[NAME_LENGTH];
 	ship_info		*sip=NULL;
 	vec3d			tvec;
 
 	Closeup_icon = bi;
-	Closeup_icon->ship_class = bi->ship_class;
 	Closeup_icon->modelnum = -1;
+	Closeup_icon->model_instance_num = -1;
 
 	Closeup_one_revolution_time = ONE_REV_TIME;
 
@@ -1247,60 +1335,84 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		*/
 		break;
+
 	case ICON_ASTEROID_FIELD:
+		if(Asteroid_icon_closeup_model[0] == '\0') {
+			Warning(LOCATION, "Tried to display an asteroid field icon, but no asteroids are available.");
+			Closeup_icon = nullptr;
+			return -1;
+		}
+
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Asteroid", 431));
+		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
+
 	case ICON_JUMP_NODE:
-		strcpy_s(pof_filename, NOX("subspacenode.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "jump node", 432));
+		strcpy_s(pof_filename, NOX(JN_DEFAULT_MODEL));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Jump Node", 432));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
+
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
 		strcpy_s(pof_filename, NOX("unknownship.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "unknown", 433));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Unknown", 433));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
+
 	default:
-		brief_get_closeup_ship_modelnum(Closeup_icon);
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
+		strcpy_s(Closeup_type_name, sip->name);
 
-		strcpy_s(Closeup_icon->closeup_label,(sip->alt_name[0]) ? sip->alt_name : sip->name);
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
-		// cut any text off after (and including) '#' char
-		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
-
-		// Goober5000 - wcsaga doesn't want this
-		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {
-			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
+			if ((sip->class_type < 0 || !Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display])
+				&& (sip->is_small_ship() || sip->is_big_ship() || sip->is_huge_ship() || sip->flags[Ship::Info_Flags::Sentrygun])) {
+					strcat_s(Closeup_icon->closeup_label, XSTR(" class", 434));
+			}
 		}
-
 		break;
 	}
 	
-	if ( Closeup_icon->modelnum == -1 ) {
-		if ( sip == NULL ) {
-			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
-		} else {
-			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	if (!api_access) {
+		if (Closeup_icon->modelnum < 0) {
+			if (sip == nullptr) {
+				Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
+			} else {
+				Closeup_icon->modelnum = model_load(sip, true);
+				Closeup_icon->model_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Closeup_icon->modelnum);
+				model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
+			}
 		}
-		Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
-	}
 
-	vm_set_identity(&Closeup_orient);
-	vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
-	Closeup_orient.vec.fvec = tvec;
-	vm_vec_zero(&Closeup_pos);
-	Closeup_angles.p  = 0.0f;
-	Closeup_angles.b  = 0.0f;
-	Closeup_angles.h  = PI;
+		if (Closeup_icon->modelnum >= 0) {
+			Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
+		}
+
+		vm_set_identity(&Closeup_orient);
+		vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
+		Closeup_orient.vec.fvec = tvec;
+		vm_vec_zero(&Closeup_pos);
+		Closeup_angles.p = 0.0f;
+		Closeup_angles.b = 0.0f;
+		Closeup_angles.h = PI;
+	}
 
 	brief_set_closeup_pos(bi);
 
@@ -1362,14 +1474,20 @@ void brief_update_closeup_icon(int mode)
 // brief_check_for_anim()
 //
 //
-void brief_check_for_anim()
+void brief_check_for_anim(bool api_access, int api_x, int api_y)
 {
 	int				mx, my, i, iw, ih, x, y;
 	brief_stage		*bs;
 	brief_icon		*bi = NULL;
 
 	bs = &Briefing->stages[Current_brief_stage];
-	mouse_get_pos_unscaled( &mx, &my );
+
+	if (!api_access) {
+		mouse_get_pos_unscaled(&mx, &my);
+	} else {
+		mx = api_x;
+		my = api_y;
+	}
 
 	// if mouse click is over the VCR controls, don't launch an icon
 	// FIXME - should prolly push these into defines instead of hardcoding this
@@ -1396,23 +1514,35 @@ void brief_check_for_anim()
 	for ( i = 0; i < bs->num_icons; i++ ) {
 		bi = &bs->icons[i];
 		brief_common_get_icon_dimensions(&iw, &ih, bi);
+
+		// could be a scaled icon
+		if (bi->scale_factor != 1.0f) {
+			iw = static_cast<int>(iw * bi->scale_factor);
+			ih = static_cast<int>(ih * bi->scale_factor);
+		}
+
 		if ( mx < bi->x ) continue;
 		if ( mx > (bi->x + iw) ) continue;
 		if ( my < bi->y ) continue;
 		if ( my > (bi->y + ih) ) continue;
+
 		// if we've got here, must be a hit
 		break;
 	}
 
 	if ( i == bs->num_icons ) {
-		brief_turn_off_closeup_icon();
+		brief_turn_off_closeup_icon(api_access);
 		return;
 	}
 
-	if ( brief_setup_closeup(bi) == 0 ) {
-		gamesnd_play_iface(SND_BRIEF_ICON_SELECT);
+	if (brief_setup_closeup(bi, api_access) == 0) {
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+		}
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
 	}
 }
 
@@ -1462,7 +1592,6 @@ void brief_do_frame(float frametime)
 		return;
 	}
 
-
 	if ( !Brief_inited ){
 		brief_init();
 	}
@@ -1509,8 +1638,9 @@ void brief_do_frame(float frametime)
 					Closeup_icon->ship_class--;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
-					if (sip->model_num < 0)
-						sip->model_num = model_load(sip->pof_file, 0, NULL);
+					if (sip->model_num < 0) {
+						sip->model_num = model_load(sip, true);
+					}
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
 					mprintf(("Modelnum = %d (%s)\n", sip->model_num, sip->pof_file));
@@ -1521,12 +1651,13 @@ void brief_do_frame(float frametime)
 			}
 
 			case KEY_CTRLED | KEY_PAGEDOWN: {
-				if ( Closeup_icon && (Closeup_icon->ship_class < static_cast<int>(Ship_info.size()) - 1) ) {
+				if ( Closeup_icon && (Closeup_icon->ship_class < ship_info_size() - 1) ) {
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
-					if (sip->model_num < 0)
-						sip->model_num = model_load(sip->pof_file, 0, NULL);
+					if (sip->model_num < 0) {
+						sip->model_num = model_load(sip, true);
+					}
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
 					mprintf(("Modelnum = %d (%s)\n", sip->model_num, sip->pof_file));
@@ -1644,6 +1775,7 @@ void brief_do_frame(float frametime)
 	if ( !Background_playing ) {
 		int time = -1;
 		int check_jump_flag = 1;
+
 		if ( Current_brief_stage != Last_brief_stage ) {
 
 			// Check if we have a quick transition pending
@@ -1696,6 +1828,9 @@ void brief_do_frame(float frametime)
 				Int3();
 				Current_brief_stage=0;
 			}
+
+			// fire the script hook
+			common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
 
 			// set the camera target
 			brief_set_new_stage(&Briefing->stages[Current_brief_stage].camera_pos,
@@ -1778,6 +1913,91 @@ void brief_do_frame(float frametime)
 	}
 }
 
+// -------------------------------------------------------------------------------------
+// brief_api_do_frame()
+//
+// this is a pared down version of brief_do_frame() for use with the Scpui API - Mjn
+// frametime is in seconds
+//
+void brief_api_do_frame(float frametime)
+{
+
+	if (!Background_playing) {
+		int time = -1;
+		int check_jump_flag = 1;
+
+		if (Current_brief_stage != Last_brief_stage) {
+
+			// Check if we have a quick transition pending
+			if (Quick_transition_stage != -1) {
+				Quick_transition_stage = -1;
+				brief_reset_last_new_stage();
+				time = 0;
+				check_jump_flag = 0;
+			}
+
+			if (check_jump_flag) {
+				if (abs(Current_brief_stage - Last_brief_stage) > 1) {
+					Quick_transition_stage = Current_brief_stage;
+					Current_brief_stage = Last_brief_stage;
+					Assert(Current_brief_stage >= 0);
+					Start_fade_up_anim = 1;
+					goto Transition_done;
+				}
+			}
+
+			if (time != 0) {
+				if (Current_brief_stage > Last_brief_stage) {
+					if (Briefing->stages[Last_brief_stage].flags & BS_FORWARD_CUT) {
+						Quick_transition_stage = Current_brief_stage;
+						Current_brief_stage = Last_brief_stage;
+						Assert(Current_brief_stage >= 0);
+						Start_fade_up_anim = 1;
+						goto Transition_done;
+					} else {
+						time = Briefing->stages[Current_brief_stage].camera_time;
+					}
+				} else {
+					if (Briefing->stages[Last_brief_stage].flags & BS_BACKWARD_CUT) {
+						Quick_transition_stage = Current_brief_stage;
+						Current_brief_stage = Last_brief_stage;
+						Assert(Current_brief_stage >= 0);
+						Start_fade_up_anim = 1;
+						goto Transition_done;
+					} else {
+						time = Briefing->stages[Last_brief_stage].camera_time;
+					}
+				}
+			}
+
+			if (Current_brief_stage < 0) {
+				Int3();
+				Current_brief_stage = 0;
+			}
+
+			// set the camera target
+			brief_set_new_stage(&Briefing->stages[Current_brief_stage].camera_pos,
+				&Briefing->stages[Current_brief_stage].camera_orient,
+				time,
+				Current_brief_stage);
+
+			Last_brief_stage = Current_brief_stage;
+			brief_reset_icons(Current_brief_stage);
+			brief_update_closeup_icon(0);
+		}
+
+	Transition_done:
+
+		if (Brief_mouse_up_flag && !Closeup_icon) {
+			brief_check_for_anim();
+		}
+
+		brief_api_render(frametime);
+		brief_camera_move(frametime, Current_brief_stage);
+
+	}
+}
+
 // --------------------------------------------------------------------------------------
 //	brief_unload_bitmaps()
 //
@@ -1840,6 +2060,25 @@ void brief_close()
 	Brief_inited = FALSE;
 }
 
+// ------------------------------------------------------------------------------------
+// brief_api_close()
+//
+// A pared down version of brief_close() for use with the Scpui API. Closes only
+// elements used by the API but still allows drawing of the briefing map - Mjn
+//
+void brief_api_close()
+{
+	if (Brief_inited == FALSE) {
+		nprintf(("Warning", "brief_api_close() returning without doing anything\n"));
+		return;
+	}
+
+	Briefing_paused = 0;
+
+	Brief_inited = FALSE;
+}
+
+
 void briefing_stop_music(bool fade)
 {
 	if ( Briefing_music_handle != -1 ) {
@@ -1848,7 +2087,7 @@ void briefing_stop_music(bool fade)
 	}
 }
 
-void briefing_load_music(char* fname)
+void briefing_load_music(const char* fname)
 {
 	if ( Cmdline_freespace_no_music ) {
 		return;
@@ -1912,12 +2151,12 @@ void brief_maybe_blit_scene_cut(float frametime)
 
 		Fade_anim.time_elapsed += frametime;
 
-		if ( !Brief_playing_fade_sound ) {
-			gamesnd_play_iface(SND_BRIEFING_STATIC);					
+		if (Fade_anim.first_frame != -1 && !Brief_playing_fade_sound) {
+			gamesnd_play_iface(InterfaceSounds::BRIEFING_STATIC);
 			Brief_playing_fade_sound = 1;
 		}
 
-		if ( Fade_anim.time_elapsed > Fade_anim.total_time ) {
+		if (Fade_anim.first_frame == -1 || Fade_anim.time_elapsed > Fade_anim.total_time) {
 			Fade_anim.time_elapsed = 0.0f;
 			Start_fade_up_anim = 0;
 			Start_fade_down_anim = 1;
@@ -1951,7 +2190,7 @@ void brief_maybe_blit_scene_cut(float frametime)
 
 		Fade_anim.time_elapsed += frametime;
 
-		if ( Fade_anim.time_elapsed > Fade_anim.total_time ) {
+		if (Fade_anim.first_frame == -1 || Fade_anim.time_elapsed > Fade_anim.total_time) {
 			Fade_anim.time_elapsed = 0.0f;
 			Start_fade_up_anim = 0;
 			Start_fade_down_anim = 0;
@@ -1987,7 +2226,7 @@ int brief_only_allow_briefing()
 		return 1;
 	}
 
-	if ( The_mission.flags[Mission::Mission_Flags::Scramble] || The_mission.flags[Mission::Mission_Flags::Red_alert] ) {
+	if ( The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert] ) {
 		return 1;
 	}
 

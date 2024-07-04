@@ -57,6 +57,10 @@ BOOL InitialShips::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	// fix overlapping checkboxes issue
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_initial_list.SetFont(GetFont());
+
 	m_list_count = 0;
 	// change the window text, get the index into the array, and check the box for either the ships
 	// or weapons
@@ -89,7 +93,7 @@ BOOL InitialShips::OnInitDialog()
 		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                for (auto i = 0; i < MAX_WEAPON_TYPES; i++) {
+                for (int i = 0; i < weapon_info_size(); ++i) {
                     if (it->allowed_weapons[i])
                         allowed_weapons[i] = 1;
                 }
@@ -97,7 +101,7 @@ BOOL InitialShips::OnInitDialog()
         }
 
 		// now add the weapons to the list
-		for (int i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+		for (int i = 0; i < weapon_info_size(); ++i) {
 			if ( allowed_weapons[i] ) {
 				m_initial_list.AddString( Weapon_info[i].name );
 				int add_weapon = 0;

@@ -10,7 +10,7 @@
 
 
 
-#include <limits.h>		// this is need even when not building debug!!
+#include <climits>		// this is need even when not building debug!!
 
 #include "globalincs/globals.h"
 #include "object/object.h"
@@ -37,13 +37,14 @@
 #include "network/multiteamselect.h"
 #include "missionui/missionweaponchoice.h"
 #include "network/multi_endgame.h"
+#include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
 #include "playerman/player.h"
 #include "network/multi_log.h"
-
+#include "network/multi_time_manager.h"
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER
@@ -86,6 +87,8 @@
 
 LOCAL	int	Ingame_ships_deleted = 0;
 //LOCAL	int	Ingame_ships_to_delete[MAX_SHIPS];
+
+SCP_vector<int> Ingame_ship_choices;
 
 
 // --------------------------------------------------------------------------------------------------
@@ -229,12 +232,12 @@ void multi_handle_ingame_joiners()
 		}
 
 		// check to see if his timestamp for ship update (hull, shields, etc) has popped. If so, send some info and reset
-		if(timestamp_elapsed(Net_players[idx].s_info.last_full_update_time)){
+		if(ui_timestamp_elapsed(Net_players[idx].s_info.last_full_update_time)){
 			// send the ships
 			multi_ingame_send_ship_update(&Net_players[idx]);
 
 			// reset the timestamp
-			Net_players[idx].s_info.last_full_update_time = timestamp(INGAME_SHIP_UPDATE_TIME);
+			Net_players[idx].s_info.last_full_update_time = ui_timestamp(INGAME_SHIP_UPDATE_TIME);
 		}
 
 		// once he has received the weapon state packet, send him the player settings for all the players in the game and mark this down
@@ -278,9 +281,6 @@ void multi_ingame_sync_init()
 	
 	// everyone should re-initialize these 
 	init_multiplayer_stats();
-
-	// reset all sequencing info
-	multi_oo_reset_sequencing();
 
 	// send the file signature to the host for possible mission file transfer
 	strcpy_s(Netgame.mission_name,Game_current_mission_filename);
@@ -478,7 +478,7 @@ static int Multi_ingame_timer_coords[GR_NUM_RESOLUTIONS][2] = {
 //#define MULTI_INGAME_TIME_LEFT_Y			411
 
 #define MULTI_INGAME_TIME_SECONDS		(1000 * 15)
-LOCAL int Ingame_time_left;
+static UI_TIMESTAMP Ingame_time_left;
 
 // uses MULTI_JOIN_REFRESH_TIME as its timestamp
 UI_WINDOW Multi_ingame_window;											// the window object for the join screen
@@ -528,9 +528,6 @@ void multi_ingame_scroll_select_up();
 
 // try and scroll the selected ship down
 void multi_ingame_scroll_select_down();
-
-// handle all timeout details
-void multi_ingame_handle_timeout();
 
 int multi_ingame_get_ship_class_icon(int ship_class)
 {
@@ -597,7 +594,7 @@ void multi_ingame_unload_icons()
 }
 
 // ingame join ship selection screen init
-void multi_ingame_select_init()
+void multi_ingame_select_init(bool API_Access)
 {
 	/// int objnum, wingnum_save,idx, goals_save;
 	// ushort net_signature;
@@ -634,8 +631,10 @@ void multi_ingame_select_init()
 	Player_ai = &Ai_info[Player_ship->ai_index];
 	*/
 
-	// load the temp ship icons
-	multi_ingame_load_icons();
+	if (!API_Access) {
+		// load the temp ship icons
+		multi_ingame_load_icons();
+	}
 
 	// blast all the ingame ship signatures
 	memset(Multi_ingame_ship_sigs,0,sizeof(ushort) * MAX_PLAYERS);
@@ -644,43 +643,44 @@ void multi_ingame_select_init()
 	Multi_ingame_ship_selected = -1;
 
 	// initialize the time he has left to select a ship
-	Ingame_time_left = timestamp(MULTI_INGAME_TIME_SECONDS);
+	Ingame_time_left = ui_timestamp(MULTI_INGAME_TIME_SECONDS);
 
 	// initialize GUI data	
 
-	// create the interface window
-	Multi_ingame_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
-	Multi_ingame_window.set_mask_bmap(Multi_ingame_join_bitmap_mask_fname[gr_screen.res]);
+	if (!API_Access){
+		// create the interface window
+		Multi_ingame_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
+		Multi_ingame_window.set_mask_bmap(Multi_ingame_join_bitmap_mask_fname[gr_screen.res]);
 
-	// load the background bitmap
-	Multi_ingame_bitmap = bm_load(Multi_ingame_join_bitmap_fname[gr_screen.res]);
-	if(Multi_ingame_bitmap < 0)
-		Error(LOCATION, "Couldn't load background bitmap for ingame join");	
+		// load the background bitmap
+		Multi_ingame_bitmap = bm_load(Multi_ingame_join_bitmap_fname[gr_screen.res]);
+		if(Multi_ingame_bitmap < 0)
+			Error(LOCATION, "Couldn't load background bitmap for ingame join");	
 	
-	// create the interface buttons
-	for(idx=0; idx<MULTI_INGAME_JOIN_NUM_BUTTONS; idx++) {
-		// create the object
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.create(&Multi_ingame_window, "", Multi_ingame_join_buttons[gr_screen.res][idx].x, Multi_ingame_join_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
+		// create the interface buttons
+		for(idx=0; idx<MULTI_INGAME_JOIN_NUM_BUTTONS; idx++) {
+			// create the object
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.create(&Multi_ingame_window, "", Multi_ingame_join_buttons[gr_screen.res][idx].x, Multi_ingame_join_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
-		// set the sound to play when highlighted
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
+			// set the sound to play when highlighted
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.set_highlight_action(common_play_highlight_sound);
 
-		// set the ani for the button
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.set_bmaps(Multi_ingame_join_buttons[gr_screen.res][idx].filename);
+			// set the ani for the button
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.set_bmaps(Multi_ingame_join_buttons[gr_screen.res][idx].filename);
 
-		// set the hotspot
-		Multi_ingame_join_buttons[gr_screen.res][idx].button.link_hotspot(Multi_ingame_join_buttons[gr_screen.res][idx].hotspot);
-	}	
+			// set the hotspot
+			Multi_ingame_join_buttons[gr_screen.res][idx].button.link_hotspot(Multi_ingame_join_buttons[gr_screen.res][idx].hotspot);
+		}	
 	
-	// create all xstrs
-	for(idx=0; idx<MULTI_INGAME_JOIN_NUM_TEXT; idx++) {
-		Multi_ingame_window.add_XSTR(&Multi_ingame_join_text[gr_screen.res][idx]);
+		// create all xstrs
+		for(idx=0; idx<MULTI_INGAME_JOIN_NUM_TEXT; idx++) {
+			Multi_ingame_window.add_XSTR(&Multi_ingame_join_text[gr_screen.res][idx]);
+		}
+
+		// create the list item select button
+		Multi_ingame_select_button.create(&Multi_ingame_window, "", Mi_name_field[gr_screen.res][MI_FIELD_X], Mi_name_field[gr_screen.res][MI_FIELD_Y], Mi_width[gr_screen.res], Mi_height[gr_screen.res], 0, 1);
+		Multi_ingame_select_button.hide();	
 	}
-
-	// create the list item select button
-	Multi_ingame_select_button.create(&Multi_ingame_window, "", Mi_name_field[gr_screen.res][MI_FIELD_X], Mi_name_field[gr_screen.res][MI_FIELD_Y], Mi_width[gr_screen.res], Mi_height[gr_screen.res], 0, 1);
-	Multi_ingame_select_button.hide();			
-
 	// load freespace stuff
 	// JAS: Code to do paging used to be here.
 }
@@ -692,13 +692,13 @@ void multi_ingame_ship_list_process()
 
 	// if we currently don't have any ships selected, but we've got items on the list, select the first one
 	if((Multi_ingame_ship_selected == -1) && (Multi_ingame_num_avail > 0)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected = 0;
 	}
 
 	// if we currently have a ship selected, but it disappears, select the next ship (is possible0
 	if((Multi_ingame_ship_selected >= 0) && (Multi_ingame_ship_selected >= Multi_ingame_num_avail)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected = Multi_ingame_num_avail-1;
 	}
 	
@@ -711,7 +711,7 @@ void multi_ingame_ship_list_process()
 		if((select_index >= 0) && (select_index < Multi_ingame_num_avail)){
 			// if we're not selected the same item, play a sound
 			if(Multi_ingame_ship_selected != select_index){
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			}
 
 			// select the item
@@ -735,6 +735,46 @@ void multi_ingame_join_check_buttons()
 	}
 }
 
+void multi_ingame_set_selected(int index)
+{
+	if (index >= 0 && index < MAX_PLAYERS) {
+		Multi_ingame_ship_selected = index;
+	}
+}
+
+bool multi_ingame_join_accept(bool API_Access)
+{
+	// don't do further processing if the game is paused
+	if (Netgame.game_state == NETGAME_STATE_PAUSED)
+		return false;
+
+	if (Multi_ingame_join_sig == 0) {
+		// if he has a valid ship selected
+		if (Multi_ingame_ship_selected >= 0) {
+			if (!API_Access) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			}
+
+			// select the sig of this ship and send a request for it
+			Multi_ingame_join_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
+
+			// send a request to the
+			send_ingame_ship_request_packet(INGAME_SR_REQUEST, Multi_ingame_join_sig);
+			return true;
+		} else {
+			if (!API_Access) {
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			}
+		}
+	} else {
+		if (!API_Access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
+	}
+
+	return false;
+}
+
 // a button was pressed, so make it do its thing
 // this is the "acting accordingly" part
 void multi_ingame_join_button_pressed(int n)
@@ -744,26 +784,7 @@ void multi_ingame_join_button_pressed(int n)
 		multi_quit_game(PROMPT_CLIENT);
 		break;
 	case MIJ_JOIN:
-		// don't do further processing if the game is paused
-		if ( Netgame.game_state == NETGAME_STATE_PAUSED )
-			return;
-
-		if(Multi_ingame_join_sig == 0) {
-			// if he has a valid ship selected
-			if(Multi_ingame_ship_selected >= 0) {
-				gamesnd_play_iface(SND_USER_SELECT);
-			
-				// select the sig of this ship and send a request for it
-				Multi_ingame_join_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
-				
-				// send a request to the
-				send_ingame_ship_request_packet(INGAME_SR_REQUEST,Multi_ingame_join_sig);
-			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			}
-		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
-		}
+		multi_ingame_join_accept();
 
 		break;
 	default:
@@ -831,9 +852,12 @@ void multi_ingame_select_close()
 
 	// unload all the ship class icons
 	multi_ingame_unload_icons();
-	
+
 	// destroy the UI_WINDOW
-	Multi_ingame_window.destroy();	
+	Multi_ingame_window.destroy();
+
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
 
 	// stop main hall music
 	main_hall_stop_music(true);
@@ -865,27 +889,50 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	// blit the ship's primary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_primary_banks;idx++){
-		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].name, GR_RESIZE_MENU);
+		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].get_display_name(), GR_RESIZE_MENU);
 	}
 
 	// blit the ship's secondary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_secondary_banks;idx++){
-		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].name, GR_RESIZE_MENU);
+		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].get_display_name(), GR_RESIZE_MENU);
 	}	
 
 	// blit the shield/hull integrity
 	hud_shield_show_mini(objp, Mi_status_field[gr_screen.res][MI_FIELD_X] + 15, y_start + 3,5,7);
 }
 
+// create the list of available ships the player can choose
+void multi_ingame_join_calc_avail(bool API_Access)
+{
+	// recalculate this # every frame
+	Multi_ingame_num_avail = 0;
+	Ingame_ship_choices.clear();
+
+	for (auto moveup: list_range(&Ship_obj_list)) {
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		if( !(Ships[Objects[moveup->objnum].instance].is_dying_or_departing()) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
+			// display the ship for normal UI but for API, store the access to the object
+			if (!API_Access){
+				multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
+			} else {
+				Ingame_ship_choices.push_back(moveup->objnum);
+			}
+
+			// set the ship signature
+			Multi_ingame_ship_sigs[Multi_ingame_num_avail] = Objects[moveup->objnum].net_signature;
+			
+			// inc the # available
+			Multi_ingame_num_avail++;
+		}
+	}
+}
+
 // display the available ships (OF_COULD_BE_PLAYER flagged)
 void multi_ingame_join_display_avail()
-{		
-	ship_obj *moveup;	
-
-	// recalculate this # every frame
-	Multi_ingame_num_avail = 0;	
-
+{
 	// display a background highlight rectangle for any selected lines
 	if(Multi_ingame_ship_selected != -1){		
 		int y_start = (Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_ship_selected * Mi_spacing[gr_screen.res]));		
@@ -898,30 +945,17 @@ void multi_ingame_join_display_avail()
 		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
 	}
 
-	moveup = GET_FIRST(&Ship_obj_list);	
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
-		if( !(Ships[Objects[moveup->objnum].instance].is_dying_or_departing()) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
-			// display the ship
-			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
-
-			// set the ship signature
-			Multi_ingame_ship_sigs[Multi_ingame_num_avail] = Objects[moveup->objnum].net_signature;
-			
-			// inc the # available
-			Multi_ingame_num_avail++;
-		}
-		moveup = GET_NEXT(moveup);
-	}		
+	multi_ingame_join_calc_avail();
 }
 
 // try and scroll the selected ship up
 void multi_ingame_scroll_select_up()
 {
 	if(Multi_ingame_ship_selected > 0){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected--;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -929,15 +963,15 @@ void multi_ingame_scroll_select_up()
 void multi_ingame_scroll_select_down()
 {
 	if(Multi_ingame_ship_selected < (Multi_ingame_num_avail - 1)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected++;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
 // handle all timeout details
-void multi_ingame_handle_timeout()
+int multi_ingame_handle_timeout(bool API_Access)
 {
 	/*
 	// uncomment this block to disable the timer
@@ -947,18 +981,22 @@ void multi_ingame_handle_timeout()
 	*/
 
 	// if we've timed out, leave the game
-	if( timestamp_elapsed(Ingame_time_left) ) {
+	if( ui_timestamp_elapsed(Ingame_time_left) ) {
 		multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_INGAME_TIMEOUT, MULTI_END_ERROR_NONE);
-		return;
+		return 0;
 	}
 
 	// otherwise, blit how much time we have left
-	int time_left = timestamp_until(Ingame_time_left) / 1000;
-	char tl_string[100];
-	gr_set_color_fast(&Color_bright);
-	memset(tl_string,0,100);
-	sprintf(tl_string,XSTR("Time remaining : %d s\n",682),time_left);	
-	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string, GR_RESIZE_MENU);
+	int time_left = ui_timestamp_until(Ingame_time_left) / MILLISECONDS_PER_SECOND;
+	if (!API_Access) {
+		char tl_string[100];
+		gr_set_color_fast(&Color_bright);
+		memset(tl_string, 0, 100);
+		sprintf(tl_string, XSTR("Time remaining : %d s\n", 682), time_left);
+		gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string, GR_RESIZE_MENU);
+	}
+
+	return time_left;
 }
 
 
@@ -972,14 +1010,12 @@ void multi_ingame_handle_timeout()
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
-    std::uint64_t oflags, sflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
 	int team_val, slot_index, idx;
 	char ship_name[255] = "";
 	object *objp;
-	int net_sig_modify;
 
 	// go through the ship obj list and delete everything. YEAH
 	if(!Ingame_ships_deleted){
@@ -1006,28 +1042,38 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
 		int ship_num, objnum;
+		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_ULONG( sflags );
-		GET_ULONG( oflags );
-		GET_INT( team );		
-		GET_SHORT( wing_data );
-		net_sig_modify = 0;
-		if(wing_data >= 0){
-			GET_INT(Wings[wing_data].current_wave);			
-			net_sig_modify = Wings[wing_data].current_wave - 1;
+		GET_DATA( flag_size );
+
+		ubyte temp;
+		SCP_vector<ubyte> ship_flags, object_flags;
+
+		for (ubyte i = 0; i < flag_size; i++) {
+			GET_DATA(temp);
+			ship_flags.push_back(temp);
 		}
 
-		// lookup ship in the original ships array
-		p_objp = mission_parse_get_parse_object(net_signature);
-		if(p_objp == NULL){
-			// if this ship is part of wing not on its current wave, look for its "original" by subtracting out wave #
-			p_objp = mission_parse_get_arrival_ship((ushort)(net_signature - (ushort)net_sig_modify));
+		GET_DATA( flag_size );
+
+		for (ubyte i = 0; i < flag_size; i++) {
+			GET_DATA(temp);
+			object_flags.push_back(temp);
 		}
-		if(p_objp == NULL){
-			Int3();
-			nprintf(("Network", "Couldn't find ship %s in either arrival list or in mission", ship_name));
+
+		GET_INT( team );		
+		GET_SHORT( wing_data );
+		if(wing_data >= 0){
+			GET_INT(Wings[wing_data].current_wave);			
+		}
+
+		// lookup ship in the registry
+		auto entry = ship_registry_get(ship_name);
+		p_objp = entry ? entry->p_objp_or_null() : nullptr;
+		if (p_objp == nullptr) {
+			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
 		}
@@ -1039,12 +1085,17 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-        Objects[objnum].flags.from_u64(oflags);
+		Objects[objnum].flags.reset();
+		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
+
+		// Cyborg17 also add this ship to the multi ship tracking and interpolation struct
+		multi_rollback_ship_record_add_ship(objnum);
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags.from_u64(sflags);
+		Ships[ship_num].flags.reset();
+		Ships[ship_num].flags.set_from_vector(ship_flags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1064,13 +1115,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				continue;
 			}
 
-			// get the team and slot.  Team will be -1 when it isn't a part of player wing.  So, if
-			// not -1, then be sure we have a valid slot, then change the ship type, etc.
+			// get the team and slot.  Team and slot will be -1 when it isn't a part of player wing.
+			// So, if not -1, then change the ship type, etc.
 			objp = &Objects[Ships[idx].objnum];		
 			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
-			if ( team_val != -1 ) {
-				Assert( slot_index != -1 );
 
+			if ( (team_val != -1) && (slot_index != -1) ) {
 				// change the ship type and the weapons
 				change_ship_type(objp->instance, Wss_slots_teams[team_val][slot_index].ship_class);
 				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
@@ -1114,9 +1164,10 @@ void send_ingame_ships_packet(net_player *player)
 	// in wings.  The joiner will take the list, create any ships which should be created, and delete all
 	// other ships after the list is sent.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		ship *shipp;
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		shipp = &Ships[Objects[so->objnum].instance];
+		ship *shipp = &Ships[Objects[so->objnum].instance];
 
 		// skip all wings.
 		// if ( shipp->wingnum != -1 ){
@@ -1127,13 +1178,35 @@ void send_ingame_ships_packet(net_player *player)
 			continue;
 		}
 
+		SCP_vector<ubyte> ship_flags_out, obj_flags_out;
+
 		//  add the ship name and other information such as net signature, ship and object(?) flags.
 		p_type = INGAME_SHIP_NEXT;
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_ULONG( shipp->flags.to_u64() );
-		ADD_ULONG( Objects[so->objnum].flags.to_u64() );
+		
+		auto check = shipp->flags.to_ubyte_vector(ship_flags_out);
+		Assertion(check <= 255, "Somehow FSO thinks there are too many ship flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
+
+		auto temp_size = static_cast<ubyte>(check);
+		ADD_DATA(temp_size);
+
+		for (auto& item : ship_flags_out){
+			ADD_DATA(item);
+		} 
+
+		check = Objects[so->objnum].flags.to_ubyte_vector(obj_flags_out);
+
+		Assertion(check <= 255, "Somehow FSO thinks there are too many object flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
+
+		temp_size = static_cast<ubyte>(check);
+
+		ADD_DATA(temp_size);
+		for (auto& item : obj_flags_out){
+			ADD_DATA(item);
+		} 
+
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
 		ADD_SHORT(wing_data);
@@ -1157,7 +1230,7 @@ void send_ingame_ships_packet(net_player *player)
 	multi_io_send_reliable(player, data, packet_size);
 }
 
-void process_ingame_wings_packet( ubyte *data, header *hinfo )
+void process_ingame_wings_packet( ubyte * /*data*/, header * /*hinfo*/ )
 {
 	Int3();
 }
@@ -1252,7 +1325,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// assign it here.
 
 				wingp->current_wave = 0;						// make it the first wave.  Ensures that ships don't get removed off the list
-				parse_wing_create_ships( wingp, 1, 1, specific_instance );
+				parse_wing_create_ships( wingp, 1, true, false, specific_instance );
 				shipnum = wingp->ship_index[wingp->current_count-1];
 				Ingame_ships_to_delete[shipnum] = 0;			// "unmark" this ship so it doesn't get deleted.
 
@@ -1401,6 +1474,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 	int i, packet_size = 0;
 	ushort signature;
 	p_object *pobj;
+	short sval;
 
 	// add the data
 	BUILD_HEADER(INGAME_SHIP_REQUEST);
@@ -1427,7 +1501,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		// add the # of respawns this ship has left
 		pobj = mission_parse_get_arrival_ship( Objects[rdata].net_signature );
 		Assert(pobj != NULL);
-		ADD_DATA(pobj->respawn_count);
+		ADD_UINT(pobj->respawn_count);
 
 		// add the ships ets settings
 		val = (ubyte)shipp->weapon_recharge_index;
@@ -1437,33 +1511,26 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		val = (ubyte)shipp->engine_recharge_index;
 		ADD_DATA(val);
 
-		// dummy field to replace ballistic primary flag
-		val = 0;
-		ADD_DATA(val);
-
 		// add current primary and secondary banks, and add link status
 		val = (ubyte)shipp->weapons.current_primary_bank;
 		ADD_DATA(val);
 		val = (ubyte)shipp->weapons.current_secondary_bank;
 		ADD_DATA(val);		
 
+		// add the current ammo count for primary banks
+		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
+		ADD_DATA(val);
+		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ ) {
+			sval = static_cast<short>(shipp->weapons.primary_bank_ammo[i]);
+			ADD_SHORT(sval);
+		}
+
 		// add the current ammo count for secondary banks;
 		val = (ubyte)shipp->weapons.num_secondary_banks;		// for sanity checking
 		ADD_DATA(val);
 		for ( i = 0; i < shipp->weapons.num_secondary_banks; i++ ) {
-			Assert( shipp->weapons.secondary_bank_ammo[i] < UCHAR_MAX );
-			val = (ubyte)shipp->weapons.secondary_bank_ammo[i];
-			ADD_DATA(val);
-		}
-
-		// add the current ammo count for primary banks - copied from above - Goober5000
-		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
-		ADD_DATA(val);
-		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ )
-		{
-			Assert( shipp->weapons.primary_bank_ammo[i] < UCHAR_MAX );
-			val = (ubyte)shipp->weapons.primary_bank_ammo[i];
-			ADD_DATA(val);
+			sval = static_cast<short>(shipp->weapons.secondary_bank_ammo[i]);
+			ADD_SHORT(sval);
 		}
 
 		// add the link status of weapons
@@ -1475,7 +1542,12 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 			val |= (1<<1);
 		}
-		ADD_DATA(val);		
+		ADD_DATA(val);
+
+		// now that we have multilock missiles tracked by the ship object, we need to clear this
+		// on the server to be safe.
+		shipp->missile_locks.clear();
+
 		break;
 	}
 
@@ -1555,6 +1627,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	ubyte val, num_secondary_banks, num_primary_banks;
 	p_object *pobj;
 	int player_num;
+	short sval;
+	fix mission_time;
+	int shield_ets, weapon_ets, engine_ets;
 
 	// get the code
 	GET_INT(code);
@@ -1568,7 +1643,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_USHORT(sig_request);
 		PACKET_SET_SIZE();
 			
-		player_num = find_player_id(hinfo->id);	
+		player_num = find_player_index(hinfo->id);	
 		if(player_num == -1){
 			nprintf(("Network","Received ingame ship request packet from unknown player!!\n"));		
 			break;
@@ -1601,6 +1676,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
         objp->flags.remove(Object::Object_Flags::Could_be_player);
 		objp->flags.set(Object::Object_Flags::Player_ship);
 
+		// remove any potentially problemantic AI only flags.
+		Ai_info[Ships[objp->instance].ai_index].ai_flags.remove(AI::AI_Flags::Formation_object);
+
 		// send a player settings packet to update all other players of this guy's final choices
 		send_player_settings_packet();
 
@@ -1621,7 +1699,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	case INGAME_SR_DENY :
 		PACKET_SET_SIZE();
 
-		// set this to -1 so we can pick again
+		// set this to 0 so we can pick again
 		Multi_ingame_join_sig = 0;
 
 		// display a popup
@@ -1629,7 +1707,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		break;
 
 	// a confirmation that we can use the selected ship
-	case INGAME_SR_CONFIRM:
+	case INGAME_SR_CONFIRM: {
 		// object *temp_objp;
 
 		// delete the ship this ingame joiner was using.  Unassign Player_obj so that this object
@@ -1645,9 +1723,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// get its most recent position and orientation
 		GET_VECTOR(objp->pos);
 		GET_ORIENT(objp->orient);
-		GET_INT( Missiontime ); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
+		GET_INT(mission_time);
 		GET_UINT( respawn_count );
-				
+
 		// tell the server I'm in the mission
 		Net_player->state = NETPLAYER_STATE_IN_MISSION;
 		send_netplayer_update_packet();
@@ -1656,7 +1734,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Net_player->m_player->objnum = OBJ_INDEX(objp);			
 		Player_obj = objp;
 		Player_obj->flags.remove(Object::Object_Flags::Could_be_player);
-        Player_obj->flags.set(Object::Object_Flags::Player_ship);
+		Player_obj->flags.set(Object::Object_Flags::Player_ship);
+		Player_obj->flags.set(Object::Object_Flags::Physics);
 		multi_assign_player_ship( MY_NET_PLAYER_NUM, objp, Ships[objp->instance].ship_info_index );
 
 		// must change the ship type and weapons.  An ingame joiner know about the default class
@@ -1674,14 +1753,12 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 		// get the ships ets settings
 		GET_DATA(val);
-		Player_ship->weapon_recharge_index = val;
+		weapon_ets = val;
 		GET_DATA(val);
-		Player_ship->shield_recharge_index = val;
+		shield_ets = val;
 		GET_DATA(val);
-		Player_ship->engine_recharge_index = val;		
-
-		// handle the dummy value that used to be the ballistic primary flag
-		GET_DATA(val);
+		engine_ets = val;		
+		set_recharge_rates(objp, shield_ets, weapon_ets, engine_ets);
 
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);
@@ -1689,21 +1766,20 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_DATA(val);
 		Player_ship->weapons.current_secondary_bank = val;				
 
-		// secondary bank ammo data
-		GET_DATA( num_secondary_banks );
-		Assert( num_secondary_banks == Player_ship->weapons.num_secondary_banks );
-		for ( i = 0; i < Player_ship->weapons.num_secondary_banks; i++ ) {
-			GET_DATA(val);
-			Player_ship->weapons.secondary_bank_ammo[i] = val;
+		// primary bank ammo data
+		GET_DATA( num_primary_banks );
+		Player_ship->weapons.num_primary_banks = num_primary_banks;
+		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
+			GET_SHORT(sval);
+			Player_ship->weapons.primary_bank_ammo[i] = sval;
 		}
 
-		// primary bank ammo data - copied from above - Goober5000
-		GET_DATA( num_primary_banks );
-		Assert( num_primary_banks == Player_ship->weapons.num_primary_banks );
-		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ )
-		{
-			GET_DATA(val);
-			Player_ship->weapons.primary_bank_ammo[i] = val;
+		// secondary bank ammo data
+		GET_DATA( num_secondary_banks );
+		Player_ship->weapons.num_secondary_banks = num_secondary_banks;
+		for ( i = 0; i < Player_ship->weapons.num_secondary_banks; i++ ) {
+			GET_SHORT(sval);
+			Player_ship->weapons.secondary_bank_ammo[i] = sval;
 		}
 
 		// get the link status of weapons
@@ -1733,6 +1809,15 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// obj_reset_pairs();
 		// obj_add_pairs( OBJ_INDEX(Player_obj) );
 
+		// use server time to sync up mission time and multi timer, taking average ping into account
+		float fl_mission_time = f2fl(mission_time);
+
+		auto ping_offset = static_cast<float>(Netgame.server->s_info.ping.ping_avg / 2000.0f);	// half avg ping in seconds
+		fl_mission_time += ping_offset;
+
+		timestamp_offset_mission_time(fl_mission_time);
+		Multi_Timing_Info.in_game_set_skip_time(fl_mission_time);
+
 		mission_hotkey_set_defaults();
 
 		//multi_ingame_validate_players();
@@ -1745,6 +1830,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			gameseq_post_event(GS_EVENT_ENTER_GAME);								
 		} 
 		break;
+	}
 
 	case INGAME_PLAYER_CHOICE: {
 		ushort net_signature;
@@ -1777,21 +1863,16 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 void multi_ingame_send_ship_update(net_player *p)
 {
-	ship_obj *moveup;
-	
-	// get the first object on the list
-	moveup = GET_FIRST(&Ship_obj_list);
-	
 	// go through the list and send all ships which are mark as OF_COULD_BE_PLAYER
-	while(moveup!=END_OF_LIST(&Ship_obj_list)){
+	for (auto moveup: list_range(&Ship_obj_list)) {
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		//Make sure the object can be a player and is on the same team as this guy
-		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player] && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
+		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player] && Objects[moveup->objnum].type == OBJ_SHIP && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
 			// send the update
 			send_ingame_ship_update_packet(p,&Ships[Objects[moveup->objnum].instance]);
 		}
-
-		// move to the next item
-		moveup = GET_NEXT(moveup);
 	}
 }
 
@@ -1806,10 +1887,25 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 
 	BUILD_HEADER(INGAME_SHIP_UPDATE);
 	
-	// just send net signature, shield and hull percentages
+	// just send net signature, flags and shield and hull percentages
 	objp = &Objects[sp->objnum];
+
 	ADD_USHORT(objp->net_signature);
-	ADD_ULONG(objp->flags.to_u64());
+
+	// flags
+	SCP_vector<ubyte> obj_flags_out;
+	objp->flags.to_ubyte_vector(obj_flags_out);
+
+	Assertion(obj_flags_out.size() <= 255, "FSO thinks there are too many object flags to send over multiplayer, specifically %d * 8. Please report!", static_cast<int>(obj_flags_out.size()));
+
+	auto temp_size = static_cast<ubyte>(obj_flags_out.size());
+
+	// Add flag entries
+	ADD_DATA(temp_size);
+	for (auto& entry : obj_flags_out){
+		ADD_DATA(entry);
+	}
+
 	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
@@ -1826,7 +1922,6 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 {
 	int offset;
 	float garbage;
-	uint64_t flags;
 	int idx;
 	int n_quadrants;
 	ushort net_sig;
@@ -1836,7 +1931,17 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	// get the net sig for the ship and do a lookup
 	GET_USHORT(net_sig);
-	GET_ULONG(flags);
+
+	// retrieve object flags
+	ubyte temp_size, temp;
+	SCP_vector<ubyte> flags_final;
+	GET_DATA(temp_size);
+
+	for (size_t i = 0; i < temp_size; i++){
+		GET_DATA(temp);
+		flags_final.push_back(temp);
+	}
+
 	GET_INT(n_quadrants);
 
 	// get the object
@@ -1852,8 +1957,9 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		PACKET_SET_SIZE();
 		return;
 	}
+
 	// otherwise read in the ship values
-	lookup->flags.from_u64(flags);
+	lookup->flags.set_from_vector(flags_final);
 	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<n_quadrants;idx++){

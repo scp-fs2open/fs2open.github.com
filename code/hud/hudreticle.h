@@ -42,13 +42,18 @@ protected:
 	int firepoint_size;
 	int firepoint_scale_x;
 	int firepoint_scale_y;
+	int autoaim_frame_offset;
+	bool has_autoaim_lock;
+	int flight_cursor_frame_offset;
 public:
 	HudGaugeReticle();
-	void render(float frametime);
+	void render(float frametime) override;
 	void initBitmaps(char *fname);
-	void pageIn();
+	void pageIn() override;
 	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
 	void getFirepointStatus();
+	void setAutoaimFrame(int framenum);
+	void setFlightCursorFrame(int framenum);
 };
 
 class HudGaugeThrottle: public HudGauge
@@ -101,14 +106,14 @@ public:
 	void showBackground(bool show);
 	void initBitmaps(char *fname);
 
-	void render(float frametime);
+	void render(float frametime) override;
 	void renderThrottleSpeed(float current_speed, int y_end);
 	void renderThrottleLine(int y);
 	void renderThrottleForeground(int y_end);
 	void renderThrottleBackground(int y_end);
 	void renderMatchSpeedIcon(int x, int y);
 
-	void pageIn();
+	void pageIn() override;
 };
 
 class HudGaugeThreatIndicator: public HudGauge
@@ -132,9 +137,9 @@ public:
 	void initBitmaps(char *fname_arc, char *fname_laser, char *fname_lock);
 	void initLaserWarnOffsets(int x, int y);
 	void initLockWarnOffsets(int x, int y);
-	void render(float frametime);
-	void initialize();
-	void pageIn();
+	void render(float frametime) override;
+	void initialize() override;
+	void pageIn() override;
 	void renderLaserThreat();
 	void renderLockThreat();
 };
@@ -159,18 +164,12 @@ public:
 		char *fname_secondary_link_1, 
 		char *fname_secondary_link_2, 
 		char *fname_secondary_link_3);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 void hud_init_reticle();
 void hud_update_reticle( player *pp );
-
-void hud_draw_outer_reticle();
-void hud_draw_center_reticle();
-void hud_draw_throttle_gauge();
-void hud_draw_target_throttle_gauge();
-
-
+void hud_reticle_set_flight_cursor_offset();
 
 #endif

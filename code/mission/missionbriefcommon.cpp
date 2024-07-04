@@ -1,14 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "mission/missionbriefcommon.h"
 
 #include "anim/animplay.h"
 #include "gamesnd/gamesnd.h"
@@ -19,13 +18,13 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "math/fvi.h"
-#include "mission/missionbriefcommon.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3d.h"
@@ -33,7 +32,6 @@
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
-
 
 // --------------------------------------------------------------------------------------
 // briefing screen
@@ -127,7 +125,18 @@ debriefing	Debriefings[MAX_TVT_TEAMS];			// there can be multiple debriefings pe
 briefing		*Briefing;							// pointer used in code -- points to correct briefing
 debriefing	*Debriefing;						// pointer to correct debriefing
 
-int			Briefing_voice_enabled=1;		// flag which turn on/off voice playback of briefings/debriefings
+bool Briefing_voice_enabled = true; // flag which turn on/off voice playback of briefings/debriefings
+
+static auto BriefingVoiceOption __UNUSED = options::OptionBuilder<bool>("Audio.BriefingVoice",
+                     std::pair<const char*, int>{"Briefing voice", 1368},
+                     std::pair<const char*, int>{"Enable or disable voice playback in the briefing", 1716})
+                     .category(std::make_pair("Audio", 1826))
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(true)
+                     .bind_to(&Briefing_voice_enabled)
+                     .importance(4)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
 
 // --------------------------------------------------------------------------------------
 // Module global data
@@ -136,7 +145,7 @@ int			Briefing_voice_enabled=1;		// flag which turn on/off voice playback of bri
 static int Last_new_stage;
 int	Cur_brief_id;
 
-const char BRIEF_META_CHAR = '$';
+const unicode::codepoint_t BRIEF_META_CHAR = UNICODE_CHAR('$');
 
 const int HIGHEST_COLOR_STACK_INDEX = 9;
 
@@ -171,18 +180,18 @@ static float	Last_dist;
 static vec3d	W_init;
 
 // flag to indicate that the sound for a spinning highlight animation has played
-static int Brief_stage_highlight_sound_handle = -1;
+static sound_handle Brief_stage_highlight_sound_handle = sound_handle::invalid();
 
 // used for scrolling briefing text ( if necessary )
 int		Num_brief_text_lines[MAX_TEXT_STREAMS];
 int		Top_brief_text_line;
 
-// Used to support drawing colored text for the briefing.  Gets complicates since we
+// Used to support drawing colored text for the briefing.  Gets complicated since we
 // need to be able to draw one character at a time as well when the briefing text
 // first appears.
 typedef struct colored_char
 {
-	char	letter;
+	unicode::codepoint_t	letter;
 	char	color;		// tag to look up in Tagged_Colors
 } colored_char;
 
@@ -198,7 +207,7 @@ static int Max_briefing_line_len;
 static int Voice_started_time;
 static int Voice_ended_time;
 
-static int		Brief_text_wipe_snd;					// sound handle of sound effect for text wipe
+static sound_handle Brief_text_wipe_snd; // sound handle of sound effect for text wipe
 static int		Play_brief_voice;
 
 // animation stuff
@@ -257,7 +266,6 @@ SCP_vector<briefing_icon_info> Briefing_icon_info;
 // --------------------------------------------------------------------------------------
 void	brief_render_elements(vec3d *pos, grid *gridp);
 void	brief_render_icons(int stage_num, float frametime);
-void	brief_grid_read_camera_controls( control_info * ci, float frametime );
 void	brief_maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
 grid	*brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
 grid	*brief_create_default_grid(void);
@@ -268,85 +276,229 @@ void	brief_set_text_color(char color_tag);
 extern void get_camera_limits(const matrix *start_camera, const matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
 
-// --------------------------------------------------------------------------------------
-//	brief_parse_icon_tbl()
-//
-//
-void brief_parse_icon_tbl()
-{
-	int icon;
-	size_t species;
+// parses, fills and returns a briefing_icon_info struct
+briefing_icon_info parse_briefing_icons() {
 	char name[MAX_FILENAME_LEN];
+	briefing_icon_info bii;
 
-	Assert(!Species_info.empty());
-	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
+	// parse regular frames
+	required_string("$Name:");
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+	generic_anim_init(&bii.regular, name);
 
-	try
-	{
+	// parse fade frames
+	required_string("$Name:");
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+	hud_anim_init(&bii.fade, 0, 0, name);
+
+	// parse highlighting frames
+	required_string("$Name:");
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+	hud_anim_init(&bii.highlight, 0, 0, name);
+
+	return bii;
+}
+
+// parses and adds a briefing_icon_info into the global vector
+int add_briefing_icons() {
+	briefing_icon_info bii = parse_briefing_icons();
+
+	Briefing_icon_info.push_back(bii);
+
+	return (int)Briefing_icon_info.size() - 1;
+}
+
+void brief_icon_parse_cleanup() {
+
+	// assign "borrows" icons
+	for (species_info &spinfo : Species_info) {
+		if (spinfo.borrows_bii_index_species < 0)
+			continue;
+
+		int lender_species = spinfo.borrows_bii_index_species;
+
+		for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
+			spinfo.bii_indices[i] = Species_info[lender_species].bii_indices[i];
+		}
+	}
+
+	SCP_string errormsg = "The following species are missing briefing icons:\n";
+	bool missing_icons = false;
+
+	for (species_info spinfo : Species_info) {
+		bool missing_icon_species = false;
+		for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
+			if (spinfo.bii_indices[i] < 0) {
+				mprintf(("Species %s missing %s icon\n", spinfo.species_name, Icon_names[i]));
+				missing_icons = missing_icon_species = true;
+			}
+		}
+		
+		if (missing_icon_species) {
+			errormsg += spinfo.species_name;
+			errormsg += "\n";
+		}
+			
+	}
+
+	if (missing_icons) {
+		errormsg += "An exact list of the missing entries has been logged.";
+		Warning(LOCATION, "%s", errormsg.c_str());
+	}
+}
+
+static size_t Num_icons_in_table = 0;
+
+// This is explicitely used to count the number of icons listed in the tbl
+// so that we can correctly parse each icon into a species without any off-by-N errors.
+// This allows modular icons.tbls to build upon the retail icons.tbl.
+void brief_pre_parse_icons()
+{
+	try {
 		read_file_text("icons.tbl", CF_TYPE_TABLES);
 		reset_parse();
 
 		required_string("#Start");
 
-		Briefing_icon_info.clear();
-		while (required_string_either("#End", "$Name:"))
-		{
-			if (Briefing_icon_info.size() >= max_icons) {
-				Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
-				skip_to_start_of_string("#End");
-				break;
-			}
+		//If we're in the new format, then nothing to do!
+		if (check_for_string("$Species:"))
+			return;
 
-			briefing_icon_info bii;
-
-			// parse regular frames
-			required_string("$Name:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			generic_anim_init(&bii.regular, name);
-
-			// parse fade frames
-			required_string("$Name:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			hud_anim_init(&bii.fade, 0, 0, name);
-
-			// parse highlighting frames
-			required_string("$Name:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			hud_anim_init(&bii.highlight, 0, 0, name);
-
-			// add it to the collection
-			Briefing_icon_info.push_back(bii);
+		char junk[MAX_FILENAME_LEN];
+		while (optional_string("$Name:")) {
+			stuff_string(junk, F_NAME, MAX_FILENAME_LEN);
+			Num_icons_in_table++;
 		}
+
 		required_string("#End");
+	} 
+	catch (const parse::ParseException& e) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "icons.tbl", e.what()));
+	}
+}
 
+// --------------------------------------------------------------------------------------
+//	brief_parse_icon_tbl()
+//
+//
+void brief_parse_icon_tbl(const char* filename)
+{
+	size_t species;
+	char name[MAX_FILENAME_LEN];
 
-		// now assign the icons to their species
-		const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
-		size_t bii_index = 0;
-		for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
-		{
-			for (species = 0; species < num_species_covered; species++)
-				Species_info[species].bii_index[icon] = (int)(bii_index++);
+	Assert(!Species_info.empty());
+
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		required_string("#Start");
+
+		// get all the species who are using unique icons (i.e. not borrowing from another species)
+		SCP_vector<int> unique_icons_species;
+		for (int i = 0; i < (int)Species_info.size(); i++) {
+			if (Species_info[i].borrows_bii_index_species == -1)
+				unique_icons_species.push_back(i);
 		}
 
-		// error check
-		if (num_species_covered < Species_info.size())
-		{
-			SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
+		bool new_style_parsing = false;
+		if (Parsing_modular_table || check_for_string("$Species:")) //Do not allow modular tables to use the old format! -Mjn
+			new_style_parsing = true;
 
-			for (species = num_species_covered; species < Species_info.size(); species++)
-			{
-				errormsg += Species_info[species].species_name;
-				errormsg += "\n";
+		if (new_style_parsing) {
+			while (optional_string("$Species:")) {
+				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+				int spinfo_index = species_info_lookup(name);
+
+				if (spinfo_index < 0) {
+					Warning(LOCATION, "Unable to find species %s, in icons.tbl.", name);
+				}
+
+				while (optional_string("$Icon Type:")) {
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					// find the matching icon type
+					int icon_type = [&]() {
+						for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
+							if (strcmp(Icon_names[i], name) == 0) {
+								// found it
+								return i;
+							}
+						}
+						// couldnt find it...
+						return -1;
+					}();
+
+					if (icon_type < 0) {
+						Warning(LOCATION, "Icon Type %s is invalid, in icons.tbl.", name);
+					}
+
+					int &existing_bii_index = Species_info[spinfo_index].bii_indices[icon_type];
+
+					if (existing_bii_index >= 0) { // overwriting
+						briefing_icon_info bii = parse_briefing_icons();
+						if (icon_type >= 0 && spinfo_index >= 0)
+							Briefing_icon_info[existing_bii_index] = bii;
+					} else { // adding a new one
+						int new_bii_index = add_briefing_icons();
+						if (icon_type >= 0 && spinfo_index >= 0)
+							existing_bii_index = new_bii_index;
+					}
+
+				}
+			}
+		}
+		else { // old style
+			
+			//Calculate how many species we're going to try to parse icons for using the pre-parsed count
+			if (Num_icons_in_table % MIN_BRIEF_ICONS != 0)
+				Warning(LOCATION,
+					"An incorrect number of icons was found in icons.tbl. There should be %i icons per species listed!",
+					MIN_BRIEF_ICONS);
+
+			size_t Num_icon_sets = Num_icons_in_table / MIN_BRIEF_ICONS;
+
+			if (Num_icon_sets % BRIEF_ICON_TYPES != 0)
+				Error(LOCATION,
+					"There was somehow a number of icons divisible by %i, but is now not divisible by %i. Get a "
+					"coder!",
+					MIN_BRIEF_ICONS,
+					BRIEF_ICON_TYPES);
+
+			size_t Num_species_in_table = Num_icon_sets / BRIEF_ICON_TYPES;
+
+			for (int icon_type = 0; icon_type < MIN_BRIEF_ICONS; icon_type++) { // NOLINT(modernize-loop-convert)
+				for (species = 0; species < Num_species_in_table; species++) {
+					// if this check isn't true we're missing entries and will complain about it later in brief_icon_parse_cleanup()
+					if (check_for_string("$Name:")) {
+						Species_info[unique_icons_species[species]].bii_indices[icon_type] = add_briefing_icons();
+					}
+				}
 			}
 
-			Error(LOCATION, "%s", errormsg.c_str());
+			//This can still be reached if the above Warning is ignored-Mjn
+			const size_t max_icons = unique_icons_species.size() * MIN_BRIEF_ICONS;
+			if (!check_for_string("#End"))
+				Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
 		}
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "icons.tbl", e.what()));
 	}
+}
+
+void brief_icons_init() {
+	Briefing_icon_info.clear();
+
+	//This is super dumb, but retail format is bad and should feel bad for making me do this-Mjn
+	brief_pre_parse_icons();
+
+	brief_parse_icon_tbl("icons.tbl");
+
+	parse_modular_table(NOX("*-ico.tbm"), brief_parse_icon_tbl);
+
+	brief_icon_parse_cleanup();
 }
 
 void brief_set_icon_color(int team)
@@ -457,6 +609,7 @@ void mission_brief_common_reset()
 					memset( Briefings[i].stages[j].icons, 0, sizeof(brief_icon) * MAX_STAGE_ICONS );
 					Briefings[i].stages[j].icons->ship_class = -1;
 					Briefings[i].stages[j].icons->modelnum = -1;
+					Briefings[i].stages[j].icons->model_instance_num = -1;
 					Briefings[i].stages[j].icons->bitmap_id = -1;
 				}
 
@@ -529,30 +682,38 @@ void debrief_reset()
 /**
  * Set up the screen regions.  A mulitplayer briefing will look different than a single player briefing.
  */
-void brief_init_screen(int multiplayer_flag)
+void brief_init_screen(int  /*multiplayer_flag*/)
 {
 	bscreen.map_x1			= Brief_grid_coords[gr_screen.res][0];
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
+	bscreen.resize          = GR_RESIZE_MENU;
 }
 
-// --------------------------------------------------------------------------------------
-//	brief_init_colors()
-//
-//
-void brief_init_colors()
+bool brief_special_closeup(int briefing_icon_type)
 {
+	switch (briefing_icon_type)
+	{
+		case ICON_PLANET:
+		case ICON_ASTEROID_FIELD:
+		case ICON_WAYPOINT:
+		case ICON_UNKNOWN:
+		case ICON_UNKNOWN_WING:
+		case ICON_JUMP_NODE:
+			return true;
+	}
+	return false;
 }
 
 briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 {
 	if (bi->ship_class < 0)
-		return NULL;
+		return nullptr;
 	ship_info *sip = &Ship_info[bi->ship_class];
 
 	// ship info might override the usual briefing icon
-	if (sip->bii_index_ship >= 0)
+	if ((!brief_special_closeup(bi->type) || Custom_briefing_icons_always_override_standard_icons) && sip->bii_index_ship >= 0)
 	{
 		if (bi->flags & BI_USE_WING_ICON)
 		{
@@ -561,14 +722,14 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 				if (sip->bii_index_wing_with_cargo >= 0)
 					return &Briefing_icon_info[sip->bii_index_wing_with_cargo];
 				else
-					mprintf(("Ship '%s' is missing the wing-with-cargo briefing icon!", sip->name));
+					mprintf(("Ship '%s' is missing the wing-with-cargo briefing icon!\n", sip->name));
 			}
 			else
 			{
 				if (sip->bii_index_wing >= 0)
 					return &Briefing_icon_info[sip->bii_index_wing];
 				else
-					mprintf(("Ship '%s' is missing the wing briefing icon!", sip->name));
+					mprintf(("Ship '%s' is missing the wing briefing icon!\n", sip->name));
 			}
 		}
 		else
@@ -578,7 +739,7 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 				if (sip->bii_index_ship_with_cargo >= 0)
 					return &Briefing_icon_info[sip->bii_index_ship_with_cargo];
 				else
-					mprintf(("Ship '%s' is missing the ship-with-cargo briefing icon!", sip->name));
+					mprintf(("Ship '%s' is missing the ship-with-cargo briefing icon!\n", sip->name));
 			}
 		}
 
@@ -589,7 +750,7 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	if (sip->species < 0)
 		return NULL;
 
-	int bii_index = Species_info[sip->species].bii_index[bi->type];
+	int bii_index = Species_info[sip->species].bii_indices[bi->type];
 	if (bii_index < 0)
 		return NULL;
 
@@ -609,7 +770,8 @@ void brief_preload_icon_anim(brief_icon *bi)
 	// force read of data from disk, so we don't glitch on initial playback
 	if ( ga->first_frame == -1 ) {
 		ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames);
-		Assert(ga->first_frame >= 0);
+		if ( ga->first_frame < 0 )
+			Warning(LOCATION, "Failed to load icon %s!", ga->filename);
 	}
 }
 
@@ -624,13 +786,13 @@ void brief_preload_fade_anim(brief_icon *bi)
 		return;
 
 	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
+	if ( ha->first_frame == -1 )
 		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
-	}
 
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
+	if ( ha->first_frame >= 0 ) {
+		gr_set_bitmap(ha->first_frame);
+		gr_aabitmap(0, 0);
+	}
 }
 
 void brief_preload_highlight_anim(brief_icon *bi)
@@ -644,15 +806,15 @@ void brief_preload_highlight_anim(brief_icon *bi)
 		return;
 
 	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
+	if ( ha->first_frame == -1 )
 		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
+
+	if ( ha->first_frame >= 0 ) {
+		bi->highlight_anim = *ha;
+
+		gr_set_bitmap(ha->first_frame);
+		gr_aabitmap(0, 0);
 	}
-
-	bi->highlight_anim = *ha;
-
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
 }
 
 /**
@@ -700,12 +862,11 @@ void brief_init_map()
 	The_grid = brief_create_default_grid();
 	brief_maybe_create_new_grid(The_grid, pos, orient, 1);
 
-	brief_init_colors();
 	brief_move_icon_reset();
 
 	brief_preload_anims();
 
-	Brief_text_wipe_snd = -1;
+	Brief_text_wipe_snd = sound_handle::invalid();
 	Last_new_stage = -1;
 	Num_fade_icons=0;
 }
@@ -849,10 +1010,9 @@ void brief_render_icon_line(int stage_num, int line_num)
  * @param icon_num icon number in stage
  * @param frametime	time elapsed in seconds
  * @param selected FRED only (will be 0 or non-zero)
- * @param w_scale_factor scale icon in width by this amount (default 1.0f)
- * @param h_scale_factor scale icon in height by this amount (default 1.0f)
+ * @param scale_factor scale icon by this amount (default 1.0f)
  */
-void brief_render_icon(int stage_num, int icon_num, float frametime, int selected, float w_scale_factor, float h_scale_factor)
+void brief_render_icon(int stage_num, int icon_num, float frametime, int selected, float scale_factor)
 {
 	brief_icon	*bi, *closeup_icon;
 	generic_anim *ga;
@@ -865,7 +1025,11 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	Assert( Briefing != NULL );
 	
 	bi = &Briefing->stages[stage_num].icons[icon_num];
-	mirror_icon = (bi->flags & BI_MIRROR_ICON)? true:false;
+
+	mirror_icon = (bi->flags & BI_MIRROR_ICON) ? true : false;
+	if (bi->scale_factor != 1.0f) {
+		scale_factor *= bi->scale_factor;
+	}
 
 	icon_move_info *mi, *next;
 	int interp_pos_found = 0;
@@ -920,7 +1084,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		ga = &bii->regular;
 		if (ga->first_frame < 0) {
-			Int3();
 			return;
 		}
 
@@ -938,10 +1101,14 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float sx = tv.screen.xyw.x;
 		float sy = tv.screen.xyw.y;
-		gr_unsize_screen_posf( &sx, &sy, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
+		int this_resize = bscreen.resize;
+		if (bscreen.resize == GR_RESIZE_MENU) {
+			this_resize = GR_RESIZE_MENU_NO_OFFSET;
+		}
+		gr_unsize_screen_posf(&sx, &sy, NULL, NULL, this_resize);
 	
-		scaled_w = icon_w * w_scale_factor;
-		scaled_h = icon_h * h_scale_factor;
+		scaled_w = icon_w * scale_factor;
+		scaled_h = icon_h * scale_factor;
 		bxf = sx - scaled_w / 2.0f + 0.5f;
 		byf = sy - scaled_h / 2.0f + 0.5f;
 		bx = fl2i(bxf);
@@ -955,12 +1122,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		}
 
 		// render highlight anim frame
-		if ( (bi->flags&BI_SHOWHIGHLIGHT) && (bi->flags&BI_HIGHLIGHT) ) {
+		if ( (bi->flags & BI_SHOWHIGHLIGHT) && (bi->flags & BI_HIGHLIGHT) ) {
 			hud_anim *ha = &bi->highlight_anim;
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bi->hold_x;
 				if (bi->label[0] != '\0') {
-					ha->sy = bi->hold_y - fl2i(gr_get_font_height()/2.0f +0.5) - 2;
+					ha->sy = bi->hold_y - (int)std::lround(gr_get_font_height()/2.0f) - 2;
 				} else {
 					ha->sy = bi->hold_y;
 				}
@@ -968,11 +1135,11 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, bscreen.resize, mirror_icon, scale_factor);
 
-				if ( Brief_stage_highlight_sound_handle < 0 ) {
+				if (!Brief_stage_highlight_sound_handle.isValid()) {
 					if ( !Fred_running) {
-						Brief_stage_highlight_sound_handle = snd_play(&Snds_iface[SND_ICON_HIGHLIGHT]);					
+						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(InterfaceSounds::ICON_HIGHLIGHT));
 					}
 				}
 			}
@@ -980,13 +1147,13 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		// render fade-in anim frame
 		if ( bi->flags & BI_FADEIN ) {
-			hud_anim *ha = &bi->fadein_anim;
+			hud_anim *ha = &bi->fade_anim;
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bx;
 				ha->sy = by;
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, GR_RESIZE_MENU, mirror_icon) == 0 ) {
+				if (hud_anim_render(ha, frametime, 1, 0, 0, 1, bscreen.resize, mirror_icon, scale_factor) == 0) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -996,29 +1163,29 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, GR_RESIZE_MENU,mirror_icon);
+			gr_aabitmap(bx, by, bscreen.resize, mirror_icon, scale_factor);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
+				gr_string(bc - fl2i(w / 2.0f), by - h, Players[Player_num].callsign, bscreen.resize);
 			}
 			else {
-				if (Lcl_gr) {
+				if (Lcl_gr && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
-				} else if (Lcl_pl) {
+					gr_string(bc - fl2i(w / 2.0f), by - h, buf, bscreen.resize);
+				} else if (Lcl_pl && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_pl(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, buf, bscreen.resize);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_string(bc - fl2i(w/2.0f), by - h, bi->label, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, bi->label, bscreen.resize);
 				}
 			}
 
@@ -1088,6 +1255,11 @@ void brief_start_highlight_anims(int stage_num)
 			bi->highlight_anim.time_elapsed=0.0f;
 
 			bm_get_info( bi->highlight_anim.first_frame, &anim_w, &anim_h, NULL);
+			if (bi->scale_factor != 1.0f) {
+				anim_w = static_cast<int>(anim_w * bi->scale_factor);
+				anim_h = static_cast<int>(anim_h * bi->scale_factor);
+			}
+
 			x = fl2i( i2fl(bi->x) + bi->w/2.0f - anim_w/2.0f );
 			y = fl2i( i2fl(bi->y) + bi->h/2.0f - anim_h/2.0f );
 			bi->hold_x = x;
@@ -1104,7 +1276,7 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, GR_RESIZE_MENU);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, bscreen.resize);
 
     if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();
@@ -1117,7 +1289,9 @@ void brief_render_map(int stage_num, float frametime)
 	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
-	brief_render_grid(The_grid);
+
+	if (Briefing->stages[stage_num].draw_grid)
+		brief_render_grid(The_grid);
 
 	brief_render_fade_outs(frametime);
 
@@ -1164,20 +1338,20 @@ void brief_blit_stage_num(int stage_num, int stage_max)
  * @param y vertical position where the text is drawn
  * @param instance index of Colored_stream of the text page to display
  */
-void brief_render_line(int line_num, int x, int y, int instance)
-{
-	Assert( 0<=instance && instance < (int)(sizeof(Colored_stream)/sizeof(*Colored_stream)) );
+void brief_render_line(int line_num, int x, int y, int instance) {
+	Assert(0 <= instance && instance < (int) (sizeof(Colored_stream) / sizeof(*Colored_stream)));
 
-	SCP_vector<colored_char> *src = &Colored_stream[instance].at(line_num);
+	SCP_vector<colored_char>* src = &Colored_stream[instance].at(line_num);
 
 	// empty strings do not have to be drawn
 	size_t src_len = src->size();
-	if (src_len == 0){
+	if (src_len == 0) {
 		return;
 	}
+
 	// truncate_len is the number of characters currently displayed including the bright white characters
 	size_t truncate_len = fl2i(Brief_text_wipe_time_elapsed / BRIEF_TEXT_WIPE_TIME * Max_briefing_line_len);
-	if (truncate_len > src_len){
+	if (truncate_len > src_len) {
 		truncate_len = src_len;
 	}
 	// truncate_len is going to be the number of characters displayed with normal intensity
@@ -1190,11 +1364,11 @@ void brief_render_line(int line_num, int x, int y, int instance)
 			truncate_len = 0;
 		} else {
 			bright_len = BRIGHTEN_LEAD;
-			truncate_len -= BRIGHTEN_LEAD; 
+			truncate_len -= BRIGHTEN_LEAD;
 		}
 	}
-	size_t char_seq_pos=0; //Cursor position into the following character sequence
-	char char_seq[MAX_BRIEF_LINE_LEN];	
+	size_t char_seq_pos = 0; //Cursor position into the following character sequence
+	char char_seq[MAX_BRIEF_LINE_LEN];
 	int offset = 0; //offset is the horizontal position of the screen where strings are drawn
 	gr_set_color_fast(&Color_white);
 
@@ -1203,16 +1377,17 @@ void brief_render_line(int line_num, int x, int y, int instance)
 	// When the color changes, the buffer is drawn and reset.
 	{
 		char last_color = src->at(0).color;
-		for (size_t current_pos=0; current_pos<truncate_len; current_pos++) {
-			colored_char &current_char=src->at(current_pos);		
+		for (size_t current_pos = 0; current_pos < truncate_len; current_pos++) {
+			colored_char& current_char = src->at(current_pos);
 			//when the current color changes, the accumulated character sequence is drawn.
-			if (current_char.color != last_color){
+			if (current_char.color != last_color) {
 				//add a 0 terminal character to make line a valid C string
 				Assert(char_seq_pos < sizeof(char_seq));
-				char_seq[char_seq_pos] = 0;         
-				{	// Draw coloured text, and increment cariage position
-					int w=0,h=0;
-					brief_set_text_color(last_color);        
+				char_seq[char_seq_pos] = 0;
+				{
+					// Draw coloured text, and increment cariage position
+					int w = 0, h = 0;
+					brief_set_text_color(last_color);
 					gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 					gr_get_string_size(&w, &h, char_seq);
 					offset += w;
@@ -1221,32 +1396,40 @@ void brief_render_line(int line_num, int x, int y, int instance)
 				char_seq_pos = 0;
 				last_color = current_char.color;
 			}
-			Assert(char_seq_pos < sizeof(char_seq));
-			char_seq[char_seq_pos++] = current_char.letter;		
+			auto encoded_size = unicode::encoded_size(current_char.letter);
+			Assert(char_seq_pos + encoded_size - 1 < sizeof(char_seq));
+			unicode::encode(current_char.letter, &char_seq[char_seq_pos]);
+			char_seq_pos += encoded_size;
 		}
+
 		// Draw the final chunk of acumulated characters
 		// Add a 0 terminal character to make line a valid C string
 		Assert(char_seq_pos < sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
-        {	// Draw coloured text, and increment cariage position
-			int w=0,h=0;
-			brief_set_text_color(last_color);        
+		{
+			// Draw coloured text, and increment cariage position
+			int w = 0, h = 0;
+			brief_set_text_color(last_color);
 			gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 			gr_get_string_size(&w, &h, char_seq);
 			offset += w;
 		}
 	}
 
-	{	// PART2: Draw leading bright white characters
+	{
+		// PART2: Draw leading bright white characters
 		char_seq_pos = 0;
-		for( size_t current_pos = truncate_len; current_pos<truncate_len + bright_len; current_pos++){		
-			Assert(char_seq_pos < sizeof(char_seq));
-			char_seq[char_seq_pos++] = src->at(current_pos).letter;
+		for (size_t current_pos = truncate_len; current_pos < truncate_len + bright_len; current_pos++) {
+			auto encoded_size = unicode::encoded_size(src->at(current_pos).letter);
+			Assert(char_seq_pos + encoded_size - 1 < sizeof(char_seq));
+			unicode::encode(src->at(current_pos).letter, &char_seq[char_seq_pos]);
+			char_seq_pos += encoded_size;
 		}
-		Assert(char_seq_pos < (int)sizeof(char_seq));
+
+		Assert(char_seq_pos < (int) sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);    
+		gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 	}
 }
 
@@ -1280,7 +1463,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 		if (snd_is_playing(Brief_text_wipe_snd)) {
 			snd_stop(Brief_text_wipe_snd);
 		}
-		gamesnd_play_iface(SND_BRIEF_TEXT_WIPE);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
 		Play_brief_voice = 1;
 	}
 
@@ -1414,10 +1597,21 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 }
 
 
-bool brief_verify_color_tag(char color_tag)
+bool brief_verify_color_tag(unicode::codepoint_t color_tag)
 {
-	if ( Tagged_Colors.find(color_tag) == Tagged_Colors.end() ) {
-		Warning(LOCATION, "Invalid text color tag '$%c' used in mission: '%s'.\n", color_tag, Mission_filename);
+	if (color_tag > 127) {
+		// The tag will always be out of range. This is done to be sure that the case below does not accidentally
+		// produce a valid tag character.
+		SCP_string tag_str;
+		unicode::encode(color_tag, std::back_inserter(tag_str));
+
+		Warning(LOCATION, "Invalid text color tag '$%s' used in mission: '%s'.\n", tag_str.c_str(), Mission_filename);
+		return false;
+	}
+	char char_tag = (char)color_tag;
+
+	if ( Tagged_Colors.find(char_tag) == Tagged_Colors.end() ) {
+		Warning(LOCATION, "Invalid text color tag '$%c' used in mission: '%s'.\n", char_tag, Mission_filename);
 		return false;
 	}
 	return true;
@@ -1433,9 +1627,9 @@ void brief_set_text_color(char color_tag)
  * @param character the character to be analysed.
  * @return true when the given character is a word separator, and false when the character is part of a word.
  */
-bool is_a_word_separator(char character)
+bool is_a_word_separator(unicode::codepoint_t character)
 {
-	return ((character >= 0) && (character <= 32)); // all control characters including space, newline, and tab
+	return character <= 32; // all control characters including space, newline, and tab
 }
 
 /**
@@ -1462,66 +1656,70 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 
 	active_color_index = default_color_stack[color_stack_index];
 
-	auto src_len = strlen(src);
-	for (size_t i = 0; i < src_len; i++)
+	unicode::codepoint_range range(src);
+	auto end_iter = std::end(range);
+	for (auto iter = std::begin(range); iter != end_iter; ++iter)
 	{
 		// Is the character a color markup?
 		// text markup consists of a '$' plus a character plus an optional space
-		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) )
+		if (iter + 1 != end_iter  && *iter == BRIEF_META_CHAR)
 		{
-			i++;   // Consume the $ character
+			++iter;   // Consume the $ character
 
 			// it's possible that there's a closing brace here
-			if (src[i] == '}')
+			if (*iter == UNICODE_CHAR('}'))
 			{
 				if (color_stack_index > 0)
 				{
 					color_stack_index--;
 					active_color_index = default_color_stack[color_stack_index];
 				}
-				i++;	// consume the }
+				++iter;	// consume the }
 			}
 			// breaking character
-			else if (src[i] == '|')
+			else if (*iter == UNICODE_CHAR('|'))
 			{
 				active_color_index = default_color_stack[color_stack_index];
-				i++;	// consume the |
+				++iter;	// consume the |
 			}
 			// normal $c or $c{
 			else
 			{
-				if (brief_verify_color_tag(src[i])) active_color_index = src[i];
-				i++; // Consume the color identifier and focus on the white character (if any)
+				if (brief_verify_color_tag(*iter)) {
+					active_color_index = (char)*iter;
+				}
+				++iter; // Consume the color identifier and focus on the white character (if any)
 
 				// special case: color spans (different default color within braces)
 				// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
-				if (src[i] == '{')
+				if (*iter == UNICODE_CHAR('{'))
 				{
 					if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
 					{
 						color_stack_index++;
 						default_color_stack[color_stack_index] = active_color_index;
 					}
-					i++;	// consume the {
+					++iter;	// consume the {
 				}
 			}
 
 			// Skip every whitespace until the next word is reached
-			while ( (i < src_len) && is_white_space(src[i]) )
-				i++;
+			while ( (iter != end_iter) && is_white_space(*iter) )
+				++iter;
+
 			//The next character is not a whitespace, let's process it as usual
 			//(subtract 1 because the for loop will add it again)
-			i--;
+			--iter;
 			continue;
  		}
 
 		// When the word is terminated, reset color to default
-		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) ))
+		if ( (is_white_space(*iter) ) || ( is_a_word_separator(*iter) ))
 			active_color_index = default_color_stack[color_stack_index];
 
 		// Append the character to the result structure
 		colored_char dest;
-		dest.letter = src[i];
+		dest.letter = *iter;
 		dest.color = active_color_index;
 		dest_line.push_back(dest);
 	} 
@@ -1559,7 +1757,7 @@ int brief_color_text_init(const char* src, int w, const char default_color, int 
 	}
 
 	Assert(src != NULL);
-	n_lines = split_str(src, w, n_chars, p_str, BRIEF_META_CHAR);
+	n_lines = split_str(src, w, n_chars, p_str, MAX_BRIEF_LINE_LEN, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 
 	//for compatability reasons truncate text from everything except the fiction viewer
@@ -1710,8 +1908,8 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 			}
 
 			newb->icons[i].flags |= BI_FADEIN;
-			newb->icons[i].fadein_anim = bii->fade;
-			newb->icons[i].fadein_anim.time_elapsed = 0.0f;
+			newb->icons[i].fade_anim = bii->fade;
+			newb->icons[i].fade_anim.time_elapsed = 0.0f;
 		}
 	}
 
@@ -1791,53 +1989,9 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 	Voice_started_time = 0;
 	Voice_ended_time = 0;
 
-	Brief_stage_highlight_sound_handle = -1;
+	Brief_stage_highlight_sound_handle = sound_handle::invalid();
 	Last_new_stage = stage_num;
 }
-
-// ------------------------------------------------------------------------------------
-// camera_pos_past_target()
-//
-//
-int camera_pos_past_target(vec3d *start, vec3d *current, vec3d *dest)
-{
-	vec3d num, den;
-	float ratio;
-
-	vm_vec_sub(&num, current, start);
-	vm_vec_sub(&den, start, dest);
-
-	ratio = vm_vec_mag_quick(&num) / vm_vec_mag_quick(&den);
-	if (ratio >= 1.0f)
-		return TRUE;
-	
-	return FALSE;
-}
-
-/**
- * Interpolate between matrices.
- * elapsed_time/total_time gives percentage of interpolation between cur and goal.
- */
-void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elapsed_time, float total_time)
-{
-	vec3d fvec, rvec;
-	float	time0, time1;
-	
-	if ( !vm_matrix_cmp( goal, start ) ) {
-		return;
-	}	
-
-	time0 = elapsed_time / total_time;
-	time1 = (total_time - elapsed_time) / total_time;
-
-	vm_vec_copy_scale(&fvec, &start->vec.fvec, time1);
-	vm_vec_scale_add2(&fvec, &goal->vec.fvec, time0);
-
-	vm_vec_copy_scale(&rvec, &start->vec.rvec, time1);
-	vm_vec_scale_add2(&rvec, &goal->vec.rvec, time0);
-
-	vm_vector_2_matrix(result, &fvec, NULL, &rvec);
- }
 
 /**
  * Calculate how far the camera should have moved
@@ -1862,7 +2016,7 @@ float brief_camera_get_dist_moved(float elapsed_time)
 /**
  * Update the camera position
  */
-void brief_camera_move(float frametime, int stage_num)
+void brief_camera_move(float frametime, int  /*stage_num*/)
 {
 	vec3d	dist_moved;
 	float		dist;
@@ -1876,7 +2030,7 @@ void brief_camera_move(float frametime, int stage_num)
 
 	// Update orientation
 	if ( (Elapsed_time < Total_move_time) ) {
-		vm_matrix_interpolate(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit);
+		vm_angular_move_matrix(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit, false);
 		Current_cam_orient = result;
 		W_init = w_out;
 	}
@@ -2220,7 +2374,7 @@ void brief_voice_load_all()
 	Assert( Briefing != NULL );
 	for ( i = 0; i < Briefing->num_stages; i++ ) {
 		bs = &Briefing->stages[i];
-		if ( strnicmp(bs->voice, NOX("none"), 4) ) {
+		if ( strnicmp(bs->voice, NOX("none"), 4) != 0 ) {
 			brief_load_voice_file(i, bs->voice);
 		}
 	}

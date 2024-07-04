@@ -22,6 +22,7 @@
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 
@@ -45,8 +46,7 @@ void hud_init_brackets()
 {
 }
 
-//	Called by draw_bounding_brackets.  
-void draw_brackets_square(int x1, int y1, int x2, int y2, int resize_mode)
+void draw_brackets_square(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2, int resize_mode)
 {
 	int	width, height;
 
@@ -57,9 +57,9 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, int resize_mode)
 	}
 	
 	width = x2 - x1;
-	Assert( width > 0);
 	height = y2 - y1;
-	Assert( height > 0);
+	if (width < 1 || height < 1)
+		return;
 
 	// make the brackets extend 25% of the way along the width or height
 	int bracket_width = width/4;
@@ -67,29 +67,29 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, int resize_mode)
 
 	// horizontal lines
 	if ( (x1 + bracket_width > 0) && (x1 < gr_screen.clip_width) ){
-		gr_gradient(x1,y1,x1+bracket_width-1,y1,GR_RESIZE_NONE);	// top left
-		gr_gradient(x1,y2,x1+bracket_width-1,y2,GR_RESIZE_NONE);	// bottom left
+		draw_list->add_gradient(x1,y1,x1+bracket_width-1,y1,GR_RESIZE_NONE);	// top left
+		draw_list->add_gradient(x1,y2,x1+bracket_width-1,y2,GR_RESIZE_NONE);	// bottom left
 	}
 
 	if ( (x2 - bracket_width < gr_screen.clip_width) && (x2 > 0) )	{
-		gr_gradient(x2, y1, x2-bracket_width+1,y1,GR_RESIZE_NONE);	// top right
-		gr_gradient(x2, y2, x2-bracket_width+1,y2,GR_RESIZE_NONE);	// bottom right
+		draw_list->add_gradient(x2, y1, x2-bracket_width+1,y1,GR_RESIZE_NONE);	// top right
+		draw_list->add_gradient(x2, y2, x2-bracket_width+1,y2,GR_RESIZE_NONE);	// bottom right
 	}
 
 	// vertical lines
 	if ( (y1 + bracket_height > 0) && (y1 < gr_screen.clip_height) ) {
-		gr_gradient(x1,y1,x1,y1+bracket_height-1,GR_RESIZE_NONE);		// top left
-		gr_gradient(x2,y1,x2,y1+bracket_height-1,GR_RESIZE_NONE);		// top right
+		draw_list->add_gradient(x1,y1,x1,y1+bracket_height-1,GR_RESIZE_NONE);		// top left
+		draw_list->add_gradient(x2,y1,x2,y1+bracket_height-1,GR_RESIZE_NONE);		// top right
 	}
 
 	if ( (y2 - bracket_height < gr_screen.clip_height) && (y2 > 0) )	{
-		gr_gradient(x1,y2,x1,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom left
-		gr_gradient(x2,y2,x2,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom right
+		draw_list->add_gradient(x1,y2,x1,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom left
+		draw_list->add_gradient(x2,y2,x2,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom right
 	}
 }
 
 // NOTE: all values should be in unscaled range
-void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick)
+void draw_brackets_square_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2, int thick)
 {
 	int	width, height;
 
@@ -101,112 +101,45 @@ void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick)
 	int bracket_height = height/4;
 
 	// top line
-	gr_line(x1,y1,x1+bracket_width,y1);
-	gr_line(x2,y1,x2-bracket_width,y1);
+	draw_list->add_line(x1,y1,x1+bracket_width,y1);
+	draw_list->add_line(x2,y1,x2-bracket_width,y1);
 	if ( thick ) {
-		gr_line(x1,y1+1,x1+bracket_width,y1+1);
-		gr_line(x2,y1+1,x2-bracket_width,y1+1);
+		draw_list->add_line(x1,y1+1,x1+bracket_width,y1+1);
+		draw_list->add_line(x2,y1+1,x2-bracket_width,y1+1);
 	}
 
 	// bottom line
-	gr_line(x1,y2,x1+bracket_width,y2);
-	gr_line(x2,y2,x2-bracket_width,y2);
+	draw_list->add_line(x1,y2,x1+bracket_width,y2);
+	draw_list->add_line(x2,y2,x2-bracket_width,y2);
 	if ( thick ) {
-		gr_line(x1,y2-1,x1+bracket_width,y2-1);
-		gr_line(x2,y2-1,x2-bracket_width,y2-1);
+		draw_list->add_line(x1,y2-1,x1+bracket_width,y2-1);
+		draw_list->add_line(x2,y2-1,x2-bracket_width,y2-1);
 	}
 
 	// left line
 	if ( thick ) {
-		gr_line(x1,y1+2,x1,y1+bracket_height);
-		gr_line(x1,y2-2,x1,y2-bracket_height);
-		gr_line(x1+1,y1+2,x1+1,y1+bracket_height);
-		gr_line(x1+1,y2-2,x1+1,y2-bracket_height);
+		draw_list->add_line(x1,y1+2,x1,y1+bracket_height);
+		draw_list->add_line(x1,y2-2,x1,y2-bracket_height);
+		draw_list->add_line(x1+1,y1+2,x1+1,y1+bracket_height);
+		draw_list->add_line(x1+1,y2-2,x1+1,y2-bracket_height);
 	} else {
-		gr_line(x1,y1+1,x1,y1+bracket_height);
-		gr_line(x1,y2-1,x1,y2-bracket_height);
+		draw_list->add_line(x1,y1+1,x1,y1+bracket_height);
+		draw_list->add_line(x1,y2-1,x1,y2-bracket_height);
 	}
 
 	// right line
 	if ( thick ) {
-		gr_line(x2,y1+2,x2,y1+bracket_height);
-		gr_line(x2,y2-2,x2,y2-bracket_height);
-		gr_line(x2-1,y1+2,x2-1,y1+bracket_height);
-		gr_line(x2-1,y2-2,x2-1,y2-bracket_height);
+		draw_list->add_line(x2,y1+2,x2,y1+bracket_height);
+		draw_list->add_line(x2,y2-2,x2,y2-bracket_height);
+		draw_list->add_line(x2-1,y1+2,x2-1,y1+bracket_height);
+		draw_list->add_line(x2-1,y2-2,x2-1,y2-bracket_height);
 	} else {
-		gr_line(x2,y1+1,x2,y1+bracket_height);
-		gr_line(x2,y2-1,x2,y2-bracket_height);
+		draw_list->add_line(x2,y1+1,x2,y1+bracket_height);
+		draw_list->add_line(x2,y2-1,x2,y2-bracket_height);
 	}
 }
 
-
-#define NUM_DASHES	2
-void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2)
-{
-	int	width, height, i;
-
-	width = x2 - x1;
-	height = y2 - y1;
-
-	// make the brackets extend 25% of the way along the width or height
-	float bracket_width = width/4.0f;
-	float bracket_height = height/4.0f;
-
-	int dash_width;
-	dash_width = fl2i(bracket_width / ( NUM_DASHES*2 - 1 ) + 0.5f);
-
-	if ( dash_width < 1 ) {
-		draw_brackets_square_quick(x1, y1, x2, y2);
-		return;
-	}
-
-	int dash_height;
-	dash_height = fl2i(bracket_height / ( NUM_DASHES*2 - 1 ) + 0.5f);
-
-	if ( dash_height < 1 ) {
-		draw_brackets_square_quick(x1, y1, x2, y2);
-		return;
-	}
-	
-	int dash_x1, dash_x2, dash_y1, dash_y2;
-
-	dash_x1 = x1;
-	dash_x2 = x2;
-	dash_y1 = y1;
-	dash_y2 = y2;
-
-	for ( i = 0; i < NUM_DASHES; i++ ) {
-		// top line
-		gr_line(dash_x1, y1, dash_x1+(dash_width-1), y1);
-		gr_line(dash_x2, y1, dash_x2-(dash_width-1), y1);
-
-		// bottom line
-		gr_line(dash_x1, y2, dash_x1+(dash_width-1), y2);
-		gr_line(dash_x2, y2, dash_x2-(dash_width-1), y2);
-		
-		dash_x1 += dash_width*2;
-		dash_x2 -= dash_width*2;
-
-		// left line
-		gr_line(x1, dash_y1, x1, dash_y1+(dash_height-1));
-		gr_line(x1, dash_y2, x1, dash_y2-(dash_height-1));
-
-		// right line
-		gr_line(x2, dash_y1, x2, dash_y1+(dash_height-1));
-		gr_line(x2, dash_y2, x2, dash_y2-(dash_height-1));
-
-		dash_y1 += dash_height*2;
-		dash_y2 -= dash_height*2;
-	}
-
-}
-
-
-
-// draw_brackets_diamond()
-//	Called by draw_bounding_brackets.  
-
-void draw_brackets_diamond(int x1, int y1, int x2, int y2)
+void draw_brackets_diamond_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2)
 {
 	int width, height, half_width, half_height;
 	int center_x, center_y;
@@ -217,168 +150,42 @@ void draw_brackets_diamond(int x1, int y1, int x2, int y2)
 	width = x2 - x1;
 	height = y2 - y1;
 
-	half_width = fl2i( width/2.0f + 0.5f );
-	half_height = fl2i( height/2.0f +0.5f );
+	half_width = (int)std::lround( width/2.0f);
+	half_height = (int)std::lround( height/2.0f);
 
 	side_len = (float)_hypot(half_width, half_height);
 	bracket_len = side_len / 8;
 	
-	x_delta = fl2i(bracket_len * width / side_len + 0.5f);
-	y_delta = fl2i(bracket_len * height / side_len + 0.5f);
-
+	x_delta = (int)std::lround(bracket_len * width / side_len);
+	y_delta = (int)std::lround(bracket_len * height / side_len);
 
 	center_x = x1 + half_width;
 	center_y = y1 + half_height;
 
 	// top left line
-	gr_gradient(center_x - x_delta, y1 + y_delta,center_x, y1);
-	gr_gradient(x1 + x_delta, center_y - y_delta, x1, center_y);
+	draw_list->add_line(center_x - x_delta, y1 + y_delta,center_x, y1);
+	draw_list->add_line(x1 + x_delta, center_y - y_delta, x1, center_y);
 
 	// top right line
-	gr_gradient(center_x + x_delta, y1 + y_delta,center_x, y1);
-	gr_gradient(x2 - x_delta, center_y - y_delta, x2, center_y);
+	draw_list->add_line(center_x + x_delta, y1 + y_delta,center_x, y1);
+	draw_list->add_line(x2 - x_delta, center_y - y_delta, x2, center_y);
 
 	// bottom left line
-	gr_gradient(x1 + x_delta, center_y + y_delta, x1, center_y);
-	gr_gradient(center_x - x_delta, y2 - y_delta, center_x, y2);
+	draw_list->add_line(x1 + x_delta, center_y + y_delta, x1, center_y);
+	draw_list->add_line(center_x - x_delta, y2 - y_delta, center_x, y2);
 
 	// bottom right line
-	gr_gradient(x2 - x_delta, center_y + y_delta, x2, center_y);
-	gr_gradient(center_x + x_delta, y2 - y_delta, center_x, y2);
-}
-
-void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2)
-{
-	int width, height, half_width, half_height;
-	int center_x, center_y;
-	int x_delta, y_delta;
-
-	float side_len, bracket_len;
-
-	width = x2 - x1;
-	height = y2 - y1;
-
-	half_width = fl2i( width/2.0f + 0.5f);
-	half_height = fl2i( height/2.0f + 0.5f);
-
-	side_len = (float)_hypot(half_width, half_height);
-	bracket_len = side_len / 8;
-	
-	x_delta = fl2i(bracket_len * width / side_len + 0.5f);
-	y_delta = fl2i(bracket_len * height / side_len + 0.5f);
-
-	center_x = x1 + half_width;
-	center_y = y1 + half_height;
-
-	// top left line
-	gr_line(center_x - x_delta, y1 + y_delta,center_x, y1);
-	gr_line(x1 + x_delta, center_y - y_delta, x1, center_y);
-
-	// top right line
-	gr_line(center_x + x_delta, y1 + y_delta,center_x, y1);
-	gr_line(x2 - x_delta, center_y - y_delta, x2, center_y);
-
-	// bottom left line
-	gr_line(x1 + x_delta, center_y + y_delta, x1, center_y);
-	gr_line(center_x - x_delta, y2 - y_delta, center_x, y2);
-
-	// bottom right line
-	gr_line(x2 - x_delta, center_y + y_delta, x2, center_y);
-	gr_line(center_x + x_delta, y2 - y_delta, center_x, y2);
+	draw_list->add_line(x2 - x_delta, center_y + y_delta, x2, center_y);
+	draw_list->add_line(center_x + x_delta, y2 - y_delta, center_x, y2);
 
 	// draw an 'X' in the middle of the brackets
-	gr_line(center_x-x_delta, center_y-y_delta, center_x+x_delta, center_y+y_delta);
-	gr_line(center_x-x_delta, center_y+y_delta, center_x+x_delta, center_y-y_delta);
+	draw_list->add_line(center_x-x_delta, center_y-y_delta, center_x+x_delta, center_y+y_delta);
+	draw_list->add_line(center_x-x_delta, center_y+y_delta, center_x+x_delta, center_y-y_delta);
 }
-
-//	Draw bounding brackets for a subobject.
-// unused function, candidate for removal
-#if 0
-void draw_bounding_brackets_subobject()
-{
-	if (Player_ai->targeted_subsys_parent == Player_ai->target_objnum)
-		if (Player_ai->targeted_subsys != NULL) {
-			ship_subsys	*subsys;
-			int		target_objnum;
-			object* targetp;
-			vertex subobj_vertex;
-			vec3d	subobj_pos;
-			int x1,x2,y1,y2;
-
-			subsys = Player_ai->targeted_subsys;
-			target_objnum = Player_ai->target_objnum;
-			Assert(target_objnum != -1);
-			targetp = &Objects[target_objnum];
-			Assert( targetp->type == OBJ_SHIP );
-
-			get_subsystem_world_pos(targetp, subsys, &subobj_pos);
-
-			g3_rotate_vertex(&subobj_vertex,&subobj_pos);
-
-			g3_project_vertex(&subobj_vertex);
-			if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
-				return;
-
-			int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
-			int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
-			int hud_subtarget_w, hud_subtarget_h, bound_rc;
-
-			bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);
-			if ( bound_rc != 0 )
-				return;
-
-			hud_subtarget_w = x2-x1+1;
-			if ( hud_subtarget_w > gr_screen.clip_width ) {
-				hud_subtarget_w = gr_screen.clip_width;
-			}
-
-			hud_subtarget_h = y2-y1+1;
-			if ( hud_subtarget_h > gr_screen.clip_height ) {
-				hud_subtarget_h = gr_screen.clip_height;
-			}
-
-			if ( hud_subtarget_w > gr_screen.max_w ) {
-				x1 = subobj_x - (gr_screen.max_w>>1);
-				x2 = subobj_x + (gr_screen.max_w>>1);
-			}
-			if ( hud_subtarget_h > gr_screen.max_h ) {
-				y1 = subobj_y - (gr_screen.max_h>>1);
-				y2 = subobj_y + (gr_screen.max_h>>1);
-			}
-
-			// *** these unsize take care of everything below ***
-			gr_unsize_screen_pos( &hud_subtarget_w, &hud_subtarget_h );
-			gr_unsize_screen_pos( &subobj_x, &subobj_y );
-			gr_unsize_screen_pos( &x1, &y1 );
-			gr_unsize_screen_pos( &x2, &y2 );
-
-			// determine if subsystem is on far or near side of the ship
-			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
-
-			// AL 29-3-98: If subsystem is destroyed, draw gray brackets
-			// Goober5000: this will now execute for fighterbays if the bay has been given a
-			// percentage subsystem strength in ships.tbl
-			// Goober5000: this will now execute for any subsys that takes damage and will not
-			// execute for any subsys that doesn't take damage
-			if ( (Player_ai->targeted_subsys->current_hits <= 0) && ( ship_subsys_takes_damage(Player_ai->targeted_subsys) ) ) {
-				gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
-			} else {
-				hud_set_iff_color( targetp, 1 );
-			}
-
-			if ( Player->subsys_in_view ) {
-				draw_brackets_square_quick(x1, y1, x2, y2);
-			} else {
-				draw_brackets_diamond_quick(x1, y1, x2, y2);
-			}
-			// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
-		}
-}
-#endif
 
 extern int HUD_drew_selection_bracket_on_target;
 //Do we want to show the ship & class name?
-extern int Cmdline_targetinfo;
+extern bool Extra_target_info;
 
 // Display the current target distance, right justified at (x,y)
 void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
@@ -398,7 +205,7 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
 	// scale by distance modifier from hud_guages.tbl for display purposes
 	displayed_distance = distance * Hud_unit_multiplier;
 
-	sprintf(text_dist, "%d", fl2i(displayed_distance+0.5f));
+	sprintf(text_dist, "%d", (int)std::lround(displayed_distance));
 	hud_num_make_mono(text_dist, font_num);
 	gr_get_string_size(&w,&h,text_dist);
 
@@ -415,182 +222,7 @@ int	Ships_attacking_bitmap = -1;
 
 int num_ships_attacking(int target_objnum);
 
-// draw_bounding_brackets() will draw the faded brackets that surround the current target
-// NOTE: x1, y1, x2 & y2 are assumed to be scaled sizes, w_correction & h_correction are assumed to be unscaled!!
-// unused function, candidate for removal
-#if 0
-void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance, int target_objnum)
-{
-	int width, height;
-
-	if ( ( x1 < 0 && x2 < 0 ) || ( y1 < 0 && y2 < 0 ) )
-		return;
-
-	if ( ( x1 > gr_screen.clip_width && x2 > gr_screen.clip_width ) ||
-		  ( y1 > gr_screen.clip_height && y2 > gr_screen.clip_height ) )
-		return;
-
-	// *** everything below is taken care of with this unsize ***
-	gr_unsize_screen_pos(&x1, &y1);
-	gr_unsize_screen_pos(&x2, &y2);
-
-	width = x2-x1;
-	Assert(width>=0);
-
-	height = y2-y1;
-	Assert(height>=0);
-
-	if ( (width >= (gr_screen.max_w_unscaled)) && (height >= (gr_screen.max_h_unscaled)) ) {
-		return;
-	}
-
-	if (width < Min_target_box_width[gr_screen.res]) {
-		x1 = x1 - (Min_target_box_width[gr_screen.res]-width)/2;
-		x2 = x2 + (Min_target_box_width[gr_screen.res]-width)/2;
-	}
-
-	if (height < Min_target_box_height[gr_screen.res]) {
-		y1 = y1 - (Min_target_box_height[gr_screen.res]-height)/2;
-		y2 = y2 + (Min_target_box_height[gr_screen.res]-height)/2;
-	}
-		
-	draw_brackets_square(x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
-
-	// draw distance to target in lower right corner of box
-	if ( distance > 0 ) {
-		hud_target_show_dist_on_bracket(x2+w_correction,y2+h_correction,distance);
-	}
-
-	//	Maybe show + for each additional fighter or bomber attacking target.
-	if ( (target_objnum != -1) && hud_gauge_active(HUD_ATTACKING_TARGET_COUNT) ) {
-		int num_attacking = num_ships_attacking(target_objnum);
-
-		if (Ships_attacking_bitmap == -1){
-			Ships_attacking_bitmap = bm_load(Ships_attack_fname[gr_screen.res]);
-		}
-
-		if (Ships_attacking_bitmap == -1) {
-			Int3();
-			return;
-		}
-
-		//	If a ship is attacked by player, show one fewer plus
-		int	k=0;
-		if (Objects[target_objnum].type == OBJ_SHIP) {
-			if (iff_x_attacks_y(Player_ship->team, Ships[Objects[target_objnum].instance].team)) {
-				k = 1;
-			}
-		} else {
-			k = 1;
-		}
-
-		if (num_attacking > k) {
-			int	i, num_blips;
-			
-			num_blips = num_attacking-k;
-			if (num_blips > 4){
-				num_blips = 4;
-			}
-
-			if (Ships_attacking_bitmap >= 0) {
-				if (num_blips > 3)
-					y1 -= 3;
-
-				for (i=0; i<num_blips; i++) {
-					GR_AABITMAP(Ships_attacking_bitmap, x2+3, y1+i*7);					
-				}
-			}
-
-			//Increment for the position of ship name/class.
-			//DEPENDANT ON ATTACKER SIZE (X)
-			x2 += 7;
-		}
-	}
-
-	if(Cmdline_targetinfo && (target_objnum != -1))
-	{
-		object* t_objp = &Objects[target_objnum];
-		const char* tinfo_name = NULL;
-		const char* tinfo_class = NULL;
-		char temp_name[NAME_LENGTH*2+3];
-		char temp_class[NAME_LENGTH];
-		SCP_list<CJumpNode>::iterator jnp;
-
-		switch(t_objp->type)
-		{
-			case OBJ_SHIP:
-				hud_stuff_ship_name(temp_name, &Ships[t_objp->instance]);
-				hud_stuff_ship_class(temp_class, &Ships[t_objp->instance]);
-				tinfo_name = temp_name;
-				tinfo_class = temp_class;
-
-				// maybe concatenate the callsign
-				if (*temp_name)
-				{
-					char temp_callsign[NAME_LENGTH];
-
-					hud_stuff_ship_callsign(temp_callsign, &Ships[t_objp->instance]);
-					if (*temp_callsign)
-						sprintf(&temp_name[strlen(temp_name)], " (%s)", temp_callsign);
-				}
-				// maybe substitute the callsign
-				else
-				{
-					hud_stuff_ship_callsign(temp_name, &Ships[t_objp->instance]);
-				}
-				break;
-
-			case OBJ_DEBRIS:
-				tinfo_name = XSTR("Debris", 348);
-				break;
-			case OBJ_WEAPON:
-				strcpy_s(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
-				break;
-			case OBJ_ASTEROID:
-				switch(Asteroids[t_objp->instance].asteroid_type)
-				{
-					case ASTEROID_TYPE_SMALL:
-					case ASTEROID_TYPE_MEDIUM:
-					case ASTEROID_TYPE_LARGE:
-						tinfo_name = NOX("Asteroid");
-						break;
-					default:
-						tinfo_name = XSTR("Debris", 348);
-				}
-				break;
-			case OBJ_JUMP_NODE:
-				for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-					if(jnp->GetSCPObject() == t_objp)
-						break;
-				}
-				
-				strcpy_s(temp_name, jnp->GetName());
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
-				break;
-		}
-
-		if(tinfo_name)
-		{
-			gr_string(x2+3, y1, tinfo_name);
-		}
-		if(tinfo_class)
-		{
-			gr_string(x2+3, y1+9, tinfo_class);
-		}
-/*
-		if(tinfo_callsign)
-		{
-			gr_string(x2+3, y1+18, tinfo_callsign);
-		}
- */
-	}
-}
-#endif
-
-int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, bool draw, bool set_color, int* draw_coords)
+int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsys, int min_width, int min_height, bool draw, bool set_color, int* draw_coords)
 {
 	Assertion(subsys != NULL, "Invalid subsystem pointer passed to draw_subsys_brackets!");
 
@@ -613,8 +245,8 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 	if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
 		return -1;
 
-	int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
-	int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
+	int subobj_x = (int)std::lround(subobj_vertex.screen.xyw.x);
+	int subobj_y = (int)std::lround(subobj_vertex.screen.xyw.y);
 	int hud_subtarget_w, hud_subtarget_h, bound_rc;
 
 	bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);
@@ -656,7 +288,7 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 	}
 
 	// determine if subsystem is on far or near side of the ship
-	int in_sight = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
+	bool in_sight = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, false);
 	
 	if (draw)
 	{
@@ -676,9 +308,9 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 		}
 
 		if ( in_sight ) {
-			draw_brackets_square_quick(x1, y1, x2, y2);
+			draw_brackets_square_quick(draw_list, x1, y1, x2, y2);
 		} else {
-			draw_brackets_diamond_quick(x1, y1, x2, y2);
+			draw_brackets_diamond_quick(draw_list, x1, y1, x2, y2);
 		}
 	}
 	
@@ -699,7 +331,7 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 }
 
 HudGaugeBrackets::HudGaugeBrackets():
-HudGauge(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
 {
 }
 
@@ -723,7 +355,7 @@ void HudGaugeBrackets::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeBrackets::render(float frametime)
+void HudGaugeBrackets::render(float  /*frametime*/)
 {
 	// don't display brackets if we're warping out.
 	if ( Player->control_mode != PCM_NORMAL ) {
@@ -748,18 +380,27 @@ void HudGaugeBrackets::render(float frametime)
 		}
 	}
 
+	line_draw_list.flush();
+
 	if(!in_frame)
 		g3_end_frame();
 }
 
 void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_correction, int h_correction, int flags)
 {
+	TRACE_SCOPE(tracing::RenderTargetingBracket);
+
 	int x1,x2,y1,y2;
 	bool draw_box = true;
 	int bound_rc;
 	SCP_list<CJumpNode>::iterator jnp;
 
-	if ( Player->target_is_dying <= 0 ) {
+
+	bool not_player_target = (Player_ai->target_objnum < 0 || targetp != &Objects[Player_ai->target_objnum]);
+
+
+	// target_is_dying is set to zero when the target is not dying, -1 when no target. Only 1, aka "TRUE", is invalid.
+	if ( not_player_target || Player->target_is_dying <= 0) {
 		int modelnum;
 
 		switch ( targetp->type ) {
@@ -797,7 +438,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			{
 			int pof = 0;
 			pof = Asteroids[targetp->instance].asteroid_subtype;
-			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].subtypes[pof].model_number;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			}
 			break;
@@ -839,7 +480,13 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			int target_objnum = -1;
 
 			if(flags & TARGET_DISPLAY_DIST) {
-				distance = hud_find_target_distance(targetp, Player_obj);
+				// since we can have either the target, or rogue asteroids bracketed,
+				// check which case we are in, and then do the correct distance.
+				if (not_player_target) {
+					distance = hud_find_target_distance(targetp, &Player_obj->pos);
+				} else {
+					distance = Player_ai->current_target_distance;
+				}
 			}
 
 			if(flags & TARGET_DISPLAY_DOTS) {
@@ -857,6 +504,8 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 
 void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, color* clr, char* string)
 {
+	TRACE_SCOPE(tracing::RenderNavBracket);
+
 	float dist;
 	int box_scale = 15;
 	int x, y;
@@ -877,7 +526,7 @@ void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, colo
 		box_scale=4;
 
 	gr_set_color_fast(clr);
-	draw_brackets_square(x-box_scale, y-box_scale, x+box_scale, y+box_scale);
+	draw_brackets_square(&line_draw_list, x-box_scale, y-box_scale, x+box_scale, y+box_scale);
 
 	// draw the nav name
 	if(string) {
@@ -929,7 +578,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 		y2 = y2 + (Min_target_box_height-height)/2;
 	}
 	
-	draw_brackets_square(x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
+	draw_brackets_square(&line_draw_list, x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
 
 	// draw distance to target in lower right corner of box
 	if ( distance > 0 ) {
@@ -1005,33 +654,28 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				break;
 
 			case OBJ_DEBRIS:
-				tinfo_name = XSTR("Debris", 348);
+				tinfo_name = XSTR("debris", 348);
 				break;
 			case OBJ_WEAPON:
-				strcpy_s(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
+				tinfo_name = Weapon_info[Weapons[t_objp->instance].weapon_info_index].get_display_name();
 				break;
 			case OBJ_ASTEROID:
 				switch(Asteroids[t_objp->instance].asteroid_type) {
 					case ASTEROID_TYPE_SMALL:
 					case ASTEROID_TYPE_MEDIUM:
 					case ASTEROID_TYPE_LARGE:
-						tinfo_name = NOX("Asteroid");
+						tinfo_name = XSTR("asteroid", 431);
 						break;
 					default:
-						tinfo_name = XSTR("Debris", 348);
+						tinfo_name = XSTR("debris", 348);
 				}
 				break;
 			case OBJ_JUMP_NODE:
 				for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-					if(jnp->GetSCPObject() == t_objp)
+					if(jnp->GetSCPObjectNumber() == target_objnum)
 						break;
 				}
-				
-				strcpy_s(temp_name, jnp->GetName());
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
+				tinfo_name = jnp->GetDisplayName();
 				break;
 		}
 
@@ -1074,8 +718,8 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
 				return;
 
-			int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
-			int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
+			int subobj_x = (int)std::lround(subobj_vertex.screen.xyw.x);
+			int subobj_y = (int)std::lround(subobj_vertex.screen.xyw.y);
 			int hud_subtarget_w, hud_subtarget_h, bound_rc;
 
 			bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);
@@ -1117,7 +761,7 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			}
 
 			// determine if subsystem is on far or near side of the ship
-			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
+			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, false) ? 1 : 0;
 
 			// AL 29-3-98: If subsystem is destroyed, draw gray brackets
 			// Goober5000: this will now execute for fighterbays if the bay has been given a
@@ -1131,9 +775,9 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			}
 
 			if ( Player->subsys_in_view ) {
-				draw_brackets_square_quick(x1, y1, x2, y2);
+				draw_brackets_square_quick(&line_draw_list, x1, y1, x2, y2);
 			} else {
-				draw_brackets_diamond_quick(x1, y1, x2, y2);
+				draw_brackets_diamond_quick(&line_draw_list, x1, y1, x2, y2);
 			}
 			// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
 

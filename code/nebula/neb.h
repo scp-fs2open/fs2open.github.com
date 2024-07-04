@@ -18,6 +18,8 @@
 #include "camera/camera.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/generic.h"
+#include "utils/RandomRange.h"
 
 class ship;
 class object;
@@ -40,40 +42,86 @@ extern float Neb2_awacs;
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
 
-#define MAX_NEB2_POOFS				6
+extern float Neb2_fog_visibility_trail;
+extern float Neb2_fog_visibility_thruster;
+extern float Neb2_fog_visibility_weapon;
+extern float Neb2_fog_visibility_shield;
+extern float Neb2_fog_visibility_glowpoint;
+extern float Neb2_fog_visibility_beam_const;
+extern float Neb2_fog_visibility_beam_scaled_factor;
+extern float Neb2_fog_visibility_particle_const;
+extern float Neb2_fog_visibility_particle_scaled_factor;
+extern float Neb2_fog_visibility_shockwave;
+extern float Neb2_fog_visibility_fireball_const;
+extern float Neb2_fog_visibility_fireball_scaled_factor;
 
-// poof names and flags (for fred)
-extern char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];	
-extern int Neb2_poof_flags;
-
-#define MAX_NEB2_BITMAPS			10
+extern std::unique_ptr<ubyte> Neb2_poof_flags;
 
 // pof texture filenames
-extern char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN];
+extern SCP_vector<SCP_string> Neb2_bitmap_filenames;
 
 // texture to use for this level
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
-// how many "slices" are in the current player nebuls
-extern int Neb2_slices;
+typedef struct poof_info {
+	char name[NAME_LENGTH];
+	char bitmap_filename[MAX_FILENAME_LEN];
+	generic_anim bitmap;
+	::util::UniformFloatRange scale;
+	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
+	::util::UniformFloatRange rotation;
+	float view_dist;
+	::util::UniformFloatRange alpha;
+	vec3d alignment;
+
+	// These values are dynamic, unlike the above and can change during a mission.
+	// They are used for fading poof types in and out via sexp
+	TIMESTAMP fade_start;			// when the fade began
+	int fade_duration;		// the length of the fade in milliseconds
+	bool fade_in;			// true if fading the poof type in, false if fading out
+	float fade_multiplier;	// the current multiplier for a poof's alpha transparency used to render the poofs of this type
+
+	poof_info() {
+		bitmap_filename[0] = '\0';
+		generic_anim_init(&bitmap);
+		scale = ::util::UniformFloatRange(175.0f, 175.0f);
+		density = 1 / (110.f * 110.f * 110.f);
+		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
+		view_dist = 250.f;
+		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
+		fade_start = TIMESTAMP::invalid();
+		fade_duration = -1;
+		fade_in = true;
+		fade_multiplier = -1.0f;
+		alignment = vmd_zero_vector;
+	}
+} poof_info;
+
+extern SCP_vector<poof_info> Poof_info;
+
+// the color of the fog/background
+extern ubyte Neb2_fog_color[3];
 
 // nebula poofs
-typedef struct cube_poof {
+typedef struct poof {
 	vec3d	pt;				// point in space
-	int		bmap;				// bitmap in space
-	float		rot;				// rotation angle
-	float		rot_speed;		// rotation speed
+	size_t		poof_info_index;
+	float		radius;
+	vec3d		up_vec;			// to keep track of the poofs rotation
+								// must be the full vector instead of an angle to prevent parallel transport when looking around
+	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
-} cube_poof;
-#define MAX_CPTS		5		// should always be <= slices
-extern cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
+	float		alpha;			// base amount of alpha to start with
+	float		anim_time;		// how far along the animation is
+} poof;
+
+extern SCP_vector<poof> Neb2_poofs;
 
 // nebula detail level
 typedef struct neb2_detail {
 	float max_alpha_glide;		// max alpha for this detail level in Glide
 	float max_alpha_d3d;		// max alpha for this detail level in D3d
 	float break_alpha;			// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-	float break_x, break_y;		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen
 	float cube_dim;				// total dimension of player poof cube
 	float cube_inner;			// inner radius of the player poof cube
 	float cube_outer;			// outer radius of the player pood cube
@@ -91,53 +139,45 @@ typedef struct neb2_detail {
 // initialize neb2 stuff at game startup
 void neb2_init();
 
-// set detail level
-void neb2_set_detail_level(int level);
+// set poof bits using a list of poof names
+void neb2_set_poof_bits(const SCP_vector<SCP_string>& list);
 
 //init neb stuff  - WMC
 void neb2_level_init();
 
+void neb2_pre_level_init();
+
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
-void neb2_post_level_init();
+void neb2_post_level_init(bool fog_color_override);
+
+// helper function, used in above and in FRED
+void neb2_generate_fog_color(const char *fog_color_palette, ubyte fog_color[]);
 
 // shutdown nebula stuff
 void neb2_level_close();
 
-// create a nebula object, return objnum of the nebula or -1 on fail
-// NOTE : in most cases you will want to pass -1.0f for outer_radius. Trust me on this
-int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius);
-
-// delete a nebula object
-void neb2_delete(object *objp);
-
 // call before beginning all rendering
 void neb2_render_setup(camid cid);
 
-// renders a nebula object
-void neb2_render(object *objp);
+// turns a poof on or off
+void neb2_toggle_poof(int poof_idx, bool enabling);
 
-// preprocess the nebula object before simulation
-void neb2_process_pre(object *objp);
-
-// process the nebula object after simulating, but before rendering
-void neb2_process_post(object *objp);
+// fades poofs
+void neb2_fade_poofs(int poof_idx, int time, bool type);
 
 // render the player nebula
-void neb2_render_player();
-
-// call this when the player's viewpoint has changed, this will cause the code to properly reset
-// the eye's local poofs
-void neb2_eye_changed();
+void neb2_render_poofs();
 
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
-void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *obj = NULL);
+void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
 
-// given a position in space, return a value from 0.0 to 1.0 representing the fog level 
-float neb2_get_fog_intensity(object *obj);
-float neb2_get_fog_intensity(vec3d *pos);
+// given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
+// distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
+// Don't use unless you know what you're doing. Use nebula_handle_alpha instead.
+float neb2_get_fog_visibility (const vec3d* pos, float distance_mult);
 
 // should we not render this object because its obscured by the nebula?
 int neb2_skip_render(object *objp, float z_depth);
@@ -147,15 +187,11 @@ float neb2_get_lod_scale(int objnum);
 
 // fogging stuff --------------------------------------------------
 
-// get the color of the pixel in the small pre-rendered background nebula
-void neb2_get_pixel(int x, int y, int *r, int *g, int *b);
-
-// set the background color
-void neb2_set_backg_color(int r, int g, int b);
-
-// get the color to fog the background color to
-void neb2_get_backg_color(int *r, int *g, int *b);
-
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b);
+
+// given a position, multiplies alpha by 0 - 1 based on the visibility of Fullneb2 / Volumetric Fogging if present in mission
+// distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
+// returns true if there is a nebula present that could have influence
+bool nebula_handle_alpha(float& alpha, const vec3d* pos, float distance_mult);
 
 #endif

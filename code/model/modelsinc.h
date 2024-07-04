@@ -10,11 +10,12 @@
 #ifndef _MODELSINC_H
 #define _MODELSINC_H
 
+#include "globalincs/pstypes.h"
 
 class polymodel;
 
 #ifndef MODEL_LIB 
-#error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.
+#pragma message ("This should only be used internally by the model library.  See John if you think you need to include this elsewhere.")
 #endif
 
 #define OP_EOF 			0
@@ -23,28 +24,22 @@ class polymodel;
 #define OP_TMAPPOLY		3
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
-
-// change header for freespace2
-//#define FREESPACE1_FORMAT
-#define FREESPACE2_FORMAT
-#if defined( FREESPACE1_FORMAT )
-#elif defined ( FREESPACE2_FORMAT )
-#else
-	#error Neither FREESPACE1_FORMAT or FREESPACE2_FORMAT defined
-#endif
+#define OP_TMAP2POLY	6
+#define OP_SORTNORM2	7
 
 // endianess will be handled by cfile and others now, little-endian should be default in all cases
 
 // little-endian (Intel) IDs
 #define POF_HEADER_ID  0x4f505350	// 'OPSP' (PSPO) POF file header
-#if defined( FREESPACE1_FORMAT )
-	// FREESPACE1 FORMAT
-	#define ID_OHDR 0x5244484f			// RDHO (OHDR): POF file header
-	#define ID_SOBJ 0x4a424f53			// JBOS (SOBJ): Subobject header
-#else
-	#define ID_OHDR 0x32524448			// 2RDH (HDR2): POF file header
-	#define ID_SOBJ 0x324a424f			// 2JBO (OBJ2): Subobject header
-#endif
+
+// FREESPACE1 FORMAT
+#define ID_OHDR 0x5244484f			// RDHO (OHDR): POF file header
+#define ID_SOBJ 0x4a424f53			// JBOS (SOBJ): Subobject header
+
+// FREESPACE2 FORMAT
+#define ID_HDR2 0x32524448			// 2RDH (HDR2): POF file header
+#define ID_OBJ2 0x324a424f			// 2JBO (OBJ2): Subobject header
+
 #define ID_TXTR 0x52545854				// RTXT (TXTR): Texture filename list
 #define ID_INFO 0x464e4950				// FNIP (PINF): POF file information, like command line, etc
 #define ID_GRID 0x44495247				// DIRG (GRID): Grid information
@@ -63,22 +58,20 @@ class polymodel;
 #define ID_GLOW 0x574f4c47				// WOLG (GLOW): glow points -Bobboau
 #define ID_GLOX 0x584f4c47				// experimental glow points will be gone as soon as we get a proper pof editor -Bobboau
 #define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
+#define ID_SLC2 0x32434c53				// 2CLS (SLC2): Shield Collision Tree with ints instead of char - ShivanSpS
 
-#define uw(p)	(*((uint *) (p)))
-#define w(p)	(*((int *) (p)))
-#define wp(p)	((int *) (p))
-#define vp(p)	((vec3d *) (p))
-#define fl(p)	(*((float *) (p)))
+#define us(p)	(*reinterpret_cast<ushort*>(p))
+#define cus(p)  (*reinterpret_cast<const ushort*>(p))
+#define uw(p)	(*reinterpret_cast<uint*>(p))
+#define cuw(p)  (*reinterpret_cast<const uint*>(p))
+#define w(p)	(*reinterpret_cast<int*>(p))
+#define cw(p)   (*reinterpret_cast<const int*>(p))
+#define wp(p)	(reinterpret_cast<int*>(p)
+#define vp(p)	(reinterpret_cast<vec3d*>(p))
+#define fl(p)	(*reinterpret_cast<float*>(p))
+#define cfl(p)  (*reinterpret_cast<const float*>(p))
 
-extern int model_interp(matrix * orient, ubyte * data, polymodel * pm );
-
-// Creates the octants for a given polygon model
-void model_octant_create( polymodel * pm );
-
-// frees the memory the octants use for a given polygon model
-void model_octant_free( polymodel * pm );
-
-void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
+void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
 void interp_clear_instance();
 

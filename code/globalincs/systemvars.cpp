@@ -1,23 +1,21 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
+#include "globalincs/systemvars.h"
 
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "io/timer.h"
 #include "nebula/neb.h"
-
+#include "options/Option.h"
 
 fix Missiontime;
-fix Skybox_timestamp;
 fix Frametime;
 int	Framecount=0;
 
@@ -35,12 +33,6 @@ float Cutscene_delta_time = 1.0f;
 //How far along a change is (0 to 1)
 float Cutscene_bars_progress = 1.0f;
 
-//FADEIN STUFF
-shader Viewer_shader;
-FadeType Fade_type = FI_NONE;
-int Fade_start_timestamp = 0;
-int Fade_end_timestamp = 0;
-
 // The detail level.  Anything below zero draws simple models earlier than it
 // should.   Anything above zero draws higher detail models longer than it should.
 // -2=lowest
@@ -57,7 +49,6 @@ vci		Viewer_chase_info;			// View chase camera information
 vec3d leaning_position;
 
 int Is_standalone;
-int Rand_count;
 
 int Interface_last_tick = -1;			// last timer tick on flip
 
@@ -67,28 +58,12 @@ char Processing_filename[MAX_PATH_LEN];
 #endif
 
 // override states to skip rendering of certain elements, but without disabling them completely
-bool Basemap_override = false;
 bool Envmap_override = false;
-bool Specmap_override = false;
-bool Normalmap_override = false;
-bool Heightmap_override = false;
 bool Glowpoint_override = false;
 bool Glowpoint_use_depth_buffer = true;
 bool PostProcessing_override = false;
-bool Teamcolor_override = false;
 bool Shadow_override = false;
-
-bool Basemap_color_override_set = false;
-float Basemap_color_override[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-
-bool Glowmap_color_override_set = false;
-float Glowmap_color_override[3] = {0.0f, 0.0f, 0.0f};
-
-bool Specmap_color_override_set = false;
-float Specmap_color_override[3] = {0.0f, 0.0f, 0.0f};
-
-bool Gloss_override_set = false;
-float Gloss_override = 0.0f;
+bool Trail_render_override = false;
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 
@@ -108,33 +83,6 @@ float Noise[NOISE_NUM_FRAMES] = {
 	0.294215f,
 	0.000000f
 };
-
-
-int myrand()
-{
-	int rval;
-	rval = rand();
-	Rand_count++;
-//	nprintf(("Alan","RAND: %d\n", rval));
-	return rval;
-}
-
-// returns a random number between 0 and 0x7fffffff, or something close to it.
-int rand32()
-{
-	if (RAND_MAX == 0x7fff) {
-		int random32;
-		// this gets two random 16 bit numbers and stuffs them into a 32 bit number
-		random32 = (rand() << 16) | rand();
-		//since rand() returns between 0 and 0x7fff, there needs to be a thing to randomly generate the 16th bit
-		random32 |= ((rand() & 1) << 15);
-		
-		return random32;
-	}
-	else {
-		return rand();
-	}
-}
 
 // Variables for the loading callback hooks
 static int cf_timestamp = -1;
@@ -271,8 +219,8 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 	{				// Highest level
 		3,			// setting
 					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		3,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		3,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
+		4,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
+		4,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
 		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
 		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 		4,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
@@ -287,9 +235,98 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 	},
 };
 
-
 // Global used to access detail levels in game and libs
-detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS-1];
+detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
+
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
+                                                                                   { 1, {"Low", 1161}},
+                                                                                   { 2, {"Medium", 1162}},
+                                                                                   { 3, {"High", 1163}},
+                                                                                   { 4, {"Ultra", 1721}}};
+
+const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.Detail",
+                     std::pair<const char*, int>{"Model Detail", 1739},
+                     std::pair<const char*, int>{"Detail level of models", 1740})
+                     .importance(8)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.detail_distance = val;
+                          return true;
+                     })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
+                     std::pair<const char*, int>{"3D Hardware Textures", 1362},
+                     std::pair<const char*, int>{"Level of detail of textures", 1720})
+                     .importance(6)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.hardware_textures = val;
+                          return true;
+                     })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
+                     std::pair<const char*, int>{"Particles", 1363},
+                     std::pair<const char*, int>{"Level of detail for particles", 1717})
+                     .importance(5)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.num_particles = val;
+                          return true;
+                     })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
+                     std::pair<const char*, int>{"Impact Effects", 1364}, 
+                     std::pair<const char*, int>{"Level of detail of impact effects", 1743})
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .importance(4)
+                     .change_listener([](int val,bool) {
+                          Detail.num_small_debris = val;
+                          return true;
+                     })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
+                     std::pair<const char*, int>{"Shield Hit Effects", 1718},
+                     std::pair<const char*, int>{"Level of detail of shield impacts", 1719})
+                     .importance(3)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.shield_effects = val;
+                          return true;
+                     })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
+
+const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
+                     std::pair<const char*, int>{"Stars", 1366}, 
+                     std::pair<const char*, int>{"Number of stars in the mission", 1698})
+                     .importance(2)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.num_stars = val;
+                          return true;
+                     })
+                     .flags({options::OptionFlags::RetailBuiltinOption})
+                     .finish();
 
 // Call this with:
 // 0 - lowest
@@ -305,9 +342,6 @@ void detail_level_set(int level)
 	Assert( level < NUM_DEFAULT_DETAIL_LEVELS );
 
 	Detail = Detail_defaults[level];
-
-	// reset nebula stuff
-	neb2_set_detail_level(level);
 }
 
 // Returns the current detail level or -1 if custom.
@@ -407,42 +441,86 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 }
 #endif
 
-// Goober5000
-// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
-// NOTE: Because this uses memcpy, it should only be used to sort POD elements!
-void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
+// Stuff that can't be included in vmallocator.h
+
+std::locale SCP_default_locale("");
+
+void SCP_tolower(char *str)
 {
-	int i, j;
-	void *current;
-	char *array_byte_base;
-	
-	// this is used to avoid having to cast array_base to (char *) all the time
-	array_byte_base = (char *) array_base;
+	for (; *str != '\0'; ++str)
+		*str = SCP_tolower(*str);
+}
 
-	// allocate space for the element being moved
-	current = malloc(element_size);
-	if (current == NULL)
+void SCP_toupper(char *str)
+{
+	for (; *str != '\0'; ++str)
+		*str = SCP_toupper(*str);
+}
+
+// this is a bit naive but it is good enough for the time being
+void SCP_totitle(char *str)
+{
+	bool prev_alpha = false;
+
+	for (; *str != '\0'; ++str)
 	{
-		Int3();
-		return;
-	}
+		bool this_alpha = (*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z');
 
-	// loop
-	for (i = 1; (unsigned) i < array_size; i++)
-	{	
-		// grab the current element
-		memcpy(current, array_byte_base + (i * element_size), element_size);
-
-		// bump other elements toward the end of the array
-		for (j = i - 1; (j >= 0) && (fncompare(array_byte_base + (j * element_size), current) > 0); j--)
+		if (this_alpha)
 		{
-			memcpy(array_byte_base + ((j + 1) * element_size), array_byte_base + (j * element_size), element_size);
+			if (prev_alpha)
+				*str = SCP_tolower(*str);
+			else
+				*str = SCP_toupper(*str);
 		}
 
-		// insert the current element at the correct place
-		memcpy(array_byte_base + ((j + 1) * element_size), current, element_size);
+		prev_alpha = this_alpha;
+	}
+}
+
+bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right)
+{
+	if (_Left.size() != _Right.size())
+		return false;
+
+	auto l_it = _Left.cbegin();
+	auto r_it = _Right.cbegin();
+
+	while (l_it != _Left.cend())
+	{
+		if (SCP_tolower(*l_it) != SCP_tolower(*r_it))
+			return false;
+
+		++l_it;
+		++r_it;
 	}
 
-	// free the allocated space
-	free(current);
+	return true;
+}
+
+bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right)
+{
+	auto l_it = _Left.cbegin();
+	auto r_it = _Right.cbegin();
+
+	while (true)
+	{
+		if (l_it == _Left.cend())
+			return (r_it != _Right.cend());
+		else if (r_it == _Right.cend())
+			return false;
+
+		auto lch = SCP_tolower(*l_it);
+		auto rch = SCP_tolower(*r_it);
+
+		if (lch < rch)
+			return true;
+		else if (lch > rch)
+			return false;
+
+		++l_it;
+		++r_it;
+	}
+
+	return true;
 }

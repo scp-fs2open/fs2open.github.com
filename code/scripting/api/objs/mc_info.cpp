@@ -8,43 +8,17 @@
 namespace scripting {
 namespace api {
 
-mc_info_h::mc_info_h(mc_info* val) : info(val) {}
+mc_info_h::mc_info_h(const mc_info& val) : info(val), valid(true) {}
 
-mc_info_h::mc_info_h() : info(NULL) {}
+mc_info_h::mc_info_h() = default;
 
-mc_info* mc_info_h::Get() {
-	return info;
-}
-void mc_info_h::deleteInfo() {
-	if (!this->IsValid())
-		return;
-
-	delete info;
-
-	info = NULL;
-}
-
-bool mc_info_h::IsValid() {
-	return info != NULL;
-}
+mc_info* mc_info_h::Get() { return &info; }
+bool mc_info_h::isValid() const { return valid; }
 
 //**********HANDLE: Collision info
-ADE_OBJ(l_ColInfo, mc_info_h, "collision info", "Information about a collision");
+ADE_OBJ(l_ColInfo, mc_info_h, "collision_info", "Information about a collision");
 
-ADE_FUNC(__gc, l_ColInfo, NULL, "Removes the allocated reference of this handle", NULL, NULL)
-{
-	mc_info_h* info;
-
-	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
-		return ADE_RETURN_NIL;
-
-	if (info->IsValid())
-		info->deleteInfo();
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model")
+ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model, or an invalid model if the handle is not valid")
 {
 	mc_info_h* info;
 	model_h * mh = nullptr;
@@ -52,7 +26,7 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 	if(!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Model.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
 	mc_info *collide = info->Get();
@@ -61,13 +35,32 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 
 	if (ADE_SETTING_VAR && mh)
 	{
-		if (mh->IsValid())
+		if (mh->isValid())
 		{
 			collide->model_num = mh->GetID();
 		}
 	}
 
 	return ade_set_args(L, "o", l_Model.Set(model_h(modelNum)));
+}
+
+ADE_FUNC(getCollisionSubmodel, l_ColInfo, nullptr, "The submodel where the collision occurred, if applicable", "submodel", "The submodel, or nil if none or if the handle is not valid")
+{
+	mc_info_h *info;
+	submodel_h *sh = nullptr;
+
+	if (!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Submodel.GetPtr(&sh)))
+		return ADE_RETURN_NIL;
+
+	if (!info->isValid())
+		return ADE_RETURN_NIL;
+
+	mc_info *collide = info->Get();
+
+	if (collide->hit_submodel < 0)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(collide->model_num, collide->hit_submodel)));
 }
 
 ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest collision point", "number", "distance or -1 on error")
@@ -77,7 +70,7 @@ ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest col
 	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	mc_info *collide = info->Get();
@@ -92,7 +85,7 @@ ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest col
 	}
 }
 
-ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point or nil of none")
+ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point, or nil if none or if the handle is not valid")
 {
 	mc_info_h* info;
 	bool local = false;
@@ -100,7 +93,7 @@ ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point o
 	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
 		return ADE_RETURN_NIL;
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ADE_RETURN_NIL;
 
 	mc_info *collide = info->Get();
@@ -118,7 +111,7 @@ ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point o
 	}
 }
 
-ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal of this information (local to object if boolean is set to <i>true</i>)", "vector", "The collision normal or nil of none")
+ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal of this information (local to object if boolean is set to <i>true</i>)", "vector", "The collision normal, or nil if none or if the handle is not valid")
 {
 	mc_info_h* info;
 	bool local = false;
@@ -126,7 +119,7 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
 		return ADE_RETURN_NIL;
 
-	if (!info->IsValid())
+	if (!info->isValid())
 		return ADE_RETURN_NIL;
 
 	mc_info *collide = info->Get();
@@ -140,8 +133,10 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 		if (!local)
 		{
 			vec3d normal;
+			auto pmi = model_get_instance(collide->model_instance_num);
+			auto pm = model_get(pmi->model_num);
 
-			vm_vec_unrotate(&normal, &collide->hit_normal, collide->orient);
+			model_instance_local_to_global_dir(&normal, &collide->hit_normal, pm, pmi, collide->hit_submodel, collide->orient);
 
 			return ade_set_args(L, "o", l_Vector.Set(normal));
 		}
@@ -157,9 +152,9 @@ ADE_FUNC(isValid, l_ColInfo, NULL, "Detects if this handle is valid", "boolean",
 	mc_info_h* info;
 
 	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 
-	if (info->IsValid())
+	if (info->isValid())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;

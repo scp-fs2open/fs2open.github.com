@@ -40,7 +40,7 @@ ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not", "boolean
 ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name")
 {
 	camid cid;
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Camera.Get(&cid), &s))
 		return ade_set_error(L, "s", "");
 
@@ -57,7 +57,7 @@ ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name"
 ADE_VIRTVAR(FOV, l_Camera, "number", "New camera FOV (in radians)", "number", "Camera FOV (in radians)")
 {
 	camid cid;
-	float f = VIEWER_ZOOM_DEFAULT;
+	float f = g3_get_hfov(VIEWER_ZOOM_DEFAULT);
 	if(!ade_get_args(L, "o|f", l_Camera.Get(&cid), &f))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -68,7 +68,7 @@ ADE_VIRTVAR(FOV, l_Camera, "number", "New camera FOV (in radians)", "number", "C
 		cid.getCamera()->set_fov(f);
 	}
 
-	return ade_set_args(L, "f", cid.getCamera()->get_fov());
+	return ade_set_args(L, "f", g3_get_hfov(cid.getCamera()->get_fov()));
 }
 
 ADE_VIRTVAR(Orientation, l_Camera, "orientation", "New camera orientation", "orientation", "Camera orientation")
@@ -119,11 +119,11 @@ ADE_VIRTVAR(Self, l_Camera, "object", "New mount object", "object", "Camera obje
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && oh && oh->IsValid()) {
-		cid.getCamera()->set_object_host(oh->objp);
+	if(ADE_SETTING_VAR && oh && oh->isValid()) {
+		cid.getCamera()->set_object_host(oh->objp());
 	}
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(cid.getCamera()->get_object_host())));
+	return ade_set_object_with_breed(L, OBJ_INDEX(cid.getCamera()->get_object_host()));
 }
 
 ADE_VIRTVAR(SelfSubsystem, l_Camera, "subsystem", "New mount object subsystem", "subsystem", "Subsystem that the camera is mounted on")
@@ -136,8 +136,8 @@ ADE_VIRTVAR(SelfSubsystem, l_Camera, "subsystem", "New mount object subsystem", 
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(ADE_SETTING_VAR && sso && sso->IsValid()) {
-		cid.getCamera()->set_object_host(sso->objp, sso->ss->system_info->subobj_num);
+	if(ADE_SETTING_VAR && sso && sso->isValid()) {
+		cid.getCamera()->set_object_host(sso->objh.objp(), sso->ss->system_info->subobj_num);
 	}
 
 	object *objp = cid.getCamera()->get_object_host();
@@ -174,11 +174,11 @@ ADE_VIRTVAR(Target, l_Camera, "object", "New target object", "object", "Camera t
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && oh && oh->IsValid()) {
-		cid.getCamera()->set_object_target(oh->objp);
+	if(ADE_SETTING_VAR && oh && oh->isValid()) {
+		cid.getCamera()->set_object_target(oh->objp());
 	}
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(cid.getCamera()->get_object_target())));
+	return ade_set_object_with_breed(L, OBJ_INDEX(cid.getCamera()->get_object_target()));
 }
 
 ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "subsystem", "Subsystem that the camera is pointed at")
@@ -191,8 +191,8 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(ADE_SETTING_VAR && sso && sso->IsValid()) {
-		cid.getCamera()->set_object_target(sso->objp, sso->ss->system_info->subobj_num);
+	if(ADE_SETTING_VAR && sso && sso->isValid()) {
+		cid.getCamera()->set_object_target(sso->objh.objp(), sso->ss->system_info->subobj_num);
 	}
 
 	object *objp = cid.getCamera()->get_object_target();
@@ -219,7 +219,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objp, ss)));
 }
 
-ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time, number Zoom deceleration Time]",
+ADE_FUNC(setFOV, l_Camera, "[number FOV, number ZoomTime, number ZoomAccelerationTime, number ZoomDecelerationTime]",
 		 "Sets camera FOV"
 			 "<br>FOV is the final field of view, in radians, of the camera."
 			 "<br>Zoom Time is the total time to take zooming in or out."
@@ -228,7 +228,7 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Accelerat
 		 "boolean", "true if successful, false or nil otherwise")
 {
 	camid cid;
-	float n_fov = VIEWER_ZOOM_DEFAULT;
+	float n_fov = g3_get_hfov(VIEWER_ZOOM_DEFAULT);
 	float time=0.0f;
 	float acc_time=0.0f;
 	float dec_time=0.0f;
@@ -243,7 +243,7 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Accelerat
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotation Time, number Acceleration Time, number Deceleration time]",
+ADE_FUNC(setOrientation, l_Camera, "[orientation WorldOrientation, number RotationTime, number AccelerationTime, number DecelerationTime]",
 		 "Sets camera orientation and velocity data."
 			 "<br>Orientation is the final orientation for the camera, after it has finished moving. If not specified, the camera will simply stop at its current orientation."
 			 "<br>Rotation time (seconds) is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
@@ -276,7 +276,7 @@ ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotat
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, number Acceleration Time, number Deceleration Time]",
+ADE_FUNC(setPosition, l_Camera, "[vector Position, number TranslationTime, number AccelerationTime, number DecelerationTime]",
 		 "Sets camera position and velocity data."
 			 "<br>Position is the final position for the camera. If not specified, the camera will simply stop at its current position."
 			 "<br>Translation time (seconds) is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."

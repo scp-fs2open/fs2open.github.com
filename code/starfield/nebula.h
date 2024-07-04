@@ -21,11 +21,8 @@ struct angles;
 
 // You shouldn't pass the extension for filename.
 // PBH = Pitch, Bank, Heading.   Pass NULL for default orientation.
-void nebula_init( const char *filename, int pitch, int bank, int heading );
+void nebula_init( int index, int pitch, int bank, int heading );
 void nebula_init( const char *filename, angles *pbh = /*NULL*/ 0 );
 void nebula_close();
-void nebula_render();
-
-#define NEBULA_INDEXED_COLORS 20
 
 #endif	//_NEBULA_H

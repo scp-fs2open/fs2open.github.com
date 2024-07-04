@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "FREDDoc.h"
+#include "FREDView.h"
 #include "InitialStatus.h"
 #include "Management.h"
 #include "globalincs/linklist.h"
@@ -401,6 +402,7 @@ BOOL initial_status::OnInitDialog()
 			if (Ship_info[shipp->ship_info_index].uses_team_colors) {
 				//Add a "None" entry at the beginning to allow simple deselection of colours
 				int t = m_team_color_setting.AddString("None");
+				m_team_color_setting.SetCurSel(i);
 				m_team_color_setting.SetItemData(t, i);
 				++i;
 
@@ -965,10 +967,13 @@ void initial_status::undock(object *objp1, object *objp2)
 	ship_num = get_ship_from_obj(OBJ_INDEX(objp1));
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
-	if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0)
-		vm_vec_scale_add2(&objp2->pos, &v, objp2->radius * 2.0f);
-	else
-		vm_vec_scale_add2(&objp1->pos, &v, objp1->radius * -2.0f);
+	if (Move_ships_when_undocking)
+	{
+		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0)
+			vm_vec_scale_add2(&objp2->pos, &v, ship_class_get_length(&Ship_info[Ships[objp2->instance].ship_info_index]));
+		else
+			vm_vec_scale_add2(&objp1->pos, &v, ship_class_get_length(&Ship_info[Ships[objp1->instance].ship_info_index]) * -1.0f);
+	}
 
 	ai_do_objects_undocked_stuff(objp1, objp2);
 

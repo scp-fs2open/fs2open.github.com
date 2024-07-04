@@ -14,12 +14,15 @@
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "sound/audiostr.h"
-#include "sound/ffmpeg/WaveFile.h"
 #include "sound/ds.h"
+#include "sound/IAudioFile.h"
 #include "sound/sound.h"
+#include "sound/openal.h"
+#include "gamesnd/eventmusic.h"
 
-#include "libs/ffmpeg/FFmpegContext.h"
-
+#ifdef WITH_FFMPEG
+#include "sound/ffmpeg/FFmpegWaveFile.h"
+#endif
 
 #define MAX_STREAM_BUFFERS 4
 
@@ -44,64 +47,97 @@ ubyte *Compressed_service_buffer = NULL;	// Used to read in compressed data duri
 const char *audio_ext_list[] = { ".ogg", ".wav" };
 const int NUM_AUDIO_EXT = sizeof(audio_ext_list) / sizeof(char*);
 
+static std::unique_ptr<sound::IAudioFile> openAudioFile(const char* fileName, bool keep_ext) {
+#ifdef WITH_FFMPEG
+	{
+		std::unique_ptr<sound::IAudioFile> audio_file(new sound::ffmpeg::FFmpegWaveFile());
+
+		// Open given file
+		if (audio_file->Open(fileName, keep_ext)) {
+			return audio_file;
+		}
+	}
+#endif
+
+	return nullptr;
+}
+
+static std::unique_ptr<sound::IAudioFile> openAudioMem(const uint8_t* snddata, size_t snd_len) {
+#ifdef WITH_FFMPEG
+	{
+		std::unique_ptr<sound::IAudioFile> audio_file(new sound::ffmpeg::FFmpegWaveFile());
+
+		// Open given in-memory file
+		if (audio_file->OpenMem(snddata, snd_len)) {
+			return audio_file;
+		}
+	}
+#endif
+
+	return nullptr;
+}
 
 int Audiostream_inited = 0;
 
 class Timer
 {
 public:
-    void constructor(void);
-    void destructor(void);
-    bool Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
+	void constructor();
+	void destructor();
+	bool Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
 protected:
-    static uint TimeProc(uint interval, void *param);
-    TIMERCALLBACK m_pfnCallback;
-    ptr_u m_dwUser;
-    uint m_nPeriod;
-    uint m_nRes;
-    SDL_TimerID m_nIDTimer;
+	static uint TimeProc(uint interval, void *param);
+	TIMERCALLBACK m_pfnCallback;
+	ptr_u m_dwUser;
+	uint m_nPeriod;
+	uint m_nRes;
+	SDL_TimerID m_nIDTimer;
 };
 
 class AudioStream
 {
 public:
-	AudioStream (void);
-	~AudioStream (void);
+	AudioStream ();
+	~AudioStream ();
 	bool Create (char *pszFilename);
-	bool Destroy (void);
+	bool CreateMem (const uint8_t* snddata, size_t snd_len);
+	bool Destroy ();
 	void Play (float volume, int looping);
 	bool Is_Playing(){ return m_fPlaying; }
 	bool Is_Paused(){ return m_bIsPaused; }
 	bool Is_Past_Limit() { return m_bPastLimit; }
 	void Stop (int paused = 0);
-	void Stop_and_Rewind (void);
-	void Fade_and_Destroy (void);
-	void Fade_and_Stop(void);
+	void Stop_and_Rewind ();
+	void Fade_and_Destroy ();
+	void Fade_and_Stop();
 	void	Set_Volume(float vol);
 	float	Get_Volume();
+	double  Get_Duration();
 	void	Init_Data();
 	void	Set_Sample_Cutoff(uint sample_cutoff);
 	void	Set_Default_Volume(float vol) { m_lDefaultVolume = vol; }
 	float	Get_Default_Volume() { return m_lDefaultVolume; }
-	uint	Get_Samples_Committed(void);
+	uint	Get_Samples_Committed();
 	int	Is_looping() { return m_bLooping; }
 	int	status;
 	int	type;
 	bool paused_via_sexp_or_script;
 
 protected:
-	void Cue (void);
+	bool prepareOpened(const char *filename);
+	void Cue ();
 	bool WriteWaveData (uint cbSize, uint *num_bytes_written, int service = 1);
-	uint GetMaxWriteSize (void);
-	bool ServiceBuffer (void);
+	uint GetMaxWriteSize ();
+	bool ServiceBuffer ();
 	static bool TimerCallback (ptr_u dwUser);
-	bool PlaybackDone(void);
+	bool PlaybackDone();
 
 	ALuint m_source_id;	// name of openAL source
 	ALuint m_buffer_ids[MAX_STREAM_BUFFERS];	// names of buffers
 
 	Timer m_timer;			// ptr to Timer object
-	std::unique_ptr<ffmpeg::WaveFile> m_pwavefile;	// ptr to WaveFile object
+	std::unique_ptr<sound::IAudioFile> m_pwavefile;	// ptr to WaveFile object
+	sound::AudioFileProperties m_fileProps;
 	bool m_fCued;			// semaphore (stream cued)
 	bool m_fPlaying;		// semaphore (stream playing)
 	uint m_cbBufOffset;		// last write position
@@ -125,6 +161,7 @@ protected:
 	size_t m_max_uncompressed_bytes_to_read;
 
 	SDL_mutex* write_lock;
+
 };
 
 
@@ -151,7 +188,7 @@ void Timer::destructor(void)
 // Create
 bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback)
 {
-	bool bRtn = true;    // assume success
+	bool bRtn = true;	// assume success
 
 	Assert(pfnCallback);
 	Assert(nPeriod > 10);
@@ -177,19 +214,19 @@ bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCall
 // 
 uint Timer::TimeProc(uint interval, void *dwUser)
 {
-    // dwUser contains ptr to Timer object
+	// dwUser contains ptr to Timer object
 	Timer * ptimer = (Timer *) dwUser;
 
-    // Call user-specified callback and pass back user specified data
-    (ptimer->m_pfnCallback) (ptimer->m_dwUser);
+	// Call user-specified callback and pass back user specified data
+	(ptimer->m_pfnCallback) (ptimer->m_dwUser);
 
-    if (ptimer->m_nPeriod) {
+	if (ptimer->m_nPeriod) {
 		return interval;
-    } else {
+	} else {
 		SDL_RemoveTimer(ptimer->m_nIDTimer);
 		ptimer->m_nIDTimer = 0;
 		return 0;
-    }
+	}
 }
 
 //
@@ -226,7 +263,7 @@ void AudioStream::Init_Data ()
 	m_bIsPaused = false;
 	m_bReadingDone = false;
 
-	m_pwavefile = NULL;
+	m_pwavefile = nullptr;
 	m_fPlaying = m_fCued = false;
 	m_cbBufOffset = 0;
 	m_cbBufSize = 0;
@@ -240,79 +277,46 @@ void AudioStream::Init_Data ()
 	m_max_uncompressed_bytes_to_read = std::numeric_limits<size_t>::max();
 }
 
-// Create
-bool AudioStream::Create (char *pszFilename)
+
+bool AudioStream::prepareOpened(const char *filename)
 {
-	bool fRtn = true;    // assume success
+	bool fRtn = true;
 
-	Assert(pszFilename);
+	m_fileProps = m_pwavefile->getFileProperties();
 
-	Init_Data();
+	m_cbBufSize = (m_fileProps.sample_rate * m_fileProps.bytes_per_sample * m_fileProps.num_channels) >> 2;
+	// make sure that we are a multiple of the frame size
+	m_cbBufSize -= (m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels));
+	m_cbBufSize += (m_cbBufSize % 12) << 1;
+	// if the requested buffer size is too big then cap it
+	m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
 
-	if (pszFilename) {
-		// make 100% sure we got a good filename
-		if ( !strlen(pszFilename) )
-			return false;
+	//				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
-		// Create a new WaveFile object
-		m_pwavefile.reset(new ffmpeg::WaveFile());
-		Assert(m_pwavefile);
+	OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
 
-		if (m_pwavefile) {
-			// Open given file
-			if ( m_pwavefile->Open(pszFilename, (type == ASF_EVENTMUSIC)) ) {
-				m_cbBufSize = (m_pwavefile->getSampleRate() * m_pwavefile->getSampleByteSize()) >> 2;
-				// make sure that we are a multiple of the frame size
-				m_cbBufSize -= (m_cbBufSize % m_pwavefile->getSampleByteSize());
-				m_cbBufSize += (m_cbBufSize % 12) << 1;
-				// if the requested buffer size is too big then cap it
-				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
+	OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
 
-//				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
+	OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
+	OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
 
-				OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
+	OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
+	OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
 
-				OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
+	OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
+	OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
 
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
-				OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
-
-				OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
-				OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
-
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
-
-				// maybe set EFX
-				if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
-					extern ALuint AL_EFX_aux_id;
-					OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
-				}
-
-				// Cue for playback
-				Cue();
-				Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
-			}
-			else {
-				// Error opening file
-				nprintf(("SOUND", "SOUND => Failed to open wave file: %s\n\r", pszFilename));
-				fRtn = false;
-			}
-		}
-		else {
-			// Error, unable to create WaveFile object
-			nprintf(("Sound", "SOUND => Failed to create WaveFile object %s\n\r", pszFilename));
-			fRtn = false;
-		}
+	// maybe set EFX
+	if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
+		extern ALuint AL_EFX_aux_id;
+		OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
 	}
-	else {
-		// Error, passed invalid parms
-		fRtn = false;
-	}
+
+	Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
 
 ErrorExit:
 	if ( (fRtn == false) && (m_pwavefile) ) {
-		mprintf(("AUDIOSTR => ErrorExit for ::Create() on wave file: %s\n", pszFilename));
+		mprintf(("AUDIOSTR => ErrorExit for ::prepareOpened() on wave file: %s\n", filename));
 
 		if (m_source_id)
 			OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
@@ -320,7 +324,49 @@ ErrorExit:
 		m_pwavefile = nullptr;
 	}
 
-	return (fRtn);
+	return fRtn;
+}
+
+// Create
+bool AudioStream::Create (char *pszFilename)
+{
+	Assert(pszFilename);
+
+	Init_Data();
+
+	if ( ! pszFilename )
+		return false;
+	// make 100% sure we got a good filename
+	if ( !strlen(pszFilename) )
+		return false;
+
+	// Create a new WaveFile object and open it
+	m_pwavefile = openAudioFile(pszFilename, (type == ASF_EVENTMUSIC));
+	if (m_pwavefile) {
+		return prepareOpened(pszFilename);
+	}
+	else {
+		// Error, unable to create WaveFile object
+		nprintf(("Sound", "SOUND => Failed to open wave file %s\n", pszFilename));
+		return false;
+	}
+
+}
+
+bool AudioStream::CreateMem (const uint8_t* snddata, size_t snd_len)
+{
+	Init_Data();
+	
+	// Create a new WaveFile object and open it
+	m_pwavefile = openAudioMem(snddata, snd_len);
+	if (m_pwavefile) {
+		return prepareOpened("in-memory");
+	}
+	else {
+		// Error, unable to create WaveFile object
+		nprintf(("Sound", "SOUND => Failed to open in-memory wave file \n"));
+		return false;
+	}
 }
 
 // Destroy
@@ -380,7 +426,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 	if ( service ) {
 		SDL_LockMutex(Global_service_lock);
 	}
-		    
+
 	if ( service ) {
 		uncompressed_wave_data = Wavedata_service_buffer;
 	} else {
@@ -389,14 +435,24 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 
 	int num_bytes_read = 0;
 
+	const auto alFormat = openal_get_format(m_fileProps.bytes_per_sample * 8, m_fileProps.num_channels);
+
 	if ( !service ) {
 		for (int ib = 0; ib < MAX_STREAM_BUFFERS; ib++) {
 			num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
 
+			// if looping then maybe reset wavefile and keep going
+			if ( (num_bytes_read < 0) && m_bLooping) {
+				m_pwavefile->Cue();
+				m_total_uncompressed_bytes_read = 0;
+				num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+			}
+
 			if (num_bytes_read < 0) {
 				m_bReadingDone = 1;
+				break;
 			} else if (num_bytes_read > 0) {
-				OpenAL_ErrorCheck( alBufferData(m_buffer_ids[ib], m_pwavefile->getALFormat(), uncompressed_wave_data, num_bytes_read, m_pwavefile->getSampleRate()), { fRtn = false; goto ErrorExit; } );
+				OpenAL_ErrorCheck( alBufferData(m_buffer_ids[ib], alFormat, uncompressed_wave_data, num_bytes_read, m_fileProps.sample_rate), { fRtn = false; goto ErrorExit; } );
 				OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &m_buffer_ids[ib]), { fRtn = false; goto ErrorExit; } );
 
 				*num_bytes_written += num_bytes_read;
@@ -412,10 +468,17 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 
 			num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
 
+			// if looping then maybe reset wavefile and keep going
+			if ( (num_bytes_read < 0) && m_bLooping) {
+				m_pwavefile->Cue();
+				m_total_uncompressed_bytes_read = 0;
+				num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+			}
+
 			if (num_bytes_read < 0) {
 				m_bReadingDone = 1;
 			} else if (num_bytes_read > 0) {
-				OpenAL_ErrorPrint( alBufferData(buffer_id, m_pwavefile->getALFormat(), uncompressed_wave_data, num_bytes_read, m_pwavefile->getSampleRate()) );
+				OpenAL_ErrorPrint( alBufferData(buffer_id, alFormat, uncompressed_wave_data, num_bytes_read, m_fileProps.sample_rate) );
 				OpenAL_ErrorPrint( alSourceQueueBuffers(m_source_id, 1, &buffer_id) );
 
 				*num_bytes_written += num_bytes_read;
@@ -431,7 +494,7 @@ ErrorExit:
 	if ( service ) {
 		SDL_UnlockMutex(Global_service_lock);
 	}
-    
+
 	return (fRtn);
 }
 
@@ -618,14 +681,15 @@ void AudioStream::Play (float volume, int looping)
 				Stop_and_Rewind();
 		}
 
-		// Cue for playback if necessary
-		if ( !m_fCued )
-			Cue ();
-
+		// loop flag must be set before Cue()!
 		if ( looping )
 			m_bLooping = 1;
 		else
 			m_bLooping = 0;
+
+		// Cue for playback if necessary
+		if ( !m_fCued )
+			Cue ();
 
 		OpenAL_ErrorPrint( alSourcePlay(m_source_id) );
 
@@ -646,10 +710,10 @@ void AudioStream::Play (float volume, int looping)
 // Timer callback for Timer object created by ::Play method.
 bool AudioStream::TimerCallback (ptr_u dwUser)
 {
-    // dwUser contains ptr to AudioStream object
-    AudioStream * pas = (AudioStream *) dwUser;
+	// dwUser contains ptr to AudioStream object
+	AudioStream * pas = (AudioStream *) dwUser;
 
-    return (pas->ServiceBuffer ());
+	return (pas->ServiceBuffer ());
 }
 
 void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
@@ -657,7 +721,7 @@ void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
 	if ( m_pwavefile == NULL )
 		return;
 
-	m_max_uncompressed_bytes_to_read = (sample_cutoff * (m_pwavefile->getSampleByteSize() / m_pwavefile->getNumChannels()));
+	m_max_uncompressed_bytes_to_read = (sample_cutoff * m_fileProps.bytes_per_sample);
 }
 
 uint AudioStream::Get_Samples_Committed(void)
@@ -665,7 +729,7 @@ uint AudioStream::Get_Samples_Committed(void)
 	if ( m_pwavefile == NULL )
 		return 0;
 
-	return (uint) (m_total_uncompressed_bytes_read / (m_pwavefile->getSampleByteSize() / m_pwavefile->getNumChannels()));
+	return (uint) (m_total_uncompressed_bytes_read / m_fileProps.bytes_per_sample);
 }
 
 
@@ -754,6 +818,11 @@ void AudioStream::Set_Volume(float vol)
 float AudioStream::Get_Volume()
 {
 	return m_lVolume;
+}
+
+double AudioStream::Get_Duration()
+{
+	return m_fileProps.duration;
 }
 
 bool AudioStream::PlaybackDone()
@@ -860,6 +929,45 @@ void audiostream_close()
 
 }
 
+static int audiostream_use_next_free( int type )
+{
+	if ( !Audiostream_inited || !snd_is_inited() )
+		return -1;
+
+	int i;
+	for (i = 0; i < MAX_AUDIO_STREAMS; i++)
+		if (Audio_streams[i].status == ASF_FREE)
+			break;
+
+	if (i == MAX_AUDIO_STREAMS) {
+		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
+		return -1;
+	}
+
+	Audio_streams[i].status = ASF_USED;
+	Audio_streams[i].type = type;
+
+	switch (type) {
+		case ASF_SOUNDFX: // As in: sound.cpp:590
+			Audio_streams[i].Set_Default_Volume(Master_sound_volume * aav_effect_volume);
+			break;
+		case ASF_EVENTMUSIC: // As in: sexp.cpp:11562
+			Audio_streams[i].Set_Default_Volume(Master_event_music_volume * aav_music_volume);
+			break;
+		case ASF_MENUMUSIC: // As in: mainhallmenu.cpp:1170
+			Audio_streams[i].Set_Default_Volume(Master_event_music_volume);
+			break;
+		case ASF_VOICE: // As in: sound.cpp:590
+			Audio_streams[i].Set_Default_Volume(Master_voice_volume * aav_voice_volume);
+			break;
+		default:
+			Audio_streams[i].status = ASF_FREE;
+			return -1;
+	}
+
+	return i;
+}
+
 // Open a digital sound file for streaming
 //
 // input:	filename	=>	disk filename of sound file
@@ -873,25 +981,11 @@ void audiostream_close()
 //				failure => -1
 int audiostream_open( const char *filename, int type )
 {
-	int i, rc;
+	int i = audiostream_use_next_free(type);
+	if ( i == -1 )
+		return -1;
+
 	char fname[MAX_FILENAME_LEN];
-
-	if ( !Audiostream_inited || !snd_is_inited() )
-		return -1;
-
-	for (i = 0; i < MAX_AUDIO_STREAMS; i++) {
-		if (Audio_streams[i].status == ASF_FREE) {
-			Audio_streams[i].status = ASF_USED;
-			Audio_streams[i].type = type;
-			break;
-		}
-	}
-
-	if (i == MAX_AUDIO_STREAMS) {
-		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
-		return -1;
-	}
-
 	// copy filename, since we might modify it
 	strcpy_s(fname, filename);
 
@@ -913,11 +1007,11 @@ int audiostream_open( const char *filename, int type )
 			break;
 
 		default:
-			Int3();
+			Audio_streams[i].status = ASF_FREE;
 			return -1;
 	}
 
-	rc = Audio_streams[i].Create(fname);
+	int rc = Audio_streams[i].Create(fname);
 
 	if ( rc == 0 ) {
 		Audio_streams[i].status = ASF_FREE;
@@ -927,7 +1021,35 @@ int audiostream_open( const char *filename, int type )
 	}
 }
 
-void audiostream_close_file(int i, int fade)
+// Open wave file contents previously loaded into memory for streaming
+//
+//input:	snddata	=>	reference of an in-memory file
+//			snd_len	=>	length of loaded file
+//			type	=>	what type of audio stream do we want to open:
+//							ASF_SOUNDFX
+//							ASF_EVENTMUSIC
+//							ASF_MENUMUSIC
+//							ASF_VOICE
+//	
+// returns:	success => handle to identify streaming sound
+//				failure => -1
+int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type )
+{
+	int i = audiostream_use_next_free(type);
+	if ( i == -1 )
+		return -1;
+
+	int rc = Audio_streams[i].CreateMem(snddata, snd_len);
+
+	if ( rc == 0 ) {
+		Audio_streams[i].status = ASF_FREE;
+		return -1;
+	} else {
+		return i;
+	}
+}
+
+void audiostream_close_file(int i, bool fade)
 {
 	if (!Audiostream_inited)
 		return;
@@ -946,7 +1068,7 @@ void audiostream_close_file(int i, int fade)
 
 }
 
-void audiostream_close_all(int fade)
+void audiostream_close_all(bool fade)
 {
 	int i;
 
@@ -1051,6 +1173,19 @@ int audiostream_is_paused(int i)
 		return -1;
 
 	return (int) Audio_streams[i].Is_Paused();
+}
+
+double audiostream_get_duration(int i)
+{
+	if (i == -1)
+		return 0;
+
+	Assert(i >= 0 && i < MAX_AUDIO_STREAMS);
+
+	if (Audio_streams[i].status == ASF_FREE)
+		return -1;
+	
+	return Audio_streams[i].Get_Duration();
 }
 
 void audiostream_set_sample_cutoff(int i, uint cutoff)

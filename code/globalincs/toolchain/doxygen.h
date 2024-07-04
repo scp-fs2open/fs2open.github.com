@@ -6,6 +6,7 @@
  * the source.
  */
 
+#if defined(DOXYGEN)
 /**
  * @file
  *
@@ -51,3 +52,34 @@
  * This can be used to ensure that a static variable is present even if it isn't referenced in the translation unit
  */
 #define USED_VARIABLE
+
+/**
+ * @brief For use in a case statement which falls through
+ *
+ * Some compilers issue a warning if a fallthrough is detected. This define can be used to suppress that warning.
+ */
+#define FALLTHROUGH
+
+/**
+ * @brief Specifies that an analyzer should consider this function as no-return
+ */
+#define CLANG_ANALYZER_NORETURN
+
+/**
+ * @brief Specifies that the code at which point this macro appears at is unreachable
+ * @param msg The message to display in debug mode
+ * @param ... Format arguments for the message
+ */
+#define UNREACHABLE(msg, ...)
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS
+
+#endif

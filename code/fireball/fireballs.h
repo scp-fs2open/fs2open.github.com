@@ -14,6 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "model/modelrender.h"
+#include "gamesnd/gamesnd.h"
 
 class object;
 class ship_info;
@@ -32,13 +33,11 @@ class asteroid_info;
 #define FIREBALL_EXPLOSION_LARGE1	4		// Used for the big explosion when a ship breaks into pieces
 #define FIREBALL_EXPLOSION_LARGE2	5		// Used for the big explosion when a ship breaks into pieces
 
-#define MAX_FIREBALL_TYPES			32		// The maximum number of fireballs that can be defined
 #define NUM_DEFAULT_FIREBALLS		6
 
-#define FIREBALL_NUM_LARGE_EXPLOSIONS 2
+#define MAX_FIREBALL_LOD						4
 
-extern int fireball_used[MAX_FIREBALL_TYPES];
-extern int Num_fireball_types;
+#define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {
@@ -49,10 +48,23 @@ typedef struct fireball_lod {
 } fireball_lod;
 
 typedef struct fireball_info {
+	char				unique_id[NAME_LENGTH];
 	int					lod_count;
-	float				exp_color[3];
-	fireball_lod		lod[4];
+	fireball_lod		lod[MAX_FIREBALL_LOD];
+	float				exp_color[3];	// red, green, blue
+
+	bool	use_3d_warp;
+	bool	fireball_used;
+
+	char	warp_glow[NAME_LENGTH];
+	int		warp_glow_bitmap;
+	char	warp_ball[NAME_LENGTH];
+	int		warp_ball_bitmap;
+	char	warp_model[NAME_LENGTH];
+	int		warp_model_id;
 } fireball_info;
+
+extern SCP_vector<fireball_info> Fireball_info;
 
 // flag values for fireball struct flags member
 #define	FBF_WARP_CLOSE_SOUND_PLAYED		(1<<0)
@@ -71,21 +83,37 @@ typedef struct fireball {
 	char	lod;					// current LOD
 	float	time_elapsed;			// in seconds
 	float	total_time;				// total lifetime of animation in seconds
-	int warp_open_sound_index;		// for warp-effect - Goober5000
-	int warp_close_sound_index;		// for warp-effect - Goober5000
+
+	// for warp-effect - Goober5000
+	gamesnd_id warp_open_sound_index;		
+	gamesnd_id warp_close_sound_index;
+	float	warp_open_duration;
+	float	warp_close_duration;
+
+	// the sound multiplier is based on the ship class, but we lose that while the warp is closing
+	float	warp_sound_range_multiplier;
 } fireball;
 // end move
+
+extern SCP_vector<fireball> Fireballs;
+
+extern bool fireballs_inited;
 
 void fireball_init();
 void fireball_render(object* obj, model_draw_list *scene);
 void fireball_delete( object * obj );
 void fireball_process_post(object * obj, float frame_time);
 
-// reversed is for warp_in/out effects
-// Velocity: If not NULL, the fireball will move at a constant velocity.
+// This does not load all the data, just the filenames and such.  Only used by FRED.
+void fireball_parse_tbl();
+
+int fireball_info_lookup(const char *unique_id);
+
+// reverse is for warp_in/out effects
+// velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=-1, int warp_close_sound=-1); 
-void fireball_render_plane(int plane);
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, bool reverse=false, vec3d *velocity=nullptr, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=nullptr, int low_res=0, int extra_flags=0, gamesnd_id warp_open_sound=gamesnd_id(), gamesnd_id warp_close_sound=gamesnd_id(), float warp_open_duration=-1.0f, float warp_close_duration=-1.0f);
+
 void fireball_close();
 
 // Returns 1 if you can remove this fireball
@@ -110,16 +138,19 @@ int fireball_ship_explosion_type(ship_info *sip);
 int fireball_asteroid_explosion_type(asteroid_info *aip);
 
 // returns the intensity of a wormhole
-float fireball_wormhole_intensity( object *obj );
-
-// internal function to draw warp grid.
-extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
-
-extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d);
-
-extern int Warp_model;
+float fireball_wormhole_intensity( fireball *fb );
 
 // Goober5000
-extern int Knossos_warp_ani_used;
+extern bool Knossos_warp_ani_used;
+
+extern bool Fireball_use_3d_warp;
+
+extern bool Fireball_warp_flash;
+
+// Cyborg - get a count of how many valid fireballs are in the mission.
+int fireball_get_count();
+
+// Goober5000 - stuffs fireballs and checks that indexes are in bounds
+void stuff_fireball_index_list(SCP_vector<int> &list, const char *name);
 
 #endif /* _FIREBALLS_H */

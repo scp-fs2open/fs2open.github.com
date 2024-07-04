@@ -27,6 +27,8 @@ extern int Multi_pause_status;
 // who paused the game
 extern net_player *Multi_pause_pauser;
 
+extern int Multi_paused;
+
 
 // ----------------------------------------------------------------------------------
 // PAUSE FUNCTIONS
@@ -56,13 +58,13 @@ int multi_pause_eat_keys();
 //
 
 // initialize multi pause screen
-void multi_pause_init();
+void multi_pause_init(bool API_Access = false);
 
 // do frame for the multi pause screen
-void multi_pause_do();
+void multi_pause_do(bool API_Access = false);
 
 // close the multi pause screen
-void multi_pause_close(int end_mission);
+void multi_pause_close(int end_mission, bool API_Access = false);
 
 
 #endif

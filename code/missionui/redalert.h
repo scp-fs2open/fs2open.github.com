@@ -26,8 +26,8 @@ void	red_alert_invalidate_timestamp();
 int	red_alert_in_progress();
 void red_alert_maybe_move_to_next_mission();
 
-void red_alert_store_wingman_status();
-void red_alert_bash_wingman_status();
+void red_alert_store_ship_status();
+void red_alert_bash_ship_status();
 void red_alert_clear();
 
 void red_alert_voice_pause();
@@ -44,15 +44,28 @@ static const int RED_ALERT_LOWEST_VALID_SHIP_CLASS = RED_ALERT_PLAYER_DEL_SHIP_C
 
 typedef struct red_alert_ship_status {
 	SCP_string	name;
-	float		hull;
-	int			ship_class;
+	float		hull = 0.0f;
+	int			ship_class = 0;
 	SCP_vector<float>	subsys_current_hits;
 	SCP_vector<float>	subsys_aggregate_current_hits;
 	SCP_vector<wep_t>	primary_weapons;
 	SCP_vector<wep_t>	secondary_weapons;
 } red_alert_ship_status;
 
-extern SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
+typedef struct red_alert_wing_status {
+	SCP_string	name;
+	int			latest_wave = 0;
+
+	// these aren't currently used but might be needed in the future
+	int			wave_count = 0;
+	int			total_arrived_count = 0;
+	int			total_departed = 0;
+	int			total_destroyed = 0;
+	int			total_vanished = 0;
+} red_alert_wing_status;
+
+extern SCP_vector<red_alert_ship_status> Red_alert_ship_status;
+extern SCP_vector<red_alert_wing_status> Red_alert_wing_status;
 extern SCP_string Red_alert_precursor_mission;
 #endif
 

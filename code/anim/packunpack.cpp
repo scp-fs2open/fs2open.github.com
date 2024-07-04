@@ -18,30 +18,23 @@
 const int packer_code = PACKER_CODE;
 const int transparent_code = 254;
 
-void anim_check_for_palette_change(anim_instance *instance) {
-	if ( instance->parent->screen_sig != gr_screen.signature ) {
-		instance->parent->screen_sig = gr_screen.signature;
-		anim_set_palette(instance->parent);
-	}
-}
-
 anim_instance *init_anim_instance(anim *ptr, int bpp)
 {
 	anim_instance *inst;
 
+	Assertion(ptr, "Bad pointer in init_anim_instance(), please report to the SCP!");
 	if (!ptr) {
-		Int3();
 		return NULL;
 	}
 
 	if ( ptr->flags & ANF_STREAMED ) {
+		Assertion(ptr->file_offset > -1, "Bad file offset of %d in init_anim_instance(), please report to the SCP!", ptr->file_offset);
 		if ( ptr->file_offset < 0 ) {
-			Int3();
 			return NULL;
 		}
 	} else {
+		Assertion(ptr->data, "Bad data in init_anim_instance(), please report to the SCP!");
 		if ( !ptr->data ) {
-			Int3();
 			return NULL;
 		}
 	}
@@ -78,52 +71,6 @@ void free_anim_instance(anim_instance *inst)
 	vm_free(inst);	
 }
 
-int anim_get_next_frame(anim_instance *inst)
-{
-	int bm, bitmap_flags;
-	int aabitmap = 0;
-	int bpp = 16;
-
-	if ( anim_instance_is_streamed(inst) ) {
-		if ( inst->file_offset <= 0 ) {
-			return -1;
-		}
-	} else {
-		if (!inst->data)
-			return -1;
-	}
-
-	inst->frame_num++;
-	if (inst->frame_num >= inst->parent->total_frames) {
-		inst->data = NULL;
-		inst->file_offset = inst->parent->file_offset;
-		return -1;
-	}
-
-	bitmap_flags = 0;
-
-	bpp = 16;
-	if(inst->aa_color != NULL){
-		bitmap_flags |= BMP_AABITMAP;
-		aabitmap = 1;
-		bpp = 8;
-	}
-
-	anim_check_for_palette_change(inst);
-
-	BM_SELECT_TEX_FORMAT();
-
-	if ( anim_instance_is_streamed(inst) ) {
-		inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation, aabitmap, bpp);
-	} else {
-		inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation, aabitmap, bpp);
-	}
-
-	bm = bm_create(bpp, inst->parent->width, inst->parent->height, inst->frame, bitmap_flags);
-	bm_unload(bm);
-	return bm;
-}
-
 ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap, int bpp)
 {	
 	if ( anim_instance_is_streamed(inst) ) {
@@ -143,8 +90,6 @@ ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap
 		return NULL;
 	}
 
-	anim_check_for_palette_change(inst);
-
 	if ( anim_instance_is_streamed(inst) ) {
 		if ( xlate_pal ){
 			inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation, aabitmap, bpp);
@@ -160,321 +105,6 @@ ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap
 	}
 
 	return inst->frame;
-}
-
-/**
- * @brief Pack key frame
- *
- * @param frame Frame pixel data to pack
- * @param save Memory to store packed data to
- * @param size Number of bytes to pack
- * @param max Maximum number of packed bytes (size of buffer)
- * @param compress_type Compress type
- * @return Actual number of bytes data packed to or -1 if error
- */
-int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_type)
-{
-	int last = -32768, count = 0;
-	long packed_size = 1;
-
-	switch ( compress_type ) {
-		case PACKING_METHOD_RLE_KEY:
-			*save++ = PACKING_METHOD_RLE_KEY;
-			while (size--) {
-				if (*frame != last || count > 255) {
-					if (packed_size + 3 >= max)
-						return -1;
-
-					if (count < 3) {
-						if (last == packer_code) {
-							*save++ = (ubyte)packer_code;
-							*save++ = (ubyte)(count - 1);
-							packed_size += 2;
-
-						} else
-							while (count--) {
-								*save++ = (ubyte)last;
-								packed_size++;
-							}
-
-					} else {
-						*save++ = (ubyte)packer_code;
-						*save++ = (ubyte)(count - 1);
-						*save++ = (ubyte)last;
-						packed_size += 3;
-					}
-
-					count = 0;
-					last = *frame;
-				}
-
-				count++;
-				frame++;
-			}
-
-			if (packed_size + 3 >= max)
-				return -1;
-
-			if (count < 3) {
-				if (last == packer_code) {
-					*save++ = (ubyte)packer_code;
-					*save++ = (ubyte)(count - 1);
-					packed_size += 2;
-
-				} else
-					while (count--) {
-						*save++ = (ubyte)last;
-						packed_size++;
-					}
-
-			} else {
-				*save++ = (ubyte)packer_code;
-				*save++ = (ubyte)(count - 1);
-				*save++ = (ubyte)last;
-				packed_size += 3;
-			}
-			break;
-
-		case PACKING_METHOD_STD_RLE_KEY: {
-			ubyte *dest_start;
-			int i;
-
-			dest_start = save;
-			count = 1;
-
-			last = *frame++;
-			*save++ = PACKING_METHOD_STD_RLE_KEY;
-			for (i=1; i < size; i++ )	{
-
-				if ( *frame != last ) {
-					if ( count ) {
-
-						if (packed_size + 2 >= max)
-							return -1;
-
-						if ( (count == 1) && !(last & STD_RLE_CODE) ) {
-							*save++ = (ubyte)last;
-							packed_size++;
-							Assert( last != STD_RLE_CODE );
-						}
-						else {
-							count |= STD_RLE_CODE;
-							*save++ = (ubyte)count;
-							*save++ = (ubyte)last;
-							packed_size += 2;
-						}
-					}
-		
-					last = *frame;
-					count = 0;
-				}
-
-				count++;
-				frame++;
-
-				if ( count == 127 ) {
-					count |= STD_RLE_CODE;
-					*save++ = (ubyte)count;
-					*save++ = (ubyte)last;
-					packed_size += 2;
-					count = 0;
-				}
-			}	// end for
-
-			if (count)	{
-
-				if (packed_size + 2 >= max)
-					return -1;
-
-				if ( (count == 1) && !(last & STD_RLE_CODE) ) {
-					*save++ = (ubyte)last;
-					packed_size++;
-					Assert( last != STD_RLE_CODE );
-				}
-				else {
-					count |= STD_RLE_CODE;
-					*save++ = (ubyte)count;
-					*save++ = (ubyte)last;
-					packed_size += 2;
-				}
-			}
-
-			Assert(packed_size == (save-dest_start) );
-			return packed_size;
-			}
-
-		default:
-			Assert(0);
-			return -1;
-			break;
-	} // end switch
-
-	return packed_size;
-}
-
-/**
- * @brief Pack frame
- *
- * @param frame Frame pixel data to pack
- * @param frame2 Previous frame's pixel data
- * @param save Memory to store packed data to
- * @param size Number of bytes to pack
- * @param max Maximum number of packed bytes (size of buffer)
- * @param compress_type Compress type
- * @return Actual number of bytes data packed to or -1 if error
- */
-int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, int compress_type)
-{
-	int pixel, last = -32768, count = 0, i;
-	long packed_size = 1;
-
-	switch ( compress_type ) {
-		case PACKING_METHOD_RLE:					// Hoffoss RLE regular frame
-			*save++ = PACKING_METHOD_RLE;
-			while (size--) {
-				if (*frame != *frame2++)
-					pixel = *frame;
-				else
-					pixel = transparent_code;
-
-				if (pixel != last || count > 255) {
-					if (packed_size + 3 >= max)
-						return -1;
-
-					if (count < 3) {
-						if (last == packer_code) {
-							*save++ = (ubyte)packer_code;
-							*save++ = (ubyte)(count - 1);
-							packed_size += 2;
-
-						} else
-							while (count--) {
-								*save++ = (ubyte)last;
-								packed_size++;
-							}
-
-					} else {
-						*save++ = (ubyte)packer_code;
-						*save++ = (ubyte)(count - 1);
-						*save++ = (ubyte)last;
-						packed_size += 3;
-					}
-
-					count = 0;
-					last = pixel;
-				}
-
-				frame++;
-				count++;
-			}
-
-			if (packed_size + 3 >= max)
-				return -1;
-
-			if (count < 3) {
-				if (last == packer_code) {
-					*save++ = (ubyte)packer_code;
-					*save++ = (ubyte)(count - 1);
-					packed_size += 2;
-
-				} else
-					while (count--) {
-						*save++ = (ubyte)last;
-						packed_size++;
-					}
-
-			} else {
-				*save++ = (ubyte)(packer_code);
-				*save++ = (ubyte)(count - 1);
-				*save++ = (ubyte)(last);
-				packed_size += 3;
-			}
-			break;
-
-		case PACKING_METHOD_STD_RLE: {		// high bit count regular RLE frame
-
-			ubyte *dest_start;
-
-			dest_start = save;
-			count = 1;
-
-			if (*frame++ != *frame2++)
-				last = *frame;
-			else
-				last = transparent_code;
-
-			*save++ = PACKING_METHOD_STD_RLE;
-			for (i=1; i < size; i++ )	{
-
-				if (*frame != *frame2++)
-					pixel = *frame;
-				else
-					pixel = transparent_code;
-
-				if ( pixel != last ) {
-					if ( count ) {
-
-						if (packed_size + 2 >= max)
-							return -1;
-
-						if ( (count == 1) && !(last & STD_RLE_CODE) ) {
-							*save++ = (ubyte)last;
-							packed_size++;
-							Assert( last != STD_RLE_CODE );
-						}
-						else {
-							count |= STD_RLE_CODE;
-							*save++ = (ubyte)count;
-							*save++ = (ubyte)last;
-							packed_size += 2;
-						}
-					}
-		
-					last = pixel;
-					count = 0;
-				}
-
-				count++;
-				frame++;
-
-				if ( count == 127 ) {
-					count |= STD_RLE_CODE;
-					*save++ = (ubyte)count;
-					*save++ = (ubyte)last;
-					packed_size += 2;
-					count = 0;
-				}
-			}	// end for
-
-			if (count)	{
-
-				if (packed_size + 2 >= max)
-					return -1;
-
-				if ( (count == 1) && !(last & STD_RLE_CODE) ) {
-					*save++ = (ubyte)last;
-					packed_size++;
-					Assert( last != STD_RLE_CODE );
-				}
-				else {
-					count |= STD_RLE_CODE;
-					*save++ = (ubyte)count;
-					*save++ = (ubyte)last;
-					packed_size += 2;
-				}
-			}
-
-			Assert(packed_size == (save-dest_start) );
-			return packed_size;
-			}
-
-		default:
-			Assert(0);
-			return -1;
-			break;
-	} // end switch
-
-	return packed_size;
 }
 
 /**
@@ -512,14 +142,21 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 			bit_16 = (ushort)pix;
 			break;
 		case 8:
-			// 8 bit-per-pixel aa bitmaps are a bit special since they only use value in the range [0, 15] where 15 wraps
-			// around back to 0. Since the rest of the code expects the value to be in the range [0, 255] the pixel value
-			// needs to be adjusted here. By muliplying the value with 17 the original range [0, 15] is mapped to [0, 255]
-			if (pix >= 15) {
-				bit_8 = 0;
-			} else {
-				bit_8 = (ubyte)(pix * 17);
+			// 8 bit-per-pixel aa bitmaps are a bit special since they only use a palette index value in the range [0, 15]. These 
+			// palette indexes must be remapped to alpha values between [0, 255] which is what graphics code expects. Palette 
+			// range [0, 14] is a gradient from black to white, and palette index 15 is a special color which indicates the background
+			// area of a HUD gauge. Retail code uses the final alpha value for index 1 for this special index to give gauges a dark
+			// transparent background.
+			if (pix > 15) {
+				bit_8 = 255;
 			}
+			else if (pix == 15) {
+				bit_8 = 18;
+			}
+			else {
+				bit_8 = (ubyte)(pix * 18);
+			}
+
 			break;
 		default:
 			Int3();
@@ -603,14 +240,21 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 			bit_16 = (ushort)pix;
 			break;
 		case 8 :
-			// 8 bit-per-pixel aa bitmaps are a bit special since they only use value in the range [0, 15] where 15 wraps
-			// around back to 0. Since the rest of the code expects the value to be in the range [0, 255] the pixel value
-			// needs to be adjusted here. By muliplying the value with 17 the original range [0, 15] is mapped to [0, 255]
-			if (pix >= 15) {
-				bit_8 = 0;
-			} else {
-				bit_8 = (ubyte)(pix * 17);
+			// 8 bit-per-pixel aa bitmaps are a bit special since they only use a palette index value in the range [0, 15]. These 
+			// palette indexes must be remapped to alpha values between [0, 255] which is what graphics code expects. Palette 
+			// range [0, 14] is a gradient from black to white, and palette index 15 is a special color which indicates the background
+			// area of a HUD gauge. Retail code uses the final alpha value for index 1 for this special index to give gauges a dark
+			// transparent background.
+			if (pix > 15) {
+				bit_8 = 255;
 			}
+			else if (pix == 15) {
+				bit_8 = 18;
+			}
+			else {
+				bit_8 = (ubyte)(pix * 18);
+			}
+
 			break;
 		default :
 			Int3();			

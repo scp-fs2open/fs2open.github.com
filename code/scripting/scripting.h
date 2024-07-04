@@ -3,15 +3,24 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
-#include "scripting/lua/LuaFunction.h"
 
-#include <stdio.h>
+#include "graphics/2d.h"
+#include "scripting/ade.h"
+#include "scripting/ade_args.h"
+#include "scripting/hook_conditions.h"
+#include "scripting/lua/LuaFunction.h"
+#include "utils/event.h"
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
 
 //*************************Scripting structs*************************
 #define SCRIPT_END_LIST		NULL
+
+namespace scripting {
+struct ScriptingDocumentation;
+class HookBase;
+}
 
 struct image_desc
 {
@@ -40,115 +49,77 @@ extern bool script_hook_valid(script_hook *hook);
 
 #define MAX_HOOK_CONDITIONS	8
 
-//Conditionals
-#define CHC_NONE			-1
-#define CHC_MISSION			0
-#define CHC_SHIP			1
-#define CHC_SHIPCLASS		2
-#define CHC_SHIPTYPE		3
-#define CHC_STATE			4
-#define CHC_CAMPAIGN		5
-#define CHC_WEAPONCLASS		6
-#define CHC_OBJECTTYPE		7
-#define CHC_KEYPRESS		8
-#define CHC_ACTION			9
-#define CHC_VERSION			10
-#define CHC_APPLICATION		11
+// Conditionals
+enum ConditionalType {
+	//These conditionals must ONLY contain global conditions.
+	//That is, conditions that do not depend on anything specific per-hook (such as a ship firing a weapon),
+	//but only conditions that can evaluate exclusively on a global state, identically for all actions. 
+	//Per-Hook specific conditionals are added through hook_conditions.h/.cpp and the respective template argument of the hook.
+	CHC_NONE        = -1,
+	CHC_MISSION,     
+	CHC_STATE,       
+	CHC_CAMPAIGN,    
+	CHC_KEYPRESS,    
+	CHC_VERSION,    
+	CHC_APPLICATION, 
+	CHC_MULTI_SERVER,
+	CHC_VR_MODE
+};
 
 //Actions
-#define CHA_NONE			-1
-#define CHA_WARPOUT			0
-#define CHA_WARPIN			1
-#define CHA_DEATH			2
-#define CHA_ONFRAME			3
-#define CHA_COLLIDESHIP		4
-#define CHA_COLLIDEWEAPON	5
-#define CHA_COLLIDEDEBRIS	6
-#define CHA_COLLIDEASTEROID	7
-#define CHA_HUDDRAW			8
-#define CHA_OBJECTRENDER	9
-#define CHA_SPLASHSCREEN	10
-#define CHA_GAMEINIT		11
-#define CHA_MISSIONSTART	12
-#define CHA_MISSIONEND		13
-#define CHA_MOUSEMOVED		14
-#define CHA_MOUSEPRESSED	15
-#define CHA_MOUSERELEASED	16
-#define CHA_KEYPRESSED		17
-#define CHA_KEYRELEASED		18
-#define CHA_ONSTATESTART	19
-#define CHA_ONSTATEEND		20
-#define CHA_ONWEAPONDELETE	21
-#define CHA_ONWPEQUIPPED	22
-#define CHA_ONWPFIRED		23
-#define CHA_ONWPSELECTED	24
-#define CHA_ONWPDESELECTED	25
-#define CHA_GAMEPLAYSTART	26
-#define CHA_ONTURRETFIRED	27
-#define CHA_PRIMARYFIRE		28
-#define CHA_SECONDARYFIRE	29
-#define CHA_ONSHIPARRIVE	30
-#define CHA_COLLIDEBEAM		31
-#define CHA_ONACTION		32
-#define CHA_ONACTIONSTOPPED	33
-#define CHA_MSGRECEIVED		34
-#define CHA_HUDMSGRECEIVED	35
-#define CHA_AFTERBURNSTART	36
-#define CHA_AFTERBURNEND    37
-#define CHA_BEAMFIRE        38
-#define CHA_SIMULATION      39
+enum ConditionalActions : int32_t {
+	CHA_NONE    = -1,
+	CHA_ONFRAME,
+	CHA_SPLASHSCREEN,
+	CHA_HUDDRAW,
+	CHA_GAMEINIT,
+	CHA_SIMULATION,
+
+	// DO NOT ADD NEW HOOKS HERE. THESE HOOKS ARE EXCLUSIVELY FOR COMPATIBILITY WITH NON-CONDITIONAL GLOBAL HOOKS
+	// There is a new Lua Hook API, see hook_api.h
+	// There you use either scripting::Hook for non-overridable or scripting::OverridableHook for overridable hooks
+	// while also having the option to document when the hook is called and what hook variables are set for it.
+
+	CHA_LAST = CHA_SIMULATION
+};
 
 // management stuff
 void scripting_state_init();
 void scripting_state_close();
-void scripting_state_do_frame(float frametime);
+void scripting_state_do_frame(float frametime, bool doKeys);
 
-class script_condition
+const scripting::HookBase* scripting_string_to_action(const char* action);
+ConditionalType scripting_string_to_condition(const char* condition);
+
+struct script_condition
 {
-public:
-	int condition_type;
-	union
-	{
-		char name[CONDITION_LENGTH];
-	} data;
-
-	script_condition()
-		: condition_type(CHC_NONE)
-	{
-		memset(data.name, 0, sizeof(data.name));
-	}
+	ConditionalType condition_type;
+	SCP_string condition_string;
+	// stores values evaluated at hook load to optimize later condition checking.
+	// currently mostly olg done for the highest impact condition types, according to performance profiling
+	// the exact type of information stored varries between hook types.
+	// CHC_STATE, CHC_OBJECTTYPE - stores the value of enum matching the name requested by the condition string.
+	// CHC_SHIPCLASS, CHC_WEAPONCLASS - stores the index of the info object requested by the condition
+	// CHC_VERSION, CHC_APPLICATION - stores validity of the check in 1 for true or 0 for false, as the condition will not change after load.
+	// CHC_KEYPRESS - stores the keycode
+	// see ConditionedHook::AddCondition for exact implimentation
+	int condition_cached_value;
 };
 
-class script_action
-{
+class script_action {
 public:
-	int action_type;
+	SCP_vector<script_condition> global_conditions;
+	SCP_vector<std::unique_ptr<scripting::EvaluatableCondition>> local_conditions;
+
 	script_hook hook;
 
-	script_action()
-		: action_type(CHA_NONE)
-	{
-	}
-};
-
-class ConditionedHook
-{
-private:
-	SCP_vector<script_action> Actions;
-	script_condition Conditions[MAX_HOOK_CONDITIONS];
-public:
-	bool AddCondition(script_condition *sc);
-	bool AddAction(script_action *sa);
-
-	bool ConditionsValid(int action, class object *objp=NULL, int more_data = 0);
-	bool IsOverride(class script_state *sys, int action);
-	bool Run(class script_state *sys, int action, char format='\0', void *data=NULL);
+	bool ConditionsValid(const linb::any& local_condition_data) const;
 };
 
 //**********Main script_state function
 class script_state
 {
-private:
+  private:
 	char StateName[32];
 
 	int Langs;
@@ -157,26 +128,29 @@ private:
 
 	//Utility variables
 	SCP_vector<image_desc> ScriptImages;
-	SCP_vector<ConditionedHook> ConditionalHooks;
+	SCP_unordered_map<int, SCP_vector<script_action>> ConditionalHooks;
+	// Scripts can add new hooks at runtime; we collect all hooks to be added here and add them at the end of the current
+	// frame to avoid corrupting any iterators that the script system may be using.
+	SCP_unordered_map<int, SCP_vector<script_action>> AddedHooks;
 
-private:
+	SCP_vector<script_function> GameInitFunctions;
+
+	// Stores references to the Lua values for the hook variables. Uses a raw reference since we do not need the more
+	// advanced features of LuaValue
+	// values are a vector to provide a stack of values. This is necessary to ensure consistent behavior if a scripting
+	// hook is called from within another script (e.g. calls to createShip)
+	SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>> HookVariableValues;
+
+	// ActiveActions lets code that might run scripting hooks know whether any scripts are even registered for it.
+	// AssayActions is responsible for keeping it up to date.
+	SCP_unordered_map<int, bool> ActiveActions;
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
-	int RunBytecodeSub(script_function& func, char format='\0', void *data=NULL);
 
 	void SetLuaSession(struct lua_State *L);
 
-	void OutputLuaMeta(FILE *fp);
-	
-	//Lua private helper functions
-	bool OpenHookVarTable();
-	bool CloseHookVarTable();
-
-	//Internal Lua helper functions
-	void EndLuaFrame();
-
-	//Destroy everything
-	void Clear();
+	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
+		const scripting::DocumentationErrorReporter& errorReporter);
 
 public:
 	//***Init/Deinit
@@ -187,8 +161,13 @@ public:
 
 	~script_state();
 
+	/**
+	 * @brief Resets the lua state and frees all resources
+	 */
+	void Clear();
+
 	//***Internal scripting stuff
-	int LoadBm(char *name);
+	int LoadBm(const char* name);
 	void UnloadImages();
 
 	lua_State *GetLuaSession(){return LuaState;}
@@ -197,38 +176,173 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	int OutputMeta(const char *filename);
+	scripting::ScriptingDocumentation OutputDocumentation(const scripting::DocumentationErrorReporter& errorReporter);
 
 	//***Moves data
 	//void MoveData(script_state &in);
 
-	//***Variable handling functions
-	bool GetGlobal(const char *name, char format='\0', void *data=NULL);
-	void RemGlobal(const char *name);
-
-	void SetHookVar(const char *name, char format, const void *data=NULL);
+	template<typename T>
+	void SetHookVar(const char *name, char format, T&& value);
 	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
-	bool GetHookVar(const char *name, char format='\0', void *data=NULL);
 	void RemHookVar(const char *name);
-	void RemHookVars(unsigned int num, ...);
+	void RemHookVars(std::initializer_list<SCP_string> names);
+
+	const SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>>& GetHookVariableReferences();
 
 	//***Hook creation functions
-	bool EvalString(const char *string, const char *format=NULL, void *rtn=NULL, const char *debug_str=NULL);
+	template <typename T>
+	bool EvalStringWithReturn(const char* string, const char* format = nullptr, T* rtn = NULL,
+	                          const char* debug_str = nullptr);
+	bool EvalString(const char* string, const char* debug_str = nullptr);
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
-	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
+	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr, const std::shared_ptr<scripting::HookBase> parentHook=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
+	void AddConditionedHook(int action_id, script_action hook);
+	void AssayActions();
+	bool IsActiveAction(int hookId);
+
+	void AddGameInitFunction(script_function func);
 
 	//***Hook running functions
-	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
-	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, char format='\0', void *data=NULL, class object *objp = NULL, int more_data = 0);
-	bool IsConditionOverride(int action, object *objp=NULL);
+	template <typename T>
+	int RunBytecode(const script_function& hd, char format = '\0', T* data = nullptr);
+	int RunBytecode(const script_function& hd);
+	bool IsOverride(const script_hook &hd);
+	int RunCondition(int action_type, linb::any local_condition_data);
+	bool IsConditionOverride(int action_type, linb::any local_condition_data);
+
+	void RunInitFunctions();
+
+	void ProcessAddedHooks();
 
 	//*****Other functions
-	void EndFrame();
+	static script_state* GetScriptState(lua_State* L);
+	util::event<void, lua_State*> OnStateDestroy;
 };
 
+template<typename T>
+void script_state::SetHookVar(const char *name, char format, T&& value)
+{
+	if(format == '\0')
+		return;
+
+	if(LuaState != nullptr)
+	{
+		char fmt[2] = {format, '\0'};
+		::scripting::ade_set_args(LuaState, fmt, std::forward<T>(value));
+		auto reference = luacpp::UniqueLuaReference::create(LuaState);
+		lua_pop(LuaState, 1); // Remove object value from the stack
+
+		HookVariableValues[name].push_back(std::move(reference));
+	}
+}
+
+template <typename T>
+bool script_state::EvalStringWithReturn(const char* string, const char* format, T* rtn, const char* debug_str)
+{
+	using namespace luacpp;
+
+	size_t string_size = strlen(string);
+	char lastchar      = string[string_size - 1];
+
+	if (string[0] == '{') {
+		return false;
+	}
+
+	if (string[0] == '[' && lastchar != ']') {
+		return false;
+	}
+
+	size_t s_bufSize = string_size + 8;
+	std::string s;
+	s.reserve(s_bufSize);
+	if (string[0] != '[') {
+		if (rtn != nullptr) {
+			s = "return ";
+		}
+		s += string;
+	} else {
+		s.assign(string + 1, string + string_size);
+	}
+
+	SCP_string debug_name;
+	if (debug_str == nullptr) {
+		debug_name = "String: ";
+		debug_name += s;
+	} else {
+		debug_name = debug_str;
+	}
+
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
+
+		try {
+			auto ret = function.call(LuaState);
+
+			if (rtn != nullptr && ret.size() >= 1) {
+				auto stack_start = lua_gettop(LuaState);
+
+				auto val = ret.front();
+				val.pushValue(LuaState);
+
+				scripting::internal::Ade_get_args_skip      = stack_start;
+				scripting::internal::Ade_get_args_lfunction = true;
+				scripting::ade_get_args(LuaState, format, rtn);
+			}
+		} catch (const LuaException&) {
+			lua_pop(LuaState, 1);
+
+			return false;
+		}
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
+
+		lua_pop(LuaState, 1);
+
+		return false;
+	}
+
+	lua_pop(LuaState, 1);
+
+	return true;
+}
+
+template <typename T>
+int script_state::RunBytecode(const script_function& hd, char format, T* data)
+{
+	using namespace luacpp;
+
+	if (!hd.function.isValid()) {
+		return 1;
+	}
+
+	GR_DEBUG_SCOPE("Lua code");
+
+	try {
+		auto ret = hd.function.call(LuaState);
+
+		if (data != nullptr && ret.size() >= 1) {
+			auto stack_start = lua_gettop(LuaState);
+
+			auto val = ret.front();
+			val.pushValue(LuaState);
+
+			char fmt[2]                                 = {format, '\0'};
+			scripting::internal::Ade_get_args_skip      = stack_start;
+			scripting::internal::Ade_get_args_lfunction = true;
+			scripting::ade_get_args(LuaState, fmt, data);
+
+			// Reset stack again
+			lua_settop(LuaState, stack_start);
+		}
+	} catch (const LuaException&) {
+		return 0;
+	}
+
+	return 1;
+}
 
 //**********Script registration functions
 void script_init();
@@ -236,6 +350,8 @@ void script_init();
 //**********Script globals
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
+extern bool Output_scripting_json;
+extern bool Scripting_game_init_run;
 
 //*************************Conditional scripting*************************
 

@@ -19,7 +19,6 @@
 #include "ShipClassEditorDlg.h"
 #include "MissionNotesDlg.h"
 #include "Grid.h"
-#include "dialog1.h"
 
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
@@ -48,7 +47,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(IDR_MENU_POPUP_TOGGLE1, OnMenuPopupToggle1)
 	ON_UPDATE_COMMAND_UI(IDR_MENU_POPUP_TOGGLE1, OnUpdateMenuPopupToggle1)
 	ON_WM_RBUTTONDOWN()
-	ON_COMMAND(ID_HELP_INPUT_INTERFACE, OnHelpInputInterface)
 	ON_WM_CLOSE()
 	ON_WM_INITMENU()
 	ON_COMMAND(ID_HELP_FINDER, OnFredHelp)
@@ -77,13 +75,14 @@ static UINT indicators[] =
 
 CMainFrame *Fred_main_wnd;
 color_combo_box m_new_ship_type_combo_box;
+size_t ship_type_combo_box_size = 0;
 int Toggle1_var = 0;
 CPoint Global_point2;
 
 /**
  * @brief Launches the default browser to open the given URL
  */
-void url_launch(char *url);
+bool url_launch(const char *url);
 
 
 #ifdef _DEBUG
@@ -100,11 +99,8 @@ CMainFrame::CMainFrame() {}
 
 CMainFrame::~CMainFrame() {}
 
-void CMainFrame::init_tools() {
-	//int highest_terran_index;
-	//char ship_name[256];
-	//int ship_index;
-
+void CMainFrame::init_tools()
+{
 	// some bizarre Volition check:
 	static int count = 0;
 	count++;
@@ -118,16 +114,22 @@ void CMainFrame::init_tools() {
     for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
         // don't add the pirate ship
         if (it->flags[Ship::Info_Flags::No_fred]) {
-            m_new_ship_type_combo_box.AddString("");
+            //m_new_ship_type_combo_box.AddString("");
             continue;
+        } else {
+            m_new_ship_type_combo_box.AddString(it->name);
+            m_new_ship_type_combo_box.SetItemData((int)ship_type_combo_box_size, std::distance(Ship_info.cbegin(), it));
+            ship_type_combo_box_size++;
         }
-
-        m_new_ship_type_combo_box.AddString(it->name);
     }
 
-	//	m_new_ship_type_combo_box.AddString("Player Start");		
-	m_new_ship_type_combo_box.AddString("Jump Node");
+	Id_select_type_waypoint = ship_type_combo_box_size;
+	Id_select_type_jump_node = ship_type_combo_box_size + 1;
+
 	m_new_ship_type_combo_box.AddString("Waypoint");
+	m_new_ship_type_combo_box.SetItemData(static_cast<int>(Id_select_type_waypoint), Ship_info.size());
+	m_new_ship_type_combo_box.AddString("Jump Node");
+	m_new_ship_type_combo_box.SetItemData(static_cast<int>(Id_select_type_jump_node), Ship_info.size() + 1);
 
 	/*
 	// now we want to sort special ships (mission disk) ----------------------
@@ -144,10 +146,21 @@ void CMainFrame::init_tools() {
 	m_new_ship_type_combo_box.SetCurSel(0);
 }
 
-void CMainFrame::OnClose() {
+void CMainFrame::OnClose()
+{
+	// CFrameWnd::OnClose() doesn't provide a way for the caller to tell that the close has been cancelled,
+	// so let's extract that particular logic and do it manually here
+	if (!FREDDoc_ptr->SaveModified())
+		return;
+
+	// and now if we *are* closing, prevent the dialog from coming up
+	FREDDoc_ptr->SetModifiedFlag(FALSE);
+
+	// do the closing stuff
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
 	CFrameWnd::OnClose();
+	gr_close();
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
@@ -219,6 +232,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	Ship_editor_dialog.Create();
 	Wing_editor_dialog.Create();
 	Waypoint_editor_dialog.Create();
+	Jumpnode_editor_dialog.Create();
+	Music_player_dialog.Create();
 	init_tools();
 	LoadBarState("Tools state");
 	return 0;
@@ -236,36 +251,25 @@ void CMainFrame::OnFileMissionnotes() {
 }
 
 void CMainFrame::OnFredHelp() {
-	char buffer[_MAX_PATH];
+	// try included documentation
+	auto res = cf_find_file_location("index.html", CF_TYPE_FREDDOCS);
 
-	// get exe path
-	strcpy_s(buffer, Fred_exe_dir);
-
-	// strip exe name
-	char *last_slash = strrchr(buffer, '\\');
-	if (last_slash == NULL) {
-		return;
-	} else {
-		*last_slash = 0;
+	// We need an actual file location so VP files are not valid
+	if (res.found) {
+		if (res.offset == 0) {
+			url_launch(res.full_name.c_str());
+			return;
+		}
 	}
 
-	// add rest of path
-	strcat_s(buffer, FRED_HELP_URL);
-
-	// shell_open url
-	url_launch(buffer);
-}
-
-void CMainFrame::OnHelpInputInterface() {
-	dialog1	dlg;
-
-	dlg.DoModal();
+	// try online as a fallback
+	url_launch("https://fredzone.hard-light.net/freddocs/");
 }
 
 void CMainFrame::OnInitMenu(CMenu* pMenu) {
 	int i;
 	CString str;
-	extern int ID_SHOW_IFF[MAX_IFFS];
+	extern SCP_vector<int> ID_SHOW_IFF;
 
 	if (Undo_available && !FREDDoc_ptr->undo_desc[1].IsEmpty())
 		str = "Undo " + FREDDoc_ptr->undo_desc[1] + "\tCtrl+Z";
@@ -276,8 +280,9 @@ void CMainFrame::OnInitMenu(CMenu* pMenu) {
 		pMenu->ModifyMenu(ID_EDIT_UNDO, MF_BYCOMMAND, ID_EDIT_UNDO, str);
 
 	// Goober5000 - do the IFF menu options
-	for (i = 0; i < MAX_IFFS; i++) {
-		if (i < Num_iffs) {
+	for (i = 0; i < (int)ID_SHOW_IFF.size(); i++) {
+		//This should eventually be properly dynamic as well
+		if (i < (int)Iff_info.size()) {
 			char text[NAME_LENGTH + 7];
 			sprintf(text, "Show %s", Iff_info[i].iff_name);
 
@@ -381,9 +386,8 @@ int color_combo_box::CalcMinimumItemHeight() {
 }
 
 void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
-	int m_cyText = 24, z;
+	int m_cyText = 24;
 	CString strText;
-	char ship_name[256];
 
 	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
 	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) ==
@@ -391,25 +395,23 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
 
-	// I think we need to do a lookup by ship name here	
-	if (lpDrawItemStruct->itemID >= Ship_info.size()) {
-		z = lpDrawItemStruct->itemID;
-	} else {
-		memset(ship_name, 0, 256);
-		GetLBText(lpDrawItemStruct->itemID, ship_name);
-		z = ship_info_lookup(ship_name);
-	}
+	if ((lpDrawItemStruct->itemID >= 0) && (lpDrawItemStruct->itemAction & (ODA_DRAWENTIRE | ODA_SELECT))) {
+		ship_info* sip = nullptr;
 
-	if ((z >= 0) && (lpDrawItemStruct->itemAction & (ODA_DRAWENTIRE | ODA_SELECT))) {
-		int cyItem = GetItemHeight(z);
+		// get the ship class corresponding to this item, if any
+		auto itemData = lpDrawItemStruct->itemData;
+		if (itemData >= 0 && itemData < Ship_info.size())
+			sip = &Ship_info[itemData];
+
+		int cyItem = GetItemHeight(lpDrawItemStruct->itemID);
 		BOOL fDisabled = !IsWindowEnabled();
 
 		COLORREF newTextColor = RGB(0x80, 0x80, 0x80);  // light gray
 		if (!fDisabled) {
-			if (z >= static_cast<int>(Ship_info.size()))
+			if (sip == nullptr)
 				newTextColor = RGB(0, 0, 0);
 			else {
-				species_info *sinfo = &Species_info[Ship_info[z].species];
+				auto sinfo = &Species_info[sip->species];
 				newTextColor = RGB(sinfo->fred_color.rgb.r, sinfo->fred_color.rgb.g, sinfo->fred_color.rgb.b);
 			}
 		}
@@ -429,15 +431,14 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 		if (m_cyText == 0)
 			VERIFY(cyItem >= CalcMinimumItemHeight());
 
-		if (z == Id_select_type_jump_node)
+		if (sip != nullptr)
+			strText = _T(sip->name);
+		else if (lpDrawItemStruct->itemID == Id_select_type_jump_node)
 			strText = _T("Jump Node");
-		else if (z == Id_select_type_start)
-			strText = _T("Player Start");
-		else if (z == Id_select_type_waypoint)
+		else if (lpDrawItemStruct->itemID == Id_select_type_waypoint)
 			strText = _T("Waypoint");
 		else
-			strText = _T(Ship_info[z].name);
-		//		GetLBText(lpDrawItemStruct->itemID, strText);
+			strText = _T("Invalid index!");
 
 		pDC->ExtTextOut(lpDrawItemStruct->rcItem.left,
 			lpDrawItemStruct->rcItem.top + std::max(0, (cyItem - m_cyText) / 2),
@@ -451,47 +452,29 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 		pDC->DrawFocusRect(&(lpDrawItemStruct->rcItem));
 }
 
-int color_combo_box::GetCurSelNEW() {
-	int cur_sel;
-	int ship_info;
-	char ship_name[256];
-	char *hmmm = ship_name;
-
-	// see if we have a special item (>= Ship_info.size())
-	cur_sel = GetCurSel();
-	if (cur_sel >= static_cast<int>(Ship_info.size())) {
-		return cur_sel;
-	}
-
-	// otherwise lookup the ship by name
-	memset(ship_name, 0, 256);
-	if (GetLBText(cur_sel, hmmm) == CB_ERR) {
-		return CB_ERR;
-	}
-	ship_info = ship_info_lookup(ship_name);
-	if ((ship_info < 0) || (ship_info >= static_cast<int>(Ship_info.size()))) {
-		return CB_ERR;
-	}
-	return ship_info;
-}
-
 void color_combo_box::MeasureItem(LPMEASUREITEMSTRUCT) {
 	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
 	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) ==
 		   (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
 }
 
-int color_combo_box::SetCurSelNEW(int model_index) {
-	if ((model_index < 0) || (model_index >= static_cast<int>(Ship_info.size()))) {
-		return SetCurSel(model_index);
-	}
-
-	// lookup the ship name
-	return FindString(0, Ship_info[model_index].name);
+int color_combo_box::GetShipClass(int item_index)
+{
+	if (item_index < 0 || item_index >= GetCount())
+		return -1;
+	return (int)GetItemData(item_index);
 }
 
+int color_combo_box::GetItemIndex(int ship_class)
+{
+	for (int i = 0; i < m_new_ship_type_combo_box.GetCount(); i++)
+		if ((int)m_new_ship_type_combo_box.GetItemData(i) == ship_class)
+			return i;
+	return -1;
+}
 
-void url_launch(char *url) {
+bool url_launch(const char *url)
+{
 	int r;
 
 	r = (int) ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOW);
@@ -510,13 +493,18 @@ void url_launch(char *url) {
 		case SE_ERR_OOM: txt = XSTR("There was not enough memory to complete the operation.", 1115); break;
 		case SE_ERR_SHARE: txt = XSTR("A sharing violation occurred.", 1116); break;
 
-			// No browser installed message
-		case SE_ERR_NOASSOC:
+		// No browser installed message
+		case SE_ERR_NOASSOC: txt = XSTR("\r\nNo web browser found.  There isn't one installed or if \r\none is installed, it isn't set to be the default browser.\r\n\r\n", 1117); break;
+
 		case ERROR_FILE_NOT_FOUND:
 		case ERROR_PATH_NOT_FOUND: txt = XSTR("\r\nUnable to locate Fred Help file: \\data\\freddocs\\index.html\r\n", 1479); break;
 
 		default: txt = XSTR("Unknown error occurred.", 1118); break;
 		}
+
 		AfxMessageBox(txt, MB_OK | MB_ICONERROR);
+		return false;
 	}
+
+	return true;
 }

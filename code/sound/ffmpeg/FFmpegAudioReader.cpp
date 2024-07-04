@@ -37,10 +37,10 @@ void av_packet_free(AVPacket **pkt)
 	av_freep(pkt);
 }
 #endif
-}
+} // namespace
 
-namespace ffmpeg
-{
+namespace sound {
+namespace ffmpeg {
 FFmpegAudioReader::FFmpegAudioReader(AVFormatContext* av_format_context, AVCodecContext* codec_ctx,
                                      int stream_idx) : _stream_idx(stream_idx),
                                                        _format_ctx(av_format_context),
@@ -182,4 +182,6 @@ FFmpegAudioReader::~FFmpegAudioReader() {
 	}
 #endif
 }
-}
+
+} // namespace ffmpeg
+} // namespace sound

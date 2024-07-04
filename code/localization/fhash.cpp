@@ -9,9 +9,9 @@
 
 
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <memory.h>
-#include <string.h>
+#include <cstring>
 #include "globalincs/pstypes.h"
 #include "localization/fhash.h"
 

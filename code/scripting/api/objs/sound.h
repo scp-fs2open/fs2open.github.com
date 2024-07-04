@@ -2,7 +2,7 @@
 
 #include <sound/ds.h>
 #include "scripting/ade_api.h"
-
+#include "gamesnd/gamesnd.h"
 #include "sound/sound.h"
 
 namespace scripting {
@@ -11,36 +11,33 @@ namespace api {
 
 struct sound_entry_h
 {
-	int idx;
+	gamesnd_id idx;
 
 	sound_entry_h();
 
-	explicit sound_entry_h(int n_idx);
+	explicit sound_entry_h(gamesnd_id n_idx);
 
-	game_snd *Get();
+	game_snd *Get() const;
 
-	bool IsValid();
-
-	int getId();
-
+	bool isValid() const;
 };
 
 //**********HANDLE: SoundEntry
 DECLARE_ADE_OBJ(l_SoundEntry, sound_entry_h);
 
-struct sound_h : public sound_entry_h
+struct sound_h
 {
-	int sig;
+	sound_entry_h entryh;
+	sound_handle sig;
 
 	sound_h();
 
-	sound_h(int n_gs_idx, int n_sig);
+	sound_h(gamesnd_id n_gs_idx, sound_handle n_sig);
 
-	int getSignature();
+	sound_handle getSignature() const;
 
-	bool IsSoundValid();
-
-	bool IsValid();
+	bool isValid() const;			// This is the function that is checked by ade_set_args
+	bool isValidWithEntry() const;
 };
 
 //**********HANDLE: Sound
@@ -51,8 +48,14 @@ DECLARE_ADE_OBJ(l_Sound3D, sound_h);
 
 
 //**********HANDLE: Soundfile
-DECLARE_ADE_OBJ(l_Soundfile, int);
 
+struct soundfile_h {
+	sound_load_id idx;
+
+	explicit soundfile_h(sound_load_id id = sound_load_id::invalid());
+};
+
+DECLARE_ADE_OBJ(l_Soundfile, soundfile_h);
 }
 }
 

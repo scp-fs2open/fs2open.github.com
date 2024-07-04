@@ -94,14 +94,14 @@ void UI_DOT_SLIDER_NEW::process(int focus)
 	if (disabled_flag) {
 		if (!hidden && !my_wnd->use_hack_to_get_around_stupid_problem_flag) {
 			if (button.is_mouse_on() && B1_JUST_PRESSED) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			} else if (has_end_buttons && (up_button.is_mouse_on() || down_button.is_mouse_on())) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			
 
 			if ( (hotkey >= 0) && (my_wnd->keypress == hotkey) ){
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		}
 
@@ -138,7 +138,7 @@ void UI_DOT_SLIDER_NEW::process(int focus)
 			if (pos < num_pos-1){
 				pos++;
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		}
 
@@ -147,7 +147,7 @@ void UI_DOT_SLIDER_NEW::process(int focus)
 			if(pos){
 				pos--;
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		}
 	}
@@ -276,7 +276,7 @@ void UI_DOT_SLIDER::process(int focus)
 			if (pos < num_pos){
 				pos++;
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		}
 
@@ -285,7 +285,7 @@ void UI_DOT_SLIDER::process(int focus)
 			if (pos){
 				pos--;
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		}
 	}

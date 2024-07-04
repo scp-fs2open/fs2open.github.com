@@ -13,11 +13,13 @@
 #include "network/multi_respawn.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "object/objcollide.h"
 #include "globalincs/linklist.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "missionui/missionweaponchoice.h"
 #include "gamesequence/gamesequence.h"
+#include "hud/hudets.h"
 #include "hud/hudconfig.h"
 #include "hud/hudobserver.h"
 #include "hud/hudmessage.h"
@@ -270,14 +272,16 @@ void multi_respawn_handle_invul_players()
 // build a list of respawn points for the mission
 void multi_respawn_build_points()
 {
-	ship_obj *moveup;
 	respawn_point *r;
 
 	// respawn points
 	Multi_respawn_point_count = 0;
 	Multi_next_respawn_point = 0;
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
+
+	for (auto moveup: list_range(&Ship_obj_list)){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// player ships
 		if(Objects[moveup->objnum].flags[Object::Object_Flags::Player_ship] || Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]){
 			r = &Multi_respawn_points[Multi_respawn_point_count++];
@@ -285,13 +289,15 @@ void multi_respawn_build_points()
 			r->pos = Objects[moveup->objnum].pos;
 			r->team = Ships[Objects[moveup->objnum].instance].team;			
 		}
-		moveup = GET_NEXT(moveup);
 	}	
 
 	// priority respawn points
 	Multi_respawn_priority_count = 0;
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
+
+	for (auto moveup: list_range(&Ship_obj_list)){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// stuff info
 		if((Ships[Objects[moveup->objnum].instance].respawn_priority > 0) && (Multi_respawn_priority_count < MAX_PRIORITY_POINTS)){
 			r = &Multi_respawn_priority_ships[Multi_respawn_priority_count++];
@@ -299,7 +305,6 @@ void multi_respawn_build_points()
 			strcpy_s(r->ship_name, Ships[Objects[moveup->objnum].instance].ship_name);
 			r->team = Ships[Objects[moveup->objnum].instance].team;
 		}
-		moveup = GET_NEXT(moveup);
 	}	
 }
 
@@ -326,7 +331,6 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	int objnum, team, slot_index;
 	object *objp;
 	ship *shipp;
-	int idx;
 
 	// create the object
 	objnum = parse_create_object(pobjp);
@@ -339,15 +343,6 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	Assert( team != -1 );
 	Assert( slot_index != -1 );
 
-	// reset object update stuff
-	for(idx=0; idx<MAX_PLAYERS; idx++){
-		shipp->np_updates[idx].orient_chksum = 0;
-		shipp->np_updates[idx].pos_chksum = 0;
-		shipp->np_updates[idx].seq = 0;
-		shipp->np_updates[idx].status_update_stamp = -1;
-		shipp->np_updates[idx].subsys_update_stamp = -1;
-		shipp->np_updates[idx].update_stamp = -1;
-	}
 
 	// change the ship type and the weapons
 	if (team != -1 && slot_index != -1) {
@@ -359,6 +354,9 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		multi_team_mark_ship(&Ships[Objects[objnum].instance]);
 	}
+
+	// need to make sure that we will update this object and that the frame tracker knows this is a valid ship again.
+	multi_oo_respawn_reset_info(objp);
 
 	pobjp->respawn_count++;
 
@@ -405,6 +403,10 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	if ( pl == Net_player ) {
 		object *oldplr = Player_obj;
 
+		// Cyborg17 - Despite the fact that the object and ship are getting deleted below, unless the net_signature is cleared here
+		// respawning in a rollback enabled game will crash the server.
+		oldplr->net_signature = 0;
+
 		Player_obj = objp;
 		Player_ship = shipp;
 		Player_ai = &Ai_info[Player_ship->ai_index];
@@ -421,7 +423,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		objp->net_signature = net_sig;
 	}
-	
+
 	// restore the correct weapon bank selections
 	shipp->weapons.current_primary_bank = (int)cur_primary_bank;
 	shipp->weapons.current_secondary_bank = (int)cur_secondary_bank;
@@ -440,11 +442,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	Assert( ship_ets != 0 );		// find dave or allender
 
 	// restore the correct ets settings
-	shipp->shield_recharge_index = ((ship_ets & 0x0f00) >> 8);
-	// weapon ets
-	shipp->weapon_recharge_index = ((ship_ets & 0x00f0) >> 4);
-	// engine ets
-	shipp->engine_recharge_index = (ship_ets & 0x000f);
+	set_recharge_rates(&Objects[shipp->objnum], ((ship_ets & 0x0f00) >> 8), ((ship_ets & 0x00f0) >> 4), (ship_ets & 0x000f));
 
 	// give the current bank a half-second timestamp so that we don't fire immediately unpon respawn
 	shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(500);
@@ -491,7 +489,7 @@ void multi_respawn_ai( p_object *pobjp )
 	object *objp;
 
 	// create the object and change the ship type
-	objnum = multi_respawn_common_stuff( pobjp );
+	objnum = multi_respawn_common_stuff( pobjp);
 	objp = &Objects[objnum];
 
 	// be sure the the OF_PLAYER_SHIP flag is unset, and the could be player flag is set
@@ -513,7 +511,7 @@ void multi_respawn_make_observer(net_player *pl)
 	multi_ping_reset(&pl->s_info.ping);
 	
 	// timestamp his last_full_update_time
-	pl->s_info.last_full_update_time = timestamp(0);
+	pl->s_info.last_full_update_time = UI_TIMESTAMP::immediate();
 
 	// create an observer object for him
 	multi_obs_create_observer(pl);		
@@ -632,7 +630,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// determine who send the packet	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index == -1){
 		nprintf(("Network","Couldn't find player for processing respawn packet!\n"));
 	}
@@ -647,9 +645,14 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		p_object *pobjp;
 
 		GET_USHORT( net_sig );
-		pobjp = mission_parse_get_arrival_ship( net_sig );
-		Assert( pobjp != NULL );
-		multi_respawn_ai( pobjp );
+
+		// only attempt to respawn if we are in the mission
+		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
+			pobjp = mission_parse_get_arrival_ship(net_sig);
+			Assert(pobjp != NULL);
+			multi_respawn_ai(pobjp);
+		}
+
 		break;		
 
 	case RESPAWN_BROADCAST:
@@ -662,19 +665,23 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		GET_DATA(cur_link_status);
 		GET_USHORT(ship_ets);
 		GET_STRING(parse_name);
-		player_index = find_player_id(player_id);
-		if(player_index == -1){
-			nprintf(("Network","Couldn't find player to respawn!\n"));
-			break;
-		}
 
-		// create the ship and assign its position, net_signature, and class
-		// respawn the player
-		multi_respawn_player(&Net_players[player_index], cur_primary_bank, cur_secondary_bank, cur_link_status, ship_ets, net_sig, parse_name, &v);
+		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
+			player_index = find_player_index(player_id);
 
-		// if this is for me, I should jump back into gameplay
-		if(&Net_players[player_index] == Net_player){
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
+			if(player_index == -1){
+				nprintf(("Network","Couldn't find player to respawn!\n"));
+				break;
+			}
+
+			// create the ship and assign its position, net_signature, and class
+			// respawn the player
+			multi_respawn_player(&Net_players[player_index], cur_primary_bank, cur_secondary_bank, cur_link_status, ship_ets, net_sig, parse_name, &v);
+
+			// if this is for me, I should jump back into gameplay
+			if(&Net_players[player_index] == Net_player){
+				gameseq_post_event(GS_EVENT_ENTER_GAME);
+			}
 		}
 		break;
 	
@@ -724,7 +731,7 @@ void multi_respawn_server()
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
 
 	// respawn me
-	multi_respawn_player(Net_player, Net_player->s_info.cur_primary_bank, Net_player->s_info.cur_secondary_bank, Net_player->s_info.cur_link_status, Net_player->s_info.ship_ets, 0, Net_player->p_info.p_objp->name);
+	multi_respawn_player(Net_player, Net_player->s_info.cur_primary_bank, Net_player->s_info.cur_secondary_bank, Net_player->s_info.cur_link_status, Net_player->s_info.ship_ets, Net_player->p_info.p_objp->net_signature, Net_player->p_info.p_objp->name);
 
 	// jump back into the game
 	gameseq_post_event(GS_EVENT_ENTER_GAME);	
@@ -880,21 +887,21 @@ void multi_respawn_place(object *new_obj, int team)
 
 #define WITHIN_BBOX()	do { \
 	if (pm != NULL) { \
-		float scale = 2.0f; \
-		collided = 0; \
+		constexpr float scale = 2.0f; \
+		collided = false; \
 		vec3d temp = new_obj->pos; \
 		vec3d gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
 		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
 		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
-			collided = 1; \
+			collided = true; \
 		} \
 	} \
-} while(0)
+} while(false)
 
 #define MOVE_AWAY_BBOX() do { \
 	if (pm != NULL) { \
-		switch((int)frand_range(0.0f, 3.9f)){ \
+		switch(Random::next(6)) { \
 		case 0: \
 			new_obj->pos.xyz.x += 200.0f; \
 			break; \
@@ -907,23 +914,31 @@ void multi_respawn_place(object *new_obj, int team)
 		case 3: \
 			new_obj->pos.xyz.y -= 200.0f; \
 			break; \
-		default : \
+		case 4: \
+			new_obj->pos.xyz.z += 200.0f; \
+			break; \
+		case 5: \
 			new_obj->pos.xyz.z -= 200.0f; \
+			break; \
+		default: \
+			UNREACHABLE("Invalid random number in MOVE_AWAY_BBOX"); \
 			break; \
 		} \
 	} \
-} while(0)
-
+} while(false)
 
 void prevent_spawning_collision(object *new_obj)
 {
-	int collided;
+	bool collided;
 	ship_obj *moveup;
 	object *hit_check;
 	ship *s_check;
 
+	if (!new_obj->flags[Object::Object_Flags::Collides])
+		return;
+
 	do {
-		collided = 0;
+		collided = false;
 
 		for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 		{
@@ -932,6 +947,15 @@ void prevent_spawning_collision(object *new_obj)
 				continue;
 
 			hit_check = &Objects[moveup->objnum];
+
+			if (hit_check->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			// consider collision configuration
+			if (!hit_check->flags[Object::Object_Flags::Collides])
+				continue;
+			if (reject_due_collision_groups(new_obj, hit_check))
+				continue;
 
 			Assert(hit_check->type == OBJ_SHIP);
 			Assert(hit_check->instance >= 0);

@@ -51,8 +51,9 @@ namespace os
 		 * @param linenum The source code line number where this function was called
 		 * @param format An optional message to display in addition to the specified text
 		 */
-		void AssertMessage(const char* text, const char* filename, int linenum,
-				SCP_FORMAT_STRING const char* format = nullptr, ...) SCP_FORMAT_STRING_ARGS(4, 5);
+		void AssertMessage(const char* text, const char* filename, int linenum, SCP_FORMAT_STRING
+						   const char* format = nullptr, ...)
+		SCP_FORMAT_STRING_ARGS(4, 5) CLANG_ANALYZER_NORETURN;
 
 		/**
 		 * @brief Shows a lua error.
@@ -72,7 +73,8 @@ namespace os
 		 * @param line The source code line number where this function was called
 		 * @param format The error message to display (a format string)
 		 */
-		void Error(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+		void Error(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...)
+		SCP_FORMAT_STRING_ARGS(3, 4) CLANG_ANALYZER_NORETURN;
 
 		/**
 		 * @brief Shows an error dialog.
@@ -80,7 +82,7 @@ namespace os
 		 *
 		 * @param text The text to display
 		 */
-		void Error(const char* text);
+		void Error(const char* text) CLANG_ANALYZER_NORETURN;;
 
 		/**
 		 * @brief Shows a warning dialog.
@@ -112,15 +114,29 @@ namespace os
 		 */
 		void ReleaseWarning(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
 		
+		/**
+		 * @brief Shows an information dialog
+		 *  Displays a modal dialog with at most an OK button and some text.  Use instead of ReleaseWarning if
+		 * debugging is not necassary and you just want to inform the player of something important and can't use
+		 * other UI.  Use sparingly.
+		 *
+		 * @param filename The source code filename where this function was called
+		 * @param line The source code line number where this function was called
+		 * @param format The message to display
+		 */
+		void Information(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+
+
 		void Message(MessageType type, const char* message, const char* title = NULL);
 	}
 }
 
 // Make these available in the global namespace for compatibility
-using os::dialogs::LuaError;
-using os::dialogs::Error;
-using os::dialogs::Warning;
-using os::dialogs::ReleaseWarning;
-using os::dialogs::WarningEx;
+using os::dialogs::LuaError; //NOLINT
+using os::dialogs::Error; //NOLINT
+using os::dialogs::Warning; //NOLINT
+using os::dialogs::ReleaseWarning; //NOLINT
+using os::dialogs::WarningEx; //NOLINT
+using os::dialogs::Information; //NOLINT
 
 #endif // _OSAPI_DIALOGS_H

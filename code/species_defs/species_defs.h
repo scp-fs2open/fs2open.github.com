@@ -64,24 +64,40 @@ public:
 	thrust_pair_bitmap thruster_tertiary_glow_info;
 	thrust_pair_bitmap thruster_distortion_info;
 
+	int warpin_params_index;
+	int warpout_params_index;
+
 	// the members below this comment are not parsed in species_defs.tbl
 
 	game_snd snd_flyby_fighter;
 	game_snd snd_flyby_bomber;
+	int borrows_flyby_sounds_species;
 
-	int bii_index[MIN_BRIEF_ICONS];
+	int bii_indices[MIN_BRIEF_ICONS];
+	int borrows_bii_index_species;   // species that this species borrows all of its briefing icons from, -1 if none
 
 	// countermeasures by species
 	char cmeasure_name[NAME_LENGTH];
 	int cmeasure_index;
 
+	// ditto for support ships - naomimyselfandi
+	char support_ship_name[NAME_LENGTH];
+	int support_ship_index;
+
 	species_info()
 	{
+		warpin_params_index = -1;
+		warpout_params_index = -1;
+
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
-			bii_index[i] = -1;
+			bii_indices[i] = -1;
 
 		cmeasure_name[0] = '\0';
 		cmeasure_index = -1;
+		support_ship_name[0] = '\0';
+		support_ship_index = -1;
+		borrows_bii_index_species = -1;
+		borrows_flyby_sounds_species = -1;
 	}
 };
 
@@ -91,5 +107,7 @@ extern SCP_vector<species_info> Species_info;
 // load up the species_defs.tbl into the correct data areas
 // IMPORTANT: If Num_species != 3, icons.tbl, asteroid.tbl, and sounds.tbl have to be modified to compensate!
 void species_init();
+
+int species_info_lookup(const char *species_name);
 
 #endif

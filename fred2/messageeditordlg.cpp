@@ -24,10 +24,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-// aww mumford
-bool is_blank_argument_op(int op_const);
-
-
 CMessageEditorDlg *Message_editor_dlg = NULL;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,7 +80,7 @@ BEGIN_MESSAGE_MAP(CMessageEditorDlg, CDialog)
 	ON_NOTIFY(NM_RCLICK, IDC_TREE, OnRclickTree)
 	ON_NOTIFY(TVN_BEGINLABELEDIT, IDC_TREE, OnBeginlabeleditTree)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_TREE, OnEndlabeleditTree)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -130,8 +126,8 @@ BOOL CMessageEditorDlg::OnInitDialog()
 	box = (CComboBox *)GetDlgItem(IDC_PERSONA_NAME);
 	box->ResetContent();
 	box->AddString("<None>");
-	for (i = 0; i < Num_personas; i++ )
-		box->AddString( Personas[i].name );
+	for (const auto &persona: Personas)
+		box->AddString(persona.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_SENDER);
 	for (i=0; i<MAX_SHIPS; i++)
@@ -213,12 +209,15 @@ void CMessageEditorDlg::OnOK()
 {
 }
 
-void CMessageEditorDlg::OnOk()
+void CMessageEditorDlg::OnButtonOk()
 {
 	update(m_cur_msg);
+
 	theApp.record_window_data(&Messages_wnd_data, this);
 	delete Message_editor_dlg;
 	Message_editor_dlg = NULL;
+
+	FREDDoc_ptr->autosave("message editor");
 }
 
 void CMessageEditorDlg::OnCancel()
@@ -291,27 +290,29 @@ void CMessageEditorDlg::update_cur_message()
 
 int CMessageEditorDlg::find_event()
 {
-	char *str;
+	const char *str;
 	int i, formula, node;
 	CComboBox *box;
 
-	for (i=0; i<Num_mission_events; i++) {
+	for (i=0; i<(int)Mission_events.size(); i++) {
 		node = Mission_events[i].formula;
 		Assertion(node >= 0, "Can't have a formula point to sexp node -1!");
 
-		if ( get_operator_const(CTEXT(node)) == OP_WHEN || get_operator_const(CTEXT(node)) == OP_EVERY_TIME
-			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT
-			|| get_operator_const(CTEXT(node)) == OP_IF_THEN_ELSE || get_operator_const(CTEXT(node)) == OP_PERFORM_ACTIONS )
+		int op_const = get_operator_const(node);
+		if (op_const == OP_WHEN || op_const == OP_EVERY_TIME
+			|| op_const == OP_WHEN_ARGUMENT || op_const == OP_EVERY_TIME_ARGUMENT
+			|| op_const == OP_IF_THEN_ELSE || op_const == OP_SWITCH
+			|| op_const == OP_PERFORM_ACTIONS_BOOL_FIRST || op_const == OP_PERFORM_ACTIONS_BOOL_LAST )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
-			if (is_blank_argument_op(get_operator_const(CTEXT(node))))
+			if (is_when_argument_op(op_const))
 				node = CDR(node);
 
 			node = CDR(node);
 			formula = CAR(node);  // bool conditional
 			if (CDR(CDR(node)) == -1) {  // only 1 action
 				node = CADR(node);
-				if ((get_operator_const(CTEXT(node)) == OP_SEND_MESSAGE) && !stricmp(CTEXT(CDR(CDR(CDR(node)))), m_message_name)) {
+				if ((get_operator_const(node) == OP_SEND_MESSAGE) && !stricmp(CTEXT(CDDDR(node)), m_message_name)) {
 					box = (CComboBox *) GetDlgItem(IDC_SENDER);
 					str = CTEXT(CDR(node));
 					m_sender = box->FindStringExact(-1, str);
@@ -319,7 +320,7 @@ int CMessageEditorDlg::find_event()
 						m_sender = 0;
 
 					box = (CComboBox *) GetDlgItem(IDC_PRIORITY);
-					str = CTEXT(CDR(CDR(node)));
+					str = CTEXT(CDDR(node));
 					m_priority = box->FindStringExact(-1, str);
 					if (m_priority == CB_ERR)
 						m_priority = 0;
@@ -409,13 +410,8 @@ int CMessageEditorDlg::update(int num)
 			if (m_event_num >= 0) {  // need to delete event
 				i = m_event_num;
 				free_sexp2(Mission_events[i].formula);
-				Assert(i < Num_mission_events);
-				while (i < Num_mission_events - 1) {
-					Mission_events[i] = Mission_events[i + 1];
-					i++;
-				}
-
-				Num_mission_events--;
+				Assert(i < (int)Mission_events.size());
+				Mission_events.erase(Mission_events.begin() + i);
 				m_event_num = -1;
 			}
 
@@ -424,22 +420,9 @@ int CMessageEditorDlg::update(int num)
 				free_sexp2(Mission_events[m_event_num].formula);
 			
 			else {
-				if (Num_mission_events == MAX_MISSION_EVENTS) {
-					MessageBox("You have reached the limit on mission events.\n"
-						"Can't add an event to send this message.");
-
-					goto exit;
-				}
-
-				Assert(Num_mission_events < MAX_MISSION_EVENTS);
-				m_event_num = Num_mission_events++;
-				string_copy(Mission_events[m_event_num].name, m_message_name, NAME_LENGTH - 1);
-				Mission_events[m_event_num].repeat_count = 1;
-				Mission_events[m_event_num].interval = 1;
-				Mission_events[m_event_num].score = 0;
-				Mission_events[m_event_num].chain_delay = -1;
-				Mission_events[m_event_num].objective_text = NULL;
-				Mission_events[m_event_num].objective_key_text = NULL;
+				Mission_events.emplace_back();
+				m_event_num = (int)Mission_events.size() - 1;
+				Mission_events[m_event_num].name = m_message_name;
 			}
 
 			fnode = m_tree.save_tree();
@@ -457,7 +440,6 @@ int CMessageEditorDlg::update(int num)
 		}
 	}
 
-exit:
 	if (query_modified())
 		set_modified();
 
@@ -522,7 +504,7 @@ void CMessageEditorDlg::OnClose()
 			return;
 
 		if (z == IDYES) {
-			OnOK();
+			OnButtonOk();
 			return;
 		}
 	}

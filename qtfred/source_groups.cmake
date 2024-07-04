@@ -1,0 +1,283 @@
+
+set(source_files)
+
+add_file_folder("Source"
+    src/AssociatedPlainTextDocument.h
+    src/CheckedDataListModel.h
+    src/FredApplication.cpp
+    src/FredApplication.h
+    src/fredstubs.cpp
+    src/main.cpp
+    src/util.cpp
+    src/util.h
+)
+
+if (WIN32)
+    add_file_folder("Source"
+        src/qmain.cpp
+    )
+endif()
+
+add_file_folder("Source/Mission"
+    src/mission/Editor.cpp
+	src/mission/EditorWing.cpp
+    src/mission/Editor.h
+    src/mission/EditorViewport.cpp
+    src/mission/EditorViewport.h
+    src/mission/FredRenderer.cpp
+    src/mission/FredRenderer.h
+    src/mission/IDialogProvider.h
+    src/mission/management.cpp
+    src/mission/management.h
+	src/mission/missionsave.cpp
+	src/mission/missionsave.h
+    src/mission/object.cpp
+    src/mission/object.h
+    src/mission/util.cpp
+    src/mission/util.h
+)
+
+add_file_folder("Source/Mission/Dialogs"
+    src/mission/dialogs/AbstractDialogModel.cpp
+    src/mission/dialogs/AbstractDialogModel.h
+	src/mission/dialogs/AsteroidEditorDialogModel.cpp
+	src/mission/dialogs/AsteroidEditorDialogModel.h
+	src/mission/dialogs/CampaignEditorDialogModel.cpp
+	src/mission/dialogs/CampaignEditorDialogModel.h
+	src/mission/dialogs/CommandBriefingDialogModel.cpp
+	src/mission/dialogs/CommandBriefingDialogModel.h
+	src/mission/dialogs/CustomWingNamesDialogModel.cpp
+	src/mission/dialogs/CustomWingNamesDialogModel.h
+    src/mission/dialogs/FictionViewerDialogModel.cpp
+    src/mission/dialogs/FictionViewerDialogModel.h
+	src/mission/dialogs/FormWingDialogModel.cpp
+	src/mission/dialogs/FormWingDialogModel.h
+	src/mission/dialogs/LoadoutEditorDialogModel.cpp
+	src/mission/dialogs/LoadoutEditorDialogModel.h
+	src/mission/dialogs/MissionGoalsDialogModel.cpp
+	src/mission/dialogs/MissionGoalsDialogModel.h
+	src/mission/dialogs/MissionSpecDialogModel.cpp
+	src/mission/dialogs/MissionSpecDialogModel.h
+	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
+	src/mission/dialogs/ObjectOrientEditorDialogModel.h
+	src/mission/dialogs/ReinforcementsEditorDialogModel.cpp	
+	src/mission/dialogs/ReinforcementsEditorDialogModel.h	
+	src/mission/dialogs/SelectionDialogModel.cpp
+	src/mission/dialogs/SelectionDialogModel.h
+	src/mission/dialogs/ShieldSystemDialogModel.cpp
+	src/mission/dialogs/ShieldSystemDialogModel.h
+	src/mission/dialogs/WaypointEditorDialogModel.cpp
+	src/mission/dialogs/WaypointEditorDialogModel.h
+)
+add_file_folder("Source/Mission/Dialogs/ShipEditor"
+	src/mission/dialogs/ShipEditor/ShipEditorDialogModel.h
+	src/mission/dialogs/ShipEditor/ShipEditorDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipInitialStatusDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipInitialStatusDialogModel.h
+	src/mission/dialogs/ShipEditor/ShipGoalsDialogModel.h
+	src/mission/dialogs/ShipEditor/ShipGoalsDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipFlagsDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipFlagsDialogModel.h
+	src/mission/dialogs/ShipEditor/PlayerOrdersDialogModel.h
+	src/mission/dialogs/ShipEditor/PlayerOrdersDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipSpecialStatsDialogModel.h
+	src/mission/dialogs/ShipEditor/ShipSpecialStatsDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.h
+	src/mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.cpp
+	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.h
+	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.h
+)
+
+add_file_folder("Source/UI"
+    src/ui/FredView.cpp
+    src/ui/FredView.h
+    src/ui/QtGraphicsOperations.cpp
+    src/ui/QtGraphicsOperations.h
+)
+
+add_file_folder("Source/UI/Dialogs"
+	src/ui/dialogs/AboutDialog.cpp
+	src/ui/dialogs/AboutDialog.h
+	src/ui/dialogs/AsteroidEditorDialog.cpp
+	src/ui/dialogs/AsteroidEditorDialog.h
+	src/ui/dialogs/BackgroundEditorDialog.h
+	src/ui/dialogs/BackgroundEditorDialog.cpp
+    src/ui/dialogs/BriefingEditorDialog.cpp
+    src/ui/dialogs/BriefingEditorDialog.h
+	src/ui/dialogs/CampaignEditorDialog.h
+	src/ui/dialogs/CampaignEditorDialog.cpp
+	src/ui/dialogs/CommandBriefingDialog.cpp
+	src/ui/dialogs/CommandBriefingDialog.h
+	src/ui/dialogs/CustomWingNamesDialog.cpp
+	src/ui/dialogs/CustomWingNamesDialog.h
+    src/ui/dialogs/EventEditorDialog.cpp
+    src/ui/dialogs/EventEditorDialog.h
+	src/ui/dialogs/FictionViewerDialog.cpp
+	src/ui/dialogs/FictionViewerDialog.h
+	src/ui/dialogs/FormWingDialog.cpp
+	src/ui/dialogs/FormWingDialog.h
+	src/ui/dialogs/LoadoutDialog.cpp	
+	src/ui/dialogs/LoadoutDialog.h
+	src/ui/dialogs/MissionGoalsDialog.cpp
+	src/ui/dialogs/MissionGoalsDialog.h
+	src/ui/dialogs/MissionSpecDialog.cpp
+	src/ui/dialogs/MissionSpecDialog.h
+	src/ui/dialogs/ObjectOrientEditorDialog.cpp
+	src/ui/dialogs/ObjectOrientEditorDialog.h
+	src/ui/dialogs/ReinforcementsEditorDialog.cpp
+	src/ui/dialogs/ReinforcementsEditorDialog.h
+	src/ui/dialogs/SelectionDialog.cpp
+	src/ui/dialogs/SelectionDialog.h
+	src/ui/dialogs/ShieldSystemDialog.h
+	src/ui/dialogs/ShieldSystemDialog.cpp
+	src/ui/dialogs/VoiceActingManager.h
+	src/ui/dialogs/VoiceActingManager.cpp
+	src/ui/dialogs/WaypointEditorDialog.cpp
+	src/ui/dialogs/WaypointEditorDialog.h
+)
+add_file_folder("Source/UI/Dialogs/ShipEditor"
+	src/ui/dialogs/ShipEditor/ShipEditorDialog.h
+	src/ui/dialogs/ShipEditor/ShipEditorDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipInitialStatusDialog.h
+	src/ui/dialogs/ShipEditor/ShipInitialStatusDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipGoalsDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipGoalsDialog.h
+	src/ui/dialogs/ShipEditor/ShipFlagsDialog.h
+	src/ui/dialogs/ShipEditor/ShipFlagsDialog.cpp
+	src/ui/dialogs/ShipEditor/PlayerOrdersDialog.h
+	src/ui/dialogs/ShipEditor/PlayerOrdersDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipSpecialStatsDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipSpecialStatsDialog.h
+	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.h
+	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipTBLViewer.h
+	src/ui/dialogs/ShipEditor/ShipTBLViewer.cpp
+	src/ui/dialogs/ShipEditor/ShipPathsDialog.h
+	src/ui/dialogs/ShipEditor/ShipPathsDialog.cpp
+)
+
+add_file_folder("Source/UI/Util"
+	src/ui/util/menu.cpp
+	src/ui/util/menu.h
+	src/ui/util/SignalBlockers.cpp
+	src/ui/util/SignalBlockers.h
+)
+
+add_file_folder("Source/UI/Widgets"
+    src/ui/widgets/ColorComboBox.cpp
+    src/ui/widgets/ColorComboBox.h
+    src/ui/widgets/renderwidget.cpp
+    src/ui/widgets/renderwidget.h
+	src/ui/widgets/sexp_tree.cpp
+	src/ui/widgets/sexp_tree.h
+	src/ui/widgets/ShipFlagCheckbox.h
+	src/ui/widgets/ShipFlagCheckbox.cpp
+)
+
+add_file_folder("UI"
+	ui/AboutDialog.ui
+	ui/AsteroidEditorDialog.ui
+	ui/BackgroundEditor.ui
+	ui/BriefingEditorDialog.ui
+	ui/CampaignEditorDialog.ui
+	ui/CommandBriefingDialog.ui
+	ui/CustomWingNamesDialog.ui
+    ui/EventEditorDialog.ui
+	ui/FictionViewerDialog.ui
+	ui/FormWingDialog.ui
+    ui/FredView.ui
+	ui/LoadoutDialog.ui
+	ui/MissionGoalsDialog.ui
+	ui/MissionSpecDialog.ui
+	ui/ObjectOrientationDialog.ui
+	ui/ReinforcementsDialog.ui
+	ui/SelectionDialog.ui
+	ui/ShieldSystemDialog.ui
+	ui/VoiceActingManager.ui
+    ui/WaypointEditorDialog.ui
+	ui/ShipEditorDialog.ui
+	ui/ShipInitialStatus.ui
+	ui/ShipGoalsDialog.ui
+	ui/ShipSpecialStatsDialog.ui
+	ui/ShipFlagsDialog.ui
+	ui/PlayerOrdersDialog.ui
+	ui/ShipTextureReplacementDialog.ui
+	ui/ShipTBLViewer.ui
+	ui/ShipPathsDialog.ui
+)
+
+add_file_folder("Resources"
+    resources/resources.qrc
+)
+
+if (WIN32)
+    add_file_folder("Resources/Windows"
+        resources/win/qtfred.manifest
+        resources/win/qtfred.rc
+    )
+endif()
+
+add_file_folder("Resources/Images"
+    resources/images/bitmap1.png
+    resources/images/black_do.png
+    resources/images/bmp00001.png
+    resources/images/chained_directive.png
+    resources/images/chained.png
+    resources/images/constx.png
+    resources/images/constxy.png
+    resources/images/constxz.png
+    resources/images/consty.png
+    resources/images/constyz.png
+    resources/images/constz.png
+    resources/images/cursor_rotate.png
+    resources/images/data00.png
+    resources/images/data05.png
+    resources/images/data10.png
+    resources/images/data15.png
+    resources/images/data20.png
+    resources/images/data25.png
+    resources/images/data30.png
+    resources/images/data35.png
+    resources/images/data40.png
+    resources/images/data45.png
+    resources/images/data50.png
+    resources/images/data55.png
+    resources/images/data60.png
+    resources/images/data65.png
+    resources/images/data70.png
+    resources/images/data75.png
+    resources/images/data80.png
+    resources/images/data85.png
+    resources/images/data90.png
+    resources/images/data95.png
+    resources/images/data.png
+    resources/images/fred_app.png
+    resources/images/fred_debug.png
+    resources/images/freddoc.ico
+    resources/images/fred.ico
+    resources/images/fredknows.png
+    resources/images/fred_splash.png
+    resources/images/green_do.png
+    resources/images/orbitsel.png
+    resources/images/play.png
+    resources/images/root_directive.png
+    resources/images/root.png
+    resources/images/rotlocal.png
+    resources/images/selectlist.png
+    resources/images/selectlock.png
+    resources/images/selectmove.png
+    resources/images/select.png
+    resources/images/selectrot.png
+    resources/images/showdist.png
+    resources/images/splash.png
+    resources/images/toolbar1.png
+    resources/images/toolbar.png
+    resources/images/V_fred.ico
+    resources/images/variable.png
+    resources/images/wingdisband.png
+    resources/images/wingform.png
+    resources/images/zoomext.png
+    resources/images/zoomsel.png
+)

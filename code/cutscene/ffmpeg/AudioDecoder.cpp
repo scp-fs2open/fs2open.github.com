@@ -6,7 +6,7 @@ namespace {
 const int OUT_CH_LAYOUT = AV_CH_LAYOUT_STEREO;
 const int OUT_SAMPLE_RATE = 48000;
 const AVSampleFormat OUT_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
-const int OUT_NUM_CHANNELS = av_get_channel_layout_nb_channels(OUT_CH_LAYOUT);
+const int OUT_NUM_CHANNELS = av_popcount64(OUT_CH_LAYOUT);
 
 const int DEFAULT_SRC_NUM_SAMPLES = 1024;
 
@@ -55,6 +55,9 @@ int resample_convert(SwrContext* ctx, uint8_t** output,
 #ifdef WITH_LIBAV
 	return avresample_convert(ctx, output, out_plane_size, out_samples, input, in_plane_size, in_samples);
 #else
+	(void)out_plane_size;
+	(void)in_plane_size;
+
 	return swr_convert(ctx, output, out_samples, (const uint8_t**) input, in_samples);
 #endif
 }
@@ -123,7 +126,7 @@ void AudioDecoder::handleDecodedFrame(AVFrame* frame) {
 		auto ret = av_samples_alloc(m_outData, &m_outLinesize, OUT_NUM_CHANNELS, m_outNumSamples,
 									OUT_SAMPLE_FORMAT, 1);
 		if (ret < 0) {
-			mprintf(("FFMPEG: Failed to allocate samples!!!"));
+			mprintf(("FFMPEG: Failed to allocate samples!!!\n"));
 			return;
 		}
 
@@ -219,6 +222,9 @@ void AudioDecoder::finishDecoding() {
 
 	// Push the last bits of audio data into the queue
 	flushAudioBuffer();
+}
+void AudioDecoder::flushBuffers() {
+	avcodec_flush_buffers(m_status->audioCodecCtx);
 }
 }
 }

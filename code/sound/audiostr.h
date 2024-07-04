@@ -38,12 +38,15 @@ void audiostream_close();
 // Opens a wave file but doesn't play it.
 int audiostream_open( const char * filename, int type );
 
+// Opens wave file contents previously loaded into memory but doesn't play them.
+int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type );
+
 // Closes the opened wave file.  This doesn't have to be
 // called between songs, because when you open the next
 // song, it will call this internally.
-void audiostream_close_file(int i, int fade = 1);
+void audiostream_close_file(int i, bool fade = true);
 
-void audiostream_close_all(int fade);
+void audiostream_close_all(bool fade);
 
 // Plays the currently opened wave file
 void audiostream_play(int i, float volume = -1.0f, int looping = 1);
@@ -62,6 +65,9 @@ void audiostream_set_volume(int i, float volume);
 
 // see if a particular stream is paused
 int audiostream_is_paused(int i);
+
+// get duration of a stream in seconds
+double audiostream_get_duration(int i);
 
 // set the number of samples that the sound should cutoff after
 void audiostream_set_sample_cutoff(int i, unsigned int cutoff);

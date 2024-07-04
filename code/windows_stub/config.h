@@ -5,7 +5,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include <stdio.h>
+#include <cstdio>
 
 
 #include <SDL.h>
@@ -29,17 +29,19 @@
 
 #if defined _WIN32
 
-#include <direct.h> // for _mkdir, ...
-
-#ifndef snprintf
-#define snprintf _snprintf
-#endif
+#include "basetsd.h"
 
 #ifndef filelength
 #define filelength _filelength
 #endif
 
+#define strtok_r strtok_s
+
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in " __FILE__ " at line %d\n", __FUNCTION__, __LINE__))
+
+#define SOCKLEN_T int
+
+#define NETCALL_WOULDBLOCK(err) (err == WSAEWOULDBLOCK)
 
 #else  // ! Win32
 
@@ -57,6 +59,8 @@
 #define SOCKET			int
 #define SOCKADDR		struct sockaddr
 #define SOCKADDR_IN		struct sockaddr_in
+#define SOCKADDR_IN6	struct sockaddr_in6
+#define SOCKADDR_STORAGE	struct sockaddr_storage
 #define LPSOCKADDR		struct sockaddr*
 #define HOSTENT			struct hostent
 #define SERVENT			struct servent
@@ -73,9 +77,16 @@
 #define SOCKET_ERROR	(-1)
 #define ioctlsocket(x, y, z)	ioctl(x, y, z)
 
+#define NETCALL_WOULDBLOCK(err) (err == EAGAIN || err == EINPROGRESS)
+
+#define WSAGetLastError()  (errno)
+
 #ifndef INVALID_SOCKET
-#define INVALID_SOCKET ((SOCKET) -1)
+#define INVALID_SOCKET	(-1)
 #endif
+
+#define SOCKLEN_T socklen_t
+#define SSIZE_T ssize_t
 
 // file related items
 #define _MAX_FNAME					255
@@ -87,7 +98,7 @@ int filelength(int fd);
 int _chdir(const char *path);
 int _getcwd(char *buffer, unsigned int len);
 int _mkdir(const char *path);
-void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
+void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext);
 
 // other stuff
 #define _hypot(x, y)  hypot(x, y)

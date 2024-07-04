@@ -3,12 +3,13 @@
 
 #include "FSTestFixture.h"
 
-#include <osapi/outwnd.h>
 #include <cmdline/cmdline.h>
 #include <graphics/2d.h>
-#include <ship/ship.h>
 #include <io/timer.h>
 #include <localization/localize.h>
+#include <mod_table/mod_table.h>
+#include <osapi/outwnd.h>
+#include <ship/ship.h>
 
 test::FSTestFixture::FSTestFixture(uint64_t init_flags) : testing::Test(), _initFlags(init_flags) {
 	addCommandlineArg("-parse_cmdline_only");
@@ -23,10 +24,10 @@ void test::FSTestFixture::SetUp() {
 
 	timer_init();
 
-#ifndef NDEBUG
-	outwnd_init();
-	mprintf(("TEST: Setting up test '%s.%s'\n", currentTest->test_case_name(), currentTest->name()));
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+		mprintf(("TEST: Setting up test '%s.%s'\n", currentTest->test_case_name(), currentTest->name()));
+	}
 
 	os_init("Test", "Test");
 
@@ -39,12 +40,24 @@ void test::FSTestFixture::SetUp() {
 			FAIL() << "Cfile init failed!";
 		}
 
+		if (_initFlags & INIT_MOD_TABLE) {
+			mod_table_init();        // load in all the mod dependent settings
+		}
+
 		lcl_init(-1);
 		lcl_xstr_init();
+
+		if (_initFlags & INIT_MOD_TABLE) {
+			mod_table_init(); // load in all the mod dependent settings
+		}
 
 		if (_initFlags & INIT_GRAPHICS) {
 			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
 				FAIL() << "Graphics init failed!";
+			}
+
+			if (_initFlags & INIT_FONTS) {
+				font::init();
 			}
 		}
 
@@ -60,11 +73,20 @@ void test::FSTestFixture::TearDown() {
 		}
 
 		if (_initFlags & INIT_GRAPHICS) {
+			if (_initFlags & INIT_FONTS) {
+				font::close();
+			}
+
 			io::mouse::CursorManager::shutdown();
 
 			bm_unload_all();
 
 			gr_close();
+		}
+
+		if (_initFlags & INIT_MOD_TABLE) {
+			// Reset mod settings again so that subsequent tests don't get broken
+			mod_table_reset();
 		}
 
 		cfile_close();
@@ -76,9 +98,9 @@ void test::FSTestFixture::TearDown() {
 
 	os_cleanup();
 
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 
 	// although the comment in cmdline.cpp said this isn't needed,
 	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner

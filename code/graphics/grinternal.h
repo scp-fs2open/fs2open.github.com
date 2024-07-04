@@ -13,7 +13,9 @@
 
 #include "globalincs/globals.h" // just in case pstypes.h messed up
 #include "globalincs/pstypes.h" // IAM_64BIT
+
 #include "graphics/font.h"
+#include "graphics/post_processing.h"
 
 extern ubyte Gr_original_palette[768];		// The palette 
 extern ubyte Gr_current_palette[768];
@@ -41,7 +43,9 @@ extern color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
 extern color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_current_alpha;
 
 extern float Gr_gamma;
-extern int Gr_gamma_int;
+
+extern bool Rendering_to_shadow_map;
+extern bool Scene_framebuffer_in_frame;
 
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.
@@ -49,6 +53,7 @@ extern int Gr_gamma_int;
 #define TCACHE_TYPE_INTERFACE				3		// for graphics that are using in the interface (for special filtering or sizing)
 #define TCACHE_TYPE_COMPRESSED				4		// Compressed bitmap type (DXT1, DXT3, DXT5)
 #define TCACHE_TYPE_CUBEMAP					5
+#define TCACHE_TYPE_3DTEX					6		// True 3D-Texture
 
 #define NEBULA_COLORS 20
 
@@ -69,10 +74,10 @@ typedef enum gr_zbuffer_type {
 	ZBUFFER_TYPE_DEFAULT
 } gr_zbuffer_type;
 
-typedef enum gr_stencil_type {
-    STENCIL_TYPE_NONE,
-    STENCIL_TYPE_READ,
-    STENCIL_TYPE_WRITE
-} gr_stencil_type;
+namespace graphics {
+
+extern std::unique_ptr<PostProcessingManager> Post_processing_manager;
+
+}
 
 #endif

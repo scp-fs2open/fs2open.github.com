@@ -13,17 +13,18 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "DumpStats.h"
-#include "starfield/starfield.h"
-#include "nebula/neb.h"
+#include "asteroid/asteroid.h"
 #include "cfile/cfile.h"
+#include "gamesnd/eventmusic.h"
 #include "globalincs/linklist.h"
+#include "jumpnode/jumpnode.h"
+#include "math/bitarray.h"
+#include "mission/missiongoals.h"
+#include "nebula/neb.h"
 #include "object/object.h"
 #include "object/waypoint.h"
-#include "jumpnode/jumpnode.h"
-#include "mission/missiongoals.h"
-#include "gamesnd/eventmusic.h"
-#include "asteroid/asteroid.h"
 #include "species_defs/species_defs.h"
+#include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
 #ifdef _DEBUG
@@ -137,7 +138,7 @@ void DumpStats::get_mission_stats(CString &buffer)
 	temp.Format("Filename: %s\r\n", Mission_filename);
 	buffer += temp;
 
-	temp.Format("Author: %s\r\n", The_mission.author);
+	temp.Format("Author: %s\r\n", The_mission.author.c_str());
 	buffer += temp;
 
 	temp.Format("Description: %s\r\n", The_mission.mission_desc);
@@ -190,7 +191,6 @@ void DumpStats::get_mission_stats(CString &buffer)
 void DumpStats::get_background_stats(CString &buffer)
 {
 	CString temp;
-	int i;
 
 	// Background
 	buffer += "\r\n\tBACKGROUND INFO\r\n";
@@ -203,7 +203,7 @@ void DumpStats::get_background_stats(CString &buffer)
 	temp.Format("Num_suns: %d\r\n", stars_get_num_suns());
 	buffer += temp;
 	
-	for (i=0; i<stars_get_num_suns(); i++) {
+	for (int i=0; i<stars_get_num_suns(); i++) {
 		temp.Format("\tSun%d bitmap name: %s\r\n", i, stars_get_sun_name(i));
 		buffer += temp;
 		//temp.Format("Sun%d glow name: %s\r\n", i, Suns[i].glow_filename);
@@ -214,7 +214,7 @@ void DumpStats::get_background_stats(CString &buffer)
 	temp.Format("Num_starfield_bitmaps: %d\r\n", stars_get_num_bitmaps());
 	buffer += temp;
 
-	for (i=0; i<stars_get_num_bitmaps(); i++) {
+	for (int i=0; i<stars_get_num_bitmaps(); i++) {
 		temp.Format("\tStarfield%d bitmap name: %s\r\n", i, stars_get_bitmap_name(i));
 		buffer += temp;
 	}
@@ -242,12 +242,9 @@ void DumpStats::get_background_stats(CString &buffer)
 				temp.Format("\tShip Debris\r\n");
 				buffer += temp;
 
-				// species
-				temp.Format("\t\tSpecies: ");
-				for (i=0; i<(int)Species_info.size(); i++) {
-					if (Asteroid_field.field_debris_type[i] >= 0) {
-						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_DEBRIS_SIZES) - 1].species_name) + " ";
-					}
+				temp.Format("\t\tTypes: ");
+				for (size_t j = 0; j < Asteroid_field.field_debris_type.size(); j++) {
+					temp += CString(Asteroid_info[Asteroid_field.field_debris_type[j]].name) + ", ";
 				}
 
 				temp += "\r\n";
@@ -273,9 +270,9 @@ void DumpStats::get_background_stats(CString &buffer)
 		buffer += temp;
 
 		// list of poofs
-		for (i=0; i<MAX_NEB2_POOFS; i++) {
-			if ( Neb2_poof_flags & (1<<i) ) {
-				temp.Format("\tNebula poof: %s\r\n", Neb2_poof_filenames[i]);
+		for (size_t i=0; i<Poof_info.size(); i++) {
+			if (get_bit(Neb2_poof_flags.get(), i)) {
+				temp.Format("\tNebula poof: %s\r\n", Poof_info[i].name);
 				buffer += temp;
 			}
 		}
@@ -287,7 +284,7 @@ void DumpStats::get_background_stats(CString &buffer)
 		}
 	} else {
 		// FS! nebula pattern
-		if (Nebula_index > 0) {
+		if (Nebula_index >= 0) {
 			temp.Format("\tOld style FS1 nebula filename: %s\r\n", Nebula_filenames[Nebula_index]);
 			buffer += temp;
 		}
@@ -384,11 +381,10 @@ void DumpStats::get_object_stats(CString &buffer)
 	size_t total_waypoints = 0;
 	buffer += "\r\nWAYPOINTS\r\n";
 
-	SCP_list<waypoint_list>::iterator ii;
-	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-		temp.Format("\tWaypoint: %s, count: %d\r\n", ii->get_name(), ii->get_waypoints().size());
+	for (const auto &ii: Waypoint_lists) {
+		temp.Format("\tWaypoint: %s, count: %d\r\n", ii.get_name(), ii.get_waypoints().size());
 		buffer += temp;
-		total_waypoints += ii->get_waypoints().size();
+		total_waypoints += ii.get_waypoints().size();
 	}
 
 	if (total_waypoints > 0) {
@@ -470,20 +466,20 @@ void DumpStats::get_objectives_and_goals(CString &buffer)
 	buffer += "\r\nOBJECTIVES AND GOALS\r\n";
 
 	// objectives
-	for (i=0; i<Num_mission_events; i++) {
+	for (i=0; i<(int)Mission_events.size(); i++) {
 		// name, objective_text, objective_key_text
-		if ( Mission_events[i].objective_text == NULL ) {
+		if ( Mission_events[i].objective_text.empty() ) {
 			continue;
 		}
-		temp.Format("\tObjective: %s,  text: %s,  key_text: %s\r\n", Mission_events[i].name, Mission_events[i].objective_text, Mission_events[i].objective_key_text);
+		temp.Format("\tObjective: %s,  text: %s,  key_text: %s\r\n", Mission_events[i].name.c_str(), Mission_events[i].objective_text.c_str(), Mission_events[i].objective_key_text.c_str());
 		buffer += temp;
 	}
 
 	buffer += "\r\n";
 
 	// goals
-	for (i=0; i<Num_goals; i++) {
-		temp.Format("\tGoal: %s, text: %s", Mission_goals[i].name, Mission_goals[i].message);
+	for (i=0; i<(int)Mission_goals.size(); i++) {
+		temp.Format("\tGoal: %s, text: %s", Mission_goals[i].name.c_str(), Mission_goals[i].message.c_str());
 		buffer += temp;
 
 		switch(Mission_goals[i].type & GOAL_TYPE_MASK) {

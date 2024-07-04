@@ -38,128 +38,7 @@ Container& split(Container& result, const typename Container::value_type& s,
 }
 // Copy-Paste end
 
-// Copy-Paste from http://www.adp-gmbh.ch/cpp/common/base64.html
-/*
- base64.cpp and base64.h
-
- Copyright (C) 2004-2008 René Nyffenegger
-
- This source code is provided 'as-is', without any express or implied
- warranty. In no event will the author be held liable for any damages
- arising from the use of this software.
-
- Permission is granted to anyone to use this software for any purpose,
- including commercial applications, and to alter it and redistribute it
- freely, subject to the following restrictions:
-
- 1. The origin of this source code must not be misrepresented; you must not
- claim that you wrote the original source code. If you use this source code
- in a product, an acknowledgment in the product documentation would be
- appreciated but is not required.
-
- 2. Altered source versions must be plainly marked as such, and must not be
- misrepresented as being the original source code.
-
- 3. This notice may not be removed or altered from any source distribution.
-
- René Nyffenegger rene.nyffenegger@adp-gmbh.ch
-
- */
-
-static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz"
-        "0123456789+/";
-
-static inline bool is_base64(unsigned char c) {
-    return (isalnum(c) || (c == '+') || (c == '/'));
-}
-
-std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {
-    std::string ret;
-    int i = 0;
-    int j = 0;
-    unsigned char char_array_3[3];
-    unsigned char char_array_4[4];
-
-    while (in_len--) {
-        char_array_3[i++] = *(bytes_to_encode++);
-        if (i == 3) {
-            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-            char_array_4[3] = char_array_3[2] & 0x3f;
-
-            for (i = 0; (i < 4); i++)
-                ret += base64_chars[char_array_4[i]];
-            i = 0;
-        }
-    }
-
-    if (i) {
-        for (j = i; j < 3; j++)
-            char_array_3[j] = '\0';
-
-        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-        char_array_4[3] = char_array_3[2] & 0x3f;
-
-        for (j = 0; (j < i + 1); j++)
-            ret += base64_chars[char_array_4[j]];
-
-        while ((i++ < 3))
-            ret += '=';
-
-    }
-
-    return ret;
-
-}
-
-std::string base64_decode(std::string const& encoded_string) {
-    int in_len = encoded_string.size();
-    int i = 0;
-    int j = 0;
-    int in_ = 0;
-    unsigned char char_array_4[4], char_array_3[3];
-    std::string ret;
-
-    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
-        char_array_4[i++] = encoded_string[in_];
-        in_++;
-        if (i == 4) {
-            for (i = 0; i < 4; i++)
-                char_array_4[i] = base64_chars.find(char_array_4[i]);
-
-            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-            for (i = 0; (i < 3); i++)
-                ret += char_array_3[i];
-            i = 0;
-        }
-    }
-
-    if (i) {
-        for (j = i; j < 4; j++)
-            char_array_4[j] = 0;
-
-        for (j = 0; j < 4; j++)
-            char_array_4[j] = base64_chars.find(char_array_4[j]);
-
-        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-        for (j = 0; (j < i - 1); j++)
-            ret += char_array_3[j];
-    }
-
-    return ret;
-}
-// Copy-Paste end
-
+#include "utils/base64.h"
 
 /*
  Copyright (c) 2013 Eli2
@@ -176,6 +55,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
 #include "osapi/osapi.h"
+#include "osapi/osregistry.h"
 
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -183,8 +63,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "network/multi_pmsg.h"
 #include "network/multi_kick.h"
 #include "network/multi_endgame.h"
-
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 
 #include "mongoose.h"
 #include "jansson.h"
@@ -228,17 +107,10 @@ public:
 		passwd.assign(newPasswd);
 	}
 
-	virtual void execute()
-	{
+	void execute() override {
 		if (hasName) {
 			strcpy_s(Netgame.name, name.c_str());
 			strcpy_s(Multi_options_g.std_pname, name.c_str());
-			// update fs2netd with the info
-			if (MULTI_IS_TRACKER_GAME) {
-				fs2netd_gameserver_disconnect();
-				os_sleep(50);
-				fs2netd_gameserver_start();
-			}
 		}
 
 		if (hasPasswd) {
@@ -258,7 +130,7 @@ public:
             : mPlayerId(playerId) {
     }
 
-    virtual void execute() {
+	void execute() override {
         size_t foundPlayerIndex = MAX_PLAYERS;
         for (size_t idx = 0; idx < MAX_PLAYERS; idx++) {
             if (MULTI_CONNECTED(Net_players[idx])) {
@@ -278,14 +150,14 @@ private:
 
 class ShutdownServerCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         gameseq_post_event(GS_EVENT_QUIT_GAME);
     }
 };
 
 class UpdateMissionsCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         if (MULTI_IS_TRACKER_GAME) {
             // delete mvalid.cfg if it exists
             cf_delete(MULTI_VALID_MISSION_FILE, CF_TYPE_DATA);
@@ -298,15 +170,8 @@ public:
 
 class ResetGameCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         multi_quit_game(PROMPT_NONE);
-    }
-};
-
-class ResetFs2NetCommand: public WebapiCommand {
-public:
-    virtual void execute() {
-        fs2netd_reset_connection();
     }
 };
 
@@ -444,11 +309,11 @@ struct Resource {
     resourceHandler handler;
 };
 
-json_t* emptyResource(ResourceContext *context) {
+json_t* emptyResource(ResourceContext * /*context*/) {
     return json_object();
 }
 
-json_t* serverGet(ResourceContext *context) {
+json_t* serverGet(ResourceContext * /*context*/) {
     json_t *result = json_object();
 
     json_object_set_new(result, "name", json_string(Multi_options_g.std_pname));
@@ -469,10 +334,13 @@ json_t* serverPut(ResourceContext *context) {
 	if (passwd) {
 		changeCommand->setPasswd(passwd);
 	}
-	int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
-	if (framecap)
-	{
-		changeCommand->setFrameCap(framecap);
+	const char* frameCapValue = json_string_value(json_object_get(context->requestEntity, "framecap"));
+	if (frameCapValue != nullptr) {
+		int framecap = atoi(frameCapValue);
+		if (framecap)
+		{
+			changeCommand->setFrameCap(framecap);
+		}
 	}
 
 	webapiAddCommand(changeCommand);
@@ -480,27 +348,22 @@ json_t* serverPut(ResourceContext *context) {
 	return json_object();
 }
 
-json_t* serverDelete(ResourceContext *context) {
+json_t* serverDelete(ResourceContext * /*context*/) {
     webapiAddCommand(new ShutdownServerCommand());
     return json_object();
 }
 
-json_t* refreshMissions(ResourceContext *context) {
+json_t* refreshMissions(ResourceContext * /*context*/) {
     webapiAddCommand(new UpdateMissionsCommand());
     return json_object();
 }
 
-json_t* serverResetGame(ResourceContext *context) {
+json_t* serverResetGame(ResourceContext * /*context*/) {
     webapiAddCommand(new ResetGameCommand());
     return json_object();
 }
 
-json_t* fs2netReset(ResourceContext *context) {
-    webapiAddCommand(new ResetFs2NetCommand());
-    return json_object();
-}
-
-json_t* netgameInfoGet(ResourceContext *context) {
+json_t* netgameInfoGet(ResourceContext * /*context*/) {
     json_t *obj = json_object();
 
     json_object_set_new(obj, "name", json_string(webapi_netgameInfo.name));
@@ -517,7 +380,7 @@ json_t* netgameInfoGet(ResourceContext *context) {
     return obj;
 }
 
-json_t* missionGet(ResourceContext *context) {
+json_t* missionGet(ResourceContext * /*context*/) {
     json_t *fpsEntity = json_object();
 
     json_object_set_new(fpsEntity, "fps", json_real(webui_fps));
@@ -526,7 +389,7 @@ json_t* missionGet(ResourceContext *context) {
     return fpsEntity;
 }
 
-json_t* missionGoalsGet(ResourceContext *context) {
+json_t* missionGoalsGet(ResourceContext * /*context*/) {
     json_t *goals = json_array();
 
     for (std::list<mission_goal>::iterator iter = webuiMissionGoals.begin(); iter != webuiMissionGoals.end(); ++iter) {
@@ -534,8 +397,8 @@ json_t* missionGoalsGet(ResourceContext *context) {
 
         json_t *goalEntity = json_object();
 
-        json_object_set_new(goalEntity, "name", json_string(goal.name));
-        json_object_set_new(goalEntity, "message", json_string(goal.message));
+        json_object_set_new(goalEntity, "name", json_string(goal.name.c_str()));
+        json_object_set_new(goalEntity, "message", json_string(goal.message.c_str()));
         json_object_set_new(goalEntity, "score", json_integer(goal.score));
         json_object_set_new(goalEntity, "team", json_integer(goal.team));
 
@@ -579,7 +442,7 @@ json_t* missionGoalsGet(ResourceContext *context) {
     return goals;
 }
 
-json_t* playerGet(ResourceContext *context) {
+json_t* playerGet(ResourceContext * /*context*/) {
     json_t *playerList = json_array();
 
     for (std::map<short, net_player>::iterator iter = webapiNetPlayers.begin(); iter != webapiNetPlayers.end();
@@ -708,7 +571,6 @@ struct Resource resources[] = {
     { "api/1/server", "DELETE", &serverDelete },
     { "api/1/server/refreshMissions", "GET", &refreshMissions },
     { "api/1/server/resetGame", "GET", &serverResetGame },
-    { "api/1/server/fs2net/reset", "GET", &fs2netReset },
     { "api/1/netgameInfo", "GET", &netgameInfoGet },
     { "api/1/mission", "GET", &missionGet },
     { "api/1/mission/goals", "GET", &missionGoalsGet },
@@ -840,7 +702,10 @@ void webapi_shutdown() {
 }
 
 void std_init_standalone() {
-    atexit(webapi_shutdown);
+}
+
+void std_deinit_standalone() {
+	webapi_shutdown();
 }
 
 void std_configLoaded(multi_global_options *options) {
@@ -861,7 +726,7 @@ void std_configLoaded(multi_global_options *options) {
     webserverContext = mg_start(&webserverCallback, NULL, mgOptions);
 }
 
-void std_add_chat_text(const char *text, int player_index, int add_id) {
+void std_add_chat_text(const char *text, int  /*player_index*/, int  /*add_id*/) {
 
     json_t *msg = json_object();
     //json_object_set_new(msg, "source",    json_string(Net_players[player_index].m_player->callsign));
@@ -925,7 +790,7 @@ void std_do_gui_frame() {
     webui_missiontime = f2fl(Missiontime);
 
     webuiMissionGoals.clear();
-    for (int idx = 0; idx < Num_goals; idx++) {
+    for (int idx = 0; idx < (int)Mission_goals.size(); idx++) {
         webuiMissionGoals.push_back(Mission_goals[idx]);
     }
 
@@ -947,41 +812,53 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy_s(Netgame.name,name);
-
-		// update fs2netd
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_disconnect();
-			os_sleep(50);
-			fs2netd_gameserver_start();
-		}
 	}
+}
+
+// notify the user that the standalone has failed to login to the tracker on startup
+void std_tracker_notify_login_fail()
+{
+}
+
+// attempt to log the standalone into the tracker
+void std_tracker_login()
+{
+	if ( !Multi_options_g.pxo ) {
+		return;
+	}
+
+	multi_fs_tracker_init();
+
+	if ( !multi_fs_tracker_inited() ) {
+		std_tracker_notify_login_fail();
+		return;
+	}
+
+	multi_fs_tracker_login_freespace();
 }
 
 /**
  * Unused methods from the original API below,
  * most of this stuff is now done in std_do_gui_frame
  */
-void std_add_player(net_player *p) {}
+void std_add_player(net_player * /*p*/) {}
 /* The return value does nothing, except cause the two functions below to be called*/
-int std_remove_player(net_player *p) {return 0;}
+int std_remove_player(net_player * /*p*/) {return 0;}
 void std_connect_set_host_connect_status() {}
 int std_connect_set_connect_count() {return 0;}
-void std_update_player_ping(net_player *p) {}
+void std_update_player_ping(net_player * /*p*/) {}
 void std_multi_setup_goal_tree() {}
 void std_multi_add_goals() {}
 void std_multi_update_goals() {}
 void std_multi_update_netgame_info_controls() {}
-void std_multi_set_standalone_mission_name(char *mission_name) {}
-void std_gen_set_text(const char *str, int field_num) {}
-void std_create_gen_dialog(const char *title) {}
+void std_multi_set_standalone_mission_name(char * /*mission_name*/) {}
+void std_gen_set_text(const char * /*str*/, int  /*field_num*/) {}
+void std_create_gen_dialog(const char * /*title*/) {}
 void std_destroy_gen_dialog() {}
 int std_gen_is_active() {return 0;}
-void std_debug_set_standalone_state_string(const char *str) {}
+void std_debug_set_standalone_state_string(const char * /*str*/) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
-void std_multi_set_standalone_missiontime(float mission_time) {}
-
-// stub - not required for *nix standalone
-void std_init_os() {}
+void std_multi_set_standalone_missiontime(float  /*mission_time*/) {}
 
 #endif

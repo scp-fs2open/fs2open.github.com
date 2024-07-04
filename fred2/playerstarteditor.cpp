@@ -17,6 +17,7 @@
 #include "object/object.h"
 #include "Management.h"
 #include "weapon/weapon.h"
+#include "checkboxlistdlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -32,6 +33,7 @@ player_start_editor::player_start_editor(CWnd* pParent) : CDialog(player_start_e
 	m_delay = 0;	
 	m_weapon_pool = 0;
 	m_ship_pool = 0;
+	m_validation_toggle = FALSE;
 	//}}AFX_DATA_INIT
 
 	selected_team = 0;
@@ -58,6 +60,7 @@ void player_start_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_DELAY, m_delay);	
 	DDX_Text(pDX, IDC_SHIP_POOL, m_ship_pool);
 	DDX_Text(pDX, IDC_WEAPON_POOL, m_weapon_pool);
+	DDX_Check(pDX, IDC_PAD_TOGGLE, m_validation_toggle);
 	//}}AFX_DATA_MAP
 }
 
@@ -75,6 +78,8 @@ BEGIN_MESSAGE_MAP(player_start_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_SHIP_VARIABLES_COMBO, OnSelchangeShipVariablesCombo)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_WEAPON_VARIABLES_COMBO, OnSelchangeWeaponVariablesCombo)
+	ON_BN_CLICKED(IDC_REQUIRED_WEAPONS, OnRequiredWeapons)
+	ON_BN_CLICKED(IDC_PAD_TOGGLE, OnSelValidationToggle)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -85,7 +90,7 @@ END_MESSAGE_MAP()
 BOOL player_start_editor::OnInitDialog() 
 {
 	int i, j;
-	int idx;	
+	int idx;
 
 	// initialize ship pool data
 	memset(static_ship_pool, -1, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
@@ -160,10 +165,13 @@ BOOL player_start_editor::OnInitDialog()
 		}
 	}
 
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		validation_toggle[i] = Team_data[i].do_not_validate;
+	}
+
 	// initialise the ship and weapon usage list
 	memset(ship_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
 	memset(weapon_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_WEAPON_TYPES);
-
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
 		for (i=0; i<MAX_TVT_TEAMS; i++) {
@@ -178,7 +186,12 @@ BOOL player_start_editor::OnInitDialog()
 			generate_ship_usage_list(ship_usage[0], Starting_wings[i]);
 			generate_weaponry_usage_list(weapon_usage[0], Starting_wings[i]);
 		}
-	}	
+	}
+
+	// initialize weapon required flags
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		memcpy_s(weapon_is_required[i], sizeof(bool) * MAX_WEAPON_TYPES, Team_data[i].weapon_required, sizeof(bool) * MAX_WEAPON_TYPES);
+	}
 
 	// entry delay time
 	m_delay = f2i(Entry_delay_time);
@@ -189,6 +202,13 @@ BOOL player_start_editor::OnInitDialog()
 	m_spin1.SetRange(0, 99);
 	m_pool_spin.SetRange(0, 9999);
 	m_delay_spin.SetRange(0, 30);	
+
+	// fix overlapping checkboxes issue
+	// https://stackoverflow.com/questions/57951333/cchecklistbox-items-get-overlapped-on-selection-if-app-build-using-visual-studi
+	m_ship_list.SetFont(GetFont());
+	m_weapon_list.SetFont(GetFont());
+	m_ship_variable_list.SetFont(GetFont());
+	m_weapon_variable_list.SetFont(GetFont());
 
 	// regenerate all the controls
 	reset_controls();
@@ -304,7 +324,7 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each weapon ship type	
 	m_weapon_list.ResetContent();
 	ct = 0;
-	for (i=0; i<Num_weapon_types; i++) {
+	for (i=0; i<weapon_info_size(); i++) {
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			m_weapon_list.AddString(Weapon_info[i].name);
 			
@@ -323,6 +343,8 @@ void player_start_editor::reset_controls()
 			static_weapon_variable_pool[selected_team][i] = -1;
 		}
 	}	
+
+	m_validation_toggle = validation_toggle[selected_team];
 
 	// be sure that nothing is selected	
 	m_ship_list.SetCurSel(-1);
@@ -376,12 +398,14 @@ BOOL player_start_editor::OnCommand(WPARAM wParam, LPARAM lParam)
 	id = LOWORD(wParam);
 	switch(id){
 	case ID_TEAM_1:
+		UpdateData();
 		previous_team = selected_team; 
 		selected_team = 0;
 		reset_controls();
 		break;
 
 	case ID_TEAM_2:
+		UpdateData();
 		previous_team = selected_team; 
 		selected_team = 1;
 		reset_controls();
@@ -399,6 +423,9 @@ BOOL player_start_editor::OnCommand(WPARAM wParam, LPARAM lParam)
 // ship list changed
 void player_start_editor::OnSelchangeShipList() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	int selected;
 	int si_index;
 	char ship_name[255] = "";
@@ -459,7 +486,10 @@ void player_start_editor::OnSelchangeShipList()
 // ship variable list changed
 void player_start_editor::OnSelchangeShipVariablesList() 
 {
-	int selection; 
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
+	int selection;
 
 	// If the variable list is selected the ship list should be deselected
 	m_ship_list.SetCurSel(-1);
@@ -512,6 +542,9 @@ void player_start_editor::OnSelchangeShipVariablesList()
 
 void player_start_editor::OnSelchangeShipVariablesCombo() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	// Get the new selection
 	char variable_name[TOKEN_LENGTH]; 
 	bool update_static_pool = false; 
@@ -564,6 +597,9 @@ void player_start_editor::OnSelchangeShipVariablesCombo()
 // weapon list changed
 void player_start_editor::OnSelchangeWeaponList() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	int selected;
 	int wi_index;
 	char weapon_name[255] = "";
@@ -623,6 +659,9 @@ void player_start_editor::OnSelchangeWeaponList()
 
 void player_start_editor::OnSelchangeWeaponVariablesList() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	int selection; 
 
 	// deselect the other list
@@ -675,6 +714,9 @@ void player_start_editor::OnSelchangeWeaponVariablesList()
 
 void player_start_editor::OnSelchangeWeaponVariablesCombo() 
 {
+	// make sure internal variables have the latest inputs
+	UpdateData();
+
 	// Get the new selection
 	char variable_name[TOKEN_LENGTH]; 
 	bool update_static_pool = false; 
@@ -724,6 +766,31 @@ void player_start_editor::OnSelchangeWeaponVariablesCombo()
 	UpdateData(FALSE);
 }
 
+void player_start_editor::OnRequiredWeapons()
+{
+	// create a list of options with just the weapons that are in the static pool
+	SCP_vector<int> weapon_indexes;
+	SCP_vector<std::pair<CString, bool>> options;
+	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
+	{
+		if (static_weapon_pool[selected_team][i] > 0)
+		{
+			weapon_indexes.push_back(i);
+			options.emplace_back(Weapon_info[i].name, weapon_is_required[selected_team][i]);
+		}
+	}
+
+	// display the checklist
+	CheckBoxListDlg dlg;
+	dlg.SetCaption("Required Weapons");
+	dlg.SetOptions(options);
+	dlg.DoModal();
+
+	// reassign required weapons
+	for (int i = 0; i < (int)options.size(); i++)
+		weapon_is_required[selected_team][weapon_indexes[i]] = dlg.IsChecked(i);
+}
+
 // cancel
 void player_start_editor::OnCancel()
 {
@@ -735,7 +802,9 @@ void player_start_editor::OnCancel()
 void player_start_editor::OnOK()
 {
 	int i, idx;
-	int num_choices; 
+	int num_choices;
+
+	UpdateData();
 	
 	int num_sexp_variables = sexp_variable_count();	
 
@@ -810,7 +879,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout ships that are statically assigned by class
 
-		for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+		for (idx = 0; idx < ship_info_size(); idx++) {
 			// if we have ships here
 			if(static_ship_pool[i][idx] > 0 || static_ship_variable_pool[i][idx] > -1) {
 				Team_data[i].ship_list[num_choices] = idx;
@@ -882,7 +951,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout weapons that are statically assigned by class
 
-		for(idx=0; idx<Num_weapon_types; idx++)
+		for(idx=0; idx<weapon_info_size(); idx++)
 		{
 			// if we have weapons here
 			if(static_weapon_pool[i][idx] > 0 || static_weapon_variable_pool[i][idx] > -1)
@@ -910,8 +979,33 @@ void player_start_editor::OnOK()
 		Team_data[i].num_weapon_choices = num_choices; 
 	}
 
+	// store the loadout padding toggle
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		Team_data[i].do_not_validate = validation_toggle[i];
+	}
+
+	// store required weapons
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (idx = 0; idx < weapon_info_size(); idx++) {
+			Team_data[i].weapon_required[idx] = false;
+
+			if (weapon_is_required[i][idx]) {
+				if (static_weapon_pool[i][idx] > 0) {
+					Team_data[i].weapon_required[idx] = true;
+				} else {
+					SCP_string buffer = "Cannot require a weapon (";
+					buffer += Weapon_info[idx].name;
+					buffer += ") that is not in the static weaponry pool!  This weapon will be skipped.";
+					MessageBox(buffer.c_str());
+				}
+			}
+		}
+	}
+
 	theApp.record_window_data(&Player_wnd_data, this);
 	CDialog::OnOK();
+
+	FREDDoc_ptr->autosave("loadout editor");
 }
 
 // Returns the ship_info index of the selected and checked ship_list item or -1 if nothing is checked or 
@@ -1047,4 +1141,10 @@ void player_start_editor::OnUpdateWeaponPool()
 		dynamic_weapon_pool[selected_team][sexp_index] = m_weapon_pool;	
 		UpdateQuantityVariable(&m_weapon_quantity_variable, m_weapon_pool);
 	}
+}
+
+void player_start_editor::OnSelValidationToggle()
+{
+	validation_toggle[selected_team] = !m_validation_toggle;
+	UpdateData(TRUE);
 }

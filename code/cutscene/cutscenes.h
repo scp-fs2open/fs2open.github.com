@@ -10,26 +10,34 @@
 #ifndef _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 #define _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 
+#include "globalincs/flagset.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+
+namespace Cutscene
+{
+	FLAG_LIST(Cutscene_Flags)
+	{
+		Viewable = 0,
+		Always_viewable,
+		Never_viewable,
+
+		NUM_VALUES
+	};
+}
 
 typedef struct cutscene_info
 {
 	char filename[MAX_FILENAME_LEN];
 	char name[NAME_LENGTH];
 	char* description;
-	bool viewable;
+	flagset<Cutscene::Cutscene_Flags> flags;
+	SCP_map<SCP_string, SCP_string> custom_data;
 } cutscene_info;
 
-#if SCP_COMPILER_IS_GNU
-#pragma GCC diagnostic push
-// This suppresses a GCC bug where it thinks that the Cutscenes from the enum class below shadows a global variable
-#pragma GCC diagnostic ignored "-Wshadow"
-#endif
 extern SCP_vector<cutscene_info> Cutscenes;
-#if SCP_COMPILER_IS_GNU
-#pragma GCC diagnostic pop
-#endif
+
+extern bool Movie_active;
 
 // initializa table data
 void cutscene_init();
@@ -41,5 +49,7 @@ void cutscenes_screen_close();
 void cutscenes_screen_do_frame();
 
 void cutscene_mark_viewable(const char* filename);
+
+int get_cutscene_index_by_name(const char* name);
 
 #endif

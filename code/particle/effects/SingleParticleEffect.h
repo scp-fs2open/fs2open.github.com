@@ -7,6 +7,7 @@
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
 #include "particle/util/EffectTiming.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {
@@ -19,18 +20,20 @@ class SingleParticleEffect: public ParticleEffect {
 
 	util::EffectTiming m_timing;
 
+	::util::UniformFloatRange m_vel_inherit;
+
  public:
 	explicit SingleParticleEffect(const SCP_string& name);
 
-	virtual bool processSource(const ParticleSource* source) SCP_OVERRIDE;
+	bool processSource(ParticleSource* source) override;
 
-	virtual void parseValues(bool nocreate) SCP_OVERRIDE;
+	void parseValues(bool nocreate) override;
 
-	virtual void pageIn() SCP_OVERRIDE;
+	void pageIn() override;
 
-	virtual void initializeSource(ParticleSource& source) SCP_OVERRIDE;
+	void initializeSource(ParticleSource& source) override;
 
-	virtual EffectType getType() const SCP_OVERRIDE { return EffectType::Single; }
+	EffectType getType() const override { return EffectType::Single; }
 
 	util::ParticleProperties& getProperties() { return m_particleProperties; }
 

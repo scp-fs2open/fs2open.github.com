@@ -15,7 +15,6 @@
 
 #define WM_MENU_POPUP_SHIPS	(WM_USER+6)
 #define WM_MENU_POPUP_EDIT		(WM_USER+7)
-#define SEXP_HELP_BOX_SIZE 170
 
 typedef struct Marking_box {
 	int x1, y1, x2, y2;
@@ -45,7 +44,7 @@ protected: // create from serialization only
 public:
 
 	int global_error_check_mixed_player_wing(int w);
-	int fred_check_sexp(int sexp, int type, const char *msg, ...);
+	int fred_check_sexp(int sexp, int type, const char *location, ...);
 	int internal_error(const char *msg, ...);
 	int error(const char *msg, ...);
 	int global_error_check();
@@ -127,6 +126,7 @@ protected:
 	afx_msg void OnUpdateChangeViewpointFollow(CCmdUI* pCmdUI);
 	afx_msg void OnChangeViewpointFollow();
 	afx_msg void OnEditorsGoals();
+	afx_msg void OnEditorsCutscenes();
 	afx_msg void OnSpeed1();
 	afx_msg void OnSpeed2();
 	afx_msg void OnSpeed5();
@@ -161,6 +161,10 @@ protected:
 	afx_msg void OnUpdateSpeed50(CCmdUI* pCmdUI);
 	afx_msg void OnSpeed100();
 	afx_msg void OnUpdateSpeed100(CCmdUI* pCmdUI);
+	afx_msg void OnSpeed500();
+	afx_msg void OnUpdateSpeed500(CCmdUI* pCmdUI);
+	afx_msg void OnSpeed1000();
+	afx_msg void OnUpdateSpeed1000(CCmdUI* pCmdUI);
 	afx_msg void OnSelect();
 	afx_msg void OnUpdateSelect(CCmdUI* pCmdUI);
 	afx_msg void OnSelectAndMove();
@@ -210,11 +214,19 @@ protected:
 	afx_msg void OnEditorsMessage();
 	afx_msg void OnEditorsStarfield();
 	afx_msg void OnEditorsBgBitmaps();
+	afx_msg void OnEditorsVolumetrics();
 	afx_msg void OnEditorsReinforcement();
 	afx_msg void OnErrorChecker();
 	afx_msg void OnEditorsWaypoint();
+	afx_msg void OnEditorsJumpnode();
 	afx_msg void OnViewOutlines();
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
+	afx_msg void OnViewOutlinesOnSelected();
+	afx_msg void OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI);
+	afx_msg void OnViewOutlineAtWarpin();
+	afx_msg void OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI);
+	afx_msg void OnErrorCheckerChecksPotentialIssues();
+	afx_msg void OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);
@@ -263,12 +275,15 @@ protected:
 	afx_msg void OnLookatObj();
 	afx_msg void OnUpdateLookatObj(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsAdjustGrid();
+	afx_msg void OnCalcRelativeCoords();
+	afx_msg void OnMusicPlayer();
 	afx_msg void OnEditorsShieldSys();
 	afx_msg void OnLevelObj();
 	afx_msg void OnAlignObj();
 	afx_msg void OnControlObj();
 	afx_msg void OnNextObj();
 	afx_msg void OnPrevObj();
+	afx_msg void OnEditCloneMarkedObjects();
 	afx_msg void OnEditDeleteWing();
 	afx_msg void OnMarkWing();
 	afx_msg void OnUpdateControlObj(CCmdUI* pCmdUI);
@@ -295,6 +310,12 @@ protected:
 	afx_msg void OnUpdateFormatFs2Retail(CCmdUI* pCmdUI);
 	afx_msg void OnFormatFs1Retail();
 	afx_msg void OnUpdateFormatFs1Retail(CCmdUI* pCmdUI);
+	afx_msg void OnMoveShipsWhenUndocking();
+	afx_msg void OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI);
+	afx_msg void OnPointUsingUvec();
+	afx_msg void OnUpdatePointUsingUvec(CCmdUI* pCmdUI);
+	afx_msg void OnHighlightSubsys();
+	afx_msg void OnUpdateHighlightSubsys(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsSetGlobalShipFlags();
 	afx_msg void OnEditorsVoiceManager();
 	afx_msg void OnEditorsFiction();
@@ -351,10 +372,13 @@ extern int Show_paths_fred;
 extern int Selection_lock;
 extern int Cursor_over;
 extern int Cur_bitmap;
-extern int Id_select_type_jump_node;
-extern int Id_select_type_start;
-extern int Id_select_type_waypoint;
+extern UINT_PTR Id_select_type_waypoint;
+extern UINT_PTR Id_select_type_jump_node;
 extern int Hide_ship_cues, Hide_wing_cues;
+extern int Move_ships_when_undocking;
+extern int Highlight_selectable_subsys;
+extern int Point_using_uvec;
+
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];
 
@@ -364,11 +388,7 @@ enum FSO_FORMAT
 	FSO_FORMAT_STANDARD = 1,
 	FSO_FORMAT_COMPATIBILITY_MODE = 2
 };
-
-// Goober5000 (currently, FS1 retail not implemented)
-extern int Format_fs2_open;
-extern int Format_fs2_retail;
-extern int Format_fs1_retail;
+extern int Mission_save_format;
 
 extern CFREDView *Fred_view_wnd;
 

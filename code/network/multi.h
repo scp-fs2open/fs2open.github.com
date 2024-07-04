@@ -17,6 +17,7 @@
 #include "network/multi_ping.h"
 #include "network/multi_options.h"
 #include "io/keycontrol.h"
+#include "io/timer.h"
 #include "globalincs/globals.h"
 
 class p_object;
@@ -44,26 +45,39 @@ class player;
 // Version #. Please put the date down when you up these values
 // NOTE: always keep SERVER_VERSION and SERVER_COMPATIBLE_VERSION the same
 //
-// version 32 - 1/29/99
-// version 33 - 2/22/99
-// version 34 - 4/8/99
-// version 35 - 4/21/99
-// version 36 - 4/28/99
-// version 37 - 4/29/99
-// version 38 - 5/17/77
-// version 39 - 7/3/99
-// version 40 - 7/7/99
-// version 41 - 7/22/99
-// version 42 - 7/26/99 (ingame join stuff)
-// version 43 - 7/30/99
-// version 44 - 8/24/99
-// version 46 - 8/30/99
-// version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
-// revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
-// version 48 - 8/15/2016 Multiple changes to the packet format for multi sexps
+// Version 32 - 1/29/99
+// Version 33 - 2/22/99
+// Version 34 - 4/8/99
+// Version 35 - 4/21/99
+// Version 36 - 4/28/99
+// Version 37 - 4/29/99
+// Version 38 - 5/17/77
+// Version 39 - 7/3/99
+// Version 40 - 7/7/99
+// Version 41 - 7/22/99
+// Version 42 - 7/26/99 (ingame join stuff)
+// Version 43 - 7/30/99
+// Version 44 - 8/24/99
+// Version 46 - 8/30/99
+// Version 47 - 11/11/2003 - (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
+// revert  46 - 9/7/2006 - (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
+// Version 48 - 8/15/2016 - Multiple changes to the packet format for multi sexps
+// Version 49 - 7/26/2020 - Addition of multilock
+// Version 50 - 7/27/2020 - IPv6
+// Version 51 - 9/20/2020 - Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
+// Version 52 - 10/9/2020 - Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
+// Version 53 - 12/2/2020 - big set of packet fixes/upgrades
+// Version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
+// Version 55 - 8/28/2021 - Adding multi-compatible animations
+// Version 56 - 8/28/2021 - Fix animations for 22_0 release
+// Version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
+// Version 58 - 11/14/2022 - Enable turret movement on clients, and fix in-game joining
+// Version 59 - 12/9/2022 - New IDs for SEXP operators
+// Version 60 - 3/27/2023 - Added generic lua data packet
+// Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							148
+#define MULTI_FS_SERVER_VERSION							61
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -89,10 +103,6 @@ class player;
 #define MAX_GAMENAME_LEN					32				// maximum length in characters of a game name
 #define DESCRIPT_LENGTH						512			// maximum length of a mission description (as specified by Fred)
 #define MAX_PASSWD_LEN						16				// maximum length of the password for a netgame
-
-// low level networking defines
-#define IP_ADDRESS_LENGTH					4				// length of the address field for an IP address
-#define IP_PORT_LENGTH						2				// length of the port field for an IP address
 
 // netgame defines
 #define MP_SINGLE_MISSION					0				// not playing a campaign - single mission
@@ -123,7 +133,7 @@ class player;
 //
 
 // netplayer management
-#define NET_PLAYER_INDEX(np)	((int)(np-Net_players))
+#define NET_PLAYER_INDEX(np)	(static_cast<int>(np-Net_players))
 #define NET_PLAYER_NUM(np)		(NET_PLAYER_INDEX(np))
 #define MY_NET_PLAYER_NUM		(NET_PLAYER_INDEX(Net_player))
 
@@ -143,8 +153,7 @@ class player;
 #define MULTI_PERM_OBSERVER(np)		((np.flags & NETINFO_FLAG_OBSERVER) && !(np.flags & NETINFO_FLAG_OBS_PLAYER))
 
 // are we playing on a master tracker registered server
-extern int Om_tracker_flag;
-#define MULTI_IS_TRACKER_GAME    (Om_tracker_flag)
+#define MULTI_IS_TRACKER_GAME    ((Game_mode & GM_MULTIPLAYER) && (Multi_options_g.pxo))
 // ----------------------------------------------------------------------------------------
 
 
@@ -193,9 +202,10 @@ extern int Om_tracker_flag;
 #define OPTIONS_UPDATE				0x28		// options (netgame or local) update packet
 #define CLIENT_UPDATE				0x29		// sent from server to client periodically to update important info (pause status, etc)
 #define CD_VERIFY						0x2A		// cd verification update
-#define PRIMARY_FIRED_NEW			0x2B		// for client-side firing - highly streamlined
+#define PRIMARY_FIRED_NEW			0x2B		// For ships on the server, and client-side firing on LINEAR_WEAPON_FIRED fail
 #define COUNTERMEASURE_NEW			0x2C		// for client-side firing
 #define EVENT_UPDATE					0x2D		// event change
+#define LINEAR_WEAPON_FIRED			0x2E		//  Cyborg17 - for firing of non-homing weapons from the player on a client to send to the server
 
 #define SECONDARY_FIRED_AI			0xA0		// fired a secondary weapon (ai ship)
 #define SECONDARY_FIRED_PLR		0xA1		// fired a secondary weapon (player ship)
@@ -209,6 +219,8 @@ extern int Om_tracker_flag;
 #define HOMING_WEAPON_UPDATE		0xA9		// update homing object and subsystem for homing missile
 #define FLAK_FIRED					0xAA		// flak gun fired
 #define SELF_DESTRUCT				0xAB		// self destruct
+#define ANIMATION_TRIGGERED			0xAC		// Lafiel - Anytime an animation starts
+#define TURRET_TRACK				0xAD		// Cyborg - When a turret's target has changed.
 
 #define JOIN							0xB1		// a join request to a server
 #define ACCEPT							0xB2		// acceptance of a join packet
@@ -251,6 +263,7 @@ extern int Om_tracker_flag;
 #define REINFORCEMENT_AVAIL		0xDB		// a reinforcement is available
 #define LIGHTNING_PACKET			0xDC		// lightning bolt packet for multiplayer nebula
 #define BYTES_SENT					0xDD		// how much data we've sent/received
+#define MISSILE_KILL					0xDE		// get rid of this weapon on the client.
 
 #define GAME_ACTIVE					0xE1		// info on an active game server
 #define GAME_QUERY					0xE2		// request for a list of active game servers
@@ -267,6 +280,7 @@ extern int Om_tracker_flag;
 
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define SEXP						0xF1		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
+#define LUA_DATA_PACKET				0xF2		// Lafiel - any generic data sent by lua
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
@@ -290,7 +304,7 @@ extern int Om_tracker_flag;
 #define JOIN_DENY_JR_INGAME_JOIN		11		// join request is denied because someone else is already ingame joining
 #define JOIN_DENY_JR_BAD_VERSION		12		// incompatible version types
 #define JOIN_QUERY_RESTRICTED			13		// poll the host of the game to see if he accepts this player
-#define JOIN_DENY_JR_TYPE				14		// cannot ingame join anything but dogfight games
+#define JOIN_DENY_JR_TYPE				14		// cannot ingame join Squadwar games
 
 // repair info codes
 #define REPAIR_INFO_BEGIN			0x1		// server to client - set your REPAIRING flags
@@ -365,7 +379,8 @@ extern int Om_tracker_flag;
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
-#define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
+// minor hack
+constexpr int PLAYER_COLLISION_TIMESTAMP = 200; // how often the server should allow a client to go through ship-ship collisions
 
 // ----------------------------------------------------------------------------------------
 
@@ -378,9 +393,8 @@ extern int Om_tracker_flag;
 // definition of header packet used in any protocol
 typedef struct header {
 	int		bytes_processed;											// used to determine how many bytes this packet was
-	ubyte		net_id[4];													// obtained from network layer header
-	ubyte		addr[6];														// obtained from network-layer header
-	short		port;															// obtained from network-layer header
+	ubyte		addr[sizeof(in6_addr)];														// obtained from network-layer header
+	uint16_t	port;															// obtained from network-layer header
 	short		id;															// will be stuffed with player_id (short)
 } header;
 
@@ -395,12 +409,12 @@ typedef struct net_player_server_info {
 	int				last_buttons_id[BUTTON_INFO_SAVE_COUNT];	//
 	fix				last_buttons_time[BUTTON_INFO_SAVE_COUNT];//
 	int				num_last_buttons;									//
-	fix				last_full_update_time;							// time when server last updated this player position/orientation
+	UI_TIMESTAMP	last_full_update_time;							// time when server last updated this player position/orientation
 	int				xfer_handle;										// handle to the file xfer handle (-1 if no file xfer is taking place)
-	int				kick_timestamp;									// timestamp with which we'll disconnect a player if he hasn't reponded to a kick packet
+	UI_TIMESTAMP	kick_timestamp;									// timestamp with which we'll disconnect a player if he hasn't reponded to a kick packet
 	int				kick_reason;										// reason he was kicked
-	int            voice_token_timestamp;							// timestamp set when a player loses a token (so we can prevent him from getting it again too quickly)
-	int				reliable_connect_time;							// after sending an accept packet, wait for this long for the guy to connect on the reliable socket
+	UI_TIMESTAMP    voice_token_timestamp;							// timestamp set when a player loses a token (so we can prevent him from getting it again too quickly)
+	time_t				reliable_connect_time;							// after sending an accept packet, wait for this long for the guy to connect on the reliable socket
 
 	// weapon select/linking information (maintained on the server and passed on respawn to all clients)
 	char				cur_primary_bank;									// currently selected primary bank
@@ -421,6 +435,9 @@ typedef struct net_player_server_info {
 	// common targeting information
 	int				target_objnum;
 
+	// for collision hack -- to fix, enough bandwidth would be needed for full physics info to be transmitted uncompressed
+	TIMESTAMP		player_collision_timestamp;		// gets around limitations on oo update packets by having collisions only occur so often
+
 	// rate limiting information
 	int				rate_stamp;							// rate limiting timestamp
 	int				rate_bytes;							// bytes sent this "second"
@@ -435,6 +452,44 @@ typedef struct net_player_server_info {
 	int					unreliable_buffer_size;					// length (in bytes) of data in unreliable send_buffer
 	ubyte					reliable_buffer[MAX_PACKET_SIZE];	// buffer used to buffer reliable packets before sending as a single UDP packet
 	int					reliable_buffer_size;					// length (in bytes) of data in reliable send_buffer
+
+	void init() {
+		memset(&ping, 0, sizeof(ping_struct));
+		wing_index_backup = -1;
+		wing_index = -1;
+		ingame_join_flags = 0;
+		invul_timestamp = 0;
+		memset(&last_buttons, 0, sizeof(last_buttons));
+		memset(&last_buttons_id, 0, sizeof(last_buttons_id));
+		memset(&last_buttons_time, 0, sizeof(last_buttons_time));
+		num_last_buttons = 0;
+		xfer_handle = -1;
+		kick_reason = 0;
+		reliable_connect_time = -1;
+
+		cur_primary_bank = 0;
+		cur_secondary_bank = 0;
+		cur_link_status = 0;
+
+		ship_ets = 0;
+
+		tracker_security_last = 0;
+		tracker_checksum = 0;
+
+		target_objnum = -1;
+
+		rate_stamp = 0;
+		rate_bytes = 0;
+
+		accum_buttons = 0;
+
+		memset(&unreliable_buffer, 0, sizeof(unreliable_buffer));
+		unreliable_buffer_size = 0;
+		memset(&reliable_buffer, 0, sizeof(reliable_buffer));
+		reliable_buffer_size = 0;
+	}
+
+	net_player_server_info() { init(); }
 } net_player_server_info;
 
 // NETPLAYER INFORMATION ALL COMPUTERS IN THE GAME MUST HAVE
@@ -474,6 +529,28 @@ typedef struct net_player {
 	// CLIENT-side
 	int				cl_bytes_recvd;					// bytes we've received (as a client)		
 	int				cl_last_pl;							// packet loss
+
+	void init() {
+		m_player = nullptr;
+		player_id = -1;
+		tracker_player_id = -1;
+
+		flags = 0;
+		state = 0;
+		reliable_socket = PSNET_INVALID_SOCKET;
+
+		client_cinfo_seq = 0;
+		client_server_seq = 0;
+
+		last_heard_time = 0;
+
+		memset(&p_info, 0, sizeof(net_player_info));
+
+		sv_bytes_sent = 0;
+		sv_last_pl = 0;
+	}
+
+	net_player() { init(); }
 } net_player;
 
 // structure which describes the state of the multiplayer game currently being played
@@ -508,6 +585,36 @@ typedef struct netgame_info {
 	multi_server_options options;				// server options settings
 
 	ubyte		debug_flags;						// special debug flags (see NETD_FLAG_* defines)
+
+	void init() {
+		name[0] = '\0';
+		mission_name[0] = '\0';
+		title[0] = '\0';
+		campaign_name[0] = '\0';
+		passwd[0] = '\0';
+
+		version_info = 0;
+		type_flags = 0;
+		mode = 0;
+		flags = 0;
+		rank_base = 0;
+		max_players = 0;
+		game_state = 0;
+		security = 0;
+		ping_time = 0.0f;
+		host = nullptr;
+		server = nullptr;
+		respawn = 0;
+		campaign_mode = 0;
+		server_update_seq = 0;
+		server_update_frame_ref = 0;
+		debug_flags = 0;
+
+		memset(&server_addr, 0, sizeof(net_addr));
+		memset(&options, 0, sizeof(multi_server_options));
+	}
+
+	netgame_info() { init(); }
 } netgame_info;
 
 // structure for active games -- kind of like Descent, but using the linked list thing, we will
@@ -536,8 +643,7 @@ typedef struct netgame_info {
 #define AG_FLAG_STATE_MASK						(AG_FLAG_FORMING|AG_FLAG_BRIEFING|AG_FLAG_DEBRIEF|AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)
 
 typedef struct active_game {
-	active_game		*next, *prev;				// next and previous elements in the list	
-	int				heard_from_timer;			// when we last heard from the game	
+	UI_TIMESTAMP	heard_from_timer;			// when we last heard from the game
 	
 	char		name[MAX_GAMENAME_LEN+1];
 	char		mission_name[NAME_LENGTH+1];
@@ -547,6 +653,22 @@ typedef struct active_game {
 	ushort	flags;								// see above AG_FLAG_* defines
 	ubyte		version,comp_version;			// version and compatible version
 	ping_struct ping;								// ping time to the server
+
+	void init() {
+		num_players = 0;
+		flags = 0;
+		version = 0;
+		comp_version = 0;
+
+		name[0] = '\0';
+		mission_name[0] = '\0';
+		title[0] = '\0';
+
+		memset(&server_addr, 0, sizeof(net_addr));
+		memset(&ping, 0, sizeof(ping_struct));
+	}
+
+	active_game() { init(); }
 } active_game;
 
 // permanent server list (read from tcp.cfg)
@@ -610,7 +732,7 @@ typedef struct network_buffer {
 #define NETINFO_FLAG_ACCEPT_OBSERVER		(1<<18)		// accepted as observer
 #define NETINFO_FLAG_ACCEPT_CLIENT			(1<<19)		// accepted as client
 #define NETINFO_FLAG_WARPING_OUT			(1<<20)		// clients keep track of this for themselves to know if they should be leaving
-#define NETINFO_FLAG_HAS_CD					(1<<21)		// the player has a CD in the drive
+#define NETINFO_FLAG_UNUSED					(1<<21)		// Used to be a flag for if the player had a CD in the drive
 #define NETINFO_FLAG_RELIABLE_CONNECTED		(1<<22)		// reliable socket is now active
 #define NETINFO_FLAG_MT_GET_FAILED			(1<<23)		// set during MT stats update process indicating we didn't properly get his stats
 #define NETINFO_FLAG_MT_SEND_FAILED			(1<<24)		// set during MT stats update process indicating we didn't properly send his stats
@@ -698,6 +820,10 @@ typedef struct network_buffer {
 #define NETPLAYER_STATE_DEBRIEF_REPLAY		28				// set on the host instead of NETPLAYER_STATE_DEBRIEF_ACCEPT to indicate he wants to replay the mission
 #define NETPLAYER_STATE_CPOOL_ACK			29				// player has acked all campaign pool status data
 #define NETPLAYER_STATE_INGAME_CINFO		30				// player has received campaign information (ingame join only)
+#define NETPLAYER_STATE_CUTSCENE			31				// watching a custscene
+#define NETPLAYER_STATE_FICTION_VIEWER		32				// in the fiction viewer screen
+#define NETPLAYER_STATE_CMD_BRIEFING		33				// in the command briefing
+#define NETPLAYER_STATE_RED_ALERT			34				// in the red alert screen
 
 // defines for connection speed
 #define CONNECTION_SPEED_NONE					-1				// not really used except for error checking
@@ -727,24 +853,28 @@ extern net_player *Net_player;										// pointer to console's net_player entry
 
 // network object management
 #define SHIP_SIG_MIN				1
-#define SHIP_SIG_MAX				(0x2fff)
+#define SHIP_SIG_MAX				(0x1fef)		// Cyborg17 - 8000 ships ought to be enough.
 
 #define STANDALONE_SHIP_SIG	(SHIP_SIG_MAX+1)
-#define REAL_SHIP_SIG_MAX		(0x3fff)
+#define REAL_SHIP_SIG_MAX		(0x1fff)			 
 
 #define DEBRIS_SIG_MIN			(REAL_SHIP_SIG_MAX+1)
-#define DEBRIS_SIG_MAX			(0x5fff)
+#define DEBRIS_SIG_MAX			(0x3fff)			// allows for 1000 ships to be destroyed and for ~8 debris chunks to be generated for each.
 
 #define ASTEROID_SIG_MIN		(DEBRIS_SIG_MAX+1)
-#define ASTEROID_SIG_MAX		(0x7fff)
+#define ASTEROID_SIG_MAX		(0x6fff)			
 
-#define NPERM_SIG_MIN			(ASTEROID_SIG_MAX+1)
-#define NPERM_SIG_MAX			(0xffff)
+#define WAYPOINT_SIG_MIN		(ASTEROID_SIG_MAX+1)
+#define WAYPOINT_SIG_MAX		(0x7fff)			// required for dynamic waypoints.
+
+#define NPERM_SIG_MIN			(WAYPOINT_SIG_MAX+1)
+#define NPERM_SIG_MAX			(0xffff)			// Allows us to have ~ 30K weapons simultaneously in a mission.
 
 extern ushort Next_ship_signature;									// next network signature to assign to an object
 extern ushort Next_asteroid_signature;								// next asteroid signature
 extern ushort Next_non_perm_signature;								// next non-permanent signature
 extern ushort Next_debris_signature;								// next debris signature
+extern ushort Next_waypoint_signature;								// next waypoint signature for dynamic waypoints in multi missions
 
 // netgame vars
 extern netgame_info Netgame;											// netgame information
@@ -754,15 +884,11 @@ extern int Multi_button_info_ok;										// flag saying it is ok to apply criti
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying
 
 // low level networking vars
-extern int ADDRESS_LENGTH;												// will be 4 for IP
-extern int PORT_LENGTH;													// will be 2 for IP
-extern int HEADER_LENGTH;												// 1 byte (packet type)
+#define HEADER_LENGTH	1											// 1 byte (packet type)
 
 // misc data
-extern active_game* Active_game_head;								// linked list of active games displayed on Join screen
-extern int Active_game_count;											// for interface screens as well
+extern SCP_list<active_game> Active_games;						// list of active games displayed on the Join screen
 extern CFILE* Multi_chat_stream;										// for streaming multiplayer chat strings to a file
-extern int Multi_has_cd;												// if this machine has a cd or not (call multi_common_verify_cd() to set this)
 extern int Multi_num_players_at_start;								// the # of players present (kept track of only on the server) at the very start of the mission
 extern short Multi_id_num;												// for assigning player id #'s
 
@@ -776,7 +902,7 @@ extern server_item* Game_server_head;								// list of permanent game servers t
 #define MULTI_JOIN_RESTR_MODE_3			2							// mode 3 - team vs. team, only team 1 has ships
 #define MULTI_JOIN_RESTR_MODE_4			3							// mode 4 - team vs. team, both teams have ships
 
-extern int Multi_restr_query_timestamp;							// timestamp for querying the host to see if he will allow a new player to join ingame
+extern UI_TIMESTAMP Multi_restr_query_timestamp;							// timestamp for querying the host to see if he will allow a new player to join ingame
 extern join_request Multi_restr_join_request;					// join request for the query
 extern net_addr Multi_restr_addr;									// net address of the join request
 extern int Multi_join_restr_mode;									// what mode we're in
@@ -792,6 +918,10 @@ extern char Multi_tracker_id_string[255];
 // current file checksum
 extern ushort Multi_current_file_checksum;
 extern int Multi_current_file_length;
+
+// ip address list vars
+#define IP_STRING_LEN 60
+#define MAX_IP_ADDRS 100
 
 
 // ----------------------------------------------------------------------------------------

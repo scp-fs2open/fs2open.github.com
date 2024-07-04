@@ -3,7 +3,10 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-#include "particle/util/RandomRange.h"
+
+#include "particle/ParticleEffect.h"
+#include "particle/ParticleManager.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {
@@ -12,7 +15,7 @@ namespace effects {
  * @ingroup particleEffects
  */
 class ConeShape {
-	util::NormalFloatRange m_normalDeviation;
+	::util::NormalFloatRange m_normalDeviation;
  public:
 	ConeShape() {}
 
@@ -36,7 +39,13 @@ class ConeShape {
 			float deviation;
 			stuff_float(&deviation);
 
-			m_normalDeviation = util::NormalFloatRange(0.0, fl_radians(deviation));
+			if (deviation < 0.001f) {
+				error_display(0, "A standard deviation of %f is not valid. Must be greater than 0. Defaulting to 1.",
+							  deviation);
+				deviation = 1.0f;
+			}
+
+			m_normalDeviation = ::util::NormalFloatRange(0.0, fl_radians(deviation));
 		}
 	}
 
@@ -46,7 +55,7 @@ class ConeShape {
 	 * @brief Specifies if the velocities of the particles should be scaled with the deviation from the direction
 	 * @return @c true
 	 */
-	static SCP_CONSTEXPR bool scale_velocity_deviation() {
+	static constexpr bool scale_velocity_deviation() {
 		return true;
 	}
 };

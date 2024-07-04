@@ -17,11 +17,12 @@
 #include "io/timer.h"
 #include "math/staticrand.h"
 #include "mission/missionparse.h"
+#include "object/objcollide.h"
 #include "object/object.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
+#include "utils/Random.h"
 #include "weapon/weapon.h"
-
 
 #ifdef _MSC_VER
 #pragma optimize("", off)
@@ -64,10 +65,10 @@ void	ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 void	ai_big_avoid_ship();
 int	ai_big_maybe_follow_subsys_path(int do_dot_check=1);
 void ai_big_strafe_position();
+static int ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
-extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs);
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
-extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collide_pos, vec3d *collision_normal);
+extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal);
 
 
 //	Called by ai_big_pick_attack_point.
@@ -75,16 +76,15 @@ extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d
 //	If truly_random flag set (haha), then generate a pretty random number.  Otherwise, generate a static rand which
 //	tends to not change from frame to frame.
 //	Try four times and choose nearest point to increase chance of getting a good point.
-void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, ship_subsys *ss)
+void ai_bpap(const object *objp, const vec3d *attacker_objp_pos, const vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, const ship_subsys *ss)
 {
 	float		nearest_dist;
 	vec3d	result_point, best_point;
 	vec3d	rel_point;
 	int		num_tries;
-	model_octant	*octp;
-	polymodel	*pm;
-	int		i, q, octs[4];	
+	int		i;	
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	polymodel* pm = model_get(sip->model_num);
 	model_subsystem *tp = NULL;
 	if (ss != NULL)
 		tp = ss->system_info;	
@@ -92,63 +92,53 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	best_point = objp->pos;
 	nearest_dist = weapon_travel_dist;
 
-	model_which_octant_distant_many(attacker_objp_pos, sip->model_num, &objp->orient, &objp->pos, &pm, octs);
-
+	// attempt anywhere from 16 to 4 times, more if we're closer
 	num_tries = (int) (vm_vec_dist(&objp->pos, attacker_objp_pos)/objp->radius);
-
 	if (num_tries >= 4)
 		num_tries = 1;
 	else
-		num_tries = 4 - num_tries;
+		num_tries = (4 - num_tries) * 4;
 
-	//	Index #0 is best one.
-	if ( pm->octants[octs[0]].verts ) {
-		*local_attack_point = *pm->octants[octs[0]].verts[0];	//	Set just in case it doesn't get set below.
-	} else {
-		vm_vec_zero(local_attack_point);
-	}
+	vm_vec_zero(local_attack_point);
 
-	for (q=0; q<4; q++) {
-		octp = &pm->octants[octs[q]];
-		if (octp->nverts > 0) {
+	auto collision_tree = model_get_bsp_collision_tree(pm->submodel[pm->detail[0]].collision_tree_index);
 
-			if (num_tries > octp->nverts)
-				num_tries = octp->nverts;
+	if (!collision_tree->poly_centers.empty()) {
+		int num_polies = (int)collision_tree->poly_centers.size();
 
-			if (num_tries > octp->nverts)
-				num_tries = octp->nverts;
+		if (num_tries > num_polies)
+			num_tries = num_polies;
 
-			for (i=0; i<num_tries; i++) {
-				int	index;
-				float	dist, dot;
-				vec3d	v2p;
+		for (i=0; i<num_tries; i++) {
+			int	index;
+			float	dist, dot;
+			vec3d	v2p;
 
-				index = (int) (frand() * (octp->nverts));
+			index = (int) (frand() * num_polies);
 
-				rel_point = *octp->verts[index];
-				vm_vec_unrotate(&result_point, &rel_point, &objp->orient);
-				vm_vec_add2(&result_point, &objp->pos);
+			rel_point = collision_tree->poly_centers[index];
+			vm_vec_unrotate(&result_point, &rel_point, &objp->orient);
+			vm_vec_add2(&result_point, &objp->pos);
 
-				dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
-				bool in_fov = false;
+			dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
+			bool in_fov = false;
 
-				dot = vm_vec_dot(&v2p, attacker_objp_fvec);
-				if (tp == NULL) {
-					if (dot > fov)
-						in_fov = true;
-				} else {
-					in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
-				}
+			dot = vm_vec_dot(&v2p, attacker_objp_fvec);
+			if (tp == NULL) {
+				if (dot > fov)
+					in_fov = true;
+			} else {
+				in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
+			}
 
-				if (in_fov) {
-					if (dist < nearest_dist) {
-						nearest_dist = dist;
-						best_point = result_point;
-						*local_attack_point = rel_point;
-						Assert( !vm_is_vec_nan(local_attack_point) );
-						if (dot > (1.0f + fov)/2.0f)	//	If this point is quite good, quit searching for a better one.
-							goto done_1;
-					}
+			if (in_fov) {
+				if (dist < nearest_dist) {
+					nearest_dist = dist;
+					best_point = result_point;
+					*local_attack_point = rel_point;
+					Assert( !vm_is_vec_nan(local_attack_point) );
+					if (dot > (1.0f + fov)/2.0f)	//	If this point is quite good, quit searching for a better one.
+						goto done_1;
 				}
 			}
 		}
@@ -172,8 +162,6 @@ done_1:
 	}
 	
 	mc_info mc;
-	mc_info_init(&mc);
-
 	mc.model_instance_num = Ships[objp->instance].model_instance_num;
 	mc.model_num = sip->model_num;
 	mc.orient = &objp->orient;
@@ -205,7 +193,7 @@ done_1:
 //
 //	Note: Default value for fov is 1.0f  1.0f means don't use fov parameter.
 //	If fov != 1.0f, try up to four times to find a point that's in the field of view.
-void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist)
+void ai_big_pick_attack_point_turret(const object *objp, ship_subsys *ssp, const vec3d *gpos, const vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist)
 {
 	if (!timestamp_elapsed(ssp->turret_pick_big_attack_point_timestamp)) {
 		vec3d	result_point;
@@ -225,7 +213,7 @@ void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos
 //	Note: Default value for fov is 1.0f  1.0f means don't use fov parameter.
 //	If fov != 1.0f, try up to four times to find a point that's in the field of view.
 //	Note, attacker_objp can be a ship or a weapon.
-void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov)
+void ai_big_pick_attack_point(const object *objp, const object *attacker_objp, vec3d *attack_point, float fov)
 {
 	Assert(objp->instance > -1);
 	Assert(objp->type == OBJ_SHIP);
@@ -369,7 +357,8 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 	float		dot = 1.0f, min_dot;
 	object	*target_objp;
 
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+	auto shipp = &Ships[Pl_objp->instance];
+	aip = &Ai_info[shipp->ai_index];
     
 	if ( aip->target_objnum < 0 )
 		return 0;
@@ -381,7 +370,8 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		float			dist;
 
 		// Get models of both source and target
-		polymodel *pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
+		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+		polymodel_instance *pmi = model_get_instance( shipp->model_instance_num );
 		polymodel *pm_t = model_get( Ship_info[Ships[target_objp->instance].ship_info_index].model_num );
 
 		// Necessary sanity check
@@ -402,8 +392,8 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 			aip->path_subsystem_next_check = timestamp(1500);
 
 			// get world pos of eye (stored in geye)
-			ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
-			model_find_world_point( &geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos );
+			ep = &(pm->view_positions[shipp->current_viewpoint]);
+			model_instance_local_to_global_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -421,7 +411,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 				}
 			}
 
-			if ( ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, 1) ) {
+			if ( ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, true) ) {
 				subsys_in_sight = 1;
 			}
 		}
@@ -430,7 +420,6 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);
 		if ( (checked_sight && ((!subsys_in_sight) || (dot < min_dot)) ) )  {
 
-			aip->path_goal_dist = 5;
 			subsys_path_num = aip->targeted_subsys->system_info->path_num;
 			if ( ((aip->path_start) == -1 || (aip->mp_index != subsys_path_num)) && subsys_path_num < pm_t->n_paths ) {
 				// maybe create a new path
@@ -460,8 +449,40 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 			Assert(aip->path_length >= 2);
 			dist = vm_vec_dist_quick(&Path_points[aip->path_start+aip->path_length-2].pos, &Pl_objp->pos);
 
+			// distance setting --wookieejedi
 			if ( aip->path_cur >= (aip->path_start+aip->path_length-1) ) {
+				// register that path is done and reset goal distance to default
+				aip->path_goal_dist = Default_subsystem_path_pt_dist;
 				path_done=1;
+			}
+			// if not done then set path distances based on specified options
+			else {
+				bool found_point = false;
+				// 1. use radii of path points if specified
+				if (aip->ai_profile_flags[AI::Profile_Flags::Use_subsystem_path_point_radii]) {
+					// need a valid path and point in model to use pof specified radius
+					int path_num = aip->targeted_subsys->system_info->path_num;
+					if ((0 <= path_num) && (path_num < pm_t->n_paths)) {
+						// need a valid place in the path
+						if ((0 <= aip->path_cur) && (aip->path_cur < aip->path_length)) {
+							float path_point_radius = pm_t->paths[path_num].verts[aip->path_cur].radius;
+							int goal_dist = fl2i(path_point_radius);
+							// only set if >= Minimum path distance specified in aibig.h
+							if (goal_dist >= Minimum_subsystem_path_pt_dist) {
+								aip->path_goal_dist = goal_dist;
+								found_point = true;
+							}
+						}
+					}
+				}
+				// 2. use radii value in ai_profiles table if specified and no valid point found
+				if (!found_point && The_mission.ai_profile->subsystem_path_radii) {
+					aip->path_goal_dist = The_mission.ai_profile->subsystem_path_radii;
+				}
+				// 3. use default radii value if no valid point or specified radii
+				else {
+					aip->path_goal_dist = Default_subsystem_path_pt_dist;
+				}
 			}
 
 			min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);
@@ -495,6 +516,122 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 	return 0;
 }
 
+bool ai_new_maybe_reposition_attack_subsys() {
+
+	ai_info* aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+
+	if (aip->target_objnum < 0 || aip->targeted_subsys == nullptr)
+		return false;
+
+	object* target_objp = &Objects[aip->target_objnum];
+
+	// dont bother with this if you're still far away
+	if (vm_vec_dist(&Pl_objp->pos, &target_objp->pos) > target_objp->radius * 2.0f + 2000.0f)
+		return false;
+
+	vec3d		geye, gsubpos;
+	eye* ep;
+	polymodel* pm = model_get(Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num);
+
+	// get world pos of eye (stored in geye)
+	ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
+	model_local_to_global_point(&geye, &ep->pnt, pm, 0, &Pl_objp->orient, &Pl_objp->pos);
+
+	// get world pos of subsystem
+	get_subsystem_pos(&gsubpos, target_objp, aip->targeted_subsys);
+
+	// you're in sight! shoot it!
+	if (ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, false))
+		return false;
+
+	// not in sight, gotta get there
+	vec3d* good_pos = nullptr;
+	vec3d world_goal_pos;
+	// For performance reasons we only recheck once a second, otherwise we reuse the last found target.
+	if (timestamp_elapsed(aip->next_dynamic_path_check_time)) {
+		vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
+		vec3d tgt2subsys = gsubpos - target_objp->pos;
+		float pl_dist = vm_vec_mag(&tgt2pl);
+		float subsys_dist = vm_vec_mag(&tgt2subsys) * 1.3f; // add a bit to this, we don't want to go directly at the subsys, we want to go above it
+
+		float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
+		float angle2goal = angle2subsys;
+		if (angle2goal > 1.2f) // let's not try to go more than about 70 degrees around the ship
+			angle2goal = 1.2f;
+
+		// we'll start by travelling along the sphere at our current distance around the ship
+		// remember that goal_pos will be relative to our target_ship (so we can scale in and out easily)
+		vec3d goal_pos, cross;
+		vm_vec_cross(&cross, &tgt2pl, &tgt2subsys);
+		vm_vec_normalize(&cross);
+		vm_vec_negate(&cross);
+		vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
+
+		// then scale in (or out) towards our subsys
+		float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
+		vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
+		world_goal_pos += target_objp->pos;
+
+		if (pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f)) {
+			// ok best case won't work
+			if (pl_dist > subsys_dist) {
+				//we're farther away than the subsys, let's try at our current distance
+				world_goal_pos = goal_pos + target_objp->pos;
+				if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+					good_pos = &world_goal_pos;
+			}
+
+			// ok, let's start moving it away and see if that's better
+			for (float i = 1.0f; i < 4.0f; i += 1.0f) {
+				if (good_pos)
+					break;
+
+				vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * powf(1.3f,i));
+				world_goal_pos += target_objp->pos;
+				if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+					good_pos = &world_goal_pos;
+			}
+
+			// welp this sucks, just run away i guess
+			if (!good_pos) {
+				vm_vec_copy_normalize(&world_goal_pos, &tgt2pl);
+				world_goal_pos *= target_objp->radius + pl_dist;
+				world_goal_pos += target_objp->pos;
+				good_pos = &world_goal_pos;
+			}
+		}
+		else
+			good_pos = &world_goal_pos;
+		aip->next_dynamic_path_check_time = timestamp( AI_DYNAMIC_PATH_RECHECK_DELAY );
+		aip->last_dynamic_path_goal = *good_pos;
+
+	}
+	else{ //Not enough time has passed till recheck.
+		good_pos = &aip->last_dynamic_path_goal;
+	}
+
+	ai_turn_towards_vector(good_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
+	float subsys_distance = vm_vec_dist(&Pl_objp->pos, &gsubpos);
+
+	// full speed until you're close, then slow down a bit
+	accelerate_ship(aip, subsys_distance > 200.0f ? 1.0f : subsys_distance / 200.0f);
+
+	if (!(Ships[Pl_objp->instance].flags[Ship::Ship_Flags::Afterburner_locked])) {
+		if (ai_willing_to_afterburn_hard(aip) && subsys_distance > 1000.0f)
+			ai_afterburn_hard(Pl_objp, aip);
+		else if (subsys_distance > 300.0f) {
+			if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
+				afterburners_start(Pl_objp);
+				aip->afterburner_stop_time = Missiontime + 2 * F1_0;
+			}
+		}
+	} else
+		afterburners_stop(Pl_objp);
+
+	return true;
+
+}
+
 // This function is only called from ai_big_chase_attack() when a ship is flying very slowly and
 // attacking a big ship.  The ship should scan for enemy fighter/bombers... if any are close, then
 // return 1, otherwise return 0;
@@ -512,16 +649,17 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 	// are near
 	if ( sip->is_small_ship() ) {
 		if ( timestamp_elapsed(aip->scan_for_enemy_timestamp) ) {
-			ship_obj	*so;
 			object	*test_objp;
 			ship		*test_sp;
 			float		dist_squared;
 			
 			aip->scan_for_enemy_timestamp = timestamp(SCAN_FIGHTERS_INTERVAL);
 			// iterate through ships, and see if any fighter/bomber from opposite team are near
-			so = GET_FIRST(&Ship_obj_list);
-			while( so != END_OF_LIST(&Ship_obj_list) ) {
+			for (auto so: list_range(&Ship_obj_list)) {
 				test_objp = &Objects[so->objnum];
+				if (test_objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				test_sp = &Ships[test_objp->instance];
 
 				if ( iff_x_attacks_y(Ships[Pl_objp->instance].team, test_sp->team) ) {
@@ -532,7 +670,6 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 						}
 					}
 				}
-				so = GET_NEXT(so);
 			}
 		}
 	}
@@ -557,6 +694,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		if (Pl_objp->phys_info.speed < 3.0f) {
 			object *objp;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+				if (objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if ((objp->type == OBJ_WEAPON) && (iff_x_attacks_y(Ships[Pl_objp->instance].team, Weapons[objp->instance].team)))
 					if (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_LASER) {
 						vec3d	in_vec;
@@ -603,8 +743,11 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		}
 
 		// see if Pl_objp needs to reposition to get a good shot at subsystem which is being attacked
-		if ( ai_big_maybe_follow_subsys_path() ) {
-			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
+		if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing]) {
+			if (ai_new_maybe_reposition_attack_subsys())
+				return;
+		} else if ( ai_big_maybe_follow_subsys_path() ) {
+			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && !ai_willing_to_afterburn_hard(aip)) {
 				afterburners_stop(Pl_objp);
 			}
 			return;
@@ -630,18 +773,32 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			compute_desired_rvec(rvec, enemy_pos, &Pl_objp->pos);
 		else
 			rvec = NULL;
+		
+		ai_turn_towards_vector(enemy_pos, Pl_objp, nullptr, rel_pos, 0.0f, 0, rvec);
 
-		ai_turn_towards_vector(enemy_pos, Pl_objp, flFrametime, sip->srotation_time, NULL, rel_pos, 0.0f, 0, rvec);
+		// set an optimal range if applicable
+		float optimal_range = 0.0f;
+		ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
+		weapon_info* wip = nullptr;
+		ship* shipp = &Ships[Pl_objp->instance];
+
+		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Primaries_locked]) {
+			wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
+		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Secondaries_locked]) {
+			wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
+		}
+
+		if (wip != nullptr && wip->optimum_range > 0)
+			optimal_range = wip->optimum_range;
 
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
 
 		if ( aip->targeted_subsys != NULL ) {
-			if (dist_to_enemy > (weapon_travel_dist-20)) {
+			if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist-20))) {
 				accelerate_ship(aip, 1.0f);
 				
-				ship	*shipp = &Ships[Pl_objp->instance];
-				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
+				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;
@@ -665,7 +822,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else if (dot_to_enemy < 0.75f) {
 				accel = 0.75f;
 			} else {
-				if (dist_to_enemy > weapon_travel_dist/2.0f) {
+				if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist/2.0f))) {
 					accel = 1.0f;
 				} else {
 					accel = 1.0f - dot_to_enemy;
@@ -682,8 +839,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else {
 				accelerate_ship(aip, accel);
 
-				ship	*shipp = &Ships[Pl_objp->instance];
-				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
+				if (ai_willing_to_afterburn_hard(aip) && accel > 0.99f && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked])) {
+					ai_afterburn_hard(Pl_objp, aip);
+				} else if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;
@@ -702,19 +860,19 @@ void ai_big_chase_ct()
 	ai_chase_ct();
 }
 
-extern void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
+extern bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
 extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst);
-extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
-extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time);
+extern bool ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
+extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f);
 
-extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
+extern void maybe_cheat_fire_synaptic(object *objp);
 
 // Determine if Pl_objp should fire weapons at current target, based on input parameters
 //
 // dist_to_enemy	=>		distance (in m) to attack point on current target
 // dot_to_enemy	=>		dot product between fvec of Pl_objp and vector from Pl_objp to attack point
 //
-void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *firing_pos, vec3d *enemy_pos, vec3d *enemy_vel)
+static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 {
 	ai_info		*aip;
 	ship_weapon	*swp;
@@ -723,12 +881,19 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 	swp = &Ships[Pl_objp->instance].weapons;
 
-	if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)) {
+	float target_radius = En_objp->radius;
+
+	// normal subsystem attacking uses whether or not its on a path and skips this function entirely to stop "over-eager" firing
+	// since the improved method doesnt use paths, refine the target radius to stop over-eager shooting
+	if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing] && aip->targeted_subsys != nullptr)
+		target_radius = aip->targeted_subsys->system_info->radius;
+
+	if (dot_to_enemy > 0.95f - 0.5f * target_radius/MAX(1.0f, target_radius + dist_to_enemy)) {
 		aip->time_enemy_in_range += flFrametime;
 		
 		//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 		//	and also the size of the target relative to distance to target.
-		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
+		if (dot_to_enemy > std::max(0.5f, 0.90f + aip->ai_accuracy / 10.0f - En_objp->radius / std::max(1.0f, dist_to_enemy))) {
 
 			ship *temp_shipp;
 			temp_shipp = &Ships[Pl_objp->instance];
@@ -748,13 +913,13 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 			}
 
 			if (tswp->num_secondary_banks > 0) {
-				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
-					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
+				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL))) {
+					bool valid_secondary = ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
-					if (current_bank > -1) {
+					if (current_bank > -1 && valid_secondary) {
 						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
-						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
+						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
 							//	If ship is protected and very low on hits, don't fire missiles.
 							if (!(En_objp->flags[Object::Object_Flags::Protected]) || (En_objp->hull_strength > 10*swip->damage)) {
 								if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
@@ -763,7 +928,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 									}
 								}
 
-								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_target_satisfies_lock_restrictions(swip, En_objp)) {
 									float firing_range;
 									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;
@@ -793,10 +958,11 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 													} else {
 														t = swip->fire_wait;
 														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+															swp->burst_counter[current_bank_adjusted] = Random::next(swip->burst_shots);
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
+														swp->burst_seed[current_bank_adjusted] = Random::next();
 													}
 												} else {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
@@ -805,10 +971,11 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 													} else {
 														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
 														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+															swp->burst_counter[current_bank_adjusted] = Random::next(swip->burst_shots);
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
+														swp->burst_seed[current_bank_adjusted] = Random::next();
 													}
 												}
 												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
@@ -845,7 +1012,7 @@ void ai_big_switch_to_chase_mode(ai_info *aip)
 	aip->submode_start_time = Missiontime;
 }
 
-extern int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos);
+extern weapon_info* ai_get_weapon(ship_weapon* swp);
 
 // Make object Pl_objp chase object En_objp, which is a big ship, not a small ship.
 void ai_big_chase()
@@ -859,30 +1026,52 @@ void ai_big_chase()
 
 	Assert(aip->mode == AIM_CHASE);
 
-	maybe_cheat_fire_synaptic(Pl_objp, aip);
+	maybe_cheat_fire_synaptic(Pl_objp);
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 
 	player_pos = Pl_objp->pos;
 	ai_big_pick_attack_point(En_objp, Pl_objp, &enemy_pos, 0.8f);
 
-	//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
-	if (En_objp->phys_info.speed > 3.0f) {
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
-		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
-		vm_vec_sub2(&enemy_pos, &En_objp->pos);
-	}	else
-		predicted_enemy_pos = En_objp->pos;
+	weapon_info* wip = ai_get_weapon(&shipp->weapons);
+	bool ballistic_aiming = !IS_VEC_NULL(&The_mission.gravity) && wip && wip->gravity_const != 0.0f;
+	bool valid_ballistic_trajectory = true;
 
-	if (aip->targeted_subsys != NULL) {
-		get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
+	if (!ballistic_aiming) {
+		//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
+		if (En_objp->phys_info.speed > 3.0f) {
+			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
+			vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
+			vm_vec_sub2(&enemy_pos, &En_objp->pos);
+		} else
+			predicted_enemy_pos = En_objp->pos;
+
+		if (aip->targeted_subsys != NULL) {
+			get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
+		}
+	} else {
+		if (aip->targeted_subsys != NULL) {
+			get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
+		}
+
+		vec3d gravity = The_mission.gravity * wip->gravity_const;
+		vec3d target;
+		valid_ballistic_trajectory = 
+			physics_lead_ballistic_trajectory(&player_pos, &enemy_pos, &En_objp->phys_info.vel, wip->max_speed, &gravity, &target);
+
+		if (valid_ballistic_trajectory) {
+			enemy_pos = Pl_objp->pos + target * vm_vec_dist(&Pl_objp->pos, &enemy_pos);
+			predicted_enemy_pos = enemy_pos;
+		} else {
+			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
+		}
 	}
 
 	dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &enemy_pos, &player_pos); // - En_objp->radius;
 	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
-		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
+		if ( ai_big_strafe_maybe_retreat(&enemy_pos) ) {
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			aip->submode = AIS_STRAFE_AVOID;
@@ -906,7 +1095,7 @@ void ai_big_chase()
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	if ((dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags[AI::AI_Flags::Seek_lock])) {
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
-	} else if (aip->targeted_subsys != NULL) {		
+	} else if (aip->targeted_subsys != NULL && !ballistic_aiming) {
 		Assert(aip->targeted_subsys != NULL);
 		get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
 		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
@@ -938,7 +1127,7 @@ void ai_big_chase()
 			}
 		}
 
-		if (aip->target_time < 2.0f)
+		if (!aip->ai_profile_flags[AI::Profile_Flags::No_continuous_turn_on_attack] && aip->target_time < 2.0f)
 			if ((dot_to_enemy < 0.9f) || (dist_to_enemy > 300.0f)) {
 				aip->submode = SM_CONTINUOUS_TURN;
 				aip->submode_start_time = Missiontime - fl2f(2.75f);	//	This backdated start time allows immediate switchout.
@@ -1007,7 +1196,10 @@ void ai_big_chase()
 		float dist_normal_to_enemy;
 
 		if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
-			dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+			if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing])
+				dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+			else // I'm fairly sure this retail code VVV meant to use / instead of * 
+				dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
 		} else {
 			// don;t have normal so use a conservative value here
 			dist_normal_to_enemy = 0.3f * dist_to_enemy;
@@ -1045,7 +1237,7 @@ void ai_big_chase()
 			if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME) ) {
 				// get away, simulate crsh recovery (don't use avoid)
 //				accelerate_ship(aip, -1.0f);
-				big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
+				big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 //				aip->submode = SM_AVOID;
 //				aip->submode_start_time = Missiontime;
 			} else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME) ) {
@@ -1143,19 +1335,14 @@ void ai_big_chase()
 	//     I noticed AI ships firing inappropriately when following a path near a big ship.
 	//		 TODO: investigate why ships fire (and aren't close to hitting ship) when following a path near
 	//				 a big ship
-	if (aip->mode != AIM_EVADE && aip->path_start == -1 ) {
-		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy, &player_pos, &predicted_enemy_pos, &En_objp->phys_info.vel);
+	if (aip->mode != AIM_EVADE && aip->path_start == -1 && (!ballistic_aiming || valid_ballistic_trajectory)) {
+		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy);
 	} else {
 		if (flFrametime < 1.0f)
 			aip->time_enemy_in_range *= (1.0f - flFrametime);
 		else
 			aip->time_enemy_in_range = 0;
 	}
-}
-
-void ai_big_ship(object *objp)
-{
-	// do nothing
 }
 
 // all three parms are output parameters
@@ -1228,7 +1415,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 
 // check to see if Pl_objp has gotten too close to attacking point.. if so, break off by entering
 // AIS_STRAFE_RETREAT
-int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
+static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 {
 	ai_info	*aip;
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -1258,7 +1445,7 @@ int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
 		if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
 			// use standard collision resolution
 			aip->ai_flags.remove(AI::AI_Flags::Target_collision);
-			big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
+			big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 		} else {
 			// too close for comfort so fly to box point + 300
 			aip->submode = AIS_STRAFE_RETREAT1;
@@ -1289,21 +1476,25 @@ void ai_big_strafe_attack()
 	ai_info	*aip;
 	vec3d	target_pos;
 	vec3d	rand_vec;
-	float		target_dist, target_dot, accel, t;
+	float	accel, t;
+	float target_dist = 0.0f;
+	float target_dot = 0.0f;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
-	if ( ai_big_maybe_follow_subsys_path(0) ) {
+	if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing]) {
+		if (ai_new_maybe_reposition_attack_subsys())
+			return;
+	} else if (ai_big_maybe_follow_subsys_path(0))
 		return;
-	}
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
-	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
+	if ( ai_big_strafe_maybe_retreat(&target_pos) )
 		return;
 
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		if (target_dist < 1200.0f) {
-			ai_turn_towards_vector(&target_pos, Pl_objp, flFrametime, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
+			ai_turn_towards_vector(&target_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
 			if ((target_dist < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);
@@ -1318,7 +1509,7 @@ void ai_big_strafe_attack()
 		if ( t > 0.0f && t < 1.5f ) {
 			// set up goal_point for avoid path to turn towards
 			aip->goal_point = Pl_objp->pos;
-			switch(rand()%4) {
+			switch(Random::next(4)) {
 			case 0:
 				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec, 2.0f);
 				break;
@@ -1347,7 +1538,7 @@ void ai_big_strafe_attack()
 	}
 
 	// maybe fire weapons at target
-	ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+	ai_big_maybe_fire_weapons(target_dist, target_dot);
 	turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
 
 	fix last_hit = Missiontime - aip->last_hit_time;
@@ -1412,9 +1603,11 @@ void ai_big_strafe_glide_attack()
 	flight_dot_to_enemy = vm_vec_dot(&target_objp->pos, &norm_vel_vec);	//Angle between flight path and target ship
 
 	//If we're following a path, then we shouldn't be doing glide strafe
-	if ( ai_big_maybe_follow_subsys_path(0) ) {
+	if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing]) {
+		if (ai_new_maybe_reposition_attack_subsys())
+			return;
+	} else if (ai_big_maybe_follow_subsys_path(0))
 		return;
-	}
 
 	//Gets a point on the target ship to attack, as well as distance and the angle between the nose of the attacker and that point.
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);	
@@ -1428,7 +1621,7 @@ void ai_big_strafe_glide_attack()
 		vm_vec_sub(&targetToAttacker, &Pl_objp->pos, &target_objp->pos);
 		matrix orient;
 		vm_vector_2_matrix(&orient, &targetToAttacker, NULL, NULL);
-		vm_vec_random_in_circle(&tangentPoint, &target_objp->pos, &orient, target_objp->radius + GLIDE_STRAFE_DISTANCE, 1);
+		vm_vec_random_in_circle(&tangentPoint, &target_objp->pos, &orient, target_objp->radius + GLIDE_STRAFE_DISTANCE, true);
 		//Get tangent point in coords relative to ship, scale it up so the actual goal point is far away, then put back in world coords
 		vm_vec_sub2(&tangentPoint, &Pl_objp->pos);
 		vm_vec_scale(&tangentPoint, 1000.0f);
@@ -1493,7 +1686,7 @@ void ai_big_strafe_glide_attack()
 		vm_vec_sub2(&target_pos, &En_objp->pos);
 
 		turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
-		ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+		ai_big_maybe_fire_weapons(target_dist, target_dot);
 	}
 
 	// if haven't been hit in quite a while, leave strafe mode
@@ -1517,7 +1710,7 @@ void ai_big_strafe_avoid()
 	mode_time = Missiontime - aip->submode_start_time;
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
-	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
+	if ( ai_big_strafe_maybe_retreat(&target_pos) )
 		return;
 
 	if ( mode_time > fl2f(0.5)) {
@@ -1548,7 +1741,7 @@ void ai_big_strafe_retreat1()
 	if (Missiontime - aip->submode_start_time > fl2f(1.50f)) {
 		// set up goal_point for avoid path to turn towards
 		aip->prev_goal_point = Pl_objp->pos;
-		switch(rand()%4) {
+		switch(Random::next(4)) {
 		case 0:
 			vm_vec_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec);
 			break;
@@ -1648,7 +1841,7 @@ void ai_big_strafe()
 
 /*
 	if ( aip->goal_objnum != aip->target_objnum ) {
-		Int3();	// what is going on here? - Get Alan
+		UNREACHABLE("The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
 		aip->mode = AIM_NONE;
 		return;
 	}
@@ -1680,7 +1873,7 @@ void ai_big_strafe()
 		break;
 	default:
 
-		Int3();		//	Illegal submode for AIM_STRAFE
+		Error(LOCATION, "Ai_big_strafe() just tried to use an illegal submode. Go tell a coder!");		
 		break;
 	}
 
@@ -1704,7 +1897,7 @@ void ai_big_strafe()
 //
 // Check if weapon_objnum was fired by Pl_objp's target, and whether Pl_objp's target is a big ship, if
 // so, enter AIM_STRAFE
-int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consider_target_only)
+int ai_big_maybe_enter_strafe_mode(const object *pl_objp, int weapon_objnum)
 {
 	ai_info		*aip;
 	ship_info	*sip;
@@ -1778,7 +1971,7 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 // Consider attacking a turret, if a turret actually fired the weapon
 // input:	ship_objp	=>	ship that will attack the turret
 //				weapon_objp	=>	
-void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
+void ai_big_strafe_maybe_attack_turret(const object *ship_objp, const object *weapon_objp)
 {
 	ai_info	*aip;
 	object	*parent_objp;

@@ -13,6 +13,8 @@
 #define _DEBRIS_H
 
 #include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
+#include "gamesnd/gamesnd.h"
 
 class object;
 struct CFILE;
@@ -20,45 +22,46 @@ class model_draw_list;
 
 #define MAX_DEBRIS_ARCS 8		// Must be less than MAX_ARC_EFFECTS in model.h
 
-typedef struct debris {
-	debris	*next, *prev;		// used for a linked list of the hull debris chunks
-	int		flags;					// See DEBRIS_??? defines
-	int		source_objnum;		// What object this came from
-	int		source_sig;			// Signature of the source object
-	int		damage_type_idx;	// Damage type of this debris
-	int		ship_info_index;	// Ship info index of the ship type debris came from
-	int		team;					// Team of the ship where the debris came from
-	int		objnum;				// What object this is linked to
-	float		lifeleft;			// When 0 or less object dies
-	int		must_survive_until;	//WMC - timestamp of earliest point that it can be murthered.
-	int		model_num;			// What model this uses
-	int		submodel_num;		// What submodel this uses
-	int		next_fireball;		// When to start a fireball
-	int		is_hull;				// indicates a large hull chunk of debris
-	int		species;				// What species this is from.  -1 if don't care.
-	int		fire_timeout;		// timestamp that holds time for fireballs to stop appearing
-	int		sound_delay;		// timestamp to signal when sound should start
-	fix		time_started;		// time when debris was created
-	int		next_distance_check;	//	timestamp to determine whether to delete this piece of debris.
+FLAG_LIST(Debris_Flags) {
+	Used,
+	OnHullDebrisList,
+	DoNotExpire,		// This debris piece has been placed in FRED and should not expire automatically
 
-	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];		// The endpoints of each arc
-	int		arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  -1 is not used
-	int		arc_frequency;							// Starts at 0, gets bigger
+	NUM_VALUES
+};
+
+
+typedef struct debris {
+	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
+	int		source_objnum;			// What object this came from
+	int		damage_type_idx;		// Damage type of this debris
+	int		ship_info_index;		// Ship info index of the ship type debris came from
+	int		team;					// Team of the ship where the debris came from
+	gamesnd_id ambient_sound;		// Ambient looping sound
+	int		objnum = -1;			// What object this is linked to
+	float		lifeleft;			// When 0 or less object dies
+	int		model_num;				// What model this uses
+	int		model_instance_num;		// What model instance this uses - needed for arcs
+	int		submodel_num;			// What submodel this uses
+	TIMESTAMP	next_fireball;		// When to start a fireball
+	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
+	int		species;				// What species this is from.  -1 if don't care.
+	TIMESTAMP	fire_timeout;		// timestamp that holds time for fireballs to stop appearing
+	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
+	fix		time_started;			// time when debris was created
+
+	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];	// The endpoints of each arc
+	TIMESTAMP	arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  Invalid is not used
+	int		arc_frequency;					// Starts at 1000, gets bigger
+
 	int		parent_alt_name;
 	float	damage_mult;
-	
+
+	// flags and objnum are the only things that are cleared when debris is deleted, so they are the only values initialized here (plus next and prev)
 } debris;
 
-
-// flags for debris pieces
-#define	DEBRIS_USED				(1<<0)
-#define	DEBRIS_EXPIRE			(1<<1)	// debris can expire (ie hull chunks from small ships)
-
-#define	MAX_DEBRIS_PIECES	64
-
-extern	debris Debris[MAX_DEBRIS_PIECES];
-
-extern int Num_debris_pieces;
+#define	SOFT_LIMIT_DEBRIS_PIECES	64
+extern	SCP_vector<debris> Debris;
 
 struct collision_info_struct;
 
@@ -66,10 +69,31 @@ void debris_init();
 void debris_render(object * obj, model_draw_list *scene);
 void debris_delete( object * obj );
 void debris_process_post( object * obj, float frame_time);
-object *debris_create( object * source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force );
+
+// Create debris, set velocity, and fire scripting hook
+object *debris_create( object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force, ship_subsys* source_subsys = nullptr );
+
+// Create debris but don't do anything else
+object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, vec3d *pos, matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx);
+
+// Set velocity after debris creation
+void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force, ship_subsys* source_subsys = nullptr);
+
+// Fire scripting hook after debris creation
+void debris_create_fire_hook(object *obj, object *source_obj);
+
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
-void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage );
+void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force );
 int debris_get_team(object *objp);
-void debris_clear_expired_flag(debris *db);
+
+void debris_add_to_hull_list(debris *db);
+void debris_remove_from_hull_list(debris *db);
+
+bool debris_is_generic(debris *db);
+bool debris_is_vaporized(debris *db);
+
+// creates a burst of generic debris at hitpos from ship_objp, with a random number between min and max
+// use_ship_debris is for whether the ship's generic debris should be used, or simply debris01.pof
+void create_generic_debris(object* ship_objp, vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris);
 
 #endif // _DEBRIS_H

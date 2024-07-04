@@ -18,9 +18,9 @@
 
 grid	Global_grid;
 grid	*The_grid;
-int	double_fine_gridlines = 0;
+bool double_fine_gridlines = false;
 
-void grid_read_camera_controls( control_info * ci, float frametime )
+void grid_read_camera_controls( control_info * ci, float  /*frametime*/ )
 {
 	float kh;
 
@@ -242,7 +242,7 @@ grid *create_default_grid(void)
 }
 
 //	Rotate and project points and draw a line.
-void rpd_line(vec3d *v0, vec3d *v1)
+void rpd_line(const vec3d *v0, const vec3d *v1)
 {
 	vertex	tv0, tv1;
 
@@ -256,45 +256,4 @@ void modify_grid(grid *gridp)
 {
 	create_grid(gridp, &gridp->gmatrix.vec.fvec, &gridp->gmatrix.vec.rvec, &gridp->center,
 		gridp->nrows, gridp->ncols, gridp->square_size);
-}
-
-void grid_render_elevation_line(vec3d *pos, grid* gridp)
-{
-	vec3d	gpos;	//	Location of point on grid.
-	vec3d	tpos;
-	float		dxz;
-	plane		tplane;
-	vec3d	*gv;
-	
-	tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
-	tplane.B = gridp->gmatrix.vec.uvec.xyz.y;
-	tplane.C = gridp->gmatrix.vec.uvec.xyz.z;
-	tplane.D = gridp->planeD;
-
-	compute_point_on_plane(&gpos, &tplane, pos);
-
-	dxz = vm_vec_dist(pos, &gpos)/8.0f;
-
-	gv = &gridp->gmatrix.vec.uvec;
-	if (gv->xyz.x * pos->xyz.x + gv->xyz.y * pos->xyz.y + gv->xyz.z * pos->xyz.z < -gridp->planeD)
-		gr_set_color(127, 127, 127);
-	else
-		gr_set_color(255, 255, 255);   // white
-
-	rpd_line(&gpos, pos);	//	Line from grid to object center.
-
-	tpos = gpos;
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, -dxz/2);
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.fvec, -dxz/2);
-	
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, dxz/2);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.fvec, dxz/2);
-	
-	rpd_line(&gpos, &tpos);
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, dxz);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, -dxz);
-
-	rpd_line(&gpos, &tpos);
 }

@@ -13,7 +13,8 @@
 #define __DS_H__
 
 #include "globalincs/pstypes.h"
-#include "sound/ffmpeg/WaveFile.h"
+#include "sound/IAudioFile.h"
+#include "utils/id.h"
 
 // Constants that DirectSound should assign, but doesn't
 #define MIN_PITCH		100
@@ -38,6 +39,8 @@ struct EnhancedSoundData;
 
 #define DS_3D		(1<<0)
 
+#define DS_RESERVED_CHANNELS 32
+
 typedef struct sound_info {
 	uint size;
 	int sample_rate;
@@ -49,38 +52,57 @@ typedef struct sound_info {
 
 extern int ds_initialized;
 
+struct ds_sound_handle_tag {
+};
+using ds_sound_handle = ::util::ID<ds_sound_handle_tag, int, -1>;
+
 int ds_init();
 void ds_close();
-int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file);
+int ds_load_buffer(int *sid, int flags, sound::IAudioFile* file);
 void ds_unload_buffer(int sid);
-int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg = false);
-int ds_get_channel(int sig);
+ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData* enhanced_sound_data, float volume,
+                        float pan, int looping, bool is_voice_msg = false);
+int ds_get_channel(ds_sound_handle sig);
+int ds_get_channel_raw(ds_sound_handle sig);
 int ds_is_channel_playing(int channel);
+bool ds_is_channel_paused(int channel_id);
 void ds_stop_channel(int channel);
+void ds_pause_channel(int channel_id);
+void ds_resume_channel(int channel_id);
 void ds_stop_channel_all();
 void ds_set_volume( int channel, float vol );
 void ds_set_pan( int channel, float pan );
-int ds_get_pitch(int channel);
-void ds_set_pitch(int channel, int pitch);
-void ds_chg_loop_status(int channel, int loop);
+/**
+ * @brief Get the pitch of a channel
+ *
+ * @details A pitch value of 1.0 means that the original sound is not changed.
+ */
+float ds_get_pitch(int channel);
+/**
+ * @brief Set the pitch of a channel
+ *
+ * @details A pitch value of 1.0 means that the original sound is not changed.
+ */
+void ds_set_pitch(int channel, float pitch);
 void ds_set_position(int channel, unsigned int offset);
 unsigned int ds_get_play_position(int channel);
-unsigned int ds_get_write_position(int channel);
 int ds_get_data(int sid, char *data);
 int ds_get_size(int sid, int *size);
 
 int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nseconds);
 int ds_lock_data(int sid, unsigned char *data, int size);
-int ds_play_easy(int sid, float volume);
 void ds_stop_easy(int sid);
 int ds_get_channel_size(int channel);
 
 int ds_get_sound_id(int channel);
+int ds_get_sound_index(int channel_id);
 
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
 
-int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, const EnhancedSoundData * enhanced_sound_data, int priority = DS_MUST_PLAY, bool is_ambient = false);
+ds_sound_handle ds3d_play(int sid, int snd_id, const vec3d* pos, const vec3d* vel, float min, float max, bool looping,
+                          float max_volume, float estimated_vol, const EnhancedSoundData* enhanced_sound_data,
+                          int priority = DS_MUST_PLAY, bool is_ambient = false);
 
 void ds_do_frame();
 
@@ -208,7 +230,6 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 int ds_eax_set_volume(float volume);
 int ds_eax_set_decay_time(float seconds);
 int ds_eax_set_damping(float damp);
-int ds_eax_set_environment(unsigned long envid);
 int ds_eax_set_all(unsigned long id, float volume, float damping, float decay);
 int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id = -1);
 int ds_eax_is_inited();

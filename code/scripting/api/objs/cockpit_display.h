@@ -11,16 +11,16 @@ namespace api {
 class cockpit_disp_info_h
 {
  private:
-	ship_info *m_sip;
+	int m_ship_info_idx;
 	size_t m_display_num;
 
  public:
 	cockpit_disp_info_h();
-	cockpit_disp_info_h(ship_info *sip, size_t display_num);
+	explicit cockpit_disp_info_h(int ship_info_idx, size_t display_num);
 
 	cockpit_display_info *Get();
 
-	bool isValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_DisplayInfo, cockpit_disp_info_h);
@@ -29,19 +29,18 @@ DECLARE_ADE_OBJ(l_DisplayInfo, cockpit_disp_info_h);
 class cockpit_display_h
 {
  private:
-	int obj_num;
-	object *m_objp;
+	int m_obj_num;
 	size_t m_display_num;
 
  public:
 	cockpit_display_h();
-	cockpit_display_h(object *objp, size_t display_num);
+	explicit cockpit_display_h(int obj_num, size_t display_num);
 
 	cockpit_display *Get();
 
-	size_t GetId();
+	size_t GetId() const;
 
-	bool isValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_CockpitDisplay, cockpit_display_h);
@@ -56,9 +55,10 @@ class cockpit_displays_info_h
 	cockpit_displays_info_h();
 	explicit cockpit_displays_info_h(int ship_info_idx);
 
-	ship_info *Get();
+	const ship_info *GetShipInfoPtr() const;
+	int GetShipInfoIndex() const;
 
-	bool isValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_CockpitDisplayInfos, cockpit_displays_info_h);
 
@@ -66,12 +66,12 @@ DECLARE_ADE_OBJ(l_CockpitDisplayInfos, cockpit_displays_info_h);
 class cockpit_displays_h
 {
  private:
-	object *m_objp;
+	int m_obj_num;
  public:
 	cockpit_displays_h();
-	explicit cockpit_displays_h(object *objp);
+	explicit cockpit_displays_h(int obj_num);
 
-	bool isValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_CockpitDisplays, cockpit_displays_h);
 

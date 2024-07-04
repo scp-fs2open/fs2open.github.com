@@ -14,22 +14,24 @@
 
 #include "hud/hud.h"
 
+struct lock_info;
+
 void hud_init_missile_lock();
-void hud_draw_lock_triangles(int center_x, int center_y, float frametime);
 void hud_calculate_lock_position(float frametime);
 void hud_calculate_lock_start_pos();
-void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos);
 void hud_do_lock_indicator(float frametime);
+void hud_do_lock_indicators(float frametime);
 void hud_stop_looped_locking_sounds();
 void hud_lock_reset(float lock_time_scale=1.0f);
 
-class HudGaugeLock: public HudGauge
+class HudGaugeLock: public HudGauge3DAnchor
 {
 protected:
 	hud_anim Lock_gauge;
 	hud_anim Lock_anim;
 
 	bool loop_locked_anim;
+	bool blink_locked_anim;
 
 	int Lock_gauge_half_w;
 	int Lock_gauge_half_h;
@@ -54,12 +56,15 @@ public:
 	void initTriBase(float length);
 	void initTargetBoxSize(int w, int h);
 	void initLoopLockedAnim(bool loop);
+	void initBlinkLockedAnim(bool blink);
 
-	void render(float frametime);
+	void render(float frametime) override;
+	void renderOld(float frametime);
 	void renderLockTriangles(int center_x, int center_y, float frametime);
+	void renderLockTrianglesNew(int center_x, int center_y, float frametime, lock_info *slot);
 	void renderLockTrianglesOld(int center_x, int center_y, int radius);
-	void pageIn();
-	void initialize();
+	void pageIn() override;
+	void initialize() override;
 };
 
 #endif

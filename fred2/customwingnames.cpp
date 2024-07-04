@@ -5,6 +5,7 @@
 #include "fred.h"
 #include "CustomWingNames.h"
 #include "ship/ship.h"
+#include "management.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -86,6 +87,19 @@ void CustomWingNames::OnOK()
 {
 	UpdateData(TRUE);
 
+	strip_quotation_marks(m_starting_1);
+	strip_quotation_marks(m_starting_2);
+	strip_quotation_marks(m_starting_3);
+
+	strip_quotation_marks(m_squadron_1);
+	strip_quotation_marks(m_squadron_2);
+	strip_quotation_marks(m_squadron_3);
+	strip_quotation_marks(m_squadron_4);
+	strip_quotation_marks(m_squadron_5);
+
+	strip_quotation_marks(m_tvt_1);
+	strip_quotation_marks(m_tvt_2);
+
 	if (strcmp(m_starting_1, m_tvt_1))
 	{
 		MessageBox("The first starting wing and the first team-versus-team wing must have the same wing name.");
@@ -113,7 +127,6 @@ void CustomWingNames::OnOK()
 		MessageBox("Duplicate wing names in team-versus-team wing list.");
 		return;
 	}
-
 
 	// copy starting wings
 	strcpy_s(Starting_wing_names[0], m_starting_1);

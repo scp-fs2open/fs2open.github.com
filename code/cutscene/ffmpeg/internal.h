@@ -16,29 +16,37 @@ struct CodecContextParameters {
 	uint64_t channel_layout = 0;
 	int sample_rate = -1;
 	AVSampleFormat audio_format = AV_SAMPLE_FMT_NONE;
+
+	AVCodecID codec_id = AV_CODEC_ID_NONE;
 };
 
 struct DecoderStatus {
 	int videoStreamIndex = -1;
 	AVStream* videoStream = nullptr;
 	CodecContextParameters videoCodecPars;
-	AVCodec* videoCodec = nullptr;
+	const AVCodec* videoCodec = nullptr;
 	AVCodecContext* videoCodecCtx = nullptr;
 
 	int audioStreamIndex = -1;
 	AVStream* audioStream = nullptr;
 	CodecContextParameters audioCodecPars;
-	AVCodec* audioCodec = nullptr;
+	const AVCodec* audioCodec = nullptr;
 	AVCodecContext* audioCodecCtx = nullptr;
+
+	// Subtitles are a bit different since they max come from a different file
+	bool externalSubtitles   = false;
+	int subtitleStreamIndex = -1;
+	AVStream* subtitleStream = nullptr;
+	CodecContextParameters subtitleCodecPars;
+	const AVCodec* subtitleCodec = nullptr;
+	AVCodecContext* subtitleCodecCtx = nullptr;
 
 	DecoderStatus();
 
 	~DecoderStatus();
 
- private:
-	DecoderStatus(const DecoderStatus&) SCP_DELETED_FUNCTION;
-
-	DecoderStatus& operator=(const DecoderStatus&) SCP_DELETED_FUNCTION;
+	DecoderStatus(const DecoderStatus&) = delete;
+	DecoderStatus& operator=(const DecoderStatus&) = delete;
 };
 
 template<typename Frame>
@@ -57,12 +65,14 @@ class FFMPEGStreamDecoder {
 	explicit FFMPEGStreamDecoder(DecoderStatus* status);
 	virtual ~FFMPEGStreamDecoder();
 
-	FFMPEGStreamDecoder(const FFMPEGStreamDecoder&) SCP_DELETED_FUNCTION;
-	FFMPEGStreamDecoder& operator=(const FFMPEGStreamDecoder&) SCP_DELETED_FUNCTION;
+	FFMPEGStreamDecoder(const FFMPEGStreamDecoder&) = delete;
+	FFMPEGStreamDecoder& operator=(const FFMPEGStreamDecoder&) = delete;
 
 	virtual void decodePacket(AVPacket* packet) = 0;
 
 	virtual void finishDecoding() = 0;
+
+	virtual void flushBuffers() = 0;
 
 	virtual FramePtr<frame_type> getFrame();
 };

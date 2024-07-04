@@ -16,6 +16,8 @@
 // TEAM SELECT DEFINES/VARS
 //
 #include "globalincs/pstypes.h"
+#include "gamesnd/gamesnd.h"
+#include "missionui/missionscreencommon.h"
 
 struct header;
 
@@ -29,6 +31,10 @@ extern int Multi_ts_inited;
 extern int Multi_ts_deleted_objnums[MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
 extern int Multi_ts_num_deleted;
 
+// packet codes
+#define TS_CODE_LOCK_TEAM 0     // the specified team's slots are locked
+#define TS_CODE_PLAYER_UPDATE 1 // a player slot update for the specified team
+
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT FUNCTIONS
 //
@@ -38,6 +44,9 @@ void multi_ts_init();
 
 // initialize all critical internal data structures
 void multi_ts_common_init();
+
+// initialize internal structures that need to be sync'd between host/client
+void multi_ts_common_level_init();
 
 // do frame for team select
 void multi_ts_do();
@@ -67,13 +76,13 @@ void multi_ts_sync_interface();
 void multi_ts_handle_player_drop();
 
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)
-void multi_ts_commit_pressed();
+commit_pressed_status multi_ts_commit_pressed();
 
 // get the team # of the given ship
 int multi_ts_get_team(char *ship_name);
 
 // function to get the team and slot of a particular ship
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch = false);
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index);
 
 // function to return the shipname of the ship belonging in slot N
 void multi_ts_get_shipname( char *ship_name, int team, int slot_index );
@@ -87,12 +96,18 @@ int multi_ts_is_locked();
 // show a popup saying "only host and team captains can modify, etc, etc"
 void multi_ts_maybe_host_only_popup();
 
+// return if a player is currently in a loadout slot
+bool multi_ts_is_player_in_slot(int slot_idx);
+
+// return if a player is allowed in a loadout slot
+bool multi_ts_is_player_allowed_in_slot(int slot_idx);
+
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT PACKET HANDLERS
 //
 
 // send a player slot position update
-void send_pslot_update_packet(int team,int code,int sound = -1);
+void send_pslot_update_packet(int team,int code, interface_snd_id sound = interface_snd_id());
 
 // process a player slot position update
 void process_pslot_update_packet(ubyte *data, header *hinfo);

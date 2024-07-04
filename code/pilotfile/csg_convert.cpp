@@ -7,9 +7,9 @@
  */
 
 #include "cfile/cfilesystem.h"
+#include "pilotfile/pilotfile_convert.h"
 #include "cutscene/cutscenes.h"
 #include "menuui/techmenu.h"
-#include "pilotfile/pilotfile_convert.h"
 #include "ship/ship.h"
 #include "stats/medals.h"
 #include "weapon/weapon.h"
@@ -191,7 +191,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 
 	// get last ship flown index
 	for (idx = 0; idx < ship_count; idx++) {
-		if ( csg->ship_list[idx].name.compare(plr->last_ship_flown) == 0 ) {
+		if ( csg->ship_list[idx].name == plr->last_ship_flown ) {
 			csg->last_ship_flown_index = idx;
 			break;
 		}
@@ -204,7 +204,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 
 	// create list of medals (since it's missing from the old files)
-	list_size = Num_medals;
+	list_size = (int)Medals.size();
 
 	for (idx = 0; idx < list_size; idx++) {
 		ilist.name = Medals[idx].name;
@@ -213,8 +213,8 @@ void pilotfile_convert::csg_import_ships_weapons()
 		csg->medals_list.push_back( ilist );
 	}
 
-	// stuff intel list as well (present but burried in old files)
-	list_size = Intel_info_size;
+	// stuff intel list as well (present but buried in old files)
+	list_size = intel_info_size();
 
 	for (idx = 0; idx < list_size; idx++) {
 		ilist.name = Intel_info[idx].name;
@@ -1103,8 +1103,8 @@ void pilotfile_convert::csg_export_cutscenes() {
 	size_t size = Cutscenes.size();
 	size_t viewableScenes = 0;
 	for (size_t j=0; j<size && j<32; ++j) {
-		if ( csg->cutscenes & (1<<j) ) {
-			Cutscenes.at(j).viewable = true;
+		if ( (j < Cutscenes.size()) && (csg->cutscenes & (1<<j)) ) {
+			Cutscenes.at(j).flags.set(Cutscene::Cutscene_Flags::Viewable);
 			viewableScenes++;
 		}
 	}
@@ -1115,9 +1115,10 @@ void pilotfile_convert::csg_export_cutscenes() {
 	// output cutscene data in new format
 	cfwrite_uint((uint)viewableScenes, cfp);
 
-	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if(cut->viewable)
+	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
 			cfwrite_string_len(cut->filename, cfp);
+		}
 	}
 
 	endSection();
@@ -1165,7 +1166,8 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 
 	filename.reserve(200);
 
-	cf_create_default_path_string(filename, CF_TYPE_SINGLE_PLAYERS, (inferno) ? "inferno" : NULL);
+	cf_create_default_path_string(filename, CF_TYPE_SINGLE_PLAYERS, (inferno) ? "inferno" : nullptr,
+	                              CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if (inferno) {
 		filename.append(DIR_SEPARATOR_STR);
@@ -1206,7 +1208,8 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 	filename.assign(fname);
 	filename.append(".csg");
 
-	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("    CSG => Unable to open '%s' for export!\n", fname));

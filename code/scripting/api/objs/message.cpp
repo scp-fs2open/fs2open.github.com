@@ -6,6 +6,7 @@
 
 #include "mission/missionmessage.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 
 extern int add_wave( const char *wave_name );
 
@@ -22,10 +23,10 @@ ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if (Personas == NULL)
+	if (Personas.empty())
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 || idx >= Num_personas)
+	if (idx < 0 || idx >= (int)Personas.size())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Personas[idx].name);
@@ -38,7 +39,7 @@ ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", idx >= 0 && idx < Num_personas);
+	return ade_set_args(L, "b", idx >= 0 && idx < (int)Personas.size());
 }
 
 //**********HANDLE: Message
@@ -50,7 +51,7 @@ ADE_VIRTVAR(Name, l_Message, "string", "The name of the message as specified in 
 	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Messages[idx].name);
@@ -61,11 +62,11 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 			"string", "The message or an empty string if handle is invalid")
 {
 	int idx = -1;
-	char* newText = NULL;
+	const char* newText = nullptr;
 	if (!ade_get_args(L, "o|s", l_Message.Get(&idx), &newText))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
 	if (ADE_SETTING_VAR && newText != NULL)
@@ -83,21 +84,20 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", "soundfile", "The voice file handle or invalid handle when not present")
 {
 	int idx = -1;
-	int sndIdx = -1;
+	soundfile_h* sndIdx = nullptr;
 
-	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Soundfile.Get(&sndIdx)))
-		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Soundfile.GetPtr(&sndIdx)))
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (idx < 0 && idx >= (int) Messages.size())
-		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	if (!SCP_vector_inbounds(Messages, idx))
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	MissionMessage* msg = &Messages[idx];
 
 	if (ADE_SETTING_VAR)
 	{
-		if (sndIdx >= 0)
-		{
-			const char* newFilename = snd_get_filename(sndIdx);
+		if (sndIdx->idx.isValid()) {
+			const char* newFilename = snd_get_filename(sndIdx->idx);
 
 			msg->wave_info.index = add_wave(newFilename);
 		}
@@ -109,7 +109,7 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 
 	if (msg->wave_info.index < 0)
 	{
-		return ade_set_args(L, "o", l_Soundfile.Set(-1));
+		return ade_set_args(L, "o", l_Soundfile.Set(soundfile_h()));
 	}
 	else
 	{
@@ -117,7 +117,7 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 		// Load the sound before using it
 		message_load_wave(index, Message_waves[index].name);
 
-		return ade_set_args(L, "o", l_Soundfile.Set(Message_waves[index].num));
+		return ade_set_args(L, "o", l_Soundfile.Set(soundfile_h(Message_waves[index].num)));
 	}
 }
 
@@ -127,12 +127,12 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	int newPersona = -1;
 
 	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Persona.Get(&newPersona)))
-		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (idx < 0 && idx >= (int) Messages.size())
-		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	if (!SCP_vector_inbounds(Messages, idx))
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < Num_personas)
+	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < (int)Personas.size())
 	{
 		Messages[idx].persona_index = newPersona;
 	}
@@ -147,7 +147,7 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 	if (!ade_get_args(L, "o|b", l_Message.Get(&idx), &replace))
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 && idx >= (int) Messages.size())
+	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
 	if (!replace)
@@ -157,7 +157,8 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 		char temp_buf[MESSAGE_LENGTH];
 		strcpy_s(temp_buf, Messages[idx].message);
 
-		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
+		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
+		sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
 
 		return ade_set_args(L, "s", temp_buf);
 	}

@@ -10,11 +10,15 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 #include "network/multi_log.h"
 #include "parse/generic_log.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "globalincs/version.h"
+#include "network/multi_options.h"
+#include "network/multi_fstracker.h"
+#include "network/multi.h"
 
 
 
@@ -22,17 +26,14 @@
 // MULTI LOGFILE DEFINES/VARS
 //
 
-// max length for a line of the logfile
-#define MAX_LOGFILE_LINE_LEN					256
-
 // how often we'll write an update to the logfile (in seconds)
 #define MULTI_LOGFILE_UPDATE_TIME			2520			// every 42 minutes
 
 // time when the logfile was opened
-int Multi_log_open_systime = -1;
+time_t Multi_log_open_systime = -1;
 
 // time when we last updated the logfile
-int Multi_log_update_systime = -1;
+time_t Multi_log_update_systime = -1;
 
 // ----------------------------------------------------------------------------------------------------
 // MULTI LOGFILE FUNCTIONS
@@ -65,8 +66,8 @@ void multi_log_write_trailer()
 // write out some info about stuff
 void multi_log_write_update()
 {
-	int diff = (int)difftime(time(NULL), Multi_log_open_systime);
-	int hours, mins, seconds;
+	long diff = d2lr(difftime(time(nullptr), Multi_log_open_systime));
+	long hours, mins, seconds;
 
 	// figure out some time values
 	hours = diff / 3600;
@@ -74,7 +75,31 @@ void multi_log_write_update()
 	seconds = (diff - (hours * 3600) - (mins * 60));
 
 	// print it out
-	ml_printf("Server has been active for %d hours, %d minutes, and %d seconds", hours, mins, seconds);
+	ml_printf("Server has been active for %ld hours, %ld minutes, and %ld seconds", hours, mins, seconds);
+}
+
+// write out some info helpful for debugging
+static void multi_log_write_info()
+{
+	extern bool Multi_cfg_missing;
+
+	if (Multi_cfg_missing) {
+		ml_string("**  multi.cfg is missing!  **");
+	}
+
+	ml_printf("FreeSpace 2 Open version: %s", FS_VERSION_FULL);
+	ml_printf("Multi version: %d", MULTI_FS_SERVER_VERSION);
+
+	extern void cmdline_print_cmdline_multi();
+	cmdline_print_cmdline_multi();
+
+	if (Is_standalone) {
+		ml_printf("PXO: %s", Multi_options_g.pxo ? "Enabled" : "Disabled");
+
+		if (Multi_options_g.pxo) {
+			ml_printf("PXO Channel: %s", Multi_fs_tracker_channel);
+		}
+	}
 }
 
 // initialize the multi logfile
@@ -82,9 +107,10 @@ void multi_log_init()
 {
 	if (logfile_init(LOGFILE_MULTI_LOG)) {
 		multi_log_write_header();
+		multi_log_write_info();
 
 		// initialize our timer info
-		Multi_log_open_systime = (int) time(NULL);
+		Multi_log_open_systime = time(NULL);
 		Multi_log_update_systime = Multi_log_open_systime;
 	} 
 }
@@ -104,7 +130,7 @@ void multi_log_process()
 		// write the update
 		multi_log_write_update();
 
-		Multi_log_update_systime = (int) time(NULL);
+		Multi_log_update_systime = time(NULL);
 	}
 }
 
@@ -130,7 +156,7 @@ void ml_printf(const char *format, ...)
 // string print function
 void ml_string(const char *string, int add_time)
 {
-	char tmp[MAX_LOGFILE_LINE_LEN*4];
+	SCP_string tmp;
 	char time_str[128];
 	time_t timer;	
 
@@ -144,25 +170,25 @@ void ml_string(const char *string, int add_time)
 		timer = time(NULL);
 
 		strftime(time_str, 128, "%m/%d %H:%M:%S~   ", localtime(&timer));
-		strcpy_s(tmp, time_str);
-		strcat_s(tmp, string);
+		tmp = time_str;
+		tmp += string;
 	} else{
-		strcpy_s(tmp, string);
+		tmp = string;
 	}
 	// don't need to add terminating \n since log_string() will do it
 
 	// now print it to the logfile if necessary	
-	log_string(LOGFILE_MULTI_LOG, tmp, 0);
+	log_string(LOGFILE_MULTI_LOG, tmp.c_str(), 0);
 
 	// add to standalone UI too
 	extern int Is_standalone;
 	extern void std_debug_multilog_add_line(const char *str);
 	if (Is_standalone) {
-		std_debug_multilog_add_line(tmp);
+		std_debug_multilog_add_line(tmp.c_str());
 	}
 
 #if defined(MULTI_LOGFILE_ECHO_TO_DEBUG)
 	// nprintf(("Network","%s\n",tmp));
-	mprintf(("ML %s", tmp));
+	mprintf(("ML %s", tmp.c_str()));
 #endif
 }

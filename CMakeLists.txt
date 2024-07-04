@@ -8,9 +8,10 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
 include(cmake/util.cmake)
+include(cmake/embed_file.cmake)
 
 # Set a few policies
-set_policy(CMP0051 OLD)
+set_policy(CMP0051 NEW)
 set_policy(CMP0053 NEW)
 set_policy(CMP0054 NEW)
 
@@ -38,7 +39,13 @@ endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
 # Override standard CMake configurations
 set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
 
-PROJECT(FS2_Open)
+set(FSO_LANGUAGES C CXX)
+
+if(APPLE)
+	set(FSO_LANGUAGES ${FSO_LANGUAGES} OBJC OBJCXX)
+endif()
+
+PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
 IF(CMAKE_CROSSCOMPILING)
 	SET(IMPORT_EXE_DIR "IMPORT_EXE_DIR-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to binary directory of a cmake build for the real OS")
@@ -53,7 +60,7 @@ endif()
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire/CMake")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
 
 IF(RESET_INSTALL_PREFIX)
 	IF(NOT $ENV{FS2PATH} STREQUAL "")
@@ -68,15 +75,16 @@ IF(RESET_INSTALL_PREFIX)
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
 
-IF (WIN32)
-	OPTION(FSO_USE_SPEECH "Use Windows specific text-to-speach libraries" ON)
+IF(WIN32 OR APPLE)
+	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" ON)
+ENDIF(WIN32 OR APPLE)
 
+IF (WIN32)
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
 
 	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" ON)
 elseif(UNIX)
 	option(FSO_BUILD_APPIMAGE "Build an AppImage package" OFF)
-	set(APPIMAGE_ASSISTANT "" CACHE STRING "The root directory of an AppImage clone.")
 ENDIF(WIN32)
 
 OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
@@ -85,7 +93,7 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-OPTION(FSO_BUILD_WXFRED2 "Build wxFRED2 binary" OFF)
+OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
 
 IF(WIN32 OR APPLE)
 	# On windows and mac the default should be to always build the included libraries
@@ -108,6 +116,19 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
+option(ENABLE_COTIRE "Enable cotire for faster compilation. Enabled by default." ON)
+
+option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
+
+OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
+
+OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
+OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
+
+OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
+
+OPTION(FSO_BUILD_WITH_OPENXR_DEBUG "Enables debug option for OpenXR" OFF)
+
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
 MARK_AS_ADVANCED(FORCE FSO_USE_OPENALSOFT)
@@ -115,6 +136,13 @@ MARK_AS_ADVANCED(FORCE FSO_USE_LUAJIT)
 MARK_AS_ADVANCED(FORCE FSO_DEVELOPMENT_MODE)
 MARK_AS_ADVANCED(FORCE FSO_FATAL_WARNINGS)
 mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
+mark_as_advanced(FORCE ENABLE_COTIRE)
+mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
+mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
 # Include cotire file from https://github.com/sakra/cotire/
 include(cotire)
@@ -134,10 +162,14 @@ if(FSO_BUILD_APPIMAGE)
 	include(appimage)
 endif()
 
+include(clang-tidy)
+
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
 
 ADD_SUBDIRECTORY(lib)
+
+ADD_SUBDIRECTORY(parsers)
 
 ADD_SUBDIRECTORY(code)
 
@@ -147,9 +179,9 @@ IF(FSO_BUILD_FRED2)
 	ADD_SUBDIRECTORY(fred2)
 ENDIF(FSO_BUILD_FRED2)
 
-IF(FSO_BUILD_WXFRED2)
-	ADD_SUBDIRECTORY(wxfred2)
-ENDIF(FSO_BUILD_WXFRED2)
+IF(FSO_BUILD_QTFRED)
+	ADD_SUBDIRECTORY(qtfred)
+ENDIF()
 
 if(FSO_BUILD_TESTS)
 	add_subdirectory(test)
@@ -175,13 +207,19 @@ include(package)
 include(doxygen)
 
 # Print used options to log
-IF (WIN32)
-	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
+IF(WIN32 OR APPLE)
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
+ENDIF()
+IF (WIN32)
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
+	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 elseif(UNIX)
 	message(STATUS "Building AppImage: ${FSO_BUILD_APPIMAGE}")
 ENDIF()
 message(STATUS "Building FSO tools: ${FSO_BUILD_TOOLS}")
-message(STATUS "Building wxFRED: ${FSO_BUILD_WXFRED2}")
+message(STATUS "Building qtFRED: ${FSO_BUILD_QTFRED}")
 message(STATUS "Fatal warnings: ${FSO_FATAL_WARNINGS}")
+message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
+message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
+message(STATUS "With OpenGL: ${FSO_BUILD_WITH_OPENGL}")
+message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")

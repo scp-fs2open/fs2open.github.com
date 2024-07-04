@@ -9,15 +9,20 @@
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/particle.h"
 
+#include "scripting/lua/LuaValue.h"
+
+#include "scripting/api/objs/bytearray.h"
+#include "scripting/api/objs/audio_stream.h"
+#include "sound/audiostr.h"
+
 #include "physics/physics.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "cutscene/movie.h"
+#include "network/multi_options.h"
 
-// Om_tracker_flag should already be set in FreeSpace.cpp, needed to determine if PXO is enabled from the registry
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 namespace scripting {
 namespace api {
@@ -26,8 +31,62 @@ namespace api {
 //This section is for stuff that's considered experimental.
 ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
 
+ADE_FUNC(openAudioStreamMem,
+	l_Testing,
+	"string snddata, enumeration stream_type /* AUDIOSTREAM_* values */",
+	"Opens an audio stream of the specified in-memory file contents and type.",
+	"audio_stream",
+	"A handle to the opened stream or invalid on error")
+{
+	luacpp::LuaValue snddata_arr(L);
+	enum_h streamTypeEnum;
+	if (!ade_get_args(L, "ao", &snddata_arr, l_Enum.Get(&streamTypeEnum))) {
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+	}
+
+	int streamType;
+	switch (streamTypeEnum.index) {
+	case LE_ASF_EVENTMUSIC:
+		streamType = ASF_EVENTMUSIC;
+		break;
+	case LE_ASF_MENUMUSIC:
+		streamType = ASF_MENUMUSIC;
+		break;
+	case LE_ASF_VOICE:
+		streamType = ASF_VOICE;
+		break;
+	default:
+		LuaError(L, "Invalid audio stream type %d.", streamTypeEnum.index);
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+	}
+	
+	
+	if (!snddata_arr.pushValue(L))
+	    return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    if (!lua_isstring(L, -1)) {
+        lua_pop(L, 1);
+        LuaError(L, "Expected binary string containing audio.");
+        return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    }
+    
+    size_t snd_len;
+    auto snddata = lua_tolstring(L, -1, &snd_len);
+	
+    int ah = audiostream_open_mem(reinterpret_cast<const uint8_t *>(snddata), snd_len, streamType);
+	lua_pop(L, 1);
+    if (ah < 0) {
+        LuaError(L,"Stream could not be opened. Did you pass valid audio?");
+        return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    }
+
+	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+}
+
+
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {
+	SCP_UNUSED(L); // unused parameter
+
 	static bool initialized = false;
 	static avd_movement avd;
 
@@ -54,12 +113,17 @@ ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-		 "Creates a particle. Use PARTICLE_* enumerations for type."
-			 "Reverse reverse animation, if one is specified"
-			 "Attached object specifies object that Position will be (and always be) relative to.",
-		 "particle",
-		 "Handle to the created particle")
+ADE_FUNC_DEPRECATED(createParticle,
+	l_Testing,
+	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number "
+	"TracerLength=-1, boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
+	"Creates a particle. Use PARTICLE_* enumerations for type."
+	"Reverse reverse animation, if one is specified"
+	"Attached object specifies object that Position will be (and always be) relative to.",
+	"particle",
+	"Handle to the created particle",
+	gameversion::version(19, 0, 0, 0),
+	"Not available in the testing library anymore. Use gr.createPersistentParticle instead.")
 {
 	particle::particle_info pi;
 	pi.type = particle::PARTICLE_DEBUG;
@@ -74,7 +138,9 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	enum_h *type = NULL;
 	bool rev=false;
 	object_h *objh=NULL;
-	if(!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, l_Enum.GetPtr(&type), &temp, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
 	if(type != NULL)
@@ -94,29 +160,33 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				pi.type = particle::PARTICLE_SMOKE2;
 				break;
 			case LE_PARTICLE_BITMAP:
-				if (pi.optional_data < 0)
-				{
-					LuaError(L, "Invalid texture specified for createParticle()!");
-				}
-
-				pi.type = particle::PARTICLE_BITMAP;
-				break;
+			    if (texture == nullptr || !texture->isValid()) {
+				    LuaError(L, "Invalid texture specified for createParticle()!");
+				    return ADE_RETURN_NIL;
+			    } else {
+				    pi.optional_data = texture->handle;
+				    pi.type          = particle::PARTICLE_BITMAP;
+			    }
+			    break;
+			default:
+				LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+				return ADE_RETURN_NIL;
 		}
 	}
 
 	if(rev)
 		pi.reverse = 0;
 
-	if(objh != NULL && objh->IsValid())
+	if(objh != NULL && objh->isValid())
 	{
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig = objh->objp->signature;
+		pi.attached_objnum = objh->objnum;
+		pi.attached_sig = objh->sig;
 	}
 
-	particle::WeakParticlePtr p = particle::create(&pi);
+	particle::WeakParticlePtr p = particle::createPersistent(&pi);
 
 	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(new particle_h(p)));
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
 	else
 		return ADE_RETURN_NIL;
 }
@@ -141,7 +211,7 @@ ADE_FUNC(isCurrentPlayerMulti, l_Testing, NULL, "Returns whether current player 
 
 ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enabled in the configuration.", "boolean", "Whether PXO is enabled or not")
 {
-	if(!(Om_tracker_flag))
+	if(!(Multi_options_g.pxo))
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -150,7 +220,7 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified filename string to play. Should really only be used in a non-gameplay state (i.e. start of GS_STATE_BRIEFING) otherwise odd side effects may occur. Highly Experimental.", "string", NULL)
 {
 	//This whole thing is a quick hack and can probably be done way better, but is currently functioning fine for my purposes.
-	char *filename;
+	const char* filename;
 
 	if (!ade_get_args(L, "s", &filename))
 		return ADE_RETURN_FALSE;

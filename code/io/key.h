@@ -12,20 +12,13 @@
 #ifndef _KEY_H
 #define _KEY_H
 
-/*
-#ifdef __cplusplus
-extern "C" {
-#endif
-*/
-
 #include "globalincs/pstypes.h"
 
 #define NUM_KEYS 256
 
-extern int shifted_ascii_table[];
-extern int ascii_table[];
-
-extern ubyte keyd_pressed[NUM_KEYS];
+const size_t SIZE_OF_ASCII_TABLE = 128;
+extern int shifted_ascii_table[SIZE_OF_ASCII_TABLE];
+extern int ascii_table[SIZE_OF_ASCII_TABLE];
 
 // O/S level hooks...
 void key_init();
@@ -34,28 +27,25 @@ void key_lost_focus();
 void key_got_focus();
 void key_mark( uint code, int state, uint latency );
 int key_getch();
-int key_peekkey();
 void key_flush();
 
 // Routines/data you can access:
-//NOT USED! extern fix key_down_time( uint code );
 float key_down_timef( uint code );
 
+SDL_Scancode fs2_to_sdl( int scancode );
 int key_to_ascii(int keycode );
 int key_inkey();
+
+bool key_is_pressed(int keycode, bool include_since_last_count = false);
 
 // global flag that will enable/disable the backspace key from stopping execution
 //extern int Backspace_debug;
 
 uint key_get_shift_status();
 int key_down_count(int scancode);
-int key_up_count(int scancode);
-int key_checkch();
-int key_check(int key);
+bool key_checkch();
 
-//	Put "key" back in the input buffer.
-void key_outkey(int key);
-
+extern SCP_string CheatUsed;
 extern int Cheats_enabled;
 extern int Key_normal_game;
 
@@ -184,11 +174,5 @@ extern int Key_normal_game;
 #define KEY_PRINT_SCRN  0xB7
 #define KEY_PAUSE       0x45	//DOS: 0x61
 #define KEY_BREAK       0xc6
-
-/*
-#ifdef __cplusplus
-}
-#endif
-*/
 
 #endif

@@ -32,21 +32,6 @@
  * @{
  */
 
-/**
- * @brief How many bitmaps the game can handle
- *
- * @attention  MAX_BITMAPS shouldn't need to be bumped again.  With the fixed bm_release() and it's proper use even the
- *   largest missions should stay under this number.  With the largest retail missions and wasteful content we should
- *   still have about 20% of the slots free.  If it still goes over then it's something the artists need to fix.
- *   For instance the Terran Mara fighter, with -spec and -glow and using the Shinepack, needs 117 bitmap slots alone.
- *   111 of those is just for the glowmaps.  This number can be greatly reduced if the number of ani frames for another
- *   LOD than LOD0 has fewer or no ani frames.  A 37 frame glow ani for LOD2 is little more than a waste of resources.
- *   Future reports of texture corruption should be initially approached with content as the cause and not code.
- *   If anything we could/should reduce MAX_BITMAPS in the future.  Where it's at now should accomidate even the
- *   largest mods.  --  Taylor
- */
-#define MAX_BITMAPS 4750
-
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
 #define	BMP_AABITMAP        (1<<0)      //!< antialiased bitmap
@@ -55,10 +40,12 @@
 #define BMP_TEX_DXT1        (1<<3)      //!< dxt1 compressed 8r8g8b1a (24bit)
 #define BMP_TEX_DXT3        (1<<4)      //!< dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5        (1<<5)      //!< dxt5 compressed 8r8g8b8a (32bit)
-#define BMP_TEX_CUBEMAP     (1<<6)      //!< a texture made for cubic environment map
+#define BMP_TEX_BC7			(1<<6)		//!< BC7  compressed 8r8g8b8a (32bit)
+#define BMP_TEX_CUBEMAP     (1<<7)      //!< a texture made for cubic environment map
+#define BMP_MASK_BITMAP     (1<<8)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
 
 // Combined flags
-#define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )  //!< Compressed textures
+#define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 | BMP_TEX_BC7 )  //!< Compressed textures
 #define BMP_TEX_NONCOMP     ( BMP_TEX_XPARENT | BMP_TEX_OTHER )             //!< Non-compressed textures
 #define	BMP_TEX_ANY         ( BMP_TEX_COMP | BMP_TEX_NONCOMP )              //!< Any texture
 
@@ -88,10 +75,13 @@ enum BM_TYPE
 	BM_TYPE_DXT1,           //!< 24 bit with switchable alpha
 	BM_TYPE_DXT3,           //!< 32 bit with 4 bit alpha
 	BM_TYPE_DXT5,           //!< 32 bit with 8 bit alpha
+	BM_TYPE_BC7,			//!< 32-bit with variable alpha
 	BM_TYPE_CUBEMAP_DDS,    //!< generic DDS cubemap (uncompressed cubemap surface)
 	BM_TYPE_CUBEMAP_DXT1,   //!< 24-bit cubemap        (compressed cubemap surface)
 	BM_TYPE_CUBEMAP_DXT3,   //!< 32-bit cubemap        (compressed cubemap surface)
-	BM_TYPE_CUBEMAP_DXT5    //!< 32-bit cubemap        (compressed cubemap surface)
+	BM_TYPE_CUBEMAP_DXT5,    //!< 32-bit cubemap        (compressed cubemap surface)
+
+	BM_TYPE_3D				//!< 3D in-memory
 };
 
 /**
@@ -102,15 +92,20 @@ struct bitmap
 {
 	short	w;          //!< Width, in number of pixels
 	short	h;          //!< Height, in number of pixels
+	short	d;			//!< Depth, in number of pixels
 	short	rowsize;    //!< What you need to add to go to next row
 	int	bpp;        //!< Requested bitdepth of each pixel. ( 7, 8, 15, 16, 24, 32)
 	int	true_bpp;   //!< The image's actual bitdepth
-	ubyte	flags;      //!< Various texture type flags. @see BMPMAN_CONSTANTS
+	ushort	flags;      //!< Various texture type flags. @see BMPMAN_CONSTANTS
 	ptr_u	data;       //!< Pointer to data, or maybe offset into VRAM.
 	ubyte *palette;     /**< @brief   Pointer to this bitmap's palette (if it has one).
 	                     *   @details If BMP_NO_PALETTE_MAP flag is cleared, this palette just points to the screen palette. (gr_palette)
 	                     */
 };
+
+// Forward definition for the graphics API
+struct bitmap_entry;
+struct bitmap_slot;
 
 extern size_t bm_texture_ram;  //!< how many bytes of textures are used.
 
@@ -123,12 +118,8 @@ extern const BM_TYPE bm_ani_type_list[];   //!< List of valid bitmap animation t
 extern const char *bm_ani_ext_list[];    //!< List of extensions for those types
 extern const int BM_ANI_NUM_TYPES;       //!< Calculated number of bitmap animation types
 
-extern int GLOWMAP;     //!< References a map that is a fully lit version of its index -Bobboau
-extern int SPECMAP;     //!< References a map that is for specular mapping -Bobboau
 extern int ENVMAP;      //!< References a map that is for environment mapping -Bobboau
-extern int NORMMAP;     //!< Normal mapping
-extern int HEIGHTMAP;   //!< Height map for normal mapping
-extern int MISCMAP;     //!< Utility map, to be utilized for various things shader authors can come up with
+extern int IRRMAP;		//!< References a filtered envmap for diffuse environment lighting - qazwsxal
 
 /**
  * @brief Initilizes the bitmap manager
@@ -139,22 +130,6 @@ void bm_init();
  * @brief Closes the bitmap manager, freeing any allocated memory used by bitmaps. Is called at program close.
  */
 void bm_close();
-
-/**
- * Gets the cache slot of the bitmap indexed by handle.
- *
- * @details if the bitmap is an ani, gets the first frame
- *
- * @returns The cache slot index of the bitmap if handle is valid
- *
- * @note If the handle is invalid, an Assert() fails
- */
-int bm_get_cache_slot(int bitmap_id, int separate_ani_frames);
-
-/**
- * @brief Gets the next available bitmap slot.
- */
-int bm_get_next_handle();
 
 #define BMP_FLAG_RENDER_TARGET_STATIC		(1<<0)
 #define BMP_FLAG_RENDER_TARGET_DYNAMIC		(1<<1)
@@ -193,11 +168,10 @@ public:
 
 	bool valid();
 
-	float get_channel_red(float u, float v);
-	float get_channel_green(float u, float v);
-	float get_channel_blue(float u, float v);
 	float get_channel_alpha(float u, float v);
 };
+
+void clear_bm_lookup_cache();
 
 /**
  * @brief Loads a bitmap so we can draw with it later.
@@ -207,7 +181,7 @@ public:
  * @returns The bitmap number if successful, else
  * @returns a negative value if not
  */
-int bm_load(const char* filename);
+int bm_load(const char* filename, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Loads a bitmap so we can draw with it later. (Preferred version)
@@ -217,7 +191,7 @@ int bm_load(const char* filename);
  * @returns The bitmap number if successful, else
  * @returns a negative value if not
  */
-int bm_load(const SCP_string& filename);
+int bm_load(const SCP_string& filename, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Reloads a bitmap as a duplicate.
@@ -245,6 +219,19 @@ int bm_load_duplicate(const char *filename);
  * @note The used RAM cannot be freed until bm_release is called on the created bitmap
  */
 int bm_create(int bpp, int w, int h, void *data = NULL, int flags = 0);
+
+/**
+ * Loads a 3D bitmap which exists somewhere in the RAM.
+ *
+ * @param bpp The bitdepth of the bitmap
+ * @param w The width of the bitmap
+ * @param h The height of the bitmap
+ * @param d The depth of the bitmap
+ * @param[in] data The bitmap's data glob
+ *
+ * @note The used RAM cannot be freed until bm_release is called on the created bitmap
+ */
+int bm_create_3d(int bpp, int w, int h, int d, void* data = nullptr);
 
 /**
  * @brief Unloads a bitmap's data, but not the bitmap info
@@ -292,6 +279,21 @@ int bm_unload_fast(int handle, int clear_render_targets = 0);
 int bm_release(int handle, int clear_render_targets = 0);
 
 /**
+ * @brief Detaches the render target of a bitmap if it exists
+ *
+ * @details Once called, this handle cannot be used as a target to switch the rendering context to
+ *
+ * @param handle               The index number of the bitmap to release
+ *
+ * @returns 1 on success,
+ * @returns 0 otherwise
+ *
+ * @note If the passed handle is that of an ANI, it frees the render target of EVERY frame. Be sure to only pass the handle of the first frame!
+ *
+ */
+bool bm_release_rendertarget(int handle);
+
+/**
  * @brief Loads a bitmap sequance so we can draw with it.
  *
  * @param[in] filename
@@ -304,7 +306,14 @@ int bm_release(int handle, int clear_render_targets = 0);
  * @returns The bm number of the first bitmap in the sequence if successful, or
  * @returns A negative value if unsuccessful
  */
-int bm_load_animation(const char *filename, int *nframes = nullptr, int *fps = nullptr, int *keyframe = nullptr, float *total_time = nullptr, bool can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+int bm_load_animation(const char *filename,
+	int *nframes = nullptr,
+	int *fps = nullptr,
+	int *keyframe = nullptr,
+	float *total_time = nullptr,
+	bool can_drop_frames = false,
+	int dir_type = CF_TYPE_ANY,
+	bool rethrow_exceptions = false);
 
 /**
  * @brief Loads either animation (bm_load_animation) or still image (bm_load)
@@ -335,14 +344,7 @@ int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, i
  * @returns A pointer to the bitmap that's valid until bm_unlock is called if successful, or
  * @returns NULL if unsuccessful
  */
-bitmap* bm_lock(int handle, int bpp, ubyte flags, bool nodebug = false);
-
-/**
- * @brief Returns a unique signiature for the bitmap indexed by handle
- *
- * @details A signature will change when the bitmap's data changes
- */
-uint bm_get_signature(int handle);
+bitmap* bm_lock(int handle, int bpp, ushort flags, bool nodebug = false);
 
 /**
  * @brief Returns the image type of the given bitmap handle
@@ -385,7 +387,17 @@ int bm_is_valid(int handle);
  * @returns The handle to the first frame on success, or
  * @returns -1 on failure
  */
-int bm_get_info(int handle, int *w = NULL, int * h = NULL, ubyte * flags = NULL, int *nframes = NULL, int *fps = NULL);
+int bm_get_info(int handle, int *w = nullptr, int * h = nullptr, ushort* flags = nullptr, int *nframes = nullptr, int *fps = nullptr);
+
+/**
+ * @brief Gets 3D info on the bitmap indexed by handle.
+ *
+ * @param[out] depth      If non-null, gets the depth
+ *
+ * @returns The handle on success
+ * @returns -1 on failure
+ */
+int bm_get_depth(int handle, int* depth);
 
 /**
  * @brief Gets the filename of the bitmap indexed by handle
@@ -410,13 +422,6 @@ void bm_get_filename(int bitmapnum, char *filename);
 const char *bm_get_filename(int handle);
 
 /**
- * @brief Loads all data for all bitmaps that have been requested to be loaded
- *
- * @note This function is not defined.
- */
-void bm_gfx_load_all();
-
-/**
  * @brief Unloads all used bitmaps, should only ever be called by game_shutdown()
  *
  * @todo Maybe move this declaration into bmpman.cpp and then extern this function within game_shutdown() to
@@ -433,15 +438,6 @@ void bm_unload_all();
  * @todo Maybe get rid of the optional filename and have the callers call bm_get_filename. Less efficient, however.
  */
 void bm_get_palette(int handle, ubyte *pal, char *name);
-
-/**
- * @brief Hack to get a pixel from a bitmap
- *
- * @details only works good in 8bpp mode
- *
- * @note This function is not defined.
- */
-void bm_gfx_get_pixel(int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *b);
 
 /**
  * @brief (DEBUG) Gets memory size, in bytes, of the locked bitmaps
@@ -502,15 +498,6 @@ void bm_page_in_xparent_texture(int bitmapnum, int num_frames = 1);
 void bm_page_in_aabitmap(int bitmapnum, int num_frames = 1);
 
 /**
- * @brief Unloads the bitmap indexed by handle that was previously paged-in
- *
- * @returns 0 If the bitmap had already been released, or
- * @returns 0 If the handle is invalid, or
- * @returns 1 If successful
- */
-bool bm_page_out(int handle);
-
-/**
  * @brief Sets BMPMAN's memory mode
  *
  * @details 0 = High memory;
@@ -559,28 +546,11 @@ void BM_SELECT_ALPHA_TEX_FORMAT();
 extern void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 /**
- * @brief Functional pointer that references any of the bm_set_components_32 functions.
- *
- * @details The bm_set_components functions packs the RGBA values into the ubyte array referenced by pixel, whose
- * format differs according to its bpp value and presence of an alpha channel. The RGBA values are scaled accordingly.
- *
- * @see bm_set_components
- */
-extern void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-
-/**
  * @brief Sets the 16bpp screen pixel to the specified RGBA value
  *
  * @see bm_set_components
  */
 void bm_set_components_argb_16_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-
-/**
- * @brief Sets the 32bpp screen pixel to the specified RGBA value
- *
- * @see bm_set_components
- */
-void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 /**
  * @brief Sets the 16bpp texture pixel to the specified RGBA value
@@ -603,15 +573,6 @@ void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, u
  */
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
-extern int UNLITMAP; //this holds a reference to a map that is optional used instead of the base map for unlit rendering
-extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of its index -Bobboau
-extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
-extern int SPECGLOSSMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
-extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
-extern int NORMMAP;	// normal mapping
-extern int HEIGHTMAP;	// height map for normal mapping
-extern int AMBIENTMAP; // ambient occluion map. red channel affects ambient lighting, green channel affects diffuse and specular
-extern int MISCMAP; // Utility map, to be utilized for various things shader authors can come up with
 
 /**
  * @brief Returns the compression type of the bitmap indexed by handle
@@ -623,10 +584,6 @@ int bm_is_compressed(int handle);
  */
 int bm_get_tcache_type(int handle);
 
-/**
- * @brief Gets the size, in bytes, taken up by the bitmap indexed by handle
- */
-size_t bm_get_size(int handle);
 
 /**
  * @brief Gets the number of mipmaps of the indexed texture
@@ -717,5 +674,54 @@ bool bm_is_texture_array(const int handle);
  * @return The bitmap handle of the base frame or -1 on error
  */
 int bm_get_base_frame(const int handle, int* num_frames = nullptr);
+
+/**
+ * @brief Get the array index of the specified bitmap
+ *
+ * This should be used when passing the array index to the GPU (e.g. when building uniform structs or streaming particle
+ * data)
+ *
+ * @param handle The handle of the bitmap
+ * @return The index into the array
+ */
+int bm_get_array_index(const int handle);
+
+/**
+ * @brief Counts how many slots are used in bm_bitmaps
+ *
+ * This needs to iterate through all the slots in order to determine whether or not they're used, so shouldn't be used frivolously.
+ *
+ * @return The number of used slots
+ */
+int bmpman_count_bitmaps();
+
+/**
+ * @brief Counts how many slots are available to the bmpman system
+ *
+ * Since the number of slots is dynamic now, this should be used for determining the total amount of available slots at
+ * the moment.
+ *
+ * @warning This is entirely for debugging and logging purposes. It should not be used in actual engine code.
+ *
+ * @return The number of available slots
+ */
+int bmpman_count_available_slots();
+
+/**
+ * @brief Checks if the given filename is a valid effect or texture file name
+ *
+ * @note At least one of @c single_frame or @c animation must be true since the result would make no sense otherwise. It
+ * is also valid to set both parmeters to @c true.
+ *
+ * @todo This currently just tries to load the file but could be improved by not actually loading the file in the future.
+ *
+ * @param file The file name to check
+ * @param single_frame If set to @c true then single frames are valid files
+ * @param animation If set to @c true then animations are valid files
+ * @return @c true if the file name is valid, @c false otherwise
+ */
+bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animation);
+
+SDL_Surface* bm_to_sdl_surface(int handle);
 
 #endif

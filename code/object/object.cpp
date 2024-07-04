@@ -17,13 +17,17 @@
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "globalincs/linklist.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "network//multi_obj.h"
 #include "object/deadobjectdock.h"
 #include "object/objcollide.h"
 #include "object/object.h"
@@ -31,6 +35,8 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/global_hooks.h"
+#include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -38,14 +44,17 @@
 #include "render/3d.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
+#include "starfield/starfield.h"
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
+#include "graphics/light.h"
+#include "graphics/color.h"
 
-
+extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
 /*
  *  Global variables
@@ -57,8 +66,6 @@ object obj_create_list;
 
 object *Player_obj = NULL;
 object *Viewer_obj = NULL;
-
-extern int Cmdline_old_collision_sys;
 
 //Data for objects
 object Objects[MAX_OBJECTS];
@@ -73,6 +80,45 @@ int Highest_ever_object_index=0;
 int Object_next_signature = 1;	//0 is bogus, start at 1
 int Object_inited = 0;
 int Show_waypoints = 0;
+
+object_h::object_h(int in_objnum)
+	: objnum(in_objnum)
+{
+	if (objnum >= 0 && objnum < MAX_OBJECTS)
+		sig = Objects[objnum].signature;
+	else
+		objnum = -1;
+}
+
+object_h::object_h(const object* in_objp)
+{
+	if (in_objp)
+	{
+		objnum = OBJ_INDEX(in_objp);
+		sig = in_objp->signature;
+	}
+}
+
+object_h::object_h()
+{}
+
+bool object_h::isValid() const
+{
+	// a signature of 0 is invalid, per obj_init()
+	if (objnum < 0 || sig <= 0 || objnum >= MAX_OBJECTS)
+		return false;
+	return Objects[objnum].signature == sig;
+}
+
+object* object_h::objp() const
+{
+	return &Objects[objnum];
+}
+
+object* object_h::objp_or_null() const
+{
+	return isValid() ? &Objects[objnum] : nullptr;
+}
 
 //WMC - Made these prettier
 const char *Object_type_names[MAX_OBJECT_TYPES] = {
@@ -97,21 +143,38 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 };
 
 obj_flag_name Object_flag_names[] = {
-    { Object::Object_Flags::Invulnerable,			"invulnerable",				1,	},
-	{ Object::Object_Flags::Protected,				"protect-ship",				1,	},
-	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",		1,	},
-	{ Object::Object_Flags::No_shields,				"no-shields",				1,	},
-	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",		1,	},
-	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",		1,	},
-	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",		1,	},
-	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
-	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
-	{ Object::Object_Flags::Collides,				"collides",					1,  },
+    { Object::Object_Flags::Invulnerable,			"invulnerable",						},
+	{ Object::Object_Flags::Protected,				"protect-ship",						},
+	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",				},
+	{ Object::Object_Flags::No_shields,				"no-shields",						},
+	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",				},
+	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",				},
+	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",				},
+	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",				},
+	{ Object::Object_Flags::Immobile,				"immobile",							},
+	{ Object::Object_Flags::Collides,				"collides",							},
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
+
+obj_flag_description Object_flag_descriptions[] = {
+    { Object::Object_Flags::Invulnerable,				"Stops ship from taking any damage."},
+	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack ship."},
+	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
+	{ Object::Object_Flags::Targetable_as_bomb,			"Allows ship to be targeted with the bomb targeting key."},
+	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Immobile,					"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+	{ Object::Object_Flags::Collides,					"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
+	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set."},
+};
+
+extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
-    : type(0), signature(0), parent_sig(0), parent_type(0) 
+    : type(0), signature(0), parent_sig(0) 
 {
     flags.reset();
 }
@@ -138,7 +201,7 @@ void object::clear()
 {
 	signature = num_pairs = collision_group_id = 0;
 	parent = parent_sig = instance = -1;
-	type = parent_type = OBJ_NONE;
+	type = OBJ_NONE;
     flags.reset();
 	pos = last_pos = vmd_zero_vector;
 	orient = last_orient = vmd_identity_matrix;
@@ -148,6 +211,9 @@ void object::clear()
 	objsnd_num.clear();
 	net_signature = 0;
 
+	pre_move_event.clear();
+	post_move_event.clear();
+
 	// just in case nobody called obj_delete last mission
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
@@ -156,10 +222,10 @@ void object::clear()
 /**
  * Scan the object list, freeing down to num_used objects
  *
- * @param  num_used Number of used objects to free down to
+ * @param  target_num_used Number of used objects to free down to
  * @return Returns number of slots freed
  */
-int free_object_slots(int num_used)
+int free_object_slots(int target_num_used)
 {
 	int	i, olind, deleted_weapons;
 	int	obj_list[MAX_OBJECTS];
@@ -173,19 +239,19 @@ int free_object_slots(int num_used)
 	for ( objp = GET_FIRST(&obj_free_list); objp != END_OF_LIST(&obj_free_list); objp = GET_NEXT(objp) )
 		num_already_free++;
 
-	if (MAX_OBJECTS - num_already_free < num_used)
+	if (MAX_OBJECTS - num_already_free < target_num_used)
 		return 0;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
 			num_already_free++;
-			if (MAX_OBJECTS - num_already_free < num_used)
+			if (MAX_OBJECTS - num_already_free < target_num_used)
 				return num_already_free;
 		} else
 			switch (objp->type) {
 				case OBJ_NONE:
 					num_already_free++;
-					if (MAX_OBJECTS - num_already_free < num_used)
+					if (MAX_OBJECTS - num_already_free < target_num_used)
 						return 0;
 					break;
 				case OBJ_FIREBALL:
@@ -214,7 +280,7 @@ int free_object_slots(int num_used)
 
 	}
 
-	num_to_free = MAX_OBJECTS - num_used - num_already_free;
+	num_to_free = MAX_OBJECTS - target_num_used - num_already_free;
 	original_num_to_free = num_to_free;
 
 	if (num_to_free > olind) {
@@ -223,32 +289,32 @@ int free_object_slots(int num_used)
 	}
 
 	for (i=0; i<num_to_free; i++)
-		if ( (Objects[obj_list[i]].type == OBJ_DEBRIS) && (Debris[Objects[obj_list[i]].instance].flags & DEBRIS_EXPIRE) ) {
+		if ( (Objects[obj_list[i]].type == OBJ_DEBRIS) && (!Debris[Objects[obj_list[i]].instance].flags[Debris_Flags::DoNotExpire]) ) {
 			num_to_free--;
 			nprintf(("allender", "Freeing   DEBRIS object %3i\n", obj_list[i]));
 			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 
-	if (!num_to_free)
+	if (num_to_free <= 0) {
 		return original_num_to_free;
+	}
 
 	for (i=0; i<num_to_free; i++)	{
 		object *tmp_obj = &Objects[obj_list[i]];
 		if ( (tmp_obj->type == OBJ_FIREBALL) && (fireball_is_perishable(tmp_obj)) ) {
 			num_to_free--;
+			if (num_to_free <= 0) {
+				return original_num_to_free;
+			}
 			nprintf(("allender", "Freeing FIREBALL object %3i\n", obj_list[i]));
 			tmp_obj->flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
-	if (!num_to_free){
-		return original_num_to_free;
-	}
-
 	deleted_weapons = collide_remove_weapons();
 
 	num_to_free -= deleted_weapons;
-	if ( !num_to_free ){
+	if ( num_to_free <= 0){
 		return original_num_to_free;
 	}
 
@@ -320,6 +386,14 @@ float get_shield_pct(object *objp)
 	return shield_get_strength(objp) / total_strength;
 }
 
+static void on_script_state_destroy(lua_State*) {
+	// Since events are mostly used for scripting, we clear the event handlers when the Lua state is destroyed
+	for (auto& obj : Objects) {
+		obj.pre_move_event.clear();
+		obj.post_move_event.clear();
+	}
+}
+
 /**
  * Sets up the free list & init player & whatever else
  */
@@ -348,10 +422,15 @@ void obj_init()
 	Num_objects = 0;
 	Highest_object_index = 0;
 
-	if ( Cmdline_old_collision_sys ) {
-		obj_reset_pairs();
-	} else {
-		obj_reset_colliders();
+	obj_reset_colliders();
+
+	Script_system.OnStateDestroy.add(on_script_state_destroy);
+}
+
+void obj_shutdown()
+{
+	for (auto& obj : Objects) {
+		obj.clear();
 	}
 }
 
@@ -366,7 +445,7 @@ static int num_objects_hwm = 0;
  * @return the number of a free object, updating Highest_object_index
  * @return -1 if no free objects
  */
-int obj_allocate(void)
+int obj_allocate(bool essential)
 {
 	int objnum;
 	object *objp;
@@ -376,7 +455,7 @@ int obj_allocate(void)
 		obj_init();
 	}
 
-	if ( Num_objects >= MAX_OBJECTS-10 ) {
+	if ( (Num_objects >= MAX_OBJECTS-10) && essential ) {
 		int	num_freed;
 
 		num_freed = free_object_slots(MAX_OBJECTS-10);
@@ -384,9 +463,7 @@ int obj_allocate(void)
 	}
 
 	if (Num_objects >= MAX_OBJECTS) {
-		#ifndef NDEBUG
 		mprintf(("Object creation failed - too many objects!\n" ));
-		#endif
 		return -1;
 	}
 
@@ -465,14 +542,14 @@ void obj_free(int objnum)
  * The object will be a non-rendering, non-physics object.   Pass -1 if no parent.
  * @return the object number 
  */
-int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags )
+int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient,
+               const vec3d *pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
 {
 	int objnum;
 	object *obj;
 
 	// Find next free object
-	objnum = obj_allocate();
+	objnum = obj_allocate(essential);
 
 	if (objnum == -1)		//no free objects
 		return -1;
@@ -491,10 +568,8 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->parent					= parent_obj;
 	if (obj->parent != -1)	{
 		obj->parent_sig		= Objects[parent_obj].signature;
-		obj->parent_type		= Objects[parent_obj].type;
 	} else {
 		obj->parent_sig = obj->signature;
-		obj->parent_type = obj->type;
 	}
 
 	obj->flags 					= flags;
@@ -512,7 +587,22 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
+
 	return objnum;
+}
+
+void obj_delete_all() 
+{
+	int counter = 0;
+	for (int i = 0; i < MAX_OBJECTS; ++i) 
+	{
+		if (Objects[i].type == OBJ_NONE)
+			continue;
+		++counter;
+		obj_delete(i);
+	}
+
+	mprintf(("Cleanup: Deleted %i objects\n", counter));
 }
 
 /**
@@ -533,12 +623,8 @@ void obj_delete(int objnum)
 	};	
 
 	// Remove all object pairs
-	if ( Cmdline_old_collision_sys ) {
-		obj_remove_pairs( objp );
-	} else {
-		obj_remove_collider(objnum);
-	}
-	
+	obj_remove_collider(objnum);
+
 	switch( objp->type )	{
 	case OBJ_WEAPON:
 		weapon_delete( objp );
@@ -560,6 +646,7 @@ void obj_delete(int objnum)
 
 			physics_init(&objp->phys_info);
 			obj_snd_delete_type(OBJ_INDEX(objp));
+
 			return;
 		} else
 			ship_delete( objp );
@@ -573,7 +660,6 @@ void obj_delete(int objnum)
 	case OBJ_START:
 	case OBJ_WAYPOINT:
 	case OBJ_POINT:
-		Assert(Fred_running);
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
 		break;  // requires no further action, handled by jumpnode deconstructor.
@@ -594,6 +680,7 @@ void obj_delete(int objnum)
 		} else {
 			// we need to be able to delete GHOST objects in multiplayer to allow for player respawns.
 			nprintf(("Network","Deleting GHOST object\n"));
+			objp->net_signature = 0;
 		}		
 		break;
 	case OBJ_OBSERVER:
@@ -607,6 +694,12 @@ void obj_delete(int objnum)
 	default:
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
+
+	// this avoids include issues from physics state, multi interpolate and object code
+	extern void multi_interpolate_clear_helper(int objnum);
+
+	// clean up interpolation info
+	multi_interpolate_clear_helper(objnum);
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
@@ -660,11 +753,7 @@ void obj_merge_created_list(void)
 		list_remove( obj_create_list, objp );
 
 		// Add it to the object pairs array
-		if ( Cmdline_old_collision_sys ) {
-			obj_add_pairs(OBJ_INDEX(objp));
-		} else {
-			obj_add_collider(OBJ_INDEX(objp));
-		}
+		obj_add_collider(OBJ_INDEX(objp));
 
 		// Then add it to the object used list
 		list_append( &obj_used_list, objp );
@@ -733,6 +822,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		return;
 	}
 
+	ship_weapon* swp = &shipp->weapons;
+
 	// single player pilots, and all players in multiplayer take care of firing their own primaries
 	if(!(Game_mode & GM_MULTIPLAYER) || (objp == Player_obj))
 	{
@@ -740,14 +831,22 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// flag the ship as having the trigger down
 			if(shipp != NULL){
 				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
+				swp->flags.set(Ship::Weapon_Flags::Primary_trigger_down);
 			}
 
 			// fire non-streaming primaries here
-			ship_fire_primary( objp, 0 );
+			// Cyborg17, this is where the inaccurate multi shots are being shot... 
+			// so let's let the new system take over instead by excluding client player shots
+			// on the server.
+			if (!(MULTIPLAYER_MASTER) || (objp == Player_obj)) {
+				ship_fire_primary(objp);
+			}
+			
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
                 shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
+				swp->flags.remove(Ship::Weapon_Flags::Primary_trigger_down);
 				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
 		}
@@ -758,18 +857,36 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	}
 
 	// single player and multiplayer masters do all of the following
-	if ( !MULTIPLAYER_CLIENT ) {		
-		if ( ci.fire_secondary_count ) {
-			ship_fire_secondary( objp );
+	if ( !MULTIPLAYER_CLIENT 
+		// Cyborg17 - except clients now fire dumbfires for rollback on the server
+		|| !(Weapon_info[swp->secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing())) {
+		if (ci.fire_secondary_count) {
+   			if ( !ship_start_secondary_fire(objp) ) {
+				ship_fire_secondary( objp );
+			}
 
 			// kill the secondary count
 			ci.fire_secondary_count = 0;
+		} else {
+			if ( ship_stop_secondary_fire(objp) ) {
+				ship_fire_secondary( objp );
+			}
 		}
+	}
+
+	if ( MULTIPLAYER_CLIENT && objp == Player_obj ) {
+		if (Weapon_info[swp->secondary_bank_weapons[shipp->weapons.current_secondary_bank]].trigger_lock) {
+			if (ci.fire_secondary_count) {
+				ship_start_secondary_fire(objp);
+			} else {
+				ship_stop_secondary_fire(objp);
+			}
+		}	
 	}
 
 	// everyone does the following for their own ships.
 	if ( ci.afterburner_start ){
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE)){
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || !ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE)) {
 			afterburners_start( objp );
 		}
 	}
@@ -784,25 +901,29 @@ void obj_move_call_physics(object *objp, float frametime)
 {
 	TRACE_SCOPE(tracing::Physics);
 
-	int has_fired = -1;	//stop fireing stuff-Bobboau
-
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
 	if ( objp->flags[Object::Object_Flags::Physics] ) {
 		// only set phys info if ship is not dead
 		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags[Ship::Ship_Flags::Dying])) {
 			ship *shipp = &Ships[objp->instance];
-			float	engine_strength;
 
-			engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
-			if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
-				engine_strength=0.0f;
+			if (!shipp->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
+				bool engines_blown = ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE);
+				if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+					engines_blown = true;
+				}
+
+				if (engines_blown) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
+					vm_vec_zero(&objp->phys_info.desired_vel);
+					vm_vec_zero(&objp->phys_info.desired_rotvel);
+					vm_mat_zero(&objp->phys_info.ai_desired_orient);
+					objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
+					objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
+				}
 			}
-
-			if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
-				vm_vec_zero(&objp->phys_info.desired_vel);
-				vm_vec_zero(&objp->phys_info.desired_rotvel);
-				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
-				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
+			// recover if we *are* maneuvering but the flag was added
+			else if ((objp->phys_info.flags & PF_DEAD_DAMP) && !shipp->flags[Ship::Ship_Flags::Dying]) {
+				ship_reset_disabled_physics(objp, shipp->ship_info_index);
 			}
 
 			if (shipp->weapons.num_secondary_banks > 0) {
@@ -812,7 +933,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
-					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+					if (!ship_secondary_has_ammo(&shipp->weapons, i))
 						continue;
 
 					int points = pm->missile_banks[i].num_slots;
@@ -827,7 +948,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					if (points > missles_left) {
 						//there are more slots than missles left, so not all of the slots will have missles drawn on them
 						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -836,7 +957,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					} else {
 						//we don't have to worry about such things
 						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -857,7 +978,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 		if (physics_paused)	{
 			if (objp==Player_obj){
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
+				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity, frametime );		// simulate the physics
 			}
 		} else {
 			//	Hack for dock mode.
@@ -875,7 +996,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				if (/* (objnum_I_am_docked_or_docking_with != -1) || */
 					((aip->mode == AIM_DOCK) && ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_UNDOCK_0))) ||
 					((aip->mode == AIM_WARP_OUT) && (aip->submode >= AIS_WARP_3))) {
-					if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f){
+					if (Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] || !ship_subsystems_blown(&Ships[objp->instance], SUBSYSTEM_ENGINE)){
 						objp->phys_info.flags |= PF_USE_VEL;
 					} else {
 						objp->phys_info.flags &= ~PF_USE_VEL;	//	If engine blown, don't PF_USE_VEL, or ships stop immediately
@@ -885,19 +1006,12 @@ void obj_move_call_physics(object *objp, float frametime)
 				}
 			}			
 
-			// in multiplayer, if this object was just updatd (i.e. clients send their own positions),
-			// then reset the flag and don't move the object.
-            if (MULTIPLAYER_MASTER && (objp->flags[Object::Object_Flags::Just_updated])) {
-				objp->flags.remove(Object::Object_Flags::Just_updated);
-				goto obj_maybe_fire;
-			}
-
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
+			// simulate the physics
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity,  frametime);
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
 			// or multiplayer.  We must find the player object to get to the control info field
-obj_maybe_fire:
 			if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp->type != OBJ_OBSERVER) && (objp == Player_obj)) {
 				player *pp;
 				if(Player != NULL){
@@ -905,18 +1019,7 @@ obj_maybe_fire:
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
 			}
-
-			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
-			// do stream weapon firing for all ships themselves. 
-			if(objp->type == OBJ_SHIP){
-				ship_fire_primary(objp, 1, 0);
-					has_fired = 1;
-			}
 		}
-	}
-	
-	if(has_fired == -1){
-		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 	}
 
 	//2D MODE
@@ -942,8 +1045,6 @@ obj_maybe_fire:
 	}
 }
 
-
-#define IMPORTANT_FLAGS (OF_COLLIDES)
 
 #ifdef OBJECT_CHECK 
 
@@ -986,10 +1087,6 @@ void obj_check_object( object *obj )
 		mprintf(( "Object parent sig changed!\n" ));
 		Int3();
 	}
-	if ( CheckObjects[objnum].parent_type != obj->parent_type ) {
-		mprintf(( "Object's parent type changed!\n" ));
-		Int3();
-	}
 }
 #endif
 
@@ -1008,11 +1105,7 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 	// turning collision detection off
 	if ( (obj->flags[Object::Object_Flags::Collides]) && (!(new_flags[Object::Object_Flags::Collides])))	{
 		// Remove all object pairs
-		if ( Cmdline_old_collision_sys ) {
-			obj_remove_pairs( obj );
-		} else {
-			obj_remove_collider(objnum);
-		}
+		obj_remove_collider(objnum);
 
 		// update object flags properly		
 		obj->flags = new_flags;
@@ -1038,12 +1131,8 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 		obj->flags.set(Object::Object_Flags::Collides);
 
 		// Turn on collision detection
-		if ( Cmdline_old_collision_sys ) {
-			obj_add_pairs(objnum);
-		} else {
-			obj_add_collider(objnum);
-		}
-				
+		obj_add_collider(objnum);
+
 		obj->flags = new_flags;
         obj->flags.remove(Object::Object_Flags::Not_in_coll);
 #ifdef OBJECT_CHECK
@@ -1073,8 +1162,8 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 
 		// see if this ship is really a player ship (or should be)
 		shipp = &Ships[obj->instance];
-		extern void multi_ts_get_team_and_slot(char *, int *, int *, bool);
-		multi_ts_get_team_and_slot(shipp->ship_name,&team,&slot, false);
+		extern void multi_ts_get_team_and_slot(char *, int *, int *);
+		multi_ts_get_team_and_slot(shipp->ship_name,&team,&slot);
 		if ( (shipp->wingnum == -1) || (team == -1) || (slot==-1) ) {
 			Int3();
 			return;
@@ -1151,8 +1240,10 @@ void obj_move_all_pre(object *objp, float frametime)
 		Int3();
 		break;
 	default:
-		Error( LOCATION, "Unhandled object type %d in obj_move_one\n", objp->type );
-	}	
+		Error(LOCATION, "Unhandled object type %d in obj_move_all_pre\n", objp->type);
+	}
+
+	objp->pre_move_event(objp);
 }
 
 // Used to tell if a particular group of lasers has cast light yet.
@@ -1168,7 +1259,6 @@ void obj_clear_weapon_group_id_list()
 
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
-extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
@@ -1182,39 +1272,52 @@ void obj_move_all_post(object *objp, float frametime)
 				weapon_process_post( objp, frametime );
 
 			// Cast light
-			if ( Detail.lighting > 2 ) {
+			if ( Detail.lighting > 3 ) {
 				// Weapons cast light
 
 				int group_id = Weapons[objp->instance].group_id;
 				int cast_light = 1;
 
-				if ( (group_id >= 0) && (Obj_weapon_group_id_used[group_id]==0) )	{
-					// Mark this group as done
-					Obj_weapon_group_id_used[group_id]++;
-				} else {
-					// This group has already done its light casting
-					cast_light = 0;
+				if (group_id >= 0) {
+					if (Obj_weapon_group_id_used[group_id] == 0) {
+						// Mark this group as done
+						Obj_weapon_group_id_used[group_id]++;
+					}
+					else {
+						// This group has already done its light casting
+						cast_light = 0;
+					}
 				}
-
-				if ( cast_light )	{
-					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-
-					if ( wi->render_type == WRT_LASER )	{
+				if (cast_light) {
+					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+					auto lp = lighting_profiles::current();
+					hdr_color light_color;
+					// If there is no specific color set in the table, laser render weapons have a dynamic color.
+					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
+						// intensity is stored in the light color even if no user setting is done.
+						light_color = hdr_color(&wi->light_color);
+						// Classic dynamic laser color is handled with an old color object
 						color c;
-						float r,g,b;
-
-						// get the laser color
 						weapon_get_laser_color(&c, objp);
-
-						r = i2fl(c.red)/255.0f;
-						g = i2fl(c.green)/255.0f;
-						b = i2fl(c.blue)/255.0f;
-
-						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b, objp->parent );
+						light_color.set_rgb(&c);
 					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
-					} 
+						// If not a laser then all default information needed is stored in the weapon light color
+						light_color = hdr_color(&wi->light_color);
+					}
+					//handles both defaults and adjustments.
+					float r = wi->light_radius;
+					float source_radius = objp->radius;
+					if (wi->render_type == WRT_LASER) {
+						r = lp->laser_light_radius.handle(r);
+						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
+					} else {
+						//Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
+						source_radius *= 0.05f;
+						r = lp->missile_light_radius.handle(r);
+						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
+					}
+					if(r > 0.0f && light_color.i() > 0.0f)
+						light_add_point(&objp->pos, r, r, &light_color,source_radius);
 				}
 			}
 
@@ -1227,18 +1330,17 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
-				ship_model_update_instance(objp);
 			}
 
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
-				if ( (Detail.lighting > 2) && (objp != Viewer_obj) ) {
+				if ( (Detail.lighting > 3) && (objp != Viewer_obj) ) {
 					int i;
 					ship		*shipp;
 					shipp = &Ships[objp->instance];
 
-					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-						if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+					for (i=0; i<MAX_ARC_EFFECTS; i++ )	{
+						if ( shipp->arc_timestamp[i].isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
 							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
@@ -1247,8 +1349,8 @@ void obj_move_all_post(object *objp, float frametime)
 							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
 							vm_vec_add2(&tmp2,&objp->pos);
 
-							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
+							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
 						}
 					}
 				}
@@ -1256,7 +1358,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 			//Check for changing team colors
 			ship* shipp = &Ships[objp->instance];
-			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none")) {
+			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none") != 0) {
 				if (f2fl(Missiontime) * 1000 > f2fl(shipp->team_change_timestamp) * 1000 + shipp->team_change_time) {
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
@@ -1275,8 +1377,11 @@ void obj_move_all_post(object *objp, float frametime)
 			if ( !physics_paused )
 				fireball_process_post(objp,frametime);
 
-			if (Detail.lighting > 3) {
+			if (Detail.lighting > 2) {
 				float r = 0.0f, g = 0.0f, b = 0.0f;
+				// Make sure the new system works fine.
+				Assert(objp->instance > -1);
+				Assert(static_cast<int>(Fireballs.size()) > objp->instance);
 
 				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
 
@@ -1294,15 +1399,19 @@ void obj_move_all_post(object *objp, float frametime)
 					float rad = p * (1.0f + frand() * 0.05f) * objp->radius;
 					
 					float intensity = 1.0f;
-					if(fireball_is_warp(objp))
+					if (fireball_is_warp(objp))
 					{
-						intensity = fireball_wormhole_intensity(objp); // Valathil: Get wormhole radius for lighting
+						// Make sure the new system works fine.
+						Assert(static_cast<int>(Fireballs.size()) > objp->instance);
+						Assert(objp->instance > -1);
+						intensity = fireball_wormhole_intensity(&Fireballs[objp->instance]); // Valathil: Get wormhole radius for lighting
 						rad = objp->radius;
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
+					// TODO: Make fireball source radius configurable, currently sized based on modern subspace portal textures as that will be a very prominent case of it
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b,rad * 0.3f);
 				}
 			}
 
@@ -1322,14 +1431,14 @@ void obj_move_all_post(object *objp, float frametime)
 
 			// Make any electrical arcs on debris cast light
 			if (Arc_light)	{
-				if ( Detail.lighting > 2 ) {
+				if ( Detail.lighting > 3 ) {
 					int i;
 					debris		*db;
 					db = &Debris[objp->instance];
 
 					if (db->arc_frequency > 0) {
 						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-							if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+							if ( db->arc_timestamp[i].isValid() )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
 								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
@@ -1338,8 +1447,8 @@ void obj_move_all_post(object *objp, float frametime)
 								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
 								vm_vec_add2(&tmp2,&objp->pos);
 
-								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
+								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
 							}
 						}
 					}
@@ -1382,8 +1491,10 @@ void obj_move_all_post(object *objp, float frametime)
 			break;
 
 		default:
-			Error( LOCATION, "Unhandled object type %d in obj_move_one\n", objp->type );
-	}	
+		    Error(LOCATION, "Unhandled object type %d in obj_move_all_post\n", objp->type);
+	    }
+
+	    objp->post_move_event(objp);
 }
 
 
@@ -1461,20 +1572,56 @@ void obj_move_all(float frametime)
 		// pre-move
 		obj_move_all_pre(objp, frametime);
 
-		// store last pos and orient
-		objp->last_pos = cur_pos;
-		objp->last_orient = objp->orient;
+		bool interpolation_object = multi_oo_is_interp_object(objp);
+
+		// store last pos and orient, but only for non-interpolation objects
+		// interpolation objects will need to to work backwards from the last good position
+		// to prevent collision issues
+		if (!interpolation_object){
+			objp->last_pos = cur_pos;
+			objp->last_orient = objp->orient;
+		}
 
 		// Goober5000 - skip objects which don't move, but only until they're destroyed
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if (multi_oo_is_interp_object(objp)) {
-				multi_oo_interp(objp);
+			if (interpolation_object) {
+				extern void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
+
+				interpolate_main_helper(OBJ_INDEX(objp), &objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
+		} else {
+			// make sure velocity is always 0 for immobile things!
+			vm_vec_zero(&objp->phys_info.vel);
+			vm_vec_zero(&objp->phys_info.desired_vel);
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
+
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		
+		// this flag only affects ship subsystems, not any other type of submodel movement
+		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			ship_move_subsystems(objp);
+
+		// do animation on this object
+		int model_instance_num = object_get_model_instance(objp);
+		if (model_instance_num > -1) {
+			polymodel_instance* pmi = model_get_instance(model_instance_num);
+			animation::ModelAnimation::stepAnimations(frametime, pmi);
+		}
+
+		// finally, do intrinsic motion on this object
+		// (this happens last because look_at is a type of intrinsic rotation,
+		// and look_at needs to happen last or the angle may be off by a frame)
+		model_do_intrinsic_motions(objp);
+
+		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
+		if (objp->type == OBJ_SHIP)
+			ship_model_replicate_submodels(objp);
 
 		// move post
 		obj_move_all_post(objp, frametime);
@@ -1491,20 +1638,27 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
+			if (scripting::hooks::OnWeaponEquipped->isActive()) {
+				scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
+					scripting::hook_param_list(
+						scripting::hook_param("User", 'o', objp),
+						scripting::hook_param("Target", 'o', target)
+					));
+			}
 		}
-		Script_system.RemHookVars(2, "User", "Target");
 	}
 
-	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
-	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
-	// were intrinsic-rotated here, but for sequencing reasons, intrinsic ship rotations must happen along with regular ship rotations.)
-	model_do_intrinsic_rotations();
+	// Now apply intrinsic motion to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
+	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
+	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		// skip objects which should be dead
+		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
+			continue;
+		}
+
 		dock_move_docked_objects(objp);
 
 		//Valathil - Move the screen rotation calculation for billboards here to get the updated orientation matrices caused by docking interpolation
@@ -1537,11 +1691,6 @@ void obj_move_all(float frametime)
 				Physics_viewer_bank -= 2.0f * PI; 	 
 			}
 		}
-
-		// unflag all objects as being updates
-        objp->flags.remove(Object::Object_Flags::Just_updated);
-
-		objp = GET_NEXT(objp);
 	}
 
 	if (!cmeasure_list.empty())
@@ -1552,11 +1701,7 @@ void obj_move_all(float frametime)
 
 	if ( Collisions_enabled ) {
 		TRACE_SCOPE(tracing::CollisionDetection);
-		if ( Cmdline_old_collision_sys ) {
-			obj_check_all_collisions();
-		} else {
-			obj_sort_and_collide();
-		}
+		obj_sort_and_collide();
 	}
 
 	turret_swarm_check_validity();
@@ -1564,8 +1709,24 @@ void obj_move_all(float frametime)
 	// do post-collision stuff for beam weapons
 	beam_move_all_post();
 
+	// Cyborg17 - Update the multi record on multi with these new positions. Clients need to get updated, too.
+	if (MULTIPLAYER_MASTER) {
+		multi_ship_record_update_all();
+	}
+
 	// update artillery locking info now
 	ship_update_artillery_lock();
+
+	if (Nmodel_instance_num >= 0) {
+		animation::ModelAnimation::stepAnimations(frametime, model_get_instance(Nmodel_instance_num));
+	}
+
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
+		ship* shipp = &Ships[Viewer_obj->instance];
+		if (shipp->cockpit_model_instance >= 0) {
+			animation::ModelAnimation::stepAnimations(frametime, model_get_instance(shipp->cockpit_model_instance));
+		}
+	}
 
 //	mprintf(("moved all objects\n"));
 }
@@ -1595,7 +1756,6 @@ void obj_render(object *obj)
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }
 
 void obj_queue_render(object* obj, model_draw_list* scene)
@@ -1604,18 +1764,22 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
-	
-	Script_system.RemHookVar("Self");
+	if (scripting::hooks::OnObjectRender->isActive()) {
+		scripting::api::Current_scene = scene;
 
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+		auto param_list = scripting::hook_param_list(scripting::hook_param("Self", 'o', obj));
+
+		// Always execute the hook content
+		bool skip_render = scripting::hooks::OnObjectRender->isOverride(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
+		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
+
+		// Clear the render scene context
+		scripting::api::Current_scene = nullptr;
+
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
 
 	switch ( obj->type ) {
@@ -1679,78 +1843,6 @@ void obj_init_all_ships_physics()
 
 }
 
-/**
- * Do client-side pre-interpolation object movement
- */
-void obj_client_pre_interpolate()
-{
-	object *objp;
-	
-	// duh
-	obj_delete_all_that_should_be_dead();
-
-	// client side processing of warping in effect stages
-	multi_do_client_warp(flFrametime);     
-
-	// client side movement of an observer
-	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)){
-		obj_observer_move(flFrametime);   
-	}
-	
-	// run everything except ships through physics (and ourselves of course)	
-	obj_merge_created_list();						// must merge any objects created by the host!
-
-	objp = GET_FIRST(&obj_used_list);
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )	{
-		if((objp != Player_obj) && (objp->type == OBJ_SHIP)){
-			continue;
-		}
-
-		// for all non-dead object which are _not_ ships
-		if ( !(objp->flags[Object::Object_Flags::Should_be_dead]) )	{				
-			// pre-move step
-			obj_move_all_pre(objp, flFrametime);
-
-			// store position and orientation
-			objp->last_pos = objp->pos;
-			objp->last_orient = objp->orient;
-
-			// call physics
-			obj_move_call_physics(objp, flFrametime);
-
-			// post-move step
-			obj_move_all_post(objp, flFrametime);
-		}
-	}
-}
-
-/**
- * Do client-side post-interpolation object movement
- */
-void obj_client_post_interpolate()
-{
-	object *objp;
-
-	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( objp != Player_obj ) {
-			dock_move_docked_objects(objp);
-		}
-		objp = GET_NEXT(objp);
-	}	
-
-	// check collisions
-	if ( Cmdline_old_collision_sys ) {
-		obj_check_all_collisions();
-	} else {
-		obj_sort_and_collide();
-	}
-
-	// do post-collision stuff for beam weapons
-	beam_move_all_post();
-}
-
 void obj_observer_move(float frame_time)
 {
 	object *objp;
@@ -1769,7 +1861,6 @@ void obj_observer_move(float frame_time)
 	ft = flFrametime;
 	obj_move_call_physics( objp, ft );
 	obj_move_all_post(objp, frame_time);
-	objp->flags.remove(Object::Object_Flags::Just_updated);
 }
 
 /**
@@ -1778,15 +1869,16 @@ void obj_observer_move(float frame_time)
 void obj_get_average_ship_pos( vec3d *pos )
 {
 	int count;
-	object *objp;
 
 	vm_vec_zero( pos );
 
    // average up all ship positions
 	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
+
 		vm_vec_add2( pos, &objp->pos );
 		count++;
 	}
@@ -1857,91 +1949,10 @@ int obj_team(object *objp)
 }
 
 /**
- * Add an element to the CheckObjects[] array, and update the
- * object pairs.  This is called from obj_create(), and the restore
- * save-game code.
- */
-void obj_add_pairs(int objnum)
-{
-	object	*objp;
-
-	Assert(objnum != -1);
-	objp = &Objects[objnum];	
-
-	// don't do anything if its already in the object pair list
-	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
-		return;
-	}
-
-#ifdef OBJECT_CHECK 
-	CheckObjects[objnum].type = objp->type;
-	CheckObjects[objnum].signature = objp->signature;
-    CheckObjects[objnum].flags = objp->flags;
-    CheckObjects[objnum].flags.remove(Object::Object_Flags::Not_in_coll);
-	CheckObjects[objnum].parent_sig = objp->parent_sig;
-	CheckObjects[objnum].parent_type = objp->parent_type;
-#endif	
-
-	// Find all the objects that can collide with this and add 
-	// it to the collision pair list. 
-	object * A;
-	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) )	{
-		obj_add_pair( objp, A );
-	}
-	
-	objp->flags.remove(Object::Object_Flags::Not_in_coll);
-}
-
-/**
  * Removes any occurances of object 'a' from
  * the pairs list.
  */
 extern int Num_pairs;
-extern obj_pair pair_used_list;
-extern obj_pair pair_free_list;
-void obj_remove_pairs( object * a )
-{
-	obj_pair *parent, *tmp;
-
-	a->flags.set(Object::Object_Flags::Not_in_coll);	
-#ifdef OBJECT_CHECK 
-	CheckObjects[OBJ_INDEX(a)].flags.set(Object::Object_Flags::Not_in_coll);
-#endif	
-
-	if ( a->num_pairs < 1 )	{
-		return;
-	}
-
-	Num_pairs-=a->num_pairs;
-	
-	parent = &pair_used_list;
-	tmp = parent->next;
-
-	while( tmp != NULL )	{
-		if ( (tmp->a==a) || (tmp->b==a) )	{
-			// Hmmm... a potenial compiler optimization problem here... either tmp->a or tmp->b
-			// is equal to 'a' and we modify 'num_pairs' in one of these and then use the value
-			// stored in 'a' later one... will the optimizer find that?  Hmmm...
-			tmp->a->num_pairs--;
-			Assert( tmp->a->num_pairs > -1 );
-			tmp->b->num_pairs--;
-			Assert( tmp->b->num_pairs > -1 );
-			parent->next = tmp->next;
-			tmp->a = tmp->b = NULL;
-			tmp->next = pair_free_list.next;
-			pair_free_list.next = tmp;
-			tmp = parent->next;
-
-			if ( a->num_pairs==0 )	{
-				break;
-			}
-
-		} else {
-			parent = tmp;
-			tmp = tmp->next;
-		}
-	}
-}
 
 /**
  * Reset all collisions
@@ -1956,28 +1967,18 @@ void obj_reset_all_collisions()
 #endif
 
 	// clear object pairs
-	if ( Cmdline_old_collision_sys ) {
-		obj_reset_pairs();
-	} else {
-		obj_reset_colliders();
-	}
+	obj_reset_colliders();
 
 	// now add every object back into the object collision pairs
-	object *moveup;
-	moveup = GET_FIRST(&obj_used_list);
-	while(moveup != END_OF_LIST(&obj_used_list)){
+	for (auto moveup: list_range(&obj_used_list)) {
+		if (moveup->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// he's not in the collision list
 		moveup->flags.set(Object::Object_Flags::Not_in_coll);
 
 		// recalc pairs for this guy
-		if ( Cmdline_old_collision_sys ) {
-			obj_add_pairs(OBJ_INDEX(moveup));
-		} else {
-			obj_add_collider(OBJ_INDEX(moveup));
-		}
-
-		// next
-		moveup = GET_NEXT(moveup);
+		obj_add_collider(OBJ_INDEX(moveup));
 	}
 }
 
@@ -2041,28 +2042,27 @@ int obj_get_by_signature(int sig)
 {
 	Assert(sig > 0);
 
-	object *objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )
+	for (auto objp: list_range(&obj_used_list))
 	{
-		if(objp->signature == sig)
+		// don't skip over should-be-dead objects, since we assume we know what we're doing
+		if (objp->signature == sig)
 			return OBJ_INDEX(objp);
-
-		objp = GET_NEXT(objp);
 	}
+
 	return -1;
 }
 
 /**
  * Gets object model
  */
-int object_get_model(object *objp)
+int object_get_model(const object *objp)
 {
 	switch(objp->type)
 	{
 		case OBJ_ASTEROID:
 		{
 			asteroid *asp = &Asteroids[objp->instance];
-			return Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
+			return Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
 		}
 		case OBJ_DEBRIS:
 		{
@@ -2085,3 +2085,81 @@ int object_get_model(object *objp)
 
 	return -1;
 }
+
+int object_get_model_instance(const object *objp)
+{
+	if (objp == nullptr)
+		return -1;
+
+	switch (objp->type)
+	{
+		case OBJ_ASTEROID:
+		{
+			asteroid *asp = &Asteroids[objp->instance];
+			return asp->model_instance_num;
+		}
+		case OBJ_DEBRIS:
+		{
+			debris *debrisp = &Debris[objp->instance];
+			return debrisp->model_instance_num;
+		}
+		case OBJ_SHIP:
+		{
+			ship *shipp = &Ships[objp->instance];
+			return shipp->model_instance_num;
+		}
+		case OBJ_WEAPON:
+		{
+			weapon *wp = &Weapons[objp->instance];
+			return wp->model_instance_num;
+		}
+		case OBJ_JUMP_NODE:
+		{
+			CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+			Assertion(jnp != nullptr, "Could not find jump node!");
+			return jnp->GetPolymodelInstanceNum();
+		}
+		default:
+			break;
+	}
+
+	return -1;
+}
+
+bool obj_compare(object* left, object* right) {
+	if (left == right) {
+		// Same pointer
+		return true;
+	}
+	if (left == nullptr || right == nullptr) {
+		// Only one is nullptr and the other is not (since they are not equal)
+		return false;
+	}
+
+	return OBJ_INDEX(left) == OBJ_INDEX(right);
+}
+
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp)
+{
+    Assertion(objp != nullptr, "Bad object (nullptr) passed to physics_overwrite_snapshot, please report to the SCP!");
+
+    snapshot.position = objp->pos;
+    snapshot.orientation = objp->orient;
+    snapshot.velocity = objp->phys_info.vel;
+    snapshot.desired_velocity = objp->phys_info.desired_vel;
+    snapshot.rotational_velocity = objp->phys_info.rotvel;
+    snapshot.desired_rotational_velocity = objp->phys_info.desired_rotvel;
+}
+
+void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source)
+{
+    Assertion(objp != nullptr, "Bad object passed to phsyics snapshot application code.  This is a coder mistake, please report!");
+
+    objp->pos = source.position;
+    objp->orient = source.orientation;
+    objp->phys_info.vel = source.velocity;
+    objp->phys_info.desired_vel = source.desired_velocity;
+    objp->phys_info.rotvel = source.rotational_velocity;
+    objp->phys_info.desired_rotvel = source.desired_rotational_velocity;
+}
+
