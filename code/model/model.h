@@ -1047,6 +1047,7 @@ void model_set_detail_level(int n);
 #define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
 #define MR_EMPTY_SLOT5				(1<<30)		// Use a animated Shader - Valathil
 #define MR_ATTACHED_MODEL			(1<<31)		// Used for attached weapon model lodding
+#define MR_NO_INSIGNIA				(1<<32)		// Disable the insignias for ... reasons
 
 #define MR_DEBUG_PIVOTS				(1<<0)		// Show the pivot points
 #define MR_DEBUG_PATHS				(1<<1)		// Show the paths associated with a model

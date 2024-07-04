@@ -20993,6 +20993,10 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_LIGHTING;
 	}
 
+	if (shipp->flags[Ship_Flags::No_insignias]) {
+		render_flags |= MR_NO_INSIGNIA;		
+	}
+
 	uint debug_flags = render_info.get_debug_flags();
 
 	if (shipp->flags[Ship_Flags::Render_without_diffuse]) {
