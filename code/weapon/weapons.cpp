@@ -7386,6 +7386,21 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == other_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
+
+			weapon* wp = &Weapons[wobjp->instance];
+			ship* shipp = &Ships[other_obj->instance];
+
+			// if this is friendly fire, we check for the friendly fire cap values
+			if (wp->team == shipp->team) {
+				if (&Objects[wobjp->parent] == other_obj && The_mission.ai_profile->weapon_self_damage_cap.has_value()) {
+					// if this is a ship shooting itself, we use the self damage cap
+					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap.value()[Game_skill_level]);
+				} else if (The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
+					// otherwise we use the friendly damage cap
+					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap.value()[Game_skill_level]);
+				}
+			}
+
 			ship_apply_global_damage(objp, wobjp, pos, damage, wip->shockwave.damage_type_idx);
 			weapon_area_apply_blast(nullptr, objp, pos, blast, false);
 			break;
@@ -7397,6 +7412,14 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
 				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f, false);
+
+			weapon* wp = &Weapons[wobjp->instance];
+			weapon* target_wp = &Weapons[other_obj->instance];
+			
+			// if this is friendly fire, we check for the friendly fire cap value
+			if (wp->team == target_wp->team && The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
+				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap.value()[Game_skill_level]);
+			}
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {

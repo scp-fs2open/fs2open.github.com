@@ -13295,6 +13295,26 @@ void sexp_player_use_ai(int flag)
 	}
 }
 
+void sexp_set_friendly_damage_caps(float beam_friendly_cap, float weapon_friendly_cap, float weapon_self_cap) {
+	ai_profile_t aip = *The_mission.ai_profile;
+	for (int sklev = 0; sklev < NUM_SKILL_LEVELS; sklev++) {
+		aip.beam_friendly_damage_cap[sklev] = beam_friendly_cap;
+	}
+	aip.weapon_friendly_damage_cap.reset();
+
+	std::array<float, NUM_SKILL_LEVELS> wfc_array; 
+	for (int sklev = 0; sklev < NUM_SKILL_LEVELS; sklev++) {
+		wfc_array[sklev] = weapon_friendly_cap;
+	}
+	aip.weapon_friendly_damage_cap = wfc_array;
+
+	std::array<float, NUM_SKILL_LEVELS> wsc_array; 
+	for (int sklev = 0; sklev < NUM_SKILL_LEVELS; sklev++) {
+		wsc_array[sklev] = weapon_self_cap;
+	}
+	aip.weapon_self_damage_cap = wsc_array;
+}
+
 // Karajorma
 void sexp_allow_treason (int n) 
 {

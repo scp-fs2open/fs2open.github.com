@@ -767,8 +767,8 @@ void ai_profile_t::reset()
 
         subsys_damage_scale[i] = 0;
         beam_friendly_damage_cap[i] = 0;
-		weapon_friendly_damage_cap[i] = tl::nullopt;
-        weapon_self_damage_cap[i] = tl::nullopt;
+		weapon_friendly_damage_cap = tl::nullopt;
+        weapon_self_damage_cap = tl::nullopt;
 		turn_time_scale[i] = 0;
         glide_attack_percent[i] = 0;
         circle_strafe_percent[i] = 0;
