@@ -28,7 +28,7 @@ void parse_curve_table(const char* filename) {
 			int index = curve_get_by_name(name);
 
 			if (index < 0) {
-				Curve curv = Curve(name);
+				Curve curv = Curve(std::move(name));
 				curv.ParseData();
 				Curves.push_back(curv);
 			} else {

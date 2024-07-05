@@ -1377,7 +1377,7 @@ void stuff_string(SCP_string &outstr, int type, const char *terminators)
 	}
 	else
 	{
-		outstr = read_str;
+		outstr = std::move(read_str);
 	}
 
 	diag_printf("Stuffed string = [%.30s]\n", outstr.c_str());

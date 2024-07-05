@@ -31,7 +31,7 @@ void LabUi::object_changed()
 		trigger = false;
 }
 
-void LabUi::build_species_entry(species_info species_def, int species_idx) const
+void LabUi::build_species_entry(const species_info &species_def, int species_idx) const
 {
 	with_TreeNode(species_def.species_name)
 	{

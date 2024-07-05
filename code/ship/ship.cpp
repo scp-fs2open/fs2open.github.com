@@ -3211,12 +3211,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if (optional_string("$Default Team:")) {
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		SCP_string name = temp;
 		if (!stricmp(temp, "none")) {
 			sip->uses_team_colors = true;
 		} else {
+			SCP_string name = temp;
 			if (Team_Colors.find(name) != Team_Colors.end()) {
-				sip->default_team_name = name;
+				sip->default_team_name = std::move(name);
 				sip->uses_team_colors = true;
 			} else {
 				Warning(LOCATION, "Team name %s is invalid. Teams must be defined in colors.tbl.\n", temp);

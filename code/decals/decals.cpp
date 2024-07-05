@@ -174,7 +174,7 @@ void parse_decals_table(const char* filename) {
 			SCP_string name;
 			stuff_string(name, F_NAME);
 
-			DecalDefinition def(name);
+			DecalDefinition def(std::move(name));
 			def.parse();
 
 			DecalDefinitions.push_back(std::move(def));

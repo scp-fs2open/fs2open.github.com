@@ -2784,7 +2784,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						SCP_string triggeredBy = CTEXT(CDDR(ship_node));
 						SCP_tolower(triggeredBy);
 						
-						if(std::find_if(animations.cbegin(), animations.cend(), [triggerType, triggeredBy](const std::remove_reference<decltype(animations)>::type::value_type& animation) -> bool {
+						if(std::find_if(animations.cbegin(), animations.cend(), [&triggerType, &triggeredBy](const std::remove_reference<decltype(animations)>::type::value_type& animation) -> bool {
 							if (animation.type != triggerType)
 								return false;
 
@@ -13358,7 +13358,7 @@ void sexp_set_player_orders(int n)
 		std::set<size_t> diff;
 		std::set_difference(shipp->orders_accepted.begin(), shipp->orders_accepted.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
-		shipp->orders_accepted = diff;
+		shipp->orders_accepted = std::move(diff);
 	}
 }
 
@@ -13401,7 +13401,7 @@ void sexp_set_order_allowed_for_target(int n)
 		std::set<size_t> diff;
 		std::set_difference(shipp->orders_allowed_against.begin(), shipp->orders_allowed_against.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
-		shipp->orders_allowed_against = diff;
+		shipp->orders_allowed_against = std::move(diff);
 	}
 }
 
@@ -16397,7 +16397,7 @@ void sexp_set_asteroid_field(int n)
 		inner_box,
 		i_min,
 		i_max,
-		targets);
+		std::move(targets));
 
 }
 
@@ -16491,7 +16491,7 @@ void sexp_set_debris_field(int n)
 	asteroid_create_debris_field(
 		num_asteroids,
 		asteroid_speed,
-		debris_types,
+		std::move(debris_types),
 		o_min,
 		o_max,
 		enhanced);

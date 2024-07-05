@@ -137,9 +137,9 @@ void script_parse_lua_script(const char *filename) {
 
 		script_function func;
 		func.language = SC_LUA;
-		func.function = function;
+		func.function = std::move(function);
 
-		Script_system.AddGameInitFunction(func);
+		Script_system.AddGameInitFunction(std::move(func));
 	} catch (const LuaException& e) {
 		LuaError(Script_system.GetLuaSession(), "Failed to parse %s: %s", filename, e.what());
 	}
@@ -686,7 +686,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		auto function = LuaFunction::createFromCode(LuaState, source, function_name);
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-		script_func.function = function;
+		script_func.function = std::move(function);
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 	}
