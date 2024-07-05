@@ -340,7 +340,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		if ( second_line ) {
 
-			if (directives_top.first_frame >= 0)
+			if (directives_middle.first_frame >= 0)
 				renderBitmap(directives_middle.first_frame, bx, by);
 			
 			by += text_h;

@@ -2574,7 +2574,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				vm_vec_random_in_circle(&pos1, &center, &orient, 1.f, bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE);
 
 			if (bwi->t5info.end_pos != Type5BeamPos::CENTER)
-				vm_vec_random_in_circle(&pos2, &center, &orient, 1.f, bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE);
+				vm_vec_random_in_circle(&pos2, &center, &orient, 1.f, bwi->t5info.end_pos == Type5BeamPos::RANDOM_OUTSIDE);
 
 			if (bwi->t5info.no_translate || bwi->t5info.end_pos == Type5BeamPos::SAME_RANDOM)
 				pos2 = pos1;
