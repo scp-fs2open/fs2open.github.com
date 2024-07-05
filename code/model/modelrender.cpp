@@ -49,7 +49,7 @@ color Wireframe_color;
 
 extern void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth);
 
-int model_render_determine_elapsed_time(int objnum, uint64_T flags);
+int model_render_determine_elapsed_time(int objnum, uint64_t flags);
 
 model_batch_buffer TransformBufferHandler;
 
@@ -2532,7 +2532,7 @@ void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, co
 	}
 }
 
-void model_render_debug_children(const polymodel *pm, int mn, int detail_level, uint debug_flags)
+void model_render_debug_children(const polymodel *pm, int mn, int detail_level, uint64_t debug_flags)
 {
 	int i;
 
@@ -2566,7 +2566,7 @@ void model_render_debug_children(const polymodel *pm, int mn, int detail_level, 
 	g3_done_instance(true);
 }
 
-void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
+void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, uint64_t flags, uint debug_flags, int objnum, int detail_level_locked )
 {
 	polymodel *pm = model_get(model_num);	
 	

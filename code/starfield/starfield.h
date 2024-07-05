@@ -57,7 +57,7 @@ extern SCP_vector<background_t> Backgrounds;
 extern int Nmodel_num;
 extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
-extern int Nmodel_flags;
+extern uint64_t Nmodel_flags;
 extern int Nmodel_bitmap;
 extern float Nmodel_alpha;
 

@@ -20797,7 +20797,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 	return -1;
 }
 
-void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint * /*render_flags*/)
+void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint64_t * /*render_flags*/)
 {
 	if ( !shipp->shader_effect_timestamp.isValid() || Rendering_to_shadow_map ) {
 		return;

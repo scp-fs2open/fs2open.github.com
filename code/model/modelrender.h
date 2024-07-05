@@ -307,7 +307,7 @@ void model_render_queue(const model_render_params* render_info, model_draw_list*
 void submodel_render_immediate(const model_render_params* render_info, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void submodel_render_queue(const model_render_params* render_info, model_draw_list* scene, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void model_render_buffers(model_draw_list* scene, model_material* rendering_material, const model_render_params* interp, const vertex_buffer* buffer, const polymodel* pm, int mn, int detail_level, uint tmap_flags);
-bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint flags);
+bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint64_t flags);
 void model_render_arc(const vec3d* v1, const vec3d* v2, const color* primary, const color* secondary, float arc_width);
 void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);
