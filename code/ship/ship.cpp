@@ -11043,11 +11043,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			if (sip) {
-				SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
-				if (gpoi != sip->glowpoint_bank_override_map.end()) {
-					gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
-				}
+			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			if (gpoi != sip->glowpoint_bank_override_map.end()) {
+				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
 			}
 
 			if (gpo) {
@@ -11197,11 +11195,9 @@ static void ship_model_change(int n, int ship_type)
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			if (sip) {
-				SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
-				if (gpoi != sip->glowpoint_bank_override_map.end()) {
-					gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
-				}
+			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			if (gpoi != sip->glowpoint_bank_override_map.end()) {
+				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
 			}
 
 			if (gpo) {

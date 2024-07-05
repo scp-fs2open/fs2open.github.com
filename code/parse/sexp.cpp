@@ -9085,6 +9085,7 @@ int sexp_angle_vectors(int node) {
 	if (is_nan1 || is_nan2)
 		return SEXP_NAN;
 
+	// coverity[uninit_use_in_call:FALSE] - v1 and v2 are always populated by eval_vec3d
 	if (IS_VEC_NULL(&v1) || IS_VEC_NULL(&v2))
 		return SEXP_NAN;
 
@@ -19036,7 +19037,7 @@ void sexp_weapon_create(int n)
 	is_locked = (target_objnum >= 0) ? 1 : 0;	// assume full lock; this lets lasers track if people want them to
 
 	// create the weapon
-	// coverity[uninit_use_in_call] - weapon_pos is always populated by eval_vec3d
+	// coverity[uninit_use_in_call:FALSE] - weapon_pos is always populated by eval_vec3d
 	weapon_objnum = weapon_create(&weapon_pos, &weapon_orient, weapon_class, parent_objnum, -1, is_locked);
 
 	// maybe make the weapon track its target

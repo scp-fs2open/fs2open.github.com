@@ -290,7 +290,7 @@ const     float FULLY_TARGETABLE        = (viewer_has_primitive_sensors ? ((dist
 				if (test > Awacs[idx].subsys->awacs_radius)
 					continue;
 
-				// coverity[dead_error_line] - closest_index will be a value other than -1 on future loop iterations
+				// coverity[dead_error_line:FALSE] - closest_index will be a value other than -1 on future loop iterations
 				if ((closest_index == -1) || (test < closest))
 				{
 					closest = test;
