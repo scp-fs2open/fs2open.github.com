@@ -1438,11 +1438,11 @@ bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_str
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
 
-void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags);
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint64_t flags);
 
-void model_render_shields( polymodel * pm, uint flags );
+void model_render_shields( polymodel * pm, uint64_t flags );
 
-void model_draw_paths_htl( int model_num, uint flags );
+void model_draw_paths_htl( int model_num, uint64_t flags );
 
 void model_draw_bay_paths_htl(int model_num);
 

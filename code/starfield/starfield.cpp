@@ -2317,7 +2317,7 @@ void stars_draw_background()
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
-void stars_set_background_model(int new_model, int new_bitmap, int flags, float alpha)
+void stars_set_background_model(int new_model, int new_bitmap, uint64_t flags, float alpha)
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;
@@ -2362,7 +2362,7 @@ void stars_set_background_model(int new_model, int new_bitmap, int flags, float 
 }
 
 // call this to set a specific model as the background model
-void stars_set_background_model(const char* model_name, const char* texture_name, int flags, float alpha)
+void stars_set_background_model(const char* model_name, const char* texture_name, uint64_t flags, float alpha)
 {
 	int new_model = -1;
 	int new_bitmap = -1;
