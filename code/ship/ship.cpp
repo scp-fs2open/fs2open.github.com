@@ -14547,6 +14547,8 @@ int ship_info_lookup(const char *token)
 	{
 		// chop off right parenthesis (it exists because otherwise the left wouldn't have been flagged)
 		char *p2 = strchr(temp2, ')');
+		if (!p2)
+			return -1;
 		*p2 = '\0';
 
 		// assemble using hash

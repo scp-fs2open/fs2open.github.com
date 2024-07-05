@@ -771,6 +771,8 @@ thruster_bank* thrusterbank_h::Get() const
 {
 	if (!isValid())
 		return nullptr;
+
+	// coverity[returned_null:FALSE] - isValid() specifically checks for modelh.Get() returning null
 	return &modelh.Get()->thrusters[thrusterbank_index];
 }
 bool thrusterbank_h::isValid() const
@@ -891,6 +893,8 @@ glow_point_bank* glowpointbank_h::Get() const
 {
 	if (!isValid())
 		return nullptr;
+
+	// coverity[returned_null:FALSE] - isValid() specifically checks for modelh.Get() returning null
 	return &modelh.Get()->glow_point_banks[glowpointbank_index];
 }
 bool glowpointbank_h::isValid() const
@@ -1114,6 +1118,7 @@ ADE_FUNC(__len, l_ModelDockingbays, NULL, "Retrieves the number of dockingbays o
 	if (!dbhp->isValid())
 		return ade_set_error(L, "i", 0);
 
+	// coverity[returned_null:FALSE] - isValid() specifically checks for model_get() returning null
 	return ade_set_args(L, "i", dbhp->Get()->n_docks);
 }
 
@@ -1127,6 +1132,7 @@ bool dockingbay_h::isValid() const
 	if (!modelh.isValid())
 		return false;
 
+	// coverity[returned_null:FALSE] - isValid() specifically checks for model_get() returning null
 	return dock_id >= 0 && dock_id < modelh.Get()->n_docks;
 }
 dock_bay* dockingbay_h::getDockingBay() const
@@ -1134,6 +1140,7 @@ dock_bay* dockingbay_h::getDockingBay() const
 	if (!isValid())
 		return nullptr;
 
+	// coverity[returned_null:FALSE] - isValid() specifically checks for model_get() returning null
 	return &modelh.Get()->docking_bays[dock_id];
 }
 

@@ -4289,6 +4289,9 @@ void get_sexp_text_for_variable(char *text, int sexp_var_index)
 // Goober5000
 void do_preload_for_arguments(void (*preloader)(const char *), int arg_node, int arg_handler_node)
 {
+	if (arg_node < 0)
+		return;
+
 	// we have a special argument
 	if (Sexp_nodes[arg_node].flags & SNF_SPECIAL_ARG_IN_NODE)
 	{
@@ -5503,7 +5506,8 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
  */
 const ship_registry_entry *eval_ship(int node)
 {
-	Assert(node >= 0);
+	if (node < 0)
+		return nullptr;
 
 	// check cache
 	if (Sexp_nodes[node].cache)
@@ -5544,7 +5548,8 @@ const ship_registry_entry *eval_ship(int node)
  */
 wing *eval_wing(int node)
 {
-	Assert(node >= 0);
+	if (node < 0)
+		return nullptr;
 
 	// check cache
 	if (Sexp_nodes[node].cache)
@@ -5587,7 +5592,8 @@ wing *eval_wing(int node)
 int sexp_atoi(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
-	Assert(node >= 0);
+	if (node < 0)
+		return 0;
 
 	// check cache
 	if (Sexp_nodes[node].cache)
@@ -5625,7 +5631,8 @@ int sexp_atoi(int node)
 bool sexp_can_construe_as_integer(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
-	Assert(node >= 0);
+	if (node < 0)
+		return false;
 
 	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
 		return true;
@@ -5650,7 +5657,8 @@ bool sexp_can_construe_as_integer(int node)
  */
 int sexp_get_variable_index(int node)
 {
-	Assert(node >= 0);
+	if (node < 0)
+		return -1;
 
 	if (Sexp_nodes[node].cached_variable_index >= 0)
 		return Sexp_nodes[node].cached_variable_index;
@@ -6612,11 +6620,10 @@ object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
 
 	ship_registry_index = ship_registry_get_index(sp->ship_name);
 	Assertion(ship_registry_index >= 0, "Ship %s was not found in the ship registry!", sp->ship_name);
-
-	if (Ship_registry[ship_registry_index].status == ShipStatus::EXITED)
-	{
+	if (ship_registry_index < 0)
+		type = OSWPT_TYPE_NONE;
+	else if (Ship_registry[ship_registry_index].status == ShipStatus::EXITED)
 		type = OSWPT_TYPE_EXITED;
-	}
 }
 
 object_ship_wing_point_team::object_ship_wing_point_team(p_object* pop)
@@ -6626,6 +6633,8 @@ object_ship_wing_point_team::object_ship_wing_point_team(p_object* pop)
 
 	ship_registry_index = ship_registry_get_index(pop->name);
 	Assertion(ship_registry_index >= 0, "Parse object %s was not found in the ship registry!", pop->name);
+	if (ship_registry_index < 0)
+		type = OSWPT_TYPE_NONE;
 }
 
 object_ship_wing_point_team::object_ship_wing_point_team(ship_obj* sop)
@@ -6807,7 +6816,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 {
 	int ship_registry_index = -1;
 	int wingnum = -1;
-	const char *object_name = nullptr;
+	const char *node_ctext = nullptr;
 
 	Assert(oswpt != nullptr);
 	Assert(node >= 0 || ctext_override);
@@ -6822,7 +6831,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 		{
 			wingnum = wing_lookup(ctext_override);
 			if (wingnum < 0)
-				object_name = ctext_override;
+				node_ctext = ctext_override;
 		}
 	}
 	// check caching
@@ -6855,7 +6864,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 			if (wingp)
 				wingnum = WING_INDEX(wingp);
 			else
-				object_name = CTEXT(node);
+				node_ctext = CTEXT(node);
 		}
 	}
 
@@ -6930,7 +6939,8 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 
 
 	// check if we have nothing
-	if(!stricmp(object_name, SEXP_NONE_STRING))
+	// (node_ctext will be non-NULL if there is no ship or wing - but that's hard to determine, Coverity misses it, and it could easily change in the future if this function is modified)
+	if (!node_ctext || !stricmp(node_ctext, SEXP_NONE_STRING))
 	{
 		oswpt->type = OSWPT_TYPE_NONE;
 		return;
@@ -6938,7 +6948,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 
 
 	// check if we have a point for a target
-	auto wpt = find_matching_waypoint(object_name);
+	auto wpt = find_matching_waypoint(node_ctext);
 	if ((wpt != nullptr) && (wpt->get_objnum() >= 0))
 	{
 		oswpt->type = OSWPT_TYPE_WAYPOINT;
@@ -6952,7 +6962,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 
 
 	// check if we have an "<any team>" type
-	int team = sexp_determine_team(object_name);
+	int team = sexp_determine_team(node_ctext);
 	if (team >= 0)
 	{
 		oswpt->type = OSWPT_TYPE_SHIP_ON_TEAM;
@@ -6962,7 +6972,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 
 
 	// check if we have a whole-team type
-	team = iff_lookup(object_name);
+	team = iff_lookup(node_ctext);
 	if (team >= 0)
 	{
 		oswpt->type = OSWPT_TYPE_WHOLE_TEAM;
@@ -8118,7 +8128,7 @@ int sexp_is_ship_visible(int node)
 	if (n >= 0)
 	{
 		auto viewer_entry = eval_ship(n);
-		return ship_check_visibility(ship_entry->shipp(), viewer_entry->shipp());
+		return ship_check_visibility(ship_entry->shipp(), viewer_entry ? viewer_entry->shipp_or_null() : nullptr);
 	}
 	else
 	{

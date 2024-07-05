@@ -8386,6 +8386,8 @@ int get_special_anchor(const char *name)
 
 	strcpy_s(tmp, name+5);
 	iff_name = strtok(tmp, " >");
+	if (iff_name == nullptr)
+		return -1;
 
 	// hack substitute "hostile" for "enemy"
 	if (!stricmp(iff_name, "enemy"))
