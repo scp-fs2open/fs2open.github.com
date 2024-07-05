@@ -9,6 +9,7 @@
 
 
 
+#include "freespace.h"
 #include "hud/hudshield.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/timer.h"
@@ -103,6 +104,17 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	if (wip->damage_curve_idx >= 0)
 		damage *= Curves[wip->damage_curve_idx].GetValue(f2fl(Missiontime - wp->creation_time) / wip->lifetime);
+
+	// if this is friendly fire, we check for the friendly fire cap values
+	if (wp->team == shipp->team) {
+		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile->weapon_self_damage_cap.has_value()) {
+			// if this is a ship shooting itself, we use the self damage cap
+			damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap.transform([](std::array<float, NUM_SKILL_LEVELS> cap) { return cap[Game_skill_level]; }).value());
+		} else if (The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
+			// otherwise we use the friendly damage cap
+			damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap.transform([](std::array<float, NUM_SKILL_LEVELS> cap) { return cap[Game_skill_level]; }).value());
+		}
+	}
 
 	// deterine whack whack
 	float		blast = wip->mass;
