@@ -141,6 +141,9 @@ SCP_vector<cc_line> Cc_lines;
 // Backups for use when user closes the config menu without saving
 SCP_vector<CCI> Control_config_backup;
 
+// The current preset that the user is working on and will likely want to save to
+static SCP_string Current_preset_name;
+
 // Undo system
 Undo_system Undo_controls;
 
@@ -1291,11 +1294,12 @@ bool control_config_accept(bool API_Access)
 			char* cstr; // Must be a char *, because popup_input may return nullptr and std::string don't like it
 
 		retry:;
+			SCP_string default_string = (Current_preset_name.empty()) ? Player->callsign : Current_preset_name;
 			cstr = popup_input(flags,
 				"Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to "
 				"abort to config menu.",
 				32 - 6,
-				Player->callsign);
+				default_string.c_str());
 			if (cstr == nullptr) {
 				// Abort
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1354,6 +1358,9 @@ bool control_config_accept(bool API_Access)
 			// consistant ordering
 			Control_config_presets.resize(1);
 			load_preset_files();
+
+			// finally, save the new preset so that changes will get saved to this preset
+			Current_preset_name = preset.name;
 		} else {
 			return false;
 		}
@@ -1537,9 +1544,11 @@ void control_config_init(bool API_Access)
 	// Init preset cycling system
 	auto preset_it = control_config_get_current_preset();
 	if (preset_it == Control_config_presets.end()) {
+		Current_preset_name.clear();
 		Defaults_cycle_pos = 0;
 
 	} else {
+		Current_preset_name = preset_it->name;
 		Defaults_cycle_pos = static_cast<unsigned int>(std::distance(Control_config_presets.begin(), preset_it));
 	}
 
@@ -1651,6 +1660,9 @@ void control_config_close(bool API_Access)
 	Cc_lines.clear();
 	Conflicts.clear();
 	Undo_controls.clear();
+
+	// Clear this, just to be tidy
+	Current_preset_name.clear();
 }
 
 SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic) {
