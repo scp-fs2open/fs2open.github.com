@@ -893,7 +893,7 @@ void create_shield_explosion_all(object *objp)
  *
  * @return If quadrant is -1, looks at entire shield, otherwise just one quadrant
  */
-int ship_is_shield_up( object *obj, int quadrant )
+int ship_is_shield_up( const object *obj, int quadrant )
 {
 	if ( (quadrant >= 0) && (quadrant < obj->n_quadrants))	{
 		// Just check one quadrant
@@ -917,7 +917,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 //	  / \.
 //	/  2  \.
 //	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
-int get_quadrant(vec3d *hit_pnt, object *shipobjp)
+int get_quadrant(const vec3d *hit_pnt, const object *shipobjp)
 {
 	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]) {
 		int closest = -1;

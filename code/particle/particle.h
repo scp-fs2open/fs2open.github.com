@@ -127,13 +127,13 @@ namespace particle
 	 *
 	 * @see particle::create(particle_info* pinfo)
 	 */
-	void create(vec3d* pos,
-				vec3d* vel,
+	void create(const vec3d* pos,
+				const vec3d* vel,
 				float lifetime,
 				float rad,
 				ParticleType type,
 				int optional_data = -1,
-				object* objp = NULL,
+				const object* objp = nullptr,
 				bool reverse = false);
 
 	/**

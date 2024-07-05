@@ -313,7 +313,7 @@ weapon_explosions::weapon_explosions()
 	ExplosionInfo.clear();
 }
 
-int weapon_explosions::GetIndex(char *filename)
+int weapon_explosions::GetIndex(const char *filename) const
 {
 	if ( filename == NULL ) {
 		Int3();
@@ -329,7 +329,7 @@ int weapon_explosions::GetIndex(char *filename)
 	return -1;
 }
 
-int weapon_explosions::Load(char *filename, int expected_lods)
+int weapon_explosions::Load(const char *filename, int expected_lods)
 {
 	char name_tmp[MAX_FILENAME_LEN] = "";
 	int bitmap_id = -1;
@@ -403,13 +403,13 @@ void weapon_explosions::PageIn(int idx)
 	}
 }
 
-int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
+int weapon_explosions::GetAnim(int weapon_expl_index, const vec3d *pos, float size) const
 {
 	if ( (weapon_expl_index < 0) || (weapon_expl_index >= (int)ExplosionInfo.size()) )
 		return -1;
 
 	//Get our weapon expl for the day
-	weapon_expl_info *wei = &ExplosionInfo[weapon_expl_index];
+	auto wei = &ExplosionInfo[weapon_expl_index];
 
 	if (wei->lod_count == 1)
 		return wei->lod[0].bitmap_id;
@@ -7106,7 +7106,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
  * Figures out whether to play disarmed or armed hit sound, checks that the
  * chosen one exists, and plays it
  */
-void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
+void weapon_play_impact_sound(const weapon_info *wip, const vec3d *hitpos, bool is_armed)
 {
 	if(is_armed)
 	{
@@ -7131,7 +7131,7 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
  *
  * @note Uses Weapon_impact_timer global for timer variable
  */
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant)
+void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const vec3d *hitpos, bool is_armed, int quadrant)
 {
 	float shield_str;
 
@@ -7229,7 +7229,7 @@ extern bool turret_weapon_has_flags(const ship_weapon *swp, Weapon::Info_Flags f
  * @param blast_pos	World pos of weapon blast
  * @param wi_index	Weapon info index of weapon causing blast
  */
-void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index)
+void weapon_do_electronics_effect(const object *ship_objp, const vec3d *blast_pos, int wi_index)
 {
 	weapon_info			*wip;
 	ship				*shipp;
@@ -7320,7 +7320,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
  * @return		No damage occurred, -1
  * @return		Damage occured, 0
  */
-int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
+int weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
 {
 	float dist;
 	vec3d box_pt;
@@ -7375,7 +7375,7 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  * @param blast				Force of blast
  * @param make_shockwave	Boolean, whether to create a shockwave or not
  */
-void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *blast_pos, float blast, bool make_shockwave)
+void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, const vec3d *blast_pos, float blast, bool make_shockwave)
 {
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
@@ -7424,7 +7424,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
  * @param pos		World pos of explosion center
  * @param impacted_obj	Object pointer to ship that weapon impacted on (can be NULL)
  */
-void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *impacted_obj)
+void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, const vec3d *pos, const object *impacted_obj)
 {
 	weapon_info	*wip;
 	object		*objp;
@@ -7580,7 +7580,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant, const vec3d* hitnormal )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -8749,7 +8749,7 @@ DCF(pspew, "Particle spew help and status provider")
 /**
  * Return a scale factor for damage which should be applied for 2 collisions
  */
-float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
+float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const object *target)
 {
 	weapon *wp;	
 	int from_player = 0;
@@ -8874,7 +8874,7 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
-void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx) {
 	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
 	particle::create(hitpos,
 					 &vmd_zero_vector,

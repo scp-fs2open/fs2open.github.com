@@ -501,7 +501,7 @@ void renderAll() {
 	draw_list.render();
 }
 
-void addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
+void addDecal(creation_info& info, const object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
 	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}

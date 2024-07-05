@@ -692,13 +692,13 @@ class weapon_explosions
 {
 private:
 	SCP_vector<weapon_expl_info> ExplosionInfo;
-	int GetIndex(char *filename);
+	int GetIndex(const char *filename) const;
 
 public:
 	weapon_explosions();
 
-	int Load(char *filename = NULL, int specified_lods = MAX_WEAPON_EXPL_LOD);
-	int GetAnim(int weapon_expl_index, vec3d *pos, float size);
+	int Load(const char *filename = NULL, int specified_lods = MAX_WEAPON_EXPL_LOD);
+	int GetAnim(int weapon_expl_index, const vec3d *pos, float size) const;
 	void PageIn(int idx);
 };
 
@@ -761,14 +761,14 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = nullptr );
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
 
-void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, bool make_shockwave);
-int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
+void	weapon_area_apply_blast(const vec3d *force_apply_pos, object *ship_objp, const vec3d *blast_pos, float blast, bool make_shockwave);
+int	weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 
 missile_obj *missile_obj_return_address(int index);
@@ -787,14 +787,14 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 // call to get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
 void weapon_get_laser_color(color *c, object *objp);
 
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant);
+void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const vec3d *hitpos, bool is_armed, int quadrant);
 
-void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
+void weapon_do_electronics_effect(const object *ship_objp, const vec3d *blast_pos, int wi_index);
 
 int weapon_get_random_player_usable_weapon();
 
 // return a scale factor for damage which should be applied for 2 collisions
-float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
+float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const object *target);
 
 // Pauses all running weapon sounds
 void weapon_pause_sounds();
@@ -805,7 +805,7 @@ void weapon_unpause_sounds();
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
 
-void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
+void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx);
 
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);

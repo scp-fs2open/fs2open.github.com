@@ -376,7 +376,7 @@ MONITOR(NumHullDebris)
  * @param exp_force		Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
  * @param source_subsys	The subsystem this debris came from, if any
  */
-object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force, ship_subsys* source_subsys)
+object *debris_create(object *source_obj, int model_num, int submodel_num, const vec3d *pos, const vec3d *exp_center, bool hull_flag, float exp_force, const ship_subsys* source_subsys)
 {
 	int             parent_objnum;
 	object  *obj;
@@ -401,7 +401,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	return obj;
 }
 
-object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, vec3d *pos, matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx)
+object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, const vec3d *pos, const matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx)
 {
 	int		objnum;
 	object	*obj;
@@ -666,7 +666,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	return obj;
 }
 
-void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force, ship_subsys* source_subsys)
+void debris_create_set_velocity(const debris *db, const ship *source_shipp, const vec3d *exp_center, float exp_force, const ship_subsys* source_subsys)
 {
 	auto obj = &Objects[db->objnum];
 	auto source_obj = (source_shipp == nullptr) ? nullptr : &Objects[source_shipp->objnum];
@@ -1105,7 +1105,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 /**
  * Return the team field for a debris object
  */
-int debris_get_team(object *objp)
+int debris_get_team(const object *objp)
 {
 	Assert( objp->type == OBJ_DEBRIS );
 	Assert( objp->instance >= 0 && objp->instance < (int)Debris.size() );
@@ -1207,17 +1207,18 @@ void debris_render(object * obj, model_draw_list *scene)
 	}
 }
 
-bool debris_is_generic(debris *db)
+bool debris_is_generic(const debris *db)
 {
 	return db->model_num == Debris_model;
 }
 
-bool debris_is_vaporized(debris *db)
+bool debris_is_vaporized(const debris *db)
 {
 	return db->model_num == Debris_vaporize_model;
 }
 
-void create_generic_debris(object* ship_objp, vec3d* pos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris) {
+void create_generic_debris(object* ship_objp, const vec3d* pos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris)
+{
 	Assertion(ship_objp->type == OBJ_SHIP, "create_generic_debris called for a non-ship, only ships can spew debris!");
 	if (ship_objp->type != OBJ_SHIP)
 		return;

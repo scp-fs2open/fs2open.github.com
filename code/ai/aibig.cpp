@@ -67,8 +67,8 @@ int	ai_big_maybe_follow_subsys_path(int do_dot_check=1);
 void ai_big_strafe_position();
 static int ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
-extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
-extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal);
+extern void compute_desired_rvec(vec3d *rvec, const vec3d *goal_pos, const vec3d *cur_pos);
+extern void big_ship_collide_recover_start(const object *objp, const object *big_objp, const vec3d *collision_normal);
 
 
 //	Called by ai_big_pick_attack_point.

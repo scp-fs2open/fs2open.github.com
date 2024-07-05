@@ -57,7 +57,7 @@ typedef struct hud_subsys_damage
 {
 	int	str;
 	int	type;
-	char* name;
+	const char* name;
 } hud_subsys_damage;
 
 // used for hudtarget
