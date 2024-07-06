@@ -5,6 +5,8 @@ set -e
 SCRIPT=$(readlink -f "$0")
 HERE=$(dirname "$SCRIPT")
 
+git config --global --add safe.directory .
+
 COMMIT_RANGE=$1..$2
 
 if ! git rev-list $COMMIT_RANGE 2>&1 >/dev/null; then
