@@ -5,7 +5,7 @@ set -e
 SCRIPT=$(readlink -f "$0")
 HERE=$(dirname "$SCRIPT")
 
-git config --global --add safe.directory .
+git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
 COMMIT_RANGE=$1..$2
 
