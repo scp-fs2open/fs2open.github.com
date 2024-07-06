@@ -54,7 +54,7 @@ void parse_sexp_table(const char* filename) {
 
 
 				dynamic_sexp_enum_list thisList;
-				thisList.name = name;
+				thisList.name = std::move(name);
 
 				while (optional_string("+Enum:")) {
 					SCP_string item;

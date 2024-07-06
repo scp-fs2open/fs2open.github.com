@@ -595,7 +595,7 @@ static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 
 			cf_root* root = cf_create_root();
 
-			root->path = rootPath;
+			root->path = std::move(rootPath);
 			if (primary) {
 				root->location_flags = basic_location | CF_LOCATION_TYPE_PRIMARY_MOD;
 			} else {

@@ -264,7 +264,7 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
 		if (m_processingSources) {
 			// If we are already in our onFrame, we need to apply the hack to the right vector though
-			m_deferredSourceAdding.reserve(m_sources.size() + childEffects.size());
+			m_deferredSourceAdding.reserve(m_deferredSourceAdding.size() + childEffects.size());
 		} else {
 			m_sources.reserve(m_sources.size() + childEffects.size());
 		}

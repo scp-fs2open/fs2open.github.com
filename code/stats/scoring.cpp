@@ -207,7 +207,7 @@ void parse_rank_table(const char* filename)
 						continue;
 					}
 				}
-				rank_p->promotion_text[persona] = buf;
+				rank_p->promotion_text[persona] = std::move(buf);
 			}
 
 			if (rank_p->promotion_text.find(-1) == rank_p->promotion_text.end())
@@ -339,7 +339,7 @@ void parse_traitor_tbl(const char* filename)
 						continue;
 					}
 				}
-				Traitor.debriefing_text[persona] = text;
+				Traitor.debriefing_text[persona] = std::move(text);
 			}
 
 			if (optional_string("$Voice:"))
@@ -368,12 +368,12 @@ void parse_traitor_tbl(const char* filename)
 				stuff_string(rec, F_MULTITEXT);
 
 				traitor_override_t traitor;
-				traitor.name = name;
-				traitor.text = text;
-				traitor.recommendation_text = rec;
+				traitor.name = std::move(name);
+				traitor.text = std::move(text);
+				traitor.recommendation_text = std::move(rec);
 				strcpy_s(traitor.voice_filename, file);
 
-				Traitor_overrides.push_back(traitor);
+				Traitor_overrides.push_back(std::move(traitor));
 			}
 		}
 	}

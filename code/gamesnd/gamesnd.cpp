@@ -1005,7 +1005,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 			}
 		}
 
-		gs->name = name;
+		gs->name = std::move(name);
 	}
 	else
 	{
@@ -1013,7 +1013,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 		{
 			Warning(LOCATION, "No existing sound entry with name \"%s\" found!", name.c_str());
 			no_create = false;
-			gs->name = name;
+			gs->name = std::move(name);
 		}
 		else
 		{
@@ -1299,7 +1299,7 @@ void parse_sound_table(const char* filename)
 							}
 						}
 
-						Snds.push_back(game_snd(tempSound));
+						Snds.emplace_back(std::move(tempSound));
 					}
 				}
 

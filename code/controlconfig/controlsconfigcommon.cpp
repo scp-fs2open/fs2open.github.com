@@ -2784,10 +2784,12 @@ bool CCB::operator!=(const CCB& A) const {
 }
 
 bool CCB::has_first_conflict(const CCB& A) const {
+	// coverity[copy_paste_error:FALSE]
 	return !first.empty() && (first.conflicts_with(A.first) || first.conflicts_with(A.second));
 }
 
 bool CCB::has_second_conflict(const CCB& A) const {
+	// coverity[copy_paste_error:FALSE]
 	return !second.empty() && (second.conflicts_with(A.first) || second.conflicts_with(A.second));
 }
 

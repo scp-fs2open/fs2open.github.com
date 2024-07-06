@@ -3211,12 +3211,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if (optional_string("$Default Team:")) {
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		SCP_string name = temp;
 		if (!stricmp(temp, "none")) {
 			sip->uses_team_colors = true;
 		} else {
+			SCP_string name = temp;
 			if (Team_Colors.find(name) != Team_Colors.end()) {
-				sip->default_team_name = name;
+				sip->default_team_name = std::move(name);
 				sip->uses_team_colors = true;
 			} else {
 				Warning(LOCATION, "Team name %s is invalid. Teams must be defined in colors.tbl.\n", temp);
@@ -11043,11 +11043,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			if (sip) {
-				SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
-				if (gpoi != sip->glowpoint_bank_override_map.end()) {
-					gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
-				}
+			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			if (gpoi != sip->glowpoint_bank_override_map.end()) {
+				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
 			}
 
 			if (gpo) {
@@ -11197,11 +11195,9 @@ static void ship_model_change(int n, int ship_type)
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			if (sip) {
-				SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
-				if (gpoi != sip->glowpoint_bank_override_map.end()) {
-					gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
-				}
+			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			if (gpoi != sip->glowpoint_bank_override_map.end()) {
+				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
 			}
 
 			if (gpo) {
@@ -14547,6 +14543,8 @@ int ship_info_lookup(const char *token)
 	{
 		// chop off right parenthesis (it exists because otherwise the left wouldn't have been flagged)
 		char *p2 = strchr(temp2, ')');
+		if (!p2)
+			return -1;
 		*p2 = '\0';
 
 		// assemble using hash

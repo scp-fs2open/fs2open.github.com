@@ -3487,7 +3487,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			temp_data.ssm_entry = fname;
 			if (Delayed_SSM_data.find(wip->name) == Delayed_SSM_data.end())
 				Delayed_SSM_names.push_back(wip->name);
-			Delayed_SSM_data[wip->name] = temp_data;
+			Delayed_SSM_data[wip->name] = std::move(temp_data);
 		} else {
 			// We'll still want to validate the index later. -MageKing17
 			delayed_ssm_index_data temp_data;
@@ -3495,7 +3495,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			temp_data.linenum = get_line_num();
 			if (Delayed_SSM_indices_data.find(wip->name) == Delayed_SSM_indices_data.end())
 				Delayed_SSM_indices.push_back(wip->name);
-			Delayed_SSM_indices_data[wip->name] = temp_data;
+			Delayed_SSM_indices_data[wip->name] = std::move(temp_data);
 		}
 	}// SSM index -Bobboau
 

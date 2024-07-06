@@ -5520,7 +5520,7 @@ void load_gauge_scripting(gauge_settings* settings) {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
-	hud_gauge->initName(name);
+	hud_gauge->initName(std::move(name));
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

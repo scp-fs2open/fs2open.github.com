@@ -766,7 +766,7 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 		Asteroid_field.inner_max_bound = i_max;
 	}
 
-	Asteroid_field.target_names = targets;
+	Asteroid_field.target_names = std::move(targets);
 
 	// Only create asteroids if we have some to create
 	if ((!Asteroid_field.field_asteroid_type.empty()) && (num_asteroids > 0)) {
