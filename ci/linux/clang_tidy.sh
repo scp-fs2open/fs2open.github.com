@@ -22,4 +22,4 @@ echo "Running clang-tidy on changed files"
 git diff -U0 --no-color "$BASE_COMMIT..$2" | \
     $HERE/clang-tidy-diff.py -path "$(pwd)/build" -p1 \
     -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)))|freespace2|qtfred|test|build|tools)\/.*\.(cpp|h)' \
-    -clang-tidy-binary /usr/bin/clang-tidy-9 -j$(nproc) -export-fixes "$(pwd)/clang-fixes.yaml"
+    -clang-tidy-binary /usr/bin/clang-tidy-16 -j$(nproc) -export-fixes "$(pwd)/clang-fixes.yaml"
