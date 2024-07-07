@@ -412,7 +412,7 @@ void pilotfile::reset_stats()
  */
 bool pilotfile::export_stats(scoring_struct *stats)
 {
-	scoring_special_t *p_stats = NULL;
+	scoring_special_t *p_stats = nullptr;
 
 	if ( !stats ) {
 		return false;
