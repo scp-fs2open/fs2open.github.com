@@ -71,7 +71,7 @@ class SourceOrigin {
 	 * 
 	 * @param posOut The pointer where the location will be stored
 	 */
-	void getGlobalPosition(vec3d* posOut) const;
+	void getGlobalPosition(vec3d* posOut, float interp = 1.0f) const;
 
 	void getHostOrientation(matrix* matOut) const;
 
@@ -96,7 +96,7 @@ class SourceOrigin {
 	 *
 	 * @param info The particle_info this should be applied to
 	 */
-	void applyToParticleInfo(particle_info& info, bool allowRelative = false) const;
+	void applyToParticleInfo(particle_info& info, bool allowRelative = false, float interp = 1.0f) const;
 
 	/**
 	 * @brief Gets the velocity of the origin host

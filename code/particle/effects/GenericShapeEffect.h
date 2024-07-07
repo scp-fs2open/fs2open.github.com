@@ -99,7 +99,13 @@ class GenericShapeEffect : public ParticleEffect {
 		// This uses the internal features of the timing class for determining if and how many effects should be
 		// triggered this frame
 		util::EffectTiming::TimingState time_state;
+		int num_spawns = 0;
 		while (m_timing.shouldCreateEffect(source, time_state)) {
+			num_spawns++;
+		}
+
+		for (int spawn_i = 1; spawn_i <= num_spawns; spawn_i++) {
+
 			auto num = m_particleNum.next();
 
 			if (source->getOrigin()->getType() == SourceOriginType::BEAM) {
@@ -119,6 +125,9 @@ class GenericShapeEffect : public ParticleEffect {
 			vec3d dir = getNewDirection(source);
 			matrix dirMatrix;
 			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
+
+			float interp = spawn_i/num_spawns;
+			
 			for (uint i = 0; i < num; ++i) {
 				if (m_particleChance < 1.0f) {
 					auto roll = m_particleRoll.next();
@@ -132,8 +141,7 @@ class GenericShapeEffect : public ParticleEffect {
 				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
 
 				particle_info info;
-
-				source->getOrigin()->applyToParticleInfo(info);
+				source->getOrigin()->applyToParticleInfo(info, false, interp);
 
 				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {

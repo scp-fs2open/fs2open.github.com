@@ -11,14 +11,18 @@ SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 	                           m_velocity(vmd_zero_vector) {
 }
 
-void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
+void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 	Assertion(posOut != nullptr, "Invalid vector pointer passed!");
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			*posOut = m_origin.m_object.objp()->pos;
+			if (interp != 1.0f) {
+				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->last_pos, &m_origin.m_object.objp()->pos, interp);
+			} else {
+				*posOut = m_origin.m_object.objp()->pos;
+			}
 			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
 			break;
 		}
@@ -84,7 +88,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, float interp) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
@@ -95,7 +99,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 
 				info.pos = m_offset;
 			} else {
-				this->getGlobalPosition(&info.pos);
+				this->getGlobalPosition(&info.pos, interp);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -104,7 +108,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 		case SourceOriginType::PARTICLE: {
 			info.rad = getScale();
 			info.lifetime = getLifetime();
-			this->getGlobalPosition(&info.pos);
+			this->getGlobalPosition(&info.pos, interp);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -112,7 +116,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 		case SourceOriginType::BEAM: // Intentional fall-through
 		case SourceOriginType::VECTOR: // Intentional fall-through
 		default: {
-			this->getGlobalPosition(&info.pos);
+			this->getGlobalPosition(&info.pos, interp);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
