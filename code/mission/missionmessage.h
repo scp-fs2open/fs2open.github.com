@@ -96,7 +96,7 @@ X(PRAISE,              "Praise",                50, 10,  60000, HIGH, SOON, NONE
 X(HIGH_PRAISE,         "High Praise",           50, -1,  0,     HIGH, SOON, PRAISE),             \
                                                                                                  \
 /* Wingmate status */                                                                            \
-X(BACKUP,              "Backup",               100, -1,  0,     LOW, SOON, NONE),                \
+X(BACKUP,              "Backup",               100, -1,   5000, LOW, SOON, NONE),                \
 X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(WINGMAN_SCREAM,      "Death",                 50, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(PRAISE_SELF,         "Praise Self",           10,  4,  60000, HIGH, SOON, NONE),               \

@@ -440,6 +440,8 @@ static int Allow_arrival_message_timestamp;
 static int Arrival_message_delay_timestamp;
 static int Arrival_message_subject;
 
+static int Allow_backup_message_timestamp;
+
 // multi TvT
 static int Allow_arrival_music_timestamp_m[2];
 static int Allow_arrival_message_timestamp_m[2];
@@ -6569,6 +6571,7 @@ bool post_process_mission(mission *pm)
 
 	Allow_arrival_music_timestamp=timestamp(0);
 	Allow_arrival_message_timestamp=timestamp(0);
+	Allow_backup_message_timestamp=timestamp(0);
 	Arrival_message_delay_timestamp = timestamp(-1);
 	Arrival_message_subject = -1;
 
@@ -7936,10 +7939,13 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 			}
 		}
 		// everything else
-		else {
+		else if (timestamp_elapsed(Allow_backup_message_timestamp)) {
 			rship = ship_get_random_ship_in_wing(wingnum, SHIP_GET_UNSILENCED);
 			if (rship >= 0) {
-				message_send_builtin(MESSAGE_BACKUP, &Ships[rship], nullptr, -1, -1);
+				auto sent = message_send_builtin(MESSAGE_BACKUP, &Ships[rship], nullptr, -1, -1);
+				if (sent) {
+					Allow_backup_message_timestamp = timestamp(Builtin_messages[MESSAGE_BACKUP].min_delay);
+				}
 			}
 		}
 
