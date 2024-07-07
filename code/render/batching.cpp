@@ -1017,6 +1017,7 @@ void batching_render_batch_item(primitive_batch_item* item,
 	} else {
 		batched_bitmap_material material_def;
 
+		material_def.set_cull_mode(item->batch_item_info.mat_type != batch_info::FLAT_EMISSIVE_WITH_BACKFACES);
 		material_set_batched_bitmap(&material_def, item->batch_item_info.texture, 1.0f, 2.0f);
 		gr_render_primitives_batched(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	}

@@ -22,6 +22,7 @@ struct batch_vertex {
 struct batch_info {
 	enum material_type {
 		FLAT_EMISSIVE,
+		FLAT_EMISSIVE_WITH_BACKFACES,
 		VOLUME_EMISSIVE,
 		DISTORTION,
 		FLAT_OPAQUE,

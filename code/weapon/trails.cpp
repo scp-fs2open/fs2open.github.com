@@ -149,7 +149,7 @@ void trail_render( trail * trailp )
 		return;
 	}
 
-	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE);
+	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE_WITH_BACKFACES);
 
 	if (trailp->single_segment) {
 		Assertion(trailp->tail == 2, "Single segment trail with more than two values!");
