@@ -429,10 +429,9 @@ fix Mission_end_time;
 // WARNING : do NOT call this function on the server - it will overwrite goals, etc
 #define MISSION_CHECKSUM_SIZE (NAME_LENGTH + NAME_LENGTH + 4 + DATE_TIME_LENGTH + DATE_TIME_LENGTH)
 
-// timers used to limit arrival messages and music
+// a timer used to limit arrival music
 #define ARRIVAL_MUSIC_MIN_SEPARATION	60000
-#define ARRIVAL_MESSAGE_MIN_SEPARATION 30000
-
+// a random delay before announcing enemy arrivals
 #define ARRIVAL_MESSAGE_DELAY_MIN		2000
 #define ARRIVAL_MESSAGE_DELAY_MAX		3000
 
@@ -7914,7 +7913,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				{
 					Arrival_message_delay_timestamp_m[multi_team_filter] = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
 				}
-				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(Builtin_messages[MESSAGE_ARRIVE_ENEMY].min_delay);
 						
 				// send to the proper team
 				message_send_builtin(MESSAGE_ARRIVE_ENEMY, nullptr, nullptr, -1, multi_team_filter);
@@ -7933,7 +7932,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 					Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
 					Arrival_message_subject = wingp->ship_index[0];
 				}
-				Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+				Allow_arrival_message_timestamp = timestamp(Builtin_messages[MESSAGE_ARRIVE_ENEMY].min_delay);
 			}
 		}
 		// everything else

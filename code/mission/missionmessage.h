@@ -115,7 +115,7 @@ X(SUPPORT_KILLED,      "Support Killed",       100, -1,  0,     HIGH, SOON, NONE
                                                                                                  \
 /* Global status */                                                                              \
 X(ALL_ALONE,           "All Alone",             50, -1,  0,     HIGH, ANYTIME, NONE),            \
-X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0,     LOW, SOON, NONE),                \
+X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  30000, LOW, SOON, NONE),                \
 X(OOPS,                "Oops 1",               100, -1,  0,     HIGH, ANYTIME, NONE),            \
 X(HAMMER_SWINE,        "Traitor",              100, -1,  0,     HIGH, ANYTIME, NONE),            \
                                                                                                  \
