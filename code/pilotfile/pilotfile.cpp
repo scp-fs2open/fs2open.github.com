@@ -455,7 +455,7 @@ bool pilotfile::export_stats(scoring_struct *stats)
 
 	// same for medals
 	for (auto &item : p_stats->medals_earned) {
-		if ( (item.index >= 0) && (item.index < stats->medal_counts.size()) ) {
+		if ( (item.index >= 0) && (item.index < static_cast<int>(stats->medal_counts.size())) ) {
 			stats->medal_counts[item.index] = item.val;
 		}
 	}
