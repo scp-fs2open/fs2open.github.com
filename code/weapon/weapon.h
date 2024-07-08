@@ -419,6 +419,10 @@ struct weapon_info
 	float	optimum_range;						// causes ai fighters to prefer this distance when attacking with the weapon
 	float weapon_min_range;           // *Minimum weapon range, default is 0 -Et1
 
+	flagset<Object::Aiming_Flags> aiming_flags;
+	float minimum_convergence_distance;
+	float convergence_distance;
+
 	bool pierce_objects;
 	bool spawn_children_on_pierce;
 
