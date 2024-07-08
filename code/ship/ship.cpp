@@ -12690,7 +12690,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				dist_to_aim = vm_vec_mag_quick(&plr_to_target_vec);
 
 				// Use the hightest minimum convergence distance
-				float min_convergence_distance = std::max(sip->minimum_convergence_distance, winfo_p->minimum_convergence_distance);
+				const float min_convergence_distance = std::max(sip->minimum_convergence_distance, winfo_p->minimum_convergence_distance);
 
 				// minimum convergence distance
 				if (min_convergence_distance > dist_to_aim) {
@@ -12925,10 +12925,10 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								V SIF convergence
 								no convergence or autoaim
 							*/
-							bool do_convergence = (sip->aiming_flags[Object::Aiming_Flags::Std_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Std_convergence]);
+							const bool do_convergence = (sip->aiming_flags[Object::Aiming_Flags::Std_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Std_convergence]);
 
 							//Must have the auto convergence flag and a valid target
-							bool do_auto_convergence = (aip->target_objnum != -1) && 
+							const bool do_auto_convergence = (aip->target_objnum != -1) && 
 								((sip->aiming_flags[Object::Aiming_Flags::Auto_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Auto_convergence]));
 
 							if (has_autoaim && in_automatic_aim_fov) {
@@ -12955,7 +12955,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								} else {
 									// std convergence
 									// Use the largest convergence distance because default distance is 0.0f and we don't want that!
-									float convergence_distance = std::max(sip->convergence_distance, winfo_p->convergence_distance);
+									const float convergence_distance = std::max(sip->convergence_distance, winfo_p->convergence_distance);
 									vm_vec_scale(&target_vec, convergence_distance);
 								}
 								
