@@ -1285,8 +1285,7 @@ void snd_rewind(sound_handle snd_handle, float seconds)
 		return;
 
 	auto channel = ds_get_channel(snd_handle);
-
-	snd = &Sounds[ds_get_sound_id(channel)].info;
+	snd = &Sounds[snd_get_sound_id(snd_handle).value()].info;
 
 	current_offset = ds_get_play_position(channel);	// current offset into the sound
 	bps = (float)snd->sample_rate * (float)snd->bits;							// data rate
@@ -1314,10 +1313,9 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 		return;
 
 	auto channel = ds_get_channel(snd_handle);
+	snd = &Sounds[snd_get_sound_id(snd_handle).value()].info;
 
-	snd = &Sounds[ds_get_sound_id(channel)].info;
-
-	current_offset = ds_get_play_position(ds_get_channel(snd_handle));	// current offset into the sound
+	current_offset = ds_get_play_position(channel);	// current offset into the sound
 	bps = (float)snd->sample_rate * (float)snd->bits;							// data rate
 	current_time = (float)current_offset/bps;										// how many seconds we're into the sound
 
@@ -1328,35 +1326,32 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 	desired_time = current_time + seconds;											// where we want to be
 	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
-	ds_set_position(ds_get_channel(snd_handle),desired_offset);
+	ds_set_position(channel,desired_offset);
 }
 
 // this could probably be optimized a bit
 void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 {
-	sound_info *snd;
-
 	if(!snd_is_playing(snd_handle))
 		return;
 
-	auto channel = ds_get_channel(snd_handle);
+	auto id_handle = snd_get_sound_id(snd_handle);
 
-	int idx = ds_get_sound_index(channel);
-	Assertion(SCP_vector_inbounds(Sounds, idx), "Attempt to get a sound that is not loaded, please report!");
+	Assertion(SCP_vector_inbounds(Sounds, id_handle.value()), "Attempt to get a sound %i that is not loaded, please report!", id_handle.value());
 
-	snd = &Sounds[idx].info;
+	const auto& snd = Sounds[id_handle.value()].info;
 
 	// set position as an absolute from 0 to 1
 	if(as_pct){
 		Assert((val >= 0.0) && (val <= 1.0));
-		ds_set_position(ds_get_channel(snd_handle),(uint32_t)((float)snd->size * val));
+		ds_set_position(ds_get_channel(snd_handle), static_cast<uint32_t>((static_cast<float>(snd.size) * val)));
 	} 
 	// set the position as an absolute # of seconds from the beginning of the sound
 	else {
 		float bps;
-		Assert(val <= (float)snd->duration/1000.0f);
-		bps = (float)snd->sample_rate * (float)snd->bits;							// data rate			
-		ds_set_position(ds_get_channel(snd_handle),(uint32_t)(bps * val));
+		Assert(val <= static_cast<float>(snd.duration) / 1000.0f);
+		bps = static_cast<float>(snd.sample_rate) * static_cast<float>(snd.bits);							// data rate			
+		ds_set_position(ds_get_channel(snd_handle), static_cast<uint32_t>(bps * val));
 	}
 }
 

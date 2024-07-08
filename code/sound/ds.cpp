@@ -1945,14 +1945,3 @@ int ds_get_sound_id(int channel_id)
 
 	return Channels[channel_id].snd_id;
 }
-
-/**
- * @brief Given a valid channel, returns the sound signature (typically the sound index)
- * @param channel_id
- * @return
- */
-int ds_get_sound_index(int channel_id) {
-	Assert( channel_id >= 0 );
-
-	return Channels[channel_id].sid;
-}
