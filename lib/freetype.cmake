@@ -16,7 +16,8 @@ if(PLATFORM_WINDOWS OR PLATFORM_MAC)
 
 	target_include_directories(freetype INTERFACE "${FREETYPE_ROOT_DIR}/include")
 
-	find_library(freetype_LOCATION freetype
+	find_library(freetype_LOCATION
+		NAMES freetype freetype281
 		PATHS "${SEARCH_PATH}"
 		NO_DEFAULT_PATH)
 

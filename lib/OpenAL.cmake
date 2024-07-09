@@ -44,7 +44,7 @@ ELSE(WIN32)
         FIND_PACKAGE(OpenAL)
 
         if(OpenAL_FOUND)
-            ADD_IMPORTED_LIB(openal ${OpenAL_INCLUDE_DIR} ${OpenAL_LIBRARY})
+            ADD_IMPORTED_LIB(openal "${OpenAL_INCLUDE_DIR}" "${OpenAL_LIBRARY}")
         else()
             message("OpenAL library could not be found. Using prebuilt library...")
 
