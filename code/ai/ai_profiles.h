@@ -9,6 +9,7 @@
 #ifndef _AI_PROFILES_H_
 #define _AI_PROFILES_H_
 
+#include<array>
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
