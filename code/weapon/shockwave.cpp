@@ -7,7 +7,6 @@
  *
 */
 
-#include "freespace.h"
 #include "weapon/shockwave.h"
 #include "asteroid/asteroid.h"
 #include "gamesnd/gamesnd.h"
@@ -28,6 +27,7 @@
 // Module-wide globals
 // -----------------------------------------------------------
 
+extern int Game_skill_level;
 static const char *Default_shockwave_2D_filename = "shockwave01";
 static const char *Default_shockwave_3D_filename = "shockwave.pof";
 static int Default_2D_shockwave_index = -1;
@@ -348,20 +348,22 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		}
 
 		switch(objp->type) {
-		case OBJ_SHIP:
+		case OBJ_SHIP: {
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
-			if ( wip && (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
+			if (wip && (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) &&
+				!(objp->flags[Object::Object_Flags::Invulnerable])) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
 
 			ship* shipp = &Ships[objp->instance];
 
-			// we make sure that this shockwave was spawned by a weapon that ultimately came from a ship, and then check to see if it's friendly fire
-			if (shockwave_objp->parent >= 0
-				&& sw->weapon_info_index >= 0
-				&& Objects[shockwave_objp->parent].type == OBJ_SHIP
-				&& Ships[Objects[shockwave_objp->parent].instance].team == shipp->team) {
-				if (&Objects[shockwave_objp->parent] == objp && The_mission.ai_profile->weapon_self_damage_cap.has_value()) {
+			// we make sure that this shockwave was spawned by a weapon that ultimately came from a ship, and then check
+			// to see if it's friendly fire
+			if (shockwave_objp->parent >= 0 && sw->weapon_info_index >= 0 &&
+				Objects[shockwave_objp->parent].type == OBJ_SHIP &&
+				Ships[Objects[shockwave_objp->parent].instance].team == shipp->team) {
+				if (&Objects[shockwave_objp->parent] == objp &&
+					The_mission.ai_profile->weapon_self_damage_cap.has_value()) {
 					// if this is a ship shooting itself, we use the self damage cap
 					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap.value()[Game_skill_level]);
 				} else if (The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
@@ -370,25 +372,28 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				}
 			}
 
-			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
+			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx);
 			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			break;
+			}
 		case OBJ_ASTEROID:
 			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
 		case OBJ_WEAPON:
 			if (wip && wip->armor_type_idx >= 0)
-				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance), 1.0f, false);
+				damage = Armor_types[wip->armor_type_idx].GetDamage(damage,
+					shockwave_get_damage_type_idx(shockwave_objp->instance),
+					1.0f,
+					false);
 
 			// friendly fire check
-			if (shockwave_objp->parent >= 0
-				&& sw->weapon_info_index >= 0
-				&& Objects[shockwave_objp->parent].type == OBJ_SHIP
-				&& Ships[Objects[shockwave_objp->parent].instance].team == Weapons[objp->instance].team
-				&& The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
-					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap.value()[Game_skill_level]);
-				}
+			if (shockwave_objp->parent >= 0 && sw->weapon_info_index >= 0 &&
+				Objects[shockwave_objp->parent].type == OBJ_SHIP &&
+				Ships[Objects[shockwave_objp->parent].instance].team == Weapons[objp->instance].team &&
+				The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
+				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap.value()[Game_skill_level]);
+			}
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
