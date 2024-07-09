@@ -239,9 +239,9 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
-                                                                                   { 1, {"Low", 1161}},
-                                                                                   { 2, {"Medium", 1162}},
-                                                                                   { 3, {"High", 1163}},
+                                                                                   { 1, {"Low", 1160}},
+                                                                                   { 2, {"Medium", 1161}},
+                                                                                   { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
 
 const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.Detail",

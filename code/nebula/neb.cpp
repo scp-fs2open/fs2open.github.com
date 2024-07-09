@@ -130,9 +130,9 @@ SCP_vector<poof> Neb2_poofs;
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
-                                                                                   { 1, {"Low", 1161}},
-                                                                                   { 2, {"Medium", 1162}},
-                                                                                   { 3, {"High", 1163}},
+                                                                                   { 1, {"Low", 1160}},
+                                                                                   { 2, {"Medium", 1161}},
+                                                                                   { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
 
 const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
