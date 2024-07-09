@@ -96,7 +96,7 @@ X(PRAISE,              "Praise",                50, 10,  60000, HIGH, SOON, NONE
 X(HIGH_PRAISE,         "High Praise",           50, -1,  0,     HIGH, SOON, PRAISE),             \
                                                                                                  \
 /* Wingmate status */                                                                            \
-X(BACKUP,              "Backup",               100, -1,  0,     LOW, SOON, NONE),                \
+X(BACKUP,              "Backup",               100, -1,   5000, LOW, SOON, NONE),                \
 X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(WINGMAN_SCREAM,      "Death",                 50, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(PRAISE_SELF,         "Praise Self",           10,  4,  60000, HIGH, SOON, NONE),               \
@@ -115,7 +115,7 @@ X(SUPPORT_KILLED,      "Support Killed",       100, -1,  0,     HIGH, SOON, NONE
                                                                                                  \
 /* Global status */                                                                              \
 X(ALL_ALONE,           "All Alone",             50, -1,  0,     HIGH, ANYTIME, NONE),            \
-X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0,     LOW, SOON, NONE),                \
+X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  30000, LOW, SOON, NONE),                \
 X(OOPS,                "Oops 1",               100, -1,  0,     HIGH, ANYTIME, NONE),            \
 X(HAMMER_SWINE,        "Traitor",              100, -1,  0,     HIGH, ANYTIME, NONE),            \
                                                                                                  \
