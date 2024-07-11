@@ -24,13 +24,8 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 	// This uses the internal features of the timing class for determining if and how many effects should be triggered
 	// this frame
 	util::EffectTiming::TimingState time_state;
-	int num_spawns = 0;
-	while (m_timing.shouldCreateEffect(source, time_state)) {
-		num_spawns++;
-	}
-
-	for (int spawn_i = 1; spawn_i <= num_spawns; spawn_i++) {
-		float interp = spawn_i/num_spawns;
+	for (int time_since_creation = m_timing.shouldCreateEffect(source, time_state); time_since_creation >= 0; time_since_creation = m_timing.shouldCreateEffect(source, time_state)) {
+		float interp = static_cast<float>(time_since_creation)/(f2fl(Frametime) * 1000.0f);
 		
 		particle_info info;
 

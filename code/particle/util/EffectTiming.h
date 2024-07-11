@@ -38,7 +38,7 @@ class EffectTiming {
 	::util::UniformFloatRange m_delayRange;
 	::util::UniformFloatRange m_durationRange;
 
-	float m_particlesPerSecond = -1.f;
+	::util::UniformFloatRange m_particlesPerSecond = ::util::UniformFloatRange(-1.f);
  public:
 	struct TimingState {
 		bool initial = true;
@@ -66,7 +66,7 @@ class EffectTiming {
 	 * TimingState and then pass it to this function.
 	 * @return @c true if a new effect should be created, @c false. This might return @c true multiple times per frame.
 	 */
-	bool shouldCreateEffect(ParticleSource* source, TimingState& localState) const;
+	int shouldCreateEffect(ParticleSource* source, TimingState& localState) const;
 
 	/**
      * @brief Parses an effect timing class

@@ -18,8 +18,8 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			if (interp != 1.0f) {
-				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->last_pos, &m_origin.m_object.objp()->pos, interp);
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
 			} else {
 				*posOut = m_origin.m_object.objp()->pos;
 			}
@@ -357,6 +357,7 @@ float SourceTiming::getLifeTimeProgress() const {
 
 	return done / (float) total;
 }
+int SourceTiming::getNextCreationTime() { return m_nextCreation; }
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 

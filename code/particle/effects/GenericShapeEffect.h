@@ -4,7 +4,7 @@
 #include "parse/parselo.h"
 #pragma once
 
-#include "globalincs/pstypes.h"
+#include "freespace.h"
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
@@ -99,12 +99,8 @@ class GenericShapeEffect : public ParticleEffect {
 		// This uses the internal features of the timing class for determining if and how many effects should be
 		// triggered this frame
 		util::EffectTiming::TimingState time_state;
-		int num_spawns = 0;
-		while (m_timing.shouldCreateEffect(source, time_state)) {
-			num_spawns++;
-		}
-
-		for (int spawn_i = 1; spawn_i <= num_spawns; spawn_i++) {
+		for (int time_since_creation = m_timing.shouldCreateEffect(source, time_state); time_since_creation >= 0; time_since_creation = m_timing.shouldCreateEffect(source, time_state)) {
+			float interp = static_cast<float>(time_since_creation)/(flFrametime * 1000.0f);
 
 			auto num = m_particleNum.next();
 
@@ -125,8 +121,6 @@ class GenericShapeEffect : public ParticleEffect {
 			vec3d dir = getNewDirection(source);
 			matrix dirMatrix;
 			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
-
-			float interp = spawn_i/num_spawns;
 			
 			for (uint i = 0; i < num; ++i) {
 				if (m_particleChance < 1.0f) {
