@@ -64,12 +64,17 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
+
+		// the erroneous extra time a bomb stays invulnerable without the fix
+		float extra_buggy_time = 0.0f;
+		if (wipA->is_locked_homing())
+			extra_buggy_time = (wipA->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipA->lifetime;
 		
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
 			if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (A_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -78,11 +83,16 @@ int collide_weapon_weapon( obj_pair * pair )
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
 
+		// the erroneous extra time a bomb stays invulnerable without the fix
+		float extra_buggy_time = 0.0f;
+		if (wipB->is_locked_homing())
+			extra_buggy_time = (wipB->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipB->lifetime;
+
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
 			if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (B_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
