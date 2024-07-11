@@ -274,7 +274,7 @@ class SourceTiming {
 	 */
 	float getLifeTimeProgress() const;
 
-	int getNextCreationTime();
+	int getNextCreationTime() const;
 
 	/**
 	 * @brief Determine if the timestamp for the next particle creation has expired

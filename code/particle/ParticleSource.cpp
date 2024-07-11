@@ -357,7 +357,7 @@ float SourceTiming::getLifeTimeProgress() const {
 
 	return done / (float) total;
 }
-int SourceTiming::getNextCreationTime() { return m_nextCreation; }
+int SourceTiming::getNextCreationTime() const { return m_nextCreation; }
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 
