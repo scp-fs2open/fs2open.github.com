@@ -67,9 +67,14 @@ class SourceOrigin {
 	/**
 	 * @brief Gets the current, global position of the origin
 	 * 
+	 * For object sources, can interpolate between object's current position and its position last frame
+	 * 
 	 * Be aware for beam sources this will give *random* points along its length
 	 * 
 	 * @param posOut The pointer where the location will be stored
+	 * 
+	 * @param interp For objects, the point's position between the current-frame
+	 * and last-frame positions of the object, with 0.0 being current-frame and 1.0 being last-frame
 	 */
 	void getGlobalPosition(vec3d* posOut, float interp = 1.0f) const;
 
