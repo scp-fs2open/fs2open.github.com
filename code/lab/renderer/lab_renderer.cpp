@@ -95,6 +95,7 @@ void LabRenderer::renderModel(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, renderFlags[LabRenderFlag::NoMiscMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !renderFlags[LabRenderFlag::ShowWeapons]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::No_insignias, !renderFlags[LabRenderFlag::ShowInsignia]);
 
 		Ships[obj->instance].team_name = currentTeamColor;
 

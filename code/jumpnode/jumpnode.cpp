@@ -407,7 +407,7 @@ void CJumpNode::Render(model_draw_list *scene, const vec3d *pos, const vec3d *vi
 
 	matrix node_orient = IDENTITY_MATRIX;
 
-	int mr_flags = MR_NO_LIGHTING | MR_NO_BATCH;
+	uint64_t mr_flags = MR_NO_LIGHTING | MR_NO_BATCH;
 	if(!(m_flags & JN_SHOW_POLYS)) {
 		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING;
 	}

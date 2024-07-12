@@ -611,7 +611,7 @@ ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
 
-void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags )
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint64_t flags )
 {
 	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
@@ -686,7 +686,7 @@ void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint
 /**
  * Debug code to show all the paths of a model
  */
-void model_draw_paths_htl( int model_num, uint flags )
+void model_draw_paths_htl( int model_num, uint64_t flags )
 {
 	int i,j;
 	vec3d pnt;
@@ -867,7 +867,7 @@ int interp_box_offscreen( vec3d *min, vec3d *max )
 	return IBOX_ALL_ON;	
 }
 
-void model_render_shields( polymodel * pm, uint flags )
+void model_render_shields( polymodel * pm, uint64_t flags )
 {
 	int i, j;
 	shield_tri *tri;

@@ -57,7 +57,7 @@ extern SCP_vector<background_t> Backgrounds;
 extern int Nmodel_num;
 extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
-extern int Nmodel_flags;
+extern uint64_t Nmodel_flags;
 extern int Nmodel_bitmap;
 extern float Nmodel_alpha;
 
@@ -151,8 +151,8 @@ void stars_draw_sun_glow(int sun_n);
 void stars_camera_cut();
 
 // call this to set a specific model as the background model
-void stars_set_background_model(int new_model, int new_bitmap = -1, int flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
-void stars_set_background_model(const char *model_name, const char *texture_name, int flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
+void stars_set_background_model(int new_model, int new_bitmap = -1, uint64_t flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
+void stars_set_background_model(const char *model_name, const char *texture_name, uint64_t flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
 void stars_set_background_orientation(const matrix *orient = nullptr);
 void stars_set_background_alpha(float alpha = 1.0f);
 
