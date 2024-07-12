@@ -296,10 +296,6 @@ const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
 
-// homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
-// range. Check the comment in weapon_set_tracking_info() for more details
-#define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
-
 // default number of missiles or bullets rearmed per load sound during rearm
 #define REARM_NUM_MISSILES_PER_BATCH 4              
 #define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH 100 
