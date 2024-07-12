@@ -1,16 +1,12 @@
 
+#include "globalincs/utility.h"
 #include "math/curve.h"
 #include "parse/parselo.h"
 
 SCP_vector<Curve> Curves;
 
 int curve_get_by_name(const SCP_string& in_name) {
-	for (int i = 0; i < (int)Curves.size(); i++) {
-		if (lcase_equal(Curves[i].name, in_name))
-			return i;
-	}
-
-	return -1;
+	return find_item_with_name(Curves, in_name);
 }
 
 void parse_curve_table(const char* filename) {

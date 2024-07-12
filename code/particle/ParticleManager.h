@@ -96,7 +96,7 @@ class ParticleManager {
 	 * @note If possible, only call this once and then store the index. The lookup is being done by a sequential search
 	 * which means it's pretty slow.
 	 *
-	 * @param name The name of the effect that is being searchd, may not be empty
+	 * @param name The name of the effect that is being searched, may not be empty
 	 * @return The index of the effect
 	 */
 	ParticleEffectHandle getEffectByName(const SCP_string& name);

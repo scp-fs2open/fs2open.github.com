@@ -35,7 +35,7 @@ class GenericShapeEffect : public ParticleEffect {
 	ConeDirection m_direction = ConeDirection::Incoming;
 	::util::UniformFloatRange m_velocity;
 	::util::UniformUIntRange m_particleNum;
-	float m_particleChance;
+	float m_particleChance = 1.0f;
 	::util::UniformFloatRange m_particleRoll;
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
@@ -187,11 +187,11 @@ class GenericShapeEffect : public ParticleEffect {
 			float chance;
 			stuff_float(&chance);
 			if (chance <= 0.0f) {
-				Warning(LOCATION,
+				error_display(0,
 					"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
 					m_name.c_str(), chance);
 			} else if (chance > 1.0f) {
-				Warning(LOCATION,
+				error_display(0,
 					"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: (min,max) "
 					"to spawn multiple particles.", m_name.c_str(), chance);
 				chance = 1.0f;
@@ -201,23 +201,23 @@ class GenericShapeEffect : public ParticleEffect {
 		m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
 
 		if (optional_string("+Direction:")) {
-			SCP_string dirStr;
-			stuff_string(dirStr, F_NAME);
+			char dirStr[NAME_LENGTH];
+			stuff_string(dirStr, F_NAME, NAME_LENGTH);
 
-			if (!stricmp(dirStr.c_str(), "Incoming")) {
+			if (!stricmp(dirStr, "Incoming")) {
 				m_direction = ConeDirection::Incoming;
 			}
-			else if (!stricmp(dirStr.c_str(), "Normal")) {
+			else if (!stricmp(dirStr, "Normal")) {
 				m_direction = ConeDirection::Normal;
 			}
-			else if (!stricmp(dirStr.c_str(), "Reflected")) {
+			else if (!stricmp(dirStr, "Reflected")) {
 				m_direction = ConeDirection::Reflected;
 			}
-			else if (!stricmp(dirStr.c_str(), "Reverse")) {
+			else if (!stricmp(dirStr, "Reverse")) {
 				m_direction = ConeDirection::Reverse;
 			}
 			else {
-				error_display(0, "Unknown direction name '%s'!", dirStr.c_str());
+				error_display(0, "Unknown direction name '%s'!", dirStr);
 			}
 		}
 

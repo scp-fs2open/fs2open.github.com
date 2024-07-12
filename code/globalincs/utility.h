@@ -294,4 +294,19 @@ int find_item_with_name(const ITEM_T* item_array, int num_items, const char* str
 	return find_item_with_field(item_array, num_items, &ITEM_T::name, str);
 }
 
+template <typename VECTOR_T>
+int find_item_with_name(const VECTOR_T& item_vector, const SCP_string& str)
+{
+	int index = 0;
+	for (const auto& item : item_vector)
+	{
+		if (lcase_equal(item.name, str))
+			return index;
+		else
+			++index;
+	}
+
+	return -1;
+}
+
 #endif

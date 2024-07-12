@@ -22,7 +22,7 @@ void ParticleProperties::parse(bool nocreate) {
 		m_radius = ::util::parseUniformRange<float>();
 		m_parentScale = true;
 	} else if (!nocreate) {
-		Error(LOCATION, "Missing +Size or +Parent Size Factor");
+		error_display(1, "Missing +Size or +Parent Size Factor");
 	}
 
 	if (optional_string("+Length:")) {
@@ -49,7 +49,7 @@ void ParticleProperties::parse(bool nocreate) {
 		m_size_lifetime_curve = curve_get_by_name(buf);
 
 		if (m_size_lifetime_curve < 0) {
-			Warning(LOCATION, "Could not find curve '%s'", buf.c_str());
+			error_display(0, "Could not find curve '%s'", buf.c_str());
 		}
 	}
 
@@ -59,22 +59,22 @@ void ParticleProperties::parse(bool nocreate) {
 		m_vel_lifetime_curve = curve_get_by_name(buf);
 
 		if (m_vel_lifetime_curve < 0) {
-			Warning(LOCATION, "Could not find curve '%s'", buf.c_str());
+			error_display(0, "Could not find curve '%s'", buf.c_str());
 		}
 	}
 
 	if (optional_string("+Rotation:")) {
-		SCP_string buf;
-		stuff_string(buf, F_NAME);
-		if (!stricmp(buf.c_str(), "DEFAULT")) {
+		char buf[NAME_LENGTH];
+		stuff_string(buf, F_NAME, NAME_LENGTH);
+		if (!stricmp(buf, "DEFAULT")) {
 			m_rotation_type = RotationType::DEFAULT;
-		} else if (!stricmp(buf.c_str(), "RANDOM")) {
+		} else if (!stricmp(buf, "RANDOM")) {
 			m_rotation_type = RotationType::RANDOM;
-		} else if (!stricmp(buf.c_str(), "SCREEN_ALIGNED") || !stricmp(buf.c_str(), "SCREEN-ALIGNED") || !stricmp(buf.c_str(), "SCREEN ALIGNED")) {
+		} else if (!stricmp(buf, "SCREEN_ALIGNED") || !stricmp(buf, "SCREEN-ALIGNED") || !stricmp(buf, "SCREEN ALIGNED")) {
 			m_rotation_type = RotationType::SCREEN_ALIGNED;
 		} else {
 			// in the future we may want to support additional types, or even a specific angle, but that is TBD
-			Warning(LOCATION, "Rotation Type %s not supported", buf.c_str());
+			error_display(0, "Rotation Type %s not supported", buf);
 		}
 	}
 }
