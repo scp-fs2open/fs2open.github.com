@@ -29,9 +29,41 @@ ELSEIF(PLATFORM_MAC)
 
     add_target_copy_files("${OPENAL_LIBRARY}")
 ELSE(WIN32)
-    FIND_PACKAGE(OpenAL REQUIRED)
+    option(OPENAL_USE_PRECOMPILED "Use precompiled version of OpenAL. If disabled the system libraries will be used." OFF)
 
-    INCLUDE(util)
+    set(USING_PREBUILT_LIBS FALSE)
+    set(OpenAL_ROOT_DIR)
 
-    ADD_IMPORTED_LIB(openal ${OPENAL_INCLUDE_DIR} ${OPENAL_LIBRARY})
+    include(util)
+
+    if(OPENAL_USE_PRECOMPILED)
+        get_prebuilt_path(PREBUILT_PATH)
+        set(OpenAL_ROOT_DIR "${PREBUILT_PATH}/openal")
+        set(USING_PREBUILT_LIBS TRUE)
+    else()
+        FIND_PACKAGE(OpenAL)
+
+        if(OpenAL_FOUND)
+            ADD_IMPORTED_LIB(openal "${OPENAL_INCLUDE_DIR}" "${OPENAL_LIBRARY}")
+        else()
+            message("OpenAL library could not be found. Using prebuilt library...")
+
+            get_prebuilt_path(PREBUILT_PATH)
+            set(OpenAL_ROOT_DIR "${PREBUILT_PATH}/openal")
+            set(USING_PREBUILT_LIBS TRUE)
+        endif()
+    endif()
+
+    if(USING_PREBUILT_LIBS)
+        message(STATUS "Using pre-built OpenAL library.")
+
+        unset(OpenAL_LOCATION CACHE)
+        find_library(OpenAL_LOCATION openal PATHS "${OpenAL_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+
+        get_filename_component(FULL_LIB_PATH "${OpenAL_LOCATION}" REALPATH)
+        ADD_IMPORTED_LIB(openal "${OpenAL_ROOT_DIR}/include" "${FULL_LIB_PATH}")
+
+        file(GLOB OpenAL_LIBS "${OpenAL_ROOT_DIR}/lib/libopenal*")
+        add_target_copy_files("${OpenAL_LIBS}")
+    endif()
 ENDIF(WIN32)
