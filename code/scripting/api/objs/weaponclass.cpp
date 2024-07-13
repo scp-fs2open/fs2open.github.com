@@ -524,6 +524,26 @@ ADE_VIRTVAR(EnergyConsumed, l_Weaponclass, nullptr, nullptr, "number", "Energy C
 	return ade_set_args(L, "f", Weapon_info[idx].energy_consumed);
 }
 
+ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is set to if damage is overriden", "number", "Shockwave Damage, or 0 if weapon shockwave damage is not overriden. Returns nil if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Shockwave Damage is not supported");
+	}
+
+	if (Weapon_info[idx].shockwave.damage_overidden) {
+		return ade_set_args(L, "f", Weapon_info[idx].shockwave.damage);
+	} else {
+		return ade_set_args(L, "f", 0.0f);
+	}
+}
+
 
 ADE_VIRTVAR(InnerRadius, l_Weaponclass, "number", "Radius at which the full explosion damage is done. Marks the line where damage attenuation begins. Same as $Inner Radius in weapons.tbl", "number", "Inner Radius, or 0 if handle is invalid")
 {
