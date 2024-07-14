@@ -12940,9 +12940,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							*/
 							const bool std_convergence_flagged = (sip->aiming_flags[Object::Aiming_Flags::Std_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Std_convergence]);
 
-							//Must have the auto convergence flag and a valid target
-							const bool do_auto_convergence = (aip->target_objnum != -1) && auto_convergence_flagged;
-
 							if (has_autoaim && in_automatic_aim_fov) {
 								vec3d firing_vec;
 
@@ -12955,13 +12952,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								}
 
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else if (std_convergence_flagged || do_auto_convergence) {
+							} else if (std_convergence_flagged || (auto_convergence_flagged && (aip->target_objnum != -1))) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
 								
 								// make sure vector is of the set length
 								vm_vec_copy_normalize(&target_vec, &firing_orient.vec.fvec);
-								if (do_auto_convergence) {
+								if (auto_convergence_flagged && (aip->target_objnum != -1)) {
 									// auto convergence
 									vm_vec_scale(&target_vec, dist_to_aim);
 								} else {
