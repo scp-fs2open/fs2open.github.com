@@ -12301,8 +12301,13 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	int weapon_idx = swp->primary_bank_weapons[bank_to_fire];
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
-	has_converging_autoaim = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim_convergence] || winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Object::Aiming_Flags::Autoaim]) || winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim] || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
+	// First check our ship/weapon flags
+	const bool autoaim_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim]));
+	const bool autoaim_convergence_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim_convergence]));
+
+	// Now check that we have a target and an FOV value
+	has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+	has_autoaim = ((autoaim_flagged || has_converging_autoaim || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
@@ -12458,9 +12463,17 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		// lets start gun convergence / autoaim code from here - Wanderer
 		// in order to do this per weapon, this needs to be moved here from above -Mjn
-		has_converging_autoaim = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim_convergence] || winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Object::Aiming_Flags::Autoaim]) || winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim] || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
-		needs_target_pos = ((has_autoaim || has_converging_autoaim) && aip->target_objnum != -1); // This change needs some scrutiny but it seems right?
+		
+		// This logic is getting a little unweildy.. so let's break it down slightly for readability.
+		// First check our ship/weapon flags
+		const bool autoaim_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim]));
+		const bool autoaim_convergence_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim_convergence]));
+		const bool auto_convergence_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Auto_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Auto_convergence]));
+
+		// Now add in other checks like difficulty and game mode as appropriate. Also make sure we have a target and an FOV if necessary.
+		has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+		has_autoaim = ((autoaim_flagged || has_converging_autoaim || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
+		needs_target_pos = ((auto_convergence_flagged || has_autoaim) && aip->target_objnum != -1);
 
 		if (needs_target_pos) {
 			if (has_autoaim) {
@@ -12925,11 +12938,10 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								V SIF convergence
 								no convergence or autoaim
 							*/
-							const bool do_convergence = (sip->aiming_flags[Object::Aiming_Flags::Std_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Std_convergence]);
+							const bool std_convergence_flagged = (sip->aiming_flags[Object::Aiming_Flags::Std_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Std_convergence]);
 
 							//Must have the auto convergence flag and a valid target
-							const bool do_auto_convergence = (aip->target_objnum != -1) && 
-								((sip->aiming_flags[Object::Aiming_Flags::Auto_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Auto_convergence]));
+							const bool do_auto_convergence = (aip->target_objnum != -1) && auto_convergence_flagged;
 
 							if (has_autoaim && in_automatic_aim_fov) {
 								vec3d firing_vec;
@@ -12943,7 +12955,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								}
 
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else if (do_convergence || do_auto_convergence) {
+							} else if (std_convergence_flagged || do_auto_convergence) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
 								
