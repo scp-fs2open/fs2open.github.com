@@ -34,11 +34,12 @@ namespace Object {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Aiming_Flags){Autoaim = 0, // has autoaim
-		Auto_convergence,                // has automatic convergence
-		Std_convergence,                 // has standard - ie. non-automatic - convergence
-		Autoaim_convergence,             // has autoaim with convergence
-		Convergence_offset,              // marks that convergence has offset value
+	FLAG_LIST(Aiming_Flags){
+		Autoaim = 0,           // has autoaim
+		Auto_convergence,      // has automatic convergence
+		Std_convergence,       // has standard - ie. non-automatic - convergence
+		Autoaim_convergence,   // has autoaim with convergence
+		Convergence_offset,    // marks that convergence has offset valuem, only used for ships not weapons
 
 		NUM_VALUES};
 	}
