@@ -99,6 +99,9 @@ public:
 
 	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
 
+	// minimum radius for the line-of-sight (los) detection --wookieejedi
+	float los_min_detection_radius;
+
 	int ai_path_mode;
 
 	// radii to use for the radius for subsystem path points and default value --wookieejedi
