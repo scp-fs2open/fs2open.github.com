@@ -3046,7 +3046,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	// even if the screen position overflowed, it will still be pointing in the correct direction
 	unsize( &hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y );
 
-	ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
+	ang = atan2(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	sin_ang=sinf(ang);
 	cos_ang=cosf(ang);
 

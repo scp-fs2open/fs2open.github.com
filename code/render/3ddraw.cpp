@@ -887,7 +887,7 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 		w = len_2d;
 
 	} else {
-		a = atan2_safe(taily - heady, tailx - headx);
+		a = atan2(taily - heady, tailx - headx);
 
 		w = len_2d;
 
