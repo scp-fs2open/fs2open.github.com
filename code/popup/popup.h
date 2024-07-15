@@ -48,7 +48,7 @@
 // misc
 #define PF_RUN_STATE					(1<<22)	// call the do frame of the current state underneath the popup
 #define PF_IGNORE_ESC				(1<<23)	// ignore the escape character
-#define PF_ALLOW_DEAD_KEYS			(1<<24)	// Allow player to use keyset that exists when player dies
+#define PF_UNUSED_0					(1<<24)	// Previously PF_ALLOW_DEAD_KEYS, but this was unused even in retail
 #define PF_NO_NETWORKING			(1<<25)	// don't do any networking
 
 // no special buttons

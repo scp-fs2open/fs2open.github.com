@@ -294,13 +294,11 @@ void popup_play_default_change_sound(popup_info *pi)
 //			POPUP_NOCHANGE		=> nothing happenned
 int popup_process_keys(popup_info *pi, int k, int flags)
 {
-	int i, masked_k;
-
 	if ( k <= 0 ) {
 		return POPUP_NOCHANGE;
 	}
 
-	for ( i = 0; i < pi->nchoices; i++ ) {
+	for ( int i = 0; i < pi->nchoices; i++ ) {
 		if ( pi->keypress[i] == key_to_ascii(k) ) {
 			Popup_default_choice=i;
 			Popup_buttons[i].press_button();
@@ -345,13 +343,6 @@ int popup_process_keys(popup_info *pi, int k, int flags)
 	default:
 		break;
 	} // end switch
-
-
-	masked_k = k & ~KEY_CTRLED;	// take out CTRL modifier only
-	if ( (Game_mode & GM_IN_MISSION) ) {
-		process_set_of_keys(masked_k, Dead_key_set_size, Dead_key_set);
-		button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
-	}
 
 	return POPUP_NOCHANGE;
 }
