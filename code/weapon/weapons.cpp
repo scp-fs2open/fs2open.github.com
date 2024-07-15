@@ -2364,13 +2364,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 		armor_index = armor_type_get_idx(fname);
-		required_string("+Effect Name:");
-			ci.effect = particle::util::parseEffect(wip->name);
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
 		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
 		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold);
 		parse_optional_bool_into("+Dinky:", &ci.dinky);
+		required_string("+Effect Name:");
+			ci.effect = particle::util::parseEffect(wip->name);
 		SCP_vector<ConditionalImpact> ci_vec;
 		if (wip->conditional_impacts.count(armor_index) == 1) {
 			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[armor_index];
@@ -7514,6 +7514,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	bool		hit_target = false;
 
 	ship		*shipp;
+	weapon		*target_wp;
+	weapon_info *target_wip;
 	int         objnum;
 
 	Assert((weapon_type >= 0) && (weapon_type < weapon_info_size()));
@@ -7557,15 +7559,23 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (other_obj != nullptr && other_obj->type == OBJ_SHIP) {
-		shipp = &Ships[other_obj->instance];
-		if (quadrant == -1) {
-			relevant_armor_idx = shipp->armor_type_idx;
-			relevant_fraction = other_obj->hull_strength / shipp->ship_max_hull_strength;
+	if (wip->conditional_impacts.size() > 0 && other_obj != nullptr && (other_obj->type == OBJ_SHIP || other_obj->type == OBJ_WEAPON)) {
+		if (other_obj->type == OBJ_SHIP) {
+			shipp = &Ships[other_obj->instance];
+			if (quadrant == -1) {
+				relevant_armor_idx = shipp->armor_type_idx;
+				relevant_fraction = other_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+			} else {
+				relevant_armor_idx = shipp->shield_armor_type_idx;
+				relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
+			}
 		} else {
-			relevant_armor_idx = shipp->shield_armor_type_idx;
-			relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
+			target_wp = &Weapons[other_obj->instance];
+			target_wip = &Weapon_info[target_wp->weapon_info_index];
+			relevant_armor_idx = target_wip->armor_type_idx;
+			relevant_fraction = other_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
 		}
+		
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
 			for (const auto& ci : wip->conditional_impacts[relevant_armor_idx]) {
 				if (((!armed_weapon) == ci.dinky)
@@ -7725,7 +7735,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 
 	//No other_obj means this weapon detonates
-	if (wip->pierce_objects && other_obj)
+	if (wip->pierce_objects && other_obj && other_obj->type != OBJ_WEAPON)
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
