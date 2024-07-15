@@ -1586,9 +1586,10 @@ void campaign_reset(const SCP_string& campaign_file)
 {
 	auto filename = campaign_file + FS_CAMPAIGN_FILE_EXT;
 
+		// note: we do not toss all-time stats from player's performance in campaign up till now
 	mission_campaign_savefile_delete(filename.c_str());
 
-	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
+	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1);
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {

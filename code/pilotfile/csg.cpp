@@ -1520,7 +1520,7 @@ void pilotfile::csg_write_container(const sexp_container &container)
 	}
 }
 
-void pilotfile::csg_reset_data()
+void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 {
 	int idx;
 	cmission *missionp;
@@ -1535,8 +1535,10 @@ void pilotfile::csg_reset_data()
 	p->stats.init();
 
 	// zero out allowed ships/weapons
-	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
-	memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
+	if (reset_ships_and_weapons) {
+		memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
+		memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
+	}
 
 	// reset campaign status
 	Campaign.prev_mission = -1;
@@ -1648,7 +1650,7 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 
 	mprintf(("CSG => Loading '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
 
-	csg_reset_data();
+	csg_reset_data(true);
 
 	// the point of all this: read in the CSG contents
 	while ( !cfeof(cfp) ) {
@@ -1868,6 +1870,19 @@ bool pilotfile::save_savefile()
 	csg_close();
 
 	return true;
+}
+
+void pilotfile::clear_savefile(bool reset_ships_and_weapons)
+{
+	if (Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	// set player ptr first thing
+	Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
+	p = &Players[Player_num];
+
+	csg_reset_data(reset_ships_and_weapons);
 }
 
 /*
