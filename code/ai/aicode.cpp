@@ -6235,7 +6235,7 @@ int ai_fire_primary_weapon(object *objp)
 	weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
 	if (aip->target_objnum != -1 && (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los])) {
 		//Check if th AI has Line of Sight and is allowed to fire
-		if (!check_los(OBJ_INDEX(objp), aip->target_objnum, 10.0f, swp->current_primary_bank, -1, nullptr)) {
+		if (!check_los(OBJ_INDEX(objp), aip->target_objnum, The_mission.ai_profile->los_min_detection_radius, swp->current_primary_bank, -1, nullptr)) {
 			return 0;
 		}
 	}
@@ -6612,7 +6612,7 @@ bool check_ok_to_fire(int objnum, int target_objnum, const weapon_info *wip, int
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
 			//Check if th AI has Line of Sight and is allowed to fire
-			if (!check_los(objnum, target_objnum, 10.0f, -1, secondary_bank, firing_pos_global)) {
+			if (!check_los(objnum, target_objnum, The_mission.ai_profile->los_min_detection_radius, -1, secondary_bank, firing_pos_global)) {
 				return false;
 			}
 		}

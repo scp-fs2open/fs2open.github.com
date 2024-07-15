@@ -471,6 +471,10 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 
+				if (optional_string("$exact los minimum detection radius:")) {
+					stuff_float(&profile->los_min_detection_radius);
+				}
+
 				set_flag(profile, "$fighterbay arrivals use carrier orientation:", AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
 
 				set_flag(profile, "$fighterbay departures use carrier orientation:", AI::Profile_Flags::Fighterbay_departures_use_carrier_orient);
@@ -721,6 +725,7 @@ void ai_profile_t::reset()
 
     flags.reset();
 
+    los_min_detection_radius = 10.0f;
     ai_path_mode = AI_PATH_MODE_NORMAL;
 	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 1.0f;
