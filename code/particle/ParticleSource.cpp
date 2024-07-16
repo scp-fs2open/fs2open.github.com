@@ -1,5 +1,6 @@
 #include <math/bitarray.h>
 #include <math/curve.h>
+#include "freespace.h"
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
@@ -27,10 +28,21 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
-			*posOut = m_origin.m_particle.lock()->pos;
-
+			auto part = m_origin.m_particle.lock();
 			matrix m = vmd_identity_matrix;
-			vec3d dir = m_origin.m_particle.lock()->velocity;
+			vec3d dir = part->velocity;
+
+			if (interp != 0.0f) {
+				float vel_scalar = 1.0f;
+				if (part->vel_lifetime_curve >= 0) {
+					vel_scalar = Curves[part->vel_lifetime_curve].GetValue(part->age / part->max_life);
+				}
+				vec3d pos_current = part->pos;
+				vec3d pos_last = pos_current - (dir * vel_scalar * flFrametime);
+				vm_vec_linear_interpolate(posOut, &pos_current, &pos_last, interp);
+			} else {
+				*posOut = part->pos;
+			}
 
 			vm_vec_normalize_safe(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
