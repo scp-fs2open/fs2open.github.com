@@ -483,6 +483,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$don't limit change in speed due to physics whack:", AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack);
 
+				set_flag(profile, "$guards ignore protected attackers:", AI::Profile_Flags::Guards_ignore_protected_attackers);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -842,5 +844,6 @@ void ai_profile_t::reset()
 	if (mod_supports_version(24, 2, 0)) {
 		flags.set(AI::Profile_Flags::Debris_respects_big_damage);
 		flags.set(AI::Profile_Flags::Force_beam_turret_fov);
+		flags.set(AI::Profile_Flags::Guards_ignore_protected_attackers);
 	}
 }

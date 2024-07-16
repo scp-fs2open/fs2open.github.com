@@ -10269,6 +10269,11 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 		if (is_ignore_object(aip, OBJ_INDEX(hitter_objp)))
 			return;
 
+		//  If the hitter is protected, ignore it
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Guards_ignore_protected_attackers] && 
+			hitter_objp->flags[Object::Object_Flags::Protected])
+			return;
+
 		//	If hitter is on same team as me, don't attack him.
 		if (Ships[guard_objp->instance].team == Ships[hitter_objp->instance].team)
 			return;
@@ -10278,9 +10283,9 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			return;
 		}
 
-		// don't attack if you can't see him
+		// don't attack if you can't see it
 		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], true) < 1.0f ) {
-			// if he's a stealth and visible, but not targetable, ok to attack.
+			// if it's stealthed and visible, but not targetable, ok to attack.
 			if ( is_object_stealth_ship(hitter_objp) ) {
 				if ( ai_is_stealth_visible(guard_objp, hitter_objp) != STEALTH_IN_FRUSTUM ) {
 					return;
