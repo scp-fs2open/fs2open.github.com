@@ -649,12 +649,21 @@ ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret 
 	if (!sso->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
-	if(ADE_SETTING_VAR)
+	float currentTime = f2fl(Missiontime);
+
+	if (ADE_SETTING_VAR)
 	{
-		sso->ss->turret_next_fire_stamp = (int)(newVal * 1000);
+		float delta = newVal - currentTime;
+		if (delta < 0.0f)
+		{
+			mprintf(("NextFireTimestamp: Specified value is in the past; setting to the current time\n"));
+			delta = 0.0f;
+		}
+
+		sso->ss->turret_next_fire_stamp = timestamp(fl2i(delta * MILLISECONDS_PER_SECOND));
 	}
 
-	return ade_set_args(L, "f", sso->ss->turret_next_fire_stamp / 1000.0f);
+	return ade_set_args(L, "f", currentTime + timestamp_until(sso->ss->turret_next_fire_stamp) / i2fl(MILLISECONDS_PER_SECOND));
 }
 
 ADE_VIRTVAR(ModelPath, l_Subsystem, "modelpath", "The model path points belonging to this subsystem", "modelpath",
