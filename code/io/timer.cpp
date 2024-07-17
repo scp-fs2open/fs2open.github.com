@@ -299,6 +299,12 @@ UI_TIMESTAMP ui_timestamp(int delta_ms) {
 //	Negative value gives milliseconds ago that timestamp elapsed.
 int timestamp_until(int stamp)
 {
+	// handle special values
+	if (stamp < 0)
+		return INT_MAX;
+	if (stamp == 1)
+		return 0;
+
 	// JAS: FIX
 	// HACK!! This doesn't handle rollover!
 	// (Will it ever happen?)
@@ -346,6 +352,12 @@ int ui_timestamp_until(UI_TIMESTAMP stamp)
 
 int timestamp_since(int stamp)
 {
+	// handle special values
+	if (stamp < 0)
+		return INT_MAX;
+	if (stamp == 1)
+		return 0;
+
 	return timestamp_ms() - stamp;
 }
 
