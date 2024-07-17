@@ -354,7 +354,7 @@ int timestamp_since(int stamp)
 {
 	// handle special values
 	if (stamp < 0)
-		return INT_MAX;
+		return INT_MIN;
 	if (stamp == 1)
 		return 0;
 
