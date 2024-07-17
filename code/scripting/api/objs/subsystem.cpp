@@ -656,7 +656,7 @@ ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret 
 		float delta = newVal - currentTime;
 		if (delta < 0.0f)
 		{
-			Warning(LOCATION, "NextFireTimestamp: Specified value is in the past; setting to the current time");
+			mprintf(("NextFireTimestamp: Specified value is in the past; setting to the current time\n"));
 			delta = 0.0f;
 		}
 
