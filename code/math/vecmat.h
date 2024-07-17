@@ -485,9 +485,6 @@ void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, c
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);
 
-// Version of atan2() that is safe for optimized builds
-float atan2_safe(float x, float y);
-
 // Translates from world coordinates to body coordinates
 vec3d* vm_rotate_vec_to_body(vec3d *body_vec, const vec3d *world_vec, const matrix *orient);
 

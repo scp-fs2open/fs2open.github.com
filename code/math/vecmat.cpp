@@ -63,36 +63,6 @@ bool vm_matrix_equal(const matrix4 &self, const matrix4 &other)
 		vm_vec_equal(self.vec.pos, other.vec.pos);
 }
 
-// -----------------------------------------------------------
-// atan2_safe()
-//
-// Wrapper around atan2() that used atanf() to calculate angle.  Safe
-// for optimized builds.  Handles special cases when x == 0.
-//
-float atan2_safe(float y, float x)
-{
-	float ang;
-
-	// special case, x == 0
-	if ( x == 0.0f ) {
-		if ( y == 0.0f ) 
-			ang = 0.0f;
-		else if ( y > 0.0f )
-			ang = PI_2;
-		else
-			ang = -PI_2;
-
-		return ang;
-	}
-	
-	ang = atanf(y/x);
-	if ( x < 0.0f ){
-		ang += PI;
-	}
-
-	return ang;
-}
-
 // ---------------------------------------------------------------------
 // vm_vec_component()
 //
@@ -981,7 +951,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 {
 	float sinh,cosh,cosp;
 
-	a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
+	a->h = atan2(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
 
 	sinh = sinf(a->h); cosh = cosf(a->h);
 
@@ -996,7 +966,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 
 	fvec_xz_distance = fl_sqrt( ( (m->vec.fvec.xyz.x)*(m->vec.fvec.xyz.x) ) + ( (m->vec.fvec.xyz.z)*(m->vec.fvec.xyz.z) ) );
 
-	a->p = atan2_safe(-m->vec.fvec.xyz.y, fvec_xz_distance);
+	a->p = atan2(-m->vec.fvec.xyz.y, fvec_xz_distance);
 
 	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 
@@ -1008,7 +978,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 		sinb = m->vec.rvec.xyz.y/cosp;
 		cosb = m->vec.uvec.xyz.y/cosp;
 
-		a->b = atan2_safe(sinb,cosb);
+		a->b = atan2(sinb,cosb);
 	}
 
 
@@ -1054,7 +1024,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->p = asinf_safe(-v->xyz.y);
 
-	a->h = atan2_safe(v->xyz.z,v->xyz.x);
+	a->h = atan2(v->xyz.z,v->xyz.x);
 
 	return a;
 }
@@ -1723,10 +1693,10 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
 		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
 
-		solutions = { 2 * atan2_safe(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
-					  2 * atan2_safe(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
-					  2 * atan2_safe(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
-					  2 * atan2_safe(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+		solutions = { 2 * atan2(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
+					  2 * atan2(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
+					  2 * atan2(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
+					  2 * atan2(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
 	}
 	float value = -2.0f;
 	float correct = 0;
