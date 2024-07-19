@@ -25,6 +25,6 @@ void barracks_do_frame(float frametime);
 // close the barracks
 void barracks_close();
 
-void barracks_accept_pilot(player* plr);
+void barracks_accept_pilot(player* plr, bool changeState);
 
 #endif // _BARRACKS_H

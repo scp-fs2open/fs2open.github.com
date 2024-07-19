@@ -520,15 +520,16 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 	return ade_set_args(L, "t", &out);
 }
 
-ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the given player as the current player",
+ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection, boolean changeState", "Accept the given player as the current player. Set second argument to false to prevent returning to the mainhall",
          "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
-	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
+	bool changeState = true;
+	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plh), &changeState)) {
 		return ADE_RETURN_FALSE;
 	}
 
-	barracks_accept_pilot(plh->get());
+	barracks_accept_pilot(plh->get(), changeState);
 	return ADE_RETURN_TRUE;
 }
 
