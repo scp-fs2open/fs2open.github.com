@@ -15825,8 +15825,11 @@ void sexp_set_wing_formation(int node)
 	for (int n = CDDR(node); n >= 0; n = CDR(n))
 	{
 		auto wingp = eval_wing(n);
-		wingp->formation = formation;
-		wingp->formation_scale = factor;
+		if (wingp)
+		{
+			wingp->formation = formation;
+			wingp->formation_scale = factor;
+		}
 	}
 }
 
