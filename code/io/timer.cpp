@@ -180,16 +180,22 @@ UI_TIMESTAMP ui_timestamp() {
 
 TIMESTAMP timestamp_delta(TIMESTAMP stamp, int delta_ms)
 {
-	if (!stamp.isValid() || stamp.isImmediate() || stamp.isNever())
+	if (!stamp.isValid() || stamp.isNever())
 		return stamp;
+
+	if (stamp.isImmediate())
+		return TIMESTAMP(timestamp_ms() + delta_ms);
 
 	return TIMESTAMP(stamp.value() + delta_ms);
 }
 
 UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms)
 {
-	if (!stamp.isValid() || stamp.isImmediate() || stamp.isNever())
+	if (!stamp.isValid() || stamp.isNever())
 		return stamp;
+
+	if (stamp.isImmediate())
+		return UI_TIMESTAMP(timer_get_milliseconds() + delta_ms);
 
 	return UI_TIMESTAMP(stamp.value() + delta_ms);
 }
@@ -300,7 +306,7 @@ UI_TIMESTAMP ui_timestamp(int delta_ms) {
 int timestamp_until(int stamp)
 {
 	// handle special values
-	if (stamp < 0)
+	if (stamp <= 0)
 		return INT_MAX;
 	if (stamp == 1)
 		return 0;
@@ -353,7 +359,7 @@ int ui_timestamp_until(UI_TIMESTAMP stamp)
 int timestamp_since(int stamp)
 {
 	// handle special values
-	if (stamp < 0)
+	if (stamp <= 0)
 		return INT_MIN;
 	if (stamp == 1)
 		return 0;
