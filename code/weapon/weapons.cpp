@@ -1489,7 +1489,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			error_display(0, "Weapon %s autoaim fov was greater than 180, setting to %f\n", wip->name, fovt);
 		}
 
+		wip->aiming_flags.set(Object::Aiming_Flags::Autoaim); 
 		wip->autoaim_fov = fovt * PI / 180.0f;
+
+		if (optional_string("+Converging Autoaim"))
+			wip->aiming_flags.set(Object::Aiming_Flags::Autoaim_convergence);
+
+		if (optional_string("+Minimum Distance:"))
+			stuff_float(&wip->minimum_convergence_distance);
+	}
+
+	if (optional_string("$Convergence:")) {
+		if (optional_string("+Automatic")) {
+			wip->aiming_flags.set(Object::Aiming_Flags::Auto_convergence);
+			if (optional_string("+Minimum Distance:"))
+				stuff_float(&wip->minimum_convergence_distance);
+		}
+		if (optional_string("+Standard")) {
+			wip->aiming_flags.set(Object::Aiming_Flags::Std_convergence);
+			if (required_string("+Distance:"))
+				stuff_float(&wip->convergence_distance);
+		}
+
+		//Purposefully left off +Offset here because I don't think it makes much sense per weapon as it has more to do with ship bank positioning.
+		//Would be trivial to add if someone wanted but we'd have to decide which takes precedent.. ship or weapon?
 	}
 
 	bool temp_is_homing = false;	// this variable should ONLY be used to store the parse value.  All checks aside from the block five lines later should exclusively use wip->is_homing()
@@ -9335,6 +9358,10 @@ void weapon_info::reset()
 	// *Minimum weapon range, default is 0 -Et1
 	this->weapon_min_range = 0.0f;
 	this->optimum_range = 0.0f;
+
+	this->aiming_flags.reset();
+	this->minimum_convergence_distance = 0.0f;
+	this->convergence_distance = 100.0f;
 
 	this->pierce_objects = false;
 	this->spawn_children_on_pierce = false;

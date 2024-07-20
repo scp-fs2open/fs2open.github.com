@@ -1471,7 +1471,7 @@ public:
 
 	SCP_map<std::pair<int, int>, int> ship_iff_info;
 
-	flagset<Ship::Aiming_Flags> aiming_flags;
+	flagset<Object::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;
