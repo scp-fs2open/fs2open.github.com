@@ -35,6 +35,7 @@ private:
 	int m_size_lifetime_curve;
 	int m_vel_lifetime_curve;
 	RotationType m_rotation_type;
+	vec3d m_manual_offset;
 
 	ParticleProperties();
 

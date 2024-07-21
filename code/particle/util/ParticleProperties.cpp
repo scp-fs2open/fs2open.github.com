@@ -7,7 +7,7 @@
 
 namespace particle {
 namespace util {
-ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f), m_size_lifetime_curve (-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT) {
+ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f), m_size_lifetime_curve (-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT), m_manual_offset (vmd_zero_vector) {
 }
 
 void ParticleProperties::parse(bool nocreate) {
@@ -77,6 +77,10 @@ void ParticleProperties::parse(bool nocreate) {
 			error_display(0, "Rotation Type %s not supported", buf);
 		}
 	}
+
+	if (optional_string("+Offset")) {
+		stuff_vec3d(&m_manual_offset);
+	}
 }
 
 int ParticleProperties::chooseBitmap()
@@ -120,6 +124,10 @@ void ParticleProperties::createParticle(particle_info& info) {
 		default:
 			UNREACHABLE("Rotation type not supported");
 	}
+
+	// we temporarily store the modder-specified offset in the position field
+	// applying the offset will be handled during getGlobalPosition
+	info.pos = m_manual_offset;
 
 	create(&info);
 }

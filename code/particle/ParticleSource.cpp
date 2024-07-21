@@ -18,11 +18,14 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
+			// add together the m_offset and the current value of posOut, which is storing the effect's modder-specified manual offset
+			vec3d combined_offset = m_offset + *posOut;
 			*posOut = m_origin.m_object.objp()->pos;
-			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
+			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_object.objp()->orient);
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
+			vec3d combined_offset = m_offset + *posOut;
 			*posOut = m_origin.m_particle.lock()->pos;
 
 			matrix m = vmd_identity_matrix;
@@ -31,7 +34,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			vm_vec_normalize_safe(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
 
-			vm_vec_unrotate(&offset, &m_offset, &m);
+			vm_vec_unrotate(&offset, &combined_offset, &m);
 
 			break;
 		}
