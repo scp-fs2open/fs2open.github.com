@@ -936,6 +936,11 @@ void red_alert_bash_ship_status()
 
 				// assign the wave number to the wing
 				wingp->current_wave = rws->latest_wave;
+				
+				// make sure that num_waves can accomodate having extra wings.
+				if (wingp->num_waves < wingp->current_wave){
+					wingp->num_waves = wingp->current_wave;
+				}
 
 				if (rws->latest_wave > 1)
 				{
