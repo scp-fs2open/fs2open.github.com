@@ -69,6 +69,9 @@ namespace particle {
 						vm_vec_rotate(&pos, &copy_pos, &stretch_matrix);
 
 					particle_info info;
+					// we temporarily store the modder-specified offset in the position field
+					// applying the offset will be handled during getGlobalPosition
+					info.pos = m_particleProperties.m_manual_offset;
 					source->getOrigin()->applyToParticleInfo(info);
 
 					// make their velocity radial, and based on position, allows for some very cool effects

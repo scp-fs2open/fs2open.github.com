@@ -39,8 +39,8 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			break;
 		}
 		case SourceOriginType::VECTOR: {
+			offset = m_offset + *posOut;
 			*posOut = m_origin.m_pos;
-			offset = m_offset;
 			break;
 		}
 		case SourceOriginType::BEAM: {

@@ -78,7 +78,7 @@ void ParticleProperties::parse(bool nocreate) {
 		}
 	}
 
-	if (optional_string("+Offset")) {
+	if (optional_string("+Offset:")) {
 		stuff_vec3d(&m_manual_offset);
 	}
 }
@@ -124,10 +124,6 @@ void ParticleProperties::createParticle(particle_info& info) {
 		default:
 			UNREACHABLE("Rotation type not supported");
 	}
-
-	// we temporarily store the modder-specified offset in the position field
-	// applying the offset will be handled during getGlobalPosition
-	info.pos = m_manual_offset;
 
 	create(&info);
 }
