@@ -304,10 +304,22 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 	//***Enumerations
 	for (uint32_t i = 0; i < Num_enumerations; i++) {
 		DocumentationEnum e;
-		e.name  = Enumerations[i].name;
+		e.name = Enumerations[i].name;
 		e.value = Enumerations[i].def;
 
 		doc.enumerations.push_back(e);
+	}
+
+	auto& optionsList = options::OptionsManager::instance()->getOptions();
+	for (auto& option : optionsList) {
+		const options::OptionBase* thisOpt = option.get();
+
+		DocumentationOption o;
+		o.title = thisOpt->getTitle();
+		o.description = thisOpt->getDescription();
+		o.key = thisOpt->getConfigKey();
+
+		doc.options.push_back(o);
 	}
 }
 
