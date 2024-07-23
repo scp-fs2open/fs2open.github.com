@@ -13312,8 +13312,8 @@ void sexp_set_friendly_damage_caps(int n) {
 	}
 	float weapon_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
 	std::array<float, NUM_SKILL_LEVELS> wfc_array; 
-	for (int sklev = 0; sklev < NUM_SKILL_LEVELS; sklev++) {
-		wfc_array[sklev] = weapon_friendly_cap;
+	for (auto &wfc : wfc_array) {
+		wfc = weapon_friendly_cap;
 	}
 	aip.weapon_friendly_damage_cap.emplace(wfc_array);
 
@@ -13323,8 +13323,8 @@ void sexp_set_friendly_damage_caps(int n) {
 	}
 	float weapon_self_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
 	std::array<float, NUM_SKILL_LEVELS> wsc_array; 
-	for (int sklev = 0; sklev < NUM_SKILL_LEVELS; sklev++) {
-		wsc_array[sklev] = weapon_self_cap;
+	for (auto &wsc : wsc_array) {
+		wsc = weapon_self_cap;
 	}
 	aip.weapon_self_damage_cap.emplace(wsc_array);
 }

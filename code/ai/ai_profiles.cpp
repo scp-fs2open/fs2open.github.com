@@ -187,13 +187,13 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Max Weapon Friendly Fire Damage:")) {
 					std::array<float, NUM_SKILL_LEVELS> temp;
 					parse_float_list(temp.data(), NUM_SKILL_LEVELS);
-					profile->weapon_friendly_damage_cap.emplace(std::move(temp));
+					profile->weapon_friendly_damage_cap.emplace(temp);
 				}
 					
 				if (optional_string("$Max Weapon Self Damage:")) {
 					std::array<float, NUM_SKILL_LEVELS> temp;
 					parse_float_list(temp.data(), NUM_SKILL_LEVELS);
-					profile->weapon_self_damage_cap.emplace(std::move(temp));
+					profile->weapon_self_damage_cap.emplace(temp);
 				}
 
 				if (optional_string("$Player Countermeasure Life Scale:"))
