@@ -65,6 +65,7 @@ static void update_danger_weapon(object *pship_obj, object *weapon_obj)
 /** 
  * Deal with weapon-ship hit stuff.  
  * Separated from check_collision routine below because of multiplayer reasons.
+ * When hit_dir was added in commit a3422b4, it was passed by value.  Since it is no longer modified locally in the function, it can be passed by pointer.
  */
 static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, const vec3d *hit_dir)
 {
