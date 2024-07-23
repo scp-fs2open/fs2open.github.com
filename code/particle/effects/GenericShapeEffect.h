@@ -132,10 +132,7 @@ class GenericShapeEffect : public ParticleEffect {
 				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
 
 				particle_info info;
-				// we temporarily store the modder-specified offset in the position field
-				// applying the offset will be handled during getGlobalPosition
-				info.pos = m_particleProperties.m_manual_offset;
-				source->getOrigin()->applyToParticleInfo(info);
+				source->getOrigin()->applyToParticleInfo(info, false, m_particleProperties.m_manual_offset);
 
 				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {

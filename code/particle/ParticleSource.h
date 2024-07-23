@@ -11,6 +11,8 @@
 
 #include "io/timer.h"
 
+#include <tl/optional.hpp>
+
 struct weapon;
 
 struct weapon_info;
@@ -71,7 +73,7 @@ class SourceOrigin {
 	 * 
 	 * @param posOut The pointer where the location will be stored
 	 */
-	void getGlobalPosition(vec3d* posOut) const;
+	void getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_offset = tl::nullopt) const;
 
 	void getHostOrientation(matrix* matOut) const;
 
@@ -96,7 +98,7 @@ class SourceOrigin {
 	 *
 	 * @param info The particle_info this should be applied to
 	 */
-	void applyToParticleInfo(particle_info& info, bool allowRelative = false) const;
+	void applyToParticleInfo(particle_info& info, bool allowRelative = false, tl::optional<vec3d> manual_offset = tl::nullopt) const;
 
 	/**
 	 * @brief Gets the velocity of the origin host

@@ -11,21 +11,22 @@ SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 	                           m_velocity(vmd_zero_vector) {
 }
 
-void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
+void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_offset) const {
 	Assertion(posOut != nullptr, "Invalid vector pointer passed!");
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			// add together the m_offset and the current value of posOut, which is storing the effect's modder-specified manual offset
-			vec3d combined_offset = m_offset + *posOut;
 			*posOut = m_origin.m_object.objp()->pos;
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
 			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_object.objp()->orient);
+
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
-			vec3d combined_offset = m_offset + *posOut;
 			*posOut = m_origin.m_particle.lock()->pos;
 
 			matrix m = vmd_identity_matrix;
@@ -34,13 +35,25 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			vm_vec_normalize_safe(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
 
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
 			vm_vec_unrotate(&offset, &combined_offset, &m);
 
 			break;
 		}
 		case SourceOriginType::VECTOR: {
-			offset = m_offset + *posOut;
 			*posOut = m_origin.m_pos;
+
+			matrix m = vmd_identity_matrix;
+			vec3d dir = m_velocity;
+
+			vm_vec_normalize_safe(&dir);
+			vm_vector_2_matrix_norm(&m, &dir);
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
+			vm_vec_unrotate(&offset, &combined_offset, &m);
+
 			break;
 		}
 		case SourceOriginType::BEAM: {
@@ -51,10 +64,19 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			float dist_adjusted = vm_vec_dist(&beam->last_start, &beam->last_shot) / beam->range;
 			// randomly sample from the weighted distribution, excluding points beyond the last_shot
 			auto t = (1.0f - sqrtf(frand_range(powf(1.f - dist_adjusted, 2.0f), 1.0f)));
+
+			matrix m = vmd_identity_matrix;
 			vec3d dir;
+
 			vm_vec_normalized_dir(&dir, &beam->last_shot, &beam->last_start);
+			vm_vector_2_matrix_norm(&m, &dir);
+
 			*posOut += (dir * beam->range) * t;
-			offset = m_offset;
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
+			vm_vec_unrotate(&offset, &combined_offset, &m);
+			
 			break;
 		}
 		default: {
@@ -87,7 +109,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, tl::optional<vec3d> manual_offset) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
@@ -98,7 +120,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 
 				info.pos = m_offset;
 			} else {
-				this->getGlobalPosition(&info.pos);
+				this->getGlobalPosition(&info.pos, manual_offset);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -107,7 +129,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 		case SourceOriginType::PARTICLE: {
 			info.rad = getScale();
 			info.lifetime = getLifetime();
-			this->getGlobalPosition(&info.pos);
+			this->getGlobalPosition(&info.pos, manual_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -115,7 +137,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 		case SourceOriginType::BEAM: // Intentional fall-through
 		case SourceOriginType::VECTOR: // Intentional fall-through
 		default: {
-			this->getGlobalPosition(&info.pos);
+			this->getGlobalPosition(&info.pos, manual_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
