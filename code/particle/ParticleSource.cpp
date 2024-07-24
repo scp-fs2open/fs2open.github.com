@@ -118,7 +118,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 				info.attached_objnum = m_origin.m_object.objnum;
 				info.attached_sig = m_origin.m_object.sig;
 
-				info.pos = m_offset;
+				info.pos = m_offset + manual_offset.value_or(vmd_zero_vector);
 			} else {
 				this->getGlobalPosition(&info.pos, manual_offset);
 				info.attached_objnum = -1;
