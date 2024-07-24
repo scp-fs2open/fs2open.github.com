@@ -36,6 +36,7 @@ private:
 	int m_vel_lifetime_curve;
 	RotationType m_rotation_type;
 	vec3d m_manual_offset;
+	bool m_parent_local = false;
 
 	ParticleProperties();
 

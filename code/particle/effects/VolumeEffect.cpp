@@ -69,7 +69,7 @@ namespace particle {
 						vm_vec_rotate(&pos, &copy_pos, &stretch_matrix);
 
 					particle_info info;
-					source->getOrigin()->applyToParticleInfo(info, false, m_particleProperties.m_manual_offset);
+					source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, m_particleProperties.m_manual_offset);
 
 					// make their velocity radial, and based on position, allows for some very cool effects
 					vec3d velocity = pos;

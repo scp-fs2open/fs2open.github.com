@@ -132,7 +132,7 @@ class GenericShapeEffect : public ParticleEffect {
 				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
 
 				particle_info info;
-				source->getOrigin()->applyToParticleInfo(info, false, m_particleProperties.m_manual_offset);
+				source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, m_particleProperties.m_manual_offset);
 
 				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {

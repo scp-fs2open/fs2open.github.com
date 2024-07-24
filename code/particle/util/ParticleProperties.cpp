@@ -81,6 +81,10 @@ void ParticleProperties::parse(bool nocreate) {
 	if (optional_string("+Offset:")) {
 		stuff_vec3d(&m_manual_offset);
 	}
+
+	if (optional_string("+Remain local to parent:")) {
+		stuff_boolean(&m_parent_local);
+	}
 }
 
 int ParticleProperties::chooseBitmap()

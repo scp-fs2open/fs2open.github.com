@@ -26,7 +26,7 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 	util::EffectTiming::TimingState time_state;
 	while (m_timing.shouldCreateEffect(source, time_state)) {
 		particle_info info;
-		source->getOrigin()->applyToParticleInfo(info, false, m_particleProperties.m_manual_offset);
+		source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, m_particleProperties.m_manual_offset);
 
 		info.vel *= m_vel_inherit.next();
 
