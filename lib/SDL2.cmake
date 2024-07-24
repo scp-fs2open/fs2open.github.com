@@ -53,7 +53,7 @@ else()
         # CMake can't check for SDL2 so we'll just use PkgConfig
         find_package(PkgConfig)
 
-        PKG_SEARCH_MODULE(SDL2 "SDL2 >= 2.26.5")
+        PKG_SEARCH_MODULE(SDL2 "sdl2 >= 2.26.5")
         if(SDL2_FOUND)
             PKG_CONFIG_LIB_RESOLVE(SDL2 SDL2_LIB)
             ADD_IMPORTED_LIB(sdl2 "${SDL2_INCLUDE_DIRS}" "${SDL2_LIB}")
