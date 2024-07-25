@@ -1077,10 +1077,11 @@ void beam_type_omni_move(beam* b)
 	vec3d actual_dir;
 	bool no_sweep = vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b) > 0.9999f;
 
-	float rotation_amount = (b->life_total - b->life_left) * b->type5_rot_speed;
-
+	float rotation_amount;
 	if (Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx >= 0) {
 		rotation_amount = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx].GetValue(BEAM_T(b)) * b->type5_rot_speed;
+	} else {
+		rotation_amount = (b->life_total - b->life_left) * b->type5_rot_speed;
 	}
 
 	if (b->rotates) {
@@ -1100,7 +1101,7 @@ void beam_type_omni_move(beam* b)
 		} else {
 			slash_completion = BEAM_T(b);
 		}
-		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, BEAM_T(b));
+		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, slash_completion);
 	}
 
 	// now recalculate shot_point to be shooting through our new point
