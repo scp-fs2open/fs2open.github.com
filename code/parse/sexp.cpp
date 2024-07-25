@@ -13327,8 +13327,8 @@ void sexp_set_friendly_damage_caps(int n) {
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
 	ai_profile_t& aip = *The_mission.ai_profile;
-	for (int sklev = 0; sklev < NUM_SKILL_LEVELS; sklev++) {
-		aip.beam_friendly_damage_cap[sklev] = beam_friendly_cap;
+	for (auto &bfdc : aip.beam_friendly_damage_cap) {
+		bfdc = beam_friendly_cap;
 	}
 
 	n = CDR(n);
