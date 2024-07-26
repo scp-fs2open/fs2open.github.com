@@ -3,6 +3,7 @@
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
+#include "ship/ship.h"
 
 namespace particle {
 SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
@@ -11,7 +12,7 @@ SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 	                           m_velocity(vmd_zero_vector) {
 }
 
-void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_offset) const {
+void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> tabled_offset) const {
 	Assertion(posOut != nullptr, "Invalid vector pointer passed!");
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
@@ -21,8 +22,32 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_o
 			*posOut = m_origin.m_object.objp()->pos;
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
-			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_object.objp()->orient);
+
+			break;
+		}
+		case SourceOriginType::SUBOBJECT: {
+			*posOut = m_origin.m_object.objp()->pos;
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+			model_instance_local_to_global_point(&offset, &combined_offset, Ships[m_origin.m_object.objp()->instance].model_instance_num, m_origin.m_subobject, &m_origin.m_object.objp()->orient, &vmd_zero_vector);
+
+			break;
+		}
+		case SourceOriginType::TURRET: {
+			ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+
+			polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+			ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
+
+			vec3d gvec;
+
+			ship_get_global_turret_gun_info(m_origin.m_object.objp(), sss, posOut, false, &gvec, true, nullptr);
+
+			vm_vec_copy_scale(&offset, &gvec, tabled_offset.value_or(vmd_zero_vector).xyz.z);
 
 			break;
 		}
@@ -36,7 +61,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_o
 			vm_vector_2_matrix_norm(&m, &dir);
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
-			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			vm_vec_unrotate(&offset, &combined_offset, &m);
 
 			break;
@@ -51,7 +76,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_o
 			vm_vector_2_matrix_norm(&m, &dir);
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
-			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			vm_vec_unrotate(&offset, &combined_offset, &m);
 
 			break;
@@ -74,7 +99,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_o
 			*posOut += (dir * beam->range) * t;
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
-			vec3d combined_offset = m_offset + manual_offset.value_or(vmd_zero_vector);
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			vm_vec_unrotate(&offset, &combined_offset, &m);
 			
 			break;
@@ -94,6 +119,35 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	case SourceOriginType::OBJECT:
 		*matOut = m_origin.m_object.objp()->orient;
 		break;
+	case SourceOriginType::SUBOBJECT: {
+		const ship& shipp = Ships[m_origin.m_object.objp()->instance];
+		vec3d temp;
+		model_instance_local_to_global_point_orient(&temp,
+			matOut,
+			&vmd_zero_vector,
+			&vmd_identity_matrix,
+			model_get(Ship_info[shipp.ship_info_index].model_num),
+			model_get_instance(shipp.model_instance_num),
+			m_origin.m_subobject,
+			&m_origin.m_object.objp()->orient,
+			&vmd_zero_vector);
+		break;
+		}
+	case SourceOriginType::TURRET: {
+		ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+
+		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+		ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
+
+		vec3d temp_pos;
+		vec3d gvec;
+
+		ship_get_global_turret_gun_info(m_origin.m_object.objp(), sss, &temp_pos, false, &gvec, true, nullptr);
+
+		vm_vector_2_matrix(matOut, &gvec);
+		break;
+	}
 	case SourceOriginType::PARTICLE:
 		vm_vector_2_matrix(matOut, &m_origin.m_particle.lock()->velocity, nullptr, nullptr);
 		break;
@@ -109,7 +163,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, tl::optional<vec3d> manual_offset) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, tl::optional<vec3d> tabled_offset) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
@@ -118,9 +172,39 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 				info.attached_objnum = m_origin.m_object.objnum;
 				info.attached_sig = m_origin.m_object.sig;
 
-				info.pos = m_offset + manual_offset.value_or(vmd_zero_vector);
+				info.pos = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			} else {
-				this->getGlobalPosition(&info.pos, manual_offset);
+				this->getGlobalPosition(&info.pos, tabled_offset);
+				info.attached_objnum = -1;
+				info.attached_sig = -1;
+			}
+			break;
+		}
+		case SourceOriginType::SUBOBJECT: {
+			if (allow_relative) {
+				info.attached_objnum = m_origin.m_object.objnum;
+				info.attached_sig = m_origin.m_object.sig;
+
+				vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+				model_instance_local_to_global_point(&info.pos,
+					&combined_offset,
+					Ships[m_origin.m_object.objp()->instance].model_instance_num,
+					m_origin.m_subobject);
+			} else {
+				this->getGlobalPosition(&info.pos, tabled_offset);
+				info.attached_objnum = -1;
+				info.attached_sig = -1;
+			}
+			break;
+		}
+		case SourceOriginType::TURRET: {
+			this->getGlobalPosition(&info.pos, tabled_offset);
+			if (allow_relative) {
+				info.attached_objnum = m_origin.m_object.objnum;
+				info.attached_sig = m_origin.m_object.sig;
+
+				info.pos -= m_origin.m_object.objp()->pos;
+			} else {
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -129,7 +213,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 		case SourceOriginType::PARTICLE: {
 			info.rad = getScale();
 			info.lifetime = getLifetime();
-			this->getGlobalPosition(&info.pos, manual_offset);
+			this->getGlobalPosition(&info.pos, tabled_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -137,7 +221,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 		case SourceOriginType::BEAM: // Intentional fall-through
 		case SourceOriginType::VECTOR: // Intentional fall-through
 		default: {
-			this->getGlobalPosition(&info.pos, manual_offset);
+			this->getGlobalPosition(&info.pos, tabled_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -149,6 +233,8 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 
 vec3d SourceOrigin::getVelocity() const {
 	switch (this->m_originType) {
+		case SourceOriginType::TURRET:
+		case SourceOriginType::SUBOBJECT:
 		case SourceOriginType::OBJECT:
 			return m_origin.m_object.objp()->phys_info.vel;
 		case SourceOriginType::PARTICLE:
@@ -224,6 +310,29 @@ void SourceOrigin::moveToObject(const object* objp, const vec3d* offset) {
 	m_offset = *offset;
 }
 
+void SourceOrigin::moveToSubobject(const object* objp, int subobject, const vec3d* offset)
+{
+	Assertion(objp, "Invalid object pointer passed!");
+	Assertion(offset, "Invalid vector pointer passed!");
+
+	m_originType = SourceOriginType::SUBOBJECT;
+	m_origin.m_object = object_h(OBJ_INDEX(objp));
+	m_origin.m_subobject = subobject;
+
+	m_offset = *offset;
+}
+
+void SourceOrigin::moveToTurret(const object* objp, int subobject)
+{
+	Assertion(objp, "Invalid object pointer passed!");
+
+	m_originType = SourceOriginType::TURRET;
+	m_origin.m_object = object_h(OBJ_INDEX(objp));
+	m_origin.m_subobject = subobject;
+
+	m_offset = vmd_zero_vector;
+}
+
 void SourceOrigin::moveToParticle(const WeakParticlePtr& weakParticlePtr) {
 	m_originType = SourceOriginType::PARTICLE;
 	m_origin.m_particle = weakParticlePtr;
@@ -233,6 +342,25 @@ bool SourceOrigin::isValid() const {
 	switch (m_originType) {
 		case SourceOriginType::NONE:
 			return false;
+		case SourceOriginType::TURRET: {
+			if (m_origin.m_object.objp()->type != OBJ_SHIP) {
+				return false;
+			}
+			if (m_origin.m_subobject < 0) {
+				return false;
+			}
+			ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+			polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+			if (pm->submodel[m_origin.m_subobject].subsys_num < 0) {
+				return false;
+			}
+			return true;
+		}
+		case SourceOriginType::SUBOBJECT:
+			if (m_origin.m_subobject < 0) {
+				return false;
+			}
+			// intentional fallthrough
 		case SourceOriginType::OBJECT:
 		case SourceOriginType::BEAM: {
 			if (!m_origin.m_object.isValid()) {

@@ -75,6 +75,20 @@ namespace particle
 			source->getOrigin()->moveToObject(obj, d);
 		}
 	}	
+
+	void ParticleSourceWrapper::moveToSubobject(const object* obj, int subobject, const vec3d* d)
+	{
+		for (auto& source : m_sources) {
+			source->getOrigin()->moveToSubobject(obj, subobject, d);
+		}
+	}	
+
+	void ParticleSourceWrapper::moveToTurret(const object* obj, int subobject)
+	{
+		for (auto& source : m_sources) {
+			source->getOrigin()->moveToTurret(obj, subobject);
+		}
+	}	
 	
 	void ParticleSourceWrapper::moveToBeam(const object* obj)
 	{

@@ -1199,7 +1199,7 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
  * @param use_angles    Use current angles
  * @param targetp       Absolute position of target object
  */
-void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp)
+void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp, vec3d *local_pos)
 {
 	vec3d *gun_pos;
 	model_subsystem *tp = ssp->system_info;
@@ -1212,6 +1212,10 @@ void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp,
 		gun_pos = &avg_gun_pos;
 	} else {
 		gun_pos = &tp->turret_firing_point[ssp->turret_next_fire_pos % tp->turret_num_firing_points];
+	}
+
+	if (local_pos != nullptr) {
+		*local_pos = *gun_pos;
 	}
 
 	model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
@@ -1941,10 +1945,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				vec3d firing_pos_buf;
 				const vec3d *firing_pos = &firing_pos_buf;
+				vec3d local_firing_pos;
 
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
-				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, &firing_pos_buf, false, nullptr, true, nullptr);
+				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, &firing_pos_buf, false, nullptr, true, nullptr, &local_firing_pos);
 
 				weapon_objnum = weapon_create(firing_pos, &firing_orient, turret_weapon_class, parent_objnum, -1, 1, 0, 0.0f, turret);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
@@ -1993,7 +1998,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					if (wip->muzzle_effect.isValid()) {
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-						particleSource.moveTo(firing_pos);
+						particleSource.moveToTurret(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj);
 						particleSource.setOrientationFromVec(firing_vec);
 						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
 						particleSource.finish();

@@ -51,6 +51,10 @@ namespace particle
 
 		void moveToObject(const object* obj, const vec3d* localPos);
 
+		void moveToSubobject(const object* obj, int subobject, const vec3d* localPos);
+
+		void moveToTurret(const object* obj, int subobject);
+
 		void moveToBeam(const object* obj);
 
 		void moveTo(const vec3d* pos);

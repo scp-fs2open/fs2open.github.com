@@ -29,6 +29,8 @@ enum class SourceOriginType {
 	VECTOR, //!< World-space offset
 	BEAM, //!< A beam
 	OBJECT, //!< An object
+	SUBOBJECT, //!< A subobject
+	TURRET, //!< A turret
 	PARTICLE //!< A particle
 };
 
@@ -50,6 +52,8 @@ class SourceOrigin {
 		vec3d m_pos;
 
 		object_h m_object;
+
+		int m_subobject;
 
 		WeakParticlePtr m_particle;
 	} m_origin;
@@ -142,6 +146,20 @@ class SourceOrigin {
 	 * @param offset The position relative to this object
 	 */
 	void moveToObject(const object* objp, const vec3d* offset);
+
+		/**
+	 * @brief Moves the source to the specified object with an offset
+	 * @param objp The hosting object
+	 * @param offset The position relative to this object
+	 */
+	void moveToSubobject(const object* objp, int subobject, const vec3d* offset);
+
+	/**
+	 * @brief Moves the source to the specified object with an offset
+	 * @param objp The hosting object
+	 * @param offset The position relative to this object
+	 */
+	void moveToTurret(const object* objp, int subobject);
 
 	/**
 	 * @brief Moves the source to the specified particle
