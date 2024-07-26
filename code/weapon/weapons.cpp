@@ -3078,12 +3078,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				stuff_vec3d(&t5info->end_pos_rand);
 			}
 
-			if (optional_string("+Slash completion over beam lifetime curve:")) {
+			if (optional_string("+Slash position over beam lifetime curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
 				t5info->slash_pos_curve_idx = curve_get_by_name(curve_name);
 				if (t5info->slash_pos_curve_idx < 0)
 					Warning(LOCATION, "Unrecognized slash position curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+				if (t5info->no_translate)
+					Warning(LOCATION, "Beam weapon %s has a slash position curve defined, but doesn't slash!", wip->name);
 			}
 
 			if (optional_string("+Orient Offsets to Target:")) {
