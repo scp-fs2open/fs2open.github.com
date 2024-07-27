@@ -332,7 +332,7 @@ void trail_render( trail * trailp )
 
 				verts[0].texture_position.v = verts[3].texture_position.v = 0.0f;
 				verts[1].texture_position.v = verts[2].texture_position.v = 1.0f;
-				if (Detail.num_particles = NUM_DEFAULT_DETAIL_LEVELS) {
+				if (Detail.num_particles == NUM_DEFAULT_DETAIL_LEVELS) {
 					batching_add_quad_twisted(ti->texture.bitmap_id, verts, batchp);
 				} else {
 					batching_add_quad(ti->texture.bitmap_id, verts, batchp);
