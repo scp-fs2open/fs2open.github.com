@@ -1199,7 +1199,7 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
  * @param use_angles    Use current angles
  * @param targetp       Absolute position of target object
  */
-void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp, vec3d *local_pos)
+void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp, vec3d *local_pos, bool output_in_model_local_space)
 {
 	vec3d *gun_pos;
 	model_subsystem *tp = ssp->system_info;
@@ -1218,16 +1218,27 @@ void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp,
 		*local_pos = *gun_pos;
 	}
 
-	model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	if (output_in_model_local_space) {
+		model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj);
+	} else {
+		model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	}
+	
 
 	// we might not need to calculate this
 	if (!gvec)
 		return;
 
 	if (use_angles) {
-		model_instance_local_to_global_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
+		if (output_in_model_local_space) {
+			model_instance_local_to_global_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj);
+		} else {
+			model_instance_local_to_global_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
+		}
+		
 	} else {
 		Assertion(targetp != nullptr, "The targetp parameter must not be null here!");
+		Assertion(!output_in_model_local_space, "We cannot deal with global target positions when we're in local space!");
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 }

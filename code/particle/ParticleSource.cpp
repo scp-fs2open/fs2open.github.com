@@ -198,13 +198,23 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 			break;
 		}
 		case SourceOriginType::TURRET: {
-			this->getGlobalPosition(&info.pos, tabled_offset);
 			if (allow_relative) {
 				info.attached_objnum = m_origin.m_object.objnum;
 				info.attached_sig = m_origin.m_object.sig;
 
-				info.pos -= m_origin.m_object.objp()->pos;
+				ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+
+				polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+				ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
+
+				vec3d gvec;
+
+				ship_get_global_turret_gun_info(m_origin.m_object.objp(), sss, &info.pos, false, &gvec, true, nullptr, nullptr, true);
+
+				vm_vec_scale_add2(&info.pos, &gvec, tabled_offset.value_or(vmd_zero_vector).xyz.z);
 			} else {
+				this->getGlobalPosition(&info.pos, tabled_offset);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
