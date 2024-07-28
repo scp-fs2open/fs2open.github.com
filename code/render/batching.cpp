@@ -967,8 +967,6 @@ void batching_add_quad_twisted(int texture, vertex *verts, primitive_batch *batc
     batching_add_quad_twisted_internal(batch, texture, verts);
 }
 
-void batching_add_quad_twisted(int texture, vertex *verts, primitive_batch* batch);
-
 void batching_add_tri(int texture, vertex *verts)
 {
 	Assertion((texture >= 0), "batching_add_tri() attempted for invalid texture");
