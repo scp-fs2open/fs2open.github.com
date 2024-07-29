@@ -14,7 +14,7 @@ void scripting::internal::ade_serializable_external<vec3d>::serialize(lua_State*
 	ADD_VECTOR(vec);
 }
 
-void scripting::internal::ade_serializable_external<vec3d>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+void scripting::internal::ade_serializable_external<vec3d>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { // NOLINT
 	vec3d vec;
 	GET_VECTOR(vec);
 	new(data_ptr) vec3d(std::move(vec));

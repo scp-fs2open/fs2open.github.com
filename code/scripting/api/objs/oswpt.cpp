@@ -43,7 +43,7 @@ void scripting::internal::ade_serializable_external<object_ship_wing_point_team>
 	}
 }
 
-void scripting::internal::ade_serializable_external<object_ship_wing_point_team>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+void scripting::internal::ade_serializable_external<object_ship_wing_point_team>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { // NOLINT
 	uint8_t oswpttype;
 	GET_DATA(oswpttype);
 	switch (static_cast<oswpt_type>(oswpttype)) {

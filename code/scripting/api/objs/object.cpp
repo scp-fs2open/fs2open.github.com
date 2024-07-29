@@ -33,7 +33,7 @@ void scripting::internal::ade_serializable_external<object_h>::serialize(lua_Sta
 	ADD_USHORT(netsig);
 }
 
-void scripting::internal::ade_serializable_external<object_h>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+void scripting::internal::ade_serializable_external<object_h>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { // NOLINT
 	ushort net_signature;
 	GET_USHORT(net_signature);
 	new(data_ptr) object_h(multi_get_network_object(net_signature));
