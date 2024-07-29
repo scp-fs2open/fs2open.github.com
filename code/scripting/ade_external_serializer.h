@@ -1,5 +1,11 @@
 #pragma once
 
+#include <type_traits>
+#include "globalincs/pstypes.h"
+
+struct object_ship_wing_point_team;
+struct object_h;
+
 namespace scripting {
 	namespace internal {
 		template <typename T>
