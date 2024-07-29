@@ -1,5 +1,6 @@
 #include <math/bitarray.h>
 #include <math/curve.h>
+#include "freespace.h"
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
@@ -11,22 +12,37 @@ SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 	                           m_velocity(vmd_zero_vector) {
 }
 
-void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
+void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 	Assertion(posOut != nullptr, "Invalid vector pointer passed!");
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			*posOut = m_origin.m_object.objp()->pos;
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
+			} else {
+				*posOut = m_origin.m_object.objp()->pos;
+			}
 			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
-			*posOut = m_origin.m_particle.lock()->pos;
-
+			auto part = m_origin.m_particle.lock();
 			matrix m = vmd_identity_matrix;
-			vec3d dir = m_origin.m_particle.lock()->velocity;
+			vec3d dir = part->velocity;
+
+			if (interp != 0.0f) {
+				float vel_scalar = 1.0f;
+				if (part->vel_lifetime_curve >= 0) {
+					vel_scalar = Curves[part->vel_lifetime_curve].GetValue(part->age / part->max_life);
+				}
+				vec3d pos_current = part->pos;
+				vec3d pos_last = pos_current - (dir * vel_scalar * flFrametime);
+				vm_vec_linear_interpolate(posOut, &pos_current, &pos_last, interp);
+			} else {
+				*posOut = part->pos;
+			}
 
 			vm_vec_normalize_safe(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
@@ -84,7 +100,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, float interp) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
@@ -95,7 +111,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 
 				info.pos = m_offset;
 			} else {
-				this->getGlobalPosition(&info.pos);
+				this->getGlobalPosition(&info.pos, interp);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -104,7 +120,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 		case SourceOriginType::PARTICLE: {
 			info.rad = getScale();
 			info.lifetime = getLifetime();
-			this->getGlobalPosition(&info.pos);
+			this->getGlobalPosition(&info.pos, interp);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -112,7 +128,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative)
 		case SourceOriginType::BEAM: // Intentional fall-through
 		case SourceOriginType::VECTOR: // Intentional fall-through
 		default: {
-			this->getGlobalPosition(&info.pos);
+			this->getGlobalPosition(&info.pos, interp);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -353,6 +369,7 @@ float SourceTiming::getLifeTimeProgress() const {
 
 	return done / (float) total;
 }
+int SourceTiming::getNextCreationTime() const { return m_nextCreation; }
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 

@@ -25,7 +25,9 @@ namespace particle {
 			// This uses the internal features of the timing class for determining if and how many effects should be
 			// triggered this frame
 			util::EffectTiming::TimingState time_state;
-			while (m_timing.shouldCreateEffect(source, time_state)) {
+			for (int time_since_creation = m_timing.shouldCreateEffect(source, time_state); time_since_creation >= 0; time_since_creation = m_timing.shouldCreateEffect(source, time_state)) {
+				float interp = static_cast<float>(time_since_creation)/(f2fl(Frametime) * 1000.0f);
+
 				auto num = m_particleNum.next();
 
 				if (source->getOrigin()->getType() == SourceOriginType::BEAM) {
@@ -44,6 +46,7 @@ namespace particle {
 
 				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin());
 				matrix stretch_matrix = vm_stretch_matrix(&stretch_dir, m_stretch);
+
 				for (uint i = 0; i < num; ++i) {
 					if (m_particleChance < 1.0f) {
 						auto roll = m_particleRoll.next();
@@ -69,7 +72,7 @@ namespace particle {
 						vm_vec_rotate(&pos, &copy_pos, &stretch_matrix);
 
 					particle_info info;
-					source->getOrigin()->applyToParticleInfo(info);
+					source->getOrigin()->applyToParticleInfo(info, false, interp);
 
 					// make their velocity radial, and based on position, allows for some very cool effects
 					vec3d velocity = pos;
