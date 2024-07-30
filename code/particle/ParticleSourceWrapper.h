@@ -53,7 +53,7 @@ namespace particle
 
 		void moveToSubobject(const object* obj, int subobject, const vec3d* localPos);
 
-		void moveToTurret(const object* obj, int subobject);
+		void moveToTurret(const object* obj, int subobject, int fire_pos);
 
 		void moveToBeam(const object* obj);
 

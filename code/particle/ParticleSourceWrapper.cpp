@@ -83,10 +83,10 @@ namespace particle
 		}
 	}	
 
-	void ParticleSourceWrapper::moveToTurret(const object* obj, int subobject)
+	void ParticleSourceWrapper::moveToTurret(const object* obj, int subobject, int fire_pos)
 	{
 		for (auto& source : m_sources) {
-			source->getOrigin()->moveToTurret(obj, subobject);
+			source->getOrigin()->moveToTurret(obj, subobject, fire_pos);
 		}
 	}	
 	

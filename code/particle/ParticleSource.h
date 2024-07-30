@@ -55,6 +55,8 @@ class SourceOrigin {
 
 		int m_subobject;
 
+		int m_fire_pos;
+
 		WeakParticlePtr m_particle;
 	} m_origin;
 
@@ -79,7 +81,7 @@ class SourceOrigin {
 	 */
 	void getGlobalPosition(vec3d* posOut, tl::optional<vec3d> manual_offset = tl::nullopt) const;
 
-	void getHostOrientation(matrix* matOut) const;
+	void getHostOrientation(matrix* matOut, bool allow_relative) const;
 
 	inline SourceOriginType getType() const { return m_originType; }
 
@@ -159,7 +161,7 @@ class SourceOrigin {
 	 * @param objp The hosting object
 	 * @param offset The position relative to this object
 	 */
-	void moveToTurret(const object* objp, int subobject);
+	void moveToTurret(const object* objp, int subobject, int fire_pos);
 
 	/**
 	 * @brief Moves the source to the specified particle
