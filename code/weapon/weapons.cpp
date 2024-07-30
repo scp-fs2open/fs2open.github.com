@@ -1489,7 +1489,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			error_display(0, "Weapon %s autoaim fov was greater than 180, setting to %f\n", wip->name, fovt);
 		}
 
+		wip->aiming_flags.set(Object::Aiming_Flags::Autoaim); 
 		wip->autoaim_fov = fovt * PI / 180.0f;
+
+		if (optional_string("+Converging Autoaim"))
+			wip->aiming_flags.set(Object::Aiming_Flags::Autoaim_convergence);
+
+		if (optional_string("+Minimum Distance:"))
+			stuff_float(&wip->minimum_convergence_distance);
+	}
+
+	if (optional_string("$Convergence:")) {
+		if (optional_string("+Automatic")) {
+			wip->aiming_flags.set(Object::Aiming_Flags::Auto_convergence);
+			if (optional_string("+Minimum Distance:"))
+				stuff_float(&wip->minimum_convergence_distance);
+		}
+		if (optional_string("+Standard")) {
+			wip->aiming_flags.set(Object::Aiming_Flags::Std_convergence);
+			if (required_string("+Distance:"))
+				stuff_float(&wip->convergence_distance);
+		}
+
+		//Purposefully left off +Offset here because I don't think it makes much sense per weapon as it has more to do with ship bank positioning.
+		//Would be trivial to add if someone wanted but we'd have to decide which takes precedent.. ship or weapon?
 	}
 
 	bool temp_is_homing = false;	// this variable should ONLY be used to store the parse value.  All checks aside from the block five lines later should exclusively use wip->is_homing()
@@ -2360,13 +2383,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 		armor_index = armor_type_get_idx(fname);
-		required_string("+Effect Name:");
-			ci.effect = particle::util::parseEffect(wip->name);
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
 		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
 		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold);
 		parse_optional_bool_into("+Dinky:", &ci.dinky);
+		required_string("+Effect Name:");
+			ci.effect = particle::util::parseEffect(wip->name);
 		SCP_vector<ConditionalImpact> ci_vec;
 		if (wip->conditional_impacts.count(armor_index) == 1) {
 			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[armor_index];
@@ -7510,6 +7533,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	bool		hit_target = false;
 
 	ship		*shipp;
+	weapon		*target_wp;
+	weapon_info *target_wip;
 	int         objnum;
 
 	Assert((weapon_type >= 0) && (weapon_type < weapon_info_size()));
@@ -7553,15 +7578,23 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (other_obj != nullptr && other_obj->type == OBJ_SHIP) {
-		shipp = &Ships[other_obj->instance];
-		if (quadrant == -1) {
-			relevant_armor_idx = shipp->armor_type_idx;
-			relevant_fraction = other_obj->hull_strength / shipp->ship_max_hull_strength;
+	if (wip->conditional_impacts.size() > 0 && other_obj != nullptr && (other_obj->type == OBJ_SHIP || other_obj->type == OBJ_WEAPON)) {
+		if (other_obj->type == OBJ_SHIP) {
+			shipp = &Ships[other_obj->instance];
+			if (quadrant == -1) {
+				relevant_armor_idx = shipp->armor_type_idx;
+				relevant_fraction = other_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+			} else {
+				relevant_armor_idx = shipp->shield_armor_type_idx;
+				relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
+			}
 		} else {
-			relevant_armor_idx = shipp->shield_armor_type_idx;
-			relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
+			target_wp = &Weapons[other_obj->instance];
+			target_wip = &Weapon_info[target_wp->weapon_info_index];
+			relevant_armor_idx = target_wip->armor_type_idx;
+			relevant_fraction = other_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
 		}
+		
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
 			for (const auto& ci : wip->conditional_impacts[relevant_armor_idx]) {
 				if (((!armed_weapon) == ci.dinky)
@@ -7716,7 +7749,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 
 	//No other_obj means this weapon detonates
-	if (wip->pierce_objects && other_obj)
+	if (wip->pierce_objects && other_obj && other_obj->type != OBJ_WEAPON)
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
@@ -9330,6 +9363,10 @@ void weapon_info::reset()
 	// *Minimum weapon range, default is 0 -Et1
 	this->weapon_min_range = 0.0f;
 	this->optimum_range = 0.0f;
+
+	this->aiming_flags.reset();
+	this->minimum_convergence_distance = 0.0f;
+	this->convergence_distance = 100.0f;
 
 	this->pierce_objects = false;
 	this->spawn_children_on_pierce = false;

@@ -24,9 +24,12 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 	// This uses the internal features of the timing class for determining if and how many effects should be triggered
 	// this frame
 	util::EffectTiming::TimingState time_state;
-	while (m_timing.shouldCreateEffect(source, time_state)) {
+	for (int time_since_creation = m_timing.shouldCreateEffect(source, time_state); time_since_creation >= 0; time_since_creation = m_timing.shouldCreateEffect(source, time_state)) {
+		float interp = static_cast<float>(time_since_creation)/(f2fl(Frametime) * 1000.0f);
+		
 		particle_info info;
-		source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, m_particleProperties.m_manual_offset);
+
+		source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
 		info.vel *= m_vel_inherit.next();
 

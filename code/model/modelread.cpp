@@ -2662,8 +2662,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )
 				{
-					char tmp_name[256];
+					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
+					constexpr int max_buffer_size = MAX_FILENAME_LEN - 8;	// leave room for the longest suffix, "-reflect"
+					if (strlen(tmp_name) >= max_buffer_size)
+					{
+						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, max_buffer_size - 1);
+						tmp_name[max_buffer_size - 1] = '\0';
+					}
 					model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
@@ -3121,7 +3127,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 
 
 //Goober
-void model_load_texture(polymodel *pm, int i, char *file)
+void model_load_texture(polymodel *pm, int i, const char *file)
 {
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it

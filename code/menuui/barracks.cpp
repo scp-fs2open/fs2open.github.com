@@ -694,7 +694,7 @@ int barracks_pilot_accepted()
 	return 0;
 }
 
-void barracks_accept_pilot(player* plr) {
+void barracks_accept_pilot(player* plr, bool changeState) {
 	// set pilot image
 	if (Game_mode & GM_MULTIPLAYER) {
 		player_set_squad_bitmap(plr, plr->m_squad_filename, true);
@@ -712,7 +712,10 @@ void barracks_accept_pilot(player* plr) {
 	multi_options_init_globals();
 
 	os_config_write_string(nullptr, "LastPlayer", plr->callsign);
-	gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+	if (changeState) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
 }
 
 // scroll up barracks pilot list one line

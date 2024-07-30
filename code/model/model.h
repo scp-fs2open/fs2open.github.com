@@ -993,7 +993,7 @@ int model_create_instance(int objnum, int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000
-void model_load_texture(polymodel *pm, int i, char *file);
+void model_load_texture(polymodel *pm, int i, const char *file);
 
 SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 

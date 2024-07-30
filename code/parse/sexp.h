@@ -1633,9 +1633,6 @@ struct object_ship_wing_point_team
 
 	bool operator==(const object_ship_wing_point_team &other) const;
 	bool operator!=(const object_ship_wing_point_team &other) const;
-
-	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);

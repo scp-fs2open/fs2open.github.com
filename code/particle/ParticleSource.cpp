@@ -1,5 +1,6 @@
 #include <math/bitarray.h>
 #include <math/curve.h>
+#include "freespace.h"
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
@@ -12,23 +13,32 @@ SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 	                           m_velocity(vmd_zero_vector) {
 }
 
-void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> tabled_offset) const {
+void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp, tl::optional<vec3d> tabled_offset) const {
 	Assertion(posOut != nullptr, "Invalid vector pointer passed!");
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	vec3d offset;
 	switch (m_originType) {
 		case SourceOriginType::OBJECT: {
-			*posOut = m_origin.m_object.objp()->pos;
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
+			} else {
+				*posOut = m_origin.m_object.objp()->pos;
+			}
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
 			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
-			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_object.objp()->orient);
-
+			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
 			break;
 		}
 		case SourceOriginType::SUBOBJECT: {
-			*posOut = m_origin.m_object.objp()->pos;
+			// this interpolation only accounts for movement of the object as a whole, not local subobject movements
+			// this could be made more accurate, but it would be a pain and as of now I am not considering it worth it
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
+			} else {
+				*posOut = m_origin.m_object.objp()->pos;
+			}
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
 			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
@@ -43,13 +53,21 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> tabled_o
 			polymodel *pm = model_get(pmi->model_num);
 			ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
 
+			// this interpolation only accounts for movement of the object as a whole, not local subobject movements like turret rotation
+			// this could be made more accurate, but it would be a pain and as of now I am not considering it worth it
+			vec3d obj_pos;
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(&obj_pos, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
+			} else {
+				obj_pos = m_origin.m_object.objp()->pos;
+			}
 			vec3d *gun_pos;
 			vec3d gvec;
 			model_subsystem *tp = sss->system_info;
 
 			gun_pos = &tp->turret_firing_point[m_origin.m_fire_pos % tp->turret_num_firing_points];
 
-			model_instance_local_to_global_point(posOut, gun_pos, pm, pmi, tp->turret_gun_sobj, &m_origin.m_object.objp()->orient, &m_origin.m_object.objp()->pos);
+			model_instance_local_to_global_point(posOut, gun_pos, pm, pmi, tp->turret_gun_sobj, &m_origin.m_object.objp()->orient, &obj_pos);
 			model_instance_local_to_global_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &m_origin.m_object.objp()->orient);
 			
 			vm_vec_copy_scale(&offset, &gvec, tabled_offset.value_or(vmd_zero_vector).xyz.z);
@@ -57,10 +75,21 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, tl::optional<vec3d> tabled_o
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
-			*posOut = m_origin.m_particle.lock()->pos;
-
+			auto part = m_origin.m_particle.lock();
 			matrix m = vmd_identity_matrix;
-			vec3d dir = m_origin.m_particle.lock()->velocity;
+			vec3d dir = part->velocity;
+
+			if (interp != 0.0f) {
+				float vel_scalar = 1.0f;
+				if (part->vel_lifetime_curve >= 0) {
+					vel_scalar = Curves[part->vel_lifetime_curve].GetValue(part->age / part->max_life);
+				}
+				vec3d pos_current = part->pos;
+				vec3d pos_last = pos_current - (dir * vel_scalar * flFrametime);
+				vm_vec_linear_interpolate(posOut, &pos_current, &pos_last, interp);
+			} else {
+				*posOut = part->pos;
+			}
 
 			vm_vec_normalize_safe(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
@@ -178,7 +207,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut, bool allow_relative) const
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, tl::optional<vec3d> tabled_offset) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, float interp, tl::optional<vec3d> tabled_offset) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
@@ -189,7 +218,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 
 				info.pos = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			} else {
-				this->getGlobalPosition(&info.pos, tabled_offset);
+				this->getGlobalPosition(&info.pos, interp, tabled_offset);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -206,7 +235,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 					Ships[m_origin.m_object.objp()->instance].model_instance_num,
 					m_origin.m_subobject);
 			} else {
-				this->getGlobalPosition(&info.pos, tabled_offset);
+				this->getGlobalPosition(&info.pos, interp, tabled_offset);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -234,7 +263,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 
 				vm_vec_scale_add2(&info.pos, &gvec, tabled_offset.value_or(vmd_zero_vector).xyz.z);
 			} else {
-				this->getGlobalPosition(&info.pos, tabled_offset);
+				this->getGlobalPosition(&info.pos, interp, tabled_offset);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -243,7 +272,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 		case SourceOriginType::PARTICLE: {
 			info.rad = getScale();
 			info.lifetime = getLifetime();
-			this->getGlobalPosition(&info.pos, tabled_offset);
+			this->getGlobalPosition(&info.pos, interp, tabled_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -251,7 +280,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 		case SourceOriginType::BEAM: // Intentional fall-through
 		case SourceOriginType::VECTOR: // Intentional fall-through
 		default: {
-			this->getGlobalPosition(&info.pos, tabled_offset);
+			this->getGlobalPosition(&info.pos, interp, tabled_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -539,6 +568,7 @@ float SourceTiming::getLifeTimeProgress() const {
 
 	return done / (float) total;
 }
+int SourceTiming::getNextCreationTime() const { return m_nextCreation; }
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 
