@@ -1064,14 +1064,12 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				// spawn particle effect
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
 				particleSource.moveToObject(objp, gun_pos);
-				particleSource.setOrientationFromVec(gun_dir);
+				particleSource.setOrientationFromVec(gun_dir, true);
 				particleSource.setVelocity(&objp->phys_info.vel);
 				particleSource.finish();
 			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
 			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
-				vec3d real_dir;
-				vm_vec_rotate(&real_dir, gun_dir, &objp->orient);
-				mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
+				mflash_create(gun_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
 			}
 	}
 

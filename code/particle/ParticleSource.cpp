@@ -122,7 +122,11 @@ void SourceOrigin::getHostOrientation(matrix* matOut, bool allow_relative) const
 	vec3d vec;
 	switch (m_originType) {
 	case SourceOriginType::OBJECT:
-		*matOut = m_origin.m_object.objp()->orient;
+		if (allow_relative) {
+			*matOut = vmd_identity_matrix;
+		} else {
+			*matOut = m_origin.m_object.objp()->orient;
+		}
 		break;
 	case SourceOriginType::SUBOBJECT: {
 		const ship& shipp = Ships[m_origin.m_object.objp()->instance];
@@ -134,7 +138,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut, bool allow_relative) const
 			model_get(Ship_info[shipp.ship_info_index].model_num),
 			model_get_instance(shipp.model_instance_num),
 			m_origin.m_subobject,
-			&m_origin.m_object.objp()->orient,
+			allow_relative ? &vmd_identity_matrix : &m_origin.m_object.objp()->orient,
 			&vmd_zero_vector);
 		break;
 		}
@@ -165,7 +169,9 @@ void SourceOrigin::getHostOrientation(matrix* matOut, bool allow_relative) const
 		vm_vec_normalized_dir(&vec, &Beams[m_origin.m_object.objp()->instance].last_shot, &Beams[m_origin.m_object.objp()->instance].last_start);
 		vm_vector_2_matrix(matOut, &vec, nullptr, nullptr);
 		break;
-	case SourceOriginType::VECTOR: // Intentional fall-through, plain vectors have no orientation
+	case SourceOriginType::VECTOR:
+		*matOut = m_origin.m_host_orientation;
+		break;
 	default:
 		*matOut = vmd_identity_matrix;
 		break;
@@ -310,10 +316,11 @@ void SourceOrigin::setWeaponState(WeaponState state) {
 	m_weaponState = state;
 }
 
-void SourceOrigin::moveTo(const vec3d* pos) {
+void SourceOrigin::moveTo(const vec3d* pos, const matrix* orientation) {
 	Assertion(pos, "Invalid vector pointer passed!");
 
 	m_originType = SourceOriginType::VECTOR;
+	m_origin.m_host_orientation = *orientation;
 	m_origin.m_pos = *pos;
 }
 
@@ -447,11 +454,16 @@ void SourceOrientation::setNormal(const vec3d& normal) {
 	m_normal = normal;
 }
 
-vec3d SourceOrientation::getDirectionVector(const SourceOrigin* origin) const {
+vec3d SourceOrientation::getDirectionVector(const SourceOrigin* origin, bool allow_relative) const {
+	if (!m_isRelative) {
+		return m_orientation.vec.fvec;
+	}
+
 	matrix finalOrient;
 
 	matrix hostOrient;
-	origin->getHostOrientation(&hostOrient, m_isRelative);
+
+	origin->getHostOrientation(&hostOrient, allow_relative);
 
 	vm_matrix_x_matrix(&finalOrient, &hostOrient, &m_orientation);
 

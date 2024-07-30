@@ -98,11 +98,11 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveTo(const vec3d* pos)
+	void ParticleSourceWrapper::moveTo(const vec3d* pos, const matrix* orientation)
 	{
 		for (auto& source : m_sources)
 		{
-			source->getOrigin()->moveTo(pos);
+			source->getOrigin()->moveTo(pos, orientation);
 		}
 	}
 

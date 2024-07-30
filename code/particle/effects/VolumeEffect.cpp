@@ -42,7 +42,7 @@ namespace particle {
 						num += 1;
 				}
 
-				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				matrix stretch_matrix = vm_stretch_matrix(&stretch_dir, m_stretch);
 				for (uint i = 0; i < num; ++i) {
 					if (m_particleChance < 1.0f) {

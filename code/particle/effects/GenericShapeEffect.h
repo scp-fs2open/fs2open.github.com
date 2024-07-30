@@ -48,18 +48,18 @@ class GenericShapeEffect : public ParticleEffect {
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ConeDirection::Incoming:
-				return source->getOrientation()->getDirectionVector(source->getOrigin());
+			return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return source->getOrientation()->getDirectionVector(source->getOrigin());
+					return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				}
 
 				return normal;
 			}
 			case ConeDirection::Reflected: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
@@ -77,7 +77,7 @@ class GenericShapeEffect : public ParticleEffect {
 				return out;
 			}
 			case ConeDirection::Reverse: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vm_vec_scale(&out, -1.0f);
 				return out;
 			}

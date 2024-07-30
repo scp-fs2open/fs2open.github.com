@@ -57,7 +57,7 @@ namespace particle
 
 		void moveToBeam(const object* obj);
 
-		void moveTo(const vec3d* pos);
+		void moveTo(const vec3d* pos, const matrix* orientation = &vmd_identity_matrix);
 
 		void setVelocity(const vec3d* vel);
 

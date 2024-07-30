@@ -51,6 +51,9 @@ class SourceOrigin {
 	struct {
 		vec3d m_pos;
 
+		// this is used only for vector-type sources, and is not used when the effect's parent is an object
+		matrix m_host_orientation;
+
 		object_h m_object;
 
 		int m_subobject;
@@ -134,7 +137,7 @@ class SourceOrigin {
 	 * @brief Moves the source to the specified world location
 	 * @param pos The world position
 	 */
-	void moveTo(const vec3d* pos);
+	void moveTo(const vec3d* pos, const matrix* orientation = &vmd_identity_matrix);
 
 	/**
 	 * @brief Moves the source to the specified beam object
@@ -220,7 +223,7 @@ class SourceOrientation {
 
 	void setFromMatrix(const matrix& mat, bool relative = false);
 
-	vec3d getDirectionVector(const SourceOrigin* origin) const;
+	vec3d getDirectionVector(const SourceOrigin* origin, bool allow_relative = false) const;
 
 	bool isRelative() const { return m_isRelative; }
 
