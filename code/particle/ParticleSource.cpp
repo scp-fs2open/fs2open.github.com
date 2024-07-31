@@ -413,10 +413,8 @@ bool SourceOrigin::isValid() const {
 			}
 			ship* shipp = &Ships[m_origin.m_object.objp()->instance];
 			polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-			if (pm->submodel[m_origin.m_subobject].subsys_num < 0) {
-				return false;
-			}
-			return true;
+			
+			return pm->submodel[m_origin.m_subobject].subsys_num >= 0;
 		}
 		case SourceOriginType::SUBOBJECT:
 			if (m_origin.m_subobject < 0) {
