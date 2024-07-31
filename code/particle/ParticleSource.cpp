@@ -28,7 +28,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp, tl::optional<v
 
 			// we add whatever offset already exists to the tabled offset specified by the modder
 			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
-			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
+			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_object.objp()->orient);
 			break;
 		}
 		case SourceOriginType::SUBOBJECT: {
@@ -61,6 +61,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp, tl::optional<v
 			} else {
 				obj_pos = m_origin.m_object.objp()->pos;
 			}
+			
 			vec3d *gun_pos;
 			vec3d gvec;
 			model_subsystem *tp = sss->system_info;
