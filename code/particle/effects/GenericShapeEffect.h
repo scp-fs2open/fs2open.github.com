@@ -52,7 +52,6 @@ class GenericShapeEffect : public ParticleEffect {
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
 					return source->getOrientation()->getDirectionVector(source->getOrigin());
 				}
 
@@ -62,7 +61,6 @@ class GenericShapeEffect : public ParticleEffect {
 				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
 					return out;
 				}
 
