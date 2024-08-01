@@ -52,6 +52,7 @@ class SourceOrigin {
 		vec3d m_pos;
 
 		// this is used only for vector-type sources, and is not used when the effect's parent is an object
+		// when the parent is an object, we get the relevant orientation from the object, so that it stays updated
 		matrix m_host_orientation;
 
 		object_h m_object;
@@ -191,9 +192,17 @@ class SourceOrigin {
  *
  * Currently only the forward direction vector is useful because the other vectors of the matrix are chosen pretty
  * arbitrarily. This also contains a normal vector if it was specified when creating the source.
- *
+ * 
+ * A source's SourceOrientation is distinct from its host orientation. The host orientation is either defined in
+ * SourceOrigin or gathered from the parent object, depending on host type. Host orientation is applied before position offset.
+ * SourceOrientation is applied after position offset.
+ * 
  * An orientation can be either relative or global. In relative mode all transforms should be relative to the host
- * object while in global mode all directions are in world-space. Normals are always in world-space.
+ * object and its orientation. In global mode, all directions are in world-space,
+ * and host orientation is overridden completely (though it will still affect the orientation of position offsets).
+ * 
+ * Normals are always in world-space.
+ * 
  */
 class SourceOrientation {
  private:
