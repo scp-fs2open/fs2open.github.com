@@ -48,7 +48,7 @@ class GenericShapeEffect : public ParticleEffect {
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ConeDirection::Incoming:
-			return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
+				return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
