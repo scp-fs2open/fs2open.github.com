@@ -29,7 +29,7 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 		
 		particle_info info;
 
-		source->getOrigin()->applyToParticleInfo(info, false, interp);
+		source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
 		info.vel *= m_vel_inherit.next();
 
