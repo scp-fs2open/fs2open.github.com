@@ -53,6 +53,7 @@ class SourceOrigin {
 
 		// this is used only for vector-type sources, and is not used when the effect's parent is an object
 		// when the parent is an object, we get the relevant orientation from the object, so that it stays updated
+		// when the parent is an object, we get the relevant orientation from the object, so that it stays updated
 		matrix m_host_orientation;
 
 		object_h m_object;
@@ -192,6 +193,11 @@ class SourceOrigin {
  *
  * Currently only the forward direction vector is useful because the other vectors of the matrix are chosen pretty
  * arbitrarily. This also contains a normal vector if it was specified when creating the source.
+ * 
+ * A source's SourceOrientation is distinct from its host orientation. The host orientation is either defined in
+ * SourceOrigin or gathered from the parent object, depending on host type. Host orientation is applied before position offset.
+ * SourceOrientation is applied after position offset.
+ * 
  * 
  * A source's SourceOrientation is distinct from its host orientation. The host orientation is either defined in
  * SourceOrigin or gathered from the parent object, depending on host type. Host orientation is applied before position offset.
