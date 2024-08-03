@@ -2354,8 +2354,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 		// variables should only be typechecked. 
 		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
 			var_index = sexp_get_variable_index(node);
-			Assert(var_index != -1);
-	
+			if (var_index < 0)
+				return SEXP_CHECK_INVALID_VARIABLE;
+
 			if (!check_variable_data_type(type,
 					Sexp_variables[var_index].type,
 					get_operator_const(op_node),
@@ -3840,9 +3841,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			case OPF_VARIABLE_NAME:
 				var_index = sexp_get_variable_index(node);
-				if ( var_index  == -1) {
+				if (var_index < 0)
 					return SEXP_CHECK_INVALID_VARIABLE;
-				}
 
 				switch (Operators[op].value)
 				{
@@ -13745,6 +13745,11 @@ void sexp_close_sound_from_file(int n)
 	if (n >= 0)
 	{
 		sexp_var = sexp_get_variable_index(n);
+		if (sexp_var < 0)
+		{
+			Warning(LOCATION, "close-sound-from-file: Variable %s does not exist!", Sexp_nodes[n].text);
+			return;
+		}
 
 		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
 		{
@@ -13805,6 +13810,11 @@ void sexp_play_sound_from_file(int n)
 	if (n >= 0)
 	{
 		sexp_var = sexp_get_variable_index(n);
+		if (sexp_var < 0)
+		{
+			Warning(LOCATION, "play-sound-from-file: Variable %s does not exist!", Sexp_nodes[n].text);
+			return;
+		}
 
 		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
 		{
@@ -13858,6 +13868,11 @@ void sexp_pause_sound_from_file(int n)
 	if (n >= 0)
 	{
 		sexp_var = sexp_get_variable_index(n);
+		if (sexp_var < 0)
+		{
+			Warning(LOCATION, "pause-sound-from-file: Variable %s does not exist!", Sexp_nodes[n].text);
+			return;
+		}
 
 		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
 		{
@@ -15825,8 +15840,11 @@ void sexp_set_wing_formation(int node)
 	for (int n = CDDR(node); n >= 0; n = CDR(n))
 	{
 		auto wingp = eval_wing(n);
-		wingp->formation = formation;
-		wingp->formation_scale = factor;
+		if (wingp)
+		{
+			wingp->formation = formation;
+			wingp->formation_scale = factor;
+		}
 	}
 }
 
@@ -16134,6 +16152,11 @@ void sexp_add_background_bitmap(int n, bool is_sun, bool uses_correct_angles)
 
 		// ripped from sexp_modify_variable()
 		sexp_var = sexp_get_variable_index(n);
+		if (sexp_var < 0)
+		{
+			Warning(LOCATION, "sexp-add-%s-bitmap: Variable %s does not exist!", is_sun ? "sun" : "background", Sexp_nodes[n].text);
+			return;
+		}
 
 		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 		{
@@ -24339,11 +24362,16 @@ void sexp_int_to_string(int n)
 
 	// get sexp_variable index
 	sexp_variable_index = sexp_get_variable_index(n);
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "int-to-string: Variable %s does not exist!", Sexp_nodes[n].text);
+		return;
+	}
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
+		Warning(LOCATION, "int-to-string: Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -24374,11 +24402,16 @@ void sexp_string_concatenate(int n)
 
 	// get sexp_variable index
 	sexp_variable_index = sexp_get_variable_index(n);
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "string-concatenate: Variable %s does not exist!", Sexp_nodes[n].text);
+		return;
+	}
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
+		Warning(LOCATION, "string-concatenate: Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -24389,7 +24422,7 @@ void sexp_string_concatenate(int n)
 	// check length
 	if (strlen(new_text) >= TOKEN_LENGTH)
 	{
-		Warning(LOCATION, "Concatenated string '%s' has " SIZE_T_ARG " characters, but the maximum is %d.  The string will be truncated.", new_text, strlen(new_text), TOKEN_LENGTH - 1);
+		Warning(LOCATION, "string-concatenate: Concatenated string '%s' has " SIZE_T_ARG " characters, but the maximum is %d.  The string will be truncated.", new_text, strlen(new_text), TOKEN_LENGTH - 1);
 		new_text[TOKEN_LENGTH] = 0;
 	}
 
@@ -24409,12 +24442,17 @@ void sexp_string_concatenate_block(int n)
 
 	// get sexp_variable index
 	sexp_variable_index = sexp_get_variable_index(n);
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "string-concatenate-block: Variable %s does not exist!", Sexp_nodes[n].text);
+		return;
+	}
 	n = CDR(n);
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
+		Warning(LOCATION, "string-concatenate-block: Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -24428,7 +24466,7 @@ void sexp_string_concatenate_block(int n)
 	// check length
 	if (new_text.length() >= TOKEN_LENGTH)
 	{
-		Warning(LOCATION, "Concatenated string '%s' has " SIZE_T_ARG " characters, but the maximum is %d.  The string will be truncated.", new_text.c_str(), new_text.length(), TOKEN_LENGTH - 1);
+		Warning(LOCATION, "string-concatenate-block: Concatenated string '%s' has " SIZE_T_ARG " characters, but the maximum is %d.  The string will be truncated.", new_text.c_str(), new_text.length(), TOKEN_LENGTH - 1);
 		new_text.resize(TOKEN_LENGTH - 1);
 	}
 
@@ -24462,11 +24500,16 @@ void sexp_string_get_substring(int node)
 
 	// get sexp_variable index
 	sexp_variable_index = sexp_get_variable_index(n);
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "string-get-substring: Variable %s does not exist!", Sexp_nodes[n].text);
+		return;
+	}
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
+		Warning(LOCATION, "string-get-substring: Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -24527,11 +24570,16 @@ void sexp_string_set_substring(int node)
 
 	// get sexp_variable index
 	sexp_variable_index = sexp_get_variable_index(n);
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "string-set-substring: Variable %s does not exist!", Sexp_nodes[n].text);
+		return;
+	}
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
+		Warning(LOCATION, "string-set-substring: Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -24566,12 +24614,12 @@ void sexp_string_set_substring(int node)
 
 	// This shouldn't happen
 	Assertion(substring_begin_byte < substring_end_byte,
-			  "The begin position of the substring must be less than the end position!");
+			  "string-set-substring: The begin position of the substring must be less than the end position!");
 
 	new_text.replace(substring_begin_byte, substring_end_byte - substring_begin_byte, new_substring);
 
 	if (new_text.size() >= TOKEN_LENGTH) {
-		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+		Warning(LOCATION, "string-set-substring: Concatenated string is too long and will be truncated.");
 
 		new_text.resize(TOKEN_LENGTH - 1);
 
@@ -24600,10 +24648,15 @@ void sexp_modify_variable_xstr(int n)
 
 	// get sexp_variable index
 	auto sexp_variable_index = sexp_get_variable_index(n);
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "modify-variable-xstr: Variable %s does not exist!", Sexp_nodes[n].text);
+		return;
+	}
 	n = CDR(n);
 
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)) {
-		Warning(LOCATION, "Variable for modify-variable-xstr has to be a string variable!");
+		Warning(LOCATION, "modify-variable-xstr: Variable %s must be a string variable!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -26313,9 +26366,13 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 				{
 					int variable_index = sexp_get_variable_index(n);
 
-					if (!(Sexp_variables[variable_index].type & SEXP_VARIABLE_STRING))
+					if (variable_index < 0)
 					{
-						Warning(LOCATION, "Variable for script-eval has to be a string variable!");
+						Warning(LOCATION, "script-eval: Variable %s does not exist!", Sexp_nodes[n].text);
+					}
+					else if (!(Sexp_variables[variable_index].type & SEXP_VARIABLE_STRING))
+					{
+						Warning(LOCATION, "script-eval: Variable %s must be a string variable!", Sexp_variables[variable_index].variable_name);
 					}
 					else if (ret != nullptr)
 					{
@@ -34337,6 +34394,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_AMBIGUOUS_EVENT_NAME:
 			return "Ambiguous event name (more than one event with the same name)";
 
+		case SEXP_CHECK_INVALID_CONTAINER:
+			return "Invalid container name";
+
 		case SEXP_CHECK_MISSING_CONTAINER_MODIFIER:
 			return "Missing container modifier";
 
@@ -34754,9 +34814,8 @@ int check_dynamic_value_node_type(int node, bool is_string, bool is_number)
 
 	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 		const int var_index = sexp_get_variable_index(node);
-		Assertion(var_index != -1,
-			"Attempt to get index of invalid variable %s. Please report!",
-			Sexp_nodes[node].text);
+		if (var_index < 0)
+			return SEXP_CHECK_INVALID_VARIABLE;
 		const int var_type = Sexp_variables[var_index].type;
 		if (((var_type & SEXP_VARIABLE_STRING) && !is_string) || ((var_type & SEXP_VARIABLE_NUMBER) && !is_number)) {
 			return SEXP_CHECK_INVALID_VARIABLE_TYPE;
@@ -34768,9 +34827,8 @@ int check_dynamic_value_node_type(int node, bool is_string, bool is_number)
 		}
 	} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
-		Assertion(p_container,
-			"Attempt to check dynamic value node type of data of nonexistent container %s. Please report!",
-			Sexp_nodes[node].text);
+		if (!p_container)
+			return SEXP_CHECK_INVALID_CONTAINER;
 		if (!check_container_data_sexp_arg_type(p_container->type, is_string, is_number)) {
 			return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
 		}
@@ -34796,7 +34854,11 @@ void sexp_modify_variable(int n)
 	// get sexp_variable index
 	sexp_variable_index = sexp_get_variable_index(n);
 
-	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
+	if (sexp_variable_index < 0)
+	{
+		Warning(LOCATION, "modify-variable: Variable %s does not exist!", Sexp_nodes[n].text);
+	}
+	else if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
 		new_number = eval_sexp(CDR(n));
@@ -34815,7 +34877,7 @@ void sexp_modify_variable(int n)
 	}
 	else
 	{
-		Error(LOCATION, "Invalid variable type.\n");
+		Warning(LOCATION, "modify-variable: Variable %s has an unknown type!", Sexp_variables[sexp_variable_index].variable_name);
 	}
 }
 
@@ -34970,6 +35032,12 @@ void sexp_copy_variable_from_index(int node)
 
 	// now get the variable we are modifying
 	to_index = sexp_get_variable_index(CDR(node));
+
+	if (to_index < 0)
+	{
+		Warning(LOCATION, "copy-variable-from-index: Variable %s does not exist!", Sexp_nodes[CDR(node)].text);
+		return;
+	}
 
 	// verify matching types
 	if ( ((Sexp_variables[from_index].type & SEXP_VARIABLE_NUMBER) && !(Sexp_variables[to_index].type & SEXP_VARIABLE_NUMBER))

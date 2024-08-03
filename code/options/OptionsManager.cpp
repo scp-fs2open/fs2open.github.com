@@ -42,12 +42,14 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 	if (override_iter != _config_overrides.end()) {
 		// We return a reference to an existing object so we need to increment the reference count
 		json_incref(override_iter->second.get());
+		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
 		return std::unique_ptr<json_t>(override_iter->second.get());
 	}
 
 	auto changed_iter = _changed_values.find(key);
 	if (changed_iter != _changed_values.end()) {
 		json_incref(changed_iter->second.get());
+		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
 		return std::unique_ptr<json_t>(changed_iter->second.get());
 	}
 
