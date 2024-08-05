@@ -1079,7 +1079,7 @@ void beam_type_omni_move(beam* b)
 
 	float rotation_amount;
 	if (Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx >= 0) {
-		rotation_amount = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx].GetValue(BEAM_T(b));
+		rotation_amount = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx].GetValue(BEAM_T(b)) * PI2;
 	} else {
 		rotation_amount = (b->life_total - b->life_left) * b->type5_rot_speed;
 	}
