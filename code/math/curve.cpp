@@ -9,6 +9,46 @@ int curve_get_by_name(const SCP_string& in_name) {
 	return find_item_with_name(Curves, in_name);
 }
 
+int pdf_to_cdf(Curve curve) {
+	SCP_vector<std::pair<float, float>> pdf_samples;
+	for (float x = 0.f; x < 1.f; x += 0.01f) {
+		pdf_samples.emplace_back(curve.GetValue(x), x);
+	}
+
+	std::sort(pdf_samples.begin(), pdf_samples.end());
+
+	SCP_vector<std::pair<float, float>> cdf_keyframes;
+
+	float last_x = 0.0f;
+	for (auto keyframe : pdf_samples) {
+		cdf_keyframes.emplace_back((keyframe.first + last_x), keyframe.second);
+		last_x = keyframe.first;
+	}
+	float final_x = cdf_keyframes.back().first;
+
+	SCP_string cdf_curve_name = curve.name + "_CDF";
+	Curve cdf_curve = Curve(cdf_curve_name);
+
+	for (auto cdf_keyframe : cdf_keyframes) {
+		curve_keyframe kframe;
+		kframe.pos.x = (cdf_keyframe.first /= final_x);
+		kframe.pos.y = cdf_keyframe.second;
+		kframe.interp_func = CurveInterpFunction::Linear;
+
+		cdf_curve.keyframes.push_back(kframe);
+	}
+	
+	for (int i = 0; i < Curves.size(); i++) {
+		Curve* existing_curve = &Curves[i];
+		if (existing_curve = &cdf_curve) {
+			return i;
+		}
+	}
+
+	Curves.push_back(cdf_curve);
+	return Curves.size();
+}
+
 void parse_curve_table(const char* filename) {
 	try
 	{
