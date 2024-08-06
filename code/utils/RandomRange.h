@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "math/curve.h"
 
 #include <random>
 #include <type_traits>
@@ -71,6 +72,7 @@ class RandomRange {
 	bool m_constant;
 	ValueType m_minValue;
 	ValueType m_maxValue;
+	int m_curve = -1;
 
  public:
 	template<typename... Ts>
@@ -103,6 +105,9 @@ class RandomRange {
 	ValueType next() const {
 		if (m_constant) {
 			return m_minValue;
+		} else if (m_curve >= 0) {
+			float interp = Curves[m_curve].GetValue(frand());
+			return (interp * (m_maxValue - m_minValue)) + m_minValue;
 		}
 
 		return m_distribution(m_generator);
@@ -259,6 +264,13 @@ UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::mi
 		return UniformRange<Value>(valueList[0]);
 	} else {
 		return UniformRange<Value>(valueList[0], valueList[1]);
+	}
+
+	if (optional_string(",")) {
+		SCP_string name;
+		stuff_string(&name, F_NAME);
+		int pdf_curve = curve_get_by_name(name);
+		m_curve = pdf_to_cdf(pdf_curve);
 	}
 }
 }

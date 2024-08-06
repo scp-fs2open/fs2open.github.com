@@ -9,7 +9,8 @@ int curve_get_by_name(const SCP_string& in_name) {
 	return find_item_with_name(Curves, in_name);
 }
 
-int pdf_to_cdf(Curve curve) {
+int pdf_to_cdf(int curve_index) {
+	Curve curve = Curves[curve_index];
 	SCP_vector<std::pair<float, float>> pdf_samples;
 	for (float x = 0.f; x < 1.f; x += 0.01f) {
 		pdf_samples.emplace_back(curve.GetValue(x), x);
