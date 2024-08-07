@@ -418,8 +418,8 @@ int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
  *
  * Sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
  */
-#define MIN_SATISFIED_TIME		5
-#define MIN_FAILED_TIME			7
+#define MIN_SATISFIED_TIME		5 * MILLISECONDS_PER_SECOND
+#define MIN_FAILED_TIME			7 * MILLISECONDS_PER_SECOND
 void sort_training_objectives()
 {
 	int i, offset;
