@@ -8,9 +8,9 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 
-void scripting::internal::ade_serializable_external<vec3d>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+void scripting::internal::ade_serializable_external<vec3d>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& luaValue, ubyte* data, int& packet_size) {
 	vec3d vec;
-	value.getValue(scripting::api::l_Vector.Get(&vec));
+	luaValue.getValue(scripting::api::l_Vector.Get(&vec));
 	ADD_VECTOR(vec);
 }
 

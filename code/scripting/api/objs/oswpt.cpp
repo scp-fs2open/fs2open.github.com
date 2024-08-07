@@ -14,9 +14,9 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 
-void scripting::internal::ade_serializable_external<object_ship_wing_point_team>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+void scripting::internal::ade_serializable_external<object_ship_wing_point_team>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& luaValue, ubyte* data, int& packet_size) {
 	object_ship_wing_point_team oswpt;
-	value.getValue(scripting::api::l_OSWPT.Get(&oswpt));
+	luaValue.getValue(scripting::api::l_OSWPT.Get(&oswpt));
 	uint8_t oswpttype = static_cast<uint8_t>(oswpt.type);
 	ADD_DATA(oswpttype);
 	switch (oswpt.type) {

@@ -26,9 +26,9 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 
-void scripting::internal::ade_serializable_external<object_h>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+void scripting::internal::ade_serializable_external<object_h>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& luaValue, ubyte* data, int& packet_size) {
 	object_h obj;
-	value.getValue(scripting::api::l_Object.Get(&obj));
+	luaValue.getValue(scripting::api::l_Object.Get(&obj));
 	const ushort& netsig = obj.isValid() ? obj.objp()->net_signature : 0;
 	ADD_USHORT(netsig);
 }
