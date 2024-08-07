@@ -275,6 +275,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-friendly-stealth-visible",	OP_IS_FRIENDLY_STEALTH_VISIBLE,			1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-iff",							OP_IS_IFF,								2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-species",						OP_IS_SPECIES,							2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ai-class",					OP_IS_AI_CLASS,							2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ship-type",					OP_IS_SHIP_TYPE,						2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ship-class",					OP_IS_SHIP_CLASS,						2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -12271,13 +12272,15 @@ int sexp_functional_switch(int node)
 }
 
 // Goober5000 - added wing capability
-int sexp_is_iff(int n)
+int sexp_is_iff_or_species(int n, bool iff)
 {
-	int i, team;
+	int i, value;
 
-	// iff value is the first parameter, second is a list of one or more ships/wings to check to see if the
-	// iff value matches
-	team = iff_lookup(CTEXT(n));
+	// iff/species value is the first parameter, second is a list of one or more ships/wings to check to see if the value matches
+	if (iff)
+		value = iff_lookup(CTEXT(n));
+	else
+		value = species_info_lookup(CTEXT(n));
 	n = CDR(n);
 
 	for ( ; n != -1; n = CDR(n) )
@@ -12289,31 +12292,82 @@ int sexp_is_iff(int n)
 		{
 			case OSWPT_TYPE_SHIP:
 			{
-				// if the team doesn't match the team specified, return false immediately
-				if (oswpt.shipp()->team != team)
-					return SEXP_FALSE;
+				// if the field doesn't match the value specified, return false immediately
+				if (iff)
+				{
+					if (oswpt.shipp()->team != value)
+						return SEXP_FALSE;
+				}
+				else
+				{
+					if (Ship_info[oswpt.shipp()->ship_info_index].species != value)
+						return SEXP_FALSE;
+				}
 
 				break;
 			}
 
 			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				// if the team doesn't match the team specified, return false immediately
-				if (oswpt.p_objp()->team != team)
-					return SEXP_FALSE;
+				// if the field doesn't match the value specified, return false immediately
+				if (iff)
+				{
+					if (oswpt.p_objp()->team != value)
+						return SEXP_FALSE;
+				}
+				else
+				{
+					if (Ship_info[oswpt.p_objp()->ship_class].species != value)
+						return SEXP_FALSE;
+				}
 
 				break;
 			}
 
 			case OSWPT_TYPE_WING:
-			case OSWPT_TYPE_WING_NOT_PRESENT:
 			{
 				for (i = 0; i < oswpt.wingp()->current_count; i++)
 				{
-					// if the team doesn't match the team specified, return false immediately
-					if (Ships[oswpt.wingp()->ship_index[i]].team != team)
-						return SEXP_FALSE;
+					// if the field doesn't match the value specified, return false immediately
+					if (iff)
+					{
+						if (Ships[oswpt.wingp()->ship_index[i]].team != value)
+							return SEXP_FALSE;
+					}
+					else
+					{
+						if (Ship_info[Ships[oswpt.wingp()->ship_index[i]].ship_info_index].species != value)
+							return SEXP_FALSE;
+					}
 				}
+
+				break;
+			}
+
+			case OSWPT_TYPE_WING_NOT_PRESENT:
+			{
+				bool at_least_one = false;
+				for (const auto& pobj : Parse_objects)
+				{
+					if (pobj.wingnum == oswpt.wingnum)
+					{
+						at_least_one = true;
+
+						// if the field doesn't match the value specified, return false immediately
+						if (iff)
+						{
+							if (pobj.team != value)
+								return SEXP_FALSE;
+						}
+						else
+						{
+							if (Ship_info[pobj.ship_class].species != value)
+								return SEXP_FALSE;
+						}
+					}
+				}
+				if (!at_least_one)
+					return SEXP_FALSE;
 
 				break;
 			}
@@ -12326,18 +12380,23 @@ int sexp_is_iff(int n)
 					// ship is properly exited
 					if (oswpt.ship_entry()->exited_index >= 0)
 					{
-						// if the team doesn't match the team specified, return false immediately
-						if (Ships_exited[oswpt.ship_entry()->exited_index].team != team)
-							return SEXP_KNOWN_FALSE;
+						// if the field doesn't match the value specified, return false immediately
+						if (iff)
+						{
+							if (Ships_exited[oswpt.ship_entry()->exited_index].team != value)
+								return SEXP_KNOWN_FALSE;
+						}
+						else
+						{
+							if (Ship_info[Ships_exited[oswpt.ship_entry()->exited_index].ship_class].species != value)
+								return SEXP_KNOWN_FALSE;
+						}
 					}
 					// ship is in the EXITED state but probably in the process of exploding
 					else if (oswpt.has_shipp())
 					{
 						UNREACHABLE("With the addition of the ShipStatus::DEATH_ROLL state, this shouldn't happen");
-
-						// if the team doesn't match the team specified, return false immediately
-						if (oswpt.shipp()->team != team)
-							return SEXP_KNOWN_FALSE;
+						return SEXP_KNOWN_FALSE;
 					}
 					// ship has vanished
 					else
@@ -27397,7 +27456,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_IFF:
-				sexp_val = sexp_is_iff(node);
+				sexp_val = sexp_is_iff_or_species(node, true);
+				break;
+
+			case OP_IS_SPECIES:
+				sexp_val = sexp_is_iff_or_species(node, false);
 				break;
 
 			case OP_NOT:
@@ -30326,6 +30389,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_ARRIVED_DELAY:
 		case OP_HAS_DEPARTED_DELAY:
 		case OP_IS_IFF:
+		case OP_IS_SPECIES:
 		case OP_IS_AI_CLASS:
 		case OP_IS_SHIP_TYPE:
 		case OP_IS_SHIP_CLASS:
@@ -31742,6 +31806,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_IFF;
 			else
 				return OPF_SHIP_WING_WHOLETEAM;
+
+		case OP_IS_SPECIES:
+			if (!argnum)
+				return OPF_SPECIES;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_ADD_SHIP_GOAL:
 			if (!argnum)
@@ -35518,6 +35588,7 @@ int get_category(int op_id)
 		case OP_NUM_SHIPS_IN_BATTLE:
 		case OP_CURRENT_SPEED:
 		case OP_IS_IFF:
+		case OP_IS_SPECIES:
 		case OP_NUM_WITHIN_BOX:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_NUM_SHIPS_IN_WING:
@@ -36520,6 +36591,7 @@ int get_subcategory(int op_id)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_IFF:
+		case OP_IS_SPECIES:
 		case OP_IS_AI_CLASS:
 		case OP_IS_SHIP_CLASS:
 		case OP_IS_SHIP_TYPE:
@@ -37087,9 +37159,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000 - added wing capability
 	{ OP_IS_IFF, "Is IFF (Boolean operator)\r\n"
-		"\tTrue if ship(s) or wing(s) are all of the specified team.\r\n\r\n"
+		"\tTrue if ship(s) or wing(s) are all of the specified team/IFF.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
-		"\t1:\tTeam (\"friendly\", \"hostile\", \"neutral\", or \"unknown\").\r\n"
+		"\t1:\tTeam (e.g. \"friendly\", \"hostile\", \"neutral\", \"unknown\").\r\n"
+		"\tRest:\tName of ship or wing to check (ship/wing does not need to be in-mission)." },
+
+	// Goober5000
+	{ OP_IS_SPECIES, "Is Species (Boolean operator)\r\n"
+		"\tTrue if ship(s) or wing(s) are all of the specified species.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tSpecies (e.g. \"Terran\", \"Vasudan\", \"Shivan\").\r\n"
 		"\tRest:\tName of ship or wing to check (ship/wing does not need to be in-mission)." },
 
 	// Goober5000
