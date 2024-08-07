@@ -13324,34 +13324,32 @@ void sexp_player_use_ai(int flag)
 void sexp_set_friendly_damage_caps(int n) {
 	bool is_nan;
 	bool is_nan_forever;
+	ai_profile_t& aip = *The_mission.ai_profile;
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	ai_profile_t& aip = *The_mission.ai_profile;
-	for (auto &bfdc : aip.beam_friendly_damage_cap) {
-		bfdc = beam_friendly_cap;
+	for (auto &bfc : aip.beam_friendly_damage_cap) {
+		bfc = beam_friendly_cap;
 	}
 
 	n = CDR(n);
 	if (n < 0) {
 		return;
 	}
+
 	float weapon_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	std::array<float, NUM_SKILL_LEVELS> wfc_array; 
-	for (auto &wfc : wfc_array) {
+	for (auto &wfc : aip.weapon_friendly_damage_cap) {
 		wfc = weapon_friendly_cap;
 	}
-	aip.weapon_friendly_damage_cap.emplace(wfc_array);
 
 	n = CDR(n);
 	if (n < 0) {
 		return;
 	}
+	
 	float weapon_self_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	std::array<float, NUM_SKILL_LEVELS> wsc_array; 
-	for (auto &wsc : wsc_array) {
+	for (auto &wsc : aip.weapon_self_damage_cap) {
 		wsc = weapon_self_cap;
 	}
-	aip.weapon_self_damage_cap.emplace(wsc_array);
 }
 
 // Karajorma

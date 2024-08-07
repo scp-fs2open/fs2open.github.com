@@ -59,8 +59,8 @@ public:
 	
 	float subsys_damage_scale[NUM_SKILL_LEVELS];			// damage applied to a player subsystem
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS];		// damage cap values for friendly beam fire
-	tl::optional<std::array<float, NUM_SKILL_LEVELS>> weapon_friendly_damage_cap;
-	tl::optional<std::array<float, NUM_SKILL_LEVELS>> weapon_self_damage_cap;
+	float weapon_friendly_damage_cap[NUM_SKILL_LEVELS];
+	float weapon_self_damage_cap[NUM_SKILL_LEVELS];
 	float turn_time_scale[NUM_SKILL_LEVELS];				// speed at which enemy ships turn
 	float glide_attack_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "glide attack" move
 	float circle_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "circle strafe" move

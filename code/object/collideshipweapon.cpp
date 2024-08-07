@@ -106,12 +106,12 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	// if this is friendly fire, we check for the friendly fire cap values
 	if (wp->team == shipp->team) {
-		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile->weapon_self_damage_cap.has_value()) {
+		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
 			// if this is a ship shooting itself, we use the self damage cap
-			damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap.value()[Game_skill_level]);
-		} else if (The_mission.ai_profile->weapon_friendly_damage_cap.has_value()) {
+			damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
+		} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 			// otherwise we use the friendly damage cap
-			damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap.value()[Game_skill_level]);
+			damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
 		}
 	}
 
