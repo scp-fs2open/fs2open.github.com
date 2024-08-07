@@ -28,7 +28,7 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
-
+extern int Game_skill_level;
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
 static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
@@ -103,6 +103,17 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	if (wip->damage_curve_idx >= 0)
 		damage *= Curves[wip->damage_curve_idx].GetValue(f2fl(Missiontime - wp->creation_time) / wip->lifetime);
+
+	// if this is friendly fire, we check for the friendly fire cap values
+	if (wp->team == shipp->team) {
+		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+			// if this is a ship shooting itself, we use the self damage cap
+			damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
+		} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+			// otherwise we use the friendly damage cap
+			damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+		}
+	}
 
 	// deterine whack whack
 	float		blast = wip->mass;

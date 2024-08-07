@@ -184,6 +184,14 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Max Beam Friendly Fire Damage:"))
 					parse_float_list(profile->beam_friendly_damage_cap, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Max Weapon Friendly Fire Damage:")) {
+					parse_float_list(profile->weapon_friendly_damage_cap, NUM_SKILL_LEVELS);
+				}
+					
+				if (optional_string("$Max Weapon Self Damage:")) {
+					parse_float_list(profile->weapon_self_damage_cap, NUM_SKILL_LEVELS);
+				}
+
 				if (optional_string("$Player Countermeasure Life Scale:"))
 					parse_float_list(profile->cmeasure_life_scale, NUM_SKILL_LEVELS);
 
@@ -761,8 +769,10 @@ void ai_profile_t::reset()
 		player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
-        beam_friendly_damage_cap[i] = 0;
-        turn_time_scale[i] = 0;
+        beam_friendly_damage_cap[i] = -1.f;
+		weapon_friendly_damage_cap[i] = -1.f;
+        weapon_self_damage_cap[i] = -1.f;
+		turn_time_scale[i] = 0;
         glide_attack_percent[i] = 0;
         circle_strafe_percent[i] = 0;
         glide_strafe_percent[i] = 0;
