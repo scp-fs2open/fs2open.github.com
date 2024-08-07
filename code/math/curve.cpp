@@ -9,47 +9,6 @@ int curve_get_by_name(const SCP_string& in_name) {
 	return find_item_with_name(Curves, in_name);
 }
 
-int pdf_to_cdf(int curve_index) {
-	Curve curve = Curves[curve_index];
-	SCP_vector<std::pair<float, float>> pdf_samples;
-	for (float x = 0.f; x < 1.f; x += 0.01f) {
-		pdf_samples.emplace_back(curve.GetValue(x), x);
-	}
-
-	std::sort(pdf_samples.begin(), pdf_samples.end());
-
-	SCP_vector<std::pair<float, float>> cdf_keyframes;
-
-	float last_x = 0.0f;
-	for (auto keyframe : pdf_samples) {
-		cdf_keyframes.emplace_back((keyframe.first + last_x), keyframe.second);
-		last_x = keyframe.first;
-	}
-	float final_x = cdf_keyframes.back().first;
-
-	SCP_string cdf_curve_name = curve.name + "_CDF";
-	Curve cdf_curve = Curve(cdf_curve_name);
-
-	for (auto cdf_keyframe : cdf_keyframes) {
-		curve_keyframe kframe;
-		kframe.pos.x = (cdf_keyframe.first /= final_x);
-		kframe.pos.y = cdf_keyframe.second;
-		kframe.interp_func = CurveInterpFunction::Linear;
-
-		cdf_curve.keyframes.push_back(kframe);
-	}
-	
-	for (int i = 0; i < Curves.size(); i++) {
-		Curve* existing_curve = &Curves[i];
-		if (existing_curve = &cdf_curve) {
-			return i;
-		}
-	}
-
-	Curves.push_back(cdf_curve);
-	return Curves.size();
-}
-
 void parse_curve_table(const char* filename) {
 	try
 	{
@@ -283,3 +242,54 @@ float Curve::GetValue(float x_val) const {
 			return 0.0f;
 	}
 }
+
+float Curve::GetValueIntegrated(float x_val) const
+{
+	float integrated_value = 0.f;
+
+	if (x_val < keyframes[0].pos.x) {
+		return (keyframes[0].pos.x - x_val) * keyframes[0].pos.y;
+	}
+
+	for (size_t i = 0; i < keyframes.size(); i++) {
+		const curve_keyframe* kframe = &keyframes[i];
+		float end_x = MIN(x_val, kframe->pos.x);
+		bool last_keyframe = false;
+		if (x_val <= kframe->pos.x) {
+			last_keyframe = true;
+		}
+		if (i == keyframes.size() - 1) {
+			integrated_value += (x_val - kframe->pos.x) * kframe->pos.y;
+			break;
+		}
+		const vec2d* next_pos = &keyframes[i+1].pos;
+		float t = (end_x - kframe->pos.x) / (next_pos->x - kframe->pos.x);
+		float out;
+		integrated_value += (end_x - kframe->pos.x) * kframe->pos.y;
+		switch (kframe->interp_func) {
+		case CurveInterpFunction::Constant:
+			break;
+		case CurveInterpFunction::Linear:
+			integrated_value += t * t * (next_pos->y - kframe->pos.y) * 0.5f;
+		case CurveInterpFunction::Polynomial:
+			out = kframe->param2 > 0.0f ? powf(t, kframe->param1 + 1.f) : (powf(1 - t, kframe->param1 + 1.f) + (kframe->param1 * t) + t - 1.f);
+			integrated_value += (out * (next_pos->y - kframe->pos.y))/(kframe->param1 + 1.f);
+		case CurveInterpFunction::Circular:
+			if (kframe->param2 > 0.0f) {
+				integrated_value += (next_pos->y - kframe->pos.y) * (0.5f * sqrtf(-(t - 2) * t) * (t - 1) + asin(sqrtf(t) / sqrtf(2.f)));
+			} else {
+				integrated_value += (next_pos->y - kframe->pos.y) * (0.5f * (-sqrtf(1.f - (t * t)) * t - asin(t)) + t);
+			}
+		case CurveInterpFunction::Curve:
+			// add 0.5 to ensure this behaves like rounding
+			integrated_value += (next_pos->y - kframe->pos.y) * (Curves[(int)(kframe->param1 + 0.5f)].GetValueIntegrated(t) - Curves[(int)(kframe->param1 + 0.5f)].GetValueIntegrated(0.f));
+		default:
+			UNREACHABLE("Unrecognized curve function");
+		}
+		if (last_keyframe) {
+			break;
+		}
+	}
+
+	return integrated_value;
+	}

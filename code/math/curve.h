@@ -37,6 +37,9 @@ public :
 	//Get
 	float GetValue(float x_val) const;
 
+	// Get
+	float GetValueIntegrated(float x_val) const;
+
 	//Set
 	void ParseData();
 };
