@@ -3013,7 +3013,7 @@ int beam_collide_ship(obj_pair *pair)
 	ship *shipp;
 	ship_info *sip;
 	weapon_info *bwi;
-	mc_info mc, mc_shield, mc_hull_enter, mc_hull_exit;
+	mc_info mc_hull_enter, mc_hull_exit, mc_shield, *mc;
 	int model_num;
 	float width;
 
@@ -3089,41 +3089,49 @@ int beam_collide_ship(obj_pair *pair)
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
-	// set up collision structs, part 1
-	mc.model_instance_num = shipp->model_instance_num;
-	mc.model_num = model_num;
-	mc.submodel_num = -1;
-	mc.orient = &ship_objp->orient;
-	mc.pos = &ship_objp->pos;
-	mc.p0 = &a_beam->last_start;
-	mc.p1 = &a_beam->last_shot;
+	// set up collision struct
+	mc_hull_enter.model_instance_num = shipp->model_instance_num;
+	mc_hull_enter.model_num = model_num;
+	mc_hull_enter.submodel_num = -1;
+	mc_hull_enter.orient = &ship_objp->orient;
+	mc_hull_enter.pos = &ship_objp->pos;
+	mc_hull_enter.p0 = &a_beam->last_start;
+	mc_hull_enter.p1 = &a_beam->last_shot;
 
 	// maybe do a sphereline
 	if (width > ship_objp->radius * BEAM_AREA_PERCENT) {
-		mc.radius = width * 0.5f;
-		mc.flags = MC_CHECK_SPHERELINE;
+		mc_hull_enter.radius = width * 0.5f;
+		mc_hull_enter.flags = MC_CHECK_SPHERELINE;
 	} else {
-		mc.flags = MC_CHECK_RAY;
+		mc_hull_enter.flags = MC_CHECK_RAY;
 	}
 
-	// set up collision structs, part 2
-	mc_shield = mc;
-	mc_hull_enter = mc;
-	mc_hull_exit = mc;
-	
-	// reverse this vector so that we check for exit holes as opposed to entrance holes
-	mc_hull_exit.p1 = &a_beam->last_start;
-	mc_hull_exit.p0 = &a_beam->last_shot;
+	// check all three kinds of collisions ---
+	int shield_collision, hull_enter_collision, hull_exit_collision;
 
-	// set flags
-	mc_shield.flags |= MC_CHECK_SHIELD;
+	if (pm->shield.ntris > 0) {
+		mc_shield = mc_hull_enter;
+		mc_shield.flags |= MC_CHECK_SHIELD;
+
+		shield_collision = model_collide(&mc_shield);
+	} else {
+		shield_collision = 0;
+	}
+
+	if (beam_will_tool_target(a_beam, ship_objp)) {
+		mc_hull_exit = mc_hull_enter;
+		mc_hull_exit.flags |= MC_CHECK_MODEL;
+
+		// reverse this vector so that we check for exit holes as opposed to entrance holes
+		std::swap(mc_hull_exit.p0, mc_hull_exit.p1);
+		hull_exit_collision = model_collide(&mc_hull_exit);
+	} else {
+		hull_exit_collision = 0;
+	}
+
 	mc_hull_enter.flags |= MC_CHECK_MODEL;
-	mc_hull_exit.flags |= MC_CHECK_MODEL;
-
-	// check all three kinds of collisions
-	int shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
-	int hull_enter_collision = model_collide(&mc_hull_enter);
-	int hull_exit_collision = (beam_will_tool_target(a_beam, ship_objp)) ? model_collide(&mc_hull_exit) : 0;
+	hull_enter_collision = model_collide(&mc_hull_enter);
+	// ---
 
     // If we have a range less than the "far" range, check if the ray actually hit within the range
     if (a_beam->range < BEAM_FAR_LENGTH
@@ -3211,14 +3219,16 @@ int beam_collide_ship(obj_pair *pair)
 	// see which impact we use
 	if (shield_collision && valid_hit_occurred)
 	{
-		mc = mc_shield;
+		mc = &mc_shield;
 		Assert(quadrant_num >= 0);
 	}
 	else if (hull_enter_collision)
 	{
-		mc = mc_hull_enter;
+		mc = &mc_hull_enter;
 		valid_hit_occurred = 1;
 	}
+	else
+		mc = nullptr;
 
 	// if we got a hit
 	if (valid_hit_occurred)
@@ -3226,7 +3236,7 @@ int beam_collide_ship(obj_pair *pair)
 		// since we might have two collisions handled the same way, let's loop over both of them
 		mc_info *mc_array[2];
 		int mc_size = 1;
-		mc_array[0] = &mc;
+		mc_array[0] = mc;
 		if (hull_exit_collision)
 		{
 			mc_array[1] = &mc_hull_exit;
