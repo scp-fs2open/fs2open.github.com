@@ -63,6 +63,7 @@ public:
 
 	inline bool isNever() const { return m_val == 0; }
 	inline bool isImmediate() const { return m_val == 1; }
+	inline bool isFinite() const { return isValid() && !isNever(); }
 };
 
 // For converting from old-style timestamps:
