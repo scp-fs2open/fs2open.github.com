@@ -4108,9 +4108,10 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
-	//Cyborg - this `else return;` would force the secondary indicator off if a dumbfire had a longer range than the primaries.
-	//Sure this is not a very common case, but we're safe from any ill effects because we're not going to try to render 
-	//any primary indicators after this point anyway (the first argument for renderIndicator is forced to 0 below).  
+	//Cyborg - this `else return;` would force the secondary indicator off if no primaries are available.
+	//Sure this is not a very common case, but we don't need the early return.
+	//We are safe from any ill effects because we're not going to try to render any primary indicators 
+	//after this point anyway (the first argument for renderIndicator is forced to 0 below).  
 	//Anyone who rewrites this function to somehow re-evaluate primary indicators will have to revist this.
 	//else return;
 
