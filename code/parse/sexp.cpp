@@ -13327,8 +13327,11 @@ void sexp_set_friendly_damage_caps(int n) {
 	ai_profile_t& aip = *The_mission.ai_profile;
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	for (auto &bfc : aip.beam_friendly_damage_cap) {
-		bfc = beam_friendly_cap;
+	if (is_nan_forever) {
+		return;
+	}
+	if (!is_nan) {
+		aip.beam_friendly_damage_cap[Game_skill_level] = beam_friendly_cap;
 	}
 
 	n = CDR(n);
@@ -13337,8 +13340,11 @@ void sexp_set_friendly_damage_caps(int n) {
 	}
 
 	float weapon_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	for (auto &wfc : aip.weapon_friendly_damage_cap) {
-		wfc = weapon_friendly_cap;
+	if (is_nan_forever) {
+		return;
+	}
+	if (!is_nan) {
+		aip.weapon_friendly_damage_cap[Game_skill_level] = weapon_friendly_cap;
 	}
 
 	n = CDR(n);
@@ -13347,8 +13353,11 @@ void sexp_set_friendly_damage_caps(int n) {
 	}
 	
 	float weapon_self_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	for (auto &wsc : aip.weapon_self_damage_cap) {
-		wsc = weapon_self_cap;
+	if (is_nan_forever) {
+		return;
+	}
+	if (!is_nan) {
+		aip.weapon_self_damage_cap[Game_skill_level] = weapon_self_cap;
 	}
 }
 
@@ -32055,7 +32064,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_VARIABLE_NAME;
 
 		case OP_SET_FRIENDLY_DAMAGE_CAPS:
-			return OPF_POSITIVE;
+			return OPF_NUMBER;
 		case OP_ALLOW_TREASON:
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
@@ -40587,10 +40596,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Kestrellius
 	{ OP_SET_FRIENDLY_DAMAGE_CAPS, "set-friendly-damage-caps\r\n"
-		"\tSets limits on damage weapons and beams can do to friendly targets. Takes 1 to 3 arguments.\r\nArguments left blank will leave the values unmodified.\r\n"
-		"\t1:\tMaximum damage beams can do to targets on the same team as the firer."
-		"\t2:\tMaximum damage weapons (and their shockwaves) can do to targets on the same team as the firer."
-		"\t3:\tMaximum damage weapons (and their shockwaves) can do to their firer."
+		"\tSets limits on damage weapons and beams can do to friendly targets on the current difficulty level. Takes 1 to 3 arguments.\r\nArguments left blank will leave the values unmodified.\r\n"
+		"\t1:\tMaximum damage beams can do to targets on the same team as the firer. -1 means no limit."
+		"\t2:\tMaximum damage weapons (and their shockwaves) can do to targets on the same team as the firer. -1 means no limit."
+		"\t3:\tMaximum damage weapons (and their shockwaves) can do to their firer. -1 means no limit."
 	},
 
 	// Karajorma

@@ -766,13 +766,13 @@ void ai_profile_t::reset()
         shield_energy_scale[i] = 0;
         afterburner_recharge_scale[i] = 0;
         player_damage_scale[i] = 0;
-		player_damage_inflicted_scale[i] = 0;
+        player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
         beam_friendly_damage_cap[i] = -1.f;
-		weapon_friendly_damage_cap[i] = -1.f;
+        weapon_friendly_damage_cap[i] = -1.f;
         weapon_self_damage_cap[i] = -1.f;
-		turn_time_scale[i] = 0;
+        turn_time_scale[i] = 0;
         glide_attack_percent[i] = 0;
         circle_strafe_percent[i] = 0;
         glide_strafe_percent[i] = 0;

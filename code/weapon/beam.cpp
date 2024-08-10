@@ -4298,7 +4298,9 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 		damage *= Curves[wip->damage_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
 
 	// same team. yikes
-	if ( (b->team == Ships[objp->instance].team) && (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
+	if ( (b->team == Ships[objp->instance].team)
+			&& (The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
+			&& (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
 		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
