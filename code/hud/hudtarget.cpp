@@ -4039,6 +4039,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	//overwritten if using non-default leadIndicatorBehaviors, this is desired.
 	bank_to_fire = hud_get_best_primary_bank(&prange);
 	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
+	bool no_primary_indicator = false;
 
 	if (Lead_indicator_behavior != leadIndicatorBehavior::DEFAULT && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) {
 		vec3d averaged_lead_pos;
@@ -4067,6 +4068,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 				continue;
 			}
 
+			// Note! This is function call that actually determines if primary or secondary target gauges are going to be rendered.
 			frame_offset = pickFrame(weapon_range, srange, dist_to_target);
 
 			if (frame_offset >= 0) {
@@ -4082,6 +4084,10 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		if (average_instances > 0 && Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
 			averaged_lead_pos = averaged_lead_pos/i2fl(average_instances);
 			renderIndicator(frame_offset, targetp, &averaged_lead_pos);
+		
+		// This handles an edge case where secondary weapon indicators might not have been rendered, despite possibly being in range.
+		} else if ( frame_offset == -1) {
+			no_primary_indicator = true;
 		}
 	}
 	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
@@ -4089,7 +4095,11 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			prange = 0.0f; // no ballistic trajectory, primary is 'always out of range'
 		}
 
+		// Note! This is function call that actually determines if primary or secondary target gauges are going to be rendered.
 		frame_offset = pickFrame(prange, srange, dist_to_target);
+
+		// note here, that srange being -1.0f is indicative of the Dont_merge_indicators flag being used above,
+		// or the missile being a dumbfire.
 		if ( frame_offset < 0 && srange != -1.0f ) {
 			return;
 		}
@@ -4098,16 +4108,25 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
-	else return;
+	//Cyborg - this `else return;` would force the secondary indicator off if a dumbfire had a longer range than the primaries.
+	//Sure this is not a very common case, but we're safe from any ill effects because we're not going to try to render 
+	//any primary indicators after this point anyway (the first argument for renderIndicator is forced to 0 below).  
+	//Anyone who rewrites this function to somehow re-evaluate primary indicators will have to revist this.
+	//else return;
+
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
+	//Cyborg - This section mainly handles dumbfire indicators, unless Dont_merge_indicators is set, forcing a separate indicator
+	//for homing weapons. OR if no_primary_indicator is true (no primary indicator was drawn when in multiple or average mode)
+	//We are guaranteed (if the target is in the homing cone) to get here because in both of those situations srange is
+	//forced to -1.0f, precluding the early returns.
 	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
 		int bank=swp->current_secondary_bank;
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
-		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
+		//get out of here if the secondary weapon is a homer and we don't have independent indicator behavior
+		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] && !no_primary_indicator )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
