@@ -4,9 +4,13 @@
 #include "parse/parselo.h"
 #include "math/curve.h"
 
+#include <mpark/variant.hpp>
+
 #include <random>
 #include <type_traits>
 #include <limits>
+
+
 
 namespace util {
 
@@ -25,13 +29,14 @@ namespace {
  *
  * @ingroup randomUtils
  */
-template<typename T, size_t N>
-size_t parse_number_list(T (& list)[N]) {
+template <typename T, size_t N>
+size_t parse_number_list(T (&list)[N])
+{
 	ignore_white_space();
 
-	if (*Mp != '(')
-	{
-		// Probably one a single value so stuff that and don't parse a list. This makes it easier to specify single values
+	if (*Mp != '(') {
+		// Probably one a single value so stuff that and don't parse a list. This makes it easier to specify single
+		// values
 		float val;
 		stuff_float(&val);
 
@@ -48,7 +53,7 @@ size_t parse_number_list(T (& list)[N]) {
 
 	return num;
 }
-}
+} // namespace
 
 /**
  * @brief Generic class for generating numbers in a specific range
@@ -58,14 +63,14 @@ size_t parse_number_list(T (& list)[N]) {
  *
  * @ingroup randomUtils
  */
-template<typename Value, typename Distribution, typename Generator>
+template <typename Value, typename Distribution, typename Generator>
 class RandomRange {
- public:
+  public:
 	typedef Distribution DistributionType;
 	typedef Generator GeneratorType;
 	typedef Value ValueType;
 
- private:
+  private:
 	mutable GeneratorType m_generator;
 	mutable DistributionType m_distribution;
 
@@ -74,25 +79,25 @@ class RandomRange {
 	ValueType m_maxValue;
 	int m_curve = -1;
 
- public:
-	template<typename... Ts>
-	RandomRange(ValueType param1, ValueType param2, Ts&& ... distributionParameters) :
-		m_generator(std::random_device()()),
-		m_distribution(param1, param2, distributionParameters...) {
+  public:
+	template <typename... Ts>
+	RandomRange(ValueType param1, ValueType param2, Ts&&... distributionParameters)
+		: m_generator(std::random_device()()), m_distribution(param1, param2, distributionParameters...)
+	{
 		m_minValue = static_cast<ValueType>(param1);
 		m_maxValue = static_cast<ValueType>(param2);
 		m_constant = false;
 	}
 
-	explicit RandomRange(const ValueType& val) : RandomRange() {
+	explicit RandomRange(const ValueType& val) : RandomRange()
+	{
 		m_minValue = val;
 		m_maxValue = val;
 		m_constant = true;
 	}
 
-	RandomRange() :
-		m_generator(std::random_device()()),
-		m_distribution() {
+	RandomRange() : m_generator(std::random_device()()), m_distribution()
+	{
 		m_minValue = static_cast<ValueType>(0.0);
 		m_maxValue = static_cast<ValueType>(0.0);
 		m_constant = true;
@@ -102,7 +107,8 @@ class RandomRange {
 	 * @brief Determines the next random number of this range
 	 * @return The random number
 	 */
-	ValueType next() const {
+	ValueType next() const
+	{
 		if (m_constant) {
 			return m_minValue;
 		} else if (m_curve >= 0) {
@@ -120,7 +126,8 @@ class RandomRange {
 	 *
 	 * @return The minimum value
 	 */
-	ValueType min() const {
+	ValueType min() const
+	{
 		return m_minValue;
 	}
 
@@ -131,7 +138,8 @@ class RandomRange {
 	 *
 	 * @return The maximum value
 	 */
-	ValueType max() {
+	ValueType max()
+	{
 		return m_maxValue;
 	}
 };
@@ -143,10 +151,8 @@ class RandomRange {
  *
  * @ingroup randomUtils
  */
-template<typename Value>
-using NormalRange = RandomRange<Value,
-								std::normal_distribution<Value>,
-								std::minstd_rand>;
+template <typename Value>
+using NormalRange = RandomRange<Value, std::normal_distribution<Value>, std::minstd_rand>;
 
 /**
  * @brief A normal range which uses floats
@@ -161,16 +167,16 @@ typedef NormalRange<float> NormalFloatRange;
  *
  * @ingroup randomUtils
  */
-template<typename Value>
-NormalRange<Value> parseNormalRange() {
+template <typename Value>
+NormalRange<Value> parseNormalRange()
+{
 	Value valueList[2];
 	auto num = parse_number_list(valueList);
 
 	if (num == 0) {
 		error_display(0, "Need at least one value to form a random range!");
 		return NormalRange<Value>();
-	}
-	else if (num == 1) {
+	} else if (num == 1) {
 		return NormalRange<Value>(valueList[0]);
 	}
 
@@ -182,12 +188,12 @@ NormalRange<Value> parseNormalRange() {
  *
  * @ingroup randomUtils
  */
-template<typename Value>
+template <typename Value>
 using UniformRange = RandomRange<Value,
-								 typename std::conditional<std::is_integral<Value>::value,
-														   std::uniform_int_distribution<Value>,
-														   std::uniform_real_distribution<Value>>::type,
-								 std::minstd_rand>;
+	typename std::conditional<std::is_integral<Value>::value,
+		std::uniform_int_distribution<Value>,
+		std::uniform_real_distribution<Value>>::type,
+	std::minstd_rand>;
 
 /**
  * @brief A uniform range which uses floats
@@ -220,9 +226,10 @@ typedef UniformRange<uint> UniformUIntRange;
  *
  * @ingroup randomUtils
  */
-template<typename Value>
+template <typename Value>
 UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::min(),
-									  Value max = std::numeric_limits<Value>::max()) {
+	Value max = std::numeric_limits<Value>::max())
+{
 	Assertion(min <= max, "Invalid min-max values specified!");
 
 	Value valueList[2];
@@ -231,31 +238,30 @@ UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::mi
 	if (num == 0) {
 		error_display(0, "Need at least one value to form a random range!");
 		return UniformRange<Value>();
-	}
-	else if (num == 1) {
+	} else if (num == 1) {
 		return UniformRange<Value>(valueList[0]);
 	}
 
 	if (valueList[0] > valueList[1]) {
-		error_display(0, "Minimum value %f is more than maximum value %f!", (float) valueList[0], (float) valueList[1]);
+		error_display(0, "Minimum value %f is more than maximum value %f!", (float)valueList[0], (float)valueList[1]);
 		std::swap(valueList[0], valueList[1]);
 	}
 
 	if (valueList[0] < min) {
-		error_display(0, "First value (%f) is less than the minimum %f!", (float) valueList[0], (float) min);
+		error_display(0, "First value (%f) is less than the minimum %f!", (float)valueList[0], (float)min);
 		valueList[0] = min;
 	}
 	if (valueList[0] > max) {
-		error_display(0, "First value (%f) is greater than the maximum %f!", (float) valueList[0], (float) max);
+		error_display(0, "First value (%f) is greater than the maximum %f!", (float)valueList[0], (float)max);
 		valueList[0] = max;
 	}
 
 	if (valueList[1] < min) {
-		error_display(0, "Second value (%f) is less than the minimum %f!", (float) valueList[1], (float) min);
+		error_display(0, "Second value (%f) is less than the minimum %f!", (float)valueList[1], (float)min);
 		valueList[1] = min;
 	}
 	if (valueList[1] > max) {
-		error_display(0, "Second value (%f) is greater than the maximum %f!", (float) valueList[1], (float) max);
+		error_display(0, "Second value (%f) is greater than the maximum %f!", (float)valueList[1], (float)max);
 		valueList[1] = max;
 	}
 
@@ -265,12 +271,117 @@ UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::mi
 	} else {
 		return UniformRange<Value>(valueList[0], valueList[1]);
 	}
-
-	if (optional_string(",")) {
-		SCP_string name;
-		stuff_string(&name, F_NAME);
-		int pdf_curve = curve_get_by_name(name);
-		m_curve = pdf_to_cdf(pdf_curve);
-	}
 }
+
+class CurveNumberDistribution {
+	int m_curve;
+
+  public:
+	using result_type = float;
+	using param_type = int;
+	CurveNumberDistribution() : CurveNumberDistribution(-1) {}
+	CurveNumberDistribution(int curve) : m_curve(curve) {}
+	void reset() {}
+	inline int param()
+	{
+		return m_curve;
+	}
+	inline void param(int p)
+	{
+		m_curve = p;
+	}
+	template <typename Generator>
+	result_type operator()(Generator& generator, const param_type& curve)
+	{
+		float max_integral = Curves[curve].GetValueIntegrated(Curves[curve].keyframes.back().pos.x);
+		float rand =
+			std::generate_canonical<float, std::numeric_limits<float>::digits, Generator>(generator) * max_integral;
+		float lower_bound = Curves[curve].keyframes.front().pos.x;
+		float upper_bound = Curves[curve].keyframes.back().pos.x;
+		for (size_t count = 0; count < 16; count++) {
+			float current_pos = (lower_bound + upper_bound) / 2.f;
+			float current_value = Curves[curve].GetValueIntegrated(current_pos);
+			if (fl_equal(current_value, rand, max_integral * 0.01f)) {
+				return current_pos;
+			}
+			if (current_value > rand) {
+				upper_bound = current_pos;
+			} else {
+				lower_bound = current_pos;
+			}
+		}
+		return (lower_bound + upper_bound) / 2.f;
+	}
+	template <typename Generator>
+	result_type operator()(Generator& generator)
+	{
+		return this->operator()(generator, m_curve);
+	}
+	inline result_type min()
+	{
+		return Curves[m_curve].keyframes.front().pos.x;
+	}
+	inline result_type max()
+	{
+		return Curves[m_curve].keyframes.back().pos.x;
+	}
+	bool operator==(const CurveNumberDistribution& other)
+	{
+		return m_curve == other.m_curve;
+	}
+	bool operator!=(const CurveNumberDistribution& other)
+	{
+		return !(*this == other);
+	}
+};
+
+template <typename _RealType, typename _CharT, typename _Traits>
+std::basic_ostream<_CharT, _Traits>& operator<<(std::basic_ostream<_CharT, _Traits>& __os,
+	const CurveNumberDistribution& __x)
+{
+	__os << __x.param();
+	return __os;
+}
+
+template <typename _RealType, typename _CharT, typename _Traits>
+std::basic_istream<_CharT, _Traits>& operator>>(std::basic_istream<_CharT, _Traits>& __is,
+	const CurveNumberDistribution& __x)
+{
+	int curve;
+	__is >> curve;
+	__x.param(curve);
+	return __is;
+}
+
+using CurveFloatRange = RandomRange<float, CurveNumberDistribution, std::minstd_rand>;
+
+CurveFloatRange ParseCurveFloatRange() {
+	Value valueList[2];
+	auto num = parse_number_list(valueList);
+
+	if (num == 0) {
+		error_display(0, "Need at least one value to form a random range!");
+		return NormalRange<Value>();
+	} else if (num == 1) {
+		return NormalRange<Value>(valueList[0]);
+	}
+
+	return NormalRange<Value>(valueList[0], valueList[1]);
+}
+
+class ParsedRandomRange {
+	mpark::variant<UniformFloatRange, NormalFloatRange, CurveFloatRange> m_random_range;
+	ParsedRandomRange() {}
+public:
+	inline float next() {
+		return mpark::visit([] (auto& range) { return range.next(); }, m_random_range);
+	}
+	float min() const {
+
+	}
+	float max() const {
+
+	}
+};
+
 }

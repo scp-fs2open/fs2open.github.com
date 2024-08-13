@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
