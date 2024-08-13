@@ -54,6 +54,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
+#include "curve.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -2394,6 +2395,76 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	}
 
 	int weapon_info_index = shiphit_get_damage_weapon(other_obj);
+
+	if (other_obj_is_weapon) {
+		weapon_info* wip = &Weapon_info[weapon_info_index];
+		float damage_mult = 1.f;
+		float hull_dam_mult = 1.f;
+		float shield_dam_mult = 1.f;
+		float subsys_dam_mult = 1.f;
+
+		for (int c = 0; c < wip->curves.size(); c++) {
+			WeaponModularCurve* mod_curve = &wip->curves[c];
+			if (mod_curve->curve_idx < 0) {
+				Warning(LOCATION, "Curve does not exist!");
+				continue;
+			}
+
+			Curve curve = Curves[mod_curve->curve_idx];
+			float input = 1.0f;
+			float output = 1.0f;
+			switch (mod_curve->input) {
+				case WeaponCurveInput::LIFETIME:
+					input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
+					break;
+				case WeaponCurveInput::AGE:
+					input = f2fl(Missiontime - wp->creation_time);
+					break;
+				case WeaponCurveInput::VELOCITY:
+					input = wp->weapon_max_vel;
+					break;
+				case WeaponCurveInput::HEALTH:
+					if (wip->weapon_hitpoints > 0.f) {
+						input = weapon_obj->hull_strength/i2fl(wip->weapon_hitpoints);
+					} else {
+						input = 1.f;
+					}
+					break;
+				case WeaponCurveInput::PARENT_RADIUS:
+					input = Objects[weapon_obj->parent].radius;
+					break;
+				default:
+					continue;
+			}
+			float scaling_factor = wp->weapon_curve_data[c].first;
+			float translation = wp->weapon_curve_data[c].second;
+			input = (input / scaling_factor) + translation;
+			if (mod_curve->wraparound) {
+				float final_x = curve.keyframes.back().pos.x;
+				input = std::fmod(input, final_x);
+			}
+			output = curve.GetValue(input);
+			if (output < 0.f) {
+				output = 0.f;
+			}
+			switch (mod_curve->output) {
+				case WeaponCurveOutput::ALL_DAMAGE_MULT:
+					damage_mult *= output;
+					break;
+				case WeaponCurveOutput::HULL_DAMAGE_MULT:
+					hull_dam_mult *= output;
+					break;
+				case WeaponCurveOutput::SHIELD_DAMAGE_MULT:
+					shield_dam_mult *= output;
+					break;
+				case WeaponCurveOutput::SUBSYS_DAMAGE_MULT:
+					subsys_dam_mult *= output;
+					break;
+				default:
+					continue;
+			}
+		}
+	}
 	
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.

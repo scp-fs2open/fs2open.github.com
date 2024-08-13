@@ -53,6 +53,7 @@
 #include "tracing/Monitor.h"
 #include "graphics/light.h"
 #include "graphics/color.h"
+#include "curve.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -1289,9 +1290,82 @@ void obj_move_all_post(object *objp, float frametime)
 					}
 				}
 				if (cast_light) {
-					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+					weapon* wp = &Weapons[objp->instance];
+					weapon_info* wi = &Weapon_info[wp->weapon_info_index];
 					auto lp = lighting_profiles::current();
 					hdr_color light_color;
+
+					float intensity_mult = 1.f;
+					float radius_mult = 1.f;
+					float r_mult = 1.f;
+					float g_mult = 1.f;
+					float b_mult = 1.f;
+
+					for (int c = 0; c < wi->curves.size(); c++) {
+						WeaponModularCurve* mod_curve = &wi->curves[c];
+						if (mod_curve->curve_idx < 0) {
+							Warning(LOCATION, "Curve does not exist!");
+							continue;
+						}
+
+						Curve curve = Curves[mod_curve->curve_idx];
+						float input = 1.0f;
+						float output = 1.0f;
+						switch (mod_curve->input) {
+							case WeaponCurveInput::LIFETIME:
+								input = f2fl(Missiontime - wp->creation_time) / wi->lifetime;
+								break;
+							case WeaponCurveInput::AGE:
+								input = f2fl(Missiontime - wp->creation_time);
+								break;
+							case WeaponCurveInput::VELOCITY:
+								input = wp->weapon_max_vel;
+								break;
+							case WeaponCurveInput::HEALTH:
+								if (wi->weapon_hitpoints > 0.f) {
+									input = objp->hull_strength/i2fl(wi->weapon_hitpoints);
+								} else {
+									input = 1.f;
+								}
+								break;
+							case WeaponCurveInput::PARENT_RADIUS:
+								input = Objects[objp->parent].radius;
+								break;
+							default:
+								continue;
+						}
+						float scaling_factor = wp->weapon_curve_data[c].first;
+						float translation = wp->weapon_curve_data[c].second;
+						input = (input / scaling_factor) + translation;
+						if (mod_curve->wraparound) {
+							float final_x = curve.keyframes.back().pos.x;
+							input = std::fmod(input, final_x);
+						}
+						output = curve.GetValue(input);
+						if (output < 0.f) {
+							output = 0.f;
+						}
+						switch (mod_curve->output) {
+							case WeaponCurveOutput::LIGHT_INTENSITY_MULT:
+								intensity_mult *= output;
+								break;
+							case WeaponCurveOutput::LIGHT_RADIUS_MULT:
+								radius_mult *= output;
+								break;
+							case WeaponCurveOutput::LIGHT_R_MULT:
+								r_mult *= output;
+								break;
+							case WeaponCurveOutput::LIGHT_G_MULT:
+								g_mult *= output;
+								break;
+							case WeaponCurveOutput::LIGHT_B_MULT:
+								b_mult *= output;
+								break;
+							default:
+								continue;
+						}
+					}
+
 					// If there is no specific color set in the table, laser render weapons have a dynamic color.
 					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
 						// intensity is stored in the light color even if no user setting is done.
@@ -1300,24 +1374,28 @@ void obj_move_all_post(object *objp, float frametime)
 						color c;
 						weapon_get_laser_color(&c, objp);
 						light_color.set_rgb(&c);
+						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
+						light_color.i(light_color.i() * intensity_mult);
 					} else {
 						// If not a laser then all default information needed is stored in the weapon light color
 						light_color = hdr_color(&wi->light_color);
+						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
 					}
 					//handles both defaults and adjustments.
-					float r = wi->light_radius;
+					float light_radius = wi->light_radius * radius_mult;
 					float source_radius = objp->radius;
 					if (wi->render_type == WRT_LASER) {
-						r = lp->laser_light_radius.handle(r);
-						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
+						light_radius = lp->laser_light_radius.handle(light_radius);
+						light_color.i(lp->laser_light_brightness.handle(light_color.i()) * intensity_mult);
 					} else {
 						//Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
 						source_radius *= 0.05f;
-						r = lp->missile_light_radius.handle(r);
-						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
+						light_radius = lp->missile_light_radius.handle(light_radius) * radius_mult;
+						light_color.i(lp->missile_light_brightness.handle(light_color.i()) * intensity_mult);
+						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
 					}
-					if(r > 0.0f && light_color.i() > 0.0f)
-						light_add_point(&objp->pos, r, r, &light_color,source_radius);
+					if(light_radius > 0.0f && light_color.i() > 0.0f)
+						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
 				}
 			}
 

@@ -324,7 +324,6 @@ enum class WeaponCurveInput {
 	AGE,
 	VELOCITY,
 	HEALTH,
-	FRAMETIME,
 	PARENT_RADIUS,
 };
 
@@ -363,9 +362,9 @@ struct WeaponModularCurve {
 	WeaponCurveInput input;
 	WeaponCurveOutput output;
 	int curve_idx;
-	::util::UniformFloatRange scaling_factor;
-	::util::UniformFloatRange translation;
-	bool wraparound;
+	::util::UniformFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
+	::util::UniformFloatRange translation = ::util::UniformFloatRange(0.f);
+	bool wraparound = true;
 };
 
 struct weapon_info
@@ -406,6 +405,7 @@ struct weapon_info
 	float laser_headon_switch_ang;			// at what angle
 
 	float laser_length;
+	bool laser_length_by_frametime;
 	vec3d	bitmap_color;						// color modifier for main laser bitmap, unlike the 'laser colors' which affect the glow bitmap
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors

@@ -1188,6 +1188,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->laser_headon_switch_rate);
 	}
 
+	if (optional_string("@Laser Bitmap Color:")) {
+		stuff_vec3d(&wip->bitmap_color);
+	}
+
 	if(optional_string("@Laser Color:"))
 	{
 		// This might be confusing at first glance. If we're a modular table (!first_time),
@@ -1220,6 +1224,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("@Laser Length:")) {
 		stuff_float(&wip->laser_length);
+	}
+
+	if (optional_string("@Multiply Laser Length By Frametime:")) {
+		stuff_boolean(&wip->laser_length_by_frametime);
 	}
 
 	if (optional_string("@Laser Length Multiplier over Lifetime Curve:")) {
@@ -1364,9 +1372,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Damage Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->damage_curve_idx = curve_get_by_name(curve_name);
-		if (wip->damage_curve_idx < 0)
-			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+		WeaponModularCurve mod_curve;
+		mod_curve.input = WeaponCurveInput::LIFETIME;
+		mod_curve.output = WeaponCurveOutput::ALL_DAMAGE_MULT;
+		mod_curve.curve_idx = curve_get_by_name(curve_name);
+		if (mod_curve.curve_idx < 0)
+			Warning(LOCATION, "Unrecognized laser length curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+		wip->curves.push_back(mod_curve);
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1491,12 +1503,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						mod_curve.input = WeaponCurveInput::VELOCITY;
 					} else if (!stricmp(name_buf, NOX("HEALTH"))) {
 						mod_curve.input = WeaponCurveInput::HEALTH;
-					} else if (!stricmp(name_buf, NOX("FRAMETIME"))) {
-						mod_curve.input = WeaponCurveInput::FRAMETIME;
 					} else if (!stricmp(name_buf, NOX("PARENT RADIUS"))) {
 						mod_curve.input = WeaponCurveInput::PARENT_RADIUS;
 					} else {
-						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'VELOCITY', 'FRAMETIME', PARENT RADIUS'.", name_buf, wip->name);
+						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'VELOCITY', 'HEALTH', PARENT RADIUS'.", name_buf, wip->name);
 					}
 
 				required_string("+Output:");
@@ -9074,9 +9084,6 @@ void weapon_render(object* obj, model_draw_list *scene)
 							input = 1.f;
 						}
 						break;
-					case WeaponCurveInput::FRAMETIME:
-						input = flFrametime;
-						break;
 					case WeaponCurveInput::PARENT_RADIUS:
 						input = Objects[obj->parent].radius;
 						break;
@@ -9143,6 +9150,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 					default:
 						continue;
 				}
+			}
+
+			if (wip->laser_length_by_frametime) {
+				length_mult *= flFrametime;
 			}
 
 			float alphaf = 1.0f;
@@ -9536,6 +9547,7 @@ void weapon_info::reset()
 	this->laser_headon_switch_ang = -1.0f;
 	this->laser_headon_switch_rate = 2.0f;
 	this->laser_length = 10.0f;
+	this->laser_length_by_frametime = false;
 	this->bitmap_color = { 255.f, 255.f, 255.f };
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
