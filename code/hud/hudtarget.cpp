@@ -6542,7 +6542,6 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 
 	if (eye_vertex->flags&PF_OVERFLOW) {
 		//	This is unlikely to happen, but can if a clip goes through the player's eye.
-		Player_ai->target_objnum = -1;
 		if (!in_frame)
 			g3_end_frame();
 		return;
