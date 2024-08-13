@@ -13327,10 +13327,7 @@ void sexp_set_friendly_damage_caps(int n) {
 	ai_profile_t& aip = *The_mission.ai_profile;
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	if (is_nan_forever) {
-		return;
-	}
-	if (!is_nan) {
+	if (!is_nan && !is_nan_forever) {
 		aip.beam_friendly_damage_cap[Game_skill_level] = beam_friendly_cap;
 	}
 
@@ -13340,10 +13337,7 @@ void sexp_set_friendly_damage_caps(int n) {
 	}
 
 	float weapon_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	if (is_nan_forever) {
-		return;
-	}
-	if (!is_nan) {
+	if (!is_nan && !is_nan_forever) {
 		aip.weapon_friendly_damage_cap[Game_skill_level] = weapon_friendly_cap;
 	}
 
@@ -13353,10 +13347,7 @@ void sexp_set_friendly_damage_caps(int n) {
 	}
 	
 	float weapon_self_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
-	if (is_nan_forever) {
-		return;
-	}
-	if (!is_nan) {
+	if (!is_nan && !is_nan_forever) {
 		aip.weapon_self_damage_cap[Game_skill_level] = weapon_self_cap;
 	}
 }
