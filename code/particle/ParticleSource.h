@@ -198,11 +198,6 @@ class SourceOrigin {
  * SourceOrigin or gathered from the parent object, depending on host type. Host orientation is applied before position offset.
  * SourceOrientation is applied after position offset.
  * 
- * 
- * A source's SourceOrientation is distinct from its host orientation. The host orientation is either defined in
- * SourceOrigin or gathered from the parent object, depending on host type. Host orientation is applied before position offset.
- * SourceOrientation is applied after position offset.
- * 
  * An orientation can be either relative or global. In relative mode all transforms should be relative to the host
  * object and its orientation. In global mode, all directions are in world-space,
  * and host orientation is overridden completely (though it will still affect the orientation of position offsets).
