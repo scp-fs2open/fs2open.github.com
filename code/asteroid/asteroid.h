@@ -163,7 +163,7 @@ bool    asteroid_is_within_view(vec3d *pos, float range, bool range_override = f
 void	asteroid_level_init();
 void	asteroid_level_close();
 void	asteroid_create_all();
-void	asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets);
+void	asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> asteroid_types);
 void	asteroid_create_debris_field(int num_asteroids, int asteroid_speed, SCP_vector<int> debris_types, vec3d o_min, vec3d o_max, bool enhanced);
 void	asteroid_render(object* obj, model_draw_list* scene);
 void	asteroid_delete( object *asteroid_objp );

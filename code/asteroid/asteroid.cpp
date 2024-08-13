@@ -702,7 +702,7 @@ void remove_all_asteroids()
 }
 
 // will replace any existing asteroid or debris field with an asteroid field
-void asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets)
+void asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> asteroid_types)
 {
 	remove_all_asteroids();
 
@@ -740,15 +740,7 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.field_asteroid_type.clear();
 
-	if (brown) {
-		Asteroid_field.field_asteroid_type.push_back("Brown");
-	}
-	if (blue) {
-		Asteroid_field.field_asteroid_type.push_back("Blue");
-	}
-	if (orange) {
-		Asteroid_field.field_asteroid_type.push_back("Orange");
-	}
+	Asteroid_field.field_asteroid_type = std::move(asteroid_types);
 
 	Asteroid_field.min_bound = o_min;
 	Asteroid_field.max_bound = o_max;
@@ -765,8 +757,6 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 		Asteroid_field.inner_min_bound = i_min;
 		Asteroid_field.inner_max_bound = i_max;
 	}
-
-	Asteroid_field.target_names = std::move(targets);
 
 	// Only create asteroids if we have some to create
 	if ((!Asteroid_field.field_asteroid_type.empty()) && (num_asteroids > 0)) {
