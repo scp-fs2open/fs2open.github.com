@@ -3666,7 +3666,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_ASTEROID_TYPES:
-			if (get_list_valid_asteroid_subtypes().size() > 0) {
+			if (!get_list_valid_asteroid_subtypes().empty()) {
 				return 1;
 			}
 			return 0;
@@ -7539,7 +7539,7 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_asteroid_types()
+sexp_list_item *sexp_tree::get_listing_opf_asteroid_types()
 {
 	sexp_list_item head;
 
@@ -7554,7 +7554,7 @@ sexp_list_item* sexp_tree::get_listing_opf_asteroid_types()
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_debris_types()
+sexp_list_item *sexp_tree::get_listing_opf_debris_types()
 {
 	sexp_list_item head;
 

@@ -4059,6 +4059,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					for (const auto& item : list) {
 						if (!stricmp(CTEXT(node), item.c_str())) {
 							valid = true;
+							break;
 						}
 					}
 
@@ -16703,7 +16704,7 @@ void sexp_config_asteroid_field(int n)
 				}
 			}
 
-			asteroid_types.push_back(CTEXT(n));
+			asteroid_types.emplace_back(CTEXT(n));
 		}
 	}
 
