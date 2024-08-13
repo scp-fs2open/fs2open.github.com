@@ -648,6 +648,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-debriefing-persona",			OP_SET_DEBRIEFING_PERSONA,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-traitor-override",			OP_SET_TRAITOR_OVERRIDE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-friendly-damage-caps",		OP_SET_FRIENDLY_DAMAGE_CAPS,			1,	3,			SEXP_ACTION_OPERATOR,	},	// Kestrellius
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
@@ -13376,6 +13377,37 @@ void sexp_player_use_ai(int flag)
 	if (!flag) {
 		Player_ai->ai_override_flags.reset();
 		Player_obj->phys_info.flags &= ~PF_MANEUVER_NO_DAMP;
+	}
+}
+
+void sexp_set_friendly_damage_caps(int n) {
+	bool is_nan;
+	bool is_nan_forever;
+	ai_profile_t& aip = *The_mission.ai_profile;
+
+	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
+	if (!is_nan && !is_nan_forever) {
+		aip.beam_friendly_damage_cap[Game_skill_level] = beam_friendly_cap;
+	}
+
+	n = CDR(n);
+	if (n < 0) {
+		return;
+	}
+
+	float weapon_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
+	if (!is_nan && !is_nan_forever) {
+		aip.weapon_friendly_damage_cap[Game_skill_level] = weapon_friendly_cap;
+	}
+
+	n = CDR(n);
+	if (n < 0) {
+		return;
+	}
+	
+	float weapon_self_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
+	if (!is_nan && !is_nan_forever) {
+		aip.weapon_self_damage_cap[Game_skill_level] = weapon_self_cap;
 	}
 }
 
@@ -28338,6 +28370,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// Kestrellius
+			case OP_SET_FRIENDLY_DAMAGE_CAPS:
+				sexp_set_friendly_damage_caps(node);
+				sexp_val = SEXP_TRUE;
+				break; 
+
 			//Karajorma
 			case OP_ALLOW_TREASON:
 				sexp_allow_treason(node);
@@ -30856,6 +30894,7 @@ int query_operator_return_type(int op)
 		case OP_TRIGGER_SUBMODEL_ANIMATION:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_SET_FRIENDLY_DAMAGE_CAPS:
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_SET_ORDER_ALLOWED_TARGET:
@@ -32142,6 +32181,8 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_VARIABLE_NAME;
 
+		case OP_SET_FRIENDLY_DAMAGE_CAPS:
+			return OPF_NUMBER;
 		case OP_ALLOW_TREASON:
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
@@ -35940,6 +35981,7 @@ int get_category(int op_id)
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
 		case OP_SET_CAMERA_SHUDDER:
+		case OP_SET_FRIENDLY_DAMAGE_CAPS:
 		case OP_ALLOW_TREASON:
 		case OP_SHIP_COPY_DAMAGE:
 		case OP_CHANGE_SUBSYSTEM_NAME:
@@ -36362,6 +36404,7 @@ int get_subcategory(int op_id)
 		case OP_SHIP_SET_DAMAGE_TYPE:
 		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
 		case OP_FIELD_SET_DAMAGE_TYPE:
+		case OP_SET_FRIENDLY_DAMAGE_CAPS:
 			return CHANGE_SUBCATEGORY_ARMOR_AND_DAMAGE_TYPES;
 
 		case OP_BEAM_FIRE:
@@ -40687,6 +40730,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_PLAYER_NOT_USE_AI, "player-not-use-ai\r\n"
 		"\tCauses the player's ship to not be controlled by the FreeSpace AI.  Takes 0 arguments.\r\n"
+	},
+
+	// Kestrellius
+	{ OP_SET_FRIENDLY_DAMAGE_CAPS, "set-friendly-damage-caps\r\n"
+		"\tSets limits on damage weapons and beams can do to friendly targets on the current difficulty level. Takes 1 to 3 arguments.\r\nArguments left blank will leave the values unmodified.\r\n"
+		"\t1:\tMaximum damage beams can do to targets on the same team as the firer. -1 means no limit."
+		"\t2:\tMaximum damage weapons (and their shockwaves) can do to targets on the same team as the firer. -1 means no limit."
+		"\t3:\tMaximum damage weapons (and their shockwaves) can do to their firer. -1 means no limit."
 	},
 
 	// Karajorma
