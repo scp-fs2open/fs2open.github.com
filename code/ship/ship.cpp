@@ -9287,7 +9287,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
 
 					// Use the position since the ship is going to be invalid soon
-					source.moveTo(&objp->pos);
+					source.moveTo(&objp->pos, &objp->orient);
 					source.setVelocity(&objp->phys_info.vel);
 
 					source.finish();
@@ -12919,6 +12919,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
+							vec3d dir;
+							dir = pm->gun_banks[bank_to_fire].norm[pt];
 							// Use 0 instead of bank_to_fire as index to external weapon model firingpoints 
 							if (weapon_model && weapon_model->n_guns) {
 								if (winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
@@ -13046,7 +13048,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								}
 							}
 							// create the muzzle flash effect
-							shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon_idx );
+							shipfx_flash_create( obj, sip->model_num, &pnt, &dir, 1, weapon_idx );
 
 							// maybe shudder the ship - if its me
 							if((winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -13731,7 +13733,9 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				pnt_index = 0;
 			}
 			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
-			pnt = pm->missile_banks[bank].pnt[pnt_index++];
+			pnt = pm->missile_banks[bank].pnt[pnt_index];
+			vec3d dir;
+			dir = pm->missile_banks[bank].norm[pnt_index++];
 
 			polymodel *weapon_model = NULL;
 			if(wip->external_model_num >= 0){
@@ -13787,7 +13791,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				has_fired = true;
 
 				// create the muzzle flash effect
-				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon_idx);
+				shipfx_flash_create(obj, sip->model_num, &pnt, &dir, 0, weapon_idx);
 
 				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 					// calculate some arbitrary value between 100

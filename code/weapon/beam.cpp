@@ -3972,8 +3972,9 @@ void beam_handle_collisions(beam *b)
 						// stream of fire for big ships
 						if (width <= Objects[target].radius * BEAM_AREA_PERCENT) {
 							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
-							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
-							particleSource.setOrientationFromNormalizedVec(&fvec);
+							matrix fvec_orient;
+							vm_vector_2_matrix_norm(&fvec_orient, &fvec);
+							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world, &fvec_orient);
 							particleSource.setOrientationNormal(&worldNormal);
 
 							particleSource.finish();
@@ -4000,15 +4001,14 @@ void beam_handle_collisions(beam *b)
 					}
 
 					auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
-					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
-					particleSource.setOrientationNormal(&worldNormal);
-
 					vec3d fvec;
 					vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-
+					matrix fvec_orient = vmd_identity_matrix;
 					if (!IS_VEC_NULL(&fvec)) {
-						particleSource.setOrientationFromVec(&fvec);
+						vm_vector_2_matrix_norm(&fvec_orient, &fvec);
 					}
+					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world, &fvec_orient);
+					particleSource.setOrientationNormal(&worldNormal);
 
 					particleSource.finish();
 				}
