@@ -156,7 +156,7 @@ namespace os
 			//error handler for Lua.
 			if (format == NULL)
 			{
-				msgStream << "LUA ERROR: " << lua_tostring(L, -1);
+				msgStream << "LUA ERROR: " << lua_tostring_nullsafe(L, -1);
 				lua_pop(L, -1);
 			}
 			else
@@ -186,9 +186,9 @@ namespace os
 				lua_remove(L, -2);
 
 				if (lua_pcall(L, 0, 1, 0) != 0)
-					msgStream << "Error while retrieving stack: " << lua_tostring(L, -1);
+					msgStream << "Error while retrieving stack: " << lua_tostring_nullsafe(L, -1);
 				else
-					msgStream << lua_tostring(L, -1);
+					msgStream << lua_tostring_nullsafe(L, -1);
 
 				lua_pop(L, 1);
 			}
