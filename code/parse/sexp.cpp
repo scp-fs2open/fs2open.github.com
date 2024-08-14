@@ -16381,7 +16381,7 @@ void sexp_toggle_asteroid_field(int n)
 	Asteroids_enabled = is_sexp_true(n);
 }
 
-void sexp_set_asteroid_field(int n)
+void sexp_set_asteroid_field(int n, bool new_sexp)
 {
 	bool is_nan, is_nan_forever;
 
@@ -16405,25 +16405,27 @@ void sexp_set_asteroid_field(int n)
 
 	SCP_vector<SCP_string> asteroid_types;
 
-	if (n >= 0) {
-		if (is_sexp_true(n)) {
-			asteroid_types.push_back("Brown");
+	if (!new_sexp) {
+		if (n >= 0) {
+			if (is_sexp_true(n)) {
+				asteroid_types.push_back("Brown");
+			}
+			n = CDR(n);
 		}
-		n = CDR(n);
-	}
 
-	if (n >= 0) {
-		if (is_sexp_true(n)) {
-			asteroid_types.push_back("Blue");
+		if (n >= 0) {
+			if (is_sexp_true(n)) {
+				asteroid_types.push_back("Blue");
+			}
+			n = CDR(n);
 		}
-		n = CDR(n);
-	}
 
-	if (n >= 0) {
-		if (is_sexp_true(n)) {
-			asteroid_types.push_back("Orange");
+		if (n >= 0) {
+			if (is_sexp_true(n)) {
+				asteroid_types.push_back("Orange");
+			}
+			n = CDR(n);
 		}
-		n = CDR(n);
 	}
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
@@ -16485,13 +16487,30 @@ void sexp_set_asteroid_field(int n)
 	}
 
 	SCP_vector<SCP_string> targets;
-	if (n >= 0) {
-		for (; n >= 0; true ? n = CDR(n) : n = -1) {
-			auto ship_entry = eval_ship(n);
-			if (!ship_entry)
-				continue;
+	if (!new_sexp) {
+		if (n >= 0) {
+			for (; n >= 0; true ? n = CDR(n) : n = -1) {
+				auto ship_entry = eval_ship(n);
+				if (!ship_entry)
+					continue;
 
-			targets.push_back(ship_entry->name);
+				targets.push_back(ship_entry->name);
+			}
+		}
+	} else {
+		if (n >= 0) {
+			auto list = get_list_valid_asteroid_subtypes();
+			for (; n >= 0; true ? n = CDR(n) : n = -1) {
+
+				// Verify that it's a valid asteroid type
+				for (const auto& item : list) {
+					if (stricmp(CTEXT(n), item.c_str())) {
+						continue;
+					}
+				}
+
+				asteroid_types.emplace_back(CTEXT(n));
+			}
 		}
 	}
 
@@ -16516,11 +16535,13 @@ void sexp_set_asteroid_field(int n)
 		i_max,
 		std::move(asteroid_types));
 
-	Asteroid_field.target_names = std::move(targets);
+	if (!new_sexp) {
+		Asteroid_field.target_names = std::move(targets);
+	}
 
 }
 
-void sexp_set_debris_field(int n)
+void sexp_set_debris_field(int n, bool new_sexp)
 {
 	bool is_nan, is_nan_forever;
 
@@ -16541,28 +16562,30 @@ void sexp_set_debris_field(int n)
 	}
 
 	SCP_vector<int> debris_types;
-	if (n >= 0) {
-		int debris1 = get_asteroid_index(CTEXT(n));
-		if (debris1 > 0) {
-			debris_types.push_back(debris1);
+	if (!new_sexp) {
+		if (n >= 0) {
+			int debris1 = get_asteroid_index(CTEXT(n));
+			if (debris1 > 0) {
+				debris_types.push_back(debris1);
+			}
+			n = CDR(n);
 		}
-		n = CDR(n);
-	}
 
-	if (n >= 0) {
-		int debris2 = get_asteroid_index(CTEXT(n));
-		if (debris2 > 0) {
-			debris_types.push_back(debris2);
+		if (n >= 0) {
+			int debris2 = get_asteroid_index(CTEXT(n));
+			if (debris2 > 0) {
+				debris_types.push_back(debris2);
+			}
+			n = CDR(n);
 		}
-		n = CDR(n);
-	}
 
-	if (n >= 0) {
-		int debris3 = get_asteroid_index(CTEXT(n));
-		if (debris3 > 0) {
-			debris_types.push_back(debris3);
+		if (n >= 0) {
+			int debris3 = get_asteroid_index(CTEXT(n));
+			if (debris3 > 0) {
+				debris_types.push_back(debris3);
+			}
+			n = CDR(n);
 		}
-		n = CDR(n);
 	}
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
@@ -16602,6 +16625,20 @@ void sexp_set_debris_field(int n)
 
 	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
 	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
+
+	if (new_sexp) {
+		if (n >= 0) {
+			for (; n >= 0; true ? n = CDR(n) : n = -1) {
+
+				// Verify that it's a valid debris type
+				auto idx = get_asteroid_index(CTEXT(n));
+				if (idx < 0)
+					continue;
+
+				debris_types.push_back(idx);
+			}
+		}
+	}
 
 	asteroid_create_debris_field(
 		num_asteroids,
@@ -16610,197 +16647,6 @@ void sexp_set_debris_field(int n)
 		o_min,
 		o_max,
 		enhanced);
-}
-
-void sexp_config_asteroid_field(int n)
-{
-	bool is_nan, is_nan_forever;
-
-	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
-	for (int i = 0; i < 3; i++) {
-
-		if (n >= 0) {
-			int temp = eval_num(n, is_nan, is_nan_forever);
-			if (is_nan || is_nan_forever)
-				return;
-
-			if (i == 0)
-				num_asteroids = temp;
-			else if (i == 1)
-				field_type = temp;
-			else
-				asteroid_speed = temp;
-			n = CDR(n);
-		}
-	}
-
-	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
-	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-
-	for (int i = 0; i < 6; i++) {
-
-		if (n >= 0) {
-			int temp = eval_num(n, is_nan, is_nan_forever);
-			if (is_nan || is_nan_forever)
-				return;
-
-			if (i == 0)
-				o_minx = temp;
-			else if (i == 1)
-				o_maxx = temp;
-			else if (i == 2)
-				o_miny = temp;
-			else if (i == 3)
-				o_maxy = temp;
-			else if (i == 4)
-				o_minz = temp;
-			else
-				o_maxz = temp;
-			n = CDR(n);
-		}
-	}
-
-	bool inner_box = false;
-	if (n >= 0) {
-		inner_box = is_sexp_true(n);
-		n = CDR(n);
-	}
-
-	int i_minx = -500, i_miny = -500, i_minz = -500;
-	int i_maxx = 500, i_maxy = 500, i_maxz = 500;
-
-	for (int i = 0; i < 6; i++) {
-
-		if (n >= 0) {
-			int temp = eval_num(n, is_nan, is_nan_forever);
-			if (is_nan || is_nan_forever)
-				return;
-
-			if (i == 0)
-				i_minx = temp;
-			else if (i == 1)
-				i_maxx = temp;
-			else if (i == 2)
-				i_miny = temp;
-			else if (i == 3)
-				i_maxy = temp;
-			else if (i == 4)
-				i_minz = temp;
-			else
-				i_maxz = temp;
-			n = CDR(n);
-		}
-	}
-
-	SCP_vector<SCP_string> asteroid_types;
-	if (n >= 0) {
-		auto list = get_list_valid_asteroid_subtypes();
-		for (; n >= 0; true ? n = CDR(n) : n = -1) {
-
-			// Verify that it's a valid asteroid type
-			for (const auto& item : list) {
-				if (stricmp(CTEXT(n), item.c_str())) {
-					continue;
-				}
-			}
-
-			asteroid_types.emplace_back(CTEXT(n));
-		}
-	}
-
-	if (num_asteroids > MAX_ASTEROIDS) {
-		num_asteroids = MAX_ASTEROIDS;
-	}
-
-	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
-	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
-
-	vec3d i_min = vm_vec_new((float)i_minx, (float)i_miny, (float)i_minz);
-	vec3d i_max = vm_vec_new((float)i_maxx, (float)i_maxy, (float)i_maxz);
-
-	asteroid_create_asteroid_field(num_asteroids,
-		field_type,
-		asteroid_speed,
-		o_min,
-		o_max,
-		inner_box,
-		i_min,
-		i_max,
-		std::move(asteroid_types));
-}
-
-void sexp_config_debris_field(int n)
-{
-	bool is_nan, is_nan_forever;
-
-	int num_asteroids = 0, asteroid_speed = 0;
-	for (int i = 0; i < 2; i++) {
-
-		if (n >= 0) {
-			int temp = eval_num(n, is_nan, is_nan_forever);
-			if (is_nan || is_nan_forever)
-				return;
-
-			if (i == 0)
-				num_asteroids = temp;
-			else
-				asteroid_speed = temp;
-			n = CDR(n);
-		}
-	}
-
-	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
-	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-	for (int i = 0; i < 6; i++) {
-
-		if (n >= 0) {
-			int temp = eval_num(n, is_nan, is_nan_forever);
-			if (is_nan || is_nan_forever)
-				return;
-
-			if (i == 0)
-				o_minx = temp;
-			else if (i == 1)
-				o_maxx = temp;
-			else if (i == 2)
-				o_miny = temp;
-			else if (i == 3)
-				o_maxy = temp;
-			else if (i == 4)
-				o_minz = temp;
-			else
-				o_maxz = temp;
-			n = CDR(n);
-		}
-	}
-
-	bool enhanced = false;
-	if (n >= 0) {
-		enhanced = is_sexp_true(n);
-		n = CDR(n);
-	}
-
-	if (num_asteroids > MAX_ASTEROIDS) {
-		num_asteroids = MAX_ASTEROIDS;
-	}
-
-	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
-	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
-
-	SCP_vector<int> debris_types;
-	if (n >= 0) {
-		for (; n >= 0; true ? n = CDR(n) : n = -1) {
-
-			// Verify that it's a valid debris type
-			auto idx = get_asteroid_index(CTEXT(n));
-			if (idx < 0)
-				continue;
-
-			debris_types.push_back(idx);
-		}
-	}
-
-	asteroid_create_debris_field(num_asteroids, asteroid_speed, std::move(debris_types), o_min, o_max, enhanced);
 }
 
 void sexp_config_field_targets(int n)
@@ -28841,22 +28687,22 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SET_ASTEROID_FIELD:
-				sexp_set_asteroid_field(node);
+				sexp_set_asteroid_field(node, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_DEBRIS_FIELD:
-				sexp_set_debris_field(node);
+				sexp_set_debris_field(node, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CONFIG_ASTEROID_FIELD:
-				sexp_config_asteroid_field(node);
+				sexp_set_asteroid_field(node, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CONFIG_DEBRIS_FIELD:
-				sexp_config_debris_field(node);
+				sexp_set_debris_field(node, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
