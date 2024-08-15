@@ -175,13 +175,14 @@ void resolve_iff_data()
 			int target_iff = iff_lookup(observed_color.iff_name);
 
 			// valid?
-			if (target_iff >= 0)
+			if (target_iff >= 0) {
 				iff->observed_color_map[target_iff] = observed_color.color_index;
-			else
+			} else{
 				Warning(LOCATION,
 					"Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n",
 					observed_color.iff_name,
 					iff->iff_name);
+			}
 		}
 
 		// resolve the accessibility observed color list names
@@ -190,13 +191,14 @@ void resolve_iff_data()
 			int target_iff = iff_lookup(observed_color.iff_name);
 
 			// valid?
-			if (target_iff >= 0)
+			if (target_iff >= 0) {
 				iff->accessibility_observed_color_map[target_iff] = observed_color.color_index;
-			else
+			} else {
 				Warning(LOCATION,
 					"Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n",
 					observed_color.iff_name,
 					iff->iff_name);
+			}
 		}
 
 		// resolve the all teams at war relationships
