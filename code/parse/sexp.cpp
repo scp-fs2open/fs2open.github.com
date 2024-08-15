@@ -16679,26 +16679,27 @@ void sexp_config_field_targets(int n)
 	}
 
 	if (targets.size() == 0) {
-		if (!toggle) {
-			Asteroid_field.target_names.clear();
-		} else {
+		if (toggle) {
 			// No ships provided to add so abort
 			return;
-		}
-	}
-
-	if (toggle) {
-		// Add the targets
-		for (const auto& ship : targets) {
-			// Check if the ship is already in the target_names
-			if (std::find(Asteroid_field.target_names.begin(), Asteroid_field.target_names.end(), ship) == Asteroid_field.target_names.end()) {
-				Asteroid_field.target_names.push_back(ship);
-			}
+		} else {
+			Asteroid_field.target_names.clear();
+			return;
 		}
 	} else {
-		// Remove the targets
-		for (const auto& ship : targets) {
-			Asteroid_field.target_names.erase(std::remove(Asteroid_field.target_names.begin(), Asteroid_field.target_names.end(), ship), Asteroid_field.target_names.end());
+		if (toggle) {
+			// Add the targets
+			for (const auto& ship : targets) {
+				// Check if the ship is already in the target_names
+				if (std::find(Asteroid_field.target_names.begin(), Asteroid_field.target_names.end(), ship) == Asteroid_field.target_names.end()) {
+					Asteroid_field.target_names.push_back(ship);
+				}
+			}
+		} else {
+			// Remove the targets
+			for (const auto& ship : targets) {
+				Asteroid_field.target_names.erase(std::remove(Asteroid_field.target_names.begin(), Asteroid_field.target_names.end(), ship), Asteroid_field.target_names.end());
+			}
 		}
 	}
 }
