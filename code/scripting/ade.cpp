@@ -172,9 +172,9 @@ int ade_index_handler(lua_State* L) {
 	lua_pop(L, 1);    //WMC - metatable
 
 	if (type_name != nullptr) {
-		LuaError(L, "Could not find index '%s' in type '%s'", lua_tostring(L, key_ldx), type_name);
+		LuaError(L, "Could not find index '%s' in type '%s'", lua_tostring_nullsafe(L, key_ldx), type_name);
 	} else {
-		LuaError(L, "Could not find index '%s'", lua_tostring(L, key_ldx));
+		LuaError(L, "Could not find index '%s'", lua_tostring_nullsafe(L, key_ldx));
 	}
 	return 0;
 }
@@ -264,7 +264,7 @@ const SCP_vector<SCP_string>& ade_manager::getTypeNames() const { return _type_n
 
 static int deprecatedFunctionHandler(lua_State* L)
 {
-	const char* functionName = lua_tostring(L, lua_upvalueindex(1));
+	const char* functionName = lua_tostring_nullsafe(L, lua_upvalueindex(1));
 	LuaError(L,
 			 "Deprecated function '%s' has been called that is not available in the targeted engine version. Check "
 			 "the documentation for a possible replacement.",
@@ -839,7 +839,7 @@ SCP_string ade_tostring(lua_State *L, int argnum, bool add_typeinfo)
 			break;
 
 		case LUA_TSTRING:
-			s = lua_tostring(L, argnum);
+			s = lua_tostring_nullsafe(L, argnum);
 			if (add_typeinfo)
 				sprintf(buf, "String [%s]", s);
 			else
@@ -868,13 +868,10 @@ SCP_string ade_tostring(lua_State *L, int argnum, bool add_typeinfo)
 				lua_pushnil(L);
 				if (lua_next(L, argnum))
 				{
-					firstkey = lua_tostring(L, -2);
-					if (firstkey != nullptr)
-					{
-						buf += ", First key: [";
-						buf += firstkey;
-						buf += "]";
-					}
+					firstkey = lua_tostring_nullsafe(L, -2);
+					buf += ", First key: [";
+					buf += firstkey;
+					buf += "]";
 					lua_pop(L, 1);	//Key
 				}
 				lua_pop(L, 1);	//Nil
@@ -889,7 +886,7 @@ SCP_string ade_tostring(lua_State *L, int argnum, bool add_typeinfo)
 			if (upname != nullptr)
 			{
 				buf += " ";
-				buf += lua_tostring(L, -1);
+				buf += lua_tostring_nullsafe(L, -1);
 				buf += "()";
 				lua_pop(L, 1);
 			}
@@ -922,7 +919,7 @@ SCP_string ade_tostring(lua_State *L, int argnum, bool add_typeinfo)
 
 		default:
 			if (add_typeinfo)
-				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
+				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring_nullsafe(L, argnum));
 			else
 				buf = "Unknown Lua type";
 			break;

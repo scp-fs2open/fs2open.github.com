@@ -86,7 +86,7 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	if (Cmdline_lua_devmode) {
 		nprintf(("scripting", "ERROR: %s\n", str.c_str()));
 	} else {
-		Error(LOCATION, "%s", lua_tostring(L, -1));
+		Error(LOCATION, "%s", lua_tostring_nullsafe(L, -1));
 	}
 
 	return ADE_RETURN_NIL;

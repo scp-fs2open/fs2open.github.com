@@ -341,6 +341,12 @@ sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_l
 			//       but will not load a duplicate 2D entry to get stereo if 3D
 			//       version already loaded
 			if ( (Sounds[n].info.n_channels == 1) || !(flags && *flags & GAME_SND_USE_DS3D) ) {
+				// Check we need to populate the signature here, as modders may desire to use 
+				// a sound file more than once in their tables.
+				if (entry->id_sig == -1) {
+					entry->id_sig = Sounds[n].sig;
+				}
+
 				return sound_load_id(static_cast<int>(n));
 			}
 		}

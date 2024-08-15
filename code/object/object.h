@@ -188,9 +188,6 @@ struct object_h final	// prevent subclassing because classes which might use thi
 	bool isValid() const;
 	object* objp() const;
 	object* objp_or_null() const;
-
-	static void serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	static void deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);
 };
 
 // object backup struct used by Fred.

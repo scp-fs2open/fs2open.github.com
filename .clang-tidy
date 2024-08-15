@@ -14,6 +14,7 @@ misc-*,\
 -misc-include-cleaner,\
 -misc-macro-parentheses,\
 -misc-misplaced-widening-cast,\
+-misc-no-recursion,\
 -misc-non-private-member-variables-in-classes,\
 -misc-static-assert,\
 -misc-unused-parameters,\
