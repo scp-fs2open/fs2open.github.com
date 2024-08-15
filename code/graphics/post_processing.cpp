@@ -50,7 +50,7 @@ static auto LightshaftsOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      .importance(60)
                      .finish();
 
-int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
+int Post_processing_bloom_intensity = 10; // using default value of Cmdline_bloom_intensity
 
 static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
 	std::pair<const char*, int>{"Bloom intensity", 1701},
@@ -64,7 +64,7 @@ static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphic
 	.finish();
 
 
-float Post_processing_bloom_width = 0.5; // using default value of Cmdline_bloom_width
+float Post_processing_bloom_width = 0.25; // using default value of Cmdline_bloom_width
 
 auto BloomWidthOption __UNUSED = options::OptionBuilder<float>("Graphics.BloomWidth",
 	std::pair<const char*, int>{"Bloom width", 1701}, //TODO figure out new string
@@ -273,11 +273,8 @@ float gr_bloom_width()
 		return 0;
 	}
 
-	if (Using_in_game_options) {
-		return graphics::Post_processing_bloom_width;
-	} else {
-		return Cmdline_bloom_width;
-	}
+	return graphics::Post_processing_bloom_width;
+
 }
 
 void gr_set_bloom_width(float width)
@@ -286,9 +283,6 @@ void gr_set_bloom_width(float width)
 		return;
 	}
 
-	if (Using_in_game_options) {
-		graphics::Post_processing_bloom_width = width;
-	} else {
-		Cmdline_bloom_width = width;
-	}
+	graphics::Post_processing_bloom_width = width;
+	
 }
