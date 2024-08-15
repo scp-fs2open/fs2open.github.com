@@ -22,7 +22,7 @@ vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, f
 
 float GeometrySchlickGGX(float dotAB, float k)
 {
-    return dotAB / (dotAB * (1.0f - k) + k);
+    return dotAB / max((dotAB * (1.0f - k) + k), 0.00001);
 }
 vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float fresnelFactor, float dotNL)
 {
