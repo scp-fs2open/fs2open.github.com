@@ -30,7 +30,7 @@ SDR_FLAG(MODEL_SDR_FLAG_BENT		  , (1 << 16), false)
 //The following ones are used ONLY as compile-time flags, but they still need to be defined here to ensure no conflict occurs
 //But since these are checked with ifdefs even for the large shader, they must never be available in GLSL mode
 
-SDR_FLAG(MODEL_SDR_FLAG_SHADOW_MAP    ,	(1 << 16), true)
-SDR_FLAG(MODEL_SDR_FLAG_THICK_OUTLINES, (1 << 17), true)
+SDR_FLAG(MODEL_SDR_FLAG_SHADOW_MAP    ,	(1 << 17), true)
+SDR_FLAG(MODEL_SDR_FLAG_THICK_OUTLINES, (1 << 18), true)
 
 #endif
