@@ -363,6 +363,7 @@ void LabUi::show_render_options()
 			Checkbox("Height map", &height_map);
 			Checkbox("Misc map", &misc_map);
 			Checkbox("AO map", &ao_map);
+			Checkbox("Bent normals map", &bent_map);
 
 			build_texture_quality_combobox();
 
@@ -473,6 +474,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, !glow_map);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !spec_map);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoReflectMap, !reflect_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoBentMap, !bent_map);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, !env_map);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, !normal_map);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, !height_map);

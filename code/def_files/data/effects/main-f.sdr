@@ -92,8 +92,8 @@ layout (std140) uniform modelData {
 	int sMiscmapIndex;
 
 	float alphaMult;
-
 	int flags;
+	int sBentmapIndex;
 };
 
 in VertexOutput {
@@ -140,6 +140,9 @@ uniform sampler2D sFramebuffer;
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
 uniform sampler2DArray sMiscmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_BENT
+uniform sampler2DArray sBentmap;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_BENT
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 uniform sampler2DArray shadow_map;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
@@ -231,6 +234,7 @@ void main()
 	vec2 aoFactors = vec2(1.0, 1.0);
 	vec3 unitNormal = normalize(vertIn.normal);
 	vec3 normal = unitNormal;
+	vec3 bentNormal = unitNormal;
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_AMBIENT
 		// red channel is ambient occlusion factor which only affects ambient lighting.
@@ -341,6 +345,20 @@ void main()
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TEAMCOLOR
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_MISC
 
+	#prereplace IF_FLAG MODEL_SDR_FLAG_BENT
+	   	// Bent Normal map - convert from DXT5nm
+	   	vec2 normalSample;
+	   	bentNormal.rg = normalSample = (texture(sBentmap, vec3(texCoord, float(sBentmapIndex))).ag * 2.0) - 1.0;
+	   	bentNormal.b = clamp(sqrt(1.0 - dot(bentNormal.rg, normal.rg)), 0.0001, 1.0);
+	   	bentNormal = vertIn.tangentMatrix * bentNormal;
+	   	float norm = length(bentNormal);
+	   	// prevent breaking of w normal maps
+	   	if (norm > 0.0)
+		  	bentNormal /= norm;
+	   	else
+		  	bentNormal = unitNormal;
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_BENT
+
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
@@ -408,11 +426,22 @@ void main()
 			float g1vNL = GeometrySchlickGGX(NdotL, k);
 			vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
 
+			vec3 irr_normal_dir;
+			float occlusionFactor;
+			#prereplace IF_FLAG MODEL_SDR_FLAG_BENT
+				float BdotL = max(dot(light_dir, bentNormal), 0);
+				occlusionFactor = mix(BdotL, 1.0, aoFactors.x);
+				irr_normal_dir = vec3(envMatrix * vec4(bentNormal, 0.0));
+			#prereplace ELSE_FLAG //MODEL_SDR_FLAG_BENT
+				irr_normal_dir = vec3(envMatrix * vec4(normal,0.0));
+				occlusionFactor = aoFactors.x;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_BENT
+
 			vec3 kD = vec3(1.0)-fresnel;
 			kD *= (vec3(1.0) - specColor.rgb);
-			vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(envMatrix * vec4(normal, 0.0))).rgb);
-			vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * aoFactors.x;
-			emissiveColor.rgb += (specEnvLighting + diffEnvLighting) * baseColor.a;
+			vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, irr_normal_dir).rgb);
+			vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor;
+			emissiveColor.rgb += (specEnvLighting + diffEnvLighting) * baseColor.a * occlusionFactor;
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 

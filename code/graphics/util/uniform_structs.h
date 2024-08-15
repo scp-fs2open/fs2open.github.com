@@ -139,7 +139,8 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
-	int pad[1];
+	int sBentmapIndex;
+	int pad;
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);

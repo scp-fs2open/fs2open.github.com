@@ -88,6 +88,7 @@ class LabUi {
 	bool height_map = true;
 	bool misc_map = true;
 	bool ao_map = true;
+	bool bent_map = true;
 	bool no_glowpoints = false;
 	bool use_wireframe_rendering = false;
 	bool no_lighting = false;

@@ -24,6 +24,7 @@ SDR_FLAG(MODEL_SDR_FLAG_TRANSFORM     , (1 << 12), false)
 SDR_FLAG(MODEL_SDR_FLAG_SHADOWS	      , (1 << 13), false)
 SDR_FLAG(MODEL_SDR_FLAG_THRUSTER      , (1 << 14), false)
 SDR_FLAG(MODEL_SDR_FLAG_ALPHA_MULT    , (1 << 15), false)
+SDR_FLAG(MODEL_SDR_FLAG_BENT		  , (1 << 16), false)
 
 #ifndef MODEL_SDR_FLAG_MODE_GLSL
 //The following ones are used ONLY as compile-time flags, but they still need to be defined here to ensure no conflict occurs

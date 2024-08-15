@@ -21045,6 +21045,10 @@ void ship_render(object* obj, model_draw_list* scene)
 		debug_flags |= MR_DEBUG_NO_REFLECT;
 	}
 
+	if (shipp->flags[Ship_Flags::Render_without_bentmap]) {
+		debug_flags |= MR_DEBUG_NO_BENT;
+	}
+
 	render_info.set_flags(render_flags);
 	render_info.set_debug_flags(debug_flags);
 

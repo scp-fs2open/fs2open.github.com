@@ -70,6 +70,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->sMiscmapIndex = 0;
 	data_out->sNormalmapIndex = 0;
 	data_out->sSpecmapIndex = 0;
+	data_out->sBentmapIndex = 0;
 
 	if (material.is_clipped()) {
 		auto& clip_info = material.get_clip_plane();
@@ -173,6 +174,11 @@ void convert_model_material(model_uniform_data* data_out,
 	if (material.get_texture_map(TM_MISC_TYPE) > 0) {
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
+
+	if (material.get_texture_map(TM_BENT_NORMAL_TYPE) > 0) {
+		data_out->sBentmapIndex = bm_get_array_index(material.get_texture_map(TM_BENT_NORMAL_TYPE));
+	}
+
 
 	if (material.is_shadow_receiving()) {
 		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
