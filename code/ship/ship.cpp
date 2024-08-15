@@ -10307,8 +10307,8 @@ static void ship_radar_process( object * obj, ship * shipp, ship_info * sip )
 	shipp->radar_current_status = visibility;
 }
 
-void update_firing_sounds(object* objp, ship* shipp) {
-
+void update_firing_sounds(object* objp, ship* shipp)
+{
 	ship_weapon* swp = &shipp->weapons;
 	bool trigger_down = swp->flags[Ship::Weapon_Flags::Primary_trigger_down];
 
@@ -10367,6 +10367,50 @@ void update_firing_sounds(object* objp, ship* shipp) {
 	}
 }
 
+// This was previously part of obj_move_call_physics(), but secondary_point_reload_pct is only used for rendering and has nothing to do with physics at all.
+void update_reload_percent(ship *shipp, float frametime)
+{
+	if (shipp->weapons.num_secondary_banks > 0) {
+		polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+		Assertion( pm != nullptr, "No polymodel found for ship %s", Ship_info[shipp->ship_info_index].name );
+		Assertion( pm->missile_banks != nullptr, "Ship %s has %d secondary banks, but no missile banks could be found.\n", Ship_info[shipp->ship_info_index].name, shipp->weapons.num_secondary_banks );
+
+		for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
+			//if there are no missles left don't bother
+			if (!ship_secondary_has_ammo(&shipp->weapons, i))
+				continue;
+
+			int points = pm->missile_banks[i].num_slots;
+			int missles_left = shipp->weapons.secondary_bank_ammo[i];
+			int next_point = shipp->weapons.secondary_next_slot[i];
+			float fire_wait = Weapon_info[shipp->weapons.secondary_bank_weapons[i]].fire_wait;
+			float reload_time = (fire_wait == 0.0f) ? 1.0f : 1.0f / fire_wait;
+
+			//ok so...we want to move up missles but only if there is a missle there to be moved up
+			//there is a missle behind next_point, and how ever many missles there are left after that
+
+			if (points > missles_left) {
+				//there are more slots than missles left, so not all of the slots will have missles drawn on them
+				for (int k = next_point; k < next_point+missles_left; k ++) {
+					float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
+					if (s_pct < 1.0)
+						s_pct += reload_time * frametime;
+					if (s_pct > 1.0)
+						s_pct = 1.0f;
+				}
+			} else {
+				//we don't have to worry about such things
+				for (int k = 0; k < points; k++) {
+					float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
+					if (s_pct < 1.0)
+						s_pct += reload_time * frametime;
+					if (s_pct > 1.0)
+						s_pct = 1.0f;
+				}
+			}
+		}
+	}
+}
 
 /**
  * Player ship uses this code, but does a quick out after doing a few things.
@@ -10406,6 +10450,8 @@ void ship_process_post(object * obj, float frametime)
 	ship_subsys_disrupted_maybe_check(shipp);
 
 	update_firing_sounds(obj, shipp);
+
+	update_reload_percent(shipp, frametime);
 
 	ship_dying_frame(obj, num);
 
