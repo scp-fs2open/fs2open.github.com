@@ -168,7 +168,9 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
-	vec3 position = texture(PositionBuffer, screenPos).xyz;
+	vec4 positionData = texture(PositionBuffer, screenPos);
+	vec3 position = positionData.xyz;
+	float occlusionFactor = positionData.a;
 
 	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;
@@ -205,6 +207,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
+	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation * occlusionFactor;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }
