@@ -800,7 +800,8 @@ static void opengl_set_default_uniforms(const opengl_shader_t& sdr) {
 		Current_shader->program->Uniforms.setTextureUniform("NormalBuffer", 1);
 		Current_shader->program->Uniforms.setTextureUniform("PositionBuffer", 2);
 		Current_shader->program->Uniforms.setTextureUniform("SpecBuffer", 3);
-		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 4);
+		Current_shader->program->Uniforms.setTextureUniform("BentBuffer", 4);
+		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 5);
 		break;
 
 	case SDR_TYPE_PASSTHROUGH_RENDER:

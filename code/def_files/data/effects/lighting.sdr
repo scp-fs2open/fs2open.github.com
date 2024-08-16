@@ -9,6 +9,14 @@ const float GLOW_MAP_INTENSITY			= 1.5;
 const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
 const float PI = 3.14159f;
 
+// source: Intel XeGTAO https://github.com/GameTechDev/XeGTAO/blob/master/Source/Rendering/Shaders/Filament/ambient_occlusion.va.fs
+float MicrofacetShadow( float ao , float NoL )
+{
+    //return mix(NoL, 1.0, ao);
+    float aperture = pow(1.0000001 - ao, -0.5);
+    NoL += 0.1; // when using bent normals, avoids overshadowing - bent normals are just approximation anyhow
+    return clamp(NoL * aperture, 0.0, 1.0);
+}
 
 vec3 FresnelSchlick(vec3 halfVec, vec3 view, vec3 specColor)
 {
@@ -69,9 +77,9 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float fresnelFactor, float dotNL) 
 {
 	#ifdef FLAG_LIGHT_MODEL_BLINN_PHONG
-	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, fresnelFactor, dotNL);
+	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, fresnelFactor, dotNL );
 	#else
-	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, roughness, fresnelFactor, dotNL);
+	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, roughness, fresnelFactor, dotNL );
 	#endif
 }
 
