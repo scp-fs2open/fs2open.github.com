@@ -77,15 +77,14 @@ class RandomRange {
 	bool m_constant;
 	ValueType m_minValue;
 	ValueType m_maxValue;
-	int m_curve = -1;
 
   public:
 	template <typename... Ts>
-	RandomRange(ValueType param1, ValueType param2, Ts&&... distributionParameters)
-		: m_generator(std::random_device()()), m_distribution(param1, param2, distributionParameters...)
+	RandomRange(Ts&&... distributionParameters)
+		: m_generator(std::random_device()()), m_distribution(distributionParameters...)
 	{
-		m_minValue = static_cast<ValueType>(param1);
-		m_maxValue = static_cast<ValueType>(param2);
+		m_minValue = static_cast<ValueType>(m_distribution.min());
+		m_maxValue = static_cast<ValueType>(m_distribution.max());
 		m_constant = false;
 	}
 
@@ -111,9 +110,6 @@ class RandomRange {
 	{
 		if (m_constant) {
 			return m_minValue;
-		} else if (m_curve >= 0) {
-			float interp = Curves[m_curve].GetValue(frand());
-			return (interp * (m_maxValue - m_minValue)) + m_minValue;
 		}
 
 		return m_distribution(m_generator);
@@ -121,8 +117,6 @@ class RandomRange {
 
 	/**
 	 * @brief Gets the minimum value that may be returned by this random range
-	 *
-	 * @warning This is not valid for normal distribution ranges since those do not have a definite minimum value.
 	 *
 	 * @return The minimum value
 	 */
@@ -134,11 +128,9 @@ class RandomRange {
 	/**
 	 * @brief Gets the maximum value that may be returned by this random range
 	 *
-	 * @warning This is not valid for normal distribution ranges since those do not have a definite maximum value.
-	 *
 	 * @return The maximum value
 	 */
-	ValueType max()
+	ValueType max() const
 	{
 		return m_maxValue;
 	}
@@ -161,26 +153,107 @@ using NormalRange = RandomRange<Value, std::normal_distribution<Value>, std::min
  */
 typedef NormalRange<float> NormalFloatRange;
 
+class BoundedNormalDistribution {
+  public:
+	using result_type = float;
+	using param_type = struct {
+		std::normal_distribution<float>::param_type normal_parameters;
+		float min;
+		float max;
+	};
+	param_type m_param;
+	inline BoundedNormalDistribution() : BoundedNormalDistribution(param_type{std::normal_distribution<float>::param_type{0.5f, 1.f}, 0.f, 1.f}) {}
+	inline BoundedNormalDistribution(param_type curve) : m_param(curve) {}
+	inline void reset() {}
+	inline param_type param()
+	{
+		return m_param;
+	}
+	inline void param(param_type p)
+	{
+		m_param = p;
+	}
+	template <typename Generator>
+	inline result_type operator()(Generator& generator, const param_type& param)
+	{
+		float unbounded = std::normal_distribution<float>()(generator, param.normal_parameters);
+		CLAMP(unbounded, param.min, param.max);
+		return unbounded;
+	}
+	template <typename Generator>
+	inline result_type operator()(Generator& generator)
+	{
+		return this->operator()(generator, m_param);
+	}
+	inline result_type min()
+	{
+		return m_param.min;
+	}
+	inline result_type max()
+	{
+		return m_param.max;
+	}
+	inline bool operator==(const BoundedNormalDistribution& other)
+	{
+		return (m_param.normal_parameters == other.m_param.normal_parameters && fl_equal(m_param.min, other.m_param.min) &&
+				fl_equal(m_param.max, other.m_param.max));
+	}
+	inline bool operator!=(const BoundedNormalDistribution& other)
+	{
+		return !(*this == other);
+	}
+};
+
+using BoundedNormalFloatRange = RandomRange<float, BoundedNormalDistribution, std::minstd_rand>;
+
 /**
  * @brief A function for parsing a normal range
  * @return The parsed normal range
  *
  * @ingroup randomUtils
  */
-template <typename Value>
-NormalRange<Value> parseNormalRange()
+inline BoundedNormalFloatRange parseNormalFloatRange(float min = -INFINITY, float max = INFINITY)
 {
-	Value valueList[2];
+	float valueList[2];
 	auto num = parse_number_list(valueList);
+
+	float parsed_min = min;
+	float parsed_max = max;
 
 	if (num == 0) {
 		error_display(0, "Need at least one value to form a random range!");
-		return NormalRange<Value>();
+		return BoundedNormalFloatRange();
 	} else if (num == 1) {
-		return NormalRange<Value>(valueList[0]);
+		return BoundedNormalFloatRange(BoundedNormalDistribution::param_type{std::normal_distribution<float>::param_type(valueList[0]), parsed_min, parsed_max});
 	}
 
-	return NormalRange<Value>(valueList[0], valueList[1]);
+	stuff_float_optional(&parsed_min);
+	stuff_float_optional(&parsed_max);
+
+	if (parsed_min > parsed_max) {
+	error_display(0, "Minimum value %f is more than maximum value %f!", (float)parsed_min, (float)parsed_max);
+	std::swap(parsed_min, parsed_max);
+	}
+
+	if (parsed_min < min) {
+		error_display(0, "First value (%f) is less than the minimum %f!", (float)parsed_min, (float)min);
+		parsed_min = min;
+	}
+	if (parsed_min > max) {
+		error_display(0, "First value (%f) is greater than the maximum %f!", (float)parsed_min, (float)max);
+		parsed_min = max;
+	}
+
+	if (parsed_max < min) {
+		error_display(0, "Second value (%f) is less than the minimum %f!", (float)parsed_max, (float)min);
+		parsed_max = min;
+	}
+	if (parsed_max > max) {
+		error_display(0, "Second value (%f) is greater than the maximum %f!", (float)parsed_max, (float)max);
+		parsed_max = max;
+	}
+
+	return BoundedNormalFloatRange(BoundedNormalDistribution::param_type{std::normal_distribution<float>::param_type(valueList[0], valueList[1]), parsed_min, parsed_max});
 }
 
 /**
@@ -227,8 +300,9 @@ typedef UniformRange<uint> UniformUIntRange;
  * @ingroup randomUtils
  */
 template <typename Value>
-UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::min(),
-	Value max = std::numeric_limits<Value>::max())
+UniformRange<Value> parseUniformRange(Value min = -INFINITY,
+	Value max = INFINITY,
+	bool do_limits_check = true)
 {
 	Assertion(min <= max, "Invalid min-max values specified!");
 
@@ -274,35 +348,41 @@ UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::mi
 }
 
 class CurveNumberDistribution {
-	int m_curve;
-
   public:
 	using result_type = float;
-	using param_type = int;
-	CurveNumberDistribution() : CurveNumberDistribution(-1) {}
-	CurveNumberDistribution(int curve) : m_curve(curve) {}
-	void reset() {}
-	inline int param()
+	using param_type = struct {
+		int curve;
+		float min;
+		float max;
+	};
+	param_type m_param;
+	inline CurveNumberDistribution() : CurveNumberDistribution(param_type{-1, 0.f, 1.f}) {}
+	inline CurveNumberDistribution(param_type curve) : m_param(curve) {}
+	inline void reset() {}
+	inline param_type param()
 	{
-		return m_curve;
+		return m_param;
 	}
-	inline void param(int p)
+	inline void param(param_type p)
 	{
-		m_curve = p;
+		m_param = p;
 	}
 	template <typename Generator>
-	result_type operator()(Generator& generator, const param_type& curve)
+	inline result_type operator()(Generator& generator, const param_type& param)
 	{
-		float max_integral = Curves[curve].GetValueIntegrated(Curves[curve].keyframes.back().pos.x);
+		float max_integral = Curves[param.curve].GetValueIntegrated(Curves[param.curve].keyframes.back().pos.x);
 		float rand =
 			std::generate_canonical<float, std::numeric_limits<float>::digits, Generator>(generator) * max_integral;
-		float lower_bound = Curves[curve].keyframes.front().pos.x;
-		float upper_bound = Curves[curve].keyframes.back().pos.x;
+		float lower_bound = Curves[param.curve].keyframes.front().pos.x;
+		float upper_bound = Curves[param.curve].keyframes.back().pos.x;
+		float curve_min = lower_bound;
+		float curve_max = upper_bound;
 		for (size_t count = 0; count < 16; count++) {
 			float current_pos = (lower_bound + upper_bound) / 2.f;
-			float current_value = Curves[curve].GetValueIntegrated(current_pos);
+			float current_value = Curves[param.curve].GetValueIntegrated(current_pos);
 			if (fl_equal(current_value, rand, max_integral * 0.01f)) {
-				return current_pos;
+				// remap the values to the distribution's range
+				return (current_pos - curve_min) / (curve_max - curve_min) * (param.max - param.min) + param.min;
 			}
 			if (current_value > rand) {
 				upper_bound = current_pos;
@@ -310,26 +390,27 @@ class CurveNumberDistribution {
 				lower_bound = current_pos;
 			}
 		}
-		return (lower_bound + upper_bound) / 2.f;
+		// remap the values to the distribution's range
+		return (((lower_bound + upper_bound) / 2.f) - curve_min) / (curve_max - curve_min) * (param.max - param.min) + param.min;
 	}
 	template <typename Generator>
-	result_type operator()(Generator& generator)
+	inline result_type operator()(Generator& generator)
 	{
-		return this->operator()(generator, m_curve);
+		return this->operator()(generator, m_param);
 	}
 	inline result_type min()
 	{
-		return Curves[m_curve].keyframes.front().pos.x;
+		return Curves[m_param.curve].keyframes.front().pos.x;
 	}
 	inline result_type max()
 	{
-		return Curves[m_curve].keyframes.back().pos.x;
+		return Curves[m_param.curve].keyframes.back().pos.x;
 	}
-	bool operator==(const CurveNumberDistribution& other)
+	inline bool operator==(const CurveNumberDistribution& other)
 	{
-		return m_curve == other.m_curve;
+		return (m_param.curve == other.m_param.curve && fl_equal(m_param.min, other.m_param.min) && fl_equal(m_param.max, other.m_param.max));
 	}
-	bool operator!=(const CurveNumberDistribution& other)
+	inline bool operator!=(const CurveNumberDistribution& other)
 	{
 		return !(*this == other);
 	}
@@ -355,33 +436,81 @@ std::basic_istream<_CharT, _Traits>& operator>>(std::basic_istream<_CharT, _Trai
 
 using CurveFloatRange = RandomRange<float, CurveNumberDistribution, std::minstd_rand>;
 
-CurveFloatRange ParseCurveFloatRange() {
-	Value valueList[2];
-	auto num = parse_number_list(valueList);
+inline CurveFloatRange parseCurveFloatRange(float min = -INFINITY, float max = INFINITY) {
+	CurveNumberDistribution::param_type curve_params;
 
-	if (num == 0) {
-		error_display(0, "Need at least one value to form a random range!");
-		return NormalRange<Value>();
-	} else if (num == 1) {
-		return NormalRange<Value>(valueList[0]);
+	optional_string("(");
+	stuff_float(&curve_params.min);
+	stuff_float(&curve_params.max);
+	optional_string(")");
+	SCP_string curve_name;
+	stuff_string(curve_name, F_NAME);
+	curve_params.curve = curve_get_by_name(curve_name);
+
+	if (curve_params.min > curve_params.max) {
+	error_display(0, "Minimum value %f is more than maximum value %f!", (float)curve_params.min, (float)curve_params.max);
+		std::swap(curve_params.min, curve_params.max);
 	}
 
-	return NormalRange<Value>(valueList[0], valueList[1]);
+	if (curve_params.min < min) {
+		error_display(0, "First value (%f) is less than the minimum %f!", (float)curve_params.min, (float)min);
+		curve_params.min = min;
+	}
+	if (curve_params.min > max) {
+		error_display(0, "First value (%f) is greater than the maximum %f!", (float)curve_params.min, (float)max);
+		curve_params.min = max;
+	}
+
+	if (curve_params.max < min) {
+		error_display(0, "Second value (%f) is less than the minimum %f!", (float)curve_params.max, (float)min);
+		curve_params.max = min;
+	}
+	if (curve_params.max > max) {
+		error_display(0, "Second value (%f) is greater than the maximum %f!", (float)curve_params.max, (float)max);
+		curve_params.max = max;
+	}
+
+	return CurveFloatRange(curve_params);
 }
 
+template<typename result_type>
+
 class ParsedRandomRange {
-	mpark::variant<UniformFloatRange, NormalFloatRange, CurveFloatRange> m_random_range;
-	ParsedRandomRange() {}
-public:
-	inline float next() {
-		return mpark::visit([] (auto& range) { return range.next(); }, m_random_range);
-	}
-	float min() const {
+	mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange> m_random_range;
 
+  public:
+	ParsedRandomRange(mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange> random_range)
+	{
+		m_random_range = random_range;
 	}
-	float max() const {
-
+	inline result_type next() {
+		return static_cast<result_type>(mpark::visit([] (auto& range) { return range.next(); }, m_random_range));
+	}
+	inline result_type min() const {
+		return static_cast<result_type>(mpark::visit([](auto& range) { return range.min(); }, m_random_range));
+	}
+	inline result_type max() const {
+		return static_cast<result_type>(mpark::visit([](auto& range) { return range.max(); }, m_random_range));
+	}
+	static ParsedRandomRange parseRandomRange(float min = -INFINITY, float max = INFINITY) {
+		switch (optional_string_either("NORMAL", "CURVE")) {
+			case 0: {
+				return ParsedRandomRange(parseNormalFloatRange(min, max));
+			}
+			case 1: {
+				return ParsedRandomRange(parseCurveFloatRange(min, max));
+			}
+			default: {
+				return ParsedRandomRange(parseUniformRange<float>(min, max));
+			}
+		}
+	}
+	ParsedRandomRange& operator=(mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange> random_range) {
+		m_random_range = random_range;
+		return *this;
 	}
 };
+
+using ParsedRandomFloatRange = ParsedRandomRange<float>;
 
 }
