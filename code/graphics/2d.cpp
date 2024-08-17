@@ -1609,7 +1609,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		// (be that a window, a render overlay from nsight, or an FSO-internal buffer) instead of directly rendering to the OS-provided direct screen backbuffer.
 		// As the cost of -window_res is one single blit of a fullscreen buffer, it's probably an acceptable compromise to get rid of render artifacts.
 		// As such, forcibly enable -window_res at the screen resolution here, if we're in fullscreen.
-		Cmdline_window_res.emplace(width, height);
+		Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
 	}
 
 	if (d_mode == GR_DEFAULT) {
