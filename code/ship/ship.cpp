@@ -435,6 +435,8 @@ flag_def_list_new<Object::Object_Flags> ai_tgt_obj_flags[] = {
 	{ "player ship",		Object::Object_Flags::Player_ship,			true, false },
 	{ "special warpin",		Object::Object_Flags::Special_warpin,		true, false },
 	{ "immobile",			Object::Object_Flags::Immobile,				true, false },
+	{ "don't-change-position",	Object::Object_Flags::Dont_change_position,	true, false },
+	{ "don't-change-orientation",	Object::Object_Flags::Dont_change_orientation,	true, false },
 };
 
 const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list_new<Object::Object_Flags>);

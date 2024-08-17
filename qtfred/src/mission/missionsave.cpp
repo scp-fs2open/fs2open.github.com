@@ -3833,8 +3833,11 @@ int CFred_mission_save::save_objects()
 			if (shipp->flags[Ship::Ship_Flags::Force_shields_on]) {
 				fout(" \"force-shields-on\"");
 			}
-			if (objp->flags[Object::Object_Flags::Immobile]) {
-				fout(" \"immobile\"");
+			if (objp->flags[Object::Object_Flags::Dont_change_position]) {
+				fout(" \"don't-change-position\"");
+			}
+			if (objp->flags[Object::Object_Flags::Dont_change_orientation]) {
+				fout(" \"don't-change-orientation\"");
 			}
 			if (shipp->flags[Ship::Ship_Flags::No_ets]) {
 				fout(" \"no-ets\"");

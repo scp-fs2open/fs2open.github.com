@@ -1139,6 +1139,8 @@
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
 #define IDC_PRELOAD_SUBSPACE            1605
+#define IDC_DONT_CHANGE_POSITION        1606
+#define IDC_DONT_CHANGE_ORIENTATION     1607
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1164,7 +1166,6 @@
 #define IDC_GROUP_MESSAGES              1628
 #define IDC_INCLUDE_SENDER              1629
 #define IDC_DISABLE_ETS                 1630
-#define IDC_IMMOBILE                    1631
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
 #define IDC_NEB2_NEAR_MULTIPLIER        1632

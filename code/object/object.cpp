@@ -152,6 +152,8 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",				},
 	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",				},
 	{ Object::Object_Flags::Immobile,				"immobile",							},
+	{ Object::Object_Flags::Dont_change_position,	"don't-change-position",			},
+	{ Object::Object_Flags::Dont_change_orientation,	"don't-change-orientation",		},
 	{ Object::Object_Flags::Collides,				"collides",							},
 	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
@@ -165,7 +167,9 @@ obj_flag_description Object_flag_descriptions[] = {
 	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
 	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack ship."},
 	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Immobile,					"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+	{ Object::Object_Flags::Immobile,					"Will not let a ship change position or orientation. Upon destruction the ship will still do the death roll and explosion."},
+	{ Object::Object_Flags::Dont_change_position,		"Will not let a ship change position. Upon destruction the ship will still do the death roll and explosion."},
+	{ Object::Object_Flags::Dont_change_orientation,	"Will not let a ship change orientation. Upon destruction the ship will still do the death roll and explosion."},
 	{ Object::Object_Flags::Collides,					"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
 	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set."},
 };
@@ -1541,8 +1545,12 @@ void obj_move_all(float frametime)
 			objp->last_orient = objp->orient;
 		}
 
-		// Goober5000 - skip objects which don't move, but only until they're destroyed
-		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
+		// Goober5000 - accommodate objects that aren't supposed to move in some way (at least until they're destroyed)
+		bool dont_change_position = objp->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
+		bool dont_change_orientation = objp->flags[Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
+
+		// skip the physics if we're totally immobile
+		if (!dont_change_position || !dont_change_orientation) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
 				extern void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
@@ -1552,15 +1560,27 @@ void obj_move_all(float frametime)
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
-		} else {
-			// make sure velocity is always 0 for immobile things!
+		}
+
+		// if the object isn't supposed to move, roll back the movement
+		if (dont_change_position) {
+			objp->pos = objp->last_pos;
+
+			// make sure velocity is always 0
 			vm_vec_zero(&objp->phys_info.vel);
 			vm_vec_zero(&objp->phys_info.desired_vel);
+			objp->phys_info.speed = 0.0f;
+			objp->phys_info.fspeed = 0.0f;
+		}
+		if (dont_change_orientation) {
+			objp->orient = objp->last_orient;
+
+			// make sure velocity is always 0
 			vm_vec_zero(&objp->phys_info.rotvel);
 			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
 
-		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile", "don't-change-position", or "don't-change-orientation" flags.
 		
 		// this flag only affects ship subsystems, not any other type of submodel movement
 		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])

@@ -18665,10 +18665,12 @@ void sexp_dont_collide_invisible(int n, bool dont_collide)
 	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Dont_collide_invis, Mission::Parse_Object_Flags::SF_Dont_collide_invis, dont_collide);
 }
 
-// Goober5000 - sets the "immobile" flag on a list of ships
+// Goober5000 - sets the "immobile" flag on a list of ships; also always clears "don't-change-position" and "don't-change-orientation" to avoid conflicts
 void sexp_set_immobile(int n, bool immobile)
 {
 	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Immobile, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Immobile, immobile);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Dont_change_position, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Dont_change_position, false);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Dont_change_orientation, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Dont_change_orientation, false);
 }
 
 // Goober5000 - sets the "no-ets" flag on a list of ships
@@ -39700,14 +39702,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAll:\tList of ships on which to unset the \"don't collide invisible\" flag (ships do not need to be in-mission)" },
 
 	{ OP_SET_MOBILE, "set-mobile\r\n"
-		"\tAllows the specified ship(s) to move.  Opposite of set-immobile.\r\n"
+		"\tAllows the specified ship(s) to change position and orientation by clearing the \"immobile\" flag.  Opposite of set-immobile.  "
+		"NOTE: This also clears the \"don't-change-position\" and \"don't-change-orientation\" flags to avoid any surprises or conflicts with the \"immobile\" flag.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to unset the \"immobile\" flag (ships do not need to be in-mission)" },
+		"\tAll:\tList of ships on which to modify flags (ships do not need to be in-mission)" },
 
 	{ OP_SET_IMMOBILE, "set-immobile\r\n"
-		"\tPrevents the specified ship(s) from moving in any way.\r\n"
+		"\tPrevents the specified ship(s) from changing position or orientation (at least until the death roll starts) by setting the \"immobile\" flag.  Opposite of set-mobile.  "
+		"NOTE: This also clears the \"don't-change-position\" and \"don't-change-orientation\" flags to avoid any surprises or conflicts with the \"immobile\" flag.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to set the \"immobile\" flag (ships do not need to be in-mission)" },
+		"\tAll:\tList of ships on which to modify flags (ships do not need to be in-mission)" },
 
 	{ OP_IGNORE_KEY, "ignore-key\r\n"
 		"\tCauses the game to ignore (or stop ignoring) a certain key.\r\n"

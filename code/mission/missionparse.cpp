@@ -311,6 +311,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "afterburners-locked",			Mission::Parse_Object_Flags::SF_Afterburner_locked,		true, false },
     { "force-shields-on",				Mission::Parse_Object_Flags::OF_Force_shields_on,		true, false },
     { "immobile",						Mission::Parse_Object_Flags::OF_Immobile,				true, false },
+    { "don't-change-position",			Mission::Parse_Object_Flags::OF_Dont_change_position,	true, false },
+    { "don't-change-orientation",		Mission::Parse_Object_Flags::OF_Dont_change_orientation,	true, false },
     { "no-ets",							Mission::Parse_Object_Flags::SF_No_ets,					true, false },
     { "cloaked",						Mission::Parse_Object_Flags::SF_Cloaked,				true, false },
     { "ship-locked",					Mission::Parse_Object_Flags::SF_Ship_locked,			true, false },
@@ -374,7 +376,9 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
     { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start or on arrival."},
     { Mission::Parse_Object_Flags::SF_Afterburner_locked,			"Will stop a ship from firing their afterburner."},
     { Mission::Parse_Object_Flags::OF_Force_shields_on,				"Shields will be activated regardless of other flags."},
-    { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship change position or orientation. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::OF_Dont_change_position,			"Will not let a ship change position. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::OF_Dont_change_orientation,		"Will not let a ship change orientation. Upon destruction the ship will still do the death roll and explosion."},
     { Mission::Parse_Object_Flags::SF_No_ets,						"Will not allow a ship to alter its ETS system."},
     { Mission::Parse_Object_Flags::SF_Cloaked,						"This ship will not be rendered."},
     { Mission::Parse_Object_Flags::SF_Ship_locked,					"Prevents the player from changing the ship class on loadout screen."},
@@ -2719,6 +2723,12 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
     if (parse_flags[Mission::Parse_Object_Flags::SF_No_departure_warp])
         shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Ship_locked])
+        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Weapons_locked])
+        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
+
     if (parse_flags[Mission::Parse_Object_Flags::SF_Locked]) {
         shipp->flags.set(Ship::Ship_Flags::Ship_locked);
         shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
@@ -2813,20 +2823,30 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
     if (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
         shipp->flags.set(Ship::Ship_Flags::Force_shields_on);
 
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Dont_change_position])
+        objp->flags.set(Object::Object_Flags::Dont_change_position);
+
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Dont_change_orientation])
+        objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+
     if (parse_flags[Mission::Parse_Object_Flags::OF_Immobile])
-        objp->flags.set(Object::Object_Flags::Immobile);
+    {
+        // handle "soft deprecation" of Immobile by setting the two half-flags, but only in FRED
+        // (FRED has dialog support for the two half-flags but not the legacy Immobile flag)
+        if (Fred_running)
+        {
+            objp->flags.set(Object::Object_Flags::Dont_change_position);
+            objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+        }
+        else
+            objp->flags.set(Object::Object_Flags::Immobile);
+    }
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_No_ets])
         shipp->flags.set(Ship::Ship_Flags::No_ets);
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Cloaked])
         shipp->flags.set(Ship::Ship_Flags::Cloaked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Ship_locked])
-        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Weapons_locked])
-        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Scramble_messages])
         shipp->flags.set(Ship::Ship_Flags::Scramble_messages);
