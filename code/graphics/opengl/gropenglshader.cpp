@@ -876,6 +876,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
 			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
 			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
+			glBindFragDataLocation(program->getShaderHandle(), 5, "fragOut5");
 
 			if (do_shader_caching()) {
 				// Enable shader caching

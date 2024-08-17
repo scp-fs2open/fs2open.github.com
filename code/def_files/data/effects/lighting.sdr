@@ -9,13 +9,32 @@ const float GLOW_MAP_INTENSITY			= 1.5;
 const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
 const float PI = 3.14159f;
 
-// source: Intel XeGTAO https://github.com/GameTechDev/XeGTAO/blob/master/Source/Rendering/Shaders/Filament/ambient_occlusion.va.fs
-float MicrofacetShadow( float ao , float NoL )
+// https://www.activision.com/cdn/research/siggraph_2018_opt.pdf
+float AdjustCosConeAngle ( float cosConeAngle , float gloss , float NdotV )
 {
-    //return mix(NoL, 1.0, ao);
-    float aperture = pow(1.0000001 - ao, -0.5);
-    NoL += 0.1; // when using bent normals, avoids overshadowing - bent normals are just approximation anyhow
-    return clamp(NoL * aperture, 0.0, 1.0);
+	// The cone is an especially poor approximation to actual visibility for high gloss values .
+	// This is an ad hoc adjustment .
+	// Gloss above 0.67 is unaffected by the cone , i .e .\ we set to full cone angle .
+	//gloss = clamp( gloss * 1.5, 0.0, 1.0 ); // Optionally , omit this line .
+	float gloss2 = gloss * gloss ;
+	float gloss4 = gloss2 * gloss2 ;
+	float gloss8 = gloss4 * gloss4 ;
+	float oneMinusNdotV2 = ( 1 - NdotV ) * ( 1 - NdotV );
+	float oneMinusNdotV4 = oneMinusNdotV2 * oneMinusNdotV2 ;
+	// We lerp towards full cone angle based on gloss and NdotV .
+	cosConeAngle = mix( 0, cosConeAngle , ( 1 - gloss8 ) * ( 1 - oneMinusNdotV4 ) );
+	return cosConeAngle ;
+}
+
+
+float GetVisibilityFromMaterialOcclusion( float materialOcclusion, float gloss, float NdotV, float BdotL )
+{
+	float vis = materialOcclusion;
+	float cosConeAngle = sqrt( 1 - vis ) ;
+	float adjustedCosConeAngle = AdjustCosConeAngle( cosConeAngle , gloss , NdotV ) ;
+	adjustedCosConeAngle = max( adjustedCosConeAngle , 0.001 );
+	vis = clamp( BdotL / adjustedCosConeAngle, 0.0, 1.0 );
+	return vis  ; // * vis
 }
 
 vec3 FresnelSchlick(vec3 halfVec, vec3 view, vec3 specColor)

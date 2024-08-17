@@ -961,7 +961,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 				&u_scale,
 				&v_scale,
 				&array_index,
-				8);
+				12);
 		}
 
 		if (material_info->is_shadow_receiving()) {
