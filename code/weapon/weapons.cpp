@@ -7401,9 +7401,9 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
  * @param wobjp		Object pointer to weapon causing explosion
  * @param sci		Shockwave info
  * @param pos		World pos of explosion center
- * @param other_obj	Object pointer to ship that weapon impacted on (can be NULL)
+ * @param impacted_obj	Object pointer to ship that weapon impacted on (can be NULL)
  */
-void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *other_obj)
+void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *impacted_obj)
 {
 	weapon_info	*wip;
 	object		*objp;
@@ -7439,7 +7439,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		}
 
 		// scale damage
-		damage *= weapon_get_damage_scale(wip, wobjp, other_obj);		
+		damage *= weapon_get_damage_scale(wip, wobjp, impacted_obj);		
 
 		weapon_info* target_wip;
 
@@ -7447,7 +7447,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		case OBJ_SHIP: {
 			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
 			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
-			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == other_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
+			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == impacted_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
 
