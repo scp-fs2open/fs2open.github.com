@@ -7452,12 +7452,12 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			}
 
 			weapon* wp = &Weapons[wobjp->instance];
-			ship* shipp = &Ships[other_obj->instance];
+			ship* shipp = &Ships[objp->instance];
 
 			// if this is friendly fire, we check for the friendly fire cap values
 			if (wp->team == shipp->team) {
-				if (&Objects[wobjp->parent] == other_obj && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
-					// if this is a ship shooting itself, we use the self damage cap
+				if (wobjp->parent > -1 && &Objects[wobjp->parent] == objp && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+					// if this is a ship damaging itself, we use the self damage cap
 					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
 				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 					// otherwise we use the friendly damage cap
@@ -7480,8 +7480,8 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f, false);
 
 			weapon* wp = &Weapons[wobjp->instance];
-			weapon* target_wp = &Weapons[other_obj->instance];
-			
+			weapon* target_wp = &Weapons[objp->instance];
+		
 			// if this is friendly fire, we check for the friendly fire cap value
 			if (wp->team == target_wp->team && The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
