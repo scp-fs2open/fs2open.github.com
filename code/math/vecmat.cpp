@@ -470,9 +470,8 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
-		mprintf(("Null vec3d in vec3d normalize.\n"
-				 "Trace out of vecmat.cpp and find offending code.\n"));
-
+		nprintf(("Network", "Null vec3d in vec3d normalize.\n"
+			"Trace out of vecmat.cpp and find offending code.\n"));
 		dest->xyz.x = 1.0f;
 		dest->xyz.y = 0.0f;
 		dest->xyz.z = 0.0f;
