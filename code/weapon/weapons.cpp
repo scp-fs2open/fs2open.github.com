@@ -7448,6 +7448,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
 			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
 			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == impacted_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
+				// NOLINT(readability-simplify-boolean-expr)
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
 
@@ -7607,6 +7608,7 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	if ((impacted_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
+		// NOLINT(readability-simplify-boolean-expr)
 		weapon_hit_do_sound(impacted_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
@@ -7623,6 +7625,7 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 	}
 
 	if (wip->conditional_impacts.size() > 0 && impacted_obj != nullptr && (impacted_obj->type == OBJ_SHIP || impacted_obj->type == OBJ_WEAPON)) {
+		// NOLINT(readability-simplify-boolean-expr)
 		if (impacted_obj->type == OBJ_SHIP) {
 			shipp = &Ships[impacted_obj->instance];
 			if (quadrant == -1) {
