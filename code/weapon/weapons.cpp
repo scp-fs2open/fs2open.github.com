@@ -7622,7 +7622,7 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr && (impacted_obj->type == OBJ_SHIP || impacted_obj->type == OBJ_WEAPON)) { // NOLINT(readability-simplify-boolean-expr)
+	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr && (impacted_obj->type == OBJ_SHIP || impacted_obj->type == OBJ_WEAPON)) { 
 		if (impacted_obj->type == OBJ_SHIP) {
 			shipp = &Ships[impacted_obj->instance];
 			if (quadrant == -1) {
