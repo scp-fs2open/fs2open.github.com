@@ -7777,7 +7777,7 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 	}	
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ((impacted_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
+	if ((impacted_obj != nullptr) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
 		if (impacted_obj->type == OBJ_SHIP) {
 			weapon_do_electronics_effect(impacted_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
