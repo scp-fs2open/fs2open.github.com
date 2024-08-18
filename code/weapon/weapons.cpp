@@ -7559,7 +7559,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
+void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -7594,20 +7594,20 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		scripting::hooks::OnMissileDeathStarted->run(scripting::hooks::WeaponDeathConditions{ wp },
 			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)));
+			scripting::hook_param("Object", 'o', impacted_obj)));
 	}
 
 	// check if the weapon actually hit the intended target
 	if (weapon_has_homing_object(wp))
-		if (wp->homing_object == other_obj)
+		if (wp->homing_object == impacted_obj)
 			hit_target = true;
 
 	//This is an expensive check
 	bool armed_weapon = weapon_armed(&Weapons[num], hit_target);
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
-	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
+	if ((impacted_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
+		weapon_hit_do_sound(impacted_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
 
@@ -7622,21 +7622,21 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (wip->conditional_impacts.size() > 0 && other_obj != nullptr && (other_obj->type == OBJ_SHIP || other_obj->type == OBJ_WEAPON)) {
-		if (other_obj->type == OBJ_SHIP) {
-			shipp = &Ships[other_obj->instance];
+	if (wip->conditional_impacts.size() > 0 && impacted_obj != nullptr && (impacted_obj->type == OBJ_SHIP || impacted_obj->type == OBJ_WEAPON)) {
+		if (impacted_obj->type == OBJ_SHIP) {
+			shipp = &Ships[impacted_obj->instance];
 			if (quadrant == -1) {
 				relevant_armor_idx = shipp->armor_type_idx;
-				relevant_fraction = other_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+				relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
 			} else {
 				relevant_armor_idx = shipp->shield_armor_type_idx;
-				relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
+				relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
 			}
 		} else {
-			target_wp = &Weapons[other_obj->instance];
+			target_wp = &Weapons[impacted_obj->instance];
 			target_wip = &Weapon_info[target_wp->weapon_info_index];
 			relevant_armor_idx = target_wip->armor_type_idx;
-			relevant_fraction = other_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+			relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
 		}
 		
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
@@ -7689,18 +7689,18 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	}
 
-	if ((other_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
-		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
+	if ((impacted_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+		if ((impacted_obj->type == OBJ_SHIP) || (impacted_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
 
-			if (other_obj->type == OBJ_SHIP) {
+			if (impacted_obj->type == OBJ_SHIP) {
 				float draw_limit, hull_pct;
 				int dmg_type_idx, piercing_type;
 
-				shipp = &Ships[other_obj->instance];
+				shipp = &Ships[impacted_obj->instance];
 
-				hull_pct = other_obj->hull_strength / shipp->ship_max_hull_strength;
+				hull_pct = impacted_obj->hull_strength / shipp->ship_max_hull_strength;
 				dmg_type_idx = wip->damage_type_idx;
 				draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
 				
@@ -7750,7 +7750,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
-	if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
+	if ( ((impacted_obj) && (impacted_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
 		sw_flag |= SW_WEAPON_KILL;
 	}
 
@@ -7767,7 +7767,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
-			weapon_do_area_effect(weapon_obj, sci, hitpos, other_obj);
+			weapon_do_area_effect(weapon_obj, sci, hitpos, impacted_obj);
 		}
 	}
 
@@ -7777,13 +7777,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}	
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ((other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
-		if (other_obj->type == OBJ_SHIP) {
-			weapon_do_electronics_effect(other_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
+	if ((impacted_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
+		if (impacted_obj->type == OBJ_SHIP) {
+			weapon_do_electronics_effect(impacted_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 
-	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !other_obj) {
+	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !impacted_obj) {
 		// spawn weapons - note the change from FS 1 multiplayer.
 		if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 			if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))) {			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
@@ -7792,8 +7792,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	//No other_obj means this weapon detonates
-	if (wip->pierce_objects && other_obj && other_obj->type != OBJ_WEAPON)
+	//No impacted_obj means this weapon detonates
+	if (wip->pierce_objects && impacted_obj && impacted_obj->type != OBJ_WEAPON)
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
@@ -7834,7 +7834,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		scripting::hooks::OnMissileDeath->run(scripting::hooks::WeaponDeathConditions{ wp },
 			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)));
+			scripting::hook_param("Object", 'o', impacted_obj)));
 	}
 
     weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
