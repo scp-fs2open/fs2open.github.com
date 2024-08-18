@@ -92,7 +92,7 @@ EffectTiming EffectTiming::parseTiming() {
 		}
 		else {
 			timing.m_duration = Duration::Range;
-			timing.m_durationRange = ::util::parseUniformRange<float>(0.0f);
+			timing.m_durationRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
 		}
 	}
 
@@ -101,12 +101,12 @@ EffectTiming EffectTiming::parseTiming() {
 			error_display(0, "+Delay is not valid for one-time effects!");
 		}
 		else {
-			timing.m_delayRange = ::util::parseUniformRange<float>(0.0f);
+			timing.m_delayRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
 		}
 	}
 
 	if (optional_string("+Effects per second:")) {
-		timing.m_particlesPerSecond = ::util::parseUniformRange<float>();
+		timing.m_particlesPerSecond = ::util::ParsedRandomFloatRange::parseRandomRange();
 		if (timing.m_particlesPerSecond.min() < 0.001f) {
 			error_display(0, "Invalid effects per second minimum %f. Setting was disabled.", timing.m_particlesPerSecond.min());
 			timing.m_particlesPerSecond = ::util::UniformFloatRange(-1.f);

@@ -476,14 +476,35 @@ inline CurveFloatRange parseCurveFloatRange(float min = -INFINITY, float max = I
 template<typename result_type>
 
 class ParsedRandomRange {
-	mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange> m_random_range;
+	class DefaultRandomRange {
+	  public:
+		inline float next() const {
+			UNREACHABLE("DefaultRandomRange used; get a coder!");
+			return NAN;
+		};
+		inline float min() const {
+			UNREACHABLE("DefaultRandomRange used; get a coder!");
+			return NAN;
+		};
+		inline float max() const {
+			UNREACHABLE("DefaultRandomRange used; get a coder!");
+			return NAN;
+		};
+	};
+  public:
+	  using variant = mpark::variant<DefaultRandomRange, UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange>;
+  private:
+	variant m_random_range;
 
   public:
-	ParsedRandomRange(mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange> random_range)
+	ParsedRandomRange(variant random_range)
 	{
 		m_random_range = random_range;
 	}
-	inline result_type next() {
+	ParsedRandomRange() {
+		m_random_range = DefaultRandomRange();
+	};
+	inline result_type next() const {
 		return static_cast<result_type>(mpark::visit([] (auto& range) { return range.next(); }, m_random_range));
 	}
 	inline result_type min() const {
@@ -505,12 +526,13 @@ class ParsedRandomRange {
 			}
 		}
 	}
-	ParsedRandomRange& operator=(mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange> random_range) {
+	ParsedRandomRange& operator=(variant random_range) {
 		m_random_range = random_range;
 		return *this;
 	}
 };
 
 using ParsedRandomFloatRange = ParsedRandomRange<float>;
+using ParsedRandomUintRange = ParsedRandomRange<uint>;
 
 }

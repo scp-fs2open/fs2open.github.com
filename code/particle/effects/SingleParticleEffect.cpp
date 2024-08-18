@@ -44,7 +44,7 @@ void SingleParticleEffect::parseValues(bool nocreate) {
 	m_particleProperties.parse(nocreate);
 
 	if (optional_string("+Parent Velocity Factor:")) {
-		m_vel_inherit = ::util::parseUniformRange<float>();
+		m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 	}
 
 	m_timing = util::EffectTiming::parseTiming();

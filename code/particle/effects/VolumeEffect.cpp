@@ -96,11 +96,11 @@ namespace particle {
 			m_particleProperties.parse(nocreate);
 
 			if (internal::required_string_if_new("+Velocity:", nocreate)) {
-				m_velocity = ::util::parseUniformRange<float>();
+				m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 
 			if (internal::required_string_if_new("+Number:", nocreate)) {
-				m_particleNum = ::util::parseUniformRange<uint>();
+				m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
 			}
 
 			if (!nocreate) {
@@ -161,7 +161,7 @@ namespace particle {
 			}
 
 			if (optional_string("+Parent Velocity Factor:")) {
-				m_vel_inherit = ::util::parseUniformRange<float>();
+				m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 
 			m_timing = util::EffectTiming::parseTiming();
