@@ -212,7 +212,7 @@ using BoundedNormalFloatRange = RandomRange<float, BoundedNormalDistribution, st
  *
  * @ingroup randomUtils
  */
-inline BoundedNormalFloatRange parseNormalFloatRange(float min = -INFINITY, float max = INFINITY)
+inline BoundedNormalFloatRange parseNormalFloatRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f)
 {
 	float valueList[2];
 	auto num = parse_number_list(valueList);
@@ -300,8 +300,8 @@ typedef UniformRange<uint> UniformUIntRange;
  * @ingroup randomUtils
  */
 template <typename Value>
-UniformRange<Value> parseUniformRange(Value min = -INFINITY,
-	Value max = INFINITY,
+UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<float>::lowest()/2.1f,
+	Value max = std::numeric_limits<float>::max()/2.1f,
 	bool do_limits_check = true)
 {
 	Assertion(min <= max, "Invalid min-max values specified!");
@@ -436,7 +436,7 @@ std::basic_istream<_CharT, _Traits>& operator>>(std::basic_istream<_CharT, _Trai
 
 using CurveFloatRange = RandomRange<float, CurveNumberDistribution, std::minstd_rand>;
 
-inline CurveFloatRange parseCurveFloatRange(float min = -INFINITY, float max = INFINITY) {
+inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 	CurveNumberDistribution::param_type curve_params;
 
 	optional_string("(");
@@ -513,7 +513,7 @@ class ParsedRandomRange {
 	inline result_type max() const {
 		return static_cast<result_type>(mpark::visit([](auto& range) { return range.max(); }, m_random_range));
 	}
-	static ParsedRandomRange parseRandomRange(float min = -INFINITY, float max = INFINITY) {
+	static ParsedRandomRange parseRandomRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 		switch (optional_string_either("NORMAL", "CURVE")) {
 			case 0: {
 				return ParsedRandomRange(parseNormalFloatRange(min, max));
