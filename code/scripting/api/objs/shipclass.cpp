@@ -806,6 +806,22 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 	return ade_set_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
+ADE_VIRTVAR(ShieldHitpointsMax, l_Shipclass, nullptr, "Ship class shield hitpoints", "number", "Shield hitpoints, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Shield Max Hitpoints is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].max_shield_strength);
+}
+
 ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
 {
 	int idx;
