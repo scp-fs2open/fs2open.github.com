@@ -118,7 +118,12 @@ static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.Defe
 bool light_deferred_enabled()
 {
 	if (Using_in_game_options) {
-		return DeferredLightingOption->getValue();
+		// This used to be getting the value of the option object itself,
+		// however that is not a free operation and changing it requires a restart anyway
+		// if the restart requirement is lifted care should be taken to cache this value
+		// and never look it up more than once a frame
+		// otherwise the performance footprint is measurable enough to worry about.
+		return DeferredLightingEnabled;
 	} else {
 		return !Cmdline_no_deferred_lighting;
 	}
