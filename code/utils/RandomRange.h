@@ -79,9 +79,9 @@ class RandomRange {
 	ValueType m_maxValue;
 
   public:
-	template <typename... Ts>
-	RandomRange(Ts&&... distributionParameters)
-		: m_generator(std::random_device()()), m_distribution(distributionParameters...)
+	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_same<ValueType, std::remove_reference<std::remove_cv<T>::type>::type>::value, int>::type>
+	RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
+		: m_generator(std::random_device()()), m_distribution(distributionFirstParameter, distributionParameters...)
 	{
 		m_minValue = static_cast<ValueType>(m_distribution.min());
 		m_maxValue = static_cast<ValueType>(m_distribution.max());
@@ -476,23 +476,8 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 template<typename result_type>
 
 class ParsedRandomRange {
-	class DefaultRandomRange {
-	  public:
-		inline float next() const {
-			UNREACHABLE("DefaultRandomRange used; get a coder!");
-			return NAN;
-		};
-		inline float min() const {
-			UNREACHABLE("DefaultRandomRange used; get a coder!");
-			return NAN;
-		};
-		inline float max() const {
-			UNREACHABLE("DefaultRandomRange used; get a coder!");
-			return NAN;
-		};
-	};
   public:
-	  using variant = mpark::variant<DefaultRandomRange, UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange>;
+	  using variant = mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange>;
   private:
 	variant m_random_range;
 
@@ -502,7 +487,7 @@ class ParsedRandomRange {
 		m_random_range = random_range;
 	}
 	ParsedRandomRange() {
-		m_random_range = DefaultRandomRange();
+		m_random_range = UniformFloatRange();
 	};
 	inline result_type next() const {
 		return static_cast<result_type>(mpark::visit([] (auto& range) { return range.next(); }, m_random_range));
