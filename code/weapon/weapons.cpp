@@ -2382,10 +2382,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		ci.dinky = false;
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-		armor_index = armor_type_get_idx(fname);
-		if (armor_index < 0) {
-			Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
-		}
+		if (*fname == *"NO ARMOR") {
+			armor_index = -1;
+		} else {
+			armor_index = armor_type_get_idx(fname);
+			if (armor_index < 0) {
+				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+				continue;
+			}
+		};
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
 		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
@@ -7625,21 +7630,26 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr && (impacted_obj->type == OBJ_SHIP || impacted_obj->type == OBJ_WEAPON)) { 
-		if (impacted_obj->type == OBJ_SHIP) {
-			shipp = &Ships[impacted_obj->instance];
-			if (quadrant == -1) {
-				relevant_armor_idx = shipp->armor_type_idx;
-				relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
-			} else {
-				relevant_armor_idx = shipp->shield_armor_type_idx;
-				relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
-			}
-		} else {
-			target_wp = &Weapons[impacted_obj->instance];
-			target_wip = &Weapon_info[target_wp->weapon_info_index];
-			relevant_armor_idx = target_wip->armor_type_idx;
-			relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr) { 
+		switch (impacted_obj->type) {
+			case OBJ_SHIP:
+				shipp = &Ships[impacted_obj->instance];
+				if (quadrant == -1) {
+					relevant_armor_idx = shipp->armor_type_idx;
+					relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+				} else {
+					relevant_armor_idx = shipp->shield_armor_type_idx;
+					relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
+				}
+				break;
+			case OBJ_WEAPON:
+				target_wp = &Weapons[impacted_obj->instance];
+				target_wip = &Weapon_info[target_wp->weapon_info_index];
+				relevant_armor_idx = target_wip->armor_type_idx;
+				relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+				break;
+			default:
+				break;
 		}
 		
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
