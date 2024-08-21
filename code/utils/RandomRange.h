@@ -370,6 +370,9 @@ class CurveNumberDistribution {
 	template <typename Generator>
 	inline result_type operator()(Generator& generator, const param_type& param)
 	{
+		if (param.curve < 0) {
+			return 0.f;
+		}
 		float max_integral = Curves[param.curve].GetValueIntegrated(Curves[param.curve].keyframes.back().pos.x);
 		float rand =
 			std::generate_canonical<float, std::numeric_limits<float>::digits, Generator>(generator) * max_integral;
@@ -448,7 +451,7 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	curve_params.curve = curve_get_by_name(curve_name);
 
 	if (curve_params.min > curve_params.max) {
-	error_display(0, "Minimum value %f is more than maximum value %f!", (float)curve_params.min, (float)curve_params.max);
+		error_display(0, "Minimum value %f is more than maximum value %f!", (float)curve_params.min, (float)curve_params.max);
 		std::swap(curve_params.min, curve_params.max);
 	}
 
@@ -468,6 +471,10 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	if (curve_params.max > max) {
 		error_display(0, "Second value (%f) is greater than the maximum %f!", (float)curve_params.max, (float)max);
 		curve_params.max = max;
+	}
+
+	if (curve_params.curve < 0) {
+		error_display(0, "Curve %s not found!", &curve_name);
 	}
 
 	return CurveFloatRange(curve_params);
