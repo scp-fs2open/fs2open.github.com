@@ -1393,7 +1393,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 	if (!api_access) {
 		if (Closeup_icon->modelnum < 0) {
 			if (sip == nullptr) {
-				Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
+				Closeup_icon->modelnum = model_load(pof_filename);
 			} else {
 				Closeup_icon->modelnum = model_load(sip, true);
 				Closeup_icon->model_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Closeup_icon->modelnum);

@@ -4353,7 +4353,7 @@ void preload_change_ship_class(const char *text)
 	// preload the model, just in case there is no other ship of this class in the mission
 	// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
 	sip = &Ship_info[idx];
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	sip->model_num = model_load(sip->pof_file, sip);
 
 	if (sip->model_num >= 0)
 		model_page_in_textures(sip->model_num, idx);
@@ -21561,7 +21561,7 @@ void sexp_set_skybox_model_preload(const char *name)
 
 	// if there isn't a skybox model then don't load one
 	if ( strlen(name) && stricmp(name, "none") != 0 ) {
-		i = model_load( name, 0, nullptr );
+		i = model_load( name );
 		model_page_in_textures( i );
 	}
 }

@@ -27,6 +27,9 @@ class ParticleEmitterEffect: public ParticleEffect {
 	void pageIn() override;
 
 	void setValues(const particle_emitter& emitter, int bitmap, float range, int nframes = -1);
+
+	const particle_emitter& getEmitter() const;
+	particle_emitter& getEmitter();
 };
 }
 }

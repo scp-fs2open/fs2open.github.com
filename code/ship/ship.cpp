@@ -4414,7 +4414,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	else if (first_time && VALID_FNAME(sip->pof_file))
 	{
 		//Calculate from the model file. This is inefficient, but whatever
-		int model_idx = model_load(sip->pof_file, 0, NULL);
+		int model_idx = model_load(sip->pof_file);
 		polymodel *pm = model_get(model_idx);
 
 		//Go through, find best
@@ -4717,6 +4717,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		
 		required_string("$Variance:");
 		stuff_float(&tpart.variance);
+
+		particle::particle_emitter pe;
+		pe.num_low = tpart.n_low;
+		pe.num_high = tpart.n_high;
+		pe.min_rad = tpart.min_rad;
+		pe.max_rad = tpart.max_rad;
+		pe.normal_variance = tpart.variance;
+		pe.min_life = 0.0f;
+		pe.max_life = 1.0f;
+
+		generic_anim_load(&tpart.thruster_bitmap);
+
+		auto tpart_effect = new particle::effects::ParticleEmitterEffect();
+		tpart_effect->setValues(pe, tpart.thruster_bitmap.first_frame, 1.f);
+		tpart.particle_handle = particle::ParticleManager::get()->addEffect(tpart_effect);
 
 		if (afterburner) {
 			sip->afterburner_thruster_particles.push_back( tpart );
@@ -9154,25 +9169,18 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipp->next_fireball = timestamp_rand(333,500);
 
 				// emit particles
-				particle::particle_emitter	pe;
-				particle_effect		pef = sip->knossos_end_particles;
-				
-				pe.num_low = pef.n_low;					// Lowest number of particles to create
-				pe.num_high = pef.n_high;				// Highest number of particles to create
-				pe.pos = outpnt;				// Where the particles emit from
-				pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-				pe.min_life = pef.min_life;	// How long the particles live
-				pe.max_life = pef.max_life;	// How long the particles live
-				pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-				pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-				pe.min_vel = pef.min_vel;
-				pe.max_vel = pef.max_vel;
-				pe.min_rad = pef.min_rad;	// * objp->radius;
-				pe.max_rad = pef.max_rad; // * objp->radius;
+				auto source = particle::ParticleManager::get()->createSource(sip->knossos_end_particles);
 
-				if (pe.num_high > 0) {
-					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, 50 );
-				}
+				// For some reason these consider the uvec to be forward...
+				matrix newOrient;
+				newOrient.vec.fvec = objp->orient.vec.uvec;
+				newOrient.vec.uvec = objp->orient.vec.fvec * -1.f;
+				newOrient.vec.rvec = objp->orient.vec.rvec;
+
+				source.moveTo(&outpnt, &newOrient);
+				source.setVelocity(&objp->phys_info.vel);
+
+				source.finish();
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
@@ -10950,11 +10958,11 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		Error(LOCATION, "Cannot create ship %s; pof file is not valid", sip->name);
 		return -1;
 	}
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+	sip->model_num = model_load(sip->pof_file, sip);		// use the highest detail level
 
 	if(VALID_FNAME(sip->cockpit_pof_file))
 	{
-		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 	}
 
 	// maybe load an optional hud target model
@@ -10962,16 +10970,16 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		// check to see if a "real" ship uses this model. if so, load it up for him so that subsystems are setup properly
 		for(auto it = Ship_info.begin(); it != Ship_info.end(); ++it){
 			if(!stricmp(it->pof_file, sip->pof_file_hud)){
-				it->model_num = model_load(it->pof_file, it->n_subsystems, &it->subsystems[0]);
+				it->model_num = model_load(it->pof_file, &*it);
 			}
 		}
 
 		// mow load it for me with no subsystems
-		sip->model_num_hud = model_load(sip->pof_file_hud, 0, NULL);
+		sip->model_num_hud = model_load(sip->pof_file_hud);
 	}
 
 	if (VALID_FNAME(sip->generic_debris_pof_file)) {
-		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file, 0, nullptr);
+		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file);
 		if (sip->generic_debris_model_num >= 0) {
 			polymodel* pm = model_get(sip->generic_debris_model_num);
 			sip->generic_debris_num_submodels = pm->n_models;
@@ -11194,12 +11202,12 @@ static void ship_model_change(int n, int ship_type)
 
 	// get new model
 	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		sip->model_num = model_load(sip->pof_file, sip);
 	}
 
 	if ( sip->cockpit_model_num == -1 ) {
 		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-			sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
+			sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 		}
 	}
 
@@ -18156,7 +18164,7 @@ void ship_page_in()
 			num_subsystems_needed += sip->n_subsystems;
 
 			// load the darn model and page in textures
-			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			sip->model_num = model_load(sip->pof_file, &*sip);
 
 			if (sip->model_num >= 0) {
 				model_page_in_textures(sip->model_num, i);
@@ -18287,7 +18295,7 @@ void ship_page_in()
 
 				// the model should already be loaded so this wouldn't take long, but
 				// we need to make sure that the load count for the model is correct
-				test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				test_id = model_load(sip->pof_file, &*sip);
 				Assert( test_id == model_previously_loaded );
 
 				break;
@@ -18332,7 +18340,7 @@ void ship_page_in()
 			}
 		} else {
 			// Model not loaded, so load it
-			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			sip->model_num = model_load(sip->pof_file, &*sip);
 
 			Assert( sip->model_num >= 0 );
 

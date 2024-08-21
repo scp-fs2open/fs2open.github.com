@@ -18,6 +18,7 @@
 #include "math/vecmat.h"
 #include "mission/missioncampaign.h"
 #include "particle/particle.h"
+#include "particle/effects/ParticleEmitterEffect.h"
 #include "popup/popupdead.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
@@ -34,11 +35,30 @@ static TIMESTAMP Supernova_timestamp;
 static TIMESTAMP Supernova_fade_to_white_timestamp;
 static TIMESTAMP Supernova_particle_timestamp;
 
+static particle::ParticleEffectHandle Supernova_particle_effect;
+
 auto Supernova_status = SUPERNOVA_STAGE::NONE;
 
 // --------------------------------------------------------------------------------------------------------------------------
 // SUPERNOVA FUNCTIONS
 //
+
+static particle::ParticleEffectHandle supernova_init_particle() {
+	particle::particle_emitter whee;
+	whee.max_life = 1.0f;
+	whee.min_life = 0.6f;
+	whee.max_vel = 50.0f;
+	whee.min_vel = 25.0f;
+	whee.normal_variance = 0.75f;
+	whee.num_high = 5;
+	whee.num_low = 2;
+	whee.min_rad = 0.5f;
+	whee.max_rad = 1.25f;
+
+	auto effect = new particle::effects::ParticleEmitterEffect();
+	effect->setValues(whee, particle::Anim_bitmap_id_fire, 1.f, particle::Anim_num_frames_fire);
+	return particle::ParticleManager::get()->addEffect(effect);
+}
 
 // level init
 // (if this function is modified, check that its use in supernova_stop() is still valid)
@@ -49,6 +69,9 @@ void supernova_level_init()
 	Supernova_timestamp = TIMESTAMP::invalid();
 	Supernova_fade_to_white_timestamp = TIMESTAMP::invalid();
 	Supernova_particle_timestamp = TIMESTAMP::immediate();
+
+	static particle::ParticleEffectHandle supernova_particle = supernova_init_particle();
+	Supernova_particle_effect = supernova_particle;
 
 	Supernova_status = SUPERNOVA_STAGE::NONE;
 }
@@ -115,16 +138,8 @@ void supernova_do_particles()
 		vm_vec_sub(&norm, &Player_obj->pos, &sun_temp);
 		vm_vec_normalize(&norm);
 
-		particle::particle_emitter whee;
-		whee.max_life = 1.0f;
-		whee.min_life = 0.6f;
-		whee.max_vel = 50.0f;
-		whee.min_vel = 25.0f;
-		whee.normal_variance = 0.75f;
-		whee.num_high = 5;
-		whee.num_low = 2;
-		whee.min_rad = 0.5f;
-		whee.max_rad = 1.25f;
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &norm);
 
 		// emit
 		for(idx=0; idx<10; idx++) {
@@ -134,17 +149,27 @@ void supernova_do_particles()
 			// rotate into world space
 			vm_vec_unrotate(&a, &ta, &Player_obj->orient);
 			vm_vec_add2(&a, &Player_obj->pos);
-			whee.pos = a;
-			whee.vel = norm;
-			vm_vec_scale(&whee.vel, 30.0f);
-			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);
-			whee.normal = norm;
-			particle::emit(&whee, particle::PARTICLE_FIRE, 0);
+
+			vec3d vel = norm;
+			vm_vec_scale(&vel, 30.0f);
+			vm_vec_add2(&vel, &Player_obj->phys_info.vel);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
-			whee.pos = b;
-			particle::emit(&whee, particle::PARTICLE_FIRE, 0);
+
+			auto source = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
+
+			source.moveTo(&a, &orient);
+			source.setVelocity(&vel);
+
+			source.finish();
+
+			auto source2 = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
+
+			source2.moveTo(&b, &orient);
+			source2.setVelocity(&vel);
+
+			source2.finish();
 		}
 	}
 }

@@ -199,55 +199,6 @@ namespace particle
 			part->nframes = info->nframes;
 		}
 
-		switch (info->type) {
-			case PARTICLE_BITMAP:
-			case PARTICLE_BITMAP_PERSISTENT: {
-				Assertion(bm_is_valid(info->bitmap), "Invalid bitmap handle passed to particle create.");
-
-				bm_get_info(info->bitmap, NULL, NULL, NULL, &part->nframes, &fps);
-
-				if (part->nframes > 1 && info->lifetime_from_animation) {
-					// Recalculate max life for ani's
-					part->max_life = i2fl(part->nframes) / i2fl(fps);
-				}
-
-				break;
-			}
-
-			case PARTICLE_FIRE: {
-				if (Anim_bitmap_id_fire < 0) {
-					return false;
-				}
-
-				part->bitmap = Anim_bitmap_id_fire;
-				part->nframes = Anim_num_frames_fire;
-
-				break;
-			}
-
-			case PARTICLE_SMOKE: {
-				if (Anim_bitmap_id_smoke < 0) {
-					return false;
-				}
-
-				part->bitmap = Anim_bitmap_id_smoke;
-				part->nframes = Anim_num_frames_smoke;
-
-				break;
-			}
-
-			case PARTICLE_SMOKE2: {
-				if (Anim_bitmap_id_smoke2 < 0) {
-					return false;
-				}
-
-				part->bitmap = Anim_bitmap_id_smoke2;
-				part->nframes = Anim_num_frames_smoke2;
-
-				break;
-			}
-		}
-
 		return true;
 	}
 

@@ -37,5 +37,14 @@ void ParticleEmitterEffect::setValues(const particle_emitter& emitter, int bitma
 	m_range = range;
 	m_nframes = nframes;
 }
+
+const particle_emitter& ParticleEmitterEffect::getEmitter() const {
+	return m_emitter;
+}
+
+particle_emitter& ParticleEmitterEffect::getEmitter() {
+	return m_emitter;
+}
+
 }
 }

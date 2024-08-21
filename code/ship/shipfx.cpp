@@ -33,6 +33,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "particle/particle.h"
+#include "particle/effects/ParticleEmitterEffect.h"
 #include "playerman/player.h"
 #include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"
@@ -1161,61 +1162,6 @@ void shipfx_flash_do_frame(float frametime)
 
 }
 
-float Particle_width = 1.2f;
-DCF(particle_width, "Sets multiplier for angular width of the particle spew ( 0 - 5)")
-{
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_width : %f\n", Particle_width);
-		return;
-	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_width = value;
-
-	dc_printf("Particle_width set to %f\n", Particle_width);
-}
-
-float Particle_number = 1.2f;
-DCF(particle_num, "Sets multiplier for the number of particles created")
-{
-	
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_number : %f\n", Particle_number);
-		return;
-	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_number = value;
-
-	dc_printf("Particle_number set to %f\n", Particle_number);
-}
-
-float Particle_life = 1.2f;
-DCF(particle_life, "Multiplier for the lifetime of particles created")
-{
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_life : %f\n", Particle_life);
-		return;
-	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_life = value;
-
-	dc_printf("Particle_life set to %f\n", Particle_life);
-}
-
 // Make sparks fly off of ship n.
 // sn = spark number to spark, corrosponding to element in
 //      ship->hitpos array.  If this isn't -1, it is a just
@@ -1226,7 +1172,6 @@ void shipfx_emit_spark( int n, int sn )
 	object * obj;
 	vec3d outpnt;
 	ship *shipp = &Ships[n];
-	float ship_radius, spark_scale_factor;
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	if(sn > -1 && !sip->impact_spew.isValid())
@@ -1237,22 +1182,6 @@ void shipfx_emit_spark( int n, int sn )
 	
 	if ( shipp->num_hits <= 0 )
 		return;
-
-	// get radius of ship
-	ship_radius = model_get_radius(sip->model_num);
-
-	// get spark_scale_factor -- how much to increase ship sparks, based on radius
-	if (ship_radius > 40) {
-		spark_scale_factor = 1.0f;
-	} else if (ship_radius > 20) {
-		spark_scale_factor = (ship_radius - 20.0f) / 20.0f;
-	} else {
-		spark_scale_factor = 0.0f;
-	}
-
-	float spark_time_scale  = 1.0f + spark_scale_factor * (Particle_life   - 1.0f);
-	float spark_width_scale = 1.0f + spark_scale_factor * (Particle_width  - 1.0f);
-	float spark_num_scale   = 1.0f + spark_scale_factor * (Particle_number - 1.0f);
 
 	obj = &Objects[shipp->objnum];
 
@@ -1300,12 +1229,6 @@ void shipfx_emit_spark( int n, int sn )
 		return;
 
 	if ( create_spark )	{
-
-		particle::particle_emitter pe;
-		particle_effect		pef;
-
-		pe.pos = outpnt;				// Where the particles emit from
-
 		vec3d vel;
         if (shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
 			// No velocity if going through warp.
@@ -1334,18 +1257,9 @@ void shipfx_emit_spark( int n, int sn )
 			vm_vec_scale_add2(&tmp_norm,&tmp_vel, -2.0f);
 			vm_vec_normalize_safe(&tmp_norm);
 		}
-				
-		pe.normal = tmp_norm;			// What normal the particle emit around
 
-		//if (sn > -1)
-		//	pef = sip->impact_spew;
-		//else
-		//	pef = sip->damage_spew;
-
-		pe.min_rad = pef.min_rad;
-		pe.max_rad = pef.max_rad;
-		pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
-		pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &tmp_norm);
 
 		// first time through - set up end time and make heavier initially
 		if ( sn > -1 )	{
@@ -1363,37 +1277,17 @@ void shipfx_emit_spark( int n, int sn )
 
 			auto source = particle::ParticleManager::get()->createSource(sip->impact_spew);
 
-			matrix orient;
-			vm_vector_2_matrix_norm(&orient, &tmp_norm);
-
 			source.moveTo(&outpnt, &orient);
 			source.setVelocity(&vel);
 
 			source.finish();
 		} else {
-			if (pef.n_high > 1) {
-				pe.num_low = pef.n_low;
-				pe.num_high = pef.n_high;
-			} else {
-				pe.num_low  = (int) (20.0f * spark_num_scale);
-				pe.num_high = (int) (50.0f * spark_num_scale);
-			}
-			
-			if (pef.variance > 0.0f) {
-				pe.normal_variance = pef.variance;
-			} else {
-				pe.normal_variance = 0.2f * spark_width_scale;
-			}
+			auto source = particle::ParticleManager::get()->createSource(sip->damage_spew);
 
-			if (pef.max_life > 0.0f) {
-				pe.min_life = pef.min_life;
-				pe.max_life = pef.max_life;
-			} else {
-				pe.min_life = 0.7f * spark_time_scale;
-				pe.max_life = 1.5f * spark_time_scale;
-			}
-			
-			particle::emit( &pe, particle::PARTICLE_SMOKE, 0 );
+			source.moveTo(&outpnt, &orient);
+			source.setVelocity(&vel);
+
+			source.finish();
 		}
 	}
 
@@ -1990,46 +1884,25 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			do_sub_expl_sound(half_ship->parent_obj->radius, &model_clip_plane_pt, handle_array);
 
 			// do particles
-			particle::particle_emitter	pe;
-			particle_effect		pef = sip->split_particles;
 
-			pe.num_low = pef.n_low;					// Lowest number of particles to create
-			pe.num_high = pef.n_high;				// Highest number of particles to create
-			pe.pos = model_clip_plane_pt;	// Where the particles emit from
-			pe.vel = half_ship->phys_info.vel;		// Initial velocity of all the particles
+			//This does not seem right, but is current particle behaviour
+			vec3d normal = vmd_x_vector;
+			vec3d vel = half_ship->phys_info.vel;
 
-			float range = 1.0f + 0.002f*half_ship->parent_obj->radius;
+			// A bit of hacking is required here since the velocity for the source depends on the effect itself...
+			//TODO REGRESSION: If no explicit random velocity is tabled, set it to 1 * half_ship->explosion_vel
+			//pe.min_vel = 0.f;
+			//pe.max_vel =  half_ship->explosion_vel;
 
-			if (pef.max_life > 0.0f) {
-				pe.min_life = pef.min_life;
-				pe.max_life = pef.max_life;
-			} else {
-				pe.min_life = 0.5f*range;				// How long the particles live
-				pe.max_life = 6.0f*range;				// How long the particles live
-			}
+			auto source = particle::ParticleManager::get()->createSource(sip->split_particles);
 
-			pe.normal = vmd_x_vector;		// What normal the particle emit around
-			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+			matrix orient;
+			vm_vector_2_matrix_norm(&orient, &normal);
 
-			if (pef.max_vel > 0.0f) {
-				pe.min_vel = pef.min_vel;
-				pe.max_vel = pef.max_vel;
-			} else {
-				pe.min_vel = 0.0f;									// How fast the slowest particle can move
-				pe.max_vel = half_ship->explosion_vel;				// How fast the fastest particle can move
-			}
-			float scale = half_ship->parent_obj->radius * 0.01f;
-			if (pef.max_rad > 0.0f) {
-				pe.min_rad = pef.min_rad;
-				pe.max_rad = pef.max_rad;
-			} else {
-				pe.min_rad = 0.5f*scale;				// Min radius
-				pe.max_rad = 1.5f*scale;				// Max radius
-			}
+			source.moveTo(&model_clip_plane_pt, &orient);
+			source.setVelocity(&vel);
 
-			if (pe.num_high > 0) {
-				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, range );
-			}
+			source.finish();
 
 			if (sip->generic_debris_model_num >= 0) {
 				// spawn a bunch of debris pieces, first determine the cross sectional average position to be the force explosion center

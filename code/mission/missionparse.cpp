@@ -3619,7 +3619,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 void mission_parse_handle_late_arrivals(p_object *p_objp)
 {
 	ship_info *sip = NULL;
-	model_subsystem *subsystems = NULL;
 
 	// only for objects which show up after the start of a mission
 	if (p_objp->created_object != NULL)
@@ -3629,12 +3628,8 @@ void mission_parse_handle_late_arrivals(p_object *p_objp)
 
 	sip = &Ship_info[p_objp->ship_class];
 
-	if (sip->n_subsystems > 0) {
-		subsystems = &sip->subsystems[0];
-	}
-
 	// we need the model to process the texture set, so go ahead and load it now
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, subsystems);
+	sip->model_num = model_load(sip->pof_file, sip);
 }
 
 // Goober5000 - I split this because 1) it's clearer; and 2) initially multiple docked ships would have been
@@ -4942,7 +4937,7 @@ void resolve_path_masks(int anchor, int *path_mask)
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
-		modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		modelnum = model_load(sip->pof_file, sip);
 
 		// resolve names to indexes
 		*path_mask = 0;

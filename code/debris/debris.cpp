@@ -22,6 +22,7 @@
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
 #include "particle/particle.h"
+#include "particle/effects/ParticleEmitterEffect.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -53,6 +54,8 @@ int Debris_inited = 0;
 int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
+
+particle::ParticleEffectHandle Debris_hit_particle;
 
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
@@ -112,6 +115,21 @@ void debris_init()
 	Debris.reserve(SOFT_LIMIT_DEBRIS_PIECES);
 
 	Num_hull_pieces = 0;
+
+	auto debris_hit_effect = new particle::effects::ParticleEmitterEffect();
+	particle::particle_emitter pe;
+	pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
+	pe.min_rad = 0.20f;				// Min radius
+	pe.max_rad = 0.40f;				// Max radius
+	pe.num_low = 10;				// Lowest number of particles to create
+	pe.num_high = 10;			// Highest number of particles to create
+	pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
+	pe.min_vel = 0.0f;				// How fast the slowest particle can move
+	pe.max_vel = 10.0f;				// How fast the fastest particle can move
+	pe.min_life = 0.25f;			// How long the particles live
+	pe.max_life = 0.75f;			// How long the particles live
+	debris_hit_effect->setValues(pe, particle::Anim_bitmap_id_fire, 1.f, particle::Anim_num_frames_fire);
+	Debris_hit_particle = particle::ParticleManager::get()->addEffect(debris_hit_effect);
 }
 
 /**
@@ -121,14 +139,14 @@ void debris_page_in()
 {
 	uint i;
 
-	Debris_model = model_load( NOX("debris01.pof"), 0, NULL );
+	Debris_model = model_load( NOX("debris01.pof") );
 	if (Debris_model >= 0)	{
 		polymodel * pm;
 		pm = model_get(Debris_model);
 		Debris_num_submodels = pm->n_models;
 	}
 
-	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
+	Debris_vaporize_model = model_load( NOX("debris02.pof") );
 
 	for (i=0; i<Species_info.size(); i++ )
 	{
@@ -776,30 +794,19 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 	debris	*debris_p = &Debris[debris_obj->instance];
 
 	// Do a little particle spark shower to show we hit
-	{
-		particle::particle_emitter pe;
-
-		pe.pos = *hitpos;								// Where the particles emit from
-		pe.vel = debris_obj->phys_info.vel;		// Initial velocity of all the particles
-
+	if (Debris_hit_particle.isValid()){			// Where the particles emit from
 		vec3d tmp_norm;
 		vm_vec_sub( &tmp_norm, hitpos, &debris_obj->pos );
 		vm_vec_normalize_safe(&tmp_norm);
-			
-		pe.normal = tmp_norm;			// What normal the particle emit around
-		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-		pe.min_rad = 0.20f;				// Min radius
-		pe.max_rad = 0.40f;				// Max radius
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &tmp_norm);
 
-		// Sparks for first time at this spot
-		pe.num_low = 10;				// Lowest number of particles to create
-		pe.num_high = 10;			// Highest number of particles to create
-		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-		pe.min_vel = 0.0f;				// How fast the slowest particle can move
-		pe.max_vel = 10.0f;				// How fast the fastest particle can move
-		pe.min_life = 0.25f;			// How long the particles live
-		pe.max_life = 0.75f;			// How long the particles live
-		particle::emit( &pe, particle::PARTICLE_FIRE, 0 );
+		auto source = particle::ParticleManager::get()->createSource(Debris_hit_particle);
+
+		source.moveTo(hitpos, &orient);
+		source.setVelocity(&debris_obj->phys_info.vel);
+
+		source.finish();
 	}
 
 	// multiplayer clients bail here

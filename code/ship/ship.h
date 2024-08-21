@@ -984,6 +984,7 @@ typedef struct thruster_particles {
 	int			n_high;
 	int			n_low;
 	float		variance;
+	particle::ParticleEffectHandle particle_handle;
 } thruster_particles;
 
 typedef struct particle_effect {

@@ -1954,7 +1954,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	if (s[0] == '\0')
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
-	model_num = model_load(s, 0, NULL);
+	model_num = model_load(s);
 
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }

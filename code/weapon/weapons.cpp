@@ -6487,7 +6487,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 			return -1;
 		}
 
-		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+		wip->model_num = model_load(wip->pofbitmap_name);
 
 		if (wip->model_num < 0) {
 			Error(LOCATION, "Cannot create weapon %s; model file %s could not be loaded", wip->name, wip->pofbitmap_name);
@@ -7983,7 +7983,7 @@ void weapons_page_in()
 		{
 			case WRT_POF:
 			{
-				wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
+				wip->model_num = model_load( wip->pofbitmap_name );
 
 				polymodel *pm = model_get( wip->model_num );
 
@@ -8016,7 +8016,7 @@ void weapons_page_in()
 		wip->external_model_num = -1;
 
 		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+			wip->external_model_num = model_load( wip->external_model_name );
 
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
@@ -8095,7 +8095,7 @@ void weapons_page_in_cheats()
         wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
 
 		if ( wip->render_type == WRT_POF ) {
-			wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
+			wip->model_num = model_load( wip->pofbitmap_name );
 				
 			polymodel *pm = model_get( wip->model_num );
 				
@@ -8109,7 +8109,7 @@ void weapons_page_in_cheats()
 		wip->external_model_num = -1;
 		
 		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+			wip->external_model_num = model_load( wip->external_model_name );
 
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
@@ -8174,7 +8174,7 @@ bool weapon_page_in(int weapon_type)
 		{
 		case WRT_POF:
 		{
-			wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+			wip->model_num = model_load(wip->pofbitmap_name);
 
 			polymodel *pm = model_get(wip->model_num);
 
@@ -8207,7 +8207,7 @@ bool weapon_page_in(int weapon_type)
 		wip->external_model_num = -1;
 
 		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load(wip->external_model_name, 0, NULL);
+			wip->external_model_num = model_load(wip->external_model_name);
 
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;

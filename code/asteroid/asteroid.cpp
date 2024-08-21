@@ -546,7 +546,7 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 		return;
 
-	asip->subtypes[asteroid_subtype].model_number = model_load( asip->subtypes[asteroid_subtype].pof_filename, 0, nullptr );
+	asip->subtypes[asteroid_subtype].model_number = model_load( asip->subtypes[asteroid_subtype].pof_filename );
 
 	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 	{
