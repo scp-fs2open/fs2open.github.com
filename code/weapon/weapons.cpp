@@ -8414,17 +8414,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit the particle
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&particle_pos,
-											 &vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = particle_pos;
+							pi.vel = vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&particle_pos,
 											 &vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8458,17 +8461,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8501,17 +8507,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8536,17 +8545,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8581,17 +8591,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8871,7 +8884,6 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 					 &vmd_zero_vector,
 					 0.0f,
 					 radius,
-					 particle::PARTICLE_BITMAP_PERSISTENT,
 					 expl_ani_handle,
 					 objp);
 }

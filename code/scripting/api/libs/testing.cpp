@@ -127,7 +127,7 @@ ADE_FUNC_DEPRECATED(createParticle,
 {
 	particle::particle_info pi;
 	pi.type = particle::PARTICLE_DEBUG;
-	pi.optional_data = -1;
+	pi.bitmap = -1;
 	pi.attached_objnum = -1;
 	pi.attached_sig = -1;
 	pi.reverse = 0;
@@ -164,7 +164,7 @@ ADE_FUNC_DEPRECATED(createParticle,
 				    LuaError(L, "Invalid texture specified for createParticle()!");
 				    return ADE_RETURN_NIL;
 			    } else {
-				    pi.optional_data = texture->handle;
+				    pi.bitmap = texture->handle;
 				    pi.type          = particle::PARTICLE_BITMAP;
 			    }
 			    break;

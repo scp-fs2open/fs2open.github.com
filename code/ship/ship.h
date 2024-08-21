@@ -1234,11 +1234,11 @@ public:
 	SCP_vector<int> explosion_bitmap_anims;
 	float skip_deathroll_chance;					
 
-	particle_effect		impact_spew;
-	particle_effect		damage_spew;
-	particle_effect		split_particles;
-	particle_effect		knossos_end_particles;
-	particle_effect		regular_end_particles;
+	particle::ParticleEffectHandle		impact_spew;
+	particle::ParticleEffectHandle		damage_spew;
+	particle::ParticleEffectHandle		split_particles;
+	particle::ParticleEffectHandle		knossos_end_particles;
+	particle::ParticleEffectHandle		regular_end_particles;
 
 	particle::ParticleEffectHandle death_effect;
 

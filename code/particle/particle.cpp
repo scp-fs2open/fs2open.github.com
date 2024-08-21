@@ -32,15 +32,6 @@ namespace
 	SCP_vector<::particle::particle> Particles;
 	SCP_vector<ParticlePtr> Persistent_particles;
 
-	int Anim_bitmap_id_fire = -1;
-	int Anim_num_frames_fire = -1;
-
-	int Anim_bitmap_id_smoke = -1;
-	int Anim_num_frames_smoke = -1;
-
-	int Anim_bitmap_id_smoke2 = -1;
-	int Anim_num_frames_smoke2 = -1;
-
 	static int Particles_enabled = 1;
 
 	float get_current_alpha(vec3d* pos, float rad)
@@ -89,6 +80,15 @@ namespace
 
 namespace particle
 {
+	int Anim_bitmap_id_fire = -1;
+	int Anim_num_frames_fire = -1;
+
+	int Anim_bitmap_id_smoke = -1;
+	int Anim_num_frames_smoke = -1;
+
+	int Anim_bitmap_id_smoke2 = -1;
+	int Anim_num_frames_smoke2 = -1;
+
 	// Reset everything between levels
 	void init()
 	{
@@ -170,7 +170,7 @@ namespace particle
 		part->max_life = info->lifetime;
 		part->radius = info->rad;
 		part->type = info->type;
-		part->optional_data = info->optional_data;
+		part->bitmap = info->bitmap;
 		part->attached_objnum = info->attached_objnum;
 		part->attached_sig = info->attached_sig;
 		part->reverse = info->reverse;
@@ -181,66 +181,71 @@ namespace particle
 		part->size_lifetime_curve = info->size_lifetime_curve;
 		part->vel_lifetime_curve = info->vel_lifetime_curve;
 
-		switch (info->type)
-		{
-		case PARTICLE_BITMAP:
-		case PARTICLE_BITMAP_PERSISTENT:
-		{
-			Assertion(bm_is_valid(info->optional_data), "Invalid bitmap handle passed to particle create.");
+		if (info->nframes < 0) {
+			Assertion(bm_is_valid(info->bitmap), "Invalid bitmap handle passed to particle create.");
 
-			bm_get_info(info->optional_data, NULL, NULL, NULL, &part->nframes, &fps);
+			bm_get_info(info->bitmap, NULL, NULL, NULL, &part->nframes, &fps);
 
 			if (part->nframes > 1 && info->lifetime_from_animation)
 			{
 				// Recalculate max life for ani's
 				part->max_life = i2fl(part->nframes) / i2fl(fps);
 			}
+		}
+		else {
+			if (part->bitmap < 0)
+				return false;
 
-			break;
+			part->nframes = info->nframes;
 		}
 
-		case PARTICLE_FIRE:
-		{
-			if (Anim_bitmap_id_fire < 0)
-			{
-				return false;
+		switch (info->type) {
+			case PARTICLE_BITMAP:
+			case PARTICLE_BITMAP_PERSISTENT: {
+				Assertion(bm_is_valid(info->bitmap), "Invalid bitmap handle passed to particle create.");
+
+				bm_get_info(info->bitmap, NULL, NULL, NULL, &part->nframes, &fps);
+
+				if (part->nframes > 1 && info->lifetime_from_animation) {
+					// Recalculate max life for ani's
+					part->max_life = i2fl(part->nframes) / i2fl(fps);
+				}
+
+				break;
 			}
 
-			part->optional_data = Anim_bitmap_id_fire;
-			part->nframes = Anim_num_frames_fire;
+			case PARTICLE_FIRE: {
+				if (Anim_bitmap_id_fire < 0) {
+					return false;
+				}
 
-			break;
-		}
+				part->bitmap = Anim_bitmap_id_fire;
+				part->nframes = Anim_num_frames_fire;
 
-		case PARTICLE_SMOKE:
-		{
-			if (Anim_bitmap_id_smoke < 0)
-			{
-				return false;
+				break;
 			}
 
-			part->optional_data = Anim_bitmap_id_smoke;
-			part->nframes = Anim_num_frames_smoke;
+			case PARTICLE_SMOKE: {
+				if (Anim_bitmap_id_smoke < 0) {
+					return false;
+				}
 
-			break;
-		}
+				part->bitmap = Anim_bitmap_id_smoke;
+				part->nframes = Anim_num_frames_smoke;
 
-		case PARTICLE_SMOKE2:
-		{
-			if (Anim_bitmap_id_smoke2 < 0)
-			{
-				return false;
+				break;
 			}
 
-			part->optional_data = Anim_bitmap_id_smoke2;
-			part->nframes = Anim_num_frames_smoke2;
+			case PARTICLE_SMOKE2: {
+				if (Anim_bitmap_id_smoke2 < 0) {
+					return false;
+				}
 
-			break;
-		}
+				part->bitmap = Anim_bitmap_id_smoke2;
+				part->nframes = Anim_num_frames_smoke2;
 
-		default:
-			part->nframes = 1;
-			break;
+				break;
+			}
 		}
 
 		return true;
@@ -273,21 +278,18 @@ namespace particle
 				vec3d* vel,
 				float lifetime,
 				float rad,
-				ParticleType type,
-				int optional_data,
+				int bitmap,
 				object* objp,
 				bool reverse) {
 		particle_info pinfo;
-
-		Assertion((type >= 0) && (type < NUM_PARTICLE_TYPES), "Invalid particle type %d specified!", type);
 
 		// setup old data
 		pinfo.pos = *pos;
 		pinfo.vel = *vel;
 		pinfo.lifetime = lifetime;
 		pinfo.rad = rad;
-		pinfo.type = type;
-		pinfo.optional_data = optional_data;
+		pinfo.bitmap = bitmap;
+		pinfo.nframes = -1;
 
 		// setup new data
 		if (objp == NULL) {
@@ -465,7 +467,7 @@ namespace particle
 		int framenum;
 		int cur_frame;
 		if (part->nframes > 1) {
-			framenum = bm_get_anim_frame(part->optional_data, part->age, part->max_life, part->looping);
+			framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
 			cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
 		}
 		else
@@ -475,15 +477,15 @@ namespace particle
 
 		if (part->type == PARTICLE_DEBUG)
 		{
-			if (part->optional_data >= 0)
-				gr_set_color((part->optional_data >> 16) & 0xff, (part->optional_data >> 8) & 0xff, part->optional_data & 0xff);
+			if (part->bitmap >= 0)
+				gr_set_color((part->bitmap >> 16) & 0xff, (part->bitmap >> 8) & 0xff, part->bitmap & 0xff);
 			else
 				gr_set_color(255, 0, 0);
 			g3_draw_sphere_ez(&p_pos, part->radius);
 		}
 		else
 		{
-			framenum = part->optional_data;
+			framenum = part->bitmap;
 
 			Assert( cur_frame < part->nframes );
 
@@ -558,7 +560,7 @@ namespace particle
 
 	// Creates a bunch of particles. You pass a structure
 	// rather than a bunch of parameters.
-	void emit(particle_emitter* pe, ParticleType type, int optional_data, float range)
+	void emit(particle_emitter* pe, int bitmap, float range, int nframes)
 	{
 		int i, n;
 
@@ -594,23 +596,28 @@ namespace particle
 
 		for (i = 0; i < n; i++)
 		{
+			particle_info pinfo;
+
 			// Create a particle
-			vec3d tmp_vel;
 			vec3d normal;                // What normal the particle emit arond
 
-			float radius = ((pe->max_rad - pe->min_rad) * frand()) + pe->min_rad;
+			pinfo.rad = ((pe->max_rad - pe->min_rad) * frand()) + pe->min_rad;
 
 			float speed = ((pe->max_vel - pe->min_vel) * frand()) + pe->min_vel;
 
-			float life = ((pe->max_life - pe->min_life) * frand()) + pe->min_life;
+			pinfo.lifetime = ((pe->max_life - pe->min_life) * frand()) + pe->min_life;
 
 			normal.xyz.x = pe->normal.xyz.x + (frand() * 2.0f - 1.0f) * pe->normal_variance;
 			normal.xyz.y = pe->normal.xyz.y + (frand() * 2.0f - 1.0f) * pe->normal_variance;
 			normal.xyz.z = pe->normal.xyz.z + (frand() * 2.0f - 1.0f) * pe->normal_variance;
 			vm_vec_normalize_safe(&normal);
-			vm_vec_scale_add(&tmp_vel, &pe->vel, &normal, speed);
+			vm_vec_scale_add(&pinfo.vel, &pe->vel, &normal, speed);
 
-			create(&pe->pos, &tmp_vel, life, radius, type, optional_data);
+			pinfo.pos = pe->pos;
+			pinfo.bitmap = bitmap;
+			pinfo.nframes = nframes;
+
+			create(&pinfo);
 		}
 	}
 }

@@ -97,8 +97,7 @@ int ParticleProperties::chooseBitmap()
 }
 
 void ParticleProperties::createParticle(particle_info& info) {
-	info.optional_data = ParticleProperties::chooseBitmap();
-	info.type = PARTICLE_BITMAP;
+	info.bitmap = ParticleProperties::chooseBitmap();
 	if (m_parentScale)
 		// if we were spawned by a particle, info.rad is the parent's radius and m_radius is a factor of that
 		info.rad *= m_radius.next(); 
@@ -134,8 +133,7 @@ void ParticleProperties::createParticle(particle_info& info) {
 }
 
 WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) {
-	info.optional_data = ParticleProperties::chooseBitmap();
-	info.type = PARTICLE_BITMAP;
+	info.bitmap = ParticleProperties::chooseBitmap();
 	info.rad = m_radius.next();
 	info.length = m_length.next();
 	info.size_lifetime_curve = m_size_lifetime_curve;

@@ -2437,7 +2437,7 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 					pe.min_life = 0.0f;
 					pe.max_life = 1.0f;
 
-					particle::emit( &pe, particle::PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
+					particle::emit( &pe, tp->thruster_bitmap.first_frame);
 				}
 			}
 		}

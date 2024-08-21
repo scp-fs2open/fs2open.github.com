@@ -15,8 +15,6 @@
 #include "globalincs/pstypes.h"
 #include "object/object.h"
 
-#include <memory>
-
 extern bool Randomize_particle_rotation;
 
 namespace particle
@@ -61,6 +59,15 @@ namespace particle
 		INVALID_TYPE
 	};
 
+	extern int Anim_bitmap_id_fire;
+	extern int Anim_num_frames_fire;
+
+	extern int Anim_bitmap_id_smoke;
+	extern int Anim_num_frames_smoke;
+
+	extern int Anim_bitmap_id_smoke2;
+	extern int Anim_num_frames_smoke2;
+
 	// particle creation stuff
 	typedef struct particle_info {
 		// old-style particle info
@@ -69,7 +76,8 @@ namespace particle
 		float lifetime = -1.0f;
 		float rad = -1.0f;
 		ParticleType type = INVALID_TYPE;
-		int optional_data = -1;
+		int bitmap = -1;
+		int nframes = -1;
 
 		// new-style particle info
 		int attached_objnum = -1;				// if these are set, the pos is relative to the pos of the origin of the attached object
@@ -92,7 +100,7 @@ namespace particle
 		bool    looping;            // If the particle will loop its animation at the end of its life instead of expiring
 		float	radius;				// radius
 		int		type;				// type										// -1 = None
-		int		optional_data;		// depends on type
+		int		bitmap;		// depends on type
 		int		nframes;			// If an ani, how many frames?	
 
 		// new style data
@@ -131,8 +139,7 @@ namespace particle
 				vec3d* vel,
 				float lifetime,
 				float rad,
-				ParticleType type,
-				int optional_data = -1,
+				int bitmap = -1,
 				object* objp = NULL,
 				bool reverse = false);
 
@@ -170,7 +177,7 @@ namespace particle
 
 	// Creates a bunch of particles. You pass a structure
 	// rather than a bunch of parameters.
-	void emit(particle_emitter *pe, ParticleType type, int optional_data, float range = 1.0);
+	void emit(particle_emitter *pe, int bitmap, float range = 1.0, int nframes = -1);
 }
 
 #endif // _PARTICLE_H

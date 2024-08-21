@@ -1609,8 +1609,7 @@ void beam_generate_muzzle_particles(beam *b)
 		pinfo.attached_sig = 0;
 		pinfo.rad = wip->b_info.beam_particle_radius;
 		pinfo.reverse = 1;
-		pinfo.type = particle::PARTICLE_BITMAP;
-		pinfo.optional_data = wip->b_info.beam_particle_ani.first_frame;
+		pinfo.bitmap = wip->b_info.beam_particle_ani.first_frame;
 		particle::create(&pinfo);
 	}
 }

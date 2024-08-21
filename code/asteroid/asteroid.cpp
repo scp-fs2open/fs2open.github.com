@@ -1689,7 +1689,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 			// If the weapon didn't play any impact animation, play custom asteroid impact animation
 			if (!wip->impact_weapon_expl_effect.isValid()) {
-				particle::create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, particle::PARTICLE_BITMAP, Asteroid_impact_explosion_ani );
+				particle::create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, Asteroid_impact_explosion_ani );
 			}
 		}
 	}

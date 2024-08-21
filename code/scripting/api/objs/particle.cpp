@@ -226,7 +226,7 @@ ADE_FUNC(setColor, l_Particle, "number r, number g, number b", "Sets the color f
 	CLAMP(r, 0, 255);
 	CLAMP(g, 0, 255);
 	CLAMP(b, 0, 255);
-	ph->Get().lock()->optional_data = r << 16 | g << 8 | b;
+	ph->Get().lock()->bitmap = r << 16 | g << 8 | b;
 
 	return ADE_RETURN_NIL;
 }

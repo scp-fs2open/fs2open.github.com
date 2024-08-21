@@ -1229,10 +1229,10 @@ void shipfx_emit_spark( int n, int sn )
 	float ship_radius, spark_scale_factor;
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
-	if(sn > -1 && sip->impact_spew.n_high <= 0)
+	if(sn > -1 && !sip->impact_spew.isValid())
 		return;
 
-	if(sn < 0 && sip->damage_spew.n_high <= 0)
+	if(sn < 0 && !sip->damage_spew.isValid())
 		return;
 	
 	if ( shipp->num_hits <= 0 )
@@ -1306,14 +1306,15 @@ void shipfx_emit_spark( int n, int sn )
 
 		pe.pos = outpnt;				// Where the particles emit from
 
+		vec3d vel;
         if (shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
 			// No velocity if going through warp.
-			pe.vel = vmd_zero_vector;
+			vel = vmd_zero_vector;
 		} else {
 			// Initial velocity of all the particles.
 			// 0.0f = 0% of parent's.
 			// 1.0f = 100% of parent's.
-			vm_vec_copy_scale( &pe.vel, &obj->phys_info.vel, 0.7f );
+			vm_vec_copy_scale( &vel, &obj->phys_info.vel, 0.7f );
 		}
 
 		// TODO: add velocity from rotation if submodel is rotating
@@ -1336,10 +1337,10 @@ void shipfx_emit_spark( int n, int sn )
 				
 		pe.normal = tmp_norm;			// What normal the particle emit around
 
-		if (sn > -1)
-			pef = sip->impact_spew;
-		else
-			pef = sip->damage_spew;
+		//if (sn > -1)
+		//	pef = sip->impact_spew;
+		//else
+		//	pef = sip->damage_spew;
 
 		pe.min_rad = pef.min_rad;
 		pe.max_rad = pef.max_rad;
@@ -1359,13 +1360,16 @@ void shipfx_emit_spark( int n, int sn )
 					shipp->sparks[spark_num].end_time = timestamp( 100000000 );
 				}
 			}
-			pe.num_low = pef.n_low;				// Lowest number of particles to create (hardware)
-			pe.num_high = pef.n_high;
-			pe.normal_variance = pef.variance;	//	How close they stick to that normal 0=good, 1=360 degree
-			pe.min_life = pef.min_life;				// How long the particles live
-			pe.max_life = pef.max_life;				// How long the particles live
 
-			particle::emit( &pe, particle::PARTICLE_FIRE, 0 );
+			auto source = particle::ParticleManager::get()->createSource(sip->impact_spew);
+
+			matrix orient;
+			vm_vector_2_matrix_norm(&orient, &tmp_norm);
+
+			source.moveTo(&outpnt, &orient);
+			source.setVelocity(&vel);
+
+			source.finish();
 		} else {
 			if (pef.n_high > 1) {
 				pe.num_low = pef.n_low;

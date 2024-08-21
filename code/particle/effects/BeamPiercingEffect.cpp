@@ -2,6 +2,7 @@
 
 #include "particle/effects/BeamPiercingEffect.h"
 #include "particle/ParticleSource.h"
+#include "particle/particle.h"
 
 #include "bmpman/bmpman.h"
 #include "parse/parselo.h"
@@ -14,11 +15,11 @@ bool BeamPiercingEffect::processSource(ParticleSource* source) {
 	source->getOrigin()->applyToParticleInfo(info);
 
 	if (m_effectBitmap >= 0) {
-		info.type = PARTICLE_BITMAP_PERSISTENT;
-		info.optional_data = m_effectBitmap;
+		info.bitmap = m_effectBitmap;
 	}
 	else {
-		info.type = PARTICLE_SMOKE;
+		info.bitmap = ::particle::Anim_bitmap_id_smoke;
+		info.nframes = ::particle::Anim_num_frames_smoke;
 	}
 
 	info.rad = m_radius * frand_range(0.5f, 2.0f);
