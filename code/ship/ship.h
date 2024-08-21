@@ -987,18 +987,6 @@ typedef struct thruster_particles {
 	particle::ParticleEffectHandle particle_handle;
 } thruster_particles;
 
-typedef struct particle_effect {
-	int				n_low;
-	int				n_high;
-	float			min_rad;
-	float			max_rad;
-	float			min_life;
-	float			max_life;
-	float			min_vel;
-	float			max_vel;
-	float			variance;
-} particle_effect;
-
 typedef struct ship_type_info {
 	char name[NAME_LENGTH];
 

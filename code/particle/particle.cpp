@@ -169,7 +169,6 @@ namespace particle
 		part->age = 0.0f;
 		part->max_life = info->lifetime;
 		part->radius = info->rad;
-		part->type = info->type;
 		part->bitmap = info->bitmap;
 		part->attached_objnum = info->attached_objnum;
 		part->attached_sig = info->attached_sig;
@@ -426,45 +425,31 @@ namespace particle
 			cur_frame = 0;
 		}
 
-		if (part->type == PARTICLE_DEBUG)
-		{
-			if (part->bitmap >= 0)
-				gr_set_color((part->bitmap >> 16) & 0xff, (part->bitmap >> 8) & 0xff, part->bitmap & 0xff);
-			else
-				gr_set_color(255, 0, 0);
-			g3_draw_sphere_ez(&p_pos, part->radius);
-		}
-		else
-		{
-			framenum = part->bitmap;
+		framenum = part->bitmap;
 
-			Assert( cur_frame < part->nframes );
+		Assert( cur_frame < part->nframes );
 
-			float radius = part->radius;
-			if (part->size_lifetime_curve >= 0) {
-				radius *= Curves[part->size_lifetime_curve].GetValue(part->age / part->max_life);
-			}
-
-			if (part->length != 0.0f) {
-				vec3d p0 = part->pos;
-
-				vec3d p1;
-				vm_vec_copy_normalize(&p1, &part->velocity);
-				p1 *= part->length;
-				p1 += part->pos;
-
-				batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
-			}
-			else {
-				// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
-				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
-			}
-
-
-			return true;
+		float radius = part->radius;
+		if (part->size_lifetime_curve >= 0) {
+			radius *= Curves[part->size_lifetime_curve].GetValue(part->age / part->max_life);
 		}
 
-		return false;
+		if (part->length != 0.0f) {
+			vec3d p0 = part->pos;
+
+			vec3d p1;
+			vm_vec_copy_normalize(&p1, &part->velocity);
+			p1 *= part->length;
+			p1 += part->pos;
+
+			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
+		}
+		else {
+			// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
+			batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
+		}
+
+		return true;
 	}
 
 	void render_all()

@@ -43,22 +43,6 @@ namespace particle
 	//=============== LOW-LEVEL SINGLE PARTICLE CREATION CODE ====================
 	//============================================================================
 
-	/**
-	 * The different types of particles
-	 */
-	enum ParticleType
-	{
-		PARTICLE_DEBUG, //!< A simple sphere; optional data provides the color which defaults to red
-		PARTICLE_BITMAP, //!< A bitmap, optional data is the bitmap number.  If bitmap is an animation, lifetime is calculated by the number of frames and fps.
-		PARTICLE_FIRE, //!< The vclip used for explosions, optional means nothing
-		PARTICLE_SMOKE, //!< The vclip used for smoke, optional means nothing
-		PARTICLE_SMOKE2, //!< The vclip used for smoke, optional means nothing
-		PARTICLE_BITMAP_PERSISTENT, //!< A bitmap, optional data is the bitmap number.  If bitmap is an animation, lifetime is calculated by the number of frames and fps.
-
-		NUM_PARTICLE_TYPES,
-		INVALID_TYPE
-	};
-
 	extern int Anim_bitmap_id_fire;
 	extern int Anim_num_frames_fire;
 
@@ -75,7 +59,6 @@ namespace particle
 		vec3d vel = vmd_zero_vector;
 		float lifetime = -1.0f;
 		float rad = -1.0f;
-		ParticleType type = INVALID_TYPE;
 		int bitmap = -1;
 		int nframes = -1;
 
@@ -99,7 +82,6 @@ namespace particle
 		float	max_life;			// How much life we had
 		bool    looping;            // If the particle will loop its animation at the end of its life instead of expiring
 		float	radius;				// radius
-		int		type;				// type										// -1 = None
 		int		bitmap;		// depends on type
 		int		nframes;			// If an ani, how many frames?	
 
