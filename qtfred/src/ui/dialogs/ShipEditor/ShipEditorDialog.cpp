@@ -879,7 +879,8 @@ void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 }
 void ShipEditorDialog::on_customWarpinButton_clicked()
 {
-	// TODO:: Custom warp Dialog
+	auto dialog = new dialogs::ShipCustomWarpDialog(this, _viewport, false);
+	dialog->show();
 }
 void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 {
@@ -888,7 +889,9 @@ void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 	dialog->show();
 }
 void ShipEditorDialog::on_customWarpoutButton_clicked()
-{ // TODO:: Custom warp Dialog
+{
+	auto dialog = new dialogs::ShipCustomWarpDialog(this, _viewport, true);
+	dialog->show();
 }
 } // namespace dialogs
 } // namespace fred
