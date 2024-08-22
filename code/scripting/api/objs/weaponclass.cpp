@@ -354,7 +354,7 @@ ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number
 	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Swarm])
 		flag = true;
 
-	return ade_set_args(L, "bif", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
+	return ade_set_args(L, "bii", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
 }
 
 ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
