@@ -503,6 +503,7 @@ void CFREDView::OnUpdateViewGrid(CCmdUI* pCmdUI)
 void CFREDView::OnViewWaypoints() 
 {
 	Show_waypoints = !Show_waypoints;
+	correct_marking();
 	Update_window = 1;
 }
 
