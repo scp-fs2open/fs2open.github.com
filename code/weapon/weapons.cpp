@@ -2375,21 +2375,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	while (optional_string("$Conditional Impact:")) {
 		int armor_index;
 		ConditionalImpact ci;
-		ci.min_health_threshold = 0.0;
-		ci.max_health_threshold = 1.0;
-		ci.min_angle_threshold = 0.0;
-		ci.max_angle_threshold = 180.0;
+		ci.min_health_threshold = std::numeric_limits<float>::lowest();
+		ci.max_health_threshold = std::numeric_limits<float>::max();
+		ci.min_angle_threshold = 0.f;
+		ci.max_angle_threshold = 180.f;
 		ci.dinky = false;
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-		if (*fname == *"NO ARMOR") {
+		if (!stricmp(fname, "NO ARMOR")) {
 			armor_index = -1;
 		} else {
 			armor_index = armor_type_get_idx(fname);
-			if (armor_index < 0) {
-				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
-				continue;
-			}
 		};
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
@@ -2404,7 +2400,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
 		}
 		ci_vec.push_back(ci);
-		wip->conditional_impacts[armor_index] = ci_vec;
+		if (armor_index >= 0) {
+			wip->conditional_impacts[armor_index] = ci_vec;
+		} else {
+			Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+		}
 	}
 
 	if (optional_string("$Inflight Effect:")) {
@@ -7679,7 +7679,7 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 
 
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
-		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+              		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
