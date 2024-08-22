@@ -234,6 +234,10 @@ BEGIN
         MENUITEM "Delete\tDel",                 32789
         MENUITEM "Delete Wing\tCtrl+Del",       33035
         MENUITEM SEPARATOR
+        MENUITEM "Lock Marked Objects",         ID_EDIT_LOCK_MARKED_OBJECTS
+        MENUITEM "Unlock All Objects",          ID_EDIT_UNLOCK_ALL_OBJECTS
+        MENUITEM "Selection Lock",              ID_SELECTION_LOCK
+        MENUITEM SEPARATOR
         MENUITEM "Disable Undo",                33055
     END
     POPUP "&View"
@@ -3491,6 +3495,10 @@ BEGIN
                             "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
+    ID_EDIT_LOCK_MARKED_OBJECTS
+                            "Prevent marked objects from being selected or moved"
+    ID_EDIT_UNLOCK_ALL_OBJECTS
+                            "Allow all objects to be selected or moved"
     ID_MISC_POINTUSINGUVEC  "When using the Object Editor to point ships, take the ship's current up-vector into account"
     ID_MUSIC_PLAYER         "Preview music files"
 END
@@ -3620,7 +3628,7 @@ BEGIN
     ID_SELECT_LIST          "Select from List\nSelect List (H)"
     ID_CONSTRAIN_Y          "Constrain movement to global Y axis\nY Constraint"
     ID_ZOOM                 "Zoom view in/out\nZoom Mode"
-    ID_SELECTION_LOCK       "Selection Lock\nSelection Lock (Spacebar)"
+    ID_SELECTION_LOCK       "Prevent selection from changing\nSelection Lock (Spacebar)"
     ID_DISSOLVE_WING        "Remove selected ships from Wing(s)\nRemove from Wing"
 END
 

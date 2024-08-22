@@ -261,8 +261,10 @@ protected:
 	afx_msg void OnRevert();
 	afx_msg void OnUpdateRevert(CCmdUI* pCmdUI);
 	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
-	afx_msg void OnHideObjects();
+	afx_msg void OnHideMarkedObjects();
 	afx_msg void OnShowHiddenObjects();
+	afx_msg void OnLockMarkedObjects();
+	afx_msg void OnUnlockAllObjects();
 	afx_msg void OnEditUndo();
 	afx_msg void OnUpdateEditUndo(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsBriefing();
