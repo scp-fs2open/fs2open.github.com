@@ -101,6 +101,9 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
 	}
 
+	if (wip->damage_curve_idx >= 0)
+		damage *= Curves[wip->damage_curve_idx].GetValue(f2fl(Missiontime - wp->creation_time) / wip->lifetime);
+
 	// deterine whack whack
 	float		blast = wip->mass;
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	

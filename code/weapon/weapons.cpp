@@ -1372,13 +1372,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Damage Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		WeaponModularCurve mod_curve;
-		mod_curve.input = WeaponCurveInput::LIFETIME;
-		mod_curve.output = WeaponCurveOutput::ALL_DAMAGE_MULT;
-		mod_curve.curve_idx = curve_get_by_name(curve_name);
-		if (mod_curve.curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser length curve '%s' for weapon %s", curve_name.c_str(), wip->name);
-		wip->curves.push_back(mod_curve);
+		wip->damage_curve_idx = curve_get_by_name(curve_name);
+		if (wip->damage_curve_idx < 0)
+			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1523,6 +1519,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						mod_curve.output = WeaponCurveOutput::LASER_HEADON_SWITCH_ANG_MULT;
 					} else if (!stricmp(name_buf, NOX("LASER HEADON TRANSITION RATE MULT"))) {
 						mod_curve.output = WeaponCurveOutput::LASER_HEADON_SWITCH_RATE_MULT;
+					} else if (!stricmp(name_buf, NOX("LASER BITMAP ANIMATION STATE"))) {
+						mod_curve.output = WeaponCurveOutput::LASER_ANIM_STATE;
 					} else if (!stricmp(name_buf, NOX("LASER OPACITY MULT"))) {
 						mod_curve.output = WeaponCurveOutput::LASER_ALPHA_MULT;
 					} else if (!stricmp(name_buf, NOX("LASER BITMAP COLOR R MULT"))) {
@@ -1547,22 +1545,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						mod_curve.output = WeaponCurveOutput::LIGHT_G_MULT;
 					} else if (!stricmp(name_buf, NOX("LIGHT COLOR B MULT"))) {
 						mod_curve.output = WeaponCurveOutput::LIGHT_B_MULT;
-					} else if (!stricmp(name_buf, NOX("DAMAGE MULT"))) {
-						mod_curve.output = WeaponCurveOutput::ALL_DAMAGE_MULT;
-					} else if (!stricmp(name_buf, NOX("SHIELD DAMAGE MULT"))) {
-						mod_curve.output = WeaponCurveOutput::SHIELD_DAMAGE_MULT;
-					} else if (!stricmp(name_buf, NOX("SUBSYSTEM DAMAGE MULT"))) {
-						mod_curve.output = WeaponCurveOutput::SUBSYS_DAMAGE_MULT;
 					} else if (!stricmp(name_buf, NOX("DETONATION RADIUS MULT"))) {
 						mod_curve.output = WeaponCurveOutput::DET_RADIUS_MULT;
-					} else if (!stricmp(name_buf, NOX("WEAPON MASS MULT"))) {
-						mod_curve.output = WeaponCurveOutput::MASS_MULT;
-					} else if (!stricmp(name_buf, NOX("GRAVITY COEFFICIENT MULT"))) {
-						mod_curve.output = WeaponCurveOutput::GRAVITY_COEFFICIENT_MULT;
 					} else if (!stricmp(name_buf, NOX("TURN RATE MULT"))) {
 						mod_curve.output = WeaponCurveOutput::TURN_RATE_MULT;
-					} else if (!stricmp(name_buf, NOX("ANGLE TO TARGET FOR HOMING DETONATION"))) {
-						mod_curve.output = WeaponCurveOutput::ABORT_DOT_TO_TARGET;
 					} else {
 						error_display(1, "Unrecognized weapon curve output '%s' for weapon %s!\n Valid inputs are: 'LASER LENGTH', 'LASER RADIUS', 'LASER HEAD RADIUS', 'LASER TAIL RADIUS', 'LASER OPACITY', 'LASER BITMAP COLOR R', 'LASER BITMAP COLOR G', 'LASER BITMAP COLOR B', 'LASER GLOW COLOR R', 'LASER GLOW COLOR G', 'LASER GLOW COLOR B', 'LIGHT COLOR R', 'LIGHT COLOR G', 'LIGHT COLOR B', 'LIGHT INTENSITY', 'LIGHT RADIUS'.", name_buf, wip->name);
 					}
@@ -5755,8 +5741,59 @@ void weapon_home(object *obj, int num, float frame_time)
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		vec3d turnrate_mod = vm_vec_new(1.0f, 1.0f, 1.0f);
-		if (wip->turn_rate_curve_idx >= 0)
-			turnrate_mod *= Curves[wip->turn_rate_curve_idx].GetValue(time_alive / wip->lifetime);
+
+		for (int c = 0; c < wip->curves.size(); c++) {
+			WeaponModularCurve* mod_curve = &wip->curves[c];
+			if (mod_curve->curve_idx < 0) {
+				Warning(LOCATION, "Curve does not exist!");
+				continue;
+			}
+
+			Curve curve = Curves[mod_curve->curve_idx];
+			float input = 1.0f;
+			float output = 1.0f;
+
+			// we do the modular curve processing in this sort of inside-out way because we only care about one output
+			// so we don't want to bother doing any processing for curves with other outputs
+			switch (mod_curve->output) {
+				case WeaponCurveOutput::TURN_RATE_MULT: {
+					switch (mod_curve->input) {
+						case WeaponCurveInput::LIFETIME:
+							input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
+							break;
+						case WeaponCurveInput::AGE:
+							input = f2fl(Missiontime - wp->creation_time);
+							break;
+						case WeaponCurveInput::VELOCITY:
+							input = wp->weapon_max_vel;
+							break;
+						case WeaponCurveInput::HEALTH:
+							if (wip->weapon_hitpoints > 0.f) {
+								input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
+							} else {
+								input = 1.f;
+							}
+							break;
+						case WeaponCurveInput::PARENT_RADIUS:
+							input = Objects[obj->parent].radius;
+							break;
+						default:
+							continue;
+					}
+					float scaling_factor = wp->weapon_curve_data[c].first;
+					float translation = wp->weapon_curve_data[c].second;
+					input = (input / scaling_factor) + translation;
+					if (mod_curve->wraparound) {
+						float final_x = curve.keyframes.back().pos.x;
+						input = std::fmod(input, final_x);
+					}
+					output = curve.GetValue(input);
+					turnrate_mod *= output;
+				}
+				default:
+					continue;
+			}		
+		}
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
@@ -5860,18 +5897,75 @@ void weapon_process_pre( object *obj, float  frame_time)
 		}
 	}
 
+	float det_radius_adjusted = wip->det_radius;
+
+	for (int c = 0; c < wip->curves.size(); c++) {
+		WeaponModularCurve* mod_curve = &wip->curves[c];
+		if (mod_curve->curve_idx < 0) {
+			Warning(LOCATION, "Curve does not exist!");
+			continue;
+		}
+
+		Curve curve = Curves[mod_curve->curve_idx];
+		float input = 1.0f;
+		float output = 1.0f;
+
+		// we do the modular curve processing in this sort of inside-out way because we only care about one output
+		// so we don't want to bother doing any processing for curves with other outputs
+		switch (mod_curve->output) {
+			case WeaponCurveOutput::DET_RADIUS_MULT: {
+				switch (mod_curve->input) {
+					case WeaponCurveInput::LIFETIME:
+						input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
+						break;
+					case WeaponCurveInput::AGE:
+						input = f2fl(Missiontime - wp->creation_time);
+						break;
+					case WeaponCurveInput::VELOCITY:
+						input = wp->weapon_max_vel;
+						break;
+					case WeaponCurveInput::HEALTH:
+						if (wip->weapon_hitpoints > 0.f) {
+							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
+						} else {
+							input = 1.f;
+						}
+						break;
+					case WeaponCurveInput::PARENT_RADIUS:
+						input = Objects[obj->parent].radius;
+						break;
+					default:
+						continue;
+				}
+				float scaling_factor = wp->weapon_curve_data[c].first;
+				float translation = wp->weapon_curve_data[c].second;
+				input = (input / scaling_factor) + translation;
+				if (mod_curve->wraparound) {
+					float final_x = curve.keyframes.back().pos.x;
+					input = std::fmod(input, final_x);
+				}
+				output = curve.GetValue(input);
+				det_radius_adjusted *= output;
+			}
+			default:
+				continue;
+		}		
+	}
+
+	det_radius_adjusted = MAX(det_radius_adjusted, 0.f);
+
 	//WMC - Maybe detonate weapon anyway!
-	if(wip->det_radius > 0.0f)
+	if(det_radius_adjusted > 0.0f)
 	{
 		if((weapon_has_homing_object(wp)) && (wp->homing_object->type != 0))
 		{
-			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
+			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= det_radius_adjusted)
 			{
 				weapon_detonate(obj);
 			}
 		} else if(wp->target_num > -1)
 		{
-			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= wip->det_radius)
+			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= det_radius_adjusted)
 			{
 				weapon_detonate(obj);
 			}
@@ -9049,6 +9143,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float tail_radius_mult = 1.f;
 			float switch_ang_mult = 1.f;
 			float switch_rate_mult = 1.f;
+			float anim_state = -1.f;
 			float alpha_mult = 1.f;
 			float bitmap_r_mult = 1.f;
 			float bitmap_g_mult = 1.f;
@@ -9115,13 +9210,18 @@ void weapon_render(object* obj, model_draw_list *scene)
 						tail_radius_mult *= output;
 						break;
 					case WeaponCurveOutput::LASER_HEADON_SWITCH_ANG_MULT:
-						switch_ang_mult *= output;
+						switch_ang_mult *= MAX(output, 0.f);
 						break;
 					case WeaponCurveOutput::LASER_HEADON_SWITCH_RATE_MULT:
-						switch_rate_mult *= output;
+						switch_rate_mult *= MAX(output, 0.f);
+						break;
+					case WeaponCurveOutput::LASER_ANIM_STATE:
+						anim_state = output;
+						CLAMP(anim_state, 0.f, 1.f);
 						break;
 					case WeaponCurveOutput::LASER_ALPHA_MULT:
 						alpha_mult *= output;
+						CLAMP(alpha_mult, 0.f, 1.f);
 						break;
 					case WeaponCurveOutput::LASER_BITMAP_R_MULT:
 						bitmap_r_mult *= output;
@@ -9199,13 +9299,23 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
+					if (anim_state >= 0.f) {
+						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
+						CLAMP(framenum, 0, wip->laser_bitmap.num_frames);
+					} else {
+						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
+					}
 				}
 
 				if (wip->laser_headon_bitmap.num_frames > 1) {
 					wp->laser_headon_bitmap_frame += flFrametime;
 
-					headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
+					if (anim_state >= 0.f) {
+						framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames) * anim_state);
+						CLAMP(framenum, 0, wip->laser_headon_bitmap.num_frames);
+					} else {
+						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
+					}
 				}
 
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
@@ -9582,6 +9692,7 @@ void weapon_info::reset()
 	this->atten_damage = -1.0f;
 	this->damage_incidence_max = 1.0f;
 	this->damage_incidence_min = 1.0f;
+	this->damage_curve_idx = -1;
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);

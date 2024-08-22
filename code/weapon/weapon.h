@@ -335,6 +335,7 @@ enum class WeaponCurveOutput {
 	LASER_TAIL_RADIUS_MULT,
 	LASER_HEADON_SWITCH_ANG_MULT,
 	LASER_HEADON_SWITCH_RATE_MULT,
+	LASER_ANIM_STATE,
 	LASER_ALPHA_MULT,
 	LASER_BITMAP_R_MULT,
 	LASER_BITMAP_G_MULT,
@@ -347,15 +348,8 @@ enum class WeaponCurveOutput {
 	LIGHT_R_MULT,
 	LIGHT_G_MULT,
 	LIGHT_B_MULT,
-	ALL_DAMAGE_MULT,
-	HULL_DAMAGE_MULT,
-	SHIELD_DAMAGE_MULT,
-	SUBSYS_DAMAGE_MULT,
 	DET_RADIUS_MULT,
-	MASS_MULT,
-	GRAVITY_COEFFICIENT_MULT,
 	TURN_RATE_MULT,
-	ABORT_DOT_TO_TARGET,
 };
 
 struct WeaponModularCurve {
@@ -437,6 +431,7 @@ struct weapon_info
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
+	int		damage_curve_idx;
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
 	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
 	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
