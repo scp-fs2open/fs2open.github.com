@@ -12,6 +12,7 @@
 #include "ShipTextureReplacementDialog.h"
 #include "ShipTBLViewer.h"
 #include "ShipPathsDialog.h"
+#include "ShipCustomWarpDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
