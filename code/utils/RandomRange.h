@@ -474,7 +474,7 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	}
 
 	if (curve_params.curve < 0) {
-		error_display(0, "Curve %s not found!", &curve_name);
+		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", &curve_name);
 	}
 
 	return CurveFloatRange(curve_params);
