@@ -2380,12 +2380,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		ci.min_angle_threshold = 0.f;
 		ci.max_angle_threshold = 180.f;
 		ci.dinky = false;
+
+		bool invalid_armor = false;
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 		if (!stricmp(fname, "NO ARMOR")) {
 			armor_index = -1;
 		} else {
 			armor_index = armor_type_get_idx(fname);
+			if (armor_index < 0) {
+				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+				invalid_armor = true;
+			}
 		};
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
@@ -2400,10 +2406,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
 		}
 		ci_vec.push_back(ci);
-		if (armor_index >= 0) {
+		if (!invalid_armor) {
 			wip->conditional_impacts[armor_index] = ci_vec;
-		} else {
-			Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
 		}
 	}
 
