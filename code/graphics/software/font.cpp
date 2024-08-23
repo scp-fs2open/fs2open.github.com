@@ -142,7 +142,8 @@ namespace
 			}
 		}
 
-		NVGFont *nvgFont = FontManager::loadNVGFont(fontFilename, size);
+		auto nvgPair = FontManager::loadNVGFont(fontFilename, size);
+		auto nvgFont = nvgPair.first;
 
 		if (nvgFont == NULL)
 		{
@@ -226,10 +227,9 @@ namespace
 					}
 				}
 				else {
-					auto old_entry = FontManager::getFontByFilename(fontName);
+					int old_index = FontManager::getFontIndexByFilename(fontName);
 					
-					if (old_entry != nullptr) {
-						int old_index = FontManager::getFontIndex(old_entry);
+					if (old_index >= 0) {
 						special_char_index = Lcl_languages[0].special_char_indexes[old_index];
 					} else {
 
@@ -256,7 +256,7 @@ namespace
 				}
 			}
 
-			auto font_id = FontManager::getFontIndex(nvgFont);
+			int font_id = nvgPair.second;
 
 			// add the index specified to all languages
 			for (auto & Lcl_language : Lcl_languages) {
@@ -293,7 +293,8 @@ namespace
 
 	void parse_vfnt_font(const SCP_string& fontFilename)
 	{
-		VFNTFont *font = FontManager::loadVFNTFont(fontFilename);
+		auto vfntPair = FontManager::loadVFNTFont(fontFilename);
+		auto font = vfntPair.first;
 
 		if (font == NULL)
 		{
@@ -315,7 +316,7 @@ namespace
 		font->setName(fontName);
 		font->setFilename(fontFilename);
 
-		auto font_id = FontManager::getFontIndex(font);
+		int font_id = vfntPair.second;
 
 		int user_defined_default_special_char_index = (int)DEFAULT_SPECIAL_CHAR_INDEX;
 		// 'default' special char index for all languages using this font
@@ -606,9 +607,9 @@ namespace font
 		return FontManager::getFont(name);
 	}
 
-	FSFont *get_font_by_filename(const SCP_string& name)
+	FSFont *get_font_by_filename(const SCP_string& filename)
 	{
-		return FontManager::getFontByFilename(name);
+		return FontManager::getFontByFilename(filename);
 	}
 
 	

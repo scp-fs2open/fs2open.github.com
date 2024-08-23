@@ -151,7 +151,7 @@ ADE_FUNC(getFont, l_HudGauge, nullptr, "Returns the font used by the specified H
 	if (font_num < 0 || font_num >= font::FontManager::numberOfFonts())
 		return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(font_num))));
+	return ade_set_args(L, "o", l_Font.Set(font_h(font_num)));
 }
 
 ADE_FUNC(getOriginAndOffset, l_HudGauge, nullptr, "Returns the origin and offset of the specified HUD gauge as specified in the table.",

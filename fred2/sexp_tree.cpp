@@ -6777,7 +6777,7 @@ sexp_list_item *sexp_tree::get_listing_opf_font()
 	sexp_list_item head;
 
 	for (i = 0; i < font::FontManager::numberOfFonts(); i++) {
-		head.add_data(const_cast<char*>(font::FontManager::getFont(i)->getName().c_str()));
+		head.add_data(font::FontManager::getFont(i)->getName().c_str());
 	}
 
 	return head.next;
