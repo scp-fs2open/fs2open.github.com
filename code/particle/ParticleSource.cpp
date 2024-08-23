@@ -4,6 +4,7 @@
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
+#include "ship/ship.h"
 
 namespace particle {
 SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
@@ -12,7 +13,7 @@ SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 	                           m_velocity(vmd_zero_vector) {
 }
 
-void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
+void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp, tl::optional<vec3d> tabled_offset) const {
 	Assertion(posOut != nullptr, "Invalid vector pointer passed!");
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
@@ -24,7 +25,54 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 			} else {
 				*posOut = m_origin.m_object.objp()->pos;
 			}
-			vm_vec_unrotate(&offset, &m_offset, &m_origin.m_object.objp()->orient);
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_object.objp()->orient);
+			break;
+		}
+		case SourceOriginType::SUBOBJECT: {
+			// this interpolation only accounts for movement of the object as a whole, not local subobject movements
+			// this could be made more accurate, but it would be a pain and as of now I am not considering it worth it
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(posOut, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
+			} else {
+				*posOut = m_origin.m_object.objp()->pos;
+			}
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+			model_instance_local_to_global_point(&offset, &combined_offset, Ships[m_origin.m_object.objp()->instance].model_instance_num, m_origin.m_subobject, &m_origin.m_object.objp()->orient, &vmd_zero_vector);
+
+			break;
+		}
+		case SourceOriginType::TURRET: {
+			ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+
+			polymodel_instance *pmi = model_get_instance(Ships[m_origin.m_object.objp()->instance].model_instance_num);
+			polymodel *pm = model_get(pmi->model_num);
+			ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
+
+			// this interpolation only accounts for movement of the object as a whole, not local subobject movements like turret rotation
+			// this could be made more accurate, but it would be a pain and as of now I am not considering it worth it
+			vec3d obj_pos;
+			if (interp != 0.0f) {
+				vm_vec_linear_interpolate(&obj_pos, &m_origin.m_object.objp()->pos, &m_origin.m_object.objp()->last_pos, interp);
+			} else {
+				obj_pos = m_origin.m_object.objp()->pos;
+			}
+			
+			vec3d *gun_pos;
+			vec3d gvec;
+			model_subsystem *tp = sss->system_info;
+
+			gun_pos = &tp->turret_firing_point[m_origin.m_fire_pos % tp->turret_num_firing_points];
+
+			model_instance_local_to_global_point(posOut, gun_pos, pm, pmi, tp->turret_gun_sobj, &m_origin.m_object.objp()->orient, &obj_pos);
+			model_instance_local_to_global_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &m_origin.m_object.objp()->orient);
+			
+			vm_vec_copy_scale(&offset, &gvec, tabled_offset.value_or(vmd_zero_vector).xyz.z);
+
 			break;
 		}
 		case SourceOriginType::PARTICLE: {
@@ -47,13 +95,25 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 			vm_vec_normalize_safe(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
 
-			vm_vec_unrotate(&offset, &m_offset, &m);
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+			vm_vec_unrotate(&offset, &combined_offset, &m);
 
 			break;
 		}
 		case SourceOriginType::VECTOR: {
 			*posOut = m_origin.m_pos;
-			offset = m_offset;
+
+			matrix m = vmd_identity_matrix;
+			vec3d dir = m_velocity;
+
+			vm_vec_normalize_safe(&dir);
+			vm_vector_2_matrix_norm(&m, &dir);
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+			vm_vec_unrotate(&offset, &combined_offset, &m);
+
 			break;
 		}
 		case SourceOriginType::BEAM: {
@@ -64,10 +124,19 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 			float dist_adjusted = vm_vec_dist(&beam->last_start, &beam->last_shot) / beam->range;
 			// randomly sample from the weighted distribution, excluding points beyond the last_shot
 			auto t = (1.0f - sqrtf(frand_range(powf(1.f - dist_adjusted, 2.0f), 1.0f)));
+
+			matrix m = vmd_identity_matrix;
 			vec3d dir;
+
 			vm_vec_normalized_dir(&dir, &beam->last_shot, &beam->last_start);
+			vm_vector_2_matrix_norm(&m, &dir);
+
 			*posOut += (dir * beam->range) * t;
-			offset = m_offset;
+
+			// we add whatever offset already exists to the tabled offset specified by the modder
+			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+			vm_vec_unrotate(&offset, &combined_offset, &m);
+			
 			break;
 		}
 		default: {
@@ -79,12 +148,49 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp) const {
 
 	vm_vec_add2(posOut, &offset);
 }
-void SourceOrigin::getHostOrientation(matrix* matOut) const {
+void SourceOrigin::getHostOrientation(matrix* matOut, bool allow_relative) const {
 	vec3d vec;
 	switch (m_originType) {
 	case SourceOriginType::OBJECT:
-		*matOut = m_origin.m_object.objp()->orient;
+		if (allow_relative) {
+			*matOut = vmd_identity_matrix;
+		} else {
+			*matOut = m_origin.m_object.objp()->orient;
+		}
 		break;
+	case SourceOriginType::SUBOBJECT: {
+		const ship& shipp = Ships[m_origin.m_object.objp()->instance];
+		vec3d temp;
+		model_instance_local_to_global_point_orient(&temp,
+			matOut,
+			&vmd_zero_vector,
+			&vmd_identity_matrix,
+			model_get(Ship_info[shipp.ship_info_index].model_num),
+			model_get_instance(shipp.model_instance_num),
+			m_origin.m_subobject,
+			allow_relative ? &vmd_identity_matrix : &m_origin.m_object.objp()->orient,
+			&vmd_zero_vector);
+		break;
+		}
+	case SourceOriginType::TURRET: {
+		ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+
+		polymodel_instance *pmi = model_get_instance(Ships[m_origin.m_object.objp()->instance].model_instance_num);
+		polymodel *pm = model_get(pmi->model_num);
+		ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
+
+		vec3d gvec;
+		model_subsystem *tp = sss->system_info;
+
+		if (allow_relative) {
+			model_instance_local_to_global_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj);
+		} else {
+			model_instance_local_to_global_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &m_origin.m_object.objp()->orient);
+		}
+
+		vm_vector_2_matrix(matOut, &gvec);
+		break;
+	}
 	case SourceOriginType::PARTICLE:
 		vm_vector_2_matrix(matOut, &m_origin.m_particle.lock()->velocity, nullptr, nullptr);
 		break;
@@ -93,14 +199,16 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 		vm_vec_normalized_dir(&vec, &Beams[m_origin.m_object.objp()->instance].last_shot, &Beams[m_origin.m_object.objp()->instance].last_start);
 		vm_vector_2_matrix(matOut, &vec, nullptr, nullptr);
 		break;
-	case SourceOriginType::VECTOR: // Intentional fall-through, plain vectors have no orientation
+	case SourceOriginType::VECTOR:
+		*matOut = m_origin.m_host_orientation;
+		break;
 	default:
 		*matOut = vmd_identity_matrix;
 		break;
 	}
 }
 
-void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, float interp) const {
+void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative, float interp, tl::optional<vec3d> tabled_offset) const {
 	Assertion(m_originType != SourceOriginType::NONE, "Invalid origin type!");
 
 	switch (m_originType) {
@@ -109,9 +217,54 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 				info.attached_objnum = m_origin.m_object.objnum;
 				info.attached_sig = m_origin.m_object.sig;
 
-				info.pos = m_offset;
+				info.pos = m_offset + tabled_offset.value_or(vmd_zero_vector);
 			} else {
-				this->getGlobalPosition(&info.pos, interp);
+				this->getGlobalPosition(&info.pos, interp, tabled_offset);
+				info.attached_objnum = -1;
+				info.attached_sig = -1;
+			}
+			break;
+		}
+		case SourceOriginType::SUBOBJECT: {
+			if (allow_relative) {
+				info.attached_objnum = m_origin.m_object.objnum;
+				info.attached_sig = m_origin.m_object.sig;
+
+				vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
+				model_instance_local_to_global_point(&info.pos,
+					&combined_offset,
+					Ships[m_origin.m_object.objp()->instance].model_instance_num,
+					m_origin.m_subobject);
+			} else {
+				this->getGlobalPosition(&info.pos, interp, tabled_offset);
+				info.attached_objnum = -1;
+				info.attached_sig = -1;
+			}
+			break;
+		}
+		case SourceOriginType::TURRET: {
+			if (allow_relative) {
+				info.attached_objnum = m_origin.m_object.objnum;
+				info.attached_sig = m_origin.m_object.sig;
+
+				ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+				polymodel_instance *pmi = model_get_instance(Ships[m_origin.m_object.objp()->instance].model_instance_num);
+				polymodel *pm = model_get(pmi->model_num);
+				ship_subsys* sss = ship_get_indexed_subsys(shipp, pm->submodel[m_origin.m_subobject].subsys_num);
+
+				vec3d *gun_pos;
+				vec3d gvec;
+				model_subsystem *tp = sss->system_info;
+
+				gun_pos = &tp->turret_firing_point[m_origin.m_fire_pos % tp->turret_num_firing_points];
+
+				model_instance_local_to_global_point(&info.pos, gun_pos, pm, pmi, tp->turret_gun_sobj);
+
+				model_instance_local_to_global_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj);
+
+				vm_vec_scale_add2(&info.pos, &gvec, tabled_offset.value_or(vmd_zero_vector).xyz.z);
+			} else {
+				this->getGlobalPosition(&info.pos, interp, tabled_offset);
 				info.attached_objnum = -1;
 				info.attached_sig = -1;
 			}
@@ -120,7 +273,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 		case SourceOriginType::PARTICLE: {
 			info.rad = getScale();
 			info.lifetime = getLifetime();
-			this->getGlobalPosition(&info.pos, interp);
+			this->getGlobalPosition(&info.pos, interp, tabled_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -128,7 +281,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 		case SourceOriginType::BEAM: // Intentional fall-through
 		case SourceOriginType::VECTOR: // Intentional fall-through
 		default: {
-			this->getGlobalPosition(&info.pos, interp);
+			this->getGlobalPosition(&info.pos, interp, tabled_offset);
 			info.attached_objnum = -1;
 			info.attached_sig = -1;
 			break;
@@ -140,6 +293,8 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allow_relative,
 
 vec3d SourceOrigin::getVelocity() const {
 	switch (this->m_originType) {
+		case SourceOriginType::TURRET:
+		case SourceOriginType::SUBOBJECT:
 		case SourceOriginType::OBJECT:
 			return m_origin.m_object.objp()->phys_info.vel;
 		case SourceOriginType::PARTICLE:
@@ -191,10 +346,11 @@ void SourceOrigin::setWeaponState(WeaponState state) {
 	m_weaponState = state;
 }
 
-void SourceOrigin::moveTo(const vec3d* pos) {
+void SourceOrigin::moveTo(const vec3d* pos, const matrix* orientation) {
 	Assertion(pos, "Invalid vector pointer passed!");
 
 	m_originType = SourceOriginType::VECTOR;
+	m_origin.m_host_orientation = *orientation;
 	m_origin.m_pos = *pos;
 }
 
@@ -215,6 +371,30 @@ void SourceOrigin::moveToObject(const object* objp, const vec3d* offset) {
 	m_offset = *offset;
 }
 
+void SourceOrigin::moveToSubobject(const object* objp, int subobject, const vec3d* offset)
+{
+	Assertion(objp, "Invalid object pointer passed!");
+	Assertion(offset, "Invalid vector pointer passed!");
+
+	m_originType = SourceOriginType::SUBOBJECT;
+	m_origin.m_object = object_h(OBJ_INDEX(objp));
+	m_origin.m_subobject = subobject;
+
+	m_offset = *offset;
+}
+
+void SourceOrigin::moveToTurret(const object* objp, int subobject, int fire_pos)
+{
+	Assertion(objp, "Invalid object pointer passed!");
+
+	m_originType = SourceOriginType::TURRET;
+	m_origin.m_object = object_h(OBJ_INDEX(objp));
+	m_origin.m_subobject = subobject;
+	m_origin.m_fire_pos = fire_pos;
+
+	m_offset = vmd_zero_vector;
+}
+
 void SourceOrigin::moveToParticle(const WeakParticlePtr& weakParticlePtr) {
 	m_originType = SourceOriginType::PARTICLE;
 	m_origin.m_particle = weakParticlePtr;
@@ -224,6 +404,23 @@ bool SourceOrigin::isValid() const {
 	switch (m_originType) {
 		case SourceOriginType::NONE:
 			return false;
+		case SourceOriginType::TURRET: {
+			if (m_origin.m_object.objp()->type != OBJ_SHIP) {
+				return false;
+			}
+			if (m_origin.m_subobject < 0) {
+				return false;
+			}
+			ship* shipp = &Ships[m_origin.m_object.objp()->instance];
+			polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+			
+			return pm->submodel[m_origin.m_subobject].subsys_num >= 0;
+		}
+		case SourceOriginType::SUBOBJECT:
+			if (m_origin.m_subobject < 0) {
+				return false;
+			}
+			// intentional fallthrough
 		case SourceOriginType::OBJECT:
 		case SourceOriginType::BEAM: {
 			if (!m_origin.m_object.isValid()) {
@@ -285,7 +482,7 @@ void SourceOrientation::setNormal(const vec3d& normal) {
 	m_normal = normal;
 }
 
-vec3d SourceOrientation::getDirectionVector(const SourceOrigin* origin) const {
+vec3d SourceOrientation::getDirectionVector(const SourceOrigin* origin, bool allow_relative) const {
 	if (!m_isRelative) {
 		return m_orientation.vec.fvec;
 	}
@@ -293,7 +490,8 @@ vec3d SourceOrientation::getDirectionVector(const SourceOrigin* origin) const {
 	matrix finalOrient;
 
 	matrix hostOrient;
-	origin->getHostOrientation(&hostOrient);
+
+	origin->getHostOrientation(&hostOrient, allow_relative);
 
 	vm_matrix_x_matrix(&finalOrient, &hostOrient, &m_orientation);
 

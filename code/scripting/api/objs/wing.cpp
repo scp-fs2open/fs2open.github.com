@@ -351,6 +351,16 @@ ADE_VIRTVAR(ArrivalDistance, l_Wing, "number", "The wing's arrival distance", "n
 	return wing_getset_helper(L, &wing::arrival_distance, true);
 }
 
+ADE_VIRTVAR(WaveDelayMinimum, l_Wing, "number", "The wing's minimum wave delay", "number", "Min wave delay, or nil if handle is invalid")
+{
+	return wing_getset_helper(L, &wing::wave_delay_min, true);
+}
+
+ADE_VIRTVAR(WaveDelayMaximum, l_Wing, "number", "The wing's maximum wave delay", "number", "Max wave delay, or nil if handle is invalid")
+{
+	return wing_getset_helper(L, &wing::wave_delay_max, true);
+}
+
 
 }
 }

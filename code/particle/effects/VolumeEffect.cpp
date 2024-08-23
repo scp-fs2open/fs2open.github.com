@@ -44,7 +44,7 @@ namespace particle {
 						num += 1;
 				}
 
-				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				matrix stretch_matrix = vm_stretch_matrix(&stretch_dir, m_stretch);
 
 				for (uint i = 0; i < num; ++i) {
@@ -72,7 +72,7 @@ namespace particle {
 						vm_vec_rotate(&pos, &copy_pos, &stretch_matrix);
 
 					particle_info info;
-					source->getOrigin()->applyToParticleInfo(info, false, interp);
+					source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
 					// make their velocity radial, and based on position, allows for some very cool effects
 					vec3d velocity = pos;

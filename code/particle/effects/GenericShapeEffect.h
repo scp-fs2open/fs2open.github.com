@@ -48,21 +48,19 @@ class GenericShapeEffect : public ParticleEffect {
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ConeDirection::Incoming:
-				return source->getOrientation()->getDirectionVector(source->getOrigin());
+				return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return source->getOrientation()->getDirectionVector(source->getOrigin());
+					return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				}
 
 				return normal;
 			}
 			case ConeDirection::Reflected: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
 					return out;
 				}
 
@@ -77,7 +75,7 @@ class GenericShapeEffect : public ParticleEffect {
 				return out;
 			}
 			case ConeDirection::Reverse: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vm_vec_scale(&out, -1.0f);
 				return out;
 			}
@@ -135,7 +133,8 @@ class GenericShapeEffect : public ParticleEffect {
 				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
 
 				particle_info info;
-				source->getOrigin()->applyToParticleInfo(info, false, interp);
+
+				source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
 				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {

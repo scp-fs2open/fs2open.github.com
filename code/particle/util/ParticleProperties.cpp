@@ -8,7 +8,7 @@
 
 namespace particle {
 namespace util {
-ParticleProperties::ParticleProperties() : m_radius(::util::UniformFloatRange(0.0f, 1.0f)), m_lifetime(::util::UniformFloatRange(0.0f, 1.0f)), m_length(::util::UniformFloatRange(0.0f)), m_size_lifetime_curve(-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT) {
+ParticleProperties::ParticleProperties() : m_radius(::util::UniformFloatRange(0.0f, 1.0f)), m_lifetime(::util::UniformFloatRange(0.0f, 1.0f)), m_length(::util::UniformFloatRange(0.0f)), m_size_lifetime_curve(-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT), m_manual_offset (vmd_zero_vector) {
 }
 
 void ParticleProperties::parse(bool nocreate) {
@@ -77,6 +77,14 @@ void ParticleProperties::parse(bool nocreate) {
 			// in the future we may want to support additional types, or even a specific angle, but that is TBD
 			error_display(0, "Rotation Type %s not supported", buf);
 		}
+	}
+
+	if (optional_string("+Offset:")) {
+		stuff_vec3d(&m_manual_offset);
+	}
+
+	if (optional_string("+Remain local to parent:")) {
+		stuff_boolean(&m_parent_local);
 	}
 }
 

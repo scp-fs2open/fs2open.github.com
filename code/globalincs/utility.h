@@ -309,4 +309,12 @@ int find_item_with_name(const VECTOR_T& item_vector, const SCP_string& str)
 	return -1;
 }
 
+template <typename NULLISH_T>
+NULLISH_T coalesce(NULLISH_T possibly_null, NULLISH_T value_if_null)
+{
+	Assertion(value_if_null != nullptr, "value_if_null can never be null itself!");
+
+	return (possibly_null != nullptr) ? possibly_null : value_if_null;
+}
+
 #endif
