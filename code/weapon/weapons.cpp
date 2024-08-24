@@ -2375,14 +2375,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	while (optional_string("$Conditional Impact:")) {
 		int armor_index;
 		ConditionalImpact ci;
-		ci.min_health_threshold = 0.0;
-		ci.max_health_threshold = 1.0;
-		ci.min_angle_threshold = 0.0;
-		ci.max_angle_threshold = 180.0;
+		ci.min_health_threshold = std::numeric_limits<float>::lowest();
+		ci.max_health_threshold = std::numeric_limits<float>::max();
+		ci.min_angle_threshold = 0.f;
+		ci.max_angle_threshold = 180.f;
 		ci.dinky = false;
+
+		bool invalid_armor = false;
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-		armor_index = armor_type_get_idx(fname);
+		if (!stricmp(fname, "NO ARMOR")) {
+			armor_index = -1;
+		} else {
+			armor_index = armor_type_get_idx(fname);
+			if (armor_index < 0) {
+				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+				invalid_armor = true;
+			}
+		};
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
 		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
@@ -2396,7 +2406,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
 		}
 		ci_vec.push_back(ci);
-		wip->conditional_impacts[armor_index] = ci_vec;
+		if (!invalid_armor) {
+			wip->conditional_impacts[armor_index] = ci_vec;
+		}
 	}
 
 	if (optional_string("$Inflight Effect:")) {
@@ -7622,21 +7634,26 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr && (impacted_obj->type == OBJ_SHIP || impacted_obj->type == OBJ_WEAPON)) { 
-		if (impacted_obj->type == OBJ_SHIP) {
-			shipp = &Ships[impacted_obj->instance];
-			if (quadrant == -1) {
-				relevant_armor_idx = shipp->armor_type_idx;
-				relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
-			} else {
-				relevant_armor_idx = shipp->shield_armor_type_idx;
-				relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
-			}
-		} else {
-			target_wp = &Weapons[impacted_obj->instance];
-			target_wip = &Weapon_info[target_wp->weapon_info_index];
-			relevant_armor_idx = target_wip->armor_type_idx;
-			relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr) { 
+		switch (impacted_obj->type) {
+			case OBJ_SHIP:
+				shipp = &Ships[impacted_obj->instance];
+				if (quadrant == -1) {
+					relevant_armor_idx = shipp->armor_type_idx;
+					relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+				} else {
+					relevant_armor_idx = shipp->shield_armor_type_idx;
+					relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
+				}
+				break;
+			case OBJ_WEAPON:
+				target_wp = &Weapons[impacted_obj->instance];
+				target_wip = &Weapon_info[target_wp->weapon_info_index];
+				relevant_armor_idx = target_wip->armor_type_idx;
+				relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+				break;
+			default:
+				break;
 		}
 		
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
@@ -7666,7 +7683,7 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 
 
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
-		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+              		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
