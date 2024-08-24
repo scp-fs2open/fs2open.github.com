@@ -222,6 +222,8 @@ static EnhancedSoundData Default_sound_priorities[NUM_RETAIL_GAMEPLAY_SOUNDS] =
 
 static const EnhancedSoundData default_enhanced_sound_data(SND_ENHANCED_PRIORITY_MEDIUM_HIGH, 1);
 
+int gamesnd_find_nonreserved_last_index(SCP_vector<game_snd>& lookupVector, bool (*is_reserved_index)(int));
+
 /*
  * Update any uninitialized EnhancedSoundData in Snds
   * with hardcoded defaults for retail.
@@ -701,7 +703,7 @@ void parse_gamesnd_old(game_snd* gs)
 	// check for extra values per Mantis #2408
 	if (stuff_int_optional(&temp) == 2)
 	{
-		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), entry.filename);
+		error_display(0, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), entry.filename);
 	}
 
 	advance_to_eoln(NULL);
@@ -958,23 +960,42 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 }
 
-void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize)
+void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize, bool (*is_reserved_index)(int))
 {
 	SCP_string name;
 	stuff_string(name, F_NAME, "\t \n");
 
 	if (lookupVector && can_construe_as_integer(name.c_str()))
 	{
+		Assertion(is_reserved_index != nullptr, "If lookupVector is supplied, the is_reserved_index() function must also be supplied");
+
 		int candidate_index = atoi(name.c_str());
 
-		// if this is a number within the range of possible indexes, make sure the vector contains an entry for that index
+		// if this is a number within the range of possible indexes
 		if (candidate_index >= 0 && static_cast<size_t>(candidate_index) < lookupVectorMaxIndexableSize)
 		{
+			// make sure the vector contains an entry for that index
 			while (lookupVector->size() <= static_cast<size_t>(candidate_index))
 			{
 				size_t back_index = lookupVector->size();
 				lookupVector->emplace_back();
 				sprintf(lookupVector->back().name, SIZE_T_ARG, back_index);
+			}
+
+			// if there is a named sound already at that index, move it to the end of the vector
+			// (because named sounds can go anywhere, while indexed sounds need to be at their indexes)
+			auto candidate_gs = &lookupVector->at(candidate_index);
+			if (!candidate_gs->name.empty() && !can_construe_as_integer(candidate_gs->name.c_str()))
+			{
+				// prevent new named sounds from colliding with reserved indexes
+				int endIndex = gamesnd_find_nonreserved_last_index(*lookupVector, is_reserved_index);
+
+				// add a new sound at the end of the vector
+				lookupVector->emplace_back();
+
+				// swap them
+				std::swap(lookupVector->at(candidate_index), lookupVector->at(endIndex));
+				sprintf(lookupVector->at(candidate_index).name, "%d", candidate_index);
 			}
 		}
 	}
@@ -1001,7 +1022,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 			}
 			else
 			{
-				Warning(LOCATION, "Duplicate sound name \"%s\" found!", name.c_str());
+				error_display(0, "Duplicate sound name \"%s\" found!", name.c_str());
 			}
 		}
 
@@ -1011,7 +1032,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 	{
 		if (vectorIndex < 0)
 		{
-			Warning(LOCATION, "No existing sound entry with name \"%s\" found!", name.c_str());
+			error_display(0, "No existing sound entry with name \"%s\" found!", name.c_str());
 			no_create = false;
 			gs->name = std::move(name);
 		}
@@ -1042,12 +1063,15 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
  * @param tag The tag that's required before an entry
  * @param lookupVector If non-NULL used to look up @c +nocreate entries
  * @param lookupVectorMaxIndexableSize Numbers less than this size will be treated as indexes;
- *        numbers at or above this size will be treated as numeric IDs that aren't indexes
+ *        numbers at or above this size will be treated as numeric IDs that aren't indexes.
+ *        Note that this distinct from the vector's current or default size.
+ * @param is_reserved_index A function to indicate whether a particular index should not be used
+ *        by a named sound
  *
  * @return @c true when a new entry has been parsed and should be added to the list of known
  *			entries. @c false otherwise, for example in case of @c +nocreate
  */
-bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *lookupVector = NULL, size_t lookupVectorMaxIndexableSize = 0)
+bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *lookupVector = nullptr, size_t lookupVectorMaxIndexableSize = 0, bool (*is_reserved_index)(int) = nullptr)
 {
 	Assertion(gs != NULL, "Invalid game_snd pointer passed to gamesnd_parse_line!");
 
@@ -1063,7 +1087,7 @@ bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *loo
 		}
 	}
 
-	gamesnd_parse_entry(gs, no_create, lookupVector, lookupVectorMaxIndexableSize);
+	gamesnd_parse_entry(gs, no_create, lookupVector, lookupVectorMaxIndexableSize, is_reserved_index);
 
 	return !no_create;
 }
@@ -1236,6 +1260,7 @@ void parse_sound_environments()
 	required_string("#Sound Environments End");
 }
 
+// indicate whether an index into Game Sounds is reserved for a built-in sound
 bool gamesnd_is_reserved_game_index(int index)
 {
 	if (index >= 0 && index <= 161)
@@ -1248,12 +1273,32 @@ bool gamesnd_is_reserved_game_index(int index)
 	return false;
 }
 
+// indicate whether an index into Interface Sounds is reserved for a built-in sound
 bool gamesnd_is_reserved_interface_index(int index)
 {
 	if (index >= 0 && index <= 64)
 		return true;
 
 	return false;
+}
+
+// Finds an index that
+//   1) is just after the last index in lookupVector (i.e. equal to the size);
+//   2) does not correspond to a reserved index, as determined by the function.
+// If needed, empty game_snds are emplaced onto the vector until these conditions are true.
+int gamesnd_find_nonreserved_last_index(SCP_vector<game_snd>& lookupVector, bool (*is_reserved_index)(int))
+{
+	int candidate_last_index = static_cast<int>(lookupVector.size());
+
+	// prevent new named sounds from colliding with reserved indexes
+	while (is_reserved_index(candidate_last_index))
+	{
+		lookupVector.emplace_back();
+		sprintf(lookupVector.back().name, "%d", candidate_last_index);
+		candidate_last_index = static_cast<int>(lookupVector.size());
+	}
+
+	return candidate_last_index;
 }
 
 // Due to the cyclic depdendency between sounds and species, the parsing is now broken up into two stages.
@@ -1277,26 +1322,21 @@ void parse_sound_table(const char* filename)
 				while (!check_for_string("#Game Sounds End"))
 				{
 					game_snd tempSound;
-					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds, static_cast<size_t>(GameSounds::MIN_GAME_SOUNDS)))
+					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds, static_cast<size_t>(GameSounds::MIN_GAME_SOUNDS) * 2, gamesnd_is_reserved_game_index))
 					{
-						// if we are in this block, this is a new sound that will be appended
+						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds.size());
 
 						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
 						{
 							// retail sounds must have names that match their indexes
 							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								Warning(LOCATION, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
 						}
 						else
 						{
-							// prevent new sounds from colliding with reserved indexes
-							while (gamesnd_is_reserved_game_index(tempIndex))
-							{
-								Snds.emplace_back();
-								sprintf(Snds.back().name, "%d", tempIndex);
-								tempIndex = static_cast<int>(Snds.size());
-							}
+							// prevent new named sounds from colliding with reserved indexes
+							tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
 						}
 
 						Snds.emplace_back(std::move(tempSound));
@@ -1317,28 +1357,24 @@ void parse_sound_table(const char* filename)
 				while (!check_for_string("#Interface Sounds End"))
 				{
 					game_snd tempSound;
-					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface, static_cast<size_t>(InterfaceSounds::MIN_INTERFACE_SOUNDS)))
+					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface, static_cast<size_t>(InterfaceSounds::MIN_INTERFACE_SOUNDS) * 2, gamesnd_is_reserved_interface_index))
 					{
+						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds_iface.size());
 
 						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
 						{
 							// retail sounds must have names that match their indexes
 							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								Warning(LOCATION, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
 						}
 						else
 						{
-							// prevent new sounds from colliding with reserved indexes
-							while (gamesnd_is_reserved_interface_index(tempIndex))
-							{
-								Snds_iface.emplace_back();
-								sprintf(Snds_iface.back().name, "%d", tempIndex);
-								tempIndex = static_cast<int>(Snds_iface.size());
-							}
+							// prevent new named sounds from colliding with reserved indexes
+							tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
 						}
 
-						Snds_iface.push_back(game_snd(tempSound));
+						Snds_iface.emplace_back(std::move(tempSound));
 					}
 				}
 
