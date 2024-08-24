@@ -79,7 +79,7 @@ class RandomRange {
 	ValueType m_maxValue;
 
   public:
-	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_same<ValueType, std::remove_reference<std::remove_cv<T>::type>::type>::value, int>::type>
+	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_same<ValueType, typename std::remove_reference<typename std::remove_cv<T>::type>::type>::value, int>::type>
 	RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
 		: m_generator(std::random_device()()), m_distribution(distributionFirstParameter, distributionParameters...)
 	{
@@ -356,7 +356,7 @@ class CurveNumberDistribution {
 		float max;
 	};
 	param_type m_param;
-	inline CurveNumberDistribution() : CurveNumberDistribution(param_type{-1, 0.f, 1.f}) {}
+	inline CurveNumberDistribution() : CurveNumberDistribution(param_type{-1, NAN, NAN}) {}
 	inline CurveNumberDistribution(param_type curve) : m_param(curve) {}
 	inline void reset() {}
 	inline param_type param()
@@ -373,19 +373,33 @@ class CurveNumberDistribution {
 		if (param.curve < 0) {
 			return 0.f;
 		}
+		float lower_bound = Curves[param.curve].keyframes.front().pos.x;
+		float upper_bound = Curves[param.curve].keyframes.back().pos.x;
+		if (lower_bound < 0 || lower_bound == upper_bound) {
+			return 0.f;
+		}
+
+		float remap_mult = 1.f;
+		float remap_add = 0.f;
+		if (!param.min.is_nan() && !param.max.is_nan()) {
+			remap_mult = param.max - param.min;
+			remap_add = param.min;
+		} else if (!param.min.is_nan()) {
+			remap_add = param.min;
+		}
+
 		float max_integral = Curves[param.curve].GetValueIntegrated(Curves[param.curve].keyframes.back().pos.x);
 		float rand =
 			std::generate_canonical<float, std::numeric_limits<float>::digits, Generator>(generator) * max_integral;
-		float lower_bound = Curves[param.curve].keyframes.front().pos.x;
-		float upper_bound = Curves[param.curve].keyframes.back().pos.x;
 		float curve_min = lower_bound;
 		float curve_max = upper_bound;
+		
 		for (size_t count = 0; count < 16; count++) {
 			float current_pos = (lower_bound + upper_bound) / 2.f;
 			float current_value = Curves[param.curve].GetValueIntegrated(current_pos);
 			if (fl_equal(current_value, rand, max_integral * 0.01f)) {
 				// remap the values to the distribution's range
-				return (current_pos - curve_min) / (curve_max - curve_min) * (param.max - param.min) + param.min;
+				return (current_pos - curve_min) / (curve_max - curve_min) * remap_mult + remap_add;
 			}
 			if (current_value > rand) {
 				upper_bound = current_pos;
@@ -394,7 +408,7 @@ class CurveNumberDistribution {
 			}
 		}
 		// remap the values to the distribution's range
-		return (((lower_bound + upper_bound) / 2.f) - curve_min) / (curve_max - curve_min) * (param.max - param.min) + param.min;
+		return (((lower_bound + upper_bound) / 2.f) - curve_min) / (curve_max - curve_min) * remap_mult + remap_add;
 	}
 	template <typename Generator>
 	inline result_type operator()(Generator& generator)
@@ -442,13 +456,16 @@ using CurveFloatRange = RandomRange<float, CurveNumberDistribution, std::minstd_
 inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 	CurveNumberDistribution::param_type curve_params;
 
-	optional_string("(");
-	stuff_float(&curve_params.min);
-	stuff_float(&curve_params.max);
-	optional_string(")");
 	SCP_string curve_name;
 	stuff_string(curve_name, F_NAME);
 	curve_params.curve = curve_get_by_name(curve_name);
+
+	optional_string("(");
+	stuff_float_optional(&curve_params.min);
+	stuff_float_optional(&curve_params.max);
+	optional_string(")");
+
+	// we need to check whether min and max are nan here but is_nan() is busted in this function for some reason
 
 	if (curve_params.min > curve_params.max) {
 		error_display(0, "Minimum value %f is more than maximum value %f!", (float)curve_params.min, (float)curve_params.max);
@@ -475,7 +492,18 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 
 	if (curve_params.curve < 0) {
 		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", &curve_name);
+	} else {
+		float lower_bound = Curves[curve_params.curve].keyframes.front().pos.x;
+		float upper_bound = Curves[curve_params.curve].keyframes.back().pos.x;
+		if (lower_bound < 0) {
+			error_display(0, "Curve %s goes below zero along the X axis. Random distributions using this curve will return 0.", &curve_name);
+		}
+		if (upper_bound == lower_bound) {
+			error_display(0, "Curve %s has height of zero along the X axis. Random distributions using this curve will return 0.", &curve_name);
+		}
+		
 	}
+
 
 	return CurveFloatRange(curve_params);
 }
