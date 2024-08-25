@@ -165,7 +165,7 @@ class BoundedNormalDistribution {
 	inline BoundedNormalDistribution() : BoundedNormalDistribution(param_type{std::normal_distribution<float>::param_type{0.5f, 1.f}, 0.f, 1.f}) {}
 	inline BoundedNormalDistribution(param_type curve) : m_param(curve) {}
 	inline void reset() {}
-	inline param_type param()
+	inline param_type param() const
 	{
 		return m_param;
 	}
@@ -359,7 +359,7 @@ class CurveNumberDistribution {
 	inline CurveNumberDistribution() : CurveNumberDistribution(param_type{-1, NAN, NAN}) {}
 	inline CurveNumberDistribution(param_type curve) : m_param(curve) {}
 	inline void reset() {}
-	inline param_type param()
+	inline param_type param() const
 	{
 		return m_param;
 	}
@@ -455,7 +455,7 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	optional_string(")");
 
 	if (curve_params.curve < 0) {
-		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", &curve_name);
+		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", curve_name.c_str());
 		return CurveFloatRange(curve_params);
 	} else {
 		bool y_below_0 = false;
@@ -472,15 +472,13 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 
 		if (y_below_0) {
 			error_display(0,
-				"Curve %s goes below zero along the Y axis. Random distributions using this curve will return 0.",
-				&curve_name);
+				"Curve %s goes below zero along the Y axis. Random distributions using this curve will return 0.", curve_name.c_str());
 			curve_params.curve = -1;
 			return CurveFloatRange(curve_params);
 		}
 		if (no_y_above_0) {
 			error_display(0,
-				"Curve %s has no values above zero along the Y axis. Random distributions using this curve will return 0.",
-				&curve_name);
+				"Curve %s has no values above zero along the Y axis. Random distributions using this curve will return 0.", curve_name.c_str());
 			curve_params.curve = -1;
 			return CurveFloatRange(curve_params);
 		}
