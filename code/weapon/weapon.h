@@ -318,21 +318,24 @@ struct ConditionalImpact {
 	bool dinky;
 };
 
-enum class WeaponCurveInput {
+enum class WeaponLifetimeCurveInput {
 	// inputs
 	LIFETIME,
 	AGE,
-	VELOCITY,
+	BASE_VELOCITY,
 	HEALTH,
 	PARENT_RADIUS,
 };
 
-enum class WeaponCurveOutput {
+enum class WeaponLifetimeCurveOutput {
 	// outputs
 	LASER_LENGTH_MULT,
 	LASER_RADIUS_MULT,
 	LASER_HEAD_RADIUS_MULT,
 	LASER_TAIL_RADIUS_MULT,
+	LASER_OFFSET_X_MULT,
+	LASER_OFFSET_Y_MULT,
+	LASER_OFFSET_Z_MULT,
 	LASER_HEADON_SWITCH_ANG_MULT,
 	LASER_HEADON_SWITCH_RATE_MULT,
 	LASER_ANIM_STATE,
@@ -352,9 +355,9 @@ enum class WeaponCurveOutput {
 	TURN_RATE_MULT,
 };
 
-struct WeaponModularCurve {
-	WeaponCurveInput input;
-	WeaponCurveOutput output;
+struct WeaponLifetimeCurve {
+	WeaponLifetimeCurveInput input;
+	WeaponLifetimeCurveOutput output;
 	int curve_idx;
 	::util::UniformFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
 	::util::UniformFloatRange translation = ::util::UniformFloatRange(0.f);
@@ -416,7 +419,7 @@ struct weapon_info
 	hdr_color 	light_color;		//For the light cast by the projectile
 	float 		light_radius;
 
-	SCP_vector<WeaponModularCurve> curves;
+	SCP_vector<WeaponLifetimeCurve> lifetime_curves;
 
 	float	max_speed;							// max speed of the weapon
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
@@ -459,7 +462,6 @@ struct weapon_info
 	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 
 	float turn_time;
-	int turn_rate_curve_idx;					// turn rate over time curve
 	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float autoaim_fov;							// the weapon specific auto-aim field of view

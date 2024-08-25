@@ -53,7 +53,7 @@
 #include "tracing/Monitor.h"
 #include "graphics/light.h"
 #include "graphics/color.h"
-#include "curve.h"
+#include "math/curve.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -1301,8 +1301,8 @@ void obj_move_all_post(object *objp, float frametime)
 					float g_mult = 1.f;
 					float b_mult = 1.f;
 
-					for (int c = 0; c < wi->curves.size(); c++) {
-						WeaponModularCurve* mod_curve = &wi->curves[c];
+					for (int c = 0; c < wi->lifetime_curves.size(); c++) {
+						WeaponLifetimeCurve* mod_curve = &wi->lifetime_curves[c];
 						if (mod_curve->curve_idx < 0) {
 							Warning(LOCATION, "Curve does not exist!");
 							continue;
@@ -1312,23 +1312,23 @@ void obj_move_all_post(object *objp, float frametime)
 						float input = 1.0f;
 						float output = 1.0f;
 						switch (mod_curve->input) {
-							case WeaponCurveInput::LIFETIME:
+							case WeaponLifetimeCurveInput::LIFETIME:
 								input = f2fl(Missiontime - wp->creation_time) / wi->lifetime;
 								break;
-							case WeaponCurveInput::AGE:
+							case WeaponLifetimeCurveInput::AGE:
 								input = f2fl(Missiontime - wp->creation_time);
 								break;
-							case WeaponCurveInput::VELOCITY:
+							case WeaponLifetimeCurveInput::BASE_VELOCITY:
 								input = wp->weapon_max_vel;
 								break;
-							case WeaponCurveInput::HEALTH:
+							case WeaponLifetimeCurveInput::HEALTH:
 								if (wi->weapon_hitpoints > 0.f) {
 									input = objp->hull_strength/i2fl(wi->weapon_hitpoints);
 								} else {
 									input = 1.f;
 								}
 								break;
-							case WeaponCurveInput::PARENT_RADIUS:
+							case WeaponLifetimeCurveInput::PARENT_RADIUS:
 								input = Objects[objp->parent].radius;
 								break;
 							default:
@@ -1346,19 +1346,19 @@ void obj_move_all_post(object *objp, float frametime)
 							output = 0.f;
 						}
 						switch (mod_curve->output) {
-							case WeaponCurveOutput::LIGHT_INTENSITY_MULT:
+							case WeaponLifetimeCurveOutput::LIGHT_INTENSITY_MULT:
 								intensity_mult *= output;
 								break;
-							case WeaponCurveOutput::LIGHT_RADIUS_MULT:
+							case WeaponLifetimeCurveOutput::LIGHT_RADIUS_MULT:
 								radius_mult *= output;
 								break;
-							case WeaponCurveOutput::LIGHT_R_MULT:
+							case WeaponLifetimeCurveOutput::LIGHT_R_MULT:
 								r_mult *= output;
 								break;
-							case WeaponCurveOutput::LIGHT_G_MULT:
+							case WeaponLifetimeCurveOutput::LIGHT_G_MULT:
 								g_mult *= output;
 								break;
-							case WeaponCurveOutput::LIGHT_B_MULT:
+							case WeaponLifetimeCurveOutput::LIGHT_B_MULT:
 								b_mult *= output;
 								break;
 							default:
@@ -1374,12 +1374,12 @@ void obj_move_all_post(object *objp, float frametime)
 						color c;
 						weapon_get_laser_color(&c, objp);
 						light_color.set_rgb(&c);
-						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
+						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
 						light_color.i(light_color.i() * intensity_mult);
 					} else {
 						// If not a laser then all default information needed is stored in the weapon light color
 						light_color = hdr_color(&wi->light_color);
-						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
+						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
 					}
 					//handles both defaults and adjustments.
 					float light_radius = wi->light_radius * radius_mult;
@@ -1392,7 +1392,7 @@ void obj_move_all_post(object *objp, float frametime)
 						source_radius *= 0.05f;
 						light_radius = lp->missile_light_radius.handle(light_radius) * radius_mult;
 						light_color.i(lp->missile_light_brightness.handle(light_color.i()) * intensity_mult);
-						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
+						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
 					}
 					if(light_radius > 0.0f && light_color.i() > 0.0f)
 						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
