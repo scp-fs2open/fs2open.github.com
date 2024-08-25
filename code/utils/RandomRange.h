@@ -533,9 +533,10 @@ class ParsedRandomRange {
 	
 
   public:
-	ParsedRandomRange(variant random_range)
+	  template<typename T>
+	ParsedRandomRange(T&& random_range)
 	{
-		m_random_range = random_range;
+		m_random_range = std::forward<T>(random_range);
 	}
 	ParsedRandomRange() {
 		m_random_range = UniformFloatRange();
