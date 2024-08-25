@@ -375,18 +375,6 @@ class CurveNumberDistribution {
 		}
 		float lower_bound = Curves[param.curve].keyframes.front().pos.x;
 		float upper_bound = Curves[param.curve].keyframes.back().pos.x;
-		if (lower_bound < 0 || lower_bound == upper_bound) {
-			return 0.f;
-		}
-
-		float remap_mult = 1.f;
-		float remap_add = 0.f;
-		if (!param.min.is_nan() && !param.max.is_nan()) {
-			remap_mult = param.max - param.min;
-			remap_add = param.min;
-		} else if (!param.min.is_nan()) {
-			remap_add = param.min;
-		}
 
 		float max_integral = Curves[param.curve].GetValueIntegrated(Curves[param.curve].keyframes.back().pos.x);
 		float rand =
@@ -399,7 +387,7 @@ class CurveNumberDistribution {
 			float current_value = Curves[param.curve].GetValueIntegrated(current_pos);
 			if (fl_equal(current_value, rand, max_integral * 0.01f)) {
 				// remap the values to the distribution's range
-				return (current_pos - curve_min) / (curve_max - curve_min) * remap_mult + remap_add;
+				return (current_pos - curve_min) / (curve_max - curve_min) * (param.max - param.min) + param.min;
 			}
 			if (current_value > rand) {
 				upper_bound = current_pos;
@@ -408,7 +396,8 @@ class CurveNumberDistribution {
 			}
 		}
 		// remap the values to the distribution's range
-		return (((lower_bound + upper_bound) / 2.f) - curve_min) / (curve_max - curve_min) * remap_mult + remap_add;
+		return (((lower_bound + upper_bound) / 2.f) - curve_min) / (curve_max - curve_min) * (param.max - param.min) +
+			   param.min;
 	}
 	template <typename Generator>
 	inline result_type operator()(Generator& generator)
@@ -465,7 +454,45 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	stuff_float_optional(&curve_params.max);
 	optional_string(")");
 
-	// we need to check whether min and max are nan here but is_nan() is busted in this function for some reason
+	if (curve_params.curve < 0) {
+		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", &curve_name);
+		return CurveFloatRange(curve_params);
+	} else {
+		bool y_below_0 = false;
+		bool no_y_above_0 = true;
+
+		for (const auto& kframe : Curves[curve_params.curve].keyframes) {
+			if (kframe.pos.y < 0.f) {
+				y_below_0 = true;
+			}
+			if (kframe.pos.y > 0.f) {
+				no_y_above_0 = false;
+			}
+		}
+
+		if (y_below_0) {
+			error_display(0,
+				"Curve %s goes below zero along the Y axis. Random distributions using this curve will return 0.",
+				&curve_name);
+			curve_params.curve = -1;
+			return CurveFloatRange(curve_params);
+		}
+		if (no_y_above_0) {
+			error_display(0,
+				"Curve %s has no values above zero along the Y axis. Random distributions using this curve will return 0.",
+				&curve_name);
+			curve_params.curve = -1;
+			return CurveFloatRange(curve_params);
+		}
+	}
+
+	if (fl_is_nan(curve_params.min) || fl_is_nan(curve_params.max)) {
+		if (!fl_is_nan(curve_params.min)) {
+			error_display(0, "Minimum value but no maximum value specified for curve distribution %s!", curve_name.c_str());
+		}
+		curve_params.min = Curves[curve_params.curve].keyframes.front().pos.x;
+		curve_params.max = Curves[curve_params.curve].keyframes.back().pos.x;
+	}
 
 	if (curve_params.min > curve_params.max) {
 		error_display(0, "Minimum value %f is more than maximum value %f!", (float)curve_params.min, (float)curve_params.max);
@@ -488,20 +515,6 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	if (curve_params.max > max) {
 		error_display(0, "Second value (%f) is greater than the maximum %f!", (float)curve_params.max, (float)max);
 		curve_params.max = max;
-	}
-
-	if (curve_params.curve < 0) {
-		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", &curve_name);
-	} else {
-		float lower_bound = Curves[curve_params.curve].keyframes.front().pos.x;
-		float upper_bound = Curves[curve_params.curve].keyframes.back().pos.x;
-		if (lower_bound < 0) {
-			error_display(0, "Curve %s goes below zero along the X axis. Random distributions using this curve will return 0.", &curve_name);
-		}
-		if (upper_bound == lower_bound) {
-			error_display(0, "Curve %s has height of zero along the X axis. Random distributions using this curve will return 0.", &curve_name);
-		}
-		
 	}
 
 
