@@ -422,24 +422,6 @@ class CurveNumberDistribution {
 	}
 };
 
-template <typename _RealType, typename _CharT, typename _Traits>
-std::basic_ostream<_CharT, _Traits>& operator<<(std::basic_ostream<_CharT, _Traits>& __os,
-	const CurveNumberDistribution& __x)
-{
-	__os << __x.param();
-	return __os;
-}
-
-template <typename _RealType, typename _CharT, typename _Traits>
-std::basic_istream<_CharT, _Traits>& operator>>(std::basic_istream<_CharT, _Traits>& __is,
-	const CurveNumberDistribution& __x)
-{
-	int curve;
-	__is >> curve;
-	__x.param(curve);
-	return __is;
-}
-
 using CurveFloatRange = RandomRange<float, CurveNumberDistribution, std::minstd_rand>;
 
 inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
@@ -527,6 +509,29 @@ class ParsedRandomRange {
   private:
 	variant m_random_range;
 
+	// these could have been one-line auto lambdas if we had C++ 14
+	struct next_helper {
+		template <typename T>
+		inline float operator()(T& range) {
+			return range.next();
+		}
+	};
+
+	struct min_helper {
+		template<typename T>
+		inline float operator()(T& range) {
+			return range.min();
+		}
+	};
+
+	struct max_helper {
+		template <typename T>
+		inline float operator()(T& range) {
+			return range.max();
+		}
+	};
+	
+
   public:
 	ParsedRandomRange(variant random_range)
 	{
@@ -536,13 +541,13 @@ class ParsedRandomRange {
 		m_random_range = UniformFloatRange();
 	};
 	inline result_type next() const {
-		return static_cast<result_type>(mpark::visit([] (auto& range) { return range.next(); }, m_random_range));
+		return static_cast<result_type>(mpark::visit(next_helper{}, m_random_range));
 	}
 	inline result_type min() const {
-		return static_cast<result_type>(mpark::visit([](auto& range) { return range.min(); }, m_random_range));
+		return static_cast<result_type>(mpark::visit(min_helper{}, m_random_range));
 	}
 	inline result_type max() const {
-		return static_cast<result_type>(mpark::visit([](auto& range) { return range.max(); }, m_random_range));
+		return static_cast<result_type>(mpark::visit(max_helper{}, m_random_range));
 	}
 	static ParsedRandomRange parseRandomRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 		switch (optional_string_either("NORMAL", "CURVE")) {
