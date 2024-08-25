@@ -67,8 +67,6 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define MODE_CAMPAIGNS	0
 #define MODE_MISSIONS	1
 
-#define MAX_LINES					200
-#define MAX_DESC_LINES			200
 #define NUM_BUTTONS				11
 #define LIST_BUTTONS_MAX		42
 
@@ -196,7 +194,7 @@ static struct {
 	int x;						// X coordinate of line
 	int y;						// Y coordinate of line
 	int flags;					// special flags, see READYROOM_FLAG_* defines above
-} sim_room_lines[MAX_LINES];
+} sim_room_lines[LIST_BUTTONS_MAX];
 
 static char Cur_campaign[MAX_FILENAME_LEN];
 static char *Mission_filenames[MAX_MISSIONS] = { NULL };
@@ -405,7 +403,7 @@ void campaign_mission_hash_table_delete()
 // add a line of sim_room smuck to end of list
 int sim_room_line_add(int type, const char *name, const char *filename, int x, int y, int flags)
 {
-	if (Num_lines >= MAX_LINES)
+	if (Num_lines >= LIST_BUTTONS_MAX)
 		return 0;
 
 	sim_room_lines[Num_lines].type = type;
@@ -1507,14 +1505,6 @@ UI_XSTR Cr_text[GR_NUM_RESOLUTIONS][CR_NUM_TEXT] = {
 	}
 };
 
-/*
-static struct {
-	char *text;
-	int len;
-} campaign_desc_lines[MAX_DESC_LINES];
-*/
-
-static int Num_desc_lines;
 static int Desc_scroll_offset;
 static int Selected_campaign_index;
 static int Active_campaign_index;
@@ -1786,7 +1776,6 @@ void campaign_room_init()
 	Campaign_room_overlay_id = help_overlay_get_index(CAMPAIGN_ROOM_OVERLAY);
 	help_overlay_set_state(Campaign_room_overlay_id,gr_screen.res,0);
 
-	Num_desc_lines = 0;
 	Desc_scroll_offset = Scroll_offset = 0;
 
 	// this stuff needs to happen before the mission_campaign_build_list() call
