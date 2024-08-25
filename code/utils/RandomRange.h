@@ -301,8 +301,7 @@ typedef UniformRange<uint> UniformUIntRange;
  */
 template <typename Value>
 UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<float>::lowest()/2.1f,
-	Value max = std::numeric_limits<float>::max()/2.1f,
-	bool do_limits_check = true)
+	Value max = std::numeric_limits<float>::max()/2.1f)
 {
 	Assertion(min <= max, "Invalid min-max values specified!");
 
