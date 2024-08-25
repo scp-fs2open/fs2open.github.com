@@ -507,8 +507,8 @@ int get_ship_hotkeys(int n)
 }
 
 void hotkey_lines_reset_all() {
-	for (int i = 0; i < MAX_LINES; ++i) {
-		Hotkey_lines[i] = hotkey_line();
+	for (auto& line : Hotkey_lines) {
+		line = hotkey_line();
 	}
 }
 
