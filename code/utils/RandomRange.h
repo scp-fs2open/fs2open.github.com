@@ -562,8 +562,9 @@ class ParsedRandomRange {
 			}
 		}
 	}
-	ParsedRandomRange& operator=(variant random_range) {
-		m_random_range = random_range;
+	template<typename T>
+	ParsedRandomRange& operator=(T&& random_range) {
+		m_random_range = std::forward<T>(random_range);
 		return *this;
 	}
 };
