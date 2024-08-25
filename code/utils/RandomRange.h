@@ -185,20 +185,20 @@ class BoundedNormalDistribution {
 	{
 		return this->operator()(generator, m_param);
 	}
-	inline result_type min()
+	inline result_type min() const
 	{
 		return m_param.min;
 	}
-	inline result_type max()
+	inline result_type max() const
 	{
 		return m_param.max;
 	}
-	inline bool operator==(const BoundedNormalDistribution& other)
+	inline bool operator==(const BoundedNormalDistribution& other) const
 	{
 		return (m_param.normal_parameters == other.m_param.normal_parameters && fl_equal(m_param.min, other.m_param.min) &&
 				fl_equal(m_param.max, other.m_param.max));
 	}
-	inline bool operator!=(const BoundedNormalDistribution& other)
+	inline bool operator!=(const BoundedNormalDistribution& other) const
 	{
 		return !(*this == other);
 	}
@@ -222,7 +222,7 @@ inline BoundedNormalFloatRange parseNormalFloatRange(float min = std::numeric_li
 
 	if (num == 0) {
 		error_display(0, "Need at least one value to form a random range!");
-		return BoundedNormalFloatRange();
+		return {};
 	} else if (num == 1) {
 		return BoundedNormalFloatRange(BoundedNormalDistribution::param_type{std::normal_distribution<float>::param_type(valueList[0]), parsed_min, parsed_max});
 	}
@@ -403,19 +403,19 @@ class CurveNumberDistribution {
 	{
 		return this->operator()(generator, m_param);
 	}
-	inline result_type min()
+	inline result_type min() const
 	{
 		return Curves[m_param.curve].keyframes.front().pos.x;
 	}
-	inline result_type max()
+	inline result_type max() const
 	{
 		return Curves[m_param.curve].keyframes.back().pos.x;
 	}
-	inline bool operator==(const CurveNumberDistribution& other)
+	inline bool operator==(const CurveNumberDistribution& other) const
 	{
 		return (m_param.curve == other.m_param.curve && fl_equal(m_param.min, other.m_param.min) && fl_equal(m_param.max, other.m_param.max));
 	}
-	inline bool operator!=(const CurveNumberDistribution& other)
+	inline bool operator!=(const CurveNumberDistribution& other) const
 	{
 		return !(*this == other);
 	}
@@ -437,7 +437,7 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 
 	if (curve_params.curve < 0) {
 		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", curve_name.c_str());
-		return CurveFloatRange(curve_params);
+		return {curve_params};
 	} else {
 		bool y_below_0 = false;
 		bool no_y_above_0 = true;
@@ -455,13 +455,13 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 			error_display(0,
 				"Curve %s goes below zero along the Y axis. Random distributions using this curve will return 0.", curve_name.c_str());
 			curve_params.curve = -1;
-			return CurveFloatRange(curve_params);
+			return {curve_params};
 		}
 		if (no_y_above_0) {
 			error_display(0,
 				"Curve %s has no values above zero along the Y axis. Random distributions using this curve will return 0.", curve_name.c_str());
 			curve_params.curve = -1;
-			return CurveFloatRange(curve_params);
+			return {curve_params};
 		}
 	}
 
@@ -496,8 +496,7 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 		curve_params.max = max;
 	}
 
-
-	return CurveFloatRange(curve_params);
+	return {curve_params};
 }
 
 template<typename result_type>
