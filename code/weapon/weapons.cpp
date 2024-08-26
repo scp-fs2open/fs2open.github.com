@@ -1497,12 +1497,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						mod_curve.input = WeaponLifetimeCurveInput::AGE;
 					} else if (!stricmp(name_buf, NOX("BASE VELOCITY"))) {
 						mod_curve.input = WeaponLifetimeCurveInput::BASE_VELOCITY;
-					} else if (!stricmp(name_buf, NOX("HEALTH"))) {
+					} else if (!stricmp(name_buf, NOX("HITPOINTS"))) {
 						mod_curve.input = WeaponLifetimeCurveInput::HEALTH;
 					} else if (!stricmp(name_buf, NOX("PARENT RADIUS"))) {
 						mod_curve.input = WeaponLifetimeCurveInput::PARENT_RADIUS;
 					} else {
-						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'BASE VELOCITY', 'HEALTH', PARENT RADIUS'.", name_buf, wip->name);
+						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'BASE VELOCITY', 'HITPOINTS', PARENT RADIUS'.", name_buf, wip->name);
 					}
 
 				required_string("+Output:");
@@ -9197,7 +9197,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 						}
 						break;
 					case WeaponLifetimeCurveInput::PARENT_RADIUS:
-						input = Objects[obj->parent].radius;
+						if (obj->parent >= 0) {
+							input = Objects[obj->parent].radius;
+						}
 						break;
 					default:
 						continue;
@@ -9697,7 +9699,7 @@ void weapon_info::reset()
 	this->laser_headon_switch_rate = 2.0f;
 	this->laser_length = 10.0f;
 	this->laser_length_by_frametime = false;
-	this->bitmap_color = { 255.f, 255.f, 255.f };
+	this->bitmap_color = { { 255.f, 255.f, 255.f } };
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
 	this->laser_head_radius = 1.0f;
