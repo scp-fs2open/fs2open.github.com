@@ -323,7 +323,7 @@ enum class WeaponLifetimeCurveInput {
 	LIFETIME,
 	AGE,
 	BASE_VELOCITY,
-	HEALTH,
+	HITPOINTS,
 	PARENT_RADIUS,
 };
 

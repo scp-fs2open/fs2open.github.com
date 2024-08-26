@@ -1498,7 +1498,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					} else if (!stricmp(name_buf, NOX("BASE VELOCITY"))) {
 						mod_curve.input = WeaponLifetimeCurveInput::BASE_VELOCITY;
 					} else if (!stricmp(name_buf, NOX("HITPOINTS"))) {
-						mod_curve.input = WeaponLifetimeCurveInput::HEALTH;
+						mod_curve.input = WeaponLifetimeCurveInput::HITPOINTS;
 					} else if (!stricmp(name_buf, NOX("PARENT RADIUS"))) {
 						mod_curve.input = WeaponLifetimeCurveInput::PARENT_RADIUS;
 					} else {
@@ -5781,7 +5781,7 @@ void weapon_home(object *obj, int num, float frame_time)
 						case WeaponLifetimeCurveInput::BASE_VELOCITY:
 							input = wp->weapon_max_vel;
 							break;
-						case WeaponLifetimeCurveInput::HEALTH:
+						case WeaponLifetimeCurveInput::HITPOINTS:
 							if (wip->weapon_hitpoints > 0.f) {
 								input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
 							} else {
@@ -5938,7 +5938,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 					case WeaponLifetimeCurveInput::BASE_VELOCITY:
 						input = wp->weapon_max_vel;
 						break;
-					case WeaponLifetimeCurveInput::HEALTH:
+					case WeaponLifetimeCurveInput::HITPOINTS:
 						if (wip->weapon_hitpoints > 0.f) {
 							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
 						} else {
@@ -9189,7 +9189,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					case WeaponLifetimeCurveInput::BASE_VELOCITY:
 						input = wp->weapon_max_vel;
 						break;
-					case WeaponLifetimeCurveInput::HEALTH:
+					case WeaponLifetimeCurveInput::HITPOINTS:
 						if (wip->weapon_hitpoints > 0.f) {
 							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
 						} else {

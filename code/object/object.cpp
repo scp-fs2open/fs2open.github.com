@@ -1321,7 +1321,7 @@ void obj_move_all_post(object *objp, float frametime)
 							case WeaponLifetimeCurveInput::BASE_VELOCITY:
 								input = wp->weapon_max_vel;
 								break;
-							case WeaponLifetimeCurveInput::HEALTH:
+							case WeaponLifetimeCurveInput::HITPOINTS:
 								if (wi->weapon_hitpoints > 0.f) {
 									input = objp->hull_strength/i2fl(wi->weapon_hitpoints);
 								} else {
