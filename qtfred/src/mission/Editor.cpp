@@ -790,6 +790,32 @@ void Editor::showHiddenObjects() {
 
 	updateAllViewports();
 }
+void Editor::lockMarkedObjects() {
+	object* ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			ptr->flags.set(Object::Object_Flags::Locked_from_editing);
+			unmarkObject(OBJ_INDEX(ptr));
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllViewports();
+}
+void Editor::unlockAllObjects() {
+	object* ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		ptr->flags.remove(Object::Object_Flags::Locked_from_editing);
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllViewports();
+}
 int Editor::create_waypoint(vec3d* pos, int waypoint_instance) {
 	int obj = waypoint_add(pos, waypoint_instance);
 

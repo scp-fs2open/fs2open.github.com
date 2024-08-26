@@ -62,6 +62,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionHide_Marked_Objects_triggered(bool enabled);
 	void on_actionShow_All_Hidden_Objects_triggered(bool enabled);
 
+	void on_actionLock_Marked_Objects_triggered(bool enabled);
+	void on_actionUnlock_All_Objects_triggered(bool enabled);
+
 	void on_actionx1_triggered(bool enabled);
 	void on_actionx2_triggered(bool enabled);
 	void on_actionx3_triggered(bool enabled);

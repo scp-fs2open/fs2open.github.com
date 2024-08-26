@@ -1459,7 +1459,7 @@
 #define ID_CPGN_FILE_SAVE_AS            32998
 #define ID_SHOW_STARFRIELD              32999
 #define ID_REVERT                       33000
-#define ID_HIDE_OBJECTS                 33002
+#define ID_HIDE_MARKED_OBJECTS          33002
 #define ID_SHOW_HIDDEN_OBJECTS          33003
 #define ID_GROUP_SET                    33004
 #define ID_EXPAND_ALL                   33005
@@ -1520,6 +1520,8 @@
 #define ID_PREV_SUBSYS                  33060
 #define ID_CANCEL_SUBSYS                33061
 #define ID_HIGHLIGHT_SUBSYS             33062
+#define ID_EDIT_LOCK_MARKED_OBJECTS     33063
+#define ID_EDIT_UNLOCK_ALL_OBJECTS      33064
 #define ID_SHOW_DOCK_POINTS             33065
 #define ID_SHOW_PATHS                   33066
 #define ID_DUMP_STATS                   33067

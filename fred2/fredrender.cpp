@@ -979,14 +979,16 @@ void game_do_frame() {
 		break;
 
 	case 2:  // Control viewpoint object
-		process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime), key);
-		object_moved(&Objects[view_obj]);
-		control_pos = Objects[view_obj].pos;
-		control_orient = Objects[view_obj].orient;
+		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
+			process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime), key);
+			object_moved(&Objects[view_obj]);
+			control_pos = Objects[view_obj].pos;
+			control_orient = Objects[view_obj].orient;
+		}
 		break;
 
 	case 1:  //	Control the current object's location and orientation
-		if (query_valid_object()) {
+		if (query_valid_object() && !Objects[cur_object_index].flags[Object::Object_Flags::Locked_from_editing]) {
 			vec3d delta_pos, leader_old_pos;
 			matrix leader_orient, leader_transpose, tmp;
 			object *leader;
@@ -1214,10 +1216,12 @@ void level_controlled() {
 		break;
 
 	case 2:  // Control viewpoint object
-		level_object(&Objects[view_obj].orient);
-		object_moved(&Objects[view_obj]);
-		set_modified();
-		FREDDoc_ptr->autosave("level object");
+		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
+			level_object(&Objects[view_obj].orient);
+			object_moved(&Objects[view_obj]);
+			set_modified();
+			FREDDoc_ptr->autosave("level object");
+		}
 		break;
 
 	case 1:  //	Control the current object's location and orientation
@@ -1316,7 +1320,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 			return 0;
 	}
 
-	if (objp->flags[Object::Object_Flags::Hidden])
+	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
 		return 0;
 
 	if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_SHIP)) {
@@ -2017,7 +2021,7 @@ int select_object(int cx, int cy) {
 	if (Briefing_dialog) {
 		best = Briefing_dialog->check_mouse_hit(cx, cy);
 		if (best >= 0) {
-			if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
+			if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked]) || Objects[best].flags[Object::Object_Flags::Locked_from_editing]) {
 				return -1;
 			}
 			return best;
@@ -2055,7 +2059,7 @@ int select_object(int cx, int cy) {
 	}
 
 	if (best >= 0) {
-		if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
+		if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked]) || Objects[best].flags[Object::Object_Flags::Locked_from_editing]) {
 			return -1;
 		}
 		return best;
@@ -2077,7 +2081,7 @@ int select_object(int cx, int cy) {
 		ptr = GET_NEXT(ptr);
 	}
 
-	if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
+	if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked]) || Objects[best].flags[Object::Object_Flags::Locked_from_editing]) {
 		return -1;
 	}
 
@@ -2098,10 +2102,12 @@ void verticalize_controlled() {
 		break;
 
 	case 2:  // Control viewpoint object
-		verticalize_object(&Objects[view_obj].orient);
-		object_moved(&Objects[view_obj]);
-		FREDDoc_ptr->autosave("align object");
-		set_modified();
+		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
+			verticalize_object(&Objects[view_obj].orient);
+			object_moved(&Objects[view_obj]);
+			FREDDoc_ptr->autosave("align object");
+			set_modified();
+		}
 		break;
 
 	case 1:  //	Control the current object's location and orientation

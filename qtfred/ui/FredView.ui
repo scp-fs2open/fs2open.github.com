@@ -71,6 +71,10 @@
     <addaction name="actionDelete"/>
     <addaction name="actionDelete_Wing"/>
     <addaction name="separator"/>
+    <addaction name="actionLock_Marked_Objects"/>
+    <addaction name="actionUnlock_All_Objects"/>
+    <addaction name="actionSelectionLock"/>
+    <addaction name="separator"/>
     <addaction name="actionDisable_Undo"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -480,7 +484,7 @@
     <string>SelectionLock</string>
    </property>
    <property name="toolTip">
-    <string>Selection Lock (Spacebar)</string>
+    <string>Prevent selection from changing (Spacebar)</string>
    </property>
    <property name="shortcut">
     <string>Space</string>
@@ -667,6 +671,16 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Del</string>
+   </property>
+  </action>
+  <action name="actionLock_Marked_Objects">
+   <property name="text">
+    <string>&amp;Lock Marked Objects</string>
+   </property>
+  </action>
+  <action name="actionUnlock_All_Objects">
+   <property name="text">
+    <string>&amp;Unlock All Objects</string>
    </property>
   </action>
   <action name="actionDisable_Undo">
