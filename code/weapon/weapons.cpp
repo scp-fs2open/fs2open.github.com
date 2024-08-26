@@ -5769,44 +5769,42 @@ void weapon_home(object *obj, int num, float frame_time)
 
 			// we do the modular curve processing in this sort of inside-out way because we only care about one output
 			// so we don't want to bother doing any processing for curves with other outputs
-			switch (mod_curve->output) {
-				case WeaponLifetimeCurveOutput::TURN_RATE_MULT: {
-					switch (mod_curve->input) {
-						case WeaponLifetimeCurveInput::LIFETIME:
-							input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
-							break;
-						case WeaponLifetimeCurveInput::AGE:
-							input = f2fl(Missiontime - wp->creation_time);
-							break;
-						case WeaponLifetimeCurveInput::BASE_VELOCITY:
-							input = wp->weapon_max_vel;
-							break;
-						case WeaponLifetimeCurveInput::HITPOINTS:
-							if (wip->weapon_hitpoints > 0.f) {
-								input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
-							} else {
-								input = 1.f;
-							}
-							break;
-						case WeaponLifetimeCurveInput::PARENT_RADIUS:
+			if (mod_curve->output == WeaponLifetimeCurveOutput::TURN_RATE_MULT) {
+				switch (mod_curve->input) {
+					case WeaponLifetimeCurveInput::LIFETIME:
+						input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
+						break;
+					case WeaponLifetimeCurveInput::AGE:
+						input = f2fl(Missiontime - wp->creation_time);
+						break;
+					case WeaponLifetimeCurveInput::BASE_VELOCITY:
+						input = wp->weapon_max_vel;
+						break;
+					case WeaponLifetimeCurveInput::HITPOINTS:
+						if (wip->weapon_hitpoints > 0.f) {
+							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
+						} else {
+							input = 1.f;
+						}
+						break;
+					case WeaponLifetimeCurveInput::PARENT_RADIUS:
+						if (obj->parent >= 0) {
 							input = Objects[obj->parent].radius;
-							break;
-						default:
-							continue;
-					}
-					float scaling_factor = wp->weapon_curve_data[c].first;
-					float translation = wp->weapon_curve_data[c].second;
-					input = (input / scaling_factor) + translation;
-					if (mod_curve->wraparound) {
-						float final_x = curve.keyframes.back().pos.x;
-						input = std::fmod(input, final_x);
-					}
-					output = curve.GetValue(input);
-					turnrate_mod *= output;
+						}
+						break;
+					default:
+						continue;
 				}
-				default:
-					continue;
-			}		
+				float scaling_factor = wp->weapon_curve_data[c].first;
+				float translation = wp->weapon_curve_data[c].second;
+				input = (input / scaling_factor) + translation;
+				if (mod_curve->wraparound) {
+					float final_x = curve.keyframes.back().pos.x;
+					input = std::fmod(input, final_x);
+				}
+				output = curve.GetValue(input);
+				turnrate_mod *= output;
+			}	
 		}
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
@@ -5926,43 +5924,41 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 		// we do the modular curve processing in this sort of inside-out way because we only care about one output
 		// so we don't want to bother doing any processing for curves with other outputs
-		switch (mod_curve->output) {
-			case WeaponLifetimeCurveOutput::DET_RADIUS_MULT: {
-				switch (mod_curve->input) {
-					case WeaponLifetimeCurveInput::LIFETIME:
-						input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
-						break;
-					case WeaponLifetimeCurveInput::AGE:
-						input = f2fl(Missiontime - wp->creation_time);
-						break;
-					case WeaponLifetimeCurveInput::BASE_VELOCITY:
-						input = wp->weapon_max_vel;
-						break;
-					case WeaponLifetimeCurveInput::HITPOINTS:
-						if (wip->weapon_hitpoints > 0.f) {
-							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
-						} else {
-							input = 1.f;
-						}
-						break;
-					case WeaponLifetimeCurveInput::PARENT_RADIUS:
+		if (mod_curve->output == WeaponLifetimeCurveOutput::DET_RADIUS_MULT) {
+			switch (mod_curve->input) {
+				case WeaponLifetimeCurveInput::LIFETIME:
+					input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
+					break;
+				case WeaponLifetimeCurveInput::AGE:
+					input = f2fl(Missiontime - wp->creation_time);
+					break;
+				case WeaponLifetimeCurveInput::BASE_VELOCITY:
+					input = wp->weapon_max_vel;
+					break;
+				case WeaponLifetimeCurveInput::HITPOINTS:
+					if (wip->weapon_hitpoints > 0.f) {
+						input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
+					} else {
+						input = 1.f;
+					}
+					break;
+				case WeaponLifetimeCurveInput::PARENT_RADIUS:
+					if (obj->parent >= 0) {
 						input = Objects[obj->parent].radius;
-						break;
-					default:
-						continue;
-				}
-				float scaling_factor = wp->weapon_curve_data[c].first;
-				float translation = wp->weapon_curve_data[c].second;
-				input = (input / scaling_factor) + translation;
-				if (mod_curve->wraparound) {
-					float final_x = curve.keyframes.back().pos.x;
-					input = std::fmod(input, final_x);
-				}
-				output = curve.GetValue(input);
-				det_radius_adjusted *= output;
+					}
+					break;
+				default:
+					continue;
 			}
-			default:
-				continue;
+			float scaling_factor = wp->weapon_curve_data[c].first;
+			float translation = wp->weapon_curve_data[c].second;
+			input = (input / scaling_factor) + translation;
+			if (mod_curve->wraparound) {
+				float final_x = curve.keyframes.back().pos.x;
+				input = std::fmod(input, final_x);
+			}
+			output = curve.GetValue(input);
+			det_radius_adjusted *= output;
 		}		
 	}
 
@@ -9699,7 +9695,7 @@ void weapon_info::reset()
 	this->laser_headon_switch_rate = 2.0f;
 	this->laser_length = 10.0f;
 	this->laser_length_by_frametime = false;
-	this->bitmap_color = { { 255.f, 255.f, 255.f } };
+	this->bitmap_color = { { { 255.f, 255.f, 255.f } } };
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
 	this->laser_head_radius = 1.0f;

@@ -1329,7 +1329,9 @@ void obj_move_all_post(object *objp, float frametime)
 								}
 								break;
 							case WeaponLifetimeCurveInput::PARENT_RADIUS:
-								input = Objects[objp->parent].radius;
+								if (objp->parent >= 0) {
+									input = Objects[objp->parent].radius;
+								}
 								break;
 							default:
 								continue;
