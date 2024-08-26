@@ -1502,7 +1502,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					} else if (!stricmp(name_buf, NOX("PARENT RADIUS"))) {
 						mod_curve.input = WeaponLifetimeCurveInput::PARENT_RADIUS;
 					} else {
-						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'BASE_VELOCITY', 'HEALTH', PARENT RADIUS'.", name_buf, wip->name);
+						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'BASE VELOCITY', 'HEALTH', PARENT RADIUS'.", name_buf, wip->name);
 					}
 
 				required_string("+Output:");
@@ -1556,7 +1556,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					} else if (!stricmp(name_buf, NOX("TURN RATE MULT"))) {
 						mod_curve.output = WeaponLifetimeCurveOutput::TURN_RATE_MULT;
 					} else {
-						error_display(1, "Unrecognized weapon curve output '%s' for weapon %s!\n Valid inputs are: 'LASER LENGTH', 'LASER RADIUS', 'LASER HEAD RADIUS', 'LASER TAIL RADIUS', 'LASER OPACITY', 'LASER BITMAP COLOR R', 'LASER BITMAP COLOR G', 'LASER BITMAP COLOR B', 'LASER GLOW COLOR R', 'LASER GLOW COLOR G', 'LASER GLOW COLOR B', 'LIGHT COLOR R', 'LIGHT COLOR G', 'LIGHT COLOR B', 'LIGHT INTENSITY', 'LIGHT RADIUS'.", name_buf, wip->name);
+						error_display(1, "Unrecognized weapon curve output '%s' for weapon %s!\n Valid inputs are: 'LASER LENGTH MULT', 'LASER RADIUS MULT', 'LASER HEAD RADIUS MULT', 'LASER TAIL RADIUS MULT', 'LASER OPACITY MULT', 'LASER BITMAP COLOR R MULT', 'LASER BITMAP COLOR G MULT', 'LASER BITMAP COLOR B MULT', 'LASER GLOW COLOR R MULT', 'LASER GLOW COLOR G MULT', 'LASER GLOW COLOR B MULT', 'LIGHT COLOR R MULT', 'LIGHT COLOR G MULT', 'LIGHT COLOR B MULT', 'LIGHT INTENSITY MULT', 'LIGHT RADIUS MULT', 'DETONATION RADIUS MULT', 'TURN RATE MULT'.", name_buf, wip->name);
 					}
 
 				required_string("+Curve Name:");
