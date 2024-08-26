@@ -1369,8 +1369,8 @@ void ai_turn_towards_vector(const vec3d* dest, object* objp, const vec3d* slide_
 			return;
 	}
 
-	//	Don't allow a ship to turn if it's immobile.
-	if ( objp->flags[Object::Object_Flags::Immobile] ) {
+	//	Don't allow a ship to turn if it's prevented from turning.
+	if ( objp->flags[Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile] ) {
 		return;
 	}
 

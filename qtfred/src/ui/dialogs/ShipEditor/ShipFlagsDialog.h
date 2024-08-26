@@ -53,7 +53,8 @@ class ShipFlagsDialog : public QDialog {
 	void friendlyStealthChanged(int);
 	void kamikazeChanged(int);
 	void kamikazeDamageChanged(int);
-	void immobileChanged(int);
+	void doesNotChangePositionChanged(int);
+	void doesNotChangeOrientationChanged(int);
 	void noDynamicGoalsChanged(int);
 	void redAlertChanged(int);
 	void gravityChanged(int);

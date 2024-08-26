@@ -27,7 +27,8 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	int m_kamikaze;
 	int m_invulnerable;
 	int m_targetable_as_bomb;
-	int m_immobile;
+	int m_dont_change_position;
+	int m_dont_change_orientation;
 	int m_ignore_count;
 	int m_hidden;
 	int m_primitive_sensors;
@@ -141,8 +142,11 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	void setKamikazeDamage(const int);
 	int getKamikazeDamage() const;
 
-	void setImmobile(const int);
-	int getImmobile() const;
+	void setDontChangePosition(const int);
+	int getDontChangePosition() const;
+
+	void setDontChangeOrientation(const int);
+	int getDontChangeOrientation() const;
 
 	void setNoDynamicGoals(const int);
 	int getNoDynamicGoals() const;

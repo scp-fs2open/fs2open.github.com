@@ -178,18 +178,33 @@ void ShipFlagsDialogModel::update_ship(const int shipnum)
 		break;
 	}
 
-	switch (m_immobile) {
+	switch (m_dont_change_position) {
 	case Qt::Checked:
-		if (!(objp->flags[Object::Object_Flags::Immobile])) {
+		if (!(objp->flags[Object::Object_Flags::Dont_change_position])) {
 			set_modified();
 		}
-		objp->flags.set(Object::Object_Flags::Immobile);
+		objp->flags.set(Object::Object_Flags::Dont_change_position);
 		break;
 	case Qt::Unchecked:
-		if (objp->flags[Object::Object_Flags::Immobile]) {
+		if (objp->flags[Object::Object_Flags::Dont_change_position]) {
 			set_modified();
 		}
-		objp->flags.remove(Object::Object_Flags::Immobile);
+		objp->flags.remove(Object::Object_Flags::Dont_change_position);
+		break;
+	}
+
+	switch (m_dont_change_orientation) {
+	case Qt::Checked:
+		if (!(objp->flags[Object::Object_Flags::Dont_change_orientation])) {
+			set_modified();
+		}
+		objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+		break;
+	case Qt::Unchecked:
+		if (objp->flags[Object::Object_Flags::Dont_change_orientation]) {
+			set_modified();
+		}
+		objp->flags.remove(Object::Object_Flags::Dont_change_orientation);
 		break;
 	}
 
@@ -902,14 +917,24 @@ int ShipFlagsDialogModel::getKamikazeDamage() const
 	return m_kdamage;
 }
 
-void ShipFlagsDialogModel::setImmobile(const int state)
+void ShipFlagsDialogModel::setDontChangePosition(const int state)
 {
-	modify(m_immobile, state);
+	modify(m_dont_change_position, state);
 }
 
-int ShipFlagsDialogModel::getImmobile() const
+int ShipFlagsDialogModel::getDontChangePosition() const
 {
-	return m_immobile;
+	return m_dont_change_position;
+}
+
+void ShipFlagsDialogModel::setDontChangeOrientation(const int state)
+{
+	modify(m_dont_change_orientation, state);
+}
+
+int ShipFlagsDialogModel::getDontChangeOrientation() const
+{
+	return m_dont_change_orientation;
 }
 
 void ShipFlagsDialogModel::setNoDynamicGoals(const int state)
@@ -1133,7 +1158,8 @@ void ShipFlagsDialogModel::initializeData()
 					m_missile_protect_ship = (objp->flags[Object::Object_Flags::Missile_protected]) ? 2 : 0;
 					m_invulnerable = (objp->flags[Object::Object_Flags::Invulnerable]) ? 2 : 0;
 					m_targetable_as_bomb = (objp->flags[Object::Object_Flags::Targetable_as_bomb]) ? 2 : 0;
-					m_immobile = (objp->flags[Object::Object_Flags::Immobile]) ? 2 : 0;
+					m_dont_change_position = (objp->flags[Object::Object_Flags::Dont_change_position]) ? 2 : 0;
+					m_dont_change_orientation = (objp->flags[Object::Object_Flags::Dont_change_orientation]) ? 2 : 0;
 					m_hidden = (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors]) ? 2 : 0;
 					m_primitive_sensors = (shipp->flags[Ship::Ship_Flags::Primitive_sensors]) ? 2 : 0;
 					m_no_subspace_drive = (shipp->flags[Ship::Ship_Flags::No_subspace_drive]) ? 2 : 0;
@@ -1200,7 +1226,8 @@ void ShipFlagsDialogModel::initializeData()
 					m_invulnerable = tristate_set(objp->flags[Object::Object_Flags::Invulnerable], m_invulnerable);
 					m_targetable_as_bomb =
 						tristate_set(objp->flags[Object::Object_Flags::Targetable_as_bomb], m_targetable_as_bomb);
-					m_immobile = tristate_set(objp->flags[Object::Object_Flags::Immobile], m_immobile);
+					m_dont_change_position = tristate_set(objp->flags[Object::Object_Flags::Dont_change_position], m_dont_change_position);
+					m_dont_change_orientation = tristate_set(objp->flags[Object::Object_Flags::Dont_change_orientation], m_dont_change_orientation);
 					m_hidden = tristate_set(shipp->flags[Ship::Ship_Flags::Hidden_from_sensors], m_hidden);
 					m_primitive_sensors =
 						tristate_set(shipp->flags[Ship::Ship_Flags::Primitive_sensors], m_primitive_sensors);

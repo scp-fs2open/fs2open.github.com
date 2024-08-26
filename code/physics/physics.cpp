@@ -226,7 +226,6 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	*orient = tmp;
 
 	vm_orthogonalize_matrix(orient);
-
 }
 
 //	-----------------------------------------------------------------------------------------------------------
@@ -419,7 +418,6 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, vec3d* gravi
 		pi->speed = vm_vec_mag(&pi->vel);							//	Note, cannot use quick version, causes cumulative error, increasing speed.
 		pi->fspeed = vm_vec_dot(&orient->vec.fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
 	}
-
 }
 
 //	-----------------------------------------------------------------------------------------------------------

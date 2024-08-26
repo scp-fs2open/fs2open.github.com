@@ -734,7 +734,10 @@ void obj_collide_pair(object *A, object *B)
     if ( !(A->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
     if ( !(B->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
 
-    if ((A->flags[Object::Object_Flags::Immobile]) && (B->flags[Object::Object_Flags::Immobile])) return;	// Two immobile objects will never collide with each other
+	// Two immobile objects will never collide with each other
+    if ( (A->flags[Object::Object_Flags::Immobile] || (A->flags[Object::Object_Flags::Dont_change_position] && A->flags[Object::Object_Flags::Dont_change_orientation]))
+		&& (B->flags[Object::Object_Flags::Immobile] || (B->flags[Object::Object_Flags::Dont_change_position] && B->flags[Object::Object_Flags::Dont_change_orientation])) )
+			return;
 
     // Make sure you're not checking a parent with it's kid or vicy-versy
     if ( reject_obj_pair_on_parent(A,B) ) {
