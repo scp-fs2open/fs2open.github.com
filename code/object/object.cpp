@@ -1301,7 +1301,7 @@ void obj_move_all_post(object *objp, float frametime)
 					float g_mult = 1.f;
 					float b_mult = 1.f;
 
-					for (int c = 0; c < wi->lifetime_curves.size(); c++) {
+					for (uint c = 0; c < wi->lifetime_curves.size(); c++) {
 						WeaponLifetimeCurve* mod_curve = &wi->lifetime_curves[c];
 						if (mod_curve->curve_idx < 0) {
 							Warning(LOCATION, "Curve does not exist!");
