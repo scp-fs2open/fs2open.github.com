@@ -5756,7 +5756,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		vec3d turnrate_mod = vm_vec_new(1.0f, 1.0f, 1.0f);
 
-		for (int c = 0; c < wip->lifetime_curves.size(); c++) {
+		for (uint c = 0; c < wip->lifetime_curves.size(); c++) {
 			WeaponLifetimeCurve* mod_curve = &wip->lifetime_curves[c];
 			if (mod_curve->curve_idx < 0) {
 				Warning(LOCATION, "Curve does not exist!");
@@ -5913,7 +5913,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 	float det_radius_adjusted = wip->det_radius;
 
-	for (int c = 0; c < wip->lifetime_curves.size(); c++) {
+	for (uint c = 0; c < wip->lifetime_curves.size(); c++) {
 		WeaponLifetimeCurve* mod_curve = &wip->lifetime_curves[c];
 		if (mod_curve->curve_idx < 0) {
 			Warning(LOCATION, "Curve does not exist!");
@@ -9169,7 +9169,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float glow_g_mult = 1.f;
 			float glow_b_mult = 1.f;
 
-			for (int ci = 0; ci < wip->lifetime_curves.size(); ci++) {
+			for (uint ci = 0; ci < wip->lifetime_curves.size(); ci++) {
 				WeaponLifetimeCurve* mod_curve = &wip->lifetime_curves[ci];
 				if (mod_curve->curve_idx < 0) {
 					Warning(LOCATION, "Curve does not exist!");
