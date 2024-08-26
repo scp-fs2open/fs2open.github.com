@@ -33,15 +33,15 @@ class GenericShapeEffect : public ParticleEffect {
 	util::ParticleProperties m_particleProperties;
 
 	ConeDirection m_direction = ConeDirection::Incoming;
-	::util::UniformFloatRange m_velocity;
-	::util::UniformUIntRange m_particleNum;
+	::util::ParsedRandomFloatRange m_velocity;
+	::util::ParsedRandomRange<uint> m_particleNum;
 	float m_particleChance = 1.0f;
-	::util::UniformFloatRange m_particleRoll;
+	::util::ParsedRandomFloatRange m_particleRoll;
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
 	util::EffectTiming m_timing;
 
-	::util::UniformFloatRange m_vel_inherit;
+	::util::ParsedRandomFloatRange m_vel_inherit;
 
 	TShape m_shape;
 
@@ -175,11 +175,11 @@ class GenericShapeEffect : public ParticleEffect {
 		m_shape.parse(nocreate);
 
 		if (internal::required_string_if_new("+Velocity:", nocreate)) {
-			m_velocity = ::util::parseUniformRange<float>();
+			m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 
 		if (internal::required_string_if_new("+Number:", nocreate)) {
-			m_particleNum = ::util::parseUniformRange<uint>();
+			m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
 		}
 		if (!nocreate) {
 			m_particleChance = 1.0f;
@@ -230,7 +230,7 @@ class GenericShapeEffect : public ParticleEffect {
 		}
 
 		if (optional_string("+Parent Velocity Factor:")) {
-			m_vel_inherit = ::util::parseUniformRange<float>();
+			m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 
 		m_timing = util::EffectTiming::parseTiming();

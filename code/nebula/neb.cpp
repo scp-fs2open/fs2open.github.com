@@ -277,7 +277,7 @@ void parse_nebula_table(const char* filename)
 					error_display(0, "Bitmap defined for nebula poof %s was not found!", poofp->name);
 
 				if (optional_string("$Scale:"))
-					poofp->scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
+					poofp->scale = ::util::ParsedRandomFloatRange::parseRandomRange(0.01f, 100000.0f);
 
 				if (optional_string("$Density:")) {
 					stuff_float(&poofp->density);
@@ -299,7 +299,7 @@ void parse_nebula_table(const char* filename)
 				}
 
 				if (optional_string("$Rotation:"))
-					poofp->rotation = ::util::parseUniformRange<float>(-1000.0f, 1000.0f);
+					poofp->rotation = util::ParsedRandomFloatRange::parseRandomRange(-1000.0f, 1000.0f);
 
 				if (optional_string("$View Distance:")) {
 					stuff_float(&poofp->view_dist);
@@ -318,7 +318,7 @@ void parse_nebula_table(const char* filename)
 				}
 
 				if (optional_string("$Alpha:")) {
-					poofp->alpha = ::util::parseUniformRange<float>(0.0f, 1.0f);
+					poofp->alpha = util::ParsedRandomFloatRange::parseRandomRange(0.0f, 1.0f);
 				}
 			}
 		}

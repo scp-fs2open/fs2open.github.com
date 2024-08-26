@@ -242,3 +242,60 @@ float Curve::GetValue(float x_val) const {
 			return 0.0f;
 	}
 }
+
+float Curve::GetValueIntegrated(float x_val) const
+{
+	float integrated_value = 0.f;
+
+	if (x_val < keyframes[0].pos.x) {
+		return (keyframes[0].pos.x - x_val) * keyframes[0].pos.y;
+	}
+
+	for (size_t i = 0; i < keyframes.size(); i++) {
+		const curve_keyframe* kframe = &keyframes[i];
+		if (i == keyframes.size() - 1) {
+			integrated_value += (x_val - kframe->pos.x) * kframe->pos.y;
+			break;
+		}
+		const vec2d* next_pos = &keyframes[i+1].pos;
+		float end_x = MIN(x_val, next_pos->x);
+		bool last_keyframe = false;
+		if (x_val <= next_pos->x) {
+			last_keyframe = true;
+		}
+		float t = (end_x - kframe->pos.x) / (next_pos->x - kframe->pos.x);
+		float m = (next_pos->y - kframe->pos.y) * (next_pos->x - kframe->pos.x);
+		float out;
+		integrated_value += (end_x - kframe->pos.x) * kframe->pos.y;
+		switch (kframe->interp_func) {
+		case CurveInterpFunction::Constant:
+			break;
+		case CurveInterpFunction::Linear:
+			integrated_value += t * t * m * 0.5f;
+			break;
+		case CurveInterpFunction::Polynomial:
+			out = kframe->param2 > 0.0f ? powf(t, kframe->param1 + 1.f) : (powf(1 - t, kframe->param1 + 1.f) + (kframe->param1 * t) + t - 1.f);
+			integrated_value += (out * m)/(kframe->param1 + 1.f);
+			break;
+		case CurveInterpFunction::Circular:
+			if (kframe->param2 > 0.0f) {
+				integrated_value += m * (0.5f * (-sqrtf(1.f - (t * t)) * t - asin(t)) + t);
+			} else {
+				integrated_value += m * (0.5f * sqrtf(-(t - 2) * t) * (t - 1) + asin(sqrtf(t) / sqrtf(2.f)));
+			}
+			break;
+		case CurveInterpFunction::Curve:
+			// add 0.5 to ensure this behaves like rounding
+			integrated_value += m * (Curves[(int)(kframe->param1 + 0.5f)].GetValueIntegrated(t) - Curves[(int)(kframe->param1 + 0.5f)].GetValueIntegrated(0.f));
+			break;
+		default:
+			UNREACHABLE("Unrecognized curve function");
+			break;
+		}
+		if (last_keyframe) {
+			break;
+		}
+	}
+
+	return integrated_value;
+	}

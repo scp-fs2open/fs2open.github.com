@@ -95,8 +95,8 @@ struct game_snd
 	GameSoundCycleType cycle_type = GameSoundCycleType::SequentialCycle;
 	size_t last_entry_index; //!< The last sound entry used by this sound.
 
-	util::UniformFloatRange pitch_range; //!< The range of possible pitch values used randomly for this sound
-	util::UniformFloatRange volume_range; //!< The possible range of the default volume (range is (0, 1]).
+	util::ParsedRandomFloatRange pitch_range; //!< The range of possible pitch values used randomly for this sound
+	util::ParsedRandomFloatRange volume_range; //!< The possible range of the default volume (range is (0, 1]).
 
 	EnhancedSoundData enhanced_sound_data;
 

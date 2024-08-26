@@ -65,10 +65,10 @@ typedef int DecalReference;
  */
 struct creation_info {
 	DecalReference definition_handle = -1;
-	util::UniformFloatRange radius = ::util::UniformFloatRange(-1.0f);
+	util::ParsedRandomFloatRange radius = ::util::UniformFloatRange(-1.0f);
 	float width = -1.0f;
 	float height = -1.0f;
-	util::UniformFloatRange lifetime = ::util::UniformFloatRange(-1.0f);
+	util::ParsedRandomFloatRange lifetime = ::util::UniformFloatRange(-1.0f);
 	bool random_rotation = false;
 };
 
