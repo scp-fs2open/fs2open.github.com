@@ -38,11 +38,13 @@ typedef struct iff_info {
 	// required stuff
 	char iff_name[NAME_LENGTH];
 	int color_index;							// treat this as private and use iff_get_color or iff_get_color_by_team
+	int accessibility_color_index;
 
 	// relationships
 	int attackee_bitmask;						// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	int attackee_bitmask_all_teams_at_war;		// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	SCP_map<int, int> observed_color_map;			// treat this as private and use iff_get_color or iff_get_color_by_team
+	SCP_map<int, int> accessibility_observed_color_map;
 	IFF_hotkey_team hotkey_team;
 
 	// flags
