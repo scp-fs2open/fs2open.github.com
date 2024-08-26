@@ -475,7 +475,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 	// and print to debugif it is.
-	if (!target_timestamp.isValid() || target_timestamp.isNever()) {
+	if (!target_timestamp.isFinite()) {
 		mprintf(("Nonsense timestamp in multi_ship_record_find_frame of %s. Get ~~Allender~~ Cyborg!\n", (target_timestamp.isValid()) ? "isNever" : "NOT isValid"));
 		return frame;
 	};
@@ -484,7 +484,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 		// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 		// and print to debug if it is.	  No need to trigger the Assert in timestamp_in_between, as it is minor here. (i + 1 should be check on previous iteration, most of the time)
-		if (!Oo_info.timestamps[i].isValid() || Oo_info.timestamps[i].isNever()) {
+		if (!Oo_info.timestamps[i].isFinite()) {
 			mprintf(("timestamps[i] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[i].isValid()) ? "isNever" : "invalid"));
 			return frame;
 		}
@@ -500,7 +500,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 	// and print to debug if it is. No need to trigger the Assert in timestamp_in_between, as it is minor here.
-	if (!Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isValid() || Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isNever()) {
+	if (!Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isFinite()) {
 			mprintf(("timestamps[MAX_FRAMES_FRAMES_RECORDED - 1] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isValid()) ? "isNever" : "invalid"));
 			return frame;
 	}
@@ -521,7 +521,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 	for (int i = MAX_FRAMES_RECORDED - 2; i > Oo_info.cur_frame_index; i--) {
 		// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 		// and print to debug if it is. No need to trigger the Assert in timestamp_in_between, as it is minor here.
-		if (!Oo_info.timestamps[i].isValid() || Oo_info.timestamps[i].isNever()) {
+		if (!Oo_info.timestamps[i].isFinite()) {
 			mprintf(("timestamps[i] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[i].isValid()) ? "isNever" : "invalid"));
 			return frame;
 		}
