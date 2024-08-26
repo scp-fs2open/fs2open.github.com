@@ -1562,7 +1562,7 @@ void obj_move_all(float frametime)
 			}
 		}
 
-		// if the object isn't supposed to move, roll back the movement
+		// If the object isn't supposed to move, roll back any movement that occurred.  Most of the movement should already have been skipped, but this ensures complete immobility.
 		if (dont_change_position) {
 			objp->pos = objp->last_pos;
 
