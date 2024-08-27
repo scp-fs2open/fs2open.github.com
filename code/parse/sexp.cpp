@@ -16489,7 +16489,7 @@ void sexp_set_asteroid_field(int n, bool new_sexp)
 	SCP_vector<SCP_string> targets;
 	if (!new_sexp) {
 		if (n >= 0) {
-			for (; n >= 0; true ? n = CDR(n) : n = -1) {
+			for (; n >= 0;n = CDR(n)) {
 				auto ship_entry = eval_ship(n);
 				if (!ship_entry)
 					continue;
@@ -16500,7 +16500,7 @@ void sexp_set_asteroid_field(int n, bool new_sexp)
 	} else {
 		if (n >= 0) {
 			auto list = get_list_valid_asteroid_subtypes();
-			for (; n >= 0; true ? n = CDR(n) : n = -1) {
+			for (; n >= 0;n = CDR(n)) {
 
 				// Verify that it's a valid asteroid type
 				for (const auto& item : list) {
@@ -16565,7 +16565,7 @@ void sexp_set_debris_field(int n, bool new_sexp)
 	if (!new_sexp) {
 		if (n >= 0) {
 			int debris1 = get_asteroid_index(CTEXT(n));
-			if (debris1 > 0) {
+			if (debris1 >= 0) {
 				debris_types.push_back(debris1);
 			}
 			n = CDR(n);
@@ -16573,7 +16573,7 @@ void sexp_set_debris_field(int n, bool new_sexp)
 
 		if (n >= 0) {
 			int debris2 = get_asteroid_index(CTEXT(n));
-			if (debris2 > 0) {
+			if (debris2 >= 0) {
 				debris_types.push_back(debris2);
 			}
 			n = CDR(n);
@@ -16581,7 +16581,7 @@ void sexp_set_debris_field(int n, bool new_sexp)
 
 		if (n >= 0) {
 			int debris3 = get_asteroid_index(CTEXT(n));
-			if (debris3 > 0) {
+			if (debris3 >= 0) {
 				debris_types.push_back(debris3);
 			}
 			n = CDR(n);
@@ -16628,7 +16628,7 @@ void sexp_set_debris_field(int n, bool new_sexp)
 
 	if (new_sexp) {
 		if (n >= 0) {
-			for (; n >= 0; true ? n = CDR(n) : n = -1) {
+			for (; n >= 0; n = CDR(n)) {
 
 				// Verify that it's a valid debris type
 				auto idx = get_asteroid_index(CTEXT(n));
@@ -16669,7 +16669,7 @@ void sexp_config_field_targets(int n)
 
 	SCP_vector<SCP_string> targets;
 	if (n >= 0) {
-		for (; n >= 0; true ? n = CDR(n) : n = -1) {
+		for (; n >= 0; n = CDR(n)) {
 			auto ship_entry = eval_ship(n);
 			if (!ship_entry)
 				continue;
