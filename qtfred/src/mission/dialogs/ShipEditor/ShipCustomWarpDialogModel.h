@@ -123,8 +123,8 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 
 	// Setters
 	void setType(const int index);
-	void setStartSound(const SCP_string);
-	void setEndSound(const SCP_string);
+	void setStartSound(const SCP_string&);
+	void setEndSound(const SCP_string&);
 	void setEngageTime(const double);
 	void setSpeed(const double);
 	void setTime(const double);
