@@ -506,6 +506,12 @@ int get_ship_hotkeys(int n)
 	return Hotkey_bits[Hotkey_lines[n].index];
 }
 
+void hotkey_lines_reset_all() {
+	for (auto& line : Hotkey_lines) {
+		line = hotkey_line();
+	}
+}
+
 // add a line of hotkey smuck to end of list
 int hotkey_line_add(const char *text, HotkeyLineType type, int index, int y)
 {
@@ -1014,6 +1020,7 @@ void mission_hotkey_init()
 
 	Scroll_offset = 0;
 	Selected_line = 1;
+	hotkey_lines_reset_all();
 	hotkey_build_listing();
 }
 
