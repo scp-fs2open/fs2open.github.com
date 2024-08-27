@@ -27,23 +27,23 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	connect(ui->lineEditStartSound, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::startSoundChanged);
 	connect(ui->lineEditEndSound, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::endSoundChanged);
 	connect(ui->doubleSpinBoxEngage,
-		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setEngageTime);
 	connect(ui->doubleSpinBoxSpeed,
-		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setSpeed);
 	connect(ui->doubleSpinBoxTime,
-		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setTime);
 	connect(ui->doubleSpinBoxExponent,
-		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setExponent);
 	connect(ui->doubleSpinBoxRadius,
-		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setRadius);
 	connect(ui->checkBoxSupercap, &QCheckBox::toggled, _model.get(), [=](bool param) {
@@ -51,7 +51,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	});
 	connect(ui->lineEditAnim, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::animChanged);
 	connect(ui->doubleSpinBoxPlayerSpeed,
-		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setPlayerSpeed);
 

@@ -156,7 +156,7 @@ void ShipCustomWarpDialogModel::initializeData()
 				} else {
 					params = &Warp_params[Ships[objp->instance].warpout_params_index];
 				}
-				if (objp->type = OBJ_START) {
+				if (objp->type == OBJ_START) {
 					_m_player = true;
 				}
 				break;
