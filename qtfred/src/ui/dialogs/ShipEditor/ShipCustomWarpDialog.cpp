@@ -18,8 +18,44 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	connect(this, &QDialog::accepted, _model.get(), &ShipCustomWarpDialogModel::apply);
 	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ShipCustomWarpDialog::rejectHandler);
 
-	updateUI(true);
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
 
+	connect(ui->comboBoxType,
+		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setType);
+	connect(ui->lineEditStartSound, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::startSoundChanged);
+	connect(ui->lineEditEndSound, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::endSoundChanged);
+	connect(ui->doubleSpinBoxEngage,
+		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setEngageTime);
+	connect(ui->doubleSpinBoxSpeed,
+		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setSpeed);
+	connect(ui->doubleSpinBoxTime,
+		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setTime);
+	connect(ui->doubleSpinBoxExponent,
+		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setExponent);
+	connect(ui->doubleSpinBoxRadius,
+		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setRadius);
+	connect(ui->checkBoxSupercap, &QCheckBox::toggled, _model.get(), [=](bool param) {
+		static_cast<ShipCustomWarpDialogModel*>(_model.get())->setSupercap(param);
+	});
+	connect(ui->lineEditAnim, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::animChanged);
+	connect(ui->doubleSpinBoxPlayerSpeed,
+		qOverload<double>(&QDoubleSpinBox::valueChanged),
+		_model.get(),
+		&ShipCustomWarpDialogModel::setPlayerSpeed);
+
+	updateUI(true);
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -46,7 +82,6 @@ void ShipCustomWarpDialog::closeEvent(QCloseEvent* e)
 			_model->reject();
 		}
 	}
-
 	QDialog::closeEvent(e);
 }
 void ShipCustomWarpDialog::updateUI(const bool firstrun)
@@ -96,8 +131,7 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 		}
 	}
 
-	if (ui->comboBoxType->itemText(ui->comboBoxType->currentIndex()) == "Homeworld")
-		{
+	if (ui->comboBoxType->itemText(ui->comboBoxType->currentIndex()) == "Homeworld") {
 		ui->lineEditAnim->setVisible(true);
 		ui->labelAnim->setVisible(true);
 	} else {
@@ -113,7 +147,64 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 		ui->labelExponent->setVisible(false);
 	}
 }
-void ShipCustomWarpDialog::rejectHandler() {}
+void ShipCustomWarpDialog::rejectHandler()
+{
+	if (_model->query_modified()) {
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
+			"Changes detected",
+			"Do you want to keep your changes?",
+			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
+
+		if (button == DialogButton::Cancel) {
+			return;
+		}
+
+		if (button == DialogButton::Yes) {
+			accept();
+			return;
+		}
+		if (button == DialogButton::No) {
+			_model->reject();
+			QDialog::reject();
+		}
+	} else {
+		_model->reject();
+		QDialog::reject();
+	}
+}
+void ShipCustomWarpDialog::startSoundChanged()
+{
+	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
+	// enviroments
+	QString temp(ui->lineEditStartSound->text());
+	if (!temp.isEmpty()) {
+		_model.get()->setStartSound(temp.toLatin1().constData());
+	} else {
+		_model.get()->setStartSound("");
+	}
+}
+void ShipCustomWarpDialog::endSoundChanged()
+{
+	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
+	// enviroments
+	QString temp(ui->lineEditEndSound->text());
+	if (!temp.isEmpty()) {
+		_model.get()->setEndSound(temp.toLatin1().constData());
+	} else {
+		_model.get()->setEndSound("");
+	}
+}
+void ShipCustomWarpDialog::animChanged()
+{
+	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
+	// enviroments
+	QString temp(ui->lineEditAnim->text());
+	if (!temp.isEmpty()) {
+		_model.get()->setAnim(temp.toLatin1().constData());
+	} else {
+		_model.get()->setAnim("");
+	}
+}
 } // namespace dialogs
 } // namespace fred
 } // namespace fso

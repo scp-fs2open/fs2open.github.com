@@ -12,7 +12,69 @@ ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent, EditorView
 
 bool ShipCustomWarpDialogModel::apply()
 {
-	return false;
+	WarpParams params;
+	params.direction = _m_departure ? WarpDirection::WARP_OUT : WarpDirection::WARP_IN;
+
+	if (_m_warp_type < Num_warp_types) {
+		params.warp_type = _m_warp_type;
+	} else {
+		params.warp_type = (_m_warp_type - Num_warp_types) | WT_DEFAULT_WITH_FIREBALL;
+	}
+
+	if (!_m_start_sound.empty()) {
+		gamesnd_id id = gamesnd_get_by_name(_m_start_sound.c_str());
+		if (id.value() == -1) {
+			Warning(LOCATION, "Game Sound \"%s\" does not exist. Skipping", _m_start_sound.c_str());
+		} else {
+			params.snd_start = id;
+		}
+	}
+
+	if (!_m_end_sound.empty()) {
+		gamesnd_id id = gamesnd_get_by_name(_m_end_sound.c_str());
+		if (id.value() == -1) {
+			Warning(LOCATION, "Game Sound \"%s\" does not exist. Skipping", _m_end_sound.c_str());
+		} else {
+			params.snd_end = id;
+		}
+	}
+
+	if (_m_departure && _m_warpout_engage_time) {
+		params.warpout_engage_time = fl2i(_m_warpout_engage_time * 1000.0f);
+	}
+	if (_m_speed) {
+		params.speed = _m_speed;
+	}
+	if (_m_time) {
+		params.time = fl2i(_m_time * 1000.0f);
+	}
+	if (_m_accel_exp) {
+		params.accel_exp = _m_accel_exp;
+	}
+	if (_m_radius) {
+		params.accel_exp = _m_radius;
+	}
+	if (!_m_anim.empty()) {
+		strcpy_s(params.anim, _m_anim.c_str());
+	}
+	params.supercap_warp_physics = (_m_supercap_warp_physics == true);
+	if (_m_departure && _m_player_warpout_speed) {
+		params.warpout_player_speed = _m_player_warpout_speed;
+	}
+	int index = find_or_add_warp_params(params);
+
+	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
+				if (!_m_departure)
+					Ships[objp->instance].warpin_params_index = index;
+				else
+					Ships[objp->instance].warpout_params_index = index;
+			}
+		}
+	}
+	_editor->missionChanged();
+	return true;
 }
 
 void ShipCustomWarpDialogModel::reject() {}
@@ -157,6 +219,65 @@ void ShipCustomWarpDialogModel::set_modified()
 bool ShipCustomWarpDialogModel::query_modified() const
 {
 	return _modified;
+}
+void ShipCustomWarpDialogModel::setType(const int index)
+{
+	modify(_m_warp_type, index);
+}
+void ShipCustomWarpDialogModel::setStartSound(const SCP_string newSound)
+{
+	if (!newSound.empty()) {
+		modify(_m_start_sound, newSound);
+	} else {
+		_m_start_sound = "";
+		set_modified();
+	}
+}
+void ShipCustomWarpDialogModel::setEndSound(const SCP_string newSound)
+{
+	if (!newSound.empty()) {
+		modify(_m_end_sound, newSound);
+	} else {
+		_m_end_sound = "";
+		set_modified();
+	}
+}
+void ShipCustomWarpDialogModel::setEngageTime(const double newValue)
+{
+	modify(_m_warpout_engage_time, static_cast<float>(newValue));
+}
+void ShipCustomWarpDialogModel::setSpeed(const double newValue)
+{
+	modify(_m_speed, static_cast<float>(newValue));
+}
+void ShipCustomWarpDialogModel::setTime(const double newValue)
+{
+	modify(_m_time, static_cast<float>(newValue));
+}
+void ShipCustomWarpDialogModel::setExponent(const double newValue)
+{
+	modify(_m_accel_exp, static_cast<float>(newValue));
+}
+void ShipCustomWarpDialogModel::setRadius(const double newValue)
+{
+	modify(_m_radius, static_cast<float>(newValue));
+}
+void ShipCustomWarpDialogModel::setAnim(const SCP_string& newAnim)
+{
+	if (!newAnim.empty()) {
+		modify(_m_anim, newAnim);
+	} else {
+		_m_anim = "";
+		set_modified();
+	}
+}
+void ShipCustomWarpDialogModel::setSupercap(const bool checked)
+{
+	modify(_m_supercap_warp_physics, checked);
+}
+void ShipCustomWarpDialogModel::setPlayerSpeed(const double newValue)
+{
+	modify(_m_player_warpout_speed, static_cast<float>(newValue));
 }
 } // namespace dialogs
 } // namespace fred

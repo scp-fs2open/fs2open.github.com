@@ -25,6 +25,10 @@ class ShipCustomWarpDialog : public QDialog {
 	EditorViewport* _viewport;
 	void updateUI(const bool firstRun = false);
 	void rejectHandler();
+
+	void startSoundChanged();
+	void endSoundChanged();
+	void animChanged();
 };
 } // namespace dialogs
 } // namespace fred
