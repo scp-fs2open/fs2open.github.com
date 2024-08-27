@@ -10360,11 +10360,10 @@ void update_firing_sounds(object* objp, ship* shipp)
 				end_snd_played = wip->end_firing_snd;
 			}
 
-			if (wip->loop_firing_snd.isValid()) {
+			if (swp->firing_loop_sounds[i] >= 0) {
 				obj_snd_delete(objp, swp->firing_loop_sounds[i]);
-				swp->firing_loop_sounds[i] = -1;
-			} else
-				swp->firing_loop_sounds[i] = -1;
+			}
+			swp->firing_loop_sounds[i] = -1;
 		}
 	}
 }
