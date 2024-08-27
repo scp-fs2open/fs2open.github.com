@@ -937,10 +937,10 @@ void red_alert_bash_ship_status()
 				// assign the wave number to the wing
 				wingp->current_wave = rws->latest_wave;
 				
-				// make sure that num_waves can accomodate having extra wings.
+				// make sure that num_waves can accommodate the new value of current_wave.
 				// this would happen if the mission we are entering has too few waves.
 				if (wingp->num_waves < wingp->current_wave){
-					mprintf(("Red alert warning: make sure that the current mission has at least as many waves as exited last mission. Bashing the number of waves of wing %s to %i!\n", wingp->name, wingp->current_wave));					
+					mprintf(("Red alert warning: wing %s in the current mission has fewer waves than in the last mission.  Bashing the number of waves from %i to %i.\n", wingp->name, wingp->num_waves, wingp->current_wave));
 					wingp->num_waves = wingp->current_wave;
 				}
 

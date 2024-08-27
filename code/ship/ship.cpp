@@ -11901,12 +11901,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	}
 
 	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
-	if (!(Game_mode & GM_IN_MISSION) && !(Fred_running)) {
-		if (p_objp != nullptr){
-			Objects[sp->objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;		
-		} else {
-			Objects[sp->objnum].phys_info.speed = 0.0f;
-		}
+	if (!(Game_mode & GM_IN_MISSION) && !(Fred_running) && (p_objp != nullptr)) {
+		Objects[sp->objnum].phys_info.speed = p_objp->initial_velocity * sip->max_speed / 100.0f;
 
 		// prev_ramp_vel needs to be in local coordinates
 		// set z of prev_ramp_vel to initial velocity
