@@ -760,10 +760,10 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	// which will happen if seen_from_team is valid.
 	Assertion(SCP_vector_inbounds(Iff_info, seen_from_team), "Cannot get color because seen_from_team is invalid. Get a coder!");
 
-	// assume an observed color is defined; if not, use normal color
 	if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
 		const auto& color_map = AccessibilityEnabled ? Iff_info[seen_from_team].accessibility_observed_color_map : Iff_info[seen_from_team].observed_color_map;
 
+		// assume an observed color is defined; if not, use normal color
 		auto it = color_map.find(team);
 
 		if (it != color_map.end()) {
