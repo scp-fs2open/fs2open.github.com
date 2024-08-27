@@ -3,7 +3,7 @@
  <class>fso::fred::dialogs::ShipCustomWarpDialog</class>
  <widget class="QDialog" name="fso::fred::dialogs::ShipCustomWarpDialog">
   <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
+   <enum>Qt::NonModal</enum>
   </property>
   <property name="geometry">
    <rect>
@@ -193,22 +193,6 @@
     <hint type="destinationlabel">
      <x>94</x>
      <y>329</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::ShipCustomWarpDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>251</x>
-     <y>333</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>37</x>
-     <y>326</y>
     </hint>
    </hints>
   </connection>

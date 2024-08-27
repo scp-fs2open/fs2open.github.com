@@ -57,7 +57,7 @@ bool ShipCustomWarpDialogModel::apply()
 	if (!_m_anim.empty()) {
 		strcpy_s(params.anim, _m_anim.c_str());
 	}
-	params.supercap_warp_physics = (_m_supercap_warp_physics == true);
+	params.supercap_warp_physics = _m_supercap_warp_physics;
 	if (_m_departure && _m_player_warpout_speed) {
 		params.warpout_player_speed = _m_player_warpout_speed;
 	}
@@ -201,7 +201,7 @@ void ShipCustomWarpDialogModel::initializeData()
 			_m_anim = params->anim;
 		}
 
-		_m_supercap_warp_physics = params->supercap_warp_physics ? true : false;
+		_m_supercap_warp_physics = params->supercap_warp_physics;
 
 		if (params->warpout_player_speed > 0.0f) {
 			_m_player_warpout_speed = params->warpout_player_speed;
@@ -224,7 +224,7 @@ void ShipCustomWarpDialogModel::setType(const int index)
 {
 	modify(_m_warp_type, index);
 }
-void ShipCustomWarpDialogModel::setStartSound(const SCP_string newSound)
+void ShipCustomWarpDialogModel::setStartSound(const SCP_string& newSound)
 {
 	if (!newSound.empty()) {
 		modify(_m_start_sound, newSound);
@@ -233,7 +233,7 @@ void ShipCustomWarpDialogModel::setStartSound(const SCP_string newSound)
 		set_modified();
 	}
 }
-void ShipCustomWarpDialogModel::setEndSound(const SCP_string newSound)
+void ShipCustomWarpDialogModel::setEndSound(const SCP_string& newSound)
 {
 	if (!newSound.empty()) {
 		modify(_m_end_sound, newSound);

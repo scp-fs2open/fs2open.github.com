@@ -16,6 +16,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 {
 	ui->setupUi(this);
 	connect(this, &QDialog::accepted, _model.get(), &ShipCustomWarpDialogModel::apply);
+
 	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ShipCustomWarpDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
@@ -178,9 +179,9 @@ void ShipCustomWarpDialog::startSoundChanged()
 	// enviroments
 	QString temp(ui->lineEditStartSound->text());
 	if (!temp.isEmpty()) {
-		_model.get()->setStartSound(temp.toLatin1().constData());
+		_model->setStartSound(temp.toLatin1().constData());
 	} else {
-		_model.get()->setStartSound("");
+		_model->setStartSound("");
 	}
 }
 void ShipCustomWarpDialog::endSoundChanged()
@@ -189,9 +190,9 @@ void ShipCustomWarpDialog::endSoundChanged()
 	// enviroments
 	QString temp(ui->lineEditEndSound->text());
 	if (!temp.isEmpty()) {
-		_model.get()->setEndSound(temp.toLatin1().constData());
+		_model->setEndSound(temp.toLatin1().constData());
 	} else {
-		_model.get()->setEndSound("");
+		_model->setEndSound("");
 	}
 }
 void ShipCustomWarpDialog::animChanged()
@@ -200,9 +201,9 @@ void ShipCustomWarpDialog::animChanged()
 	// enviroments
 	QString temp(ui->lineEditAnim->text());
 	if (!temp.isEmpty()) {
-		_model.get()->setAnim(temp.toLatin1().constData());
+		_model->setAnim(temp.toLatin1().constData());
 	} else {
-		_model.get()->setAnim("");
+		_model->setAnim("");
 	}
 }
 } // namespace dialogs
