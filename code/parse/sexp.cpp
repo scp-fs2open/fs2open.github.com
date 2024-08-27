@@ -766,8 +766,11 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-skybox-alpha",				OP_SET_SKYBOX_ALPHA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	12,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael - Deprecated
+	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	12,			SEXP_ACTION_OPERATOR,	},	// MjnMixael - Deprecated
+	{ "config-asteroid-field",			OP_CONFIG_ASTEROID_FIELD,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
+	{ "config-debris-field",			OP_CONFIG_DEBRIS_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
+	{ "config-field-targets",			OP_CONFIG_FIELD_TARGETS,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
@@ -4048,7 +4051,26 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 			}
 
-			case OPF_ASTEROID_DEBRIS:
+			case OPF_ASTEROID_TYPES:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				} else {
+					auto list = get_list_valid_asteroid_subtypes();
+					bool valid = false;
+					for (const auto& item : list) {
+						if (!stricmp(CTEXT(node), item.c_str())) {
+							valid = true;
+							break;
+						}
+					}
+
+					if (stricmp(CTEXT(node), SEXP_NONE_STRING) && !valid) {
+						return SEXP_CHECK_INVALID_ASTEROID;
+					}
+				}
+				break;
+
+			case OPF_DEBRIS_TYPES:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -16391,7 +16413,7 @@ void sexp_toggle_asteroid_field(int n)
 	Asteroids_enabled = is_sexp_true(n);
 }
 
-void sexp_set_asteroid_field(int n)
+void sexp_set_asteroid_field(int n, bool new_sexp)
 {
 	bool is_nan, is_nan_forever;
 
@@ -16413,22 +16435,29 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
-	bool brown = true;
-	if (n >= 0) {
-		brown = is_sexp_true(n);
-		n = CDR(n);
-	}
+	SCP_vector<SCP_string> asteroid_types;
 
-	bool blue = false;
-	if (n >= 0) {
-		blue = is_sexp_true(n);
-		n = CDR(n);
-	}
+	if (!new_sexp) {
+		if (n >= 0) {
+			if (is_sexp_true(n)) {
+				asteroid_types.push_back("Brown");
+			}
+			n = CDR(n);
+		}
 
-	bool orange = false;
-	if (n >= 0) {
-		orange = is_sexp_true(n);
-		n = CDR(n);
+		if (n >= 0) {
+			if (is_sexp_true(n)) {
+				asteroid_types.push_back("Blue");
+			}
+			n = CDR(n);
+		}
+
+		if (n >= 0) {
+			if (is_sexp_true(n)) {
+				asteroid_types.push_back("Orange");
+			}
+			n = CDR(n);
+		}
 	}
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
@@ -16490,13 +16519,30 @@ void sexp_set_asteroid_field(int n)
 	}
 
 	SCP_vector<SCP_string> targets;
-	if (n >= 0) {
-		for (; n >= 0; true ? n = CDR(n) : n = -1) {
-			auto ship_entry = eval_ship(n);
-			if (!ship_entry)
-				continue;
+	if (!new_sexp) {
+		if (n >= 0) {
+			for (; n >= 0;n = CDR(n)) {
+				auto ship_entry = eval_ship(n);
+				if (!ship_entry)
+					continue;
 
-			targets.push_back(ship_entry->name);
+				targets.push_back(ship_entry->name);
+			}
+		}
+	} else {
+		if (n >= 0) {
+			auto list = get_list_valid_asteroid_subtypes();
+			for (; n >= 0;n = CDR(n)) {
+
+				// Verify that it's a valid asteroid type
+				for (const auto& item : list) {
+					if (stricmp(CTEXT(n), item.c_str())) {
+						continue;
+					}
+				}
+
+				asteroid_types.emplace_back(CTEXT(n));
+			}
 		}
 	}
 
@@ -16514,19 +16560,20 @@ void sexp_set_asteroid_field(int n)
 		num_asteroids,
 		field_type,
 		asteroid_speed,
-		brown,
-		blue,
-		orange,
 		o_min,
 		o_max,
 		inner_box,
 		i_min,
 		i_max,
-		std::move(targets));
+		std::move(asteroid_types));
+
+	if (!new_sexp) {
+		Asteroid_field.target_names = std::move(targets);
+	}
 
 }
 
-void sexp_set_debris_field(int n)
+void sexp_set_debris_field(int n, bool new_sexp)
 {
 	bool is_nan, is_nan_forever;
 
@@ -16546,22 +16593,31 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
-	int debris1 = -1;
-	if (n >= 0) {
-		debris1 = get_asteroid_index(CTEXT(n));
-		n = CDR(n);
-	}
+	SCP_vector<int> debris_types;
+	if (!new_sexp) {
+		if (n >= 0) {
+			int debris1 = get_asteroid_index(CTEXT(n));
+			if (debris1 >= 0) {
+				debris_types.push_back(debris1);
+			}
+			n = CDR(n);
+		}
 
-	int debris2 = -1;
-	if (n >= 0) {
-		debris2 = get_asteroid_index(CTEXT(n));
-		n = CDR(n);
-	}
+		if (n >= 0) {
+			int debris2 = get_asteroid_index(CTEXT(n));
+			if (debris2 >= 0) {
+				debris_types.push_back(debris2);
+			}
+			n = CDR(n);
+		}
 
-	int debris3 = -1;
-	if (n >= 0) {
-		debris3 = get_asteroid_index(CTEXT(n));
-		n = CDR(n);
+		if (n >= 0) {
+			int debris3 = get_asteroid_index(CTEXT(n));
+			if (debris3 >= 0) {
+				debris_types.push_back(debris3);
+			}
+			n = CDR(n);
+		}
 	}
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
@@ -16602,15 +16658,18 @@ void sexp_set_debris_field(int n)
 	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
 	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
 
-	SCP_vector<int> debris_types;
-	if (debris1 > 0) {
-		debris_types.push_back(debris1);
-	}
-	if (debris2 > 0) {
-		debris_types.push_back(debris2);
-	}
-	if (debris3 > 0) {
-		debris_types.push_back(debris3);
+	if (new_sexp) {
+		if (n >= 0) {
+			for (; n >= 0; n = CDR(n)) {
+
+				// Verify that it's a valid debris type
+				auto idx = get_asteroid_index(CTEXT(n));
+				if (idx < 0)
+					continue;
+
+				debris_types.push_back(idx);
+			}
+		}
 	}
 
 	asteroid_create_debris_field(
@@ -16620,6 +16679,61 @@ void sexp_set_debris_field(int n)
 		o_min,
 		o_max,
 		enhanced);
+}
+
+void sexp_config_field_targets(int n)
+{
+	// Do nothing for disabled fields
+	if (Asteroid_field.num_initial_asteroids == 0) {
+		return;
+	}
+	
+	// Do nothing for passive fields
+	if (Asteroid_field.field_type == FT_PASSIVE) {
+		return;
+	}
+	
+	bool toggle = false;
+	if (n >= 0) {
+		toggle = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	SCP_vector<SCP_string> targets;
+	if (n >= 0) {
+		for (; n >= 0; n = CDR(n)) {
+			auto ship_entry = eval_ship(n);
+			if (!ship_entry)
+				continue;
+
+			targets.push_back(ship_entry->name);
+		}
+	}
+
+	if (targets.size() == 0) {
+		if (toggle) {
+			// No ships provided to add so abort
+			return;
+		} else {
+			Asteroid_field.target_names.clear();
+			return;
+		}
+	} else {
+		if (toggle) {
+			// Add the targets
+			for (const auto& ship : targets) {
+				// Check if the ship is already in the target_names
+				if (std::find(Asteroid_field.target_names.begin(), Asteroid_field.target_names.end(), ship) == Asteroid_field.target_names.end()) {
+					Asteroid_field.target_names.push_back(ship);
+				}
+			}
+		} else {
+			// Remove the targets
+			for (const auto& ship : targets) {
+				Asteroid_field.target_names.erase(std::remove(Asteroid_field.target_names.begin(), Asteroid_field.target_names.end(), ship), Asteroid_field.target_names.end());
+			}
+		}
+	}
 }
 
 void sexp_set_motion_debris_type(int n)
@@ -28614,12 +28728,27 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SET_ASTEROID_FIELD:
-				sexp_set_asteroid_field(node);
+				sexp_set_asteroid_field(node, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_DEBRIS_FIELD:
-				sexp_set_debris_field(node);
+				sexp_set_debris_field(node, false);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CONFIG_ASTEROID_FIELD:
+				sexp_set_asteroid_field(node, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CONFIG_DEBRIS_FIELD:
+				sexp_set_debris_field(node, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CONFIG_FIELD_TARGETS:
+				sexp_config_field_targets(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -30984,6 +31113,9 @@ int query_operator_return_type(int op)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
+		case OP_CONFIG_ASTEROID_FIELD:
+		case OP_CONFIG_DEBRIS_FIELD:
+		case OP_CONFIG_FIELD_TARGETS:
 		case OP_SET_MOTION_DEBRIS:
 		case OP_SET_PRIMARY_AMMO:
 		case OP_SET_SECONDARY_AMMO:
@@ -33702,11 +33834,39 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum <= 1)
 				return OPF_POSITIVE;
 			else if (argnum <= 4)
-				return OPF_ASTEROID_DEBRIS;
+				return OPF_DEBRIS_TYPES;
 			else if (argnum <= 10)
 				return OPF_NUMBER;
 			else
 				return OPF_BOOL;
+
+		case OP_CONFIG_ASTEROID_FIELD:
+			if (argnum <= 2)
+				return OPF_POSITIVE;
+			else if (argnum <= 8)
+				return OPF_NUMBER;
+			else if (argnum == 9)
+				return OPF_BOOL;
+			else if (argnum <= 15)
+				return OPF_NUMBER;
+			else
+				return OPF_ASTEROID_TYPES;
+
+		case OP_CONFIG_DEBRIS_FIELD:
+			if (argnum <= 1)
+				return OPF_POSITIVE;
+			else if (argnum <= 7)
+				return OPF_NUMBER;
+			else if (argnum <= 8)
+				return OPF_BOOL;
+			else
+				return OPF_DEBRIS_TYPES;
+
+		case OP_CONFIG_FIELD_TARGETS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_SHIP;
 
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_MOTION_DEBRIS;
@@ -36164,6 +36324,9 @@ int get_category(int op_id)
 		case OP_VALIDATE_GENERAL_ORDERS:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
+		case OP_CONFIG_ASTEROID_FIELD:
+		case OP_CONFIG_DEBRIS_FIELD:
+		case OP_CONFIG_FIELD_TARGETS:
 		case OP_SET_WING_FORMATION:
 		case OP_SET_MOTION_DEBRIS:
 			return OP_CATEGORY_CHANGE;
@@ -36606,6 +36769,9 @@ int get_subcategory(int op_id)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
+		case OP_CONFIG_ASTEROID_FIELD:
+		case OP_CONFIG_DEBRIS_FIELD:
+		case OP_CONFIG_FIELD_TARGETS:
 		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
@@ -41625,7 +41791,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\ttrue for field on, false for field off\r\n" 
 	},
 
-	{ OP_SET_ASTEROID_FIELD, "set-asteroid-field\r\n" 
+	{ OP_SET_ASTEROID_FIELD, "set-asteroid-field (deprecated in favor of config-asteroid-field)\r\n" 
 		"\tCreates or overwrites the asteroid or debris field with an asteroid field. \r\n"
 		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of asteroids in the field, or 0 to remove an existing field\r\n" 
@@ -41650,7 +41816,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRest:\tThe ships the asteroid field will target if it's an active field\r\n"
 	},
 
-	{ OP_SET_DEBRIS_FIELD, "set-debris-field\r\n" 
+	{ OP_SET_DEBRIS_FIELD, "set-debris-field (deprecated in favor of config-debris-field)\r\n" 
 		"\tCreates or overwrites the asteroid or debris field with a debris field. \r\n"
 		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of debris in the field, or 0 to remove an existing field\r\n" 
@@ -41665,6 +41831,54 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t10:\tOuterbox Min Z, defaults to -1000\r\n"
 		"\t11:\tOuterbox Max Z, defaults to 1000\r\n"
 		"\t12:\tIf the field uses enhanced spawning checks, defaults to false\r\n"
+	},
+
+	{ OP_CONFIG_ASTEROID_FIELD, "config-asteroid-field\r\n" 
+		"\tCreates or overwrites the asteroid or debris field with an asteroid field. \r\n"
+		"\tNote that setting targets for an active field must be done with config-asteroid-targets. \r\n"
+		"\tTakes 1 or more arguments...\r\n"
+		"\t1:\tNumber of asteroids in the field, or 0 to remove an existing field\r\n" 
+		"\t2:\t0 for passive field, 1 for active field, 2 for enhanced passive, 3 for enhanced active, defaults to 0\r\n"
+		"\t3:\tThe speed of the asteroids, defaults to 0\r\n"
+		"\t4:\tOuterbox Min X, defaults to -1000\r\n"
+		"\t5:\tOuterbox Max X, defaults to 1000\r\n"
+		"\t6:\tOuterbox Min Y, defaults to -1000\r\n"
+		"\t7:\tOuterbox Max Y, defaults to 1000\r\n"
+		"\t8:\tOuterbox Min Z, defaults to -1000\r\n"
+		"\t9:\tOuterbox Max Z, defaults to 1000\r\n"
+		"\t10:\tTrue to activate the inner box where no asteroids will be spawned, defaults to false\r\n"
+		"\t11:\tInnerbox Min X, defaults to -500\r\n"
+		"\t12:\tInnerbox Max X, defaults to 500\r\n"
+		"\t13:\tInnerbox Min Y, defaults to -500\r\n"
+		"\t14:\tInnerbox Max Y, defaults to 500\r\n"
+		"\t15:\tInnerbox Min Z, defaults to -500\r\n"
+		"\t16:\tInnerbox Max Z, defaults to 500\r\n"
+		"\tRest:\tThe asteroid types to enable\r\n"
+	},
+
+	{ OP_CONFIG_DEBRIS_FIELD, "config-debris-field\r\n" 
+		"\tCreates or overwrites the asteroid or debris field with a debris field. \r\n"
+		"\tTakes 1 or more arguments...\r\n"
+		"\t1:\tNumber of debris in the field, or 0 to remove an existing field\r\n" 
+		"\t2:\tThe speed of the asteroids, defaults to 0\r\n"
+		"\t3:\tOuterbox Min X, defaults to -1000\r\n"
+		"\t4:\tOuterbox Max X, defaults to 1000\r\n"
+		"\t5:\tOuterbox Min Y, defaults to -1000\r\n"
+		"\t6:\tOuterbox Max Y, defaults to 1000\r\n"
+		"\t7:\tOuterbox Min Z, defaults to -1000\r\n"
+		"\t8:\tOuterbox Max Z, defaults to 1000\r\n"
+		"\t9:\tIf the field uses enhanced spawning checks, defaults to false\r\n"
+		"\tRest:\tThe asteroid types to enable\r\n"
+	},
+
+	{ OP_CONFIG_FIELD_TARGETS, "config-field-targets\r\n"
+		"\tAdds or removes ships from the Asteroid Field targets list. Only works on Active fields. \r\n"
+		"\tYou can remove all targets at once by supplying 0 ship arguments. \r\n"
+		"\tRemoving all targets will force the field to use default behavior and target the first ship on the escort list. \r\n"
+		"\tThe inverse is not true. Ship arguments must be provided to add targets. \r\n"
+		"\tTakes 1 or more arguments...\r\n"
+		"\t1:\tTrue to add to the list, false to remove\r\n"
+		"\tRest:\tThe names of ships to add or remove\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris\r\n" 

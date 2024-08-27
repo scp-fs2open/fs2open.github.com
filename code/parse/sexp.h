@@ -134,7 +134,8 @@ enum sexp_opf_t : int {
 	OPF_TRANSLATING_SUBSYSTEM,		// Goober5000 - a translating subsystem
 	OPF_ANY_HUD_GAUGE,				// Goober5000 - both custom and builtin
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
-	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
+	OPF_ASTEROID_TYPES,				// MjnMixael - Asteroids from asteroids.tbl, asteroid types only
+	OPF_DEBRIS_TYPES,				// MjnMixael - Asteroids from asteroids.tbl, debris types only
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
@@ -911,8 +912,10 @@ enum : int {
 	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
-
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
+	OP_CONFIG_ASTEROID_FIELD,  // MjnMixael
+	OP_CONFIG_DEBRIS_FIELD,  // MjnMixael
+	OP_CONFIG_FIELD_TARGETS,  // MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	OP_GOOD_PRIMARY_TIME,	// plieblang
 	OP_SET_SKYBOX_ALPHA,	// Goober5000
