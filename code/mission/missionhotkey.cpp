@@ -1217,7 +1217,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 
 	font::set_font(font::FONT1);
 	int line = Scroll_offset;
-	while (hotkey_line_query_visible(line)) {
+	while (hotkey_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		//int z = Hotkey_lines[line].index;
 		int y = Hotkey_list_coords[gr_screen.res][1] + Hotkey_lines[line].y - Hotkey_lines[Scroll_offset].y;
 		int hotkeys = 0;
