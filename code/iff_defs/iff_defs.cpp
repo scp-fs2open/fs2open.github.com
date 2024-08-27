@@ -734,18 +734,11 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	Assertion((is_bright == 0 || is_bright == 1), "Error with brightness selection when getting color. Get a coder!");
 
 	int color_index;
-	SCP_map<int, int> color_map;
 
 	if (AccessibilityEnabled) {
 		color_index = Iff_info[team].accessibility_color_index;
-		if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
-			color_map = Iff_info[seen_from_team].accessibility_observed_color_map;
-		}
 	} else {
 		color_index = Iff_info[team].color_index;
-		if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
-			color_map = Iff_info[seen_from_team].observed_color_map;
-		}
 	}
 
 
@@ -767,11 +760,15 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	// which will happen if seen_from_team is valid.
 	Assertion(SCP_vector_inbounds(Iff_info, seen_from_team), "Cannot get color because seen_from_team is invalid. Get a coder!");
 
-	// assume an observed color is defined; if not, use normal color
-	auto it = color_map.find(team);
+	if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
+		const auto& color_map = AccessibilityEnabled ? Iff_info[seen_from_team].accessibility_observed_color_map : Iff_info[seen_from_team].observed_color_map;
 
-	if (it != color_map.end()) {
-		color_index = it->second;
+		// assume an observed color is defined; if not, use normal color
+		auto it = color_map.find(team);
+
+		if (it != color_map.end()) {
+			color_index = it->second;
+		}
 	}
 	
 	return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
@@ -788,18 +785,11 @@ color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 	Assertion((is_bright == 0 || is_bright == 1), "Error with brightness selection when getting color. Get a coder!");
 
 	int color_index;
-	SCP_map<int, int> color_map;
 
 	if (AccessibilityEnabled) {
 		color_index = Iff_info[team].accessibility_color_index;
-		if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
-			color_map = Iff_info[seen_from_team].accessibility_observed_color_map;
-		}
 	} else {
-		color_index = Iff_info[team].color_index;
-		if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
-			color_map = Iff_info[seen_from_team].observed_color_map;
-		}
+		color_index = Iff_info[team].color_index;	
 	}
 
 	// is this guy being seen by anyone?
@@ -812,11 +802,14 @@ color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 	// which will happen if seen_from_team is valid.
 	Assertion(SCP_vector_inbounds(Iff_info, seen_from_team), "Cannot get color because seen_from_team is invalid. Get a coder!");
 
-	int this_color_index = -1;
-	{
+	if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
+		const auto& color_map = AccessibilityEnabled ? Iff_info[seen_from_team].accessibility_observed_color_map : Iff_info[seen_from_team].observed_color_map;
+
 		auto it = color_map.find(team);
-		if (it != color_map.end())
-			this_color_index = it->second;
+
+		if (it != color_map.end()) {
+			color_index = it->second;
+		}
 	}
 
 	int alt_color_index = -1;
@@ -843,6 +836,8 @@ color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 			break;
 	}
 
+
+	int this_color_index = -1;
 	// temporary solution.... 
 	if (alt_color_index >= 0) {
 		this_color_index = alt_color_index;
