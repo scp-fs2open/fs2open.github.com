@@ -31,6 +31,7 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	//Getters
 	int getType() const;
 	SCP_string getStartSound() const;
 	SCP_string getEndSound() const;
@@ -47,6 +48,19 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	bool isPlayer() const;
 
 	bool query_modified() const;
+
+	//Setters
+	void setType(const int index);
+	void setStartSound(const SCP_string);
+	void setEndSound(const SCP_string);
+	void setEngageTime(const double);
+	void setSpeed(const double);
+	void setTime(const double);
+	void setExponent(const double);
+	void setRadius(const double);
+	void setAnim(const SCP_string&);
+	void setSupercap(const bool);
+	void setPlayerSpeed(const double);
 };
 
 template <typename T>
