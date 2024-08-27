@@ -1908,7 +1908,7 @@ int control_config_draw_list(int select_tease_line) {
 	char buf[256];  // c_str buffer
 	int font_height = gr_get_font_height();
 
-	for (line = Scroll_offset; cc_line_query_visible(line); ++line) {
+	for (line = Scroll_offset; cc_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX); ++line) {
 		z = Cc_lines[line].cc_index;
 
 		// screen coordinate y = list box origin y + (this item's relative y - topmost item's relative y)

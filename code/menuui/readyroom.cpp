@@ -67,6 +67,7 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define MODE_CAMPAIGNS	0
 #define MODE_MISSIONS	1
 
+#define MAX_LINES					200		// NOLINT(modernize-macro-to-enum)
 #define NUM_BUTTONS				11
 #define LIST_BUTTONS_MAX		42
 
@@ -194,7 +195,7 @@ static struct {
 	int x;						// X coordinate of line
 	int y;						// Y coordinate of line
 	int flags;					// special flags, see READYROOM_FLAG_* defines above
-} sim_room_lines[LIST_BUTTONS_MAX];
+} sim_room_lines[MAX_LINES];
 
 static char Cur_campaign[MAX_FILENAME_LEN];
 static char *Mission_filenames[MAX_MISSIONS] = { NULL };
@@ -403,7 +404,7 @@ void campaign_mission_hash_table_delete()
 // add a line of sim_room smuck to end of list
 int sim_room_line_add(int type, const char *name, const char *filename, int x, int y, int flags)
 {
-	if (Num_lines >= LIST_BUTTONS_MAX)
+	if (Num_lines >= MAX_LINES)
 		return 0;
 
 	sim_room_lines[Num_lines].type = type;
@@ -1378,7 +1379,7 @@ void sim_room_do_frame(float  /*frametime*/)
 	}
 
 	line = Scroll_offset;
-	while (sim_room_line_query_visible(line)) {
+	while (sim_room_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		y = list_y + sim_room_lines[line].y - sim_room_lines[Scroll_offset].y;
 
 		if (sim_room_lines[line].type != READYROOM_LINE_CAMPAIGN) {
@@ -1928,7 +1929,7 @@ void campaign_room_do_frame(float  /*frametime*/)
 	font::set_font(font::FONT1);
 	int font_height = gr_get_font_height();
 	line = Scroll_offset;
-	while (sim_room_line_query_visible(line)) {
+	while (sim_room_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		y = Cr_list_coords[gr_screen.res][1] + sim_room_lines[line].y - sim_room_lines[Scroll_offset].y;
 
 		List_buttons[line - Scroll_offset].update_dimensions(Cr_list_coords[gr_screen.res][0], y, Cr_list_coords[gr_screen.res][2], font_height);
