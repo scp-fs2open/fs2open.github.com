@@ -3703,8 +3703,13 @@ void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem
 
 void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 {
+	if (sip == nullptr)
+		return;
+
 	auto damage_spew_effect = dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->damage_spew));
 	if (damage_spew_effect != nullptr) {
+		damage_spew_effect = new particle::effects::ParticleEmitterEffect(*damage_spew_effect);
+
 		float Particle_width = 1.2f;
 		float Particle_number = 1.2f;
 		float Particle_life = 1.2f;
@@ -3739,10 +3744,14 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 			pe.min_life = 0.7f * spark_time_scale;
 			pe.max_life = 1.5f * spark_time_scale;
 		}
+
+		sip->damage_spew = particle::ParticleManager::get()->addEffect(damage_spew_effect);
 	}
 
 	auto split_particles_effect = dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->split_particles));
 	if (split_particles_effect != nullptr) {
+		split_particles_effect = new particle::effects::ParticleEmitterEffect(*split_particles_effect);
+
 		auto& pe = split_particles_effect->getEmitter();
 
 		float range = 1.0f + 0.002f * pm->rad;
@@ -3757,6 +3766,8 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 			pe.min_rad = 0.5f*scale;				// Min radius
 			pe.max_rad = 1.5f*scale;				// Max radius
 		}
+
+		sip->split_particles = particle::ParticleManager::get()->addEffect(split_particles_effect);
 	}
 }
 

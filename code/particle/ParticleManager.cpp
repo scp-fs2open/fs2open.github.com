@@ -134,6 +134,9 @@ void ParticleManager::init() {
 
 	m_manager.reset(new ParticleManager());
 
+	//Need to init the base graphics once here
+	::particle::init();
+
 	parseConfigFiles();
 }
 

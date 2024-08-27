@@ -30,8 +30,6 @@ void ParticleEmitterEffect::pageIn() {
 }
 
 void ParticleEmitterEffect::setValues(const particle_emitter& emitter, int bitmap, float range, int nframes) {
-	Assert(bm_is_valid(bitmap));
-
 	m_emitter = emitter;
 	m_particleBitmap = bitmap;
 	m_range = range;
