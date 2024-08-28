@@ -901,11 +901,7 @@ void brief_render_fade_outs(float frametime)
 	for (i=0; i<Num_fade_icons; i++) {
 		fi = &Fading_icons[i];
 
-		float scale_factor = 1.0f;
-
-		if (fi->scale_factor != 1.0f) {
-			scale_factor *= fi->scale_factor;
-		}
+		float scale_factor = fi->scale_factor;
 
 		if (!Fred_running) {
 			scale_factor *= Briefing_Icon_Scale_Factor;
@@ -940,11 +936,6 @@ void brief_render_fade_outs(float frametime)
 			scaled_h = h * scale_factor;
 			bxf = screenX - scaled_w / 2.0f + 0.5f;
 			byf = screenY - scaled_h / 2.0f + 0.5f;
-			bx = fl2i(bxf);
-			by = fl2i(byf);
-
-			bxf = screenX - w / 2.0f + 0.5f;
-			byf = screenY - h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
 			by = fl2i(byf);
 
