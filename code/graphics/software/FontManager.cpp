@@ -94,14 +94,10 @@ namespace font
 
 	bool FontManager::hasScalingFonts()
 	{
-		for (auto& font : fonts) {
+		return std::any_of(fonts.begin(), fonts.end(), [](const std::unique_ptr<FSFont>& font) {
 			const auto& thisFont = font.get();
-			if (thisFont->getType() == NVG_FONT && thisFont->getScaleBehavior()) {
-				return true;
-			}
-		}
-
-		return false;
+			return thisFont->getType() == NVG_FONT && thisFont->getScaleBehavior();
+		});
 	}
 
 	int FontManager::numberOfFonts()
