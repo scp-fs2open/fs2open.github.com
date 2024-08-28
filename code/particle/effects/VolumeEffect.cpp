@@ -100,7 +100,7 @@ namespace particle {
 			}
 
 			if (internal::required_string_if_new("+Number:", nocreate)) {
-				m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
+				m_particleNum = ::util::ParsedRandomUintRange::parseRandomRange();
 			}
 
 			if (!nocreate) {

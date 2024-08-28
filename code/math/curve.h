@@ -49,6 +49,5 @@ public :
 extern SCP_vector<Curve> Curves;
 
 extern int curve_get_by_name(const SCP_string& in_name);
-extern int pdf_to_cdf(int curve);
 extern void curves_init();
 

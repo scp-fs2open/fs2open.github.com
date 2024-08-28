@@ -235,7 +235,7 @@ float Curve::GetValue(float x_val) const {
 			return kframe->pos.y + out * (next_pos->y - kframe->pos.y);
 		case CurveInterpFunction::Curve:
 			// add 0.5 to ensure this behaves like rounding
-			out = Curves[(int)(kframe->param1 + 0.5f)].GetValue(t);
+			out = Curves[fl2i(kframe->param1 + 0.5f)].GetValue(t);
 			return kframe->pos.y + out * (next_pos->y - kframe->pos.y);
 		default:
 			UNREACHABLE("Unrecognized curve function");
@@ -286,7 +286,7 @@ float Curve::GetValueIntegrated(float x_val) const
 			break;
 		case CurveInterpFunction::Curve:
 			// add 0.5 to ensure this behaves like rounding
-			integrated_value += m * (Curves[(int)(kframe->param1 + 0.5f)].GetValueIntegrated(t) - Curves[(int)(kframe->param1 + 0.5f)].GetValueIntegrated(0.f));
+			integrated_value += m * (Curves[fl2i(kframe->param1 + 0.5f)].GetValueIntegrated(t) - Curves[fl2i(kframe->param1 + 0.5f)].GetValueIntegrated(0.f));
 			break;
 		default:
 			UNREACHABLE("Unrecognized curve function");
@@ -298,4 +298,4 @@ float Curve::GetValueIntegrated(float x_val) const
 	}
 
 	return integrated_value;
-	}
+}

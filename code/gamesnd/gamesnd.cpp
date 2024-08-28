@@ -845,10 +845,10 @@ void parse_gamesnd_soundset(game_snd* gs, bool no_create) {
 	}
 
 	if (optional_string("+Pitch:")) {
-		gs->pitch_range = util::UniformFloatRange(0.0001f);
+		gs->pitch_range = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 	} else if (!no_create) {
 		// Default pitch is 1.0
-		gs->pitch_range = util::ParsedRandomFloatRange::parseRandomRange(1.0f);
+		gs->pitch_range = util::UniformFloatRange(1.0f);
 	}
 }
 

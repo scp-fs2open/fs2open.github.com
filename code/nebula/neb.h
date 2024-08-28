@@ -82,9 +82,9 @@ typedef struct poof_info {
 	float fade_multiplier;	// the current multiplier for a poof's alpha transparency used to render the poofs of this type
 
 	poof_info() : 
-		scale(::util::UniformFloatRange(175.f, 175.f)),
+		scale(::util::UniformFloatRange(175.f)),
 		rotation(::util::UniformFloatRange(-3.7f, 3.7f)),
-		alpha(::util::UniformFloatRange(0.8f, 0.8f))
+		alpha(::util::UniformFloatRange(0.8f))
 	{
 		bitmap_filename[0] = '\0';
 		generic_anim_init(&bitmap);
