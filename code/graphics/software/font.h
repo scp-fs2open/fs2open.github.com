@@ -42,6 +42,13 @@ namespace font
 	void init();
 
 	/**
+	 * @brief Verifies which font options should be available
+	 *
+	 * Removes options if they are not valid for the current font definitions,
+	 */
+	void checkFontOptions();
+
+	/**
 	* @brief Closes the Font system
 	*
 	* Deallocates all allocated memory for the fonts and the respective font data.

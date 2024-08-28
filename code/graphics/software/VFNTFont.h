@@ -3,6 +3,8 @@
 #include "globalincs/pstypes.h"
 #include "graphics/software/FSFont.h"
 
+void removeFontMultiplierOption();
+
 namespace font
 {
 	struct font;

@@ -492,6 +492,12 @@ namespace font
 		font_initialized = true;
 	}
 
+	void checkFontOptions() {
+		if (!FontManager::hasScalingFonts()) {
+			removeFontMultiplierOption();
+		}
+	}
+
 	void close()
 	{
 		if (!font_initialized) {
