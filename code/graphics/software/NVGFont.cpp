@@ -22,6 +22,10 @@ static auto FontScaleFactor __UNUSED = options::OptionBuilder<float>("Game.FontS
 										   .importance(55)
 										   .finish();
 
+void removeFontMultiplierOption() {
+	options::OptionsManager::instance()->removeOption(FontScaleFactor);
+}
+
 namespace
 {
 	const char* const TOKEN_SEPARATORS = "\n\t\r";

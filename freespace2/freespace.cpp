@@ -1877,6 +1877,7 @@ void game_init()
 #endif
 
 	font::init();					// loads up all fonts
+	font::checkFontOptions();
 	
 	// add title screen
 	game_title_screen_display();

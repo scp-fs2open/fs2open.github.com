@@ -125,6 +125,11 @@ namespace font {
 		static int getFontIndexByFilename(const SCP_string &filename);
 
 		/**
+		 * @brief Checks if we have any Scaling TTF fonts loaded. If not it disables the font scaling option
+		 */
+		static bool hasScalingFonts();
+
+		/**
 		* @brief Returns the number of fonts currently saved in the manager
 		* @return The number of fonts
 		*/
