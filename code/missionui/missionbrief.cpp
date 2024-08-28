@@ -1521,6 +1521,9 @@ void brief_check_for_anim(bool api_access, int api_x, int api_y)
 			ih = static_cast<int>(ih * bi->scale_factor);
 		}
 
+		iw *= Briefing_Icon_Scale_Factor;
+		ih *= Briefing_Icon_Scale_Factor;
+
 		if ( mx < bi->x ) continue;
 		if ( mx > (bi->x + iw) ) continue;
 		if ( my < bi->y ) continue;
