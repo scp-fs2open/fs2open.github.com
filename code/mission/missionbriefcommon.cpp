@@ -888,12 +888,6 @@ void brief_render_fade_outs(float frametime)
 	for (i=0; i<Num_fade_icons; i++) {
 		fi = &Fading_icons[i];
 
-		float scale_factor = 1.0f;
-
-		if (fi->scale_factor != 1.0f) {
-			scale_factor *= fi->scale_factor;
-		}
-
 		g3_rotate_vertex(&tv, &fi->pos);
 
 		if (!(tv.flags & PF_PROJECTED))
@@ -919,22 +913,17 @@ void brief_render_fade_outs(float frametime)
 			}
 			gr_unsize_screen_posf(&screenX, &screenY, nullptr, nullptr, this_resize);
 
-			scaled_w = w * scale_factor;
-			scaled_h = h * scale_factor;
+			scaled_w = w * fi->scale_factor;
+			scaled_h = h * fi->scale_factor;
 			bxf = screenX - scaled_w / 2.0f + 0.5f;
 			byf = screenY - scaled_h / 2.0f + 0.5f;
-			bx = fl2i(bxf);
-			by = fl2i(byf);
-
-			bxf = screenX - w / 2.0f + 0.5f;
-			byf = screenY - h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
 			by = fl2i(byf);
 
 			if ( fi->fade_anim.first_frame >= 0 ) {
 				fi->fade_anim.sx = bx;
 				fi->fade_anim.sy = by;
-				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, bscreen.resize, fi->mirror, scale_factor);
+				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, bscreen.resize, fi->mirror, fi->scale_factor);
 			}
 		}
 	}
