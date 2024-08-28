@@ -1910,7 +1910,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 			Fading_icons[Num_fade_icons].fade_anim = bii->fade;
 			Fading_icons[Num_fade_icons].pos = cb->icons[i].pos;
 			Fading_icons[Num_fade_icons].scale_factor = cb->icons[i].scale_factor;
-			Fading_icons[Num_fade_icons].mirror = (cb->icons[i].flags & BI_MIRROR_ICON) ? true : false;
+			Fading_icons[Num_fade_icons].mirror = (cb->icons[i].flags & BI_MIRROR_ICON) != 0;
 			Fading_icons[Num_fade_icons].team = cb->icons[i].team;
 			Num_fade_icons++;
 		}
