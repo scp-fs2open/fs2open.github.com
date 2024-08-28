@@ -151,6 +151,14 @@ namespace
 			return;
 		}
 
+		if (optional_string("+Can Scale:")) {
+			bool temp;
+			
+			stuff_boolean(&temp);
+
+			nvgFont->setScaleBehavior(temp);
+		}
+
 		if (optional_string("+Top offset:"))
 		{
 			float temp;

@@ -3,6 +3,8 @@
 #include "globalincs/pstypes.h"
 #include "graphics/software/FSFont.h"
 
+extern float Font_Scale_Factor;
+
 namespace font
 {
 	struct font;
