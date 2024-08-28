@@ -10,6 +10,11 @@ namespace font
 	{
 	}
 
+	void FSFont::setScaleBehavior(bool scale)
+	{
+		this->canScale = scale;
+	}
+
 	void FSFont::setBottomOffset(float offset)
 	{
 		this->offsetBottom = offset;
@@ -28,6 +33,11 @@ namespace font
 	void FSFont::setFilename(const SCP_string& newName) 
 	{
 		this->filename = newName;
+	}
+
+	bool FSFont::getScaleBehavior() const
+	{
+		return this->canScale;
 	}
 
 	float FSFont::getBottomOffset() const
