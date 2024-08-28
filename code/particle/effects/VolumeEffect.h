@@ -23,7 +23,7 @@ namespace particle {
 			float m_stretch = 1.0f;
 			util::EffectTiming m_timing;
 
-			::util::ParsedRandomRange<uint> m_particleNum;
+			::util::ParsedRandomUintRange m_particleNum;
 			float m_particleChance = 1.0f;
 			::util::ParsedRandomFloatRange m_particleRoll;
 

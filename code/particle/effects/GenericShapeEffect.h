@@ -34,7 +34,7 @@ class GenericShapeEffect : public ParticleEffect {
 
 	ConeDirection m_direction = ConeDirection::Incoming;
 	::util::ParsedRandomFloatRange m_velocity;
-	::util::ParsedRandomRange<uint> m_particleNum;
+	::util::ParsedRandomUintRange m_particleNum;
 	float m_particleChance = 1.0f;
 	::util::ParsedRandomFloatRange m_particleRoll;
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
@@ -179,7 +179,7 @@ class GenericShapeEffect : public ParticleEffect {
 		}
 
 		if (internal::required_string_if_new("+Number:", nocreate)) {
-			m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
+			m_particleNum = ::util::ParsedRandomUintRange::parseRandomRange();
 		}
 		if (!nocreate) {
 			m_particleChance = 1.0f;
