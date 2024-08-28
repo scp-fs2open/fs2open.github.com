@@ -245,6 +245,8 @@ typedef struct icon_fade_info
 {
 	hud_anim	fade_anim;
 	vec3d	pos;
+	float   scale_factor;
+	bool    mirror;
 	int		team;
 } fade_icon;
 
@@ -886,6 +888,12 @@ void brief_render_fade_outs(float frametime)
 	for (i=0; i<Num_fade_icons; i++) {
 		fi = &Fading_icons[i];
 
+		float scale_factor = 1.0f;
+
+		if (fi->scale_factor != 1.0f) {
+			scale_factor *= fi->scale_factor;
+		}
+
 		g3_rotate_vertex(&tv, &fi->pos);
 
 		if (!(tv.flags & PF_PROJECTED))
@@ -899,10 +907,24 @@ void brief_render_fade_outs(float frametime)
 				continue;
 			}
 
-			bm_get_info( fi->fade_anim.first_frame, &w, &h, NULL);
+			float scaled_w, scaled_h;
+
+			bm_get_info( fi->fade_anim.first_frame, &w, &h, nullptr);
 			float screenX = tv.screen.xyw.x;
 			float screenY = tv.screen.xyw.y;
-			gr_unsize_screen_posf( &screenX, &screenY, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
+
+			int this_resize = bscreen.resize;
+			if (bscreen.resize == GR_RESIZE_MENU) {
+				this_resize = GR_RESIZE_MENU_NO_OFFSET;
+			}
+			gr_unsize_screen_posf(&screenX, &screenY, nullptr, nullptr, this_resize);
+
+			scaled_w = w * scale_factor;
+			scaled_h = h * scale_factor;
+			bxf = screenX - scaled_w / 2.0f + 0.5f;
+			byf = screenY - scaled_h / 2.0f + 0.5f;
+			bx = fl2i(bxf);
+			by = fl2i(byf);
 
 			bxf = screenX - w / 2.0f + 0.5f;
 			byf = screenY - h / 2.0f + 0.5f;
@@ -912,7 +934,7 @@ void brief_render_fade_outs(float frametime)
 			if ( fi->fade_anim.first_frame >= 0 ) {
 				fi->fade_anim.sx = bx;
 				fi->fade_anim.sy = by;
-				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, GR_RESIZE_MENU);
+				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, bscreen.resize, fi->mirror, scale_factor);
 			}
 		}
 	}
@@ -1887,6 +1909,8 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 
 			Fading_icons[Num_fade_icons].fade_anim = bii->fade;
 			Fading_icons[Num_fade_icons].pos = cb->icons[i].pos;
+			Fading_icons[Num_fade_icons].scale_factor = cb->icons[i].scale_factor;
+			Fading_icons[Num_fade_icons].mirror = (cb->icons[i].flags & BI_MIRROR_ICON) ? true : false;
 			Fading_icons[Num_fade_icons].team = cb->icons[i].team;
 			Num_fade_icons++;
 		}
