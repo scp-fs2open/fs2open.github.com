@@ -49,6 +49,19 @@ brief_screen bscreen;
 #define BRIEF_CUPINFO_X2	639
 #define BRIEF_CUPINFO_Y2	438
 
+float Briefing_Icon_Scale_Factor = 1.0;
+
+static auto IconScaleFactor __UNUSED = options::OptionBuilder<float>("Game.BriefIconScaleFactor",
+                     std::pair<const char*, int>{"Briefing Icon Scale Factor", 1857},
+                     std::pair<const char*, int>{"Scales the size of the briefing icons", 1858})
+                     .category(std::make_pair("Game", 1824))
+                     .range(0.2f, 4.0f) //Upper limit is somewhat arbitrary
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(1.0)
+                     .bind_to(&Briefing_Icon_Scale_Factor)
+                     .importance(55)
+                     .finish();
+
 const char *Brief_static_name[GR_NUM_RESOLUTIONS] = {
 	"BriefMap",
 	"2_BriefMap"
@@ -245,6 +258,8 @@ typedef struct icon_fade_info
 {
 	hud_anim	fade_anim;
 	vec3d	pos;
+	float   scale_factor;
+	bool    mirror;
 	int		team;
 } fade_icon;
 
@@ -886,6 +901,12 @@ void brief_render_fade_outs(float frametime)
 	for (i=0; i<Num_fade_icons; i++) {
 		fi = &Fading_icons[i];
 
+		float scale_factor = fi->scale_factor;
+
+		if (!Fred_running) {
+			scale_factor *= Briefing_Icon_Scale_Factor;
+		}
+
 		g3_rotate_vertex(&tv, &fi->pos);
 
 		if (!(tv.flags & PF_PROJECTED))
@@ -899,20 +920,29 @@ void brief_render_fade_outs(float frametime)
 				continue;
 			}
 
-			bm_get_info( fi->fade_anim.first_frame, &w, &h, NULL);
+			float scaled_w, scaled_h;
+
+			bm_get_info( fi->fade_anim.first_frame, &w, &h, nullptr);
 			float screenX = tv.screen.xyw.x;
 			float screenY = tv.screen.xyw.y;
-			gr_unsize_screen_posf( &screenX, &screenY, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
 
-			bxf = screenX - w / 2.0f + 0.5f;
-			byf = screenY - h / 2.0f + 0.5f;
+			int this_resize = bscreen.resize;
+			if (bscreen.resize == GR_RESIZE_MENU) {
+				this_resize = GR_RESIZE_MENU_NO_OFFSET;
+			}
+			gr_unsize_screen_posf(&screenX, &screenY, nullptr, nullptr, this_resize);
+
+			scaled_w = w * scale_factor;
+			scaled_h = h * scale_factor;
+			bxf = screenX - scaled_w / 2.0f + 0.5f;
+			byf = screenY - scaled_h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
 			by = fl2i(byf);
 
 			if ( fi->fade_anim.first_frame >= 0 ) {
 				fi->fade_anim.sx = bx;
 				fi->fade_anim.sy = by;
-				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, GR_RESIZE_MENU);
+				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, bscreen.resize, fi->mirror, scale_factor);
 			}
 		}
 	}
@@ -1029,6 +1059,10 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	mirror_icon = (bi->flags & BI_MIRROR_ICON) ? true : false;
 	if (bi->scale_factor != 1.0f) {
 		scale_factor *= bi->scale_factor;
+	}
+
+	if (!Fred_running) {
+		scale_factor *= Briefing_Icon_Scale_Factor;
 	}
 
 	icon_move_info *mi, *next;
@@ -1887,6 +1921,8 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 
 			Fading_icons[Num_fade_icons].fade_anim = bii->fade;
 			Fading_icons[Num_fade_icons].pos = cb->icons[i].pos;
+			Fading_icons[Num_fade_icons].scale_factor = cb->icons[i].scale_factor;
+			Fading_icons[Num_fade_icons].mirror = (cb->icons[i].flags & BI_MIRROR_ICON) != 0;
 			Fading_icons[Num_fade_icons].team = cb->icons[i].team;
 			Num_fade_icons++;
 		}

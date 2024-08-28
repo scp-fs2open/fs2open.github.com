@@ -65,6 +65,8 @@
 
 #define BRIEF_ICON_TYPES					3
 
+extern float Briefing_Icon_Scale_Factor;
+
 //If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
 	generic_anim	regular;
