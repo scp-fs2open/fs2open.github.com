@@ -8966,11 +8966,11 @@ bool check_for_23_3_data()
 			return true;
 	}
 
-	if (The_mission.custom_data.size() > 0) {
+	if (!The_mission.custom_data.empty()) {
 		return true;
 	}
 
-	if (The_mission.custom_strings.size() > 0) {
+	if (!The_mission.custom_strings.empty()) {
 		return true;
 	}
 
@@ -9014,6 +9014,14 @@ bool check_for_24_1_data()
 		if (shipp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP || shipp->arrival_location == ArrivalLocation::ABOVE_SHIP || shipp->arrival_location == ArrivalLocation::BELOW_SHIP
 			|| shipp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP || shipp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP)
 			return true;
+
+		if (shipp->cargo_title[0] != '\0')
+			return true;
+		for (const auto& ss : list_range(&shipp->subsys_list))
+		{
+			if (ss->subsys_cargo_title[0] != '\0')
+				return true;
+		}
 	}
 
 	if ((Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
