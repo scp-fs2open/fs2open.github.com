@@ -407,7 +407,6 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 				common_music_close(); 
 				music_off = true;
 				movie::play(The_mission.cutscenes[i].filename);	//Play the movie!
-				cutscene_mark_viewable( The_mission.cutscenes[i].filename );
 			}
 		}
 	}
