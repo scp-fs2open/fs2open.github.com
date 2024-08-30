@@ -1018,7 +1018,8 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 			if (existing_gs->sound_entries.empty() || existing_gs->sound_entries[0].filename[0] == '\0')
 			{
 				gs = existing_gs;
-				no_create = orig_no_create = true;
+				orig_no_create = true;	// prevent sound from being appended in parse_sound_table
+										// (leave no_create as false because we are creating a new sound and we need all the fields to be filled out)
 			}
 			else
 			{
@@ -1033,7 +1034,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 		if (vectorIndex < 0)
 		{
 			error_display(0, "No existing sound entry with name \"%s\" found!", name.c_str());
-			no_create = false;
+			no_create = false;			// this is a new sound, so we need all the fields to be filled out
 			gs->name = std::move(name);
 		}
 		else
