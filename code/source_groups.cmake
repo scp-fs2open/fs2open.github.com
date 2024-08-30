@@ -1668,6 +1668,7 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/join_string.h
+	utils/modular_curves.h
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
