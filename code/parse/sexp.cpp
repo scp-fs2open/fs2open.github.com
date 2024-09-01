@@ -5521,6 +5521,80 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
 	return get_player_from_ship_entry(ship_entry, test_respawns, netplayer_index);
 }
 
+/*
+ * Iterates through a subsystem list and applies the given function to each subsystem, handling the "hull" subsystem as well as (optionally) generic subsystems.  The function's prototype should be:
+ * 
+ * void f(bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss);
+ * 
+ * If any of the booleans are true, ss will be nullptr.
+ */
+template <typename Function>
+void process_ship_subsystems(const ship_registry_entry *ship_entry, bool allow_generic_subsystems, int node, bool iterate_nodes, const char *sexp_operator_name, Function f)
+{
+	Assertion(sexp_operator_name, "sexp_operator_name must not be null!");
+	if (node < 0)
+		return;
+
+	if (!ship_entry || !ship_entry->has_shipp())
+		return;
+	auto shipp = ship_entry->shipp();
+
+	// handle the subsystem node(s)
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		auto subsys_name = CTEXT(n);
+
+		// check for HULL
+		if (!stricmp(subsys_name, SEXP_HULL_STRING))
+		{
+			f(true, false, false, nullptr);
+		}
+		// check for SIM_HULL
+		else if (!stricmp(subsys_name, SEXP_SIM_HULL_STRING))
+		{
+			f(false, true, false, nullptr);
+		}
+		// check for shields
+		else if (!stricmp(subsys_name, SEXP_SHIELD_STRING))
+		{
+			f(false, false, true, nullptr);
+		}
+		// some kind of subsystem...
+		else
+		{
+			// check for a generic subsystem like <all engines>
+			int generic_type = get_generic_subsys(subsys_name);
+			if (generic_type)
+			{
+				if (allow_generic_subsystems)
+				{
+					// search through all subsystems
+					for (auto ss : list_range(&shipp->subsys_list))
+					{
+						if (generic_type == ss->system_info->type)
+							f(false, false, false, ss);
+					}
+				}
+				else
+					Warning(LOCATION, "Generic subsystem %s passed to %s.  This operator does not support generic subsystems.", subsys_name, sexp_operator_name);
+			}
+			// it's a regular subsystem
+			else
+			{
+				auto ss = ship_get_subsys(shipp, subsys_name);
+				if (ss)
+					f(false, false, false, ss);
+				else if (ship_class_unchanged(ship_entry))
+					Warning(LOCATION, "Invalid subsystem passed to %s: %s does not have a %s subsystem", sexp_operator_name, ship_entry->name, subsys_name);
+			}
+		}
+
+		// some operators have only one subsystem node
+		if (!iterate_nodes)
+			break;
+	}
+}
+
 // ----------------------------------------------------------------------------------- 
 // SEXP caching
 // -----------------------------------------------------------------------------------
@@ -12849,13 +12923,20 @@ void sexp_change_ai_class(int n)
 	if (n >= 0)
 	{
 		// loopity-loop
-		for ( ; n != -1; n = CDR(n) )
+		process_ship_subsystems(ship_entry, true, n, true, "change-ai-class", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss)
 		{
-			auto subsystem = CTEXT(n);
-			ship_subsystem_set_new_ai_class(ship_entry->shipp(), subsystem, new_ai_class);
-
-			Current_sexp_network_packet.send_string(subsystem);
-		}
+			if (is_hull)
+				Warning(LOCATION, "change-ai-class does not support " SEXP_HULL_STRING);
+			else if (is_sim_hull)
+				Warning(LOCATION, "change-ai-class does not support " SEXP_SIM_HULL_STRING);
+			else if (is_shields)
+				Warning(LOCATION, "change-ai-class does not support " SEXP_SHIELD_STRING);
+			else
+			{
+				ship_subsystem_set_new_ai_class(ss, new_ai_class);
+				Current_sexp_network_packet.send_string(ss->system_info->subobj_name);
+			}
+		});
 	}
 	// just the one ship
 	else
@@ -12870,6 +12951,7 @@ void multi_sexp_change_ai_class()
 {
 	int new_ai_class;
 	ship *shipp;
+	ship_subsys *ss;
 	char subsystem[TOKEN_LENGTH];
 
 	Current_sexp_network_packet.get_ship(shipp); 
@@ -12877,11 +12959,13 @@ void multi_sexp_change_ai_class()
 
 	// subsystem?
 	if (Current_sexp_network_packet.get_string(subsystem)) {
-		ship_subsystem_set_new_ai_class(shipp, subsystem, new_ai_class);
+		ss = ship_get_subsys(shipp, subsystem);
+		ship_subsystem_set_new_ai_class(ss, new_ai_class);
 
 		// deal with any other subsystems
 		while (Current_sexp_network_packet.get_string(subsystem)) {
-			ship_subsystem_set_new_ai_class(shipp, subsystem, new_ai_class);
+			ss = ship_get_subsys(shipp, subsystem);
+			ship_subsystem_set_new_ai_class(ss, new_ai_class);
 		}		 
 	}
 	else {
@@ -15232,11 +15316,9 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
  */
 void sexp_sabotage_subsystem(int n)
 {
-	const char *subsystem;
-	int	percentage, index, generic_type;
+	int	percentage, subsystem_node;
 	float sabotage_hits;
-	ship_subsys *ss = nullptr, *ss_start;
-	bool do_loop = true, is_nan, is_nan_forever;
+	bool is_nan, is_nan_forever;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp())
@@ -15244,7 +15326,7 @@ void sexp_sabotage_subsystem(int n)
 	auto shipp = ship_entry->shipp();
 	n = CDR(n);
 
-	subsystem = CTEXT(n);
+	subsystem_node = n;
 	n = CDR(n);
 
 	percentage = eval_num(n, is_nan, is_nan_forever);
@@ -15258,80 +15340,41 @@ void sexp_sabotage_subsystem(int n)
 		return;
 	}
 
-	// see if we are dealing with the HULL
-	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
-		float ihs;
-		auto objp = ship_entry->objp();
+	bool any_subsystem = false;
 
-		ihs = shipp->ship_max_hull_strength;
-		sabotage_hits = ihs * ((float)percentage / 100.0f);
-		objp->hull_strength -= sabotage_hits;
+	// process the single subsystem, which could be hull, sim hull, or a generic type like <all engines>
+	process_ship_subsystems(ship_entry, true, subsystem_node, false, "sabotage-subsystem", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss) {
+		if (is_hull) {
+			float ihs;
+			auto objp = ship_entry->objp();
 
-		// self destruct the ship if <= 0.
-		if ( objp->hull_strength <= 0.0f )
-			ship_self_destruct( objp );
-		return;
-	}
+			ihs = shipp->ship_max_hull_strength;
+			sabotage_hits = ihs * (i2fl(percentage) / 100.0f);
+			objp->hull_strength -= sabotage_hits;
 
-	// see if we are dealing with the Simulated HULL
-	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
-		float ihs;
-		auto objp = ship_entry->objp();
+			// self destruct the ship if <= 0.
+			if (objp->hull_strength <= 0.0f)
+				ship_self_destruct(objp);
+		} else if (is_sim_hull) {
+			float ihs;
+			auto objp = ship_entry->objp();
 
-		ihs = shipp->ship_max_hull_strength;
-		sabotage_hits = ihs * ((float)percentage / 100.0f);
-		objp->sim_hull_strength -= sabotage_hits;
-
-		return;
-	}
-
-	// now find the given subsystem on the ship.  This could be a generic type like <All Engines>
-	generic_type = get_generic_subsys(subsystem);
-	ss_start = GET_FIRST(&shipp->subsys_list); 
-
-	while (do_loop) {
-		if (generic_type) {
-			// loop until we find a subsystem of that type
-			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
-				ss = nullptr;
-				if (generic_type == ss_start->system_info->type) {
-					ss = ss_start;
-					ss_start = GET_NEXT(ss_start);
-					break;
-				}
-			}
-
-			// reached the end of the subsystem list 
-			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
-				do_loop = false;
-				// If the last subsystem wasn't of interest we don't need to go any further
-				if (ss == nullptr) { 
-					continue;
-				}
-			}			
-		}
-		else {
-			do_loop = false;
-			index = ship_find_subsys(shipp, subsystem);
-			if ( index == -1 ) {
-				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for sabotage subsystem\n", subsystem, shipp->ship_name));
-				continue;
-			}
-
-			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
+			ihs = shipp->ship_max_hull_strength;
+			sabotage_hits = ihs * (i2fl(percentage) / 100.0f);
+			objp->sim_hull_strength -= sabotage_hits;
+		} else if (is_shields) {
+			Warning(LOCATION, "sabotage-subsystem does not support " SEXP_SHIELD_STRING);
+		} else {
+			// get the pointer to the subsystem.  Check its current hits against its max hits, and
 			// set the strength to the given percentage if current strength is > given percentage
-			ss = ship_get_indexed_subsys( shipp, index );
-			if (ss == nullptr) {
-				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", index, shipp->ship_name));
-				continue;
-			}
+			set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, nullptr, &percentage, false, false);
+			any_subsystem = true;
 		}
-
-		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, nullptr, &percentage, false, false);
-	}
+	});
 
 	// recalculate when done
-	ship_recalc_subsys_strength(shipp);
+	if (any_subsystem)
+		ship_recalc_subsys_strength(shipp);
 }
 
 /**
@@ -15341,12 +15384,10 @@ void sexp_sabotage_subsystem(int n)
  */
 void sexp_repair_subsystem(int n)
 {
-	const char *subsystem;
-	int	percentage, index, generic_type;
+	int	percentage, subsystem_node;
 	bool do_submodel_repair = true, do_ancestor_repair = true;
 	float repair_hits;
-	ship_subsys *ss = nullptr, *ss_start;
-	bool do_loop = true, is_nan, is_nan_forever;
+	bool is_nan, is_nan_forever;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp())
@@ -15354,7 +15395,7 @@ void sexp_repair_subsystem(int n)
 	auto shipp = ship_entry->shipp();
 	n = CDR(n);
 
-	subsystem = CTEXT(n);
+	subsystem_node = n;
 	n = CDR(n);
 
 	percentage = eval_num(n, is_nan, is_nan_forever);
@@ -15376,81 +15417,43 @@ void sexp_repair_subsystem(int n)
 			do_ancestor_repair = is_sexp_true(n);
 	}
 	
-	// see if we are dealing with the HULL
-	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
-		float ihs;
-		auto objp = ship_entry->objp();
+	bool any_subsystem = false;
 
-		ihs = shipp->ship_max_hull_strength;
-		repair_hits = ihs * ((float)percentage / 100.0f);
-		objp->hull_strength += repair_hits;
+	// process the single subsystem, which could be hull, sim hull, or a generic type like <all engines>
+	process_ship_subsystems(ship_entry, true, subsystem_node, false, "repair-subsystem", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss) {
+		if (is_hull) {
+			float ihs;
+			auto objp = ship_entry->objp();
 
-		if ( objp->hull_strength > ihs )
-			objp->hull_strength = ihs;
-		return;
-	}
+			ihs = shipp->ship_max_hull_strength;
+			repair_hits = ihs * (i2fl(percentage) / 100.0f);
+			objp->hull_strength += repair_hits;
 
-	// see if we are dealing with the Simulated HULL
-	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
-		float ihs;
-		auto objp = ship_entry->objp();
+			if (objp->hull_strength > ihs)
+				objp->hull_strength = ihs;
+		} else if (is_sim_hull) {
+			float ihs;
+			auto objp = ship_entry->objp();
 
-		ihs = shipp->ship_max_hull_strength;
-		repair_hits = ihs * ((float)percentage / 100.0f);
-		objp->sim_hull_strength += repair_hits;
+			ihs = shipp->ship_max_hull_strength;
+			repair_hits = ihs * (i2fl(percentage) / 100.0f);
+			objp->sim_hull_strength += repair_hits;
 
-		if ( objp->sim_hull_strength > ihs )
-			objp->sim_hull_strength = ihs;
-		return;
-	}
-
-	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic_type = get_generic_subsys(subsystem);
-	ss_start = GET_FIRST(&shipp->subsys_list); 
-
-	while (do_loop) {
-		if (generic_type) {
-			// loop until we find a subsystem of that type
-			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
-				ss = nullptr;
-				if (generic_type == ss_start->system_info->type) {
-					ss = ss_start;
-					ss_start = GET_NEXT(ss_start);
-					break;
-				}
-			}
-
-			// reached the end of the subsystem list 
-			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
-				do_loop = false;
-				// If the last subsystem wasn't of interest we don't need to go any further
-				if (ss == nullptr) { 
-					continue;
-				}
-			}			
-		}
-		else {
-			do_loop = false;
-			index = ship_find_subsys(shipp, subsystem);
-			if ( index == -1 ) {
-				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for repair subsystem\n", subsystem, shipp->ship_name));
-				continue;
-			}
-
-			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
+			if (objp->sim_hull_strength > ihs)
+				objp->sim_hull_strength = ihs;
+		} else if (is_shields) {
+			Warning(LOCATION, "repair-subsystem does not support " SEXP_SHIELD_STRING);
+		} else {
+			// get the pointer to the subsystem.  Check its current hits against its max hits, and
 			// set the strength to the given percentage if current strength is < given percentage
-			ss = ship_get_indexed_subsys( shipp, index );
-			if (ss == nullptr) {
-				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for repair subsystem\n", index, shipp->ship_name));
-				continue;
-			}
+			set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, &percentage, nullptr, do_submodel_repair, do_ancestor_repair);
+			any_subsystem = true;
 		}
-
-		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, &percentage, nullptr, do_submodel_repair, do_ancestor_repair);
-	}
+	});
 
 	// recalculate when done
-	ship_recalc_subsys_strength(shipp);
+	if (any_subsystem)
+		ship_recalc_subsys_strength(shipp);
 }
 
 /**
@@ -15458,11 +15461,9 @@ void sexp_repair_subsystem(int n)
  */
 void sexp_set_subsystem_strength(int n)
 {
-	const char *subsystem;
-	int	percentage, index, generic_type;
+	int	percentage, subsystem_node;
 	bool do_submodel_repair = true, do_ancestor_repair = true;
-	ship_subsys *ss = nullptr, *ss_start;
-	bool do_loop = true, is_nan, is_nan_forever;
+	bool is_nan, is_nan_forever;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp())
@@ -15470,7 +15471,7 @@ void sexp_set_subsystem_strength(int n)
 	auto shipp = ship_entry->shipp();
 	n = CDR(n);
 
-	subsystem = CTEXT(n);
+	subsystem_node = n;
 	n = CDR(n);
 
 	percentage = eval_num(n, is_nan, is_nan_forever);
@@ -15488,96 +15489,52 @@ void sexp_set_subsystem_strength(int n)
 	}
 
 	if ( percentage > 100 ) {
-		mprintf(("Percentage for set_subsystem_strength > 100 on ship %s for subsystem '%s'-- setting to 100\n", ship_entry->name, subsystem));
+		mprintf(("Percentage for set-subsystem-strength > 100 on ship %s for subsystem '%s' -- setting to 100\n", ship_entry->name, CTEXT(subsystem_node)));
 		percentage = 100;
 	} else if ( percentage < 0 ) {
-		mprintf(("Percantage for set_subsystem_strength < 0 on ship %s for subsystem '%s' -- setting to 0\n", ship_entry->name, subsystem));
+		mprintf(("Percentage for set-subsystem-strength < 0 on ship %s for subsystem '%s' -- setting to 0\n", ship_entry->name, CTEXT(subsystem_node)));
 		percentage = 0;
 	}
 
-	// see if we are dealing with the HULL
-	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
-		float ihs;
-		auto objp = ship_entry->objp();
+	bool any_subsystem = false;
 
-		// destroy the ship if percentage is 0
-		if ( percentage == 0 ) {
-			ship_self_destruct( objp );
-		} else {
+	// process the single subsystem, which could be hull, sim hull, or a generic type like <all engines>
+	process_ship_subsystems(ship_entry, true, subsystem_node, false, "set-subsystem-strength", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss) {
+		if (is_hull) {
+			float ihs;
+			auto objp = ship_entry->objp();
+
+			// destroy the ship if percentage is 0
+			if (percentage == 0) {
+				ship_self_destruct(objp);
+			} else {
+				ihs = shipp->ship_max_hull_strength;
+				objp->hull_strength = ihs * (i2fl(percentage) / 100.0f);
+			}
+		} else if (is_sim_hull) {
+			float ihs;
+			auto objp = ship_entry->objp();
+
 			ihs = shipp->ship_max_hull_strength;
-			objp->hull_strength = ihs * ((float)percentage / 100.0f);
-		}
-
-		return;
-	}
-
-	// see if we are dealing with the Simulated HULL
-	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
-		float ihs;
-		auto objp = ship_entry->objp();
-
-		ihs = shipp->ship_max_hull_strength;
-		objp->sim_hull_strength = ihs * ((float)percentage / 100.0f);
-
-		return;
-	}
-
-	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic_type = get_generic_subsys(subsystem);
-	ss_start = GET_FIRST(&shipp->subsys_list); 
-
-	while (do_loop) {
-		if (generic_type) {
-			// loop until we find a subsystem of that type
-			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
-				ss = nullptr;
-				if (generic_type == ss_start->system_info->type) {
-					ss = ss_start;
-					ss_start = GET_NEXT(ss_start);
-					break;
-				}
-			}
-
-			// reached the end of the subsystem list 
-			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
-				do_loop = false;
-				// If the last subsystem wasn't of interest we don't need to go any further
-				if (ss == nullptr) { 
-					continue;
-				}
-			}			
-		}
-		else {
-			do_loop = false;
-			index = ship_find_subsys(shipp, subsystem);
-			if ( index == -1 ) {
-				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for set subsystem strength\n", subsystem, shipp->ship_name));
-				continue;
-			}
-
-			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
+			objp->sim_hull_strength = ihs * (i2fl(percentage) / 100.0f);
+		} else if (is_shields) {
+			Warning(LOCATION, "set-subsystem-strength does not support " SEXP_SHIELD_STRING);
+		} else {
+			// get the pointer to the subsystem.  Check its current hits against its max hits, and
 			// set the strength to the given percentage
-			ss = ship_get_indexed_subsys( shipp, index );
-			if (ss == nullptr) {
-				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for set subsystem strength\n", index, shipp->ship_name));
-				continue;
-			}
+			set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, &percentage, nullptr, nullptr, do_submodel_repair, do_ancestor_repair);
+			any_subsystem = true;
 		}
-
-		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, &percentage, nullptr, nullptr, do_submodel_repair, do_ancestor_repair);
-	}
+	});
 
 	// recalculate when done
-	ship_recalc_subsys_strength(shipp);
+	if (any_subsystem)
+		ship_recalc_subsys_strength(shipp);
 }
 
 // destroys a subsystem without explosions
 void sexp_destroy_subsys_instantly(int n)
 {
-	const char *subsystem;
-	int	subsys_index, generic_type;
-	ship_subsys *ss;
-
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp())
 		return;
@@ -15590,60 +15547,32 @@ void sexp_destroy_subsys_instantly(int n)
 		Current_sexp_network_packet.send_ship(shipp);
 	}
 
-	for ( ; n >= 0; n = CDR(n))
+	bool any_subsystem = false;
+
+	// process the subsystems, which could be hull, sim hull, or a generic type like <all engines>
+	process_ship_subsystems(ship_entry, true, n, true, "destroy-subsys-instantly", [&](bool, bool, bool, ship_subsys *ss)
 	{
-		subsystem = CTEXT(n);
-
-		// use destroy-instantly if we want to do this
-		if (!stricmp(subsystem, SEXP_HULL_STRING) || !stricmp(subsystem, SEXP_SIM_HULL_STRING))
-			continue;
-
-		// deal with generic subsystems
-		generic_type = get_generic_subsys(subsystem);
-		if (generic_type != SUBSYSTEM_NONE)
+		// this sexp is only for subsystems
+		if (ss)
 		{
-			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss))
-			{
-				if (generic_type == ss->system_info->type)
-				{
-					// do destruction stuff
-					ss->current_hits = 0;
-					do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
-
-					if (MULTIPLAYER_MASTER)
-					{
-						subsys_index = ship_get_subsys_index(ss);
-						Assert(subsys_index >= 0);
-						Current_sexp_network_packet.send_int(subsys_index);
-					}
-				}
-			}
-		}
-		// normal subsystems
-		else
-		{
-			ss = ship_get_subsys(shipp, subsystem);
-			if (ss == nullptr)
-			{
-				nprintf(("Warning", "Nonexistent subsystem '%s' on ship %s for destroy-subsys-instantly\n", subsystem, shipp->ship_name));
-				continue;
-			}
-
 			// do destruction stuff
 			ss->current_hits = 0;
 			do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 
 			if (MULTIPLAYER_MASTER)
 			{
-				subsys_index = ship_get_subsys_index(ss);
+				int subsys_index = ship_get_subsys_index(ss);
 				Assert(subsys_index >= 0);
 				Current_sexp_network_packet.send_int(subsys_index);
 			}
+
+			any_subsystem = true;
 		}
-	}
+	});
 
 	// recalculate when done
-	ship_recalc_subsys_strength(shipp);
+	if (any_subsystem)
+		ship_recalc_subsys_strength(shipp);
 
 	if (MULTIPLAYER_MASTER)
 		Current_sexp_network_packet.end_callback();
@@ -19061,33 +18990,17 @@ void sexp_ship_subsys_guardian_threshold(int node)
 		return;
 	n = CDR(n);
 
-	// for all subsystems
-	for ( ; n != -1; n = CDR(n) ) {
-		// check for HULL
-		auto subsys_name = CTEXT(n);
-		if (!strcmp(subsys_name, SEXP_HULL_STRING)) {
+	process_ship_subsystems(ship_entry, true, n, true, "ship-subsys-guardian-threshold", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss)
+	{
+		if (is_hull)
 			ship_entry->shipp()->ship_guardian_threshold = threshold;
-			continue;
-		}
-
-		int generic_type = get_generic_subsys(subsys_name);
-		if (generic_type) {
-			// search through all subsystems
-			for (auto ss: list_range(&ship_entry->shipp()->subsys_list)) {
-				if (generic_type == ss->system_info->type) {
-					ss->subsys_guardian_threshold = threshold;
-				}
-			}
-		}				
-		else {
-			auto ss = ship_get_subsys(ship_entry->shipp(), subsys_name);
-			if (ss) {
-				ss->subsys_guardian_threshold = threshold;
-			} else if (ship_class_unchanged(ship_entry)) {
-				Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_entry->name, subsys_name);
-			}
-		}
-	}
+		else if (is_sim_hull)
+			Warning(LOCATION, "ship-subsys-guardian-threshold does not support " SEXP_SIM_HULL_STRING);
+		else if (is_shields)
+			Warning(LOCATION, "ship-subsys-guardian-threshold does not support " SEXP_SHIELD_STRING);
+		else
+			ss->subsys_guardian_threshold = threshold;
+	});
 }
 
 // sexpression to toggle KEEP ALIVE flag of ship object
@@ -22011,11 +21924,9 @@ void sexp_set_armor_type(int node)
 	node = CDR(node);
 
 	//Set armor
-	for (; node != -1; node = CDR(node))
+	process_ship_subsystems(ship_entry, true, node, true, "set-armor-type", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys* ss)
 	{
-		auto subsys_name = CTEXT(node);
-
-		if (!stricmp(SEXP_HULL_STRING, subsys_name))
+		if (is_hull || is_sim_hull)
 		{
 			// we are setting the ship itself
 			if (!rset)
@@ -22023,7 +21934,7 @@ void sexp_set_armor_type(int node)
 			else
 				shipp->armor_type_idx = armor;
 		}
-		else if (!stricmp(SEXP_SHIELD_STRING, subsys_name))
+		else if (is_shields)
 		{
 			// we are setting the ships shields
 			if (!rset)
@@ -22033,37 +21944,13 @@ void sexp_set_armor_type(int node)
 		}
 		else
 		{
-			int generic_type = get_generic_subsys(subsys_name);
-			if (generic_type != SUBSYSTEM_NONE)
-			{
-				// search through all subsystems
-				for (auto ss : list_range(&shipp->subsys_list))
-				{
-					if (generic_type == ss->system_info->type)
-					{
-						// set the range
-						if (!rset)
-							ss->armor_type_idx = ss->system_info->armor_type_idx;
-						else
-							ss->armor_type_idx = armor;
-					}
-				}
-			}
+			// set the range
+			if (!rset)
+				ss->armor_type_idx = ss->system_info->armor_type_idx;
 			else
-			{
-				// get the subsystem
-				auto ss = ship_get_subsys(shipp, subsys_name);
-				if (ss != nullptr)
-				{
-					// set the range
-					if (!rset)
-						ss->armor_type_idx = ss->system_info->armor_type_idx;
-					else
-						ss->armor_type_idx = armor;
-				}
-			}
+				ss->armor_type_idx = armor;
 		}
-	}
+	});
 }
 
 void sexp_weapon_set_damage_type(int node)
@@ -32277,7 +32164,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_SHIP;
 			else
-				return OPF_SUBSYSTEM;
+				return OPF_SUBSYS_OR_GENERIC;
 
 		case OP_IS_SHIP_TYPE:
 			if (argnum == 0)
@@ -38233,7 +38120,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tAI Class to change to (\"None\", \"Coward\", \"Lieutenant\", etc.)\r\n"
 		"\t2:\tName of ship to change AI class of (ship must be in-mission)\r\n"
-		"\tRest:\tName of subsystem to change AI class of (optional)" },
+		"\tRest:\tName of subsystem(s) to change AI class of (optional)" },
 
 	{ OP_MODIFY_VARIABLE, "Modify-variable (Misc. operator)\r\n"
 		"\tModifies variable to specified value\r\n\r\n"
