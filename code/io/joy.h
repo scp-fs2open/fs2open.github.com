@@ -17,7 +17,7 @@
 #include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
-const int JOY_NUM_BUTTONS = 32;
+const int JOY_NUM_BUTTONS = 128;
 const int JOY_NUM_HAT_POS = 4;
 const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
 
