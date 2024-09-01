@@ -126,12 +126,15 @@ struct modular_curves_entry_instance {
 
 };
 
+/*
+ * output_enum must be a contiguous enum with a NUM_VALUES end
+ * */
 template<typename input_type, typename output_enum, typename... input_grabbers>
 struct modular_curves {
   private:
 	SCP_unordered_map<SCP_string, output_enum> outputs;
 	std::tuple<std::pair<const char*, input_grabbers>...> inputs;
-	SCP_unordered_map<output_enum, SCP_vector<std::pair<size_t, modular_curves_entry>>> curves; //Output -> List<(Input, curve_entry)>
+	std::array<SCP_vector<std::pair<size_t, modular_curves_entry>>, static_cast<std::underlying_type_t<output_enum>>(output_enum::NUM_VALUES)> curves; //Output -> List<(Input, curve_entry)>
 
   public:
 	modular_curves(SCP_unordered_map<SCP_string, output_enum> outputs_, std::tuple<std::pair<const char*, input_grabbers>...> inputs_) : outputs(std::move(outputs_)), inputs(std::move(inputs_)), curves() {}
@@ -185,11 +188,7 @@ struct modular_curves {
 	float get_output(output_enum output, const input_type& input, const instance_data* instance = nullptr) const {
 		float result = 1.f;
 
-		auto output_curves = curves.find(output);
-		if (output_curves == curves.end())
-			return result;
-
-		for (const auto& [input_idx, curve_entry] : output_curves->second){
+		for (const auto& [input_idx, curve_entry] : curves[static_cast<std::underlying_type_t<output_enum>>(output)]){
 			const auto& [scaling_factor, translation] = get_instance_data(output, input_idx, curve_entry, instance);
 			const auto& curve = Curves[curve_entry.curve_idx];
 
