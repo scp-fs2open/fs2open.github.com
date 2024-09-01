@@ -2,6 +2,7 @@
 
 #include "utils/RandomRange.h"
 #include "math/curve.h"
+#include "parse/encrypt.h"
 
 #include <optional>
 #include <type_traits>
@@ -114,16 +115,14 @@ struct modular_curves_functional_input {
 
 struct modular_curves_entry {
 	int curve_idx = -1;
-	//TODO update to parsed
-	::util::UniformFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
-	::util::UniformFloatRange translation = ::util::UniformFloatRange(0.f);
+	::util::ParsedRandomFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
+	::util::ParsedRandomFloatRange translation = ::util::UniformFloatRange(0.f);
 	bool wraparound = true;
 };
 
 struct modular_curves_entry_instance {
-	float scaling_factor;
-	float translation;
-
+	int seed_scaling_factor;
+	int seed_translation;
 };
 
 /*
@@ -132,45 +131,44 @@ struct modular_curves_entry_instance {
 template<typename input_type, typename output_enum, typename... input_grabbers>
 struct modular_curves {
   private:
+	static constexpr size_t num_inputs = sizeof...(input_grabbers);
+	static constexpr size_t num_outputs = static_cast<size_t>(output_enum::NUM_VALUES);
+
 	SCP_unordered_map<SCP_string, output_enum> outputs;
 	std::tuple<std::pair<const char*, input_grabbers>...> inputs;
-	std::array<SCP_vector<std::pair<size_t, modular_curves_entry>>, static_cast<std::underlying_type_t<output_enum>>(output_enum::NUM_VALUES)> curves; //Output -> List<(Input, curve_entry)>
-
+	std::array<SCP_vector<std::pair<size_t, modular_curves_entry>>, num_outputs> curves; //Output -> List<(Input, curve_entry)>
   public:
 	modular_curves(SCP_unordered_map<SCP_string, output_enum> outputs_, std::tuple<std::pair<const char*, input_grabbers>...> inputs_) : outputs(std::move(outputs_)), inputs(std::move(inputs_)), curves() {}
 
-	using instance_data = SCP_unordered_map<output_enum, SCP_unordered_map<size_t, modular_curves_entry_instance>>;
-	instance_data create_instance() const {
-		instance_data instance;
-		for (const auto& [output, curve_pair] : curves) {
-			auto& instance_output_map = instance[output];
-			for (const auto& [input, curve_entry] : curve_pair) {
-				instance_output_map.emplace(input, modular_curves_entry_instance{ curve_entry.scaling_factor.next(), curve_entry.translation.next() });
-			}
-		}
-		return instance;
+	modular_curves_entry_instance create_instance() const {
+		return modular_curves_entry_instance{util::Random::next(), util::Random::next()};
 	}
 
   private:
-	inline std::pair<float, float> get_instance_data(output_enum output, size_t input, const modular_curves_entry& curve_entry, const instance_data* instance) const {
-		std::pair<float, float> data;
-		bool has_data = false;
+	inline std::pair<float, float> get_maybe_instanced_randoms(output_enum output, size_t input, const modular_curves_entry& curve_entry, const modular_curves_entry_instance* instance) const {
 		if (instance != nullptr) {
-			auto current_instance = instance->find(output);
-			if (current_instance != instance->end()) {
-				auto current_curve = current_instance->second.find(input);
-				if (current_curve != current_instance->second.end()) {
-					data.first = current_curve->second.scaling_factor;
-					data.second = current_curve->second.translation;
-					has_data = true;
+			static constexpr std::array<std::array<uint32_t, num_outputs>, num_inputs> inout_seeds = []() constexpr {
+				std::array<std::array<uint32_t, num_outputs>, num_inputs> temp{};
+				for(size_t in = 0; in < num_inputs; in++) {
+					for(size_t out = 0; out < num_outputs; out++) {
+						//This isn't perfect, but absolutely sufficient to give each input-output combination different random values.
+						temp[in][out] = hash_fnv1a(hash_fnv1a(in) ^ out);
+					}
 				}
-			}
+				return temp;
+			}();
+
+			uint32_t seed = inout_seeds[input][static_cast<std::underlying_type_t<output_enum>>(output)] ^ curve_entry.curve_idx;
+
+			curve_entry.scaling_factor.seed(seed ^ instance->seed_scaling_factor);
+			curve_entry.translation.seed(seed ^ instance->seed_translation);
+
+			//This will yield consistent seeds (and thus random values) for the same tuples of input_idx-output_idx-curve_idx-instance_seed.
+			//if any of these four changes, the resulting value should be random with regard to the previous value.
+			//Furthermore, this seed generation is not commutative, so input 0 and output 1 will result in a different seed to input 1 and output 0
 		}
-		if (!has_data) {
-			data.first = curve_entry.scaling_factor.next();
-			data.second = curve_entry.translation.next();
-		}
-		return data;
+
+		return {curve_entry.scaling_factor.next(), curve_entry.translation.next()};
 	}
 
 	template<size_t... idx>
@@ -185,11 +183,11 @@ struct modular_curves {
 	}
 
   public:
-	float get_output(output_enum output, const input_type& input, const instance_data* instance = nullptr) const {
+	float get_output(output_enum output, const input_type& input, const modular_curves_entry_instance* instance = nullptr) const {
 		float result = 1.f;
 
 		for (const auto& [input_idx, curve_entry] : curves[static_cast<std::underlying_type_t<output_enum>>(output)]){
-			const auto& [scaling_factor, translation] = get_instance_data(output, input_idx, curve_entry, instance);
+			const auto& [scaling_factor, translation] = get_maybe_instanced_randoms(output, input_idx, curve_entry, instance);
 			const auto& curve = Curves[curve_entry.curve_idx];
 
 			float input_value = (get_individual_input(input_idx, input, std::index_sequence_for<input_grabbers...>{}) / scaling_factor) + translation;
