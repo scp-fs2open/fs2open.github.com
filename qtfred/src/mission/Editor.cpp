@@ -98,7 +98,7 @@ extern void allocate_parse_text(size_t size);
 namespace fso {
 namespace fred {
 	
-Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), 0), Shield_sys_types(ship_info_size(), 0) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -464,9 +464,8 @@ void Editor::clearMission(bool fast_reload) {
 	Shield_sys_teams.clear();
 	Shield_sys_teams.resize(Iff_info.size(), 0);
 
-	for (int i = 0; i < MAX_SHIP_CLASSES; i++) {
-		Shield_sys_types[i] = 0;
-	}
+	Shield_sys_types.clear();
+	Shield_sys_types.resize(ship_info_size(), 0);
 
 	setupCurrentObjectIndices(-1);
 
@@ -3241,7 +3240,7 @@ void Editor::importShieldSysData(const std::vector<int>& teams, const std::vecto
 // 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
 void Editor::normalizeShieldSysData() {
 	std::vector<int> teams(Iff_info.size(), 0);
-	std::vector<int> types(MAX_SHIP_CLASSES, 0);
+	std::vector<int> types(ship_info_size(), 0);
 
 	for (int i = 0; i < MAX_SHIPS; i++) {
 		if (Ships[i].objnum >= 0) {

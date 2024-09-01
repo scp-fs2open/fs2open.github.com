@@ -20,7 +20,7 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 	int getCurrentTeam() const { return _currTeam; }
 	int getCurrentShipType() const { return _currType; }
 	void setCurrentTeam(int team) { Assert(team >= 0 && team < (int)Iff_info.size());  modify<int>(_currTeam, team); }
-	void setCurrentShipType(int type) { Assert(type >= 0 && type < MAX_SHIP_CLASSES); modify<int>(_currType, type); }
+	void setCurrentShipType(int type) { Assert(type >= 0 && type < ship_info_size()); modify<int>(_currType, type); }
 
 	int getCurrentTeamShieldSys() const { return _teams[_currTeam]; }
 	int getCurrentTypeShieldSys() const { return _types[_currType]; }
