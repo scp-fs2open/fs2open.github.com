@@ -12,6 +12,9 @@ template<typename>   constexpr bool is_optional = false;
 template<typename T> constexpr bool is_optional<std::optional<T>> = true;
 template<> 			 constexpr bool is_optional<std::nullopt_t> = true;
 
+template <typename T> struct is_tuple : std::false_type {};
+template <typename... U> struct is_tuple<std::tuple <U...>> : std::true_type {};
+
 template<auto... grabbers>
 struct modular_curves_submember_input {
   private:
@@ -78,10 +81,18 @@ struct modular_curves_submember_input {
 		}
 	}
 
+	template<int tuple_idx, typename input_type>
+	inline auto grab_from_tuple(const input_type& input) const {
+		if constexpr(tuple_idx < 0)
+			return std::cref(input);
+		else
+			return std::cref(std::get<tuple_idx>(input));
+	}
+
   public:
-	template<typename input_type>
+	template<int tuple_idx, typename input_type>
 	inline float grab(const input_type& input) const {
-		const auto& result = grab_internal<input_type, grabbers...>(std::cref(input));
+		const auto& result = grab_internal<std::decay_t<decltype(grab_from_tuple<tuple_idx, input_type>(input).get())>, grabbers...>(grab_from_tuple<tuple_idx, input_type>(input));
 		if constexpr (is_optional<typename std::decay_t<decltype(result)>>) {
 			if (result.has_value())
 				return result->get();
@@ -99,16 +110,24 @@ struct modular_curves_functional_input {
   private:
 	grabber_fnc grabber;
 
+	template<int tuple_idx, typename input_type>
+	inline auto grab_from_tuple(const input_type& input) const {
+		if constexpr(tuple_idx < 0)
+			return std::cref(input);
+		else
+			return std::cref(std::get<tuple_idx>(input));
+	}
+
   public:
 	modular_curves_functional_input(grabber_fnc grabber_) : grabber(std::move(grabber_)) {}
 
-	template<typename input_type>
+	template<int tuple_idx, typename input_type>
 	inline float grab(const input_type& input) const {
 		if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>){
-			return grabber(*input);
+			return grabber(*grab_from_tuple<tuple_idx, input_type>(input));
 		}
 		else {
-			return grabber(input);
+			return grabber(grab_from_tuple<tuple_idx, input_type>(input));
 		}
 	}
 };
@@ -128,7 +147,7 @@ struct modular_curves_entry_instance {
 /*
  * output_enum must be a contiguous enum with a NUM_VALUES end
  * */
-template<typename input_type, typename output_enum, typename... input_grabbers>
+template<typename input_type, typename output_enum, typename input_tuple_index, typename... input_grabbers>
 struct modular_curves {
   private:
 	static constexpr size_t num_inputs = sizeof...(input_grabbers);
@@ -171,12 +190,15 @@ struct modular_curves {
 		return {curve_entry.scaling_factor.next(), curve_entry.translation.next()};
 	}
 
-	template<size_t... idx>
+	template<bool parsing, size_t... idx>
 	inline size_t get_input_idx_by_name(const char* input, std::index_sequence<idx...>) const {
 		size_t result = -1;
 		bool matched_case = ((!stricmp(input, std::get<idx>(inputs).first) ? (result = idx), true : false) || ...);
 		if (!matched_case) {
-			error_display(1, "Unexpected modular curve input %s!", input);
+			if constexpr (parsing)
+				error_display(1, "Unexpected modular curve input %s!", input);
+			else
+				UNREACHABLE("Unexpected modular curve input %s!", input);
 		}
 		return result;
 	}
@@ -185,7 +207,7 @@ struct modular_curves {
 	inline float get_individual_input(size_t input_index, const input_type& input, std::index_sequence<idx...>) const {
 		float result = 1.f;
 		//GCC11+ and Clang will properly unroll this fold expression into a switch-case jumptable
-		bool matched_case = ((idx == input_index ? (result = std::get<idx>(inputs).second.grab(input)), true : false) || ...);
+		bool matched_case = ((idx == input_index ? (result = std::get<idx>(inputs).second.template grab<std::tuple_element_t<idx, input_tuple_index>::value>(input)), true : false) || ...);
 		if (!matched_case) {
 			UNREACHABLE("Modular Curves requested Input %zu which has no grabber!", input_index);
 		}
@@ -218,12 +240,12 @@ struct modular_curves {
 		return result;
 	}
 
-	void parse(SCP_string curve_type) {
+	void parse(const SCP_string& curve_type) {
 		while(optional_string(curve_type.c_str())) {
 			SCP_string input;
 			required_string("+Input:");
 			stuff_string(input, F_NAME);
-			size_t input_idx = get_input_idx_by_name(input.c_str(), std::index_sequence_for<input_grabbers...>{});
+			size_t input_idx = get_input_idx_by_name<true>(input.c_str(), std::index_sequence_for<input_grabbers...>{});
 
 			SCP_string output;
 			required_string("+Output:");
@@ -261,11 +283,61 @@ struct modular_curves {
 			curves[static_cast<std::underlying_type_t<output_enum>>(output_idx)].emplace_back(input_idx, std::move(curve_entry));
 		}
 	}
+
+	void add_curve(const SCP_string& input, output_enum output, modular_curves_entry curve_entry) {
+		size_t input_idx = get_input_idx_by_name<false>(input.c_str(), std::index_sequence_for<input_grabbers...>{});
+		curves[static_cast<std::underlying_type_t<output_enum>>(output)].emplace_back(input_idx, std::move(curve_entry));
+	}
+
+private:
+	//Helper functions to compute the correct type for derived modular curved sets. Meant for unevaluated context (i.e. within a decltype) ONLY!
+	template<typename maybe_tuple, typename... tuple_additions>
+	static auto unevaluated_maybe_tuple_cat(const maybe_tuple& in, const tuple_additions&... adds) {
+		if constexpr(is_tuple<maybe_tuple>::value)
+			return std::tuple_cat(in, std::tuple<const tuple_additions&...>(adds...));
+		else
+			return std::tuple<const maybe_tuple&, const tuple_additions&...>(in, adds...);
+	}
+
+	template<size_t... idx>
+	static auto unevaluated_tuple_of_input_idx_least_0(std::index_sequence<idx...>) {
+		return std::tuple<std::integral_constant<int, std::tuple_element_t<idx, input_tuple_index>::value < 0 ? 0 : std::tuple_element_t<idx, input_tuple_index>::value>...>();
+	}
+
+	template<typename tuple_of_integrals, size_t... idx>
+	static constexpr int find_lowest_tuple_integral_constant(std::index_sequence<idx...>) {
+		//This explicitly "finds" 0 for a tuple of only -1's
+		int result = 0;
+		((result = (result < std::tuple_element_t<idx, tuple_of_integrals>::value ? std::tuple_element_t<idx, tuple_of_integrals>::value : result)), ...);
+		return result;
+	}
+
+public:
+	template<typename additional_input_type, typename new_output_enum, typename... additional_input_grabbers>
+	auto derive_modular_curves_subset(SCP_unordered_map<SCP_string, new_output_enum, SCP_string_lcase_hash, SCP_string_lcase_equal_to> new_outputs, std::pair<const char*, additional_input_grabbers>... additional_inputs) {
+		using new_input_type = decltype(unevaluated_maybe_tuple_cat(std::declval<input_type>(), std::declval<additional_input_type>()));
+		using new_input_tuple_index = decltype(std::tuple_cat(
+				//Old tuple accessors, but if they were -1 (i.e. no tuple) set them to 0 (i.e. first element)
+				unevaluated_tuple_of_input_idx_least_0(std::index_sequence_for<input_grabbers...>()),
+				//New tuple accessors, highest observed one + 1
+				std::tuple<std::integral_constant<std::conditional_t<true, int, input_grabbers>, find_lowest_tuple_integral_constant<input_tuple_index>(std::index_sequence_for<input_grabbers...>()) + 1>...>())); //This "seemingly unnecessary" conditional is required to be able to unpack the parameter pack over the input_grabbers and get a tuple type of the identical length
+		return modular_curves<
+				new_input_type,
+				new_output_enum,
+				new_input_tuple_index,
+				input_grabbers..., additional_input_grabbers...>(
+				std::move(new_outputs), std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
+		);
+	}
 };
 
 template<typename input_type, typename output_enum, typename... input_grabbers>
 constexpr auto make_modular_curves(SCP_unordered_map<SCP_string, output_enum, SCP_string_lcase_hash, SCP_string_lcase_equal_to> outputs, std::pair<const char*, input_grabbers>... inputs) {
-	return modular_curves<input_type, output_enum, input_grabbers...>(
+	return modular_curves<
+	        input_type,
+			output_enum,
+			std::tuple<std::integral_constant<std::conditional_t<true, int, input_grabbers>, -1>...>, //This "seemingly unnecessary" conditional is required to be able to unpack the parameter pack over the input_grabbers and get a tuple type of the identical length
+			input_grabbers...>(
 		std::move(outputs), std::make_tuple(std::move(inputs)...)
 	);
 }
