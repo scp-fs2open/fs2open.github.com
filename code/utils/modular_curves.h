@@ -320,7 +320,7 @@ public:
 				//Old tuple accessors, but if they were -1 (i.e. no tuple) set them to 0 (i.e. first element)
 				unevaluated_tuple_of_input_idx_least_0(std::index_sequence_for<input_grabbers...>()),
 				//New tuple accessors, highest observed one + 1
-				std::tuple<std::integral_constant<std::conditional_t<true, int, input_grabbers>, find_lowest_tuple_integral_constant<input_tuple_index>(std::index_sequence_for<input_grabbers...>()) + 1>...>())); //This "seemingly unnecessary" conditional is required to be able to unpack the parameter pack over the input_grabbers and get a tuple type of the identical length
+				std::tuple<std::integral_constant<std::conditional_t<true, int, additional_input_grabbers>, find_lowest_tuple_integral_constant<input_tuple_index>(std::index_sequence_for<input_grabbers...>()) + 1>...>())); //This "seemingly unnecessary" conditional is required to be able to unpack the parameter pack over the additional_input_grabbers and get a tuple type of the identical length
 		return modular_curves<
 				new_input_type,
 				new_output_enum,
