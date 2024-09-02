@@ -134,11 +134,11 @@ struct modular_curves {
 	static constexpr size_t num_inputs = sizeof...(input_grabbers);
 	static constexpr size_t num_outputs = static_cast<size_t>(output_enum::NUM_VALUES);
 
-	SCP_unordered_map<SCP_string, output_enum> outputs;
+	SCP_unordered_map<SCP_string, output_enum, SCP_string_lcase_hash, SCP_string_lcase_equal_to> outputs;
 	std::tuple<std::pair<const char*, input_grabbers>...> inputs;
 	std::array<SCP_vector<std::pair<size_t, modular_curves_entry>>, num_outputs> curves; //Output -> List<(Input, curve_entry)>
   public:
-	modular_curves(SCP_unordered_map<SCP_string, output_enum> outputs_, std::tuple<std::pair<const char*, input_grabbers>...> inputs_) : outputs(std::move(outputs_)), inputs(std::move(inputs_)), curves() {}
+	modular_curves(SCP_unordered_map<SCP_string, output_enum, SCP_string_lcase_hash, SCP_string_lcase_equal_to> outputs_, std::tuple<std::pair<const char*, input_grabbers>...> inputs_) : outputs(std::move(outputs_)), inputs(std::move(inputs_)), curves() {}
 
 	modular_curves_entry_instance create_instance() const {
 		return modular_curves_entry_instance{util::Random::next(), util::Random::next()};
@@ -169,6 +169,16 @@ struct modular_curves {
 		}
 
 		return {curve_entry.scaling_factor.next(), curve_entry.translation.next()};
+	}
+
+	template<size_t... idx>
+	inline size_t get_input_idx_by_name(const char* input, std::index_sequence<idx...>) const {
+		size_t result = -1;
+		bool matched_case = ((!stricmp(input, std::get<idx>(inputs).first) ? (result = idx), true : false) || ...);
+		if (!matched_case) {
+			error_display(1, "Unexpected modular curve input %s!", input);
+		}
+		return result;
 	}
 
 	template<size_t... idx>
@@ -207,10 +217,54 @@ struct modular_curves {
 
 		return result;
 	}
+
+	void parse(SCP_string curve_type) {
+		while(optional_string(curve_type.c_str())) {
+			SCP_string input;
+			required_string("+Input:");
+			stuff_string(input, F_NAME);
+			size_t input_idx = get_input_idx_by_name(input.c_str(), std::index_sequence_for<input_grabbers...>{});
+
+			SCP_string output;
+			required_string("+Output:");
+			stuff_string(output, F_NAME);
+			auto output_it = outputs.find(output);
+			if (output_it == outputs.end()){
+				error_display(1, "Unexpected modular curve output %s!", output.c_str());
+			}
+			output_enum output_idx = output_it->second;
+
+			modular_curves_entry curve_entry;
+
+			required_string("+Curve Name:");
+			SCP_string curve;
+			stuff_string(curve, F_NAME);
+			curve_entry.curve_idx = curve_get_by_name(curve);
+			if (curve_entry.curve_idx < 0){
+				error_display(1, "Unknown curve %s requested for modular curves!", curve.c_str());
+			}
+
+			if (optional_string("+Random Scaling Factor:")) {
+				curve_entry.scaling_factor = ::util::ParsedRandomFloatRange::parseRandomRange();
+			} else {
+				curve_entry.scaling_factor = ::util::UniformFloatRange(1.0f);
+			}
+			if (optional_string("+Random Translation:")) {
+				curve_entry.translation = ::util::ParsedRandomFloatRange::parseRandomRange();
+			} else {
+				curve_entry.translation = ::util::UniformFloatRange(0.0f);
+			}
+
+			curve_entry.wraparound = true;
+			parse_optional_bool_into("+Wraparound:", &curve_entry.wraparound);
+
+			curves[static_cast<std::underlying_type_t<output_enum>>(output_idx)].emplace_back(input_idx, std::move(curve_entry));
+		}
+	}
 };
 
 template<typename input_type, typename output_enum, typename... input_grabbers>
-constexpr auto make_modular_curves(SCP_unordered_map<SCP_string, output_enum> outputs, std::pair<const char*, input_grabbers>... inputs) {
+constexpr auto make_modular_curves(SCP_unordered_map<SCP_string, output_enum, SCP_string_lcase_hash, SCP_string_lcase_equal_to> outputs, std::pair<const char*, input_grabbers>... inputs) {
 	return modular_curves<input_type, output_enum, input_grabbers...>(
 		std::move(outputs), std::make_tuple(std::move(inputs)...)
 	);
