@@ -68,12 +68,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: linux-Release
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: linux-FastDebug
           path: builds
@@ -198,12 +198,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
@@ -320,12 +320,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: mac-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: mac-FastDebug-${{ matrix.arch }}
           path: builds
