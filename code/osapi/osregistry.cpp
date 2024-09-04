@@ -442,7 +442,7 @@ static tl::optional<time_t> key_mod_time(bool alternate_path) {
 }
 
 tl::optional<time_t> os_registry_get_last_modification_time() {
-	
+
 	auto standard_time = key_mod_time(false);
 	auto alternate_time = key_mod_time(true);
 
