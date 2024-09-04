@@ -657,7 +657,7 @@ void StartTrackerGame(void *buffer)
 //A new function
 void RequestGameCountWithFilter(void *filter) 
 {
-	game_packet_header GameCountReq;
+	game_packet_header GameCountReq{};
 	ubyte packet_data[sizeof(game_packet_header)];
 	int packet_length = 0;
 

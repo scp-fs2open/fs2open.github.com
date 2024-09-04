@@ -5379,7 +5379,7 @@ int model_create_bsp_collision_tree()
 		return (int)i;
 	}
 
-	bsp_collision_tree tree;
+	bsp_collision_tree tree{};
 
 	tree.used = true;
 	Bsp_collision_tree_list.push_back(tree);
