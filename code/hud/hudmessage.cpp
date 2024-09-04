@@ -1140,7 +1140,7 @@ HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, false, true, (VM_DEAD_VIEW |
 
 void HudGaugeTalkingHead::initialize()
 {
-	head_anim = NULL;
+	head_anim = nullptr;
 	msg_id = -1;
 
 	HudGauge::initialize();
@@ -1242,7 +1242,7 @@ void HudGaugeTalkingHead::render(float frametime)
 				}
 			}
 			msg_id = -1;    // allow repeated messages to display a new head ani
-			head_anim = NULL; // Nothing to see here anymore, move along
+			head_anim = nullptr; // Nothing to see here anymore, move along
 		}
 	}
 	// check playing messages to see if we have any messages with talking animations that need to be created.
@@ -1252,7 +1252,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			if (Playing_messages[i].anim_data)
 				head_anim = Playing_messages[i].anim_data;	
 			else
-				head_anim = NULL;
+				head_anim = nullptr;
 
 			return;
 		}
