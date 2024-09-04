@@ -1197,7 +1197,7 @@ void HudGaugeTalkingHead::render(float frametime)
 		bool play_frame = false;
 		if (head_anim != nullptr) {
 			// New method loops until the message audio is done
-			if (Always_loop_head_anis && cur_message != nullptr) {
+			if (Always_loop_head_anis && cur_message != nullptr && (cur_message->builtin_type != MESSAGE_WINGMAN_SCREAM)) {
 				play_frame = cur_message->play_anim;
 				// Old method only plays once
 			} else if (head_anim != nullptr) {
@@ -1278,7 +1278,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			if (Playing_messages[i].anim_data) {
 				head_anim = Playing_messages[i].anim_data;
 				// If we're using the newer setup then choose a random starting frame
-				if (Use_newer_head_ani_suffix && head_anim->num_frames > 0) {
+				if (Use_newer_head_ani_suffix && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) && head_anim->num_frames > 0) {
 					int random_frame = rand() % head_anim->num_frames; // Generate random frame to start with
 					head_anim->anim_time = (float)random_frame * head_anim->total_time / head_anim->num_frames;
 				}
