@@ -1182,8 +1182,30 @@ void HudGaugeTalkingHead::render(float frametime)
 		return;
 	}
 
-	if(msg_id != -1 && head_anim != NULL) {
-		if(!head_anim->done_playing) {
+	if(msg_id != -1) {
+
+		// Get our message data. Current max is 2 so this shouldn't be much of a performance hit
+		pmessage* cur_message = nullptr;
+		for (int j = 0; j < Num_messages_playing; ++j) {
+			if (Playing_messages[j].id == msg_id) {
+				cur_message = &Playing_messages[j];
+				break; // only one head ani plays at a time
+			}
+		}
+
+		// Should we play a frame or not?
+		bool play_frame = false;
+		if (head_anim != nullptr) {
+			// New method loops until the message audio is done
+			if (Always_loop_head_anis && cur_message != nullptr) {
+				play_frame = cur_message->play_anim;
+				// Old method only plays once
+			} else if (head_anim != nullptr) {
+				play_frame = !head_anim->done_playing;
+			}
+		}
+
+		if (play_frame) {
 			// draw frame
 			// hud_set_default_color();
 			setGaugeColor();
@@ -1235,11 +1257,15 @@ void HudGaugeTalkingHead::render(float frametime)
 			// draw title
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
-			for (int j = 0; j < Num_messages_playing; ++j) {
-				if (Playing_messages[j].id == msg_id) {
-					Playing_messages[j].play_anim = false;
-					break;  // only one head ani plays at a time
+			if (cur_message == nullptr) {
+				for (int j = 0; j < Num_messages_playing; ++j) {
+					if (Playing_messages[j].id == msg_id) {
+						Playing_messages[j].play_anim = false;
+						break; // only one head ani plays at a time
+					}
 				}
+			} else {
+				cur_message->play_anim = false;
 			}
 			msg_id = -1;    // allow repeated messages to display a new head ani
 			head_anim = nullptr; // Nothing to see here anymore, move along

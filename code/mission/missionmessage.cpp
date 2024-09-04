@@ -42,6 +42,7 @@
 #include "utils/Random.h"
 
 bool Allow_generic_backup_messages = false;
+bool Always_loop_head_anis = false;
 float Command_announces_enemy_arrival_chance = 0.25;
 
 #define DEFAULT_MOOD 0
@@ -757,6 +758,9 @@ void parse_msgtbl(const char* filename)
 		// now we can start parsing
 		parse_custom_message_types(false); // Already parsed, so skip it
 		if (optional_string("#Message Settings")) {
+			if (optional_string("$Always loop head anis:")) {
+				stuff_boolean(&Always_loop_head_anis);
+			}
 			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
 				stuff_boolean(&Allow_generic_backup_messages);
 			}
@@ -1462,7 +1466,9 @@ void message_play_anim( message_q *q )
 			return;
 		}
 		
-		anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		if (!Always_loop_head_anis) {
+			anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		}
 		Playing_messages[Num_messages_playing].anim_data = &anim_info->anim_data;
 		message_calc_anim_start_frame(Message_wave_duration, &anim_info->anim_data, is_death_scream);
 		Playing_messages[Num_messages_playing].play_anim = true;
