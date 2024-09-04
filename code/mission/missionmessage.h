@@ -60,6 +60,7 @@ extern SCP_vector<SCP_string> Builtin_moods;
 extern int Current_mission_mood;
 extern float Command_announces_enemy_arrival_chance;
 extern bool Always_loop_head_anis;
+extern bool Use_newer_head_ani_suffix;
 
 // Builtin messages
 

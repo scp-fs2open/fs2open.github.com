@@ -1275,10 +1275,16 @@ void HudGaugeTalkingHead::render(float frametime)
 	for (int i = 0; i < Num_messages_playing; i++ ) {
 		if(Playing_messages[i].play_anim && Playing_messages[i].id != msg_id ) {
 			msg_id = Playing_messages[i].id;
-			if (Playing_messages[i].anim_data)
-				head_anim = Playing_messages[i].anim_data;	
-			else
+			if (Playing_messages[i].anim_data) {
+				head_anim = Playing_messages[i].anim_data;
+				// If we're using the newer setup then choose a random starting frame
+				if (Use_newer_head_ani_suffix && head_anim->num_frames > 0) {
+					int random_frame = rand() % head_anim->num_frames; // Generate random frame to start with
+					head_anim->anim_time = (float)random_frame * head_anim->total_time / head_anim->num_frames;
+				}
+			} else {
 				head_anim = nullptr;
+			}
 
 			return;
 		}
