@@ -4016,10 +4016,10 @@ void weapon_sort_by_type()
 {
 	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_primaries = NULL, *child_secondaries = NULL;
 	size_t num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
-	int i, weapon_index;
+	int weapon_index;
 
 	// get the initial count of each weapon type
-	for (i = 0; i < weapon_info_size(); i++) {
+	for (int i = 0; i < weapon_info_size(); i++) {
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_UNUSED:
@@ -4097,7 +4097,7 @@ void weapon_sort_by_type()
 	}
 
 	// fill the buckets
-	for (i = 0; i < weapon_info_size(); i++) {
+	for (int i = 0; i < weapon_info_size(); i++) {
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_UNUSED:
@@ -4133,28 +4133,28 @@ void weapon_sort_by_type()
 	weapon_index = 0;
 
 	// reorder the weapon_info structure according to our rules defined above
-	for (i = 0; i < num_lasers; i++, weapon_index++)
+	for (size_t i = 0; i < num_lasers; i++, weapon_index++)
 		Weapon_info[weapon_index] = lasers[i];
 
-	for (i = 0; i < num_big_lasers; i++, weapon_index++)
+	for (size_t i = 0; i < num_big_lasers; i++, weapon_index++)
 		Weapon_info[weapon_index] = big_lasers[i];
 
-	for (i = 0; i < num_beams; i++, weapon_index++)
+	for (size_t i = 0; i < num_beams; i++, weapon_index++)
 		Weapon_info[weapon_index] = beams[i];
 
-	for (i = 0; i < num_child_primaries; i++, weapon_index++)
+	for (size_t i = 0; i < num_child_primaries; i++, weapon_index++)
 		Weapon_info[weapon_index] = child_primaries[i];
 
 	// designate start of secondary weapons so that we'll have the correct offset later on
 	First_secondary_index = weapon_index;
 
-	for (i = 0; i < num_missiles; i++, weapon_index++)
+	for (size_t i = 0; i < num_missiles; i++, weapon_index++)
 		Weapon_info[weapon_index] = missiles[i];
 
-	for (i = 0; i < num_big_missiles; i++, weapon_index++)
+	for (size_t i = 0; i < num_big_missiles; i++, weapon_index++)
 		Weapon_info[weapon_index] = big_missiles[i];
 
-	for (i = 0; i < num_child_secondaries; i++, weapon_index++)
+	for (size_t i = 0; i < num_child_secondaries; i++, weapon_index++)
 		Weapon_info[weapon_index] = child_secondaries[i];
 
 
