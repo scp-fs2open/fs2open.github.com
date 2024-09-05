@@ -960,6 +960,11 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 }
 
+bool gamesnd_is_placeholder(const game_snd& gs)
+{
+	return gs.sound_entries.empty() || gs.sound_entries[0].filename[0] == '\0';
+}
+
 void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize, bool (*is_reserved_index)(int))
 {
 	SCP_string name;
@@ -1015,7 +1020,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 			auto existing_gs = &lookupVector->at(vectorIndex);
 
 			// if the existing sound was an empty or placeholder sound, replace it, don't warn
-			if (existing_gs->sound_entries.empty() || existing_gs->sound_entries[0].filename[0] == '\0')
+			if (gamesnd_is_placeholder(*existing_gs))
 			{
 				gs = existing_gs;
 				orig_no_create = true;	// prevent sound from being appended in parse_sound_table
@@ -1461,6 +1466,17 @@ void gamesnd_parse_soundstbl(bool first_stage)
 		// these vectors should be the same size
 		while (Snds_iface_handle.size() < Snds_iface.size())
 			Snds_iface_handle.push_back(sound_handle::invalid());
+
+		// mark any placeholder sounds as invalid
+		// (most places in the code already check for this, but it is possible for sexps and scripts to attempt to play an empty sound)
+		for (auto& snd : Snds)
+			if (gamesnd_is_placeholder(snd))
+				snd.flags |= GAME_SND_NOT_VALID;
+
+		// ditto for interface sounds
+		for (auto& snd : Snds_iface)
+			if (gamesnd_is_placeholder(snd))
+				snd.flags |= GAME_SND_NOT_VALID;
 	}
 	else
 	{
