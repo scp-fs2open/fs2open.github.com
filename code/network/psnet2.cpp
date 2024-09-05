@@ -810,7 +810,7 @@ int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLI
 	}
 
 	FD_ZERO(&wfds);
-	FD_SET(Psnet_socket, &wfds);
+	FD_SET_SAFE(Psnet_socket, &wfds);
 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
@@ -821,7 +821,7 @@ int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLI
 	}
 
 	// if the write file descriptor is not set, then bail!
-	if ( !FD_ISSET(Psnet_socket, &wfds) ) {
+	if ( !FD_ISSET_SAFE(Psnet_socket, &wfds) ) {
 		return 0;
 	}
 
@@ -1986,10 +1986,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	fd_set read_fds;
 	reliable_socket *rsocket;
 
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return;
-
 	*socket = PSNET_INVALID_SOCKET;
 
 	psnet_addr_to_sockaddr(server_addr, &srv_addr);
@@ -2001,14 +1997,14 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 		timeout.tv_usec = 0;
 
 		FD_ZERO(&read_fds);
-		FD_SET(Psnet_socket, &read_fds);
+		FD_SET_SAFE(Psnet_socket, &read_fds);
 
 		if ( SELECT(static_cast<int>(Psnet_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE) == SOCKET_ERROR ) {
 			break;
 		}
 
 		// if the file descriptor is not set, then bail!
-		if ( !FD_ISSET(Psnet_socket, &read_fds) ) {
+		if ( !FD_ISSET_SAFE(Psnet_socket, &read_fds) ) {
 			break;
 		}
 
@@ -2046,14 +2042,14 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 		timeout.tv_usec = 0;
 
 		FD_ZERO(&read_fds);
-		FD_SET(Psnet_socket, &read_fds);
+		FD_SET_SAFE(Psnet_socket, &read_fds);
 
 		if ( SELECT(static_cast<int>(Psnet_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE) == SOCKET_ERROR ) {
 			break;
 		}
 
 		// if the file descriptor is not set, then bail!
-		if ( !FD_ISSET(Psnet_socket, &read_fds) ) {
+		if ( !FD_ISSET_SAFE(Psnet_socket, &read_fds) ) {
 			continue;
 		}
 

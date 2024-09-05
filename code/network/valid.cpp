@@ -270,10 +270,6 @@ int InitValidateClient()
 //  1	User valid
 int ValidateUser(validate_id_request *valid_id, char *trackerid)
 {
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return -1;
-
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -310,7 +306,7 @@ int ValidateUser(validate_id_request *valid_id, char *trackerid)
 			timeout.tv_usec=0;
 			
 			FD_ZERO(&read_fds);	// NOLINT
-			FD_SET(Psnet_socket, &read_fds);
+			FD_SET_SAFE(Psnet_socket, &read_fds);
 
 			while(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION))
 			{
@@ -357,15 +353,11 @@ void ValidIdle()
 
 	PSNET_TOP_LAYER_PROCESS();
 
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return;
-
 	timeout.tv_sec=0;            
 	timeout.tv_usec=0;
 	
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET(Psnet_socket, &read_fds);
+	FD_SET_SAFE(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION)){
 		int bytesin;
@@ -393,7 +385,7 @@ void ValidIdle()
 		}
 
 		FD_ZERO(&read_fds);	// NOLINT
-		FD_SET(Psnet_socket, &read_fds);
+		FD_SET_SAFE(Psnet_socket, &read_fds);
 
 		//Check to make sure the packets ok
 		if ( (bytesin > 0) && (bytesin == inpacket.len) ) {
@@ -576,10 +568,6 @@ void AckValidServer(unsigned int sig)
 //  1	User valid
 int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 {
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return -1;
-
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -626,7 +614,7 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 				udp_packet_header inpacket;
 
 				FD_ZERO(&read_fds);	// NOLINT
-				FD_SET(Psnet_socket, &read_fds);
+				FD_SET_SAFE(Psnet_socket, &read_fds);
 
 				addrsize = sizeof(fromaddr);
 				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
@@ -664,10 +652,6 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 //  1	match valid
 int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 {
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return -1;
-
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -716,7 +700,7 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 				udp_packet_header inpacket;
 
 				FD_ZERO(&read_fds);	// NOLINT
-				FD_SET(Psnet_socket, &read_fds);
+				FD_SET_SAFE(Psnet_socket, &read_fds);
 
 				addrsize = sizeof(fromaddr);
 				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
@@ -773,10 +757,6 @@ static unsigned short PackValidDataRequest(const vmt_valid_data_req_struct *vreq
 //  1	table valid
 int ValidateData(const vmt_valid_data_req_struct *vreq)
 {
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return -1;
-
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -814,7 +794,7 @@ int ValidateData(const vmt_valid_data_req_struct *vreq)
 				udp_packet_header inpacket;
 
 				FD_ZERO(&read_fds);	// NOLINT
-				FD_SET(Psnet_socket, &read_fds);
+				FD_SET_SAFE(Psnet_socket, &read_fds);
 
 				addrsize = sizeof(fromaddr);
 				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,

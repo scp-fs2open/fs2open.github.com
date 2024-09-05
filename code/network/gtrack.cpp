@@ -338,10 +338,6 @@ void IdleGameTracker()
 
 	PSNET_TOP_LAYER_PROCESS();
 
-	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
-	if (Psnet_socket < 0)
-		return;
-
 	timeout.tv_sec=0;            
 	timeout.tv_usec=0;
 	if((TrackerGameIsRunning) && ((time(nullptr)-LastTrackerUpdate)>TRACKER_UPDATE_INTERVAL) && !SendingGameOver)
@@ -385,9 +381,8 @@ void IdleGameTracker()
 	//End New 7-9-98
 
 	//Check for incoming
-		
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET(Psnet_socket, &read_fds);
+	FD_SET_SAFE(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_GAME_TRACKER))
 	{
