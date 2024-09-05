@@ -4015,20 +4015,20 @@ void parse_weaponstbl(const char *filename)
 void weapon_sort_by_type()
 {
 	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_primaries = NULL, *child_secondaries = NULL;
-	size_t num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
+	unsigned int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
 	int weapon_index;
 
 	// get the initial count of each weapon type
-	for (int i = 0; i < weapon_info_size(); i++) {
-		switch (Weapon_info[i].subtype)
+	for (const auto& wi : Weapon_info) {
+		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_primaries++;
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_lasers++;
 				else
 					num_lasers++;
@@ -4039,9 +4039,9 @@ void weapon_sort_by_type()
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_secondaries++;
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_missiles++;
 				else
 					num_missiles++;
@@ -4097,32 +4097,32 @@ void weapon_sort_by_type()
 	}
 
 	// fill the buckets
-	for (int i = 0; i < weapon_info_size(); i++) {
-		switch (Weapon_info[i].subtype)
+	for (const auto& wi : Weapon_info) {
+		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_primaries[num_child_primaries++] = Weapon_info[i];
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_lasers[num_big_lasers++] = Weapon_info[i];
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_primaries[num_child_primaries++] = wi;
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
+					big_lasers[num_big_lasers++] = wi;
 				else
-					lasers[num_lasers++] = Weapon_info[i];
+					lasers[num_lasers++] = wi;
 				break;
 		
 			case WP_BEAM:
-				beams[num_beams++] = Weapon_info[i];
+				beams[num_beams++] = wi;
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_secondaries[num_child_secondaries++] = Weapon_info[i];
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_missiles[num_big_missiles++] = Weapon_info[i];
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_secondaries[num_child_secondaries++] = wi;
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
+					big_missiles[num_big_missiles++] = wi;
 				else
-					missiles[num_missiles++]=Weapon_info[i];
+					missiles[num_missiles++] = wi;
 				break;
 
 			default:
