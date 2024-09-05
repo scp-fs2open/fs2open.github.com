@@ -1031,6 +1031,26 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 				error_display(0, "Duplicate sound name \"%s\" found!", name.c_str());
 			}
 		}
+		else if (lookupVector)
+		{
+			// see if there is an empty or placeholder sound that we can replace
+			int i = 0;
+			for (const auto& ii : *lookupVector)
+			{
+				if (gamesnd_is_placeholder(ii) && !is_reserved_index(i))
+				{
+					vectorIndex = i;
+					gs = &lookupVector->at(vectorIndex);
+					orig_no_create = true;	// prevent sound from being appended in parse_sound_table
+											// (leave no_create as false because we are creating a new sound and we need all the fields to be filled out)
+
+					// a placeholder can have a single entry with an empty filename, so remove that if it exists
+					gs->sound_entries.clear();
+					break;
+				}
+				i++;
+			}
+		}
 
 		gs->name = std::move(name);
 	}
