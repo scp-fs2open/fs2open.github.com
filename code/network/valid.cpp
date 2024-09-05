@@ -270,6 +270,10 @@ int InitValidateClient()
 //  1	User valid
 int ValidateUser(validate_id_request *valid_id, char *trackerid)
 {
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return -1;
+
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -352,6 +356,10 @@ void ValidIdle()
 	int packet_length = 0;
 
 	PSNET_TOP_LAYER_PROCESS();
+
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return;
 
 	timeout.tv_sec=0;            
 	timeout.tv_usec=0;
@@ -568,6 +576,10 @@ void AckValidServer(unsigned int sig)
 //  1	User valid
 int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 {
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return -1;
+
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -652,6 +664,10 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 //  1	match valid
 int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 {
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return -1;
+
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -757,6 +773,10 @@ static unsigned short PackValidDataRequest(const vmt_valid_data_req_struct *vreq
 //  1	table valid
 int ValidateData(const vmt_valid_data_req_struct *vreq)
 {
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return -1;
+
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 

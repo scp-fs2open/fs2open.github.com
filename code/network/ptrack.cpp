@@ -613,6 +613,10 @@ void IdlePTrack()
 
 void PollPTrackNet()
 {
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return;
+	
 	fd_set read_fds;	           
 	struct timeval timeout;
 	ubyte packet_data[sizeof(udp_packet_header)];

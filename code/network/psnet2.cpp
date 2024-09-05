@@ -1986,6 +1986,10 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	fd_set read_fds;
 	reliable_socket *rsocket;
 
+	//GCC warns here that Psnet_socket is not guaranteed to be non-negative (even though it really should not be) so check to silence the warning
+	if (Psnet_socket < 0)
+		return;
+
 	*socket = PSNET_INVALID_SOCKET;
 
 	psnet_addr_to_sockaddr(server_addr, &srv_addr);
