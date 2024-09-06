@@ -2423,6 +2423,16 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		stuff_boolean(&m->allow_fish);
 	}
 
+	if (optional_string("+Left Fish Anim:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->l_fish_anim = temp_string;
+	}
+
+	if (optional_string("+Right Fish Anim:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->r_fish_anim = temp_string;
+	}
+
 	if (optional_string("+Headz Door Index:")) {
 		stuff_int(&m->headz_index);
 
@@ -2937,4 +2947,12 @@ void main_hall_unpause()
 void main_hall_toggle_help(bool enable)
 {
 	help_overlay_set_state(Main_hall_overlay_id, main_hall_get_overlay_resolution_index(), (int)enable);
+}
+
+/**
+* Start the fishies!
+*/
+void main_hall_start_fishies()
+{
+	fishtank_start(Main_hall->l_fish_anim, Main_hall->r_fish_anim);
 }
