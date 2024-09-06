@@ -66,6 +66,13 @@ public:
 	int zoom_area_width = -1;
 	int zoom_area_height = -1;
 
+	// allow fishies! (and headz...)
+	bool allow_fish = false;
+	int headz_index = -1;
+	SCP_string headz_anim;
+	SCP_string headz_background;
+	interface_snd_id headz_sound_index = InterfaceSounds::VASUDAN_BUP;
+
 	bool render_title = true;
 	bool render_version = true;
 
@@ -210,6 +217,10 @@ int main_hall_get_overlay_resolution_index();
 int main_hall_id();
 
 // Vasudan?
+bool main_hall_is_retail_vasudan();
+
+bool main_hall_allows_fish();
+bool main_hall_allows_headz();
 // (defaults to the current main hall, but now allows checking another specified main hall)
 bool main_hall_is_vasudan(const main_hall_defines *hall = nullptr);
 
