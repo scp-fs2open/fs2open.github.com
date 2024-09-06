@@ -52,6 +52,7 @@ extern void game_process_cheats(int k);
 
 // forward declaration
 void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &res_idx);
+void main_hall_set_door_headz(bool enable, bool init = false);
 
 // ----------------------------------------------------------------------------
 // MAIN HALL DATA DEFINES
@@ -70,8 +71,7 @@ static int Main_hall_music_index = -1;
 
 bool Main_hall_poll_key = true;
 
-int Vasudan_funny = 0;
-int Vasudan_funny_plate = -1;
+bool Vasudan_funny = false;
 
 SCP_string Main_hall_cheat = "";
 
@@ -540,29 +540,6 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// init tooltip shader						// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
 
-	// are we funny?
-	if (Vasudan_funny && main_hall_is_vasudan()) {
-		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
-			
-			// set head anim. hehe
-			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
-			
-			// set the background
-			Main_hall->bitmap = "vhallhead";
-		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
-			
-			// set head anim. hehe
-			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
-			
-			// set the background
-			Main_hall->bitmap = "2_vhallhead";
-		}
-	}
-
 	Main_hall_bitmap_w = -1;
 	Main_hall_bitmap_h = -1;
 
@@ -676,6 +653,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
 		Main_hall_door_sound_handles.emplace_back(nullptr, sound_handle::invalid());
 	}
+
+	// are we funny?
+	// Vasudan_funny cannot be true unless the mainhall is retail Vasudan or headz_index >= 0
+	// The check is in keycontrol.cpp in the cheats section
+	main_hall_set_door_headz(Vasudan_funny, true);
 
 	// skip the first frame
 	Main_hall_frame_skip = 1;
@@ -1485,6 +1467,9 @@ void main_hall_mouse_release_region(int region)
 		}
 
 		auto sound = Main_hall->door_sounds.at(region).at(1);
+		if (Vasudan_funny && (main_hall_is_retail_vasudan() || main_hall_allows_headz())) {
+			sound = Main_hall->headz_sound_index;
+		}
 
 		if (sound.isValid())
 		{
@@ -1533,6 +1518,9 @@ void main_hall_mouse_grab_region(int region)
 
 
 	auto sound = Main_hall->door_sounds.at(region).at(0);
+	if (Vasudan_funny && (main_hall_is_retail_vasudan() || main_hall_allows_headz())) {
+		sound = Main_hall->headz_sound_index;
+	}
 
 	if (sound.isValid())
 	{
@@ -2420,6 +2408,25 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		m->help_overlay_resolution_index = res_idx;
 	}
 
+	if (optional_string("+Allow Fishies:")) {
+		stuff_boolean(&m->allow_fish);
+	}
+
+	if (optional_string("+Headz Door Index:")) {
+		stuff_int(&m->headz_index);
+
+		required_string("+Headz Animation:");
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->headz_anim = temp_string;
+
+		if (optional_string("+Headz Background:")) {
+			stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+			m->headz_background = temp_string;
+		}
+
+		parse_iface_sound("+Headz sound:", &m->headz_sound_index);
+	}
+
 	// zoom area
 	if (optional_string("+Zoom To:")) {
 		stuff_int(&m->zoom_area_width);
@@ -2714,19 +2721,111 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 }
 
 /**
- * Make the vasudan main hall funny
+ * Change the selected door and background to the provided headz animation
  */
-void main_hall_vasudan_funny()
+void main_hall_set_door_headz(bool enable, bool init)
 {
-	Vasudan_funny = 1;
+	// Skip this if we're initing the mainhall and we're not enabling headz
+	if (init && !enable) {
+		return;
+	}
+	
+	int region_index = -1;
+	SCP_string anim_filename;
+	SCP_string bg_filename;
+
+	if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
+		region_index = OPTIONS_REGION;
+		if (enable) {
+			anim_filename = "vhallheads";
+			bg_filename = "vhallhead";
+		}
+	} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
+		region_index = OPTIONS_REGION;
+		if (enable) {
+			anim_filename = "2_vhallheads";
+			bg_filename = "2_vhallhead";
+		}
+	} else if ((Main_hall->headz_index >= 0) && (Main_hall->headz_index < Main_hall->num_door_animations) && !Main_hall->headz_anim.empty()) {
+		region_index = Main_hall->headz_index;
+		if (enable) {
+			anim_filename = Main_hall->headz_anim;
+			bg_filename = Main_hall->headz_background;
+		}
+		// Custom mainhalls don't need to change the background because we have true transparency now
+	}
+
+	// If we're toggling headz off
+	if (!enable) {
+		anim_filename = Main_hall->door_anim_name.at(region_index);
+		bg_filename = Main_hall->bitmap;
+	}
+
+	// If we got a match, then let's rip off some headz
+	if (region_index >= 0) {
+		// Change the door anim
+		if (!anim_filename.empty()) {
+			// On init we skip setting frames
+			int cur_frame;
+			float anim_time;
+
+			cur_frame = Main_hall_door_anim.at(region_index).current_frame;
+			anim_time = Main_hall_door_anim.at(region_index).anim_time;
+
+			generic_anim_unload(&Main_hall_door_anim.at(region_index));
+			generic_anim_init(&Main_hall_door_anim.at(region_index), anim_filename);
+
+			if (generic_anim_stream(&Main_hall_door_anim.at(region_index)) == -1) {
+				nprintf(("General", "WARNING: Could not load door anim %s in main hall\n", anim_filename.c_str()));
+			} else {
+				Main_hall_door_anim.at(region_index).direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
+			}
+
+			Main_hall_door_anim.at(region_index).current_frame = cur_frame;
+			Main_hall_door_anim.at(region_index).anim_time = anim_time;
+		}
+
+		// Change the background
+		if (!bg_filename.empty()) {
+			bm_release(Main_hall_bitmap);
+			Main_hall_bitmap = bm_load(bg_filename);
+		}
+	}
 }
 
 /**
- * Lookup if Vasudan main hall, based upon background graphics
+ * Make the vasudan main hall funny
+ * In retail you had to leave the mainhall and return for it to actually take effect
+ * Custom mainhalls can take effect immediately, though
  */
-bool main_hall_is_vasudan()
+void main_hall_vasudan_funny()
+{
+	Vasudan_funny = !Vasudan_funny;
+	main_hall_set_door_headz(Vasudan_funny);
+}
+
+/**
+ * Lookup if retail Vasudan main hall, based upon background graphics
+ */
+bool main_hall_is_retail_vasudan()
 {
 	return !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
+}
+
+/**
+* Lookup if fish are allowed in a custom main hall
+*/
+bool main_hall_allows_fish()
+{
+	return Main_hall->allow_fish;
+}
+
+/**
+* Lookup if a headz graphic is defined in a custom main hall
+*/
+bool main_hall_allows_headz()
+{
+	return Main_hall->headz_index >= 0 && !Main_hall->headz_anim.empty();
 }
 
 /**
