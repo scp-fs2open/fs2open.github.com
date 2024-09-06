@@ -68,6 +68,8 @@ public:
 
 	// allow fishies! (and headz...)
 	bool allow_fish = false;
+	SCP_string l_fish_anim;
+	SCP_string r_fish_anim;
 	int headz_index = -1;
 	SCP_string headz_anim;
 	SCP_string headz_background;
@@ -238,5 +240,7 @@ void main_hall_pause();
 void main_hall_unpause();
 
 void main_hall_toggle_help(bool enable);
+
+void main_hall_start_fishies();
 
 #endif
