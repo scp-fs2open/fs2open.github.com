@@ -24,7 +24,7 @@ typedef struct fish {
 	bool	swimming;				// whee
 } fish;
 
-#define MAX_FISH					24 // was 12.. bigger screens need more fish!
+constexpr int MAX_FISH = 24; // was 12.. bigger screens need more fish!
 SCP_vector<fish> All_fish;
 
 // fish anim names
@@ -115,7 +115,7 @@ void fish_flush(fish *f)
 	f->swimming = false;
 }
 
-void fishtank_start(SCP_string f_left, SCP_string f_right)
+void fishtank_start(const SCP_string& f_left, const SCP_string& f_right)
 {
 	if(Fish_inited){
 		return;

@@ -2833,7 +2833,6 @@ void main_hall_set_door_headz(bool enable, bool init)
 			anim_filename = Main_hall->headz_anim;
 			bg_filename = Main_hall->headz_background;
 		}
-		// Custom mainhalls don't need to change the background because we have true transparency now
 	}
 
 	// If we're toggling headz off
@@ -2842,11 +2841,10 @@ void main_hall_set_door_headz(bool enable, bool init)
 		bg_filename = Main_hall->bitmap;
 	}
 
-	// If we got a match, then let's rip off some headz
+	// If we got a match, then let's rip off some headz (or put them back on if we're toggling off I guess)
 	if (region_index >= 0) {
 		// Change the door anim
 		if (!anim_filename.empty()) {
-			// On init we skip setting frames
 			int cur_frame;
 			float anim_time;
 
@@ -2875,9 +2873,7 @@ void main_hall_set_door_headz(bool enable, bool init)
 }
 
 /**
- * Make the vasudan main hall funny
- * In retail you had to leave the mainhall and return for it to actually take effect
- * Custom mainhalls can take effect immediately, though
+ * Make the main hall funny
  */
 void main_hall_vasudan_funny()
 {
