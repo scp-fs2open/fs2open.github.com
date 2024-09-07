@@ -16,12 +16,12 @@
 
 // fish
 typedef struct fish {
-	float x, y;						// x and y coords
-	float	x_speed, y_speed;		// x and y speed
-	int	left;						// left or right
-	generic_anim ga;				// the animation
-	bool	onscreen;				
-	bool	swimming;				// whee
+	float x, y;              // x and y coords
+	float x_speed, y_speed;  // x and y speed
+	bool left;	             // left or right
+	generic_anim anim;       // the animation
+	bool onscreen;           // visible? 			
+	bool swimming;           // whee
 } fish;
 
 constexpr int MAX_FISH = 24; // was 12.. bigger screens need more fish!
@@ -51,27 +51,27 @@ void fish_generate()
 	fish* f = &(*it);
 
 	// Pick a direction randomly
-	f->left = frand_range(0.0f, 1.0f) < 0.5f ? 0 : 1;
+	f->left = frand_range(0.0f, 1.0f) < 0.5f ? false : true;
 
 	// Let it freeeeeeee!
 	f->swimming = true;
 
 	// Set the animation
 	if (f->left) {
-		generic_anim_init(&f->ga, Fish_left_anim_name);
+		generic_anim_init(&f->anim, Fish_left_anim_name);
 
 		// Doh! Something went wrong. Maybe the fish escaped!
-		if (generic_anim_stream(&f->ga) == -1) {
+		if (generic_anim_stream(&f->anim) == -1) {
 			f->swimming = false;
-			generic_anim_init(&f->ga);
+			generic_anim_init(&f->anim);
 		}
 	} else {
-		generic_anim_init(&f->ga, Fish_right_anim_name);
+		generic_anim_init(&f->anim, Fish_right_anim_name);
 		
 		// Doh! Something went wrong. Maybe the fish escaped!
-		if (generic_anim_stream(&f->ga) == -1) {
+		if (generic_anim_stream(&f->anim) == -1) {
 			f->swimming = false;
-			generic_anim_init(&f->ga);
+			generic_anim_init(&f->anim);
 		}
 	}
 
@@ -79,7 +79,7 @@ void fish_generate()
 	if(f->left){
 		f->x = gr_screen.max_w_unscaled_zoomed + frand_range(0.0f, 50.0f);
 	} else {
-		f->x = frand_range(0.0f, -50.0f) - f->ga.width;
+		f->x = frand_range(0.0f, -50.0f) - f->anim.width;
 	}
 	f->y = frand_range(-40.0f, (float)gr_screen.max_h_unscaled_zoomed + 40.0f);
 
@@ -107,8 +107,8 @@ void fish_flush(fish *f)
 	}
 
 	// Catch and release or something
-	if (f->ga.first_frame != -1) {
-		generic_anim_unload(&f->ga);
+	if (f->anim.first_frame != -1) {
+		generic_anim_unload(&f->anim);
 	}
 
 	// No longer swimming
@@ -176,8 +176,8 @@ void fishtank_stop()
 
 	// Release stuff		
 	for (fish& f : All_fish) {
-		if (f.ga.first_frame != -1) {
-			generic_anim_unload(&f.ga);
+		if (f.anim.first_frame != -1) {
+			generic_anim_unload(&f.anim);
 		}
 		f.swimming = false;
 	}
@@ -213,8 +213,8 @@ void fishtank_process()
 
 		// Check if it's on screen still
 		bool onscreen = false;
-		if ((f.x < (float)gr_screen.max_w_unscaled_zoomed) && ((f.x + f.ga.width) >= 0.0f) &&
-			(f.y < (float)gr_screen.max_h_unscaled_zoomed) && ((f.y + f.ga.height) >= 0.0f)) {
+		if ((f.x < (float)gr_screen.max_w_unscaled_zoomed) && ((f.x + f.anim.width) >= 0.0f) &&
+			(f.y < (float)gr_screen.max_h_unscaled_zoomed) && ((f.y + f.anim.height) >= 0.0f)) {
 			onscreen = true;
 		}
 
@@ -231,7 +231,7 @@ void fishtank_process()
 
 		// Render the fishy!
 		if (f.onscreen) {
-			generic_anim_render(&f.ga, flFrametime, (int)f.x, (int)f.y);
+			generic_anim_render(&f.anim, flFrametime, (int)f.x, (int)f.y);
 		}
 	}
 }
