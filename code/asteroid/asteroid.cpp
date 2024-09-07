@@ -42,6 +42,7 @@
 #include "weapon/weapon.h"
 
 #include <algorithm>
+#include <random>
 
 #define			ASTEROID_OBJ_USED	(1<<0)				// flag used in asteroid_obj struct
 #define			MAX_ASTEROID_OBJS	MAX_ASTEROIDS		// max number of asteroids tracked in asteroid list
@@ -1813,7 +1814,8 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 								roids_to_create.push_back(split->asteroid_type);
 					}
 
-					random_shuffle(roids_to_create.begin(), roids_to_create.end());
+					std::random_device rd;
+					std::shuffle(roids_to_create.begin(), roids_to_create.end(), std::mt19937(rd()));
 
 					size_t total_roids = roids_to_create.size();
 					for (size_t i = 0; i < total_roids; i++) {
