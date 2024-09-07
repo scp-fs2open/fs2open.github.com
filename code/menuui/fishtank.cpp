@@ -18,13 +18,14 @@
 typedef struct fish {
 	float x, y;              // x and y coords
 	float x_speed, y_speed;  // x and y speed
+	float scale;             // big fish or small fish?
 	bool left;	             // left or right
 	generic_anim anim;       // the animation
 	bool onscreen;           // visible? 			
 	bool swimming;           // whee
 } fish;
 
-constexpr int MAX_FISH = 24; // was 12.. bigger screens need more fish!
+constexpr size_t MAX_FISH = 24; // was 12.. bigger screens need more fish!
 SCP_vector<fish> All_fish;
 
 // fish anim names
@@ -51,7 +52,7 @@ void fish_generate()
 	fish* f = &(*it);
 
 	// Pick a direction randomly
-	f->left = frand_range(0.0f, 1.0f) < 0.5f ? false : true;
+	f->left = frand_range(0.0f, 1.0f) >= 0.5f;
 
 	// Let it freeeeeeee!
 	f->swimming = true;
@@ -74,6 +75,9 @@ void fish_generate()
 			generic_anim_init(&f->anim);
 		}
 	}
+
+	// Pick a scale
+	f->scale = frand_range(0.5f, 1.0f);
 
 	// Pick a starting location
 	if(f->left){
@@ -189,16 +193,50 @@ void fishtank_stop()
 	Fish_inited = 0;
 }
 
+void fishtank_change_speed(float& speed, float increase, float decrease, float multiplier)
+{
+	float speed_modifier = (frand_range(0.0f, 1.0f) < 0.5f) ? increase : decrease;
+	float min = 5.0f * multiplier;
+	float max = 20.0f * multiplier;
+
+	// Positive speed
+	if (speed > 0.0f) {
+		if ((speed < min && speed_modifier == decrease) || (speed > max && speed_modifier == increase)) {
+			speed_modifier = 1.0f;
+		}
+	// Negative speed
+	} else {
+		if ((speed > -min && speed_modifier == decrease) || (speed < -max && speed_modifier == increase)) {
+			speed_modifier = 1.0f;
+		}
+	}
+
+	speed = speed * speed_modifier;
+}
+
 void fishtank_process()
 {
 	if(!Fish_inited){
 		return;
 	}
 
+	// Small chance to add a fish
+	if (All_fish.size() < MAX_FISH) {
+		if (frand_range(0.0f, 1.0f) < 0.0005f) {
+			fish new_fish;
+			new_fish.swimming = false;
+			All_fish.push_back(new_fish);
+			fish_generate();
+		}
+	}
+
 	// Process all fish
-	for (fish& f : All_fish) {
+	for (auto it = All_fish.begin(); it != All_fish.end();) {
+		fish& f = *it;
+
 		// Not swimming?
 		if (!f.swimming) {
+			++it;
 			continue;
 		}
 
@@ -207,7 +245,16 @@ void fishtank_process()
 			f.y_speed *= -1;
 		}
 
-		// Move it along according to it's speed settings
+		// Small chance to slightly change speed
+		if (frand_range(0.0f, 1.0f) < 0.001f) {
+			if (frand_range(0.0f, 1.0f) < 0.5f) {
+				fishtank_change_speed(f.x_speed, 1.7f, 0.5f, gr_screen.max_w / 1024.0f);
+			} else {
+				fishtank_change_speed(f.y_speed, 1.1f, 0.9f, gr_screen.max_h / 786.0f);
+			}
+		}
+
+		// Move it along according to its speed settings
 		f.x += f.x_speed * flFrametime;
 		f.y += f.y_speed * flFrametime;
 
@@ -218,20 +265,27 @@ void fishtank_process()
 			onscreen = true;
 		}
 
-		// If it was onscreen before, but is no longer, flush it (down the toilet?!) and make a new fish
+		// If it was onscreen before but is no longer, yeet it or flush it
 		if (f.onscreen && !onscreen) {
-			fish_flush(&f);
-
-			fish_generate();
+			// Small chance to yeet the fish instead of flushing it. I didn't come up with this language. Don't ask me.
+			if (frand_range(0.0f, 1.0f) < 0.3f) {
+				it = All_fish.erase(it);
+			} else {
+				fish_flush(&f); // Flush the fish and keep it in the pool. How does that make sense?
+				fish_generate();
+				++it;
+			}
 			continue;
 		}
 
-		// Otherwise just mark its current status
+		// Otherwise, just mark its current status
 		f.onscreen = onscreen;
 
-		// Render the fishy!
+		// Render the fish if it's onscreen
 		if (f.onscreen) {
-			generic_anim_render(&f.anim, flFrametime, (int)f.x, (int)f.y);
+			generic_anim_render(&f.anim, flFrametime, (int)f.x, (int)f.y, false, nullptr, f.scale);
 		}
+
+		++it;
 	}
 }
