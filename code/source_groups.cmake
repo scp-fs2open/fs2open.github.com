@@ -400,6 +400,7 @@ add_file_folder("GlobalIncs"
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/type_traits.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
 	globalincs/utility.h

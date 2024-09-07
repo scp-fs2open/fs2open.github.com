@@ -3,17 +3,11 @@
 #include "utils/RandomRange.h"
 #include "math/curve.h"
 #include "parse/encrypt.h"
+#include "globalincs/type_traits.h"
 
 #include <optional>
 #include <type_traits>
 #include <utility>
-
-template<typename>   constexpr bool is_optional = false;
-template<typename T> constexpr bool is_optional<std::optional<T>> = true;
-template<> 			 constexpr bool is_optional<std::nullopt_t> = true;
-
-template <typename T> struct is_tuple : std::false_type {};
-template <typename... U> struct is_tuple<std::tuple <U...>> : std::true_type {};
 
 //
 // Modular Curve Input Grabbers
@@ -66,13 +60,13 @@ struct modular_curves_submember_input {
 		else {
 			const auto& current_access = grab_part<input_type, grabber>(input.get());
 			//If the current grabber isn't guaranteed to succeed, check for completion first
-			if constexpr (is_optional<std::decay_t<decltype(current_access)>>) {
+			if constexpr (is_optional_v<std::decay_t<decltype(current_access)>>) {
 				using lower_return_type = decltype(grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access));
-				using return_type = typename std::conditional_t<is_optional<std::decay_t<lower_return_type>>, lower_return_type, std::optional<lower_return_type>>;
+				using return_type = typename std::conditional_t<is_optional_v<std::decay_t<lower_return_type>>, lower_return_type, std::optional<lower_return_type>>;
 				//If we're already nullopt (i.e. this array access failed) return early
 				if (current_access.has_value()) {
 					//Now, it's possible that lower acceses _also_ produce optionals. In this case, we need to forward the lower result, not re-wrap it.
-					if constexpr (is_optional<std::decay_t<lower_return_type>>) {
+					if constexpr (is_optional_v<std::decay_t<lower_return_type>>) {
 						return grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access);
 					}
 					else{
@@ -101,7 +95,7 @@ struct modular_curves_submember_input {
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
 		const auto& result = grab_internal<std::decay_t<decltype(grab_from_tuple<tuple_idx, input_type>(input).get())>, grabbers...>(grab_from_tuple<tuple_idx, input_type>(input));
-		if constexpr (is_optional<typename std::decay_t<decltype(result)>>) {
+		if constexpr (is_optional_v<typename std::decay_t<decltype(result)>>) {
 			if (result.has_value())
 				return result->get();
 			else
@@ -276,7 +270,7 @@ struct modular_curves_definition {
 	// Helper functions to compute the correct type for derived modular curved sets. Meant for unevaluated context (i.e. within a decltype) ONLY!
 	template<typename maybe_tuple, typename... tuple_additions>
 	static auto unevaluated_maybe_tuple_cat(const maybe_tuple& in, const tuple_additions&... adds) {
-		if constexpr(is_tuple<maybe_tuple>::value)
+		if constexpr(is_tuple_v<maybe_tuple>)
 			return std::tuple_cat(in, std::tuple<const tuple_additions&...>(adds...));
 		else
 			return std::tuple<const maybe_tuple&, const tuple_additions&...>(in, adds...);
