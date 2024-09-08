@@ -826,8 +826,10 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
  	}
 
 	for ( i = 0; i < smi->num_arcs; i++ ) {
+		auto &arc = smi->electrical_arcs[i];
+
 		// pick a color based upon arc type
-		switch ( smi->arc_type[i] ) {
+		switch ( arc.type ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_DAMAGED:
 			if ( Random::flip_coin() )	{
@@ -853,14 +855,14 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 		case MARC_TYPE_SCRIPTED:
 		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				primary = smi->arc_primary_color_1[i];
+				primary = arc.primary_color_1;
 			} else {
-				primary = smi->arc_primary_color_2[i];
+				primary = arc.primary_color_2;
 			}
 
-			secondary = smi->arc_secondary_color[i];
+			secondary = arc.secondary_color;
 
-			width = smi->arc_width[i];
+			width = arc.width;
 
 			break;
 
@@ -887,12 +889,12 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			break;
 
 		default:
-			UNREACHABLE("Unknown arc type of %d found in model_render_add_lightning(), please contact an SCP coder!", smi->arc_type[i]);
+			UNREACHABLE("Unknown arc type of %d found in model_render_add_lightning(), please contact an SCP coder!", arc.type);
 		}
 
 		// render the actual arc segment
 		if (width > 0.0f)
-			scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
+			scene->add_arc(&arc.endpoint_1, &arc.endpoint_2, &primary, &secondary, width);
 	}
 }
 

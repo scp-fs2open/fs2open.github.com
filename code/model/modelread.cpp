@@ -5221,15 +5221,16 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	auto smi = &pmi->submodel[sub_model_num];
 
 	if ( smi->num_arcs < MAX_ARC_EFFECTS )	{
-		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
-		smi->arc_pts[smi->num_arcs][0] = *v1;
-		smi->arc_pts[smi->num_arcs][1] = *v2;
+		auto &new_arc = smi->electrical_arcs[smi->num_arcs];
+		new_arc.type = static_cast<ubyte>(arc_type);
+		new_arc.endpoint_1 = *v1;
+		new_arc.endpoint_2 = *v2;
 
 		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
-			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
-			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
-			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
-			smi->arc_width[smi->num_arcs] = width;
+			new_arc.primary_color_1 = *primary_color_1;
+			new_arc.primary_color_2 = *primary_color_2;
+			new_arc.secondary_color = *secondary_color;
+			new_arc.width = width;
 		}
 
 		smi->num_arcs++;

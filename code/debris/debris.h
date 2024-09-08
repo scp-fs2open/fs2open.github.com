@@ -30,6 +30,12 @@ FLAG_LIST(Debris_Flags) {
 	NUM_VALUES
 };
 
+struct debris_electrical_arc
+{
+	vec3d endpoint_1;
+	vec3d endpoint_2;
+	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
+};
 
 typedef struct debris {
 	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
@@ -50,8 +56,7 @@ typedef struct debris {
 	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
 	fix		time_started;			// time when debris was created
 
-	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];	// The endpoints of each arc
-	TIMESTAMP	arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  Invalid is not used
+	debris_electrical_arc electrical_arcs[MAX_DEBRIS_ARCS];
 	int		arc_frequency;					// Starts at 1000, gets bigger
 
 	int		parent_alt_name;
