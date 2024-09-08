@@ -56,6 +56,8 @@ int Debris_num_submodels = 0;
 
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
+// Find the first available arc slot.
+debris_electrical_arc *debris_find_electrical_arc_slot(debris *db);
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
@@ -262,36 +264,36 @@ void debris_process_post(object * obj, float frame_time)
 
 			// Create the spark effects
 			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-				if ( !db->arc_timestamp[i].isValid() )	{
+				auto arc = &db->electrical_arcs[i];
+				if ( !arc->timestamp.isValid() )	{
 
-					db->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
+					arc->timestamp = _timestamp(lifetime);	// live up to a second
 
 					switch( n )	{
 					case 0:
-						db->arc_pts[i][0] = v1;
-						db->arc_pts[i][1] = v2;
+						arc->endpoint_1 = v1;
+						arc->endpoint_2 = v2;
 						break;
 					case 1:
-						db->arc_pts[i][0] = v2;
-						db->arc_pts[i][1] = v3;
+						arc->endpoint_1 = v2;
+						arc->endpoint_2 = v3;
 						break;
 
 					case 2:
-						db->arc_pts[i][0] = v2;
-						db->arc_pts[i][1] = v4;
+						arc->endpoint_1 = v2;
+						arc->endpoint_2 = v4;
 						break;
 
 					default:
 						Int3();
 					}
-						
+
 					n++;
 					if ( n == n_arcs )
 						break;	// Don't need to create anymore
 				}
 			}
 
-	
 			// rotate v2 out of local coordinates into world.
 			// Use v2 since it is used in every bolt.  See above switch().
 			vec3d snd_pos;
@@ -318,16 +320,20 @@ void debris_process_post(object * obj, float frame_time)
 		}
 	}
 
-	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-		if ( db->arc_timestamp[i].isValid() )	{
-			if ( timestamp_elapsed( db->arc_timestamp[i] ) )	{
+	for (auto &arc: db->electrical_arcs) {
+		if (arc.timestamp.isValid()) {
+			if (timestamp_elapsed(arc.timestamp)) {
 				// Kill off the spark
-				db->arc_timestamp[i] = TIMESTAMP::invalid();
+				arc.timestamp = TIMESTAMP::invalid();
 			} else {
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					db->arc_pts[i][mr % 2] = submodel_get_random_point(db->model_num, db->submodel_num);
+					auto pt = submodel_get_random_point(db->model_num, db->submodel_num);
+					if (mr % 2 == 0)
+						arc.endpoint_1 = pt;
+					else
+						arc.endpoint_2 = pt;
 				}
 			}
 		}
@@ -578,7 +584,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	db->damage_mult = 1.0f;
 
 	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{	// NOLINT
-		db->arc_timestamp[i] = TIMESTAMP::invalid();
+		db->electrical_arcs[i].timestamp = TIMESTAMP::invalid();
 	}
 
 	if ( db->is_hull )	{
@@ -1145,7 +1151,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs,
 */
 void debris_render(object * obj, model_draw_list *scene)
 {
-	int			i, num, swapped;
+	int			num, swapped;
 	debris		*db;
 
 	swapped = -1;
@@ -1180,9 +1186,9 @@ void debris_render(object * obj, model_draw_list *scene)
 
 		// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 		if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
-			for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-				if ( db->arc_timestamp[i].isValid() )	{
-					model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
+			for (auto &arc: db->electrical_arcs) {
+				if ( arc.timestamp.isValid() )	{
+					model_instance_add_arc( pm, pmi, db->submodel_num, &arc.endpoint_1, &arc.endpoint_2, MARC_TYPE_DAMAGED );
 				}
 			}
 		}
@@ -1231,4 +1237,20 @@ void create_generic_debris(object* ship_objp, vec3d* pos, float min_num_debris, 
 		int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
 		debris_create(ship_objp, model_num, -1, &create_pos, pos, 0, speed_mult);
 	}
+}
+
+debris_electrical_arc *debris_find_electrical_arc_slot(debris *db)
+{
+	size_t i = 0;
+	for (auto& ii : db->electrical_arcs)
+	{
+		if (!ii.timestamp.isValid())
+			break;
+		i++;
+	}
+
+	if (i == MAX_DEBRIS_ARCS)
+		return nullptr;
+
+	return &db->electrical_arcs[i];
 }
