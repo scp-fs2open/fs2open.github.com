@@ -7029,12 +7029,10 @@ void ship::clear()
 	for (int i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
 		sub_expl_sound_handle[i] = sound_handle::invalid();
 
-	memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+	memset(&electrical_arcs, 0, MAX_ARC_EFFECTS * sizeof(ship_electrical_arc));
 	for (int i = 0; i < MAX_ARC_EFFECTS; i++)
-		arc_timestamp[i] = TIMESTAMP::invalid();
-	memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
-	memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
-	arc_next_time = timestamp(-1);
+		electrical_arcs[i].timestamp = TIMESTAMP::invalid();
+	arc_next_time = TIMESTAMP::invalid();
 
 	emp_intensity = -1.0f;
 	emp_decr = 0.0f;
@@ -7487,9 +7485,8 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
 	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
 	
-	for (int i = 0; i < (int)sip->ship_passive_arcs.size(); i++)
-		shipp->passive_arc_next_times.push_back(timestamp(0));
-
+	for (size_t i = 0; i < sip->ship_passive_arcs.size(); i++)
+		shipp->passive_arc_next_times.push_back(TIMESTAMP::immediate());
 }
 
 /**
@@ -21397,18 +21394,9 @@ void ship_render(object* obj, model_draw_list* scene)
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
-		for ( int i = 0; i < MAX_ARC_EFFECTS; i++ )	{
-			if ( shipp->arc_timestamp[i].isValid() ) {
-				model_instance_add_arc(pm,
-					pmi,
-					-1,
-					&shipp->arc_pts[i][0],
-					&shipp->arc_pts[i][1],
-					shipp->arc_type[i],
-					&shipp->arc_primary_color_1[i],
-					&shipp->arc_primary_color_2[i],
-					&shipp->arc_secondary_color[i],
-					shipp->arc_width[i]);
+		for (auto &arc: shipp->electrical_arcs)	{
+			if (arc.timestamp.isValid()) {
+				model_instance_add_arc(pm, pmi, -1, &arc.endpoint_1, &arc.endpoint_2, arc.type, &arc.primary_color_1, &arc.primary_color_2, &arc.secondary_color, arc.width);
 			}
 		}
 	}
@@ -21845,4 +21833,20 @@ int ship_check_visibility(const ship* viewed, ship* viewer)
 	}
 
 	return ship_is_visible;
+}
+
+ship_electrical_arc *ship_find_electrical_arc_slot(ship *shipp)
+{
+	size_t i = 0;
+	for (auto &ii : shipp->electrical_arcs)
+	{
+		if (!ii.timestamp.isValid())
+			break;
+		i++;
+	}
+
+	if (i == MAX_ARC_EFFECTS)
+		return nullptr;
+
+	return &shipp->electrical_arcs[i];
 }

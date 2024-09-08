@@ -2773,24 +2773,24 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 	auto shipp = &Ships[objh->objp()->instance];
 
 	// spawn the arc in the first unused slot
-	for (int i = 0; i < MAX_ARC_EFFECTS; i++) {
-		if (!shipp->arc_timestamp[i].isValid()) {
-			shipp->arc_timestamp[i] = _timestamp(fl2i(duration * MILLISECONDS_PER_SECOND));
+	auto arc = ship_find_electrical_arc_slot(shipp);
+	if (arc)
+	{
+		arc->timestamp = _timestamp(fl2i(duration * MILLISECONDS_PER_SECOND));
 
-			shipp->arc_pts[i][0] = *v1;
-			shipp->arc_pts[i][1] = *v2;
+		arc->endpoint_1 = *v1;
+		arc->endpoint_2 = *v2;
 
-			//Set the arc colors
-			shipp->arc_primary_color_1[i] = Arc_color_damage_p1;
-			shipp->arc_primary_color_2[i] = Arc_color_damage_p2;
-			shipp->arc_secondary_color[i] = Arc_color_damage_s1;
+		//Set the arc colors
+		arc->primary_color_1 = Arc_color_damage_p1;
+		arc->primary_color_2 = Arc_color_damage_p2;
+		arc->secondary_color = Arc_color_damage_s1;
 
-			shipp->arc_type[i] = MARC_TYPE_SCRIPTED;
+		arc->type = MARC_TYPE_SCRIPTED;
 
-			shipp->arc_width[i] = width;
+		arc->width = width;
 
-			return ade_set_args(L, "i", i + 1);	// FS2 -> Lua
-		}
+		return ade_set_args(L, "i", static_cast<int>(arc - shipp->electrical_arcs) + 1);	// FS2 -> Lua
 	}
 
 	return ade_set_args(L, "i", 0);
@@ -2815,7 +2815,7 @@ ADE_FUNC(DeleteElectricArc, l_Ship, "number index",
 	index--;	// Lua -> FS2
 	if (index >= 0 && index < MAX_ARC_EFFECTS)
 	{
-		shipp->arc_timestamp[index] = TIMESTAMP::invalid();
+		shipp->electrical_arcs[index].timestamp = TIMESTAMP::invalid();
 	}
 
 	return ADE_RETURN_NIL;
@@ -2844,11 +2844,12 @@ ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector sec
 	index--;	// Lua -> FS2
 	if (index >= 0 && index < MAX_ARC_EFFECTS)
 	{
-		shipp->arc_pts[index][0] = *v1;
-		shipp->arc_pts[index][1] = *v2;
+		auto &arc = shipp->electrical_arcs[index];
+		arc.endpoint_1 = *v1;
+		arc.endpoint_2 = *v2;
 
 		if (args == 5)
-			shipp->arc_width[index] = width;
+			arc.width = width;
 	}
 
 	return ADE_RETURN_NIL;

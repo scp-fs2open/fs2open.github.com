@@ -1381,18 +1381,16 @@ void obj_move_all_post(object *objp, float frametime)
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
 				if ( (Detail.lighting > 3) && (objp != Viewer_obj) ) {
-					int i;
-					ship		*shipp;
-					shipp = &Ships[objp->instance];
+					auto shipp = &Ships[objp->instance];
 
-					for (i=0; i<MAX_ARC_EFFECTS; i++ )	{
-						if ( shipp->arc_timestamp[i].isValid() )	{
+					for (auto &arc: shipp->electrical_arcs) {
+						if ( arc.timestamp.isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
-							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
+							vm_vec_unrotate(&tmp1,&arc.endpoint_1,&objp->orient);
 							vm_vec_add2(&tmp1,&objp->pos);
 
-							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
+							vm_vec_unrotate(&tmp2,&arc.endpoint_2,&objp->orient);
 							vm_vec_add2(&tmp2,&objp->pos);
 
 							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
@@ -1478,19 +1476,17 @@ void obj_move_all_post(object *objp, float frametime)
 			// Make any electrical arcs on debris cast light
 			if (Arc_light)	{
 				if ( Detail.lighting > 3 ) {
-					int i;
-					debris		*db;
-					db = &Debris[objp->instance];
+					auto db = &Debris[objp->instance];
 
 					if (db->arc_frequency > 0) {
-						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-							if ( db->arc_timestamp[i].isValid() )	{
+						for (auto &arc: db->electrical_arcs) {
+							if ( arc.timestamp.isValid() )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
-								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
+								vm_vec_unrotate(&tmp1,&arc.endpoint_1,&objp->orient);
 								vm_vec_add2(&tmp1,&objp->pos);
 
-								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
+								vm_vec_unrotate(&tmp2,&arc.endpoint_2,&objp->orient);
 								vm_vec_add2(&tmp2,&objp->pos);
 
 								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );

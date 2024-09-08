@@ -96,6 +96,23 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
+// Electrical Arc Effect Info
+// Sets a spark for this submodel between vertex v1 and v2
+struct electrical_arc
+{
+	color	primary_color_1;
+	color	primary_color_2;
+	color	secondary_color;
+	float	width;								// only used for MARC_TYPE_SHIP and MARC_TYPE_SCRIPTED
+	vec3d	endpoint_1;
+	vec3d	endpoint_2;
+	ubyte	type;								// see MARC_TYPE_* defines
+};
+
+struct model_electrical_arc : electrical_arc
+{
+};
+
 // Data specific to a particular instance of a submodel.
 struct submodel_instance
 {
@@ -127,30 +144,16 @@ struct submodel_instance
 	vec3d	canonical_offset = vmd_zero_vector;
 	vec3d	canonical_prev_offset = vmd_zero_vector;
 
-	// --- these fields used to be in bsp_info ---
-
-	// Electrical Arc Effect Info
-	// Sets a spark for this submodel between vertex v1 and v2	
-	int		num_arcs = 0;											// See model_add_arc for more info	
-	color   arc_primary_color_1[MAX_ARC_EFFECTS];
-	color   arc_primary_color_2[MAX_ARC_EFFECTS];
-	color	arc_secondary_color[MAX_ARC_EFFECTS];
-	float	arc_width[MAX_ARC_EFFECTS];								// only used for MARC_TYPE_SHIP and MARC_TYPE_SCRIPTED
-	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
-	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
+	int		num_arcs = 0;											// See model_add_arc for more info
+	model_electrical_arc electrical_arcs[MAX_ARC_EFFECTS];
 
 	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
-	vec3d	rotation_axis;
-	vec3d	translation_axis;
+	vec3d	rotation_axis = vmd_zero_vector;
+	vec3d	translation_axis = vmd_zero_vector;
 
 	submodel_instance()
 	{
-		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
-		memset(&arc_primary_color_1, 0, MAX_ARC_EFFECTS * sizeof(color));
-		memset(&arc_primary_color_2, 0, MAX_ARC_EFFECTS * sizeof(color));
-		memset(&arc_secondary_color, 0, MAX_ARC_EFFECTS * sizeof(color));
-		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
-		memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
+		memset(electrical_arcs, 0, MAX_ARC_EFFECTS * sizeof(model_electrical_arc));
 	}
 };
 
