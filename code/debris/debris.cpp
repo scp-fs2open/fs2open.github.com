@@ -302,14 +302,13 @@ void debris_process_post(object * obj, float frame_time)
 						arc->endpoint_1 = v2;
 						arc->endpoint_2 = v3;
 						break;
-
 					case 2:
 						arc->endpoint_1 = v2;
 						arc->endpoint_2 = v4;
 						break;
 
 					default:
-						Int3();
+						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
 
 					n++;
