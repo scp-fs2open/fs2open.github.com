@@ -2220,14 +2220,13 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					arc->endpoint_1 = v2;
 					arc->endpoint_2 = v3;
 					break;
-
 				case 2:
 					arc->endpoint_1 = v2;
 					arc->endpoint_2 = v4;
 					break;
 
 				default:
-					Int3();
+					UNREACHABLE("Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
 				}
 
 				// determine what kind of arc to create
@@ -2244,30 +2243,30 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			} else if (arc->type == MARC_TYPE_DAMAGED || arc->type == MARC_TYPE_EMP) {
 				num_damage_arcs ++;
 			}
+		}
 	
-			// rotate v2 out of local coordinates into world.
-			// Use v2 since it is used in every bolt.  See above switch().
-			vec3d snd_pos;
-			vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
-			vm_vec_add2(&snd_pos, &obj->pos );
+		// rotate v2 out of local coordinates into world.
+		// Use v2 since it is used in every bolt.  See above switch().
+		vec3d snd_pos;
+		vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
+		vm_vec_add2(&snd_pos, &obj->pos );
 
-			//Play a sound effect
-			if ( lifetime > 750 )	{
-				// 1.00 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  500 )	{
-				// 0.75 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  250 )	{
-				// 0.50 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  100 )	{
-				// 0.25 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
-			} else {
-				// 0.10 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
-			}
+		//Play a sound effect
+		if ( lifetime > 750 )	{
+			// 1.00 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  500 )	{
+			// 0.75 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  250 )	{
+			// 0.50 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  100 )	{
+			// 0.25 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
+		} else {
+			// 0.10 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 		}
 	}
 
