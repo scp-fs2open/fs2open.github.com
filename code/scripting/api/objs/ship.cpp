@@ -41,6 +41,7 @@
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
+extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 namespace scripting {
 namespace api {
@@ -2753,8 +2754,9 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
-ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width",
-	"Creates an electric arc on the ship between two points in the ship's reference frame, for the specified duration in seconds, and the specified width in meters.",
+ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width, [number segment_depth, boolean persistent_points]",
+	"Creates an electric arc on the ship between two points in the ship's reference frame, for the specified duration in seconds, and the specified width in meters.  Optionally, "
+		"specify the segment depth (the number of times the spark is divided) and whether to generate a set of arc points that will persist from frame to frame.",
 	"number",
 	"The arc index if successful, 0 otherwise")
 {
@@ -2763,8 +2765,10 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 	vec3d* v2;
 	float duration = 0.0f;
 	float width = 0.0f;
+	int segment_depth = 4;
+	bool persistent_points = false;
 
-	if (!ade_get_args(L, "oooff", l_Ship.GetPtr(&objh), l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &duration, &width))
+	if (!ade_get_args(L, "oooff|ib", l_Ship.GetPtr(&objh), l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &duration, &width, &segment_depth, &persistent_points))
 		return ade_set_error(L, "i", 0);
 
 	if (!objh->isValid())
@@ -2789,6 +2793,19 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 		arc->type = MARC_TYPE_SCRIPTED;
 
 		arc->width = width;
+		arc->segment_depth = static_cast<ubyte>(segment_depth);
+
+		// we might want to generate the arc points ahead of time, rather than every frame
+		if (persistent_points)
+		{
+			arc->persistent_arc_points.reset(new SCP_vector<vec3d>());
+
+			// need to add the first point
+			arc->persistent_arc_points->push_back(*v1);
+
+			// this should fill in all of the middle, and the last, points
+			interp_generate_arc_segment(*arc->persistent_arc_points, v1, v2, static_cast<ubyte>(segment_depth), 1);	// start at depth 1 for the benefit of Lua
+		}
 
 		return ade_set_args(L, "i", static_cast<int>(arc - shipp->electrical_arcs.data()) + 1);	// FS2 -> Lua
 	}
@@ -2821,8 +2838,9 @@ ADE_FUNC(DeleteElectricArc, l_Ship, "number index",
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector secondPoint, [number width]",
-	"Sets the endpoints (in the ship's reference frame) and width of the specified electric arc on the ship, .",
+ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector secondPoint, [number width, number segment_depth, boolean persistent_points]",
+	"Sets the endpoints (in the ship's reference frame), width, and segment depth of the specified electric arc on the ship, plus whether the arc has persistent points.  "
+		"If this arc already had a collection of persistent points and it still does after this function is called, the points will be regenerated.",
 	nullptr,
 	nullptr)
 {
@@ -2831,8 +2849,10 @@ ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector sec
 	vec3d* v1;
 	vec3d* v2;
 	float width = 0.0f;
+	int segment_depth = 4;
+	bool persistent_points = false;
 
-	int args = ade_get_args(L, "oioo|f", l_Ship.GetPtr(&objh), &index, l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &width);
+	int args = ade_get_args(L, "oioo|fib", l_Ship.GetPtr(&objh), &index, l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &width, &segment_depth, &persistent_points);
 	if (args < 4)
 		return ADE_RETURN_NIL;
 
@@ -2848,8 +2868,35 @@ ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector sec
 		arc.endpoint_1 = *v1;
 		arc.endpoint_2 = *v2;
 
-		if (args == 5)
+		if (args >= 5)
 			arc.width = width;
+		if (args >= 6)
+			arc.segment_depth = static_cast<ubyte>(segment_depth);
+		if (args >= 7)
+		{
+			if (persistent_points)
+			{
+				if (!arc.persistent_arc_points)
+					arc.persistent_arc_points.reset(new SCP_vector<vec3d>());
+			}
+			else
+			{
+				if (arc.persistent_arc_points)
+					arc.persistent_arc_points.reset();
+			}
+		}
+
+		// persistent points need to be regenerated when the arc is moved; they also need to be generated if we are adding them for the first time
+		if (arc.persistent_arc_points)
+		{
+			arc.persistent_arc_points->clear();
+
+			// need to add the first point
+			arc.persistent_arc_points->push_back(*v1);
+
+			// this should fill in all of the middle, and the last, points
+			interp_generate_arc_segment(*arc.persistent_arc_points, v1, v2, static_cast<ubyte>(segment_depth), 1);	// start at depth 1 for the benefit of Lua
+		}
 	}
 
 	return ADE_RETURN_NIL;

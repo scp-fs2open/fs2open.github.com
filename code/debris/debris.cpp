@@ -1201,7 +1201,7 @@ void debris_render(object * obj, model_draw_list *scene)
 		if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
 			for (auto &arc: db->electrical_arcs) {
 				if ( arc.timestamp.isValid() )	{
-					model_instance_add_arc( pm, pmi, db->submodel_num, &arc.endpoint_1, &arc.endpoint_2, MARC_TYPE_DAMAGED );
+					model_instance_add_arc( pm, pmi, db->submodel_num, &arc.endpoint_1, &arc.endpoint_2, nullptr, MARC_TYPE_DAMAGED );
 				}
 			}
 		}

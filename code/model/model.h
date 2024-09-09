@@ -107,10 +107,12 @@ struct electrical_arc
 	vec3d	endpoint_1;
 	vec3d	endpoint_2;
 	ubyte	type;								// see MARC_TYPE_* defines
+	ubyte	segment_depth;						// number of times to divide the arc into segments
 };
 
 struct model_electrical_arc : electrical_arc
 {
+	const SCP_vector<vec3d> *persistent_arc_points;
 };
 
 // Data specific to a particular instance of a submodel.
@@ -1217,8 +1219,8 @@ extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_nu
 void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr, float width = 0.0f);
+void model_instance_clear_arcs(const polymodel *pm, polymodel_instance *pmi);
+void model_instance_add_arc(const polymodel *pm, polymodel_instance *pmi, int sub_model_num, const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, ubyte arc_type, const color *primary_color_1 = nullptr, const color *primary_color_2 = nullptr, const color *secondary_color = nullptr, float width = 0.0f, ubyte segment_depth = 4);
 
 // Gets two random points on the surface of a submodel
 extern vec3d submodel_get_random_point(int model_num, int submodel_num, int seed = -1);

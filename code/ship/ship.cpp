@@ -21394,7 +21394,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for (auto &arc: shipp->electrical_arcs)	{
 			if (arc.timestamp.isValid()) {
-				model_instance_add_arc(pm, pmi, -1, &arc.endpoint_1, &arc.endpoint_2, arc.type, &arc.primary_color_1, &arc.primary_color_2, &arc.secondary_color, arc.width);
+				model_instance_add_arc(pm, pmi, -1, &arc.endpoint_1, &arc.endpoint_2, arc.persistent_arc_points.get(), arc.type, &arc.primary_color_1, &arc.primary_color_2, &arc.secondary_color, arc.width, arc.segment_depth);
 			}
 		}
 	}

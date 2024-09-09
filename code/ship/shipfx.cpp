@@ -2087,6 +2087,10 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 						}
 					}
 
+					arc->segment_depth = 4;	// previously hard-coded in interp_generate_arc_segment()
+
+					arc->persistent_arc_points.reset();	// by default, no persistent points
+
 					shipp->passive_arc_next_times[passive_arc_info_idx] = _timestamp(fl2i(arc_info->frequency * MILLISECONDS_PER_SECOND));
 				}
 			}
@@ -2235,6 +2239,10 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				} else {
 					arc->type = MARC_TYPE_DAMAGED;
 				}
+
+				arc->segment_depth = 4;	// previously hard-coded in interp_generate_arc_segment()
+
+				arc->persistent_arc_points.reset();	// by default, no persistent points
 
 				num_damage_arcs++;
 			}
