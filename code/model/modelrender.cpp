@@ -40,9 +40,7 @@ extern int Model_polys;
 extern int tiling;
 extern float model_radius;
 
-extern const int MAX_ARC_SEGMENT_POINTS;
-extern int Num_arc_segment_points;
-extern vec3d Arc_segment_points[];
+extern SCP_vector<vec3d> Arc_segment_points;
 
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
@@ -810,11 +808,8 @@ model_draw_list::~model_draw_list() {
 
 void model_render_add_lightning(model_draw_list *scene, const model_render_params* interp, const polymodel *pm, const submodel_instance *smi )
 {
-	int i;
 	float width = 0.9f;
 	color primary, secondary;
-
-	Assert( smi->num_arcs > 0 );
 
 	if ( interp->get_model_flags() & MR_SHOW_OUTLINE_PRESET ) {
 		return;
@@ -825,9 +820,7 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
  		return;
  	}
 
-	for ( i = 0; i < smi->num_arcs; i++ ) {
-		auto &arc = smi->electrical_arcs[i];
-
+	for (auto &arc: smi->electrical_arcs) {
 		// pick a color based upon arc type
 		switch ( arc.type ) {
 			// "normal", FreeSpace 1 style arcs
@@ -1305,7 +1298,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		} 
 	}
 
-	if ( smi != nullptr && smi->num_arcs > 0 ) {
+	if ( smi != nullptr && !smi->electrical_arcs.empty() ) {
 		model_render_add_lightning( scene, interp, pm, smi );
 	}
 
@@ -1625,7 +1618,7 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 		}
 	}
 	
-	if ( pmi && pmi->submodel[submodel_num].num_arcs > 0 )	{
+	if ( pmi && !pmi->submodel[submodel_num].electrical_arcs.empty() )	{
 		model_render_add_lightning( scene, render_info, pm, &pmi->submodel[submodel_num] );
 	}
 
@@ -2079,8 +2072,8 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 				Assert( bank->points != nullptr );
 				int flick;
 
-				if (pmi != nullptr && pmi->submodel[pm->detail[0]].num_arcs > 0) {
-					flick = static_rand( timestamp() % 20 ) % (pmi->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
+				if (pmi != nullptr && !pmi->submodel[pm->detail[0]].electrical_arcs.empty()) {
+					flick = static_rand( timestamp() % 20 ) % (pmi->submodel[pm->detail[0]].electrical_arcs.size() + j); //the more damage, the more arcs, the more likely the lights will fail
 				} else {
 					flick = 1;
 				}
@@ -2502,10 +2495,10 @@ void model_render_insignias(const insignia_draw_data *insignia_data)
 
 void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
 {
-	Num_arc_segment_points = 0;
+	Arc_segment_points.clear();
 
-	// need need to add the first point
-	memcpy( &Arc_segment_points[Num_arc_segment_points++], v1, sizeof(vec3d) );
+	// need to add the first point
+	Arc_segment_points.push_back(*v1);
 
 	// this should fill in all of the middle, and the last, points
 	interp_render_arc_segment(v1, v2, 0);
@@ -2513,10 +2506,10 @@ void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, co
 	// use primary color for fist pass
 	Assert( primary );
 
-	g3_render_rod(primary, Num_arc_segment_points, Arc_segment_points, arc_width);
+	g3_render_rod(primary, static_cast<int>(Arc_segment_points.size()), Arc_segment_points.data(), arc_width);
 
 	if (secondary) {
-		g3_render_rod(secondary, Num_arc_segment_points, Arc_segment_points, arc_width * 0.33f);
+		g3_render_rod(secondary, static_cast<int>(Arc_segment_points.size()), Arc_segment_points.data(), arc_width * 0.33f);
 	}
 }
 
@@ -2921,7 +2914,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		} else {
 			model_render_buffers(scene, &rendering_material, interp, &pm->submodel[detail_model_num].buffer, pm, detail_model_num, detail_level, tmap_flags);
 
-			if ( pmi != nullptr && pmi->submodel[detail_model_num].num_arcs > 0 ) {
+			if ( pmi != nullptr && !pmi->submodel[detail_model_num].electrical_arcs.empty() ) {
 				model_render_add_lightning( scene, interp, pm, &pmi->submodel[detail_model_num] );
 			}
 		}

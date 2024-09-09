@@ -2048,8 +2048,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			if (skip) continue;
 
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
-				// spawn the arc in the first unused slot
-				auto arc = ship_find_electrical_arc_slot(shipp);
+				// spawn the arc in the first unused slot, or in a new slot if there are no unused ones
+				auto arc = ship_find_or_create_electrical_arc_slot(shipp, shipp->electrical_arcs.size() >= MAX_ARC_EFFECTS);
 				if (arc) {
 					arc->timestamp = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
 
@@ -2159,7 +2159,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 		shipp->arc_next_time = TIMESTAMP::invalid();		// invalid, so it gets restarted next frame
 
-		int n, n_arcs = Random::next(1, 3);
+		int n_arcs = Random::next(1, 3);
 
 		vec3d v1 = submodel_get_random_point(model_num, -1);
 		vec3d v2 = submodel_get_random_point(model_num, -1);
@@ -2197,18 +2197,18 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			
 		}
 		
-		n = 0;
-
 		float factor = 1.0f + 0.0025f*obj->radius;
 		int a = (int) (factor*100.0f);
 		int b = (int) (factor*1000.0f);
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		int num_damage_arcs = 0;
-		for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
-			auto arc = &shipp->electrical_arcs[i];
-			if ( !arc->timestamp.isValid() ) {
+		auto num_damage_arcs = std::count_if(shipp->electrical_arcs.begin(), shipp->electrical_arcs.end(), [](const ship_electrical_arc &arc) {
+			return arc.timestamp.isValid() && (arc.type == MARC_TYPE_DAMAGED || arc.type == MARC_TYPE_EMP);
+		});
+		for (int n = 0; n < n_arcs && num_damage_arcs < MAX_SHIP_DAMAGE_ARCS; n++) {
+			auto arc = ship_find_or_create_electrical_arc_slot(shipp, false);
+			if (arc) {
 				arc->timestamp = _timestamp(lifetime);	// live up to a second
 
 				switch( n )	{
@@ -2235,16 +2235,11 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				} else {
 					arc->type = MARC_TYPE_DAMAGED;
 				}
-					
-				n++;
+
 				num_damage_arcs++;
-				if ( n == n_arcs || num_damage_arcs >= MAX_SHIP_DAMAGE_ARCS)
-					break;	// Don't need to create anymore
-			} else if (arc->type == MARC_TYPE_DAMAGED || arc->type == MARC_TYPE_EMP) {
-				num_damage_arcs ++;
 			}
 		}
-	
+
 		// rotate v2 out of local coordinates into world.
 		// Use v2 since it is used in every bolt.  See above switch().
 		vec3d snd_pos;

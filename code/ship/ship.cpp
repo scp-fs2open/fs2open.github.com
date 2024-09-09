@@ -7029,9 +7029,7 @@ void ship::clear()
 	for (int i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
 		sub_expl_sound_handle[i] = sound_handle::invalid();
 
-	memset(&electrical_arcs, 0, MAX_ARC_EFFECTS * sizeof(ship_electrical_arc));
-	for (int i = 0; i < MAX_ARC_EFFECTS; i++)
-		electrical_arcs[i].timestamp = TIMESTAMP::invalid();
+	electrical_arcs.clear();
 	arc_next_time = TIMESTAMP::invalid();
 
 	emp_intensity = -1.0f;
@@ -21835,7 +21833,7 @@ int ship_check_visibility(const ship* viewed, ship* viewer)
 	return ship_is_visible;
 }
 
-ship_electrical_arc *ship_find_electrical_arc_slot(ship *shipp)
+ship_electrical_arc *ship_find_or_create_electrical_arc_slot(ship *shipp, bool no_create)
 {
 	size_t i = 0;
 	for (auto &ii : shipp->electrical_arcs)
@@ -21845,8 +21843,12 @@ ship_electrical_arc *ship_find_electrical_arc_slot(ship *shipp)
 		i++;
 	}
 
-	if (i == MAX_ARC_EFFECTS)
-		return nullptr;
+	if (i == shipp->electrical_arcs.size())
+	{
+		if (no_create)
+			return nullptr;
+		shipp->electrical_arcs.emplace_back();
+	}
 
 	return &shipp->electrical_arcs[i];
 }

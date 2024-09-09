@@ -20,7 +20,7 @@ class object;
 struct CFILE;
 class model_draw_list;
 
-#define MAX_DEBRIS_ARCS 8		// Must be less than MAX_ARC_EFFECTS in model.h
+#define MAX_DEBRIS_ARCS 8
 
 FLAG_LIST(Debris_Flags) {
 	Used,
@@ -56,7 +56,7 @@ typedef struct debris {
 	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
 	fix		time_started;			// time when debris was created
 
-	debris_electrical_arc electrical_arcs[MAX_DEBRIS_ARCS];
+	SCP_vector<debris_electrical_arc> electrical_arcs;
 	int		arc_frequency;					// Starts at 1000, gets bigger
 
 	int		parent_alt_name;

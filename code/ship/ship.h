@@ -733,7 +733,7 @@ public:
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
 
 	// Stuff for showing electrical arcs on damaged ships
-	ship_electrical_arc electrical_arcs[MAX_ARC_EFFECTS];
+	SCP_vector<ship_electrical_arc> electrical_arcs;
 	TIMESTAMP		arc_next_time;							// When the next damage/emp arc will be created.
 	SCP_vector<TIMESTAMP>		passive_arc_next_times;		// When the next passive ship arc will be created.
 
@@ -2113,7 +2113,7 @@ bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
 // Used to check if one ship can see the other on radar
 int ship_check_visibility(const ship* viewed, ship* viewer);
 
-// Find the first available arc slot.
-ship_electrical_arc *ship_find_electrical_arc_slot(ship *shipp);
+// Find the first available arc slot.  If none is available, and no_create is false, add one.
+ship_electrical_arc *ship_find_or_create_electrical_arc_slot(ship *shipp, bool no_create);
 
 #endif

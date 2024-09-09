@@ -59,8 +59,8 @@ particle::ParticleEffectHandle Debris_hit_particle;
 
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
-// Find the first available arc slot.
-debris_electrical_arc *debris_find_electrical_arc_slot(debris *db);
+// Find the first available arc slot.  If none is available, and no_create is false, add one.
+debris_electrical_arc *debris_find_or_create_electrical_arc_slot(debris *db, bool no_create);
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
@@ -275,22 +275,19 @@ void debris_process_post(object * obj, float frame_time)
 
 		if (db->is_hull)	{
 
-			int n, n_arcs = Random::next(1, 3);		// Create 1-3 sparks
+			int n_arcs = Random::next(1, 3);		// Create 1-3 sparks
 
 			vec3d v1 = submodel_get_random_point(db->model_num, db->submodel_num);
 			vec3d v2 = submodel_get_random_point(db->model_num, db->submodel_num);
 			vec3d v3 = submodel_get_random_point(db->model_num, db->submodel_num);
 			vec3d v4 = submodel_get_random_point(db->model_num, db->submodel_num);
 
-			n = 0;
-
 			int lifetime = Random::next(100, 1000);
 
 			// Create the spark effects
-			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-				auto arc = &db->electrical_arcs[i];
-				if ( !arc->timestamp.isValid() )	{
-
+			for (int n = 0; n < n_arcs; n++) {
+				auto arc = debris_find_or_create_electrical_arc_slot(db, db->electrical_arcs.size() >= MAX_DEBRIS_ARCS);
+				if (arc) {
 					arc->timestamp = _timestamp(lifetime);	// live up to a second
 
 					switch( n )	{
@@ -310,10 +307,6 @@ void debris_process_post(object * obj, float frame_time)
 					default:
 						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
-
-					n++;
-					if ( n == n_arcs )
-						break;	// Don't need to create anymore
 				}
 			}
 
@@ -606,9 +599,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	db->parent_alt_name = alt_type_index;
 	db->damage_mult = 1.0f;
 
-	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{	// NOLINT
-		db->electrical_arcs[i].timestamp = TIMESTAMP::invalid();
-	}
+	db->electrical_arcs.clear();
 
 	if ( db->is_hull )	{
 		// Percent of debris pieces with arcs controlled via table (default 50%)
@@ -1262,7 +1253,7 @@ void create_generic_debris(object* ship_objp, const vec3d* pos, float min_num_de
 	}
 }
 
-debris_electrical_arc *debris_find_electrical_arc_slot(debris *db)
+debris_electrical_arc *debris_find_or_create_electrical_arc_slot(debris *db, bool no_create)
 {
 	size_t i = 0;
 	for (auto& ii : db->electrical_arcs)
@@ -1272,8 +1263,12 @@ debris_electrical_arc *debris_find_electrical_arc_slot(debris *db)
 		i++;
 	}
 
-	if (i == MAX_DEBRIS_ARCS)
-		return nullptr;
+	if (i == db->electrical_arcs.size())
+	{
+		if (no_create)
+			return nullptr;
+		db->electrical_arcs.emplace_back();
+	}
 
 	return &db->electrical_arcs[i];
 }

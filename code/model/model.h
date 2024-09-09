@@ -144,17 +144,11 @@ struct submodel_instance
 	vec3d	canonical_offset = vmd_zero_vector;
 	vec3d	canonical_prev_offset = vmd_zero_vector;
 
-	int		num_arcs = 0;											// See model_add_arc for more info
-	model_electrical_arc electrical_arcs[MAX_ARC_EFFECTS];
+	SCP_vector<model_electrical_arc> electrical_arcs;
 
 	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
 	vec3d	rotation_axis = vmd_zero_vector;
 	vec3d	translation_axis = vmd_zero_vector;
-
-	submodel_instance()
-	{
-		memset(electrical_arcs, 0, MAX_ARC_EFFECTS * sizeof(model_electrical_arc));
-	}
 };
 
 #define TM_BASE_TYPE		0		// the standard base map
