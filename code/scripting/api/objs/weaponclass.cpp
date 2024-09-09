@@ -314,7 +314,7 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 
 	if(ADE_SETTING_VAR) {
 		if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Cmeasure]) {
-			LuaError(L, "Setting Countermeasure FIre Wait is not supported");
+			LuaError(L, "Setting Countermeasure Fire Wait is not supported");
 		} else {
 			Weapon_info[idx].fire_wait = f;
 		}
