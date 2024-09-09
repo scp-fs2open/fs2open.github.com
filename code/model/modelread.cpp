@@ -5200,7 +5200,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 	Assert(pm->id == pmi->model_num);
 
 	for (int i = 0; i < pm->n_models; ++i) {
-		pmi->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
+		pmi->submodel[i].electrical_arcs.clear();		// Turn off any electric arcing effects
 	}
 }
 
@@ -5220,20 +5220,18 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	if ( sub_model_num >= pm->n_models ) return;
 	auto smi = &pmi->submodel[sub_model_num];
 
-	if ( smi->num_arcs < MAX_ARC_EFFECTS )	{
-		auto &new_arc = smi->electrical_arcs[smi->num_arcs];
-		new_arc.type = static_cast<ubyte>(arc_type);
-		new_arc.endpoint_1 = *v1;
-		new_arc.endpoint_2 = *v2;
+	smi->electrical_arcs.emplace_back();
+	auto &new_arc = smi->electrical_arcs.back();
 
-		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
-			new_arc.primary_color_1 = *primary_color_1;
-			new_arc.primary_color_2 = *primary_color_2;
-			new_arc.secondary_color = *secondary_color;
-			new_arc.width = width;
-		}
+	new_arc.type = static_cast<ubyte>(arc_type);
+	new_arc.endpoint_1 = *v1;
+	new_arc.endpoint_2 = *v2;
 
-		smi->num_arcs++;
+	if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
+		new_arc.primary_color_1 = *primary_color_1;
+		new_arc.primary_color_2 = *primary_color_2;
+		new_arc.secondary_color = *secondary_color;
+		new_arc.width = width;
 	}
 }
 

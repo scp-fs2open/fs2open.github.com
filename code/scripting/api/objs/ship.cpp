@@ -2772,8 +2772,8 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 
 	auto shipp = &Ships[objh->objp()->instance];
 
-	// spawn the arc in the first unused slot
-	auto arc = ship_find_electrical_arc_slot(shipp);
+	// spawn the arc in the first unused slot, or in a new slot if there are no unused ones
+	auto arc = ship_find_or_create_electrical_arc_slot(shipp, false);
 	if (arc)
 	{
 		arc->timestamp = _timestamp(fl2i(duration * MILLISECONDS_PER_SECOND));
@@ -2790,7 +2790,7 @@ ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number 
 
 		arc->width = width;
 
-		return ade_set_args(L, "i", static_cast<int>(arc - shipp->electrical_arcs) + 1);	// FS2 -> Lua
+		return ade_set_args(L, "i", static_cast<int>(arc - shipp->electrical_arcs.data()) + 1);	// FS2 -> Lua
 	}
 
 	return ade_set_args(L, "i", 0);
@@ -2813,7 +2813,7 @@ ADE_FUNC(DeleteElectricArc, l_Ship, "number index",
 	auto shipp = &Ships[objh->objp()->instance];
 
 	index--;	// Lua -> FS2
-	if (index >= 0 && index < MAX_ARC_EFFECTS)
+	if (SCP_vector_inbounds(shipp->electrical_arcs, index))
 	{
 		shipp->electrical_arcs[index].timestamp = TIMESTAMP::invalid();
 	}
@@ -2842,7 +2842,7 @@ ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector sec
 	auto shipp = &Ships[objh->objp()->instance];
 
 	index--;	// Lua -> FS2
-	if (index >= 0 && index < MAX_ARC_EFFECTS)
+	if (SCP_vector_inbounds(shipp->electrical_arcs, index))
 	{
 		auto &arc = shipp->electrical_arcs[index];
 		arc.endpoint_1 = *v1;

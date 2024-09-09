@@ -785,9 +785,7 @@ void model_draw_bay_paths_htl(int model_num)
 	gr_set_cull(cull);
 }
 
-static const int MAX_ARC_SEGMENT_POINTS = 50;
-int Num_arc_segment_points = 0;
-vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
+SCP_vector<vec3d> Arc_segment_points;
 
 void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth )
 {
@@ -795,10 +793,7 @@ void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth )
 	const float scaler = 0.30f;
 
 	if ( (d < scaler) || (depth > 4) ) {
-		// the real limit appears to be 33, so we should never hit this unless the code changes
-		Assert( Num_arc_segment_points < MAX_ARC_SEGMENT_POINTS );
-
-		memcpy( &Arc_segment_points[Num_arc_segment_points++], v2, sizeof(vec3d) );
+		Arc_segment_points.push_back(*v2);
 	} else {
 		// divide in half
 		vec3d tmp;
