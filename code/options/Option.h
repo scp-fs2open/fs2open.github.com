@@ -245,7 +245,7 @@ class Option : public OptionBase {
 			return 0.0f;
 		}
 	}
-	T fetchValue() const
+	T getValue() const
 	{
 		try {
 			tl::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
@@ -259,19 +259,9 @@ class Option : public OptionBase {
 			return _defaultValueFunc();
 		}
 	}
-	T getValue() const
-	{
-		if (_is_once) {
-			static T cache = fetchValue();
-			return cache;
-		}
-		else {
-			return fetchValue();
-		}
-	}
 	ValueDescription getCurrentValueDescription() const override
 	{
-		auto val = fetchValue();
+		auto val = getValue();
 		return toDescription(val);
 	}
 	void setValueDescription(const ValueDescription& desc) const override
@@ -307,7 +297,7 @@ class Option : public OptionBase {
 		}
 
 		try {
-			_changeListener(fetchValue(), true);
+			_changeListener(getValue(), true);
 		} catch (const std::exception&) {
 		}
 	}
