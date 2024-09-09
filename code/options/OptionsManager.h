@@ -35,7 +35,7 @@ class OptionsManager {
 
 	const OptionBase* addOption(std::shared_ptr<const OptionBase>&& option);
 
-	void removeOption(std::shared_ptr<const OptionBase> option);
+	void removeOption(const std::shared_ptr<const OptionBase>& option);
 
 	const OptionBase* getOptionByKey(SCP_string name);
 

@@ -571,7 +571,7 @@ class OptionBuilder {
 		return *this;
 	}
 	//Finishes building the option and returns a pointer to it
-	const std::shared_ptr<Option<T>> finish()
+	std::shared_ptr<const Option<T>> finish()
 	{
 		for (auto& val : _preset_values) {
 			_instance.setPreset(val.first, json_dump_string_new(_instance.getSerializer()(val.second),
