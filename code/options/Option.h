@@ -307,7 +307,7 @@ class Option : public OptionBase {
 		}
 
 		try {
-			_changeListener(getValue(), true);
+			_changeListener(fetchValue(), true);
 		} catch (const std::exception&) {
 		}
 	}
