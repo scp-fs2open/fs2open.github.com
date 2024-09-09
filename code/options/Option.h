@@ -271,7 +271,7 @@ class Option : public OptionBase {
 	}
 	ValueDescription getCurrentValueDescription() const override
 	{
-		auto val = getValue();
+		auto val = fetchValue();
 		return toDescription(val);
 	}
 	void setValueDescription(const ValueDescription& desc) const override
