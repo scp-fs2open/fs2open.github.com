@@ -268,9 +268,9 @@ void debris_process_post(object * obj, float frame_time)
 		return;			// If arc_frequency <= 0, this piece has no arcs on it
 	}
 
-	if ( !timestamp_elapsed(db->fire_timeout) && timestamp_elapsed(db->next_fireball))	{		
+	if ( !timestamp_elapsed(db->arc_timeout) && timestamp_elapsed(db->arc_next_time))	{
 
-		db->next_fireball = _timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
+		db->arc_next_time = _timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
 		db->arc_frequency += 100;	
 
 		if (db->is_hull)	{
@@ -600,7 +600,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	db->ship_info_index = parent_ship_class;
 	db->team = team;
 	db->ambient_sound = (sip == nullptr) ? gamesnd_id(-1) : sip->debris_ambient_sound;
-	db->fire_timeout = TIMESTAMP::never();	// if not changed, timestamp_elapsed() will return false
+	db->arc_timeout = TIMESTAMP::never();	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = (sip == nullptr) ? -1 : sip->species;
 	db->parent_alt_name = alt_type_index;
@@ -621,7 +621,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		db->arc_frequency = 0;
 	}
 
-	db->next_fireball = _timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
+	db->arc_next_time = _timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
 
 	flagset<Object::Object_Flags> default_flags;
 	default_flags.set(Object::Object_Flags::Renders);
@@ -682,12 +682,12 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		// limit the amount of time that fireballs appear
 		// let fireball length be linked to radius of ship.  Range is .33 radius => 3.33 radius seconds.
 		if (spark_timeout >= 0) {
-			db->fire_timeout = _timestamp(spark_timeout);
+			db->arc_timeout = _timestamp(spark_timeout);
 		} else if (parent_objnum >= 0) {
 			float t = 1000*Objects[parent_objnum].radius/3 + (fl2i(1000*3*Objects[parent_objnum].radius) == 0 ? 0 : Random::next(fl2i(1000*3*Objects[parent_objnum].radius)));
-			db->fire_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
+			db->arc_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		} else {
-			db->fire_timeout = TIMESTAMP::immediate();
+			db->arc_timeout = TIMESTAMP::immediate();
 		}
 
 		if (parent_objnum >= 0 && Objects[parent_objnum].radius >= MIN_RADIUS_FOR_PERSISTENT_DEBRIS) {
