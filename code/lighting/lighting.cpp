@@ -123,7 +123,7 @@ bool light_deferred_enabled()
 		// if the restart requirement is lifted care should be taken to cache this value
 		// and never look it up more than once a frame
 		// otherwise the performance footprint is measurable enough to worry about.
-		return DeferredLightingEnabled;
+		return DeferredLightingOption->getValue();
 	} else {
 		return !Cmdline_no_deferred_lighting;
 	}
