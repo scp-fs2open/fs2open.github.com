@@ -95,7 +95,7 @@ void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json)
 }
 
 //Adds an option to the options vector
-const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& option)
+const OptionBase* OptionsManager::addOption(std::shared_ptr<const OptionBase>&& option)
 {
 	_options.emplace_back(std::move(option));
 	_optionsSorted = false; // Order got invalidated by adding a new option
@@ -106,12 +106,12 @@ const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& 
 }
 
 //Removes an option from the options vector
-void OptionsManager::removeOption(const OptionBase* option)
+void OptionsManager::removeOption(const std::shared_ptr<const OptionBase>& option)
 {
 	_optionsMapping.erase(option->getConfigKey());
 	_options.erase(
 	    std::remove_if(_options.begin(), _options.end(),
-	                   [option](const std::unique_ptr<const OptionBase>& ptr) { return ptr.get() == option; }));
+	                   [option](const std::shared_ptr<const OptionBase>& ptr) { return ptr == option; }));
 }
 
 // Returns an option with the specified name
@@ -126,13 +126,13 @@ const OptionBase* OptionsManager::getOptionByKey(SCP_string key)
 }
 
 //Returns a table of all built-in options available
-const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::getOptions()
+const SCP_vector<std::shared_ptr<const options::OptionBase>>& OptionsManager::getOptions()
 {
 	if (!_optionsSorted) {
 		// Keep options sorted by only sorting them when necessary
 
 		std::sort(_options.begin(), _options.end(),
-		          [](const std::unique_ptr<const OptionBase>& left, const std::unique_ptr<const OptionBase>& right) {
+		          [](const std::shared_ptr<const OptionBase>& left, const std::shared_ptr<const OptionBase>& right) {
 			          return *left < *right;
 		          });
 
