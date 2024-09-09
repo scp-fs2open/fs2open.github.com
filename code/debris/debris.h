@@ -49,10 +49,10 @@ typedef struct debris {
 	int		model_num;				// What model this uses
 	int		model_instance_num;		// What model instance this uses - needed for arcs
 	int		submodel_num;			// What submodel this uses
-	TIMESTAMP	next_fireball;		// When to start a fireball
+	TIMESTAMP	arc_next_time;		// When the next damage/emp arc will be created.
 	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
 	int		species;				// What species this is from.  -1 if don't care.
-	TIMESTAMP	fire_timeout;		// timestamp that holds time for fireballs to stop appearing
+	TIMESTAMP	arc_timeout;		// timestamp that holds time for arcs to stop appearing
 	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
 	fix		time_started;			// time when debris was created
 
