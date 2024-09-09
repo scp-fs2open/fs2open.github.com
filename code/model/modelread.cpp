@@ -5195,7 +5195,7 @@ void model_do_intrinsic_motions(object *objp)
 	}
 }
 
-void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
+void model_instance_clear_arcs(const polymodel *pm, polymodel_instance *pmi)
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5205,7 +5205,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color, float width )
+void model_instance_add_arc(const polymodel *pm, polymodel_instance *pmi, int sub_model_num, const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, ubyte arc_type, const color *primary_color_1, const color *primary_color_2, const color *secondary_color, float width, ubyte segment_depth)
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5223,9 +5223,11 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	smi->electrical_arcs.emplace_back();
 	auto &new_arc = smi->electrical_arcs.back();
 
-	new_arc.type = static_cast<ubyte>(arc_type);
+	new_arc.type = arc_type;
 	new_arc.endpoint_1 = *v1;
 	new_arc.endpoint_2 = *v2;
+	new_arc.persistent_arc_points = persistent_arc_points;
+	new_arc.segment_depth = segment_depth;
 
 	if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
 		new_arc.primary_color_1 = *primary_color_1;

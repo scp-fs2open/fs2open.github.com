@@ -40,12 +40,10 @@ extern int Model_polys;
 extern int tiling;
 extern float model_radius;
 
-extern SCP_vector<vec3d> Arc_segment_points;
-
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
 
-extern void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth);
+extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
 
@@ -444,7 +442,7 @@ void model_draw_list::add_submodel_to_batch(int model_num)
 	TransformBufferHandler.set_model_transform(transform, model_num);
 }
 
-void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
+void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth)
 {
 	arc_effect new_arc;
 
@@ -454,6 +452,8 @@ void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const color *pri
 	new_arc.primary = *primary;
 	new_arc.secondary = *secondary;
 	new_arc.width = arc_width;
+	new_arc.segment_depth = segment_depth;
+	new_arc.persistent_arc_points = persistent_arc_points;
 
 	Arcs.push_back(new_arc);
 }
@@ -623,7 +623,7 @@ void model_draw_list::render_arc(const arc_effect &arc)
 {
 	g3_start_instance_matrix(&arc.transform);	
 
-	model_render_arc(&arc.v1, &arc.v2, &arc.primary, &arc.secondary, arc.width);
+	model_render_arc(&arc.v1, &arc.v2, arc.persistent_arc_points, &arc.primary, &arc.secondary, arc.width, arc.segment_depth);
 
 	g3_done_instance(true);
 }
@@ -887,7 +887,7 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 
 		// render the actual arc segment
 		if (width > 0.0f)
-			scene->add_arc(&arc.endpoint_1, &arc.endpoint_2, &primary, &secondary, width);
+			scene->add_arc(&arc.endpoint_1, &arc.endpoint_2, arc.persistent_arc_points, &primary, &secondary, width, arc.segment_depth);
 	}
 }
 
@@ -2493,23 +2493,36 @@ void model_render_insignias(const insignia_draw_data *insignia_data)
 	}
 }
 
-void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
+SCP_vector<vec3d> Arc_segment_points;
+
+void model_render_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte depth_limit)
 {
-	Arc_segment_points.clear();
+	int size;
+	const vec3d *pvecs;
 
-	// need to add the first point
-	Arc_segment_points.push_back(*v1);
+	if (persistent_arc_points) {
+		size = static_cast<int>(persistent_arc_points->size());
+		pvecs = persistent_arc_points->data();
+	} else {
+		Arc_segment_points.clear();
 
-	// this should fill in all of the middle, and the last, points
-	interp_render_arc_segment(v1, v2, 0);
+		// need to add the first point
+		Arc_segment_points.push_back(*v1);
+
+		// this should fill in all of the middle, and the last, points
+		interp_generate_arc_segment(Arc_segment_points, v1, v2, depth_limit, 0);
+
+		size = static_cast<int>(Arc_segment_points.size());
+		pvecs = Arc_segment_points.data();
+	}
 
 	// use primary color for fist pass
 	Assert( primary );
 
-	g3_render_rod(primary, static_cast<int>(Arc_segment_points.size()), Arc_segment_points.data(), arc_width);
+	g3_render_rod(primary, size, pvecs, arc_width);
 
 	if (secondary) {
-		g3_render_rod(secondary, static_cast<int>(Arc_segment_points.size()), Arc_segment_points.data(), arc_width * 0.33f);
+		g3_render_rod(secondary, size, pvecs, arc_width * 0.33f);
 	}
 }
 

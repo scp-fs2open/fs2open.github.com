@@ -544,6 +544,9 @@ private:
 struct ship_electrical_arc : electrical_arc
 {
 	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
+
+	// if this vector exists, these points will be used instead of the ones generated on each frame by interp_generate_arc_segment()
+	std::unique_ptr<SCP_vector<vec3d>>	persistent_arc_points;
 };
 
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
