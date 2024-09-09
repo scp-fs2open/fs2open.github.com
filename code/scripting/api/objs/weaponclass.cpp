@@ -1223,7 +1223,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isCountermeasure, l_Weaponclass, NULL, "Return true if the weapon is a countermeasure", "boolean", "true if the weapon is a countermeasure, false otherwise")
+ADE_FUNC(isCountermeasure, l_Weaponclass, nullptr, "Return true if the weapon is a countermeasure", "boolean", "true if the weapon is a countermeasure, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
