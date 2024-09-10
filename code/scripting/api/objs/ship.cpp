@@ -38,6 +38,9 @@
 #include "ship/shiphit.h"
 #include "waypoint.h"
 
+#include "scripting/lua/LuaException.h"
+#include "scripting/lua/LuaUtil.h"
+
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
@@ -2897,6 +2900,69 @@ ADE_FUNC(ModifyElectricArc, l_Ship, "number index, vector firstPoint, vector sec
 			// this should fill in all of the middle, and the last, points
 			interp_generate_arc_segment(*arc.persistent_arc_points, v1, v2, static_cast<ubyte>(segment_depth), 1);	// start at depth 1 for the benefit of Lua
 		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(ModifyElectricArcPoints, l_Ship, "number index, table points, [number width]",
+	"Sets the collection of persistent points to be used by this arc, as well as optionally the arc's width.  "
+		"The table of points should consist of Vectors (e.g. created with ba.createVector()), arrays with three elements each, or tables with 'x'/'X', 'y'/'Y', and 'z'/'Z' pairs.  There must be at least two points.",
+	nullptr,
+	nullptr)
+{
+	object_h* objh = nullptr;
+	int index;
+	luacpp::LuaTable luaPoints;
+	float width = 0.0f;
+
+	int args = ade_get_args(L, "oit|f", l_Ship.GetPtr(&objh), &index, &luaPoints, &width);
+	if (args < 3)
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp()->instance];
+
+	index--;	// Lua -> FS2
+	if (SCP_vector_inbounds(shipp->electrical_arcs, index) && luaPoints.isValid())
+	{
+		SCP_vector<vec3d> fsoPoints;
+
+		// convert Lua points to FSO points
+		for (const auto &entry : luaPoints)
+		{
+			try
+			{
+				fsoPoints.push_back(luacpp::util::valueToVec3d(entry.second));
+			}
+			catch (const luacpp::LuaException &e)
+			{
+				LuaError(L, "%s", e.what());
+				return ADE_RETURN_NIL;
+			}
+		}
+
+		if (fsoPoints.size() < 2)
+		{
+			LuaError(L, "Points table passed to ship:ModifyElectricArcPoints() has fewer than two points!");
+			return ADE_RETURN_NIL;
+		}
+
+		auto &arc = shipp->electrical_arcs[index];
+		arc.endpoint_1 = fsoPoints.front();
+		arc.endpoint_2 = fsoPoints.back();
+
+		// need to create the persistent point storage if it isn't set up yet
+		if (!arc.persistent_arc_points)
+			arc.persistent_arc_points.reset(new SCP_vector<vec3d>());
+
+		// assign all of our new points to the persistent point storage
+		arc.persistent_arc_points->operator=(std::move(fsoPoints));
+
+		if (args >= 4)
+			arc.width = width;
 	}
 
 	return ADE_RETURN_NIL;
