@@ -688,6 +688,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-set-frame",					OP_HUD_SET_FRAME,						2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-coords",					OP_HUD_SET_COORDS,						3,	3,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-color",					OP_HUD_SET_COLOR,						4,	4,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
+	{ "hud-reset-color",				OP_HUD_RESET_COLOR,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-display-gauge",				OP_HUD_DISPLAY_GAUGE,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
 	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
@@ -13234,10 +13235,37 @@ void sexp_hud_set_color(int n)
 	HudGauge* hg = hud_get_gauge(gaugename);
 	if (hg) {
 		hg->sexpLockConfigColor(false);
-		hg->updateColor((ubyte)rgb[0], (ubyte)rgb[1], (ubyte)rgb[2], (HUD_color_alpha + 1) * 16);
+		hg->updateColor(rgb[0], rgb[1], rgb[2], (HUD_color_alpha + 1) * 16);
 		hg->sexpLockConfigColor(true);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+	}
+}
+
+void sexp_hud_reset_color(int n)
+{
+	for (; n >= 0; n = CDR(n))
+	{
+		auto gaugename = CTEXT(n);
+		HudGauge* hg = hud_get_gauge(gaugename);
+		if (hg) {
+			// only a subset of default HUD gauges have a configured color
+			int type = hg->getConfigType();
+			auto ii = std::find_if(std::begin(Legacy_HUD_gauges), std::end(Legacy_HUD_gauges), [type](const Legacy_HUD_gauge_pair& pair) { return pair.hud_gauge_type == type; });
+
+			if (ii == std::end(Legacy_HUD_gauges)) {
+				WarningEx(LOCATION, "HUD gauge %s does not have a built-in configured color!", gaugename);
+			} else {
+				// use the color as specified in the HUD config
+				auto& c = HUD_config.clr[std::distance(std::begin(Legacy_HUD_gauges), ii)];
+
+				hg->sexpLockConfigColor(false);
+				hg->updateColor(c.red, c.green, c.blue, (HUD_color_alpha + 1) * 16);
+				hg->sexpLockConfigColor(true);
+			}
+		} else {
+			WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+		}
 	}
 }
 
@@ -28454,6 +28482,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_RESET_COLOR:
+				sexp_hud_reset_color(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_HUD_SET_MAX_TARGETING_RANGE:
 				sexp_hud_set_max_targeting_range(node);
 				sexp_val = SEXP_TRUE;
@@ -31056,6 +31089,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_HUD_RESET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
@@ -32415,6 +32449,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_ANY_HUD_GAUGE;
 			else
 				return OPF_POSITIVE;
+
+		case OP_HUD_RESET_COLOR:
+			return OPF_ANY_HUD_GAUGE;
 
 		case OP_HUD_CLEAR_MESSAGES:
 			return OPF_NONE;
@@ -36080,6 +36117,7 @@ int get_category(int op_id)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_HUD_RESET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_SHIP_TAG:
 		case OP_SHIP_UNTAG:
@@ -36689,6 +36727,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_SET_DIRECTIVE:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_HUD_RESET_COLOR:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
@@ -40990,6 +41029,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tRed component (0-255)\r\n"
 		"\t3:\tGreen component (0-255)\r\n"
 		"\t4:\tBlue component (0-255)"
+	},
+
+	// Goober5000
+	{ OP_HUD_RESET_COLOR, "hud-reset-color\r\n"
+		"\tResets the color of a given HUD gauge back to its color as defined in the HUD config. Only effective for gauges for which a config exists. Takes 1 or more arguments...\r\n"
+		"\tAll:\tHUD gauge to be modified\r\n"
 	},
 
 	//WMC
