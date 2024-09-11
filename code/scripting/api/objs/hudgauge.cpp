@@ -21,7 +21,7 @@ ADE_FUNC(isCustom, l_HudGauge, nullptr, "Custom HUD Gauge status", "boolean", "R
 	return ade_set_args(L, "b", gauge->isCustom());
 }
 
-ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or blank if this is a default gauge, or nil if handle is invalid")
+ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if this is a default gauge or the handle is invalid")
 {
 	HudGauge* gauge;
 
@@ -37,7 +37,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 	return ade_set_args(L, "s", gauge->getCustomGaugeName());
 }
 
-ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or blank if this is a default gauge, or nil if handle is invalid")
+ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if this is a default gauge or the handle is invalid")
 {
 	HudGauge* gauge;
 	const char* text = nullptr;
