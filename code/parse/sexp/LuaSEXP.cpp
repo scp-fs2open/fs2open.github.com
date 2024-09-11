@@ -302,7 +302,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
   }
 	case OPF_ANY_HUD_GAUGE: {
 		auto name = CTEXT(node);
-		return LuaValue::createValue(_action.getLuaState(), l_HudGauge.Set(hud_get_gauge(name)));
+		return LuaValue::createValue(_action.getLuaState(), l_HudGauge.Set(hud_get_gauge(name, true)));
 	}
 	case OPF_EVENT_NAME: {
 		auto name = CTEXT(node);
