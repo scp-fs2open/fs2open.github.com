@@ -2394,7 +2394,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	}
 
 	int weapon_info_index = shiphit_get_damage_weapon(other_obj);
-	
+
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
 	if ( quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields]) )	{

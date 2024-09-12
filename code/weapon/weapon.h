@@ -109,6 +109,8 @@ typedef struct weapon {
 	int		group_id;						// Which group this is in.
 	float	det_range;					//How far from start_pos it blows up
 
+	SCP_vector<std::pair<float, float>> weapon_curve_data; // per-weapon random scaling and translation values for curves
+
 	// Stuff for thruster glows
 	int		thruster_bitmap;					// What frame the current thruster bitmap is at for this weapon
 	float		thruster_frame;					// Used to keep track of which frame the animation should be on.
@@ -318,6 +320,52 @@ struct ConditionalImpact {
 	bool dinky;
 };
 
+enum class WeaponLifetimeCurveInput {
+	// inputs
+	LIFETIME,
+	AGE,
+	BASE_VELOCITY,
+	HITPOINTS,
+	PARENT_RADIUS,
+};
+
+enum class WeaponLifetimeCurveOutput {
+	// outputs
+	LASER_LENGTH_MULT,
+	LASER_RADIUS_MULT,
+	LASER_HEAD_RADIUS_MULT,
+	LASER_TAIL_RADIUS_MULT,
+	LASER_OFFSET_X_MULT,
+	LASER_OFFSET_Y_MULT,
+	LASER_OFFSET_Z_MULT,
+	LASER_HEADON_SWITCH_ANG_MULT,
+	LASER_HEADON_SWITCH_RATE_MULT,
+	LASER_ANIM_STATE,
+	LASER_ALPHA_MULT,
+	LASER_BITMAP_R_MULT,
+	LASER_BITMAP_G_MULT,
+	LASER_BITMAP_B_MULT,
+	LASER_GLOW_R_MULT,
+	LASER_GLOW_G_MULT,
+	LASER_GLOW_B_MULT,
+	LIGHT_INTENSITY_MULT,
+	LIGHT_RADIUS_MULT,
+	LIGHT_R_MULT,
+	LIGHT_G_MULT,
+	LIGHT_B_MULT,
+	DET_RADIUS_MULT,
+	TURN_RATE_MULT,
+};
+
+struct WeaponLifetimeCurve {
+	WeaponLifetimeCurveInput input;
+	WeaponLifetimeCurveOutput output;
+	int curve_idx;
+	::util::UniformFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
+	::util::UniformFloatRange translation = ::util::UniformFloatRange(0.f);
+	bool wraparound = true;
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -356,23 +404,24 @@ struct weapon_info
 	float laser_headon_switch_ang;			// at what angle
 
 	float laser_length;
-	int laser_length_curve_idx;				// length over time curve
+	bool laser_length_by_frametime;
+	vec3d	bitmap_color;						// color modifier for main laser bitmap, unlike the 'laser colors' which affect the glow bitmap
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
 	float laser_glow_length_scale;
 	float laser_glow_head_scale;
 	float laser_glow_tail_scale;
-	int	laser_radius_curve_idx;				// tail + head radius over time curve
 	float laser_min_pixel_size;
 	vec3d	laser_pos_offset;
 
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
-	int laser_alpha_curve_idx;			// alpha over time curve
 
 	bool 		light_color_set;
 	hdr_color 	light_color;		//For the light cast by the projectile
 	float 		light_radius;
+
+	SCP_vector<WeaponLifetimeCurve> lifetime_curves;
 
 	float	max_speed;							// max speed of the weapon
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
@@ -387,7 +436,7 @@ struct weapon_info
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
-	int   damage_curve_idx;					// damage over time curve
+	int		damage_curve_idx;
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
 	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
 	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
@@ -415,7 +464,6 @@ struct weapon_info
 	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 
 	float turn_time;
-	int turn_rate_curve_idx;					// turn rate over time curve
 	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float autoaim_fov;							// the weapon specific auto-aim field of view
