@@ -568,11 +568,6 @@ int barracks_new_pilot_selected()
 		return -1;
 	}
 
-	if (!Pilot.load_savefile(Cur_pilot, Cur_pilot->current_campaign)) {
-		// set single player squad image to multi if campaign can't be loaded
-		strcpy_s(Cur_pilot->s_squad_filename, Cur_pilot->m_squad_filename);
-	}
-
 	// init stuff to reflect new pilot
 	int i;
 	barracks_init_stats(&Cur_pilot->stats);
