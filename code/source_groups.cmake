@@ -1108,6 +1108,7 @@ add_file_folder("Particle"
 	particle/ParticleSource.h
 	particle/ParticleSourceWrapper.cpp
 	particle/ParticleSourceWrapper.h
+	particle/ParticleVolume.h
 )
 
 add_file_folder("Particle\\\\Effects"
@@ -1117,6 +1118,8 @@ add_file_folder("Particle\\\\Effects"
 	particle/effects/CompositeEffect.h
 	particle/effects/ConeShape.h
 	particle/effects/GenericShapeEffect.h
+	particle/effects/OmniEffect.cpp
+	particle/effects/OmniEffect.h
 	particle/effects/ParticleEmitterEffect.cpp
 	particle/effects/ParticleEmitterEffect.h
 	particle/effects/SingleParticleEffect.cpp
@@ -1131,6 +1134,15 @@ add_file_folder("Particle\\\\Util"
 	particle/util/EffectTiming.h
 	particle/util/ParticleProperties.cpp
 	particle/util/ParticleProperties.h
+)
+
+add_file_folder("Particle\\\\Volumes"
+	particle/volumes/ConeVolume.cpp
+	particle/volumes/ConeVolume.h
+	particle/volumes/LegacyAACuboidVolume.cpp
+	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/SpheroidVolume.cpp
+	particle/volumes/SpheroidVolume.h
 )
 
 # PcxUtils files
