@@ -110,7 +110,7 @@ void ParticleProperties::createParticle(particle_info& info) {
 			info.lifetime *= m_lifetime.next();
 		else
 			info.lifetime = m_lifetime.next();
-		info.lifetime_from_animation = false;
+		info.lifetime_from_animation = m_keep_anim_length_if_available;
 	}
 	info.size_lifetime_curve = m_size_lifetime_curve;
 	info.vel_lifetime_curve = m_vel_lifetime_curve;

@@ -37,6 +37,7 @@ private:
 	RotationType m_rotation_type;
 	vec3d m_manual_offset;
 	bool m_parent_local = false;
+	bool m_keep_anim_length_if_available = false;
 
 	ParticleProperties();
 

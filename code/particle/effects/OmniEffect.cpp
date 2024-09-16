@@ -6,6 +6,65 @@
 namespace particle {
 namespace effects {
 
+OmniParticleEffect::OmniParticleEffect(const SCP_string& name)
+	: ParticleEffect(name),
+	  m_timing(),
+	  m_particleProperties(),
+	  m_particleNum(::util::UniformFloatRange(1.0f)),
+	  m_direction(ShapeDirection::Aligned),
+	  m_vel_inherit(),
+	  m_vel_inherit_absolute(false),
+	  m_velocityVolume(nullptr),
+	  m_velocity_scaling(),
+	  m_velocity_directional_scaling(VelocityScaling::NONE),
+	  m_vel_inherit_from_position(tl::nullopt),
+	  m_spawnVolume(nullptr),
+	  m_particleTrail(ParticleEffectHandle::invalid()),
+	  m_particleChance(1.f),
+	  m_affectedByDetail(false),
+	  m_distanceCulled(-1.f)
+	{}
+
+OmniParticleEffect::OmniParticleEffect(const SCP_string& name,
+	::util::ParsedRandomFloatRange particleNum,
+	ShapeDirection direction,
+	::util::ParsedRandomFloatRange vel_inherit,
+	bool vel_inherit_absolute,
+	std::unique_ptr<::particle::ParticleVolume> velocityVolume,
+	::util::ParsedRandomFloatRange velocity_scaling,
+	VelocityScaling velocity_directional_scaling,
+	tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
+	std::unique_ptr<::particle::ParticleVolume> spawnVolume,
+	ParticleEffectHandle particleTrail,
+	float particleChance,
+	bool affectedByDetail,
+	float distanceCulled,
+	::util::ParsedRandomFloatRange lifetime,
+	::util::ParsedRandomFloatRange radius,
+	int bitmap)
+	: ParticleEffect(name),
+	  m_timing(),
+	  m_particleProperties(),
+	  m_particleNum(std::move(particleNum)),
+	  m_direction(direction),
+	  m_vel_inherit(std::move(vel_inherit)),
+	  m_vel_inherit_absolute(vel_inherit_absolute),
+	  m_velocityVolume(std::move(velocityVolume)),
+	  m_velocity_scaling(std::move(velocity_scaling)),
+	  m_velocity_directional_scaling(velocity_directional_scaling),
+	  m_vel_inherit_from_position(std::move(vel_inherit_from_position)),
+	  m_spawnVolume(std::move(spawnVolume)),
+	  m_particleTrail(std::move(particleTrail)),
+	  m_particleChance(particleChance),
+	  m_affectedByDetail(affectedByDetail),
+	  m_distanceCulled(distanceCulled) {
+	m_particleProperties.m_lifetime = std::move(lifetime);
+	m_particleProperties.m_keep_anim_length_if_available = true;
+	m_particleProperties.m_radius = std::move(radius);
+	m_particleProperties.m_bitmap_list = {bitmap};
+	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);
+}
+
 void OmniParticleEffect::initializeSource(ParticleSource &source) {
 	m_timing.applyToSource(&source);
 }
@@ -107,6 +166,9 @@ bool OmniParticleEffect::processSource(ParticleSource* source) {
 
 			source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
+			if (m_vel_inherit_absolute)
+				vm_vec_normalize_quick(&info.vel);
+
 			info.vel *= m_vel_inherit.next();
 
 			vec3d velocity = ZERO_VECTOR;
@@ -117,22 +179,21 @@ bool OmniParticleEffect::processSource(ParticleSource* source) {
 			}
 
 			if (m_velocityVolume != nullptr) {
-				velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix);
+				velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix) * m_velocity_scaling.next();
 			}
 
 			if (m_vel_inherit_from_position.has_value()){
 				velocity += localPos * m_vel_inherit_from_position->next();
 			}
 
-			if (m_velocity_scaling != VelocityScaling::NONE) {
+			if (m_velocity_directional_scaling != VelocityScaling::NONE) {
 				// Scale the vector with a random velocity sample and also multiply that with cos(angle between
 				// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
 				// only achieved when the particle travels directly on the normal/reflect vector
 				float dot = vm_vec_dot(&velocity, &sourceDir);
-				vm_vec_scale(&velocity, m_velocity_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
+				vm_vec_scale(&velocity,
+					m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
 			}
-
-			vm_vec_scale(&velocity, m_velocity.next());
 
 			info.pos += localPos;
 			info.vel += velocity;
