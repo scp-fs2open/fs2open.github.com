@@ -243,7 +243,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 									flags |= WPF_REPEAT;
 								if (ohp->aigp->flags[AI::Goal_Flags::Waypoints_in_reverse])
 									flags |= WPF_BACKTRACK;
-								ai_start_waypoints(ohp->objh.objp(), wpl, flags, ohp->aigp->int_data);
+								ai_start_waypoints(ohp->objh.objp(), find_index_of_waypoint_list(wpl), flags, ohp->aigp->int_data);
 							}
 						}
 					}
@@ -303,9 +303,9 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 			// check if waypoint order is the current goal (ohp->odx == 0) and if it is valid
-			if ( (ohp->odx == 0) && (aip->wp_index != INVALID_WAYPOINT_POSITION) &&
-				(aip->wp_index >= 0 && aip->wp_index < static_cast<int>(aip->wp_list->get_waypoints().size())) ) {
-				objnum = aip->wp_list->get_waypoints()[aip->wp_index].get_objnum();
+			waypoint* wp;
+			if ( (ohp->odx == 0) && (aip->wp_index != INVALID_WAYPOINT_POSITION) && ((wpl = find_waypoint_list_at_index(aip->wp_list_index)) != nullptr) && ((wp = find_waypoint_at_index(wpl, aip->wp_index)) != nullptr) ) {
+				objnum = wp->get_objnum();
 			} else {
 				wpl = find_matching_waypoint_list(ohp->aigp->target_name);
 				if (wpl != nullptr) {

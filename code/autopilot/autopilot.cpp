@@ -66,7 +66,7 @@ int start_dist;
 void autopilot_ai_waypoint_goal_fixup(ai_goal* aigp)
 {
 	// this function sets wp_index properly;
-	aigp->wp_list = find_matching_waypoint_list(aigp->target_name);
+	aigp->wp_list_index = find_matching_waypoint_list_index(aigp->target_name);
 }
 
 
@@ -111,13 +111,15 @@ const vec3d *NavPoint::GetPosition()
 {
 	if (flags & NP_WAYPOINT)
 	{
-		waypoint *wpt = find_waypoint_at_index((waypoint_list*) target_obj, waypoint_num-1);
-		Assert(wpt != NULL);
+		auto wpt = find_waypoint_at_indexes(target_index, waypoint_num-1);
+		Assert(wpt != nullptr);
+		if (wpt == nullptr)
+			return &vmd_zero_vector;
 		return wpt->get_pos();
 	}
 	else
 	{
-		return &Objects[((ship*) target_obj)->objnum].pos;
+		return &Objects[target_index].pos;
 	}
 }
 
@@ -462,12 +464,12 @@ bool StartAutopilot()
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name(), &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), &Ai_info[Ships[i].ai_index] );
 					//fixup has to wait until after wing goals
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 
 			}
@@ -491,7 +493,7 @@ bool StartAutopilot()
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name(), i );
+					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), i );
 
 					// "fix up" the goal
 					for (j = 0; j < MAX_AI_GOALS; j++)
@@ -505,7 +507,7 @@ bool StartAutopilot()
 				}
 				else
 				{
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
+					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, i );
 
 				}
 			}
@@ -874,12 +876,12 @@ void EndAutoPilot()
 	if (Navs[CurrentNav].flags & NP_WAYPOINT)
 	{
 		goal = AI_GOAL_WAYPOINTS_ONCE;
-		goal_name = ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name();
+		goal_name = Waypoint_lists[Navs[CurrentNav].target_index].get_name();
 	}
 	else
 	{
 		goal = AI_GOAL_FLY_TO_SHIP;
-		goal_name = ((ship*)Navs[CurrentNav].target_obj)->ship_name;
+		goal_name = Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name;
 	}
 
 	// assign ship goals
@@ -1094,9 +1096,9 @@ void NavSystem_Do()
 
 		for (i = 0; i < MAX_NAVPOINTS; i++)
 		{
-			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_obj != NULL))
+			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_index >= 0))
 			{
-				if (((ship*)Navs[i].target_obj)->objnum == -1)
+				if (Objects[Navs[i].target_index].flags[Object::Object_Flags::Should_be_dead])
 				{
 					if (CurrentNav == i)
 						CurrentNav = -1;
@@ -1108,7 +1110,7 @@ void NavSystem_Do()
 		// check if we're reached a Node
 		for (i = 0; i < MAX_NAVPOINTS; i++)
 		{
-			if (Navs[i].target_obj != NULL)
+			if (Navs[i].target_index >= 0)
 			{
 				if (Navs[i].flags & NP_VALIDTYPE && DistanceTo(i) < 1000)
 					Navs[i].flags |= NP_VISITED;
@@ -1392,7 +1394,7 @@ bool AddNav_Ship(const char *Nav, const char *TargetName, int flags)
 	{
 		if (Ships[i].objnum != -1 && !stricmp(TargetName, Ships[i].ship_name))
 		{
-			tnav.target_obj = (void *)&Ships[i];		
+			tnav.target_index = Ships[i].objnum;
 		}
 	}
 
@@ -1433,7 +1435,7 @@ bool AddNav_Waypoint(const char *Nav, const char *WP_Path, int node, int flags)
 
 	Assert(!(tnav.flags & NP_SHIP));
 
-	tnav.target_obj = find_matching_waypoint_list(WP_Path);
+	tnav.target_index = find_matching_waypoint_list_index(WP_Path);
 	tnav.waypoint_num = node;
 
 	// copy it into it's location

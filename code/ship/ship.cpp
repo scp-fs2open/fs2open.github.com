@@ -17140,9 +17140,10 @@ int ship_return_seconds_to_goal(ship *sp)
 	if ( aip->mode == AIM_WAYPOINTS ) {
 		// Is traveling a waypoint path
 		min_speed = 0.9f * max_speed;
-		if (aip->wp_list != NULL) {
+		auto wp_list = find_waypoint_list_at_index(aip->wp_list_index);
+		if (wp_list != nullptr) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
-			auto& waypoints = aip->wp_list->get_waypoints();
+			auto& waypoints = wp_list->get_waypoints();
 
 			// distance to current waypoint
 			dist += vm_vec_dist_quick(&objp->pos, waypoints[aip->wp_index].get_pos());

@@ -1269,8 +1269,8 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 	int waypoint_instance = -1;
 	if (wlh && wlh->isValid())
 	{
-		int wp_list_index = find_index_of_waypoint_list(wlh->wlp);
-		int wp_index = (int) wlh->wlp->get_waypoints().size() - 1;
+		int wp_list_index = find_index_of_waypoint_list(wlh->getList());
+		int wp_index = static_cast<int>(wlh->getList()->get_waypoints().size()) - 1;
 		waypoint_instance = calc_waypoint_instance(wp_list_index, wp_index);
 	}
 	int obj_idx = waypoint_add(v3 != NULL ? v3 : &vmd_zero_vector, waypoint_instance);
