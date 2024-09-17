@@ -634,6 +634,10 @@ void parse_gamesnd_old(game_snd* gs)
 	int is_3d;
 	int temp;
 
+	// retail-style sounds with numeric indexes, as seen in the original sounds.tbl format
+	if (can_construe_as_integer(gs->name.c_str()))
+		gs->flags |= GAME_SND_RETAIL_STYLE;
+
 	// An old sound is just a single entry sound set
 	gs->sound_entries.resize(1);
 	auto& entry = gs->sound_entries.back();
@@ -642,7 +646,6 @@ void parse_gamesnd_old(game_snd* gs)
 	gs->pitch_range = util::UniformFloatRange(1.0f);
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
-	gs->flags |= GAME_SND_RETAIL_STYLE;
 
 	// since we have a new filename, first assume it's valid
 	gs->flags &= ~GAME_SND_NOT_VALID;
@@ -1353,17 +1356,12 @@ void parse_sound_table(const char* filename)
 						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds.size());
 
-						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
-						{
-							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
-						}
-						else
-						{
-							// prevent new named sounds from colliding with reserved indexes
-							tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
-						}
+						// retail sounds with numeric names must match their indexes
+						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
+							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+
+						// prevent new named sounds from colliding with reserved indexes
+						tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
 
 						Snds.emplace_back(std::move(tempSound));
 					}
@@ -1388,17 +1386,12 @@ void parse_sound_table(const char* filename)
 						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds_iface.size());
 
-						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
-						{
-							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
-						}
-						else
-						{
-							// prevent new named sounds from colliding with reserved indexes
-							tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
-						}
+						// retail sounds with numeric names must match their indexes
+						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
+							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+
+						// prevent new named sounds from colliding with reserved indexes
+						tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
 
 						Snds_iface.emplace_back(std::move(tempSound));
 					}
