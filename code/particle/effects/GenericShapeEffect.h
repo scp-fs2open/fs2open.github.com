@@ -89,7 +89,7 @@ class GenericShapeEffect : public ParticleEffect {
 	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
 	}
 
-	bool processSource(ParticleSource* source) override {
+	bool processSource(ParticleSource* source) const override {
 		if (!m_timing.continueProcessing(source)) {
 			return false;
 		}

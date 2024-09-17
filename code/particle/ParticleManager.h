@@ -4,8 +4,6 @@
 
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
-#include "particle/ParticleSource.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "utils/id.h"
 
 namespace particle {
@@ -15,6 +13,9 @@ struct particle_effect_tag {
  * The particle index type.
  */
 using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
+
+class ParticleSource;
+class ParticleSourceWrapper;
 
 /**
  * @brief Manages high-level particle effects and sources
@@ -26,7 +27,7 @@ using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
  */
 class ParticleManager {
  private:
-	SCP_vector<std::shared_ptr<ParticleEffect>> m_effects; //!< All parsed effects
+	SCP_vector<SCP_vector<ParticleEffect>> m_effects; //!< All parsed effects
 
 	SCP_vector<ParticleSource> m_sources; //!< The currently active sources
 
@@ -52,7 +53,7 @@ class ParticleManager {
 	 */
 	ParticleSource* createSource();
  public:
-	ParticleManager() {}
+	ParticleManager();
 
 	/**
 	 * @brief Initializes the effect system
@@ -81,13 +82,13 @@ class ParticleManager {
 	 * @param effectID The id of the effect to retrieve
 	 * @return The particle effect pointer, will not be @c nullptr
 	 */
-	inline ParticleEffectPtr getEffect(ParticleEffectHandle effectID)
+	inline const SCP_vector<ParticleEffect>& getEffect(ParticleEffectHandle effectID) const
 	{
 		Assertion(effectID.value() >= 0 &&
 		              effectID.value() < static_cast<ParticleEffectHandle::impl_type>(m_effects.size()),
 		          "Particle effect index " PTRDIFF_T_ARG " is invalid!", effectID.value());
 
-		return m_effects[effectID.value()].get();
+		return m_effects[effectID.value()];
 	}
 
 	/**
@@ -146,7 +147,7 @@ namespace internal {
  * @param name The name of the created effect, an empty string means no special name
  * @return The index of the added effect
  */
-ParticleEffectHandle parseEffectElement(EffectType forcedType = EffectType::Invalid, const SCP_string& name = "");
+ParticleEffectHandle parseEffectElement(const SCP_string& name = "");
 
 /**
  * @brief Utility function for required_string

@@ -23,7 +23,7 @@ class SphereShape {
  public:
 	SphereShape() : m_sphereRange(0.f, 1.f) {}
 
-	matrix getDisplacementMatrix() {
+	matrix getDisplacementMatrix() const {
 
 		vec3d vec;
 

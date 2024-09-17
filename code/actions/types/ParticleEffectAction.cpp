@@ -1,6 +1,8 @@
 
 #include "ParticleEffectAction.h"
 
+#include "particle/ParticleSourceWrapper.h"
+
 #include "math/vecmat.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"

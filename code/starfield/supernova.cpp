@@ -19,6 +19,7 @@
 #include "mission/missioncampaign.h"
 #include "particle/particle.h"
 #include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "popup/popupdead.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"

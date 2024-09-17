@@ -16,7 +16,7 @@ namespace effects {
 SingleParticleEffect::SingleParticleEffect(const SCP_string& name)
 	: ParticleEffect(name) {}
 
-bool SingleParticleEffect::processSource(ParticleSource* source) {
+bool SingleParticleEffect::processSource(ParticleSource* source) const {
 	if (!m_timing.continueProcessing(source)) {
 		return false;
 	}

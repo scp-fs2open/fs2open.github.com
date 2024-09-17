@@ -8,6 +8,7 @@
 
 #include "particle/particle.h"
 #include "particle/ParticleEffect.h"
+#include "particle/ParticleManager.h"
 
 #include "io/timer.h"
 
@@ -348,20 +349,22 @@ class ParticleSource {
 
 	SourceTiming m_timing; //!< The time informations of the particle source
 
-	ParticleEffect* m_effect; //!< The effect that is assigned to this source
+	ParticleEffectHandle m_effect; //!< The effect that is assigned to this source
 
 	size_t m_processingCount; //!< The number of times this effect has been processed
+
+	static constexpr size_t max_composite_size = 64;
+
+	std::bitset<max_composite_size> m_effect_completed;
 
 	void initializeThrusterOffset(weapon* wp, weapon_info* wip);
  public:
 	ParticleSource();
 
-	inline const ParticleEffect* getEffect() const { return m_effect; }
+	inline ParticleEffectHandle getEffect() { return m_effect; }
 
-	inline ParticleEffect* getEffect() { return m_effect; }
-
-	inline void setEffect(ParticleEffect* eff) {
-		Assert(eff != nullptr);
+	inline void setEffect(ParticleEffectHandle eff) {
+		Assert(eff.isValid());
 		m_effect = eff;
 	}
 

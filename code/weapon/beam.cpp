@@ -43,6 +43,7 @@
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/vecmath.h"
 #include "particle/particle.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/ship.h"

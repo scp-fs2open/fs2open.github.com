@@ -10,7 +10,7 @@ ParticleEmitterEffect::ParticleEmitterEffect() : ParticleEffect("") {
 	memset(&m_emitter, 0, sizeof(m_emitter));
 }
 
-bool ParticleEmitterEffect::processSource(ParticleSource* source) {
+bool ParticleEmitterEffect::processSource(ParticleSource* source) const {
 	particle_emitter emitter = m_emitter;
 	source->getOrigin()->getGlobalPosition(&emitter.pos);
 	emitter.normal = source->getOrientation()->getDirectionVector(source->getOrigin());

@@ -9,7 +9,7 @@
 
 namespace particle {
 namespace effects {
-bool BeamPiercingEffect::processSource(ParticleSource* source) {
+bool BeamPiercingEffect::processSource(ParticleSource* source) const {
 	particle_info info;
 
 	source->getOrigin()->applyToParticleInfo(info);

@@ -88,7 +88,7 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 }
 
-int ParticleProperties::chooseBitmap()
+int ParticleProperties::chooseBitmap() const
 {
 	// failsafe check, though we should not have been able to get to this point
 	Assertion(!m_bitmap_list.empty(), "No bitmaps found!");
@@ -96,7 +96,7 @@ int ParticleProperties::chooseBitmap()
 	return m_bitmap_list[m_bitmap_range.next()];
 }
 
-void ParticleProperties::createParticle(particle_info& info) {
+void ParticleProperties::createParticle(particle_info& info) const {
 	info.bitmap = ParticleProperties::chooseBitmap();
 	if (m_parentScale)
 		// if we were spawned by a particle, info.rad is the parent's radius and m_radius is a factor of that
@@ -132,7 +132,7 @@ void ParticleProperties::createParticle(particle_info& info) {
 	create(&info);
 }
 
-WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) {
+WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) const {
 	info.bitmap = ParticleProperties::chooseBitmap();
 	info.rad = m_radius.next();
 	info.length = m_length.next();

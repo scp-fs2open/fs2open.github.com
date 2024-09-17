@@ -25,6 +25,7 @@
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"

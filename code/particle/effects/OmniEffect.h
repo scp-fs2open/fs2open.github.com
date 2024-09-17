@@ -87,7 +87,7 @@ public:
 								int bitmap
 		);
 
-	bool processSource(ParticleSource* source) override;
+	bool processSource(ParticleSource* source) const override;
 
 	void parseValues(bool nocreate) override;
 

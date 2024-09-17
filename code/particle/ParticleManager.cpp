@@ -3,6 +3,8 @@
 
 #include "particle/ParticleManager.h"
 
+#include "particle/ParticleSourceWrapper.h"
+
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/CompositeEffect.h"
 #include "particle/effects/VolumeEffect.h"
@@ -31,14 +33,6 @@ const char* effectTypeNames[effectTypeNamesMax] = {
 	"Volume"
 };
 
-const char* getEffectTypeName(EffectType type) {
-	int index = static_cast<int>(type);
-	if (index >= 0 && static_cast<size_t>(index) < effectTypeNamesMax)
-		return effectTypeNames[index];
-
-	UNREACHABLE("Invalid effect type %d specified!", index);
-	return "INVALID";
-}
 
 ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 	using namespace effects;
@@ -129,6 +123,8 @@ void parseConfigFiles() {
 namespace particle {
 std::unique_ptr<ParticleManager> ParticleManager::m_manager = nullptr;
 
+ParticleManager::ParticleManager() {}
+
 void ParticleManager::init() {
 	Assertion(m_manager == nullptr, "ParticleManager was not properly shut down!");
 
@@ -172,8 +168,8 @@ ParticleEffectHandle ParticleManager::getEffectByName(const SCP_string& name)
 	}
 
 	auto foundIterator = find_if(m_effects.begin(), m_effects.end(),
-								 [&name](const std::shared_ptr<ParticleEffect>& ptr) {
-									 return lcase_equal(ptr->getName(), name);
+								 [&name](const SCP_vector<ParticleEffect>& vec) {
+									 return !vec.empty() && lcase_equal(vec.front().getName(), name);
 								 });
 
 	if (foundIterator == m_effects.end()) {
@@ -241,54 +237,30 @@ ParticleEffectHandle ParticleManager::addEffect(ParticleEffectPtr effect)
 	}
 #endif
 
-	m_effects.push_back(std::shared_ptr<ParticleEffect>(effect));
+	//TODO Fix effect adding
+	//m_effects.push_back(std::shared_ptr<ParticleEffect>(effect));
 
 	return ParticleEffectHandle(static_cast<ParticleEffectHandle::impl_type>(m_effects.size() - 1));
 }
 
 void ParticleManager::pageIn() {
-	for (auto& effect : m_effects) {
-		effect->pageIn();
+	for (auto& effectList : m_effects) {
+		for (auto& effect : effectList)
+			effect.pageIn();
 	}
 }
 
 ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 {
-	ParticleEffectPtr eff = this->getEffect(index);
 	ParticleSourceWrapper wrapper;
 
-	if (eff->getType() == EffectType::Composite) {
-		SCP_vector<ParticleSource*> sources;
-		auto composite = static_cast<effects::CompositeEffect*>(eff);
-		auto& childEffects = composite->getEffects();
+	ParticleSource* source = createSource();
+	source->setEffect(index);
+	//TODO sources are no longer initialized properly for compound effects
+	m_effects[index.value()].front().initializeSource(*source);
+	//eff->initializeSource(*source);
 
-		// UGH, HACK! To implement the source wrapper we need constant pointers to all sources.
-		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
-		if (m_processingSources) {
-			// If we are already in our onFrame, we need to apply the hack to the right vector though
-			m_deferredSourceAdding.reserve(m_deferredSourceAdding.size() + childEffects.size());
-		} else {
-			m_sources.reserve(m_sources.size() + childEffects.size());
-		}
-
-		for (auto& effect : childEffects) {
-			ParticleSource* source = createSource();
-			source->setEffect(effect);
-			effect->initializeSource(*source);
-
-			sources.push_back(source);
-		}
-
-		wrapper = ParticleSourceWrapper(std::move(sources));
-	}
-	else {
-		ParticleSource* source = createSource();
-		source->setEffect(eff);
-		eff->initializeSource(*source);
-
-		wrapper = ParticleSourceWrapper(source);
-	}
-
+	wrapper = ParticleSourceWrapper(source);
 	wrapper.setCreationTimestamp(timestamp());
 
 	return wrapper;
@@ -321,7 +293,7 @@ ParticleEffectHandle parseEffect(const SCP_string& objectName)
 }
 
 namespace internal {
-ParticleEffectHandle parseEffectElement(EffectType forcedType, const SCP_string& name)
+ParticleEffectHandle parseEffectElement(const SCP_string& name)
 {
 	if (!optional_string("$New Effect")) {
 		SCP_string newName;
@@ -332,22 +304,11 @@ ParticleEffectHandle parseEffectElement(EffectType forcedType, const SCP_string&
 		if (!index.isValid()) {
 			error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
 		}
-		if (forcedType != EffectType::Invalid) {
-			// Validate the effect type
-			auto effect = ParticleManager::get()->getEffect(index);
-
-			if (effect->getType() != forcedType) {
-				error_display(0, "Particle effect '%s' has the wrong effect type! Expected %s but was %s!",
-							  newName.c_str(), getEffectTypeName(forcedType), getEffectTypeName(effect->getType()));
-			}
-		}
 
 		return index;
 	}
 
-	if (forcedType == EffectType::Invalid) {
-		forcedType = parseEffectType();
-	}
+	EffectType forcedType = parseEffectType();
 
 	auto effect = constructEffect(name, forcedType);
 

@@ -7,7 +7,7 @@ namespace particle {
 namespace effects {
 CompositeEffect::CompositeEffect(const SCP_string& name) : ParticleEffect(name) {}
 
-bool CompositeEffect::processSource(ParticleSource*) {
+bool CompositeEffect::processSource(ParticleSource*) const {
 	UNREACHABLE("Processing a composite source is not supported! This was caused by a coding error, get a coder!");
 	return false;
 }
@@ -16,7 +16,8 @@ void CompositeEffect::parseValues(bool) {
 	while (optional_string("+Child effect:")) {
 		auto effectId = internal::parseEffectElement();
 		if (effectId.isValid()) {
-			ParticleEffectPtr effect = ParticleManager::get()->getEffect(effectId);
+			//TODO
+			/*ParticleEffectPtr effect = ParticleManager::get()->getEffect(effectId);
 
 			if (effect->getType() == EffectType::Composite) {
 				error_display(0,
@@ -24,7 +25,7 @@ void CompositeEffect::parseValues(bool) {
 			}
 			else {
 				addEffect(effect);
-			}
+			}*/
 		}
 	}
 }

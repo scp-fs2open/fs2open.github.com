@@ -69,6 +69,7 @@
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "scripting/hook_api.h"
 #include "scripting/global_hooks.h"
 #include "particle/particle.h"

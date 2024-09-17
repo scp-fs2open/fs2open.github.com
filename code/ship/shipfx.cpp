@@ -32,8 +32,7 @@
 #include "object/objectdock.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
-#include "particle/particle.h"
-#include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "playerman/player.h"
 #include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"

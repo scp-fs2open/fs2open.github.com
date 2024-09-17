@@ -80,7 +80,7 @@ class ParticleEffect {
 	 * @param source The source to process
 	 * @return @c true if the effect should continue to be processed, @c false if the effect is done.
 	 */
-	virtual bool processSource(ParticleSource* source) = 0;
+	virtual bool processSource(ParticleSource* source) const = 0;
 
 	/**
 	 * @brief Initializes the source for this effect

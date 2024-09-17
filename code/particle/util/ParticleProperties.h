@@ -20,7 +20,7 @@ private:
 	/**
 	 * @brief Choose particle from bitmap list
 	 */
-	int chooseBitmap();
+	int chooseBitmap() const;
 
  public:
 
@@ -52,14 +52,14 @@ private:
 	 * @param info The base values of the particle. Some values will be overwritten by this function
 	 * @return The created particle
 	 */
-	void createParticle(particle_info& info);
+	void createParticle(particle_info& info) const;
 
 	/**
 	 * @brief Creates a particle with the stored values
 	 * @param info The base values of the particle. Some values will be overwritten by this function
 	 * @return The created particle
 	 */
-	WeakParticlePtr createPersistentParticle(particle_info& info);
+	WeakParticlePtr createPersistentParticle(particle_info& info) const;
 
 	void pageIn();
 };

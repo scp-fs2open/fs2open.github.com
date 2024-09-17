@@ -3706,7 +3706,7 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 	if (sip == nullptr)
 		return;
 
-	auto damage_spew_effect = dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->damage_spew));
+	particle::effects::ParticleEmitterEffect* damage_spew_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->damage_spew));
 	if (damage_spew_effect != nullptr) {
 		damage_spew_effect = new particle::effects::ParticleEmitterEffect(*damage_spew_effect);
 
@@ -3748,7 +3748,7 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 		sip->damage_spew = particle::ParticleManager::get()->addEffect(damage_spew_effect);
 	}
 
-	auto split_particles_effect = dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->split_particles));
+	particle::effects::ParticleEmitterEffect* split_particles_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->split_particles));
 	if (split_particles_effect != nullptr) {
 		split_particles_effect = new particle::effects::ParticleEmitterEffect(*split_particles_effect);
 

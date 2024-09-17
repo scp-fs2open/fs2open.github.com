@@ -1,5 +1,7 @@
 #include "particle/effects/OmniEffect.h"
 
+#include "particle/ParticleSourceWrapper.h"
+
 #include "weapon/beam.h"
 #include "render/3d.h"
 
@@ -110,7 +112,7 @@ void OmniParticleEffect::initializeSource(ParticleSource &source) {
 		}
 	}
 
-bool OmniParticleEffect::processSource(ParticleSource* source) {
+bool OmniParticleEffect::processSource(ParticleSource* source) const {
 	if (!m_timing.continueProcessing(source)) {
 		return false;
 	}

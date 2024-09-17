@@ -22,6 +22,7 @@
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
 #include "particle/particle.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "particle/effects/ParticleEmitterEffect.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"

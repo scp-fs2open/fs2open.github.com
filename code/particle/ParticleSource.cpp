@@ -571,14 +571,14 @@ int SourceTiming::getNextCreationTime() const { return m_nextCreation; }
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 
-ParticleSource::ParticleSource() : m_effect(nullptr), m_processingCount(0) {}
+ParticleSource::ParticleSource() : m_effect(ParticleEffectHandle::invalid()), m_processingCount(0) {}
 
 bool ParticleSource::isValid() const {
 	if (m_timing.isFinished()) {
 		return false;
 	}
 
-	if (m_effect == nullptr) {
+	if (!m_effect.isValid()) {
 		return false;
 	}
 
@@ -631,7 +631,17 @@ void ParticleSource::finishCreation() {
 
 bool ParticleSource::process() {
 	if (m_timing.isActive()) {
-		auto result = this->m_effect->processSource(this);
+		//TODO make more efficient / get rid of the horror that is the singleton pattern
+		const auto& effectList = ParticleManager::get()->getEffect(m_effect);
+
+		bool result = false;
+		for (size_t i = 0; i < effectList.size(); i++) {
+			if (m_effect_completed[i]) {
+				bool effectResult = effectList[i].processSource(this);
+				m_effect_completed[i] = effectResult;
+				result |= effectResult;
+			}
+		}
 
 		++m_processingCount;
 

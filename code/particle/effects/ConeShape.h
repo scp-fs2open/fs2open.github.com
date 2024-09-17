@@ -19,7 +19,7 @@ class ConeShape {
  public:
 	ConeShape() {}
 
-	matrix getDisplacementMatrix() {
+	matrix getDisplacementMatrix() const {
 		angles angs;
 
 		angs.b = 0.0f;

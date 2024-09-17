@@ -43,6 +43,7 @@
 #include "parse/parselo.h"
 #include "scripting/global_hooks.h"
 #include "particle/particle.h"
+#include "particle/ParticleSourceWrapper.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "render/3d.h"
@@ -2216,13 +2217,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// Default value
 		wip->shield_impact_explosion_radius = 1.0f;
 		if (wip->impact_weapon_expl_effect.isValid()) {
-			auto singleEffect = dynamic_cast<effects::SingleParticleEffect*>(ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect));
-
-			if (singleEffect)
-			{
-				// Initialize with value of the previously created single particle effect
-				wip->shield_impact_explosion_radius = singleEffect->getProperties().m_radius.next();
-			}
+			//TODO
+			// Initialize with value of the previously created single particle effect
+			//wip->shield_impact_explosion_radius = singleEffect->getProperties().m_radius.next();
 		}
 	}
 
