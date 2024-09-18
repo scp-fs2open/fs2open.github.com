@@ -654,7 +654,7 @@ void parse_gamesnd_old(game_snd* gs)
 	{
 		entry.filename[0] = 0;
 		advance_to_eoln(nullptr);
-		gs->flags |= GAME_SND_NOT_VALID;
+		gs->flags |= (GAME_SND_NOT_VALID | GAME_SND_EXPLICITLY_EMPTY);
 		return;
 	}
 	Mp++;
@@ -883,7 +883,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	if (!stricmp(name, NOX("empty")) || !stricmp(name, NOX("none")))
 	{
 		entry->filename[0] = 0;
-		gs->flags |= GAME_SND_NOT_VALID;
+		gs->flags |= (GAME_SND_NOT_VALID | GAME_SND_EXPLICITLY_EMPTY);
 		return;
 	}
 
@@ -965,7 +965,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 
 bool gamesnd_is_placeholder(const game_snd& gs)
 {
-	return gs.sound_entries.empty() || gs.sound_entries[0].filename[0] == '\0';
+	return (gs.sound_entries.empty() || gs.sound_entries[0].filename[0] == '\0') && !(gs.flags & GAME_SND_EXPLICITLY_EMPTY);
 }
 
 void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize, bool (*is_reserved_index)(int))

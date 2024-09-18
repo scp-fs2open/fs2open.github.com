@@ -26,6 +26,7 @@
 #define GAME_SND_NOT_VALID			(1<<2)
 #define GAME_SND_PRELOAD			(1<<3)	//!< preload sound (ie read from disk before mission starts)
 #define GAME_SND_RETAIL_STYLE		(1<<4)
+#define GAME_SND_EXPLICITLY_EMPTY	(1<<5)	// a sound that has been parsed as empty
 
 // Priorities that can be passed to snd_play() functions to limit how many concurrent sounds of a 
 // given type are played.
