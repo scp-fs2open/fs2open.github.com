@@ -129,6 +129,14 @@ namespace
 			return;
 		}
 
+		if (optional_string("+Can Scale:")) {
+			bool temp;
+			
+			stuff_boolean(&temp);
+
+			nvgFont->setScaleBehavior(temp);
+		}
+
 		if (optional_string("+Top offset:"))
 		{
 			float temp;
@@ -482,6 +490,12 @@ namespace font
 		set_font(0);
 
 		font_initialized = true;
+	}
+
+	void checkFontOptions() {
+		if (!FontManager::hasScalingFonts()) {
+			removeFontMultiplierOption();
+		}
 	}
 
 	void close()
