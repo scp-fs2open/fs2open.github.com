@@ -329,7 +329,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	}
 
 	// if the model is not loaded then abort
-	if(asip->subtypes[asteroid_subtype].model_pointer == nullptr) {
+	if(asip->subtypes[asteroid_subtype].model_number == -1) {
 		return nullptr;
 	}	
 
@@ -454,8 +454,8 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	objp->phys_info.max_vel.xyz.y = 0.0f;
 	objp->phys_info.max_vel.xyz.z = vm_vec_mag(&objp->phys_info.desired_vel);
 	
-	objp->phys_info.mass = asip->subtypes[asteroid_subtype].model_pointer->rad * 700.0f;
-	objp->phys_info.I_body_inv.vec.rvec.xyz.x = 1.0f / (objp->phys_info.mass*asip->subtypes[asteroid_subtype].model_pointer->rad);
+	objp->phys_info.mass = model_get(asip->subtypes[asteroid_subtype].model_number)->rad * 700.0f;
+	objp->phys_info.I_body_inv.vec.rvec.xyz.x = 1.0f / (objp->phys_info.mass*model_get(asip->subtypes[asteroid_subtype].model_number)->rad);
 	objp->phys_info.I_body_inv.vec.uvec.xyz.y = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
 	objp->phys_info.I_body_inv.vec.fvec.xyz.z = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
 	objp->hull_strength = asip->initial_asteroid_strength * (0.8f + (float)Game_skill_level/NUM_SKILL_LEVELS)/2.0f;
@@ -550,7 +550,7 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 
 	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 	{
-		polymodel *pm = asip->subtypes[asteroid_subtype].model_pointer = model_get(asip->subtypes[asteroid_subtype].model_number);
+		polymodel *pm = model_get(asip->subtypes[asteroid_subtype].model_number);
 		
 		if ( asip->num_detail_levels != pm->n_detail_levels )
 		{
@@ -1717,7 +1717,6 @@ void asteroid_level_close()
 	for (size_t i = 0; i < Asteroid_info.size(); i++) {
 		for (size_t j = 0; j < Asteroid_info[i].subtypes.size(); j++) {
 			Asteroid_info[i].subtypes[j].model_number = -1;
-			Asteroid_info[i].subtypes[j].model_pointer = nullptr;
 		}
 	}
 
@@ -2183,7 +2182,6 @@ static void asteroid_parse_section()
 		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
 
 		thisType.model_number = -1;
-		thisType.model_pointer = nullptr;
 
 		asteroid_p->subtypes.push_back(thisType);
 	}
@@ -2195,7 +2193,6 @@ static void asteroid_parse_section()
 		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
 
 		thisType.model_number = -1;
-		thisType.model_pointer = nullptr;
 
 		asteroid_p->subtypes.push_back(thisType);
 	}
@@ -2207,7 +2204,6 @@ static void asteroid_parse_section()
 		stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
 
 		thisType.model_number = -1;
-		thisType.model_pointer = nullptr;
 
 		asteroid_p->subtypes.push_back(thisType);
 	}
@@ -2223,7 +2219,6 @@ static void asteroid_parse_section()
 			stuff_string(thisType.pof_filename, F_NAME, MAX_FILENAME_LEN);
 
 			thisType.model_number = -1;
-			thisType.model_pointer = nullptr;
 
 			bool exists = false;
 			for (const auto& type : asteroid_p->subtypes) {
@@ -2786,11 +2781,11 @@ void asteroid_page_in()
 				if (asip->subtypes[k].model_number < 0)
 					continue;
 
-				asip->subtypes[k].model_pointer = model_get(asip->subtypes[k].model_number);
+				const auto mp = model_get(asip->subtypes[k].model_number);
 
 				// Page in textures
-				for (int j = 0; j < asip->subtypes[k].model_pointer->n_textures; j++ )	{
-					asip->subtypes[k].model_pointer->maps[j].PageIn();			
+				for (int j = 0; j < mp->n_textures; j++) {
+					mp->maps[j].PageIn();			
 				}
 
 			}
