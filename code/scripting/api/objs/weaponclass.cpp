@@ -408,7 +408,7 @@ ADE_VIRTVAR_DEPRECATED(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean,
 }
 
 ADE_FUNC(getCorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number",
-	"Returns five values: a) whether the weapon has the corkscrew flag, b) the number of corkscrew missiles fired, c) the radius, d) the fire delay, e) whether the weapon counter-rotations, f) the twist value. Returns nil if the handle is invalid.")
+	"Returns six values: a) whether the weapon has the corkscrew flag, b) the number of corkscrew missiles fired, c) the radius, d) the fire delay, e) whether the weapon counter-rotations, f) the twist value. Returns nil if the handle is invalid.")
 {
 	return corkscrew_info_helper(L);
 }
