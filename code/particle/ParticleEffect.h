@@ -3,9 +3,14 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "utils/id.h"
 
 namespace particle {
 class ParticleSource;
+
+struct particle_effect_tag {
+};
+using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
 /**
  * @brief The type of an Effect
@@ -34,7 +39,7 @@ enum class EffectType: int {
  *
  * @ingroup particleSystems
  */
-class ParticleEffect {
+class ParticleEffectLegacy {
  protected:
 	SCP_string m_name; //!< The name of this effect
 
@@ -43,9 +48,9 @@ class ParticleEffect {
 	 * @brief Initializes the base ParticleEffect
 	 * @param name The name this effect should have
 	 */
-	explicit ParticleEffect(const SCP_string& name) : m_name(name) {}
+	explicit ParticleEffectLegacy(const SCP_string& name) : m_name(name) {}
 
-	virtual ~ParticleEffect() {}
+	virtual ~ParticleEffectLegacy() {}
 
 	const SCP_string& getName() const { return m_name; }
 
@@ -106,7 +111,7 @@ class ParticleEffect {
 /**
  * A particle pointer.
  */
-typedef ParticleEffect* ParticleEffectPtr;
+//typedef ParticleEffect* ParticleEffectPtr;
 }
 
 

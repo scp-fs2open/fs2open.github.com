@@ -5,7 +5,7 @@
 
 namespace particle {
 namespace effects {
-CompositeEffect::CompositeEffect(const SCP_string& name) : ParticleEffect(name) {}
+CompositeEffect::CompositeEffect(const SCP_string& name) : ParticleEffectLegacy(name) {}
 
 bool CompositeEffect::processSource(ParticleSource*) const {
 	UNREACHABLE("Processing a composite source is not supported! This was caused by a coding error, get a coder!");

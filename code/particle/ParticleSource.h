@@ -8,7 +8,6 @@
 
 #include "particle/particle.h"
 #include "particle/ParticleEffect.h"
-#include "particle/ParticleManager.h"
 
 #include "io/timer.h"
 

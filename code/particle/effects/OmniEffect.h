@@ -2,18 +2,16 @@
 
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
-#include "particle/ParticleManager.h"
 #include "particle/ParticleVolume.h"
 #include "particle/util/ParticleProperties.h"
 #include "particle/util/EffectTiming.h"
 #include "utils/RandomRange.h"
 
 namespace particle {
-namespace effects {
 /**
  * @ingroup particleEffects
  */
-class OmniParticleEffect: public ParticleEffect {
+class ParticleEffect : public ParticleEffectLegacy {
 public:
 	enum class ShapeDirection {
 		Aligned,
@@ -64,11 +62,11 @@ private:
 
 public:
 
-	explicit OmniParticleEffect(const SCP_string& name);
+	explicit ParticleEffect(const SCP_string& name);
 
 	// Use this to recreate deprecated legacy effects from in-engine code.
 	// Parsing the deprecated -part.tbm effects uses the simple constructor + parseLegacy() instead!
-	explicit OmniParticleEffect(const SCP_string& name,
+	explicit ParticleEffect(const SCP_string& name,
 								::util::ParsedRandomFloatRange particleNum,
 								ShapeDirection direction,
 								::util::ParsedRandomFloatRange vel_inherit,
@@ -98,5 +96,4 @@ public:
 	EffectType getType() const override { return EffectType::Single; }
 
 };
-}
 }

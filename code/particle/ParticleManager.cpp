@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <memory>
 
+#include "particle/effects/OmniEffect.h"
+
 #include "particle/ParticleManager.h"
 
 #include "particle/ParticleSourceWrapper.h"
@@ -12,6 +14,7 @@
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
 #include "particle/effects/GenericShapeEffect.h"
+
 
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
@@ -34,8 +37,8 @@ const char* effectTypeNames[effectTypeNamesMax] = {
 };
 
 
-ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
-	using namespace effects;
+std::nullptr_t constructEffect(const SCP_string& name, EffectType type) {
+	/*using namespace effects;
 	// Use a unique_ptr to make sure memory is deallocated if an exception is thrown
 	std::unique_ptr<ParticleEffect> effect;
 
@@ -71,7 +74,8 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 	}
 
-	return effect.release();
+	return effect.release();*/
+	return nullptr;
 }
 
 EffectType parseEffectType() {
@@ -103,7 +107,8 @@ void parseCallback(const char* fileName) {
 
 			auto type = parseEffectType();
 
-			ParticleManager::get()->addEffect(constructEffect(name, type));
+			//TODO
+			//ParticleManager::get()->addEffect(constructEffect(name, type));
 		}
 
 		required_string("#End");
@@ -214,31 +219,35 @@ void ParticleManager::doFrame(float) {
 	m_deferredSourceAdding.clear();
 }
 
-ParticleEffectHandle ParticleManager::addEffect(ParticleEffectPtr effect)
+ParticleEffectHandle ParticleManager::addEffect(ParticleEffect&& effect)
+{
+	SCP_vector<ParticleEffect> effectList;
+	effectList.emplace_back(std::move(effect));
+	return addEffect(std::move(effectList));
+}
+
+ParticleEffectHandle ParticleManager::addEffect(SCP_vector<ParticleEffect>&& effect)
 {
 	// we don't need this on standalone so remove the effect and return something invalid
 	if (Is_standalone) {
-		delete effect;
-
 		return ParticleEffectHandle::invalid();
 	}
 
-	Assertion(effect, "Invalid effect pointer passed!");
+	Assert(!effect.empty());
 
 #ifndef NDEBUG
-	if (!effect->getName().empty()) {
+	if (!effect.front().getName().empty()) {
 		// This check is a bit expensive and will only be used in debug
-		auto index = getEffectByName(effect->getName());
+		auto index = getEffectByName(effect.front().getName());
 
 		if (index.isValid()) {
-			Warning(LOCATION, "Effect with name '%s' already exists!", effect->getName().c_str());
+			Warning(LOCATION, "Effect with name '%s' already exists!", effect.front().getName().c_str());
 			return index;
 		}
 	}
 #endif
 
-	//TODO Fix effect adding
-	//m_effects.push_back(std::shared_ptr<ParticleEffect>(effect));
+	m_effects.emplace_back(std::move(effect));
 
 	return ParticleEffectHandle(static_cast<ParticleEffectHandle::impl_type>(m_effects.size() - 1));
 }
@@ -312,7 +321,7 @@ ParticleEffectHandle parseEffectElement(const SCP_string& name)
 
 	auto effect = constructEffect(name, forcedType);
 
-	return ParticleManager::get()->addEffect(effect);
+	return ParticleEffectHandle::invalid();//;ParticleManager::get()->addEffect(effect);
 }
 
 bool required_string_if_new(const char* token, bool no_create) {

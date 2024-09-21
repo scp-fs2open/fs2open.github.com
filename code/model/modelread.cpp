@@ -3745,7 +3745,8 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 			pe.max_life = 1.5f * spark_time_scale;
 		}
 
-		sip->damage_spew = particle::ParticleManager::get()->addEffect(damage_spew_effect);
+		//TODO
+		//sip->damage_spew = particle::ParticleManager::get()->addEffect(damage_spew_effect);
 	}
 
 	particle::effects::ParticleEmitterEffect* split_particles_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->split_particles));
@@ -3767,7 +3768,8 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 			pe.max_rad = 1.5f*scale;				// Max radius
 		}
 
-		sip->split_particles = particle::ParticleManager::get()->addEffect(split_particles_effect);
+		//TODO
+		//sip->split_particles = particle::ParticleManager::get()->addEffect(split_particles_effect);
 	}
 }
 

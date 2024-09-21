@@ -3,16 +3,17 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-#include "particle/ParticleEffect.h"
+#include "particle/effects/OmniEffect.h"
 #include "utils/id.h"
 
 namespace particle {
-struct particle_effect_tag {
-};
+
+class ParticleEffectLegacy;
+using ParticleEffectPtr = ParticleEffectLegacy*;
+
 /**
  * The particle index type.
  */
-using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
 class ParticleSource;
 class ParticleSourceWrapper;
@@ -107,7 +108,14 @@ class ParticleManager {
 	 * @param effect The effect to add
 	 * @return The index of the added effect
 	 */
-	ParticleEffectHandle addEffect(ParticleEffectPtr effect);
+	ParticleEffectHandle addEffect(ParticleEffect&& effect);
+
+	/**
+	 * @brief Adds a composite effect
+	 * @param effect The effects of the composite effect to add
+	 * @return The index of the added effect
+	 */
+	ParticleEffectHandle addEffect(SCP_vector<ParticleEffect>&& effect);
 
 	/**
 	 * @brief Does one processing step of the particle manager

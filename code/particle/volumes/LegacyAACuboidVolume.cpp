@@ -3,6 +3,8 @@
 #include "math/vecmat.h"
 
 namespace particle {
+	LegacyAACuboidVolume::LegacyAACuboidVolume(float normalVariance, float size, bool normalize) : m_normalVariance(normalVariance), m_size(size), m_normalize(normalize) {	}
+
 	vec3d LegacyAACuboidVolume::sampleRandomPoint(const matrix &orientation) {
 		vec3d normal;
 

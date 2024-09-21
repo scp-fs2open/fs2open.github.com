@@ -15,7 +15,7 @@
 namespace particle {
 	namespace effects {
 		VolumeEffect::VolumeEffect(const SCP_string& name)
-			: ParticleEffect(name) {}
+			: ParticleEffectLegacy(name) {}
 
 		bool VolumeEffect::processSource(ParticleSource* source) const {
 			if (!m_timing.continueProcessing(source)) {

@@ -6,7 +6,7 @@
 
 namespace particle {
 namespace effects {
-ParticleEmitterEffect::ParticleEmitterEffect() : ParticleEffect("") {
+ParticleEmitterEffect::ParticleEmitterEffect() : ParticleEffectLegacy("") {
 	memset(&m_emitter, 0, sizeof(m_emitter));
 }
 

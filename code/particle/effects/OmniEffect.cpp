@@ -1,15 +1,16 @@
 #include "particle/effects/OmniEffect.h"
 
+#include "particle/ParticleManager.h"
+
 #include "particle/ParticleSourceWrapper.h"
 
 #include "weapon/beam.h"
 #include "render/3d.h"
 
 namespace particle {
-namespace effects {
 
-OmniParticleEffect::OmniParticleEffect(const SCP_string& name)
-	: ParticleEffect(name),
+ParticleEffect::ParticleEffect(const SCP_string& name)
+	: ParticleEffectLegacy(name),
 	  m_timing(),
 	  m_particleProperties(),
 	  m_particleNum(::util::UniformFloatRange(1.0f)),
@@ -27,7 +28,7 @@ OmniParticleEffect::OmniParticleEffect(const SCP_string& name)
 	  m_distanceCulled(-1.f)
 	{}
 
-OmniParticleEffect::OmniParticleEffect(const SCP_string& name,
+ParticleEffect::ParticleEffect(const SCP_string& name,
 	::util::ParsedRandomFloatRange particleNum,
 	ShapeDirection direction,
 	::util::ParsedRandomFloatRange vel_inherit,
@@ -44,7 +45,7 @@ OmniParticleEffect::OmniParticleEffect(const SCP_string& name,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
-	: ParticleEffect(name),
+	: ParticleEffectLegacy(name),
 	  m_timing(),
 	  m_particleProperties(),
 	  m_particleNum(std::move(particleNum)),
@@ -67,12 +68,12 @@ OmniParticleEffect::OmniParticleEffect(const SCP_string& name,
 	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);
 }
 
-void OmniParticleEffect::initializeSource(ParticleSource &source) {
+void ParticleEffect::initializeSource(ParticleSource &source) {
 	m_timing.applyToSource(&source);
 }
 
 //This MUST be refactored into ParticleSourceHost
-	vec3d OmniParticleEffect::getNewDirection(const ParticleSource* source) const {
+	vec3d ParticleEffect::getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ShapeDirection::Aligned:
 				return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
@@ -112,7 +113,7 @@ void OmniParticleEffect::initializeSource(ParticleSource &source) {
 		}
 	}
 
-bool OmniParticleEffect::processSource(ParticleSource* source) const {
+bool ParticleEffect::processSource(ParticleSource* source) const {
 	if (!m_timing.continueProcessing(source)) {
 		return false;
 	}
@@ -222,9 +223,8 @@ bool OmniParticleEffect::processSource(ParticleSource* source) const {
 	return true;
 }
 
-void OmniParticleEffect::pageIn() {
+void ParticleEffect::pageIn() {
 	m_particleProperties.pageIn();
 }
 
-}
 }

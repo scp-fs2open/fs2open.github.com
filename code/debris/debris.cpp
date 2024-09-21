@@ -24,6 +24,7 @@
 #include "particle/particle.h"
 #include "particle/ParticleSourceWrapper.h"
 #include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -117,20 +118,24 @@ void debris_init()
 
 	Num_hull_pieces = 0;
 
-	auto debris_hit_effect = new particle::effects::ParticleEmitterEffect();
-	particle::particle_emitter pe;
-	pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-	pe.min_rad = 0.20f;				// Min radius
-	pe.max_rad = 0.40f;				// Max radius
-	pe.num_low = 10;				// Lowest number of particles to create
-	pe.num_high = 10;			// Highest number of particles to create
-	pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-	pe.min_vel = 0.0f;				// How fast the slowest particle can move
-	pe.max_vel = 10.0f;				// How fast the fastest particle can move
-	pe.min_life = 0.25f;			// How long the particles live
-	pe.max_life = 0.75f;			// How long the particles live
-	debris_hit_effect->setValues(pe, particle::Anim_bitmap_id_fire, 1.f, particle::Anim_num_frames_fire);
-	Debris_hit_particle = particle::ParticleManager::get()->addEffect(debris_hit_effect);
+	Debris_hit_particle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+		"__internal_debris_hit_particle", //Name
+		::util::UniformFloatRange(10.f), //Particle num
+		particle::ParticleEffect::ShapeDirection::Aligned, //Particle direction
+		::util::UniformFloatRange(1.f), //Velocity Inherit
+		false, //Velocity Inherit absolute?
+		make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume
+		::util::UniformFloatRange(0.f, 10.f), //Velocity volume multiplier
+		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+		tl::nullopt, //Position-based velocity
+		nullptr, //Position volume
+		particle::ParticleEffectHandle::invalid(), //Trail
+		1.f, //Chance
+		true, //Affected by detail
+		1.f, //Culling range multiplier
+		::util::UniformFloatRange(0.25f, 0.75f), //Lifetime
+		::util::UniformFloatRange(0.2f, 0.4f), //Radius
+		particle::Anim_bitmap_id_fire)); //Bitmap
 }
 
 /**

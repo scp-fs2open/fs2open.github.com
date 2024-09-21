@@ -28,7 +28,7 @@ enum class ConeDirection {
  * @ingroup particleEffects
  */
 template<typename TShape>
-class GenericShapeEffect : public ParticleEffect {
+class GenericShapeEffect : public ParticleEffectLegacy {
  private:
 	util::ParticleProperties m_particleProperties;
 
@@ -86,7 +86,7 @@ class GenericShapeEffect : public ParticleEffect {
 	}
 
  public:
-	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
+	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffectLegacy(name) {
 	}
 
 	bool processSource(ParticleSource* source) const override {

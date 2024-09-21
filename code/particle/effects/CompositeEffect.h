@@ -12,7 +12,7 @@ namespace effects {
 /**
  * @ingroup particleEffects
  */
-class CompositeEffect: public ParticleEffect {
+class CompositeEffect: public ParticleEffectLegacy {
  private:
 	SCP_vector<ParticleEffectPtr> m_childEffects;
 

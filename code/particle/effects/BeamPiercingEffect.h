@@ -11,7 +11,7 @@ namespace effects {
 /**
  * @ingroup particleEffects
  */
-class BeamPiercingEffect: public ParticleEffect {
+class BeamPiercingEffect: public ParticleEffectLegacy {
  private:
 	float m_radius = -1.f;
 	float m_velocity = -1.f;
@@ -21,7 +21,7 @@ class BeamPiercingEffect: public ParticleEffect {
 	int m_effectBitmap = -1;
 
  public:
-	BeamPiercingEffect() : ParticleEffect("") {}
+	BeamPiercingEffect() : ParticleEffectLegacy("") {}
 
 	bool processSource(ParticleSource* source) const override;
 

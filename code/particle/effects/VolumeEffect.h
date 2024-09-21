@@ -14,7 +14,7 @@ namespace particle {
 		/**
 		 * @ingroup particleEffects
 		 */
-		class VolumeEffect : public ParticleEffect {
+		class VolumeEffect : public ParticleEffectLegacy {
 		private:
 			util::ParticleProperties m_particleProperties;
 
