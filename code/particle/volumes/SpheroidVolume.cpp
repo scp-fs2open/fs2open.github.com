@@ -3,6 +3,8 @@
 #include "math/vecmat.h"
 
 namespace particle {
+	SpheroidVolume::SpheroidVolume(float bias, float stretch, float radius) : m_bias(bias), m_stretch(stretch), m_radius(radius) { };
+
 	vec3d SpheroidVolume::sampleRandomPoint(const matrix &orientation) {
 		vec3d pos;
 		// get an unbiased random point in the sphere

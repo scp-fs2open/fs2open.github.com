@@ -62,6 +62,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	  m_affectedByDetail(affectedByDetail),
 	  m_distanceCulled(distanceCulled) {
 	m_particleProperties.m_lifetime = std::move(lifetime);
+	m_particleProperties.m_hasLifetime = true;
 	m_particleProperties.m_keep_anim_length_if_available = true;
 	m_particleProperties.m_radius = std::move(radius);
 	m_particleProperties.m_bitmap_list = {bitmap};
@@ -222,6 +223,10 @@ bool ParticleEffect::processSource(ParticleSource* source) const {
 	// Continue processing this source
 	return true;
 }
+
+void ParticleEffect::parseValues(bool nocreate) {
+	//TODO
+};
 
 void ParticleEffect::pageIn() {
 	m_particleProperties.pageIn();

@@ -9,6 +9,11 @@ namespace particle {
 		float m_radius;
 
 	public:
+		explicit SpheroidVolume(float bias, float stretch, float radius);
+
 		vec3d sampleRandomPoint(const matrix &orientation) override;
+		void parse() override {
+			//TODO
+		};
 	};
 }

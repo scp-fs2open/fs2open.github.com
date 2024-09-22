@@ -56,9 +56,9 @@
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
-#include "particle/effects/SingleParticleEffect.h"
-#include "particle/effects/BeamPiercingEffect.h"
-#include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/effects/OmniEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
+#include "particle/volumes/SpheroidVolume.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "weapon.h"
@@ -2193,19 +2193,28 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (bitmapIndex >= 0 && size > 0.0f)
 		{
 			using namespace particle;
+			SCP_string particle_effect_name = "__internal_wip_impact_" + SCP_string(wip->name);
 
-			// Only beams do this randomization
-			if (subtype == WP_BEAM)
-			{
-				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
-				auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f);
-				wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-			}
-			else
-			{
-				auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size, size);
-				wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-			}
+			// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
+			auto radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
+			wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+					particle_effect_name, //Name
+					::util::UniformFloatRange(1.f), //Particle num
+					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+					::util::UniformFloatRange(0.f), //Velocity Inherit
+					false, //Velocity Inherit absolute?
+					nullptr, //Velocity volume
+					::util::UniformFloatRange(0.f), //Velocity volume multiplier
+					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					tl::nullopt, //Position-based velocity
+					nullptr, //Position volume
+					ParticleEffectHandle::invalid(), //Trail
+					1.f, //Chance
+					false, //Affected by detail
+					-1.f, //Culling range multiplier
+					::util::UniformFloatRange(-1.f), //Lifetime
+					std::move(radius), //Radius
+					bitmapIndex)); //Bitmap
 		}
 	}
 
@@ -2253,19 +2262,28 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (bitmapID >= 0 && size > 0.0f)
 			{
 				using namespace particle;
+				SCP_string particle_effect_name = "__internal_wip_dinkyimpact_" + SCP_string(wip->name);
 
-				// Only beams do this randomization
-				if (subtype == WP_BEAM)
-				{
-					// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapID, size * 1.2f, size * 1.9f);
-					wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-				}
-				else
-				{
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapID, size, size);
-					wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-				}
+				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
+				auto radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
+				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+						particle_effect_name, //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						nullptr, //Velocity volume
+						::util::UniformFloatRange(0.f), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						::util::UniformFloatRange(-1.f), //Lifetime
+						std::move(radius), //Radius
+						bitmapID)); //Bitmap
 			}
 		}
 		else if (first_time) {
@@ -2295,7 +2313,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// Do not add features here!
 
 		using namespace particle;
-		using namespace effects;
 
 		int effectIndex = -1;
 		float radius = 0.0f;
@@ -2340,31 +2357,49 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (effectIndex >= 0 && radius != 0.0f)
 		{
-			emitter.max_vel = 2.0f * velocity;
-			emitter.min_vel = 0.5f * velocity;
-			emitter.max_life = 2.0f * life;
-			emitter.min_life = 0.25f * life;
-			emitter.num_high = 2 * count;
-			emitter.num_low = count / 2;
-			emitter.normal_variance = variance;
-			emitter.max_rad = 2.0f * radius;
-			emitter.min_rad = 0.5f * radius;
-			emitter.vel = vmd_zero_vector;
+			SCP_string particle_effect_name = "__internal_wip_piercing_" + SCP_string(wip->name);
 
-			auto emitterEffect = new ParticleEmitterEffect();
-			emitterEffect->setValues(emitter, effectIndex, 10.0f);
-			wip->piercing_impact_effect = ParticleManager::get()->addEffect(emitterEffect);
+			wip->piercing_impact_effect = ParticleManager::get()->addEffect(ParticleEffect(
+					particle_effect_name, //Name
+					::util::UniformFloatRange(count / 2.f, 2.f * count), //Particle num
+					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+					::util::UniformFloatRange(1.f), //Velocity Inherit
+					false, //Velocity Inherit absolute?
+					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+					::util::UniformFloatRange(0.5f * velocity, 2.0f * velocity), //Velocity volume multiplier
+					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					tl::nullopt, //Position-based velocity
+					nullptr, //Position volume
+					ParticleEffectHandle::invalid(), //Trail
+					1.f, //Chance
+					true, //Affected by detail
+					10.f, //Culling range multiplier
+					::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
+					::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
+					effectIndex)); //Bitmap
 
 			if (back_velocity != 0.0f)
 			{
-				emitter.max_vel = 2.0f * back_velocity;
-				emitter.min_vel = 0.5f * back_velocity;
-				emitter.num_high /= 2;
-				emitter.num_low /= 2;
+				SCP_string particle_effect_name_secondary = "__internal_wip_piercing_secondary_" + SCP_string(wip->name);
 
-				auto secondaryEffect = new ParticleEmitterEffect();
-				secondaryEffect->setValues(emitter, effectIndex, 10.0f);
-				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(secondaryEffect);
+				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(ParticleEffect(
+						particle_effect_name_secondary, //Name
+						::util::UniformFloatRange(count / 4.f, count), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(1.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+						::util::UniformFloatRange(0.5f * back_velocity, 2.0f * back_velocity), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						true, //Affected by detail
+						10.f, //Culling range multiplier
+						::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
+						::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
+						effectIndex)); //Bitmap
 			}
 		}
 	}
@@ -2998,22 +3033,31 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (bitmapIndex >= 0 && size > 0.0f)
 			{
 				using namespace particle;
+				SCP_string particle_effect_name = "__internal_wip_flashimpact_" + SCP_string(wip->name);
 
-				if (defaultEffect)
-				{
-					// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
-					// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
-					// seriously, who though that would be a good idea?
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f, size * 1.5f * 0.005f);
-					wip->flash_impact_weapon_expl_effect = ParticleManager::get()->
-						addEffect(singleEffect);
-				}
-				else
-				{
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f);
-					wip->flash_impact_weapon_expl_effect = ParticleManager::get()->
-						addEffect(singleEffect);
-				}
+				// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
+				// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
+				// seriously, who though that would be a good idea?
+				auto lifetime = defaultEffect ? ::util::UniformFloatRange(size * 1.5f * 0.005f) : ::util::UniformFloatRange(-1.f);
+
+				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+						particle_effect_name, //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						nullptr, //Velocity volume
+						::util::UniformFloatRange(0.f), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						std::move(lifetime), //Lifetime
+						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
+						bitmapIndex)); //Bitmap
 			}
 		}
 
@@ -3059,13 +3103,54 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (bitmapIndex >= 0 && radius > 0.0f)
 			{
 				using namespace particle;
-				using namespace effects;
 
-				auto piercingEffect = new BeamPiercingEffect();
-				piercingEffect->setValues(bitmapIndex, radius, velocity, back_velocity, variance);
+				SCP_string particle_effect_name = "__internal_wip_beampiercing_" + SCP_string(wip->name);
+				SCP_vector<ParticleEffect> piercingEffect;
 
-				wip->piercing_impact_effect = ParticleManager::get()->
-					addEffect(piercingEffect);
+				float baseVelocity = velocity == 0.f ? radius : velocity;
+				float backVelocity = back_velocity == 0.f ? baseVelocity * -0.2f : back_velocity;
+
+				//Primary particle
+				piercingEffect.emplace_back(
+						particle_effect_name, //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(baseVelocity, baseVelocity * 2.f), //Velocity Inherit
+						true, //Velocity Inherit absolute?
+						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						::util::UniformFloatRange(-1.f), //Lifetime
+						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
+						bitmapIndex);
+
+				//Splash particle
+				piercingEffect.emplace_back(
+						"", //Name, empty as it's a non-findable part of a composite
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(backVelocity, backVelocity * 2.f), //Velocity Inherit
+						true, //Velocity Inherit absolute?
+						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						::util::UniformFloatRange(-1.f), //Lifetime
+						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
+						bitmapIndex);
+
+				wip->piercing_impact_effect = ParticleManager::get()->addEffect(std::move(piercingEffect));
 			}
 		}
 
