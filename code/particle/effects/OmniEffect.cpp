@@ -14,7 +14,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name)
 	  m_timing(),
 	  m_particleProperties(),
 	  m_particleNum(::util::UniformFloatRange(1.0f)),
-	  m_direction(ShapeDirection::Aligned),
+	  m_direction(ShapeDirection::ALIGNED),
 	  m_vel_inherit(),
 	  m_vel_inherit_absolute(false),
 	  m_velocityVolume(nullptr),
@@ -75,9 +75,9 @@ void ParticleEffect::initializeSource(ParticleSource &source) {
 //This MUST be refactored into ParticleSourceHost
 	vec3d ParticleEffect::getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
-			case ShapeDirection::Aligned:
+			case ShapeDirection::ALIGNED:
 				return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
-			case ShapeDirection::HitNormal: {
+			case ShapeDirection::HIT_NORMAL: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
@@ -85,7 +85,7 @@ void ParticleEffect::initializeSource(ParticleSource &source) {
 
 				return normal;
 			}
-			case ShapeDirection::Reflected: {
+			case ShapeDirection::REFLECTED: {
 				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
@@ -102,7 +102,7 @@ void ParticleEffect::initializeSource(ParticleSource &source) {
 
 				return out;
 			}
-			case ShapeDirection::Reverse: {
+			case ShapeDirection::REVERSE: {
 				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vm_vec_scale(&out, -1.0f);
 				return out;

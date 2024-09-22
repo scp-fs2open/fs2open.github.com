@@ -121,7 +121,7 @@ void debris_init()
 	Debris_hit_particle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 		"__internal_debris_hit_particle", //Name
 		::util::UniformFloatRange(10.f), //Particle num
-		particle::ParticleEffect::ShapeDirection::Aligned, //Particle direction
+		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
 		make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume

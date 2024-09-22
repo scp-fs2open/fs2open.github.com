@@ -18,7 +18,8 @@
 #include "math/vecmat.h"
 #include "mission/missioncampaign.h"
 #include "particle/particle.h"
-#include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/effects/OmniEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
 #include "particle/ParticleSourceWrapper.h"
 #include "popup/popupdead.h"
 #include "ship/ship.h"
@@ -45,20 +46,24 @@ auto Supernova_status = SUPERNOVA_STAGE::NONE;
 //
 
 static particle::ParticleEffectHandle supernova_init_particle() {
-	particle::particle_emitter whee;
-	whee.max_life = 1.0f;
-	whee.min_life = 0.6f;
-	whee.max_vel = 50.0f;
-	whee.min_vel = 25.0f;
-	whee.normal_variance = 0.75f;
-	whee.num_high = 5;
-	whee.num_low = 2;
-	whee.min_rad = 0.5f;
-	whee.max_rad = 1.25f;
-
-	auto effect = new particle::effects::ParticleEmitterEffect();
-	effect->setValues(whee, particle::Anim_bitmap_id_fire, 1.f, particle::Anim_num_frames_fire);
-	return particle::ParticleManager::get()->addEffect(effect);
+	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+			"__internal_supernova_particle", //Name
+			::util::UniformFloatRange(2.f, 5.f), //Particle num
+			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+			::util::UniformFloatRange(1.f), //Velocity Inherit
+			false, //Velocity Inherit absolute?
+			make_unique<particle::LegacyAACuboidVolume>(0.75f, 1.f, true), //Velocity volume
+			::util::UniformFloatRange(25.f, 50.f), //Velocity volume multiplier
+			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			tl::nullopt, //Position-based velocity
+			nullptr, //Position volume
+			particle::ParticleEffectHandle::invalid(), //Trail
+			1.f, //Chance
+			true, //Affected by detail
+			1.f, //Culling range multiplier
+			::util::UniformFloatRange(0.6f, 1.f), //Lifetime
+			::util::UniformFloatRange(0.5f, 1.25f), //Radius
+			particle::Anim_bitmap_id_fire)); //Bitmap
 }
 
 // level init

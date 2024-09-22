@@ -68,7 +68,8 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
-#include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/effects/OmniEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
 #include "particle/ParticleSourceWrapper.h"
 #include "scripting/hook_api.h"
 #include "scripting/global_hooks.h"
@@ -170,7 +171,7 @@ static void ship_set_eye(object *obj, int eye_index);
 static void ship_start_targeting_laser(ship *shipp);
 static void ship_add_ship_type_kill_count(int ship_info_index);
 static int ship_info_lookup_sub(const char *token);
-static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, int nframes);
+static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, const char* name);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -1802,20 +1803,20 @@ ship_info::ship_info()
 	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
-	static auto default_impact_spew = default_ship_particle_effect(30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire, particle::Anim_num_frames_fire);
+	static auto default_impact_spew = default_ship_particle_effect(30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire, "__internal_sip_impact spew_default");
 	impact_spew = default_impact_spew;
 
 	// default values from shipfx.cpp
-	static auto default_damage_spew = default_ship_particle_effect(1, 0, 1.3f, 1.7f, 0.0f, 0.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke, particle::Anim_num_frames_smoke);
+	static auto default_damage_spew = default_ship_particle_effect(1, 0, 1.3f, 1.7f, 0.0f, 0.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke, "__internal_sip_damage spew_default");
 	damage_spew = default_damage_spew;
 
-	static auto default_split_particles = default_ship_particle_effect(80, 40, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, particle::Anim_num_frames_smoke2);
+	static auto default_split_particles = default_ship_particle_effect(80, 40, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, "__internal_sip_ship split spew_default");
 	split_particles = default_split_particles;
 
-	static auto default_knossos_end_particles = default_ship_particle_effect(30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2, particle::Anim_num_frames_smoke2);
+	static auto default_knossos_end_particles = default_ship_particle_effect(30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2, "__internal_sip_knossos death spew_default");
 	knossos_end_particles = default_knossos_end_particles;
 
-	static auto default_regular_end_particles = default_ship_particle_effect(100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, particle::Anim_num_frames_smoke2);
+	static auto default_regular_end_particles = default_ship_particle_effect(100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, "__internal_sip_normal death spew_default");
 	regular_end_particles = default_regular_end_particles;
 
 	death_effect = particle::ParticleEffectHandle::invalid();
@@ -2425,131 +2426,105 @@ static void parse_ship_sounds(ship_info *sip)
 	parse_ship_sound("$DeathRollSnd:",                    GameSounds::DEATH_ROLL, sip);
 	parse_ship_sound("$ExplosionSnd:",                    GameSounds::SHIP_EXPLODE_1, sip);
 	parse_ship_sound("$SubsysExplosionSnd:",              GameSounds::SUBSYS_EXPLODE, sip);
-} 
+}
 
-static particle::ParticleEffectHandle parse_ship_particle_effect(ship_info* sip, const char *id_string, float range, int bitmap, int nframes)
+static inline void parse_ship_particle_random_range_parse_helper(float* value) {
+	stuff_float(value);
+}
+
+static inline void parse_ship_particle_random_range_parse_helper(int* value) {
+	stuff_int(value);
+}
+
+template<typename T_parse, typename T_range = T_parse>
+static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char *min_name, const char *max_name, const char* id_string, const char *error_name, const char* shipname, bool min_can_be_0) {
+	constexpr const char* const non_neg_print_str = std::is_integral<T_parse>::value ? "Bad value %i, defined as %s particle %s (%s) in ship '%s'.\nValue should be non-negative.\n" : "Bad value %f, defined as %s particle %s (%s) in ship '%s'.\nValue should be non-negative.\n";
+	constexpr const char* const pos_print_str = std::is_integral<T_parse>::value ? "Bad value %i, defined as %s particle %s (%s) in ship '%s'.\nValue should be positive.\n" : "Bad value %f, defined as %s particle %s (%s) in ship '%s'.\nValue should be positive.\n";
+	T_parse uninitialized = min_can_be_0 ? static_cast<T_parse>(0) : (std::numeric_limits<T_range>::min() + (std::is_integral<T_parse>::value ? 1 : 0));
+	T_parse max_value = uninitialized, min_value = uninitialized;
+
+	if(optional_string(max_name))
+	{
+		parse_ship_particle_random_range_parse_helper(&max_value);
+		if (max_value < 0 || (max_value <= 0.0f && !min_can_be_0)) {
+			Warning(LOCATION, min_can_be_0 ? non_neg_print_str : pos_print_str, max_value, id_string, error_name, "min", shipname);
+			max_value = uninitialized;
+		}
+	}
+
+	if(optional_string(min_name))
+	{
+		parse_ship_particle_random_range_parse_helper(&min_value);
+		if (min_value < 0 || (min_value <= 0.0f && !min_can_be_0)) {
+			Warning(LOCATION, min_can_be_0 ? non_neg_print_str : pos_print_str, min_value, id_string, error_name, "max", shipname);
+			min_value = uninitialized;
+		}
+	}
+	if (min_value >= max_value)
+		return ::util::UniformRange<T_range>(max_value);
+	else
+		return ::util::UniformRange<T_range>(min_value, max_value);
+}
+
+static particle::ParticleEffectHandle parse_ship_particle_effect(ship_info* sip, const char *id_string, float range, int bitmap)
 {
-	particle::particle_emitter pe;
+	//TODO accept modern particle here
+	SCP_string effect_name = "__internal_sip_" + SCP_string(sip->name) + id_string;
 
-	float tempf;
-	int temp;
-	if(optional_string("+Max particles:"))
-	{
-		stuff_int(&temp);
-		if (temp < 0) {
-			Warning(LOCATION,"Bad value %i, defined as %s particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, id_string, sip->name);
-		} else {
-			pe.num_high = temp;
-			if (pe.num_high == 0) {
-				// notification for disabling the particles
-				mprintf(("Particle effect for %s disabled on ship '%s'.\n", id_string, sip->name));
-			}
-		}
-	}
-	if(optional_string("+Min particles:"))
-	{
-		stuff_int(&temp);
-		if (temp < 0) {
-			Warning(LOCATION,"Bad value %i, defined as %s particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, id_string, sip->name);
-		} else {
-			pe.num_low = temp;
-		}
-	}
-	if (pe.num_low > pe.num_high)
-		pe.num_low = pe.num_high;
-
-	if(optional_string("+Max Radius:"))
-	{
-		stuff_float(&tempf);
-		if (tempf <= 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, id_string, sip->name);
-		} else {
-			pe.max_rad = tempf;
-		}
-	}
-	if(optional_string("+Min Radius:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe.min_rad = tempf;
-		}
-	}
-	if (pe.min_rad > pe.max_rad)
-		pe.min_rad = pe.max_rad;
-
-	if(optional_string("+Max Lifetime:"))
-	{
-		stuff_float(&tempf);
-		if (tempf <= 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, id_string, sip->name);
-		} else {
-			pe.max_life = tempf;
-		}
-	}
-	if(optional_string("+Min Lifetime:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe.min_life = tempf;
-		}
-	}
-	if (pe.min_life > pe.max_life)
-		pe.min_life = pe.max_life;
-
-	if(optional_string("+Max Velocity:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe.max_vel = tempf;
-		}
-	}
-	if(optional_string("+Min Velocity:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe.min_vel = tempf;
-		}
-	}
-	if (pe.min_vel > pe.max_vel)
-		pe.min_vel = pe.max_vel;
+	auto particle_num = parse_ship_particle_random_range<int, float>("+Min particles:", "+Max particles:", id_string, "number", sip->name, true);
+	auto radius = parse_ship_particle_random_range<float>("+Min Radius:", "+Max Radius:", id_string, "radius", sip->name, true);
+	auto lifetime = parse_ship_particle_random_range<float>("+Min Lifetime:", "+Max Lifetime:", id_string, "lifetime", sip->name, true);
+	auto velocity = parse_ship_particle_random_range<float>("+Min Velocity:", "+Max Velocity:", id_string, "velocity", sip->name, false);
+	float normal_variance = 0.0f;
 
 	if(optional_string("+Normal Variance:"))
 	{
-		stuff_float(&tempf);
-		if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
-			pe.normal_variance = tempf;
-		} else {
-			Warning(LOCATION,"Bad value %f, defined as %s particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, id_string, sip->name);
+		stuff_float(&normal_variance);
+		if ((normal_variance < 0.0f) || (normal_variance > 2.0f)) {
+			normal_variance = 0.0f;
+			Warning(LOCATION,"Bad value %f, defined as %s particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", normal_variance, id_string, sip->name);
 		}
 	}
 
-	auto effect = new particle::effects::ParticleEmitterEffect();
-	effect->setValues(pe, bitmap, range, nframes);
-	return particle::ParticleManager::get()->addEffect(effect);
+	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+			effect_name, //Name
+			std::move(particle_num), //Particle num
+			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+			::util::UniformFloatRange(1.f), //Velocity Inherit
+			false, //Velocity Inherit absolute?
+			make_unique<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true), //Velocity volume
+			std::move(velocity), //Velocity volume multiplier
+			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			tl::nullopt, //Position-based velocity
+			nullptr, //Position volume
+			particle::ParticleEffectHandle::invalid(), //Trail
+			1.f, //Chance
+			true, //Affected by detail
+			range, //Culling range multiplier
+			std::move(lifetime), //Lifetime
+			std::move(radius), //Radius
+			bitmap)); //Bitmap
 }
 
-static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, int nframes) {
-	particle::particle_emitter pe;
-	pe.num_high = n_high;
-	pe.num_low = n_low;
-	pe.max_rad = max_rad;
-	pe.min_rad = min_rad ;
-	pe.max_life = max_life;
-	pe.min_life = min_life;
-	pe.max_vel = max_vel ;
-	pe.min_vel = min_vel ;
-	pe.normal_variance = variance;
-	auto effect = new particle::effects::ParticleEmitterEffect();
-	effect->setValues(pe, bitmap, range, nframes);
-	return particle::ParticleManager::get()->addEffect(effect);
+static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, const char* name) {
+	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+			name, //Name
+			::util::UniformFloatRange(n_low, n_high), //Particle num
+			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+			::util::UniformFloatRange(1.f), //Velocity Inherit
+			false, //Velocity Inherit absolute?
+			make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+			::util::UniformFloatRange(min_vel, max_vel), //Velocity volume multiplier
+			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			tl::nullopt, //Position-based velocity
+			nullptr, //Position volume
+			particle::ParticleEffectHandle::invalid(), //Trail
+			1.f, //Chance
+			true, //Affected by detail
+			range, //Culling range multiplier
+			::util::UniformFloatRange(min_life, max_life), //Lifetime
+			::util::UniformFloatRange(min_rad, max_rad), //Radius
+			bitmap)); //Bitmap
 }
 
 static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
@@ -3248,11 +3223,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	//are settable, but erg, just not happening right now -C
 	if(optional_string("$Impact Spew:"))
 	{
-		sip->impact_spew = parse_ship_particle_effect(sip, "impact spew", 1.f, particle::Anim_bitmap_id_fire, particle::Anim_num_frames_fire);
+		sip->impact_spew = parse_ship_particle_effect(sip, "impact spew", 1.f, particle::Anim_bitmap_id_fire);
 	}
 	if(optional_string("$Damage Spew:"))
 	{
-		sip->damage_spew = parse_ship_particle_effect(sip, "damage spew", 1.f, particle::Anim_bitmap_id_smoke, particle::Anim_num_frames_smoke);
+		sip->damage_spew = parse_ship_particle_effect(sip, "damage spew", 1.f, particle::Anim_bitmap_id_smoke);
 	}
 
 	if(optional_string("$Collision Physics:"))
@@ -3758,7 +3733,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if(optional_string("$Ship Splitting Particles:"))
 	{
-		sip->split_particles = parse_ship_particle_effect(sip, "ship split spew", 1.f, particle::Anim_bitmap_id_smoke2, particle::Anim_num_frames_smoke2);
+		sip->split_particles = parse_ship_particle_effect(sip, "ship split spew", 1.f, particle::Anim_bitmap_id_smoke2);
 	}
 
 	if (optional_string("$Ship Death Effect:"))
@@ -3767,12 +3742,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	else if(optional_string("$Ship Death Particles:"))
 	{
-		sip->regular_end_particles = parse_ship_particle_effect(sip, "normal death spew", 1.f, particle::Anim_bitmap_id_smoke2, particle::Anim_num_frames_smoke2);
+		sip->regular_end_particles = parse_ship_particle_effect(sip, "normal death spew", 1.f, particle::Anim_bitmap_id_smoke2);
 	}
 
 	if(optional_string("$Alternate Death Particles:"))
 	{
-		sip->knossos_end_particles = parse_ship_particle_effect(sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, particle::Anim_num_frames_smoke2);
+		sip->knossos_end_particles = parse_ship_particle_effect(sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2);
 	}
 
 	auto skip_str = "$Skip Death Roll Percent Chance:";
@@ -4702,37 +4677,50 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			Error( LOCATION, "formatting error in the thruster's particle section for %s '%s'\n", info_type_name, sip->name );
 
 		generic_anim_init(&tpart.thruster_bitmap, NULL);
+
+		//TODO accept modern particle here
 		stuff_string(tpart.thruster_bitmap.filename, F_NAME, MAX_FILENAME_LEN);
 
+		float min_rad, max_rad;
+		int min_n, max_n;
+		float variance;
 		required_string("$Min Radius:");
-		stuff_float(&tpart.min_rad);
+		stuff_float(&min_rad);
 		
 		required_string("$Max Radius:");
-		stuff_float(&tpart.max_rad);
+		stuff_float(&max_rad);
 		
 		required_string("$Min created:");
-		stuff_int(&tpart.n_low);
+		stuff_int(&min_n);
 		
 		required_string("$Max created:");
-		stuff_int(&tpart.n_high);
+		stuff_int(&max_n);
 		
 		required_string("$Variance:");
-		stuff_float(&tpart.variance);
+		stuff_float(&variance);
 
-		particle::particle_emitter pe;
-		pe.num_low = tpart.n_low;
-		pe.num_high = tpart.n_high;
-		pe.min_rad = tpart.min_rad;
-		pe.max_rad = tpart.max_rad;
-		pe.normal_variance = tpart.variance;
-		pe.min_life = 0.0f;
-		pe.max_life = 1.0f;
+		SCP_string thruster_effect_name = "__internal_sip_thruster_" + SCP_string(sip->name) + std::to_string(sip->afterburner_thruster_particles.size() + sip->normal_thruster_particles.size());
 
 		generic_anim_load(&tpart.thruster_bitmap);
 
-		auto tpart_effect = new particle::effects::ParticleEmitterEffect();
-		tpart_effect->setValues(pe, tpart.thruster_bitmap.first_frame, 1.f);
-		tpart.particle_handle = particle::ParticleManager::get()->addEffect(tpart_effect);
+		tpart.particle_handle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+				thruster_effect_name, //Name
+				::util::UniformFloatRange(min_n, max_n), //Particle num
+				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+				::util::UniformFloatRange(1.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+				::util::UniformFloatRange(0.0f), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				tl::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				true, //Affected by detail
+				1.0f, //Culling range multiplier
+				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
+				::util::UniformFloatRange(min_rad, max_rad), //Radius
+				tpart.thruster_bitmap.first_frame)); //Bitmap
 
 		if (afterburner) {
 			sip->afterburner_thruster_particles.push_back( tpart );

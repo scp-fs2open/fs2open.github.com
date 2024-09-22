@@ -979,11 +979,6 @@ typedef struct ship_passive_arc_info {
 
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
-	float		min_rad;
-	float		max_rad;
-	int			n_high;
-	int			n_low;
-	float		variance;
 	particle::ParticleEffectHandle particle_handle;
 } thruster_particles;
 

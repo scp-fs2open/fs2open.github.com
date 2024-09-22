@@ -14,10 +14,10 @@ namespace particle {
 class ParticleEffect : public ParticleEffectLegacy {
 public:
 	enum class ShapeDirection {
-		Aligned,
-		HitNormal,
-		Reflected,
-		Reverse
+		ALIGNED,
+		HIT_NORMAL,
+		REFLECTED,
+		REVERSE
 	};
 
 	enum class VelocityScaling {

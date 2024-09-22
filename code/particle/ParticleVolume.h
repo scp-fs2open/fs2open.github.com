@@ -9,5 +9,7 @@ namespace particle {
 		virtual vec3d sampleRandomPoint(const matrix &orientation) = 0;
 
 		virtual void parse() = 0;
+
+		virtual ~ParticleVolume() = default;
 	};
 }
