@@ -318,6 +318,16 @@ struct ConditionalImpact {
 	bool dinky;
 };
 
+enum class FiringPattern {
+	STANDARD,
+	CYCLE_FORWARD,
+	CYCLE_REVERSE,
+	RANDOM_EXHAUSTIVE,
+	RANDOM_NONREPEATING,
+	RANDOM_REPEATING,
+	MAX_VALUE,
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -539,9 +549,11 @@ struct weapon_info
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
 	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
 	float max_fof_spread;			//The maximum fof increase that the shots can spread to
+	FiringPattern firing_pattern;
 	int	  shots;					//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
+	int   cycle_multishot;			//ugly hack -- used to control multishot if the weapon uses any non-standard firing pattern, since $shots is used for fire point number
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;
