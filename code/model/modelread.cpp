@@ -34,7 +34,6 @@
 #include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
-#include "particle/effects/ParticleEmitterEffect.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
@@ -3706,7 +3705,7 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 	if (sip == nullptr)
 		return;
 
-	particle::effects::ParticleEmitterEffect* damage_spew_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->damage_spew));
+	/*particle::effects::ParticleEmitterEffect* damage_spew_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->damage_spew));
 	if (damage_spew_effect != nullptr) {
 		damage_spew_effect = new particle::effects::ParticleEmitterEffect(*damage_spew_effect);
 
@@ -3770,7 +3769,7 @@ void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
 
 		//TODO
 		//sip->split_particles = particle::ParticleManager::get()->addEffect(split_particles_effect);
-	}
+	}*/
 }
 
 // Determine the path indices (indicies into pm->paths[]) for the paths used for approaching/departing

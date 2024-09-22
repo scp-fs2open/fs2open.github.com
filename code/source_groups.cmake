@@ -1112,21 +1112,8 @@ add_file_folder("Particle"
 )
 
 add_file_folder("Particle\\\\Effects"
-	particle/effects/BeamPiercingEffect.cpp
-	particle/effects/BeamPiercingEffect.h
-	particle/effects/CompositeEffect.cpp
-	particle/effects/CompositeEffect.h
-	particle/effects/ConeShape.h
-	particle/effects/GenericShapeEffect.h
 	particle/effects/OmniEffect.cpp
 	particle/effects/OmniEffect.h
-	particle/effects/ParticleEmitterEffect.cpp
-	particle/effects/ParticleEmitterEffect.h
-	particle/effects/SingleParticleEffect.cpp
-	particle/effects/SingleParticleEffect.h
-	particle/effects/SphereShape.h
-	particle/effects/VolumeEffect.cpp
-	particle/effects/VolumeEffect.h
 )
 
 add_file_folder("Particle\\\\Util"

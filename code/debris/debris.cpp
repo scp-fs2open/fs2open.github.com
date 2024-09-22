@@ -23,7 +23,7 @@
 #include "object/objectsnd.h"
 #include "particle/particle.h"
 #include "particle/ParticleSourceWrapper.h"
-#include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/effects/OmniEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"

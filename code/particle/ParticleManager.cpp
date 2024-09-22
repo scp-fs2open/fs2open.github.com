@@ -7,15 +7,6 @@
 
 #include "particle/ParticleSourceWrapper.h"
 
-#include "particle/effects/SingleParticleEffect.h"
-#include "particle/effects/CompositeEffect.h"
-#include "particle/effects/VolumeEffect.h"
-
-#include "particle/effects/ConeShape.h"
-#include "particle/effects/SphereShape.h"
-#include "particle/effects/GenericShapeEffect.h"
-
-
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
 #include "tracing/tracing.h"
@@ -49,24 +40,186 @@ std::nullptr_t constructEffect(const SCP_string& name, EffectType type) {
 			break;
 		}
 		case EffectType::Composite: {
-			effect.reset(new CompositeEffect(name));
-			effect->parseValues(false);
-			break;
+			 while (optional_string("+Child effect:")) {
+				auto effectId = internal::parseEffectElement();
+				if (effectId.isValid()) {
+					//TODO
+					ParticleEffectPtr effect = ParticleManager::get()->getEffect(effectId);
+
+					if (effect->getType() == EffectType::Composite) {
+						error_display(0,
+									  "A composite effect cannot contain more composite effects! The effect has not been added.");
+					}
+					else {
+						addEffect(effect);
+					}
+				}
+			}
 		}
 		case EffectType::Cone: {
-			effect.reset(new GenericShapeEffect<ConeShape>(name));
-			effect->parseValues(false);
-			break;
+			if (internal::required_string_if_new("+Deviation:", nocreate)) {
+				float deviation;
+				stuff_float(&deviation);
+
+				if (deviation < 0.001f) {
+					error_display(0, "A standard deviation of %f is not valid. Must be greater than 0. Defaulting to 1.",
+								  deviation);
+					deviation = 1.0f;
+				}
+
+				m_normalDeviation = ::util::NormalFloatRange(0.f, fl_radians(deviation));
+			}
 		}
 		case EffectType::Sphere: {
-			effect.reset(new GenericShapeEffect<SphereShape>(name));
-			effect->parseValues(false);
-			break;
 		}
+		 m_particleProperties.parse(nocreate);
+
+			m_shape.parse(nocreate);
+
+			if (internal::required_string_if_new("+Velocity:", nocreate)) {
+				m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+
+			if (internal::required_string_if_new("+Number:", nocreate)) {
+				m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
+			}
+			if (!nocreate) {
+				m_particleChance = 1.0f;
+			}
+			if (optional_string("+Chance:")) {
+				float chance;
+				stuff_float(&chance);
+				if (chance <= 0.0f) {
+					error_display(0,
+						"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
+						m_name.c_str(), chance);
+				} else if (chance > 1.0f) {
+					error_display(0,
+						"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: (min,max) "
+						"to spawn multiple particles.", m_name.c_str(), chance);
+					chance = 1.0f;
+				}
+				m_particleChance = chance;
+			}
+			m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
+
+			if (optional_string("+Direction:")) {
+				char dirStr[NAME_LENGTH];
+				stuff_string(dirStr, F_NAME, NAME_LENGTH);
+
+				if (!stricmp(dirStr, "Incoming")) {
+					m_direction = ConeDirection::Incoming;
+				}
+				else if (!stricmp(dirStr, "Normal")) {
+					m_direction = ConeDirection::Normal;
+				}
+				else if (!stricmp(dirStr, "Reflected")) {
+					m_direction = ConeDirection::Reflected;
+				}
+				else if (!stricmp(dirStr, "Reverse")) {
+					m_direction = ConeDirection::Reverse;
+				}
+				else {
+					error_display(0, "Unknown direction name '%s'!", dirStr);
+				}
+			}
+
+			bool saw_deprecated_effect_location = false;
+			if (optional_string("+Trail effect:")) {
+				// This is the deprecated location since this introduces ambiguities in the parsing process
+				m_particleTrail = internal::parseEffectElement();
+				saw_deprecated_effect_location = true;
+			}
+
+			if (optional_string("+Parent Velocity Factor:")) {
+				m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+
+			m_timing = util::EffectTiming::parseTiming();
+
+			if (optional_string("+Trail effect:")) {
+				// This is the new and correct location. This might create duplicate effects but the warning should be clear
+				// enough to avoid that
+				if (saw_deprecated_effect_location) {
+					error_display(0, "Found two trail effect options! Specifying '+Trail effect:' before '+Duration:' is "
+									 "deprecated since that can cause issues with conflicting effect options.");
+				}
+				m_particleTrail = internal::parseEffectElement();
+			}
+
 		case EffectType::Volume: {
-			effect.reset(new VolumeEffect(name));
-			effect->parseValues(false);
-			break;
+			m_particleProperties.parse(nocreate);
+
+			if (internal::required_string_if_new("+Velocity:", nocreate)) {
+				m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+
+			if (internal::required_string_if_new("+Number:", nocreate)) {
+				m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
+			}
+
+			if (!nocreate) {
+				m_particleChance = 1.0f;
+			}
+
+			if (optional_string("+Chance:")) {
+				float chance;
+				stuff_float(&chance);
+				if (chance <= 0.0f) {
+					error_display(0,
+						"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
+						m_name.c_str(),
+						chance);
+				} else if (chance >= 1.0f) {
+					error_display(0,
+						"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: "
+						"(min,max) to spawn multiple particles.",
+						m_name.c_str(),
+						chance);
+					chance = 1.0f;
+				}
+				m_particleChance = chance;
+			}
+			m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
+
+			if (internal::required_string_if_new("+Volume radius:", nocreate)) {
+				float radius;
+				stuff_float(&radius);
+
+				if (radius < 0.001f) {
+					error_display(0, "A volume radius of %f is not valid. Must be greater than 0. Defaulting to 10.", radius);
+					radius = 10.0f;
+				}
+				m_radius = radius;
+			}
+
+			if (optional_string("+Bias:")) {
+				float bias;
+				stuff_float(&bias);
+
+				if (bias < 0.001f) {
+					error_display(0, "A volume bias value of %f is not valid. Must be greater than 0.", bias);
+					bias = 1.0f;
+				}
+				m_bias = bias;
+			}
+
+			if (optional_string("+Stretch:")) {
+				float stretch;
+				stuff_float(&stretch);
+
+				if (stretch < 0.001f) {
+					error_display(0, "A volume stretch value of %f is not valid. Must be greater than 0.", stretch);
+					stretch = 1.0f;
+				}
+				m_stretch = stretch;
+			}
+
+			if (optional_string("+Parent Velocity Factor:")) {
+				m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+
+			m_timing = util::EffectTiming::parseTiming();
 		}
 		default: {
 			Error(LOCATION, "Unimplemented effect type %d encountered! Get a coder!", static_cast<int>(type));
