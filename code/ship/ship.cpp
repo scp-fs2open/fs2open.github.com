@@ -3903,7 +3903,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 			sip->dyn_firing_patterns_allowed[pattern_index].push_back(pattern);
 		}
-		if (sip->dyn_firing_patterns_allowed[pattern_index].size() == 0) {
+		if (sip->dyn_firing_patterns_allowed[pattern_index].empty()) {
 			sip->dyn_firing_patterns_allowed[pattern_index].push_back(FiringPattern::CYCLE_FORWARD);
 		}
 	}
@@ -12919,13 +12919,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
     					fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
     					fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
-    					fbfire_info.beam_info_override = NULL;
+    					fbfire_info.beam_info_override = nullptr;
     					fbfire_info.shooter = &Objects[shipp->objnum];
 
 	    				if (aip->target_objnum >= 0) {
     						fbfire_info.target = &Objects[aip->target_objnum];
     					} else {
-    						fbfire_info.target = NULL;
+    						fbfire_info.target = nullptr;
 	    				}
 	    				fbfire_info.turret = &shipp->fighter_beam_turret_data;
     					fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
@@ -13065,7 +13065,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					firepoint_list = nullptr;
 				}
 
-				polymodel *weapon_model = NULL;
+				polymodel *weapon_model = nullptr;
 				if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0)) 
 					weapon_model = model_get(winfo_p->external_model_num);
 
@@ -13271,7 +13271,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					case FiringPattern::RANDOM_EXHAUSTIVE: {
 						if (num_slots < (swp->primary_firepoint_used_index[bank_to_fire] + point_count)) {
 							std::random_device rd;
-							std::shuffle(&swp->primary_firepoint_indices[bank_to_fire][0], &swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_used_index[bank_to_fire]-1], std::mt19937(rd()));
+							std::shuffle(&swp->primary_firepoint_indices[bank_to_fire][0], &swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_used_index[bank_to_fire]-1], std::mt19937(rd())); //NOLINT
 						} else if (swp->primary_firepoint_used_index[bank_to_fire] < point_count) {
 							std::random_device rd;
 							std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
