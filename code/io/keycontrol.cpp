@@ -1818,6 +1818,7 @@ int button_function_critical(int n, net_player *p = NULL)
 					polymodel *pm = model_get( sip->model_num );
 					count = (int)ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
+					swp->primary_firepoint_used_index[swp->current_primary_bank] = 0;
 				}
 			}
 			break;

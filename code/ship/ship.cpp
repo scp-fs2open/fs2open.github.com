@@ -7078,7 +7078,7 @@ void ship_weapon::clear()
 
         primary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
 
-        primary_bank_pattern_index[i] = 0;
+        primary_bank_substitution_pattern_index[i] = 0;
 
         burst_counter[i] = 0;
 		burst_seed[i] = Random::next();
@@ -7107,7 +7107,7 @@ void ship_weapon::clear()
 
 		secondary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
 
-		secondary_bank_pattern_index[i] = 0;
+		secondary_bank_substitution_pattern_index[i] = 0;
 
         burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
         external_model_fp_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;

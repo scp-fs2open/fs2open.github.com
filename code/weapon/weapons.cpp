@@ -6403,12 +6403,12 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 	// the weapon to the wrong bank.  Hopefully this isn't a problem.
 	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
 		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_pattern_index[pi]);
+			return &(ship_weapon_p->primary_bank_substitution_pattern_index[pi]);
 		}
 	}
 	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
 		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_pattern_index[si]);
+			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[si]);
 		}
 	}
 	return NULL;
