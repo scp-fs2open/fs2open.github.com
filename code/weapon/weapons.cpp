@@ -775,6 +775,8 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->damage);
+		if (sci->damage < 0.0f)
+			sci->damage = 0.0f;
 		sci->damage_overidden = true;
 	}
 
@@ -1321,6 +1323,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Damage:")) {
 		stuff_float(&wip->damage);
+
+		if (wip->damage < 0.0f) {
+			Warning(LOCATION, "$Damage in weapon '%s' should not be negative.\nConsider the 'heals' flag instead if this is intentional. ", wip->name);
+			wip->damage = 0.0f;
+		}
+
 		//WMC - now that shockwave damage can be set for them individually,
 		//do this automagically
 		if(!wip->shockwave.damage_overidden) {
