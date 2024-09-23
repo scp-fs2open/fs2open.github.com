@@ -325,7 +325,6 @@ enum class FiringPattern {
 	RANDOM_EXHAUSTIVE,
 	RANDOM_NONREPEATING,
 	RANDOM_REPEATING,
-	MAX_VALUE,
 };
 
 struct weapon_info
