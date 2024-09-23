@@ -13292,6 +13292,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 						std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
 						break;
 					}
+					default: {
+						break;
+					}
 				}
 
 				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
