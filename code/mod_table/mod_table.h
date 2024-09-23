@@ -164,6 +164,7 @@ extern bool Use_new_scanning_behavior;
 extern bool Lua_API_returns_nil_instead_of_invalid_object;
 extern bool Dont_show_callsigns_in_escort_list;
 extern bool Fix_scripted_velocity;
+extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 
 void mod_table_init();
 void mod_table_post_process();
