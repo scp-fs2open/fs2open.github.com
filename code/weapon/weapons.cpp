@@ -2193,12 +2193,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (bitmapIndex >= 0 && size > 0.0f)
 		{
 			using namespace particle;
-			SCP_string particle_effect_name = "__internal_wip_impact_" + SCP_string(wip->name);
 
 			// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
 			auto radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
 			wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
-					particle_effect_name, //Name
+					"", //Name
 					::util::UniformFloatRange(1.f), //Particle num
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(0.f), //Velocity Inherit
@@ -2262,12 +2261,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (bitmapID >= 0 && size > 0.0f)
 			{
 				using namespace particle;
-				SCP_string particle_effect_name = "__internal_wip_dinkyimpact_" + SCP_string(wip->name);
 
 				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
 				auto radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
 				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
-						particle_effect_name, //Name
+						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
@@ -2357,10 +2355,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (effectIndex >= 0 && radius != 0.0f)
 		{
-			SCP_string particle_effect_name = "__internal_wip_piercing_" + SCP_string(wip->name);
-
 			wip->piercing_impact_effect = ParticleManager::get()->addEffect(ParticleEffect(
-					particle_effect_name, //Name
+					"", //Name
 					::util::UniformFloatRange(count / 2.f, 2.f * count), //Particle num
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
@@ -2380,10 +2376,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (back_velocity != 0.0f)
 			{
-				SCP_string particle_effect_name_secondary = "__internal_wip_piercing_secondary_" + SCP_string(wip->name);
-
 				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(ParticleEffect(
-						particle_effect_name_secondary, //Name
+						"", //Name
 						::util::UniformFloatRange(count / 4.f, count), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(1.f), //Velocity Inherit
@@ -3033,7 +3027,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (bitmapIndex >= 0 && size > 0.0f)
 			{
 				using namespace particle;
-				SCP_string particle_effect_name = "__internal_wip_flashimpact_" + SCP_string(wip->name);
 
 				// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
 				// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
@@ -3041,7 +3034,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				auto lifetime = defaultEffect ? ::util::UniformFloatRange(size * 1.5f * 0.005f) : ::util::UniformFloatRange(-1.f);
 
 				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
-						particle_effect_name, //Name
+						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit

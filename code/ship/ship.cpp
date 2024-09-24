@@ -171,7 +171,7 @@ static void ship_set_eye(object *obj, int eye_index);
 static void ship_start_targeting_laser(ship *shipp);
 static void ship_add_ship_type_kill_count(int ship_info_index);
 static int ship_info_lookup_sub(const char *token);
-static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, const char* name);
+static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -1803,20 +1803,20 @@ ship_info::ship_info()
 	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
-	static auto default_impact_spew = default_ship_particle_effect(30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire, "__internal_sip_impact spew_default");
+	static auto default_impact_spew = default_ship_particle_effect(30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire);
 	impact_spew = default_impact_spew;
 
 	// default values from shipfx.cpp
-	static auto default_damage_spew = default_ship_particle_effect(1, 0, 1.3f, 1.7f, 0.0f, 0.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke, "__internal_sip_damage spew_default");
+	static auto default_damage_spew = default_ship_particle_effect(1, 0, 1.3f, 1.7f, 0.0f, 0.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke);
 	damage_spew = default_damage_spew;
 
-	static auto default_split_particles = default_ship_particle_effect(80, 40, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, "__internal_sip_ship split spew_default");
+	static auto default_split_particles = default_ship_particle_effect(80, 40, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2);
 	split_particles = default_split_particles;
 
-	static auto default_knossos_end_particles = default_ship_particle_effect(30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2, "__internal_sip_knossos death spew_default");
+	static auto default_knossos_end_particles = default_ship_particle_effect(30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2);
 	knossos_end_particles = default_knossos_end_particles;
 
-	static auto default_regular_end_particles = default_ship_particle_effect(100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, "__internal_sip_normal death spew_default");
+	static auto default_regular_end_particles = default_ship_particle_effect(100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2);
 	regular_end_particles = default_regular_end_particles;
 
 	death_effect = particle::ParticleEffectHandle::invalid();
@@ -2469,7 +2469,6 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 static particle::ParticleEffectHandle parse_ship_particle_effect(ship_info* sip, const char *id_string, float range, int bitmap)
 {
 	//TODO accept modern particle here
-	SCP_string effect_name = "__internal_sip_" + SCP_string(sip->name) + id_string;
 
 	auto particle_num = parse_ship_particle_random_range<int, float>("+Min particles:", "+Max particles:", id_string, "number", sip->name, true);
 	auto radius = parse_ship_particle_random_range<float>("+Min Radius:", "+Max Radius:", id_string, "radius", sip->name, true);
@@ -2487,7 +2486,7 @@ static particle::ParticleEffectHandle parse_ship_particle_effect(ship_info* sip,
 	}
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
-			effect_name, //Name
+			"", //Name
 			std::move(particle_num), //Particle num
 			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 			::util::UniformFloatRange(1.f), //Velocity Inherit
@@ -2506,9 +2505,9 @@ static particle::ParticleEffectHandle parse_ship_particle_effect(ship_info* sip,
 			bitmap)); //Bitmap
 }
 
-static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, const char* name) {
+static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap) {
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
-			name, //Name
+			"", //Name
 			::util::UniformFloatRange(n_low, n_high), //Particle num
 			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 			::util::UniformFloatRange(1.f), //Velocity Inherit
@@ -4699,12 +4698,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		required_string("$Variance:");
 		stuff_float(&variance);
 
-		SCP_string thruster_effect_name = "__internal_sip_thruster_" + SCP_string(sip->name) + std::to_string(sip->afterburner_thruster_particles.size() + sip->normal_thruster_particles.size());
-
 		generic_anim_load(&tpart.thruster_bitmap);
 
 		tpart.particle_handle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
-				thruster_effect_name, //Name
+				"", //Name
 				::util::UniformFloatRange(min_n, max_n), //Particle num
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit

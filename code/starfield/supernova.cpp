@@ -47,7 +47,7 @@ auto Supernova_status = SUPERNOVA_STAGE::NONE;
 
 static particle::ParticleEffectHandle supernova_init_particle() {
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
-			"__internal_supernova_particle", //Name
+			"", //Name
 			::util::UniformFloatRange(2.f, 5.f), //Particle num
 			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 			::util::UniformFloatRange(1.f), //Velocity Inherit

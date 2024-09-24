@@ -173,10 +173,12 @@ namespace particle {
 					parseTiming(effect);
 					break;
 				case ParticleEffectLegacyType::Composite: {
+					bool first = true;
 					result.pop_back();
 					while (optional_string("+Child effect:")) {
-						const auto& child_effects = parseLegacyCompositeElement("");
+						const auto& child_effects = parseLegacyCompositeElement(first ? name : "");
 						result.insert(result.end(), std::make_move_iterator(child_effects.begin()), std::make_move_iterator(child_effects.end()));
+						first = false;
 					}
 					if (result.empty()) {
 						error_display(0, "Composite effect %s must have at least one child effect!", name.c_str());

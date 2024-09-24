@@ -119,7 +119,7 @@ void debris_init()
 	Num_hull_pieces = 0;
 
 	Debris_hit_particle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
-		"__internal_debris_hit_particle", //Name
+		"", //Name
 		::util::UniformFloatRange(10.f), //Particle num
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
