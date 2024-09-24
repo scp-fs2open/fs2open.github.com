@@ -13,23 +13,6 @@ struct particle_effect_tag {
 using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
 /**
- * @brief The type of an Effect
- * If you add a new effect type you need to add it to the enum.
- *
- * @ingroup particleSystems
- */
-enum class EffectType: int {
-	Invalid = -1,
-	Single,
-	Composite,
-	Cone,
-	Sphere,
-	Volume,
-
-	MAX,
-};
-
-/**
  * @brief Defines a particle effect
  *
  * A particle effect contains all data necessary for spawning the particles for one particle source. A source can't
@@ -97,15 +80,6 @@ class ParticleEffectLegacy {
 	 * @param source The source to be initialized
 	 */
 	virtual void initializeSource(ParticleSource&  /*source*/) {}
-
-	/**
-	 * @brief Gets the type of this effect
-	 *
-	 * @note Implementations should override this and return their own type if possible
-	 *
-	 * @return The effect type.
-	 */
-	virtual EffectType getType() const { return EffectType::Invalid; }
 };
 
 /**

@@ -15,269 +15,6 @@
  * @defgroup particleSystems Particle System
  */
 
-namespace {
-using namespace particle;
-
-constexpr size_t effectTypeNamesMax = static_cast<size_t>(EffectType::MAX);
-const char* effectTypeNames[effectTypeNamesMax] = {
-	"Single",
-	"Composite",
-	"Cone",
-	"Sphere",
-	"Volume"
-};
-
-
-std::nullptr_t constructEffect(const SCP_string& name, EffectType type) {
-	/*using namespace effects;
-	// Use a unique_ptr to make sure memory is deallocated if an exception is thrown
-	std::unique_ptr<ParticleEffect> effect;
-
-	switch (type) {
-		case EffectType::Single: {
-			effect.reset(new SingleParticleEffect(name));
-			effect->parseValues(false);
-			break;
-		}
-		case EffectType::Composite: {
-			 while (optional_string("+Child effect:")) {
-				auto effectId = internal::parseEffectElement();
-				if (effectId.isValid()) {
-					//TODO
-					ParticleEffectPtr effect = ParticleManager::get()->getEffect(effectId);
-
-					if (effect->getType() == EffectType::Composite) {
-						error_display(0,
-									  "A composite effect cannot contain more composite effects! The effect has not been added.");
-					}
-					else {
-						addEffect(effect);
-					}
-				}
-			}
-		}
-		case EffectType::Cone: {
-			if (internal::required_string_if_new("+Deviation:", nocreate)) {
-				float deviation;
-				stuff_float(&deviation);
-
-				if (deviation < 0.001f) {
-					error_display(0, "A standard deviation of %f is not valid. Must be greater than 0. Defaulting to 1.",
-								  deviation);
-					deviation = 1.0f;
-				}
-
-				m_normalDeviation = ::util::NormalFloatRange(0.f, fl_radians(deviation));
-			}
-		}
-		case EffectType::Sphere: {
-		}
-		 m_particleProperties.parse(nocreate);
-
-			m_shape.parse(nocreate);
-
-			if (internal::required_string_if_new("+Velocity:", nocreate)) {
-				m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
-			}
-
-			if (internal::required_string_if_new("+Number:", nocreate)) {
-				m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
-			}
-			if (!nocreate) {
-				m_particleChance = 1.0f;
-			}
-			if (optional_string("+Chance:")) {
-				float chance;
-				stuff_float(&chance);
-				if (chance <= 0.0f) {
-					error_display(0,
-						"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
-						m_name.c_str(), chance);
-				} else if (chance > 1.0f) {
-					error_display(0,
-						"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: (min,max) "
-						"to spawn multiple particles.", m_name.c_str(), chance);
-					chance = 1.0f;
-				}
-				m_particleChance = chance;
-			}
-			m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
-
-			if (optional_string("+Direction:")) {
-				char dirStr[NAME_LENGTH];
-				stuff_string(dirStr, F_NAME, NAME_LENGTH);
-
-				if (!stricmp(dirStr, "Incoming")) {
-					m_direction = ConeDirection::Incoming;
-				}
-				else if (!stricmp(dirStr, "Normal")) {
-					m_direction = ConeDirection::Normal;
-				}
-				else if (!stricmp(dirStr, "Reflected")) {
-					m_direction = ConeDirection::Reflected;
-				}
-				else if (!stricmp(dirStr, "Reverse")) {
-					m_direction = ConeDirection::Reverse;
-				}
-				else {
-					error_display(0, "Unknown direction name '%s'!", dirStr);
-				}
-			}
-
-			bool saw_deprecated_effect_location = false;
-			if (optional_string("+Trail effect:")) {
-				// This is the deprecated location since this introduces ambiguities in the parsing process
-				m_particleTrail = internal::parseEffectElement();
-				saw_deprecated_effect_location = true;
-			}
-
-			if (optional_string("+Parent Velocity Factor:")) {
-				m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
-			}
-
-			m_timing = util::EffectTiming::parseTiming();
-
-			if (optional_string("+Trail effect:")) {
-				// This is the new and correct location. This might create duplicate effects but the warning should be clear
-				// enough to avoid that
-				if (saw_deprecated_effect_location) {
-					error_display(0, "Found two trail effect options! Specifying '+Trail effect:' before '+Duration:' is "
-									 "deprecated since that can cause issues with conflicting effect options.");
-				}
-				m_particleTrail = internal::parseEffectElement();
-			}
-
-		case EffectType::Volume: {
-			m_particleProperties.parse(nocreate);
-
-			if (internal::required_string_if_new("+Velocity:", nocreate)) {
-				m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
-			}
-
-			if (internal::required_string_if_new("+Number:", nocreate)) {
-				m_particleNum = ::util::ParsedRandomRange<uint>::parseRandomRange();
-			}
-
-			if (!nocreate) {
-				m_particleChance = 1.0f;
-			}
-
-			if (optional_string("+Chance:")) {
-				float chance;
-				stuff_float(&chance);
-				if (chance <= 0.0f) {
-					error_display(0,
-						"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
-						m_name.c_str(),
-						chance);
-				} else if (chance >= 1.0f) {
-					error_display(0,
-						"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: "
-						"(min,max) to spawn multiple particles.",
-						m_name.c_str(),
-						chance);
-					chance = 1.0f;
-				}
-				m_particleChance = chance;
-			}
-			m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
-
-			if (internal::required_string_if_new("+Volume radius:", nocreate)) {
-				float radius;
-				stuff_float(&radius);
-
-				if (radius < 0.001f) {
-					error_display(0, "A volume radius of %f is not valid. Must be greater than 0. Defaulting to 10.", radius);
-					radius = 10.0f;
-				}
-				m_radius = radius;
-			}
-
-			if (optional_string("+Bias:")) {
-				float bias;
-				stuff_float(&bias);
-
-				if (bias < 0.001f) {
-					error_display(0, "A volume bias value of %f is not valid. Must be greater than 0.", bias);
-					bias = 1.0f;
-				}
-				m_bias = bias;
-			}
-
-			if (optional_string("+Stretch:")) {
-				float stretch;
-				stuff_float(&stretch);
-
-				if (stretch < 0.001f) {
-					error_display(0, "A volume stretch value of %f is not valid. Must be greater than 0.", stretch);
-					stretch = 1.0f;
-				}
-				m_stretch = stretch;
-			}
-
-			if (optional_string("+Parent Velocity Factor:")) {
-				m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
-			}
-
-			m_timing = util::EffectTiming::parseTiming();
-		}
-		default: {
-			Error(LOCATION, "Unimplemented effect type %d encountered! Get a coder!", static_cast<int>(type));
-			throw std::runtime_error("Unimplemented effect type encountered!");
-		}
-	}
-
-	return effect.release();*/
-	return nullptr;
-}
-
-EffectType parseEffectType() {
-	required_string("$Type:");
-
-	SCP_string type;
-	stuff_string(type, F_NAME);
-
-	int i = string_lookup(type.c_str(), effectTypeNames, effectTypeNamesMax, "EffectType", true);
-	if (i >= 0)
-		return static_cast<EffectType>(i);
-	else
-		return EffectType::Invalid;
-}
-
-void parseCallback(const char* fileName) {
-	using namespace particle;
-
-	try {
-		read_file_text(fileName, CF_TYPE_TABLES);
-
-		reset_parse();
-
-		required_string("#Particle Effects");
-
-		while (optional_string("$Effect:")) {
-			SCP_string name;
-			stuff_string(name, F_NAME);
-
-			auto type = parseEffectType();
-
-			//TODO
-			//ParticleManager::get()->addEffect(constructEffect(name, type));
-		}
-
-		required_string("#End");
-	}
-	catch (const parse::ParseException& e)
-	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", fileName, e.what()));
-		return;
-	}
-}
-
-void parseConfigFiles() {
-	parse_modular_table("*-part.tbm", parseCallback);
-}
-}
-
 namespace particle {
 std::unique_ptr<ParticleManager> ParticleManager::m_manager = nullptr;
 
@@ -455,69 +192,46 @@ ParticleEffectHandle parseEffect(const SCP_string& objectName)
 }
 
 namespace internal {
-ParticleEffectHandle parseEffectElement(const SCP_string& name)
-{
-	if (!optional_string("$New Effect")) {
-		SCP_string newName;
-		stuff_string(newName, F_NAME);
-
-		auto index = ParticleManager::get()->getEffectByName(newName);
-
-		if (!index.isValid()) {
-			error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
+	bool required_string_if_new(const char* token, bool no_create) {
+		if (no_create) {
+			return optional_string(token) == 1;
 		}
 
-		return index;
+		required_string(token);
+		return true;
 	}
 
-	EffectType forcedType = parseEffectType();
+	SCP_vector<int> parseAnimationList(bool critical) {
 
-	auto effect = constructEffect(name, forcedType);
+		SCP_vector<SCP_string> bitmap_strings;
 
-	return ParticleEffectHandle::invalid();//;ParticleManager::get()->addEffect(effect);
-}
-
-bool required_string_if_new(const char* token, bool no_create) {
-	if (no_create) {
-		return optional_string(token) == 1;
-	}
-
-	required_string(token);
-	return true;
-}
-
-SCP_vector<int> parseAnimationList(bool critical) {
-
-	SCP_vector<SCP_string> bitmap_strings;
-	
-	// check to see if we are parsing a single value or list
-	ignore_white_space();
-	if (*Mp == '(') {
-		// list of names case
-		stuff_string_list(bitmap_strings);
-	}
-	else {
-		// single name case
-		SCP_string name;
-		stuff_string(name, F_FILESPEC);
-		bitmap_strings.push_back(std::move(name));
-	}
-	
-	SCP_vector<int> handles;
-
-	for (auto const &name: bitmap_strings) {
-		auto handle = bm_load_animation(name.c_str());
-		if (handle >= 0) {
-			handles.push_back(handle);
+		// check to see if we are parsing a single value or list
+		ignore_white_space();
+		if (*Mp == '(') {
+			// list of names case
+			stuff_string_list(bitmap_strings);
 		}
 		else {
-			int level = critical ? 1 : 0;
-			error_display(level, "Failed to load effect %s!", name.c_str());
+			// single name case
+			SCP_string name;
+			stuff_string(name, F_FILESPEC);
+			bitmap_strings.push_back(std::move(name));
 		}
+
+		SCP_vector<int> handles;
+
+		for (auto const &name: bitmap_strings) {
+			auto handle = bm_load_animation(name.c_str());
+			if (handle >= 0) {
+				handles.push_back(handle);
+			}
+			else {
+				int level = critical ? 1 : 0;
+				error_display(level, "Failed to load effect %s!", name.c_str());
+			}
+		}
+
+		return handles;
 	}
-
-	return handles;
-}
-
 }
 }

@@ -26,6 +26,7 @@ public:
 		DOT_INVERSE
 	};
 private:
+	friend struct ParticleParse;
 
 	util::EffectTiming m_timing;
 
@@ -39,7 +40,7 @@ private:
 
 	bool m_vel_inherit_absolute;
 
-	std::unique_ptr<::particle::ParticleVolume> m_velocityVolume;
+	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
 
 	::util::ParsedRandomFloatRange m_velocity_scaling;
 
@@ -47,7 +48,9 @@ private:
 
 	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
 
-	std::unique_ptr<::particle::ParticleVolume> m_spawnVolume;
+	bool m_vel_inherit_from_position_absolute;
+
+	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
 
 	ParticleEffectHandle m_particleTrail;
 
@@ -71,11 +74,11 @@ public:
 								ShapeDirection direction,
 								::util::ParsedRandomFloatRange vel_inherit,
 								bool vel_inherit_absolute,
-								std::unique_ptr<::particle::ParticleVolume> velocityVolume,
+								std::shared_ptr<::particle::ParticleVolume> velocityVolume,
 								::util::ParsedRandomFloatRange velocity_scaling,
 								VelocityScaling velocity_directional_scaling,
 								tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
-								std::unique_ptr<::particle::ParticleVolume> spawnVolume,
+								std::shared_ptr<::particle::ParticleVolume> spawnVolume,
 								ParticleEffectHandle particleTrail,
 								float particleChance,
 								bool affectedByDetail,
@@ -92,8 +95,6 @@ public:
 	void pageIn() override;
 
 	void initializeSource(ParticleSource& source) override;
-
-	EffectType getType() const override { return EffectType::Single; }
 
 };
 }

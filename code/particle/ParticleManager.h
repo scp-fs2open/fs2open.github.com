@@ -44,6 +44,8 @@ class ParticleManager {
 	 */
 	static std::unique_ptr<ParticleManager> m_manager;
 
+	static void parseConfigFiles();
+
 	/**
 	 * @brief Creates a source and returns a pointer to it
 	 *
@@ -145,18 +147,6 @@ class ParticleManager {
 };
 
 namespace internal {
-/**
- * @brief Parses an effect element
- *
- * This can either be the name of an existing effect or a new effect which is created in-place. If forcedType is
- * specified then the effect will have the specified type or an error will be generated.
- *
- * @param forcedType The type the effect should have, EffectType::Invalid can be specified for any effect type
- * @param name The name of the created effect, an empty string means no special name
- * @return The index of the added effect
- */
-ParticleEffectHandle parseEffectElement(const SCP_string& name = "");
-
 /**
  * @brief Utility function for required_string
  *

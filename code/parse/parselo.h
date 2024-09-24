@@ -259,7 +259,7 @@ extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
-int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false)
 {
 	for (size_t i=0; i<max; i++)
 	{

@@ -21,6 +21,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name)
 	  m_velocity_scaling(),
 	  m_velocity_directional_scaling(VelocityScaling::NONE),
 	  m_vel_inherit_from_position(tl::nullopt),
+	  m_vel_inherit_from_position_absolute(false),
 	  m_spawnVolume(nullptr),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
 	  m_particleChance(1.f),
@@ -33,11 +34,11 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	ShapeDirection direction,
 	::util::ParsedRandomFloatRange vel_inherit,
 	bool vel_inherit_absolute,
-	std::unique_ptr<::particle::ParticleVolume> velocityVolume,
+	std::shared_ptr<::particle::ParticleVolume> velocityVolume,
 	::util::ParsedRandomFloatRange velocity_scaling,
 	VelocityScaling velocity_directional_scaling,
 	tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
-	std::unique_ptr<::particle::ParticleVolume> spawnVolume,
+	std::shared_ptr<::particle::ParticleVolume> spawnVolume,
 	ParticleEffectHandle particleTrail,
 	float particleChance,
 	bool affectedByDetail,
@@ -56,6 +57,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	  m_velocity_scaling(std::move(velocity_scaling)),
 	  m_velocity_directional_scaling(velocity_directional_scaling),
 	  m_vel_inherit_from_position(std::move(vel_inherit_from_position)),
+	  m_vel_inherit_from_position_absolute(false),
 	  m_spawnVolume(std::move(spawnVolume)),
 	  m_particleTrail(std::move(particleTrail)),
 	  m_particleChance(particleChance),
@@ -186,8 +188,11 @@ bool ParticleEffect::processSource(ParticleSource* source) const {
 				velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix) * m_velocity_scaling.next();
 			}
 
-			if (m_vel_inherit_from_position.has_value()){
-				velocity += localPos * m_vel_inherit_from_position->next();
+			if (m_vel_inherit_from_position.has_value()) {
+				vec3d velFromPos = localPos;
+				if (m_vel_inherit_from_position_absolute)
+					vm_vec_normalize_safe(&velFromPos);
+				velocity += velFromPos * m_vel_inherit_from_position->next();
 			}
 
 			if (m_velocity_directional_scaling != VelocityScaling::NONE) {

@@ -1104,6 +1104,7 @@ add_file_folder("Particle"
 	particle/ParticleEffect.h
 	particle/ParticleManager.cpp
 	particle/ParticleManager.h
+	particle/ParticleParse.cpp
 	particle/ParticleSource.cpp
 	particle/ParticleSource.h
 	particle/ParticleSourceWrapper.cpp
