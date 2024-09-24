@@ -23,23 +23,21 @@ namespace particle {
 		}
 
 		static void parseDirection(ParticleEffect &effect) {
-			SCP_string dirStr;
-			stuff_string(dirStr, F_NAME);
+			if (optional_string("+Direction:")) {
+				SCP_string dirStr;
+				stuff_string(dirStr, F_NAME);
 
-			if (!stricmp(dirStr.c_str(), "Incoming") || !stricmp(dirStr.c_str(), "Aligned")) {
-				effect.m_direction = ParticleEffect::ShapeDirection::ALIGNED;
-			}
-			else if (!stricmp(dirStr.c_str(), "Normal") || !stricmp(dirStr.c_str(), "HitNormal")) {
-				effect.m_direction = ParticleEffect::ShapeDirection::HIT_NORMAL;
-			}
-			else if (!stricmp(dirStr.c_str(), "Reflected")) {
-				effect.m_direction = ParticleEffect::ShapeDirection::REFLECTED;
-			}
-			else if (!stricmp(dirStr.c_str(), "Reverse")) {
-				effect.m_direction = ParticleEffect::ShapeDirection::REVERSE;
-			}
-			else {
-				error_display(0, "Unknown direction name '%s'!", dirStr.c_str());
+				if (!stricmp(dirStr.c_str(), "Incoming") || !stricmp(dirStr.c_str(), "Aligned")) {
+					effect.m_direction = ParticleEffect::ShapeDirection::ALIGNED;
+				} else if (!stricmp(dirStr.c_str(), "Normal") || !stricmp(dirStr.c_str(), "HitNormal")) {
+					effect.m_direction = ParticleEffect::ShapeDirection::HIT_NORMAL;
+				} else if (!stricmp(dirStr.c_str(), "Reflected")) {
+					effect.m_direction = ParticleEffect::ShapeDirection::REFLECTED;
+				} else if (!stricmp(dirStr.c_str(), "Reverse")) {
+					effect.m_direction = ParticleEffect::ShapeDirection::REVERSE;
+				} else {
+					error_display(0, "Unknown direction name '%s'!", dirStr.c_str());
+				}
 			}
 		}
 
@@ -175,9 +173,13 @@ namespace particle {
 					parseTiming(effect);
 					break;
 				case ParticleEffectLegacyType::Composite: {
+					result.pop_back();
 					while (optional_string("+Child effect:")) {
 						const auto& child_effects = parseLegacyCompositeElement("");
 						result.insert(result.end(), std::make_move_iterator(child_effects.begin()), std::make_move_iterator(child_effects.end()));
+					}
+					if (result.empty()) {
+						error_display(0, "Composite effect %s must have at least one child effect!", name.c_str());
 					}
 					break;
 				}
