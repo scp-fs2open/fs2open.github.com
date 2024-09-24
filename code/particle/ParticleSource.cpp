@@ -571,7 +571,11 @@ int SourceTiming::getNextCreationTime() const { return m_nextCreation; }
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 
-ParticleSource::ParticleSource() : m_effect(ParticleEffectHandle::invalid()), m_processingCount(0) {}
+ParticleSource::ParticleSource() : m_effect(ParticleEffectHandle::invalid()), m_processingCount(0) {
+	for (size_t i = 0; i < 64; i++) {
+		m_effect_is_running[i] = true;
+	}
+}
 
 bool ParticleSource::isValid() const {
 	if (m_timing.isFinished()) {
@@ -636,9 +640,9 @@ bool ParticleSource::process() {
 
 		bool result = false;
 		for (size_t i = 0; i < effectList.size(); i++) {
-			if (m_effect_completed[i]) {
+			if (m_effect_is_running[i]) {
 				bool effectResult = effectList[i].processSource(this);
-				m_effect_completed[i] = effectResult;
+				m_effect_is_running[i] = effectResult;
 				result |= effectResult;
 			}
 		}

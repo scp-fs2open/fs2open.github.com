@@ -187,6 +187,7 @@ namespace particle {
 				}
 				case ParticleEffectLegacyType::Cone: {
 					parseParticleProperties(effect);
+					effect.m_velocity_directional_scaling = ParticleEffect::VelocityScaling::DOT;
 
 					if (required_string("+Deviation:")) {
 						float deviation;

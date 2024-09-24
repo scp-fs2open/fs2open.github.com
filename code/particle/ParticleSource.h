@@ -354,7 +354,7 @@ class ParticleSource {
 
 	static constexpr size_t max_composite_size = 64;
 
-	std::bitset<max_composite_size> m_effect_completed;
+	std::bitset<max_composite_size> m_effect_is_running;
 
 	void initializeThrusterOffset(weapon* wp, weapon_info* wip);
  public:
