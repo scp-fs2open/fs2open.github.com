@@ -79,7 +79,7 @@ class RandomRange {
 	ValueType m_maxValue;
 
   public:
-	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_same<ValueType, typename std::remove_reference<typename std::remove_cv<T>::type>::type>::value, int>::type>
+	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value, int>::type>
 	RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
 		: m_generator(std::random_device()()), m_distribution(distributionFirstParameter, distributionParameters...)
 	{
