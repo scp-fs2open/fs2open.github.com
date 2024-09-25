@@ -6208,6 +6208,8 @@ static void ship_parse_post_cleanup()
  */
 void ship_init()
 {
+	int idx;
+
 	if ( !Ships_inited )
 	{
 		//Initialize Ignore_List for targeting
@@ -6222,11 +6224,18 @@ void ship_init()
 		//Then other ones
 		parse_modular_table(NOX("*-obt.tbm"), parse_shiptype_tbl);
 
+		// Remove the "stealth" ship type if it exists, since it was never supposed to be an actual ship type, and it conflicts with ship class flags (Github #6366)
+		idx = ship_type_name_lookup("stealth");
+		if (idx >= 0)
+		{
+			Warning(LOCATION, "A ship type \"stealth\" was found in objecttypes.tbl or *-obt.tbm.  This ship type will be removed since it will conflict with the \"stealth\" ship class flag.  Please update your mod files.");
+			Ship_types.erase(Ship_types.begin() + idx);
+		}
+
 		// DO ALL THE STUFF WE NEED TO DO AFTER LOADING Ship_types
 		ship_type_info *stp;
 
 		uint i,j;
-		int idx;
 		for(i = 0; i < Ship_types.size(); i++)
 		{
 			stp = &Ship_types[i];
