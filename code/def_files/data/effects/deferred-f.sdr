@@ -9,6 +9,7 @@ uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
+uniform sampler2D BentBuffer;
 uniform sampler2DArray shadow_map;
 
 layout (std140) uniform globalDeferredData {
@@ -168,7 +169,8 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
-	vec3 position = texture(PositionBuffer, screenPos).xyz;
+	vec4 positionBufferData = texture(PositionBuffer, screenPos);
+	vec3 position = positionBufferData.xyz;
 
 	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;
@@ -178,11 +180,15 @@ void main()
 	vec4 specColor = texture(SpecBuffer, screenPos);
 	// The vector in the normal buffer could be longer than the unit vector since decal rendering only adds to the normal buffer
 	vec3 normal = normalize(normalData.xyz);
+
+	vec4 bentNormalBufferData = texture(BentBuffer, screenPos);
+	vec3 bentNormal =  normalize(bentNormalBufferData.xyz);
 	float gloss = normalData.a;
 	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
 	float alpha = roughness * roughness;
 	float fresnel = specColor.a;
 	vec3 eyeDir = normalize(-position);
+	float ambientOcclusion = bentNormalBufferData.a;
 
 	vec3 lightDir;
 	float attenuation;
@@ -204,7 +210,12 @@ void main()
 
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
+
+	float NdotV = clamp(dot(normal, eyeDir), 0.0, 1.0);
+	float BdotL = clamp(dot(bentNormal, lightDir), 0.0, 1.0);
+	float occlusionShadow = GetVisibilityFromMaterialOcclusion(ambientOcclusion, gloss, NdotV, BdotL);
+
 	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
+	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL ).rgb * diffuseLightColor * attenuation * area_normalisation * occlusionShadow ;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

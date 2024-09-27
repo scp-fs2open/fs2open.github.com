@@ -29,6 +29,7 @@ FLAG_LIST(LabRenderFlag) {
 	NoMiscMap,
 	NoGlowpoints,
 	NoLighting,
+	NoBentMap,
 	ShowWireframe,
 	ShowFullDetail,
 	ShowThrusters,

@@ -4,12 +4,14 @@ out vec4 fragOut2;
 out vec4 fragOut3;
 out vec4 fragOut4;
 out vec4 fragOut5;
+out vec4 fragOut6;
 void main()
 {
 	fragOut0 = vec4(0.0, 0.0, 0.0, 1.0); // color
 	fragOut1 = vec4(0.0, 0.0, -1000000.0, 1.0); // position
 	fragOut2 = vec4(0.0, 0.0, 0.0, 1.0); // normal
 	fragOut3 = vec4(0.0, 0.0, 0.0, 0.0); // specular
-	fragOut4 = vec4(0.0, 0.0, 0.0, 1.0); // emissive
-	fragOut5 = vec4(0.0, 0.0, 0.0, 1.0); // composite
+	fragOut4 = vec4(0.0, 0.0, 0.0, 1.0); // bent
+	fragOut5 = vec4(0.0, 0.0, 0.0, 1.0); // emissive
+	fragOut6 = vec4(0.0, 0.0, 0.0, 1.0); // composite
 }

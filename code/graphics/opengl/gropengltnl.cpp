@@ -870,6 +870,8 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_TRANSFORM))
 			Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_BENT))
+			Current_shader->program->Uniforms.setTextureUniform("sBentmap", 12);
 
 		//No shader ever defines this, so don't push it.
 		//Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
@@ -951,6 +953,15 @@ void opengl_tnl_set_model_material(model_material *material_info)
 				&v_scale,
 				&array_index,
 				7);
+		}
+
+		if (material_info->get_texture_map(TM_BENT_NORMAL_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_BENT_NORMAL_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				12);
 		}
 
 		if (material_info->is_shadow_receiving()) {

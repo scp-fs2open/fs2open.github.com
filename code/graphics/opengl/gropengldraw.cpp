@@ -35,11 +35,13 @@ GLuint Scene_ldr_texture;
 GLuint Scene_color_texture;
 GLuint Scene_position_texture;
 GLuint Scene_normal_texture;
+GLuint Scene_bent_texture;
 GLuint Scene_specular_texture;
 GLuint Scene_emissive_texture;
 GLuint Scene_color_texture_ms;
 GLuint Scene_position_texture_ms;
 GLuint Scene_normal_texture_ms;
+GLuint Scene_bent_texture_ms;
 GLuint Scene_specular_texture_ms;
 GLuint Scene_emissive_texture_ms;
 GLuint Scene_composite_texture;
@@ -215,6 +217,25 @@ void opengl_setup_scene_textures()
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, Scene_specular_texture, 0);
 
+	// setup bent render texture
+	glGenTextures(1, &Scene_bent_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_bent_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	opengl_set_object_label(GL_TEXTURE, Scene_bent_texture, "Scene Bent texture");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_bent_texture, 0);
+
 	// setup emissive render texture
 	glGenTextures(1, &Scene_emissive_texture);
 
@@ -228,11 +249,20 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D,
+		0,
+		GL_RGBA16F,
+		Scene_texture_width,
+		Scene_texture_height,
+		0,
+		GL_BGRA,
+		GL_UNSIGNED_INT_8_8_8_8_REV,
+		NULL);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	opengl_set_object_label(GL_TEXTURE, Scene_emissive_texture, "Scene Emissive texture");
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_emissive_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, Scene_emissive_texture, 0);
+
 
 	// setup compositing render texture
 	glGenTextures(1, &Scene_composite_texture);
@@ -250,7 +280,7 @@ void opengl_setup_scene_textures()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	opengl_set_object_label(GL_TEXTURE, Scene_composite_texture, "Scene Composite texture");
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, Scene_composite_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D, Scene_composite_texture, 0);
 
 	//Set up luminance texture (used as input for FXAA)
 	// also used as a light accumulation buffer during the deferred pass
@@ -332,6 +362,9 @@ void opengl_setup_scene_textures()
 
 		glDeleteTextures(1, &Scene_specular_texture);
 		Scene_specular_texture = 0;
+
+		glDeleteTextures(1, &Scene_bent_texture);
+		Scene_bent_texture = 0;
 
 		glDeleteTextures(1, &Scene_emissive_texture);
 		Scene_emissive_texture = 0;
@@ -440,7 +473,6 @@ void opengl_setup_scene_textures()
 			GL_TEXTURE_2D_MULTISAMPLE,
 			Scene_normal_texture_ms,
 			0);
-
 		// setup specular render texture
 		glGenTextures(1, &Scene_specular_texture_ms);
 
@@ -462,6 +494,28 @@ void opengl_setup_scene_textures()
 			Scene_specular_texture_ms,
 			0);
 
+		// setup bent render texture
+		glGenTextures(1, &Scene_bent_texture_ms);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+		GL_state.Texture.Enable(Scene_bent_texture_ms);
+
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			Cmdline_msaa_enabled,
+			GL_RGBA16F,
+			Scene_texture_width,
+			Scene_texture_height,
+			GL_TRUE);
+		opengl_set_object_label(GL_TEXTURE, Scene_bent_texture_ms, "Scene Bent normal texture multisampling");
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT4,
+			GL_TEXTURE_2D_MULTISAMPLE,
+			Scene_bent_texture_ms,
+			0);
+
+
 		// setup emissive render texture
 		glGenTextures(1, &Scene_emissive_texture_ms);
 
@@ -477,7 +531,7 @@ void opengl_setup_scene_textures()
 			GL_TRUE);
 		opengl_set_object_label(GL_TEXTURE, Scene_emissive_texture_ms, "Scene Emissive texture multisample");
 		glFramebufferTexture2D(GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT4,
+			GL_COLOR_ATTACHMENT5,
 			GL_TEXTURE_2D_MULTISAMPLE,
 			Scene_emissive_texture_ms,
 			0);
@@ -639,6 +693,11 @@ void opengl_scene_texture_shutdown()
 		Scene_specular_texture = 0;
 	}
 
+	if (Scene_bent_texture) {
+		glDeleteTextures(1, &Scene_bent_texture);
+		Scene_bent_texture = 0;
+	}
+
 	if (Scene_emissive_texture) {
 		glDeleteTextures(1, &Scene_emissive_texture);
 		Scene_emissive_texture = 0;
@@ -701,7 +760,7 @@ void gr_opengl_scene_texture_begin()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {
-		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_COLOR_ATTACHMENT6 };
 		glDrawBuffers(6, buffers);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -806,7 +865,7 @@ void gr_opengl_copy_effect_texture()
 
     //Make sure we're reading from the up-to-date color texture
     glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT5);
+	glDrawBuffer(GL_COLOR_ATTACHMENT6);
 	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
@@ -1163,8 +1222,9 @@ void gr_opengl_start_decal_pass() {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT4,
+		GL_COLOR_ATTACHMENT5,
 	};
-	glDrawBuffers(3, buffers);
+	glDrawBuffers(4, buffers);
 }
 void gr_opengl_stop_decal_pass() {
 	GLenum buffers2[] = {
@@ -1174,8 +1234,9 @@ void gr_opengl_stop_decal_pass() {
 		GL_COLOR_ATTACHMENT3,
 		GL_COLOR_ATTACHMENT4,
 		GL_COLOR_ATTACHMENT5,
+		GL_COLOR_ATTACHMENT6,
 	};
-	glDrawBuffers(6, buffers2);
+	glDrawBuffers(7, buffers2);
 }
 
 void gr_opengl_calculate_irrmap()

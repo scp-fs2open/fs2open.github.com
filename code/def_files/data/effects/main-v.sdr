@@ -95,6 +95,7 @@ layout (std140) uniform modelData {
 	float alphaMult;
 
 	int flags;
+	int sBentmapIndex;
 };
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM

@@ -248,6 +248,7 @@ Depth_bias(0)
 	Texture_maps[TM_MISC_TYPE]		= -1;
 	Texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 	Texture_maps[TM_AMBIENT_TYPE] = -1;
+	Texture_maps[TM_BENT_NORMAL_TYPE] = -1;
 
 	Clip_params.enabled = false;
 
@@ -298,7 +299,8 @@ bool material::is_textured() const
 	Texture_maps[TM_NORMAL_TYPE]	> -1 ||
 	Texture_maps[TM_HEIGHT_TYPE]	> -1 ||
 	Texture_maps[TM_AMBIENT_TYPE]	> -1 ||
-	Texture_maps[TM_MISC_TYPE]		> -1;
+	Texture_maps[TM_MISC_TYPE]		> -1 ||
+	Texture_maps[TM_BENT_NORMAL_TYPE] > -1;
 }
 
 void material::set_texture_type(texture_type t_type)
@@ -784,6 +786,8 @@ int model_material::get_shader_runtime_flags() const {
 		flags |= MODEL_SDR_FLAG_MISC;
 	if (get_texture_map(TM_MISC_TYPE) > 0 && is_team_color_set())
 		flags |= MODEL_SDR_FLAG_TEAMCOLOR;
+	if (get_texture_map(TM_BENT_NORMAL_TYPE) > 0)
+		flags |= MODEL_SDR_FLAG_BENT;
 	if (is_fogged())
 		flags |= MODEL_SDR_FLAG_FOG;
 	if (is_shadow_receiving())

@@ -149,7 +149,8 @@ struct submodel_instance
 #define TM_MISC_TYPE		5		// optional utility map
 #define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
 #define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
-#define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
+#define TM_BENT_NORMAL_TYPE	8		// optional normal map with normals pointing in least occluded direction
+#define TM_NUM_TYPES		9		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
 
@@ -1063,6 +1064,7 @@ constexpr uint64_t MR_NO_INSIGNIA = 2147483648;	// Disable the insignias for ...
 #define MR_DEBUG_NO_AMBIENT			(1<<11)
 #define MR_DEBUG_NO_MISC			(1<<12)
 #define MR_DEBUG_NO_REFLECT			(1<<13)
+#define MR_DEBUG_NO_BENT			(1<<14)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1

@@ -5,11 +5,13 @@ out vec4 fragOut2;
 out vec4 fragOut3;
 out vec4 fragOut4;
 out vec4 fragOut5;
+out vec4 fragOut6;
 
 uniform sampler2DMS texColor;
 uniform sampler2DMS texPos;
 uniform sampler2DMS texNormal;
 uniform sampler2DMS texSpecular;
+uniform sampler2DMS texBent;
 uniform sampler2DMS texEmissive;
 uniform sampler2DMS texDepth;
 
@@ -167,6 +169,7 @@ void main()
 	vec4 color = vec4(0);
 	vec4 pos = vec4(0);
 	vec4 normal = vec4(0);
+	vec4 bent = vec4(0);
 	vec4 specular = vec4(0);
 	vec4 emissive = vec4(0);
 	float depth = 0;
@@ -183,6 +186,7 @@ void main()
 		pos += localPos * localWeight;
 		color += texelFetch(texColor, texel, i) * localWeight;
 		normal += texelFetch(texNormal, texel, i) * localWeight;
+		bent += texelFetch(texBent, texel, i) * localWeight;
 		specular += texelFetch(texSpecular, texel, i) * localWeight;
 		emissive += texelFetch(texEmissive, texel, i) * localWeight;
 		depth += texelFetch(texDepth, texel, i).x * localWeight;
@@ -193,6 +197,7 @@ void main()
 	fragOut1 = pos / weight;
 	fragOut2 = vec4(normalize(normal.xyz), normal.a / weight);
 	fragOut3 = specular / weight;
-	fragOut4 = emissive / weight;
+	fragOut4 =  vec4(normalize(bent.xyz), bent.a / weight);
+	fragOut5 = emissive / weight;
 	gl_FragDepth = depth / weight;
 }

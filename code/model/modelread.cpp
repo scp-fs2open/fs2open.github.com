@@ -3255,6 +3255,15 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 
 	tmisc->LoadTexture(tmp_name, pm->filename);
 
+	// bent normals
+	texture_info* tbent = &tmap->textures[TM_BENT_NORMAL_TYPE];
+
+	strcpy_s(tmp_name, file);
+	strcat_s(tmp_name, "-bent");
+	strlwr(tmp_name);
+
+	tbent->LoadTexture(tmp_name, pm->filename);
+
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material

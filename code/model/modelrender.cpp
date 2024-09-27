@@ -771,6 +771,10 @@ bool model_draw_list::sort_draw_pair(const model_draw_list* target, const int a,
 		return draw_call_a->render_material.get_texture_map(TM_MISC_TYPE) < draw_call_b->render_material.get_texture_map(TM_MISC_TYPE);
 	}
 
+	if ( draw_call_a->render_material.get_texture_map(TM_BENT_NORMAL_TYPE) != draw_call_b->render_material.get_texture_map(TM_BENT_NORMAL_TYPE) ) {
+		return draw_call_a->render_material.get_texture_map(TM_BENT_NORMAL_TYPE) < draw_call_b->render_material.get_texture_map(TM_BENT_NORMAL_TYPE);
+	}
+
 	return draw_call_a->lights.index_start < draw_call_b->lights.index_start;
 }
 void model_draw_list::build_uniform_buffer() {
@@ -1058,6 +1062,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		texture_maps[TM_MISC_TYPE] = -1;
 		texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 		texture_maps[TM_AMBIENT_TYPE] = -1;
+		texture_maps[TM_BENT_NORMAL_TYPE] = -1;
 
 		if (forced_texture != -2) {
 			texture_maps[TM_BASE_TYPE] = forced_texture;
@@ -1125,6 +1130,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				auto height_map = &tmap->textures[TM_HEIGHT_TYPE];
 				auto ambient_map = &tmap->textures[TM_AMBIENT_TYPE];
 				auto misc_map = &tmap->textures[TM_MISC_TYPE];
+				auto bent_map = &tmap->textures[TM_BENT_NORMAL_TYPE];
 
 				if (replacement_textures != nullptr) {
 					const auto& replacement_textures_deref = *replacement_textures;
@@ -1147,6 +1153,11 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_MISC_TYPE]);
 						misc_map = &tex_replace[TM_MISC_TYPE];
 					}
+
+					if (replacement_textures_deref[rt_begin_index + TM_BENT_NORMAL_TYPE] >= 0) {
+						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_BENT_NORMAL_TYPE]);
+						bent_map = &tex_replace[TM_BENT_NORMAL_TYPE];
+					}
 				}
 
 				if (debug_flags & MR_DEBUG_NO_DIFFUSE)  texture_maps[TM_BASE_TYPE] = -1;
@@ -1157,6 +1168,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				if (!(debug_flags & MR_DEBUG_NO_NORMAL) && Detail.lighting > 0)  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, elapsed_time);
 				if (!(debug_flags & MR_DEBUG_NO_AMBIENT) && Detail.lighting > 0) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, elapsed_time);
 				if (!(debug_flags & MR_DEBUG_NO_HEIGHT) && Detail.lighting > 1)  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, elapsed_time);
+				if (!(debug_flags & MR_DEBUG_NO_BENT) && Detail.lighting > 0) texture_maps[TM_BENT_NORMAL_TYPE] = model_interp_get_texture(bent_map, elapsed_time);
 			}
 		} else {
 			alpha = forced_alpha;
@@ -1239,6 +1251,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			rendering_material->set_texture_map(TM_HEIGHT_TYPE, texture_maps[TM_HEIGHT_TYPE]);
 			rendering_material->set_texture_map(TM_AMBIENT_TYPE, texture_maps[TM_AMBIENT_TYPE]);
 			rendering_material->set_texture_map(TM_MISC_TYPE,	texture_maps[TM_MISC_TYPE]);
+			rendering_material->set_texture_map(TM_BENT_NORMAL_TYPE, texture_maps[TM_BENT_NORMAL_TYPE]);
 		}
 
 		scene->add_buffer_draw(rendering_material, &pm->vert_source, buffer, i, tmap_flags);

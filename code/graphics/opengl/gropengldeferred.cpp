@@ -68,12 +68,12 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	Deferred_lighting = true;
 	GL_state.ColorMask(true, true, true, true);
 	
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_COLOR_ATTACHMENT6 };
 
 	if (Cmdline_msaa_enabled > 0) {
 		//Ensure MSAA Mode if necessary
 		GL_state.BindFrameBuffer(Scene_framebuffer_ms);
-		glDrawBuffer(GL_COLOR_ATTACHMENT4);
+		glDrawBuffer(GL_COLOR_ATTACHMENT5);
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY, 0));
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
@@ -84,19 +84,20 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	} else {
 		// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
 		// treated as emissive
-		glDrawBuffer(GL_COLOR_ATTACHMENT4);
+		glDrawBuffer(GL_COLOR_ATTACHMENT5);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	}
 	
-	glDrawBuffers(6, buffers);
+	glDrawBuffers(7, buffers);
 	glClearBufferfv(GL_COLOR, 0, black);
 	if (clearNonColorBufs) {
 		glClearBufferfv(GL_COLOR, 1, black);
 		glClearBufferfv(GL_COLOR, 2, black);
 		glClearBufferfv(GL_COLOR, 3, black);
-		glClearBufferfv(GL_COLOR, 5, black);
+		glClearBufferfv(GL_COLOR, 4, black);
+		glClearBufferfv(GL_COLOR, 6, black);
 	}
 }
 
@@ -115,8 +116,9 @@ void gr_opengl_deferred_lighting_msaa()
 		GL_COLOR_ATTACHMENT1,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT3,
-		GL_COLOR_ATTACHMENT4};
-	glDrawBuffers(5, buffers);
+		GL_COLOR_ATTACHMENT4,
+		GL_COLOR_ATTACHMENT5,};
+	glDrawBuffers(6, buffers);
 
 	int msaa_resolve_flags = 0;
 	switch (Cmdline_msaa_enabled) {
@@ -139,14 +141,16 @@ void gr_opengl_deferred_lighting_msaa()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D_MULTISAMPLE, Scene_position_texture_ms);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D_MULTISAMPLE, Scene_normal_texture_ms);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D_MULTISAMPLE, Scene_specular_texture_ms);
-	GL_state.Texture.Enable(4, GL_TEXTURE_2D_MULTISAMPLE, Scene_emissive_texture_ms);
-	GL_state.Texture.Enable(5, GL_TEXTURE_2D_MULTISAMPLE, Scene_depth_texture_ms);
+	GL_state.Texture.Enable(4, GL_TEXTURE_2D_MULTISAMPLE, Scene_bent_texture_ms);
+	GL_state.Texture.Enable(5, GL_TEXTURE_2D_MULTISAMPLE, Scene_emissive_texture_ms);
+	GL_state.Texture.Enable(6, GL_TEXTURE_2D_MULTISAMPLE, Scene_depth_texture_ms);
 	Current_shader->program->Uniforms.setTextureUniform("texColor", 0);
 	Current_shader->program->Uniforms.setTextureUniform("texPos", 1);
 	Current_shader->program->Uniforms.setTextureUniform("texNormal", 2);
 	Current_shader->program->Uniforms.setTextureUniform("texSpecular", 3);
-	Current_shader->program->Uniforms.setTextureUniform("texEmissive", 4);
-	Current_shader->program->Uniforms.setTextureUniform("texDepth", 5);
+	Current_shader->program->Uniforms.setTextureUniform("texBent", 4);
+	Current_shader->program->Uniforms.setTextureUniform("texEmissive", 5);
+	Current_shader->program->Uniforms.setTextureUniform("texDepth", 6);
 	opengl_set_generic_uniform_data<graphics::generic_data::msaa_data>(
 		[&](graphics::generic_data::msaa_data* data) {
 			data->samples = Cmdline_msaa_enabled;
@@ -226,8 +230,8 @@ void gr_opengl_deferred_lighting_finish()
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0));
 
 	// Render on top of the composite buffer texture
-	glDrawBuffer(GL_COLOR_ATTACHMENT5);
-	glReadBuffer(GL_COLOR_ATTACHMENT4);
+	glDrawBuffer(GL_COLOR_ATTACHMENT6);
+	glReadBuffer(GL_COLOR_ATTACHMENT5);
 	glBlitFramebuffer(0,
 		0,
 		gr_screen.max_w,
@@ -243,8 +247,9 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
+	GL_state.Texture.Enable(4, GL_TEXTURE_2D, Scene_bent_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+		GL_state.Texture.Enable(5, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
 
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
@@ -606,7 +611,7 @@ void gr_opengl_deferred_lighting_finish()
 	else {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
-		glReadBuffer(GL_COLOR_ATTACHMENT5);
+		glReadBuffer(GL_COLOR_ATTACHMENT6);
 		glBlitFramebuffer(0,
 						  0,
 						  gr_screen.max_w,
