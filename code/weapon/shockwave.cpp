@@ -66,6 +66,7 @@ static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwave
                      })
                      .level(options::ExpertLevel::Advanced)
                      .importance(66)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
                      .finish();
 
 /**
