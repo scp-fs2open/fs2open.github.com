@@ -793,6 +793,8 @@ void control_config_common_init()
 	Axis_text[3] = vm_strdup(XSTR("rX Axis", 1650));	// XSTR 1024 - "Joystick rX Axis"
 	Axis_text[4] = vm_strdup(XSTR("rY Axis", 1651));	// XSTR 1025 - "Joystick rY Axis"
 	Axis_text[5] = vm_strdup(XSTR("rZ Axis", 1652));	// XSTR 1026 - "Joystick rZ Axis"
+	Axis_text[6] = vm_strdup(XSTR("U Axis", 1857));     // XSTR 1026 - "Joystick rZ Axis"
+	Axis_text[7] = vm_strdup(XSTR("V Axis", 1858));    // XSTR 1026 - "Joystick rZ Axis"
 
 	Mouse_button_text[0] = vm_strdup(XSTR("Left Button", 1027));
 	Mouse_button_text[1] = vm_strdup(XSTR("Right Button", 1028));
@@ -1206,6 +1208,8 @@ void LoadEnumsIntoAxisMap() {
 	mAxisNameToVal["RX_AXIS"] = JOY_RX_AXIS;
 	mAxisNameToVal["RY_AXIS"] = JOY_RY_AXIS;
 	mAxisNameToVal["RZ_AXIS"] = JOY_RZ_AXIS;
+	mAxisNameToVal["U_AXIS"] = JOY_U_AXIS;
+	mAxisNameToVal["V_AXIS"] = JOY_V_AXIS;
 }
 
 void LoadEnumsIntoHatMap() {
