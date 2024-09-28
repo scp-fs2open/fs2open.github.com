@@ -36,8 +36,10 @@ enum Joy_axis_index : short {
 	JOY_RX_AXIS,
 	JOY_RY_AXIS,
 	JOY_RZ_AXIS,
+	JOY_U_AXIS,
+	JOY_V_AXIS,
 
-	JOY_NUM_AXES	// Number of axes a joystick may have. Must be last enum in Joy_axis_index.
+	JOY_NUM_AXES	//!< Max number of joy axes that FSO can handle. Must be last enum in Joy_axis_index.
 };
 
 // Aliases for mouse axes.  Really should unify this...
