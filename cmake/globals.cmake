@@ -19,3 +19,15 @@ else()
         set(IS_ARM64 TRUE)
     endif()
 endif()
+
+set(IS_RISCV64 FALSE)
+
+if (NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "")   # needed to cover Visual Studio generator
+    if(CMAKE_GENERATOR_PLATFORM MATCHES "^(riscv64|RISCV64|rv64g|RV64G)")
+        set(IS_RISCV64 TRUE)
+    endif()
+else()
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(riscv64|RISCV64|rv64g|RV64G)")
+        set(IS_RISCV64 TRUE)
+    endif()
+endif()

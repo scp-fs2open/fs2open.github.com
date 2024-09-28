@@ -11,9 +11,17 @@ option(GCC_ENABLE_SANITIZE_UNDEFINED "Enable -fsanitize=undefined" OFF)
 option(GCC_USE_GOLD "Use the gold linker instead of the standard linker" OFF)
 option(GCC_GENERATE_GDB_INDEX "Adds linker option to generate the gdb index for debug builds" OFF)
 
-# These are the default values
-set(C_BASE_FLAGS "-march=native -pipe")
-set(CXX_BASE_FLAGS "-march=native -pipe")
+# GCC RISC-V do not support -march=native
+if(IS_RISCV64)
+	# This is minimum recommended target for RISC-V, for vectors it should be rv64gcv
+	set(C_BASE_FLAGS "-march=rv64g -pipe")
+	set(CXX_BASE_FLAGS "-march=rv64g -pipe")
+
+else()
+	# These are the default values
+	set(C_BASE_FLAGS "-march=native -pipe")
+	set(CXX_BASE_FLAGS "-march=native -pipe")
+endif()
 
 # For C and C++, the values can be overwritten independently
 if(DEFINED ENV{CFLAGS})
