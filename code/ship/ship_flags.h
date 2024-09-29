@@ -141,7 +141,7 @@ namespace Ship {
 		Maneuver_despite_engines,	// Goober5000 - ship can move even when engines are disabled or disrupted
 		Force_primary_unlinking,	// plieblang - turned on when the ship is under good-primary-time
 		No_scanned_cargo,                 //MjnMixael -- The cargo will never be revealed, instead always returning "Scanned" or "Not Scanned"
-		No_insignias,				// Cyborg do not render insignias, even when one is defined for them.
+		No_insignias,				// Cyborg -- do not render insignias, even when one is defined for them.
 
 		NUM_VALUES
 

@@ -1046,8 +1046,8 @@ void model_set_detail_level(int n);
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 #define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
 #define MR_EMPTY_SLOT5				(1<<30)		// Use a animated Shader - Valathil
-#define MR_ATTACHED_MODEL			(1<<31)		// Used for attached weapon model lodding
-constexpr uint64_t MR_NO_INSIGNIA = 2147483648;	// Disable the insignias for ... reasons.  Also << more than 31 causes UB, so that's (1<<32)
+constexpr uint64_t MR_ATTACHED_MODEL = static_cast<uint64_t>(1) << static_cast<uint64_t>(31); // Used for attached weapon model lodding
+constexpr uint64_t MR_NO_INSIGNIA = static_cast<uint64_t>(1) << static_cast<uint64_t>(32);	// Disable the insignias for ... reasons.  Also << more than 31 causes UB, so that's (1<<32)
 
 #define MR_DEBUG_PIVOTS				(1<<0)		// Show the pivot points
 #define MR_DEBUG_PATHS				(1<<1)		// Show the paths associated with a model
