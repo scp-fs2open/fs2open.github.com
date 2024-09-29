@@ -467,14 +467,17 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	nv = uw(p + TMAP_NVERTS);
 
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
+	if (nv > TMAP_MAX_VERTS) {
+		Error(LOCATION, "Model contains TMAP chunk with more than %d vertices!", TMAP_MAX_VERTS);
 		return;
 	}
 
 	int tmap_num = w(p + TMAP_TEXNUM);
 
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
+		return;
+	}
 
 	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
