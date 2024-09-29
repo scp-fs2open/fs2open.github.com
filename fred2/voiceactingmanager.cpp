@@ -404,9 +404,9 @@ void VoiceActingManager::OnGenerateFileNames()
 	}
 
 	// notify user that we are done and how many filenames were changed
-	char message[128] = { '\0' };
-	snprintf(message, sizeof(message)-1, "File name generation complete. Modified " SIZE_T_ARG " messages.", modified_filenames);
-	MessageBox(message, "Woohoo!");
+	SCP_string message;
+	sprintf(message, "File name generation complete.  " SIZE_T_ARG " file %s modified.", modified_filenames, (modified_filenames == 1) ? "name was" : "names were");
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnGenerateScript()
@@ -975,6 +975,7 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 {
 	char sender_buf[NAME_LENGTH];
 	int sender_shipnum;
+	size_t num_modified = 0;
 
 	SCP_unordered_set<int> already_assigned;
 	SCP_string inconsistent_copy_msg;
@@ -1006,6 +1007,7 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 
 					sender_shipp->persona_index = persona_to_copy;
 					already_assigned.insert(sender_shipnum);
+					num_modified++;
 				}
 				else
 				{
@@ -1017,31 +1019,31 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 
 					message->persona_index = persona_to_copy;
 					already_assigned.insert(i);
+					num_modified++;
 				}
 			}
 		}
 	}
 
+	if (num_modified > 0)
+		set_modified(TRUE);
+
+	SCP_string message;
 	if (messages_to_ships)
-	{
-		if (!inconsistent_copy_msg.empty())
-		{
-			inconsistent_copy_msg = "Attempted to copy personas from messages to ships, but the following ships send messages with inconsistent personas.  You may want to review them.\n" + inconsistent_copy_msg;
-			MessageBox(inconsistent_copy_msg.c_str(), "Voice Acting Manager");
-		}
-		else
-			MessageBox("Personas have been copied from messages to ships.", "Voice Acting Manager");
-	}
+		sprintf(message, "Personas have been copied from messages to ships.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "ship was" : "ships were");
 	else
+		sprintf(message, "Personas have been copied from ships to messages.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "message was" : "messages were");
+
+	if (!inconsistent_copy_msg.empty())
 	{
-		if (!inconsistent_copy_msg.empty())
-		{
-			inconsistent_copy_msg = "Attempted to copy personas from ships to messages, but the following messages are sent by ships with inconsistent personas.  You may want to review them.\n" + inconsistent_copy_msg;
-			MessageBox(inconsistent_copy_msg.c_str(), "Voice Acting Manager");
-		}
+		if (messages_to_ships)
+			message += "\n\nThe following ships send messages with inconsistent personas.  You may want to review them.\n";
 		else
-			MessageBox("Personas have been copied from ships to messages.", "Voice Acting Manager");
+			message += "\n\nThe following messages are sent by ships with inconsistent personas.  You may want to review them.\n";
+		message += inconsistent_copy_msg;
 	}
+
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnClearPersonasFromNonSenders()
@@ -1050,6 +1052,7 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 
 	char sender_buf[NAME_LENGTH];
 	int sender_shipnum;
+	size_t num_modified = 0;
 
 	// go through all messages in the mission
 	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
@@ -1077,12 +1080,18 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 				{
 					// clear the persona
 					Ships[objp->instance].persona_index = -1;
+					num_modified++;
 				}
 			}
 		}
 	}
 
-	MessageBox("Personas have been cleared from all ships that do not send messages.", "Voice Acting Manager");
+	if (num_modified > 0)
+		set_modified(TRUE);
+
+	SCP_string message;
+	sprintf(message, "Personas have been cleared from all ships that do not send messages.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "ship was" : "ships were");
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnCopyMessagePersonasToShips()
@@ -1097,6 +1106,8 @@ void VoiceActingManager::OnCopyShipPersonasToMessages()
 
 void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 {
+	size_t num_modified = 0;
+
 	// go through all messages in the mission
 	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
 	{
@@ -1122,11 +1133,13 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 				if (message->avi_info.name == nullptr)
 				{
 					message->avi_info.name = strdup(builtin_message->avi_info.name);
+					num_modified++;
 				}
 				else if (stricmp(message->avi_info.name, builtin_message->avi_info.name) != 0)
 				{
 					free(message->avi_info.name);
 					message->avi_info.name = strdup(builtin_message->avi_info.name);
+					num_modified++;
 				}
 
 				// done searching
@@ -1141,7 +1154,12 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 		}
 	}
 
-	MessageBox("Message head ANIs have been assigned from builtin messages.", "Voice Acting Manager");
+	if (num_modified > 0)
+		set_modified(TRUE);
+
+	SCP_string message;
+	sprintf(message, "Message head ANIs have been assigned from builtin messages.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "message was" : "messages were");
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnCheckAnyWingmanPersonas()
