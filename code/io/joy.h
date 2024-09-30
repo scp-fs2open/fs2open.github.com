@@ -347,6 +347,12 @@ namespace io
 	}
 }
 
+// integer Aliases for hat positions (because z64 is lazy)
+const int iHAT_UP = io::joystick::HAT_UP + JOY_NUM_BUTTONS;
+const int iHAT_RIGHT = io::joystick::HAT_RIGHT + JOY_NUM_BUTTONS;
+const int iHAT_DOWN = io::joystick::HAT_DOWN + JOY_NUM_BUTTONS;
+const int iHAT_LEFT = io::joystick::HAT_LEFT + JOY_NUM_BUTTONS;
+
 const int JOY_AXIS_MIN = 0;
 const int JOY_AXIS_CENTER = 32768;	//  = JOY_AXIS_MIN + ((JOY_AXIS_MAX - JOY_AXIS_MIN) / 2)
 const int JOY_AXIS_MAX = 65536;

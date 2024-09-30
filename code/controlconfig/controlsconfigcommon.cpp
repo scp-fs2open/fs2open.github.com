@@ -209,10 +209,10 @@ void control_config_common_init_bindings() {
 	(VIEW_DIST_INCREASE,                            KEY_PADPLUS, -1, COMPUTER_TAB, 1, "Increase View Distance",             CC_TYPE_CONTINUOUS)
 	(VIEW_DIST_DECREASE,                           KEY_PADMINUS, -1, COMPUTER_TAB, 1, "Decrease View Distance",             CC_TYPE_CONTINUOUS)
 	(VIEW_CENTER,                                      KEY_PAD5, -1, COMPUTER_TAB, 1, "Center View",                        CC_TYPE_CONTINUOUS)
-	(PADLOCK_UP,                                             -1, 33, COMPUTER_TAB, 1, "View Up",                            CC_TYPE_CONTINUOUS)
-	(PADLOCK_DOWN,                                           -1, 32, COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
-	(PADLOCK_LEFT,                                           -1, 34, COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
-	(PADLOCK_RIGHT,                                          -1, 35, COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
+	(PADLOCK_UP,                                             -1, iHAT_UP,       COMPUTER_TAB, 1, "View Up",                            CC_TYPE_CONTINUOUS)
+	(PADLOCK_DOWN,                                           -1, iHAT_DOWN,     COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
+	(PADLOCK_LEFT,                                           -1, iHAT_LEFT,     COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
+	(PADLOCK_RIGHT,                                          -1, iHAT_RIGHT,    COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
 	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 1777, "Top-Down View",                      CC_TYPE_TRIGGER)
 	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 1778, "Target Padlock View",                CC_TYPE_TRIGGER)
 
@@ -439,36 +439,37 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 };
 
 // Localization strings for hat positions. Back[0], Forward[1], Left[2], Right[3]
+// Forward[0], Right[1], Backward[2], Left[3]
 const char* Joy_hat_text_german_u[JOY_NUM_HAT_POS] = {
-	"Hut Hinten", "Hut Vorne", "Hut Links", "Hut Rechts"
+	"Hut Vorne", "Hut Rechts", "Hut Hinten", "Hut Links"
 };
 
 const char* Joy_hat_text_french_u[JOY_NUM_HAT_POS] = {
-	("Chapeau Arri\xc3\xa8""re"), "Chapeau Avant", "Chapeau Gauche", "Chapeau Droite"
+	"Chapeau Avant", "Chapeau Droite", ("Chapeau Arri\xc3\xa8""re"), "Chapeau Gauche"
 };
 
 const char* Joy_hat_text_polish_u[JOY_NUM_HAT_POS] = {
-	"Hat Ty\xc5\x82", ("Hat Prz\xc3\xb3""d"), "Hat Lewo", "Hat Prawo"
+	("Hat Prz\xc3\xb3""d"), "Hat Prawo", "Hat Ty\xc5\x82", "Hat Lewo"
 };
 
 const char* Joy_hat_text_english_u[JOY_NUM_HAT_POS] = {
-	"Hat Back", "Hat Forward", "Hat Left", "Hat Right"
+	"Hat Forward", "Hat Right", "Hat Back", "Hat Left"
 };
 
 const char* Joy_hat_text_german[JOY_NUM_HAT_POS] = {
-	"Hut Hinten", "Hut Vorne", "Hut Links", "Hut Rechts"
+	"Hut Vorne", "Hut Rechts", "Hut Hinten", "Hut Links"
 };
 
 const char* Joy_hat_text_french[JOY_NUM_HAT_POS] = {
-	"Chapeau Arri\x8Are", "Chapeau Avant", "Chapeau Gauche", "Chapeau Droite"
+	"Chapeau Avant", "Chapeau Droite", "Chapeau Arri\x8Are", "Chapeau Gauche"
 };
 
 const char* Joy_hat_text_polish[JOY_NUM_HAT_POS] = {
-	"Hat Ty\xB3", "Hat Prz\xF3\x64", "Hat Lewo", "Hat Prawo"
+	"Hat Prz\xF3\x64", "Hat Prawo", "Hat Ty\xB3", "Hat Lewo"
 };
 
 const char* Joy_hat_text_english[JOY_NUM_HAT_POS] = {
-	"Hat Back", "Hat Forward", "Hat Left", "Hat Right"
+	"Hat Forward", "Hat Right", "Hat Back", "Hat Left"
 };
 
 //English scancodes are still needed eclusively for the scripting API, as we need to give generic and stable scan code names to the API that are neither translated nor localized to keyboard layout.
