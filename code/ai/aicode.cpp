@@ -14566,7 +14566,11 @@ static int ai_find_shockwave_ship(object *objp)
 		shipp = &Ships[A->instance];
 		//	Only look at objects in the process of dying.
 		if (shipp->flags[Ship::Ship_Flags::Dying]) {
-			float damage = ship_get_exp_damage(objp);
+			float damage;
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_avoid_shockwave_bugs])
+				damage = ship_get_exp_damage(A);	// A is the object that is actually exploding!
+			else
+				damage = ship_get_exp_damage(objp);
 
 			if (damage >= EVADE_SHOCKWAVE_DAMAGE_THRESHOLD) {		//	Only evade quite large blasts
 				float	dist;
@@ -14586,6 +14590,8 @@ static int ai_find_shockwave_ship(object *objp)
 
 int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 {
+	bool fix_bugs = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_avoid_shockwave_bugs];
+
 	// MAKE SURE safe_pos DOES NOT TAKE US TOWARD THE A SHIP WE'RE ATTACKING.
 	if (aip->ai_flags[AI::AI_Flags::Avoid_shockwave_weapon]) {
 		//	If we don't currently know of a weapon to avoid, try to find one.
@@ -14646,7 +14652,24 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 			}
 		}
 
-		if (!pos_set) {
+		if (pos_set) {
+			// if the object is not a small ship, a surface impact is likely to be some distance away from the ship center, so refine the position
+			if (fix_bugs && target_ship_obj && !Ship_info[Ships[target_ship_obj->instance].ship_info_index].is_small_ship()) {
+				mc_info mc;
+				mc.model_instance_num = Ships[target_ship_obj->instance].model_instance_num;
+				mc.model_num = Ship_info[Ships[target_ship_obj->instance].ship_info_index].model_num;
+				mc.orient = &target_ship_obj->orient;
+				mc.pos = &target_ship_obj->pos;
+				mc.p0 = &weapon_objp->pos;				// Point 1 of ray to check
+				mc.p1 = &expected_pos;					// Point 2 of ray to check
+				mc.flags = MC_CHECK_MODEL;
+
+				model_collide(&mc);
+				if (mc.num_hits > 0) {
+					expected_pos = mc.hit_point_world;
+				}
+			}
+		} else {
 			float	time_scale;
 
 			if (wip->lifetime - weaponp->lifeleft > 5.0f) {
@@ -14692,12 +14715,13 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		Assert(aip->shockwave_object > -1);
 		object	*ship_objp = &Objects[aip->shockwave_object];
 		if (ship_objp == objp) {
-			aip->shockwave_object = -1;
+			aip->shockwave_object = -1;	// this one was already present in retail
 			return 0;
 		}
 
 		if (ship_objp->type != OBJ_SHIP) {
 			aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_ship);
+			if (fix_bugs) aip->shockwave_object = -1;
 			return 0;
 		}
 
@@ -14711,6 +14735,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 
 		if (vm_vec_dist_quick(&objp->pos, &ship_objp->pos) > outer_rad*1.5f) {
 			aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_ship);
+			if (fix_bugs) aip->shockwave_object = -1;
 			return 0;
 		}
 
@@ -14730,6 +14755,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 int ai_avoid_shockwave(object *objp, ai_info *aip)
 {
 	vec3d	safe_pos;
+	bool fix_bugs = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_avoid_shockwave_bugs];
 
 	// BIG|HUGE do not respond to shockwaves
 	// Goober5000 - let's treat shockwave response the same way whether from weapon or ship
@@ -14737,7 +14763,27 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 		// don't come here again
 		aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_ship);
 		aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_weapon);
+		if (fix_bugs) aip->shockwave_object = -1;
 		return 0;
+	}
+
+	//	Don't try to evade a homing weapon until it starts homing
+	if (fix_bugs && aip->ai_flags[AI::AI_Flags::Avoid_shockwave_weapon] && !(aip->ai_flags[AI::AI_Flags::Avoid_shockwave_started])) {
+		// since the "don't all react right away" timer should only start when the weapon begins homing, we need the actual weapon now...
+		// so choose the weapon ahead of time using the same technique aas_1() would normally use later
+		if (aip->shockwave_object == -1) {
+			aip->shockwave_object = ai_find_shockwave_weapon(objp);
+			if (aip->shockwave_object == -1) {
+				aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_weapon);
+				return 0;
+			}
+		}
+
+		// if this is a homing weapon that isn't homing, don't react yet
+		auto wp = &Weapons[Objects[aip->shockwave_object].instance];
+		if (Weapon_info[wp->weapon_info_index].is_homing() && IS_VEC_NULL(&wp->homing_pos)) {
+			return 0;
+		}
 	}
 
 	//	Don't all react right away.
