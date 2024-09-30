@@ -34,7 +34,7 @@ public:
 	ubyte normal_color[3] = { 0x80, 0x80, 0xFF };
 	ubyte visited_color[3] = { 0xFF, 0xFF, 0x00 };
 
-	const void *target_obj = nullptr;
+	int target_index = -1; //waypoint list index if NP_WAYPOINT, otherwise object index
 	int waypoint_num = -1; //only used when flags & NP_WAYPOINT
 
 	const vec3d *GetPosition();
@@ -53,7 +53,7 @@ public:
 		visited_color[1] = 0xFF;
 		visited_color[2] = 0x00;
 
-		target_obj = nullptr;
+		target_index = -1;
 		waypoint_num = -1;
 	}
 };

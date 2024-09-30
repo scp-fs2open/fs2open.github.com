@@ -72,6 +72,7 @@ void waypoint_create_game_objects();
 
 // Find a waypoint list with the specified name
 waypoint_list *find_matching_waypoint_list(const char *name);
+int find_matching_waypoint_list_index(const char *name);
 
 // Find a waypoint with the specified name (e.g. Path:1)
 waypoint *find_matching_waypoint(const char *name);
@@ -84,6 +85,7 @@ waypoint *find_waypoint_with_instance(int waypoint_instance);
 // Find something at the specified index
 waypoint_list *find_waypoint_list_at_index(int index);
 waypoint *find_waypoint_at_index(waypoint_list *list, int index);
+waypoint *find_waypoint_at_indexes(int list_index, int index);
 int find_index_of_waypoint_list(const waypoint_list *wp_list);
 int find_index_of_waypoint(const waypoint_list *wp_list, const waypoint *wpt);
 

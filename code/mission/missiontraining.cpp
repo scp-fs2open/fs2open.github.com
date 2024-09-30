@@ -92,7 +92,7 @@ int	Training_context_speed_set;
 int	Training_context_speed_min;
 int	Training_context_speed_max;
 TIMESTAMP	Training_context_speed_timestamp;
-waypoint_list *Training_context_path;
+int Training_context_waypoint_path;
 int Training_context_goal_waypoint;
 int Training_context_at_waypoint;
 float	Training_context_distance;
@@ -398,7 +398,7 @@ void training_mission_init()
 	Training_context = 0;
 	Training_context_speed_set = 0;
 	Training_context_speed_timestamp = TIMESTAMP::invalid();
-	Training_context_path = nullptr;
+	Training_context_waypoint_path = -1;
 
 	Players_target = UNINITIALIZED;
 	Players_mlocked = UNINITIALIZED;

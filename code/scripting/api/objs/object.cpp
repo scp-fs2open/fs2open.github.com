@@ -147,7 +147,7 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		objh->objp()->pos = *v3;
 		if (objh->objp()->type == OBJ_WAYPOINT) {
-			waypoint *wpt = find_waypoint_with_objnum(objh->objnum);
+			waypoint *wpt = find_waypoint_with_instance(objh->objp()->instance);
 			wpt->set_pos(v3);
 		}
 
