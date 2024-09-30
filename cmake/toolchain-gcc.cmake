@@ -13,9 +13,12 @@ option(GCC_GENERATE_GDB_INDEX "Adds linker option to generate the gdb index for 
 
 # GCC RISC-V do not support -march=native
 if(IS_RISCV64)
-	# This is minimum recommended target for RISC-V, for vectors it should be rv64gcv
-	set(C_BASE_FLAGS "-march=rv64g -pipe")
-	set(CXX_BASE_FLAGS "-march=rv64g -pipe")
+	# You do not need to pass a -march, passing nothing will make gcc to choose itself.
+	# If you want a specific set of instructions like vectors, set -march in CFLAGS and CXXFLAGS env variables
+	# Example for vectors: -march=rv64gcv
+    # https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html
+	set(C_BASE_FLAGS "-pipe")
+	set(CXX_BASE_FLAGS "-pipe")
 
 else()
 	# These are the default values
