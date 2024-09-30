@@ -2135,9 +2135,12 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!done && (j < JOY_TOTAL_BUTTONS)) {
 			// Bind the joy button
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), item, API_Access);
 
-			strcpy_s(bound_string, Joy_button_text[j]);
+			CC_bind joy_bind(static_cast<CID>(joy), j);
+
+			control_config_bind(ctrl, joy_bind, item, API_Access);
+
+			strcpy_s(bound_string, joy_bind.textify().c_str());
 			done = true;
 		}
 
@@ -2171,9 +2174,10 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 					if (mouse_down(mouse_bind)) {
 						Assert(!Control_config[ctrl].is_axis());
+
 						control_config_bind(ctrl, mouse_bind, item, API_Access);
 
-						strcpy_s(bound_string, Joy_button_text[i]);
+						strcpy_s(bound_string, mouse_bind.textify().c_str());
 						done = true;
 
 						break;
