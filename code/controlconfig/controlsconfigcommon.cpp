@@ -694,16 +694,16 @@ const char* textify_button(int btn) {
 	if (btn < JOY_NUM_BUTTONS) {
 		// Is a button.
 		if (Lcl_gr) {
-			sprintf_s(text, "Knopf %i", btn);
+			sprintf(text, "Knopf %i", btn);
 
 		} else if (Lcl_fr) {
-			sprintf_s(text, "Bouton %i", btn);
+			sprintf(text, "Bouton %i", btn);
 
 		} else if (Lcl_pl) {
-			sprintf_s(text, "Przyc.%i", btn);
+			sprintf(text, "Przyc.%i", btn);
 
 		} else {
-			sprintf_s(text, "Button %i", btn);
+			sprintf(text, "Button %i", btn);
 		}
 
 	} else {
