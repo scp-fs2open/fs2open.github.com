@@ -12,7 +12,7 @@ option(GCC_USE_GOLD "Use the gold linker instead of the standard linker" OFF)
 option(GCC_GENERATE_GDB_INDEX "Adds linker option to generate the gdb index for debug builds" OFF)
 
 # GCC does not support -march=native in RISC-V
-if(IS_RISCV64)
+if(IS_RISCV)
 	# You do not need to pass a -march, passing nothing will make gcc to choose itself.
 	# If you want a specific set of instructions like vectors, set -march in CFLAGS and CXXFLAGS env variables
 	# Example for vectors: -march=rv64gcv
