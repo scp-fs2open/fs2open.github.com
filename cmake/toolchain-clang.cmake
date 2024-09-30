@@ -9,9 +9,18 @@ option(CLANG_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 
 option(CLANG_USE_LIBCXX "Use libc++" OFF)
 
-# These are the default values
-set(C_BASE_FLAGS "-march=native -pipe")
-set(CXX_BASE_FLAGS "-march=native -pipe")
+# Clang does not support -march=native for RISC-V
+if(IS_RISCV64)
+	# You do not need to pass a -march, passing nothing will make clang to choose itself.
+	# If you want a specific set of instructions like vectors, set -march in CFLAGS and CXXFLAGS env variables
+	# Example for vectors: -march=rv64gcv
+	set(C_BASE_FLAGS "-pipe")
+	set(CXX_BASE_FLAGS "-pipe")
+else()
+	# These are the default values
+	set(C_BASE_FLAGS "-march=native -pipe")
+	set(CXX_BASE_FLAGS "-march=native -pipe")
+endif()
 
 # For C and C++, the values can be overwritten independently
 if(DEFINED ENV{CXXFLAGS})
