@@ -379,9 +379,7 @@ static int shiphit_get_damage_weapon(object *damaging_objp)
 			weapon_info_index = shockwave_get_weapon_index(damaging_objp->instance);
 			break;
 		case OBJ_BEAM:
-			if (Beams_use_damage_factors) {
-				weapon_info_index = beam_get_weapon_info_index(damaging_objp);
-			}
+			weapon_info_index = beam_get_weapon_info_index(damaging_objp);
 			break;
 		default:
 			weapon_info_index = -1;
@@ -2417,7 +2415,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			}
 
 			float shield_factor = 1.0f;
-			if (weapon_info_index >= 0 )
+			if (weapon_info_index >= 0 && (!other_obj_is_beam || Beams_use_damage_factors))
 				shield_factor = Weapon_info[weapon_info_index].shield_factor;
 
 			// apply shield damage
@@ -2475,7 +2473,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		// continue with damage?
 		if (damage > 0.0f) {
-			if ( weapon_info_index >= 0 ) {
+			if ( weapon_info_index >= 0 && (!other_obj_is_beam || Beams_use_damage_factors)) {
 				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					damage /= 4;
 				}
@@ -2607,28 +2605,23 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		}
 	}
 
-	// if the hitting object is a weapon, maybe do some fun stuff here
-	if(other_obj_is_weapon)
-	{
-		weapon_info *wip;
-		Assert(other_obj->instance >= 0);
-		if (other_obj->instance < 0) {
-			return;
-		}
-		Assert(Weapons[other_obj->instance].weapon_info_index >= 0);
-		if (Weapons[other_obj->instance].weapon_info_index < 0) {
-			return;
-		}
-		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+	// handle weapon and afterburner leeching here
+	if(other_obj_is_weapon || other_obj_is_beam) {		
+		Assert(weapon_info_index >= 0);
+		weapon_info* wip = &Weapon_info[weapon_info_index];
+
+		float mult = 1.0f;
+		if (other_obj_is_beam)
+			mult = flFrametime;
 
 		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
 		if (wip->wi_flags[Weapon::Info_Flags::Energy_suck]) {
 			// reduce afterburner fuel
-			shipp->afterburner_fuel -= wip->afterburner_reduce;
+			shipp->afterburner_fuel -= wip->afterburner_reduce * mult;
 			shipp->afterburner_fuel = (shipp->afterburner_fuel < 0.0f) ? 0.0f : shipp->afterburner_fuel;
 
 			// reduce weapon energy
-			shipp->weapon_energy -= wip->weapon_reduce;
+			shipp->weapon_energy -= wip->weapon_reduce * mult;
 			shipp->weapon_energy = (shipp->weapon_energy < 0.0f) ? 0.0f : shipp->weapon_energy;
 		}
 	}
@@ -2721,8 +2714,11 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 	}
 
 	// if the hitting object is a weapon, maybe do some fun stuff here
-	if (other_obj_is_weapon)
-	{
+	if (other_obj_is_weapon || other_obj_is_beam) {
+		float mult = 1.0f;
+		if (other_obj_is_beam)
+			mult = flFrametime;
+
 		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
 		if (wip->wi_flags[Weapon::Info_Flags::Energy_suck]) {
 			// reduce afterburner fuel
