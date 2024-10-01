@@ -2722,11 +2722,11 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
 		if (wip->wi_flags[Weapon::Info_Flags::Energy_suck]) {
 			// reduce afterburner fuel
-			shipp->afterburner_fuel -= wip->afterburner_reduce;
+			shipp->afterburner_fuel -= wip->afterburner_reduce * mult;
 			shipp->afterburner_fuel = (shipp->afterburner_fuel < 0.0f) ? 0.0f : shipp->afterburner_fuel;
 
 			// reduce weapon energy
-			shipp->weapon_energy -= wip->weapon_reduce;
+			shipp->weapon_energy -= wip->weapon_reduce * mult;
 			shipp->weapon_energy = (shipp->weapon_energy < 0.0f) ? 0.0f : shipp->weapon_energy;
 		}
 	}
