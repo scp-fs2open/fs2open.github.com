@@ -1896,7 +1896,7 @@ void gr_set_shader(shader *shade)
 }
 
 // new bitmap functions
-void gr_bitmap(int _x, int _y, int resize_mode)
+void gr_bitmap(int _x, int _y, int resize_mode, float scale_factor)
 {
 	GR_DEBUG_SCOPE("2D Bitmap");
 
@@ -1909,6 +1909,11 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	}
 
 	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
+
+	if (scale_factor != 1.0f) {
+		_w = static_cast<int>(_w * scale_factor);
+		_h = static_cast<int>(_h * scale_factor);
+	}
 
 	x = i2fl(_x);
 	y = i2fl(_y);
