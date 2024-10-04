@@ -6702,6 +6702,7 @@ void ship::clear()
 	pre_death_explosion_happened = 0;
 	wash_killed = 0;	// serenity lies
 	cargo1 = 0;							// "Nothing"
+	cargo_title[0] = '\0';
 
 	wing_status_wing_index = -1;
 	wing_status_wing_pos = -1;
@@ -7730,6 +7731,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->optimum_range = model_system->optimum_range;
 		ship_system->favor_current_facing = model_system->favor_current_facing;
 		ship_system->subsys_cargo_name = 0;
+		ship_system->subsys_cargo_title[0] = '\0';
 		ship_system->time_subsys_cargo_revealed = 0;
 		
 		j = 0;
