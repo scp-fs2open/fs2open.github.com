@@ -116,7 +116,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
 		}
 
-		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index - 1))));
+		return ade_set_args(L, "o", l_Font.Set(font_h(index - 1)));
 	}
 	else
 	{
@@ -125,7 +125,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 		if(!ade_get_args(L, "*s", &s))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(s))));
+		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFontIndex(s))));
 	}
 }
 
@@ -137,10 +137,10 @@ ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
 		return ade_set_error(L, "o", l_Font.Set(font_h()));
 
 	if(ADE_SETTING_VAR && newFh->isValid()) {
-		font::FontManager::setCurrentFont(newFh->Get());
+		font::FontManager::setCurrentFontIndex(newFh->GetIndex());
 	}
 
-	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getCurrentFont())));
+	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getCurrentFontIndex())));
 }
 
 //****SUBLIBRARY: Graphics/PostEffects

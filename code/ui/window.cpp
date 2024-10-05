@@ -564,7 +564,7 @@ void UI_WINDOW::add_XSTR(UI_XSTR *xstr)
 
 void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 {
-	font::FSFont *f_backup = NULL;
+	int f_backup = -1;
 	char str[255] = "";
 
 	// sanity
@@ -580,8 +580,8 @@ void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 	// maybe set the font
 	if(xs->font_id >= 0){
 		// backup the current font
-		Assert(font::get_current_font() != NULL);
-		f_backup = font::get_current_font();
+		f_backup = font::FontManager::getCurrentFontIndex();
+		Assert(f_backup >= 0);
 
 		// set the new font
 		font::set_font(xs->font_id);
@@ -642,8 +642,8 @@ void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 	}
 
 	// maybe restore the old font
-	if(f_backup != NULL){
-		font::FontManager::setCurrentFont(f_backup);
+	if(f_backup >= 0){
+		font::FontManager::setCurrentFontIndex(f_backup);
 	}			
 }
 

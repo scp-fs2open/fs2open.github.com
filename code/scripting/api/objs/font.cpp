@@ -1,25 +1,37 @@
 
 #include "font.h"
+#include "graphics/software/FontManager.h"
 
 namespace scripting {
 namespace api {
 
 //**********HANDLE: Font
-font_h::font_h(font::FSFont* fontIn): font(fontIn) {
-}
+font_h::font_h(int fontIndex):
+	_fontIndex(fontIndex)
+{}
 
-font_h::font_h(): font(NULL) {
-}
+font_h::font_h()
+	: _fontIndex(-1)
+{}
 
-font::FSFont* font_h::Get() const {
+font::FSFont* font_h::Get() const
+{
 	if (!isValid())
-		return NULL;
+		return nullptr;
 
-	return font;
+	return font::FontManager::getFont(_fontIndex);
+}
+
+int font_h::GetIndex() const
+{
+	if (!isValid())
+		return -1;
+
+	return _fontIndex;
 }
 
 bool font_h::isValid() const {
-	return font != NULL;
+	return font::FontManager::isFontNumberValid(_fontIndex);
 }
 
 ADE_OBJ(l_Font, font_h, "font", "font handle");
