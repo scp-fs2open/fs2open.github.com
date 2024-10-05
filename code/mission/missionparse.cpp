@@ -3775,7 +3775,6 @@ void parse_common_object_data(p_object *p_objp)
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
-		Subsys_status[i].subsys_cargo_name = 0;
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
@@ -3793,7 +3792,6 @@ void parse_common_object_data(p_object *p_objp)
 			Subsys_status[i].subsys_cargo_name = index;
 		}
 
-		Subsys_status[i].subsys_cargo_title[0] = '\0';
 		if (optional_string("+Cargo Title:")) {
 			stuff_string(Subsys_status[i].subsys_cargo_title, F_NAME, NAME_LENGTH);
 		}
@@ -8266,6 +8264,7 @@ int allocate_subsys_status()
 	Subsys_status[Subsys_index].ai_class = SUBSYS_STATUS_NO_CHANGE;
 
 	Subsys_status[Subsys_index].subsys_cargo_name = 0;	// "Nothing"
+	Subsys_status[Subsys_index].subsys_cargo_title[0] = '\0';
 
 	return Subsys_index++;
 }
