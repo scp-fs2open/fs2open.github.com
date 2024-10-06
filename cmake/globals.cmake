@@ -33,6 +33,6 @@ else()
 endif()
 
 set(IS_X86 FALSE)
-if (NOT IS_ARM AND NOT IS_RISCV)
+if (NOT IS_ARM64 AND NOT IS_RISCV)
     set(IS_X86 TRUE)
 endif()
