@@ -108,14 +108,18 @@ if(IS_X86)
 		set(MSVC_SIMD_INSTRUCTIONS ${FSO_INSTRUCTION_SET})
 	endif()
 
-	CHECK_CXX_COMPILER_FLAG("/arch:${MSVC_SIMD_INSTRUCTIONS}" COMPILER_SUPPORTS_ARCH)
+	if (NOT (IS_64BIT AND (MSVC_SIMD_INSTRUCTIONS STREQUAL "IA32" OR MSVC_SIMD_INSTRUCTIONS STREQUAL "SSE" OR MSVC_SIMD_INSTRUCTIONS STREQUAL "SSE2")))
+		# 32-Bit and SSE(2) mustn't be set, as these are implied in x86_64 and thus MSVC does not support it for the /arch argument
+		CHECK_CXX_COMPILER_FLAG("/arch:${MSVC_SIMD_INSTRUCTIONS}" COMPILER_SUPPORTS_ARCH)
 
-	IF(COMPILER_SUPPORTS_ARCH)
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:${MSVC_SIMD_INSTRUCTIONS}")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:${MSVC_SIMD_INSTRUCTIONS}")
-	ELSE()
-		message( FATAL_ERROR "Your version of MSVC does not support the requested instruction set. Consider updating!" )
-	ENDIF()
+		IF(COMPILER_SUPPORTS_ARCH)
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:${MSVC_SIMD_INSTRUCTIONS}")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:${MSVC_SIMD_INSTRUCTIONS}")
+		ELSE()
+			message( FATAL_ERROR "Your version of MSVC does not support the requested instruction set. Consider updating!" )
+		ENDIF()
+	endif()
+
 endif()
 
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE _CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX
