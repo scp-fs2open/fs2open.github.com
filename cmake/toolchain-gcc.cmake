@@ -47,6 +47,15 @@ elseif(IS_RISCV)
     # As such, default C/CXX_BASE_FLAGS are sufficient.
 endif()
 
+if (IS_64BIT)
+	set(C_BASE_FLAGS "${C_BASE_FLAGS} -m64")
+	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -m64")
+endif()
+
+if (USE_STATIC_LIBCXX)
+	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -static-libstdc++")
+endif()
+
 # For C and C++, the values can be overwritten independently
 if(DEFINED ENV{CFLAGS})
 	set(C_BASE_FLAGS $ENV{CFLAGS})
