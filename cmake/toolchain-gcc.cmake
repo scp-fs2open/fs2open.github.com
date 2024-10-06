@@ -11,9 +11,19 @@ option(GCC_ENABLE_SANITIZE_UNDEFINED "Enable -fsanitize=undefined" OFF)
 option(GCC_USE_GOLD "Use the gold linker instead of the standard linker" OFF)
 option(GCC_GENERATE_GDB_INDEX "Adds linker option to generate the gdb index for debug builds" OFF)
 
-# These are the default values
-set(C_BASE_FLAGS "-march=native -pipe")
-set(CXX_BASE_FLAGS "-march=native -pipe")
+# GCC does not support -march=native in RISC-V
+if(IS_RISCV)
+	# You do not need to pass a -march, passing nothing will make gcc to choose itself.
+	# If you want a specific set of instructions like vectors, set -march in CFLAGS and CXXFLAGS env variables
+	# Example for vectors: -march=rv64gcv
+    # https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html
+	set(C_BASE_FLAGS "-pipe")
+	set(CXX_BASE_FLAGS "-pipe")
+else()
+	# These are the default values
+	set(C_BASE_FLAGS "-march=native -pipe")
+	set(CXX_BASE_FLAGS "-march=native -pipe")
+endif()
 
 # For C and C++, the values can be overwritten independently
 if(DEFINED ENV{CFLAGS})
