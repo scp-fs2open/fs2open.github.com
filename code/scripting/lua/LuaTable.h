@@ -70,8 +70,14 @@ class LuaTable: public LuaValue {
 	 *
 	 * This wraps a shared pointer to an iterator so that this class can be copied like the iterator interface expects
 	 */
-	class iterator: public std::iterator<std::input_iterator_tag, std::pair<LuaValue, LuaValue>> {
+	class iterator {
 	 public:
+		using iterator_category = std::input_iterator_tag;
+		using value_type = std::pair<LuaValue, LuaValue>;
+		using difference_type = std::ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+
 		explicit iterator(const LuaTable& _parent);
 		iterator();
 

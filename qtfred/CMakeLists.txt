@@ -29,6 +29,8 @@ set_target_properties(qtfred PROPERTIES
 
 set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}")
 
+target_compile_features(qtfred PUBLIC cxx_std_17)
+
 target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGING=1>")
 
 # Undefine emit since it conflicts with our code
