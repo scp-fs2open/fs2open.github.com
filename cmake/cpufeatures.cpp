@@ -7,14 +7,15 @@
 #else
 
 //  GCC Inline Assembly
-void cpuid(int CPUInfo[4],int InfoType){
+void cpuid(int CPUInfo[4], int InfoType, int SubType){
     __asm__ __volatile__ (
         "cpuid":
         "=a" (CPUInfo[0]),
         "=b" (CPUInfo[1]),
         "=c" (CPUInfo[2]),
         "=d" (CPUInfo[3]) :
-        "a" (InfoType)
+        "a" (InfoType),
+		"c" (SubType)
     );
 }
 
@@ -30,19 +31,19 @@ int main( int argc, char* argv[] )
 	int AVX2    = false;
 
 	int info[4];
-	cpuid(info, 0);
+	cpuid(info, 0, 0);
 	int nIds = info[0];
 
 	//  Detect Instruction Set
 	if (nIds >= 1){
-		cpuid(info,0x00000001);
+		cpuid(info, 0x00000001, 0);
 		SSE   = (info[3] & ((int)1 << 25)) != 0;
 		SSE2  = (info[3] & ((int)1 << 26)) != 0;
 
 		AVX   = (info[2] & ((int)1 << 28)) != 0;
 	}
 	if (nIds >= 7){
-		cpuid(info,0x00000007);
+		cpuid(info,0x00000007, 0);
 		AVX2  = (info[1] & ((int)1 <<  5)) != 0;
 	}
 
