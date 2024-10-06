@@ -5585,7 +5585,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		Assertion(sip->n_subsystems >= 0, "Invalid n_subsystems detected!");
 		auto new_n = sip->n_subsystems + n_subsystems;
 
-		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[new_n]);
+		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[MAX(0,new_n)]);
 
 		if(sip->n_subsystems <= 0) {
 			sip->n_subsystems = n_subsystems;

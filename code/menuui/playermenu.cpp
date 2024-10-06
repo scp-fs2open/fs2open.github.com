@@ -79,45 +79,45 @@ const char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 #define PLAYER_SELECT_MAIN_HALL_OVERLAY		NOX("MainHall1")			// main hall help overlay
 
 // convenient struct for handling all button controls
-struct barracks_buttons {
+struct player_select_buttons {
 	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	barracks_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	player_select_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
-static barracks_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SELECT_BUTTONS] = {
+static player_select_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SELECT_BUTTONS] = {
 	{ // GR_640
 		// create, clone and delete (respectively)
-		barracks_buttons("CPB_00",		114,	205,	117,	240,	0),
-		barracks_buttons("CPB_01",		172,	205,	175,	240,	1),
-		barracks_buttons("CPB_02",		226,	205,	229,	240,	2),
+		player_select_buttons("CPB_00",		114,	205,	117,	240,	0),
+		player_select_buttons("CPB_01",		172,	205,	175,	240,	1),
+		player_select_buttons("CPB_02",		226,	205,	229,	240,	2),
 
 		// scroll up, scroll down, and accept (respectively)
-		barracks_buttons("CPB_03",		429,	213,	 -1,	 -1,	3),
-		barracks_buttons("CPB_04",		456,	213,	 -1,	 -1,	4),
-		barracks_buttons("CPB_05",		481,	207,	484,	246,	5),
+		player_select_buttons("CPB_03",		429,	213,	 -1,	 -1,	3),
+		player_select_buttons("CPB_04",		456,	213,	 -1,	 -1,	4),
+		player_select_buttons("CPB_05",		481,	207,	484,	246,	5),
 		
 		// single player select and multiplayer select, respectively
-		barracks_buttons("CPB_06",		428,	 82,	430,	108,	6),
-		barracks_buttons("CPB_07",		477,	 82,	481,	108,	7)
+		player_select_buttons("CPB_06",		428,	 82,	430,	108,	6),
+		player_select_buttons("CPB_07",		477,	 82,	481,	108,	7)
 	}, 
 	{ // GR_1024
 		// create, clone and delete (respectively)
-		barracks_buttons("2_CPB_00",	182,	328,	199,	384,	0),
-		barracks_buttons("2_CPB_01",	275,	328,	292,	384,	1),
-		barracks_buttons("2_CPB_02",	361,	328,	379,	384,	2),
+		player_select_buttons("2_CPB_00",	182,	328,	199,	384,	0),
+		player_select_buttons("2_CPB_01",	275,	328,	292,	384,	1),
+		player_select_buttons("2_CPB_02",	361,	328,	379,	384,	2),
 
 		// scroll up, scroll down, and accept (respectively)
-		barracks_buttons("2_CPB_03",	686,	341,	 -1,	 -1,	3),
-		barracks_buttons("2_CPB_04",	729,	341,	 -1,	 -1,	4),
-		barracks_buttons("2_CPB_05",	770,	332,	787,	394,	5),
+		player_select_buttons("2_CPB_03",	686,	341,	 -1,	 -1,	3),
+		player_select_buttons("2_CPB_04",	729,	341,	 -1,	 -1,	4),
+		player_select_buttons("2_CPB_05",	770,	332,	787,	394,	5),
 		
 		// single player select and multiplayer select, respectively
-		barracks_buttons("2_CPB_06",	685,	132,	700,	173,	6),
-		barracks_buttons("2_CPB_07",	764,	132,	782,	173,	7)
+		player_select_buttons("2_CPB_06",	685,	132,	700,	173,	6),
+		player_select_buttons("2_CPB_07",	764,	132,	782,	173,	7)
 	}
 };
 
@@ -294,7 +294,7 @@ void player_select_set_controls(int gray)
 void player_select_init()
 {
 	int i;
-	barracks_buttons *b;
+	player_select_buttons *b;
 	UI_WINDOW *w;
 
 	// start a looping ambient sound
