@@ -95,48 +95,26 @@ ENDIF(MSVC_USE_RUNTIME_DLL)
 INCLUDE(MSVCMultipleProcessCompile)
 
 # Visual Studio supports compiling for multiple vector instruction sets
-SET(POSSIBLE_INSTUCTION_SETS "" SSE SSE2 AVX AVX2)
 
-if (NOT DEFINED MSVC_SIMD_INSTRUCTIONS)
-	detect_simd_instructions(MSVC_DETECTED_SIMD_INSTRUCTIONS)
+if(IS_X86)
+	if(FORCED_NATIVE_SIMD_INSTRUCTIONS AND FORCED_SIMD_INSTRUCTIONS STREQUAL "")
+		# MSVC has no direct -march=native equivalent, so just use the detected extensions.
+		SET(FSO_INSTRUCTION_SET "${DETECTED_SIMD_INSTRUCTIONS}")
+	endif()
 
-	SET(MSVC_SIMD_INSTRUCTIONS "${MSVC_DETECTED_SIMD_INSTRUCTIONS}" CACHE FILEPATH "The SIMD instructions which will be used, possible values are ${POSSIBLE_INSTUCTION_SETS}")
-	MARK_AS_ADVANCED(FORCE MSVC_SIMD_INSTRUCTIONS)
-endif()
-set(FSO_INSTRUCTION_SET ${MSVC_SIMD_INSTRUCTIONS})
+	if(FSO_INSTRUCTION_SET STREQUAL "")
+		set(MSVC_SIMD_INSTRUCTIONS "IA32")
+	else()
+		set(MSVC_SIMD_INSTRUCTIONS ${FSO_INSTRUCTION_SET})
+	endif()
 
-LIST(FIND POSSIBLE_INSTUCTION_SETS "${MSVC_SIMD_INSTRUCTIONS}" SET_INDEX)
+	CHECK_CXX_COMPILER_FLAG("/arch:${MSVC_SIMD_INSTRUCTIONS}" COMPILER_SUPPORTS_ARCH_${MSVC_SIMD_INSTRUCTIONS})
 
-if (SET_INDEX LESS 0)
-	MESSAGE(STATUS "An invalid instruction set was specified, defaulting to no special compiler options.")
-else()
-	IF (NOT SET_INDEX EQUAL 0)
-		SET(FOUND)
-
-		FOREACH(list_index RANGE ${SET_INDEX} 1)
-			list(GET POSSIBLE_INSTUCTION_SETS ${list_index} _simd_set)
-			CHECK_CXX_COMPILER_FLAG("/arch:${_simd_set}" COMPILER_SUPPORTS_ARCH_${_simd_set})
-
-			IF(COMPILER_SUPPORTS_ARCH_${_simd_set})
-				set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:${_simd_set}")
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:${_simd_set}")
-
-				SET(FOUND TRUE)
-				BREAK()
-			ENDIF()
-		ENDFOREACH(list_index)
-
-		IF(NOT FOUND)
-			# Don't set anything, it will likely not work
-			MESSAGE(STATUS "Your compiler does not support any optimization flags, defaulting to none")
-		ENDIF(NOT FOUND)
+	IF(COMPILER_SUPPORTS_ARCH_${MSVC_SIMD_INSTRUCTIONS})
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:${MSVC_SIMD_INSTRUCTIONS}")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:${MSVC_SIMD_INSTRUCTIONS}")
 	ELSE()
-		CHECK_CXX_COMPILER_FLAG("/arch:IA32" COMPILER_SUPPORTS_ARCH_IA32)
-
-		IF(COMPILER_SUPPORTS_ARCH_IA32)
-			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:IA32")
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:IA32")
-		ENDIF(COMPILER_SUPPORTS_ARCH_IA32)
+		message( FATAL_ERROR "Your version of MSVC does not support the requested instruction set. Consider updating!" )
 	ENDIF()
 endif()
 

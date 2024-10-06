@@ -9,17 +9,38 @@ option(CLANG_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 
 option(CLANG_USE_LIBCXX "Use libc++" OFF)
 
-# Clang does not support -march=native for RISC-V
-if(IS_RISCV)
-	# You do not need to pass a -march, passing nothing will make clang to choose itself.
-	# If you want a specific set of instructions like vectors, set -march in CFLAGS and CXXFLAGS env variables
-	set(C_BASE_FLAGS "-pipe")
-	set(CXX_BASE_FLAGS "-pipe")
-else()
-	# These are the default values
-	set(C_BASE_FLAGS "-march=native -pipe")
-	set(CXX_BASE_FLAGS "-march=native -pipe")
+# These are the default values
+set(C_BASE_FLAGS "-pipe")
+set(CXX_BASE_FLAGS "-pipe")
+
+if(IS_X86)
+	if(FORCED_NATIVE_SIMD_INSTRUCTIONS AND FORCED_SIMD_INSTRUCTIONS STREQUAL "")
+		set(CLANG_EXTENSIONS "-march=native")
+	elseif (FSO_INSTRUCTION_SET STREQUAL "")
+		set(CLANG_EXTENSIONS "-march=x86-64")
+	elseif (FSO_INSTRUCTION_SET STREQUAL "SSE")
+		set(CLANG_EXTENSIONS "-march=x86-64 -msse -mfpmath=sse")
+	elseif (FSO_INSTRUCTION_SET STREQUAL "SSE2")
+		set(CLANG_EXTENSIONS "-march=x86-64 -msse -msse2 -mfpmath=sse")
+	elseif (FSO_INSTRUCTION_SET STREQUAL "AVX")
+		set(CLANG_EXTENSIONS "-march=x86-64-v2 -msse -msse2 -mavx -mfpmath=sse")
+	elseif (FSO_INSTRUCTION_SET STREQUAL "AVX2")
+		set(CLANG_EXTENSIONS "-march=x86-64-v3 -msse -msse2 -mavx -mavx2 -mfpmath=sse")
+	else ()
+		message( FATAL_ERROR "Unknown instruction set encountered for clang. Update toolchain-clang.cmake!" )
+	endif()
+
+	set(C_BASE_FLAGS "${C_BASE_FLAGS} ${CLANG_EXTENSIONS}")
+	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} ${CLANG_EXTENSIONS}")
+elseif(IS_ARM)
+	if(FORCED_NATIVE_SIMD_INSTRUCTIONS)
+		set(C_BASE_FLAGS "${C_BASE_FLAGS} -march=native")
+		set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -march=native")
+    endif ()
+elseif(IS_RISCV)
+    # Default C/CXX_BASE_FLAGS are fine for RISC-V
 endif()
+
 
 # For C and C++, the values can be overwritten independently
 if(DEFINED ENV{CXXFLAGS})

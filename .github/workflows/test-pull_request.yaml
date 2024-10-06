@@ -133,11 +133,11 @@ jobs:
           else
               if [ "$ARCHITECTURE" = "Win32" ]; then
                   cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
-                      -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -G "Visual Studio 16 2019" \
+                      -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -G "Visual Studio 16 2019" \
                       -DFSO_BUILD_QTFRED=OFF -T "v142" -A "$ARCHITECTURE" ..
               else
                   cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
-                      -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "Visual Studio 16 2019" \
+                      -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "Visual Studio 16 2019" \
                       -DFSO_BUILD_QTFRED=OFF -T "v142" -A "$ARCHITECTURE" ..
               fi
           fi

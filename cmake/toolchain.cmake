@@ -5,6 +5,32 @@ add_library(compiler INTERFACE)
 
 target_compile_definitions(compiler INTERFACE "$<$<CONFIG:Release>:NDEBUG>;$<$<CONFIG:Debug>:_DEBUG>;$<$<CONFIG:FastDebug>:_DEBUG>")
 
+set(FORCED_NATIVE_SIMD_INSTRUCTIONS ON CACHE BOOL "Override instruction set detection and compile with the maximum possible instructions for the current system.")
+IF(IS_X86)
+	SET(POSSIBLE_INSTRUCTION_SETS "" SSE SSE2 AVX AVX2)
+	detect_simd_instructions(DETECTED_SIMD_INSTRUCTIONS)
+
+	set(FORCED_SIMD_INSTRUCTIONS "" CACHE STRING "Overrides any instruction set settings (including forced-native). Any of ${POSSIBLE_INSTRUCTION_SETS}.")
+	if (NOT FORCED_SIMD_INSTRUCTIONS STREQUAL "" AND NOT FORCED_NATIVE_SIMD_INSTRUCTIONS)
+		LIST(FIND POSSIBLE_INSTRUCTION_SETS "${FORCED_SIMD_INSTRUCTIONS}" SET_INDEX)
+
+		if (SET_INDEX LESS 0)
+			MESSAGE(STATUS "An invalid instruction set was specified, defaulting to no special compiler options.")
+			set(FSO_INSTRUCTION_SET "")
+		else ()
+			LIST(FIND POSSIBLE_INSTRUCTION_SETS "${DETECTED_SIMD_INSTRUCTIONS}" SET_INDEX)
+			if (SET_INDEX LESS 0)
+				MESSAGE(STATUS "An instruction set was specified which is unsupported on this platform. Compiled binary might not be executable.")
+			endif()
+
+			set(FSO_INSTRUCTION_SET ${FORCED_SIMD_INSTRUCTIONS})
+		endif()
+	else()
+		SET(FSO_INSTRUCTION_SET ${DETECTED_SIMD_INSTRUCTIONS})
+	endif()
+	MESSAGE(STATUS "Using instruction set level ${FSO_INSTRUCTION_SET}. Optimizations for host-system specifically: ${FORCED_NATIVE_SIMD_INSTRUCTIONS}.")
+ENDIF()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	include(toolchain-gcc)
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

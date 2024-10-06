@@ -31,3 +31,8 @@ else()
         set(IS_RISCV TRUE)
     endif()
 endif()
+
+set(IS_X86 FALSE)
+if (NOT IS_ARM AND NOT IS_RISCV)
+    set(IS_X86 TRUE)
+endif()
