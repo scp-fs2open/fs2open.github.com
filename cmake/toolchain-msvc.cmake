@@ -97,7 +97,7 @@ INCLUDE(MSVCMultipleProcessCompile)
 # Visual Studio supports compiling for multiple vector instruction sets
 
 if(IS_X86)
-	if(FORCED_NATIVE_SIMD_INSTRUCTIONS AND FORCED_SIMD_INSTRUCTIONS STREQUAL "")
+	if(FORCED_NATIVE_SIMD_INSTRUCTIONS)
 		# MSVC has no direct -march=native equivalent, so just use the detected extensions.
 		SET(FSO_INSTRUCTION_SET "${DETECTED_SIMD_INSTRUCTIONS}")
 	endif()
