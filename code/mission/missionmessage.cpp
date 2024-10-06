@@ -1198,7 +1198,7 @@ void message_load_wave(int index, const char *filename)
 }
 
 // Goober5000
-bool message_filename_is_generic(char *filename)
+bool message_filename_is_generic(const char *filename)
 {
 	char truncated_filename[MAX_FILENAME_LEN];
 

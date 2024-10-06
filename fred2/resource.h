@@ -496,6 +496,7 @@
 #define IDC_SBITMAP                     1189
 #define IDC_ASCT1_VARIABLES_COMBO1      1189
 #define IDC_WEAPON_VARIABLES_COMBO      1189
+#define IDC_WHICH_TO_SYNC               1189
 #define IDC_ASCT1_CLASS_COMBO2          1190
 #define IDC_BACKGROUND_NUM              1190
 #define IDC_WING_DISPLAY_FILTER         1191
@@ -1119,7 +1120,6 @@
 #define IDC_SYNC_PERSONAS               1582
 #define IDC_TOGGLE_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
-#define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
 #define IDC_ENTRY_FORMAT_DESC           1588

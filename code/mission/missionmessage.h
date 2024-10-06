@@ -266,7 +266,7 @@ void message_pagein_mission_messages();
 int message_filter_multi(int id);
 
 // Goober5000
-bool message_filename_is_generic(char *filename);
+bool message_filename_is_generic(const char *filename);
 
 // m!m
 void message_load_wave(int index, const char *filename);
