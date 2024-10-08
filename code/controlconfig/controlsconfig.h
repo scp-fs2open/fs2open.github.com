@@ -297,6 +297,8 @@ enum IoActionId : int {
 
 	TOGGLE_HUD_SHADOWS,
 
+	CYCLE_PRIMARY_WEAPON_PATTERN,
+
 	/*!
 	 * This must always be below the last defined item
 	 */

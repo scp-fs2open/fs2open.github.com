@@ -178,6 +178,7 @@ void control_config_common_init_bindings() {
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
 	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 1776, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
+	(CYCLE_PRIMARY_WEAPON_PATTERN,			  KEY_ALTED | KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Pattern",	  CC_TYPE_TRIGGER) // need to get help from someone to track down what the next free number is
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
@@ -431,6 +432,7 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Cycle Nav Points",                        NAV_CYCLE},
 	{"Toggle Gliding",                          TOGGLE_GLIDING},
 	{"Cycle Primary Weapon Firing Rate",        CYCLE_PRIMARY_WEAPON_SEQUENCE},
+	{"Cycle Primary Weapon Firing Pattern",		CYCLE_PRIMARY_WEAPON_PATTERN},
 	{"Custom Control 1",                        CUSTOM_CONTROL_1},
 	{"Custom Control 2",                        CUSTOM_CONTROL_2},
 	{"Custom Control 3",                        CUSTOM_CONTROL_3},
@@ -1154,6 +1156,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(TOGGLE_GLIDING)
 
 	ADD_ENUM_TO_ACTION_MAP(CYCLE_PRIMARY_WEAPON_SEQUENCE)
+	ADD_ENUM_TO_ACTION_MAP(CYCLE_PRIMARY_WEAPON_PATTERN)
 
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_1)
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_2)

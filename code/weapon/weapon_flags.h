@@ -44,7 +44,6 @@ namespace Weapon {
 		Default_in_tech_database,			// this entry's default tech database status, as specified in weapons.tbl; used when the tech db is "reset to default" - Goober5000
 		Local_ssm,							// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 		Tagged_only,						// can only fire if target is tagged
-		Cycle,								// will only fire from (shots (defalts to 1)) points at a time
 		Small_only,							// can only be used against small ships like fighters or bombers
 		Same_turret_cooldown,				// the weapon has the same cooldown time on turrets
 		Mr_no_lighting,						// don't render with lighting, regardless of user options
