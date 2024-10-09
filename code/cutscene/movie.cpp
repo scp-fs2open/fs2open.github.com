@@ -30,6 +30,7 @@
 #include "io/key.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
+#include "scripting/global_hooks.h"
 
 extern int Game_mode;
 extern int Is_standalone;
@@ -272,12 +273,22 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 
 namespace movie {
 // Play one movie
-bool play(const char* name) {
+bool play(const char* filename, bool via_tech_room = false)
+{
+	if (scripting::hooks::OnMovieAboutToPlay->isActive())
+	{
+		auto paramList = scripting::hook_param_list(scripting::hook_param("Filename", 's', filename), scripting::hook_param("ViaTechRoom", 'b', via_tech_room));
+		bool skip = scripting::hooks::OnMovieAboutToPlay->isOverride(paramList);
+		scripting::hooks::OnMovieAboutToPlay->run(paramList);
+		if (skip)
+			return false;
+	}
+
 	// mark the movie as viewable to the player when in a campaign
 	// do this before anything else so that we're sure the movie is available
 	// to the player even if it's not going to play right now
 	if (Game_mode & GM_CAMPAIGN_MODE) {
-		cutscene_mark_viewable(name);
+		cutscene_mark_viewable(filename);
 	}
 
 	if (Cmdline_nomovies || Is_standalone) {
@@ -306,7 +317,7 @@ bool play(const char* name) {
 	// clear third buffer (may not be one, but that's ok)
 	gr_clear();
 
-	auto player = cutscene::Player::newPlayer(name);
+	auto player = cutscene::Player::newPlayer(filename);
 	if (player) {
 		PlaybackState state;
 		initialize_player_state(player.get(), &state);
@@ -316,7 +327,7 @@ bool play(const char* name) {
 		player->stopPlayback();
 	} else {
 		// uh-oh, movie is invalid... Abory, Retry, Fail?
-		mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
+		mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", filename));
 	}
 
 	Movie_active = false;
@@ -327,9 +338,9 @@ bool play(const char* name) {
 	return true;
 }
 
-void play_two(const char* name1, const char* name2) {
-	if (play(name1)) {
-		play(name2);
+void play_two(const char* filename1, const char* filename2) {
+	if (play(filename1)) {
+		play(filename2);
 	}
 }
 }

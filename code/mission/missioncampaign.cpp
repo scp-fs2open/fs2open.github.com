@@ -1468,7 +1468,6 @@ void mission_campaign_maybe_play_movie(int type)
 		return;
 
 	movie::play(filename);	//Play the movie!
-	cutscene_mark_viewable( filename );
 }
 
 /**

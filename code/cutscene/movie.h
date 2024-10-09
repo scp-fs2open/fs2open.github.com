@@ -14,9 +14,9 @@
 
 namespace movie {
 
-bool play(const char* name);
+bool play(const char* filename, bool via_tech_room = false);
 
-void play_two(const char* name1, const char* name2);
+void play_two(const char* filename1, const char* filename2);
 
 }
 

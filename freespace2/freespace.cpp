@@ -6848,11 +6848,13 @@ int game_main(int argc, char *argv[])
 		output_sexps("sexps.html");
 	}
 
+	bool skip_intro = false;
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
+		skip_intro = scripting::hooks::OnIntroAboutToPlay->isOverride();
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone) {
+	if (!Is_standalone && !skip_intro) {
 		movie::play("intro.mve");
 	}
 
