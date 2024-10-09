@@ -799,6 +799,13 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 		return ss.str();
 	}
 
+	//Check for a custom path set by env variable
+	const auto envPreferencesPath = getenv("FSO_PREFERENCES_PATH");
+	if (envPreferencesPath != nullptr && strlen(envPreferencesPath) > 0) {
+		ss << envPreferencesPath << DIR_SEPARATOR_CHAR << compatiblePath;
+		return ss.str();
+	}
+
 	// Avoid infinite recursion when checking legacy mode
 	if (os_is_legacy_mode()) {
 #ifdef WIN32
