@@ -45,8 +45,15 @@ namespace
 	{
 		// Lazily initialize the preferences path
 		if (!preferencesPath) {
-		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-			
+			//Check for a custom path set by env variable
+			auto envPreferencesPath = getenv("FSO_PREFERENCES_PATH");
+			if (envPreferencesPath != nullptr && strlen(envPreferencesPath) > 0) {
+				preferencesPath = envPreferencesPath;
+			}
+			else {
+				preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+			}
+
 			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
 			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
 		    if (preferencesPath == nullptr) {
@@ -799,12 +806,6 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 		return ss.str();
 	}
 
-	//Check for a custom path set by env variable
-	const auto envPreferencesPath = getenv("FSO_PREFERENCES_PATH");
-	if (envPreferencesPath != nullptr && strlen(envPreferencesPath) > 0) {
-		ss << envPreferencesPath << DIR_SEPARATOR_CHAR << compatiblePath;
-		return ss.str();
-	}
 
 	// Avoid infinite recursion when checking legacy mode
 	if (os_is_legacy_mode()) {
