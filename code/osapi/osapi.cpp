@@ -806,7 +806,6 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 		return ss.str();
 	}
 
-
 	// Avoid infinite recursion when checking legacy mode
 	if (os_is_legacy_mode()) {
 #ifdef WIN32
