@@ -2755,8 +2755,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
 
-		if (optional_string("+Use Fire Wait:")) {
-			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		// This was originally coded with the colon which implies a boolean input but that was not needed
+		if (optional_string_either("+Use Fire Wait:", "+Use Fire Wait")) {
+			wip->cmeasure_firewait = (int)(wip->fire_wait * 1000.0f);
 		}
 
 		if (optional_string("+Failure Launch Delay Multiplier for AI:")) {
