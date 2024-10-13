@@ -8,9 +8,9 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Turrets attack this:	YES											
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
 $Name:					Sentry Gun										
@@ -28,10 +28,10 @@ $Fog:
 $AI:																	
 	+Accept Player Orders:	NO											
 	+Auto attacks:			YES											
-	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
 $Name:					Escape Pod										
@@ -48,9 +48,9 @@ $Fog:
 	+Compl dist:			600.0										
 $AI:																	
 	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
-	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Turrets attack this:	YES											
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
 $Name:					Cargo											
@@ -87,11 +87,11 @@ $AI:
 	+Accept Player Orders:	YES											
 	+Player orders:			( "rearm me" "abort rearm" "depart" )																	
 	+Auto attacks:			YES											
-	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
 	+Active docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
 $Name:					Fighter											
@@ -114,12 +114,12 @@ $AI:
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
-	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
 $Name:					Bomber											
@@ -142,12 +142,40 @@ $AI:
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
-	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Skip Death Roll Percent Chance: 0.0											
+
+;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber
+$Name:					Fighter/bomber									
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushable:			YES												
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		4.0												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "depart" "disable subsys" )		
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
 $Name:					Transport										
@@ -176,7 +204,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -208,7 +236,7 @@ $AI:
 	+Can Form Wing:			YES											
 	+Active docks:			( "cargo" )								
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -238,7 +266,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -268,7 +296,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES	
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -298,7 +326,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -328,7 +356,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -358,7 +386,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -386,7 +414,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -412,7 +440,7 @@ $AI:
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
@@ -436,7 +464,7 @@ $AI:
 	+Guards attack this:	YES											
 	+Turrets attack this:	YES											
 	+Passive docks:			( "support" )								
-	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Targeted by 'Huge' weapons and Ignored by 'small only' weapons: YES
 $Skip Death Roll Percent Chance: 0.0											
 
