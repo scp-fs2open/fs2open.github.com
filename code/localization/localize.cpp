@@ -1040,9 +1040,9 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 	if (id != nullptr)
 		*id = xstr_id;
 
-	// if we made an attempt but failed, let the modder know
+	// if we made an attempt but failed, let the modder know (using a ReleaseWarning)
 	if (xstr_id == -2 && attempted_xstr)
-		error_display(0, "Malformed XSTR detected:\n\n%s\n", in);
+		error_display(2, "Malformed XSTR detected:\n\n%s\n", in);
 
 	// copy the entire string (or as much as we can)
 	auto str_len = strlen(xstr_str);
@@ -1202,9 +1202,9 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	if (id != nullptr)
 		*id = xstr_id;
 
-	// if we made an attempt but failed, let the modder know
+	// if we made an attempt but failed, let the modder know (using a ReleaseWarning)
 	if (xstr_id == -2 && attempted_xstr)
-		error_display(0, "Malformed XSTR detected:\n\n%s\n", in.c_str());
+		error_display(2, "Malformed XSTR detected:\n\n%s\n", in.c_str());
 
 	// copy the entire string
 	out = xstr_str;
