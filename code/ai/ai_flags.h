@@ -101,6 +101,10 @@ namespace AI {
         Fix_heat_seeker_stealth_bug,
         Fix_linked_primary_bug,
 		Fix_ramming_stationary_targets_bug,
+		Fix_avoid_shockwave_bugs,   // a) waiting until a homing weapon actually homes before evading;
+		                            // b) picking the correct expected impact position for capships;
+		                            // c) not clearing shockwave_object for ships;
+		                            // d) checking the explosion damage of the correct ship
         Force_beam_turret_fov,
 		Free_afterburner_use,
         Glide_decay_requires_thrust,
