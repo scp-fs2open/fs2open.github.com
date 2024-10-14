@@ -520,6 +520,11 @@ bool os_is_legacy_mode()
 		path_stream.str("");
 		path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
 		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+
+		// If the registry key and cmdline_fso.cfg does not exist old_config_time will be zero
+		if (old_config_time == 0) {
+			old_config_exists = false;
+		}
 #endif
 
 		if (new_config_exists && old_config_exists) {
