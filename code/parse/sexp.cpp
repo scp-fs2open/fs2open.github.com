@@ -41301,7 +41301,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"
-		"\tCauses the camera to shudder.  Currently this will only work if the camera is showing the player's viewpoint (i.e. the HUD).\r\n\r\n"
+		"\tCauses the camera to shudder.  Normally this will only work if the camera is showing the player's viewpoint (i.e. the HUD), unless the Everywhere flag is set.\r\n\r\n"
 		"Takes 2 to 4 arguments...\r\n"
 		"\t1: Time (in milliseconds)\r\n"
 		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440.\r\n"
