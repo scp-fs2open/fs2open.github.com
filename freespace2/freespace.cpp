@@ -3424,7 +3424,6 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
-	matrix eye_no_jitter = vmd_identity_matrix;
 
 	if(cam != nullptr)
 	{
@@ -3445,10 +3444,13 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		}
 
 		//Handle jitter if not cutscene camera
-		eye_no_jitter = eye_orient;
 		if( !(Viewer_mode & VM_FREECAMERA) ) {
 			apply_view_shake(&eye_orient);
-			cam->set_rotation(&eye_orient);
+			cam->set_rotation(&eye_orient);		// this was added in 57fbb21c; see Mantis 1743; needed to make the target indicator shake
+		}
+		//If cutscene camera, handle jitter differently
+		else if ( Game_shudder_everywhere ) {
+			apply_view_shake(&eye_orient);		// the camera rotation shouldn't be modified for cutscenes or it will produce feedback
 		}
 
 		//Maybe override FOV from SEXP
