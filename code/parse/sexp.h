@@ -58,7 +58,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
 	OPF_SHIP_WING_POINT_OR_NONE,	// WMC - Ship, wing, point or none
-	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)
+	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)... NOTE: the type "fighter/bomber" is allowed even though it's not a real ship type; SEXPs must account for this
 	OPF_KEYPRESS,					// a default key
 	OPF_EVENT_NAME,					// name of an event
 	OPF_AI_ORDER,					// a squadmsg order player can give to a ship
