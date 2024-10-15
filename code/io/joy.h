@@ -17,7 +17,7 @@
 #include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
-const int JOY_NUM_BUTTONS = 32;
+const int JOY_NUM_BUTTONS = 32;	// Max number of buttons FSO can handle.  OS max may differ.
 const int JOY_NUM_HAT_POS = 4;
 const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
 
@@ -346,6 +346,12 @@ namespace io
 		void printJoyJSON();
 	}
 }
+
+// integer Aliases for hat positions (because z64 is lazy)
+const int iHAT_UP = io::joystick::HAT_UP + JOY_NUM_BUTTONS;
+const int iHAT_RIGHT = io::joystick::HAT_RIGHT + JOY_NUM_BUTTONS;
+const int iHAT_DOWN = io::joystick::HAT_DOWN + JOY_NUM_BUTTONS;
+const int iHAT_LEFT = io::joystick::HAT_LEFT + JOY_NUM_BUTTONS;
 
 const int JOY_AXIS_MIN = 0;
 const int JOY_AXIS_CENTER = 32768;	//  = JOY_AXIS_MIN + ((JOY_AXIS_MAX - JOY_AXIS_MIN) / 2)
