@@ -414,6 +414,9 @@ static time_t key_mod_time(bool alternate_path) {
 
 	if (lResult != ERROR_SUCCESS) {
 		::RegCloseKey(hKey);
+		if (lResult == ERROR_FILE_NOT_FOUND) {
+			return -1;
+		}
 		return 0;
 	}
 
