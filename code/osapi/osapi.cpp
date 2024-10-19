@@ -529,7 +529,11 @@ bool os_is_legacy_mode()
 			// Both config files exists so we need to decide which to use based on their last modification times
 			// if the old config was modified more recently than the new config then we use the legacy mode since the
 			// user probably used an outdated launcher after using a more recent one
+#ifdef SCP_UNIX
+			legacyMode = old_config_time > new_config_time;
+#else
 			legacyMode = old_config_time.value() > new_config_time;
+#endif
 
 			if (legacyMode) {
 				Osapi_legacy_mode_reason = "Legacy mode enabled since the old config location was used more recently than the new location.";
