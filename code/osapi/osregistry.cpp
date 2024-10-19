@@ -400,7 +400,7 @@ static time_t filetime_to_timet(const FILETIME& ft)
 	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 
-static time_t key_mod_time(bool alternate_path) {
+static tl::optional<time_t> key_mod_time(bool alternate_path) {
 	char keyname[1024];
 
 	HKEY useHKey = get_registry_keyname(keyname, nullptr, alternate_path);
@@ -415,7 +415,7 @@ static time_t key_mod_time(bool alternate_path) {
 	if (lResult != ERROR_SUCCESS) {
 		::RegCloseKey(hKey);
 		if (lResult == ERROR_FILE_NOT_FOUND) {
-			return -1;
+			return tl::nullopt;
 		}
 		return 0;
 	}
@@ -441,11 +441,20 @@ static time_t key_mod_time(bool alternate_path) {
 	return filetime_to_timet(time);
 }
 
-time_t os_registry_get_last_modification_time() {
+tl::optional<time_t> os_registry_get_last_modification_time() {
+	
 	auto standard_time = key_mod_time(false);
 	auto alternate_time = key_mod_time(true);
 
-	return std::max(standard_time, alternate_time);
+	if (standard_time.has_value() && alternate_time.has_value()) {
+		return std::max(standard_time.value(), alternate_time.value());
+	} else if (alternate_time.has_value()) {
+		return alternate_time.value();
+	} else if (standard_time.has_value()) {
+		return standard_time.value();
+	} else {
+		return tl::nullopt;
+	}
 }
 
 #endif
