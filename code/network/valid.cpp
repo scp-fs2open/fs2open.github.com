@@ -306,7 +306,7 @@ int ValidateUser(validate_id_request *valid_id, char *trackerid)
 			timeout.tv_usec=0;
 			
 			FD_ZERO(&read_fds);	// NOLINT
-			FD_SET(Psnet_socket, &read_fds);
+			FD_SET_SAFE(Psnet_socket, &read_fds);
 
 			while(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION))
 			{
@@ -357,7 +357,7 @@ void ValidIdle()
 	timeout.tv_usec=0;
 	
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET(Psnet_socket, &read_fds);
+	FD_SET_SAFE(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION)){
 		int bytesin;
@@ -385,7 +385,7 @@ void ValidIdle()
 		}
 
 		FD_ZERO(&read_fds);	// NOLINT
-		FD_SET(Psnet_socket, &read_fds);
+		FD_SET_SAFE(Psnet_socket, &read_fds);
 
 		//Check to make sure the packets ok
 		if ( (bytesin > 0) && (bytesin == inpacket.len) ) {
@@ -614,7 +614,7 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 				udp_packet_header inpacket;
 
 				FD_ZERO(&read_fds);	// NOLINT
-				FD_SET(Psnet_socket, &read_fds);
+				FD_SET_SAFE(Psnet_socket, &read_fds);
 
 				addrsize = sizeof(fromaddr);
 				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
@@ -700,7 +700,7 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 				udp_packet_header inpacket;
 
 				FD_ZERO(&read_fds);	// NOLINT
-				FD_SET(Psnet_socket, &read_fds);
+				FD_SET_SAFE(Psnet_socket, &read_fds);
 
 				addrsize = sizeof(fromaddr);
 				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
@@ -794,7 +794,7 @@ int ValidateData(const vmt_valid_data_req_struct *vreq)
 				udp_packet_header inpacket;
 
 				FD_ZERO(&read_fds);	// NOLINT
-				FD_SET(Psnet_socket, &read_fds);
+				FD_SET_SAFE(Psnet_socket, &read_fds);
 
 				addrsize = sizeof(fromaddr);
 				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,

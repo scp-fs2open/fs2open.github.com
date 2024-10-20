@@ -545,7 +545,7 @@ int GetFSPilotData(vmt_stats_struct *fs_pilot, const char *pilot_name, const cha
 // Send an ACK to the server
 void AckServer(unsigned int sig)
 {
-	udp_packet_header ack_pack;
+	udp_packet_header ack_pack{};
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
@@ -623,7 +623,7 @@ void PollPTrackNet()
 	timeout.tv_usec=0;
 	
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET(Psnet_socket, &read_fds);
+	FD_SET_SAFE(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1), &read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_USER_TRACKER)){
 		int bytesin;
