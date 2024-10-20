@@ -21,6 +21,8 @@ ENDIF(MSVC60)
 
 ADD_EXECUTABLE(Freespace2 ${EXE_GUI_TYPE} ${FREESPACE_SRC})
 
+target_compile_features(Freespace2 PUBLIC cxx_std_17)
+
 include(resources.cmake)
 
 SET_TARGET_PROPERTIES(Freespace2 PROPERTIES OUTPUT_NAME "fs2_open_${FSO_BINARY_SUFFIX}")

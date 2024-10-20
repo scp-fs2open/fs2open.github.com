@@ -10,3 +10,5 @@ runtime/CMakeLists.txt:
  - Added "compiler platform" links to antlr targets
  - Disable installation rules
  - Removed _shared target since it it causing issues
+StringUtils.h/.cpp:
+ - Moved utf8/32 conversion templates from header to cpp and explicitly instantiate them with the only type they're used with to avoid C++17 deprecations in the dependent project

@@ -14908,7 +14908,8 @@ void sexp_send_builtin_message(int n) {
 	}
 
 	if (shuffle) {
-		std::random_shuffle(sender_names.begin(), sender_names.end());
+		std::random_device rd;
+		std::shuffle(sender_names.begin(), sender_names.end(), std::mt19937(rd()));
 	}
 
 	auto subject = have_subject ? subject_entry->shipp() : nullptr;
