@@ -282,6 +282,9 @@ reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 SCP_vector<ship_info>	Ship_templates;
 
 SCP_vector<ship_type_info> Ship_types;
+bool Fighter_bomber_valid = false;
+const char *Fighter_bomber_type_name = "fighter/bomber";
+int Ship_type_fighter = -1, Ship_type_bomber = -1, Ship_type_fighter_bomber = -1;
 
 SCP_vector<ArmorType> Armor_types;
 SCP_vector<DamageTypeStruct>	Damage_types;
@@ -6230,6 +6233,16 @@ void ship_init()
 		{
 			Warning(LOCATION, "A ship type \"stealth\" was found in objecttypes.tbl or *-obt.tbm.  This ship type will be removed since it will conflict with the \"stealth\" ship class flag.  Please update your mod files.");
 			Ship_types.erase(Ship_types.begin() + idx);
+		}
+
+		// See whether this mod defines an explicit "fighter/bomber" type (which would take priority over the special usage), and if not, whether the component types exist
+		if (ship_type_name_lookup(Fighter_bomber_type_name) < 0)
+		{
+			Ship_type_fighter_bomber = static_cast<int>(Ship_types.size()) + 1;	// This is a convenient way to indicate that we want the fighter/bomber special case; it is not an actual valid Ship_types index
+			Ship_type_fighter = ship_type_name_lookup("fighter");
+			Ship_type_bomber = ship_type_name_lookup("bomber");
+			if (Ship_type_fighter >= 0 && Ship_type_bomber >= 0)
+				Fighter_bomber_valid = true;
 		}
 
 		// DO ALL THE STUFF WE NEED TO DO AFTER LOADING Ship_types
@@ -16177,8 +16190,8 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 {
 	int type = ship_class_query_general_type(ship_info_index);
 
-	//Ship has no type or something
-	if(type < 0) {
+	//Ship has no type or the vector isn't set up
+	if (!SCP_vector_inbounds(Ship_type_counts, type)) {
 		return;
 	}
 
@@ -16190,14 +16203,13 @@ static void ship_add_ship_type_kill_count( int ship_info_index )
 {
 	int type = ship_class_query_general_type(ship_info_index);
 
-	//Ship has no type or something
-	if(type < 0) {
+	//Ship has no type or the vector isn't set up
+	if (!SCP_vector_inbounds(Ship_type_counts, type)) {
 		return;
 	}
 
-	//Add it if we are actually in gameplay
-	if (Ship_type_counts.size() > static_cast<size_t>(type))
-		Ship_type_counts[type].killed++;
+	//Add it
+	Ship_type_counts[type].killed++;
 }
 
 int ship_query_general_type(int ship)
