@@ -72,3 +72,7 @@ bool gr_lightshafts_enabled();
 int gr_bloom_intensity();
 // used by lab
 void gr_set_bloom_intensity(int intensity);
+
+float gr_bloom_width();
+// used by lab
+void gr_set_bloom_width(float width);
