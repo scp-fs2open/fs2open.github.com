@@ -1218,6 +1218,10 @@ add_file_folder("ScpUi"
 	scpui/IncludeNodeHandler.h
 	scpui/rocket_ui.cpp
 	scpui/rocket_ui.h
+	scpui/RocketDecorators.cpp
+	scpui/RocketDecorators.h
+	scpui/RocketDecoratorsInstancer.cpp
+	scpui/RocketDecoratorsInstancer.h
 	scpui/RocketFileInterface.cpp
 	scpui/RocketFileInterface.h
 	scpui/RocketLuaSystemInterface.cpp

@@ -16,6 +16,7 @@
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "scpui/IncludeNodeHandler.h"
+#include "scpui/RocketDecoratorsInstancer.h"
 #include "scpui/RocketFileInterface.h"
 #include "scpui/RocketLuaSystemInterface.h"
 #include "scpui/RocketRenderingInterface.h"
@@ -577,6 +578,18 @@ void initialize()
 		->RemoveReference();
 
 	XMLParser::RegisterNodeHandler("include", new IncludeNodeHandler())->RemoveReference();
+
+	// Register custom underline decorator with its own instancer
+	Rocket::Core::DecoratorInstancer* underline_instancer = new scpui::decorators::UnderlineDecoratorInstancer();
+	Rocket::Core::Factory::RegisterDecoratorInstancer("underline", underline_instancer);
+
+	// Register custom corner-borders decorator with its own instancer
+	Rocket::Core::DecoratorInstancer* corner_borders_instancer = new scpui::decorators::BorderDecoratorInstancer();
+	Rocket::Core::Factory::RegisterDecoratorInstancer("corner-borders", corner_borders_instancer);
+
+	// Decrease the reference counts (as it is managed by libRocket after registration)
+	underline_instancer->RemoveReference();
+	corner_borders_instancer->RemoveReference();
 
 	// Setup the plugin a style sheet properties for the sound support
 	Rocket::Core::RegisterPlugin(new SoundPlugin());
