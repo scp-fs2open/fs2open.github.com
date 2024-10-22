@@ -19,6 +19,6 @@ namespace particle {
 		matrix rotatedVel;
 		vm_matrix_x_matrix(&rotatedVel, &orientation, &m);
 
-		return m.vec.fvec * m_length;
+		return rotatedVel.vec.fvec * m_length;
 	}
 }
