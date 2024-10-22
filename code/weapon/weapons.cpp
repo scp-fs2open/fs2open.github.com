@@ -2362,7 +2362,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
 					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
-					::util::UniformFloatRange(0.5f * velocity, 2.0f * velocity), //Velocity volume multiplier
+					::util::UniformFloatRange(MIN(0.5f * velocity, 2.0f * velocity), MAX(0.5f * velocity, 2.0f * velocity)), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 					tl::nullopt, //Position-based velocity
 					nullptr, //Position volume
@@ -2383,7 +2383,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						::util::UniformFloatRange(1.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
 						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
-						::util::UniformFloatRange(0.5f * back_velocity, 2.0f * back_velocity), //Velocity volume multiplier
+						::util::UniformFloatRange(MIN(0.5f * back_velocity, 2.0f * back_velocity), MAX(0.5f * back_velocity, 2.0f * back_velocity)), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						tl::nullopt, //Position-based velocity
 						nullptr, //Position volume
