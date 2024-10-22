@@ -165,8 +165,9 @@ public:
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
-	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];
-	int primary_firepoint_used_index[MAX_SHIP_PRIMARY_BANKS];
+	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
+	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
+																		// For randomized ones, keeps track of where we are in primary_firepoint_indices
 
 	size_t primary_bank_substitution_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_substitution_pattern_index[MAX_SHIP_SECONDARY_BANKS];

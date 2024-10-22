@@ -7085,7 +7085,7 @@ void ship_weapon::clear()
         external_model_fp_counter[i] = 0;
 
 		primary_firepoint_indices[i].clear();
-		primary_firepoint_used_index[i] = 0;
+		primary_firepoint_next_to_fire_index[i] = 0;
 
 		firing_loop_sounds[i] = -1;
     }
@@ -11121,7 +11121,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	ship_set_default_weapons(shipp, sip);	//	Moved up here because ship_set requires that weapon info be valid.  MK, 4/28/98
 	ship_set(shipnum, objnum, ship_type);
 
-	for (auto& fpu : shipp->weapons.primary_firepoint_used_index) {
+	for (auto& fpu : shipp->weapons.primary_firepoint_next_to_fire_index) {
 		fpu = 0;
 	}
 
@@ -11340,7 +11340,7 @@ static void ship_model_change(int n, int ship_type)
 
 	for (int bank_i = 0; bank_i < MAX_SHIP_PRIMARY_BANKS; bank_i++) {
 		sp->weapons.primary_firepoint_indices[bank_i].clear();
-		sp->weapons.primary_firepoint_used_index[bank_i] = 0;
+		sp->weapons.primary_firepoint_next_to_fire_index[bank_i] = 0;
 		SCP_vector<int> fpi;
 		for (int fp = 0; fp < pm->gun_banks[bank_i].num_slots; fp++) {
 			fpi.emplace_back(fp);
@@ -12870,23 +12870,24 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					int pt;
 					switch (firing_pattern) {
 						case FiringPattern::CYCLE_FORWARD: {
-							pt = swp->primary_firepoint_used_index[bank_to_fire]++;
-							if (swp->primary_firepoint_used_index[bank_to_fire] >= num_slots) {
-								swp->primary_firepoint_used_index[bank_to_fire] = 0;
+							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]++;
+							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
 							}
 							break;
 						}
 						case FiringPattern::CYCLE_REVERSE: {
-							if (--swp->primary_firepoint_used_index[bank_to_fire] < 0) {
-								swp->primary_firepoint_used_index[bank_to_fire] = num_slots - 1;
+							swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
+							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < 0) {
+								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = num_slots - 1;
 							}
-							pt = swp->primary_firepoint_used_index[bank_to_fire];
+							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire];
 							break;
 						}
 						case FiringPattern::RANDOM_EXHAUSTIVE: {
-							pt = swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_used_index[bank_to_fire]++];
-							if (swp->primary_firepoint_used_index[bank_to_fire] >= num_slots) {
-								swp->primary_firepoint_used_index[bank_to_fire] = 0;
+							pt = swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]++];
+							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
 							}
 							break;
 						}
@@ -13073,23 +13074,24 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					int pt;
 					switch (firing_pattern) {
 						case FiringPattern::CYCLE_FORWARD: {
-							pt = swp->primary_firepoint_used_index[bank_to_fire]++;
-							if (swp->primary_firepoint_used_index[bank_to_fire] >= num_slots) {
-								swp->primary_firepoint_used_index[bank_to_fire] = 0;
+							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]++;
+							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
 							}
 							break;
 						}
 						case FiringPattern::CYCLE_REVERSE: {
-							if (--swp->primary_firepoint_used_index[bank_to_fire] < 0) {
-								swp->primary_firepoint_used_index[bank_to_fire] = num_slots - 1;
+							swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
+							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < 0) {
+								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = num_slots - 1;
 							}
-							pt = swp->primary_firepoint_used_index[bank_to_fire];
+							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire];
 							break;
 						}
 						case FiringPattern::RANDOM_EXHAUSTIVE: {
-							pt = swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_used_index[bank_to_fire]++];
-							if (swp->primary_firepoint_used_index[bank_to_fire] >= num_slots) {
-								swp->primary_firepoint_used_index[bank_to_fire] = 0;
+							pt = swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]++];
+							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
 							}
 							break;
 						}
@@ -13269,10 +13271,10 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 				switch (firing_pattern) {
 					case FiringPattern::RANDOM_EXHAUSTIVE: {
-						if (num_slots < (swp->primary_firepoint_used_index[bank_to_fire] + point_count)) {
+						if (num_slots < (swp->primary_firepoint_next_to_fire_index[bank_to_fire] + point_count)) {
 							std::random_device rd;
-							std::shuffle(&swp->primary_firepoint_indices[bank_to_fire][0], &swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_used_index[bank_to_fire]-1], std::mt19937(rd())); //NOLINT
-						} else if (swp->primary_firepoint_used_index[bank_to_fire] < point_count) {
+							std::shuffle(&swp->primary_firepoint_indices[bank_to_fire][0], &swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]-1], std::mt19937(rd())); //NOLINT
+						} else if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < point_count) {
 							std::random_device rd;
 							std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
 						}
