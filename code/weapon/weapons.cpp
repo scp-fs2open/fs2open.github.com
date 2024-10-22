@@ -3108,7 +3108,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						particle_effect_name, //Name
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
-						::util::UniformFloatRange(baseVelocity, baseVelocity * 2.f), //Velocity Inherit
+						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Velocity Inherit
 						true, //Velocity Inherit absolute?
 						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
@@ -3128,7 +3128,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						"", //Name, empty as it's a non-findable part of a composite
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
-						::util::UniformFloatRange(backVelocity, backVelocity * 2.f), //Velocity Inherit
+						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Velocity Inherit
 						true, //Velocity Inherit absolute?
 						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
