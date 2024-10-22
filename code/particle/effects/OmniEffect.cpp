@@ -199,7 +199,9 @@ bool ParticleEffect::processSource(ParticleSource* source) const {
 				// Scale the vector with a random velocity sample and also multiply that with cos(angle between
 				// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
 				// only achieved when the particle travels directly on the normal/reflect vector
-				float dot = vm_vec_dot(&velocity, &sourceDir);
+				vec3d normalizedVelocity;
+				vm_vec_copy_normalize(&normalizedVelocity, &velocity);
+				float dot = vm_vec_dot(&normalizedVelocity, &sourceDir);
 				vm_vec_scale(&velocity,
 					m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
 			}
