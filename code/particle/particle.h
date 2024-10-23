@@ -136,30 +136,6 @@ namespace particle
 	 * @return A weak reference to the particle
 	 */
     WeakParticlePtr createPersistent(particle_info* pinfo);
-
-	//============================================================================
-	//============== HIGH-LEVEL PARTICLE SYSTEM CREATION CODE ====================
-	//============================================================================
-
-	// Use a structure rather than pass a ton of parameters to particle_emit
-	typedef struct particle_emitter {
-		int		num_low;			// Lowest number of particles to create
-		int		num_high;			// Highest number of particles to create
-		vec3d	pos;				// Where the particles emit from
-		vec3d	vel;				// Initial velocity of all the particles
-		float	min_life;			// How long the particles live
-		float	max_life;			// How long the particles live
-		vec3d	normal;				// What normal the particle emit arond
-		float	normal_variance;	// How close they stick to that normal 0=good, 1=360 degree
-		float	min_vel;			// How fast the slowest particle can move
-		float	max_vel;			// How fast the fastest particle can move
-		float	min_rad;			// Min radius
-		float	max_rad;			// Max radius
-	} particle_emitter;
-
-	// Creates a bunch of particles. You pass a structure
-	// rather than a bunch of parameters.
-	void emit(particle_emitter *pe, int bitmap, float range = 1.0, int nframes = -1);
 }
 
 #endif // _PARTICLE_H

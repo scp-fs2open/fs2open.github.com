@@ -2322,9 +2322,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		float back_velocity = 0.0f;
 		float variance = 0.0f;
 
-		particle_emitter emitter;
-		memset(&emitter, 0, sizeof(emitter));
-
 		if (optional_string("$Piercing Impact Explosion:"))
 		{
 			stuff_string(fname, F_NAME, NAME_LENGTH);
