@@ -8,7 +8,7 @@ namespace scpui {
 namespace decorators {
 
 // UnderlineDecoratorInstancer Implementation
-UnderlineDecoratorInstancer::UnderlineDecoratorInstancer() : Rocket::Core::DecoratorInstancer()
+UnderlineDecoratorInstancer::UnderlineDecoratorInstancer()
 {
 	RegisterProperty("thickness", "1.0").AddParser("number");
 	RegisterProperty("style", "solid").AddParser("keyword", "solid, dashed, dotted");
@@ -33,9 +33,9 @@ Rocket::Core::Decorator* UnderlineDecoratorInstancer::InstanceDecorator(const Ro
 		style = static_cast<LineStyle>(style_idx);
 	}
 
-	float thickness = prop_dict.GetProperty("thickness")->Get<float>();
-	float length = prop_dict.GetProperty("length")->Get<float>();
-	float space = prop_dict.GetProperty("space")->Get<float>();
+	auto thickness = prop_dict.GetProperty("thickness")->Get<float>();
+	auto length = prop_dict.GetProperty("length")->Get<float>();
+	auto space = prop_dict.GetProperty("space")->Get<float>();
 	Rocket::Core::Colourb color = prop_dict.GetProperty("color")->Get<Rocket::Core::Colourb>();
 	bool use_element_color = prop_dict.GetProperty("color-setting")->Get<int>();
 
@@ -53,7 +53,7 @@ void UnderlineDecoratorInstancer::Release()
 }
 
 // BorderDecoratorInstancer Implementation
-BorderDecoratorInstancer::BorderDecoratorInstancer() : Rocket::Core::DecoratorInstancer()
+BorderDecoratorInstancer::BorderDecoratorInstancer()
 {
 	// Register border properties
 	RegisterProperty("thickness", "1.0").AddParser("number");
@@ -68,7 +68,7 @@ BorderDecoratorInstancer::BorderDecoratorInstancer() : Rocket::Core::DecoratorIn
 Rocket::Core::Decorator* BorderDecoratorInstancer::InstanceDecorator(const Rocket::Core::String& /*name*/,
 	const Rocket::Core::PropertyDictionary& prop_dict)
 {
-	float thickness = prop_dict.GetProperty("thickness")->Get<float>();
+	auto thickness = prop_dict.GetProperty("thickness")->Get<float>();
 
 	// Check if horizontal or vertical lengths are defined, and fallback to "length" if needed
 	float length_h = prop_dict.GetProperty("length-h")
