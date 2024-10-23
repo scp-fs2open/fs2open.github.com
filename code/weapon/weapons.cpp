@@ -2205,6 +2205,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					nullptr, //Velocity volume
 					::util::UniformFloatRange(0.f), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					tl::nullopt, //Orientation-based velocity
 					tl::nullopt, //Position-based velocity
 					nullptr, //Position volume
 					ParticleEffectHandle::invalid(), //Trail
@@ -2273,6 +2274,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						nullptr, //Velocity volume
 						::util::UniformFloatRange(0.f), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Orientation-based velocity
 						tl::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
@@ -2364,6 +2366,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 					::util::UniformFloatRange(MIN(0.5f * velocity, 2.0f * velocity), MAX(0.5f * velocity, 2.0f * velocity)), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					tl::nullopt, //Orientation-based velocity
 					tl::nullopt, //Position-based velocity
 					nullptr, //Position volume
 					ParticleEffectHandle::invalid(), //Trail
@@ -2385,6 +2388,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 						::util::UniformFloatRange(MIN(0.5f * back_velocity, 2.0f * back_velocity), MAX(0.5f * back_velocity, 2.0f * back_velocity)), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Orientation-based velocity
 						tl::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
@@ -3042,6 +3046,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						nullptr, //Velocity volume
 						::util::UniformFloatRange(0.f), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						tl::nullopt, //Orientation-based velocity
 						tl::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
@@ -3108,11 +3113,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						particle_effect_name, //Name
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
-						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Velocity Inherit
-						true, //Velocity Inherit absolute?
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
 						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Orientation-based velocity
 						tl::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
@@ -3128,11 +3134,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						"", //Name, empty as it's a non-findable part of a composite
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
-						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Velocity Inherit
-						true, //Velocity Inherit absolute?
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
 						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Orientation-based velocity
 						tl::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail

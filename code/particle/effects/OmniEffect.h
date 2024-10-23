@@ -46,6 +46,8 @@ private:
 
 	VelocityScaling m_velocity_directional_scaling;
 
+	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
+
 	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
 
 	bool m_vel_inherit_from_position_absolute;
@@ -77,6 +79,7 @@ public:
 								std::shared_ptr<::particle::ParticleVolume> velocityVolume,
 								::util::ParsedRandomFloatRange velocity_scaling,
 								VelocityScaling velocity_directional_scaling,
+								tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
 								tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
 								std::shared_ptr<::particle::ParticleVolume> spawnVolume,
 								ParticleEffectHandle particleTrail,

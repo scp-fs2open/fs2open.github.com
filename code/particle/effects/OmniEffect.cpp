@@ -20,6 +20,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name)
 	  m_velocityVolume(nullptr),
 	  m_velocity_scaling(),
 	  m_velocity_directional_scaling(VelocityScaling::NONE),
+	  m_vel_inherit_from_orientation(tl::nullopt),
 	  m_vel_inherit_from_position(tl::nullopt),
 	  m_vel_inherit_from_position_absolute(false),
 	  m_spawnVolume(nullptr),
@@ -37,6 +38,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	std::shared_ptr<::particle::ParticleVolume> velocityVolume,
 	::util::ParsedRandomFloatRange velocity_scaling,
 	VelocityScaling velocity_directional_scaling,
+	tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
 	tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
 	std::shared_ptr<::particle::ParticleVolume> spawnVolume,
 	ParticleEffectHandle particleTrail,
@@ -56,6 +58,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	  m_velocityVolume(std::move(velocityVolume)),
 	  m_velocity_scaling(std::move(velocity_scaling)),
 	  m_velocity_directional_scaling(velocity_directional_scaling),
+	  m_vel_inherit_from_orientation(std::move(vel_inherit_from_orientation)),
 	  m_vel_inherit_from_position(std::move(vel_inherit_from_position)),
 	  m_vel_inherit_from_position_absolute(false),
 	  m_spawnVolume(std::move(spawnVolume)),
@@ -186,6 +189,10 @@ bool ParticleEffect::processSource(ParticleSource* source) const {
 
 			if (m_velocityVolume != nullptr) {
 				velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix) * m_velocity_scaling.next();
+			}
+
+			if (m_vel_inherit_from_orientation.has_value()) {
+				velocity += sourceDir * m_vel_inherit_from_orientation->next();
 			}
 
 			if (m_vel_inherit_from_position.has_value()) {

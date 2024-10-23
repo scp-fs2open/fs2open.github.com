@@ -2494,6 +2494,7 @@ static particle::ParticleEffectHandle parse_ship_particle_effect(ship_info* sip,
 			make_unique<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true), //Velocity volume
 			std::move(velocity), //Velocity volume multiplier
 			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			tl::nullopt, //Orientation-based velocity
 			tl::nullopt, //Position-based velocity
 			nullptr, //Position volume
 			particle::ParticleEffectHandle::invalid(), //Trail
@@ -2515,6 +2516,7 @@ static particle::ParticleEffectHandle default_ship_particle_effect(int n_high, i
 			make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 			::util::UniformFloatRange(min_vel, max_vel), //Velocity volume multiplier
 			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			tl::nullopt, //Orientation-based velocity
 			tl::nullopt, //Position-based velocity
 			nullptr, //Position volume
 			particle::ParticleEffectHandle::invalid(), //Trail
@@ -4709,6 +4711,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 				::util::UniformFloatRange(0.0f), //Velocity volume multiplier
 				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				tl::nullopt, //Orientation-based velocity
 				tl::nullopt, //Position-based velocity
 				nullptr, //Position volume
 				particle::ParticleEffectHandle::invalid(), //Trail
