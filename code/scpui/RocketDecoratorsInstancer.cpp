@@ -15,12 +15,12 @@ UnderlineDecoratorInstancer::UnderlineDecoratorInstancer() : Rocket::Core::Decor
 	RegisterProperty("length", "5.0").AddParser("number");
 	RegisterProperty("space", "3.0").AddParser("number");
 	RegisterProperty("color-setting", "default").AddParser("keyword", "default, element");
-	RegisterProperty("color", "rgb(-1,-1,-1,-1)").AddParser("color");
+	RegisterProperty("color", "white").AddParser("color");
 
 	RegisterShorthand("shorthand", "style, thickness, length, space");
 }
 
-Rocket::Core::Decorator* UnderlineDecoratorInstancer::InstanceDecorator(const Rocket::Core::String& name,
+Rocket::Core::Decorator* UnderlineDecoratorInstancer::InstanceDecorator(const Rocket::Core::String& /*name*/,
 	const Rocket::Core::PropertyDictionary& prop_dict)
 {
 	// librocket documentation says the best way to get a keyword is by index so get
@@ -65,7 +65,7 @@ BorderDecoratorInstancer::BorderDecoratorInstancer() : Rocket::Core::DecoratorIn
 	RegisterShorthand("shorthand", "thickness, length-h, length-v");
 }
 
-Rocket::Core::Decorator* BorderDecoratorInstancer::InstanceDecorator(const Rocket::Core::String& name,
+Rocket::Core::Decorator* BorderDecoratorInstancer::InstanceDecorator(const Rocket::Core::String& /*name*/,
 	const Rocket::Core::PropertyDictionary& prop_dict)
 {
 	float thickness = prop_dict.GetProperty("thickness")->Get<float>();
