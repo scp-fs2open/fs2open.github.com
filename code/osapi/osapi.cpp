@@ -512,16 +512,19 @@ bool os_is_legacy_mode()
 					<< "cmdline_fso.cfg";
 		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
-		tl::optional<time_t> old_config_time = os_registry_get_last_modification_time();
+		tl::optional<time_t> optional_old_config_time = os_registry_get_last_modification_time();
+		time_t old_config_time = 0;
+
 		//Check if the registry key exists
-		auto old_config_exists = old_config_time.has_value();
+		auto old_config_exists = optional_old_config_time.has_value();
 
 		if (old_config_exists) {
+			old_config_time = optional_old_config_time.value();
 			// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
 			// Only get this if the old config exists
 			path_stream.str("");
 			path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
-			old_config_time = std::max(old_config_time.value(), get_file_modification_time(path_stream.str()));
+			old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 		}
 #endif
 
@@ -529,11 +532,7 @@ bool os_is_legacy_mode()
 			// Both config files exists so we need to decide which to use based on their last modification times
 			// if the old config was modified more recently than the new config then we use the legacy mode since the
 			// user probably used an outdated launcher after using a more recent one
-#ifdef SCP_UNIX
 			legacyMode = old_config_time > new_config_time;
-#else
-			legacyMode = old_config_time.value() > new_config_time;
-#endif
 
 			if (legacyMode) {
 				Osapi_legacy_mode_reason = "Legacy mode enabled since the old config location was used more recently than the new location.";
