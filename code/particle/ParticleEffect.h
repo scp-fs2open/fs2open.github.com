@@ -12,6 +12,8 @@ struct particle_effect_tag {
 };
 using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
+//TODO Fold this file into the OmniEffect
+
 /**
  * @brief Defines a particle effect
  *
@@ -59,27 +61,13 @@ class ParticleEffectLegacy {
 	 * @brief Process a particle source
 	 *
 	 * @note This is the main function of the effect. In this function the implementation should generate new particles
-	 * according to its configuration. The return value is used to determine if the source should continue to exist.
-	 * Return @c true if the source should be processed in the next frame, return @c false if this is effect is done.
+	 * according to its configuration.
 	 *
-	 * @warning Implementations of this function must be able to handle multiple calls to this function even if a
-	 * previous call returned @c false.
+	 * @warning Implementations of this function must be able to handle multiple calls to this function.
 	 *
 	 * @param source The source to process
-	 * @return @c true if the effect should continue to be processed, @c false if the effect is done.
 	 */
-	virtual bool processSource(ParticleSource* source) const = 0;
-
-	/**
-	 * @brief Initializes the source for this effect
-	 *
-	 * @note Implementations can use this function to apply one-time operations to a source. This could be used to set
-	 * the lifetime of a source once if the effect supports it. See #SingleParticleEffect for an example of how this
-	 * could be used.
-	 *
-	 * @param source The source to be initialized
-	 */
-	virtual void initializeSource(ParticleSource&  /*source*/) {}
+	virtual void processSource(ParticleSource* source, float interp) const = 0;
 };
 
 /**

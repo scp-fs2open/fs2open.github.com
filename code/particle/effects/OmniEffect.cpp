@@ -74,10 +74,6 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);
 }
 
-void ParticleEffect::initializeSource(ParticleSource &source) {
-	m_timing.applyToSource(&source);
-}
-
 //This MUST be refactored into ParticleSourceHost
 	vec3d ParticleEffect::getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
@@ -119,21 +115,18 @@ void ParticleEffect::initializeSource(ParticleSource &source) {
 		}
 	}
 
-bool ParticleEffect::processSource(ParticleSource* source) const {
-	if (!m_timing.continueProcessing(source)) {
-		return false;
-	}
-
+void ParticleEffect::processSource(ParticleSource* source, float interp) const {
 	float particle_percent = m_particleChance;
 
 	if (m_affectedByDetail){
 		if (Detail.num_particles > 0)
 			particle_percent *= (0.5f + (0.25f * static_cast<float>(Detail.num_particles - 1)));
 		else
-			return true; //Will not emit on current detail settings, but may in the future.
+			return; //Will not emit on current detail settings, but may in the future.
 	}
 
 	vec3d pe_pos; //TODO actually calc this here and not once per particle in applytoparticleinfo...
+	//TODO In general, move _as much_ as possible from here to the source
 
 	if (m_distanceCulled > 0.f) {
 		float min_dist = 125.0f;
@@ -153,89 +146,80 @@ bool ParticleEffect::processSource(ParticleSource* source) const {
 		particle_percent *= dist;
 	}
 
-	// This uses the internal features of the timing class for determining if and how many effects should be triggered
-	// this frame
-	util::EffectTiming::TimingState time_state;
-	for (int time_since_creation = m_timing.shouldCreateEffect(source, time_state); time_since_creation >= 0; time_since_creation = m_timing.shouldCreateEffect(source, time_state)) {
-		float interp = static_cast<float>(time_since_creation)/(f2fl(Frametime) * 1000.0f);
+	//Start of per-spawn stuff
 
-		float num = m_particleNum.next() * particle_percent;
-		unsigned int num_spawn;
+	float num = m_particleNum.next() * particle_percent;
+	unsigned int num_spawn;
 
-		if (num >= 1.f){
-			num_spawn = static_cast<unsigned int>(num);
-		}
-		else {
-			num_spawn = (num >= frand() ? 1 : 0);
-		}
-
-
-		for (uint i = 0; i < num_spawn; ++i) {
-			particle_info info;
-
-			source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
-
-			if (m_vel_inherit_absolute)
-				vm_vec_normalize_quick(&info.vel);
-
-			info.vel *= m_vel_inherit.next();
-
-			vec3d velocity = ZERO_VECTOR;
-			vec3d localPos = ZERO_VECTOR;
-
-			if (m_spawnVolume != nullptr) {
-				localPos += m_spawnVolume->sampleRandomPoint(sourceDirMatrix);
-			}
-
-			if (m_velocityVolume != nullptr) {
-				velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix) * m_velocity_scaling.next();
-			}
-
-			if (m_vel_inherit_from_orientation.has_value()) {
-				velocity += sourceDir * m_vel_inherit_from_orientation->next();
-			}
-
-			if (m_vel_inherit_from_position.has_value()) {
-				vec3d velFromPos = localPos;
-				if (m_vel_inherit_from_position_absolute)
-					vm_vec_normalize_safe(&velFromPos);
-				velocity += velFromPos * m_vel_inherit_from_position->next();
-			}
-
-			if (m_velocity_directional_scaling != VelocityScaling::NONE) {
-				// Scale the vector with a random velocity sample and also multiply that with cos(angle between
-				// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
-				// only achieved when the particle travels directly on the normal/reflect vector
-				vec3d normalizedVelocity;
-				vm_vec_copy_normalize(&normalizedVelocity, &velocity);
-				float dot = vm_vec_dot(&normalizedVelocity, &sourceDir);
-				vm_vec_scale(&velocity,
-					m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
-			}
-
-			info.pos += localPos;
-			info.vel += velocity;
-
-			if (m_particleTrail.isValid()) {
-				auto part = m_particleProperties.createPersistentParticle(info);
-
-				// There are some possibilities where we can get a null pointer back. Those are very rare but we
-				// still shouldn't crash in those circumstances.
-				if (!part.expired()) {
-					auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-					trailSource.moveToParticle(part);
-
-					trailSource.finish();
-				}
-			} else {
-				// We don't have a trail so we don't need a persistent particle
-				m_particleProperties.createParticle(info);
-			}
-		}
+	if (num >= 1.f){
+		num_spawn = static_cast<unsigned int>(num);
+	}
+	else {
+		num_spawn = (num >= frand() ? 1 : 0);
 	}
 
-	// Continue processing this source
-	return true;
+	for (uint i = 0; i < num_spawn; ++i) {
+		particle_info info;
+
+		source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
+
+		if (m_vel_inherit_absolute)
+			vm_vec_normalize_quick(&info.vel);
+
+		info.vel *= m_vel_inherit.next();
+
+		vec3d velocity = ZERO_VECTOR;
+		vec3d localPos = ZERO_VECTOR;
+
+		if (m_spawnVolume != nullptr) {
+			localPos += m_spawnVolume->sampleRandomPoint(sourceDirMatrix);
+		}
+
+		if (m_velocityVolume != nullptr) {
+			velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix) * m_velocity_scaling.next();
+		}
+
+		if (m_vel_inherit_from_orientation.has_value()) {
+			velocity += sourceDir * m_vel_inherit_from_orientation->next();
+		}
+
+		if (m_vel_inherit_from_position.has_value()) {
+			vec3d velFromPos = localPos;
+			if (m_vel_inherit_from_position_absolute)
+				vm_vec_normalize_safe(&velFromPos);
+			velocity += velFromPos * m_vel_inherit_from_position->next();
+		}
+
+		if (m_velocity_directional_scaling != VelocityScaling::NONE) {
+			// Scale the vector with a random velocity sample and also multiply that with cos(angle between
+			// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
+			// only achieved when the particle travels directly on the normal/reflect vector
+			vec3d normalizedVelocity;
+			vm_vec_copy_normalize(&normalizedVelocity, &velocity);
+			float dot = vm_vec_dot(&normalizedVelocity, &sourceDir);
+			vm_vec_scale(&velocity,
+				m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
+		}
+
+		info.pos += localPos;
+		info.vel += velocity;
+
+		if (m_particleTrail.isValid()) {
+			auto part = m_particleProperties.createPersistentParticle(info);
+
+			// There are some possibilities where we can get a null pointer back. Those are very rare but we
+			// still shouldn't crash in those circumstances.
+			if (!part.expired()) {
+				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
+				trailSource.moveToParticle(part);
+
+				trailSource.finish();
+			}
+		} else {
+			// We don't have a trail so we don't need a persistent particle
+			m_particleProperties.createParticle(info);
+		}
+	}
 }
 
 void ParticleEffect::parseValues(bool nocreate) {

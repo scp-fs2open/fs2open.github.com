@@ -155,12 +155,8 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 
 	ParticleSource* source = createSource();
 	source->setEffect(index);
-	//TODO sources are no longer initialized properly for compound effects
-	m_effects[index.value()].front().initializeSource(*source);
-	//eff->initializeSource(*source);
 
 	wrapper = ParticleSourceWrapper(source);
-	wrapper.setCreationTimestamp(timestamp());
 
 	return wrapper;
 }

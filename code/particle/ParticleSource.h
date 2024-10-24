@@ -254,81 +254,9 @@ class SourceOrientation {
 	friend class ParticleSource;
 };
 
-/**
- * @brief Contains information about the timing of a source
- *
- * This can be used to control when a source is active and when it will be deleted. Since a source can be active at a
- * later time the timing goes through three stages. In the first state the source is created but not active. #isActive()
- * returns false but #isFinished() also return false. When it activates #isActive() will return true while #isFinished()
- * stays @c false. Then #isActive() will be @c false and #isFinished() will be @c true. At this point the source is
- * considered to have expired and it will be removed the next time it is processed.
- */
-class SourceTiming {
- private:
-	int m_creationTimestamp;
-	int m_nextCreation; //! The next time the source should generate a particle. Controlled by the effect of the source.
-
-	int m_beginTimestamp;
-	int m_endTimestamp;
-
- public:
-	SourceTiming();
-
-	void setCreationTimestamp(int time);
-
-	int getCreationTime() const { return m_creationTimestamp; }
-
-	/**
-	 * @brief Sets when the source is active
-	 *
-	 * The source will be active between the specified begin and end times
-	 *
-	 * @param begin The timestamp when the source will begin to be active
-	 * @param end The timestamp when the source will not be active anymore
-	 */
-	void setLifetime(int begin, int end);
-
-	/**
-	 * @brief Determines if the source is currently active
-	 * @return @c true if the source is active
-	 */
-	bool isActive() const;
-
-	/**
-	 * @brief Determines if the source has expired
-	 * @return @c true if the source has expired.
-	 */
-	bool isFinished() const;
-
-	/**
-	 * @brief Gets the progress of the source through its active time.
-	 *
-	 * If the source is not active or if the timestamps are not valid then -1 is returned
-	 *
-	 * @return The progress of the source through its lifetime
-	 */
-	float getLifeTimeProgress() const;
-
-	int getNextCreationTime() const;
-
-	/**
-	 * @brief Determine if the timestamp for the next particle creation has expired
-	 * @return @c true if the timestamp has expired, false otherwise
-	 */
-	bool nextCreationTimeExpired() const;
-
-	/**
-	 * @brief Move the internal timestamp for the next creation forward
-	 *
-	 * Use this for achieving a consistent amount of created particles regardless of FPS by setting time_diff_ms to a
-	 * constant time and call nextCreationTimeExpired() until that returns false. Then all particles for that frame have
-	 * been created.
-	 *
-	 * @param time_diff_ms
-	 */
-	void incrementNextCreationTime(int time_diff_ms);
-
-	friend class ParticleSource;
+struct SourceTiming {
+	TIMESTAMP m_nextCreation;
+	TIMESTAMP m_endTimestamp;
 };
 
 /**
@@ -346,7 +274,7 @@ class ParticleSource {
 
 	SourceOrientation m_effectOrientation; //!< The orientation of the particle source
 
-	SourceTiming m_timing; //!< The time informations of the particle source
+	SCP_vector<SourceTiming> m_timing; //!< The time informations of the particle source
 
 	ParticleEffectHandle m_effect; //!< The effect that is assigned to this source
 
@@ -374,10 +302,6 @@ class ParticleSource {
 	inline const SourceOrientation* getOrientation() const { return &m_effectOrientation; }
 
 	inline SourceOrientation* getOrientation() { return &m_effectOrientation; }
-
-	inline const SourceTiming* getTiming() const { return &m_timing; }
-
-	inline SourceTiming* getTiming() { return &m_timing; }
 
 	inline size_t getProcessingCount() const { return m_processingCount; }
 

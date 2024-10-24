@@ -506,71 +506,6 @@ bool SourceOrientation::getNormal(vec3d* outNormal) const {
 	return m_hasNormal;
 }
 
-SourceTiming::SourceTiming() : m_creationTimestamp(timestamp(-1)), m_beginTimestamp(timestamp(-1)),
-							   m_endTimestamp(timestamp(-1)) {}
-
-void SourceTiming::setCreationTimestamp(int time) {
-	m_creationTimestamp = time;
-	m_nextCreation      = time;
-}
-
-void SourceTiming::setLifetime(int begin, int end) {
-	m_beginTimestamp = begin;
-	m_endTimestamp = end;
-}
-
-bool SourceTiming::isActive() const {
-	if (!timestamp_valid(m_beginTimestamp) && !timestamp_valid(m_endTimestamp)) {
-		// No valid timestamps => default is to be active
-		return true;
-	}
-
-	if (!timestamp_valid(m_beginTimestamp) && timestamp_valid(m_endTimestamp)) {
-		// Active until the end has elapsed
-		return !timestamp_elapsed(m_endTimestamp);
-	}
-
-	if (timestamp_valid(m_beginTimestamp) && !timestamp_valid(m_endTimestamp)) {
-		// If begin is valid, check if it already happened
-		return timestamp_elapsed(m_beginTimestamp) != 0;
-	}
-
-	// Check if we are in the range [begin, end]
-	return timestamp_elapsed(m_beginTimestamp) && !timestamp_elapsed(m_endTimestamp);
-}
-
-bool SourceTiming::isFinished() const {
-	// If end isn't valid the timing is never finished
-	if (!timestamp_valid(m_endTimestamp)) {
-		return false;
-	}
-
-	return timestamp_elapsed(m_endTimestamp) != 0;
-}
-
-float SourceTiming::getLifeTimeProgress() const {
-	// The progress can only be given when we have a valid time range
-	if (!timestamp_valid(m_beginTimestamp) && !timestamp_valid(m_endTimestamp)) {
-		return -1.f;
-	}
-
-	if (!timestamp_valid(m_beginTimestamp) && timestamp_valid(m_endTimestamp)) {
-		return -1.f;
-	}
-
-	if (timestamp_valid(m_beginTimestamp) && !timestamp_valid(m_endTimestamp)) {
-		return -1.f;
-	}
-
-	auto total = m_endTimestamp - m_beginTimestamp;
-	auto done = timestamp() - m_beginTimestamp;
-
-	return done / (float) total;
-}
-int SourceTiming::getNextCreationTime() const { return m_nextCreation; }
-bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
-void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
-
 ParticleSource::ParticleSource() : m_effect(ParticleEffectHandle::invalid()), m_processingCount(0) {
 	for (size_t i = 0; i < 64; i++) {
 		m_effect_is_running[i] = true;
@@ -578,7 +513,7 @@ ParticleSource::ParticleSource() : m_effect(ParticleEffectHandle::invalid()), m_
 }
 
 bool ParticleSource::isValid() const {
-	if (m_timing.isFinished()) {
+	if (!m_effect_is_running.any()) {
 		return false;
 	}
 
@@ -631,29 +566,47 @@ void ParticleSource::finishCreation() {
 			}
 		}
 	}
+
+	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
+		TIMESTAMP begin = _timestamp(effect.m_timing.m_delayRange.next() * 1000.0f);
+		TIMESTAMP end = timestamp_delta(begin, effect.m_timing.m_durationRange.next() * 1000.0f);
+		m_timing.emplace_back(SourceTiming{begin, end});
+	}
 }
 
 bool ParticleSource::process() {
-	if (m_timing.isActive()) {
-		//TODO make more efficient / get rid of the horror that is the singleton pattern
-		const auto& effectList = ParticleManager::get()->getEffect(m_effect);
+	//TODO make more efficient / get rid of the horror that is the singleton pattern
+	const auto& effectList = ParticleManager::get()->getEffect(m_effect);
 
-		bool result = false;
-		for (size_t i = 0; i < effectList.size(); i++) {
-			if (m_effect_is_running[i]) {
-				bool effectResult = effectList[i].processSource(this);
-				m_effect_is_running[i] = effectResult;
-				result |= effectResult;
+	bool result = false;
+	for (size_t i = 0; i < effectList.size(); i++) {
+		const auto& effect = effectList[i];
+		auto& timing = m_timing[i];
+		if (m_effect_is_running[i]) {
+			bool needs_to_continue_running = true;
+
+			while(timestamp_elapsed(timing.m_nextCreation)) {
+				//Find "time" in last frame where particle spawned
+				float interp = static_cast<float>(timestamp_since(timing.m_nextCreation)) / (f2fl(Frametime) * 1000.0f);
+
+				// Calculate next spawn
+				auto secondsPerParticle = 1.0f / effect.m_timing.m_particlesPerSecond.next();
+				// we need to clamp this to 1 because a spawn delay lower than it takes to spawn the particle in ms means we try to spawn infinite particles
+				auto time_diff_ms = std::max(fl2i(secondsPerParticle * MILLISECONDS_PER_SECOND), 1);
+				timing.m_nextCreation = timestamp_delta(timing.m_nextCreation, time_diff_ms);
+
+				effect.processSource(this, interp);
+
+				bool isDone = effect.m_timing.m_duration == util::Duration::Onetime || timestamp_elapsed(timing.m_endTimestamp);
+
+				m_effect_is_running[i] = !isDone;
+				needs_to_continue_running = !isDone;
 			}
+			result |= needs_to_continue_running;
 		}
-
-		++m_processingCount;
-
-		return result;
 	}
-	else {
-		// If not active, try the next frame
-		return true;
-	}
+
+	++m_processingCount;
+	return result;
 }
 }

@@ -27,6 +27,7 @@ public:
 	};
 private:
 	friend struct ParticleParse;
+	friend class ParticleSource; //TODO remove once timing is tidied up.
 
 	util::EffectTiming m_timing;
 
@@ -91,13 +92,11 @@ public:
 								int bitmap
 		);
 
-	bool processSource(ParticleSource* source) const override;
+	void processSource(ParticleSource* source, float interp) const override;
 
 	void parseValues(bool nocreate) override;
 
 	void pageIn() override;
-
-	void initializeSource(ParticleSource& source) override;
 
 };
 }

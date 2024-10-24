@@ -52,14 +52,6 @@ namespace particle
 		m_finished = true;
 	}
 
-	void ParticleSourceWrapper::setCreationTimestamp(int timestamp)
-	{
-		for (auto& source : m_sources)
-		{
-			source->getTiming()->setCreationTimestamp(timestamp);
-		}
-	}
-
 	void ParticleSourceWrapper::moveToParticle(const WeakParticlePtr& ptr)
 	{
 		for (auto& source : m_sources)

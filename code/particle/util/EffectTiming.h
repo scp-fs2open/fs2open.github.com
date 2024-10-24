@@ -8,6 +8,8 @@
 namespace particle {
 namespace util {
 
+//TODO Fold this file into the OmniEffect
+
 /**
  * @defgroup particleUtils Particle Effect utilities
  *
@@ -34,6 +36,7 @@ enum class Duration {
  */
 class EffectTiming {
  private:
+   friend class ::particle::ParticleSource; //TODO remove when tidying up
 	Duration m_duration;
 	::util::ParsedRandomFloatRange m_delayRange;
 	::util::ParsedRandomFloatRange m_durationRange;
@@ -45,30 +48,6 @@ class EffectTiming {
 	};
 
 	EffectTiming();
-
-	/**
-     * @brief Applies the timing information to a specific source
-     * @param source The source to be modified
-     */
-	void applyToSource(ParticleSource* source) const;
-
-	/**
-     * @brief Determines if processing should continue
-     * @param source The source which should be checked
-     * @return @c true if processing should contine, @c false otherwise
-     */
-	bool continueProcessing(const ParticleSource* source) const;
-
-	/**
-	 * @brief Given the properties of this timing structure, determine if a new effect should be created for a source,
-	 * and if so, at what point during the frame the effect should spawn.
-	 * @param source The source to check.
-	 * @param localState Internal state used by this function that is needed multiple times. Default construct
-	 * TimingState and then pass it to this function.
-	 * If an effect should be created, @return the number of milliseconds between the creation time and the current time.
-	 * If no effect should be created, @return -1.
-	 */
-	int shouldCreateEffect(ParticleSource* source, TimingState& localState) const;
 
 	/**
      * @brief Parses an effect timing class
