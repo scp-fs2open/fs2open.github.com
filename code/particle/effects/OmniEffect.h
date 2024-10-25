@@ -87,6 +87,7 @@ public:
 								float particleChance,
 								bool affectedByDetail,
 								float distanceCulled,
+								bool disregardAnimationLength,
 								::util::ParsedRandomFloatRange lifetime,
 								::util::ParsedRandomFloatRange radius,
 								int bitmap

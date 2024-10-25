@@ -45,6 +45,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	float particleChance,
 	bool affectedByDetail,
 	float distanceCulled,
+	bool disregardAnimationLength,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
@@ -68,7 +69,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	  m_distanceCulled(distanceCulled) {
 	m_particleProperties.m_lifetime = std::move(lifetime);
 	m_particleProperties.m_hasLifetime = true;
-	m_particleProperties.m_keep_anim_length_if_available = true;
+	m_particleProperties.m_keep_anim_length_if_available = !disregardAnimationLength;
 	m_particleProperties.m_radius = std::move(radius);
 	m_particleProperties.m_bitmap_list = {bitmap};
 	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);

@@ -134,6 +134,7 @@ void debris_init()
 		1.f, //Chance
 		true, //Affected by detail
 		1.f, //Culling range multiplier
+		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 		::util::UniformFloatRange(0.25f, 0.75f), //Lifetime
 		::util::UniformFloatRange(0.2f, 0.4f), //Radius
 		particle::Anim_bitmap_id_fire)); //Bitmap

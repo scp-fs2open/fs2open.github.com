@@ -2212,6 +2212,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					1.f, //Chance
 					false, //Affected by detail
 					-1.f, //Culling range multiplier
+					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 					::util::UniformFloatRange(-1.f), //Lifetime
 					std::move(radius), //Radius
 					bitmapIndex)); //Bitmap
@@ -2281,6 +2282,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						1.f, //Chance
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						::util::UniformFloatRange(-1.f), //Lifetime
 						std::move(radius), //Radius
 						bitmapID)); //Bitmap
@@ -2370,6 +2372,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					1.f, //Chance
 					true, //Affected by detail
 					10.f, //Culling range multiplier
+					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 					::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 					::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
 					effectIndex)); //Bitmap
@@ -2392,6 +2395,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						1.f, //Chance
 						true, //Affected by detail
 						10.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 						::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
 						effectIndex)); //Bitmap
@@ -3050,6 +3054,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						1.f, //Chance
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						std::move(lifetime), //Lifetime
 						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
 						bitmapIndex)); //Bitmap
@@ -3122,6 +3127,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						1.f, //Chance
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
 						bitmapIndex);
@@ -3143,6 +3149,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						1.f, //Chance
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
 						bitmapIndex);
