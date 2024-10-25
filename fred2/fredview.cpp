@@ -3925,13 +3925,21 @@ void CFREDView::OnRunFreeSpace()
 		nameAttempts.push_back(processed_name);
 	}
 
-	nameAttempts.push_back("start_fs2.bat");
 	nameAttempts.push_back("fs2_open.exe");
 	nameAttempts.push_back("fs2_open_r.exe");
 
+	// reconstruct command line
+	extern SCP_string cmdline_build_string();
+	auto commandArgs = cmdline_build_string();
+
 	for (const auto &nameAttempt: nameAttempts) {
+		// CreateProcess actually writes to the C-string, so we have to make it modifiable
+		std::unique_ptr<char[]> fullString(new char[nameAttempt.length() + commandArgs.length() + 1]);
+		strcpy(fullString.get(), nameAttempt.c_str());
+		strcat(fullString.get(), commandArgs.c_str());
+
 		// try to start FS2_open
-		r = CreateProcess(nameAttempt.c_str(), nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
+		r = CreateProcess(nullptr, fullString.get(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 		if (r) {
 			break;
 		}
