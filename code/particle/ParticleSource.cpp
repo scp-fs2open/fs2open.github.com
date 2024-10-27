@@ -104,15 +104,9 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut, float interp, tl::optional<v
 		case SourceOriginType::VECTOR: {
 			*posOut = m_origin.m_pos;
 
-			matrix m = vmd_identity_matrix;
-			vec3d dir = m_velocity;
-
-			vm_vec_normalize_safe(&dir);
-			vm_vector_2_matrix_norm(&m, &dir);
-
 			// we add whatever offset already exists to the tabled offset specified by the modder
 			vec3d combined_offset = m_offset + tabled_offset.value_or(vmd_zero_vector);
-			vm_vec_unrotate(&offset, &combined_offset, &m);
+			vm_vec_unrotate(&offset, &combined_offset, &m_origin.m_host_orientation);
 
 			break;
 		}
@@ -601,7 +595,7 @@ bool ParticleSource::process() {
 
 				effect.processSource(this, interp);
 
-				bool isDone = effect.m_timing.m_duration == util::Duration::Onetime || timestamp_elapsed(timing.m_endTimestamp);
+				bool isDone = effect.m_timing.m_duration == util::Duration::Onetime || timestamp_compare(timing.m_endTimestamp, timing.m_nextCreation) < 0;
 
 				m_effect_is_running[i] = !isDone;
 				needs_to_continue_running = !isDone;
