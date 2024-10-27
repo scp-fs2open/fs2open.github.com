@@ -569,7 +569,11 @@ void ParticleSource::finishCreation() {
 
 	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
 		TIMESTAMP begin = _timestamp(effect.m_timing.m_delayRange.next() * 1000.0f);
-		TIMESTAMP end = timestamp_delta(begin, effect.m_timing.m_durationRange.next() * 1000.0f);
+		TIMESTAMP end;
+		if (effect.m_timing.m_duration == util::Duration::Always)
+			end = TIMESTAMP::never();
+		else
+			end = timestamp_delta(begin, effect.m_timing.m_durationRange.next() * 1000.0f);
 		m_timing.emplace_back(SourceTiming{begin, end});
 	}
 }
