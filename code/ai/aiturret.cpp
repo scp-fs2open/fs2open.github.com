@@ -1215,6 +1215,7 @@ void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp,
 	}
 
 	model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	
 
 	// we might not need to calculate this
 	if (!gvec)
@@ -1993,8 +1994,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					if (wip->muzzle_effect.isValid()) {
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-						particleSource.moveTo(firing_pos);
-						particleSource.setOrientationFromVec(firing_vec);
+						particleSource.moveToTurret(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos);
 						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
 						particleSource.finish();
 					}
@@ -2111,8 +2111,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
-			particleSource.moveTo(&turret_pos);
-			particleSource.setOrientationFromVec(&turret_fvec);
+			particleSource.moveToTurret(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1);
 			particleSource.setVelocity(&Objects[tsi->parent_objnum].phys_info.vel);
 			particleSource.finish();
 		}

@@ -1921,6 +1921,7 @@ ADE_FUNC(initHotkeysList,
 
 	reset_hotkeys();
 	hotkey_set_selected_line(1);
+	hotkey_lines_reset_all();
 	hotkey_build_listing();
 
 	// We want to allow the API to handle expanding wings on its own,

@@ -62,7 +62,8 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this,
 		&ShipFlagsDialog::kamikazeDamageChanged);
-	connect(ui->noMoveCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::immobileChanged);
+	connect(ui->noChangePosCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::doesNotChangePositionChanged);
+	connect(ui->noChangeOrientCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::doesNotChangeOrientationChanged);
 
 	// Column Two
 	connect(ui->noDynamicGoalsCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::noDynamicGoalsChanged);
@@ -198,9 +199,12 @@ void ShipFlagsDialog::updateUI()
 	ui->kamikazeCheckbox->setCheckState(Qt::CheckState(value));
 	value = _model->getKamikazeDamage();
 	ui->kamikazeDamageSpinBox->setValue(value);
-	// Does Not move
-	value = _model->getImmobile();
-	ui->noMoveCheckbox->setCheckState(Qt::CheckState(value));
+	// Does Not Change Position
+	value = _model->getDontChangePosition();
+	ui->noChangePosCheckbox->setCheckState(Qt::CheckState(value));
+	// Does Not Change Orientation
+	value = _model->getDontChangeOrientation();
+	ui->noChangeOrientCheckbox->setCheckState(Qt::CheckState(value));
 	// Column Two
 	// No Dynamic Goals
 	value = _model->getNoDynamicGoals();
@@ -386,9 +390,14 @@ void ShipFlagsDialog::kamikazeDamageChanged(int value)
 	_model->setKamikazeDamage(value);
 }
 
-void ShipFlagsDialog::immobileChanged(int value)
+void ShipFlagsDialog::doesNotChangePositionChanged(int value)
 {
-	_model->setImmobile(value);
+	_model->setDontChangePosition(value);
+}
+
+void ShipFlagsDialog::doesNotChangeOrientationChanged(int value)
+{
+	_model->setDontChangeOrientation(value);
 }
 
 void ShipFlagsDialog::noDynamicGoalsChanged(int value)

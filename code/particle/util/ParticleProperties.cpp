@@ -4,10 +4,11 @@
 
 #include "bmpman/bmpman.h"
 #include "math/curve.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace util {
-ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f), m_size_lifetime_curve (-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT) {
+ParticleProperties::ParticleProperties() : m_radius(::util::UniformFloatRange(0.0f, 1.0f)), m_lifetime(::util::UniformFloatRange(0.0f, 1.0f)), m_length(::util::UniformFloatRange(0.0f)), m_size_lifetime_curve(-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT), m_manual_offset (vmd_zero_vector) {
 }
 
 void ParticleProperties::parse(bool nocreate) {
@@ -17,16 +18,16 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 
 	if (optional_string("+Size:")) {
-		m_radius = ::util::parseUniformRange<float>();
+		m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
 	} else if (optional_string("+Parent Size Factor:")) {
-		m_radius = ::util::parseUniformRange<float>();
+		m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
 		m_parentScale = true;
 	} else if (!nocreate) {
 		error_display(1, "Missing +Size or +Parent Size Factor");
 	}
 
 	if (optional_string("+Length:")) {
-		m_length = ::util::parseUniformRange<float>();
+		m_length = ::util::ParsedRandomFloatRange::parseRandomRange();
 	}
 
 	if (optional_string("+Lifetime:")) {
@@ -35,12 +36,12 @@ void ParticleProperties::parse(bool nocreate) {
 			m_hasLifetime = false;
 		} else {
 			m_hasLifetime = true;
-			m_lifetime = ::util::parseUniformRange<float>();
+			m_lifetime = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 	} else if (optional_string("+Parent Lifetime Factor:")) {
 		m_hasLifetime = true;
 		m_parentLifetime = true;
-		m_lifetime = ::util::parseUniformRange<float>();
+		m_lifetime = ::util::ParsedRandomFloatRange::parseRandomRange();
 	}
 
 	if (optional_string("+Size over lifetime curve:")) {
@@ -76,6 +77,14 @@ void ParticleProperties::parse(bool nocreate) {
 			// in the future we may want to support additional types, or even a specific angle, but that is TBD
 			error_display(0, "Rotation Type %s not supported", buf);
 		}
+	}
+
+	if (optional_string("+Offset:")) {
+		stuff_vec3d(&m_manual_offset);
+	}
+
+	if (optional_string("+Remain local to parent:")) {
+		stuff_boolean(&m_parent_local);
 	}
 }
 

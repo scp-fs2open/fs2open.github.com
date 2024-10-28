@@ -11,6 +11,8 @@
 
 #include "io/timer.h"
 
+#include <tl/optional.hpp>
+
 struct weapon;
 
 struct weapon_info;
@@ -27,6 +29,8 @@ enum class SourceOriginType {
 	VECTOR, //!< World-space offset
 	BEAM, //!< A beam
 	OBJECT, //!< An object
+	SUBOBJECT, //!< A subobject
+	TURRET, //!< A turret
 	PARTICLE //!< A particle
 };
 
@@ -47,7 +51,16 @@ class SourceOrigin {
 	struct {
 		vec3d m_pos;
 
+		// this is used only for vector-type sources, and is not used when the effect's parent is an object
+		// when the parent is an object, we get the relevant orientation from the object, so that it stays updated
+		// when the parent is an object, we get the relevant orientation from the object, so that it stays updated
+		matrix m_host_orientation;
+
 		object_h m_object;
+
+		int m_subobject;
+
+		int m_fire_pos;
 
 		WeakParticlePtr m_particle;
 	} m_origin;
@@ -76,9 +89,9 @@ class SourceOrigin {
 	 * @param interp For objects, the point's position between the current-frame
 	 * and last-frame positions of the object, with 0.0 being current-frame and 1.0 being last-frame
 	 */
-	void getGlobalPosition(vec3d* posOut, float interp = 1.0f) const;
+	void getGlobalPosition(vec3d* posOut, float interp = 1.0f, tl::optional<vec3d> manual_offset = tl::nullopt) const;
 
-	void getHostOrientation(matrix* matOut) const;
+	void getHostOrientation(matrix* matOut, bool allow_relative) const;
 
 	inline SourceOriginType getType() const { return m_originType; }
 
@@ -101,7 +114,7 @@ class SourceOrigin {
 	 *
 	 * @param info The particle_info this should be applied to
 	 */
-	void applyToParticleInfo(particle_info& info, bool allowRelative = false, float interp = 1.0f) const;
+	void applyToParticleInfo(particle_info& info, bool allowRelative = false, float interp = 1.0f, tl::optional<vec3d> manual_offset = tl::nullopt) const;
 
 	/**
 	 * @brief Gets the velocity of the origin host
@@ -131,7 +144,7 @@ class SourceOrigin {
 	 * @brief Moves the source to the specified world location
 	 * @param pos The world position
 	 */
-	void moveTo(const vec3d* pos);
+	void moveTo(const vec3d* pos, const matrix* orientation = &vmd_identity_matrix);
 
 	/**
 	 * @brief Moves the source to the specified beam object
@@ -145,6 +158,20 @@ class SourceOrigin {
 	 * @param offset The position relative to this object
 	 */
 	void moveToObject(const object* objp, const vec3d* offset);
+
+		/**
+	 * @brief Moves the source to the specified object with an offset
+	 * @param objp The hosting object
+	 * @param offset The position relative to this object
+	 */
+	void moveToSubobject(const object* objp, int subobject, const vec3d* offset);
+
+	/**
+	 * @brief Moves the source to the specified object with an offset
+	 * @param objp The hosting object
+	 * @param offset The position relative to this object
+	 */
+	void moveToTurret(const object* objp, int subobject, int fire_pos);
 
 	/**
 	 * @brief Moves the source to the specified particle
@@ -166,9 +193,17 @@ class SourceOrigin {
  *
  * Currently only the forward direction vector is useful because the other vectors of the matrix are chosen pretty
  * arbitrarily. This also contains a normal vector if it was specified when creating the source.
- *
+ * 
+ * A source's SourceOrientation is distinct from its host orientation. The host orientation is either defined in
+ * SourceOrigin or gathered from the parent object, depending on host type. Host orientation is applied before position offset.
+ * SourceOrientation is applied after position offset.
+ * 
  * An orientation can be either relative or global. In relative mode all transforms should be relative to the host
- * object while in global mode all directions are in world-space. Normals are always in world-space.
+ * object and its orientation. In global mode, all directions are in world-space,
+ * and host orientation is overridden completely (though it will still affect the orientation of position offsets).
+ * 
+ * Normals are always in world-space.
+ * 
  */
 class SourceOrientation {
  private:
@@ -203,7 +238,7 @@ class SourceOrientation {
 
 	void setFromMatrix(const matrix& mat, bool relative = false);
 
-	vec3d getDirectionVector(const SourceOrigin* origin) const;
+	vec3d getDirectionVector(const SourceOrigin* origin, bool allow_relative = false) const;
 
 	bool isRelative() const { return m_isRelative; }
 

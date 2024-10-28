@@ -339,7 +339,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	}
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
-		dest_info.radius = util::parseUniformRange(0.0001f);
+		dest_info.radius = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 	}
 
 	if (required_string_if_new("+Lifetime:", is_new_entry)) {
@@ -347,7 +347,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 			dest_info.lifetime = util::UniformFloatRange(-1.0f);
 		} else {
 			// Require at least a small lifetime so that the calculations don't have to deal with div-by-zero
-			dest_info.lifetime = util::parseUniformRange(0.0001f);
+			dest_info.lifetime = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 		}
 	}
 

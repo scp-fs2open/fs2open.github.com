@@ -204,10 +204,12 @@ typedef struct type5_beam_info {
 	vec3d end_pos_offset;                        // position simply added to end pos (possibly manipulated by the bools below)
 	vec3d start_pos_rand;                        // same as above but a randomly chosen between defined value for each axis and its negative
 	vec3d end_pos_rand;
+	int slash_pos_curve_idx;
 	bool target_orient_positions;                // if true, offsets are oriented relative to the target, else the shooter's pov
 	bool target_scale_positions;                 // if true, offsets are scaled by target radius, else its a fixed span from the shooters pov
 	                                             // regardless of distance
 	float continuous_rot;                        // radians per sec rotation over beam lifetime
+	int rot_curve_idx;
 	Type5BeamRotAxis continuous_rot_axis;		 // axis around which do continuous rotation
 	SCP_vector<float> burst_rot_pattern;         // radians to rotate for each beam in a burst, will also make spawned and ssb beams fire 
 	                                             // this many beams simultaneously with the defined rotations
@@ -807,7 +809,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = NULL );
+void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = nullptr );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer

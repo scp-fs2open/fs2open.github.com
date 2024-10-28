@@ -1077,18 +1077,32 @@ void beam_type_omni_move(beam* b)
 	vec3d actual_dir;
 	bool no_sweep = vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b) > 0.9999f;
 
+	float rotation_amount;
+	if (Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx >= 0) {
+		rotation_amount = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx].GetValue(BEAM_T(b)) * PI2;
+	} else {
+		rotation_amount = (b->life_total - b->life_left) * b->type5_rot_speed;
+	}
+
 	if (b->rotates) {
-		vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, (b->life_total - b->life_left) * b->type5_rot_speed, &zero_vec, &b->binfo.rot_axis); 
+		vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, rotation_amount, &zero_vec, &b->binfo.rot_axis); 
 		if (no_sweep)
 			actual_dir = newdir_a;
 		else 
-			vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, (b->life_total - b->life_left) * b->type5_rot_speed, &zero_vec, &b->binfo.rot_axis);
+			vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, rotation_amount, &zero_vec, &b->binfo.rot_axis);
 	}
 
 	if (no_sweep)
 		actual_dir = newdir_a;
-	else
-		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, BEAM_T(b));
+	else {
+		float slash_completion;
+		if (Weapon_info[b->weapon_info_index].b_info.t5info.slash_pos_curve_idx >= 0) {
+			slash_completion = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.slash_pos_curve_idx].GetValue(BEAM_T(b));
+		} else {
+			slash_completion = BEAM_T(b);
+		}
+		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, slash_completion);
+	}
 
 	// now recalculate shot_point to be shooting through our new point
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
@@ -3958,8 +3972,9 @@ void beam_handle_collisions(beam *b)
 						// stream of fire for big ships
 						if (width <= Objects[target].radius * BEAM_AREA_PERCENT) {
 							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
-							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
-							particleSource.setOrientationFromNormalizedVec(&fvec);
+							matrix fvec_orient;
+							vm_vector_2_matrix_norm(&fvec_orient, &fvec);
+							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world, &fvec_orient);
 							particleSource.setOrientationNormal(&worldNormal);
 
 							particleSource.finish();
@@ -3986,15 +4001,14 @@ void beam_handle_collisions(beam *b)
 					}
 
 					auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
-					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
-					particleSource.setOrientationNormal(&worldNormal);
-
 					vec3d fvec;
 					vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-
+					matrix fvec_orient = vmd_identity_matrix;
 					if (!IS_VEC_NULL(&fvec)) {
-						particleSource.setOrientationFromVec(&fvec);
+						vm_vector_2_matrix_norm(&fvec_orient, &fvec);
 					}
+					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world, &fvec_orient);
+					particleSource.setOrientationNormal(&worldNormal);
 
 					particleSource.finish();
 				}
@@ -4298,7 +4312,9 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 		damage *= Curves[wip->damage_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
 
 	// same team. yikes
-	if ( (b->team == Ships[objp->instance].team) && (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
+	if ( (b->team == Ships[objp->instance].team)
+			&& (The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
+			&& (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
 		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage

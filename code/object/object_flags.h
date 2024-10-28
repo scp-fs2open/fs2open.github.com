@@ -23,10 +23,13 @@ namespace Object {
 		Flak_protected,			// Goober5000 - protected from flak turrets
 		Laser_protected,		// Goober5000 - protected from laser turrets
 		Missile_protected,		// Goober5000 - protected from missile turrets
-		Immobile,				// Goober5000 - doesn't move, no matter what
+		Immobile,				// Goober5000 - doesn't change position or orientation, no matter what (legacy flag, but not deprecated due to the difficulty of mapping one flag to two for compatibility)
+		Dont_change_position,	// Goober5000 - doesn't change position, no matter what
+		Dont_change_orientation,	// Goober5000 - doesn't change orientation, no matter what
 		Marked,					// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
 		Temp_marked,			// Temporarily marked (Fred).
-		Hidden,					// Object is hidden (not shown) and can't be manipulated
+		Hidden,					// Object is hidden (not shown in Fred) and can't be manipulated
+		Locked_from_editing,	// Object cannot be edited (Fred)
 		Collides_with_parent,	// Asteroth - Only used for weapons with 'Can_damage_shooter'
 		Attackable_if_no_collide,	// Cyborg - Allows the AI to attack this object, even if no-collide is set (Cue Admiral Ackbar)
 		Collision_cache_stale,	// This object has a stale collision cache, and will be recalculated this frame

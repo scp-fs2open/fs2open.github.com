@@ -157,7 +157,6 @@ int collide_weapon_weapon( obj_pair * pair )
 							weapon_hit(A, B, &A->pos, -1, nullptr);
 						}
 						if (B->hull_strength < 0.0f) {
-							wpB->lifeleft = 0.001f;
 							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 							weapon_hit(B, A, &B->pos, -1, nullptr);
 						}

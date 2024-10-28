@@ -549,6 +549,12 @@ void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {
 void FredView::on_actionShow_All_Hidden_Objects_triggered(bool  /*enabled*/) {
 	fred->showHiddenObjects();
 }
+void FredView::on_actionLock_Marked_Objects_triggered(bool  /*enabled*/) {
+	fred->lockMarkedObjects();
+}
+void FredView::on_actionUnlock_All_Objects_triggered(bool  /*enabled*/) {
+	fred->unlockAllObjects();
+}
 void FredView::onUpdateViewSpeeds() {
 	ui->actionx1->setChecked(_viewport->physics_speed == 1);
 	ui->actionx2->setChecked(_viewport->physics_speed == 2);

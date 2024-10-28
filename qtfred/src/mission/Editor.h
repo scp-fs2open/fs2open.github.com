@@ -69,6 +69,9 @@ class Editor : public QObject {
 	void hideMarkedObjects();
 	void showHiddenObjects();
 
+	void lockMarkedObjects();
+	void unlockAllObjects();
+
 	int dup_object(object* objp);
 
 	int delete_object(int obj);

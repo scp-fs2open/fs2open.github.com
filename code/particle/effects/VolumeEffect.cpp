@@ -44,7 +44,7 @@ namespace particle {
 						num += 1;
 				}
 
-				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				matrix stretch_matrix = vm_stretch_matrix(&stretch_dir, m_stretch);
 
 				for (uint i = 0; i < num; ++i) {
@@ -72,7 +72,7 @@ namespace particle {
 						vm_vec_rotate(&pos, &copy_pos, &stretch_matrix);
 
 					particle_info info;
-					source->getOrigin()->applyToParticleInfo(info, false, interp);
+					source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
 					// make their velocity radial, and based on position, allows for some very cool effects
 					vec3d velocity = pos;
@@ -96,11 +96,11 @@ namespace particle {
 			m_particleProperties.parse(nocreate);
 
 			if (internal::required_string_if_new("+Velocity:", nocreate)) {
-				m_velocity = ::util::parseUniformRange<float>();
+				m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 
 			if (internal::required_string_if_new("+Number:", nocreate)) {
-				m_particleNum = ::util::parseUniformRange<uint>();
+				m_particleNum = ::util::ParsedRandomUintRange::parseRandomRange();
 			}
 
 			if (!nocreate) {
@@ -161,7 +161,7 @@ namespace particle {
 			}
 
 			if (optional_string("+Parent Velocity Factor:")) {
-				m_vel_inherit = ::util::parseUniformRange<float>();
+				m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 
 			m_timing = util::EffectTiming::parseTiming();

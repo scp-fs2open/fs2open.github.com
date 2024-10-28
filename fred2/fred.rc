@@ -234,6 +234,10 @@ BEGIN
         MENUITEM "Delete\tDel",                 32789
         MENUITEM "Delete Wing\tCtrl+Del",       33035
         MENUITEM SEPARATOR
+        MENUITEM "Lock Marked Objects",         ID_EDIT_LOCK_MARKED_OBJECTS
+        MENUITEM "Unlock All Objects",          ID_EDIT_UNLOCK_ALL_OBJECTS
+        MENUITEM "Selection Lock",              ID_SELECTION_LOCK
+        MENUITEM SEPARATOR
         MENUITEM "Disable Undo",                33055
     END
     POPUP "&View"
@@ -1988,7 +1992,7 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,209,205,50,8
 END
 
-IDD_SHIP_FLAGS DIALOGEX 0, 0, 286, 295
+IDD_SHIP_FLAGS DIALOGEX 0, 0, 286, 305
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -2032,8 +2036,8 @@ BEGIN
     CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | WS_TABSTOP,165,87,97,10
     EDITTEXT        IDC_RESPAWN_PRIORITY,226,97,49,14,ES_AUTOHSCROLL
     LTEXT           "Respawn Priority",IDC_STATIC,166,100,54,8
-    DEFPUSHBUTTON   "OK",IDOK,145,274,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,214,274,65,14
+    DEFPUSHBUTTON   "OK",IDOK,145,282,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,214,282,65,14
     CONTROL         "AutoNav Carry Status",IDC_NAV_CARRY,"Button",BS_3STATE | WS_TABSTOP,165,114,97,10
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",BS_3STATE | WS_TABSTOP,165,124,97,10
     CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | WS_TABSTOP,165,135,99,10
@@ -2043,7 +2047,8 @@ BEGIN
     CONTROL         "Laser Protect Ship",IDC_LASER_PROTECT_SHIP,"Button",BS_3STATE | WS_TABSTOP,12,110,80,8
     CONTROL         "Missile Protect Ship",IDC_MISSILE_PROTECT_SHIP,"Button",BS_3STATE | WS_TABSTOP,12,118,80,8
     GROUPBOX        "Turret Threats",IDC_STATIC,7,83,102,48
-    CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_3STATE | WS_TABSTOP,7,274,66,10
+    CONTROL         "Does Not Change Position",IDC_DONT_CHANGE_POSITION,"Button",BS_3STATE | WS_TABSTOP,7,274,132,10
+    CONTROL         "Does Not Change Orientation",IDC_DONT_CHANGE_ORIENTATION,"Button",BS_3STATE | WS_TABSTOP,7,282,132,10
     CONTROL         "Cloaked",IDC_CLOAKED,"Button",BS_3STATE | WS_TABSTOP,165,167,42,10
     CONTROL         "Scramble Messages",IDC_SCRAMBLE_MESSAGES,"Button",BS_3STATE | WS_TABSTOP,165,177,79,10
     CONTROL         "No Collisions",IDC_NO_COLLIDE,"Button",BS_3STATE | WS_TABSTOP,165,188,66,10
@@ -3491,6 +3496,10 @@ BEGIN
                             "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
+    ID_EDIT_LOCK_MARKED_OBJECTS
+                            "Prevent marked objects from being selected or moved"
+    ID_EDIT_UNLOCK_ALL_OBJECTS
+                            "Allow all objects to be selected or moved"
     ID_MISC_POINTUSINGUVEC  "When using the Object Editor to point ships, take the ship's current up-vector into account"
     ID_MUSIC_PLAYER         "Preview music files"
 END
@@ -3620,7 +3629,7 @@ BEGIN
     ID_SELECT_LIST          "Select from List\nSelect List (H)"
     ID_CONSTRAIN_Y          "Constrain movement to global Y axis\nY Constraint"
     ID_ZOOM                 "Zoom view in/out\nZoom Mode"
-    ID_SELECTION_LOCK       "Selection Lock\nSelection Lock (Spacebar)"
+    ID_SELECTION_LOCK       "Prevent selection from changing\nSelection Lock (Spacebar)"
     ID_DISSOLVE_WING        "Remove selected ships from Wing(s)\nRemove from Wing"
 END
 

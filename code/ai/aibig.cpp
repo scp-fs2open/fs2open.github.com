@@ -1933,7 +1933,10 @@ int ai_big_maybe_enter_strafe_mode(const object *pl_objp, int weapon_objnum)
 	weapon_objp = &Objects[weapon_objnum];
 	Assert(weapon_objp->type == OBJ_WEAPON);
 
-	Assert(weapon_objp->parent >= 0 && weapon_objp->parent < MAX_OBJECTS);
+	if (weapon_objp->parent < 0) {
+		return 0;
+	}
+	Assert(weapon_objp->parent < MAX_OBJECTS);
 	parent_objp = &Objects[weapon_objp->parent];
 	if ( (parent_objp->signature != weapon_objp->parent_sig) || (parent_objp->type != OBJ_SHIP) ) {
 		return 0;

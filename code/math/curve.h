@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
@@ -36,6 +38,9 @@ public :
 
 	//Get
 	float GetValue(float x_val) const;
+
+	// Get
+	float GetValueIntegrated(float x_val) const;
 
 	//Set
 	void ParseData();

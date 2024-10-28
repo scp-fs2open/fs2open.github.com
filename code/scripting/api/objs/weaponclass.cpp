@@ -336,8 +336,7 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
 }
 
-ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", 
-	"If the weapon has the swarm flag , the number of swarm missiles, the swarm wait. Returns nil if the handle is invalid.")
+static int swarm_info_helper(lua_State* L)
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -354,11 +353,23 @@ ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number
 	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Swarm])
 		flag = true;
 
-	return ade_set_args(L, "bif", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
+	return ade_set_args(L, "bii", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
 }
 
-ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
-	"If the weapon has the corkscrew flag, the number of corkscrew missiles fired, the radius, the fire delay, counter rotate settings, the twist value. Returns nil if the handle is invalid.")
+ADE_VIRTVAR_DEPRECATED(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean",
+	"Returns whether the weapon has the swarm flag, or nil if the handle is invalid.",
+	gameversion::version(24, 2), "Deprecated in favor of weaponclass:getSwarmInfo(), since virtvars can only return a single value.")
+{
+	return swarm_info_helper(L);
+}
+
+ADE_FUNC(getSwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number",
+	"Returns three values: a) whether the weapon has the swarm flag, b) the number of swarm missiles fired, c) the swarm wait. Returns nil if the handle is invalid.")
+{
+	return swarm_info_helper(L);
+}
+
+static int corkscrew_info_helper(lua_State* L)
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -387,6 +398,19 @@ ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, nu
 		Weapon_info[idx].cs_delay,
 		crotate,
 		Weapon_info[idx].cs_twist);
+}
+
+ADE_VIRTVAR_DEPRECATED(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number",
+	"Returns whether the weapon has the corkscrew flag, or nil if the handle is invalid.",
+	gameversion::version(24, 2), "Deprecated in favor of weaponclass:getCorkscrewInfo(), since virtvars can only return a single value.")
+{
+	return corkscrew_info_helper(L);
+}
+
+ADE_FUNC(getCorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number",
+	"Returns six values: a) whether the weapon has the corkscrew flag, b) the number of corkscrew missiles fired, c) the radius, d) the fire delay, e) whether the weapon counter-rotations, f) the twist value. Returns nil if the handle is invalid.")
+{
+	return corkscrew_info_helper(L);
 }
 
 ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")

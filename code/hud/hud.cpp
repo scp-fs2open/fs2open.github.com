@@ -3908,7 +3908,9 @@ void hud_page_in()
 
 HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 {
-	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
+	ship_info *player_sip = nullptr;
+	if (Player_ship && Player_ship->ship_info_index >= 0)
+		player_sip = &Ship_info[Player_ship->ship_info_index];
 
 	// go through all gauges for all ships and defaults
 	if (check_all_gauges) {

@@ -787,7 +787,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// We will try not to worry about the left over time in the frame
 	// heavy's position unchanged by collision
 	// light's position is heavy's position plus relative position from heavy
-	if (should_collide && !lighter->flags[Object::Object_Flags::Immobile]){
+	if (should_collide && !lighter->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]){
 		vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
 	}
 
@@ -799,7 +799,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 	if (should_collide){
 
-		if (!heavy->flags[Object::Object_Flags::Immobile]) {
+		if (!heavy->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]) {
 			Assert(!vm_is_vec_nan(&direction_light));
 			vm_vec_scale_add2(&heavy->pos, &direction_light, 0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 			vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
@@ -819,7 +819,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	if (ship_ship_hit_info->is_landing) {
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
 	}
-	else if (!lighter->flags[Object::Object_Flags::Immobile]) {
+	else if (!lighter->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]) {
 		vm_vec_scale_add2(&lighter->pos, &direction_light, -0.2f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 	}

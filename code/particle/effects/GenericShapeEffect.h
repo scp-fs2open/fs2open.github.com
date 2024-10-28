@@ -33,36 +33,34 @@ class GenericShapeEffect : public ParticleEffect {
 	util::ParticleProperties m_particleProperties;
 
 	ConeDirection m_direction = ConeDirection::Incoming;
-	::util::UniformFloatRange m_velocity;
-	::util::UniformUIntRange m_particleNum;
+	::util::ParsedRandomFloatRange m_velocity;
+	::util::ParsedRandomUintRange m_particleNum;
 	float m_particleChance = 1.0f;
-	::util::UniformFloatRange m_particleRoll;
+	::util::ParsedRandomFloatRange m_particleRoll;
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
 	util::EffectTiming m_timing;
 
-	::util::UniformFloatRange m_vel_inherit;
+	::util::ParsedRandomFloatRange m_vel_inherit;
 
 	TShape m_shape;
 
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ConeDirection::Incoming:
-				return source->getOrientation()->getDirectionVector(source->getOrigin());
+				return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return source->getOrientation()->getDirectionVector(source->getOrigin());
+					return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				}
 
 				return normal;
 			}
 			case ConeDirection::Reflected: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
 					return out;
 				}
 
@@ -77,7 +75,7 @@ class GenericShapeEffect : public ParticleEffect {
 				return out;
 			}
 			case ConeDirection::Reverse: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
 				vm_vec_scale(&out, -1.0f);
 				return out;
 			}
@@ -135,7 +133,8 @@ class GenericShapeEffect : public ParticleEffect {
 				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
 
 				particle_info info;
-				source->getOrigin()->applyToParticleInfo(info, false, interp);
+
+				source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
 
 				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {
@@ -176,11 +175,11 @@ class GenericShapeEffect : public ParticleEffect {
 		m_shape.parse(nocreate);
 
 		if (internal::required_string_if_new("+Velocity:", nocreate)) {
-			m_velocity = ::util::parseUniformRange<float>();
+			m_velocity = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 
 		if (internal::required_string_if_new("+Number:", nocreate)) {
-			m_particleNum = ::util::parseUniformRange<uint>();
+			m_particleNum = ::util::ParsedRandomUintRange::parseRandomRange();
 		}
 		if (!nocreate) {
 			m_particleChance = 1.0f;
@@ -231,7 +230,7 @@ class GenericShapeEffect : public ParticleEffect {
 		}
 
 		if (optional_string("+Parent Velocity Factor:")) {
-			m_vel_inherit = ::util::parseUniformRange<float>();
+			m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 
 		m_timing = util::EffectTiming::parseTiming();

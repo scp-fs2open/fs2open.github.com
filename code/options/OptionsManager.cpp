@@ -5,6 +5,7 @@
 #include "Option.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
+#include <tl/optional.hpp>
 
 namespace {
 
@@ -36,18 +37,20 @@ OptionsManager* options::OptionsManager::instance()
 }
 
 //Gets the value of an option from the Config using the option key
-std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key) const
+tl::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key) const
 {
 	auto override_iter = _config_overrides.find(key);
 	if (override_iter != _config_overrides.end()) {
 		// We return a reference to an existing object so we need to increment the reference count
 		json_incref(override_iter->second.get());
+		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
 		return std::unique_ptr<json_t>(override_iter->second.get());
 	}
 
 	auto changed_iter = _changed_values.find(key);
 	if (changed_iter != _changed_values.end()) {
 		json_incref(changed_iter->second.get());
+		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
 		return std::unique_ptr<json_t>(changed_iter->second.get());
 	}
 
@@ -60,8 +63,8 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str(), (const char*)0, true);
 
 	if (value == nullptr) {
-		// TODO: This is not really an error but I would like to avoid return nullptr here...
-		throw std::runtime_error("No value available");
+		// Signal that there is no value for this key
+		return tl::nullopt;
 	}
 
 	json_error_t err;
@@ -92,7 +95,7 @@ void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json)
 }
 
 //Adds an option to the options vector
-const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& option)
+const OptionBase* OptionsManager::addOption(std::shared_ptr<const OptionBase>&& option)
 {
 	_options.emplace_back(std::move(option));
 	_optionsSorted = false; // Order got invalidated by adding a new option
@@ -103,12 +106,12 @@ const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& 
 }
 
 //Removes an option from the options vector
-void OptionsManager::removeOption(const OptionBase* option)
+void OptionsManager::removeOption(const std::shared_ptr<const OptionBase>& option)
 {
 	_optionsMapping.erase(option->getConfigKey());
 	_options.erase(
 	    std::remove_if(_options.begin(), _options.end(),
-	                   [option](const std::unique_ptr<const OptionBase>& ptr) { return ptr.get() == option; }));
+	                   [option](const std::shared_ptr<const OptionBase>& ptr) { return ptr == option; }));
 }
 
 // Returns an option with the specified name
@@ -123,13 +126,13 @@ const OptionBase* OptionsManager::getOptionByKey(SCP_string key)
 }
 
 //Returns a table of all built-in options available
-const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::getOptions()
+const SCP_vector<std::shared_ptr<const options::OptionBase>>& OptionsManager::getOptions()
 {
 	if (!_optionsSorted) {
 		// Keep options sorted by only sorting them when necessary
 
 		std::sort(_options.begin(), _options.end(),
-		          [](const std::unique_ptr<const OptionBase>& left, const std::unique_ptr<const OptionBase>& right) {
+		          [](const std::shared_ptr<const OptionBase>& left, const std::shared_ptr<const OptionBase>& right) {
 			          return *left < *right;
 		          });
 

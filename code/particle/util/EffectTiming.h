@@ -35,10 +35,10 @@ enum class Duration {
 class EffectTiming {
  private:
 	Duration m_duration;
-	::util::UniformFloatRange m_delayRange;
-	::util::UniformFloatRange m_durationRange;
+	::util::ParsedRandomFloatRange m_delayRange;
+	::util::ParsedRandomFloatRange m_durationRange;
 
-	::util::UniformFloatRange m_particlesPerSecond = ::util::UniformFloatRange(-1.f);
+	::util::ParsedRandomFloatRange m_particlesPerSecond = ::util::UniformFloatRange(-1.f);
  public:
 	struct TimingState {
 		bool initial = true;

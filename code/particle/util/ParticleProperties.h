@@ -26,15 +26,17 @@ private:
 
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformRange<size_t> m_bitmap_range;
-	::util::UniformFloatRange m_radius;
+	::util::ParsedRandomFloatRange m_radius;
 	bool m_parentLifetime = false;
 	bool m_parentScale = false;
 	bool m_hasLifetime = false;
-	::util::UniformFloatRange m_lifetime;
-	::util::UniformFloatRange m_length;
+	::util::ParsedRandomFloatRange m_lifetime;
+	::util::ParsedRandomFloatRange m_length;
 	int m_size_lifetime_curve;
 	int m_vel_lifetime_curve;
 	RotationType m_rotation_type;
+	vec3d m_manual_offset;
+	bool m_parent_local = false;
 
 	ParticleProperties();
 

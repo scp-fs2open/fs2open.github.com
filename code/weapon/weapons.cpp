@@ -2498,14 +2498,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	while (optional_string("$Conditional Impact:")) {
 		int armor_index;
 		ConditionalImpact ci;
-		ci.min_health_threshold = 0.0;
-		ci.max_health_threshold = 1.0;
-		ci.min_angle_threshold = 0.0;
-		ci.max_angle_threshold = 180.0;
+		ci.min_health_threshold = std::numeric_limits<float>::lowest();
+		ci.max_health_threshold = std::numeric_limits<float>::max();
+		ci.min_angle_threshold = 0.f;
+		ci.max_angle_threshold = 180.f;
 		ci.dinky = false;
+
+		bool invalid_armor = false;
 		required_string("+Armor Type:");
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-		armor_index = armor_type_get_idx(fname);
+		if (!stricmp(fname, "NO ARMOR")) {
+			armor_index = -1;
+		} else {
+			armor_index = armor_type_get_idx(fname);
+			if (armor_index < 0) {
+				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+				invalid_armor = true;
+			}
+		};
 		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
 		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
 		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
@@ -2519,7 +2529,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
 		}
 		ci_vec.push_back(ci);
-		wip->conditional_impacts[armor_index] = ci_vec;
+		if (!invalid_armor) {
+			wip->conditional_impacts[armor_index] = ci_vec;
+		}
 	}
 
 	if (optional_string("$Inflight Effect:")) {
@@ -3247,6 +3259,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				stuff_vec3d(&t5info->end_pos_rand);
 			}
 
+			if (optional_string("+Slash position over beam lifetime curve:")) {
+				SCP_string curve_name;
+				stuff_string(curve_name, F_NAME);
+				t5info->slash_pos_curve_idx = curve_get_by_name(curve_name);
+				if (t5info->slash_pos_curve_idx < 0)
+					Warning(LOCATION, "Unrecognized slash position curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+				if (t5info->no_translate)
+					Warning(LOCATION, "Beam weapon %s has a slash position curve defined, but doesn't slash!", wip->name);
+			}
+
 			if (optional_string("+Orient Offsets to Target:")) {
 				stuff_boolean(&t5info->target_orient_positions);
 			}
@@ -3258,6 +3280,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Continuous Rotation:")) {
 				stuff_float(&t5info->continuous_rot);
 				t5info->continuous_rot *= (PI / 180.f);
+			}
+
+			if (optional_string("+Rotation over beam lifetime curve:")) {
+				SCP_string curve_name;
+				stuff_string(curve_name, F_NAME);
+				t5info->rot_curve_idx = curve_get_by_name(curve_name);
+				if (t5info->rot_curve_idx < 0)
+					Warning(LOCATION, "Unrecognized rotation curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 			}
 
 			if (optional_string("+Continuous Rotation Axis:")) {
@@ -6151,8 +6181,8 @@ void weapon_process_post(object * obj, float frame_time)
 					// do the spawn effect
 					if (wip->spawn_info[i].spawn_effect.isValid()) {
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
-						particleSource.moveTo(&obj->pos);
-						particleSource.setOrientationFromVec(&obj->phys_info.vel);
+
+						particleSource.moveTo(&obj->pos, &obj->orient);
 						particleSource.setVelocity(&obj->phys_info.vel);
 						particleSource.finish();
 					}
@@ -7616,9 +7646,9 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
  * @param wobjp		Object pointer to weapon causing explosion
  * @param sci		Shockwave info
  * @param pos		World pos of explosion center
- * @param other_obj	Object pointer to ship that weapon impacted on (can be NULL)
+ * @param impacted_obj	Object pointer to ship that weapon impacted on (can be NULL)
  */
-void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *other_obj)
+void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *impacted_obj)
 {
 	weapon_info	*wip;
 	object		*objp;
@@ -7654,28 +7684,53 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		}
 
 		// scale damage
-		damage *= weapon_get_damage_scale(wip, wobjp, other_obj);		
+		damage *= weapon_get_damage_scale(wip, wobjp, impacted_obj);		
 
 		weapon_info* target_wip;
 
 		switch ( objp->type ) {
-		case OBJ_SHIP:
+		case OBJ_SHIP: {
 			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
 			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
-			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == other_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
+			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == impacted_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) { // NOLINT(readability-simplify-boolean-expr)
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
+
+			weapon* wp = &Weapons[wobjp->instance];
+			ship* shipp = &Ships[objp->instance];
+
+			// if this is friendly fire, we check for the friendly fire cap values
+			if (wp->team == shipp->team) {
+				if (wobjp->parent > -1 && &Objects[wobjp->parent] == objp && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+					// if this is a ship damaging itself, we use the self damage cap
+					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
+				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+					// otherwise we use the friendly damage cap
+					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+				}
+			}
+
 			ship_apply_global_damage(objp, wobjp, pos, damage, wip->shockwave.damage_type_idx);
 			weapon_area_apply_blast(nullptr, objp, pos, blast, false);
 			break;
+			}
 		case OBJ_ASTEROID:
 			weapon_area_apply_blast(nullptr, objp, pos, blast, true);
 			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
-		case OBJ_WEAPON:
+		case OBJ_WEAPON: {
+		
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
 				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f, false);
+
+			weapon* wp = &Weapons[wobjp->instance];
+			weapon* target_wp = &Weapons[objp->instance];
+		
+			// if this is friendly fire, we check for the friendly fire cap value
+			if (wp->team == target_wp->team && The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+			}
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
@@ -7684,6 +7739,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
+			}
 		default:
 			Int3();
 			break;
@@ -7748,7 +7804,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
+void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -7783,20 +7839,20 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		scripting::hooks::OnMissileDeathStarted->run(scripting::hooks::WeaponDeathConditions{ wp },
 			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)));
+			scripting::hook_param("Object", 'o', impacted_obj)));
 	}
 
 	// check if the weapon actually hit the intended target
 	if (weapon_has_homing_object(wp))
-		if (wp->homing_object == other_obj)
+		if (wp->homing_object == impacted_obj)
 			hit_target = true;
 
 	//This is an expensive check
 	bool armed_weapon = weapon_armed(&Weapons[num], hit_target);
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
-	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
+	if ((impacted_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) { // NOLINT(readability-simplify-boolean-expr)
+		weapon_hit_do_sound(impacted_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
 
@@ -7811,21 +7867,26 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
 	}
 
-	if (wip->conditional_impacts.size() > 0 && other_obj != nullptr && (other_obj->type == OBJ_SHIP || other_obj->type == OBJ_WEAPON)) {
-		if (other_obj->type == OBJ_SHIP) {
-			shipp = &Ships[other_obj->instance];
-			if (quadrant == -1) {
-				relevant_armor_idx = shipp->armor_type_idx;
-				relevant_fraction = other_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
-			} else {
-				relevant_armor_idx = shipp->shield_armor_type_idx;
-				relevant_fraction = ship_quadrant_shield_strength(other_obj, quadrant);
-			}
-		} else {
-			target_wp = &Weapons[other_obj->instance];
-			target_wip = &Weapon_info[target_wp->weapon_info_index];
-			relevant_armor_idx = target_wip->armor_type_idx;
-			relevant_fraction = other_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr) { 
+		switch (impacted_obj->type) {
+			case OBJ_SHIP:
+				shipp = &Ships[impacted_obj->instance];
+				if (quadrant == -1) {
+					relevant_armor_idx = shipp->armor_type_idx;
+					relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+				} else {
+					relevant_armor_idx = shipp->shield_armor_type_idx;
+					relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
+				}
+				break;
+			case OBJ_WEAPON:
+				target_wp = &Weapons[impacted_obj->instance];
+				target_wip = &Weapon_info[target_wp->weapon_info_index];
+				relevant_armor_idx = target_wip->armor_type_idx;
+				relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+				break;
+			default:
+				break;
 		}
 		
 		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
@@ -7837,8 +7898,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 					&& hit_angle <= fl_radians(ci.max_angle_threshold)
 				) {
 					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
-					particleSource.moveTo(hitpos);
-					particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+					particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 					particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 					if (hitnormal)
@@ -7856,9 +7916,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
-		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos);
-		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+              		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
@@ -7869,8 +7928,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos);
-		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
@@ -7881,18 +7939,18 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	}
 
-	if ((other_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
-		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
+	if ((impacted_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+		if ((impacted_obj->type == OBJ_SHIP) || (impacted_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
 
-			if (other_obj->type == OBJ_SHIP) {
+			if (impacted_obj->type == OBJ_SHIP) {
 				float draw_limit, hull_pct;
 				int dmg_type_idx, piercing_type;
 
-				shipp = &Ships[other_obj->instance];
+				shipp = &Ships[impacted_obj->instance];
 
-				hull_pct = other_obj->hull_strength / shipp->ship_max_hull_strength;
+				hull_pct = impacted_obj->hull_strength / shipp->ship_max_hull_strength;
 				dmg_type_idx = wip->damage_type_idx;
 				draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
 				
@@ -7913,8 +7971,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 				using namespace particle;
 
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
-				primarySource.moveTo(&weapon_obj->pos);
-				primarySource.setOrientationMatrix(&weapon_obj->last_orient);
+				primarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
 				primarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 				if (hitnormal)
@@ -7926,8 +7983,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
-					secondarySource.moveTo(&weapon_obj->pos);
-					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
+					secondarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
 					secondarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 					if (hitnormal)
@@ -7944,7 +8000,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
-	if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
+	if ( ((impacted_obj) && (impacted_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
 		sw_flag |= SW_WEAPON_KILL;
 	}
 
@@ -7961,7 +8017,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
-			weapon_do_area_effect(weapon_obj, sci, hitpos, other_obj);
+			weapon_do_area_effect(weapon_obj, sci, hitpos, impacted_obj);
 		}
 	}
 
@@ -7971,13 +8027,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}	
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ((other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
-		if (other_obj->type == OBJ_SHIP) {
-			weapon_do_electronics_effect(other_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
+	if ((impacted_obj != nullptr) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
+		if (impacted_obj->type == OBJ_SHIP) {
+			weapon_do_electronics_effect(impacted_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 
-	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !other_obj) {
+	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !impacted_obj) {
 		// spawn weapons - note the change from FS 1 multiplayer.
 		if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 			if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))) {			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
@@ -7986,8 +8042,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	//No other_obj means this weapon detonates
-	if (wip->pierce_objects && other_obj && other_obj->type != OBJ_WEAPON)
+	//No impacted_obj means this weapon detonates
+	if (wip->pierce_objects && impacted_obj && impacted_obj->type != OBJ_WEAPON)
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
@@ -8028,7 +8084,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		scripting::hooks::OnMissileDeath->run(scripting::hooks::WeaponDeathConditions{ wp },
 			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)));
+			scripting::hook_param("Object", 'o', impacted_obj)));
 	}
 
     weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
@@ -9947,9 +10003,11 @@ void weapon_info::reset()
 	vm_vec_zero(&this->b_info.t5info.end_pos_offset);
 	vm_vec_zero(&this->b_info.t5info.start_pos_rand);
 	vm_vec_zero(&this->b_info.t5info.end_pos_rand);
+	this->b_info.t5info.slash_pos_curve_idx = -1;
 	this->b_info.t5info.target_orient_positions = false;
 	this->b_info.t5info.target_scale_positions = false;
 	this->b_info.t5info.continuous_rot = 0.f;
+	this->b_info.t5info.rot_curve_idx = -1;
 	this->b_info.t5info.continuous_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
 	this->b_info.t5info.per_burst_rot = 0.f;
 	this->b_info.t5info.per_burst_rot_axis = Type5BeamRotAxis::UNSPECIFIED;

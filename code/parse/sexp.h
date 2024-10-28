@@ -134,7 +134,8 @@ enum sexp_opf_t : int {
 	OPF_TRANSLATING_SUBSYSTEM,		// Goober5000 - a translating subsystem
 	OPF_ANY_HUD_GAUGE,				// Goober5000 - both custom and builtin
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
-	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
+	OPF_ASTEROID_TYPES,				// MjnMixael - Asteroids from asteroids.tbl, asteroid types only
+	OPF_DEBRIS_TYPES,				// MjnMixael - Asteroids from asteroids.tbl, debris types only
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
@@ -416,14 +417,15 @@ enum : int {
 	OP_NUM_SHIPS_IN_BATTLE,	// phreak
 	OP_CURRENT_SPEED, // WMCoolmon
 	OP_IS_IFF,	// Goober5000
+	OP_IS_SPECIES,	// Goober5000
 	OP_NUM_WITHIN_BOX,	// WMCoolmon
 	OP_SCRIPT_EVAL_NUM, // WMCoolmon
 	OP_SCRIPT_EVAL_STRING, // WMCoolmon
 	OP_NUM_SHIPS_IN_WING,	// Karajorma
 	OP_GET_PRIMARY_AMMO, // Karajorma
 	OP_GET_SECONDARY_AMMO, // Karajorma
+
 	OP_NUM_ASSISTS, // Karajorma
-	
 	OP_SHIP_SCORE, // Karajorma
 	OP_SHIP_DEATHS, // Karajorma
 	OP_RESPAWNS_LEFT, // Karajorma
@@ -434,7 +436,6 @@ enum : int {
 	OP_PRIMARY_FIRED_SINCE, // Karajorma
 	OP_SECONDARY_FIRED_SINCE, // Karajorma
 	OP_CUTSCENES_GET_FOV, // Echelon9
-	OP_GET_THROTTLE_SPEED, // Karajorma
 	OP_HITS_LEFT_SUBSYSTEM_GENERIC, // Goober5000
 	OP_HITS_LEFT_SUBSYSTEM_SPECIFIC, // Goober5000
 	OP_GET_OBJECT_PITCH,	// Goober5000
@@ -456,12 +457,14 @@ enum : int {
 	OP_IS_IN_BOX, // Sushi
 	OP_IS_IN_MISSION, // Goober5000
 	OP_ARE_SHIP_FLAGS_SET, // Karajorma
+	OP_ARE_WING_FLAGS_SET, // Goober5000
+
+	OP_GET_THROTTLE_SPEED, // Karajorma
+	OP_HAS_ARMOR_TYPE, // MjnMixael
 	OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
+	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
 	OP_TURRET_HAS_PRIMARY_WEAPON,      // MjnMixael
 	OP_TURRET_HAS_SECONDARY_WEAPON, // MjnMixael
-	OP_HAS_ARMOR_TYPE, // MjnMixael
-	
-	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
 	OP_IS_DOCKED,	// Goober5000
 	OP_IS_IN_TURRET_FOV,	// Goober5000
 	OP_GET_HOTKEY, // wookieejedi
@@ -472,13 +475,12 @@ enum : int {
 	OP_SCRIPT_EVAL_BOOL, // Goober5000
 	OP_IS_CONTAINER_EMPTY,	// Karajorma/jg18
 	OP_GET_CONTAINER_SIZE,	// Karajorma/jg18
+
 	OP_LIST_HAS_DATA,	// Karajorma/jg18
 	OP_LIST_DATA_INDEX,	// Karajorma/jg18
 	OP_MAP_HAS_KEY,	// Karajorma/jg18
 	OP_MAP_HAS_DATA_ITEM,	// Karajorma/jg18
 	OP_ANGLE_FVEC_TARGET, // Lafiel
-	
-	OP_ARE_WING_FLAGS_SET, // Goober5000
 	OP_IS_SHIP_EMP_ACTIVE,	// MjnMixael
 	OP_PLAYER_IS_CHEATING_BASTARD,	// The E
 	OP_TURRET_FIRED_SINCE,	// Asteroth
@@ -718,6 +720,7 @@ enum : int {
 	OP_LOCK_SECONDARY_WEAPON, // Karajorma
 	OP_UNLOCK_SECONDARY_WEAPON, // Karajorma
 	OP_SET_CAMERA_SHUDDER,	// Goober5000
+	OP_SET_FRIENDLY_DAMAGE_CAPS, // Kestrellius
 	OP_ALLOW_TREASON, // Karajorma
 	OP_SHIP_COPY_DAMAGE,	// Goober5000
 	OP_CHANGE_SUBSYSTEM_NAME,	// Karajorma
@@ -909,8 +912,10 @@ enum : int {
 	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
-
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
+	OP_CONFIG_ASTEROID_FIELD,  // MjnMixael
+	OP_CONFIG_DEBRIS_FIELD,  // MjnMixael
+	OP_CONFIG_FIELD_TARGETS,  // MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	OP_GOOD_PRIMARY_TIME,	// plieblang
 	OP_SET_SKYBOX_ALPHA,	// Goober5000
@@ -1235,6 +1240,7 @@ enum sexp_error_check
 	SEXP_CHECK_MISPLACED_SPECIAL_ARGUMENT,
 	SEXP_CHECK_AMBIGUOUS_GOAL_NAME,
 	SEXP_CHECK_AMBIGUOUS_EVENT_NAME,
+	SEXP_CHECK_INVALID_CONTAINER,
 	SEXP_CHECK_MISSING_CONTAINER_MODIFIER,
 	SEXP_CHECK_INVALID_LIST_MODIFIER,
 	SEXP_CHECK_WRONG_MAP_KEY_TYPE,

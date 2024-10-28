@@ -304,8 +304,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_REVERT, OnRevert)
 	ON_UPDATE_COMMAND_UI(ID_REVERT, OnUpdateRevert)
 	ON_WM_SETCURSOR()
-	ON_COMMAND(ID_HIDE_OBJECTS, OnHideObjects)
+	ON_COMMAND(ID_HIDE_MARKED_OBJECTS, OnHideMarkedObjects)
 	ON_COMMAND(ID_SHOW_HIDDEN_OBJECTS, OnShowHiddenObjects)
+	ON_COMMAND(ID_EDIT_LOCK_MARKED_OBJECTS, OnLockMarkedObjects)
+	ON_COMMAND(ID_EDIT_UNLOCK_ALL_OBJECTS, OnUnlockAllObjects)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_UNDO, OnUpdateEditUndo)
 	ON_COMMAND(ID_EDITORS_BRIEFING, OnEditorsBriefing)
@@ -503,6 +505,7 @@ void CFREDView::OnUpdateViewGrid(CCmdUI* pCmdUI)
 void CFREDView::OnViewWaypoints() 
 {
 	Show_waypoints = !Show_waypoints;
+	correct_marking();
 	Update_window = 1;
 }
 
@@ -1315,7 +1318,7 @@ void select_objects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden])
+		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
 			valid = 0;
 
 		Assert(ptr->type != OBJ_NONE);
@@ -4038,7 +4041,7 @@ BOOL CFREDView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 	return CView::OnSetCursor(pWnd, nHitTest, message);
 }
 
-void CFREDView::OnHideObjects() 
+void CFREDView::OnHideMarkedObjects()
 {
 	object *ptr;
 
@@ -4053,13 +4056,41 @@ void CFREDView::OnHideObjects()
 	}
 }
 
-void CFREDView::OnShowHiddenObjects() 
+void CFREDView::OnShowHiddenObjects()
 {
 	object *ptr;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		ptr->flags.remove(Object::Object_Flags::Hidden);
+		ptr = GET_NEXT(ptr);
+	}
+
+	Update_window = 1;
+}
+
+void CFREDView::OnLockMarkedObjects()
+{
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+            ptr->flags.set(Object::Object_Flags::Locked_from_editing);
+			unmark_object(OBJ_INDEX(ptr));
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+}
+
+void CFREDView::OnUnlockAllObjects()
+{
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		ptr->flags.remove(Object::Object_Flags::Locked_from_editing);
 		ptr = GET_NEXT(ptr);
 	}
 

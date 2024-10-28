@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
 #include <memory>
+#include <tl/optional.hpp>
 
 namespace options {
 
@@ -18,7 +19,7 @@ class OptionsManager {
 
 	SCP_unordered_map<SCP_string, const OptionBase*> _optionsMapping;
 
-	SCP_vector<std::unique_ptr<const OptionBase>> _options;
+	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
   public:
@@ -26,19 +27,19 @@ class OptionsManager {
 
 	~OptionsManager();
 
-	std::unique_ptr<json_t> getValueFromConfig(const SCP_string& key) const;
+	tl::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
 	void setOverride(const SCP_string& key, const SCP_string& json);
 
-	const OptionBase* addOption(std::unique_ptr<const OptionBase>&& option);
+	const OptionBase* addOption(std::shared_ptr<const OptionBase>&& option);
 
-	void removeOption(const OptionBase* option);
+	void removeOption(const std::shared_ptr<const OptionBase>& option);
 
 	const OptionBase* getOptionByKey(SCP_string name);
 
-	const SCP_vector<std::unique_ptr<const options::OptionBase>>& getOptions();
+	const SCP_vector<std::shared_ptr<const options::OptionBase>>& getOptions();
 
 	bool persistOptionChanges(const options::OptionBase* option);
 

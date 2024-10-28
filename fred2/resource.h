@@ -1139,6 +1139,8 @@
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
 #define IDC_PRELOAD_SUBSPACE            1605
+#define IDC_DONT_CHANGE_POSITION        1606
+#define IDC_DONT_CHANGE_ORIENTATION     1607
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1164,7 +1166,6 @@
 #define IDC_GROUP_MESSAGES              1628
 #define IDC_INCLUDE_SENDER              1629
 #define IDC_DISABLE_ETS                 1630
-#define IDC_IMMOBILE                    1631
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
 #define IDC_NEB2_NEAR_MULTIPLIER        1632
@@ -1459,7 +1460,7 @@
 #define ID_CPGN_FILE_SAVE_AS            32998
 #define ID_SHOW_STARFRIELD              32999
 #define ID_REVERT                       33000
-#define ID_HIDE_OBJECTS                 33002
+#define ID_HIDE_MARKED_OBJECTS          33002
 #define ID_SHOW_HIDDEN_OBJECTS          33003
 #define ID_GROUP_SET                    33004
 #define ID_EXPAND_ALL                   33005
@@ -1520,6 +1521,8 @@
 #define ID_PREV_SUBSYS                  33060
 #define ID_CANCEL_SUBSYS                33061
 #define ID_HIGHLIGHT_SUBSYS             33062
+#define ID_EDIT_LOCK_MARKED_OBJECTS     33063
+#define ID_EDIT_UNLOCK_ALL_OBJECTS      33064
 #define ID_SHOW_DOCK_POINTS             33065
 #define ID_SHOW_PATHS                   33066
 #define ID_DUMP_STATS                   33067

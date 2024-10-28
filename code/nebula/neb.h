@@ -67,11 +67,11 @@ typedef struct poof_info {
 	char name[NAME_LENGTH];
 	char bitmap_filename[MAX_FILENAME_LEN];
 	generic_anim bitmap;
-	::util::UniformFloatRange scale;
+	::util::ParsedRandomFloatRange scale;
 	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
-	::util::UniformFloatRange rotation;
+	::util::ParsedRandomFloatRange rotation;
 	float view_dist;
-	::util::UniformFloatRange alpha;
+	::util::ParsedRandomFloatRange alpha;
 	vec3d alignment;
 
 	// These values are dynamic, unlike the above and can change during a mission.
@@ -81,14 +81,15 @@ typedef struct poof_info {
 	bool fade_in;			// true if fading the poof type in, false if fading out
 	float fade_multiplier;	// the current multiplier for a poof's alpha transparency used to render the poofs of this type
 
-	poof_info() {
+	poof_info() : 
+		scale(::util::UniformFloatRange(175.f)),
+		rotation(::util::UniformFloatRange(-3.7f, 3.7f)),
+		alpha(::util::UniformFloatRange(0.8f))
+	{
 		bitmap_filename[0] = '\0';
 		generic_anim_init(&bitmap);
-		scale = ::util::UniformFloatRange(175.0f, 175.0f);
 		density = 1 / (110.f * 110.f * 110.f);
-		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
 		view_dist = 250.f;
-		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
 		fade_start = TIMESTAMP::invalid();
 		fade_duration = -1;
 		fade_in = true;
