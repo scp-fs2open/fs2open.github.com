@@ -10,6 +10,7 @@
 
 #cmakedefine01 IS_64BIT
 #cmakedefine01 IS_ARM64
+#cmakedefine01 IS_RISCV
 
 #cmakedefine01 SCP_HAVE_STRCASECMP
 #cmakedefine01 SCP_HAVE_STRNCASECMP
