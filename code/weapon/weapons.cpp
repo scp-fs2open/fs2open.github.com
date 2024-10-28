@@ -3038,7 +3038,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				// seriously, who though that would be a good idea?
 				auto lifetime = defaultEffect ? ::util::UniformFloatRange(size * 1.5f * 0.005f) : ::util::UniformFloatRange(-1.f);
 
-				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+				wip->flash_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
