@@ -4,6 +4,7 @@
 #include "math/curve.h"
 #include "parse/encrypt.h"
 #include "globalincs/type_traits.h"
+#include "parse/parsehi.h"
 
 #include <optional>
 #include <type_traits>
@@ -126,6 +127,28 @@ struct modular_curves_functional_input {
 		}
 		else {
 			return grabber_fnc(grab_from_tuple<tuple_idx, input_type>(input));
+		}
+	}
+};
+
+struct modular_curves_self_input {
+private:
+	template<int tuple_idx, typename input_type>
+	static inline auto grab_from_tuple(const input_type& input) {
+		if constexpr(tuple_idx < 0)
+			return input;
+		else
+			return std::get<tuple_idx>(input);
+	}
+
+public:
+	template<int tuple_idx, typename input_type>
+	static inline float grab(const input_type& input) {
+		if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>){
+			return *grab_from_tuple<tuple_idx, input_type>(input);
+		}
+		else {
+			return grab_from_tuple<tuple_idx, input_type>(input);
 		}
 	}
 };
@@ -307,6 +330,24 @@ public:
 				std::move(new_outputs), std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
 		);
 	}
+
+	template<typename additional_input_type, typename... additional_input_grabbers>
+	constexpr auto derive_modular_curves_input_only_subset(std::pair<const char*, additional_input_grabbers>... additional_inputs) const {
+		using new_input_type = decltype(unevaluated_maybe_tuple_cat(std::declval<input_type>(), std::declval<additional_input_type>()));
+		using new_input_tuple_index = decltype(std::tuple_cat(
+				//Old tuple accessors, but if they were -1 (i.e. no tuple) set them to 0 (i.e. first element)
+				unevaluated_tuple_of_input_idx_least_0(std::index_sequence_for<input_grabbers...>()),
+				//New tuple accessors, highest observed one + 1
+				std::tuple<std::integral_constant<std::conditional_t<true, int, additional_input_grabbers>, find_lowest_tuple_integral_constant<input_tuple_index>(std::index_sequence_for<input_grabbers...>()) + 1>...>())); //This "seemingly unnecessary" conditional is required to be able to unpack the parameter pack over the additional_input_grabbers and get a tuple type of the identical length
+		return modular_curves_definition<
+				new_input_type,
+				output_enum,
+				0,
+				new_input_tuple_index,
+				input_grabbers..., additional_input_grabbers...>(
+				std::array<std::pair<const char*, output_enum>, 0> {}, std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
+		);
+	}
 };
 
 //
@@ -427,3 +468,5 @@ inline auto make_modular_curve_set() {
 	using modular_curves_definition = std::decay_t<decltype(curve_definition)>;
 	return modular_curves_definition::template make_modular_curve_set<curve_definition>();
 }
+
+#define MODULAR_CURVE_SET(name, source) decltype(make_modular_curve_set<source>()) name = make_modular_curve_set<source>()
