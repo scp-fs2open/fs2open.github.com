@@ -464,6 +464,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->last_start = fire_info->starting_pos;
 	new_item->type5_rot_speed = wip->b_info.t5info.continuous_rot;
 	new_item->rotates = wip->b_info.beam_type == BeamType::OMNI && wip->b_info.t5info.continuous_rot_axis != Type5BeamRotAxis::UNSPECIFIED;
+	new_item->modular_curves_instance = wip->beam_modular_curves.create_instance();
 
 	if (fire_info->bfi_flags & BFIF_FORCE_FIRING)
 		new_item->flags |= BF_FORCE_FIRING;
@@ -4307,9 +4308,7 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 	}
 
 	float damage = wip->damage;
-
-	if (wip->damage_curve_idx >= 0)
-		damage *= Curves[wip->damage_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
+	damage *= wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::DAMAGE_MULT, *b, &b->modular_curves_instance);
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team)
@@ -4365,6 +4364,10 @@ int beam_will_tool_target(beam *b, object *objp)
 	// if the beam is going to apply more damage in about 1 and a half than the ship can take
 	damage_in_a_few_seconds = (TOOLTIME / (float)BEAM_DAMAGE_TIME) * wip->damage;
 	return (damage_in_a_few_seconds > total_strength);
+}
+
+float beam_get_lifetime_pct(const beam& b) {
+	return (b.life_total - b.life_left) / b.life_total;
 }
 
 float beam_accuracy = 1.0f;

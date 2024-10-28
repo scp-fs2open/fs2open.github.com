@@ -92,17 +92,16 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		damage = wip->damage;
 	}
 
-	if (wip->damage_incidence_max != 1.0f || wip->damage_incidence_min != 1.0f) {
-		float dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, &worldNormal);
+	float dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, &worldNormal);
 
+	if (wip->damage_incidence_max != 1.0f || wip->damage_incidence_min != 1.0f) {
 		if (dot < 0.0f)
 			dot = 0.0f;
 
 		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
 	}
 
-	if (wip->damage_curve_idx >= 0)
-		damage *= Curves[wip->damage_curve_idx].GetValue(f2fl(Missiontime - wp->creation_time) / wip->lifetime);
+	damage *= wip->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 
 	// if this is friendly fire, we check for the friendly fire cap values
 	if (wp->team == shipp->team) {

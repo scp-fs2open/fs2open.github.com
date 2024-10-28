@@ -1258,78 +1258,11 @@ void obj_move_all_post(object *objp, float frametime)
 					auto lp = lighting_profiles::current();
 					hdr_color light_color;
 
-					float intensity_mult = 1.f;
-					float radius_mult = 1.f;
-					float r_mult = 1.f;
-					float g_mult = 1.f;
-					float b_mult = 1.f;
-
-					for (uint c = 0; c < wi->lifetime_curves.size(); c++) {
-						WeaponLifetimeCurve* mod_curve = &wi->lifetime_curves[c];
-						if (mod_curve->curve_idx < 0) {
-							Warning(LOCATION, "Curve does not exist!");
-							continue;
-						}
-
-						Curve curve = Curves[mod_curve->curve_idx];
-						float input = 1.0f;
-						float output = 1.0f;
-						switch (mod_curve->input) {
-							case WeaponLifetimeCurveInput::LIFETIME:
-								input = f2fl(Missiontime - wp->creation_time) / wi->lifetime;
-								break;
-							case WeaponLifetimeCurveInput::AGE:
-								input = f2fl(Missiontime - wp->creation_time);
-								break;
-							case WeaponLifetimeCurveInput::BASE_VELOCITY:
-								input = wp->weapon_max_vel;
-								break;
-							case WeaponLifetimeCurveInput::HITPOINTS:
-								if (wi->weapon_hitpoints > 0.f) {
-									input = objp->hull_strength/i2fl(wi->weapon_hitpoints);
-								} else {
-									input = 1.f;
-								}
-								break;
-							case WeaponLifetimeCurveInput::PARENT_RADIUS:
-								if (objp->parent >= 0) {
-									input = Objects[objp->parent].radius;
-								}
-								break;
-							default:
-								continue;
-						}
-						float scaling_factor = wp->weapon_curve_data[c].first;
-						float translation = wp->weapon_curve_data[c].second;
-						input = (input / scaling_factor) + translation;
-						if (mod_curve->wraparound) {
-							float final_x = curve.keyframes.back().pos.x;
-							input = std::fmod(input, final_x);
-						}
-						output = curve.GetValue(input);
-						if (output < 0.f) {
-							output = 0.f;
-						}
-						switch (mod_curve->output) {
-							case WeaponLifetimeCurveOutput::LIGHT_INTENSITY_MULT:
-								intensity_mult *= output;
-								break;
-							case WeaponLifetimeCurveOutput::LIGHT_RADIUS_MULT:
-								radius_mult *= output;
-								break;
-							case WeaponLifetimeCurveOutput::LIGHT_R_MULT:
-								r_mult *= output;
-								break;
-							case WeaponLifetimeCurveOutput::LIGHT_G_MULT:
-								g_mult *= output;
-								break;
-							case WeaponLifetimeCurveOutput::LIGHT_B_MULT:
-								b_mult *= output;
-								break;
-							default:
-								continue;
-						}
-					}
+					float intensity_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_INTENSITY_MULT, *wp, &wp->modular_curves_instance);
+					float radius_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+					float r_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_R_MULT, *wp, &wp->modular_curves_instance);
+					float g_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_G_MULT, *wp, &wp->modular_curves_instance);
+					float b_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_B_MULT, *wp, &wp->modular_curves_instance);
 
 					// If there is no specific color set in the table, laser render weapons have a dynamic color.
 					if (!wi->light_color_set && wi->render_type == WRT_LASER) {

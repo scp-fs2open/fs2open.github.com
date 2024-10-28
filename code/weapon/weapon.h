@@ -33,6 +33,8 @@
 #include "model/modelrender.h"
 #include "render/3d.h"
 
+#include "utils/modular_curves.h"
+
 class object;
 class ship_subsys;
 
@@ -166,7 +168,10 @@ typedef struct weapon {
 	WeaponState weapon_state; // The current state of the weapon
 
 	float beam_per_shot_rot; // for type 5 beams
+
+	modular_curves_entry_instance modular_curves_instance;
 } weapon;
+
 
 
 // info specific to beam weapons
@@ -366,6 +371,9 @@ struct WeaponLifetimeCurve {
 	bool wraparound = true;
 };
 
+float weapon_get_lifetime_pct(const weapon& wp);
+float beam_get_lifetime_pct(const beam& wp);
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -436,7 +444,6 @@ struct weapon_info
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
-	int		damage_curve_idx;
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
 	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
 	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
@@ -690,6 +697,77 @@ struct weapon_info
 
 	animation::ModelAnimationSet animations;
 
+	enum class ModularCurveOutputs {
+		// outputs
+		LASER_LENGTH_MULT,
+		LASER_RADIUS_MULT,
+		LASER_HEAD_RADIUS_MULT,
+		LASER_TAIL_RADIUS_MULT,
+		LASER_OFFSET_X_MULT,
+		LASER_OFFSET_Y_MULT,
+		LASER_OFFSET_Z_MULT,
+		LASER_HEADON_SWITCH_ANG_MULT,
+		LASER_HEADON_SWITCH_RATE_MULT,
+		LASER_ANIM_STATE,
+		LASER_ALPHA_MULT,
+		LASER_BITMAP_R_MULT,
+		LASER_BITMAP_G_MULT,
+		LASER_BITMAP_B_MULT,
+		LASER_GLOW_R_MULT,
+		LASER_GLOW_G_MULT,
+		LASER_GLOW_B_MULT,
+		LIGHT_INTENSITY_MULT,
+		LIGHT_RADIUS_MULT,
+		LIGHT_R_MULT,
+		LIGHT_G_MULT,
+		LIGHT_B_MULT,
+		DET_RADIUS_MULT,
+		TURN_RATE_MULT,
+
+		NUM_VALUES
+	};
+	static constexpr auto modular_curves_definition = make_modular_curve_definition<weapon, ModularCurveOutputs>(
+			std::array {
+					std::pair {"Light Intensity Multiplier", ModularCurveOutputs::LIGHT_INTENSITY_MULT},
+					std::pair {"Light Radius Multiplier", ModularCurveOutputs::LIGHT_RADIUS_MULT},
+					std::pair {"Light R Multiplier", ModularCurveOutputs::LIGHT_R_MULT},
+					std::pair {"Light G Multiplier", ModularCurveOutputs::LIGHT_G_MULT},
+					std::pair {"Light B Multiplier", ModularCurveOutputs::LIGHT_B_MULT},
+			},
+			std::pair {"Base Velocity", modular_curves_submember_input<&weapon::weapon_max_vel>{}},
+			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}},
+			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}}
+	);
+
+	enum class HitModularCurveOutputs {
+		// outputs
+		DAMAGE_MULT,
+		NUM_VALUES
+	};
+	static constexpr auto hit_modular_curves_definition = modular_curves_definition.derive_modular_curves_input_only_subset<object>(
+			std::pair {"Target Health", modular_curves_submember_input<&object::hull_strength>{}}
+	).derive_modular_curves_subset<float, HitModularCurveOutputs>(
+			std::array {
+					std::pair {"Damage Multiplier", HitModularCurveOutputs::DAMAGE_MULT},
+			},
+			std::pair {"Dot", modular_curves_self_input{}}
+	);
+
+	enum class BeamModularCurveOutputs {
+		// outputs
+		DAMAGE_MULT,
+		NUM_VALUES
+	};
+	static constexpr auto beam_modular_curves_definition = make_modular_curve_definition<beam, BeamModularCurveOutputs>(
+			std::array {
+					std::pair {"Damage Multiplier", BeamModularCurveOutputs::DAMAGE_MULT}
+			},
+			std::pair {"Lifetime", modular_curves_functional_input<beam_get_lifetime_pct>{}}
+	);
+
+	MODULAR_CURVE_SET(modular_curves, weapon_info::modular_curves_definition);
+	MODULAR_CURVE_SET(hit_modular_curves, weapon_info::hit_modular_curves_definition);
+	MODULAR_CURVE_SET(beam_modular_curves, weapon_info::beam_modular_curves_definition);
 public:
 	weapon_info();
 
