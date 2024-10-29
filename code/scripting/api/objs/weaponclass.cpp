@@ -548,11 +548,11 @@ ADE_VIRTVAR(EnergyConsumed, l_Weaponclass, nullptr, nullptr, "number", "Energy C
 	return ade_set_args(L, "f", Weapon_info[idx].energy_consumed);
 }
 
-ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is set to if damage is overriden", "number", "Shockwave Damage, or 0 if weapon shockwave damage is not overriden. Returns nil if handle is invalid")
+ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is set to if damage is overridden", "number", "Shockwave Damage if explicitly specified via table, or -1 if unspecified. Returns nil if handle is invalid")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ade_set_error(L, "f", 0.0f);
+		return ade_set_error(L, "f", -1.0f);
 
 	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_NIL;
@@ -561,10 +561,10 @@ ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is s
 		LuaError(L, "Setting Shockwave Damage is not supported");
 	}
 
-	if (Weapon_info[idx].shockwave.damage_overidden) {
+	if (Weapon_info[idx].shockwave.damage_overridden) {
 		return ade_set_args(L, "f", Weapon_info[idx].shockwave.damage);
 	} else {
-		return ade_set_args(L, "f", 0.0f);
+		return ade_set_args(L, "f", -1.0f);
 	}
 }
 
