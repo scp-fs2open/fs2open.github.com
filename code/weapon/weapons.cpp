@@ -1370,11 +1370,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("$Damage Multiplier over Lifetime Curve:")) {
+		//Legacy table. Just populates the modular curve set!
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->damage_curve_idx = curve_get_by_name(curve_name);
-		if (wip->damage_curve_idx < 0)
+		int curve = curve_get_by_name(curve_name);
+		if (curve < 0)
 			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+
+		if (subtype == WP_BEAM)
+			wip->beam_modular_curves.add_curve("Lifetime", weapon_info::BeamModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
+		else
+			wip->hit_modular_curves.add_curve("Lifetime", weapon_info::HitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -6890,6 +6896,8 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		}
 	}
 
+	wp->modular_curves_instance = wip->modular_curves.create_instance();
+
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
 		// For the next two frames, any non-timer-based countermeasures will pulse each frame.
 		Cmeasures_homing_check = 2;
@@ -9785,7 +9793,6 @@ void weapon_info::reset()
 	this->atten_damage = -1.0f;
 	this->damage_incidence_max = 1.0f;
 	this->damage_incidence_min = 1.0f;
-	this->damage_curve_idx = -1;
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);
@@ -10591,4 +10598,8 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 
 bool weapon_has_homing_object(weapon* wp) {
 	return wp->homing_object != &obj_used_list;
+}
+
+float weapon_get_lifetime_pct(const weapon& wp) {
+	return f2fl(Missiontime - wp.creation_time) / Weapon_info[wp.weapon_info_index].lifetime;
 }
