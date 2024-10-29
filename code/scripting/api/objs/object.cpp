@@ -337,7 +337,7 @@ ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the shoul
 	return ade_set_args(L, "b", oh->objp()->flags[Object::Object_Flags::Should_be_dead]);
 }
 
-ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
+ADE_FUNC(getBreedName, l_Object, nullptr, "Gets the FreeSpace type name", "string", "FreeSpace type name ('Ship', 'Weapon', etc.), or empty string if handle is invalid")
 {
 	object_h *objh;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
