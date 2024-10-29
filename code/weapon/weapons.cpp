@@ -1233,13 +1233,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Length Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		WeaponLifetimeCurve mod_curve;
-		mod_curve.input = WeaponLifetimeCurveInput::LIFETIME;
-		mod_curve.output = WeaponLifetimeCurveOutput::LASER_LENGTH_MULT;
-		mod_curve.curve_idx = curve_get_by_name(curve_name);
-		if (mod_curve.curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser length curve '%s' for weapon %s", curve_name.c_str(), wip->name);
-		wip->lifetime_curves.push_back(mod_curve);
+		wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_LENGTH_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 	
 	if(optional_string("@Laser Head Radius:")) {
@@ -1253,13 +1247,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Radius Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		WeaponLifetimeCurve mod_curve;
-		mod_curve.input = WeaponLifetimeCurveInput::LIFETIME;
-		mod_curve.output = WeaponLifetimeCurveOutput::LASER_RADIUS_MULT;
-		mod_curve.curve_idx = curve_get_by_name(curve_name);
-		if (mod_curve.curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser radius curve '%s' for weapon %s", curve_name.c_str(), wip->name);
-		wip->lifetime_curves.push_back(mod_curve);
+		wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_RADIUS_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 	if (optional_string("@Laser Glow Length Scale:")) {
 		stuff_float(&wip->laser_glow_length_scale);
@@ -1282,13 +1270,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		WeaponLifetimeCurve mod_curve;
-		mod_curve.input = WeaponLifetimeCurveInput::LIFETIME;
-		mod_curve.output = WeaponLifetimeCurveOutput::LASER_ALPHA_MULT;
-		mod_curve.curve_idx = curve_get_by_name(curve_name);
-		if (mod_curve.curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser opacity curve '%s' for weapon %s", curve_name.c_str(), wip->name);
-		wip->lifetime_curves.push_back(mod_curve);
+		wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 
 	if (parse_optional_color3i_into("$Light color:", &wip->light_color)) {
@@ -1491,100 +1473,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	while (optional_string("$Lifetime Curve:")) {
-				WeaponLifetimeCurve mod_curve;
-				char name_buf[NAME_LENGTH];
+	wip->modular_curves.parse("$Lifetime Curve:");
 
-				required_string("+Input:");
-					stuff_string(name_buf, F_NAME, NAME_LENGTH);
-					if (!stricmp(name_buf, NOX("LIFETIME"))) {
-						mod_curve.input = WeaponLifetimeCurveInput::LIFETIME;
-					} else if (!stricmp(name_buf, NOX("AGE"))) {
-						mod_curve.input = WeaponLifetimeCurveInput::AGE;
-					} else if (!stricmp(name_buf, NOX("BASE VELOCITY"))) {
-						mod_curve.input = WeaponLifetimeCurveInput::BASE_VELOCITY;
-					} else if (!stricmp(name_buf, NOX("HITPOINTS"))) {
-						mod_curve.input = WeaponLifetimeCurveInput::HITPOINTS;
-					} else if (!stricmp(name_buf, NOX("PARENT RADIUS"))) {
-						mod_curve.input = WeaponLifetimeCurveInput::PARENT_RADIUS;
-					} else {
-						error_display(1, "Unrecognized weapon curve input '%s' for weapon %s!\n Valid inputs are: 'LIFETIME', 'AGE', 'BASE VELOCITY', 'HITPOINTS', PARENT RADIUS'.", name_buf, wip->name);
-					}
+	wip->hit_modular_curves.parse("$Hit Curve:");
 
-				required_string("+Output:");
-					stuff_string(name_buf, F_NAME, NAME_LENGTH);
-					if (!stricmp(name_buf, NOX("LASER LENGTH MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_LENGTH_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER RADIUS MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_RADIUS_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER HEAD RADIUS MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_HEAD_RADIUS_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER TAIL RADIUS MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_TAIL_RADIUS_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER POSITION OFFSET X MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_OFFSET_X_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER POSITION OFFSET Y MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_OFFSET_Y_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER POSITION OFFSET Z MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_OFFSET_Z_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER HEADON TRANSITION ANGLE MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_HEADON_SWITCH_ANG_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER HEADON TRANSITION RATE MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_HEADON_SWITCH_RATE_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER BITMAP ANIMATION STATE"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_ANIM_STATE;
-					} else if (!stricmp(name_buf, NOX("LASER OPACITY MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_ALPHA_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER BITMAP COLOR R MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_BITMAP_R_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER BITMAP COLOR G MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_BITMAP_G_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER BITMAP COLOR B MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_BITMAP_B_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER GLOW COLOR R MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_GLOW_R_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER GLOW COLOR G MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_GLOW_G_MULT;
-					} else if (!stricmp(name_buf, NOX("LASER GLOW COLOR B MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LASER_GLOW_B_MULT;
-					} else if (!stricmp(name_buf, NOX("LIGHT INTENSITY MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LIGHT_INTENSITY_MULT;
-					} else if (!stricmp(name_buf, NOX("LIGHT RADIUS MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LIGHT_RADIUS_MULT;
-					} else if (!stricmp(name_buf, NOX("LIGHT COLOR R MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LIGHT_R_MULT;
-					} else if (!stricmp(name_buf, NOX("LIGHT COLOR G MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LIGHT_G_MULT;
-					} else if (!stricmp(name_buf, NOX("LIGHT COLOR B MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::LIGHT_B_MULT;
-					} else if (!stricmp(name_buf, NOX("DETONATION RADIUS MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::DET_RADIUS_MULT;
-					} else if (!stricmp(name_buf, NOX("TURN RATE MULT"))) {
-						mod_curve.output = WeaponLifetimeCurveOutput::TURN_RATE_MULT;
-					} else {
-						error_display(1, "Unrecognized weapon curve output '%s' for weapon %s!\n Valid inputs are: 'LASER LENGTH MULT', 'LASER RADIUS MULT', 'LASER HEAD RADIUS MULT', 'LASER TAIL RADIUS MULT', 'LASER OPACITY MULT', 'LASER BITMAP COLOR R MULT', 'LASER BITMAP COLOR G MULT', 'LASER BITMAP COLOR B MULT', 'LASER GLOW COLOR R MULT', 'LASER GLOW COLOR G MULT', 'LASER GLOW COLOR B MULT', 'LIGHT COLOR R MULT', 'LIGHT COLOR G MULT', 'LIGHT COLOR B MULT', 'LIGHT INTENSITY MULT', 'LIGHT RADIUS MULT', 'DETONATION RADIUS MULT', 'TURN RATE MULT'.", name_buf, wip->name);
-					}
-
-				required_string("+Curve Name:");
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					mod_curve.curve_idx = curve_get_by_name(curve_name);
-				if (optional_string("+Random Scaling Factor:")) {
-					mod_curve.scaling_factor = ::util::parseUniformRange<float>();
-				} else {
-					mod_curve.scaling_factor = ::util::UniformFloatRange(1.0f);
-				}
-				if (optional_string("+Random Translation:")) {
-					mod_curve.translation = ::util::parseUniformRange<float>();
-				} else {
-					mod_curve.translation = ::util::UniformFloatRange(0.0f);
-				}
-
-				mod_curve.wraparound = true;
-				parse_optional_bool_into("+Wraparound:", &mod_curve.wraparound);
-
-				wip->lifetime_curves.push_back(mod_curve);
-			}
+	wip->beam_modular_curves.parse("$Beam Curve:");
 
 	if(optional_string("$Energy Consumed:")) {
 		stuff_float(&wip->energy_consumed);
@@ -1699,13 +1592,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
-				WeaponLifetimeCurve mod_curve;
-				mod_curve.input = WeaponLifetimeCurveInput::LIFETIME;
-				mod_curve.output = WeaponLifetimeCurveOutput::TURN_RATE_MULT;
-				mod_curve.curve_idx = curve_get_by_name(curve_name);
-				if (mod_curve.curve_idx < 0)
-					Warning(LOCATION, "Unrecognized turn rate curve '%s' for weapon %s", curve_name.c_str(), wip->name);
-				wip->lifetime_curves.push_back(mod_curve);
+				wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -1764,13 +1651,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
-				WeaponLifetimeCurve mod_curve;
-				mod_curve.input = WeaponLifetimeCurveInput::LIFETIME;
-				mod_curve.output = WeaponLifetimeCurveOutput::TURN_RATE_MULT;
-				mod_curve.curve_idx = curve_get_by_name(curve_name);
-				if (mod_curve.curve_idx < 0)
-					Warning(LOCATION, "Unrecognized turn rate curve '%s' for weapon %s", curve_name.c_str(), wip->name);
-				wip->lifetime_curves.push_back(mod_curve);
+				wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -5792,56 +5673,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		vec3d turnrate_mod = vm_vec_new(1.0f, 1.0f, 1.0f);
 
-		for (uint c = 0; c < wip->lifetime_curves.size(); c++) {
-			WeaponLifetimeCurve* mod_curve = &wip->lifetime_curves[c];
-			if (mod_curve->curve_idx < 0) {
-				Warning(LOCATION, "Curve does not exist!");
-				continue;
-			}
-
-			Curve curve = Curves[mod_curve->curve_idx];
-			float input = 1.0f;
-			float output = 1.0f;
-
-			// we do the modular curve processing in this sort of inside-out way because we only care about one output
-			// so we don't want to bother doing any processing for curves with other outputs
-			if (mod_curve->output == WeaponLifetimeCurveOutput::TURN_RATE_MULT) {
-				switch (mod_curve->input) {
-					case WeaponLifetimeCurveInput::LIFETIME:
-						input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
-						break;
-					case WeaponLifetimeCurveInput::AGE:
-						input = f2fl(Missiontime - wp->creation_time);
-						break;
-					case WeaponLifetimeCurveInput::BASE_VELOCITY:
-						input = wp->weapon_max_vel;
-						break;
-					case WeaponLifetimeCurveInput::HITPOINTS:
-						if (wip->weapon_hitpoints > 0.f) {
-							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
-						} else {
-							input = 1.f;
-						}
-						break;
-					case WeaponLifetimeCurveInput::PARENT_RADIUS:
-						if (obj->parent >= 0) {
-							input = Objects[obj->parent].radius;
-						}
-						break;
-					default:
-						continue;
-				}
-				float scaling_factor = wp->weapon_curve_data[c].first;
-				float translation = wp->weapon_curve_data[c].second;
-				input = (input / scaling_factor) + translation;
-				if (mod_curve->wraparound) {
-					float final_x = curve.keyframes.back().pos.x;
-					input = std::fmod(input, final_x);
-				}
-				output = curve.GetValue(input);
-				turnrate_mod *= output;
-			}	
-		}
+		turnrate_mod *= wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::TURN_RATE_MULT, *wp, &wp->modular_curves_instance);
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
@@ -5947,62 +5779,13 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 	float det_radius_adjusted = wip->det_radius;
 
-	for (uint c = 0; c < wip->lifetime_curves.size(); c++) {
-		WeaponLifetimeCurve* mod_curve = &wip->lifetime_curves[c];
-		if (mod_curve->curve_idx < 0) {
-			Warning(LOCATION, "Curve does not exist!");
-			continue;
-		}
-
-		Curve curve = Curves[mod_curve->curve_idx];
-		float input = 1.0f;
-		float output = 1.0f;
-
-		// we do the modular curve processing in this sort of inside-out way because we only care about one output
-		// so we don't want to bother doing any processing for curves with other outputs
-		if (mod_curve->output == WeaponLifetimeCurveOutput::DET_RADIUS_MULT) {
-			switch (mod_curve->input) {
-				case WeaponLifetimeCurveInput::LIFETIME:
-					input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
-					break;
-				case WeaponLifetimeCurveInput::AGE:
-					input = f2fl(Missiontime - wp->creation_time);
-					break;
-				case WeaponLifetimeCurveInput::BASE_VELOCITY:
-					input = wp->weapon_max_vel;
-					break;
-				case WeaponLifetimeCurveInput::HITPOINTS:
-					if (wip->weapon_hitpoints > 0.f) {
-						input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
-					} else {
-						input = 1.f;
-					}
-					break;
-				case WeaponLifetimeCurveInput::PARENT_RADIUS:
-					if (obj->parent >= 0) {
-						input = Objects[obj->parent].radius;
-					}
-					break;
-				default:
-					continue;
-			}
-			float scaling_factor = wp->weapon_curve_data[c].first;
-			float translation = wp->weapon_curve_data[c].second;
-			input = (input / scaling_factor) + translation;
-			if (mod_curve->wraparound) {
-				float final_x = curve.keyframes.back().pos.x;
-				input = std::fmod(input, final_x);
-			}
-			output = curve.GetValue(input);
-			det_radius_adjusted *= output;
-		}		
-	}
-
-	det_radius_adjusted = MAX(det_radius_adjusted, 0.f);
-
 	//WMC - Maybe detonate weapon anyway!
 	if(det_radius_adjusted > 0.0f)
 	{
+		det_radius_adjusted *= wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::DET_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+
+		det_radius_adjusted = MAX(det_radius_adjusted, 0.f);
+
 		if((weapon_has_homing_object(wp)) && (wp->homing_object->type != 0))
 		{
 			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= det_radius_adjusted)
@@ -6820,12 +6603,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	wp->target_sig = -1;
 	wp->cmeasure_ignore_list = nullptr;
 	wp->det_range = wip->det_range;
-
-	for (auto &mod_curve : wip->lifetime_curves) {
-			float scaling_factor = mod_curve.scaling_factor.next();
-			float translation = mod_curve.translation.next();
-			wp->weapon_curve_data.emplace_back(scaling_factor, translation);
-		}
 
 	// Init the thruster info
 	wp->thruster_bitmap = -1;
@@ -9211,131 +8988,24 @@ void weapon_render(object* obj, model_draw_list *scene)
 	{
 	case WRT_LASER:
 		{
-			float length_mult = 1.f;
-			float radius_mult = 1.f;
-			float head_radius_mult = 1.f;
-			float tail_radius_mult = 1.f;
-			float offset_x_mult = 1.f;
-			float offset_y_mult = 1.f;
-			float offset_z_mult = 1.f;
-			float switch_ang_mult = 1.f;
-			float switch_rate_mult = 1.f;
-			float anim_state = -1.f;
-			float alpha_mult = 1.f;
-			float bitmap_r_mult = 1.f;
-			float bitmap_g_mult = 1.f;
-			float bitmap_b_mult = 1.f;
-			float glow_r_mult = 1.f;
-			float glow_g_mult = 1.f;
-			float glow_b_mult = 1.f;
-
-			for (uint ci = 0; ci < wip->lifetime_curves.size(); ci++) {
-				WeaponLifetimeCurve* mod_curve = &wip->lifetime_curves[ci];
-				if (mod_curve->curve_idx < 0) {
-					Warning(LOCATION, "Curve does not exist!");
-					continue;
-				}
-
-				Curve curve = Curves[mod_curve->curve_idx];
-				float input = 1.0f;
-				float output = 1.0f;
-				switch (mod_curve->input) {
-					case WeaponLifetimeCurveInput::LIFETIME:
-						input = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
-						break;
-					case WeaponLifetimeCurveInput::AGE:
-						input = f2fl(Missiontime - wp->creation_time);
-						break;
-					case WeaponLifetimeCurveInput::BASE_VELOCITY:
-						input = wp->weapon_max_vel;
-						break;
-					case WeaponLifetimeCurveInput::HITPOINTS:
-						if (wip->weapon_hitpoints > 0.f) {
-							input = obj->hull_strength/i2fl(wip->weapon_hitpoints);
-						} else {
-							input = 1.f;
-						}
-						break;
-					case WeaponLifetimeCurveInput::PARENT_RADIUS:
-						if (obj->parent >= 0) {
-							input = Objects[obj->parent].radius;
-						}
-						break;
-					default:
-						continue;
-				}
-				float scaling_factor = wp->weapon_curve_data[ci].first;
-				float translation = wp->weapon_curve_data[ci].second;
-				input = (input / scaling_factor) + translation;
-				if (mod_curve->wraparound) {
-					float final_x = curve.keyframes.back().pos.x;
-					input = std::fmod(input, final_x);
-				}
-				output = curve.GetValue(input);
-				if (output < 0.f) {
-					output = 0.f;
-				}
-				switch (mod_curve->output) {
-					case WeaponLifetimeCurveOutput::LASER_LENGTH_MULT:
-						length_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_RADIUS_MULT:
-						radius_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_HEAD_RADIUS_MULT:
-						head_radius_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_TAIL_RADIUS_MULT:
-						tail_radius_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_OFFSET_X_MULT:
-						offset_x_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_OFFSET_Y_MULT:
-						offset_y_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_OFFSET_Z_MULT:
-						offset_z_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_HEADON_SWITCH_ANG_MULT:
-						switch_ang_mult *= MAX(output, 0.f);
-						break;
-					case WeaponLifetimeCurveOutput::LASER_HEADON_SWITCH_RATE_MULT:
-						switch_rate_mult *= MAX(output, 0.f);
-						break;
-					case WeaponLifetimeCurveOutput::LASER_ANIM_STATE:
-						anim_state = output;
-						CLAMP(anim_state, 0.f, 1.f);
-						break;
-					case WeaponLifetimeCurveOutput::LASER_ALPHA_MULT:
-						alpha_mult *= output;
-						CLAMP(alpha_mult, 0.f, 1.f);
-						break;
-					case WeaponLifetimeCurveOutput::LASER_BITMAP_R_MULT:
-						bitmap_r_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_BITMAP_G_MULT:
-						bitmap_g_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_BITMAP_B_MULT:
-						bitmap_b_mult *= output;
-						break;
-					case WeaponLifetimeCurveOutput::LASER_GLOW_R_MULT:
-						glow_r_mult *= output;
-						CLAMP(glow_r_mult, 0.f, 1.f);
-						break;
-					case WeaponLifetimeCurveOutput::LASER_GLOW_G_MULT:
-						glow_g_mult *= output;
-						CLAMP(glow_g_mult, 0.f, 1.f);
-						break;
-					case WeaponLifetimeCurveOutput::LASER_GLOW_B_MULT:
-						glow_b_mult *= output;
-						CLAMP(glow_b_mult, 0.f, 1.f);
-						break;
-					default:
-						continue;
-				}
-			}
+			float length_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+			float radius_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float head_radius_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEAD_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float tail_radius_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_TAIL_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float offset_x_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_X_MULT, *wp, &wp->modular_curves_instance);
+			float offset_y_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_Y_MULT, *wp, &wp->modular_curves_instance);
+			float offset_z_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
+			float switch_ang_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT, *wp, &wp->modular_curves_instance);
+			float switch_rate_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
+			bool anim_has_curve = wip->modular_curves.has_curve(weapon_info::ModularCurveOutputs::LASER_ANIM_STATE);
+			float anim_state = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			float alpha_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_ALPHA_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_r_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_R_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_g_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_G_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_b_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_B_MULT, *wp, &wp->modular_curves_instance);
+			float glow_r_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_R_MULT, *wp, &wp->modular_curves_instance);
+			float glow_g_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_G_MULT, *wp, &wp->modular_curves_instance);
+			float glow_b_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_B_MULT, *wp, &wp->modular_curves_instance);
 
 			if (wip->laser_length_by_frametime) {
 				length_mult *= flFrametime;
@@ -9387,7 +9057,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					if (anim_state >= 0.f) {
+					if (anim_has_curve) {
 						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
 					} else {
 						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
@@ -9399,7 +9069,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->laser_headon_bitmap.num_frames > 1) {
 					wp->laser_headon_bitmap_frame += flFrametime;
 
-					if (anim_state >= 0.f) {
+					if (anim_has_curve) {
 						framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames) * anim_state);
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
@@ -9484,7 +9154,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					while (wp->laser_glow_bitmap_frame > wip->laser_glow_bitmap.total_time)
 						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
 
-					if (anim_state >= 0.f) {
+					if (anim_has_curve) {
 						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames) * anim_state);
 					} else {
 						framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
@@ -9505,7 +9175,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					while (wp->laser_glow_headon_bitmap_frame > wip->laser_glow_headon_bitmap.total_time)
 						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
-					if (anim_state >= 0.f) {
+					if (anim_has_curve) {
 						framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames) * anim_state);
 					} else {
 						headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
@@ -9774,7 +9444,9 @@ void weapon_info::reset()
 	this->light_color.reset();
 	this->light_radius = -1.0f; //Defaults handled at runtime via lighting profile if left negative
 
-	this->lifetime_curves.clear();
+	this->modular_curves.reset();
+	this->hit_modular_curves.reset();
+	this->beam_modular_curves.reset();
 
 	this->collision_radius_override = -1.0f;
 	this->max_speed = 10.0f;
@@ -10602,4 +10274,17 @@ bool weapon_has_homing_object(weapon* wp) {
 
 float weapon_get_lifetime_pct(const weapon& wp) {
 	return f2fl(Missiontime - wp.creation_time) / Weapon_info[wp.weapon_info_index].lifetime;
+}
+
+float weapon_get_age(const weapon& wp) {
+	return f2fl(Missiontime - wp.creation_time);
+}
+
+float weapon_get_hitpoints_fraction(const weapon& wp) {
+	float weapon_hitpoints = i2fl(Weapon_info[wp.weapon_info_index].weapon_hitpoints);
+	if (weapon_hitpoints <= 0.f) {
+		return 1.f;
+	} else {
+		return i2fl(Objects[wp.objnum].hull_strength) / weapon_hitpoints;
+	}
 }

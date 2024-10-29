@@ -111,8 +111,6 @@ typedef struct weapon {
 	int		group_id;						// Which group this is in.
 	float	det_range;					//How far from start_pos it blows up
 
-	SCP_vector<std::pair<float, float>> weapon_curve_data; // per-weapon random scaling and translation values for curves
-
 	// Stuff for thruster glows
 	int		thruster_bitmap;					// What frame the current thruster bitmap is at for this weapon
 	float		thruster_frame;					// Used to keep track of which frame the animation should be on.
@@ -325,54 +323,10 @@ struct ConditionalImpact {
 	bool dinky;
 };
 
-enum class WeaponLifetimeCurveInput {
-	// inputs
-	LIFETIME,
-	AGE,
-	BASE_VELOCITY,
-	HITPOINTS,
-	PARENT_RADIUS,
-};
-
-enum class WeaponLifetimeCurveOutput {
-	// outputs
-	LASER_LENGTH_MULT,
-	LASER_RADIUS_MULT,
-	LASER_HEAD_RADIUS_MULT,
-	LASER_TAIL_RADIUS_MULT,
-	LASER_OFFSET_X_MULT,
-	LASER_OFFSET_Y_MULT,
-	LASER_OFFSET_Z_MULT,
-	LASER_HEADON_SWITCH_ANG_MULT,
-	LASER_HEADON_SWITCH_RATE_MULT,
-	LASER_ANIM_STATE,
-	LASER_ALPHA_MULT,
-	LASER_BITMAP_R_MULT,
-	LASER_BITMAP_G_MULT,
-	LASER_BITMAP_B_MULT,
-	LASER_GLOW_R_MULT,
-	LASER_GLOW_G_MULT,
-	LASER_GLOW_B_MULT,
-	LIGHT_INTENSITY_MULT,
-	LIGHT_RADIUS_MULT,
-	LIGHT_R_MULT,
-	LIGHT_G_MULT,
-	LIGHT_B_MULT,
-	DET_RADIUS_MULT,
-	TURN_RATE_MULT,
-};
-
-struct WeaponLifetimeCurve {
-	WeaponLifetimeCurveInput input;
-	WeaponLifetimeCurveOutput output;
-	int curve_idx;
-	::util::UniformFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
-	::util::UniformFloatRange translation = ::util::UniformFloatRange(0.f);
-	bool wraparound = true;
-};
-
 float weapon_get_lifetime_pct(const weapon& wp);
 float beam_get_lifetime_pct(const beam& wp);
+float weapon_get_age(const weapon& wp);
+float weapon_get_hitpoints_fraction(const weapon& wp);
 
 struct weapon_info
 {
@@ -428,8 +382,6 @@ struct weapon_info
 	bool 		light_color_set;
 	hdr_color 	light_color;		//For the light cast by the projectile
 	float 		light_radius;
-
-	SCP_vector<WeaponLifetimeCurve> lifetime_curves;
 
 	float	max_speed;							// max speed of the weapon
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
@@ -726,17 +678,39 @@ struct weapon_info
 
 		NUM_VALUES
 	};
+
 	static constexpr auto modular_curves_definition = make_modular_curve_definition<weapon, ModularCurveOutputs>(
 			std::array {
+					std::pair {"Laser Length Mult", ModularCurveOutputs::LASER_LENGTH_MULT},
+					std::pair {"Laser Radius Mult", ModularCurveOutputs::LASER_RADIUS_MULT},
+					std::pair {"Laser Head Radius Mult", ModularCurveOutputs::LASER_HEAD_RADIUS_MULT},
+					std::pair {"Laser Tail Radius Mult", ModularCurveOutputs::LASER_TAIL_RADIUS_MULT},
+					std::pair {"Laser Offset X Mult", ModularCurveOutputs::LASER_OFFSET_X_MULT},
+					std::pair {"Laser Offset Y Mult", ModularCurveOutputs::LASER_OFFSET_Y_MULT},
+					std::pair {"Laser Offset Z Mult", ModularCurveOutputs::LASER_OFFSET_Z_MULT},
+					std::pair {"Laser Headon Transition Angle Mult", ModularCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT},
+					std::pair {"Laser Headon Transition Rate Mult", ModularCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT},
+					std::pair {"Laser Anim State", ModularCurveOutputs::LASER_ANIM_STATE},
+					std::pair {"Laser Alpha Mult", ModularCurveOutputs::LASER_ALPHA_MULT},
+					std::pair {"Laser Bitmap R Mult", ModularCurveOutputs::LASER_BITMAP_R_MULT},
+					std::pair {"Laser Bitmap G Mult", ModularCurveOutputs::LASER_BITMAP_G_MULT},
+					std::pair {"Laser Bitmap B Mult", ModularCurveOutputs::LASER_BITMAP_B_MULT},
+					std::pair {"Laser Glow R Mult", ModularCurveOutputs::LASER_GLOW_R_MULT},
+					std::pair {"Laser Glow G Mult", ModularCurveOutputs::LASER_GLOW_G_MULT},
+					std::pair {"Laser Glow B Mult", ModularCurveOutputs::LASER_GLOW_B_MULT},
 					std::pair {"Light Intensity Multiplier", ModularCurveOutputs::LIGHT_INTENSITY_MULT},
 					std::pair {"Light Radius Multiplier", ModularCurveOutputs::LIGHT_RADIUS_MULT},
 					std::pair {"Light R Multiplier", ModularCurveOutputs::LIGHT_R_MULT},
 					std::pair {"Light G Multiplier", ModularCurveOutputs::LIGHT_G_MULT},
 					std::pair {"Light B Multiplier", ModularCurveOutputs::LIGHT_B_MULT},
+					std::pair {"Detonation Radius Mult", ModularCurveOutputs::DET_RADIUS_MULT},
+					std::pair {"Turn Rate Mult", ModularCurveOutputs::TURN_RATE_MULT},
 			},
+			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}},
+			std::pair {"Age", modular_curves_functional_input<weapon_get_age>{}},
 			std::pair {"Base Velocity", modular_curves_submember_input<&weapon::weapon_max_vel>{}},
-			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}},
-			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}}
+			std::pair {"Hitpoints Fraction", modular_curves_functional_input<weapon_get_hitpoints_fraction>{}},
+			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
 	);
 
 	enum class HitModularCurveOutputs {

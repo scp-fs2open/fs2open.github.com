@@ -221,7 +221,7 @@ struct modular_curves_definition {
 	//Helper function to for parsing
 	template<bool parsing, size_t... idx>
 	inline size_t get_input_idx_by_name(const char* input, std::index_sequence<idx...>) const {
-		size_t result = -1;
+		size_t result = 0;
 		bool matched_case = ((!stricmp(input, std::get<idx>(inputs).first) ? (result = idx), true : false) || ...);
 		if (!matched_case) {
 			if constexpr (parsing)
@@ -245,7 +245,7 @@ struct modular_curves_definition {
 			stuff_string(output, F_NAME);
 
 			bool found_output = false;
-			output_enum output_idx;
+			output_enum output_idx = static_cast<output_enum>(0);
 			for (const auto& output_pair : outputs){
 				if (!stricmp(output_pair.first, output.c_str())){
 					found_output = true;
@@ -281,13 +281,13 @@ struct modular_curves_definition {
 			curve_entry.wraparound = true;
 			parse_optional_bool_into("+Wraparound:", &curve_entry.wraparound);
 
-			curves[static_cast<std::underlying_type_t<output_enum>>(output_idx)].emplace_back(input_idx, std::move(curve_entry));
+			curves[static_cast<std::underlying_type_t<output_enum>>(output_idx)].emplace_back(input_idx, curve_entry);
 		}
 	}
 
 	void add_curve(std::array<SCP_vector<std::pair<size_t, modular_curves_entry>>, num_outputs>& curves, const SCP_string& input, output_enum output, modular_curves_entry curve_entry) const {
 		size_t input_idx = get_input_idx_by_name<false>(input.c_str(), std::index_sequence_for<input_grabbers...>{});
-		curves[static_cast<std::underlying_type_t<output_enum>>(output)].emplace_back(input_idx, std::move(curve_entry));
+		curves[static_cast<std::underlying_type_t<output_enum>>(output)].emplace_back(input_idx, curve_entry);
 	}
 
 	// Helper functions to compute the correct type for derived modular curved sets. Meant for unevaluated context (i.e. within a decltype) ONLY!
@@ -373,7 +373,7 @@ private:
 	constexpr modular_curves_set() : curves() {}
 public:
 	// Used to create an instance for any single thing affected by modular curves. Note that having an instance is purely optional
-	modular_curves_entry_instance create_instance() const {
+	[[nodiscard]] modular_curves_entry_instance create_instance() const {
 		return modular_curves_entry_instance{util::Random::next(), util::Random::next()};
 	}
 
@@ -383,8 +383,8 @@ private:
 		if (instance != nullptr) {
 			static constexpr std::array<std::array<uint32_t, num_outputs>, num_inputs> inout_seeds = []() constexpr {
 				std::array<std::array<uint32_t, num_outputs>, num_inputs> temp{};
-				for(size_t in = 0; in < num_inputs; in++) {
-					for(size_t out = 0; out < num_outputs; out++) {
+				for(uint32_t in = 0; in < static_cast<uint32_t>(num_inputs); in++) {
+					for(uint32_t out = 0; out < static_cast<uint32_t>(num_outputs); out++) {
 						//This isn't perfect, but absolutely sufficient to give each input-output combination different random values.
 						temp[in][out] = hash_fnv1a(hash_fnv1a(in) ^ out);
 					}
@@ -417,6 +417,10 @@ private:
 	}
 
 public:
+	bool has_curve(output_enum output) const {
+		return !curves[static_cast<std::underlying_type_t<output_enum>>(output)].empty();
+	}
+
 	float get_output(output_enum output, const input_type& input, const modular_curves_entry_instance* instance = nullptr) const {
 		float result = 1.f;
 
@@ -437,13 +441,19 @@ public:
 		return result;
 	}
 
+	void reset() {
+		for (auto& curve_list : curves) {
+			curve_list.clear();
+		}
+	}
+
 	inline void parse(const SCP_string& curve_type) {
 		definitions.parse(curves, curve_type);
 	}
 
 	// Use add_curve to programmatically add a curve as if it had been tabled.
 	inline void add_curve(const SCP_string& input, output_enum output, modular_curves_entry curve_entry) {
-		definitions.add_curve(curves, input, output, std::move(curve_entry));
+		definitions.add_curve(curves, input, output, curve_entry);
 	}
 };
 
