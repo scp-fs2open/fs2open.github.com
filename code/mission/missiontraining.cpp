@@ -688,6 +688,10 @@ char *translate_message_token(char *str)
 	return NULL;
 }
 
+void string_replace_tokens_with_keys(SCP_string& text) {
+	text = message_translate_tokens(text.c_str());
+}
+
 /**
  * Translates all special tokens in a message, producing the new finalized message to be displayed
  */
