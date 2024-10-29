@@ -4690,6 +4690,9 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_type() {
 	for (i = 0; i < Ship_types.size(); i++) {
 		head.add_data(Ship_types[i].name);
 	}
+	if (Fighter_bomber_valid) {
+		head.add_data(Fighter_bomber_type_name);
+	}
 
 	return head.next;
 }
