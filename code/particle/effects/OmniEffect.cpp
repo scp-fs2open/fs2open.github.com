@@ -75,49 +75,47 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);
 }
 
-//This MUST be refactored into ParticleSourceHost
-	vec3d ParticleEffect::getNewDirection(const ParticleSource* source) const {
+	matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const {
 		switch (m_direction) {
 			case ShapeDirection::ALIGNED:
-				return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
+				return hostOrientation;
 			case ShapeDirection::HIT_NORMAL: {
-				vec3d normal;
-				if (!source->getOrientation()->getNormal(&normal)) {
-					return source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
+				if (!normal) {
+					return hostOrientation;
 				}
 
-				return normal;
+				matrix normalOrient;
+				vm_vector_2_matrix(&normalOrient, &*normal);
+
+				return normalOrient;
 			}
 			case ShapeDirection::REFLECTED: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
-				vec3d normal;
-				if (!source->getOrientation()->getNormal(&normal)) {
-					return out;
+				if (!normal) {
+					return hostOrientation;
 				}
 
 				// Compute reflect vector as R = V - 2*(V dot N)*N where N
 				// is the normal and V is the incoming direction
 
-				auto dot = 2 * vm_vec_dot(&out, &normal);
-
-				vm_vec_scale(&normal, dot);
-				vm_vec_sub(&out, &out, &normal);
-
-				return out;
+				return vm_matrix_new(1.f - 2.f * normal->xyz.x * normal->xyz.x, -2.f * normal->xyz.x * normal->xyz.y, -2.f * normal->xyz.x * normal->xyz.z,
+									 -2.f * normal->xyz.x * normal->xyz.y, 1.f - 2.f * normal->xyz.y * normal->xyz.y, -2.f * normal->xyz.y * normal->xyz.z,
+									 -2.f * normal->xyz.x * normal->xyz.z, -2.f * normal->xyz.y * normal->xyz.z, 1.f - 2.f * normal->xyz.z * normal->xyz.z)
+									 * hostOrientation;
 			}
 			case ShapeDirection::REVERSE: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin(), m_particleProperties.m_parent_local);
-				vm_vec_scale(&out, -1.0f);
-				return out;
+				return vm_matrix_new(hostOrientation.vec.rvec * -1.f, hostOrientation.vec.uvec * -1.f, hostOrientation.vec.fvec * -1.f);
 			}
 			default:
 				Error(LOCATION, "Unhandled direction value!");
-				return vmd_zero_vector;
+				return vmd_identity_matrix;
 		}
 	}
 
-void ParticleEffect::processSource(ParticleSource* source, float interp) const {
-	float particle_percent = m_particleChance;
+void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const {
+	particle_percent *= m_particleChance;
+
+	const auto& [pos, hostOrientation] = host->getPositionAndOrientation(m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset );
+	const auto& orientation = getNewDirection(hostOrientation, normal);
 
 	if (m_affectedByDetail){
 		if (Detail.num_particles > 0)
@@ -126,28 +124,12 @@ void ParticleEffect::processSource(ParticleSource* source, float interp) const {
 			return; //Will not emit on current detail settings, but may in the future.
 	}
 
-	vec3d pe_pos; //TODO actually calc this here and not once per particle in applytoparticleinfo...
-	//TODO In general, move _as much_ as possible from here to the source
-
 	if (m_distanceCulled > 0.f) {
 		float min_dist = 125.0f;
-		float dist = 0.0f;//vm_vec_dist_quick(&pe_pos, &Eye_position) / m_distanceCulled;
+		float dist = vm_vec_dist_quick(&pos, &Eye_position) / m_distanceCulled;
 		if (dist > min_dist)
 			particle_percent *= min_dist / dist;
 	}
-
-	vec3d sourceDir = getNewDirection(source);
-	matrix sourceDirMatrix;
-	vm_vector_2_matrix(&sourceDirMatrix, &sourceDir, nullptr, nullptr);
-
-	if (source->getOrigin()->getType() == SourceOriginType::BEAM) {
-		// beam particle numbers are per km
-		object* b_obj = source->getOrigin()->getObjectHost();
-		float dist = vm_vec_dist(&Beams[b_obj->instance].last_start, &Beams[b_obj->instance].last_shot) / 1000.0f;
-		particle_percent *= dist;
-	}
-
-	//Start of per-spawn stuff
 
 	float num = m_particleNum.next() * particle_percent;
 	unsigned int num_spawn;
@@ -162,7 +144,12 @@ void ParticleEffect::processSource(ParticleSource* source, float interp) const {
 	for (uint i = 0; i < num_spawn; ++i) {
 		particle_info info;
 
-		source->getOrigin()->applyToParticleInfo(info, m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset);
+		info.pos = pos;
+		info.vel = vel;
+		info.rad = radius;
+		info.lifetime = lifetime;
+		info.attached_objnum = parent;
+		info.attached_sig = parent_sig;
 
 		if (m_vel_inherit_absolute)
 			vm_vec_normalize_quick(&info.vel);
@@ -173,15 +160,15 @@ void ParticleEffect::processSource(ParticleSource* source, float interp) const {
 		vec3d localPos = ZERO_VECTOR;
 
 		if (m_spawnVolume != nullptr) {
-			localPos += m_spawnVolume->sampleRandomPoint(sourceDirMatrix);
+			localPos += m_spawnVolume->sampleRandomPoint(orientation);
 		}
 
 		if (m_velocityVolume != nullptr) {
-			velocity += m_velocityVolume->sampleRandomPoint(sourceDirMatrix) * m_velocity_scaling.next();
+			velocity += m_velocityVolume->sampleRandomPoint(orientation) * m_velocity_scaling.next();
 		}
 
 		if (m_vel_inherit_from_orientation.has_value()) {
-			velocity += sourceDir * m_vel_inherit_from_orientation->next();
+			velocity += orientation.vec.fvec * m_vel_inherit_from_orientation->next();
 		}
 
 		if (m_vel_inherit_from_position.has_value()) {
@@ -197,7 +184,7 @@ void ParticleEffect::processSource(ParticleSource* source, float interp) const {
 			// only achieved when the particle travels directly on the normal/reflect vector
 			vec3d normalizedVelocity;
 			vm_vec_copy_normalize(&normalizedVelocity, &velocity);
-			float dot = vm_vec_dot(&normalizedVelocity, &sourceDir);
+			float dot = vm_vec_dot(&normalizedVelocity, &orientation.vec.fvec);
 			vm_vec_scale(&velocity,
 				m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
 		}
@@ -212,9 +199,9 @@ void ParticleEffect::processSource(ParticleSource* source, float interp) const {
 			// still shouldn't crash in those circumstances.
 			if (!part.expired()) {
 				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-				trailSource.moveToParticle(part);
+				trailSource->moveToParticle(part);
 
-				trailSource.finish();
+				trailSource->finishCreation();
 			}
 		} else {
 			// We don't have a trail so we don't need a persistent particle

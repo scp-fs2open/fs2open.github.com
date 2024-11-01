@@ -143,7 +143,7 @@ class ParticleManager {
 	 * @param index The index of the effect
 	 * @return A wrapper class which allows access to the created sources
 	 */
-	ParticleSourceWrapper createSource(ParticleEffectHandle index);
+	ParticleSource* createSource(ParticleEffectHandle index);
 };
 
 namespace internal {

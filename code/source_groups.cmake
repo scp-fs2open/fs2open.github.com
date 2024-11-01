@@ -1099,6 +1099,7 @@ add_file_folder("Parse\\\\SEXP"
 
 # Particle files
 add_file_folder("Particle"
+	particle/EffectHost.h
 	particle/particle.cpp
 	particle/particle.h
 	particle/ParticleEffect.h
@@ -1107,14 +1108,27 @@ add_file_folder("Particle"
 	particle/ParticleParse.cpp
 	particle/ParticleSource.cpp
 	particle/ParticleSource.h
-	particle/ParticleSourceWrapper.cpp
-	particle/ParticleSourceWrapper.h
 	particle/ParticleVolume.h
 )
 
 add_file_folder("Particle\\\\Effects"
 	particle/effects/OmniEffect.cpp
 	particle/effects/OmniEffect.h
+)
+
+add_file_folder("Particle\\\\Hosts"
+	particle/hosts/EffectHostBeam.cpp
+	particle/hosts/EffectHostBeam.h
+	particle/hosts/EffectHostObject.cpp
+	particle/hosts/EffectHostObject.h
+	particle/hosts/EffectHostParticle.cpp
+	particle/hosts/EffectHostParticle.h
+	particle/hosts/EffectHostSubmodel.cpp
+	particle/hosts/EffectHostSubmodel.h
+	particle/hosts/EffectHostTurret.cpp
+	particle/hosts/EffectHostTurret.h
+	particle/hosts/EffectHostVector.cpp
+	particle/hosts/EffectHostVector.h
 )
 
 add_file_folder("Particle\\\\Util"

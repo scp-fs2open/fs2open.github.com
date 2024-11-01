@@ -8,7 +8,7 @@
 
 namespace particle {
 namespace util {
-ParticleProperties::ParticleProperties() : m_radius(::util::UniformFloatRange(0.0f, 1.0f)), m_lifetime(::util::UniformFloatRange(0.0f, 1.0f)), m_length(::util::UniformFloatRange(0.0f)), m_size_lifetime_curve(-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT), m_manual_offset (vmd_zero_vector) {
+ParticleProperties::ParticleProperties() : m_radius(::util::UniformFloatRange(0.0f, 1.0f)), m_lifetime(::util::UniformFloatRange(0.0f, 1.0f)), m_length(::util::UniformFloatRange(0.0f)), m_size_lifetime_curve(-1), m_vel_lifetime_curve (-1), m_rotation_type(RotationType::DEFAULT), m_manual_offset (tl::nullopt) {
 }
 
 void ParticleProperties::parse(bool nocreate) {
@@ -80,7 +80,7 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 
 	if (optional_string("+Offset:")) {
-		stuff_vec3d(&m_manual_offset);
+		stuff_vec3d(&m_manual_offset.emplace());
 	}
 
 	if (optional_string("+Remain local to parent:")) {

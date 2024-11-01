@@ -5,6 +5,10 @@
 #include "globalincs/pstypes.h"
 #include "utils/id.h"
 
+#include <tl/optional.hpp>
+
+class EffectHost;
+
 namespace particle {
 class ParticleSource;
 
@@ -67,7 +71,7 @@ class ParticleEffectLegacy {
 	 *
 	 * @param source The source to process
 	 */
-	virtual void processSource(ParticleSource* source, float interp) const = 0;
+	virtual void processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const = 0;
 };
 
 /**

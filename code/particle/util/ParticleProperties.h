@@ -35,7 +35,7 @@ private:
 	int m_size_lifetime_curve;
 	int m_vel_lifetime_curve;
 	RotationType m_rotation_type;
-	vec3d m_manual_offset;
+	tl::optional<vec3d> m_manual_offset;
 	bool m_parent_local = false;
 	bool m_keep_anim_length_if_available = false;
 

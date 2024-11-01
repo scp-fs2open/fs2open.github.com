@@ -104,7 +104,7 @@ void ParticleManager::doFrame(float) {
 	m_processingSources = false;
 
 	for (auto& source : m_deferredSourceAdding) {
-		m_sources.push_back(source);
+		m_sources.push_back(std::move(source));
 	}
 	m_deferredSourceAdding.clear();
 }
@@ -149,16 +149,14 @@ void ParticleManager::pageIn() {
 	}
 }
 
-ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
+ParticleSource* ParticleManager::createSource(ParticleEffectHandle index)
 {
 	ParticleSourceWrapper wrapper;
 
 	ParticleSource* source = createSource();
 	source->setEffect(index);
 
-	wrapper = ParticleSourceWrapper(source);
-
-	return wrapper;
+	return source;
 }
 
 void ParticleManager::clearSources() {

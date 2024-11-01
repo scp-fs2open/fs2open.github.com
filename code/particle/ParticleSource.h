@@ -11,6 +11,8 @@
 
 #include "io/timer.h"
 
+#include "particle/EffectHost.h"
+
 #include <tl/optional.hpp>
 
 struct weapon;
@@ -205,55 +207,6 @@ class SourceOrigin {
  * Normals are always in world-space.
  * 
  */
-class SourceOrientation {
- private:
-	matrix m_orientation;
-
-	bool m_hasNormal = false;
-	vec3d m_normal;
-
-	// By default the orientation of a source is relative to the host
-	bool m_isRelative = true;
-
- public:
-	SourceOrientation();
-
-	/**
-	 * @brief Sets the direction from a vector
-	 *
-	 * The vector doesn't have to be normalized before passing it to this function.
-	 *
-	 * @param vec The vector to create the matrix from
-	 */
-	void setFromVector(const vec3d& vec, bool relative = false);
-
-	/**
-	 * @brief Sets the direction from an already normalized vector
-	 *
-	 * @param vec The normalized vector
-	 */
-	void setFromNormalizedVector(const vec3d& vec, bool relative = false);
-
-	void setNormal(const vec3d& normal);
-
-	void setFromMatrix(const matrix& mat, bool relative = false);
-
-	vec3d getDirectionVector(const SourceOrigin* origin, bool allow_relative = false) const;
-
-	bool isRelative() const { return m_isRelative; }
-
-	/**
-	 * @brief Gets the normal of this orientation
-	 * @param outNormal The pointer where the normal will be written
-	 * @return @c true if there was a normal, @c false otherwise
-	 */
-	bool getNormal(vec3d* outNormal) const;
-
-	inline const matrix* getMatrix() const { return &m_orientation; }
-
-	friend class ParticleSource;
-};
-
 struct SourceTiming {
 	TIMESTAMP m_nextCreation;
 	TIMESTAMP m_endTimestamp;
@@ -270,9 +223,9 @@ struct SourceTiming {
  */
 class ParticleSource {
  private:
-	SourceOrigin m_origin; //!< The current position of this particle source
+	std::unique_ptr<EffectHost> m_host;
 
-	SourceOrientation m_effectOrientation; //!< The orientation of the particle source
+	tl::optional<vec3d> m_normal;
 
 	SCP_vector<SourceTiming> m_timing; //!< The time informations of the particle source
 
@@ -295,14 +248,6 @@ class ParticleSource {
 		m_effect = eff;
 	}
 
-	inline const SourceOrigin* getOrigin() const { return &m_origin; }
-
-	inline SourceOrigin* getOrigin() { return &m_origin; }
-
-	inline const SourceOrientation* getOrientation() const { return &m_effectOrientation; }
-
-	inline SourceOrientation* getOrientation() { return &m_effectOrientation; }
-
 	inline size_t getProcessingCount() const { return m_processingCount; }
 
 	/**
@@ -323,6 +268,8 @@ class ParticleSource {
 	 * @return @c true if the source is valid, @c false otherwise.
 	 */
 	bool isValid() const;
+
+	void setNormal(const vec3d& normal);
 };
 }
 

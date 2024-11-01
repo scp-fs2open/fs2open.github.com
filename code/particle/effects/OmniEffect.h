@@ -64,7 +64,7 @@ private:
 
 	float m_distanceCulled;
 
-	vec3d getNewDirection(const ParticleSource* source) const;
+	matrix getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const;
 
 public:
 
@@ -93,7 +93,7 @@ public:
 								int bitmap
 		);
 
-	void processSource(ParticleSource* source, float interp) const override;
+	void processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const override;
 
 	void parseValues(bool nocreate) override;
 
