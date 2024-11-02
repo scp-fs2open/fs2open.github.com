@@ -1,78 +1,10 @@
 #include <math/bitarray.h>
-#include <math/curve.h>
 #include "freespace.h"
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
-#include "ParticleSource.h"
 #include "ship/ship.h"
 
 namespace particle {
-
-void SourceOrigin::setVelocity(const vec3d* vel) {
-	Assertion(vel, "Invalid vector pointer passed!");
-	if (!vel)
-		return;
-
-	m_velocity = *vel;
-}
-
-void SourceOrigin::setWeaponState(WeaponState state) {
-	m_weaponState = state;
-}
-
-void SourceOrigin::moveTo(const vec3d* pos, const matrix* orientation) {
-	Assertion(pos, "Invalid vector pointer passed!");
-
-	m_originType = SourceOriginType::VECTOR;
-	m_origin.m_host_orientation = *orientation;
-	m_origin.m_pos = *pos;
-}
-
-void SourceOrigin::moveToBeam(const object* objp) {
-	Assertion(objp, "Invalid object pointer passed!");
-
-	m_originType = SourceOriginType::BEAM;
-	m_origin.m_object = object_h(OBJ_INDEX(objp));
-}
-
-void SourceOrigin::moveToObject(const object* objp, const vec3d* offset) {
-	Assertion(objp, "Invalid object pointer passed!");
-	Assertion(offset, "Invalid vector pointer passed!");
-
-	m_originType = SourceOriginType::OBJECT;
-	m_origin.m_object = object_h(OBJ_INDEX(objp));
-
-	m_offset = *offset;
-}
-
-void SourceOrigin::moveToSubobject(const object* objp, int subobject, const vec3d* offset)
-{
-	Assertion(objp, "Invalid object pointer passed!");
-	Assertion(offset, "Invalid vector pointer passed!");
-
-	m_originType = SourceOriginType::SUBOBJECT;
-	m_origin.m_object = object_h(OBJ_INDEX(objp));
-	m_origin.m_subobject = subobject;
-
-	m_offset = *offset;
-}
-
-void SourceOrigin::moveToTurret(const object* objp, int subobject, int fire_pos)
-{
-	Assertion(objp, "Invalid object pointer passed!");
-
-	m_originType = SourceOriginType::TURRET;
-	m_origin.m_object = object_h(OBJ_INDEX(objp));
-	m_origin.m_subobject = subobject;
-	m_origin.m_fire_pos = fire_pos;
-
-	m_offset = vmd_zero_vector;
-}
-
-void SourceOrigin::moveToParticle(const WeakParticlePtr& weakParticlePtr) {
-	m_originType = SourceOriginType::PARTICLE;
-	m_origin.m_particle = weakParticlePtr;
-}
 
 ParticleSource::ParticleSource() : m_normal(tl::nullopt), m_effect(ParticleEffectHandle::invalid()), m_processingCount(0) {
 	for (size_t i = 0; i < 64; i++) {
@@ -111,6 +43,8 @@ void ParticleSource::finishCreation() {
 }
 
 bool ParticleSource::process() {
+	Assertion(m_host != nullptr, "Particle Source has no host!");
+
 	//TODO make more efficient / get rid of the horror that is the singleton pattern
 	const auto& effectList = ParticleManager::get()->getEffect(m_effect);
 
@@ -154,5 +88,9 @@ bool ParticleSource::process() {
 
 void ParticleSource::setNormal(const vec3d& normal) {
 	m_normal = normal;
+}
+
+void ParticleSource::setHost(std::unique_ptr<EffectHost> host) {
+	m_host = std::move(host);
 }
 }

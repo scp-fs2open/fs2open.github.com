@@ -1,9 +1,14 @@
 #include "EffectHostParticle.h"
 
+#include <utility>
+
 #include "math/vecmat.h"
 #include "math/curve.h"
 
 #include "freespace.h"
+
+EffectHostParticle::EffectHostParticle(particle::WeakParticlePtr particle, matrix orientationOverride, bool orientationOverrideRelative) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_particle(std::move(particle)) {}
 
 //Particle hosts can never have a parent, so it'll always return global space
 std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*relativeToParent*/, float interp, const tl::optional<vec3d>& tabled_offset) {

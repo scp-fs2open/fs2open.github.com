@@ -2,10 +2,11 @@
 
 #include "math/vecmat.h"
 #include "model/model.h"
-#include "object/object.h"
 #include "ship/ship.h"
 
-//Vector hosts can never have a parent, so it'll always return global space
+EffectHostTurret::EffectHostTurret(object* objp, int submodel, int fire_pnt, matrix orientationOverride, bool orientationOverrideRelative) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel), m_fire_pnt(fire_pnt) {}
+
 std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) {
 	ship& shipp = Ships[Objects[m_objnum].instance];
 	const polymodel* pm = model_get(Ship_info[shipp.ship_info_index].model_num);

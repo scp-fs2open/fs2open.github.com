@@ -1,10 +1,9 @@
 
 #include "ParticleEffectAction.h"
 
-#include "particle/ParticleSourceWrapper.h"
-
 #include "math/vecmat.h"
 #include "parse/parselo.h"
+#include "particle/hosts/EffectHostObject.h"
 #include "ship/ship.h"
 
 #include <utility>
@@ -60,11 +59,11 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	local_pos += locals.variables.getValue({"locals", "position"}).getVector();
 
 	auto direction = locals.variables.getValue({"locals", "direction"}).getVector();
+	matrix orientation;
+	vm_vector_2_matrix(&orientation, &direction);
 
-	source.moveToObject(locals.host.objp(), &local_pos);
-	source.setOrientationFromNormalizedVec(&direction, true);
-
-	source.finish();
+	source->setHost(make_unique<EffectHostObject>(locals.host.objp(), local_pos, orientation, true));
+	source->finishCreation();
 
 	return ActionResult::Finished;
 }

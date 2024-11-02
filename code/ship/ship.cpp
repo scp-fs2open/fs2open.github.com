@@ -70,7 +70,6 @@
 #include "parse/parselo.h"
 #include "particle/effects/OmniEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "scripting/hook_api.h"
 #include "scripting/global_hooks.h"
 #include "particle/particle.h"
@@ -9169,10 +9168,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				newOrient.vec.uvec = objp->orient.vec.fvec * -1.f;
 				newOrient.vec.rvec = objp->orient.vec.rvec;
 
-				source.moveTo(&outpnt, &newOrient);
-				source.setVelocity(&objp->phys_info.vel);
-
-				source.finish();
+				source->setHost(make_unique<EffectHostVector>(outpnt, newOrient, objp->phys_info.vel));
+				source->finishCreation();
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
@@ -9278,10 +9275,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
 
 					// Use the position since the ship is going to be invalid soon
-					source.moveTo(&objp->pos, &objp->orient);
-					source.setVelocity(&objp->phys_info.vel);
-
-					source.finish();
+					source->setHost(make_unique<EffectHostVector>(objp->pos, objp->orient, objp->phys_info.vel));
+					source->finishCreation();
 				} else {
 					// play a random explosion
 					auto source = particle::ParticleManager::get()->createSource(sip->regular_end_particles);
@@ -9292,10 +9287,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 					newOrient.vec.uvec = objp->orient.vec.fvec * -1.f;
 					newOrient.vec.rvec = objp->orient.vec.rvec;
 
-					source.moveTo(&objp->pos, &newOrient);
-					source.setVelocity(&objp->phys_info.vel);
-
-					source.finish();
+					source->setHost(make_unique<EffectHostVector>(objp->pos, newOrient, objp->phys_info.vel));
+					source->finishCreation();
 				}
 			}
 

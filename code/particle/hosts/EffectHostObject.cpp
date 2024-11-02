@@ -4,7 +4,21 @@
 #include "object/object.h"
 #include "weapon/weapon.h"
 
-//Vector hosts can never have a parent, so it'll always return global space
+static inline WeaponState getWeaponStateOrInvalid(const object* objp) {
+	switch(objp->type) {
+		case OBJ_WEAPON:
+			return Weapons[objp->instance].weapon_state;
+		case OBJ_BEAM:
+			return Beams[objp->instance].weapon_state;
+		default:
+			return WeaponState::INVALID;
+	}
+}
+
+EffectHostObject::EffectHostObject(object* objp, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)),
+	m_objsig(objp->signature), m_weaponState(getWeaponStateOrInvalid(objp)) {}
+
 std::pair<vec3d, matrix> EffectHostObject::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) {
 	vec3d pos = m_offset;
 	if (tabled_offset) {

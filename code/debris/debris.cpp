@@ -22,10 +22,8 @@
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
 #include "particle/particle.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "particle/effects/OmniEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
-#include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "scripting/global_hooks.h"
@@ -811,10 +809,8 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 
 		auto source = particle::ParticleManager::get()->createSource(Debris_hit_particle);
 
-		source.moveTo(hitpos, &orient);
-		source.setVelocity(&debris_obj->phys_info.vel);
-
-		source.finish();
+		source->setHost(make_unique<EffectHostVector>(*hitpos, orient, debris_obj->phys_info.vel));
+		source->finishCreation();
 	}
 
 	// multiplayer clients bail here

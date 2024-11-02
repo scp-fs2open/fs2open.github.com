@@ -20,7 +20,6 @@
 #include "particle/particle.h"
 #include "particle/effects/OmniEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "popup/popupdead.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
@@ -166,18 +165,12 @@ void supernova_do_particles()
 			vm_vec_add2(&b, &Player_obj->pos);
 
 			auto source = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
-
-			source.moveTo(&a, &orient);
-			source.setVelocity(&vel);
-
-			source.finish();
+			source->setHost(make_unique<EffectHostVector>(a, orient, vel));
+			source->finishCreation();
 
 			auto source2 = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
-
-			source2.moveTo(&b, &orient);
-			source2.setVelocity(&vel);
-
-			source2.finish();
+			source2->setHost(make_unique<EffectHostVector>(b, orient, vel));
+			source2->finishCreation();
 		}
 	}
 }

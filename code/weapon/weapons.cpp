@@ -43,7 +43,6 @@
 #include "parse/parselo.h"
 #include "scripting/global_hooks.h"
 #include "particle/particle.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "render/3d.h"
@@ -5950,13 +5949,8 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-
-		object* objp = &Objects[wp->objnum];
-		source.moveToObject(objp, &vmd_zero_vector);
-		source.setWeaponState(wp->weapon_state);
-		source.setVelocity(&objp->phys_info.vel);
-
-		source.finish();
+		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
+		source->finishCreation();
 	}
 }
 
@@ -6041,9 +6035,8 @@ void weapon_process_post(object * obj, float frame_time)
 					if (wip->spawn_info[i].spawn_effect.isValid()) {
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
 
-						particleSource.moveTo(&obj->pos, &obj->orient);
-						particleSource.setVelocity(&obj->phys_info.vel);
-						particleSource.finish();
+						particleSource->setHost(make_unique<EffectHostVector>(obj->pos, obj->orient, obj->phys_info.vel));
+						particleSource->finishCreation();
 					}
 
 					// update next_spawn_time
@@ -7751,15 +7744,13 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 					&& hit_angle <= fl_radians(ci.max_angle_threshold)
 				) {
 					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
-					particleSource.moveTo(hitpos, &weapon_obj->last_orient);
-					particleSource.setVelocity(&weapon_obj->phys_info.vel);
+					particleSource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
-						particleSource.setOrientationNormal(hitnormal);
+						particleSource->setNormal(*hitnormal);
 					}
-
-					particleSource.finish();
+					particleSource->finishCreation();
 
 					valid_conditional_impact = true;
 				}
@@ -7770,26 +7761,23 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
               		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
-		particleSource.setVelocity(&weapon_obj->phys_info.vel);
+
+		particleSource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
-			particleSource.setOrientationNormal(hitnormal);
+			particleSource->setNormal(*hitnormal);
 		}
-
-		particleSource.finish();
+		particleSource->finishCreation();
 	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
-		particleSource.setVelocity(&weapon_obj->phys_info.vel);
+		particleSource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
-			particleSource.setOrientationNormal(hitnormal);
+			particleSource->setNormal(*hitnormal);
 		}
-
-		particleSource.finish();
+		particleSource->finishCreation();
 	}
 
 	if ((impacted_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
@@ -7824,27 +7812,23 @@ void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int
 				using namespace particle;
 
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
-				primarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
-				primarySource.setVelocity(&weapon_obj->phys_info.vel);
+				primarySource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
 
 				if (hitnormal)
 				{
-					primarySource.setOrientationNormal(hitnormal);
+					primarySource->setNormal(*hitnormal);
 				}
-
-				primarySource.finish();
+				primarySource->finishCreation();
 
 				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
-					secondarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
-					secondarySource.setVelocity(&weapon_obj->phys_info.vel);
+					secondarySource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
-						secondarySource.setOrientationNormal(hitnormal);
+						secondarySource->setNormal(*hitnormal);
 					}
-
-					secondarySource.finish();
+					secondarySource->finishCreation();
 				}
 			}
 		}

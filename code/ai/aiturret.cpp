@@ -14,7 +14,6 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "object/objectdock.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "render/3d.h"
@@ -1995,9 +1994,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					if (wip->muzzle_effect.isValid()) {
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-						particleSource.moveToTurret(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos);
-						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
-						particleSource.finish();
+						particleSource->setHost(make_unique<EffectHostTurret>(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos));
+						particleSource->finishCreation();
 					}
 					else if (wip->muzzle_flash >= 0) {
 						mflash_create(firing_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
@@ -2112,9 +2110,8 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
-			particleSource.moveToTurret(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1);
-			particleSource.setVelocity(&Objects[tsi->parent_objnum].phys_info.vel);
-			particleSource.finish();
+			particleSource->setHost(make_unique<EffectHostTurret>(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1));
+			particleSource->finishCreation();
 		}
 		else if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
 			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);

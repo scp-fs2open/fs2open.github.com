@@ -25,7 +25,6 @@
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -2433,10 +2432,8 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 					matrix orientParticle;
 					vm_vector_2_matrix_norm(&orientParticle, &normal);
 
-					source.moveTo(&npnt, &orientParticle);
-					source.setVelocity(&Objects[shipp->objnum].phys_info.desired_vel);
-
-					source.finish();
+					source->setHost(make_unique<EffectHostVector>(npnt, orientParticle, Objects[shipp->objnum].phys_info.desired_vel));
+					source->finishCreation();
 				}
 			}
 		}

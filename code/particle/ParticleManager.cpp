@@ -5,8 +5,6 @@
 
 #include "particle/ParticleManager.h"
 
-#include "particle/ParticleSourceWrapper.h"
-
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
 #include "tracing/tracing.h"
@@ -151,8 +149,6 @@ void ParticleManager::pageIn() {
 
 ParticleSource* ParticleManager::createSource(ParticleEffectHandle index)
 {
-	ParticleSourceWrapper wrapper;
-
 	ParticleSource* source = createSource();
 	source->setEffect(index);
 

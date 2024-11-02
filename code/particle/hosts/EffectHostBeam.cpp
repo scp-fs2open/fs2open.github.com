@@ -5,6 +5,10 @@
 
 #include "freespace.h"
 
+EffectHostBeam::EffectHostBeam(object* objp, matrix orientationOverride, bool orientationOverrideRelative) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_objnum(OBJ_INDEX(objp)),
+	m_objsig(objp->signature), m_weaponState(Beams[objp->instance].weapon_state) {}
+
 //Beam hosts can never have a parent, so it'll always return global space
 std::pair<vec3d, matrix> EffectHostBeam::getPositionAndOrientation(bool /*relativeToParent*/, float interp, const tl::optional<vec3d>& tabled_offset) {
 	const beam& bm = Beams[m_objnum];

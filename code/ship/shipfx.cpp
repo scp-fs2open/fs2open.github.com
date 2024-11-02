@@ -32,7 +32,6 @@
 #include "object/objectdock.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "playerman/player.h"
 #include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"
@@ -1057,16 +1056,14 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
 			// if there's a muzzle effect entry, we use that
 			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
-				vec3d gun_world_pos;
-				vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[OBJ_INDEX(objp)].orient);
-				vm_vec_add2(&gun_world_pos, &Objects[OBJ_INDEX(objp)].pos);
+				matrix gunOrient;
+				vm_vector_2_matrix(&gunOrient, gun_dir);
 
 				// spawn particle effect
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
-				particleSource.moveToObject(objp, gun_pos);
-				particleSource.setOrientationFromVec(gun_dir, true);
-				particleSource.setVelocity(&objp->phys_info.vel);
-				particleSource.finish();
+				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
+				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
+				particleSource->finishCreation();
 			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
 			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
 				mflash_create(gun_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
@@ -1275,18 +1272,12 @@ void shipfx_emit_spark( int n, int sn )
 			}
 
 			auto source = particle::ParticleManager::get()->createSource(sip->impact_spew);
-
-			source.moveTo(&outpnt, &orient);
-			source.setVelocity(&vel);
-
-			source.finish();
+			source->setHost(make_unique<EffectHostVector>(outpnt, orient, vel));
+			source->finishCreation();
 		} else {
 			auto source = particle::ParticleManager::get()->createSource(sip->damage_spew);
-
-			source.moveTo(&outpnt, &orient);
-			source.setVelocity(&vel);
-
-			source.finish();
+			source->setHost(make_unique<EffectHostVector>(outpnt, orient, vel));
+			source->finishCreation();
 		}
 	}
 
@@ -1898,10 +1889,8 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			matrix orient;
 			vm_vector_2_matrix_norm(&orient, &normal);
 
-			source.moveTo(&model_clip_plane_pt, &orient);
-			source.setVelocity(&vel);
-
-			source.finish();
+			source->setHost(make_unique<EffectHostVector>(model_clip_plane_pt, orient, vel));
+			source->finishCreation();
 
 			if (sip->generic_debris_model_num >= 0) {
 				// spawn a bunch of debris pieces, first determine the cross sectional average position to be the force explosion center

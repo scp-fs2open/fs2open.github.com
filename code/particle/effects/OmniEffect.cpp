@@ -2,8 +2,6 @@
 
 #include "particle/ParticleManager.h"
 
-#include "particle/ParticleSourceWrapper.h"
-
 #include "weapon/beam.h"
 #include "render/3d.h"
 
@@ -148,8 +146,15 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 		info.vel = vel;
 		info.rad = radius;
 		info.lifetime = lifetime;
-		info.attached_objnum = parent;
-		info.attached_sig = parent_sig;
+
+		if (m_particleProperties.m_parent_local) {
+			info.attached_objnum = parent;
+			info.attached_sig = parent_sig;
+		}
+		else {
+			info.attached_objnum = -1;
+			info.attached_sig = -1;
+		}
 
 		if (m_vel_inherit_absolute)
 			vm_vec_normalize_quick(&info.vel);
@@ -199,8 +204,7 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 			// still shouldn't crash in those circumstances.
 			if (!part.expired()) {
 				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-				trailSource->moveToParticle(part);
-
+				trailSource->setHost(make_unique<EffectHostParticle>(std::move(part)));
 				trailSource->finishCreation();
 			}
 		} else {

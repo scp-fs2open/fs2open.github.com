@@ -6,6 +6,14 @@
 #include "particle/effects/OmniEffect.h"
 #include "utils/id.h"
 
+#include "particle/hosts/EffectHostBeam.h"
+#include "particle/hosts/EffectHostObject.h"
+#include "particle/hosts/EffectHostParticle.h"
+#include "particle/hosts/EffectHostSubmodel.h"
+#include "particle/hosts/EffectHostTurret.h"
+#include "particle/hosts/EffectHostVector.h"
+
+
 namespace particle {
 
 class ParticleEffectLegacy;
@@ -16,7 +24,6 @@ using ParticleEffectPtr = ParticleEffectLegacy*;
  */
 
 class ParticleSource;
-class ParticleSourceWrapper;
 
 /**
  * @brief Manages high-level particle effects and sources

@@ -1,5 +1,4 @@
 #include "particle/ParticleManager.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "particle/effects/OmniEffect.h"
 #include "particle/volumes/ConeVolume.h"
 #include "particle/volumes/SpheroidVolume.h"

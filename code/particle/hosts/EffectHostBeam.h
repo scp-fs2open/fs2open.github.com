@@ -10,6 +10,7 @@ class EffectHostBeam : public EffectHost {
 
 	WeaponState m_weaponState;
 public:
+	EffectHostBeam(object* objp, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
 	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) override;
 
