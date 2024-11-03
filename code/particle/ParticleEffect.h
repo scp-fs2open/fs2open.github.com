@@ -3,6 +3,10 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "particle/ParticleVolume.h"
+#include "particle/util/ParticleProperties.h"
+#include "particle/util/EffectTiming.h"
+#include "utils/RandomRange.h"
 #include "utils/id.h"
 
 #include <tl/optional.hpp>
@@ -10,74 +14,118 @@
 class EffectHost;
 
 namespace particle {
-class ParticleSource;
 
 struct particle_effect_tag {
 };
 using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
-//TODO Fold this file into the OmniEffect
+class ParticleSource;
 
 /**
  * @brief Defines a particle effect
  *
- * A particle effect contains all data necessary for spawning the particles for one particle source. A source can't
- * store effect specific data so a particle effect has to be state-less. To add your own particle effects just extend
- * this class and override the functions you need. If the effect type should be available for table creation
- * take a look at constructEffect in ParticleManager.cpp.
+ * A particle effect contains all data necessary for spawning the particles from a particle source. A source can't
+ * store effect specific data so a particle effect has to be state-less. All additions to particles should be done
+ * within this class. This allows all features to be available for all particles.
  *
  * @ingroup particleSystems
  */
-class ParticleEffectLegacy {
- protected:
+class ParticleEffect {
+public:
+	enum class ShapeDirection {
+		ALIGNED,
+		HIT_NORMAL,
+		REFLECTED,
+		REVERSE
+	};
+
+	enum class VelocityScaling {
+		NONE,
+		DOT,
+		DOT_INVERSE
+	};
+
+ private:
 	SCP_string m_name; //!< The name of this effect
 
+	friend struct ParticleParse;
+	friend class ParticleSource; //TODO remove once timing is tidied up.
+
+	util::EffectTiming m_timing;
+
+	util::ParticleProperties m_particleProperties;
+
+	::util::ParsedRandomFloatRange m_particleNum;
+
+	ShapeDirection m_direction;
+
+	::util::ParsedRandomFloatRange m_vel_inherit;
+
+	bool m_vel_inherit_absolute;
+
+	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
+
+	::util::ParsedRandomFloatRange m_velocity_scaling;
+
+	VelocityScaling m_velocity_directional_scaling;
+
+	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
+
+	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
+
+	bool m_vel_inherit_from_position_absolute;
+
+	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
+
+	ParticleEffectHandle m_particleTrail;
+
+	//Bad legacy flags. Get rid off, or at least don't expose in new table.
+	float m_particleChance;
+
+	bool m_affectedByDetail;
+
+	float m_distanceCulled;
+
+	matrix getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const;
  public:
 	/**
 	 * @brief Initializes the base ParticleEffect
 	 * @param name The name this effect should have
 	 */
-	explicit ParticleEffectLegacy(const SCP_string& name) : m_name(name) {}
+	explicit ParticleEffect(const SCP_string& name);
 
-	virtual ~ParticleEffectLegacy() {}
+	// Use this to recreate deprecated legacy effects from in-engine code.
+	// Parsing the deprecated -part.tbm effects uses the simple constructor + parseLegacy() instead!
+	explicit ParticleEffect(const SCP_string& name,
+							::util::ParsedRandomFloatRange particleNum,
+							ShapeDirection direction,
+							::util::ParsedRandomFloatRange vel_inherit,
+							bool vel_inherit_absolute,
+							std::shared_ptr<::particle::ParticleVolume> velocityVolume,
+							::util::ParsedRandomFloatRange velocity_scaling,
+							VelocityScaling velocity_directional_scaling,
+							tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
+							tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
+							std::shared_ptr<::particle::ParticleVolume> spawnVolume,
+							ParticleEffectHandle particleTrail,
+							float particleChance,
+							bool affectedByDetail,
+							float distanceCulled,
+							bool disregardAnimationLength,
+							::util::ParsedRandomFloatRange lifetime,
+							::util::ParsedRandomFloatRange radius,
+							int bitmap
+	);
+
+	void processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const;
+
+	void parseValues(bool nocreate);
+
+	void pageIn();
 
 	const SCP_string& getName() const { return m_name; }
-
-	/**
-	 * @brief Parses the values of this effect
-	 *
-	 * @note If your effect should be available for usage in tables you can use this function for parsing the values. The
-	 * usual parsing functions are available.
-	 *
-	 * @param nocreate
-	 */
-	virtual void parseValues(bool  /*nocreate*/) {}
-
-	/**
-	 * @brief Page in used effects
-	 *
-	 * @note This is called at mission start to determine which textures are used by this effect. Use #bm_page_in_texture to
-	 * specify which textures will be used.
-	 */
-	virtual void pageIn() {}
-
-	/**
-	 * @brief Process a particle source
-	 *
-	 * @note This is the main function of the effect. In this function the implementation should generate new particles
-	 * according to its configuration.
-	 *
-	 * @warning Implementations of this function must be able to handle multiple calls to this function.
-	 *
-	 * @param source The source to process
-	 */
-	virtual void processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const = 0;
 };
 
-/**
- * A particle pointer.
- */
-//typedef ParticleEffect* ParticleEffectPtr;
 }
 
 

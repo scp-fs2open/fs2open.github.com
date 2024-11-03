@@ -55,7 +55,7 @@
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
-#include "particle/effects/OmniEffect.h"
+#include "particle/ParticleEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
 #include "particle/volumes/SpheroidVolume.h"
 #include "tracing/Monitor.h"

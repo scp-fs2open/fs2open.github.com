@@ -2,7 +2,6 @@
 
 #include "actions/Action.h"
 #include "actions/expression/ActionExpression.h"
-#include "particle/ParticleManager.h"
 
 namespace actions {
 namespace types {

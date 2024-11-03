@@ -1102,6 +1102,7 @@ add_file_folder("Particle"
 	particle/EffectHost.h
 	particle/particle.cpp
 	particle/particle.h
+	particle/ParticleEffect.cpp
 	particle/ParticleEffect.h
 	particle/ParticleManager.cpp
 	particle/ParticleManager.h
@@ -1109,11 +1110,6 @@ add_file_folder("Particle"
 	particle/ParticleSource.cpp
 	particle/ParticleSource.h
 	particle/ParticleVolume.h
-)
-
-add_file_folder("Particle\\\\Effects"
-	particle/effects/OmniEffect.cpp
-	particle/effects/OmniEffect.h
 )
 
 add_file_folder("Particle\\\\Hosts"

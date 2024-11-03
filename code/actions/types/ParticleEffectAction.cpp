@@ -4,6 +4,7 @@
 #include "math/vecmat.h"
 #include "parse/parselo.h"
 #include "particle/hosts/EffectHostObject.h"
+#include "particle/ParticleManager.h"
 #include "ship/ship.h"
 
 #include <utility>

@@ -22,7 +22,7 @@
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
 #include "particle/particle.h"
-#include "particle/effects/OmniEffect.h"
+#include "particle/ParticleEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"

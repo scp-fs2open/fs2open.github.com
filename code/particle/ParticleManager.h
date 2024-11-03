@@ -3,7 +3,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-#include "particle/effects/OmniEffect.h"
+#include "particle/ParticleEffect.h"
 #include "utils/id.h"
 
 #include "particle/hosts/EffectHostBeam.h"
@@ -13,11 +13,9 @@
 #include "particle/hosts/EffectHostTurret.h"
 #include "particle/hosts/EffectHostVector.h"
 
+#include "particle/ParticleSource.h"
 
 namespace particle {
-
-class ParticleEffectLegacy;
-using ParticleEffectPtr = ParticleEffectLegacy*;
 
 /**
  * The particle index type.

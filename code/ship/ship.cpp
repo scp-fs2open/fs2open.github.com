@@ -68,7 +68,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
-#include "particle/effects/OmniEffect.h"
+#include "particle/ParticleEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
 #include "scripting/hook_api.h"
 #include "scripting/global_hooks.h"

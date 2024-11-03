@@ -1,14 +1,12 @@
-#include "particle/effects/OmniEffect.h"
-
+#include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 
-#include "weapon/beam.h"
 #include "render/3d.h"
 
 namespace particle {
 
 ParticleEffect::ParticleEffect(const SCP_string& name)
-	: ParticleEffectLegacy(name),
+	: m_name(name),
 	  m_timing(),
 	  m_particleProperties(),
 	  m_particleNum(::util::UniformFloatRange(1.0f)),
@@ -47,7 +45,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
-	: ParticleEffectLegacy(name),
+	: m_name(name),
 	  m_timing(),
 	  m_particleProperties(),
 	  m_particleNum(std::move(particleNum)),
@@ -73,41 +71,41 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);
 }
 
-	matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const {
-		switch (m_direction) {
-			case ShapeDirection::ALIGNED:
+matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const {
+	switch (m_direction) {
+		case ShapeDirection::ALIGNED:
+			return hostOrientation;
+		case ShapeDirection::HIT_NORMAL: {
+			if (!normal) {
 				return hostOrientation;
-			case ShapeDirection::HIT_NORMAL: {
-				if (!normal) {
-					return hostOrientation;
-				}
-
-				matrix normalOrient;
-				vm_vector_2_matrix(&normalOrient, &*normal);
-
-				return normalOrient;
 			}
-			case ShapeDirection::REFLECTED: {
-				if (!normal) {
-					return hostOrientation;
-				}
 
-				// Compute reflect vector as R = V - 2*(V dot N)*N where N
-				// is the normal and V is the incoming direction
+			matrix normalOrient;
+			vm_vector_2_matrix(&normalOrient, &*normal);
 
-				return vm_matrix_new(1.f - 2.f * normal->xyz.x * normal->xyz.x, -2.f * normal->xyz.x * normal->xyz.y, -2.f * normal->xyz.x * normal->xyz.z,
-									 -2.f * normal->xyz.x * normal->xyz.y, 1.f - 2.f * normal->xyz.y * normal->xyz.y, -2.f * normal->xyz.y * normal->xyz.z,
-									 -2.f * normal->xyz.x * normal->xyz.z, -2.f * normal->xyz.y * normal->xyz.z, 1.f - 2.f * normal->xyz.z * normal->xyz.z)
-									 * hostOrientation;
-			}
-			case ShapeDirection::REVERSE: {
-				return vm_matrix_new(hostOrientation.vec.rvec * -1.f, hostOrientation.vec.uvec * -1.f, hostOrientation.vec.fvec * -1.f);
-			}
-			default:
-				Error(LOCATION, "Unhandled direction value!");
-				return vmd_identity_matrix;
+			return normalOrient;
 		}
+		case ShapeDirection::REFLECTED: {
+			if (!normal) {
+				return hostOrientation;
+			}
+
+			// Compute reflect vector as R = V - 2*(V dot N)*N where N
+			// is the normal and V is the incoming direction
+
+			return vm_matrix_new(1.f - 2.f * normal->xyz.x * normal->xyz.x, -2.f * normal->xyz.x * normal->xyz.y, -2.f * normal->xyz.x * normal->xyz.z,
+								 -2.f * normal->xyz.x * normal->xyz.y, 1.f - 2.f * normal->xyz.y * normal->xyz.y, -2.f * normal->xyz.y * normal->xyz.z,
+								 -2.f * normal->xyz.x * normal->xyz.z, -2.f * normal->xyz.y * normal->xyz.z, 1.f - 2.f * normal->xyz.z * normal->xyz.z)
+								 * hostOrientation;
+		}
+		case ShapeDirection::REVERSE: {
+			return vm_matrix_new(hostOrientation.vec.rvec * -1.f, hostOrientation.vec.uvec * -1.f, hostOrientation.vec.fvec * -1.f);
+		}
+		default:
+			Error(LOCATION, "Unhandled direction value!");
+			return vmd_identity_matrix;
 	}
+}
 
 void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const {
 	particle_percent *= m_particleChance;

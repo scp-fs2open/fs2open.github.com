@@ -2,10 +2,11 @@
 #define FS2_OPEN_EFFECTTIMING_H
 #pragma once
 
-#include "particle/ParticleSource.h"
 #include "utils/RandomRange.h"
 
 namespace particle {
+class ParticleSource; //TODO remove
+
 namespace util {
 
 //TODO Fold this file into the OmniEffect

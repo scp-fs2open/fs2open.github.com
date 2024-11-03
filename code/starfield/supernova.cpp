@@ -18,7 +18,7 @@
 #include "math/vecmat.h"
 #include "mission/missioncampaign.h"
 #include "particle/particle.h"
-#include "particle/effects/OmniEffect.h"
+#include "particle/ParticleEffect.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
 #include "popup/popupdead.h"
 #include "ship/ship.h"
