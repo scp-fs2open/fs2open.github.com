@@ -1128,8 +1128,6 @@ add_file_folder("Particle\\\\Hosts"
 )
 
 add_file_folder("Particle\\\\Util"
-	particle/util/EffectTiming.cpp
-	particle/util/EffectTiming.h
 	particle/util/ParticleProperties.cpp
 	particle/util/ParticleProperties.h
 )

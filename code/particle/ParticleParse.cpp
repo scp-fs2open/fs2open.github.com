@@ -57,8 +57,38 @@ namespace particle {
 		}
 
 		static void parseTiming(ParticleEffect &effect) {
-			//TODO integrate timing
-			effect.m_timing = util::EffectTiming::parseTiming();
+			if (optional_string("+Duration:")) {
+				if (optional_string("Onetime")) {
+					effect.m_duration = ParticleEffect::Duration::Onetime;
+				}
+				else if (optional_string("Always")) {
+					effect.m_duration = ParticleEffect::Duration::Always;
+				}
+				else {
+					effect.m_duration = ParticleEffect::Duration::Range;
+					effect.m_durationRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
+				}
+			}
+
+			if (optional_string("+Delay:")) {
+				if (effect.m_duration == ParticleEffect::Duration::Onetime) {
+					error_display(0, "+Delay is not valid for one-time effects!");
+				}
+				else {
+					effect.m_delayRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
+				}
+			}
+
+			if (optional_string("+Effects per second:")) {
+				effect.m_particlesPerSecond = ::util::ParsedRandomFloatRange::parseRandomRange();
+				if (effect.m_particlesPerSecond.min() < 0.001f) {
+					error_display(0, "Invalid effects per second minimum %f. Setting was disabled.", effect.m_particlesPerSecond.min());
+					effect.m_particlesPerSecond = ::util::UniformFloatRange(-1.f);
+				}
+				if (effect.m_particlesPerSecond.max() > 1000.0f) {
+					error_display(0, "Effects per second maximum %f is above 1000. Delay between effects will be clamped to 1 millisecond.", effect.m_particlesPerSecond.max());
+				}
+			}
 		}
 
 

@@ -5,7 +5,6 @@
 #include "globalincs/pstypes.h"
 #include "particle/ParticleVolume.h"
 #include "particle/util/ParticleProperties.h"
-#include "particle/util/EffectTiming.h"
 #include "utils/RandomRange.h"
 #include "utils/id.h"
 
@@ -32,26 +31,35 @@ class ParticleSource;
  */
 class ParticleEffect {
 public:
-	enum class ShapeDirection {
+	enum class Duration : uint8_t {
+		Onetime, //!< The effect is active exactly once
+		Range, //!< The effect is active within a specific time range
+		Always //!< The effect is always active
+	};
+
+	enum class ShapeDirection : uint8_t {
 		ALIGNED,
 		HIT_NORMAL,
 		REFLECTED,
 		REVERSE
 	};
 
-	enum class VelocityScaling {
+	enum class VelocityScaling : uint8_t {
 		NONE,
 		DOT,
 		DOT_INVERSE
 	};
 
  private:
+	//TODO reorder fields to minimize padding
 	SCP_string m_name; //!< The name of this effect
 
 	friend struct ParticleParse;
-	friend class ParticleSource; //TODO remove once timing is tidied up.
 
-	util::EffectTiming m_timing;
+	Duration m_duration;
+	::util::ParsedRandomFloatRange m_delayRange;
+	::util::ParsedRandomFloatRange m_durationRange;
+	::util::ParsedRandomFloatRange m_particlesPerSecond;
 
 	util::ParticleProperties m_particleProperties;
 
@@ -124,6 +132,12 @@ public:
 	void pageIn();
 
 	const SCP_string& getName() const { return m_name; }
+
+	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration() const;
+
+	float getNextSpawnDelay() const;
+
+	bool isOnetime() const { return m_duration == Duration::Onetime; }
 };
 
 }

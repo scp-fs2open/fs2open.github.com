@@ -32,12 +32,7 @@ void ParticleSource::finishCreation() {
 	m_host->setupProcessing();
 
 	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
-		TIMESTAMP begin = _timestamp(effect.m_timing.m_delayRange.next() * 1000.0f);
-		TIMESTAMP end;
-		if (effect.m_timing.m_duration == util::Duration::Always)
-			end = TIMESTAMP::never();
-		else
-			end = timestamp_delta(begin, effect.m_timing.m_durationRange.next() * 1000.0f);
+		const auto& [begin, end] = effect.getEffectDuration();
 		m_timing.emplace_back(SourceTiming{begin, end});
 	}
 }
@@ -65,15 +60,13 @@ bool ParticleSource::process() {
 				//Find "time" in last frame where particle spawned
 				float interp = static_cast<float>(timestamp_since(timing.m_nextCreation)) / (f2fl(Frametime) * 1000.0f);
 
-				// Calculate next spawn
-				auto secondsPerParticle = 1.0f / effect.m_timing.m_particlesPerSecond.next();
 				// we need to clamp this to 1 because a spawn delay lower than it takes to spawn the particle in ms means we try to spawn infinite particles
-				auto time_diff_ms = std::max(fl2i(secondsPerParticle * MILLISECONDS_PER_SECOND), 1);
+				auto time_diff_ms = std::max(fl2i(effect.getNextSpawnDelay() * MILLISECONDS_PER_SECOND), 1);
 				timing.m_nextCreation = timestamp_delta(timing.m_nextCreation, time_diff_ms);
 
 				effect.processSource(interp, m_host, m_normal, vel, parent, parent_sig, lifetime, radius, particleMultiplier);
 
-				bool isDone = effect.m_timing.m_duration == util::Duration::Onetime || timestamp_compare(timing.m_endTimestamp, timing.m_nextCreation) < 0;
+				bool isDone = effect.isOnetime() || timestamp_compare(timing.m_endTimestamp, timing.m_nextCreation) < 0;
 
 				m_effect_is_running[i] = !isDone;
 				needs_to_continue_running = !isDone;

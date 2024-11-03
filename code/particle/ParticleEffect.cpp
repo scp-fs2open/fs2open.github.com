@@ -7,7 +7,8 @@ namespace particle {
 
 ParticleEffect::ParticleEffect(const SCP_string& name)
 	: m_name(name),
-	  m_timing(),
+	  m_duration(Duration::Onetime),
+	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
 	  m_particleProperties(),
 	  m_particleNum(::util::UniformFloatRange(1.0f)),
 	  m_direction(ShapeDirection::ALIGNED),
@@ -46,7 +47,8 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
 	: m_name(name),
-	  m_timing(),
+	  m_duration(Duration::Onetime),
+	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
 	  m_particleProperties(),
 	  m_particleNum(std::move(particleNum)),
 	  m_direction(direction),
@@ -218,6 +220,20 @@ void ParticleEffect::parseValues(bool nocreate) {
 
 void ParticleEffect::pageIn() {
 	m_particleProperties.pageIn();
+}
+
+std::pair<TIMESTAMP, TIMESTAMP> ParticleEffect::getEffectDuration() const {
+	std::pair<TIMESTAMP, TIMESTAMP> timing;
+	timing.first = _timestamp(m_delayRange.next() * 1000.0f);
+	if (m_duration == Duration::Always)
+		timing.second = TIMESTAMP::never();
+	else
+		timing.second = timestamp_delta(timing.first, m_durationRange.next() * 1000.0f);
+	return timing;
+}
+
+float ParticleEffect::getNextSpawnDelay() const {
+	return 1.0f / m_particlesPerSecond.next();
 }
 
 }
