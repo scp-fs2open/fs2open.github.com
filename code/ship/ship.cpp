@@ -1806,10 +1806,10 @@ ship_info::ship_info()
 	impact_spew = default_impact_spew;
 
 	// default values from shipfx.cpp
-	static auto default_damage_spew = default_ship_particle_effect(1, 0, 1.3f, 0.7f, 0.0f, 0.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke);
+	static auto default_damage_spew = default_ship_particle_effect(1, 0, 1.3f, 0.7f, 1.0f, 1.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke);
 	damage_spew = default_damage_spew;
 
-	static auto default_split_particles = default_ship_particle_effect(80, 40, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2);
+	static auto default_split_particles = default_ship_particle_effect(80, 40, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2);
 	split_particles = default_split_particles;
 
 	static auto default_knossos_end_particles = default_ship_particle_effect(30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2);
