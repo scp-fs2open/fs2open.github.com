@@ -31,9 +31,9 @@ class ParticleSource;
 class ParticleEffect {
 public:
 	enum class Duration : uint8_t {
-		Onetime, //!< The effect is active exactly once
-		Range, //!< The effect is active within a specific time range
-		Always //!< The effect is always active
+		ONETIME, //!< The effect is active exactly once
+		RANGE, //!< The effect is active within a specific time range
+		ALWAYS //!< The effect is always active
 	};
 
 	enum class ShapeDirection : uint8_t {
@@ -56,61 +56,52 @@ public:
 	};
 
  private:
-	//TODO reorder fields to minimize padding
-	SCP_string m_name; //!< The name of this effect
-
 	friend struct ParticleParse;
 
-	Duration m_duration;
-	::util::ParsedRandomFloatRange m_delayRange;
-	::util::ParsedRandomFloatRange m_durationRange;
-	::util::ParsedRandomFloatRange m_particlesPerSecond;
+	SCP_string m_name; //!< The name of this effect
 
-	SCP_vector<int> m_bitmap_list;
-	::util::UniformRange<size_t> m_bitmap_range;
-	::util::ParsedRandomFloatRange m_radius;
+	Duration m_duration;
+	RotationType m_rotation_type;
+	ShapeDirection m_direction;
+	VelocityScaling m_velocity_directional_scaling;
+
+	bool m_affectedByDetail; //Kinda deprecated. Only used by the oldest of legacy effects.
 	bool m_parentLifetime;
 	bool m_parentScale;
 	bool m_hasLifetime;
-	::util::ParsedRandomFloatRange m_lifetime;
-	::util::ParsedRandomFloatRange m_length;
-	int m_size_lifetime_curve;
-	int m_vel_lifetime_curve;
-	RotationType m_rotation_type;
-	tl::optional<vec3d> m_manual_offset;
 	bool m_parent_local;
 	bool m_keep_anim_length_if_available;
-
-	::util::ParsedRandomFloatRange m_particleNum;
-
-	ShapeDirection m_direction;
-
-	::util::ParsedRandomFloatRange m_vel_inherit;
-
 	bool m_vel_inherit_absolute;
-
-	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
-
-	::util::ParsedRandomFloatRange m_velocity_scaling;
-
-	VelocityScaling m_velocity_directional_scaling;
-
-	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
-
-	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
-
 	bool m_vel_inherit_from_position_absolute;
 
+	SCP_vector<int> m_bitmap_list;
+	::util::UniformRange<size_t> m_bitmap_range;
+
+	::util::ParsedRandomFloatRange m_delayRange;
+	::util::ParsedRandomFloatRange m_durationRange;
+	::util::ParsedRandomFloatRange m_particlesPerSecond;
+	::util::ParsedRandomFloatRange m_particleNum;
+	::util::ParsedRandomFloatRange m_radius;
+	::util::ParsedRandomFloatRange m_lifetime;
+	::util::ParsedRandomFloatRange m_length;
+	::util::ParsedRandomFloatRange m_vel_inherit;
+	::util::ParsedRandomFloatRange m_velocity_scaling;
+
+	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
+	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
+
+	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
 	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
+
+	tl::optional<vec3d> m_manual_offset;
 
 	ParticleEffectHandle m_particleTrail;
 
-	//Bad legacy flags. Get rid off, or at least don't expose in new table.
-	float m_particleChance;
+	int m_size_lifetime_curve; //TODO replace with curve set
+	int m_vel_lifetime_curve; //TODO replace with curve set
 
-	bool m_affectedByDetail;
-
-	float m_distanceCulled;
+	float m_particleChance; //Deprecated. Use particle num random ranges instead.
+	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
 	matrix getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const;
  public:
@@ -118,11 +109,13 @@ public:
 	 * @brief Initializes the base ParticleEffect
 	 * @param name The name this effect should have
 	 */
-	explicit ParticleEffect(const SCP_string& name);
+	explicit ParticleEffect(SCP_string name);
 
 	// Use this to recreate deprecated legacy effects from in-engine code.
+	// All cases like this should already be handled. You should thus never add new uses of this constructor.
+	// This constructor will initialize certain non-parsed values differently to handle legacy effects correctly.
 	// Parsing the deprecated -part.tbm effects uses the simple constructor + parseLegacy() instead!
-	explicit ParticleEffect(const SCP_string& name,
+	explicit ParticleEffect(SCP_string name,
 							::util::ParsedRandomFloatRange particleNum,
 							ShapeDirection direction,
 							::util::ParsedRandomFloatRange vel_inherit,
@@ -144,7 +137,7 @@ public:
 	);
 
 	void processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const;
-	
+
 	void pageIn();
 
 	const SCP_string& getName() const { return m_name; }
@@ -153,7 +146,7 @@ public:
 
 	float getNextSpawnDelay() const;
 
-	bool isOnetime() const { return m_duration == Duration::Onetime; }
+	bool isOnetime() const { return m_duration == Duration::ONETIME; }
 };
 
 }

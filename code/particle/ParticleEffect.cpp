@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 
@@ -5,39 +7,44 @@
 
 namespace particle {
 
-ParticleEffect::ParticleEffect(const SCP_string& name)
-	: m_name(name),
-	  m_duration(Duration::Onetime),
-	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
-	  m_radius(::util::UniformFloatRange(0.0f, 1.0f)),
+ParticleEffect::ParticleEffect(SCP_string name)
+	: m_name(std::move(name)),
+	  m_duration(Duration::ONETIME),
+	  m_rotation_type(RotationType::DEFAULT),
+	  m_direction(ShapeDirection::ALIGNED),
+	  m_velocity_directional_scaling(VelocityScaling::NONE),
+	  m_affectedByDetail(false),
 	  m_parentLifetime(false),
 	  m_parentScale(false),
 	  m_hasLifetime(false),
-	  m_length(::util::UniformFloatRange(0.0f)),
-	  m_size_lifetime_curve(-1),
-	  m_vel_lifetime_curve (-1),
-	  m_rotation_type(RotationType::DEFAULT),
-	  m_manual_offset (tl::nullopt),
 	  m_parent_local(false),
 	  m_keep_anim_length_if_available(false),
-	  m_particleNum(::util::UniformFloatRange(1.0f)),
-	  m_direction(ShapeDirection::ALIGNED),
-	  m_vel_inherit(),
 	  m_vel_inherit_absolute(false),
-	  m_velocityVolume(nullptr),
-	  m_velocity_scaling(),
-	  m_velocity_directional_scaling(VelocityScaling::NONE),
+	  m_vel_inherit_from_position_absolute(false),
+	  m_bitmap_list({}),
+	  m_bitmap_range(::util::UniformRange<size_t>(0)),
+	  m_delayRange(::util::UniformFloatRange(0.0f)),
+	  m_durationRange(::util::UniformFloatRange(0.0f)),
+	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
+	  m_particleNum(::util::UniformFloatRange(1.0f)),
+	  m_radius(::util::UniformFloatRange(0.0f, 1.0f)),
+	  m_lifetime(::util::UniformFloatRange(0.0f)),
+	  m_length(::util::UniformFloatRange(0.0f)),
+	  m_vel_inherit(::util::UniformFloatRange(0.0f)),
+	  m_velocity_scaling(::util::UniformFloatRange(0.0f)),
 	  m_vel_inherit_from_orientation(tl::nullopt),
 	  m_vel_inherit_from_position(tl::nullopt),
-	  m_vel_inherit_from_position_absolute(false),
+	  m_velocityVolume(nullptr),
 	  m_spawnVolume(nullptr),
+	  m_manual_offset (tl::nullopt),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
+	  m_size_lifetime_curve(-1),
+	  m_vel_lifetime_curve (-1),
 	  m_particleChance(1.f),
-	  m_affectedByDetail(false),
 	  m_distanceCulled(-1.f)
 	{}
 
-ParticleEffect::ParticleEffect(const SCP_string& name,
+ParticleEffect::ParticleEffect(SCP_string name,
 	::util::ParsedRandomFloatRange particleNum,
 	ShapeDirection direction,
 	::util::ParsedRandomFloatRange vel_inherit,
@@ -56,37 +63,39 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
-	: m_name(name),
-	  m_duration(Duration::Onetime),
-	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
-	  m_bitmap_list({bitmap}),
-	  m_bitmap_range(::util::UniformRange<size_t>(0)),
-	  m_radius(std::move(radius)),
+	: m_name(std::move(name)),
+	  m_duration(Duration::ONETIME),
+	  m_rotation_type(RotationType::DEFAULT),
+	  m_direction(direction),
+	  m_velocity_directional_scaling(velocity_directional_scaling),
+	  m_affectedByDetail(affectedByDetail),
 	  m_parentLifetime(false),
 	  m_parentScale(false),
 	  m_hasLifetime(true),
-	  m_lifetime(std::move(lifetime)),
-	  m_length(::util::UniformFloatRange(0.0f)),
-	  m_size_lifetime_curve(-1),
-	  m_vel_lifetime_curve (-1),
-	  m_rotation_type(RotationType::DEFAULT),
-	  m_manual_offset (tl::nullopt),
 	  m_parent_local(false),
 	  m_keep_anim_length_if_available(!disregardAnimationLength),
-	  m_particleNum(std::move(particleNum)),
-	  m_direction(direction),
-	  m_vel_inherit(std::move(vel_inherit)),
 	  m_vel_inherit_absolute(vel_inherit_absolute),
-	  m_velocityVolume(std::move(velocityVolume)),
+	  m_vel_inherit_from_position_absolute(false),
+	  m_bitmap_list({bitmap}),
+	  m_bitmap_range(::util::UniformRange<size_t>(0)),
+	  m_delayRange(::util::UniformFloatRange(0.0f)),
+	  m_durationRange(::util::UniformFloatRange(0.0f)),
+	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
+	  m_particleNum(std::move(particleNum)),
+	  m_radius(std::move(radius)),
+	  m_lifetime(std::move(lifetime)),
+	  m_length(::util::UniformFloatRange(0.0f)),
+	  m_vel_inherit(std::move(vel_inherit)),
 	  m_velocity_scaling(std::move(velocity_scaling)),
-	  m_velocity_directional_scaling(velocity_directional_scaling),
 	  m_vel_inherit_from_orientation(std::move(vel_inherit_from_orientation)),
 	  m_vel_inherit_from_position(std::move(vel_inherit_from_position)),
-	  m_vel_inherit_from_position_absolute(false),
+	  m_velocityVolume(std::move(velocityVolume)),
 	  m_spawnVolume(std::move(spawnVolume)),
+	  m_manual_offset (tl::nullopt),
 	  m_particleTrail(std::move(particleTrail)),
+	  m_size_lifetime_curve(-1),
+	  m_vel_lifetime_curve (-1),
 	  m_particleChance(particleChance),
-	  m_affectedByDetail(affectedByDetail),
 	  m_distanceCulled(distanceCulled) {}
 
 matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const {
@@ -271,7 +280,7 @@ void ParticleEffect::pageIn() {
 std::pair<TIMESTAMP, TIMESTAMP> ParticleEffect::getEffectDuration() const {
 	std::pair<TIMESTAMP, TIMESTAMP> timing;
 	timing.first = _timestamp(m_delayRange.next() * 1000.0f);
-	if (m_duration == Duration::Always)
+	if (m_duration == Duration::ALWAYS)
 		timing.second = TIMESTAMP::never();
 	else
 		timing.second = timestamp_delta(timing.first, m_durationRange.next() * 1000.0f);

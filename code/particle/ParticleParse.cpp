@@ -131,20 +131,20 @@ namespace particle {
 
 		static void parseTiming(ParticleEffect &effect) {
 			if (optional_string("+Duration:")) {
-				if (optional_string("Onetime")) {
-					effect.m_duration = ParticleEffect::Duration::Onetime;
+				if (optional_string("ONETIME")) {
+					effect.m_duration = ParticleEffect::Duration::ONETIME;
 				}
 				else if (optional_string("Always")) {
-					effect.m_duration = ParticleEffect::Duration::Always;
+					effect.m_duration = ParticleEffect::Duration::ALWAYS;
 				}
 				else {
-					effect.m_duration = ParticleEffect::Duration::Range;
+					effect.m_duration = ParticleEffect::Duration::RANGE;
 					effect.m_durationRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
 				}
 			}
 
 			if (optional_string("+Delay:")) {
-				if (effect.m_duration == ParticleEffect::Duration::Onetime) {
+				if (effect.m_duration == ParticleEffect::Duration::ONETIME) {
 					error_display(0, "+Delay is not valid for one-time effects!");
 				}
 				else {
