@@ -11,8 +11,81 @@ namespace particle {
 
 	struct ParticleParse {
 		static void parseParticleProperties(ParticleEffect &effect) {
-			//TODO Split up ParticleProperties
-			effect.m_particleProperties.parse(false);
+			bool nocreate = false;
+			if (internal::required_string_if_new("+Filename:", nocreate)) {
+				effect.m_bitmap_list = internal::parseAnimationList(true);
+				effect.m_bitmap_range = ::util::UniformRange<size_t>(0, effect.m_bitmap_list.size() - 1);
+			}
+
+			if (optional_string("+Size:")) {
+				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
+			} else if (optional_string("+Parent Size Factor:")) {
+				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
+				effect.m_parentScale = true;
+			} else if (!nocreate) {
+				error_display(1, "Missing +Size or +Parent Size Factor");
+			}
+
+			if (optional_string("+Length:")) {
+				effect.m_length = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+
+			if (optional_string("+Lifetime:")) {
+				if (optional_string("<none>")) {
+					// Use lifetime of effect
+					effect.m_hasLifetime = false;
+				} else {
+					effect.m_hasLifetime = true;
+					effect.m_lifetime = ::util::ParsedRandomFloatRange::parseRandomRange();
+				}
+			} else if (optional_string("+Parent Lifetime Factor:")) {
+				effect.m_hasLifetime = true;
+				effect.m_parentLifetime = true;
+				effect.m_lifetime = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+
+			if (optional_string("+Size over lifetime curve:")) {
+				SCP_string buf;
+				stuff_string(buf, F_NAME);
+				effect.m_size_lifetime_curve = curve_get_by_name(buf);
+
+				if (effect.m_size_lifetime_curve < 0) {
+					error_display(0, "Could not find curve '%s'", buf.c_str());
+				}
+			}
+
+			if (optional_string("+Velocity scalar over lifetime curve:")) {
+				SCP_string buf;
+				stuff_string(buf, F_NAME);
+				effect.m_vel_lifetime_curve = curve_get_by_name(buf);
+
+				if (effect.m_vel_lifetime_curve < 0) {
+					error_display(0, "Could not find curve '%s'", buf.c_str());
+				}
+			}
+
+			if (optional_string("+Rotation:")) {
+				char buf[NAME_LENGTH];
+				stuff_string(buf, F_NAME, NAME_LENGTH);
+				if (!stricmp(buf, "DEFAULT")) {
+					effect.m_rotation_type = ParticleEffect::RotationType::DEFAULT;
+				} else if (!stricmp(buf, "RANDOM")) {
+					effect.m_rotation_type = ParticleEffect::RotationType::RANDOM;
+				} else if (!stricmp(buf, "SCREEN_ALIGNED") || !stricmp(buf, "SCREEN-ALIGNED") || !stricmp(buf, "SCREEN ALIGNED")) {
+					effect.m_rotation_type = ParticleEffect::RotationType::SCREEN_ALIGNED;
+				} else {
+					// in the future we may want to support additional types, or even a specific angle, but that is TBD
+					error_display(0, "Rotation Type %s not supported", buf);
+				}
+			}
+
+			if (optional_string("+Offset:")) {
+				stuff_vec3d(&effect.m_manual_offset.emplace());
+			}
+
+			if (optional_string("+Remain local to parent:")) {
+				stuff_boolean(&effect.m_parent_local);
+			}
 		}
 
 		static void parseNumber(ParticleEffect &effect) {

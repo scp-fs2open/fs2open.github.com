@@ -1127,11 +1127,6 @@ add_file_folder("Particle\\\\Hosts"
 	particle/hosts/EffectHostVector.h
 )
 
-add_file_folder("Particle\\\\Util"
-	particle/util/ParticleProperties.cpp
-	particle/util/ParticleProperties.h
-)
-
 add_file_folder("Particle\\\\Volumes"
 	particle/volumes/ConeVolume.cpp
 	particle/volumes/ConeVolume.h

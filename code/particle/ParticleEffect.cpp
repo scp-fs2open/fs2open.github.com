@@ -9,7 +9,17 @@ ParticleEffect::ParticleEffect(const SCP_string& name)
 	: m_name(name),
 	  m_duration(Duration::Onetime),
 	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
-	  m_particleProperties(),
+	  m_radius(::util::UniformFloatRange(0.0f, 1.0f)),
+	  m_parentLifetime(false),
+	  m_parentScale(false),
+	  m_hasLifetime(false),
+	  m_length(::util::UniformFloatRange(0.0f)),
+	  m_size_lifetime_curve(-1),
+	  m_vel_lifetime_curve (-1),
+	  m_rotation_type(RotationType::DEFAULT),
+	  m_manual_offset (tl::nullopt),
+	  m_parent_local(false),
+	  m_keep_anim_length_if_available(false),
 	  m_particleNum(::util::UniformFloatRange(1.0f)),
 	  m_direction(ShapeDirection::ALIGNED),
 	  m_vel_inherit(),
@@ -49,7 +59,20 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	: m_name(name),
 	  m_duration(Duration::Onetime),
 	  m_particlesPerSecond(::util::UniformFloatRange(-1.f)),
-	  m_particleProperties(),
+	  m_bitmap_list({bitmap}),
+	  m_bitmap_range(::util::UniformRange<size_t>(0)),
+	  m_radius(std::move(radius)),
+	  m_parentLifetime(false),
+	  m_parentScale(false),
+	  m_hasLifetime(true),
+	  m_lifetime(std::move(lifetime)),
+	  m_length(::util::UniformFloatRange(0.0f)),
+	  m_size_lifetime_curve(-1),
+	  m_vel_lifetime_curve (-1),
+	  m_rotation_type(RotationType::DEFAULT),
+	  m_manual_offset (tl::nullopt),
+	  m_parent_local(false),
+	  m_keep_anim_length_if_available(!disregardAnimationLength),
 	  m_particleNum(std::move(particleNum)),
 	  m_direction(direction),
 	  m_vel_inherit(std::move(vel_inherit)),
@@ -64,14 +87,7 @@ ParticleEffect::ParticleEffect(const SCP_string& name,
 	  m_particleTrail(std::move(particleTrail)),
 	  m_particleChance(particleChance),
 	  m_affectedByDetail(affectedByDetail),
-	  m_distanceCulled(distanceCulled) {
-	m_particleProperties.m_lifetime = std::move(lifetime);
-	m_particleProperties.m_hasLifetime = true;
-	m_particleProperties.m_keep_anim_length_if_available = !disregardAnimationLength;
-	m_particleProperties.m_radius = std::move(radius);
-	m_particleProperties.m_bitmap_list = {bitmap};
-	m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0);
-}
+	  m_distanceCulled(distanceCulled) {}
 
 matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const {
 	switch (m_direction) {
@@ -112,7 +128,7 @@ matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::
 void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const {
 	particle_percent *= m_particleChance;
 
-	const auto& [pos, hostOrientation] = host->getPositionAndOrientation(m_particleProperties.m_parent_local, interp, m_particleProperties.m_manual_offset );
+	const auto& [pos, hostOrientation] = host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
 	const auto& orientation = getNewDirection(hostOrientation, normal);
 
 	if (m_affectedByDetail){
@@ -144,10 +160,8 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 
 		info.pos = pos;
 		info.vel = vel;
-		info.rad = radius;
-		info.lifetime = lifetime;
 
-		if (m_particleProperties.m_parent_local) {
+		if (m_parent_local) {
 			info.attached_objnum = parent;
 			info.attached_sig = parent_sig;
 		}
@@ -197,8 +211,42 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 		info.pos += localPos;
 		info.vel += velocity;
 
+		info.bitmap = m_bitmap_list[m_bitmap_range.next()];
+
+		if (m_parentScale)
+			// if we were spawned by a particle, info.rad is the parent's radius and m_radius is a factor of that
+			info.rad = radius * m_radius.next();
+		else
+			info.rad = m_radius.next();
+
+		info.length = m_length.next();
+		if (m_hasLifetime) {
+			if (m_parentLifetime)
+				// if we were spawned by a particle, info.lifetime is the parent's remaining liftime and m_lifetime is a factor of that
+				info.lifetime = lifetime * m_lifetime.next();
+			else
+				info.lifetime = m_lifetime.next();
+			info.lifetime_from_animation = m_keep_anim_length_if_available;
+		}
+		info.size_lifetime_curve = m_size_lifetime_curve;
+		info.vel_lifetime_curve = m_vel_lifetime_curve;
+
+		switch (m_rotation_type) {
+			case RotationType::DEFAULT:
+				info.use_angle = Randomize_particle_rotation;
+				break;
+			case RotationType::RANDOM:
+				info.use_angle = true;
+				break;
+			case RotationType::SCREEN_ALIGNED:
+				info.use_angle = false;
+				break;
+			default:
+				UNREACHABLE("Rotation type not supported");
+		}
+
 		if (m_particleTrail.isValid()) {
-			auto part = m_particleProperties.createPersistentParticle(info);
+			auto part = createPersistent(&info);
 
 			// There are some possibilities where we can get a null pointer back. Those are very rare but we
 			// still shouldn't crash in those circumstances.
@@ -209,17 +257,15 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 			}
 		} else {
 			// We don't have a trail so we don't need a persistent particle
-			m_particleProperties.createParticle(info);
+			create(&info);
 		}
 	}
 }
 
-void ParticleEffect::parseValues(bool nocreate) {
-	//TODO
-};
-
 void ParticleEffect::pageIn() {
-	m_particleProperties.pageIn();
+	for (int bitmap : m_bitmap_list) {
+		bm_page_in_texture(bitmap);
+	}
 }
 
 std::pair<TIMESTAMP, TIMESTAMP> ParticleEffect::getEffectDuration() const {

@@ -4,7 +4,6 @@
 
 #include "globalincs/pstypes.h"
 #include "particle/ParticleVolume.h"
-#include "particle/util/ParticleProperties.h"
 #include "utils/RandomRange.h"
 #include "utils/id.h"
 
@@ -50,6 +49,12 @@ public:
 		DOT_INVERSE
 	};
 
+	enum class RotationType : uint8_t {
+		DEFAULT,
+		RANDOM,
+		SCREEN_ALIGNED
+	};
+
  private:
 	//TODO reorder fields to minimize padding
 	SCP_string m_name; //!< The name of this effect
@@ -61,7 +66,20 @@ public:
 	::util::ParsedRandomFloatRange m_durationRange;
 	::util::ParsedRandomFloatRange m_particlesPerSecond;
 
-	util::ParticleProperties m_particleProperties;
+	SCP_vector<int> m_bitmap_list;
+	::util::UniformRange<size_t> m_bitmap_range;
+	::util::ParsedRandomFloatRange m_radius;
+	bool m_parentLifetime;
+	bool m_parentScale;
+	bool m_hasLifetime;
+	::util::ParsedRandomFloatRange m_lifetime;
+	::util::ParsedRandomFloatRange m_length;
+	int m_size_lifetime_curve;
+	int m_vel_lifetime_curve;
+	RotationType m_rotation_type;
+	tl::optional<vec3d> m_manual_offset;
+	bool m_parent_local;
+	bool m_keep_anim_length_if_available;
 
 	::util::ParsedRandomFloatRange m_particleNum;
 
@@ -126,9 +144,7 @@ public:
 	);
 
 	void processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const;
-
-	void parseValues(bool nocreate);
-
+	
 	void pageIn();
 
 	const SCP_string& getName() const { return m_name; }
