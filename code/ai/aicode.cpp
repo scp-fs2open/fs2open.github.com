@@ -1242,7 +1242,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	ai_info	*aip;
 	float		old_dist, new_dist;
 	float		old_dot, new_dot;
-	object	*old_weapon_objp = NULL;
+	object	*old_weapon_objp = nullptr;
 
 	// any object number less than 0 is invalid
 	if ((attacked_objnum < 0) || (weapon_objnum < 0)) {
@@ -1287,7 +1287,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 		}
 	}
 
-	new_dist = compute_dots(weapon_objp, objp, &new_dot, NULL);
+	new_dist = compute_dots(weapon_objp, objp, &new_dot, nullptr);	// NOLINT(readability-suspicious-call-argument)
 
 	if (aip->danger_weapon_objnum == -1) {
 		if (new_dist < 1500.0f) {
@@ -1297,8 +1297,8 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 			}
 		}
 	} else {
-		Assert(old_weapon_objp != NULL);
-		old_dist = compute_dots(old_weapon_objp, objp, &old_dot, NULL);
+		Assert(old_weapon_objp != nullptr);
+		old_dist = compute_dots(old_weapon_objp, objp, &old_dot, nullptr);	// NOLINT(readability-suspicious-call-argument)
 	
 		if (old_dot < 0.5f) {
 			aip->danger_weapon_objnum = -1;
@@ -16064,7 +16064,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 			//	And the current object is a small ship
 			if (Ship_info[Ships[objp_ship->instance].ship_info_index].is_small_ship()) {
 				//	Recover from hitting a big ship.  Note, if two big ships collide, they just pound away at each other.  Oh well.  Recovery looks dumb and it's very late.
-				big_ship_collide_recover_start(objp_ship, hit_objp, hit_normal);
+				big_ship_collide_recover_start(objp_ship, hit_objp, hit_normal);	// NOLINT(readability-suspicious-call-argument)
 			}
 		}
 	}

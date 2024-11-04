@@ -697,7 +697,7 @@ private:
 public:
 	weapon_explosions();
 
-	int Load(const char *filename = NULL, int specified_lods = MAX_WEAPON_EXPL_LOD);
+	int Load(const char *filename = nullptr, int specified_lods = MAX_WEAPON_EXPL_LOD);
 	int GetAnim(int weapon_expl_index, const vec3d *pos, float size) const;
 	void PageIn(int idx);
 };

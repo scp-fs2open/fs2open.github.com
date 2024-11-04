@@ -1844,7 +1844,7 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
-extern int get_quadrant(const vec3d *hit_pnt, const object *shipobjp = NULL);	//	Return quadrant num of given hit point.
+extern int get_quadrant(const vec3d *hit_pnt, const object *shipobjp = nullptr);	//	Return quadrant num of given hit point.
 
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 

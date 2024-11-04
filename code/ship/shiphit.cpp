@@ -1530,7 +1530,7 @@ static void player_died_start(const object *killer_objp)
 */
 
 	//	Create a good vector for the camera to move along during death sequence.
-	const object	*other_objp = NULL;
+	const object	*other_objp = nullptr;
 
 	// on multiplayer clients, there have been occasions where we haven't been able to determine
 	// the killer of a ship (due to bogus/mismatched/timed-out signatures on the client side).  If
@@ -1559,7 +1559,7 @@ static void player_died_start(const object *killer_objp)
 			break;
 
 		default:
-			Int3();		//	Killed by an object of a peculiar type.  What is it?
+			UNREACHABLE("Unhandled object type %d in player_died_start()", killer_objp->type);		//	Killed by an object of a peculiar type.  What is it?
 			other_objp = killer_objp;	//	Enable to continue, just in case we shipped it with this bug...
 		}
 	} else {
@@ -1575,7 +1575,7 @@ static void player_died_start(const object *killer_objp)
 	vec3d	*side_vec;
 	float		dist;
 
-	Assert(other_objp != NULL);
+	Assert(other_objp != nullptr);
 
 	if (Player_obj == other_objp) {
 		dist = 50.0f;

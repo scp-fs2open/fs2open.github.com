@@ -77,12 +77,12 @@ namespace animation { enum class ModelAnimationDirection; }
 
 // send the specified data packet to all players
 void multi_io_send(net_player *pl, const ubyte *data, int length);
-void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignore = NULL);
+void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignore = nullptr);
 void multi_io_send_force(net_player *pl);
 
 // send the data packet to all players via their reliable sockets
 void multi_io_send_reliable(net_player *pl, const ubyte *data, int length);
-void multi_io_send_to_all_reliable(const ubyte* data, int length, const net_player *ignore = NULL);
+void multi_io_send_to_all_reliable(const ubyte* data, int length, const net_player *ignore = nullptr);
 void multi_io_send_reliable_force(net_player *pl);
 
 // send all buffered packets
