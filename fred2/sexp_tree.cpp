@@ -995,7 +995,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_REMOVE_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, these are deprecated 
+
+							// hide these operators per GitHub issue #6400
+							case OP_GET_VARIABLE_BY_INDEX:
+							case OP_SET_VARIABLE_BY_INDEX:
+							case OP_COPY_VARIABLE_FROM_INDEX:
+							case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+
+							// unlike the various campaign operators, these are deprecated
 							case OP_HITS_LEFT_SUBSYSTEM:
 							case OP_CUTSCENES_SHOW_SUBTITLE:
 							case OP_ORDER:
@@ -1053,7 +1060,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_REMOVE_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, these are deprecated 
+
+							// hide these operators per GitHub issue #6400
+							case OP_GET_VARIABLE_BY_INDEX:
+							case OP_SET_VARIABLE_BY_INDEX:
+							case OP_COPY_VARIABLE_FROM_INDEX:
+							case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+
+							// unlike the various campaign operators, these are deprecated
 							case OP_HITS_LEFT_SUBSYSTEM:
 							case OP_CUTSCENES_SHOW_SUBTITLE:
 							case OP_ORDER:
