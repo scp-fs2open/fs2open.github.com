@@ -2936,11 +2936,7 @@ int multi_get_connection_speed()
 	int cspeed;
 	const char *connection_speed;
 
-#ifdef _WIN32	
-	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "");	
-#else
 	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "Fast");
-#endif
 
 	if ( !stricmp(connection_speed, NOX("Slow")) ) {
 		cspeed = CONNECTION_SPEED_288;

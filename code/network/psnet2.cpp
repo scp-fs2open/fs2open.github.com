@@ -52,7 +52,6 @@ static bool Psnet_active = false;
 
 static int Network_status;
 int Psnet_failure_code = 0;
-int Psnet_connection;
 
 uint16_t Psnet_default_port;
 
@@ -423,8 +422,6 @@ void psnet_init(uint16_t port_num)
 		return;
 	}
 
-	Psnet_connection = NETWORK_CONNECTION_LAN;
-
 	Network_status = NETWORK_STATUS_NO_PROTOCOL;
 
 #ifdef _WIN32
@@ -660,11 +657,6 @@ bool psnet_init_my_addr()
  */
 int psnet_get_network_status()
 {
-	// first case is when "none" is selected
-	if (Psnet_connection == NETWORK_CONNECTION_NONE) {
-		return NETWORK_ERROR_NO_TYPE;
-	}
-
 	// first, check the connection status of the network
 	if (Network_status == NETWORK_STATUS_NO_WINSOCK) {
 		return NETWORK_ERROR_NO_WINSOCK;
