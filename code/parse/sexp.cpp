@@ -37599,7 +37599,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
-		"this mission is played as a single mission." },
+		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_PREVIOUS_GOAL_FALSE, "Previous Mission Goal False (Boolean operator)\r\n"
 		"\tReturns true if the specified goal in the specified mission "
@@ -37608,7 +37608,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
-		"this mission is played as a single mission." },
+		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_PREVIOUS_GOAL_INCOMPLETE, "Previous Mission Goal Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified goal in the specified mission "
@@ -37617,7 +37617,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
-		"this mission is played as a single mission." },
+		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_PREVIOUS_EVENT_TRUE, "Previous Mission Event True (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the specified mission is true "
@@ -37626,7 +37626,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
-		"this mission is played as a single mission." },
+		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_PREVIOUS_EVENT_FALSE, "Previous Mission Event False (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the specified mission "
@@ -37635,7 +37635,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
-		"this mission is played as a single mission." },
+		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_PREVIOUS_EVENT_INCOMPLETE, "Previous Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the specified mission "
@@ -37644,7 +37644,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
-		"this mission is played as a single mission." },
+		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_GOAL_TRUE_DELAY, "Mission Goal True (Boolean operator)\r\n"
 		"\tReturns true N seconds after the specified goal in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
