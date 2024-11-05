@@ -157,7 +157,7 @@ typedef struct weapon {
 	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
 								// currently only gets set when weapon_info->acceleration_time is used
 
-	int next_spawn_time[MAX_SPAWN_TYPES_PER_WEAPON];		// used for continuous child spawn
+	TIMESTAMP last_spawn_time[MAX_SPAWN_TYPES_PER_WEAPON];		// used for continuous child spawn
 
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
@@ -324,9 +324,16 @@ struct ConditionalImpact {
 };
 
 float weapon_get_lifetime_pct(const weapon& wp);
-float beam_get_lifetime_pct(const beam& wp);
 float weapon_get_age(const weapon& wp);
 float weapon_get_hitpoints_fraction(const weapon& wp);
+
+float beam_get_warmup_lifetime_pct(const beam& wp);
+float beam_get_lifetime_pct(const beam& wp);
+float beam_get_age(const beam& wp);
+float beam_get_warmdown_lifetime_pct(const beam& wp);
+float beam_get_warmdown_age(const beam& wp);
+float beam_get_total_lifetime_pct(const beam& wp);
+float beam_get_total_age(const beam& wp);
 
 struct weapon_info
 {
@@ -675,6 +682,8 @@ struct weapon_info
 		LIGHT_B_MULT,
 		DET_RADIUS_MULT,
 		TURN_RATE_MULT,
+		SPAWN_RATE_MULT,
+		SPAWN_COUNT_MULT,
 
 		NUM_VALUES
 	};
@@ -690,7 +699,7 @@ struct weapon_info
 					std::pair {"Laser Offset Z Mult", ModularCurveOutputs::LASER_OFFSET_Z_MULT},
 					std::pair {"Laser Headon Transition Angle Mult", ModularCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT},
 					std::pair {"Laser Headon Transition Rate Mult", ModularCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT},
-					std::pair {"Laser Anim State", ModularCurveOutputs::LASER_ANIM_STATE},
+					std::pair {"Laser Animation State", ModularCurveOutputs::LASER_ANIM_STATE},
 					std::pair {"Laser Alpha Mult", ModularCurveOutputs::LASER_ALPHA_MULT},
 					std::pair {"Laser Bitmap R Mult", ModularCurveOutputs::LASER_BITMAP_R_MULT},
 					std::pair {"Laser Bitmap G Mult", ModularCurveOutputs::LASER_BITMAP_G_MULT},
@@ -705,6 +714,8 @@ struct weapon_info
 					std::pair {"Light B Multiplier", ModularCurveOutputs::LIGHT_B_MULT},
 					std::pair {"Detonation Radius Mult", ModularCurveOutputs::DET_RADIUS_MULT},
 					std::pair {"Turn Rate Mult", ModularCurveOutputs::TURN_RATE_MULT},
+					std::pair {"Child Spawn Rate Mult", ModularCurveOutputs::SPAWN_RATE_MULT},
+					std::pair {"Child Spawn Count Mult", ModularCurveOutputs::SPAWN_COUNT_MULT},
 			},
 			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}},
 			std::pair {"Age", modular_curves_functional_input<weapon_get_age>{}},
@@ -716,33 +727,88 @@ struct weapon_info
 	enum class HitModularCurveOutputs {
 		// outputs
 		DAMAGE_MULT,
+		HULL_DAMAGE_MULT,
+		SHIELD_DAMAGE_MULT,
+		SUBSYS_DAMAGE_MULT,
+		MASS_MULT,
+
 		NUM_VALUES
 	};
 	static constexpr auto hit_modular_curves_definition = modular_curves_definition.derive_modular_curves_input_only_subset<object>(
-			std::pair {"Target Health", modular_curves_submember_input<&object::hull_strength>{}}
+			std::pair {"Target Health", modular_curves_submember_input<&object::hull_strength>{}},
+			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}}
 	).derive_modular_curves_subset<float, HitModularCurveOutputs>(
 			std::array {
-					std::pair {"Damage Multiplier", HitModularCurveOutputs::DAMAGE_MULT},
+					std::pair {"Damage Mult", HitModularCurveOutputs::DAMAGE_MULT},
+					std::pair {"Hull Damage Mult", HitModularCurveOutputs::HULL_DAMAGE_MULT},
+					std::pair {"Shield Damage Mult", HitModularCurveOutputs::SHIELD_DAMAGE_MULT},
+					std::pair {"Subsystem Damage Mult", HitModularCurveOutputs::SUBSYS_DAMAGE_MULT},
+					std::pair {"Mass Mult", HitModularCurveOutputs::MASS_MULT},
 			},
 			std::pair {"Dot", modular_curves_self_input{}}
 	);
 
 	enum class BeamModularCurveOutputs {
 		// outputs
-		DAMAGE_MULT,
+		BEAM_WIDTH_MULT,
+		BEAM_ALPHA_MULT,
+		BEAM_ANIM_STATE,
+		GLOW_RADIUS_MULT,
+		GLOW_ALPHA_MULT,
+		GLOW_ANIM_STATE,
+
 		NUM_VALUES
 	};
 	static constexpr auto beam_modular_curves_definition = make_modular_curve_definition<beam, BeamModularCurveOutputs>(
 			std::array {
-					std::pair {"Damage Multiplier", BeamModularCurveOutputs::DAMAGE_MULT}
+					std::pair {"Beam Width Mult", BeamModularCurveOutputs::BEAM_WIDTH_MULT},
+					std::pair {"Beam Alpha Mult", BeamModularCurveOutputs::BEAM_ALPHA_MULT},
+					std::pair {"Beam Animation State", BeamModularCurveOutputs::BEAM_ANIM_STATE},
+					std::pair {"Glow Radius Mult", BeamModularCurveOutputs::GLOW_RADIUS_MULT},
+					std::pair {"Glow Alpha Mult", BeamModularCurveOutputs::GLOW_ALPHA_MULT},
+					std::pair {"Glow Animation State", BeamModularCurveOutputs::GLOW_ANIM_STATE},
 			},
-			std::pair {"Lifetime", modular_curves_functional_input<beam_get_lifetime_pct>{}}
+			std::pair {"Beam Lifetime", modular_curves_functional_input<beam_get_lifetime_pct>{}},
+			std::pair {"Beam Age", modular_curves_functional_input<beam_get_age>{}},
+			std::pair {"Warmup Lifetime", modular_curves_functional_input<beam_get_warmup_lifetime_pct>{}},
+			std::pair {"Warmup Age", modular_curves_functional_input<beam_get_total_age>{}},
+			std::pair {"Warmdown Lifetime", modular_curves_functional_input<beam_get_warmdown_lifetime_pct>{}},
+			std::pair {"Warmdown Age", modular_curves_functional_input<beam_get_warmdown_age>{}},
+			std::pair {"Beam Total Lifetime", modular_curves_functional_input<beam_get_total_lifetime_pct>{}},
+			std::pair {"Beam Total Age", modular_curves_functional_input<beam_get_total_age>{}},
+			std::pair {"Parent Radius", modular_curves_submember_input<&beam::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
 	);
+
+	enum class BeamHitModularCurveOutputs {
+		// outputs
+		DAMAGE_MULT,
+		HULL_DAMAGE_MULT,
+		SHIELD_DAMAGE_MULT,
+		SUBSYS_DAMAGE_MULT,
+		MASS_MULT,
+
+		NUM_VALUES
+	};
+	static constexpr auto beam_hit_modular_curves_definition =
+		beam_modular_curves_definition
+			.derive_modular_curves_subset<object, BeamHitModularCurveOutputs>(
+				std::array{
+					std::pair{"Damage Mult", BeamHitModularCurveOutputs::DAMAGE_MULT},
+					std::pair{"Hull Damage Mult", BeamHitModularCurveOutputs::HULL_DAMAGE_MULT},
+					std::pair{"Shield Damage Mult", BeamHitModularCurveOutputs::SHIELD_DAMAGE_MULT},
+					std::pair{"Subsystem Damage Mult", BeamHitModularCurveOutputs::SUBSYS_DAMAGE_MULT},
+					std::pair{"Mass Mult", BeamHitModularCurveOutputs::MASS_MULT},
+				},
+				std::pair{"Target Health", modular_curves_submember_input<&object::hull_strength>{}},
+				std::pair{"Target Radius", modular_curves_submember_input<&object::radius>{}}
+			);
 
 	MODULAR_CURVE_SET(modular_curves, weapon_info::modular_curves_definition);
 	MODULAR_CURVE_SET(hit_modular_curves, weapon_info::hit_modular_curves_definition);
 	MODULAR_CURVE_SET(beam_modular_curves, weapon_info::beam_modular_curves_definition);
-public:
+	MODULAR_CURVE_SET(beam_hit_modular_curves, weapon_info::beam_hit_modular_curves_definition);
+
+  public:
 	weapon_info();
 
     inline bool is_homing()        const { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }

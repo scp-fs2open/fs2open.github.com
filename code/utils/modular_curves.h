@@ -245,7 +245,7 @@ struct modular_curves_definition {
 			stuff_string(output, F_NAME);
 
 			bool found_output = false;
-			output_enum output_idx = static_cast<output_enum>(0);
+			auto output_idx = static_cast<output_enum>(0);
 			for (const auto& output_pair : outputs){
 				if (!stricmp(output_pair.first, output.c_str())){
 					found_output = true;

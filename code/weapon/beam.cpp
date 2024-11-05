@@ -1412,6 +1412,7 @@ void beam_render(beam *b, float u_offset)
 	float u_scale;	// beam tileing -Bobboau
 	beam_weapon_section_info *bwsi;
 	beam_weapon_info *bwi;
+	weapon_info *wip;
 
 	memset( h1, 0, sizeof(vertex) * 4 );
 
@@ -1431,7 +1432,8 @@ void beam_render(beam *b, float u_offset)
 	//int cull = gr_set_cull(0);
 
 
-	bwi = &Weapon_info[b->weapon_info_index].b_info;
+	wip = &Weapon_info[b->weapon_info_index];
+	bwi = &wip->b_info;
 
 	// if this beam tracks its own u_offset, use that instead
 	if (bwi->flags[Weapon::Beam_Info_Flags::Track_own_texture_tiling]) {
@@ -1439,9 +1441,10 @@ void beam_render(beam *b, float u_offset)
 		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
 
-	float alpha_mult = 1.0f;
-	if (bwi->beam_alpha_curve_idx >= 0)
-		alpha_mult *= Curves[bwi->beam_alpha_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
+	float width_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_WIDTH_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_modular_curves.has_curve(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE);
+	float anim_state = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	float length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 	float per = 1.0f;
@@ -1466,7 +1469,7 @@ void beam_render(beam *b, float u_offset)
 			continue;
 
 		// calculate the beam points
-		scale = frand_range(1.0f - bwsi->flicker, 1.0f + bwsi->flicker);
+		scale = frand_range(1.0f - bwsi->flicker, 1.0f + bwsi->flicker) * width_mult;
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &b->last_start, bwsi->width * scale * b->current_width_factor, bwsi->z_add);	
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &b->last_shot, bwsi->width * scale * scale * b->current_width_factor, bwsi->z_add);
 
@@ -1511,9 +1514,12 @@ void beam_render(beam *b, float u_offset)
 		int framenum = 0;
 
 		if (bwsi->texture.num_frames > 1) {
-			b->beam_section_frame[s_idx] += flFrametime;
-
-			framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
+			if (anim_has_curve) {
+				framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
+			} else {
+				b->beam_section_frame[s_idx] += flFrametime;
+				framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
+			}
 		}
 
 		float fade = 0.9999f;
@@ -1668,6 +1674,11 @@ void beam_render_muzzle_glow(beam *b)
 		return;
 	}
 
+	float radius_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_modular_curves.has_curve(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE);
+	float anim_state = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
+
 	// if the beam is warming up, scale the glow
 	if (b->warmup_stamp != -1) {		
 		// get warmup pct
@@ -1686,13 +1697,13 @@ void beam_render_muzzle_glow(beam *b)
 		rand_val = frand_range(0.90f, 1.0f);
 	}
 
-	rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
+	rad = wip->b_info.beam_muzzle_radius * pct * rand_val * radius_mult;
 
 	// don't bother trying to draw if there is no radius
 	if (rad <= 0.0f)
 		return;
 
-	float alpha = get_muzzle_glow_alpha(b);
+	float alpha = get_muzzle_glow_alpha(b) * alpha_mult;
 
 	if (alpha <= 0.0f)
 		return;
@@ -1756,9 +1767,12 @@ void beam_render_muzzle_glow(beam *b)
 		int framenum = 0;
 
 		if ( bwi->beam_glow.num_frames > 1 ) {
-			b->beam_glow_frame += flFrametime;
-
-			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+			if (anim_has_curve) {
+				framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
+			} else {
+				b->beam_glow_frame += flFrametime;
+				framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+			}
 		}
 
 		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
@@ -4308,7 +4322,7 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 	}
 
 	float damage = wip->damage;
-	damage *= wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::DAMAGE_MULT, *b, &b->modular_curves_instance);
+	damage *= wip->beam_hit_modular_curves.get_output(weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team)
@@ -4366,8 +4380,35 @@ int beam_will_tool_target(beam *b, object *objp)
 	return (damage_in_a_few_seconds > total_strength);
 }
 
+float beam_get_warmup_lifetime_pct(const beam& b) {
+	return BEAM_WARMUP_PCT((&b));
+}
+
 float beam_get_lifetime_pct(const beam& b) {
 	return (b.life_total - b.life_left) / b.life_total;
+}
+
+float beam_get_age(const beam& b) {
+	return b.life_total - b.life_left;
+}
+
+float beam_get_warmdown_lifetime_pct(const beam& b) {
+	return BEAM_WARMDOWN_PCT((&b));
+}
+
+float beam_get_warmdown_age(const beam& b) {
+	return ((float)timestamp_since(b.warmdown_stamp)) / MILLISECONDS_PER_SECOND;
+}
+
+float beam_get_total_lifetime_pct(const beam& b) {
+	beam_weapon_info* bwip = &Weapon_info[b.weapon_info_index].b_info;
+	float beam_age = ((float)timestamp_since(b.warmup_stamp)) / i2fl(MILLISECONDS_PER_SECOND);
+	float beam_total_life = (i2fl(bwip->beam_warmup + bwip->beam_warmdown) / i2fl(MILLISECONDS_PER_SECOND)) + bwip->beam_life;
+	return beam_age / beam_total_life;
+}
+
+float beam_get_total_age(const beam& b) {
+	return ((float)timestamp_since(b.warmup_stamp)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
 float beam_accuracy = 1.0f;

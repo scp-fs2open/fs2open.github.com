@@ -125,11 +125,13 @@ int collide_weapon_weapon( obj_pair * pair )
 			float dot_curve = -dot;
 			float aDamage = wipA->damage;
 			aDamage *= wipA->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wpA, *B, dot_curve), &wpA->modular_curves_instance);
+			aDamage *= wipA->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wpA, *B, dot_curve), &wpA->modular_curves_instance);
 			if (wipB->armor_type_idx >= 0)
 				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f, false);
 
 			float bDamage = wipB->damage;
 			bDamage *= wipB->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wpB, *A, dot_curve), &wpB->modular_curves_instance);
+			bDamage *= wipB->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wpB, *A, dot_curve), &wpB->modular_curves_instance);
 			if (wipA->armor_type_idx >= 0)
 				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f, false);
 

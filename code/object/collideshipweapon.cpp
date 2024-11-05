@@ -103,6 +103,11 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	damage *= wip->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 
+	// we handle curve scaling for shield damage here, but hull and subsystem damage scaling happens in shiphit.cpp
+	if (quadrant_num) {
+		damage *= wip->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::SHIELD_DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
+	}
+
 	// if this is friendly fire, we check for the friendly fire cap values
 	if (wp->team == shipp->team) {
 		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
@@ -115,7 +120,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	}
 
 	// deterine whack whack
-	float		blast = wip->mass;
+	float		blast = wip->mass * wip->hit_modular_curves.get_output(weapon_info::HitModularCurveOutputs::MASS_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
 	// send player pain packet
@@ -128,7 +133,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		}
 	}	
 
-	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num);
+	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num, 0, dot);
 
 	// let the hud shield gauge know when Player or Player target is hit
 	hud_shield_quadrant_hit(pship_obj, quadrant_num);

@@ -1360,7 +1360,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 
 		if (subtype == WP_BEAM)
-			wip->beam_modular_curves.add_curve("Lifetime", weapon_info::BeamModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
+			wip->beam_hit_modular_curves.add_curve("Lifetime", weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
 		else
 			wip->hit_modular_curves.add_curve("Lifetime", weapon_info::HitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
 	}
@@ -1478,6 +1478,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	wip->hit_modular_curves.parse("$Hit Curve:");
 
 	wip->beam_modular_curves.parse("$Beam Curve:");
+
+	wip->beam_hit_modular_curves.parse("$Beam Hit Curve:");
 
 	if(optional_string("$Energy Consumed:")) {
 		stuff_float(&wip->energy_consumed);
@@ -2636,11 +2638,23 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (spawn_weap < MAX_SPAWN_TYPES_PER_WEAPON)
 		{
 			// Get delay out of the way before handling interval so we can do adjusted lifetime 
+			float delay = 0.f;
 			if (optional_string("+Delay:")) {
-				stuff_float(&wip->spawn_info[spawn_weap].spawn_interval_delay);
+				stuff_float(&delay);
+
+				// since curves are used for spawn rate now, we just parse the value into a curve of spawn rate over absolute age
+				// this will behave correctly even if it's being used together with other spawn rate curves
+				SCP_string curve_name = wip->name;
+				curve_name += "SpawnDelayCurve" + spawn_weap;
+
+				Curve new_curve = Curve(curve_name);
+				new_curve.keyframes.push_back(curve_keyframe{ vec2d { 0.f, 0.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
+				new_curve.keyframes.push_back(curve_keyframe{ vec2d { delay, 1.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
+				Curves.push_back(new_curve);
+				wip->modular_curves.add_curve("Age", weapon_info::ModularCurveOutputs::SPAWN_RATE_MULT, modular_curves_entry{(static_cast<int>(Curves.size()) - 1)});
 			}
 
-			float adjusted_lifetime = wip->lifetime - wip->spawn_info[spawn_weap].spawn_interval_delay;
+			float adjusted_lifetime = wip->lifetime - delay;
 
 			if (temp_interval >= MINIMUM_SPAWN_INTERVAL) {
 				wip->spawn_info[spawn_weap].spawn_interval = temp_interval;
@@ -5963,22 +5977,27 @@ void weapon_process_post(object * obj, float frame_time)
 	// do continuous spawns
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
-			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
-				if (timestamp_elapsed(wp->next_spawn_time[i])) {
-					spawn_child_weapons(obj, i);
+			bool spawn = wp->last_spawn_time[i].isNever();
+			float rate_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::SPAWN_RATE_MULT, *wp, &wp->modular_curves_instance);
+			if (rate_mult > 0.f) {
+				int required_elapsed = fl2i(wip->spawn_info[i].spawn_interval / rate_mult) * MILLISECONDS_PER_SECOND;
+				spawn |= timestamp_elapsed(timestamp_delta(wp->last_spawn_time[i], required_elapsed));
+			}
 
-					// do the spawn effect
-					if (wip->spawn_info[i].spawn_effect.isValid()) {
-						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
+			if (spawn) {
+				spawn_child_weapons(obj, i);
 
-						particleSource.moveTo(&obj->pos, &obj->orient);
-						particleSource.setVelocity(&obj->phys_info.vel);
-						particleSource.finish();
-					}
+				// do the spawn effect
+				if (wip->spawn_info[i].spawn_effect.isValid()) {
+					auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
 
-					// update next_spawn_time
-					wp->next_spawn_time[i] = timestamp() + (int)(wip->spawn_info[i].spawn_interval * 1000.f);
+					particleSource.moveTo(&obj->pos, &obj->orient);
+					particleSource.setVelocity(&obj->phys_info.vel);
+					particleSource.finish();
 				}
+
+				// update next_spawn_time
+				wp->last_spawn_time[i] = _timestamp();
 			}
 		}
 	}
@@ -6837,18 +6856,10 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
 			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
-				int delay;
-				if (wip->spawn_info[i].spawn_interval_delay < 0.f)
-					delay = (int)(wip->spawn_info[i].spawn_interval * 1000);
-				else
-					delay = (int)(wip->spawn_info[i].spawn_interval_delay * 1000);
-
-				if (delay < 10)
-					delay = 10; // cap at 10 ms
-				wp->next_spawn_time[i] = timestamp(delay);
+				wp->last_spawn_time[i] = TIMESTAMP::never();
 			}
 			else
-				wp->next_spawn_time[i] = INT_MAX; // basically never expire
+				wp->last_spawn_time[i] = TIMESTAMP::invalid(); // never spawn
 		}
 	}
 
@@ -7009,6 +7020,8 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 		else {
 			spawn_count = wip->spawn_info[i].spawn_count;
 		}
+
+		spawn_count = fl2i(i2fl(spawn_count) * wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::SPAWN_COUNT_MULT, *wp, &wp->modular_curves_instance));
 
 		child_id = wip->spawn_info[i].spawn_wep_index;
 		if (child_id < 0)
