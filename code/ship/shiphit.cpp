@@ -2713,7 +2713,7 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 			spark.end_time = timestamp(0);
 	}
 
-	// if the hitting object is a weapon, maybe do some fun stuff here
+	// handle weapon and afterburner leeching here
 	if (other_obj_is_weapon || other_obj_is_beam) {
 		float mult = 1.0f;
 		if (other_obj_is_beam)
