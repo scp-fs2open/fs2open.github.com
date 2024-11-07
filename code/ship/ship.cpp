@@ -12812,7 +12812,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
 
 				if (has_autoaim) {
-					angle_to_target = vm_vec_delta_ang(&firing_orient.vec.fvec, &plr_to_target_vec, NULL);
+					angle_to_target = vm_vec_delta_ang(&firing_orient.vec.fvec, &plr_to_target_vec, nullptr);
 					if (angle_to_target < autoaim_fov)
 						in_automatic_aim_fov = true;
 				}
