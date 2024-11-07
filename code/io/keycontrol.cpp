@@ -1818,7 +1818,7 @@ int button_function_critical(int n, net_player *p = NULL)
 					polymodel *pm = model_get( sip->model_num );
 					count = (int)ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
-					swp->primary_firepoint_used_index[swp->current_primary_bank] = 0;
+					swp->primary_firepoint_next_to_fire_index[swp->current_primary_bank] = 0;
 				}
 			}
 			break;
@@ -1830,7 +1830,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
 					int new_pattern = (swp->dynamic_firing_pattern[swp->current_primary_bank] + 1) % (sip->dyn_firing_patterns_allowed[swp->current_primary_bank].size());
 					swp->dynamic_firing_pattern[swp->current_primary_bank] = new_pattern;
-					swp->primary_firepoint_used_index[swp->current_primary_bank] = 0;
+					swp->primary_firepoint_next_to_fire_index[swp->current_primary_bank] = 0;
 				}
 			} break;
 

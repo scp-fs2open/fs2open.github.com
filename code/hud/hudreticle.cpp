@@ -442,19 +442,19 @@ void HudGaugeReticle::getFirepointStatus() {
 							// If this firepoint is not among the next shot(s) to be fired, dim it one step
 							switch (firing_pattern) {
 								case FiringPattern::CYCLE_FORWARD: {
-									if (j == (swp->primary_firepoint_used_index[i] + q) % num_slots) {
+								if (j == (swp->primary_firepoint_next_to_fire_index[i] + q) % num_slots) {
 										fpactive++;
 									}
 									break;
 								}
 								case FiringPattern::CYCLE_REVERSE: {
-									if (j == ((swp->primary_firepoint_used_index[i] - (q + 1)) % num_slots + num_slots) % num_slots) {
+									if (j == ((swp->primary_firepoint_next_to_fire_index[i] - (q + 1)) % num_slots + num_slots) % num_slots) {
 										fpactive++;
 									}
 									break;
 								}
 								case FiringPattern::RANDOM_EXHAUSTIVE: {
-									if (j == swp->primary_firepoint_indices[i][(swp->primary_firepoint_used_index[i] + q) % num_slots]) {
+									if (j == swp->primary_firepoint_indices[i][(swp->primary_firepoint_next_to_fire_index[i] + q) % num_slots]) {
 										fpactive++;
 									}
 									break;

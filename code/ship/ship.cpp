@@ -20615,7 +20615,11 @@ void parse_ai_target_priorities()
 				}
 			}
 			if (j == num_ai_tgt_weapon_info_flags) {
-				Warning(LOCATION, "Unidentified weapon class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
+				if (!stricmp(temp_strings[i].c_str(), "Cycle")) {
+					mprintf(("Weapon flag \"Cycle\" is deprecated for target priorities in ship.tbl.\n"));
+				} else {
+					Warning(LOCATION, "Unidentified weapon class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
+				}
 			}
 		}
 	}
