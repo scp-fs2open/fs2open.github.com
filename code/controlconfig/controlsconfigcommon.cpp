@@ -178,7 +178,7 @@ void control_config_common_init_bindings() {
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
 	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 1776, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
-	(CYCLE_PRIMARY_WEAPON_PATTERN,			  KEY_ALTED | KEY_O, -1, WEAPON_TAB, 1857, "Cycle Primary Weapon Firing Pattern",	  CC_TYPE_TRIGGER)
+	(CYCLE_PRIMARY_WEAPON_PATTERN,			  KEY_ALTED | KEY_O, -1, WEAPON_TAB, 1858, "Cycle Primary Weapon Firing Pattern",	  CC_TYPE_TRIGGER)
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
