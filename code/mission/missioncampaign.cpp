@@ -1669,6 +1669,18 @@ void mission_campaign_skip_to_next()
 	// now set the next mission
 	mission_campaign_eval_next_mission();
 
+	// because all goals/events are marked true, it's possible for the campaign condition to unexpectedly *not* evaluate to the next mission
+	// (e.g. if is-previous-goal-false or is-previous-event-false is used without the optional argument), so this is a failsafe
+	if (Campaign.next_mission == Campaign.current_mission) {
+		Campaign.next_mission++;
+		if (Campaign.next_mission < Campaign.num_missions) {
+			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!  Choosing the next-in-sequence mission as a failsafe...");
+		} else {
+			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!");
+			Campaign.next_mission = -1;
+		}
+	}
+
 	// clear out relevant player vars
 	Player->failures_this_session = 0;
 	Player->show_skip_popup = 1;
