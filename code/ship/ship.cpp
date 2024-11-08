@@ -282,6 +282,9 @@ reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 SCP_vector<ship_info>	Ship_templates;
 
 SCP_vector<ship_type_info> Ship_types;
+bool Fighter_bomber_valid = false;
+const char *Fighter_bomber_type_name = "fighter/bomber";
+int Ship_type_fighter = -1, Ship_type_bomber = -1, Ship_type_fighter_bomber = -1;
 
 SCP_vector<ArmorType> Armor_types;
 SCP_vector<DamageTypeStruct>	Damage_types;
@@ -6249,6 +6252,8 @@ static void ship_parse_post_cleanup()
  */
 void ship_init()
 {
+	int idx;
+
 	if ( !Ships_inited )
 	{
 		//Initialize Ignore_List for targeting
@@ -6263,11 +6268,28 @@ void ship_init()
 		//Then other ones
 		parse_modular_table(NOX("*-obt.tbm"), parse_shiptype_tbl);
 
+		// Remove the "stealth" ship type if it exists, since it was never supposed to be an actual ship type, and it conflicts with ship class flags (Github #6366)
+		idx = ship_type_name_lookup("stealth");
+		if (idx >= 0)
+		{
+			Warning(LOCATION, "A ship type \"stealth\" was found in objecttypes.tbl or *-obt.tbm.  This ship type will be removed since it will conflict with the \"stealth\" ship class flag.  Please update your mod files.");
+			Ship_types.erase(Ship_types.begin() + idx);
+		}
+
+		// See whether this mod defines an explicit "fighter/bomber" type (which would take priority over the special usage), and if not, whether the component types exist
+		if (ship_type_name_lookup(Fighter_bomber_type_name) < 0)
+		{
+			Ship_type_fighter_bomber = static_cast<int>(Ship_types.size()) + 1;	// This is a convenient way to indicate that we want the fighter/bomber special case; it is not an actual valid Ship_types index
+			Ship_type_fighter = ship_type_name_lookup("fighter");
+			Ship_type_bomber = ship_type_name_lookup("bomber");
+			if (Ship_type_fighter >= 0 && Ship_type_bomber >= 0)
+				Fighter_bomber_valid = true;
+		}
+
 		// DO ALL THE STUFF WE NEED TO DO AFTER LOADING Ship_types
 		ship_type_info *stp;
 
 		uint i,j;
-		int idx;
 		for(i = 0; i < Ship_types.size(); i++)
 		{
 			stp = &Ship_types[i];
@@ -6734,6 +6756,7 @@ void ship::clear()
 	pre_death_explosion_happened = 0;
 	wash_killed = 0;	// serenity lies
 	cargo1 = 0;							// "Nothing"
+	cargo_title[0] = '\0';
 
 	wing_status_wing_index = -1;
 	wing_status_wing_pos = -1;
@@ -7764,6 +7787,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->optimum_range = model_system->optimum_range;
 		ship_system->favor_current_facing = model_system->favor_current_facing;
 		ship_system->subsys_cargo_name = 0;
+		ship_system->subsys_cargo_title[0] = '\0';
 		ship_system->time_subsys_cargo_revealed = 0;
 		
 		j = 0;
@@ -16349,8 +16373,8 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 {
 	int type = ship_class_query_general_type(ship_info_index);
 
-	//Ship has no type or something
-	if(type < 0) {
+	//Ship has no type or the vector isn't set up
+	if (!SCP_vector_inbounds(Ship_type_counts, type)) {
 		return;
 	}
 
@@ -16362,14 +16386,13 @@ static void ship_add_ship_type_kill_count( int ship_info_index )
 {
 	int type = ship_class_query_general_type(ship_info_index);
 
-	//Ship has no type or something
-	if(type < 0) {
+	//Ship has no type or the vector isn't set up
+	if (!SCP_vector_inbounds(Ship_type_counts, type)) {
 		return;
 	}
 
-	//Add it if we are actually in gameplay
-	if (Ship_type_counts.size() > static_cast<size_t>(type))
-		Ship_type_counts[type].killed++;
+	//Add it
+	Ship_type_counts[type].killed++;
 }
 
 int ship_query_general_type(int ship)
@@ -17323,9 +17346,10 @@ int ship_return_seconds_to_goal(ship *sp)
 	if ( aip->mode == AIM_WAYPOINTS ) {
 		// Is traveling a waypoint path
 		min_speed = 0.9f * max_speed;
-		if (aip->wp_list != NULL) {
+		auto wp_list = find_waypoint_list_at_index(aip->wp_list_index);
+		if (wp_list != nullptr) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
-			auto& waypoints = aip->wp_list->get_waypoints();
+			auto& waypoints = wp_list->get_waypoints();
 
 			// distance to current waypoint
 			dist += vm_vec_dist_quick(&objp->pos, waypoints[aip->wp_index].get_pos());

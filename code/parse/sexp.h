@@ -58,7 +58,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
 	OPF_SHIP_WING_POINT_OR_NONE,	// WMC - Ship, wing, point or none
-	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)
+	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)... NOTE: the type "fighter/bomber" is allowed even though it's not a real ship type; SEXPs must account for this
 	OPF_KEYPRESS,					// a default key
 	OPF_EVENT_NAME,					// name of an event
 	OPF_AI_ORDER,					// a squadmsg order player can give to a ship
@@ -653,6 +653,7 @@ enum : int {
 	OP_HUD_SET_COORDS, //WMC
 	OP_HUD_SET_FRAME, //WMC
 	OP_HUD_SET_COLOR, //WMC
+	OP_HUD_RESET_COLOR, // Goober5000
 	OP_HUD_SET_MAX_TARGETING_RANGE, // Goober5000
 	OP_SHIP_TAG, // Goober5000
 	OP_SHIP_UNTAG, // Goober5000
@@ -661,8 +662,8 @@ enum : int {
 	OP_UNSCRAMBLE_MESSAGES,	// phreak
 	OP_CUTSCENES_SET_CUTSCENE_BARS,	// WMC
 	OP_CUTSCENES_UNSET_CUTSCENE_BARS,	// WMC
+
 	OP_CUTSCENES_FADE_IN,	// WMC
-	
 	OP_CUTSCENES_FADE_OUT,	// WMC
 	OP_CUTSCENES_SET_CAMERA_POSITION,	// WMC
 	OP_CUTSCENES_SET_CAMERA_FACING,	// WMC

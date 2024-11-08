@@ -688,6 +688,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-set-frame",					OP_HUD_SET_FRAME,						2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-coords",					OP_HUD_SET_COORDS,						3,	3,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-color",					OP_HUD_SET_COLOR,						4,	4,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
+	{ "hud-reset-color",				OP_HUD_RESET_COLOR,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-display-gauge",				OP_HUD_DISPLAY_GAUGE,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
 	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
@@ -3167,18 +3168,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 			}
 
-			case OPF_SHIP_TYPE:
+			case OPF_SHIP_TYPE: {
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				i = ship_type_name_lookup(CTEXT(node));
+				auto type_name = CTEXT(node);
+				i = ship_type_name_lookup(type_name);
 
 				if (i < 0){
+					if (Fighter_bomber_valid && !stricmp(type_name, Fighter_bomber_type_name)) {
+						// this is allowed even though it's not an explicit type
+						break;
+					}
+
 					return SEXP_CHECK_INVALID_SHIP_TYPE;
 				}
 
 				break;
+			}
 
 			case OPF_WAYPOINT_PATH:
 				if (find_matching_waypoint_list(CTEXT(node)) == nullptr) {
@@ -7724,21 +7732,35 @@ int sexp_ship_type_destroyed(int n)
 		return SEXP_KNOWN_FALSE;
 
 	auto shiptype = CTEXT(CDR(n));
-
 	int type = ship_type_name_lookup(shiptype);
 
-	// bogus if we reach the end of this array!!!!
-	if ( type < 0 ) {
-		Warning(LOCATION, "Invalid shiptype passed to ship-type-destroyed");
+	if (type < 0 && Fighter_bomber_valid && !stricmp(shiptype, Fighter_bomber_type_name))
+		type = Ship_type_fighter_bomber;
+	else if (!SCP_vector_inbounds(Ship_types, type))
+	{
+		// bogus if we reach the end of this array!!!!
+		Warning(LOCATION, "Invalid shiptype '%s' passed to ship-type-destroyed", shiptype);
 		return SEXP_FALSE;
 	}
 
-	if ( type >= (int)Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
+	int killed, total;
+	if (type == Ship_type_fighter_bomber)
+	{
+		killed = Ship_type_counts[Ship_type_fighter].killed + Ship_type_counts[Ship_type_bomber].killed;
+		total = Ship_type_counts[Ship_type_fighter].total + Ship_type_counts[Ship_type_bomber].total;
+	}
+	else
+	{
+		//We are safe from array indexing probs b/c of previous if.
+		killed = Ship_type_counts[type].killed;
+		total = Ship_type_counts[type].total;
+	}
+
+	if (total == 0)
 		return SEXP_FALSE;
 
-	//We are safe from array indexing probs b/c of previous if.
 	// determine if the percentage of killed/total is >= percentage given in the expression
-	if ( (Ship_type_counts[type].killed * 100 / Ship_type_counts[type].total) >= percent)
+	if ((killed * 100 / total) >= percent)
 		return SEXP_KNOWN_TRUE;
 	
 	return SEXP_FALSE;
@@ -9296,7 +9318,7 @@ void multi_sexp_set_object_position()
 	objp = multi_get_network_object(obj_sig);
 	if (objp->type == OBJ_WAYPOINT) {
 		objp->pos = wp_vec;
-		waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objp));
+		waypoint *wpt = find_waypoint_with_instance(objp->instance);
 		wpt->set_pos(&wp_vec);
 	}
 }
@@ -11686,6 +11708,8 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 				break;
 			case OP_FOR_SHIP_TYPE:
 				constraint_index = ship_type_name_lookup(constraint);
+				if (constraint_index < 0 && Fighter_bomber_valid && !stricmp(constraint, Fighter_bomber_type_name))
+					constraint_index = Ship_type_fighter_bomber;
 				break;
 			case OP_FOR_SHIP_TEAM:
 				constraint_index = iff_lookup(constraint);
@@ -11724,7 +11748,13 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 					break;
 			}
 
-			if (constraint_index == ship_index)
+			bool constraint_matches;
+			if (op_const == OP_FOR_SHIP_TYPE && constraint_index == Ship_type_fighter_bomber)
+				constraint_matches = (ship_index == Ship_type_fighter || ship_index == Ship_type_bomber);
+			else
+				constraint_matches = (ship_index == constraint_index);
+
+			if (constraint_matches)
 			{
 				if (just_count)
 					num_valid_arguments++;
@@ -12704,12 +12734,21 @@ int sexp_is_ship_class_or_type(int n, bool ship_class)
 	Assert( n >= 0 );
 
 	// get class or type
-	int index;
+	auto name = CTEXT(n);
+	int constraint_index;
 	if (ship_class)
-		index = ship_info_lookup(CTEXT(n));
+		constraint_index = ship_info_lookup(name);
 	else
-		index = ship_type_name_lookup(CTEXT(n));
+	{
+		constraint_index = ship_type_name_lookup(name);
+		if (constraint_index < 0 && Fighter_bomber_valid && !stricmp(name, Fighter_bomber_type_name))
+			constraint_index = Ship_type_fighter_bomber;
+	}
 	n = CDR(n);
+
+	// not valid; no need to check
+	if (constraint_index < 0)
+		return SEXP_FALSE;
 
 	// eval ships
 	while (n != -1)
@@ -12719,29 +12758,37 @@ int sexp_is_ship_class_or_type(int n, bool ship_class)
 		if (!ship_entry)
 			return SEXP_NAN;
 
-		int other_index;
+		int ship_index;
 		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		{
-			other_index = ship_entry->p_objp()->ship_class;
+			ship_index = ship_entry->p_objp()->ship_class;
 		}
 		else if (ship_entry->exited_index >= 0)
 		{
-			other_index = Ships_exited[ship_entry->exited_index].ship_class;
+			ship_index = Ships_exited[ship_entry->exited_index].ship_class;
 		}
 		else if (ship_entry->has_shipp())
 		{
-			other_index = ship_entry->shipp()->ship_info_index;
+			ship_index = ship_entry->shipp()->ship_info_index;
 		}
 		else
 			return SEXP_NAN_FOREVER;
 
 		// maybe convert from class to type
 		if (!ship_class)
-			other_index = ship_class_query_general_type(other_index);
+			ship_index = ship_class_query_general_type(ship_index);
 
 		// if it doesn't match, return false
-		if (index != other_index)
-			return SEXP_FALSE;
+		if (!ship_class && constraint_index == Ship_type_fighter_bomber)
+		{
+			if (ship_index != Ship_type_fighter && ship_index != Ship_type_bomber)
+				return SEXP_FALSE;
+		}
+		else
+		{
+			if (ship_index != constraint_index)
+				return SEXP_FALSE;
+		}
 
 		// increment
 		n = CDR(n);
@@ -13234,10 +13281,37 @@ void sexp_hud_set_color(int n)
 	HudGauge* hg = hud_get_gauge(gaugename);
 	if (hg) {
 		hg->sexpLockConfigColor(false);
-		hg->updateColor((ubyte)rgb[0], (ubyte)rgb[1], (ubyte)rgb[2], (HUD_color_alpha + 1) * 16);
+		hg->updateColor(rgb[0], rgb[1], rgb[2], (HUD_color_alpha + 1) * 16);
 		hg->sexpLockConfigColor(true);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+	}
+}
+
+void sexp_hud_reset_color(int n)
+{
+	for (; n >= 0; n = CDR(n))
+	{
+		auto gaugename = CTEXT(n);
+		HudGauge* hg = hud_get_gauge(gaugename);
+		if (hg) {
+			// only a subset of default HUD gauges have a configured color
+			int type = hg->getConfigType();
+			auto ii = std::find_if(std::begin(Legacy_HUD_gauges), std::end(Legacy_HUD_gauges), [type](const Legacy_HUD_gauge_pair& pair) { return pair.hud_gauge_type == type; });
+
+			if (ii == std::end(Legacy_HUD_gauges)) {
+				WarningEx(LOCATION, "HUD gauge %s does not have a built-in configured color!", gaugename);
+			} else {
+				// use the color as specified in the HUD config
+				auto& c = HUD_config.clr[std::distance(std::begin(Legacy_HUD_gauges), ii)];
+
+				hg->sexpLockConfigColor(false);
+				hg->updateColor(c.red, c.green, c.blue, (HUD_color_alpha + 1) * 16);
+				hg->sexpLockConfigColor(true);
+			}
+		} else {
+			WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+		}
 	}
 }
 
@@ -14908,7 +14982,8 @@ void sexp_send_builtin_message(int n) {
 	}
 
 	if (shuffle) {
-		std::random_shuffle(sender_names.begin(), sender_names.end());
+		std::random_device rd;
+		std::shuffle(sender_names.begin(), sender_names.end(), std::mt19937(rd()));
 	}
 
 	auto subject = have_subject ? subject_entry->shipp() : nullptr;
@@ -20065,12 +20140,8 @@ int sexp_facing2(int node)
 		return SEXP_CANT_EVAL;
 	}
 
-	// get waypoint name
-	auto waypoint_name = CTEXT(node);
-
 	// get position of first waypoint
-	waypoint_list *wp_list = find_matching_waypoint_list(waypoint_name);
-
+	waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
 	if (wp_list == nullptr) {
 		return SEXP_KNOWN_FALSE;
 	}
@@ -20215,7 +20286,8 @@ int sexp_waypoint_twice()
 int sexp_path_flown()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
-		if ((uint) Training_context_goal_waypoint == Training_context_path->get_waypoints().size()){
+		auto wp_list = find_waypoint_list_at_index(Training_context_waypoint_path);
+		if (wp_list && (Training_context_goal_waypoint == static_cast<int>(wp_list->get_waypoints().size()))) {
 			return SEXP_TRUE;
 		}
 	}
@@ -24147,22 +24219,41 @@ int sexp_return_player_data(int node, int type)
 int sexp_num_type_kills(int node)
 {
 	auto p = get_player_from_ship_node(node, true);
-	if (!p) {
+	if (!p)
 		return 0;
-	}
 
-	// lookup ship type name
-	int st_index = ship_type_name_lookup(CTEXT(CDR(node)));
-	if (st_index < 0) {
-		return 0;
+	// look up ship type name
+	auto name = CTEXT(CDR(node));
+	int constraint_type = ship_type_name_lookup(name);
+	if (constraint_type < 0)
+	{
+		if (Fighter_bomber_valid && !stricmp(name, Fighter_bomber_type_name))
+			constraint_type = Ship_type_fighter_bomber;
+		else
+			return 0;
 	}
 
 	// look stuff up	
 	int total = 0;
-	for (int idx = 0; idx < ship_info_size(); idx++) {
-		if ((p->stats.m_okKills[idx] > 0) && ship_class_query_general_type(idx) == st_index) {
-			total += p->stats.m_okKills[idx];
+	for (int idx = 0; idx < ship_info_size(); idx++)
+	{
+		if (p->stats.m_okKills[idx] <= 0)
+			continue;
+
+		int ship_type = ship_class_query_general_type(idx);
+
+		if (constraint_type == Ship_type_fighter_bomber)
+		{
+			if (ship_type != Ship_type_fighter && ship_type != Ship_type_bomber)
+				continue;
 		}
+		else
+		{
+			if (ship_type != constraint_type)
+				continue;
+		}
+
+		total += p->stats.m_okKills[idx];
 	}
 
 	// total
@@ -24990,8 +25081,8 @@ void sexp_set_training_context_fly_path(int node)
 		return;
 
 	Training_context |= TRAINING_CONTEXT_FLY_PATH;
-	Training_context_path = wp_list;
-	Training_context_distance = (float)distance;
+	Training_context_waypoint_path = find_index_of_waypoint_list(wp_list);
+	Training_context_distance = static_cast<float>(distance);
 	Training_context_goal_waypoint = 0;
 	Training_context_at_waypoint = -1;
 }
@@ -28454,6 +28545,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_RESET_COLOR:
+				sexp_hud_reset_color(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_HUD_SET_MAX_TARGETING_RANGE:
 				sexp_hud_set_max_targeting_range(node);
 				sexp_val = SEXP_TRUE;
@@ -31056,6 +31152,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_HUD_RESET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
@@ -32415,6 +32512,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_ANY_HUD_GAUGE;
 			else
 				return OPF_POSITIVE;
+
+		case OP_HUD_RESET_COLOR:
+			return OPF_ANY_HUD_GAUGE;
 
 		case OP_HUD_CLEAR_MESSAGES:
 			return OPF_NONE;
@@ -36080,6 +36180,7 @@ int get_category(int op_id)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_HUD_RESET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_SHIP_TAG:
 		case OP_SHIP_UNTAG:
@@ -36689,6 +36790,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_SET_DIRECTIVE:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_HUD_RESET_COLOR:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
@@ -37708,9 +37810,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4:\tHow many times the ship has completed the waypoint path (optional)." },
 
 	{ OP_SHIP_TYPE_DESTROYED, "Ship Type Destroyed (Boolean operator)\r\n"
-		"\tBecomes true when the specified percentage of ship types in this mission (including ships not yet in-mission) "
-		"have been destroyed.  The ship type is a generic type such as fighter/bomber, "
-		"transport, etc.  Fighters and bombers count as the same type.\r\n\r\n"
+		"\tBecomes true when the specified percentage of ship types in this mission (including ships not yet in-mission) have been destroyed.  The "
+		"ship type is a generic type such as fighter, bomber, transport, etc.  Note that the percentage is updated when a ship finishes exploding, "
+		"in contrast to the mission log and the *-destroyed-delay SEXPs which are updated when a ship starts exploding.  Note also that player ships "
+		"and ships with the \"Ignore for counting goals\" flag are not included in the calculation.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 arguments...\r\n"
 		"\t1:\tPercentage of ships that must be destroyed.\r\n"
 		"\t2:\tShip type to check for." },
@@ -40992,6 +41095,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4:\tBlue component (0-255)"
 	},
 
+	// Goober5000
+	{ OP_HUD_RESET_COLOR, "hud-reset-color\r\n"
+		"\tResets the color of a given HUD gauge back to its color as defined in the HUD config. Only effective for gauges for which a config exists. Takes 1 or more arguments...\r\n"
+		"\tAll:\tHUD gauge to be modified\r\n"
+	},
+
 	//WMC
 	{ OP_CURRENT_SPEED, "current-speed\r\n"
 		"\tReturns the speed of the given object. Takes 1 argument...\r\n"
@@ -41301,7 +41410,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"
-		"\tCauses the camera to shudder.  Currently this will only work if the camera is showing the player's viewpoint (i.e. the HUD).\r\n\r\n"
+		"\tCauses the camera to shudder.  Normally this will only work if the camera is showing the player's viewpoint (i.e. the HUD), unless the Everywhere flag is set.\r\n\r\n"
 		"Takes 2 to 4 arguments...\r\n"
 		"\t1: Time (in milliseconds)\r\n"
 		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440.\r\n"

@@ -1056,6 +1056,9 @@ typedef struct ship_type_info {
 } ship_type_info;
 
 extern SCP_vector<ship_type_info> Ship_types;
+extern bool Fighter_bomber_valid;				// Whether "fighter/bomber" can be used as a union of "fighter" and "bomber"
+extern const char *Fighter_bomber_type_name;
+extern int Ship_type_fighter, Ship_type_bomber, Ship_type_fighter_bomber;
 
 class rcs_thruster_info {
     public:

@@ -74,6 +74,8 @@ class OptionBase {
 	float _min = 0;
 	float _max = 1;
 
+	bool _is_once = false;
+
 	SCP_unordered_map<PresetKind, SCP_string> _preset_values;
 
 	flagset<OptionFlags> _flags;
@@ -99,6 +101,9 @@ class OptionBase {
 
 	const flagset<OptionFlags>& getFlags() const;
 	void setFlags(const flagset<OptionFlags>& flags);
+
+	bool getIsOnce() const;
+	void setIsOnce(bool is_once);
 
 	const SCP_string& getConfigKey() const;
 	const SCP_string& getTitle() const;
@@ -519,6 +524,7 @@ class OptionBuilder {
 	//The global variable to bind the option to once. Will require game restart to persist changes.
 	OptionBuilder& bind_to_once(T* dest)
 	{
+		_instance.setIsOnce(true);
 		return change_listener([dest](const T& val, bool initial) {
 			if (initial) {
 				*dest = val;
@@ -555,13 +561,13 @@ class OptionBuilder {
 		return *this;
 	}
 	//Finishes building the option and returns a pointer to it
-	const Option<T>* finish()
+	std::shared_ptr<const Option<T>> finish()
 	{
 		for (auto& val : _preset_values) {
 			_instance.setPreset(val.first, json_dump_string_new(_instance.getSerializer()(val.second),
 			                                                    JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY));
 		}
-		std::unique_ptr<Option<T>> opt_ptr(new Option<T>(_instance));
+		auto opt_ptr = make_shared<Option<T>>(_instance);
 
 		if (mpark::holds_alternative<std::pair<const char*, int>>(_title)) {
 			const auto& xstr_info = mpark::get<std::pair<const char*, int>>(_title);
@@ -573,9 +579,8 @@ class OptionBuilder {
 			lcl_delayed_xstr(opt_ptr->_description, xstr_info.first, xstr_info.second);
 		}
 
-		auto ptr = opt_ptr.get(); // We need to get the pointer now since we loose the type information otherwise
-		OptionsManager::instance()->addOption(std::unique_ptr<OptionBase>(opt_ptr.release()));
-		return ptr;
+		OptionsManager::instance()->addOption(opt_ptr);
+		return opt_ptr;
 	}
 };
 

@@ -409,7 +409,7 @@ void player_select_do()
 	}
 
 	if (!Ingame_options_save_found && Using_in_game_options && !Save_file_warning_displayed) {
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("In-game Options are enabled but a save file could not be found. You may need to update your settings in the Options menu.", 1854));
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A new settings file has been created for the current game or mod. You may want to check the options menu to ensure everything is set to your liking.", 1854));
 		Save_file_warning_displayed = true;
 	}
 		

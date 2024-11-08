@@ -95,13 +95,17 @@ ADE_FUNC(skipToString, l_Parsing, "string token", "Search for specified string, 
 	}
 
 	try {
-		skip_to_string(str);
+		int found = skip_to_string(str);
+
+		if (found == 1) {
+			return ADE_RETURN_TRUE;
+		} else {
+			return ADE_RETURN_FALSE;
+		}
 	} catch (const parse::ParseException& e) {
 		mprintf(("PARSE: Error while parsing: %s\n", e.what()));
 		return ADE_RETURN_FALSE;
 	}
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(requiredString, l_Parsing, "string token", "Require that a string appears at the current position.", "boolean",

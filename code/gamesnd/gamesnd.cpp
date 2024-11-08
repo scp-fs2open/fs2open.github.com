@@ -634,6 +634,10 @@ void parse_gamesnd_old(game_snd* gs)
 	int is_3d;
 	int temp;
 
+	// retail-style sounds with numeric indexes, as seen in the original sounds.tbl format
+	if (can_construe_as_integer(gs->name.c_str()))
+		gs->flags |= GAME_SND_RETAIL_STYLE;
+
 	// An old sound is just a single entry sound set
 	gs->sound_entries.resize(1);
 	auto& entry = gs->sound_entries.back();
@@ -642,7 +646,6 @@ void parse_gamesnd_old(game_snd* gs)
 	gs->pitch_range = util::UniformFloatRange(1.0f);
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
-	gs->flags |= GAME_SND_RETAIL_STYLE;
 
 	// since we have a new filename, first assume it's valid
 	gs->flags &= ~GAME_SND_NOT_VALID;
@@ -651,7 +654,7 @@ void parse_gamesnd_old(game_snd* gs)
 	{
 		entry.filename[0] = 0;
 		advance_to_eoln(nullptr);
-		gs->flags |= GAME_SND_NOT_VALID;
+		gs->flags |= (GAME_SND_NOT_VALID | GAME_SND_EXPLICITLY_EMPTY);
 		return;
 	}
 	Mp++;
@@ -880,7 +883,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	if (!stricmp(name, NOX("empty")) || !stricmp(name, NOX("none")))
 	{
 		entry->filename[0] = 0;
-		gs->flags |= GAME_SND_NOT_VALID;
+		gs->flags |= (GAME_SND_NOT_VALID | GAME_SND_EXPLICITLY_EMPTY);
 		return;
 	}
 
@@ -960,6 +963,11 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 }
 
+bool gamesnd_is_placeholder(const game_snd& gs)
+{
+	return (gs.sound_entries.empty() || gs.sound_entries[0].filename[0] == '\0') && !(gs.flags & GAME_SND_EXPLICITLY_EMPTY);
+}
+
 void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize, bool (*is_reserved_index)(int))
 {
 	SCP_string name;
@@ -1015,7 +1023,7 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 			auto existing_gs = &lookupVector->at(vectorIndex);
 
 			// if the existing sound was an empty or placeholder sound, replace it, don't warn
-			if (existing_gs->sound_entries.empty() || existing_gs->sound_entries[0].filename[0] == '\0')
+			if (gamesnd_is_placeholder(*existing_gs))
 			{
 				gs = existing_gs;
 				orig_no_create = true;	// prevent sound from being appended in parse_sound_table
@@ -1024,6 +1032,26 @@ void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd
 			else
 			{
 				error_display(0, "Duplicate sound name \"%s\" found!", name.c_str());
+			}
+		}
+		else if (lookupVector)
+		{
+			// see if there is an empty or placeholder sound that we can replace
+			int i = 0;
+			for (const auto& ii : *lookupVector)
+			{
+				if (gamesnd_is_placeholder(ii) && !is_reserved_index(i))
+				{
+					vectorIndex = i;
+					gs = &lookupVector->at(vectorIndex);
+					orig_no_create = true;	// prevent sound from being appended in parse_sound_table
+											// (leave no_create as false because we are creating a new sound and we need all the fields to be filled out)
+
+					// a placeholder can have a single entry with an empty filename, so remove that if it exists
+					gs->sound_entries.clear();
+					break;
+				}
+				i++;
 			}
 		}
 
@@ -1328,17 +1356,12 @@ void parse_sound_table(const char* filename)
 						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds.size());
 
-						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
-						{
-							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
-						}
-						else
-						{
-							// prevent new named sounds from colliding with reserved indexes
-							tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
-						}
+						// retail sounds with numeric names must match their indexes
+						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
+							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+
+						// prevent new named sounds from colliding with reserved indexes
+						tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
 
 						Snds.emplace_back(std::move(tempSound));
 					}
@@ -1363,17 +1386,12 @@ void parse_sound_table(const char* filename)
 						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds_iface.size());
 
-						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
-						{
-							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
-						}
-						else
-						{
-							// prevent new named sounds from colliding with reserved indexes
-							tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
-						}
+						// retail sounds with numeric names must match their indexes
+						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
+							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+
+						// prevent new named sounds from colliding with reserved indexes
+						tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
 
 						Snds_iface.emplace_back(std::move(tempSound));
 					}
@@ -1461,6 +1479,17 @@ void gamesnd_parse_soundstbl(bool first_stage)
 		// these vectors should be the same size
 		while (Snds_iface_handle.size() < Snds_iface.size())
 			Snds_iface_handle.push_back(sound_handle::invalid());
+
+		// mark any placeholder sounds as invalid
+		// (most places in the code already check for this, but it is possible for sexps and scripts to attempt to play an empty sound)
+		for (auto& snd : Snds)
+			if (gamesnd_is_placeholder(snd))
+				snd.flags |= GAME_SND_NOT_VALID;
+
+		// ditto for interface sounds
+		for (auto& snd : Snds_iface)
+			if (gamesnd_is_placeholder(snd))
+				snd.flags |= GAME_SND_NOT_VALID;
 	}
 	else
 	{

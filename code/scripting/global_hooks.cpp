@@ -16,13 +16,20 @@ const std::shared_ptr<Hook<>> OnSplashEnd = Hook<>::Factory("On Splash End",
 	"Executed just after the splash screen fades out.",
 	{});
 
-const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro About To Play",
+const std::shared_ptr<OverridableHook<>> OnIntroAboutToPlay = OverridableHook<>::Factory("On Intro About To Play",
 	"Executed just before the intro movie is played.",
 	{});
 
+const std::shared_ptr<OverridableHook<>> OnMovieAboutToPlay = OverridableHook<>::Factory("On Movie About To Play",
+	"Executed just before any cutscene movie is played.",
+	{
+		{"Filename", "string", "The filename of the movie that is about to play."},
+		{"ViaTechRoom", "boolean", "Whether the movie player was invoked through the tech room."},
+	});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
-	{ 
+	{
 		{"OldState", "gamestate", "The gamestate that was executing."}, 
 		{"NewState", "gamestate", "The gamestate that will be executing."}
 	});

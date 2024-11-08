@@ -354,32 +354,25 @@ static const char* Text_lines[MAX_TEXT_LINES];
 
 void cutscenes_screen_play()
 {
-	char name[MAX_FILENAME_LEN]; // *full_name 
-	int which_cutscene;
-
-	Assert((Selected_line >= 0) && (Selected_line < (int) Cutscene_list.size()));
-	which_cutscene = Cutscene_list[Selected_line];
-
-	strcpy_s(name, Cutscenes[which_cutscene].filename);
-//	full_name = cf_add_ext(name, NOX(".mve"));
+	Assertion(SCP_vector_inbounds(Cutscene_list, Selected_line), "Selected line %d is out of range!", Selected_line);
+	int which_cutscene = Cutscene_list[Selected_line];
 
 	main_hall_stop_music(true);
 	main_hall_stop_ambient();
-	auto rval = movie::play(name);
+	auto rval = movie::play(Cutscenes[which_cutscene].filename, true);
 	main_hall_start_music();
 
 	if (!rval)
 	{
-		char str[256];
+		SCP_string str;
 
 		if (Cmdline_nomovies)
-			strcpy_s(str, XSTR("Movies are currently disabled.", 1574));
+			str = XSTR("Movies are currently disabled.", 1574);
 		else
 			sprintf(str, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
 
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, str);
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, str.c_str());
 	}
-
 }
 
 void cutscenes_screen_scroll_line_up()

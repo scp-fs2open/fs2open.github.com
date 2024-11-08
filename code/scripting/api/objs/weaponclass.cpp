@@ -313,10 +313,19 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
-		Weapon_info[idx].fire_wait = f;
+		if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Cmeasure]) {
+			LuaError(L, "Setting Countermeasure Fire Wait is not supported");
+		} else {
+			Weapon_info[idx].fire_wait = f;
+		}
 	}
 
-	return ade_set_args(L, "f", Weapon_info[idx].fire_wait);
+	float fw = Weapon_info[idx].fire_wait;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Cmeasure]) {
+		fw = static_cast<float>(Weapon_info[idx].cmeasure_firewait) / 1000.0f;
+	}
+
+	return ade_set_args(L, "f", fw);
 }
 
 ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will fly before turing onto its target", "number", "Free flight time or empty string if invalid")
@@ -336,8 +345,7 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
 }
 
-ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", 
-	"If the weapon has the swarm flag , the number of swarm missiles, the swarm wait. Returns nil if the handle is invalid.")
+static int swarm_info_helper(lua_State* L)
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -357,8 +365,20 @@ ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number
 	return ade_set_args(L, "bii", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
 }
 
-ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
-	"If the weapon has the corkscrew flag, the number of corkscrew missiles fired, the radius, the fire delay, counter rotate settings, the twist value. Returns nil if the handle is invalid.")
+ADE_VIRTVAR_DEPRECATED(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean",
+	"Returns whether the weapon has the swarm flag, or nil if the handle is invalid.",
+	gameversion::version(24, 2), "Deprecated in favor of weaponclass:getSwarmInfo(), since virtvars can only return a single value.")
+{
+	return swarm_info_helper(L);
+}
+
+ADE_FUNC(getSwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number",
+	"Returns three values: a) whether the weapon has the swarm flag, b) the number of swarm missiles fired, c) the swarm wait. Returns nil if the handle is invalid.")
+{
+	return swarm_info_helper(L);
+}
+
+static int corkscrew_info_helper(lua_State* L)
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -387,6 +407,19 @@ ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, nu
 		Weapon_info[idx].cs_delay,
 		crotate,
 		Weapon_info[idx].cs_twist);
+}
+
+ADE_VIRTVAR_DEPRECATED(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number",
+	"Returns whether the weapon has the corkscrew flag, or nil if the handle is invalid.",
+	gameversion::version(24, 2), "Deprecated in favor of weaponclass:getCorkscrewInfo(), since virtvars can only return a single value.")
+{
+	return corkscrew_info_helper(L);
+}
+
+ADE_FUNC(getCorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number",
+	"Returns six values: a) whether the weapon has the corkscrew flag, b) the number of corkscrew missiles fired, c) the radius, d) the fire delay, e) whether the weapon counter-rotations, f) the twist value. Returns nil if the handle is invalid.")
+{
+	return corkscrew_info_helper(L);
 }
 
 ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")
@@ -524,11 +557,11 @@ ADE_VIRTVAR(EnergyConsumed, l_Weaponclass, nullptr, nullptr, "number", "Energy C
 	return ade_set_args(L, "f", Weapon_info[idx].energy_consumed);
 }
 
-ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is set to if damage is overriden", "number", "Shockwave Damage, or 0 if weapon shockwave damage is not overriden. Returns nil if handle is invalid")
+ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is set to if damage is overridden", "number", "Shockwave Damage if explicitly specified via table, or -1 if unspecified. Returns nil if handle is invalid")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ade_set_error(L, "f", 0.0f);
+		return ade_set_error(L, "f", -1.0f);
 
 	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_NIL;
@@ -537,10 +570,10 @@ ADE_VIRTVAR(ShockwaveDamage, l_Weaponclass, "number", "Damage the shockwave is s
 		LuaError(L, "Setting Shockwave Damage is not supported");
 	}
 
-	if (Weapon_info[idx].shockwave.damage_overidden) {
+	if (Weapon_info[idx].shockwave.damage_overridden) {
 		return ade_set_args(L, "f", Weapon_info[idx].shockwave.damage);
 	} else {
-		return ade_set_args(L, "f", 0.0f);
+		return ade_set_args(L, "f", -1.0f);
 	}
 }
 
@@ -760,6 +793,110 @@ ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon c
 	}
 
 	return ade_set_args(L, "f", info->cargo_size);
+}
+
+ADE_VIRTVAR(heatEffectiveness,
+	l_Weaponclass,
+	"number",
+	"The heat effectiveness of this weapon class if it's a countermeasure. Otherwise returns -1",
+	"number",
+	"The heat effectiveness or -1 on error")
+{
+	int idx;
+	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+		return ade_set_args(L, "f", -1.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "f", -1.0f);
+
+	weapon_info* info = &Weapon_info[idx];
+
+	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+		return ade_set_args(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Heat Effectiveness is not supported");
+	}
+
+	return ade_set_args(L, "f", info->cm_heat_effectiveness);
+}
+
+ADE_VIRTVAR(aspectEffectiveness,
+	l_Weaponclass,
+	"number",
+	"The aspect effectiveness of this weapon class if it's a countermeasure. Otherwise returns -1",
+	"number",
+	"The aspect effectiveness or -1 on error")
+{
+	int idx;
+	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+		return ade_set_args(L, "f", -1.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "f", -1.0f);
+
+	weapon_info* info = &Weapon_info[idx];
+
+	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+		return ade_set_args(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Aspect Effectiveness is not supported");
+	}
+
+	return ade_set_args(L, "f", info->cm_aspect_effectiveness);
+}
+
+ADE_VIRTVAR(effectiveRange,
+	l_Weaponclass,
+	"number",
+	"The effective range of this weapon class if it's a countermeasure. Otherwise returns -1",
+	"number",
+	"The effective range or -1 on error")
+{
+	int idx;
+	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+		return ade_set_args(L, "f", -1.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "f", -1.0f);
+
+	weapon_info* info = &Weapon_info[idx];
+
+	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+		return ade_set_args(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Effective Range is not supported");
+	}
+
+	return ade_set_args(L, "f", info->cm_effective_rad);
+}
+
+ADE_VIRTVAR(pulseInterval,
+	l_Weaponclass,
+	"number",
+	"The pulse interval of this weapon class if it's a countermeasure. Otherwise returns -1",
+	"number",
+	"The pulse interval or -1 on error")
+{
+	int idx;
+	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+		return ade_set_args(L, "f", -1.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "f", -1.0f);
+
+	weapon_info* info = &Weapon_info[idx];
+
+	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+		return ade_set_args(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Pulse Interval is not supported");
+	}
+
+	return ade_set_args(L, "f", info->cmeasure_timer_interval);
 }
 
 ADE_VIRTVAR(BurstShots, l_Weaponclass, "number", "The number of shots in a burst from this weapon.", "number", "Burst shots, 1 for non-burst weapons, or 0 if handle is invalid")
@@ -1105,6 +1242,21 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 		return ADE_RETURN_FALSE;
 
 	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isCountermeasure, l_Weaponclass, nullptr, "Return true if the weapon is a countermeasure", "boolean", "true if the weapon is a countermeasure, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Cmeasure])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;

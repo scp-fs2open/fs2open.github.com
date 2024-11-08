@@ -208,6 +208,14 @@ void OptionBase::setFlags(const flagset<OptionFlags>& flags) {
 	_flags = flags;
 }
 
+bool OptionBase::getIsOnce() const {
+	return _is_once;
+}
+
+void OptionBase::setIsOnce(bool is_once) {
+	_is_once = is_once;
+}
+
 //persists any changes made to this specific option and returns whether or not it was successful
 bool OptionBase::persistChanges() const { return _parent->persistOptionChanges(this); }
 

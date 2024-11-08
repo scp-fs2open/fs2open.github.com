@@ -512,14 +512,20 @@ bool os_is_legacy_mode()
 					<< "cmdline_fso.cfg";
 		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
-		// At this point we can't determine if the old config exists so just assume that it does
-		auto old_config_exists = true;
-		time_t old_config_time = os_registry_get_last_modification_time();
+		tl::optional<time_t> optional_old_config_time = os_registry_get_last_modification_time();
+		time_t old_config_time = 0;
 
-		// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
-		path_stream.str("");
-		path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
-		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+		//Check if the registry key exists
+		auto old_config_exists = optional_old_config_time.has_value();
+
+		if (old_config_exists) {
+			old_config_time = optional_old_config_time.value();
+			// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
+			// Only get this if the old config exists
+			path_stream.str("");
+			path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+			old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+		}
 #endif
 
 		if (new_config_exists && old_config_exists) {

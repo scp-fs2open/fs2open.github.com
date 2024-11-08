@@ -777,7 +777,9 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->damage);
-		sci->damage_overidden = true;
+		if (sci->damage < 0.0f)
+			sci->damage = 0.0f;
+		sci->damage_overridden = true;
 	}
 
 	sprintf(buf, "%sShockwave damage type:", pre_char);
@@ -1323,9 +1325,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Damage:")) {
 		stuff_float(&wip->damage);
+
+		if (wip->damage < 0.0f) {
+			Warning(LOCATION, "$Damage in weapon '%s' should not be negative.\nConsider the 'heals' flag instead if this is intentional. ", wip->name);
+			wip->damage = 0.0f;
+		}
+
 		//WMC - now that shockwave damage can be set for them individually,
 		//do this automagically
-		if(!wip->shockwave.damage_overidden) {
+		if(!wip->shockwave.damage_overridden) {
 			wip->shockwave.damage = wip->damage;
 		}
 	}
@@ -2757,8 +2765,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
 
-		if (optional_string("+Use Fire Wait:")) {
-			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		// This was originally coded with the colon which implies a boolean input but that was not needed
+		if (optional_string_either("+Use Fire Wait:", "+Use Fire Wait")) {
+			wip->cmeasure_firewait = (int)(wip->fire_wait * 1000.0f);
 		}
 
 		if (optional_string("+Failure Launch Delay Multiplier for AI:")) {

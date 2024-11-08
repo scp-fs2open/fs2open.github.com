@@ -45,7 +45,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.configuration }}
           path: ${{ github.workspace }}/build/install/*.AppImage
@@ -61,12 +61,12 @@ jobs:
           submodules: true
           fetch-depth: '0'
       - name: Download Release builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-Release
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-FastDebug
           path: builds
@@ -137,13 +137,13 @@ jobs:
 
           if [ "$ARCHITECTURE" = "Win32" ]; then
               cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-                -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                -DFSO_USE_VOICEREC="ON" -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
                 -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
                 -DFSO_INSTALL_DEBUG_FILES="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -A "$ARCHITECTURE" \
                 -G "Visual Studio 16 2019" -T "v142" ..
           else
               cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-                -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                -DFSO_USE_VOICEREC="ON" -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
                 -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
                 -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
                 -G "Visual Studio 16 2019" -T "v142" ..
@@ -164,7 +164,7 @@ jobs:
         shell: bash
         run: ./bin/$CONFIGURATION/unittests --gtest_shuffle
       - name: Upload build result
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
@@ -184,12 +184,12 @@ jobs:
           submodules: true
           fetch-depth: '0'
       - name: Download Release builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
@@ -287,7 +287,7 @@ jobs:
         # Ref: https://github.com/actions/runner-images/issues/2619
         run: gtar -cvzf macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz *.app
       - name: Upload build result
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mac-${{ matrix.configuration }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz
@@ -307,12 +307,12 @@ jobs:
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mac-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mac-FastDebug-${{ matrix.arch }}
           path: builds
