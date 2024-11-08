@@ -95,6 +95,27 @@ namespace
 			}
 		}
 
+		if (optional_string("+Auto Size:")) {
+			bool autoSize;
+			stuff_boolean(&autoSize);
+
+			if (autoSize) {
+				// Lambda to calculate font size based on screen resolution
+				auto calculateAutoSize = [size]() -> float {
+					int vmin = std::min(gr_screen.max_w, gr_screen.max_h);
+
+					// Base size calculation (similar to ~Npx font at 1080p)
+					// Use 1080p because that's generally what font sizes have been targeting for years
+					// And should provide a fairly close out-of-the-box solution
+					float baseSize = vmin * (size / 1080.0f);
+					return std::round(baseSize);
+				};
+
+				// Set the font size based on the result of the lambda
+				size = calculateAutoSize();
+			}
+		}
+
 		// Build name from existing values if no name is specified
 		if (!hasName)
 		{
