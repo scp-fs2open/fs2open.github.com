@@ -188,6 +188,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "perform-actions-bool-last",		OP_PERFORM_ACTIONS_BOOL_LAST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "has-time-elapsed",				OP_HAS_TIME_ELAPSED,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "has-time-elapsed-msecs",			OP_HAS_TIME_ELAPSED_MSECS,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "is-true-for-duration",			OP_IS_TRUE_FOR_DURATION,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 
 	//Event/Goals Category
 	{ "is-goal-true-delay",				OP_GOAL_TRUE_DELAY,						2,	2,			SEXP_BOOLEAN_OPERATOR,	},
@@ -1037,6 +1038,9 @@ static int Fade_out_r = 0;
 static int Fade_out_g = 0;
 static int Fade_out_b = 0;
 
+// for is-true-for-duration
+SCP_vector<fix> Sexp_is_true_for_duration_times;
+
 // for play-music - Goober5000
 SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
 
@@ -1336,6 +1340,7 @@ static void sexp_nodes_close()
 	}
 }
 
+// done at the beginning of each mission
 void init_sexp()
 {
 	// Goober5000
@@ -1363,8 +1368,13 @@ void init_sexp()
 	Fade_out_r = 0;
 	Fade_out_g = 0;
 	Fade_out_b = 0;
+
+	// init data structures used by certain operators
+	// (note, Sexp_music_handles are not cleared here because sexp_music_close() handled that at the end of the previous mission)
+	Sexp_is_true_for_duration_times.clear();
 }
 
+// done at the beginning of the game
 void sexp_startup()
 {
 #ifndef NDEBUG
@@ -1463,6 +1473,7 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].op_index = NO_OPERATOR_INDEX_DEFINED;
 	Sexp_nodes[node].cache = nullptr;
 	Sexp_nodes[node].cached_variable_index = -1;
+	Sexp_nodes[node].duration_index = -1;
 
 	// special-arg?
 	if (type == SEXP_ATOM && !strcmp(text, SEXP_ARGUMENT_STRING))
@@ -1651,7 +1662,7 @@ int free_sexp2(int num, int calling_node)
 }
 
 /**
- * Reset the status of all the nodes in a tree, forcing them to all be evaulated again.
+ * Reset the status of all the nodes in a tree, forcing them to all be evaluated again.
  */
 void flush_sexp_tree(int node)
 {
@@ -1662,6 +1673,7 @@ void flush_sexp_tree(int node)
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
 	clear_cache(node);
 	Sexp_nodes[node].cached_variable_index = -1;
+	Sexp_nodes[node].duration_index = -1;
 
 	flush_sexp_tree(Sexp_nodes[node].first);
 	flush_sexp_tree(Sexp_nodes[node].rest);
@@ -12322,6 +12334,51 @@ int sexp_functional_switch(int node)
 	}
 
 	return result;
+}
+
+// Goober500
+int sexp_is_true_for_duration(int op_node, int node)
+{
+	// find our start time using the duration slot, creating one if necessary
+	if (Sexp_nodes[op_node].duration_index < 0)
+	{
+		Sexp_nodes[op_node].duration_index = static_cast<int>(Sexp_is_true_for_duration_times.size());
+		Sexp_is_true_for_duration_times.push_back(Missiontime);
+	}
+	fix& start_time = Sexp_is_true_for_duration_times[Sexp_nodes[op_node].duration_index];
+
+	// get the duration we want
+	bool is_nan, is_nan_forever;
+	int duration = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+	if (is_nan || duration < 0)
+		return SEXP_FALSE;
+
+	// see if all the conditions are true
+	bool all_true = true;
+	for (int n = CDR(node); n >= 0; n = CDR(n))
+	{
+		if (!is_sexp_true(n))
+			all_true = false;
+		// don't break because we want to evaluate all the conditions -- see sexp_and()
+	}
+
+	// reset the clock?
+	if (!all_true)
+	{
+		start_time = Missiontime;
+		return SEXP_FALSE;
+	}
+
+	// figure out the elapsed delta in milliseconds
+	int elapsed_delta = fl2i(f2fl(Missiontime - start_time) * MILLISECONDS_PER_SECOND);
+
+	// compare to the duration
+	if (elapsed_delta >= duration)
+		return SEXP_TRUE;
+	else
+		return SEXP_FALSE;
 }
 
 // Goober5000 - added wing capability
@@ -27751,6 +27808,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_string_compare( node, op_num );
 				break;
 
+			case OP_IS_TRUE_FOR_DURATION:
+				sexp_val = sexp_is_true_for_duration(cur_node, node);
+				break;
+
 			case OP_IS_IFF:
 				sexp_val = sexp_is_iff_or_species(node, true);
 				break;
@@ -30693,6 +30754,7 @@ int query_operator_return_type(int op)
 		case OP_STRING_LESS_THAN:
 		case OP_PERFORM_ACTIONS_BOOL_FIRST:
 		case OP_PERFORM_ACTIONS_BOOL_LAST:
+		case OP_IS_TRUE_FOR_DURATION:
 		case OP_IS_DESTROYED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_IS_DISABLED:
@@ -31529,6 +31591,12 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_MESSAGE_OR_STRING;
 			}
+
+		case OP_IS_TRUE_FOR_DURATION:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_HAS_TIME_ELAPSED:
 		case OP_HAS_TIME_ELAPSED_MSECS:
@@ -35864,6 +35932,7 @@ int get_category(int op_id)
 		case OP_XOR:
 		case OP_PERFORM_ACTIONS_BOOL_FIRST:
 		case OP_PERFORM_ACTIONS_BOOL_LAST:
+		case OP_IS_TRUE_FOR_DURATION:
 			return OP_CATEGORY_LOGICAL;
 
 		case OP_GOAL_INCOMPLETE:
@@ -37083,7 +37152,7 @@ bool usable_in_campaign(int op_id)
 	if (op_id >= First_available_operator_id)
 		return false;
 
-	// exceptions to the below
+	// exceptions to the general-by-category check below
 	switch (op_id)
 	{
 		case OP_PREVIOUS_EVENT_TRUE:
@@ -37097,6 +37166,7 @@ bool usable_in_campaign(int op_id)
 		case OP_HAS_TIME_ELAPSED_MSECS:
 		case OP_PERFORM_ACTIONS_BOOL_FIRST:
 		case OP_PERFORM_ACTIONS_BOOL_LAST:
+		case OP_IS_TRUE_FOR_DURATION:
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
 			return false;
@@ -37522,6 +37592,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Returns a boolean value (note well the distinction between perform-actions-bool-first and perform-actions-bool-last).  Takes 2 or more arguments.\r\n"
 		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: This parameter is evaluated AFTER all of the actions have been performed.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
+
+	// Goober5000
+	{ OP_IS_TRUE_FOR_DURATION, "is-true-for-duration\r\n"
+		"\tTrue as long as all of the boolean arguments are true for at least the specified duration.  That is, as soon as all of the boolean arguments are true simultaneously, the "
+		"clock starts running.  If all of the boolean arguments remain true for the entire duration, this sexp also becomes true; but if any boolean argument becomes false, "
+		"the clock resets and the sexp becomes false.  This sexp may switch between true and false multiple times per mission if multiple durations satisfy the conditions.\r\n\r\n"
+		"NOTE: This sexp will not work correctly with any special-argument sexp, as it relies on state data that must persist from frame to frame to keep track of the timing.\r\n\r\n"
+		"Takes 2 or more arguments:\r\n"
+		"\t1:\tThe duration, in milliseconds\r\n"
+		"\tRest:\tOne or more boolean conditions\r\n" },
 
 	// Goober5000
 	{ OP_STRING_EQUALS, "String Equals (Boolean operator)\r\n"
