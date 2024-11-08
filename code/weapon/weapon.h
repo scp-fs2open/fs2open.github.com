@@ -688,7 +688,7 @@ struct weapon_info
 		NUM_VALUES
 	};
 
-	static constexpr auto modular_curves_definition = make_modular_curve_definition<weapon, ModularCurveOutputs>(
+	static constexpr auto weapon_modular_curves_definition = make_modular_curve_definition<weapon, ModularCurveOutputs>(
 			std::array {
 					std::pair {"Laser Length Mult", ModularCurveOutputs::LASER_LENGTH_MULT},
 					std::pair {"Laser Radius Mult", ModularCurveOutputs::LASER_RADIUS_MULT},
@@ -734,7 +734,7 @@ struct weapon_info
 
 		NUM_VALUES
 	};
-	static constexpr auto hit_modular_curves_definition = modular_curves_definition.derive_modular_curves_input_only_subset<object>(
+	static constexpr auto weapon_hit_modular_curves_definition = weapon_modular_curves_definition.derive_modular_curves_input_only_subset<object>(
 			std::pair {"Target Health", modular_curves_submember_input<&object::hull_strength>{}},
 			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}}
 	).derive_modular_curves_subset<float, HitModularCurveOutputs>(
@@ -803,10 +803,10 @@ struct weapon_info
 				std::pair{"Target Radius", modular_curves_submember_input<&object::radius>{}}
 			);
 
-	MODULAR_CURVE_SET(modular_curves, weapon_info::modular_curves_definition);
-	MODULAR_CURVE_SET(hit_modular_curves, weapon_info::hit_modular_curves_definition);
-	MODULAR_CURVE_SET(beam_modular_curves, weapon_info::beam_modular_curves_definition);
-	MODULAR_CURVE_SET(beam_hit_modular_curves, weapon_info::beam_hit_modular_curves_definition);
+	MODULAR_CURVE_SET(weapon_curves, weapon_info::weapon_modular_curves_definition);
+	MODULAR_CURVE_SET(weapon_hit_curves, weapon_info::weapon_hit_modular_curves_definition);
+	MODULAR_CURVE_SET(beam_curves, weapon_info::beam_modular_curves_definition);
+	MODULAR_CURVE_SET(beam_hit_curves, weapon_info::beam_hit_modular_curves_definition);
 
   public:
 	weapon_info();

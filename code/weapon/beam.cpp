@@ -464,7 +464,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->last_start = fire_info->starting_pos;
 	new_item->type5_rot_speed = wip->b_info.t5info.continuous_rot;
 	new_item->rotates = wip->b_info.beam_type == BeamType::OMNI && wip->b_info.t5info.continuous_rot_axis != Type5BeamRotAxis::UNSPECIFIED;
-	new_item->modular_curves_instance = wip->beam_modular_curves.create_instance();
+	new_item->modular_curves_instance = wip->beam_curves.create_instance();
 
 	if (fire_info->bfi_flags & BFIF_FORCE_FIRING)
 		new_item->flags |= BF_FORCE_FIRING;
@@ -1441,10 +1441,10 @@ void beam_render(beam *b, float u_offset)
 		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
 
-	float width_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_WIDTH_MULT, *b, &b->modular_curves_instance);
-	float alpha_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ALPHA_MULT, *b, &b->modular_curves_instance);
-	bool anim_has_curve = wip->beam_modular_curves.has_curve(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE);
-	float anim_state = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE, *b, &b->modular_curves_instance);
+	float width_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_WIDTH_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE);
+	float anim_state = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	float length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 	float per = 1.0f;
@@ -1674,10 +1674,10 @@ void beam_render_muzzle_glow(beam *b)
 		return;
 	}
 
-	float radius_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
-	float alpha_mult = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
-	bool anim_has_curve = wip->beam_modular_curves.has_curve(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE);
-	float anim_state = wip->beam_modular_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
+	float radius_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE);
+	float anim_state = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	// if the beam is warming up, scale the glow
 	if (b->warmup_stamp != -1) {		
@@ -4322,7 +4322,7 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 	}
 
 	float damage = wip->damage;
-	damage *= wip->beam_hit_modular_curves.get_output(weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
+	damage *= wip->beam_hit_curves.get_output(weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team)

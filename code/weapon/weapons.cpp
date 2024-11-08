@@ -1233,7 +1233,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Length Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_LENGTH_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_LENGTH_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 	
 	if(optional_string("@Laser Head Radius:")) {
@@ -1247,7 +1247,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Radius Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_RADIUS_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_RADIUS_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 	if (optional_string("@Laser Glow Length Scale:")) {
 		stuff_float(&wip->laser_glow_length_scale);
@@ -1270,7 +1270,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::LASER_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 
 	if (parse_optional_color3i_into("$Light color:", &wip->light_color)) {
@@ -1360,9 +1360,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 
 		if (subtype == WP_BEAM)
-			wip->beam_hit_modular_curves.add_curve("Lifetime", weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
+			wip->beam_hit_curves.add_curve("Lifetime", weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
 		else
-			wip->hit_modular_curves.add_curve("Lifetime", weapon_info::HitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
+			wip->weapon_hit_curves.add_curve("Lifetime", weapon_info::HitModularCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1473,13 +1473,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	wip->modular_curves.parse("$Lifetime Curve:");
+	wip->weapon_curves.parse("$Lifetime Curve:");
 
-	wip->hit_modular_curves.parse("$Hit Curve:");
+	wip->weapon_hit_curves.parse("$Hit Curve:");
 
-	wip->beam_modular_curves.parse("$Beam Curve:");
+	wip->beam_curves.parse("$Beam Curve:");
 
-	wip->beam_hit_modular_curves.parse("$Beam Hit Curve:");
+	wip->beam_hit_curves.parse("$Beam Hit Curve:");
 
 	if(optional_string("$Energy Consumed:")) {
 		stuff_float(&wip->energy_consumed);
@@ -1594,7 +1594,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
-				wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+				wip->weapon_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -1653,7 +1653,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
-				wip->modular_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+				wip->weapon_curves.add_curve("Lifetime", weapon_info::ModularCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -2651,7 +2651,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				new_curve.keyframes.push_back(curve_keyframe{ vec2d { 0.f, 0.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
 				new_curve.keyframes.push_back(curve_keyframe{ vec2d { delay, 1.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
 				Curves.push_back(new_curve);
-				wip->modular_curves.add_curve("Age", weapon_info::ModularCurveOutputs::SPAWN_RATE_MULT, modular_curves_entry{(static_cast<int>(Curves.size()) - 1)});
+				wip->weapon_curves.add_curve("Age", weapon_info::ModularCurveOutputs::SPAWN_RATE_MULT, modular_curves_entry{(static_cast<int>(Curves.size()) - 1)});
 			}
 
 			float adjusted_lifetime = wip->lifetime - delay;
@@ -5687,7 +5687,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		vec3d turnrate_mod = vm_vec_new(1.0f, 1.0f, 1.0f);
 
-		turnrate_mod *= wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::TURN_RATE_MULT, *wp, &wp->modular_curves_instance);
+		turnrate_mod *= wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::TURN_RATE_MULT, *wp, &wp->modular_curves_instance);
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
@@ -5796,7 +5796,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 	//WMC - Maybe detonate weapon anyway!
 	if(det_radius_adjusted > 0.0f)
 	{
-		det_radius_adjusted *= wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::DET_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+		det_radius_adjusted *= wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::DET_RADIUS_MULT, *wp, &wp->modular_curves_instance);
 
 		det_radius_adjusted = MAX(det_radius_adjusted, 0.f);
 
@@ -5978,7 +5978,7 @@ void weapon_process_post(object * obj, float frame_time)
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
 			bool spawn = wp->last_spawn_time[i].isNever();
-			float rate_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::SPAWN_RATE_MULT, *wp, &wp->modular_curves_instance);
+			float rate_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::SPAWN_RATE_MULT, *wp, &wp->modular_curves_instance);
 			if (rate_mult > 0.f) {
 				int required_elapsed = fl2i(wip->spawn_info[i].spawn_interval / rate_mult) * MILLISECONDS_PER_SECOND;
 				spawn |= timestamp_elapsed(timestamp_delta(wp->last_spawn_time[i], required_elapsed));
@@ -6692,7 +6692,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		}
 	}
 
-	wp->modular_curves_instance = wip->modular_curves.create_instance();
+	wp->modular_curves_instance = wip->weapon_curves.create_instance();
 
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
 		// For the next two frames, any non-timer-based countermeasures will pulse each frame.
@@ -7021,7 +7021,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			spawn_count = wip->spawn_info[i].spawn_count;
 		}
 
-		spawn_count = fl2i(i2fl(spawn_count) * wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::SPAWN_COUNT_MULT, *wp, &wp->modular_curves_instance));
+		spawn_count = fl2i(i2fl(spawn_count) * wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::SPAWN_COUNT_MULT, *wp, &wp->modular_curves_instance));
 
 		child_id = wip->spawn_info[i].spawn_wep_index;
 		if (child_id < 0)
@@ -9001,24 +9001,24 @@ void weapon_render(object* obj, model_draw_list *scene)
 	{
 	case WRT_LASER:
 		{
-			float length_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
-			float radius_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
-			float head_radius_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEAD_RADIUS_MULT, *wp, &wp->modular_curves_instance);
-			float tail_radius_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_TAIL_RADIUS_MULT, *wp, &wp->modular_curves_instance);
-			float offset_x_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_X_MULT, *wp, &wp->modular_curves_instance);
-			float offset_y_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_Y_MULT, *wp, &wp->modular_curves_instance);
-			float offset_z_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
-			float switch_ang_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT, *wp, &wp->modular_curves_instance);
-			float switch_rate_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
-			bool anim_has_curve = wip->modular_curves.has_curve(weapon_info::ModularCurveOutputs::LASER_ANIM_STATE);
-			float anim_state = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
-			float alpha_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_ALPHA_MULT, *wp, &wp->modular_curves_instance);
-			float bitmap_r_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_R_MULT, *wp, &wp->modular_curves_instance);
-			float bitmap_g_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_G_MULT, *wp, &wp->modular_curves_instance);
-			float bitmap_b_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_B_MULT, *wp, &wp->modular_curves_instance);
-			float glow_r_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_R_MULT, *wp, &wp->modular_curves_instance);
-			float glow_g_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_G_MULT, *wp, &wp->modular_curves_instance);
-			float glow_b_mult = wip->modular_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_B_MULT, *wp, &wp->modular_curves_instance);
+			float length_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+			float radius_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float head_radius_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEAD_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float tail_radius_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_TAIL_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float offset_x_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_X_MULT, *wp, &wp->modular_curves_instance);
+			float offset_y_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_Y_MULT, *wp, &wp->modular_curves_instance);
+			float offset_z_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
+			float switch_ang_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT, *wp, &wp->modular_curves_instance);
+			float switch_rate_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
+			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::ModularCurveOutputs::LASER_ANIM_STATE);
+			float anim_state = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			float alpha_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_ALPHA_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_r_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_R_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_g_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_G_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_b_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_BITMAP_B_MULT, *wp, &wp->modular_curves_instance);
+			float glow_r_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_R_MULT, *wp, &wp->modular_curves_instance);
+			float glow_g_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_G_MULT, *wp, &wp->modular_curves_instance);
+			float glow_b_mult = wip->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LASER_GLOW_B_MULT, *wp, &wp->modular_curves_instance);
 
 			if (wip->laser_length_by_frametime) {
 				length_mult *= flFrametime;
@@ -9457,9 +9457,9 @@ void weapon_info::reset()
 	this->light_color.reset();
 	this->light_radius = -1.0f; //Defaults handled at runtime via lighting profile if left negative
 
-	this->modular_curves.reset();
-	this->hit_modular_curves.reset();
-	this->beam_modular_curves.reset();
+	this->weapon_curves.reset();
+	this->weapon_hit_curves.reset();
+	this->beam_curves.reset();
 
 	this->collision_radius_override = -1.0f;
 	this->max_speed = 10.0f;

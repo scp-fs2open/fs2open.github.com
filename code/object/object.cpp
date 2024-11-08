@@ -1258,11 +1258,11 @@ void obj_move_all_post(object *objp, float frametime)
 					auto lp = lighting_profiles::current();
 					hdr_color light_color;
 
-					float intensity_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_INTENSITY_MULT, *wp, &wp->modular_curves_instance);
-					float radius_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_RADIUS_MULT, *wp, &wp->modular_curves_instance);
-					float r_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_R_MULT, *wp, &wp->modular_curves_instance);
-					float g_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_G_MULT, *wp, &wp->modular_curves_instance);
-					float b_mult = wi->modular_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_B_MULT, *wp, &wp->modular_curves_instance);
+					float intensity_mult = wi->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_INTENSITY_MULT, *wp, &wp->modular_curves_instance);
+					float radius_mult = wi->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+					float r_mult = wi->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_R_MULT, *wp, &wp->modular_curves_instance);
+					float g_mult = wi->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_G_MULT, *wp, &wp->modular_curves_instance);
+					float b_mult = wi->weapon_curves.get_output(weapon_info::ModularCurveOutputs::LIGHT_B_MULT, *wp, &wp->modular_curves_instance);
 
 					// If there is no specific color set in the table, laser render weapons have a dynamic color.
 					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
