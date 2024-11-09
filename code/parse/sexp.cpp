@@ -475,6 +475,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "change-iff-color",				OP_CHANGE_IFF_COLOR,					6,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "add-remove-escort",				OP_ADD_REMOVE_ESCORT,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "ship-change-alt-name",			OP_SHIP_CHANGE_ALT_NAME,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "ship-change-display-name",		OP_SHIP_CHANGE_DISPLAY_NAME,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-change-callsign",			OP_SHIP_CHANGE_CALLSIGN,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-tag",						OP_SHIP_TAG,							3,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -19847,6 +19848,10 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 	}
 }
 
+void sexp_ship_change_display_name() {}
+
+void multi_sexp_ship_change_display_name() {}
+
 // Goober5000
 void sexp_set_death_message(int n)
 {
@@ -28413,6 +28418,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SHIP_CHANGE_DISPLAY_NAME:
+				sexp_ship_change_display_name();
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SET_DEATH_MESSAGE:
 				sexp_set_death_message(node);
 				sexp_val = SEXP_TRUE;
@@ -30284,6 +30294,10 @@ void multi_sexp_eval()
 				multi_sexp_ship_change_alt_name_or_callsign(op_num == OP_SHIP_CHANGE_ALT_NAME);
 				break;
 
+			case OP_SHIP_CHANGE_DISPLAY_NAME:
+				multi_sexp_ship_change_display_name();
+				break;
+
 			case OP_SET_RESPAWNS:
 				multi_sexp_set_respawns();
 				break;
@@ -31265,6 +31279,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SQUADRON_WINGS:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
@@ -31912,6 +31927,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_SHIP;
+
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_SET_DEATH_MESSAGE:
 			return OPF_MESSAGE_OR_STRING;
@@ -36319,6 +36340,7 @@ int get_category(int op_id)
 		case OP_SHIP_TAG:
 		case OP_SHIP_UNTAG:
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -36719,6 +36741,7 @@ int get_subcategory(int op_id)
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
 		case OP_SHIP_TAG:
 		case OP_SHIP_UNTAG:
 		case OP_SET_ARRIVAL_INFO:
@@ -39943,6 +39966,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tChanges the alternate ship class name displayed in the HUD target window.  Takes 2 or more arguments...\r\n"
 		"\t1:\tThe ship class name to display\r\n"
 		"\tRest:\tThe ships to display the new class name (ships do not need to be in-mission)" },
+
+	{ OP_SHIP_CHANGE_DISPLAY_NAME, "ship-change-display-name\r\n"
+		"\tChanges the ship name displayed in the HUD target window.  Takes 2 arguments...\r\n"
+		"\t1:\tThe ship name to display\r\n"
+		"\tRest:\tThe ship to display the new name (ships do not need to be in-mission)" },
 
 	// FUBAR
 	{ OP_SHIP_CHANGE_CALLSIGN, "ship-change-callsign\r\n"
