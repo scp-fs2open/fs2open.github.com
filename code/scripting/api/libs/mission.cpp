@@ -1846,6 +1846,11 @@ ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is curre
 	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);
 }
 
+ADE_FUNC(isPrePlayerEntry, l_Mission, nullptr, "get whether the mission is currently in the pre-player-entry state", "boolean", "true if in pre-player-entry, false otherwise")
+{
+	return ade_set_args(L, "b", Pre_player_entry);
+}
+
 ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
 {
 	bool b = false;
