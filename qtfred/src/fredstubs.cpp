@@ -224,6 +224,9 @@ void game_feature_disabled_popup() {}
 void game_pause() {}
 void game_unpause() {}
 
+bool Pre_player_entry;
+bool game_actually_playing() { return false; }
+
 //Time stuff
 bool Time_compression_locked;
 float flRealframetime;

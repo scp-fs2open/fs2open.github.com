@@ -361,7 +361,7 @@ int Test_begin = 0;
 extern int	Player_attacking_enabled;
 int Show_net_stats;
 
-int Pre_player_entry;
+bool Pre_player_entry;
 
 int	Fred_running = 0;
 bool running_unittests = false;
@@ -1057,7 +1057,7 @@ void game_level_init()
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 
-	Pre_player_entry = 1;			//	Means the player has not yet entered.
+	Pre_player_entry = true;		//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 
 	observer_init();
@@ -3854,15 +3854,12 @@ void game_maybe_do_dead_popup(float frametime)
 }
 
 // returns true if player is actually in a game_play stats
-int game_actually_playing()
+bool game_actually_playing()
 {
 	int state;
 
 	state = gameseq_get_state();
-	if ( (state != GS_STATE_GAME_PLAY) && (state != GS_STATE_DEATH_DIED) && (state != GS_STATE_DEATH_BLEW_UP) )
-		return 0;
-	else
-		return 1;
+	return (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_DEATH_DIED) || (state == GS_STATE_DEATH_BLEW_UP);
 }
 
 void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
@@ -4087,6 +4084,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 	{
 		TRACE_SCOPE(tracing::RenderHUDHook);
 
+		// see also hu.isOnHudDrawCalled()
 		if (scripting::hooks::OnHudDraw->isActive()) {
 			if (fov_override)
 				g3_set_fov(*fov_override);
@@ -4156,7 +4154,6 @@ void game_frame(bool paused)
 	fix flip_time1=0, flip_time2=0;
 	fix clear_time1=0, clear_time2=0;
 #endif
-	int actually_playing;
 
 #ifndef NDEBUG
 	if (Framerate_delay) {
@@ -4183,7 +4180,7 @@ void game_frame(bool paused)
 	else
 	{
 		// var to hold which state we are in
-		actually_playing = game_actually_playing();
+		bool actually_playing = game_actually_playing();
 
 		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 			if (!(Game_mode & GM_STANDALONE_SERVER)){
@@ -4192,7 +4189,7 @@ void game_frame(bool paused)
 		}
 	
 		if (Pre_player_entry && Missiontime > Entry_delay_time) {
-			Pre_player_entry = 0;
+			Pre_player_entry = false;
 			event_music_set_start_delay();
 		}
 
