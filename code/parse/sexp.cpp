@@ -1126,7 +1126,7 @@ int Sexp_current_argument_nesting_level;
 
 
 //Karajorma
-int get_generic_subsys(const char *subsy_name);
+int get_generic_subsys(const char *subsys_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
@@ -2583,8 +2583,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					break;
 				}
 
-				//  subsys_or_generic has a few extra options it accepts
-				if (type == OPF_SUBSYS_OR_GENERIC && (!(stricmp(CTEXT(node), SEXP_ALL_ENGINES_STRING)) || !(stricmp(CTEXT(node), SEXP_ALL_TURRETS_STRING)) )) {
+				//  subsys_or_generic can also accept generic types
+				if (type == OPF_SUBSYS_OR_GENERIC && get_generic_subsys(CTEXT(node)) != SUBSYSTEM_NONE) {
 					break;
 				}
 
@@ -15426,7 +15426,7 @@ void sexp_sabotage_subsystem(int n)
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = nullptr;
-				if (generic_type == ss_start->system_info->type) {
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -15545,7 +15545,7 @@ void sexp_repair_subsystem(int n)
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = nullptr;
-				if (generic_type == ss_start->system_info->type) {
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -15663,7 +15663,7 @@ void sexp_set_subsystem_strength(int n)
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = nullptr;
-				if (generic_type == ss_start->system_info->type) {
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -15736,7 +15736,7 @@ void sexp_destroy_subsys_instantly(int n)
 		{
 			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss))
 			{
-				if (generic_type == ss->system_info->type)
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss->system_info->type)
 				{
 					// do destruction stuff
 					ss->current_hits = 0;
@@ -19037,7 +19037,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, Ship::Subsystem_Flags ss_flag,
 		int generic_type = get_generic_subsys(CTEXT(node));
 		if (generic_type) {
 			for (auto ss: list_range(&shipp->subsys_list)) {
-				if (generic_type == ss->system_info->type) {
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss->system_info->type) {
 					ss->flags.set(ss_flag, setit);
 				}
 			}
@@ -19081,7 +19081,7 @@ void multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags ss_flag)
 		int generic_type = get_generic_subsys(ss_name);
 		if (generic_type) {
 			for (auto ss: list_range(&shipp->subsys_list)) {
-				if (generic_type == ss->system_info->type) {
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss->system_info->type) {
 					ss->flags.set(ss_flag, setit);
 				}
 			}
@@ -19206,7 +19206,7 @@ void sexp_ship_subsys_guardian_threshold(int node)
 		if (generic_type) {
 			// search through all subsystems
 			for (auto ss: list_range(&ship_entry->shipp()->subsys_list)) {
-				if (generic_type == ss->system_info->type) {
+				if (generic_type == SUBSYSTEM_ALL || generic_type == ss->system_info->type) {
 					ss->subsys_guardian_threshold = threshold;
 				}
 			}
@@ -22168,7 +22168,7 @@ void sexp_set_armor_type(int node)
 				// search through all subsystems
 				for (auto ss : list_range(&shipp->subsys_list))
 				{
-					if (generic_type == ss->system_info->type)
+					if (generic_type == SUBSYSTEM_ALL || generic_type == ss->system_info->type)
 					{
 						// set the range
 						if (!rset)
@@ -27349,16 +27349,22 @@ void sexp_set_motion_debris(int node)
 
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
+ * NOTE: this can return SUBSYSTEM_ALL which is not in the normal range of subsystem types
  */
 int get_generic_subsys(const char *subsys_name)
 {
-	if (!strcmp(subsys_name, SEXP_ALL_ENGINES_STRING)) {
-		return SUBSYSTEM_ENGINE;
-	} else if (!strcmp(subsys_name, SEXP_ALL_TURRETS_STRING)) {
-		return SUBSYSTEM_TURRET;
+	char buffer[NAME_LENGTH];
+
+	for (int i = 0; i < SUBSYSTEM_MAX; ++i)
+	{
+		sprintf(buffer, SEXP_ALL_GENERIC_SUBSYSTEM_STRING, Subsystem_types[i]);
+		if (!stricmp(subsys_name, buffer))
+			return i;
 	}
 
-	Assert(SUBSYSTEM_NONE == 0);
+	if (!stricmp(subsys_name, SEXP_ALL_SUBSYSTEMS_STRING))
+		return SUBSYSTEM_ALL;
+
 	return SUBSYSTEM_NONE;
 }
 

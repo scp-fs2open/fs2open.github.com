@@ -72,6 +72,19 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_UNKNOWN			11
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
+#define SUBSYSTEM_ALL				100				//	only for use in special situations
+
+#if SUBSYSTEM_NONE != 0
+#error SUBSYSTEM_NONE must be 0!
+#endif
+#if SUBSYSTEM_MAX != (SUBSYSTEM_UNKNOWN+1)
+#error SUBSYSTEM_MAX is not correct, or SUBSYSTEM_UNKNOWN is not the last subsystem in the list!
+#endif
+#if !(SUBSYSTEM_ALL > SUBSYSTEM_MAX)
+#error SUBSYSTEM_ALL must be greater than SUBSYSTEM_MAX!
+#endif
+
+
 enum class modelread_status { FAIL, SUCCESS_REAL, SUCCESS_VIRTUAL };
 
 enum model_objnum_special : int { OBJNUM_NONE = -1, OBJNUM_COCKPIT = -2, OBJNUM_SPECIAL_MIN = -3};

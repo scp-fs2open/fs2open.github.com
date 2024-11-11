@@ -7278,9 +7278,19 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_or_none(int parent_node, in
 sexp_list_item *sexp_tree::get_listing_opf_subsys_or_generic(int parent_node, int arg_index)
 {
 	sexp_list_item head;
+	char buffer[NAME_LENGTH];
 
-	head.add_data(SEXP_ALL_ENGINES_STRING);
-	head.add_data(SEXP_ALL_TURRETS_STRING);
+	for (int i = 0; i < SUBSYSTEM_MAX; ++i)
+	{
+		// it's not clear what the "activator" subsystem was intended to do, so let's not display it by default
+		if (i != SUBSYSTEM_NONE && i != SUBSYSTEM_UNKNOWN && i != SUBSYSTEM_ACTIVATION)
+		{
+			sprintf(buffer, SEXP_ALL_GENERIC_SUBSYSTEM_STRING, Subsystem_types[i]);
+			SCP_tolower(buffer);
+			head.add_data(buffer);
+		}
+	}
+	head.add_data(SEXP_ALL_SUBSYSTEMS_STRING);
 	head.add_list(get_listing_opf_subsystem(parent_node, arg_index));
 
 	return head.next;
