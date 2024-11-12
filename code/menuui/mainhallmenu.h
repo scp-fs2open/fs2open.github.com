@@ -66,6 +66,9 @@ public:
 	int zoom_area_width = -1;
 	int zoom_area_height = -1;
 
+	bool render_title = true;
+	bool render_version = true;
+
 	// intercom defines -------------------
 
 	// # of intercom sounds

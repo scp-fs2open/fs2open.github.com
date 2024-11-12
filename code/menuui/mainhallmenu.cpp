@@ -1090,10 +1090,14 @@ void main_hall_do(float frametime)
 	help_overlay_maybe_blit(Main_hall_overlay_id, main_hall_get_overlay_resolution_index());
 
 	// blit the freespace version #
-	main_hall_blit_version();
+	if (Main_hall->render_version) {
+		main_hall_blit_version();
+	}
 
 	// blit the mod title and version
-	main_hall_blit_mod();
+	if (Main_hall->render_title) {
+		main_hall_blit_mod();
+	}
 
 	// blit ship and weapon table status
 #ifndef NDEBUG
@@ -2424,6 +2428,14 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	if (optional_string("+Zoom To:")) {
 		stuff_int(&m->zoom_area_width);
 		stuff_int(&m->zoom_area_height);
+	}
+
+	if (optional_string("+Render Mod Title:")) {
+		stuff_boolean(&m->render_title);
+	}
+
+	if (optional_string("+Render FSO Version:")) {
+		stuff_boolean(&m->render_version);
 	}
 
 	// intercom sounds
