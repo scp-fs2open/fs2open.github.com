@@ -13071,7 +13071,7 @@ void sexp_hud_set_xstr(int n)
 
 	auto gaugename = CTEXT(n);
 	auto text = CTEXT(CDR(n));
-	auto id = eval_num(CDR(n), is_nan, is_nan_forever);
+	auto id = eval_num(CDDR(n), is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever) {
 		id = -1;
 	}
