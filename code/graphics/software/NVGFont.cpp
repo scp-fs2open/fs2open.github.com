@@ -12,8 +12,8 @@
 float Font_Scale_Factor = 1.0;
 
 static auto FontScaleFactor __UNUSED = options::OptionBuilder<float>("Game.FontScaleFactor",
-										   std::pair<const char*, int>{"Font Scale Factor", 1859}, // Update localize.cpp!! If this is still here, do not pass review
-										   std::pair<const char*, int>{"Sets a multipler to scale fonts by. Only works on fonts the mod has explicitely allowed", 1860})
+										   std::pair<const char*, int>{"Font Scale Factor", 1862},
+										   std::pair<const char*, int>{"Sets a multipler to scale fonts by. Only works on fonts the mod has explicitely allowed", 1863})
 										   .category(std::make_pair("Game", 1824))
 										   .range(0.2f, 4.0f) // Upper limit is somewhat arbitrary
 										   .level(options::ExpertLevel::Advanced)
