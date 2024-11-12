@@ -150,7 +150,7 @@ namespace font
 		 *
 		 * @return	The scaling behavior
 		 */
-		bool getScaleBehavior() const;
+		[[nodiscard]] bool getScaleBehavior() const;
 
 		/**
 		* @brief	Gets the offset of this font from the top of the drawing line

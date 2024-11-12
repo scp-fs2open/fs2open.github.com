@@ -28,7 +28,7 @@ namespace font
 		this->filename = newName;
 	}
 
-	bool FSFont::getScaleBehavior() const
+	[[nodiscard]] bool FSFont::getScaleBehavior() const
 	{
 		return this->canScale;
 	}
