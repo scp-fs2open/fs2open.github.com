@@ -1471,8 +1471,17 @@ void main_hall_mouse_release_region(int region)
 		}
 
 		auto sound = Main_hall->door_sounds.at(region).at(1);
+
+		// funny business
 		if (Vasudan_funny && (main_hall_is_retail_vasudan() || main_hall_allows_headz())) {
-			sound = Main_hall->headz_sound_index;
+			// we found headz.. so let's check if we're in the headz region
+			bool inVhall = !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
+			bool validHeadzIndex = (Main_hall->headz_index >= 0) && (Main_hall->headz_index < Main_hall->num_door_animations) && !Main_hall->headz_anim.empty();
+
+			// if retail vasudan && options region OR valid headz index
+			if ((region == OPTIONS_REGION && inVhall) || (region == Main_hall->headz_index && validHeadzIndex)) {
+				sound = Main_hall->headz_sound_index;
+			}
 		}
 
 		if (sound.isValid())
@@ -1522,8 +1531,17 @@ void main_hall_mouse_grab_region(int region)
 
 
 	auto sound = Main_hall->door_sounds.at(region).at(0);
+
+	// funny business
 	if (Vasudan_funny && (main_hall_is_retail_vasudan() || main_hall_allows_headz())) {
-		sound = Main_hall->headz_sound_index;
+		// we found headz.. so let's check if we're in the headz region
+		bool inVhall = !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
+		bool validHeadzIndex = (Main_hall->headz_index >= 0) && (Main_hall->headz_index < Main_hall->num_door_animations) && !Main_hall->headz_anim.empty();
+
+		// if retail vasudan && options region OR valid headz index
+		if ((region == OPTIONS_REGION && inVhall) || (region == Main_hall->headz_index && validHeadzIndex)) {
+			sound = Main_hall->headz_sound_index;
+		}
 	}
 
 	if (sound.isValid())
