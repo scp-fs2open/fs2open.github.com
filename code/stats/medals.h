@@ -20,8 +20,6 @@ class player;
 
 extern int Rank_medal_index;
 
-extern scoring_struct *Player_score;
-
 // NUM_MEDALS stored in scoring.h since needed for player scoring structure
 
 class medal_stuff

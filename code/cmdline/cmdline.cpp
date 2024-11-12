@@ -315,7 +315,6 @@ int Cmdline_cd_check = 1;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
-int Cmdline_gimme_all_medals = 0;
 int Cmdline_mouse_coords = 0;
 int Cmdline_multi_log = 0;
 int Cmdline_multi_stream_chat_to_file = 0;

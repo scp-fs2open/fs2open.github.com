@@ -34,7 +34,6 @@ extern int Cmdline_cd_check;
 extern int Cmdline_closed_game;
 extern int Cmdline_freespace_no_music;
 extern int Cmdline_freespace_no_sound;
-extern int Cmdline_gimme_all_medals;
 extern int Cmdline_mouse_coords;
 extern int Cmdline_multi_log;
 extern int Cmdline_multi_stream_chat_to_file;
