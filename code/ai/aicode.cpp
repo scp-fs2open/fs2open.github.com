@@ -14626,7 +14626,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		}
 
 		float	danger_dist;
-		vec3d	expected_pos;		//	Position at which we expect the weapon to detonate.
+		vec3d	expected_pos = vmd_zero_vector;		//	Position at which we expect the weapon to detonate.
 		int		pos_set = 0;
 
 		danger_dist = wip->shockwave.outer_rad;
@@ -14655,18 +14655,35 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		if (pos_set) {
 			// if the object is not a small ship, a surface impact is likely to be some distance away from the ship center, so refine the position
 			if (fix_bugs && target_ship_obj && !Ship_info[Ships[target_ship_obj->instance].ship_info_index].is_small_ship()) {
-				mc_info mc;
-				mc.model_instance_num = Ships[target_ship_obj->instance].model_instance_num;
-				mc.model_num = Ship_info[Ships[target_ship_obj->instance].ship_info_index].model_num;
-				mc.orient = &target_ship_obj->orient;
-				mc.pos = &target_ship_obj->pos;
-				mc.p0 = &weapon_objp->pos;				// Point 1 of ray to check
-				mc.p1 = &expected_pos;					// Point 2 of ray to check
-				mc.flags = MC_CHECK_MODEL;
+				// set up cache if needed
+				if (weaponp->homing_cache_ptr == nullptr) {
+					weaponp->homing_cache_ptr.reset(new homing_cache_info{ TIMESTAMP::immediate(), expected_pos, false });
+				}
 
-				model_collide(&mc);
-				if (mc.num_hits > 0) {
-					expected_pos = mc.hit_point_world;
+				// only refine the position every so often though
+				if (timestamp_elapsed(weaponp->homing_cache_ptr->next_update)) {
+					mc_info mc;
+					mc.model_instance_num = Ships[target_ship_obj->instance].model_instance_num;
+					mc.model_num = Ship_info[Ships[target_ship_obj->instance].ship_info_index].model_num;
+					mc.orient = &target_ship_obj->orient;
+					mc.pos = &target_ship_obj->pos;
+					mc.p0 = &weapon_objp->pos;				// Point 1 of ray to check
+					mc.p1 = &expected_pos;					// Point 2 of ray to check
+					mc.flags = MC_CHECK_MODEL;
+
+					model_collide(&mc);
+					if (mc.num_hits > 0) {
+						weaponp->homing_cache_ptr->expected_pos = mc.hit_point_world;
+						weaponp->homing_cache_ptr->valid = true;
+					} else {
+						weaponp->homing_cache_ptr->valid = false;
+					}
+
+					weaponp->homing_cache_ptr->next_update = _timestamp(500);
+				}
+
+				if (weaponp->homing_cache_ptr->valid) {
+					expected_pos = weaponp->homing_cache_ptr->expected_pos;
 				}
 			}
 		} else {
