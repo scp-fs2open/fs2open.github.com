@@ -417,18 +417,63 @@ void HudGaugeReticle::getFirepointStatus() {
 					}
 
 					int num_slots = pm->gun_banks[i].num_slots;
+					int point_count = 0;
+					FiringPattern firing_pattern;
+					if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
+						firing_pattern = sip->dyn_firing_patterns_allowed[shipp->weapons.current_primary_bank][swp->dynamic_firing_pattern[shipp->weapons.current_primary_bank]];
+					} else {
+						firing_pattern = Weapon_info[swp->primary_bank_weapons[i]].firing_pattern;
+					}
+
+					if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
+						point_count = MIN(num_slots, swp->primary_bank_slot_count[shipp->weapons.current_primary_bank] );
+					} else if (firing_pattern != FiringPattern::STANDARD) {
+						point_count = MIN(num_slots, Weapon_info[swp->primary_bank_weapons[i]].shots);
+					} else {
+						point_count = num_slots;
+					}
+					
 					for (int j = 0; j < num_slots; j++) {
 						int fpactive = bankactive;
 
-						if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
+						fpactive--;
+
+						for (int q = 0; q < point_count; q++) {
 							// If this firepoint is not among the next shot(s) to be fired, dim it one step
-							if ( !( (j >= (shipp->last_fired_point[i]+1) % num_slots) && (j <= (shipp->last_fired_point[i]+swp->primary_bank_slot_count[i]) % num_slots) ) ) {
-								fpactive--;
+							switch (firing_pattern) {
+								case FiringPattern::CYCLE_FORWARD: {
+								if (j == (swp->primary_firepoint_next_to_fire_index[i] + q) % num_slots) {
+										fpactive++;
+									}
+									break;
+								}
+								case FiringPattern::CYCLE_REVERSE: {
+									if (j == ((swp->primary_firepoint_next_to_fire_index[i] - (q + 1)) % num_slots + num_slots) % num_slots) {
+										fpactive++;
+									}
+									break;
+								}
+								case FiringPattern::RANDOM_EXHAUSTIVE: {
+									if (j == swp->primary_firepoint_indices[i][(swp->primary_firepoint_next_to_fire_index[i] + q) % num_slots]) {
+										fpactive++;
+									}
+									break;
+								}
+								case FiringPattern::RANDOM_NONREPEATING:
+								case FiringPattern::RANDOM_REPEATING: {
+									if (j == swp->primary_firepoint_indices[i][q]) {
+										fpactive++;
+									}
+									break;
+								}
+								default:
+								case FiringPattern::STANDARD: {
+									fpactive++;
+									break;
+								}
 							}
-						} else if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Cycle]) {
-							// If this firepoint is not the next one to be fired, dim it one step
-							if (j != (shipp->last_fired_point[i]+1) % num_slots) {
-								fpactive--;
+							if (fpactive == bankactive) {
+								break;
 							}
 						}
 

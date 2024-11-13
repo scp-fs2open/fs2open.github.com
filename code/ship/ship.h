@@ -31,6 +31,7 @@
 #include "weapon/trails.h"
 #include "ship/ship_flags.h"
 #include "weapon/weapon_flags.h"
+#include "weapon/weapon.h"
 #include "ai/ai.h"
 
 #include <string>
@@ -131,6 +132,7 @@ public:
 
 	// dynamic weapon linking - by RSAXVC
 	int primary_bank_slot_count[MAX_SHIP_PRIMARY_BANKS];	// Fire this many slots at a time
+	int dynamic_firing_pattern[MAX_SHIP_PRIMARY_BANKS];		// Index into ship_info's dyn_firing_patterns_allowed
 	// end dynamic weapon linking
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
@@ -163,8 +165,12 @@ public:
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
-	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
-	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
+	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
+	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
+																		// For randomized ones, keeps track of where we are in primary_firepoint_indices
+
+	size_t primary_bank_substitution_pattern_index[MAX_SHIP_PRIMARY_BANKS];
+	size_t secondary_bank_substitution_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 
 	// for type5 beams, keeps track of accumulated per burst rotation, added to with each shot (or burst)
 	float per_burst_rot;
@@ -783,7 +789,6 @@ public:
 
 	float alpha_mult;
 
-	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 	ship_subsys *last_fired_turret; // which turret has fired last
 
 	// fighter bay door stuff, parent side
@@ -1322,6 +1327,8 @@ public:
 
 	// Shudder modifier for the ship
 	float ship_shudder_modifier;
+
+	SCP_vector<FiringPattern> dyn_firing_patterns_allowed[MAX_SHIP_PRIMARY_BANKS];
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;

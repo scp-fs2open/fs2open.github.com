@@ -196,7 +196,9 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 		Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
 		weaponp->mass = 0.0f;
 	}}, //special case
-    { "cycle",							Weapon::Info_Flags::Cycle,								true },
+    { "cycle",							Weapon::Info_Flags::NUM_VALUES,							false, [](const SCP_string& /*spawn*/, weapon_info* weaponp, flagset<Weapon::Info_Flags>& /*flags*/) {
+		weaponp->firing_pattern = FiringPattern::CYCLE_FORWARD;
+	}}, //special case
     { "small only",						Weapon::Info_Flags::Small_only,							true },
     { "same turret cooldown",			Weapon::Info_Flags::Same_turret_cooldown,				true },
     { "apply no light",					Weapon::Info_Flags::Mr_no_lighting,						true },
@@ -3587,9 +3589,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}		
 	}
 
+	if(optional_string("$Firing Pattern:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+		if (!stricmp(fname, "CYCLE FORWARD")) {
+			wip->firing_pattern = FiringPattern::CYCLE_FORWARD;
+		} else if (!stricmp(fname, "CYCLE REVERSE")) {
+			wip->firing_pattern = FiringPattern::CYCLE_REVERSE;
+		} else if (!stricmp(fname, "RANDOM EXHAUSTIVE")) {
+			wip->firing_pattern = FiringPattern::RANDOM_EXHAUSTIVE;
+		} else if (!stricmp(fname, "RANDOM NONREPEATING")) {
+			wip->firing_pattern = FiringPattern::RANDOM_NONREPEATING;
+		} else if (!stricmp(fname, "RANDOM REPEATING")) {
+			wip->firing_pattern = FiringPattern::RANDOM_REPEATING;
+		}
+	}
 
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
+	}
+
+	if( optional_string("$Cycle Multishot:")){
+		stuff_int(&wip->cycle_multishot);
 	}
 
 	//Left in for compatibility
@@ -6392,12 +6412,12 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 	// the weapon to the wrong bank.  Hopefully this isn't a problem.
 	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
 		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_pattern_index[pi]);
+			return &(ship_weapon_p->primary_bank_substitution_pattern_index[pi]);
 		}
 	}
 	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
 		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_pattern_index[si]);
+			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[si]);
 		}
 	}
 	return NULL;
@@ -9550,7 +9570,9 @@ void weapon_info::reset()
 	this->fof_spread_rate = 0.0f;
 	this->fof_reset_rate = 0.0f;
 	this->max_fof_spread = 0.0f;
+	this->firing_pattern = FiringPattern::STANDARD;
 	this->shots = 1;
+	this->cycle_multishot = 1;
 
 	//customizeable corkscrew stuff
 	this->cs_num_fired = 4;
