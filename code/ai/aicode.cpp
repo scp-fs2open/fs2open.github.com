@@ -14709,6 +14709,12 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 
 		//	See if too far away to care about shockwave.
 		if (vm_vec_dist_quick(&objp->pos, &expected_pos) > danger_dist*2.0f) {
+			// Volition commented this out, but based on testing it looks like removing the flag makes more sense.
+			// Also, the corresponding flag is removed in the distance check for ship shockwaves.
+			if (fix_bugs) {
+				aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_weapon);
+				aip->shockwave_object = -1;
+			}
 			//aip->ai_flags &= ~AIF_AVOID_SHOCKWAVE_WEAPON;
 			return 0;
 		} else {
@@ -14806,9 +14812,13 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 		}
 
 		// if this is a homing weapon that isn't homing, don't react yet
-		auto wp = &Weapons[Objects[aip->shockwave_object].instance];
-		if (Weapon_info[wp->weapon_info_index].is_homing() && IS_VEC_NULL(&wp->homing_pos)) {
-			return 0;
+		// (this might be a should-be-dead weapon, in which case it will be pruned with an object type check inside aas_1(),
+		// so to minimize changes to the existing logic, don't prune it here)
+		if (!Objects[aip->shockwave_object].flags[Object::Object_Flags::Should_be_dead]) {
+			auto wp = &Weapons[Objects[aip->shockwave_object].instance];
+			if (Weapon_info[wp->weapon_info_index].is_homing() && IS_VEC_NULL(&wp->homing_pos)) {
+				return 0;
+			}
 		}
 	}
 
