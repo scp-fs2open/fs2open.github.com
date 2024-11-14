@@ -1792,7 +1792,17 @@ ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", credits_get_music_filename(Credits_music_name));
+	const char *credits_wavfile_name = nullptr;
+
+	// try substitute music first
+	if (*Credits_substitute_music_name)
+		credits_wavfile_name = credits_get_music_filename(Credits_substitute_music_name);
+
+	// fall back to regular music
+	if (!credits_wavfile_name)
+		credits_wavfile_name = credits_get_music_filename(Credits_music_name);
+
+	return ade_set_args(L, "s", credits_wavfile_name);
 }
 
 ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of credits images", "number", "The number of images")
