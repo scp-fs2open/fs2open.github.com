@@ -506,7 +506,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)
-	if (Main_hall && Main_hall->name != main_hall_to_load) {
+	if (!Main_hall || Main_hall->name != main_hall_to_load) {
 		main_hall_stop_ambient();
 	}
 
@@ -1726,22 +1726,17 @@ void main_hall_notify_do()
  */
 void main_hall_start_ambient()
 {
-	int play_ambient_loop = 0;
-
 	if (Main_hall_paused) {
 		return;
 	}
 
-	if (!Main_hall_ambient_loop.isValid()) {
-		play_ambient_loop = 1;
-	} else {
-		if (!snd_is_playing(Main_hall_ambient_loop)) {
-			play_ambient_loop = 1;
-		}
-	}
+	if (!Main_hall_ambient_loop.isValid() || !snd_is_playing(Main_hall_ambient_loop)) {
+		// if no main hall (e.g. on pilot select screen) use the default
+		auto sound = Main_hall ? Main_hall->ambient_sound : InterfaceSounds::MAIN_HALL_AMBIENT;
 
-	if (play_ambient_loop) {
-		Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT));
+		if (sound.isValid()) {
+			Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(sound));
+		}
 	}
 
 	// no need to restart the intercom, since the game will set the timestamp for a new one
@@ -1792,7 +1787,12 @@ void main_hall_stop_ambient()
 void main_hall_reset_ambient_vol()
 {
 	if (Main_hall_ambient_loop.isValid()) {
-		snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT)->volume_range.next());
+		// if no main hall (e.g. on pilot select screen) use the default
+		auto sound = Main_hall ? Main_hall->ambient_sound : InterfaceSounds::MAIN_HALL_AMBIENT;
+
+		if (sound.isValid()) {
+			snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(sound)->volume_range.next());
+		}
 	}
 }
 
@@ -2437,6 +2437,9 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	if (optional_string("+Render FSO Version:")) {
 		stuff_boolean(&m->render_version);
 	}
+
+	// ambient sound
+	parse_iface_sound("+Ambient Sound:", &m->ambient_sound);
 
 	// intercom sounds
 	if (optional_string("+Num Intercom Sounds:")) {

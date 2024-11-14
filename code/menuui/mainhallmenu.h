@@ -69,6 +69,8 @@ public:
 	bool render_title = true;
 	bool render_version = true;
 
+	interface_snd_id ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT;
+
 	// intercom defines -------------------
 
 	// # of intercom sounds
