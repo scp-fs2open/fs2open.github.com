@@ -1224,8 +1224,6 @@ public:
 	particle::ParticleEffectHandle		knossos_end_particles;
 	particle::ParticleEffectHandle		regular_end_particles;
 
-	particle::ParticleEffectHandle death_effect;
-
 	//Debris stuff
 	float			debris_min_lifetime;
 	float			debris_max_lifetime;
