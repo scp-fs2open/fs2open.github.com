@@ -90,6 +90,7 @@ struct homing_cache_info {
 	TIMESTAMP next_update;
 	vec3d expected_pos;
 	bool valid;
+	bool skip_future_refinements;
 };
 
 typedef struct weapon {

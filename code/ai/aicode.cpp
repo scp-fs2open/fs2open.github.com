@@ -14657,11 +14657,11 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 			if (fix_bugs && target_ship_obj && !Ship_info[Ships[target_ship_obj->instance].ship_info_index].is_small_ship()) {
 				// set up cache if needed
 				if (weaponp->homing_cache_ptr == nullptr) {
-					weaponp->homing_cache_ptr.reset(new homing_cache_info{ TIMESTAMP::immediate(), expected_pos, false });
+					weaponp->homing_cache_ptr.reset(new homing_cache_info{ TIMESTAMP::immediate(), expected_pos, false, false });
 				}
 
 				// only refine the position every so often though
-				if (timestamp_elapsed(weaponp->homing_cache_ptr->next_update)) {
+				if (!weaponp->homing_cache_ptr->skip_future_refinements && timestamp_elapsed(weaponp->homing_cache_ptr->next_update)) {
 					mc_info mc;
 					mc.model_instance_num = Ships[target_ship_obj->instance].model_instance_num;
 					mc.model_num = Ship_info[Ships[target_ship_obj->instance].ship_info_index].model_num;
@@ -14673,8 +14673,17 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 
 					model_collide(&mc);
 					if (mc.num_hits > 0) {
-						weaponp->homing_cache_ptr->expected_pos = mc.hit_point_world;
-						weaponp->homing_cache_ptr->valid = true;
+						// if the refined point was sufficiently close to the homing point, skip future refinements
+						// (refining the point only matters if the surface impact really is far away from the homing position,
+						// e.g. if a missile is homing on the center of a large ship or large subsystem)
+						float refinement_threshold = std::min(10.0f, wip->shockwave.inner_rad * 0.1f);
+						if (vm_vec_dist_squared(&expected_pos, &mc.hit_point_world) < refinement_threshold * refinement_threshold) {
+							weaponp->homing_cache_ptr->skip_future_refinements = true;
+							weaponp->homing_cache_ptr->valid = false;
+						} else {
+							weaponp->homing_cache_ptr->expected_pos = mc.hit_point_world;
+							weaponp->homing_cache_ptr->valid = true;
+						}
 					} else {
 						weaponp->homing_cache_ptr->valid = false;
 					}
