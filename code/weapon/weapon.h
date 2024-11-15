@@ -86,6 +86,13 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
+struct homing_cache_info {
+	TIMESTAMP next_update;
+	vec3d expected_pos;
+	bool valid;
+	bool skip_future_refinements;
+};
+
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
@@ -124,6 +131,8 @@ typedef struct weapon {
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
+
+	std::unique_ptr<homing_cache_info> homing_cache_ptr;
 
 	SCP_vector<int>* cmeasure_ignore_list;
 	int		cmeasure_timer;

@@ -4862,8 +4862,12 @@ void weapon_delete(object *obj)
 
 	Assert(wp->weapon_info_index >= 0);
 	wp->weapon_info_index = -1;
+
 	if (wp->swarm_info_ptr != nullptr)
 		wp->swarm_info_ptr.reset();
+
+	if (wp->homing_cache_ptr != nullptr)
+		wp->homing_cache_ptr.reset();
 
 	if(wp->cscrew_index >= 0) {
 		cscrew_delete(wp->cscrew_index);
@@ -5701,7 +5705,6 @@ void weapon_home(object *obj, int num, float frame_time)
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);
-
 		}
 	}
 }
