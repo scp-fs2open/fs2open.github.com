@@ -210,7 +210,8 @@ int main_hall_get_overlay_resolution_index();
 int main_hall_id();
 
 // Vasudan?
-bool main_hall_is_vasudan();
+// (defaults to the current main hall, but now allows checking another specified main hall)
+bool main_hall_is_vasudan(const main_hall_defines *hall = nullptr);
 
 // start the ambient sounds playing in the main hall
 void main_hall_start_ambient();
