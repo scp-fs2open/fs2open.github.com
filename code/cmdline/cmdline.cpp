@@ -640,8 +640,8 @@ void cmdline_debug_print_cmdline()
 }
 #endif
 
-// prints simple cmdline to multi.log
-void cmdline_print_cmdline_multi()
+// builds simple cmdline
+SCP_string cmdline_build_string()
 {
 	cmdline_parm *parmp;
 	int found = 0;
@@ -660,10 +660,18 @@ void cmdline_print_cmdline_multi()
 	}
 
 	if ( !found ) {
-		cmdline << " <none>";
+		return "";
 	}
 
-	ml_printf("Command line:%s", cmdline.str().c_str());
+	return cmdline.str();
+}
+
+// prints simple cmdline to multi.log
+void cmdline_print_cmdline_multi()
+{
+	auto str = cmdline_build_string();
+
+	ml_printf("Command line:%s", str.empty() ? " <none>" : str.c_str());
 }
 
 //	Return true if this character is an extra char (white space and quotes)
@@ -671,7 +679,6 @@ int is_extra_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == 0x0a) || (ch == '\'') || (ch == '\"'));
 }
-
 
 // eliminates all leading and trailing extra chars from a string.  Returns pointer passed in.
 char *drop_extra_chars(char *str)

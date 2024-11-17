@@ -86,6 +86,13 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
+struct homing_cache_info {
+	TIMESTAMP next_update;
+	vec3d expected_pos;
+	bool valid;
+	bool skip_future_refinements;
+};
+
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
@@ -124,6 +131,8 @@ typedef struct weapon {
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
+
+	std::unique_ptr<homing_cache_info> homing_cache_ptr;
 
 	SCP_vector<int>* cmeasure_ignore_list;
 	int		cmeasure_timer;
@@ -316,6 +325,15 @@ struct ConditionalImpact {
 	float min_angle_threshold; //in degrees
 	float max_angle_threshold; //in degrees
 	bool dinky;
+};
+
+enum class FiringPattern {
+	STANDARD,
+	CYCLE_FORWARD,
+	CYCLE_REVERSE,
+	RANDOM_EXHAUSTIVE,
+	RANDOM_NONREPEATING,
+	RANDOM_REPEATING,
 };
 
 struct weapon_info
@@ -539,9 +557,11 @@ struct weapon_info
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
 	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
 	float max_fof_spread;			//The maximum fof increase that the shots can spread to
+	FiringPattern firing_pattern;
 	int	  shots;					//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
+	int   cycle_multishot;			//ugly hack -- used to control multishot if the weapon uses any non-standard firing pattern, since $shots is used for fire point number
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;

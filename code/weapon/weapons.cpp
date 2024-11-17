@@ -196,7 +196,9 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 		Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
 		weaponp->mass = 0.0f;
 	}}, //special case
-    { "cycle",							Weapon::Info_Flags::Cycle,								true },
+    { "cycle",							Weapon::Info_Flags::NUM_VALUES,							false, [](const SCP_string& /*spawn*/, weapon_info* weaponp, flagset<Weapon::Info_Flags>& /*flags*/) {
+		weaponp->firing_pattern = FiringPattern::CYCLE_FORWARD;
+	}}, //special case
     { "small only",						Weapon::Info_Flags::Small_only,							true },
     { "same turret cooldown",			Weapon::Info_Flags::Same_turret_cooldown,				true },
     { "apply no light",					Weapon::Info_Flags::Mr_no_lighting,						true },
@@ -775,7 +777,9 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->damage);
-		sci->damage_overidden = true;
+		if (sci->damage < 0.0f)
+			sci->damage = 0.0f;
+		sci->damage_overridden = true;
 	}
 
 	sprintf(buf, "%sShockwave damage type:", pre_char);
@@ -1321,9 +1325,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Damage:")) {
 		stuff_float(&wip->damage);
+
+		if (wip->damage < 0.0f) {
+			Warning(LOCATION, "$Damage in weapon '%s' should not be negative.\nConsider the 'heals' flag instead if this is intentional. ", wip->name);
+			wip->damage = 0.0f;
+		}
+
 		//WMC - now that shockwave damage can be set for them individually,
 		//do this automagically
-		if(!wip->shockwave.damage_overidden) {
+		if(!wip->shockwave.damage_overridden) {
 			wip->shockwave.damage = wip->damage;
 		}
 	}
@@ -2755,8 +2765,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
 
-		if (optional_string("+Use Fire Wait:")) {
-			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		// This was originally coded with the colon which implies a boolean input but that was not needed
+		if (optional_string_either("+Use Fire Wait:", "+Use Fire Wait")) {
+			wip->cmeasure_firewait = (int)(wip->fire_wait * 1000.0f);
 		}
 
 		if (optional_string("+Failure Launch Delay Multiplier for AI:")) {
@@ -3578,9 +3589,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}		
 	}
 
+	if(optional_string("$Firing Pattern:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+		if (!stricmp(fname, "CYCLE FORWARD")) {
+			wip->firing_pattern = FiringPattern::CYCLE_FORWARD;
+		} else if (!stricmp(fname, "CYCLE REVERSE")) {
+			wip->firing_pattern = FiringPattern::CYCLE_REVERSE;
+		} else if (!stricmp(fname, "RANDOM EXHAUSTIVE")) {
+			wip->firing_pattern = FiringPattern::RANDOM_EXHAUSTIVE;
+		} else if (!stricmp(fname, "RANDOM NONREPEATING")) {
+			wip->firing_pattern = FiringPattern::RANDOM_NONREPEATING;
+		} else if (!stricmp(fname, "RANDOM REPEATING")) {
+			wip->firing_pattern = FiringPattern::RANDOM_REPEATING;
+		}
+	}
 
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
+	}
+
+	if( optional_string("$Cycle Multishot:")){
+		stuff_int(&wip->cycle_multishot);
 	}
 
 	//Left in for compatibility
@@ -4833,8 +4862,12 @@ void weapon_delete(object *obj)
 
 	Assert(wp->weapon_info_index >= 0);
 	wp->weapon_info_index = -1;
+
 	if (wp->swarm_info_ptr != nullptr)
 		wp->swarm_info_ptr.reset();
+
+	if (wp->homing_cache_ptr != nullptr)
+		wp->homing_cache_ptr.reset();
 
 	if(wp->cscrew_index >= 0) {
 		cscrew_delete(wp->cscrew_index);
@@ -5672,7 +5705,6 @@ void weapon_home(object *obj, int num, float frame_time)
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);
-
 		}
 	}
 }
@@ -6383,12 +6415,12 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 	// the weapon to the wrong bank.  Hopefully this isn't a problem.
 	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
 		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_pattern_index[pi]);
+			return &(ship_weapon_p->primary_bank_substitution_pattern_index[pi]);
 		}
 	}
 	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
 		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_pattern_index[si]);
+			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[si]);
 		}
 	}
 	return NULL;
@@ -9541,7 +9573,9 @@ void weapon_info::reset()
 	this->fof_spread_rate = 0.0f;
 	this->fof_reset_rate = 0.0f;
 	this->max_fof_spread = 0.0f;
+	this->firing_pattern = FiringPattern::STANDARD;
 	this->shots = 1;
+	this->cycle_multishot = 1;
 
 	//customizeable corkscrew stuff
 	this->cs_num_fired = 4;

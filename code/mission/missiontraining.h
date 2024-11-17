@@ -25,7 +25,7 @@ extern int Training_context_speed_min;
 extern int Training_context_speed_max;
 extern int Training_context_speed_set;
 extern TIMESTAMP Training_context_speed_timestamp;
-extern waypoint_list *Training_context_path;
+extern int Training_context_waypoint_path;
 extern int Training_context_goal_waypoint;
 extern int Training_context_at_waypoint;
 extern float Training_context_distance;

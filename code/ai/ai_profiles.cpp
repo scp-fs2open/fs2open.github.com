@@ -653,6 +653,8 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_float(&profile->rot_fac_multiplier_ply_collisions);
 				}
 
+				set_flag(profile, "$fix avoid-shockwave bugs:", AI::Profile_Flags::Fix_avoid_shockwave_bugs);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -855,5 +857,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Debris_respects_big_damage);
 		flags.set(AI::Profile_Flags::Force_beam_turret_fov);
 		flags.set(AI::Profile_Flags::Guards_ignore_protected_attackers);
+	}
+	if (mod_supports_version(25, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fix_avoid_shockwave_bugs);
 	}
 }

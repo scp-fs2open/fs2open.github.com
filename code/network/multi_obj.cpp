@@ -1493,8 +1493,9 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 		// either send out the waypoint they are trying to get to *or* their current target
 		if (umode == AIM_WAYPOINTS) {
 			// if it's already started pointing to a waypoint, grab its net_signature and send that instead
-			if ((aip->wp_list != nullptr) && (aip->wp_index >= 0 && aip->wp_index < static_cast<int>(aip->wp_list->get_waypoints().size()))) {
-				target_signature = Objects[aip->wp_list->get_waypoints().at(aip->wp_index).get_objnum()].net_signature;
+			waypoint* wp;
+			if ((wp = find_waypoint_at_indexes(aip->wp_list_index, aip->wp_index)) != nullptr) {
+				target_signature = Objects[wp->get_objnum()].net_signature;
 			}
 		} // send the target signature. 2021 Version!
 		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
@@ -2124,12 +2125,14 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
 				// set their waypoints if in waypoint mode.
 				} else if (umode == AIM_WAYPOINTS) {
-					waypoint* destination = find_waypoint_with_instance(target_objp->instance);
-					if (destination != nullptr) {
-						Ai_info[shipp->ai_index].wp_list = destination->get_parent_list();
-						Ai_info[shipp->ai_index].wp_index = find_index_of_waypoint(Ai_info[shipp->ai_index].wp_list, destination);
+					int wp_list_index = calc_waypoint_list_index(target_objp->instance);
+					int wp_index = calc_waypoint_index(target_objp->instance);
+					if (find_waypoint_at_indexes(wp_list_index, wp_index) != nullptr) {
+						Ai_info[shipp->ai_index].wp_list_index = wp_list_index;
+						Ai_info[shipp->ai_index].wp_index = wp_index;
 					} else {
-						Ai_info[shipp->ai_index].wp_list = nullptr;
+						Ai_info[shipp->ai_index].wp_list_index = -1;
+						Ai_info[shipp->ai_index].wp_index = INVALID_WAYPOINT_POSITION;
 					}
 				} else {
 					Ai_info[shipp->ai_index].target_objnum = OBJ_INDEX(target_objp);

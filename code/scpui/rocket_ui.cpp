@@ -42,6 +42,8 @@
 #include <codecvt>
 #include <locale>
 
+#include <SDL_stdinc.h>
+
 using namespace Rocket::Core;
 
 namespace {
@@ -505,21 +507,6 @@ bool key_event_handler(const SDL_Event& evt)
 		return input_context->ProcessKeyUp(translateKey(evt.key.keysym.sym), get_modifier_state());
 	}
 }
-#if _MSC_VER >= 1900
-std::u16string utf8_to_utf16(const char* utf8_string)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> convert;
-	auto intString = convert.from_bytes(utf8_string);
-
-	return std::u16string(reinterpret_cast<const char16_t*>(intString.data()));
-}
-#else
-std::u16string utf8_to_utf16(const char* utf8_string)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-	return convert.from_bytes(utf8_string);
-}
-#endif
 
 bool text_input_handler(const SDL_Event& evt)
 {
@@ -534,7 +521,7 @@ bool text_input_handler(const SDL_Event& evt)
 	}
 
 	// libRocket expects UCS-2 so we first need to convert to that
-	auto ucs2String = utf8_to_utf16(evt.text.text);
+	auto ucs2String = std::basic_string<unsigned short>(SDL_iconv_utf8_ucs2(evt.text.text));
 
 	bool consumed = true;
 	for (auto& c : ucs2String) {

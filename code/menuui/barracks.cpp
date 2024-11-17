@@ -185,17 +185,6 @@ struct barracks_bitmaps {
 	int b;
 };
 
-struct barracks_buttons {
-	const char *filename;
-	int x, y;
-	int text_x, text_y;	// this is where the text label is
-	int hotspot;
-	int repeat;
-	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
-
-	barracks_buttons(const char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
-};
-
 static int Background_bitmap = -1;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_region;

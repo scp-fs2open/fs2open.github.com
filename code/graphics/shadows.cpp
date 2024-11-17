@@ -37,7 +37,7 @@ bool Shadow_quality_uses_mod_option = false;
 auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shadows",
                      std::pair<const char*, int>{"Shadow Quality", 1750},
                      std::pair<const char*, int>{"The quality of the shadows", 1751})
-                     .values({{ShadowQuality::Disabled, {"Disabled", 1779}},
+                     .values({{ShadowQuality::Disabled, {"Disabled", 413}},
                               {ShadowQuality::Low, {"Low", 1160}},
                               {ShadowQuality::Medium, {"Medium", 1161}},
                               {ShadowQuality::High, {"High", 1162}},

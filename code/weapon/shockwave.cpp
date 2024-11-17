@@ -66,6 +66,7 @@ static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwave
                      })
                      .level(options::ExpertLevel::Advanced)
                      .importance(66)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
                      .finish();
 
 /**
@@ -774,7 +775,7 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
-	sci->damage_overidden = false;
+	sci->damage_overridden = false;
 
 	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }
