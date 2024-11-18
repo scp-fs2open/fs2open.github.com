@@ -11362,7 +11362,7 @@ static void ship_model_change(int n, int ship_type)
 	// reset texture animations
 	sp->base_texture_anim_timestamp = _timestamp();
 
-	for (int bank_i = 0; bank_i < MAX_SHIP_PRIMARY_BANKS; bank_i++) {
+	for (int bank_i = 0; bank_i < pm->n_guns; bank_i++) {
 		sp->weapons.primary_firepoint_indices[bank_i].clear();
 		sp->weapons.primary_firepoint_next_to_fire_index[bank_i] = 0;
 		SCP_vector<int> fpi;

@@ -866,8 +866,8 @@ public:
 
 	// linked lists for special polygon types on this model.  Most ships I think will have most
 	// of these.  (most ships however, probably won't have approach points).
-	int			n_guns;								// number of primary gun points (not counting turrets)
-	int			n_missiles;							// number of secondary missile points (not counting turrets)
+	int			n_guns;								// number of primary weapon banks (not counting turrets)
+	int			n_missiles;							// number of secondary weapon banks (not counting turrets)
 	int			n_docks;								// number of docking points
 	int			n_thrusters;						// number of thrusters on this ship.
 	w_bank		*gun_banks;							// array of gun banks
