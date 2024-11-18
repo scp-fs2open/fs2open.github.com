@@ -1159,9 +1159,11 @@ void ship_info::clone(const ship_info& other)
 	max_hull_strength = other.max_hull_strength;
 	ship_recoil_modifier = other.ship_recoil_modifier;
 	ship_shudder_modifier = other.ship_shudder_modifier;
+
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 		dyn_firing_patterns_allowed[i] = other.dyn_firing_patterns_allowed[i];
 	}
+
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1497,9 +1499,11 @@ void ship_info::move(ship_info&& other)
 	max_hull_strength = other.max_hull_strength;
 	ship_recoil_modifier = other.ship_recoil_modifier;
 	ship_shudder_modifier = other.ship_shudder_modifier;
+
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		dyn_firing_patterns_allowed[i] = other.dyn_firing_patterns_allowed[i];
+		std::swap(dyn_firing_patterns_allowed[i], other.dyn_firing_patterns_allowed[i]);
 	}
+
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1920,7 +1924,6 @@ ship_info::ship_info()
 		primary_bank_weapons[i] = -1;
 		draw_primary_models[i] = false;
 		primary_bank_ammo_capacity[i] = 0;
-		dyn_firing_patterns_allowed[i].clear();
 		dyn_firing_patterns_allowed[i].push_back(FiringPattern::CYCLE_FORWARD);
 	}
 	
@@ -3882,10 +3885,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	SCP_vector<SCP_string> temp_string_list;
 
 	while (optional_string("$Allowed Firing Patterns for Dynamic Primary Linking:")) {
-		if (pattern_index > MAX_SHIP_PRIMARY_BANKS) {
-			Error(LOCATION, "Firing pattern lists for ship %s defined more than %i times!", sip->name, MAX_SHIP_PRIMARY_BANKS);
+		if (pattern_index >= MAX_SHIP_PRIMARY_BANKS) {
+			error_display(0, "Firing pattern lists for ship %s defined more than %i times!", sip->name, MAX_SHIP_PRIMARY_BANKS - 1);
+			advance_to_eoln(nullptr);
+			continue;
 		}
-		temp_string_list.clear();
 		stuff_string_list(temp_string_list);
 		sip->dyn_firing_patterns_allowed[pattern_index].clear();
 		FiringPattern pattern;
@@ -10776,13 +10780,14 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 		swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
 
-		SCP_vector<int> fpi;
+		swp->primary_firepoint_next_to_fire_index[i] = 0;
+		auto &fpi = swp->primary_firepoint_indices[i];
+		fpi.clear();
 		for (int fp = 0; fp < pm->gun_banks[i].num_slots; fp++) {
-			fpi.emplace_back(fp);
+			fpi.push_back(fp);
 		}
-		swp->primary_firepoint_indices[i] = fpi;
 		std::random_device rd;
-		std::shuffle(swp->primary_firepoint_indices[i].begin(), swp->primary_firepoint_indices[i].end(), std::mt19937(rd()));
+		std::shuffle(fpi.begin(), fpi.end(), std::mt19937(rd()));
 	}
 
 	swp->num_secondary_banks = sip->num_secondary_banks;
@@ -11364,17 +11369,14 @@ static void ship_model_change(int n, int ship_type)
 	sp->base_texture_anim_timestamp = _timestamp();
 
 	for (int bank_i = 0; bank_i < pm->n_guns; bank_i++) {
-		sp->weapons.primary_firepoint_indices[bank_i].clear();
 		sp->weapons.primary_firepoint_next_to_fire_index[bank_i] = 0;
-		SCP_vector<int> fpi;
+		auto &fpi = sp->weapons.primary_firepoint_indices[bank_i];
+		fpi.clear();
 		for (int fp = 0; fp < pm->gun_banks[bank_i].num_slots; fp++) {
-			fpi.emplace_back(fp);
+			fpi.push_back(fp);
 		}
-		sp->weapons.primary_firepoint_indices[bank_i] = fpi;
 		std::random_device rd;
-		std::shuffle(sp->weapons.primary_firepoint_indices[bank_i].begin(),
-			sp->weapons.primary_firepoint_indices[bank_i].end(),
-			std::mt19937(rd()));
+		std::shuffle(fpi.begin(), fpi.end(), std::mt19937(rd()));
 	}
 
 	model_delete_instance(sp->model_instance_num);
@@ -12902,11 +12904,10 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							break;
 						}
 						case FiringPattern::CYCLE_REVERSE: {
-							swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
+							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
 							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < 0) {
 								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = num_slots - 1;
 							}
-							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire];
 							break;
 						}
 						case FiringPattern::RANDOM_EXHAUSTIVE: {
@@ -12995,13 +12996,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				}
 
 				if (swp->primary_firepoint_indices[bank_to_fire].empty()) {
-					SCP_vector<int> fpi;
+					auto &fpi = swp->primary_firepoint_indices[bank_to_fire];
+					fpi.clear();
 					for (int fp = 0; fp < num_slots; fp++) {
-						fpi.emplace_back(fp);
+						fpi.push_back(fp);
 					}
-					swp->primary_firepoint_indices[bank_to_fire] = fpi;
 					std::random_device rd;
-					std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
+					std::shuffle(fpi.begin(), fpi.end(), std::mt19937(rd()));
 				}
 
 				// The energy-consumption code executes even for ballistic primaries, because
@@ -13106,11 +13107,10 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							break;
 						}
 						case FiringPattern::CYCLE_REVERSE: {
-							swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
+							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
 							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < 0) {
 								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = num_slots - 1;
 							}
-							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire];
 							break;
 						}
 						case FiringPattern::RANDOM_EXHAUSTIVE: {
@@ -20641,7 +20641,7 @@ void parse_ai_target_priorities()
 			}
 			if (j == num_ai_tgt_weapon_info_flags) {
 				if (!stricmp(temp_strings[i].c_str(), "Cycle")) {
-					mprintf(("Weapon flag \"Cycle\" is deprecated for target priorities in ship.tbl.\n"));
+					mprintf(("Weapon flag \"Cycle\" is deprecated for target priorities in ships.tbl.\n"));
 				} else {
 					Warning(LOCATION, "Unidentified weapon class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 				}
