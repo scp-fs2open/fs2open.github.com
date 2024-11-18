@@ -17,7 +17,7 @@
 #include "playerman/player.h"
 #include "stats/stats.h"
 
-static const player *Stats_player;
+static const scoring_struct *Player_stats;
 static scoring_struct All_time_ever_stats;
 
 void show_stats_init()
@@ -25,10 +25,10 @@ void show_stats_init()
 	if (Game_mode & GM_MULTIPLAYER) {				
 		set_player_stats(MY_NET_PLAYER_NUM);
 	} else {
-		Stats_player = Player;
+		Player_stats = &Player->stats;
 	}	
 
-	// looks like this can't be done for multiplayer pilots, at least currently
+	// multi only has current stats and all-time-ever stats, so this is only needed in single-player
 	Pilot.export_stats(&All_time_ever_stats);
 }
 
@@ -112,16 +112,17 @@ void show_stats_numbers(StatsType type, int sx, int sy, int dy)
 	switch (type)
 	{
 		case StatsType::MISSION_STATS:
-			show_stats_numbers(Stats_player->stats, true, sx, sy, dy);
+			show_stats_numbers(*Player_stats, true, sx, sy, dy);
 			break;
 
 		case StatsType::ALL_TIME_CAMPAIGN_STATS:
-			show_stats_numbers(Stats_player->stats, false, sx, sy, dy);
+			Assertion(!(Game_mode & GM_MULTIPLAYER), "ALL_TIME_CAMPAIGN_STATS are not stored for multiplayer!");
+			show_stats_numbers(*Player_stats, false, sx, sy, dy);
 			break;
 
 		case StatsType::ALL_TIME_EVER_STATS:
 			if (Game_mode & GM_MULTIPLAYER)
-				show_stats_numbers(Stats_player->stats, false, sx, sy, dy);		// use campaign stats because we can't currently get other players' all-time-ever stats in multi
+				show_stats_numbers(*Player_stats, false, sx, sy, dy);		// in multiplayer, the all-time-ever stats are stored in the player
 			else
 				show_stats_numbers(All_time_ever_stats, false, sx, sy, dy);
 			break;
@@ -136,14 +137,14 @@ int stats_get_kills(StatsType type, int ship_class)
 	switch (type)
 	{
 		case StatsType::MISSION_STATS:
-			return stats_get_kills(Stats_player->stats, true, ship_class);
+			return stats_get_kills(*Player_stats, true, ship_class);
 
 		case StatsType::ALL_TIME_CAMPAIGN_STATS:
-			return stats_get_kills(Stats_player->stats, false, ship_class);
+			return stats_get_kills(*Player_stats, false, ship_class);
 
 		case StatsType::ALL_TIME_EVER_STATS:
 			if (Game_mode & GM_MULTIPLAYER)
-				return stats_get_kills(Stats_player->stats, false, ship_class);		// use campaign stats because we can't currently get other players' all-time-ever stats in multi
+				return stats_get_kills(*Player_stats, false, ship_class);		// in multiplayer, the all-time-ever stats are stored in the player
 			else
 				return stats_get_kills(All_time_ever_stats, false, ship_class);
 
@@ -286,5 +287,5 @@ void init_multiplayer_stats( )
 
 void set_player_stats(int pid)
 {
-   Stats_player = Net_players[pid].m_player;
+   Player_stats = &Net_players[pid].m_player->stats;
 }

@@ -145,9 +145,9 @@ static char Medals_background_filename[NAME_LENGTH];
 static const char* Default_medals_mask_filename = "Medals-M";
 static char Medals_mask_filename[NAME_LENGTH];
 
-int Medals_mode;
-player *Medals_player;
-scoring_struct Medals_stats;
+static int Medals_mode;
+static player *Medals_player;
+static scoring_struct Medals_stats;
 
 void init_medal_bitmaps();
 void init_snazzy_regions();
