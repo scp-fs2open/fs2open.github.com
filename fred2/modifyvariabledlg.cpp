@@ -42,9 +42,9 @@ void CModifyVariableDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CModifyVariableDlg)
 	DDX_Text(pDX, IDC_MODIFY_DEFAULT_VALUE, m_default_value);
-	DDV_MaxChars(pDX, m_default_value, 31);
+	DDV_MaxChars(pDX, m_default_value, TOKEN_LENGTH - 1);
 	DDX_CBString(pDX, IDC_MODIFY_VARIABLE_NAME, m_cur_variable_name);
-	DDV_MaxChars(pDX, m_cur_variable_name, 31);
+	DDV_MaxChars(pDX, m_cur_variable_name, TOKEN_LENGTH - 1);
 	//}}AFX_DATA_MAP
 }
 
