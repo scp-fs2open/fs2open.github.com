@@ -1441,10 +1441,10 @@ void beam_render(beam *b, float u_offset)
 		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
 
-	float width_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_WIDTH_MULT, *b, &b->modular_curves_instance);
-	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ALPHA_MULT, *b, &b->modular_curves_instance);
-	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE);
-	float anim_state = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::BEAM_ANIM_STATE, *b, &b->modular_curves_instance);
+	float width_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::BEAM_WIDTH_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::BEAM_ANIM_STATE);
+	float anim_state = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::BEAM_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	float length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 	float per = 1.0f;
@@ -1674,10 +1674,10 @@ void beam_render_muzzle_glow(beam *b)
 		return;
 	}
 
-	float radius_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
-	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
-	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE);
-	float anim_state = wip->beam_curves.get_output(weapon_info::BeamModularCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
+	float radius_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_ANIM_STATE);
+	float anim_state = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	// if the beam is warming up, scale the glow
 	if (b->warmup_stamp != -1) {		
@@ -4322,7 +4322,7 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 	}
 
 	float damage = wip->damage;
-	damage *= wip->beam_hit_curves.get_output(weapon_info::BeamHitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
+	damage *= wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team)
@@ -4382,14 +4382,6 @@ int beam_will_tool_target(beam *b, object *objp)
 
 float beam_get_warmup_lifetime_pct(const beam& b) {
 	return BEAM_WARMUP_PCT((&b));
-}
-
-float beam_get_lifetime_pct(const beam& b) {
-	return (b.life_total - b.life_left) / b.life_total;
-}
-
-float beam_get_age(const beam& b) {
-	return b.life_total - b.life_left;
 }
 
 float beam_get_warmdown_lifetime_pct(const beam& b) {

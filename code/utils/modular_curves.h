@@ -92,18 +92,33 @@ struct modular_curves_submember_input {
 			return std::cref(std::get<tuple_idx>(input));
 	}
 
+	template<typename result_type>
+	static inline float number_to_float(const result_type& number) {
+		// if constexpr(std::is_same_v<std::decay_t<result_type>, fix>) // TODO: Make sure we can differentiate fixes from ints.
+		//	return f2fl(number);
+		// else
+		if constexpr(std::is_integral_v<std::decay_t<result_type>>)
+			return static_cast<float>(number);
+		else if constexpr(std::is_floating_point_v<std::decay_t<result_type>>)
+			return static_cast<float>(number);
+		else {
+			static_assert(!std::is_same_v<result_type, result_type>, "Tried to return non-numeric value");
+			return 0.f;
+		}
+	}
+
   public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
 		const auto& result = grab_internal<std::decay_t<decltype(grab_from_tuple<tuple_idx, input_type>(input).get())>, grabbers...>(grab_from_tuple<tuple_idx, input_type>(input));
 		if constexpr (is_optional_v<typename std::decay_t<decltype(result)>>) {
 			if (result.has_value())
-				return result->get();
+				return number_to_float(result->get());
 			else
 				return 1.0f;
 		}
 		else {
-			return result.get();
+			return number_to_float(result.get());
 		}
 	}
 };
@@ -127,6 +142,39 @@ struct modular_curves_functional_input {
 		}
 		else {
 			return grabber_fnc(grab_from_tuple<tuple_idx, input_type>(input));
+		}
+	}
+};
+
+enum class ModularCurvesMathOperators {
+	addition,
+	subtraction,
+	multiplication,
+	division,
+};
+
+template <typename first, typename second, auto operation>
+struct modular_curves_math_input {
+  public:
+	template <int tuple_idx, typename input_type>
+	static inline float grab(const input_type& input) {
+		float first_value = first::template grab<tuple_idx, input_type>(input);
+		float second_value = second::template grab<tuple_idx, input_type>(input);
+		static_assert(std::is_same_v<decltype(operation), ModularCurvesMathOperators>, "Operation type must be in ModularCurvesMathOperators!");
+		if constexpr (operation == ModularCurvesMathOperators::addition) {
+			return first_value + second_value;
+		} else if constexpr (operation == ModularCurvesMathOperators::subtraction) {
+			return first_value - second_value;
+		} else if constexpr (operation == ModularCurvesMathOperators::multiplication) {
+			return first_value * second_value;
+		} else if constexpr (operation == ModularCurvesMathOperators::division) {
+			if (second_value != 0.f)
+				return first_value / second_value;
+			else
+				return 1.f;
+		} else {
+			static_assert(!std::is_same_v<first, first>, "Unknown operation type");
+			return 0.f;
 		}
 	}
 };

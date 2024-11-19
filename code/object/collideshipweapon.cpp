@@ -101,11 +101,11 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
 	}
 
-	damage *= wip->weapon_hit_curves.get_output(weapon_info::HitModularCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
+	damage *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 
 	// we handle curve scaling for shield damage here, but hull and subsystem damage scaling happens in shiphit.cpp
 	if (quadrant_num) {
-		damage *= wip->weapon_hit_curves.get_output(weapon_info::HitModularCurveOutputs::SHIELD_DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
+		damage *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 	}
 
 	// if this is friendly fire, we check for the friendly fire cap values
@@ -120,7 +120,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	}
 
 	// deterine whack whack
-	float		blast = wip->mass * wip->weapon_hit_curves.get_output(weapon_info::HitModularCurveOutputs::MASS_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
+	float		blast = wip->mass * wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
 	// send player pain packet

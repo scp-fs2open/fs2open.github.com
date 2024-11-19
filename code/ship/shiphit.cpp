@@ -727,9 +727,9 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		weapon_info* wip = &Weapon_info[weapon_info_index];
 
 		damage_left *= wip->subsystem_factor;
-		damage_left *= wip->weapon_hit_curves.get_output(weapon_info::HitModularCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
+		damage_left *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
 		damage_if_hull *= wip->armor_factor;
-		damage_if_hull *= wip->weapon_hit_curves.get_output(weapon_info::HitModularCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
+		damage_if_hull *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
 	} else if ((weapon_info_index >= 0) && other_obj_is_beam) {
 		weapon_info* wip = &Weapon_info[weapon_info_index];
 
@@ -742,8 +742,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		}
 
 		beam* b = &Beams[other_obj->instance];
-		damage_left *= wip->beam_hit_curves.get_output(weapon_info::BeamHitModularCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*b, *other_obj), &b->modular_curves_instance);
-		damage_if_hull *= wip->beam_hit_curves.get_output(weapon_info::BeamHitModularCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*b, *other_obj), &b->modular_curves_instance);
+		damage_left *= wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*b, *other_obj), &b->modular_curves_instance);
+		damage_if_hull *= wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*b, *other_obj), &b->modular_curves_instance);
 	}
 
 
