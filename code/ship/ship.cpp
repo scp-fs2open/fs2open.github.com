@@ -3909,6 +3909,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (sip->dyn_firing_patterns_allowed[pattern_index].empty()) {
 			sip->dyn_firing_patterns_allowed[pattern_index].push_back(FiringPattern::CYCLE_FORWARD);
 		}
+		pattern_index++;
 	}
 
 	if(optional_string("$Shields:")) {
