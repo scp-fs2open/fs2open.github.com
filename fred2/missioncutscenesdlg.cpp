@@ -94,9 +94,9 @@ void CMissionCutscenesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_CUTSCENE_TYPE_DROP, m_cutscene_type);
 	DDX_CBIndex(pDX, IDC_DISPLAY_CUTSCENE_TYPES_DROP, m_display_cutscene_types);
 	DDX_Text(pDX, IDC_CUTSCENE_NAME, m_name);
+	DDV_MaxChars(pDX, m_name, NAME_LENGTH - 1);
 	DDX_Text(pDX, IDC_CUTSCENE_HELP_BOX, m_desc);
 	//}}AFX_DATA_MAP
-	DDV_MaxChars(pDX, m_name, NAME_LENGTH - 1);
 }
 
 BEGIN_MESSAGE_MAP(CMissionCutscenesDlg, CDialog)
