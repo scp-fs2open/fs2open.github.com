@@ -457,15 +457,13 @@ void barracks_init_stats(scoring_struct *stats)
 			Assert(Num_stat_lines < Max_stat_lines);
 
 			// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
-			if (Num_stat_lines >= Max_stat_lines)
+			if (Num_stat_lines < Max_stat_lines)
 			{
-				break;
+				Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
+				sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
+				sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
+				Num_stat_lines++;
 			}
-
-			Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
-			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
-			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
-			Num_stat_lines++;
 
 			// work out the total score from ship kills
 			score_from_kills += stats->kills[i] * it->score;
@@ -564,7 +562,11 @@ int barracks_new_pilot_selected()
 
 	// init stuff to reflect new pilot
 	int i;
-	barracks_init_stats(&Cur_pilot->stats);
+	scoring_struct pstats;
+
+	Pilot.export_stats(&pstats);
+	barracks_init_stats(&pstats);
+
 	strcpy_s(stripped, Cur_pilot->image_filename);
 	barracks_strip_pcx(stripped);
 	for (i=0; i<Num_pilot_images; i++) {

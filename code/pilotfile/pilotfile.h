@@ -102,6 +102,15 @@ class pilotfile {
 		void reset_stats();
 
 		/**
+		 * @brief Export stats to given scoring struct, sanitized for current mod data
+		 * 
+		 * @param[out] stats Scoring struct for exported data
+		 * 
+		 * @returns true if stats were exported successfully
+		 */
+		bool export_stats(scoring_struct *stats);
+
+		/**
 		 * Verifies a pilot file with the given filename
 		 * 
 		 * @param[in]  filename     The filename of the pilot file to test. Must have the .JSON extension.
