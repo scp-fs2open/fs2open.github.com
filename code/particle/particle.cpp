@@ -65,17 +65,6 @@ namespace
 
 		return alpha;
 	}
-
-	inline int get_percent(int count)
-	{
-		if (count == 0)
-			return 0;
-
-		// this should basically return a scale like:
-		//  50, 75, 100, 125, 150, ...
-		// based on value of 'count' (detail level)
-		return (50 + (25 * (count - 1)));
-	}
 }
 
 namespace particle
