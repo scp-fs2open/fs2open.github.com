@@ -380,8 +380,13 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define INTEL_FLOAT(x)	(*x)
 #endif // BYTE_ORDER
 
+// since a lot of header files will try to #define TRUE and FALSE,
+// making them constexpr here doesn't gain us much
 #define TRUE	1
 #define FALSE	0
+
+// the trailing underscores are to avoid conflicts with previously #define'd tokens
+enum class TriStateBool : int { FALSE_ = 0, TRUE_ = 1, UNKNOWN_ = -1 };
 
 
 // lod checker for (modular) table parsing
