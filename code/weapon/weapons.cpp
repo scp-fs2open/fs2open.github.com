@@ -9768,7 +9768,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Area Effect,Shockwave%s\n", all_weapons ? ",Player Allowed" : ""));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
+		if (!wi.is_primary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -9852,7 +9852,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_MISSILE)
+		if (!wi.is_secondary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child])
@@ -9912,7 +9912,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	mprintf(("\n"));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
+		if (!wi.is_primary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -9993,7 +9993,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_MISSILE)
+		if (!wi.is_secondary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child])

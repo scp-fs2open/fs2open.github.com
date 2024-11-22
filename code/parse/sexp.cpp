@@ -20840,7 +20840,7 @@ void sexp_set_weapon(int node, bool primary)
 			return;
 
 		// Be sure it's a valid type
-		if (Weapon_info[windex].subtype != WP_LASER && Weapon_info[windex].subtype != WP_BEAM)
+		if (!Weapon_info[windex].is_primary())
 			return;
 	}
 	else
@@ -20850,7 +20850,7 @@ void sexp_set_weapon(int node, bool primary)
 			return;
 
 		// Be sure it's a valid type
-		if (Weapon_info[windex].subtype != WP_MISSILE)
+		if (!Weapon_info[windex].is_secondary())
 			return;
 	}
 
