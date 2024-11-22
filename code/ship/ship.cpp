@@ -10722,7 +10722,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a laser
 			for (const auto &weapon_id : Player_weapon_precedence) {
-				if ( (Weapon_info[weapon_id].subtype == WP_LASER) || (Weapon_info[weapon_id].subtype == WP_BEAM) ) {
+				if (Weapon_info[weapon_id].is_primary()) {
 					swp->primary_bank_weapons[i] = weapon_id;
 					break;
 				}
@@ -10743,7 +10743,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		for ( i = sip->num_secondary_banks; i < pm->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a missile
 			for (const auto &weapon_id : Player_weapon_precedence) {
-				if (Weapon_info[weapon_id].subtype == WP_MISSILE) {
+				if (Weapon_info[weapon_id].is_secondary()) {
 					swp->secondary_bank_weapons[i] = weapon_id;
 					break;
 				}

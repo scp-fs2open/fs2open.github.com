@@ -1190,31 +1190,33 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
  */
 void wl_set_disabled_weapons(int ship_class, int bank_index)
 {
-	int				i;
-	ship_info		*sip;
-
-	if ( ship_class == - 1 )
+	if ( ship_class < 0 )
 		return;
 
 	Assert(ship_class >= 0 && ship_class < ship_info_size());
 	Assert(bank_index < MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS);
 	Assert( Wl_icons != NULL );
 
-	sip = &Ship_info[ship_class];
+	auto sip = &Ship_info[ship_class];
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
+	int i = 0;
+	for ( auto &wi: Weapon_info )
 	{
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
 		Wl_icons[i].can_use_for_ship = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
 
 		//	Also determine whether the weapon can be used on this bank
-		if ( bank_index < 0 )
+		if ( bank_index < 0 || !Wl_icons[i].can_use_for_ship )
 			Wl_icons[i].can_use_for_bank = TriStateBool::UNKNOWN_;
-		else if ( Wl_icons[i].can_use_for_ship && eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank_index][i]) )
+		else if ( (wi.is_primary() && bank_index >= MAX_SHIP_PRIMARY_BANKS) || (wi.is_secondary() && bank_index < MAX_SHIP_PRIMARY_BANKS) )
+			Wl_icons[i].can_use_for_bank = TriStateBool::UNKNOWN_;
+		else if ( !eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank_index]) || eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank_index][i]) )
 			Wl_icons[i].can_use_for_bank = TriStateBool::TRUE_;
 		else
 			Wl_icons[i].can_use_for_bank = TriStateBool::FALSE_;
+
+		++i;
 	}
 }
 
