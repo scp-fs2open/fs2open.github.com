@@ -2916,9 +2916,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Opacity over Lifetime Curve:")) {
 			SCP_string curve_name;
 			stuff_string(curve_name, F_NAME);
-			wip->b_info.beam_alpha_curve_idx = curve_get_by_name(curve_name);
-			if (wip->b_info.beam_alpha_curve_idx < 0)
-				Warning(LOCATION, "Unrecognized beam alpha curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+			wip->beam_curves.add_curve("Beam Lifetime", weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 		}
 
 		// # of shots (only used for type D beams)
@@ -9071,7 +9069,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
+						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames - 1) * anim_state);
 					} else {
 						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 					}
@@ -9083,7 +9081,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames) * anim_state);
+						framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state);
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
 					}
@@ -9093,8 +9091,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 					alphaf = wp->alpha_current;
-					alphaf *= alpha_mult;
 				}
+				alphaf *= alpha_mult;
 				CLAMP(alphaf, 0.0f, 1.0f);
 
 				if (Neb_affects_weapons) {
@@ -9673,7 +9671,6 @@ void weapon_info::reset()
 	this->b_info.beam_num_sections = 0;
 	this->b_info.glow_length = 0;
 	this->b_info.directional_glow = false;
-	this->b_info.beam_alpha_curve_idx = -1;
 	this->b_info.beam_shots = 1;
 	this->b_info.beam_shrink_factor = 0.0f;
 	this->b_info.beam_shrink_pct = 0.0f;

@@ -1515,12 +1515,14 @@ void beam_render(beam *b, float u_offset)
 
 		if (bwsi->texture.num_frames > 1) {
 			if (anim_has_curve) {
-				framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
+				framenum = fl2i(i2fl(bwsi->texture.num_frames - 1) * anim_state);
 			} else {
 				b->beam_section_frame[s_idx] += flFrametime;
 				framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
 			}
 		}
+
+		CLAMP(framenum, 0, bwsi->texture.num_frames - 1);
 
 		float fade = 0.9999f;
 
@@ -1674,7 +1676,9 @@ void beam_render_muzzle_glow(beam *b)
 		return;
 	}
 
+	bool radius_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_RADIUS_MULT);
 	float radius_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
+	bool alpha_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_ALPHA_MULT);
 	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
 	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_ANIM_STATE);
 	float anim_state = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
@@ -1697,16 +1701,27 @@ void beam_render_muzzle_glow(beam *b)
 		rand_val = frand_range(0.90f, 1.0f);
 	}
 
-	rad = wip->b_info.beam_muzzle_radius * pct * rand_val * radius_mult;
+	if (radius_has_curve) {
+		rad = wip->b_info.beam_muzzle_radius * radius_mult;
+	} else {
+		rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
+	}
 
 	// don't bother trying to draw if there is no radius
 	if (rad <= 0.0f)
 		return;
 
-	float alpha = get_muzzle_glow_alpha(b) * alpha_mult;
+	float alpha;
+	if (alpha_has_curve) {
+		alpha = alpha_mult;
+	} else {
+		alpha = get_muzzle_glow_alpha(b);
+	}
 
 	if (alpha <= 0.0f)
 		return;
+
+	alpha = MIN(alpha, 1.f);
 
 	if (bwi->directional_glow == true){
 		vertex h1[4];
@@ -1768,20 +1783,25 @@ void beam_render_muzzle_glow(beam *b)
 
 		if ( bwi->beam_glow.num_frames > 1 ) {
 			if (anim_has_curve) {
-				framenum = fl2i(i2fl(wip->laser_bitmap.num_frames) * anim_state);
+				framenum = fl2i(i2fl(bwi->beam_glow.num_frames - 1) * anim_state);
 			} else {
 				b->beam_glow_frame += flFrametime;
 				framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
 			}
 		}
 
+		CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
+
 		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
 		// draw a poly
 		//g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 
+		if (!alpha_has_curve) {
+			alpha = alpha * pct;
+		}
 		material material_info;
-		material_set_unlit_emissive(&material_info, bwi->beam_glow.first_frame + framenum, alpha * pct, 2.0f);
+		material_set_unlit_emissive(&material_info, bwi->beam_glow.first_frame + framenum, alpha, 2.0f);
 		g3_render_primitives_textured(&material_info, h1, 4, PRIM_TYPE_TRIFAN, false);
 
 	} else {
@@ -1791,18 +1811,26 @@ void beam_render_muzzle_glow(beam *b)
 
 		int framenum = 0;
 
-		if ( bwi->beam_glow.num_frames > 1 ) {
-			b->beam_glow_frame += flFrametime;
-
-			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+		if (bwi->beam_glow.num_frames > 1) {
+			if (anim_has_curve) {
+				framenum = fl2i(i2fl(bwi->beam_glow.num_frames - 1) * anim_state);
+			} else {
+				b->beam_glow_frame += flFrametime;
+				framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+			}
 		}
+
+		CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
 
 		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
+		if (!alpha_has_curve) {
+			alpha = alpha * pct;
+		}
 		// draw 1 bitmap
 		//g3_draw_bitmap(&pt, 0, rad, tmap_flags);
 		material mat_params;
-		material_set_unlit_emissive(&mat_params, bwi->beam_glow.first_frame + framenum, alpha * pct, 2.0f);
+		material_set_unlit_emissive(&mat_params, bwi->beam_glow.first_frame + framenum, alpha, 2.0f);
 		g3_render_rect_screen_aligned(&mat_params, &pt, 0, rad, 0.0f);
 
 		// maybe draw more
@@ -4037,7 +4065,7 @@ void beam_handle_collisions(beam *b)
 			{
 				vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
 				vm_vec_normalize(&force);
-				force *= wi->mass;
+				force *= wi->mass * wi->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*b, Objects[target]), &b->modular_curves_instance);
 
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
 				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
@@ -4099,7 +4127,7 @@ void beam_handle_collisions(beam *b)
 				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 					vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
 					vm_vec_normalize(&force);
-					force *= wi->mass;
+					force *= wi->mass * wi->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*b, Objects[target]), &b->modular_curves_instance);
 
 					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
 				}
@@ -4278,7 +4306,7 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 			whack = b_whack_big;
 		}
 	}else{
-		whack = wip->mass;
+		whack = wip->mass * wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
 	}
 
 	// whack direction
@@ -4390,17 +4418,6 @@ float beam_get_warmdown_lifetime_pct(const beam& b) {
 
 float beam_get_warmdown_age(const beam& b) {
 	return ((float)timestamp_since(b.warmdown_stamp)) / MILLISECONDS_PER_SECOND;
-}
-
-float beam_get_total_lifetime_pct(const beam& b) {
-	beam_weapon_info* bwip = &Weapon_info[b.weapon_info_index].b_info;
-	float beam_age = ((float)timestamp_since(b.warmup_stamp)) / i2fl(MILLISECONDS_PER_SECOND);
-	float beam_total_life = (i2fl(bwip->beam_warmup + bwip->beam_warmdown) / i2fl(MILLISECONDS_PER_SECOND)) + bwip->beam_life;
-	return beam_age / beam_total_life;
-}
-
-float beam_get_total_age(const beam& b) {
-	return ((float)timestamp_since(b.warmup_stamp)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
 float beam_accuracy = 1.0f;

@@ -240,7 +240,6 @@ typedef struct beam_weapon_info {
 	generic_anim beam_glow;				// muzzle glow bitmap
 	float glow_length;					// (DahBlount) determines the length the muzzle glow when using a directional glow
 	bool directional_glow;				// (DahBlount) makes the muzzle glow render to a poly that is oriented along the direction of fire
-	int beam_alpha_curve_idx;			// alpha multiplier over the lifetime of the beam
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
@@ -330,8 +329,6 @@ float weapon_get_age(const weapon& wp);
 float beam_get_warmup_lifetime_pct(const beam& wp);
 float beam_get_warmdown_lifetime_pct(const beam& wp);
 float beam_get_warmdown_age(const beam& wp);
-float beam_get_total_lifetime_pct(const beam& wp);
-float beam_get_total_age(const beam& wp);
 
 struct weapon_info;
 extern SCP_vector<weapon_info> Weapon_info;
@@ -709,11 +706,11 @@ struct weapon_info
 					std::pair {"Laser Glow R Mult", WeaponCurveOutputs::LASER_GLOW_R_MULT},
 					std::pair {"Laser Glow G Mult", WeaponCurveOutputs::LASER_GLOW_G_MULT},
 					std::pair {"Laser Glow B Mult", WeaponCurveOutputs::LASER_GLOW_B_MULT},
-					std::pair {"Light Intensity Multiplier", WeaponCurveOutputs::LIGHT_INTENSITY_MULT},
-					std::pair {"Light Radius Multiplier", WeaponCurveOutputs::LIGHT_RADIUS_MULT},
-					std::pair {"Light R Multiplier", WeaponCurveOutputs::LIGHT_R_MULT},
-					std::pair {"Light G Multiplier", WeaponCurveOutputs::LIGHT_G_MULT},
-					std::pair {"Light B Multiplier", WeaponCurveOutputs::LIGHT_B_MULT},
+					std::pair {"Light Intensity Mult", WeaponCurveOutputs::LIGHT_INTENSITY_MULT},
+					std::pair {"Light Radius Mult", WeaponCurveOutputs::LIGHT_RADIUS_MULT},
+					std::pair {"Light R Mult", WeaponCurveOutputs::LIGHT_R_MULT},
+					std::pair {"Light G Mult", WeaponCurveOutputs::LIGHT_G_MULT},
+					std::pair {"Light B Mult", WeaponCurveOutputs::LIGHT_B_MULT},
 					std::pair {"Detonation Radius Mult", WeaponCurveOutputs::DET_RADIUS_MULT},
 					std::pair {"Turn Rate Mult", WeaponCurveOutputs::TURN_RATE_MULT},
 					std::pair {"Child Spawn Rate Mult", WeaponCurveOutputs::SPAWN_RATE_MULT},
@@ -722,6 +719,8 @@ struct weapon_info
 			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}},
 			std::pair {"Age", modular_curves_functional_input<weapon_get_age>{}},
 			std::pair {"Base Velocity", modular_curves_submember_input<&weapon::weapon_max_vel>{}},
+			std::pair {"Max Hitpoints", modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>{}},
+			std::pair {"Current Hitpoints", modular_curves_submember_input<&weapon::objnum, &Objects, &object::hull_strength>{}},
 			std::pair {"Hitpoints Fraction", modular_curves_math_input<
 				modular_curves_submember_input<&weapon::objnum, &Objects, &object::hull_strength>,
 				modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>,
@@ -744,7 +743,7 @@ struct weapon_info
 
   private:
 	static constexpr auto weapon_hit_modular_curves_definition = weapon_modular_curves_definition.derive_modular_curves_input_only_subset<object>(
-			std::pair {"Target Health", modular_curves_submember_input<&object::hull_strength>{}},
+			std::pair {"Target Hitpoints", modular_curves_submember_input<&object::hull_strength>{}},
 			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}}
 	).derive_modular_curves_subset<float, WeaponHitCurveOutputs>(
 			std::array {
@@ -775,10 +774,10 @@ struct weapon_info
 			std::array {
 					std::pair {"Beam Width Mult", BeamCurveOutputs::BEAM_WIDTH_MULT},
 					std::pair {"Beam Alpha Mult", BeamCurveOutputs::BEAM_ALPHA_MULT},
-					std::pair {"Beam Animation State", BeamCurveOutputs::BEAM_ANIM_STATE},
-					std::pair {"Glow Radius Mult", BeamCurveOutputs::GLOW_RADIUS_MULT},
-					std::pair {"Glow Alpha Mult", BeamCurveOutputs::GLOW_ALPHA_MULT},
-					std::pair {"Glow Animation State", BeamCurveOutputs::GLOW_ANIM_STATE},
+					std::pair {"Beam Anim State", BeamCurveOutputs::BEAM_ANIM_STATE},
+					std::pair {"Muzzle Glow Radius Mult", BeamCurveOutputs::GLOW_RADIUS_MULT},
+					std::pair {"Muzzle Glow Alpha Mult", BeamCurveOutputs::GLOW_ALPHA_MULT},
+					std::pair {"Muzzle Glow Anim State", BeamCurveOutputs::GLOW_ANIM_STATE},
 			},
 			std::pair {"Beam Lifetime", modular_curves_math_input<
 				modular_curves_math_input<
@@ -795,11 +794,8 @@ struct weapon_info
 				ModularCurvesMathOperators::subtraction
 			>{}},
 			std::pair {"Warmup Lifetime", modular_curves_functional_input<beam_get_warmup_lifetime_pct>{}},
-			std::pair {"Warmup Age", modular_curves_functional_input<beam_get_total_age>{}},
 			std::pair {"Warmdown Lifetime", modular_curves_functional_input<beam_get_warmdown_lifetime_pct>{}},
 			std::pair {"Warmdown Age", modular_curves_functional_input<beam_get_warmdown_age>{}},
-			std::pair {"Beam Total Lifetime", modular_curves_functional_input<beam_get_total_lifetime_pct>{}},
-			std::pair {"Beam Total Age", modular_curves_functional_input<beam_get_total_age>{}},
 			std::pair {"Parent Radius", modular_curves_submember_input<&beam::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
 	);
 
@@ -826,7 +822,7 @@ struct weapon_info
 					std::pair{"Subsystem Damage Mult", BeamHitCurveOutputs::SUBSYS_DAMAGE_MULT},
 					std::pair{"Mass Mult", BeamHitCurveOutputs::MASS_MULT},
 				},
-				std::pair{"Target Health", modular_curves_submember_input<&object::hull_strength>{}},
+				std::pair{"Target Hitpoints", modular_curves_submember_input<&object::hull_strength>{}},
 				std::pair{"Target Radius", modular_curves_submember_input<&object::radius>{}}
 			);
 
