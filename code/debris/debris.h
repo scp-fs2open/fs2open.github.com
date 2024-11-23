@@ -71,29 +71,29 @@ void debris_delete( object * obj );
 void debris_process_post( object * obj, float frame_time);
 
 // Create debris, set velocity, and fire scripting hook
-object *debris_create( object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force, ship_subsys* source_subsys = nullptr );
+object *debris_create(object *source_obj, int model_num, int submodel_num, const vec3d *pos, const vec3d *exp_center, bool hull_flag, float exp_force, const ship_subsys* source_subsys = nullptr);
 
 // Create debris but don't do anything else
-object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, vec3d *pos, matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx);
+object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, const vec3d *pos, const matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx);
 
 // Set velocity after debris creation
-void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force, ship_subsys* source_subsys = nullptr);
+void debris_create_set_velocity(const debris *db, const ship *source_shipp, const vec3d *exp_center, float exp_force, const ship_subsys* source_subsys = nullptr);
 
 // Fire scripting hook after debris creation
 void debris_create_fire_hook(object *obj, object *source_obj);
 
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
 void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force );
-int debris_get_team(object *objp);
 
 void debris_add_to_hull_list(debris *db);
 void debris_remove_from_hull_list(debris *db);
 
-bool debris_is_generic(debris *db);
-bool debris_is_vaporized(debris *db);
+int debris_get_team(const object *objp);
+bool debris_is_generic(const debris *db);
+bool debris_is_vaporized(const debris *db);
 
 // creates a burst of generic debris at hitpos from ship_objp, with a random number between min and max
 // use_ship_debris is for whether the ship's generic debris should be used, or simply debris01.pof
-void create_generic_debris(object* ship_objp, vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris);
+void create_generic_debris(object* ship_objp, const vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris);
 
 #endif // _DEBRIS_H

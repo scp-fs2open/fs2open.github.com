@@ -112,7 +112,7 @@ void prevent_spawning_collision(object *new_obj);
 //
 
 // check to see if a net player needs to be respawned
-void multi_respawn_check(object *objp)
+void multi_respawn_check(const object *objp)
 {
 	int player_index;
 	net_player *pl = NULL;

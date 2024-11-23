@@ -1197,7 +1197,7 @@ int ai_is_stealth_visible(const object *viewer_objp, const object *stealth_objp)
  * Forward vector is the forward vector of the ship.
  * If from_dot == NULL, don't fill it in.
  */
-float compute_dots(object *objp, object *other_objp, float *to_dot, float *from_dot)
+float compute_dots(const object *objp, const object *other_objp, float *to_dot, float *from_dot)
 {
 	vec3d	v2o;
 	float		dist;
@@ -1242,7 +1242,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	ai_info	*aip;
 	float		old_dist, new_dist;
 	float		old_dot, new_dot;
-	object	*old_weapon_objp = NULL;
+	object	*old_weapon_objp = nullptr;
 
 	// any object number less than 0 is invalid
 	if ((attacked_objnum < 0) || (weapon_objnum < 0)) {
@@ -1287,7 +1287,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 		}
 	}
 
-	new_dist = compute_dots(weapon_objp, objp, &new_dot, NULL);
+	new_dist = compute_dots(weapon_objp, objp, &new_dot, nullptr);	// NOLINT(readability-suspicious-call-argument)
 
 	if (aip->danger_weapon_objnum == -1) {
 		if (new_dist < 1500.0f) {
@@ -1297,8 +1297,8 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 			}
 		}
 	} else {
-		Assert(old_weapon_objp != NULL);
-		old_dist = compute_dots(old_weapon_objp, objp, &old_dot, NULL);
+		Assert(old_weapon_objp != nullptr);
+		old_dist = compute_dots(old_weapon_objp, objp, &old_dot, nullptr);	// NOLINT(readability-suspicious-call-argument)
 	
 		if (old_dot < 0.5f) {
 			aip->danger_weapon_objnum = -1;
@@ -7249,7 +7249,7 @@ static void ai_chase_eb(ai_info *aip, vec3d *predicted_enemy_pos)
 //	Assumes ship_objp is not moving.
 //	Returns negative time if not going to hit.
 //	This is a very approximate function, but is pretty fast.
-float ai_endangered_time(object *ship_objp, object *weapon_objp)
+float ai_endangered_time(const object *ship_objp, const object *weapon_objp)
 {
 	float		to_dot, from_dot, dist;
 
@@ -7702,7 +7702,7 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d 
  * Set desired right vector for ships flying towards another ship.
  * Since this is governed only by vector to target, it causes ships to align bank and look less chaotic.
  */
-void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos)
+void compute_desired_rvec(vec3d *rvec, const vec3d *goal_pos, const vec3d *cur_pos)
 {
 	vec3d	v2e;
 
@@ -16010,7 +16010,7 @@ int firing_aspect_seeking_bomb(object *objp)
 // *objp collided with big ship *big_objp at some global point.
 // Make it fly away from the collision point.
 // collision_normal is NULL, when a collision is imminent and we just want to bug out.
-void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal)
+void big_ship_collide_recover_start(const object *objp, const object *big_objp, const vec3d *collision_normal)
 {
 	ai_info	*aip;
 
@@ -16047,7 +16047,7 @@ void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *colli
 
 float max_lethality = 0.0f;
 
-void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
+void ai_update_lethality(const object *pship_obj, const object *other_obj, float damage)
 {
 	// Goober5000 - stop any trickle-down errors from ship_do_damage
 	Assert(other_obj);
@@ -16100,7 +16100,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 /**
  * Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp
  */
-void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
+void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
 	object	*objp_hitter = nullptr;
@@ -16146,7 +16146,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 			//	And the current object is a small ship
 			if (Ship_info[Ships[objp_ship->instance].ship_info_index].is_small_ship()) {
 				//	Recover from hitting a big ship.  Note, if two big ships collide, they just pound away at each other.  Oh well.  Recovery looks dumb and it's very late.
-				big_ship_collide_recover_start(objp_ship, hit_objp, hit_normal);
+				big_ship_collide_recover_start(objp_ship, hit_objp, hit_normal);	// NOLINT(readability-suspicious-call-argument)
 			}
 		}
 	}

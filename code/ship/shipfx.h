@@ -32,11 +32,11 @@ struct matrix;
 void shipfx_emit_spark( int n, int sn );
 
 // Does the special effects to blow a subsystem off a ship
-extern void shipfx_blow_off_subsystem(object *ship_obj, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, bool no_explosion = false);
+extern void shipfx_blow_off_subsystem(object *ship_obj, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion = false);
 
 // Creates "ndebris" pieces of debris on random verts of the "submodel" in the 
 // ship's model.
-extern void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_center);
+extern void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center);
 
 
 // =================================================
@@ -156,7 +156,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime);
 
 void shipfx_large_blowup_queue_render(model_draw_list *scene, ship* shipp);
 
-void shipfx_debris_limit_speed(struct debris *db, ship *shipp);
+void shipfx_debris_limit_speed(const struct debris *db, const ship *shipp);
 
 // sound manager fore big ship sub explosions sounds
 void do_sub_expl_sound(float radius, vec3d* sound_pos, sound_handle* sound_handle);

@@ -135,7 +135,7 @@ void hud_cease_subsystem_targeting(bool print_message = true);
 void hud_cease_targeting(bool deliberate = false);
 
 void	hud_restore_subsystem_target(ship* shipp);
-vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
+vec3d* get_subsystem_world_pos(const object* parent_obj, const ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 
 void hud_show_hostile_triangle();
@@ -394,14 +394,14 @@ protected:
 	char header_text[NAME_LENGTH];
 public:
 	HudGaugeWeaponList(int gauge_object);
-	void initBitmaps(char *fname_first, char *fname_entry, char *fname_last);
+	void initBitmaps(const char *fname_first, const char *fname_entry, const char *fname_last);
 	void initBgFirstOffsetX(int x);
 	void initBgEntryOffsetX(int x);
 	void initBgLastOffsetX(int x);
 	void initBgLastOffsetY(int x);
 	void initBgFirstHeight(int h);
 	void initBgEntryHeight(int h);
-	void initHeaderText(char *text);
+	void initHeaderText(const char *text);
 	void initHeaderOffsets(int x, int y);
 	void initEntryStartY(int y);
 	void initEntryHeight(int h);

@@ -178,7 +178,7 @@ bool shield_ani_warning_displayed_already = false;
 
 // called at beginning of level to page in all ship icons
 // used in this level
-void hud_ship_icon_page_in(ship_info *sip)
+void hud_ship_icon_page_in(const ship_info *sip)
 {
 	hud_frames	*sgp;
 
@@ -287,7 +287,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 // Try to find a match between filename and the names inside
 // of Hud_shield_filenames.  This will provide us with an 
 // association of ship class to shield icon information.
-void hud_shield_assign_info(ship_info *sip, char *filename)
+void hud_shield_assign_info(ship_info *sip, const char *filename)
 {
 	ubyte i;
 
@@ -300,10 +300,10 @@ void hud_shield_assign_info(ship_info *sip, char *filename)
 
 	//No HUD icon found. Add one!
 	sip->shield_icon_index = (unsigned char) Hud_shield_filenames.size();
-	Hud_shield_filenames.push_back((SCP_string)filename);
+	Hud_shield_filenames.emplace_back(filename);
 }
 
-void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
+void hud_show_mini_ship_integrity(const object *objp, int x_force, int y_force)
 {
 	char	text_integrity[64];
 	int	numeric_integrity;
@@ -350,7 +350,7 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 
 // Draw the miniature shield icon that is drawn near the reticle
 // this function is only used by multi_ingame_join_display_ship() in multi_ingame.cpp as of the new HudGauge implementation (Swifty)
-void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_offset, int y_hull_offset)
+void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hull_offset, int y_hull_offset)
 {
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
@@ -426,7 +426,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 // reset the shield_hit_info data structure
 // pass NULL as objp if you only need to initialize a shield_hit_info without an
 // associated ship
-void shield_info_reset(object *objp, shield_hit_info *shi)
+void shield_info_reset(const object *objp, shield_hit_info *shi)
 {
 	int n_quadrants = (objp != NULL) ? objp->n_quadrants : 0;
 
@@ -451,7 +451,7 @@ void shield_info_reset(object *objp, shield_hit_info *shi)
 // input:	player	=>	optional parameter (default value 0).  This is to indicate that player shield hit
 //								info should be reset.  This is normally not the case.
 //								is for the player's current target
-void hud_shield_hit_reset(object *objp, int player)
+void hud_shield_hit_reset(const object *objp, int player)
 {
 	shield_hit_info	*shi;
 
@@ -495,7 +495,7 @@ void hud_shield_hit_update()
 // input:
 //				objp		=>	object pointer for ship that has been hit
 //				quadrant	=> quadrant of shield getting hit (-1 if no shield is present)
-void hud_shield_quadrant_hit(object *objp, int quadrant)
+void hud_shield_quadrant_hit(const object *objp, int quadrant)
 {
 	shield_hit_info	*shi;
 	int					num;
@@ -550,7 +550,7 @@ void HudGaugeShield::render(float  /*frametime*/)
 {
 }
 
-void HudGaugeShield::showShields(object *objp, int mode)
+void HudGaugeShield::showShields(const object *objp, int mode)
 {
 //	static int fod_model = -1;
 	float			max_shield;
@@ -924,7 +924,7 @@ void HudGaugeShieldMini::init2DigitOffsets(int x, int y)
 	Mini_2digit_offsets[1] = y;
 }
 
-void HudGaugeShieldMini::initBitmaps(char *fname)
+void HudGaugeShieldMini::initBitmaps(const char *fname)
 {
 	Shield_mini_gauge.first_frame = bm_load_animation(fname, &Shield_mini_gauge.num_frames);
 	if ( Shield_mini_gauge.first_frame == -1 ) {
@@ -953,7 +953,7 @@ void HudGaugeShieldMini::pageIn()
 }
 
 // Draw the miniature shield icon that is drawn near the reticle
-void HudGaugeShieldMini::showMiniShields(object *objp)
+void HudGaugeShieldMini::showMiniShields(const object *objp)
 {
 	if (Shield_mini_gauge.first_frame < 0)
 		return;

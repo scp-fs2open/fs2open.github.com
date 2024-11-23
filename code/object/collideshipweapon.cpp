@@ -28,8 +28,9 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+
 extern int Game_skill_level;
-extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
+extern float ai_endangered_time(const object *ship_objp, const object *weapon_objp);
 static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
 
@@ -38,7 +39,7 @@ extern float flFrametime;
  * If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
  * then update danger_weapon_objnum.
  */
-static void update_danger_weapon(object *pship_obj, object *weapon_obj)
+static void update_danger_weapon(const object *pship_obj, const object *weapon_obj)
 {
 	ai_info	*aip;
 
@@ -67,7 +68,7 @@ static void update_danger_weapon(object *pship_obj, object *weapon_obj)
  * Separated from check_collision routine below because of multiplayer reasons.
  * When hit_dir was added in commit a3422b4, it was passed by value.  Since it is no longer modified locally in the function, it can be passed by pointer.
  */
-static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, const vec3d *hit_dir)
+static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, const vec3d *world_hitpos, const vec3d *hitpos, int quadrant_num, int submodel_num, const vec3d *hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];

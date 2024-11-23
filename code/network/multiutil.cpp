@@ -522,7 +522,7 @@ int find_player_socket(PSNET_SOCKET_RELIABLE sock)
 
 // multi_find_player_by_object returns a player num (reference by Net_players[x]) when given a object *.
 // used to find netplayers in game when only the object is known
-int multi_find_player_by_object( object *objp )
+int multi_find_player_by_object( const object *objp )
 {
 	int i, objnum;
 

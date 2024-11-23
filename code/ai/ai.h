@@ -534,7 +534,7 @@ extern void ai_dock_with_object(object *docker, int docker_index, object *dockee
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, int wl_index, int wp_flags, int start_index);
-extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal);
+extern void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum);
 extern vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp);
 extern void ai_turn_towards_vector(const vec3d *dest, object *objp, const vec3d *slide_vec, const vec3d *rel_pos, float bank_override, int flags, const vec3d *rvec = nullptr, const vec3d* turnrate_mod = nullptr);

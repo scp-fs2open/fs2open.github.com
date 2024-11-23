@@ -10050,7 +10050,7 @@ static void ship_subsys_disrupted_maybe_check(ship *shipp)
  * @param ss	pointer to ship subsystem
  * @return		1 if subsystem is disrupted, 0 if subsystem is not disrupted
  */
-int ship_subsys_disrupted(ship_subsys *ss)
+int ship_subsys_disrupted(const ship_subsys *ss)
 {
 	if ( !ss ) {
 		Int3();		// should never happen, get Alan if it does.
@@ -10094,7 +10094,7 @@ void ship_subsys_set_disrupted(ship_subsys *ss, int time)
  * @param type	type of subsystem (SUBSYSTEM_*)
  * @return		1 if subsystem is disrupted, 0 if subsystem is not disrupted
  */
-int ship_subsys_disrupted(ship *sp, int type)
+int ship_subsys_disrupted(const ship *sp, int type)
 {
 	Assert ( sp != NULL );
 	Assert ( type >= 0 && type < SUBSYSTEM_MAX );
@@ -14904,7 +14904,7 @@ int ship_type_name_lookup(const char *name)
 // Return true/false for subsystem found/not found.
 // Stuff vector *pos with absolute position.
 // subsysp is a pointer to the subsystem.
-int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
+int get_subsystem_pos(vec3d* pos, const object* objp, const ship_subsys* subsysp)
 {
 	if (subsysp == NULL) {
 		*pos = objp->pos;
@@ -15176,7 +15176,7 @@ void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do
 //
 // returns: pointer to subsystem if one found, NULL otherwise
 #define MAX_SUBSYS_ATTACKERS 3
-ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *attacker_pos)
+ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, const vec3d *attacker_pos)
 {
 	ship_subsys	*ss;
 	ship_subsys *best_in_sight_subsys, *lowest_attacker_subsys, *ss_return;
@@ -15239,7 +15239,7 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
  *                 to select the best subsystem to attack of that type (using line-of-sight)
  *                 and based on the number of ships already attacking the subsystem
  */
-ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos)
+ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos)
 {
 	Assertion(subsys_type > SUBSYSTEM_NONE && subsys_type < SUBSYSTEM_MAX, "Subsys_type %d must refer to a valid subsystem type!", subsys_type);
 
@@ -15313,7 +15313,7 @@ ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 /**
 * Returns the index number of the ship_subsys parameter within its ship's subsytem list
 */
-int ship_get_subsys_index(ship_subsys *subsys)
+int ship_get_subsys_index(const ship_subsys *subsys)
 {
 	Assertion(subsys != nullptr, "ship_get_subsys_index was called with a null ship_subsys parameter!");
 	if (subsys == nullptr)
@@ -15331,7 +15331,7 @@ int ship_get_subsys_index(ship_subsys *subsys)
 /**
  * Searches for the subsystem with the given name in the ship's linked list of subsystems, and returns its index or -1 if not found.
  */
-int ship_find_subsys(ship *sp, const char *ss_name)
+int ship_find_subsys(const ship *sp, const char *ss_name)
 {
 	int count;
 	ship_subsys *ss;
@@ -16969,7 +16969,7 @@ ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, c
 	return closest_in_sight_subsys;
 }
 
-char *ship_subsys_get_name(ship_subsys *ss)
+const char *ship_subsys_get_name(const ship_subsys *ss)
 {
 	if( ss->sub_name[0] != '\0' )
 		return ss->sub_name;
@@ -16977,7 +16977,7 @@ char *ship_subsys_get_name(ship_subsys *ss)
 		return ss->system_info->name;
 }
 
-bool ship_subsys_has_instance_name(ship_subsys *ss)
+bool ship_subsys_has_instance_name(const ship_subsys *ss)
 {
 	if( ss->sub_name[0] != '\0' )
 		return true;
@@ -16994,7 +16994,7 @@ void ship_subsys_set_name(ship_subsys* ss, const char* n_name) { strncpy(ss->sub
  * @param quadrant_num shield quadrant that was hit
  * @return strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
  */
-float ship_quadrant_shield_strength(object *hit_objp, int quadrant_num)
+float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num)
 {
 	float			max_quadrant;
 
@@ -19102,7 +19102,7 @@ ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name)
 	return NULL;
 }
 
-int ship_get_num_subsys(ship *shipp)
+int ship_get_num_subsys(const ship *shipp)
 {
 	Assert(shipp != NULL);
 
@@ -20796,7 +20796,7 @@ bool ship_has_sound(object *objp, GameSounds id)
  * @return point is inside bbox, TRUE/1
  * @return point is outside bbox, FALSE/0
  */
-int get_nearest_bbox_point(object *ship_objp, vec3d *start, vec3d *box_pt)
+int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *box_pt)
 {
 	vec3d temp, rf_start;
 	polymodel *pm;

@@ -257,7 +257,7 @@ void shield_balance(object *objp, float rate, float penalty) {
 	}
 }
 
-float shield_get_max_quad(object *objp) {
+float shield_get_max_quad(const object *objp) {
 	Assert(objp);
 
 	if (objp->type != OBJ_SHIP) {
@@ -267,7 +267,7 @@ float shield_get_max_quad(object *objp) {
 	return shield_get_max_strength(objp, true) / objp->n_quadrants;
 }
 
-float shield_get_max_strength(object *objp, bool no_msr) {
+float shield_get_max_strength(const object *objp, bool no_msr) {
 	Assert(objp);
 
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
@@ -279,7 +279,7 @@ float shield_get_max_strength(object *objp, bool no_msr) {
 		return Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
 }
 
-float shield_get_quad(object *objp, int quadrant_num) {
+float shield_get_quad(const object *objp, int quadrant_num) {
 	Assert(objp);
 
 	// no shield system, no strength!
@@ -339,7 +339,7 @@ float shield_get_quad(object *objp, int quadrant_num) {
 	return objp->shield_quadrant[quadrant_num];
 }
 
-float shield_get_strength(object *objp)
+float shield_get_strength(const object *objp)
 {
 	Assert(objp);
 

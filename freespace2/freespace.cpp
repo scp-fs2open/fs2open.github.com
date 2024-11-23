@@ -2716,7 +2716,7 @@ void game_tst_frame()
 		}
 	}
 }
-void game_tst_mark(object *objp, ship *shipp)
+void game_tst_mark(const object *objp, const ship *shipp)
 {
 	ship_info *sip;	
 

@@ -209,10 +209,13 @@ int Game_shudder_total;
 float Game_shudder_intensity;
 void game_shudder_apply(int, float, bool, bool){}
 
+class object;
+class ship;
+
 int game_hacked_data(){return 0;}
 int game_single_step;
 int last_single_step;
-void game_tst_mark(class object *, class ship *){}
+void game_tst_mark(const object*, const ship*){}
 int tst;
 //int Player_multi_died_check;
 int Show_framerate = 0;

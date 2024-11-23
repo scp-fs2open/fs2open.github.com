@@ -134,7 +134,7 @@ void renderAll();
  * orientation should look along the direction
  */
 void addDecal(creation_info& info,
-			  object* host,
+			  const object* host,
 			  int submodel,
 			  const vec3d& local_pos,
 			  const matrix& local_orient);
