@@ -683,6 +683,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-set-custom-gauge-active",	OP_HUD_SET_CUSTOM_GAUGE_ACTIVE,			2, 	INT_MAX, 	SEXP_ACTION_OPERATOR,	},
 	{ "hud-set-builtin-gauge-active",	OP_HUD_SET_BUILTIN_GAUGE_ACTIVE,		2, 	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "hud-set-text",					OP_HUD_SET_TEXT,						2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
+	{ "hud-set-xstr",                   OP_HUD_SET_XSTR,                        3,  3,          SEXP_ACTION_OPERATOR,   },  //MjnMixael
 	{ "hud-set-text-num",				OP_HUD_SET_TEXT_NUM,					2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-message",				OP_HUD_SET_MESSAGE,						2,	2,			SEXP_ACTION_OPERATOR,	},	//The E
 	{ "hud-set-directive",				OP_HUD_SET_DIRECTIVE,					2,	2,			SEXP_ACTION_OPERATOR,	},	//The E
@@ -13168,6 +13169,36 @@ void sexp_hud_set_text(int n)
 	}
 }
 
+void sexp_hud_set_xstr(int n)
+{
+	bool is_nan, is_nan_forever;
+
+	auto gaugename = CTEXT(n);
+	auto text = CTEXT(CDR(n));
+	auto id = eval_num(CDDR(n), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		id = -1;
+	}
+
+	// Translate the string using tstrings
+	SCP_string xstr;
+	sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
+	SCP_string translated_string;
+	lcl_ext_localize(xstr, translated_string);
+
+	// Now replace tokens and variables
+	string_replace_tokens_with_keys(translated_string);
+	sexp_replace_variable_names_with_values(translated_string);
+	sexp_container_replace_refs_with_values(translated_string);
+
+	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	if (cg) {
+		cg->updateCustomGaugeText(translated_string.c_str());
+	} else {
+		WarningEx(LOCATION, "Could not find a custom hud gauge named %s\n", gaugename);
+	}
+}
+
 void sexp_hud_set_message(int n)
 {
 	auto gaugename = CTEXT(n);
@@ -13178,6 +13209,7 @@ void sexp_hud_set_message(int n)
 		if ( !stricmp(text, Messages[i].name) ) {
 			message = Messages[i].message;
 
+			string_replace_tokens_with_keys(message);
 			sexp_replace_variable_names_with_values(message);
 			sexp_container_replace_refs_with_values(message);
 
@@ -28592,6 +28624,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_SET_XSTR:
+				sexp_hud_set_xstr(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_HUD_SET_TEXT_NUM:
 				sexp_hud_set_text_num(node);
 				sexp_val = SEXP_TRUE;
@@ -31215,6 +31252,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_SET_COLOR:
 		case OP_NAV_SET_VISITED_COLOR:
 		case OP_HUD_SET_TEXT:
+		case OP_HUD_SET_XSTR:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
 		case OP_HUD_SET_COORDS:
@@ -32566,6 +32604,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_STRING;
+
+		case OP_HUD_SET_XSTR:
+			if (argnum == 0)
+				return OPF_CUSTOM_HUD_GAUGE;
+			if (argnum == 1)
+				return OPF_STRING;
+			else
+				return OPF_NUMBER;
 
 		case OP_HUD_SET_MESSAGE:
 			if (argnum == 0)
@@ -36251,6 +36297,7 @@ int get_category(int op_id)
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_FORCE_JUMP:
 		case OP_HUD_SET_TEXT:
+		case OP_HUD_SET_XSTR:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
@@ -36860,6 +36907,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_HUD_SET_TEXT:
+		case OP_HUD_SET_XSTR:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
 		case OP_HUD_SET_DIRECTIVE:
@@ -41142,6 +41190,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the text value of a given HUD gauge. Works for custom gauges only. Takes 2 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tText to be set"
+	},
+
+	//MjnMixael
+	{ OP_HUD_SET_XSTR, "hud-set-xstr\r\n"
+		"\tSets the text value of a given HUD gauge to a translated string and replaces variables.\r\n"
+		"\tWorks for custom gauges only. Takes 3 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tText to be set"
+		"\t3:\tXSTR ID to lookup"
 	},
 
 	{ OP_HUD_SET_TEXT_NUM, "hud-set-text-num\r\n"
