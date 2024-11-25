@@ -218,13 +218,10 @@ int main_hall_get_overlay_resolution_index();
 // what main hall we're on
 int main_hall_id();
 
-// Vasudan?
-bool main_hall_is_retail_vasudan();
-
 bool main_hall_allows_fish();
 bool main_hall_allows_headz();
-// (defaults to the current main hall, but now allows checking another specified main hall)
-bool main_hall_is_vasudan(const main_hall_defines *hall = nullptr);
+// Vasudan? (defaults to the current main hall, but now allows checking another specified main hall)
+bool main_hall_is_retail_vasudan(const main_hall_defines* hall = nullptr);
 
 // start the ambient sounds playing in the main hall
 void main_hall_start_ambient();

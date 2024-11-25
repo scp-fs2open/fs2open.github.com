@@ -2482,7 +2482,7 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 
 	// ambient sound
 	bool ambient_found = parse_iface_sound("+Ambient Sound:", &m->ambient_sound);
-	if (!ambient_found && first_time && main_hall_is_vasudan(m))
+	if (!ambient_found && first_time && main_hall_is_retail_vasudan(m))
 		m->ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT_V;	// default to using Vasudan ambient sound in a Vasudan hall
 
 	// intercom sounds
@@ -2902,9 +2902,16 @@ void main_hall_vasudan_funny()
 /**
  * Lookup if retail Vasudan main hall, based upon background graphics
  */
-bool main_hall_is_retail_vasudan()
+bool main_hall_is_retail_vasudan(const main_hall_defines* hall)
 {
-	return !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
+	if (!hall) {
+		if (Main_hall)
+			hall = Main_hall; // default to the current main hall
+		else
+			return false;
+	}
+	
+	return !stricmp(hall->bitmap.c_str(), "vhall") || !stricmp(hall->bitmap.c_str(), "2_vhall");
 }
 
 /**
