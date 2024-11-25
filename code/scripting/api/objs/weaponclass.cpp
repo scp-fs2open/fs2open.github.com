@@ -83,6 +83,25 @@ ADE_VIRTVAR(AltName, l_Weaponclass, "string", "The alternate weapon class name."
 	return ade_set_args(L, "s", Weapon_info[idx].display_name);
 }
 
+ADE_VIRTVAR(TurretName, l_Weaponclass, "string", "The name displayed for a turret if the turret's first weapon is this weapon class.", "string", "Turret name (aka alternate subsystem name), or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Weapon_info[idx].altSubsysName);
+		strncpy(Weapon_info[idx].altSubsysName, s, len);
+		Weapon_info[idx].altSubsysName[len - 1] = 0;
+	}
+
+	return ade_set_args(L, "s", Weapon_info[idx].altSubsysName);
+}
+
 ADE_VIRTVAR(Title, l_Weaponclass, "string", "Weapon class title", "string", "Weapon class title, or empty string if handle is invalid")
 {
 	int idx;

@@ -329,6 +329,22 @@ ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem 
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
 }
 
+ADE_VIRTVAR(NameOnHUD, l_Subsystem, "string", "Subsystem name as it would be displayed on the HUD", "string", "Subsystem name on HUD, or an empty string if handle is invalid")
+{
+	ship_subsys_h *sso;
+
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "s", "");
+
+	if (!sso->isValid())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the NameOnHUD is not allowed!");
+
+	return ade_set_args(L, "s", ship_subsys_get_name_on_hud(sso->ss));
+}
+
 ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "number", "Number of fire points, or 0 if handle is invalid")
 {
 	ship_subsys_h* sso;
