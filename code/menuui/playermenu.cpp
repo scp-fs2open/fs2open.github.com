@@ -318,13 +318,13 @@ void player_select_init()
 
 	// add some text
 	w = &Player_select_window;
-	w->add_XSTR("Create", 1034, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_x, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Clone", 1040, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_x, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CLONE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Remove", 1038, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_x, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][DELETE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
+	w->add_XSTR("Create", 1034, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_x, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Clone", 1040, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_x, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CLONE_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Remove", 1038, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_x, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][DELETE_BUTTON].button, UI_XSTR_COLOR_GREEN);
 
-	w->add_XSTR("Select", 1039, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_x, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);	
-	w->add_XSTR("Single", 1041, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_x, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][SINGLE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Multi", 1042, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_x, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_y, &Player_select_buttons[gr_screen.res][MULTI_BUTTON].button, UI_XSTR_COLOR_GREEN);	
+	w->add_XSTR("Select", 1039, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_x, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);
+	w->add_XSTR("Single", 1041, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_x, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][SINGLE_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Multi", 1042, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_x, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_y, &Player_select_buttons[gr_screen.res][MULTI_BUTTON].button, UI_XSTR_COLOR_GREEN);
 	for(i=0; i<PLAYER_SELECT_NUM_TEXT; i++) {
 		w->add_XSTR(&Player_select_text[gr_screen.res][i]);
 	}

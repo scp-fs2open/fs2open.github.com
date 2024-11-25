@@ -1700,7 +1700,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
 				}
 
-				pm->submodel = new bsp_info[pm->n_models];
+				pm->submodel = new bsp_info[MAX(1,pm->n_models)];
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -5379,7 +5379,7 @@ int model_create_bsp_collision_tree()
 		return (int)i;
 	}
 
-	bsp_collision_tree tree;
+	bsp_collision_tree tree{};
 
 	tree.used = true;
 	Bsp_collision_tree_list.push_back(tree);

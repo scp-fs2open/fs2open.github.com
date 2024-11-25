@@ -4015,20 +4015,20 @@ void parse_weaponstbl(const char *filename)
 void weapon_sort_by_type()
 {
 	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_primaries = NULL, *child_secondaries = NULL;
-	int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
-	int i, weapon_index;
+	unsigned int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
+	int weapon_index;
 
 	// get the initial count of each weapon type
-	for (i = 0; i < weapon_info_size(); i++) {
-		switch (Weapon_info[i].subtype)
+	for (const auto& wi : Weapon_info) {
+		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_primaries++;
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_lasers++;
 				else
 					num_lasers++;
@@ -4039,9 +4039,9 @@ void weapon_sort_by_type()
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_secondaries++;
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_missiles++;
 				else
 					num_missiles++;
@@ -4097,32 +4097,32 @@ void weapon_sort_by_type()
 	}
 
 	// fill the buckets
-	for (i = 0; i < weapon_info_size(); i++) {
-		switch (Weapon_info[i].subtype)
+	for (const auto& wi : Weapon_info) {
+		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_primaries[num_child_primaries++] = Weapon_info[i];
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_lasers[num_big_lasers++] = Weapon_info[i];
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_primaries[num_child_primaries++] = wi;
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
+					big_lasers[num_big_lasers++] = wi;
 				else
-					lasers[num_lasers++] = Weapon_info[i];
+					lasers[num_lasers++] = wi;
 				break;
 		
 			case WP_BEAM:
-				beams[num_beams++] = Weapon_info[i];
+				beams[num_beams++] = wi;
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_secondaries[num_child_secondaries++] = Weapon_info[i];
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_missiles[num_big_missiles++] = Weapon_info[i];
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_secondaries[num_child_secondaries++] = wi;
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
+					big_missiles[num_big_missiles++] = wi;
 				else
-					missiles[num_missiles++]=Weapon_info[i];
+					missiles[num_missiles++] = wi;
 				break;
 
 			default:
@@ -4133,28 +4133,28 @@ void weapon_sort_by_type()
 	weapon_index = 0;
 
 	// reorder the weapon_info structure according to our rules defined above
-	for (i = 0; i < num_lasers; i++, weapon_index++)
+	for (size_t i = 0; i < num_lasers; i++, weapon_index++)
 		Weapon_info[weapon_index] = lasers[i];
 
-	for (i = 0; i < num_big_lasers; i++, weapon_index++)
+	for (size_t i = 0; i < num_big_lasers; i++, weapon_index++)
 		Weapon_info[weapon_index] = big_lasers[i];
 
-	for (i = 0; i < num_beams; i++, weapon_index++)
+	for (size_t i = 0; i < num_beams; i++, weapon_index++)
 		Weapon_info[weapon_index] = beams[i];
 
-	for (i = 0; i < num_child_primaries; i++, weapon_index++)
+	for (size_t i = 0; i < num_child_primaries; i++, weapon_index++)
 		Weapon_info[weapon_index] = child_primaries[i];
 
 	// designate start of secondary weapons so that we'll have the correct offset later on
 	First_secondary_index = weapon_index;
 
-	for (i = 0; i < num_missiles; i++, weapon_index++)
+	for (size_t i = 0; i < num_missiles; i++, weapon_index++)
 		Weapon_info[weapon_index] = missiles[i];
 
-	for (i = 0; i < num_big_missiles; i++, weapon_index++)
+	for (size_t i = 0; i < num_big_missiles; i++, weapon_index++)
 		Weapon_info[weapon_index] = big_missiles[i];
 
-	for (i = 0; i < num_child_secondaries; i++, weapon_index++)
+	for (size_t i = 0; i < num_child_secondaries; i++, weapon_index++)
 		Weapon_info[weapon_index] = child_secondaries[i];
 
 
