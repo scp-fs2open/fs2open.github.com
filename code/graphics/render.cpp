@@ -827,7 +827,8 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_len
 
 		// Calculate the offset to center the text
 		float offsetX = 0.0f;
-		// Not sure if we should do this.. kinda depends on if the text is drawn at the top of the screen or the bottom
+		// This is a compromise to try and size the text around center to minimize text offsets during scaling behavior.
+		// TODO Update this if multiline text is found to be negatively affected or a proper method of setting text anchors is added
 		float offsetY = (scaledSize - originalSize) * 0.5f;
 
 		path->translate(sx - offsetX, sy - offsetY);
