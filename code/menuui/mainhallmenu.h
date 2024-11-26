@@ -150,7 +150,7 @@ public:
 	SCP_vector<SCP_vector<int> > door_anim_coords;
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<interface_snd_id> > door_sounds;
+	SCP_vector<std::pair<interface_snd_id, interface_snd_id>> door_sounds;
 
 	// pan values for the door sounds
 	SCP_vector<float> door_sound_pan;
@@ -230,8 +230,8 @@ void main_hall_reset_ambient_vol();
 
 void main_hall_do_multi_ready();
 
-// make the vasudan main hall funny
-void main_hall_vasudan_funny();
+// toggle vasudan headz cheat animation
+void main_hall_set_door_headz(bool init = false);
 
 void main_hall_pause();
 void main_hall_unpause();
