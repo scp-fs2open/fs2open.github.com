@@ -230,8 +230,8 @@ void main_hall_reset_ambient_vol();
 
 void main_hall_do_multi_ready();
 
-// make the vasudan main hall funny
-void main_hall_vasudan_funny();
+// toggle vasudan headz cheat animation
+void main_hall_set_door_headz(bool init = false);
 
 void main_hall_pause();
 void main_hall_unpause();

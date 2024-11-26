@@ -18,4 +18,6 @@ void split_string(const SCP_string& s, char delim, Out result)
 
 std::vector<std::string> split_string(const std::string& s, char delim);
 
+bool isStringOneOf(const std::string& value, const std::vector<std::string>& candidates);
+
 } // namespace util
