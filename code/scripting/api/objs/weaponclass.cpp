@@ -971,7 +971,7 @@ ADE_VIRTVAR(BeamLife, l_Weaponclass, "number", "The time in seconds that a beam 
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Setting BeamLife is not supported");
 
-	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].is_beam())
 		return ade_set_args(L, "f", Weapon_info[idx].b_info.beam_life);
 
 	return ade_set_args(L, "f", 0.0f);
@@ -989,7 +989,7 @@ ADE_VIRTVAR(BeamWarmup, l_Weaponclass, "number", "The time in seconds that a bea
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Setting BeamWarmup is not supported");
 
-	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].is_beam())
 		return ade_set_args(L, "f", i2fl(Weapon_info[idx].b_info.beam_warmup) / MILLISECONDS_PER_SECOND);
 
 	return ade_set_args(L, "f", 0.0f);
@@ -1007,7 +1007,7 @@ ADE_VIRTVAR(BeamWarmdown, l_Weaponclass, "number", "The time in seconds that a b
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Setting BeamWarmdown is not supported");
 
-	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].is_beam())
 		return ade_set_args(L, "f", i2fl(Weapon_info[idx].b_info.beam_warmdown) / MILLISECONDS_PER_SECOND);
 
 	return ade_set_args(L, "f", 0.0f);
@@ -1217,6 +1217,21 @@ ADE_FUNC(isPrimary, l_Weaponclass, nullptr, "Return true if the weapon is a prim
 		return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(isNonBeamPrimary, l_Weaponclass, nullptr, "Return true if the weapon is a primary weapon that is not a beam.", "boolean", "true if the weapon is a non-beam primary, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].is_non_beam_primary())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(isSecondary, l_Weaponclass, nullptr, "Return true if the weapon is a secondary weapon.  This function is equivalent to isMissile().", "boolean", "true if the weapon is a secondary, false otherwise")
 {
 	int idx;
@@ -1241,7 +1256,7 @@ ADE_FUNC(isBeam, l_Weaponclass, nullptr, "Return true if the weapon is a beam", 
 	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
-	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].is_beam())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;

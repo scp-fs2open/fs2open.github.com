@@ -36,10 +36,12 @@
 class object;
 class ship_subsys;
 
-#define	WP_UNUSED			-1
-#define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
-#define	WP_MISSILE			1
-#define	WP_BEAM				2
+#define WP_UNUSED    -1
+#define WP_LASER     0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
+#define WP_MISSILE   1
+#define WP_BEAM      2		// This is only set for beams in the #Beam Weapons section.  Many beams are found in the #Primary Weapons section and therefore have the subtype WP_LASER.
+                      		// Use the Weapon_Info::Beam flag or .is_beam() to properly check whether a weapon is a beam.
+
 extern const char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
@@ -667,6 +669,8 @@ public:
 
     inline bool is_primary()            const { return subtype == WP_LASER || subtype == WP_BEAM; } // either of these is allowed in a primary bank
     inline bool is_secondary()          const { return subtype == WP_MISSILE; }
+    inline bool is_beam()               const { return subtype == WP_BEAM || wi_flags[Weapon::Info_Flags::Beam]; }
+    inline bool is_non_beam_primary()   const { return subtype == WP_LASER && !wi_flags[Weapon::Info_Flags::Beam]; }
 
     inline bool is_homing()             const { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
     inline bool is_locked_homing()      const { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }

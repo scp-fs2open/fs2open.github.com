@@ -2204,6 +2204,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			using namespace particle;
 
 			// Only beams do this randomization
+			// NOTE: in practice, most beams are WP_LASER and do not do this
 			if (subtype == WP_BEAM)
 			{
 				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
@@ -2268,6 +2269,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				using namespace particle;
 
 				// Only beams do this randomization
+				// NOTE: in practice, most beams are WP_LASER and do not do this
 				if (subtype == WP_BEAM)
 				{
 					// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
@@ -4026,7 +4028,9 @@ void weapon_sort_by_type()
 				continue;
 
 			case WP_LASER:
-				if (wi.wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Beam])      // many beams are found in the laser section
+					num_beams++;
+				else if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_primaries++;
 				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_lasers++;
@@ -4104,7 +4108,9 @@ void weapon_sort_by_type()
 				continue;
 
 			case WP_LASER:
-				if (wi.wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Beam])      // many beams are found in the laser section
+					beams[num_beams++] = wi;
+				else if (wi.wi_flags[Weapon::Info_Flags::Child])
 					child_primaries[num_child_primaries++] = wi;
 				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					big_lasers[num_big_lasers++] = wi;
