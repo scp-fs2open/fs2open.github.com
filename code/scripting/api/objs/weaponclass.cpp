@@ -1172,7 +1172,7 @@ ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the 
 	return ade_set_args(L, "i", idx + 1);
 }
 
-ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a primary weapon (this includes Beams). This function is deprecated, use isPrimary instead.", "boolean", "true if the weapon is a primary, false otherwise")
+ADE_FUNC(isLaser, l_Weaponclass, nullptr, "Return true if the weapon is a 'laser' weapon, which also includes ballistic (ammo-based) weapons.  This also includes most beams, but not necessarily all of them.  See also isPrimary().", "boolean", "true if the weapon is a laser weapon, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -1187,7 +1187,7 @@ ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a primary w
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isMissile, l_Weaponclass, NULL, "Return true if the weapon is a secondary weapon. This function is deprecated, use isSecondary instead.", "boolean", "true if the weapon is a secondary, false otherwise")
+ADE_FUNC(isMissile, l_Weaponclass, nullptr, "Return true if the weapon is a 'missile' weapon.  See also isSecondary().", "boolean", "true if the weapon is a missile weapon, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -1202,7 +1202,7 @@ ADE_FUNC(isMissile, l_Weaponclass, NULL, "Return true if the weapon is a seconda
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isPrimary, l_Weaponclass, NULL, "Return true if the weapon is a primary weapon (this includes Beams)", "boolean", "true if the weapon is a primary, false otherwise")
+ADE_FUNC(isPrimary, l_Weaponclass, nullptr, "Return true if the weapon is a primary weapon.  This also includes most beams, but not necessarily all of them.  This function is equivalent to isLaser().", "boolean", "true if the weapon is a primary, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -1217,7 +1217,7 @@ ADE_FUNC(isPrimary, l_Weaponclass, NULL, "Return true if the weapon is a primary
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isSecondary, l_Weaponclass, NULL, "Return true if the weapon is a secondary weapon", "boolean", "true if the weapon is a secondary, false otherwise")
+ADE_FUNC(isSecondary, l_Weaponclass, nullptr, "Return true if the weapon is a secondary weapon.  This function is equivalent to isMissile().", "boolean", "true if the weapon is a secondary, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -1232,7 +1232,7 @@ ADE_FUNC(isSecondary, l_Weaponclass, NULL, "Return true if the weapon is a secon
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "boolean", "true if the weapon is a beam, false otherwise")
+ADE_FUNC(isBeam, l_Weaponclass, nullptr, "Return true if the weapon is a beam", "boolean", "true if the weapon is a beam, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
