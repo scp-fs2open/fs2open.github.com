@@ -84,14 +84,14 @@ static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 	}
 }
 
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient);
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 /**
  * Check if subsystem has live debris and create
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
+static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag)
 {
 	// initializations
 	ship *shipp = &Ships[ship_objp->instance];
@@ -270,7 +270,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 	}
 }
 
-void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, bool no_explosion)
+void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion)
 {
 	vec3d subobj_pos;
 
@@ -298,7 +298,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *sub
 	}
 }
 
-static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *pmi, vec3d *exp_center)
+static void shipfx_blow_up_hull(object *obj, const polymodel *pm, const polymodel_instance *pmi, const vec3d *exp_center)
 {
 	int i;
 	ushort sig_save;
@@ -344,7 +344,7 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *
 /**
  * Creates "ndebris" pieces of debris on random verts of the the "submodel" in the ship's model.
  */
-void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_center)
+void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center)
 {
 	int i;
 
@@ -1742,7 +1742,7 @@ void shipfx_large_blowup_init(ship *shipp)
 	split_ship_init(shipp, &Split_ships[i] );
 }
 
-void shipfx_debris_limit_speed(debris *db, ship *shipp)
+void shipfx_debris_limit_speed(const debris *db, const ship *shipp)
 {
 	if(db == NULL || shipp == NULL)
 		return;

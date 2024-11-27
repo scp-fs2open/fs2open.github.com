@@ -158,7 +158,9 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DEPARTURE_TREE, m_departure_tree);
 	DDX_Control(pDX, IDC_PLAYER_SHIP, m_player_ship);
 	DDX_Text(pDX, IDC_SHIP_NAME, m_ship_name);
+	DDV_MaxChars(pDX, m_ship_name, NAME_LENGTH - 1);
 	DDX_CBString(pDX, IDC_SHIP_CARGO1, m_cargo1);
+	DDV_MaxChars(pDX, m_cargo1, NAME_LENGTH - 1);
 	DDX_CBIndex(pDX, IDC_SHIP_CLASS, m_ship_class_combo_index);
 	DDX_CBIndex(pDX, IDC_SHIP_TEAM, m_team);
 	DDX_CBIndex(pDX, IDC_ARRIVAL_LOCATION, m_arrival_location);
@@ -171,8 +173,6 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_DEPARTURE_TARGET, m_departure_target);
 	DDX_CBIndex(pDX, IDC_SHIP_PERSONA, m_persona);	
 	//}}AFX_DATA_MAP
-	DDV_MaxChars(pDX, m_ship_name, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_cargo1, NAME_LENGTH - 1);
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
 		GetDlgItem(IDC_ARRIVAL_DELAY)->GetWindowText(str);

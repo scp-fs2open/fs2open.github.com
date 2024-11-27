@@ -39,10 +39,12 @@
 class object;
 class ship_subsys;
 
-#define	WP_UNUSED			-1
-#define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
-#define	WP_MISSILE			1
-#define	WP_BEAM				2
+#define WP_UNUSED    -1
+#define WP_LASER     0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
+#define WP_MISSILE   1
+#define WP_BEAM      2		// This is only set for beams in the #Beam Weapons section.  Many beams are found in the #Primary Weapons section and therefore have the subtype WP_LASER.
+                      		// Use the Weapon_Info::Beam flag or .is_beam() to properly check whether a weapon is a beam.
+
 extern const char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
@@ -89,6 +91,13 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
+struct homing_cache_info {
+	TIMESTAMP next_update;
+	vec3d expected_pos;
+	bool valid;
+	bool skip_future_refinements;
+};
+
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
@@ -127,6 +136,8 @@ typedef struct weapon {
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
+
+	std::unique_ptr<homing_cache_info> homing_cache_ptr;
 
 	SCP_vector<int>* cmeasure_ignore_list;
 	int		cmeasure_timer;
@@ -321,6 +332,15 @@ struct ConditionalImpact {
 	float min_angle_threshold; //in degrees
 	float max_angle_threshold; //in degrees
 	bool dinky;
+};
+
+enum class FiringPattern {
+	STANDARD,
+	CYCLE_FORWARD,
+	CYCLE_REVERSE,
+	RANDOM_EXHAUSTIVE,
+	RANDOM_NONREPEATING,
+	RANDOM_REPEATING,
 };
 
 float weapon_get_lifetime_pct(const weapon& wp);
@@ -551,9 +571,11 @@ struct weapon_info
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
 	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
 	float max_fof_spread;			//The maximum fof increase that the shots can spread to
+	FiringPattern firing_pattern;
 	int	  shots;					//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
+	int   cycle_multishot;			//ugly hack -- used to control multishot if the weapon uses any non-standard firing pattern, since $shots is used for fire point number
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;
@@ -834,10 +856,15 @@ struct weapon_info
 
 	weapon_info();
 
-    inline bool is_homing()        const { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
-    inline bool is_locked_homing() const { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
-    inline bool hurts_big_ships()  const { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
-    inline bool is_interceptable() const { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
+    inline bool is_primary()            const { return subtype == WP_LASER || subtype == WP_BEAM; } // either of these is allowed in a primary bank
+    inline bool is_secondary()          const { return subtype == WP_MISSILE; }
+    inline bool is_beam()               const { return subtype == WP_BEAM || wi_flags[Weapon::Info_Flags::Beam]; }
+    inline bool is_non_beam_primary()   const { return subtype == WP_LASER && !wi_flags[Weapon::Info_Flags::Beam]; }
+
+    inline bool is_homing()             const { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
+    inline bool is_locked_homing()      const { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
+    inline bool hurts_big_ships()       const { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
+    inline bool is_interceptable()      const { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;
@@ -881,13 +908,13 @@ class weapon_explosions
 {
 private:
 	SCP_vector<weapon_expl_info> ExplosionInfo;
-	int GetIndex(char *filename);
+	int GetIndex(const char *filename) const;
 
 public:
 	weapon_explosions();
 
-	int Load(char *filename = NULL, int specified_lods = MAX_WEAPON_EXPL_LOD);
-	int GetAnim(int weapon_expl_index, vec3d *pos, float size);
+	int Load(const char *filename = nullptr, int specified_lods = MAX_WEAPON_EXPL_LOD);
+	int GetAnim(int weapon_expl_index, const vec3d *pos, float size) const;
 	void PageIn(int idx);
 };
 
@@ -948,14 +975,14 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object * weapon_obj, object * impacted_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = nullptr );
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
 
-void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, bool make_shockwave);
-int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
+void	weapon_area_apply_blast(const vec3d *force_apply_pos, object *ship_objp, const vec3d *blast_pos, float blast, bool make_shockwave);
+int	weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 
 missile_obj *missile_obj_return_address(int index);
@@ -974,14 +1001,14 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 // call to get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
 void weapon_get_laser_color(color *c, object *objp);
 
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant);
+void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const vec3d *hitpos, bool is_armed, int quadrant);
 
-void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
+void weapon_do_electronics_effect(const object *ship_objp, const vec3d *blast_pos, int wi_index);
 
 int weapon_get_random_player_usable_weapon();
 
 // return a scale factor for damage which should be applied for 2 collisions
-float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
+float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const object *target);
 
 // Pauses all running weapon sounds
 void weapon_pause_sounds();
@@ -992,7 +1019,7 @@ void weapon_unpause_sounds();
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
 
-void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
+void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx);
 
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);

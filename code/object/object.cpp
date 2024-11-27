@@ -338,7 +338,7 @@ int free_object_slots(int target_num_used)
 }
 
 // Goober5000
-float get_hull_pct(object *objp)
+float get_hull_pct(const object *objp)
 {
 	Assert(objp);
 	Assert(objp->type == OBJ_SHIP);
@@ -356,7 +356,7 @@ float get_hull_pct(object *objp)
 	return objp->hull_strength / total_strength;
 }
 
-float get_sim_hull_pct(object *objp)
+float get_sim_hull_pct(const object *objp)
 {
 	Assert(objp);
 	Assert(objp->type == OBJ_SHIP);
@@ -375,7 +375,7 @@ float get_sim_hull_pct(object *objp)
 }
 
 // Goober5000
-float get_shield_pct(object *objp)
+float get_shield_pct(const object *objp)
 {
 	Assert(objp);
 

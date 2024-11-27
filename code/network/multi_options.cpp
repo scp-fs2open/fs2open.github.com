@@ -458,13 +458,8 @@ void multi_options_set_local_defaults(multi_local_options *options)
 	// accept pix by default and broadcast on the local subnet
 	options->flags = (MLO_FLAG_ACCEPT_PIX | MLO_FLAG_LOCAL_BROADCAST);	
 
-	// set the object update level based on the type of network connection specified by the user
-	// at install (or launcher) time.
-	if ( Psnet_connection == NETWORK_CONNECTION_DIALUP ) {
-		options->obj_update_level = OBJ_UPDATE_LOW;
-	} else {
-		options->obj_update_level = Default_multi_object_update_level;
-	}
+	// set the object update level based on the type of network connection specified by the mod
+	options->obj_update_level = Default_multi_object_update_level;
 }
 
 // fill in the passed netgame options struct with the data from my player file data (only host/server should do this)

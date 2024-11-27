@@ -64,7 +64,7 @@ typedef uint PSNET_SOCKET_RELIABLE;
 
 // define values for network errors when trying to enter the ready room
 #define NETWORK_ERROR_NONE					0
-#define NETWORK_ERROR_NO_TYPE				-1
+#define NETWORK_ERROR_NO_TYPE				-1	// this is no longer used because we no longer require the user to set the connection type via the launcher
 #define NETWORK_ERROR_NO_WINSOCK			-2
 #define NETWORK_ERROR_NO_PROTOCOL		-3
 #define NETWORK_ERROR_RELIABLE			-4
@@ -88,8 +88,6 @@ extern int Psnet_failure_code;
 #define NETWORK_CONNECTION_DIALUP		2
 #define NETWORK_CONNECTION_LAN			3
 
-extern int Psnet_connection;
-
 extern ushort Psnet_default_port;
 
 // Reliable socket states
@@ -108,6 +106,9 @@ extern unsigned int Serverconn;
 #define PSNET_IP_MODE_V4		(1<<0)
 #define PSNET_IP_MODE_V6		(1<<1)
 #define PSNET_IP_MODE_DUAL		(PSNET_IP_MODE_V4|PSNET_IP_MODE_V6)
+
+#define FD_SET_SAFE(bit, set) FD_SET((bit < 0 || bit >= FD_SETSIZE ? 0 : bit), set)
+#define FD_ISSET_SAFE(bit, set) FD_ISSET((bit < 0 || bit >= FD_SETSIZE ? 0 : bit), set)
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 TOP LAYER FUNCTIONS - these functions simply buffer and store packets based upon type (see PSNET_TYPE_* defines)

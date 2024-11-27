@@ -166,7 +166,7 @@ void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode,
 	aigp->target_name = nullptr;
 	aigp->target_name_index = -1;
 
-	aigp->wp_list = nullptr;
+	aigp->wp_list_index = -1;
 
 	aigp->target_instance = -1;
 	aigp->target_signature = -1;
@@ -738,8 +738,8 @@ void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_
 
 	if ( mode == AI_GOAL_WARP ) {
 		if (submode >= 0) {
-			aigp->wp_list = find_waypoint_list_at_index(submode);
-			Assert(aigp->wp_list != NULL);
+			aigp->wp_list_index = submode;
+			Assert(find_waypoint_list_at_index(aigp->wp_list_index) != nullptr);
 		}
 	}
 
@@ -1605,10 +1605,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// check to see if we have a valid list.  If not, then try to set one up.  If that
 	// fails, then we must pitch this order
 	if ( (aigp->ai_mode == AI_GOAL_WAYPOINTS_ONCE) || (aigp->ai_mode == AI_GOAL_WAYPOINTS) ) {
-		if ( aigp->wp_list == NULL ) {
-			aigp->wp_list = find_matching_waypoint_list(aigp->target_name);
+		if ( aigp->wp_list_index < 0 ) {
+			aigp->wp_list_index = find_matching_waypoint_list_index(aigp->target_name);
 
-			if ( aigp->wp_list == NULL ) {
+			if ( aigp->wp_list_index < 0 ) {
 				Warning(LOCATION, "Unknown waypoint list %s - not found in mission file.  Killing ai goal", aigp->target_name );
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
@@ -2344,7 +2344,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			flags |= WPF_REPEAT;
 		if (current_goal->flags[AI::Goal_Flags::Waypoints_in_reverse])
 			flags |= WPF_BACKTRACK;
-		ai_start_waypoints(objp, current_goal->wp_list, flags, current_goal->int_data);
+		ai_start_waypoints(objp, current_goal->wp_list_index, flags, current_goal->int_data);
 		break;
 	}
 

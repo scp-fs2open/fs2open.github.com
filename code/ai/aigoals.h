@@ -119,7 +119,7 @@ typedef struct ai_goal {
 
 	const char *target_name;	// name of the thing that this goal acts upon
 	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
-	waypoint_list *wp_list;		// waypoints that this ship might fly.
+	int wp_list_index;			// waypoints that this ship might fly.
 	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
 	int	target_signature;		// signature of object this ship might be chasing (currently only used for weapons; paired with above value to confirm target)
 

@@ -1385,7 +1385,7 @@ int model_find_texture(int model_num, int bitmap)
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_model_closest_box_point_with_delta(vec3d *closest_box_point, vec3d *start_point, int modelnum, int *is_inside, float delta)
+float get_model_closest_box_point_with_delta(vec3d *closest_box_point, const vec3d *start_point, int modelnum, int *is_inside, float delta)
 {
 	int i, idx;
 	vec3d box_point, ray_direction, *extremes;
@@ -1437,7 +1437,7 @@ float get_model_closest_box_point_with_delta(vec3d *closest_box_point, vec3d *st
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *box_obj, vec3d *start_point, int *is_inside, float delta)
+float get_world_closest_box_point_with_delta(vec3d *closest_box_point, const object *box_obj, const vec3d *start_point, int *is_inside, float delta)
 {
 	vec3d temp, box_start;
 	float dist;

@@ -2,14 +2,6 @@
 
 namespace font
 {
-	FSFont::FSFont() : name(SCP_string("<Invalid>")), offsetTop(0.0f), offsetBottom(0.0f)
-	{
-	}
-
-	FSFont::~FSFont()
-	{
-	}
-
 	void FSFont::setBottomOffset(float offset)
 	{
 		this->offsetBottom = offset;

@@ -247,10 +247,10 @@ int beam_fire(beam_fire_info *fire_info);
 int beam_fire_targeting(fighter_beam_fire_info *fire_info);
 
 // return an object index of the guy who's firing this beam
-int beam_get_parent(object *bm);
+int beam_get_parent(const object *bm);
 
 // return weapon_info_index of beam
-int beam_get_weapon_info_index(object *bm);
+int beam_get_weapon_info_index(const object *bm);
 
 // given a beam object, get the # of collisions which happened during the last collision check (typically, last frame)
 int beam_get_num_collisions(int objnum);

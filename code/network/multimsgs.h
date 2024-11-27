@@ -76,13 +76,13 @@ namespace animation { enum class ModelAnimationDirection; }
 // data sending wrappers
 
 // send the specified data packet to all players
-void multi_io_send(net_player *pl, ubyte *data, int length);
-void multi_io_send_to_all(ubyte *data, int length, net_player *ignore = NULL);
+void multi_io_send(net_player *pl, const ubyte *data, int length);
+void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignore = nullptr);
 void multi_io_send_force(net_player *pl);
 
 // send the data packet to all players via their reliable sockets
-void multi_io_send_reliable(net_player *pl, ubyte *data, int length);
-void multi_io_send_to_all_reliable(ubyte* data, int length, net_player *ignore = NULL);
+void multi_io_send_reliable(net_player *pl, const ubyte *data, int length);
+void multi_io_send_to_all_reliable(const ubyte* data, int length, const net_player *ignore = nullptr);
 void multi_io_send_reliable_force(net_player *pl);
 
 // send all buffered packets
@@ -296,7 +296,7 @@ void send_netgame_descript_packet(net_addr *addr, int code);
 void send_object_update_packet(int force_all = 0);
 
 // send a packet indicating a ship has been killed
-void send_ship_kill_packet( object *ship_obj, object *other_objp, float percent_killed, int self_destruct );
+void send_ship_kill_packet( const object *ship_obj, const object *other_objp, float percent_killed, int self_destruct );
 
 // send a packet indicating that a missile died.
 void send_missile_kill_packet(object* objp);
@@ -538,8 +538,8 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 void process_flak_fired_packet(ubyte *data, header *hinfo);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num);
-void process_player_pain_packet(ubyte *data, header *hinfo);
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, const vec3d *force, const vec3d *hitpos, int quadrant_num);
+void process_player_pain_packet(const ubyte *data, header *hinfo);
 
 // lightning packet
 void send_lightning_packet(int bolt_type_internal, vec3d *start, vec3d *strike);

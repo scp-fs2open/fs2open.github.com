@@ -49,13 +49,12 @@ namespace font
 	void close();
 
 	/**
-	* Retrieves the font which is located at index @c font_num and sets this font
-	* as the current font
-	* @param font_num The new font number, may not be an illegal font number
+	* Sets this font number as the current font
+	* @param font_num The new font number; may not be an illegal font number
 	*/
 	inline void set_font(int fontnum)
 	{
-		FontManager::setCurrentFont(FontManager::getFont(fontnum));
+		FontManager::setCurrentFontIndex(fontnum);
 	}
 
 	/**

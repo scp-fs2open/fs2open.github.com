@@ -31,16 +31,16 @@ namespace font
 	class FSFont
 	{
 	private:
-		SCP_string name;	//!< The name of this font
-		SCP_string filename; //!< The file name used to retrieve this font
+		SCP_string name = "<Invalid>";	//!< The name of this font
+		SCP_string filename;			//!< The file name used to retrieve this font
 
 	protected:
-		float offsetTop;		//!< The offset at the top of a line of text
-		float offsetBottom;	//!< The offset at the bottom of a line of text
+		float offsetTop = 0.0f;			//!< The offset at the top of a line of text
+		float offsetBottom = 0.0f;		//!< The offset at the bottom of a line of text
 
-		float _height;
-		float _ascender;
-		float _descender;
+		float _height = 0.0f;
+		float _ascender = 0.0f;
+		float _descender = 0.0f;
 
 		void checkFontMetrics();
 
@@ -51,14 +51,14 @@ namespace font
 		*
 		* @date	23.11.2011
 		*/
-		FSFont();
+		FSFont() = default;
 
 		/**
 		* @brief	Destructor.
 		*
 		* @date	23.11.2011
 		*/
-		virtual ~FSFont();
+		virtual ~FSFont() = default;
 
 		/**
 		* @brief	Sets the name of this font.

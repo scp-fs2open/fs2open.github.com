@@ -288,9 +288,9 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 void obj_init_all_ships_physics();
 
 // Goober5000
-float get_hull_pct(object *objp);
-float get_sim_hull_pct(object *objp);
-float get_shield_pct(object *objp);
+float get_hull_pct(const object *objp);
+float get_sim_hull_pct(const object *objp);
+float get_shield_pct(const object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);

@@ -56,7 +56,6 @@ typedef struct asteroid_split_info {
 // Data structure for storing asteroid subtype info. POFs, model pointer, model num, etc.
 typedef struct asteroid_subtype_info {
 	char        pof_filename[MAX_FILENAME_LEN];
-	polymodel*  model_pointer;
 	int         model_number;
 	SCP_string  type_name;
 } asteroid_subtype_info;

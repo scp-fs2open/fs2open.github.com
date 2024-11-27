@@ -28,8 +28,9 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+
 extern int Game_skill_level;
-extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
+extern float ai_endangered_time(const object *ship_objp, const object *weapon_objp);
 static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
 
@@ -38,7 +39,7 @@ extern float flFrametime;
  * If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
  * then update danger_weapon_objnum.
  */
-static void update_danger_weapon(object *pship_obj, object *weapon_obj)
+static void update_danger_weapon(const object *pship_obj, const object *weapon_obj)
 {
 	ai_info	*aip;
 
@@ -65,8 +66,9 @@ static void update_danger_weapon(object *pship_obj, object *weapon_obj)
 /** 
  * Deal with weapon-ship hit stuff.  
  * Separated from check_collision routine below because of multiplayer reasons.
+ * When hit_dir was added in commit a3422b4, it was passed by value.  Since it is no longer modified locally in the function, it can be passed by pointer.
  */
-static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
+static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, const vec3d *world_hitpos, const vec3d *hitpos, int quadrant_num, int submodel_num, const vec3d *hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
@@ -77,7 +79,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	vec3d force;
 
 	vec3d worldNormal;
-	model_instance_local_to_global_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
+	model_instance_local_to_global_dir(&worldNormal, hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);
@@ -158,7 +160,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		model_instance_global_to_local_dir(&weapon_up, &weapon_obj->orient.vec.uvec, pm, pmi, submodel_num, &pship_obj->orient);
 
 		matrix decal_orient;
-		vm_vector_2_matrix_norm(&decal_orient, &hit_dir, &weapon_up); // hit_dir is already normalized so we can use the more efficient function
+		vm_vector_2_matrix_norm(&decal_orient, hit_dir, &weapon_up); // hit_dir is already normalized so we can use the more efficient function
 
 		// randomize angle of decal if specified --wookeejedi
 		if (wip->impact_decal.random_rotation) {
@@ -176,7 +178,7 @@ extern int Framecount;
 
 static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = nullptr)
 {
-	mc_info mc, mc_shield, mc_hull;
+	mc_info mc_hull, mc_shield, *mc;
 	ship	*shipp;
 	ship_info *sip;
 	weapon	*wp;
@@ -238,17 +240,15 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
-	// set up collision structs
-	mc.model_instance_num = shipp->model_instance_num;
-	mc.model_num = sip->model_num;
-	mc.submodel_num = -1;
-	mc.orient = &ship_objp->orient;
-	mc.pos = &ship_objp->pos;
-	mc.p0 = &weapon_start_pos;
-	mc.p1 = &weapon_end_pos;
-	mc.lod = sip->collision_lod;
-	mc_shield = mc;
-	mc_hull = mc;
+	// set up collision struct
+	mc_hull.model_instance_num = shipp->model_instance_num;
+	mc_hull.model_num = sip->model_num;
+	mc_hull.submodel_num = -1;
+	mc_hull.orient = &ship_objp->orient;
+	mc_hull.pos = &ship_objp->pos;
+	mc_hull.p0 = &weapon_start_pos;
+	mc_hull.p1 = &weapon_end_pos;
+	mc_hull.lod = sip->collision_lod;
 
 	// (btw, these are leftover comments from below...)
 	//
@@ -275,6 +275,9 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 	// check shields for impact
 	if (!(ship_objp->flags[Object::Object_Flags::No_shields])) {
+		// set up collision struct
+		mc_shield = mc_hull;
+
 		if (sip->flags[Ship::Info_Flags::Auto_spread_shields]) {
 			// The weapon is not allowed to impact the shield before it reaches this point
 			vec3d shield_ignored_until = weapon_objp->last_pos;
@@ -466,20 +469,22 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	// see which impact we use
 	if (shield_collision)
 	{
-		mc = mc_shield;
+		mc = &mc_shield;
 		Assert(quadrant_num >= 0);
 		valid_hit_occurred = 1;
 	}
 	else if (hull_collision)
 	{
-		mc = mc_hull;
+		mc = &mc_hull;
 		valid_hit_occurred = 1;
 	}
+	else
+		mc = nullptr;
 
 	// deal with predictive collisions.  Find their actual hit time and see if they occured in current frame
 	if (next_hit && valid_hit_occurred) {
 		// find hit time
-		*next_hit = (int) (1000.0f * (mc.hit_dist*(flFrametime + time_limit) - flFrametime) );
+		*next_hit = (int) (1000.0f * (mc->hit_dist*(flFrametime + time_limit) - flFrametime) );
 		if (*next_hit > 0)
 			// if hit occurs outside of this frame, do not do damage 
 			return 1;
@@ -488,13 +493,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	if ( valid_hit_occurred )
 	{
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
-		*wp->collisionInfo = mc;
+		*wp->collisionInfo = *mc;
 
 		bool ship_override = false, weapon_override = false;
 
 		// get submodel handle if scripting needs it
-		bool has_submodel = (mc.hit_submodel >= 0);
-		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
+		bool has_submodel = (mc->hit_submodel >= 0);
+		scripting::api::submodel_h smh(mc->model_num, mc->hit_submodel);
 
 		if (scripting::hooks::OnWeaponCollision->isActive()) {
 			ship_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
@@ -502,7 +507,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Object", 'o', weapon_objp),
 					scripting::hook_param("Ship", 'o', ship_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world)));
 		}
 		if (scripting::hooks::OnShipCollision->isActive()) {
 			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
@@ -510,17 +515,17 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Object", 'o', ship_objp),
 					scripting::hook_param("Ship", 'o', ship_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world),
 					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
 
 		if(!ship_override && !weapon_override) {
 			if (shield_collision && quadrant_num >= 0) {
 				if ((sip->shield_impact_explosion_anim > -1) && (wip->shield_impact_explosion_radius > 0)) {
-					shield_impact_explosion(&mc.hit_point, ship_objp, wip->shield_impact_explosion_radius, sip->shield_impact_explosion_anim);
+					shield_impact_explosion(&mc->hit_point, ship_objp, wip->shield_impact_explosion_radius, sip->shield_impact_explosion_anim);
 				}
 			}
-			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
+			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc->hit_point_world, &mc->hit_point, quadrant_num, mc->hit_submodel, &mc->hit_normal);
 		}
 
 		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !ship_override)) {
@@ -529,7 +534,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Object", 'o', weapon_objp),
 					scripting::hook_param("Ship", 'o', ship_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world)));
 		}
 		if (scripting::hooks::OnShipCollision->isActive() && !ship_override) {
 			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
@@ -537,7 +542,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Object", 'o', ship_objp),
 					scripting::hook_param("Ship", 'o', ship_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world),
 					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
 	}

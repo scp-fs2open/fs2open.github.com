@@ -266,11 +266,11 @@ void parse_hud_gauges_tbl(const char *filename)
 			stuff_int(&Max_escort_ships);
 		}
 
-		if (optional_string("$Length Unit Multiplier:"))	{
+		if (optional_string("$Distance Unit Multiplier:") || optional_string("$Length Unit Multiplier:"))	{
 			stuff_float(&Hud_unit_multiplier);
 
 			if (Hud_unit_multiplier <= 0.0f) {
-				Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
+				Warning(LOCATION, "\"$Distance Unit Multiplier:\" (aka \"$Length Unit Multiplier:\") value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
 				Hud_unit_multiplier = 1.0f;
 			}
 		}
