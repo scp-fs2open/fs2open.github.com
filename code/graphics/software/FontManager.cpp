@@ -11,6 +11,7 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "localization/localize.h"
+#include "options/Option.h"
 
 namespace font
 {
@@ -89,6 +90,14 @@ namespace font
 		}
 
 		return -1;
+	}
+
+	bool FontManager::hasScalingFonts()
+	{
+		return std::any_of(fonts.begin(), fonts.end(), [](const std::unique_ptr<FSFont>& font) {
+			const auto& thisFont = font.get();
+			return thisFont->getType() == NVG_FONT && thisFont->getScaleBehavior();
+		});
 	}
 
 	int FontManager::numberOfFonts()

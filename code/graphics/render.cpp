@@ -814,12 +814,27 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_len
 		GR_DEBUG_SCOPE("Render TTF string");
 
 		auto path = beginDrawing(resize_mode);
-		path->translate(sx, sy);
 
 		auto nvgFont = static_cast<NVGFont*>(currentFont);
 
+		float scale_factor = Font_Scale_Factor;
+		if (!nvgFont->getScaleBehavior()) {
+			scale_factor = 1.0f;
+		}
+
+		float originalSize = nvgFont->getSize();
+		float scaledSize = originalSize * scale_factor;
+
+		// Calculate the offset to center the text
+		float offsetX = 0.0f;
+		// This is a compromise to try and size the text around center to minimize text offsets during scaling behavior.
+		// TODO Update this if multiline text is found to be negatively affected or a proper method of setting text anchors is added
+		float offsetY = (scaledSize - originalSize) * 0.5f;
+
+		path->translate(sx - offsetX, sy - offsetY);
+
 		path->fontFaceId(nvgFont->getHandle());
-		path->fontSize(nvgFont->getSize());
+		path->fontSize(scaledSize);
 		path->textLetterSpacing(nvgFont->getLetterSpacing());
 		path->textAlign(static_cast<TextAlign>(ALIGN_TOP | ALIGN_LEFT));
 
