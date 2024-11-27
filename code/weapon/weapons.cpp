@@ -2204,6 +2204,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			using namespace particle;
 
 			// Only beams do this randomization
+			// NOTE: in practice, most beams are WP_LASER and do not do this
 			if (subtype == WP_BEAM)
 			{
 				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
@@ -2268,6 +2269,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				using namespace particle;
 
 				// Only beams do this randomization
+				// NOTE: in practice, most beams are WP_LASER and do not do this
 				if (subtype == WP_BEAM)
 				{
 					// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
@@ -4026,7 +4028,9 @@ void weapon_sort_by_type()
 				continue;
 
 			case WP_LASER:
-				if (wi.wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Beam])      // many beams are found in the laser section
+					num_beams++;
+				else if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_primaries++;
 				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_lasers++;
@@ -4056,73 +4060,68 @@ void weapon_sort_by_type()
 	// allocate the buckets
 	if (num_lasers) {
 		lasers = new weapon_info[num_lasers];
-		Verify( lasers != NULL );
 		num_lasers = 0;
 	}
 
 	if (num_big_lasers) {
 		big_lasers = new weapon_info[num_big_lasers];
-		Verify( big_lasers != NULL );
 		num_big_lasers = 0;
 	}
 
 	if (num_beams) {
 		beams = new weapon_info[num_beams];
-		Verify( beams != NULL );
 		num_beams = 0;
 	}
 
 	if (num_missiles) {
 		missiles = new weapon_info[num_missiles];
-		Verify( missiles != NULL );
 		num_missiles = 0;
 	}
 
 	if (num_big_missiles) {
 		big_missiles = new weapon_info[num_big_missiles];
-		Verify( big_missiles != NULL );
 		num_big_missiles = 0;
 	}
 
 	if (num_child_primaries) {
 		child_primaries = new weapon_info[num_child_primaries];
-		Verify( child_primaries != NULL );
 		num_child_primaries = 0;
 	}
 
 	if (num_child_secondaries) {
 		child_secondaries = new weapon_info[num_child_secondaries];
-		Verify( child_secondaries != NULL );
 		num_child_secondaries = 0;
 	}
 
 	// fill the buckets
-	for (const auto& wi : Weapon_info) {
+	for (auto& wi : Weapon_info) {
 		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (wi.wi_flags[Weapon::Info_Flags::Child])
-					child_primaries[num_child_primaries++] = wi;
+				if (wi.wi_flags[Weapon::Info_Flags::Beam])      // many beams are found in the laser section
+					beams[num_beams++] = std::move(wi);
+				else if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_primaries[num_child_primaries++] = std::move(wi);
 				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
-					big_lasers[num_big_lasers++] = wi;
+					big_lasers[num_big_lasers++] = std::move(wi);
 				else
-					lasers[num_lasers++] = wi;
+					lasers[num_lasers++] = std::move(wi);
 				break;
 		
 			case WP_BEAM:
-				beams[num_beams++] = wi;
+				beams[num_beams++] = std::move(wi);
 				break;
 
 			case WP_MISSILE:
 				if (wi.wi_flags[Weapon::Info_Flags::Child])
-					child_secondaries[num_child_secondaries++] = wi;
+					child_secondaries[num_child_secondaries++] = std::move(wi);
 				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
-					big_missiles[num_big_missiles++] = wi;
+					big_missiles[num_big_missiles++] = std::move(wi);
 				else
-					missiles[num_missiles++] = wi;
+					missiles[num_missiles++] = std::move(wi);
 				break;
 
 			default:
@@ -4134,28 +4133,28 @@ void weapon_sort_by_type()
 
 	// reorder the weapon_info structure according to our rules defined above
 	for (size_t i = 0; i < num_lasers; i++, weapon_index++)
-		Weapon_info[weapon_index] = lasers[i];
+		Weapon_info[weapon_index] = std::move(lasers[i]);
 
 	for (size_t i = 0; i < num_big_lasers; i++, weapon_index++)
-		Weapon_info[weapon_index] = big_lasers[i];
+		Weapon_info[weapon_index] = std::move(big_lasers[i]);
 
 	for (size_t i = 0; i < num_beams; i++, weapon_index++)
-		Weapon_info[weapon_index] = beams[i];
+		Weapon_info[weapon_index] = std::move(beams[i]);
 
 	for (size_t i = 0; i < num_child_primaries; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_primaries[i];
+		Weapon_info[weapon_index] = std::move(child_primaries[i]);
 
 	// designate start of secondary weapons so that we'll have the correct offset later on
 	First_secondary_index = weapon_index;
 
 	for (size_t i = 0; i < num_missiles; i++, weapon_index++)
-		Weapon_info[weapon_index] = missiles[i];
+		Weapon_info[weapon_index] = std::move(missiles[i]);
 
 	for (size_t i = 0; i < num_big_missiles; i++, weapon_index++)
-		Weapon_info[weapon_index] = big_missiles[i];
+		Weapon_info[weapon_index] = std::move(big_missiles[i]);
 
 	for (size_t i = 0; i < num_child_secondaries; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_secondaries[i];
+		Weapon_info[weapon_index] = std::move(child_secondaries[i]);
 
 
 	if (lasers)			delete [] lasers;
