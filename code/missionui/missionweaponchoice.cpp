@@ -839,7 +839,7 @@ void draw_3d_overhead_view(int model_num,
 		vec3d subobj_pos;
 		int x, y;
 		int xc, yc;
-		int num_found = 2;
+		int num_found = 0;
 
 		int bank_coords[MAX_SHIP_WEAPONS][2] = {
 			{bank1_x, bank1_y},
@@ -855,8 +855,8 @@ void draw_3d_overhead_view(int model_num,
 		for (x = 0; x < pm->n_guns; x++) {
 			if ((weapon_array[x] == selected_weapon_class && hovered_weapon_slot < 0) ||
 				x == hovered_weapon_slot) {
-				Assert(num_found < NUM_ICON_FRAMES);
-				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
+				Assert(num_found < MAX_SHIP_SECONDARY_BANKS);
+				gr_set_color_fast(&Overhead_line_colors[num_found]);
 				gr_circle(bank_coords[x][0] + bank_prim_offset, bank_coords[x][1] + bank_y_offset, 5, resize_mode);
 				for (y = 0; y < pm->gun_banks[x].num_slots; y++) {
 					// Stuff
@@ -921,14 +921,14 @@ void draw_3d_overhead_view(int model_num,
 			}
 		}
 
-		num_found = 2;
+		num_found = 0;
 		// Render selected secondary lines
 		for (x = 0; x < pm->n_missiles; x++) {
 			if ((weapon_array[x + MAX_SHIP_PRIMARY_BANKS] == selected_weapon_class &&
 					hovered_weapon_slot < 0) ||
 				x + MAX_SHIP_PRIMARY_BANKS == hovered_weapon_slot) {
-				Assert(num_found < NUM_ICON_FRAMES);
-				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
+				Assert(num_found < MAX_SHIP_PRIMARY_BANKS);
+				gr_set_color_fast(&Overhead_line_colors[num_found]);
 				gr_circle(bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset,
 					bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset,
 					5,
