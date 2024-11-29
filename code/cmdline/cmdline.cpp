@@ -1586,6 +1586,12 @@ bool SetCmdlineParams()
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
 
+	// DO THIS BEFORE get_flags, as portable_mode can change the value of pref_path printed in the json
+	if (portable_mode.found())
+	{
+		Cmdline_portable_mode = true;
+	}
+
 	// DO THIS FIRST to avoid unrecognized flag warnings when just getting flag file
 	if ( get_flags_arg.found() ) {
 		write_flags();
@@ -2085,11 +2091,6 @@ bool SetCmdlineParams()
 	if (noshadercache_arg.found())
 	{
 		Cmdline_noshadercache = true;
-	}
-
-	if (portable_mode.found())
-	{
-		Cmdline_portable_mode = true;
 	}
 
 	if (lang_arg.found()) 
