@@ -12876,6 +12876,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				} else if (firing_pattern != FiringPattern::STANDARD) {
 					shot_count = winfo_p->cycle_multishot;
 					point_count = MIN(num_slots, winfo_p->shots);
+				} else if (winfo_p->b_info.beam_shots) {
+					shot_count = winfo_p->shots;
+					point_count = MIN(winfo_p->b_info.beam_shots, num_slots);
 				} else {
 					shot_count = winfo_p->shots;
 					point_count = num_slots;
