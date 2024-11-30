@@ -12873,6 +12873,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
 					shot_count = winfo_p->cycle_multishot;
 					point_count = MIN(num_slots, swp->primary_bank_slot_count[bank_to_fire] );
+				} else if (winfo_p->b_info.beam_shots) {
+					shot_count = winfo_p->shots;
+					point_count = MIN(winfo_p->b_info.beam_shots, num_slots);
 				} else if (firing_pattern != FiringPattern::STANDARD) {
 					shot_count = winfo_p->cycle_multishot;
 					point_count = MIN(num_slots, winfo_p->shots);
@@ -12895,37 +12898,44 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 				for (int pt_count = 0; pt_count < point_count; pt_count++) {
 					int pt;
-					switch (firing_pattern) {
-						case FiringPattern::CYCLE_FORWARD: {
-							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]++;
-							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
-								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
+					if (!sip->flags[Ship::Info_Flags::Dyn_primary_linking] && winfo_p->b_info.beam_shots) {
+						pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]++;
+						if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+							swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
+						}
+					} else {
+						switch (firing_pattern) {
+							case FiringPattern::CYCLE_FORWARD: {
+								pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]++;
+								if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+									swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
+								}
+								break;
 							}
-							break;
-						}
-						case FiringPattern::CYCLE_REVERSE: {
-							pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
-							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < 0) {
-								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = num_slots - 1;
+							case FiringPattern::CYCLE_REVERSE: {
+								pt = swp->primary_firepoint_next_to_fire_index[bank_to_fire]--;
+								if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < 0) {
+									swp->primary_firepoint_next_to_fire_index[bank_to_fire] = num_slots - 1;
+								}
+								break;
 							}
-							break;
-						}
-						case FiringPattern::RANDOM_EXHAUSTIVE: {
-							pt = swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]++];
-							if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
-								swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
+							case FiringPattern::RANDOM_EXHAUSTIVE: {
+								pt = swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]++];
+								if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] >= num_slots) {
+									swp->primary_firepoint_next_to_fire_index[bank_to_fire] = 0;
+								}
+								break;
 							}
-							break;
-						}
-						case FiringPattern::RANDOM_NONREPEATING: // behaves the same as random repeating here
-						case FiringPattern::RANDOM_REPEATING: {
-							pt = swp->primary_firepoint_indices[bank_to_fire][pt_count];
-							break;
-						}
-						default:
-						case FiringPattern::STANDARD: {
-							pt = pt_count;
-							break;
+							case FiringPattern::RANDOM_NONREPEATING: // behaves the same as random repeating here
+							case FiringPattern::RANDOM_REPEATING: {
+								pt = swp->primary_firepoint_indices[bank_to_fire][pt_count];
+								break;
+							}
+							default:
+							case FiringPattern::STANDARD: {
+								pt = pt_count;
+								break;
+							}
 						}
 					}
 
