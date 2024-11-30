@@ -5542,10 +5542,28 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
 	return get_player_from_ship_entry(ship_entry, test_respawns, netplayer_index);
 }
 
+enum class ProcessSubsystemType : uint8_t { SUBSYSTEM, HULL, SIM_HULL, SHIELDS };
+
+const char *special_subsystem_string(ProcessSubsystemType type)
+{
+	switch (type)
+	{
+		case ProcessSubsystemType::HULL:
+			return SEXP_HULL_STRING;
+		case ProcessSubsystemType::SIM_HULL:
+			return SEXP_SIM_HULL_STRING;
+		case ProcessSubsystemType::SHIELDS:
+			return SEXP_SHIELD_STRING;
+		case ProcessSubsystemType::SUBSYSTEM:
+		default:
+			return nullptr;
+	}
+}
+
 /*
  * Iterates through a subsystem list and applies the given function to each subsystem, handling the "hull" subsystem as well as (optionally) generic subsystems.  The function's prototype should be:
  * 
- * void f(bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss);
+ * void f(ProcessSubsystemType type, ship_subsys *ss);
  * 
  * If any of the booleans are true, ss will be nullptr.
  */
@@ -5568,17 +5586,17 @@ void process_ship_subsystems(const ship_registry_entry *ship_entry, bool allow_g
 		// check for HULL
 		if (!stricmp(subsys_name, SEXP_HULL_STRING))
 		{
-			f(true, false, false, nullptr);
+			f(ProcessSubsystemType::HULL, nullptr);
 		}
 		// check for SIM_HULL
 		else if (!stricmp(subsys_name, SEXP_SIM_HULL_STRING))
 		{
-			f(false, true, false, nullptr);
+			f(ProcessSubsystemType::SIM_HULL, nullptr);
 		}
 		// check for shields
 		else if (!stricmp(subsys_name, SEXP_SHIELD_STRING))
 		{
-			f(false, false, true, nullptr);
+			f(ProcessSubsystemType::SHIELDS, nullptr);
 		}
 		// some kind of subsystem...
 		else
@@ -5593,7 +5611,7 @@ void process_ship_subsystems(const ship_registry_entry *ship_entry, bool allow_g
 					for (auto ss : list_range(&shipp->subsys_list))
 					{
 						if (generic_type == SUBSYSTEM_ALL || generic_type == ss->system_info->type)
-							f(false, false, false, ss);
+							f(ProcessSubsystemType::SUBSYSTEM, ss);
 					}
 				}
 				else
@@ -5604,7 +5622,7 @@ void process_ship_subsystems(const ship_registry_entry *ship_entry, bool allow_g
 			{
 				auto ss = ship_get_subsys(shipp, subsys_name);
 				if (ss)
-					f(false, false, false, ss);
+					f(ProcessSubsystemType::SUBSYSTEM, ss);
 				else if (ship_class_unchanged(ship_entry))
 					Warning(LOCATION, "Invalid subsystem passed to %s: %s does not have a %s subsystem", sexp_operator_name, ship_entry->name, subsys_name);
 			}
@@ -13028,19 +13046,15 @@ void sexp_change_ai_class(int n)
 	if (n >= 0)
 	{
 		// loopity-loop
-		process_ship_subsystems(ship_entry, true, n, true, "change-ai-class", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss)
+		process_ship_subsystems(ship_entry, true, n, true, "change-ai-class", [&](ProcessSubsystemType type, ship_subsys *ss)
 		{
-			if (is_hull)
-				Warning(LOCATION, "change-ai-class does not support " SEXP_HULL_STRING);
-			else if (is_sim_hull)
-				Warning(LOCATION, "change-ai-class does not support " SEXP_SIM_HULL_STRING);
-			else if (is_shields)
-				Warning(LOCATION, "change-ai-class does not support " SEXP_SHIELD_STRING);
-			else
+			if (type == ProcessSubsystemType::SUBSYSTEM)
 			{
 				ship_subsystem_set_new_ai_class(ss, new_ai_class);
 				Current_sexp_network_packet.send_string(ss->system_info->subobj_name);
 			}
+			else
+				Warning(LOCATION, "change-ai-class does not support %s!", special_subsystem_string(type));
 		});
 	}
 	// just the one ship
@@ -15507,8 +15521,8 @@ void sexp_sabotage_subsystem(int n)
 	bool any_subsystem = false;
 
 	// process the single subsystem, which could be hull, sim hull, or a generic type like <all engines>
-	process_ship_subsystems(ship_entry, true, subsystem_node, false, "sabotage-subsystem", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss) {
-		if (is_hull) {
+	process_ship_subsystems(ship_entry, true, subsystem_node, false, "sabotage-subsystem", [&](ProcessSubsystemType type, ship_subsys *ss) {
+		if (type == ProcessSubsystemType::HULL) {
 			float ihs;
 			auto objp = ship_entry->objp();
 
@@ -15519,14 +15533,14 @@ void sexp_sabotage_subsystem(int n)
 			// self destruct the ship if <= 0.
 			if (objp->hull_strength <= 0.0f)
 				ship_self_destruct(objp);
-		} else if (is_sim_hull) {
+		} else if (type == ProcessSubsystemType::SIM_HULL) {
 			float ihs;
 			auto objp = ship_entry->objp();
 
 			ihs = shipp->ship_max_hull_strength;
 			sabotage_hits = ihs * (i2fl(percentage) / 100.0f);
 			objp->sim_hull_strength -= sabotage_hits;
-		} else if (is_shields) {
+		} else if (type == ProcessSubsystemType::SHIELDS) {
 			Warning(LOCATION, "sabotage-subsystem does not support " SEXP_SHIELD_STRING);
 		} else {
 			// get the pointer to the subsystem.  Check its current hits against its max hits, and
@@ -15584,8 +15598,8 @@ void sexp_repair_subsystem(int n)
 	bool any_subsystem = false;
 
 	// process the single subsystem, which could be hull, sim hull, or a generic type like <all engines>
-	process_ship_subsystems(ship_entry, true, subsystem_node, false, "repair-subsystem", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss) {
-		if (is_hull) {
+	process_ship_subsystems(ship_entry, true, subsystem_node, false, "repair-subsystem", [&](ProcessSubsystemType type, ship_subsys *ss) {
+		if (type == ProcessSubsystemType::HULL) {
 			float ihs;
 			auto objp = ship_entry->objp();
 
@@ -15595,7 +15609,7 @@ void sexp_repair_subsystem(int n)
 
 			if (objp->hull_strength > ihs)
 				objp->hull_strength = ihs;
-		} else if (is_sim_hull) {
+		} else if (type == ProcessSubsystemType::SIM_HULL) {
 			float ihs;
 			auto objp = ship_entry->objp();
 
@@ -15605,7 +15619,7 @@ void sexp_repair_subsystem(int n)
 
 			if (objp->sim_hull_strength > ihs)
 				objp->sim_hull_strength = ihs;
-		} else if (is_shields) {
+		} else if (type == ProcessSubsystemType::SHIELDS) {
 			Warning(LOCATION, "repair-subsystem does not support " SEXP_SHIELD_STRING);
 		} else {
 			// get the pointer to the subsystem.  Check its current hits against its max hits, and
@@ -15663,8 +15677,8 @@ void sexp_set_subsystem_strength(int n)
 	bool any_subsystem = false;
 
 	// process the single subsystem, which could be hull, sim hull, or a generic type like <all engines>
-	process_ship_subsystems(ship_entry, true, subsystem_node, false, "set-subsystem-strength", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss) {
-		if (is_hull) {
+	process_ship_subsystems(ship_entry, true, subsystem_node, false, "set-subsystem-strength", [&](ProcessSubsystemType type, ship_subsys *ss) {
+		if (type == ProcessSubsystemType::HULL) {
 			float ihs;
 			auto objp = ship_entry->objp();
 
@@ -15675,13 +15689,13 @@ void sexp_set_subsystem_strength(int n)
 				ihs = shipp->ship_max_hull_strength;
 				objp->hull_strength = ihs * (i2fl(percentage) / 100.0f);
 			}
-		} else if (is_sim_hull) {
+		} else if (type == ProcessSubsystemType::SIM_HULL) {
 			float ihs;
 			auto objp = ship_entry->objp();
 
 			ihs = shipp->ship_max_hull_strength;
 			objp->sim_hull_strength = ihs * (i2fl(percentage) / 100.0f);
-		} else if (is_shields) {
+		} else if (type == ProcessSubsystemType::SHIELDS) {
 			Warning(LOCATION, "set-subsystem-strength does not support " SEXP_SHIELD_STRING);
 		} else {
 			// get the pointer to the subsystem.  Check its current hits against its max hits, and
@@ -15714,10 +15728,10 @@ void sexp_destroy_subsys_instantly(int n)
 	bool any_subsystem = false;
 
 	// process the subsystems, which could be hull, sim hull, or a generic type like <all engines>
-	process_ship_subsystems(ship_entry, true, n, true, "destroy-subsys-instantly", [&](bool, bool, bool, ship_subsys *ss)
+	process_ship_subsystems(ship_entry, true, n, true, "destroy-subsys-instantly", [&](ProcessSubsystemType type, ship_subsys *ss)
 	{
 		// this sexp is only for subsystems
-		if (ss)
+		if (type == ProcessSubsystemType::SUBSYSTEM)
 		{
 			// do destruction stuff
 			ss->current_hits = 0;
@@ -18993,15 +19007,9 @@ void sexp_ship_deal_with_subsystem_flag(int op_node, int node, Ship::Subsystem_F
 
 	//Process subsystems
 	const char *op_name = Sexp_nodes[op_node].text;
-	process_ship_subsystems(ship_entry, true, node, true, op_name, [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss)
+	process_ship_subsystems(ship_entry, true, node, true, op_name, [&](ProcessSubsystemType type, ship_subsys *ss)
 	{
-		if (is_hull)
-			Warning(LOCATION, "%s does not support " SEXP_HULL_STRING, op_name);
-		else if (is_sim_hull)
-			Warning(LOCATION, "%s does not support " SEXP_SIM_HULL_STRING, op_name);
-		else if (is_shields)
-			Warning(LOCATION, "%s does not support " SEXP_SHIELD_STRING, op_name);
-		else
+		if (type == ProcessSubsystemType::SUBSYSTEM)
 		{
 			ss->flags.set(ss_flag, setit);
 
@@ -19009,6 +19017,8 @@ void sexp_ship_deal_with_subsystem_flag(int op_node, int node, Ship::Subsystem_F
 			if (sendit)
 				Current_sexp_network_packet.send_string(ss->system_info->subobj_name);
 		}
+		else
+			Warning(LOCATION, "%s does not support %s!", op_name, special_subsystem_string(type));
 	});
 
 	// multiplayer end of packet
@@ -19144,16 +19154,14 @@ void sexp_ship_subsys_guardian_threshold(int node)
 		return;
 	n = CDR(n);
 
-	process_ship_subsystems(ship_entry, true, n, true, "ship-subsys-guardian-threshold", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys *ss)
+	process_ship_subsystems(ship_entry, true, n, true, "ship-subsys-guardian-threshold", [&](ProcessSubsystemType type, ship_subsys *ss)
 	{
-		if (is_hull)
+		if (type == ProcessSubsystemType::HULL)
 			ship_entry->shipp()->ship_guardian_threshold = threshold;
-		else if (is_sim_hull)
-			Warning(LOCATION, "ship-subsys-guardian-threshold does not support " SEXP_SIM_HULL_STRING);
-		else if (is_shields)
-			Warning(LOCATION, "ship-subsys-guardian-threshold does not support " SEXP_SHIELD_STRING);
-		else
+		else if (type == ProcessSubsystemType::SUBSYSTEM)
 			ss->subsys_guardian_threshold = threshold;
+		else
+			Warning(LOCATION, "ship-subsys-guardian-threshold does not support %s!", special_subsystem_string(type));
 	});
 }
 
@@ -22075,9 +22083,9 @@ void sexp_set_armor_type(int node)
 	node = CDR(node);
 
 	//Set armor
-	process_ship_subsystems(ship_entry, true, node, true, "set-armor-type", [&](bool is_hull, bool is_sim_hull, bool is_shields, ship_subsys* ss)
+	process_ship_subsystems(ship_entry, true, node, true, "set-armor-type", [&](ProcessSubsystemType type, ship_subsys* ss)
 	{
-		if (is_hull || is_sim_hull)
+		if (type == ProcessSubsystemType::HULL || type == ProcessSubsystemType::SIM_HULL)
 		{
 			// we are setting the ship itself
 			if (!rset)
@@ -22085,7 +22093,7 @@ void sexp_set_armor_type(int node)
 			else
 				shipp->armor_type_idx = armor;
 		}
-		else if (is_shields)
+		else if (type == ProcessSubsystemType::SHIELDS)
 		{
 			// we are setting the ships shields
 			if (!rset)
