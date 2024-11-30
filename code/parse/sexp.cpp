@@ -479,6 +479,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "set-weapon-energy",				OP_SET_WEAPON_ENERGY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -544,9 +547,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-vanish",				OP_SHIP_SUBSYS_VANISHED,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
-	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
-	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -41733,60 +41733,60 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_FORCE_GLIDE, "force-glide\r\n"
-		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot."
+		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tShip to force (ship must be in-mission)\r\n"
 		"\t2:\tTrue to activate glide, False to deactivate\r\n"
 	},
 
 	{OP_HUD_SET_DIRECTIVE, "hud-set-directive\r\n"
-		"\tSets the text of a given custom hud gauge to the provided text."
+		"\tSets the text of a given custom hud gauge to the provided text.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences.\r\n"
 	},
 
 	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active (deprecated)\r\n"
-		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges."
+		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	},
 
 	{OP_HUD_CLEAR_MESSAGES, "hud-clear-messages\r\n"
-		"\tClears active messages displayed on the HUD."
+		"\tClears active messages displayed on the HUD.\r\n"
 		"Takes no arguments\r\n"
 	},
 
 	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type (deprecated)\r\n"
-		"\tActivates or deactivates all hud gauges of a given type."
+		"\tActivates or deactivates all hud gauges of a given type.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tGauge Type\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	},
 
 	{OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, "hud-set-custom-gauge-active\r\n"
-		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl."
+		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge name\r\n"
 	},
 
 	{OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, "hud-set-builtin-gauge-active\r\n"
-		"\tActivates or deactivates a builtin hud gauge grouping."
+		"\tActivates or deactivates a builtin hud gauge grouping.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge Group name\r\n"
 	},
 
 	{OP_HUD_FORCE_SENSOR_STATIC, "hud-force-sensor-static\r\n"
-		"\tActivates or deactivates hud static as if sensors are damaged."
+		"\tActivates or deactivates hud static as if sensors are damaged.\r\n"
 		"Takes 1 Argument...\r\n"
 		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
 	},
 
 	{OP_HUD_FORCE_EMP_EFFECT, "hud-force-emp-effect\r\n"
-		"\tActivates or deactivates emp effect for the player."
+		"\tActivates or deactivates emp effect for the player.\r\n"
 		"Takes 2 or more Arguments...\r\n"
 		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
 		"\t2:\tNumber, emp duration in milliseconds\r\n"
