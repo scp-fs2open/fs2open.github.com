@@ -28,6 +28,10 @@ void	hud_set_wingman_status_none( int wing_index, int wing_pos);
 void	hud_wingman_status_start_flash(int wing_index, int wing_pos);
 void	hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp);
 
+// for resetting the gauge via sexp
+void	hud_wingman_status_set_index(int squad_wing_index, wing *wingp, ship *shipp, p_object *pobjp);
+void	hud_wingman_status_refresh();
+
 class HudGaugeWingmanStatus: public HudGauge
 {
 protected:

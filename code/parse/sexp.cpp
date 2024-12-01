@@ -50,6 +50,7 @@
 #include "hud/hudparse.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"		// for the order sexp
+#include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
 #include "io/keycontrol.h"
 #include "io/timer.h"
@@ -13706,10 +13707,22 @@ void sexp_set_squadron_wings(int node)
 	}
 
 	// set the ships in the new squadron wings
-	// TODO
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+	{
+		if (Squadron_wings[i] < 0)
+			continue;
+
+		auto wingp = &Wings[Squadron_wings[i]];
+		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+		{
+			int shipnum = wingp->ship_index[j];
+			if (shipnum >= 0)
+				hud_wingman_status_set_index(i, wingp, &Ships[shipnum], nullptr);
+		}
+	}
 
 	// refresh the HUD status
-	// TODO
+	hud_wingman_status_refresh();
 }
 
 // Goober5000
@@ -41854,7 +41867,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_SET_SQUADRON_WINGS, "set-squadron-wings\r\n"
-		"\tSets the wings displayed on the squadron HUD display.  By default these are Alpha, Beta, Gamma, Delta, and Epsilon.\r\n"
+		"\tSets the wings displayed on the squadron HUD display.  By default these are Alpha, Beta, Gamma, Delta, and Epsilon.  "
+		"The squadron status will be updated to the current status of the wings, but note that if any ships in those wings have "
+		"previously been destroyed, the HUD display may look different than expected.  (Specifically, destroyed ships may be "
+		"indicated as missing or may cause other ships in the same wing to appear in different positions.)\r\n"
 		"Takes 1 to " SCP_TOKEN_TO_STR(MAX_SQUADRON_WINGS) " arguments...\r\n"
 		"\tAll:\tWing to display\r\n"
 	},

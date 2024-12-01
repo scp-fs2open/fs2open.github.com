@@ -174,23 +174,22 @@ void hud_init_wingman_status_gauge()
 void hud_wingman_status_update()
 {
 	if ( timestamp_elapsed(HUD_wingman_update_timer) ) {
-		int		wing_index,wing_pos;
-		ship_obj	*so;
-		object	*ship_objp;
-		ship		*shipp;
 
 		HUD_wingman_update_timer=timestamp(HUD_WINGMAN_UPDATE_STATUS_INTERVAL);
 
-		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-			ship_objp = &Objects[so->objnum];
-			if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+		for (int wing_index = 0; wing_index < MAX_SQUADRON_WINGS; wing_index++) {
+			if (Squadron_wings[wing_index] < 0)
 				continue;
-			shipp = &Ships[ship_objp->instance];
 
-			wing_index = shipp->wing_status_wing_index;
-			wing_pos = shipp->wing_status_wing_pos;
+			auto wingp = &Wings[Squadron_wings[wing_index]];
+			for (int j = 0; j < MAX_SHIPS_PER_WING; j++) {
+				int shipnum = wingp->ship_index[j];
+				if (shipnum < 0)
+					continue;
 
-			if ( (wing_index >= 0) && (wing_pos >= 0) ) {
+				auto shipp = &Ships[shipnum];
+				auto ship_objp = &Objects[shipp->objnum];
+				int wing_pos = shipp->wing_status_wing_pos;
 
 				HUD_wingman_status[wing_index].used = true;
 				if (!(shipp->is_departing()) ) {
@@ -534,7 +533,7 @@ int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
 		break;
 	case 1:
 		for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-			if ( HUD_wingman_status[i].used > 0 ) {
+			if ( HUD_wingman_status[i].used ) {
 				for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
 					if ( HUD_wingman_status[i].status[j] != HUD_WINGMAN_STATUS_NONE ) {
 						count++;
@@ -667,22 +666,25 @@ bool HudGaugeWingmanStatus::maybeFlashStatus(int wing_index, int wing_pos)
 
 void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
 {
-	int wing_index;
-
 	// Check for squadron wings
-	wing_index = ship_squadron_wing_lookup(wingp->name);
-	if ( wing_index < 0 )
+	int squad_wing_index = ship_squadron_wing_lookup(wingp->name);
+	hud_wingman_status_set_index(squad_wing_index, wingp, shipp, pobjp);
+}
+
+void hud_wingman_status_set_index(int squad_wing_index, wing *wingp, ship *shipp, p_object *pobjp)
+{
+	if ( squad_wing_index < 0 )
 		return;
 
 	// this wing is shown on the squadron display
-	shipp->wing_status_wing_index = (char) wing_index;
+	shipp->wing_status_wing_index = i2ch(squad_wing_index);
 
-	// for the first wave, just use the parse object position
-	if (wingp->current_wave == 1)
+	// for the first wave, if we have a parse object, just use the parse object position
+	if (wingp->current_wave == 1 && pobjp != nullptr)
 	{
-		shipp->wing_status_wing_pos = (char) pobjp->pos_in_wing;
+		shipp->wing_status_wing_pos = i2ch(pobjp->pos_in_wing);
 	}
-	// for subsequent waves, find the first position not taken
+	// otherwise, find the first position not taken
 	else
 	{
 		int i, pos, wing_bitfield = 0;
@@ -700,7 +702,7 @@ void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
 		{
 			if (!(wing_bitfield & (1<<i)))
 			{
-				shipp->wing_status_wing_pos = (char) i;
+				shipp->wing_status_wing_pos = i2ch(i);
 				break;
 			}
 		}
@@ -711,12 +713,26 @@ void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
 	// this section accounts for ships that are not present at mission start
 	// the wingmen dot override for ships present at mission start are set hud_init_wingman_status_gauge() 
 	int wing_pos = shipp->wing_status_wing_pos;
-	if ( (wing_index >= 0) && (wing_pos >= 0) ) {
-		int dot_override = Ship_info[pobjp->ship_class].wingmen_status_dot_override;
+	if ( (squad_wing_index >= 0) && (wing_pos >= 0) ) {
+		int dot_override = Ship_info[shipp->ship_info_index].wingmen_status_dot_override;
 		if (dot_override >= 0) {
-			HUD_wingman_status[wing_index].dot_anim_override[wing_pos] = dot_override;
+			HUD_wingman_status[squad_wing_index].dot_anim_override[wing_pos] = dot_override;
 		}
 	}
+}
+
+void hud_wingman_status_refresh()
+{
+	// basically reinitialize the gauge, except for the individual ship data which will be filled in by the update function
+	for (int wing_index = 0; wing_index < MAX_SQUADRON_WINGS; wing_index++)
+	{
+		HUD_wingman_status[wing_index].used = (Squadron_wings[wing_index] >= 0);
+		for (int wing_pos = 0; wing_pos < MAX_SHIPS_PER_WING; wing_pos++)
+			HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NONE;
+	}
+
+	HUD_wingman_update_timer = timestamp(0);	// update status right away
+	hud_wingman_status_update();
 }
 
 void HudGaugeWingmanStatus::pageIn()
