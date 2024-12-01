@@ -25,6 +25,7 @@
 #include "asteroid/asteroid.h"
 #include "cfile/cfile.h"
 #include "gamesnd/eventmusic.h"
+#include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "hud/hudsquadmsg.h"
@@ -1131,6 +1132,13 @@ int CFred_mission_save::save_briefing()
 			if (!bs->draw_grid) {
 				if (Mission_save_format != FSO_FORMAT_RETAIL) {
 					fout("\n$no_grid");
+				}
+			}
+
+			if (!gr_compare_color_values(&bs->grid_color, &Color_briefing_grid)) {
+				if (Mission_save_format != FSO_FORMAT_RETAIL) {
+					fout("\n$grid_color:");
+					fout("(%d, %d, %d, %d)", bs->grid_color.red, bs->grid_color.green, bs->grid_color.blue, bs->grid_color.alpha);
 				}
 			}
 
