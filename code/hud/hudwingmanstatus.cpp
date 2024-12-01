@@ -36,8 +36,8 @@
 
 typedef struct Wingman_status
 {
-	int	ignore;													// set to 1 when we should ignore this item -- used in team v. team
-	int	used;
+	bool	ignore;													// set to true when we should ignore this item -- used in team v. team
+	bool	used;
 	float hull[MAX_SHIPS_PER_WING];			// 0.0 -> 1.0
 	int	status[MAX_SHIPS_PER_WING];		// HUD_WINGMAN_STATUS_* 
 	int dot_anim_override[MAX_SHIPS_PER_WING]; // optional wingmen dot status to use instead of default --wookieejedi
@@ -80,10 +80,10 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NONE;
 
-	int used = 0;
+	bool used = false;
 	for ( i = 0; i < MAX_SHIPS_PER_WING; i++ ) {
 		if ( HUD_wingman_status[wing_index].status[i] != HUD_WINGMAN_STATUS_NONE ) {
-			used = 1;
+			used = true;
 			break;
 		}
 	}
@@ -123,7 +123,7 @@ void hud_wingman_kill_multi_teams()
 	if ( wing_index == -1 )
 		return;
 
-	HUD_wingman_status[wing_index].ignore = 1;
+	HUD_wingman_status[wing_index].ignore = true;
 }
 
 
@@ -137,8 +137,8 @@ void hud_init_wingman_status_gauge()
 	HUD_wingman_update_timer=timestamp(0);	// update status right away
 
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		HUD_wingman_status[i].ignore = 0;
-		HUD_wingman_status[i].used = 0;
+		HUD_wingman_status[i].ignore = false;
+		HUD_wingman_status[i].used = false;
 		for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
 			HUD_wingman_status[i].status[j] = HUD_WINGMAN_STATUS_NONE;
 			HUD_wingman_status[i].dot_anim_override[j] = -1;
@@ -192,7 +192,7 @@ void hud_wingman_status_update()
 
 			if ( (wing_index >= 0) && (wing_pos >= 0) ) {
 
-				HUD_wingman_status[wing_index].used = 1;
+				HUD_wingman_status[wing_index].used = true;
 				if (!(shipp->is_departing()) ) {
 					HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;	
 				}
@@ -561,7 +561,7 @@ void HudGaugeWingmanStatus::render(float  /*frametime*/)
 	int i, count, num_wings_to_draw = 0;
 
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		if ( (HUD_wingman_status[i].used > 0) && (HUD_wingman_status[i].ignore == 0) ) {
+		if ( (HUD_wingman_status[i].used) && !(HUD_wingman_status[i].ignore) ) {
 			num_wings_to_draw++;
 		}
 	}
@@ -578,7 +578,7 @@ void HudGaugeWingmanStatus::render(float  /*frametime*/)
 
 	count = 0;
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		if ( (HUD_wingman_status[i].used <= 0) || (HUD_wingman_status[i].ignore == 1) ) {
+		if ( !(HUD_wingman_status[i].used) || (HUD_wingman_status[i].ignore) ) {
 			continue;
 		}
 
