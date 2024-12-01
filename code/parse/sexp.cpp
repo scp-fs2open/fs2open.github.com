@@ -698,6 +698,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "hud-force-emp-effect",			OP_HUD_FORCE_EMP_EFFECT,				2,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-squadron-wings",				OP_SET_SQUADRON_WINGS,			1,	MAX_SQUADRON_WINGS,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -13661,6 +13662,54 @@ void multi_sexp_hud_display_gauge()
 	if (Current_sexp_network_packet.get_int(show_for)) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
 	}
+}
+
+void sexp_set_squadron_wings(int node)
+{
+	// clear the ships that are currently in the squadron wings
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+	{
+		if (Squadron_wings[i] < 0)
+			continue;
+
+		auto wingp = &Wings[Squadron_wings[i]];
+		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+		{
+			int shipnum = wingp->ship_index[j];
+			if (shipnum >= 0)
+			{
+				Ships[shipnum].wing_status_wing_index = -1;
+				Ships[shipnum].wing_status_wing_pos = -1;
+			}
+		}
+	}
+
+	// get the new set of squadron wings
+	for (int i = 0, n = node; i < MAX_SQUADRON_WINGS; i++)
+	{
+		auto wing_name = "";
+		int wing_num = -1;
+
+		if (n >= 0)
+		{
+			auto wingp = eval_wing(n);
+			if (wingp)
+			{
+				wing_name = wingp->name;
+				wing_num = WING_INDEX(wingp);
+			}
+			n = CDR(n);
+		}
+
+		strcpy_s(Squadron_wing_names[i], wing_name);
+		Squadron_wings[i] = wing_num;
+	}
+
+	// set the ships in the new squadron wings
+	// TODO
+
+	// refresh the HUD status
+	// TODO
 }
 
 // Goober5000
@@ -28589,6 +28638,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_SQUADRON_WINGS:
+				sexp_set_squadron_wings(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -31178,6 +31232,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -32570,6 +32625,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			else
 				return OPF_MESSAGE_OR_STRING;
+
+		case OP_SET_SQUADRON_WINGS:
+			return OPF_WING;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -36464,6 +36522,7 @@ int get_category(int op_id)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
 		case OP_ABORT_REARM:
@@ -36847,6 +36906,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -41791,6 +41851,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
 		"\t2:\tNumber, emp duration in milliseconds\r\n"
 		"\t3:\tString or message to display. \"none\" to display nothing. Defaults to \"Emp\"\r\n"
+	},
+
+	{OP_SET_SQUADRON_WINGS, "set-squadron-wings\r\n"
+		"\tSets the wings displayed on the squadron HUD display.  By default these are Alpha, Beta, Gamma, Delta, and Epsilon.\r\n"
+		"Takes 1 to " SCP_TOKEN_TO_STR(MAX_SQUADRON_WINGS) " arguments...\r\n"
+		"\tAll:\tWing to display\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
