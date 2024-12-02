@@ -40,6 +40,7 @@ int Squad_msg_mode;							// current mode that the messaging system is in
 LOCAL int Msg_key_used;								// local variable which tells if the key being processed
 															// with the messaging system was actually used
 LOCAL int Msg_key;									// global which indicates which key was currently pressed
+LOCAL int Lua_key; // global which indicates which key was currently pressed
 LOCAL int Msg_mode_timestamp;
 int Msg_instance;						// variable which holds ship/wing instance to send the message to
 int Msg_shortcut_command;			// holds command when using a shortcut key
@@ -99,15 +100,10 @@ int Menu_pgdn_coords[GR_NUM_RESOLUTIONS][2] = {
 // -----------
 // following defines/vars are used to build menus that are used in messaging mode
 
-typedef struct mmode_item {
-	int	instance;					// instance in Ships/Wings array of this menu item
-	int	active;						// active items are in bold text -- inactive items greyed out
-	SCP_string	text;		// text to display on the menu
-} mmode_item;
-
 char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
-int Num_menu_items = -1;					// number of items for a message menu
+int Num_menu_items = -1; // number of items for a message menu
+
 int First_menu_item= -1;							// index of first item in the menu
 SCP_string Lua_sqd_msg_cat;
 
@@ -214,6 +210,7 @@ void hud_squadmsg_start()
 	}
 
 	Msg_key = -1;
+	Lua_key = -1;
 
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
@@ -256,6 +253,8 @@ void hud_squadmsg_end()
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
 		scripting::hooks::OnHudCommMenuClosed->run(std::move(paramList));
 	}
+
+	Squad_msg_title[0] = '\0';
 }
 
 // function which returns true if there are fighters/bombers on the players team in the mission
@@ -543,17 +542,28 @@ int hud_squadmsg_get_key()
 {
 	int k, i, num_keys_used;
 
-	if ( Msg_key == -1 )
+	if ( Msg_key == -1 && Lua_key == -1)
 		return -1;
 
-	k = Msg_key;
+	bool lua_selected = false;
+	if (Lua_key >= 0) {
+		k = Lua_key;
+		lua_selected = true;
+	} else {
+		k = Msg_key;
+	}
 	Msg_key = -1;
+	Lua_key = -1;
 
 	num_keys_used = hud_squadmsg_get_total_keys();
 
 	// if the emp effect is active, never accept keypresses
 	if(emp_active_local()){
 		return -1;
+	}
+
+	if (lua_selected) {
+		return k;
 	}
 
 	for ( i = 0; i < num_keys_used; i++ ) {
@@ -2531,6 +2541,10 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 	}
 
 	return 0;
+}
+
+void Hud_set_lua_key(int selection) {
+	Lua_key = selection;
 }
 
 HudGaugeSquadMessage::HudGaugeSquadMessage():

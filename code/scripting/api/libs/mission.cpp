@@ -15,6 +15,7 @@
 #include "gamesnd/eventmusic.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
+#include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -43,6 +44,7 @@
 #include "scripting/api/objs/animation_handle.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/comm_order.h"
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
@@ -243,6 +245,38 @@ ADE_FUNC(__len, l_Mission_Asteroids, NULL,
 		return ade_set_args(L, "i", object_subclass_count(Asteroids, MAX_ASTEROIDS));
 	}
 	return ade_set_args(L, "i", 0);
+}
+
+//****SUBLIBRARY: Mission/Comm Items
+ADE_LIB_DERIV(l_Mission_Comm_Items, "CommItems", nullptr, "Comm Items in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_Comm_Items,
+	"number Index",
+	"Gets comm items",
+	"comm_item",
+	"Comm Item handle, or invalid handle if invalid index specified")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= MAX_MENU_ITEMS)
+		return ade_set_args(L, "o", l_Comm_Item.Set(-1));
+
+	return ade_set_args(L, "o", l_Comm_Item.Set(idx));
+}
+
+ADE_FUNC(__len,
+	l_Mission_Comm_Items,
+	NULL,
+	"Number of comm orders in mission currently. Note that the value will change when an order is selected or the open/closed state of the comm menu is changed.",
+	"number",
+	"Number of comm orders in the mission. 0 if comm menu is closed")
+{
+	return ade_set_args(L, "i", Num_menu_items);
 }
 
 //****SUBLIBRARY: Mission/Debris
