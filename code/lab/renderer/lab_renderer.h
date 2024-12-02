@@ -72,6 +72,7 @@ namespace ltp = lighting_profiles;
 
 struct gfx_options {
 	int bloom_level;
+	float bloom_width;
 	float ambient_factor;
 	float light_factor;
 	float emissive_factor;
@@ -88,6 +89,7 @@ class LabRenderer {
 public:
 	LabRenderer() {
 		bloomLevel = gr_bloom_intensity();
+		bloomWidth = gr_bloom_width();
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
 		currentTeamColor = LAB_TEAM_COLOR_NONE;
@@ -183,6 +185,13 @@ public:
 		return level; 
 	}
 
+	float setBloomWidth(float width)
+	{
+		bloomWidth = width;
+		gr_set_bloom_width(width);
+		return width;
+	}
+
 	float setExposureLevel(float level) {
 		exposureLevel = level;
 		ltp::lab_set_exposure(level);
@@ -211,6 +220,7 @@ public:
 private:
 	flagset<LabRenderFlag> renderFlags;
 	int bloomLevel;
+	float bloomWidth;
 	float exposureLevel;
 	TextureQuality textureQuality;
 	SCP_string currentTeamColor;
