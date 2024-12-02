@@ -16998,6 +16998,85 @@ bool ship_subsys_has_instance_name(const ship_subsys *ss)
 
 void ship_subsys_set_name(ship_subsys* ss, const char* n_name) { strncpy(ss->sub_name, n_name, NAME_LENGTH - 1); }
 
+//from aiturret.cpp. Less include...problems...this way.
+extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(const ship_weapon *swp);
+extern bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype);
+
+const char *get_turret_subsys_name(const ship_weapon *swp)
+{
+	Assert(swp != nullptr);	// Goober5000 //WMC
+
+	//WMC - find the first weapon, if there is one
+	if (swp->num_primary_banks || swp->num_secondary_banks) {
+		// allow the first weapon on the turret to specify the name
+		for (int i = 0; i < swp->num_primary_banks; ++i) {
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				return wip->altSubsysName;
+			}
+		}
+		for (int i = 0; i < swp->num_secondary_banks; ++i) {
+			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				return wip->altSubsysName;
+			}
+		}
+
+		// otherwise use a general name based on the type of weapon(s) on the turret
+		auto flags = turret_weapon_aggregate_flags(swp);
+
+		// check if beam or flak using weapon flags
+		if (flags[Weapon::Info_Flags::Beam]) {
+			return XSTR("Beam turret", 1567);
+		} else if (flags[Weapon::Info_Flags::Flak]) {
+			return XSTR("Flak turret", 1566);
+		} else {
+			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
+				return XSTR("Missile lnchr", 1569);
+			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
+				// ballistic too! - Goober5000
+				if (flags[Weapon::Info_Flags::Ballistic]) {
+					return XSTR("Turret", 1487);
+				}
+				// the TVWP has some primaries flagged as bombs
+				else if (flags[Weapon::Info_Flags::Bomb]) {
+					return XSTR("Missile lnchr", 1569);
+				} else {
+					return XSTR("Laser turret", 1568);
+				}
+			} else {
+				// Mantis #2226: find out if there are any weapons here at all
+				if (flags.none_set()) {
+					return NOX("Unused");
+				} else {
+					// Illegal subtype
+					static bool Turret_illegal_subtype_warned = false;
+					if (!Turret_illegal_subtype_warned) {
+						Turret_illegal_subtype_warned = true;
+						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
+					}
+					return XSTR("Turret", 1487);
+				}
+			}
+		}
+	} else if(swp->num_tertiary_banks) {
+		//TODO: add tertiary turret code stuff here
+		return NOX("Unknown");
+	} else {
+		// This should not happen
+		return NOX("Unused");
+	}
+}
+
+const char *ship_subsys_get_name_on_hud(const ship_subsys *ss)
+{
+	// get turret subsys name
+	if (ss->system_info->type == SUBSYSTEM_TURRET && !ship_subsys_has_instance_name(ss))
+		return get_turret_subsys_name(&ss->weapons);
+	else
+		return ship_subsys_get_name(ss);
+}
+
 /**
  * Return the shield strength of the specified quadrant on hit_objp
  *
