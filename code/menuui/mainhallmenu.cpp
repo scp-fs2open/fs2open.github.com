@@ -70,9 +70,6 @@ static int Main_hall_music_index = -1;
 
 bool Main_hall_poll_key = true;
 
-int Vasudan_funny = 0;
-int Vasudan_funny_plate = -1;
-
 SCP_string Main_hall_cheat = "";
 
 // ----------------------------------------------------------------------------
@@ -539,29 +536,6 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// init tooltip shader						// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
-
-	// are we funny?
-	if (Vasudan_funny && main_hall_is_vasudan()) {
-		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
-			
-			// set head anim. hehe
-			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
-			
-			// set the background
-			Main_hall->bitmap = "vhallhead";
-		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
-			
-			// set head anim. hehe
-			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
-			
-			// set the background
-			Main_hall->bitmap = "2_vhallhead";
-		}
-	}
 
 	Main_hall_bitmap_w = -1;
 	Main_hall_bitmap_h = -1;
@@ -1488,7 +1462,7 @@ void main_hall_mouse_release_region(int region)
 			snd_stop(sound_pair->second);
 		}
 
-		auto sound = Main_hall->door_sounds.at(region).at(1);
+		auto sound = Main_hall->door_sounds.at(region).second;
 
 		if (sound.isValid())
 		{
@@ -1536,7 +1510,7 @@ void main_hall_mouse_grab_region(int region)
 	}
 
 
-	auto sound = Main_hall->door_sounds.at(region).at(0);
+	auto sound = Main_hall->door_sounds.at(region).first;
 
 	if (sound.isValid())
 	{
@@ -2609,8 +2583,13 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		}
 
 		for (int idx = base_num; idx < m->num_door_animations; idx++) {
+			SCP_vector<interface_snd_id> sounds;
 			// door open and close sounds
-			parse_iface_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", true);
+			parse_iface_sound_list("+Door sounds:", sounds, "+Door sounds:", true);
+			if (sounds.size() >= 2) {
+				m->door_sounds.at(idx).first = sounds.at(0);
+				m->door_sounds.at(idx).second = sounds.at(1);
+			}
 		}
 
 		for (int idx = base_num; idx < m->num_door_animations; idx++) {
@@ -2730,12 +2709,102 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	}
 }
 
+// unload the current background and reload whatever the new one is
+void main_hall_reload_background()
+{
+	// see main_hall_close() and main_hall_init()
+
+	if (Main_hall_bitmap >= 0)
+		bm_release(Main_hall_bitmap);
+
+	Main_hall_bitmap = bm_load(Main_hall->bitmap);
+
+	if (Main_hall_bitmap < 0)
+		nprintf(("General", "WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap.c_str()));
+}
+
+// unload the current door animation and reload whatever the new one is
+void main_hall_reload_door(int region)
+{
+	// see main_hall_close() and main_hall_init()
+
+	auto &door_anim = Main_hall_door_anim.at(region);
+	auto &door_anim_name = Main_hall->door_anim_name.at(region);
+
+	// save info for current animation
+	auto bg_type = door_anim.ani.bg_type;
+	int current_frame = door_anim.current_frame;
+	float anim_time = door_anim.anim_time;
+	auto direction = door_anim.direction;
+
+	if (door_anim.num_frames > 0)
+		generic_anim_unload(&door_anim);
+
+	generic_anim_init(&door_anim, door_anim_name);
+	door_anim.ani.bg_type = bg_type;
+
+	if (generic_anim_stream(&door_anim) < 0)
+		nprintf(("General", "WARNING!, Could not load door anim %s in main hall\n", door_anim_name.c_str()));
+
+	door_anim.current_frame = current_frame;
+	door_anim.anim_time = anim_time;
+	door_anim.direction = direction;
+}
+
 /**
  * Make the vasudan main hall funny
  */
 void main_hall_vasudan_funny()
 {
-	Vasudan_funny = 1;
+	if (!Main_hall || !main_hall_is_vasudan())
+		return;
+
+	static bool Vasudan_funny = false;
+	static SCP_string serious_bitmap;
+	static SCP_vector<std::tuple<int, SCP_string, interface_snd_id, interface_snd_id>> serious_door_info;
+
+	Vasudan_funny = !Vasudan_funny;
+
+	if (Vasudan_funny) {
+		// save stuff so we can restore it later
+		serious_bitmap = Main_hall->bitmap;
+		serious_door_info.clear();
+		serious_door_info.emplace_back(OPTIONS_REGION, Main_hall->door_anim_name.at(OPTIONS_REGION), Main_hall->door_sounds.at(OPTIONS_REGION).first, Main_hall->door_sounds.at(OPTIONS_REGION).second);
+
+		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
+			Main_hall->door_sounds.at(OPTIONS_REGION).first = InterfaceSounds::VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).second = InterfaceSounds::VASUDAN_BUP;
+
+			// set head anim. hehe
+			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
+
+			// set the background
+			Main_hall->bitmap = "vhallhead";
+		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
+			Main_hall->door_sounds.at(OPTIONS_REGION).first = InterfaceSounds::VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).second = InterfaceSounds::VASUDAN_BUP;
+
+			// set head anim. hehe
+			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
+
+			// set the background
+			Main_hall->bitmap = "2_vhallhead";
+		}
+	} else {
+		// time to get serious
+		Main_hall->bitmap = serious_bitmap;
+		for (const auto &info : serious_door_info) {
+			int door_region = std::get<0>(info);
+			Main_hall->door_anim_name.at(door_region) = std::get<1>(info);
+			Main_hall->door_sounds.at(door_region).first = std::get<2>(info);
+			Main_hall->door_sounds.at(door_region).second = std::get<3>(info);
+		}
+	}
+
+	// reload anything we changed, whether on or off
+	main_hall_reload_background();
+	for (const auto &info : serious_door_info)
+		main_hall_reload_door(std::get<0>(info));
 }
 
 /**
@@ -2751,7 +2820,8 @@ bool main_hall_is_vasudan(const main_hall_defines *hall)
 			return false;
 	}
 
-	return !stricmp(hall->bitmap.c_str(), "vhall") || !stricmp(hall->bitmap.c_str(), "2_vhall");
+	return !stricmp(hall->bitmap.c_str(), "vhall") || !stricmp(hall->bitmap.c_str(), "2_vhall")
+		|| !stricmp(hall->bitmap.c_str(), "vhallhead") || !stricmp(hall->bitmap.c_str(), "2_vhallhead");	// if the cheat is active
 }
 
 /**
