@@ -2281,13 +2281,13 @@ grid *brief_create_default_grid(void)
 /**
  * Rotate and project points and draw a line.
  */
-void brief_rpd_line(vec3d *v0, vec3d *v1, color* color)
+void brief_rpd_line(vec3d *v0, vec3d *v1, color* clr)
 {
 	vertex	tv0, tv1;
 	g3_rotate_vertex(&tv0, v0);
 	g3_rotate_vertex(&tv1, v1);
 
-	gr_set_color_fast(color);
+	gr_set_color_fast(clr);
 	g3_draw_line(&tv0, &tv1);
 }
 
