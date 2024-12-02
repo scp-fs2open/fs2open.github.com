@@ -19476,28 +19476,13 @@ void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 }
 
 // Goober5000
-void ship_subsystem_set_new_ai_class(ship *shipp, const char *subsystem, int new_ai_class)
+void ship_subsystem_set_new_ai_class(ship_subsys *ss, int new_ai_class)
 {
-	Assert(shipp);
-	Assert(subsystem);
+	Assert(ss);
 	Assert(new_ai_class >= 0);
 
-	ship_subsys *ss;
-
-	// find the ship subsystem by searching ship's subsys_list
-	ss = GET_FIRST( &shipp->subsys_list );
-	while ( ss != END_OF_LIST( &shipp->subsys_list ) )
-	{
-		// if we found the subsystem
-		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
-		{
-			// set ai class
-			ss->weapons.ai_class = new_ai_class;
-			return;
-		}
-
-		ss = GET_NEXT( ss );
-	}
+	// set ai class
+	ss->weapons.ai_class = new_ai_class;
 }
 
 // Goober5000 - will attempt to load an insignia bitmap and set it as active for the wing
