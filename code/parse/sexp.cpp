@@ -758,11 +758,12 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "add-sun-bitmap-new",				OP_ADD_SUN_BITMAP_NEW,					5,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
+	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-fade-poof",				OP_NEBULA_FADE_POOF,					3,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
-	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
+	{ "nebula-set-range",				OP_NEBULA_SET_RANGE,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "volumetrics-toggle", 			OP_VOLUMETRICS_TOGGLE, 					1,	1,			SEXP_ACTION_OPERATOR,	},	// Lafiel
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -16507,6 +16508,16 @@ void sexp_nebula_change_fog_color(int node)
 	The_mission.flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 }
 
+void sexp_nebula_set_range(int node)
+{
+	bool is_nan, is_nan_forever;
+	int range = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || range < 1)
+		return;
+
+	Neb2_awacs = i2fl(range);
+}
+
 void sexp_volumetrics_toggle(int n)
 {
 	if (!The_mission.volumetrics)
@@ -28802,6 +28813,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_NEBULA_SET_RANGE:
+				sexp_nebula_set_range(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_VOLUMETRICS_TOGGLE:
 				sexp_volumetrics_toggle(node);
 				sexp_val = SEXP_TRUE;
@@ -31197,6 +31213,9 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_FADE_POOF:
+		case OP_NEBULA_CHANGE_PATTERN:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
+		case OP_NEBULA_SET_RANGE:
 		case OP_VOLUMETRICS_TOGGLE:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
@@ -31265,7 +31284,6 @@ int query_operator_return_type(int op)
 		case OP_ALTER_WING_FLAG:
 		case OP_CANCEL_FUTURE_WAVES:
 		case OP_CHANGE_TEAM_COLOR:
-		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_COPY_VARIABLE_FROM_INDEX:
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
@@ -31279,7 +31297,6 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
 		case OP_REPLACE_TEXTURE_SKYBOX:
-		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_UPDATE_MOVEABLE:
@@ -33913,6 +33930,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_NEBULA_CHANGE_FOG_COLOR:
+		case OP_NEBULA_SET_RANGE:
 			return OPF_POSITIVE;
 
 		case OP_VOLUMETRICS_TOGGLE:
@@ -36231,6 +36249,9 @@ int get_category(int op_id)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_FADE_POOF:
+		case OP_NEBULA_CHANGE_PATTERN:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
+		case OP_NEBULA_SET_RANGE:
 		case OP_VOLUMETRICS_TOGGLE:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -36360,7 +36381,6 @@ int get_category(int op_id)
 		case OP_NAV_UNSELECT:
 		case OP_ALTER_SHIP_FLAG:
 		case OP_CHANGE_TEAM_COLOR:
-		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_COPY_VARIABLE_FROM_INDEX:
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
@@ -36397,7 +36417,6 @@ int get_category(int op_id)
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
 		case OP_REPLACE_TEXTURE_SKYBOX:
-		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
 		case OP_TRIGGER_ANIMATION_NEW:
@@ -36874,6 +36893,7 @@ int get_subcategory(int op_id)
 		case OP_NEBULA_FADE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
+		case OP_NEBULA_SET_RANGE:
 		case OP_VOLUMETRICS_TOGGLE:
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_TOGGLE_ASTEROID_FIELD:
@@ -39882,7 +39902,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tTurns nebula on/off\r\n"
 		"\tTakes 1 or 2 arguments...\r\n"
 		"\t1:\t0 for nebula off, 1 for nebula on\r\n"
-		"\t2:\tNebula range (optional; defaults to 3000)\r\n" },
+		"\t2:\tNebula range (optional; defaults to 3000).  See also nebula-set-range.\r\n" },
 
 	{ OP_MISSION_SET_SUBSPACE, "mission-set-subspace\r\n"
 		"\tTurns subspace on/off\r\n"
@@ -41619,6 +41639,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tRed (0 - 255)\r\n"
 		"\t2:\tGreen (0 - 255)\r\n"
 		"\t3:\tBlue (0 - 255)\r\n"
+	},
+
+	{ OP_NEBULA_SET_RANGE, "nebula-set-range\r\n"
+		"\tSets the basic sensor range of the current nebula, which is multiplied by a species-specific factor to get the \"scan range\".  "
+		"Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  "
+		"Beyond the scan range, a ship is not targetable.  Note that the range will be reset or overridden if mission-set-nebula is called.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tNebula basic sensor range\r\n"
 	},
 
 	{ OP_VOLUMETRICS_TOGGLE, "volumetrics-toggle\r\n"
