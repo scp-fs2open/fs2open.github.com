@@ -164,7 +164,7 @@ public:
 	color		grid_color;
 
 	brief_stage( ) 
-		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(nullptr), num_lines(0), lines(nullptr),
+		: camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(nullptr), num_lines(0), lines(nullptr),
 		  draw_grid(true)
 	{ 
 		voice[ 0 ] = 0;
