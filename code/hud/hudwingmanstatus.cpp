@@ -34,14 +34,14 @@
 #define HUD_WINGMAN_STATUS_ALIVE			2		// wingman is in the mission
 #define HUD_WINGMAN_STATUS_NOT_HERE		3		// wingman hasn't arrived, or has departed
 
-typedef struct Wingman_status
+struct wingman_status
 {
 	bool	ignore;													// set to true when we should ignore this item -- used in team v. team
 	bool	used;
 	float hull[MAX_SHIPS_PER_WING];			// 0.0 -> 1.0
 	int	status[MAX_SHIPS_PER_WING];		// HUD_WINGMAN_STATUS_* 
 	int dot_anim_override[MAX_SHIPS_PER_WING]; // optional wingmen dot status to use instead of default --wookieejedi
-} wingman_status;
+};
 
 wingman_status HUD_wingman_status[MAX_SQUADRON_WINGS];
 
@@ -664,15 +664,9 @@ bool HudGaugeWingmanStatus::maybeFlashStatus(int wing_index, int wing_pos)
 	return draw_bright;
 }
 
-void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
-{
-	// Check for squadron wings
-	int squad_wing_index = ship_squadron_wing_lookup(wingp->name);
-	hud_wingman_status_set_index(squad_wing_index, wingp, shipp, pobjp);
-}
-
 void hud_wingman_status_set_index(int squad_wing_index, wing *wingp, ship *shipp, p_object *pobjp)
 {
+	// Check for squadron wings
 	if ( squad_wing_index < 0 )
 		return;
 
@@ -721,16 +715,105 @@ void hud_wingman_status_set_index(int squad_wing_index, wing *wingp, ship *shipp
 	}
 }
 
-void hud_wingman_status_refresh()
+void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
 {
-	// basically reinitialize the gauge, except for the individual ship data which will be filled in by the update function
-	for (int wing_index = 0; wing_index < MAX_SQUADRON_WINGS; wing_index++)
+	int squad_wing_index = ship_squadron_wing_lookup(wingp->name);
+	hud_wingman_status_set_index(squad_wing_index, wingp, shipp, pobjp);
+}
+
+void hud_set_new_squadron_wings(const std::array<int, MAX_SQUADRON_WINGS> &new_squad_wingnums)
+{
+	// set up a map to tell where wings are going in the new arrangement
+	SCP_unordered_map<int, int> new_squad_indexes;
+	for (int cur_squad_index = 0; cur_squad_index < MAX_SQUADRON_WINGS; cur_squad_index++)
 	{
-		HUD_wingman_status[wing_index].used = (Squadron_wings[wing_index] >= 0);
-		for (int wing_pos = 0; wing_pos < MAX_SHIPS_PER_WING; wing_pos++)
-			HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NONE;
+		int wingnum = Squadron_wings[cur_squad_index];
+		if (wingnum >= 0)
+		{
+			auto loc = std::find(new_squad_wingnums.begin(), new_squad_wingnums.end(), wingnum);
+			if (loc != new_squad_wingnums.end())
+				new_squad_indexes[wingnum] = static_cast<int>(std::distance(new_squad_wingnums.begin(), loc));
+		}
 	}
 
+	// clear or reassign the ships that are currently in the squadron wings
+	for (int cur_squad_index = 0; cur_squad_index < MAX_SQUADRON_WINGS; cur_squad_index++)
+	{
+		int wingnum = Squadron_wings[cur_squad_index];
+		if (wingnum < 0)
+			continue;
+		auto wingp = &Wings[wingnum];
+		auto new_squad_index = new_squad_indexes.find(wingnum);
+
+		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+		{
+			int shipnum = wingp->ship_index[j];
+			if (shipnum < 0)
+				continue;
+			auto shipp = &Ships[shipnum];
+
+			if (new_squad_index == new_squad_indexes.end())
+			{
+				shipp->wing_status_wing_index = -1;
+				shipp->wing_status_wing_pos = -1;
+			}
+			else
+				shipp->wing_status_wing_index = i2ch(new_squad_index->second);
+		}
+	}
+
+	// copy the old status to the new locations
+	wingman_status Backup_HUD_wingman_status[MAX_SQUADRON_WINGS];
+	memcpy(Backup_HUD_wingman_status, HUD_wingman_status, sizeof(HUD_wingman_status));
+	for (int cur_squad_index = 0; cur_squad_index < MAX_SQUADRON_WINGS; cur_squad_index++)
+	{
+		int wingnum = Squadron_wings[cur_squad_index];
+		if (wingnum < 0)
+			continue;
+
+		auto new_squad_index = new_squad_indexes.find(wingnum);
+		if (new_squad_index == new_squad_indexes.end())
+			continue;
+
+		memcpy(&HUD_wingman_status[new_squad_index->second], &Backup_HUD_wingman_status[cur_squad_index], sizeof(wingman_status));
+	}
+
+	// set the new squadron wings on the HUD
+	for (int new_squad_index = 0; new_squad_index < MAX_SQUADRON_WINGS; new_squad_index++)
+	{
+		int wingnum = new_squad_wingnums[new_squad_index];
+		auto wing_name = wingnum < 0 ? "" : Wings[wingnum].name;
+
+		strcpy_s(Squadron_wing_names[new_squad_index], wing_name);
+		Squadron_wings[new_squad_index] = wingnum;
+
+		HUD_wingman_status[new_squad_index].used = (wingnum >= 0);
+	}
+
+	// set the ships in the new squadron wings, but only for the ones that weren't copied
+	for (int new_squad_index = 0; new_squad_index < MAX_SQUADRON_WINGS; new_squad_index++)
+	{
+		int wingnum = Squadron_wings[new_squad_index];
+		if (wingnum < 0)
+			continue;
+		if (new_squad_indexes.find(wingnum) != new_squad_indexes.end())
+			continue;
+
+		// clear the status before we actually add any wingmen
+		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+			HUD_wingman_status[new_squad_index].status[j] = HUD_WINGMAN_STATUS_NONE;
+
+		// now add the existing wingmen
+		auto wingp = &Wings[wingnum];
+		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+		{
+			int shipnum = wingp->ship_index[j];
+			if (shipnum >= 0)
+				hud_wingman_status_set_index(new_squad_index, wingp, &Ships[shipnum], nullptr);
+		}
+	}
+
+	// refresh the HUD status for everybody
 	HUD_wingman_update_timer = timestamp(0);	// update status right away
 	hud_wingman_status_update();
 }
