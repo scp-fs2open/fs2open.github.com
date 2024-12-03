@@ -13667,62 +13667,26 @@ void multi_sexp_hud_display_gauge()
 
 void sexp_set_squadron_wings(int node)
 {
-	// clear the ships that are currently in the squadron wings
-	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
-	{
-		if (Squadron_wings[i] < 0)
-			continue;
-
-		auto wingp = &Wings[Squadron_wings[i]];
-		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
-		{
-			int shipnum = wingp->ship_index[j];
-			if (shipnum >= 0)
-			{
-				Ships[shipnum].wing_status_wing_index = -1;
-				Ships[shipnum].wing_status_wing_pos = -1;
-			}
-		}
-	}
+	std::array<int, MAX_SQUADRON_WINGS> new_squad_wingnums;
 
 	// get the new set of squadron wings
 	for (int i = 0, n = node; i < MAX_SQUADRON_WINGS; i++)
 	{
-		auto wing_name = "";
-		int wing_num = -1;
+		int wingnum = -1;
 
 		if (n >= 0)
 		{
 			auto wingp = eval_wing(n);
 			if (wingp)
-			{
-				wing_name = wingp->name;
-				wing_num = WING_INDEX(wingp);
-			}
+				wingnum = WING_INDEX(wingp);
+
 			n = CDR(n);
 		}
 
-		strcpy_s(Squadron_wing_names[i], wing_name);
-		Squadron_wings[i] = wing_num;
+		new_squad_wingnums[i] = wingnum;
 	}
 
-	// set the ships in the new squadron wings
-	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
-	{
-		if (Squadron_wings[i] < 0)
-			continue;
-
-		auto wingp = &Wings[Squadron_wings[i]];
-		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
-		{
-			int shipnum = wingp->ship_index[j];
-			if (shipnum >= 0)
-				hud_wingman_status_set_index(i, wingp, &Ships[shipnum], nullptr);
-		}
-	}
-
-	// refresh the HUD status
-	hud_wingman_status_refresh();
+	hud_set_new_squadron_wings(new_squad_wingnums);
 }
 
 // Goober5000
@@ -41870,7 +41834,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the wings displayed on the squadron HUD display.  By default these are Alpha, Beta, Gamma, Delta, and Epsilon.  "
 		"The squadron status will be updated to the current status of the wings, but note that if any ships in those wings have "
 		"previously been destroyed, the HUD display may look different than expected.  (Specifically, destroyed ships may be "
-		"indicated as missing or may cause other ships in the same wing to appear in different positions.)\r\n"
+		"indicated as missing or may cause other ships in the same wing to appear in different positions.)  However, any wings "
+		"that are shared between one display and the next will be preserved.\r\n"
 		"Takes 1 to " SCP_TOKEN_TO_STR(MAX_SQUADRON_WINGS) " arguments...\r\n"
 		"\tAll:\tWing to display\r\n"
 	},
